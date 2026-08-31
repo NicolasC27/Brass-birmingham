@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* BRASSWORKS material tokens (design.md §2) */
+    --coal-950: #100D0B;
+    --coal-900: #171310;
+    --coal-800: #211C17;
+    --coal-700: #2C251D;
+    --brass-400: #DDBE7E;
+    --brass-500: #C9A45C;
+    --brass-700: #8A6B33;
+    --copper-500: #A6562B;
+    --copper-700: #7C3E1F;
+    --green-800: #1E3A2A;
+    --green-600: #2E5540;
+    --cream-100: #F2EAD6;
+    --cream-300: #E3D4B4;
+    --rust-500: #8E3B2F;
+    --ink-900: #241D14;
+    --p-brass: #C9A45C;
+    --p-oxblood: #9E3B30;
+    --p-green: #3F7A55;
+    --p-steel: #4E6E8E;
+
+    /* shadcn aliases mapped onto the dark brassworks palette */
+    --background: 30 18% 8%;
+    --foreground: 40 44% 89%;
+    --card: 28 20% 11%;
+    --card-foreground: 40 44% 89%;
+    --popover: 30 25% 5%;
+    --popover-foreground: 40 44% 89%;
+    --primary: 38 50% 57%;
+    --primary-foreground: 32 26% 11%;
+    --secondary: 28 20% 15%;
+    --secondary-foreground: 38 50% 57%;
+    --muted: 28 18% 16%;
+    --muted-foreground: 38 20% 62%;
+    --accent: 38 50% 57%;
+    --accent-foreground: 32 26% 11%;
+    --destructive: 7 51% 37%;
+    --destructive-foreground: 40 44% 89%;
+    --border: 37 45% 37%;
+    --input: 37 45% 37%;
+    --ring: 39 62% 68%;
+    --radius: 0.5rem;
+    --sidebar-background: 30 25% 5%;
+    --sidebar-foreground: 40 44% 89%;
+    --sidebar-primary: 38 50% 57%;
+    --sidebar-primary-foreground: 32 26% 11%;
+    --sidebar-accent: 28 20% 15%;
+    --sidebar-accent-foreground: 40 44% 89%;
+    --sidebar-border: 37 45% 37%;
+    --sidebar-ring: 39 62% 68%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-coal-900 text-cream-100 font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: rgba(201, 164, 92, 0.35);
+    color: var(--cream-100);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brass-400);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* ---------- Texture overlays (applied over a base color, never under small text at high opacity) ---------- */
+  .tex-paper {
+    background-image: url("/tex-paper.png");
+    background-size: 512px;
+  }
+  .tex-brass {
+    background-image: url("/tex-brass.png");
+    background-size: 512px;
+  }
+  .tex-coal {
+    background-image: url("/tex-coal.png");
+    background-size: 512px;
+  }
+  .tex-wood {
+    background-image: url("/tex-wood.png");
+    background-size: 1024px;
+  }
+  .tex-felt {
+    background-image: url("/table-felt.png");
+    background-size: 512px;
+  }
+
+  /* ---------- Engraved text on brass (design.md §3) ---------- */
+  .engraved-brass {
+    color: var(--brass-700);
+    text-shadow:
+      0 1px 0 rgba(242, 234, 214, 0.35),
+      0 -1px 1px rgba(0, 0, 0, 0.5);
+  }
+
+  .wordmark-gradient {
+    background: linear-gradient(170deg, #DDBE7E, #C9A45C 55%, #8A6B33);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+  }
+
+  /* ---------- Eyebrow / UI label (design.md §3) ---------- */
+  .eyebrow {
+    @apply font-sans font-semibold uppercase text-brass-500;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+  }
+
+  /* ---------- Brass Plaque family (design.md §6.2) ---------- */
+  .plaque {
+    position: relative;
+    border-radius: 8px;
+    border: 1px solid var(--brass-700);
+    background: linear-gradient(160deg, var(--brass-400), var(--brass-500) 45%, var(--brass-700));
+    box-shadow:
+      inset 0 1px 0 rgba(242, 234, 214, 0.5),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+      0 3px 6px rgba(0, 0, 0, 0.45),
+      0 10px 24px rgba(0, 0, 0, 0.25);
+  }
+  .plaque-rivets::before,
+  .plaque-rivets::after {
+    content: "";
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: radial-gradient(circle at 35% 30%, var(--brass-400), var(--brass-700));
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+  }
+  .plaque-rivets::before {
+    top: 7px;
+    left: 7px;
+  }
+  .plaque-rivets::after {
+    bottom: 7px;
+    right: 7px;
+  }
+
+  .plate {
+    border-radius: 8px;
+    border: 1px solid rgba(138, 107, 51, 0.55);
+    background-color: var(--coal-700);
+    box-shadow:
+      0 3px 6px rgba(0, 0, 0, 0.45),
+      0 10px 24px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(242, 234, 214, 0.1);
+  }
+
+  .paper {
+    border-radius: 6px;
+    border: 1px solid rgba(138, 107, 51, 0.4);
+    background-color: var(--cream-100);
+    color: var(--ink-900);
+  }
+
+  /* ---------- Buttons (design.md §6.3) ---------- */
+  .btn-strike {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden font-sans font-bold uppercase text-ink-900;
+    min-height: 40px;
+    padding: 12px 20px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    border: 1px solid var(--brass-700);
+    background: linear-gradient(160deg, var(--brass-400), var(--brass-500) 45%, var(--brass-700));
+    box-shadow:
+      inset 0 1px 0 rgba(242, 234, 214, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+      0 3px 6px rgba(0, 0, 0, 0.45);
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .btn-strike:hover {
+    transform: translateY(-2px);
+    box-shadow:
+      inset 0 1px 0 rgba(242, 234, 214, 0.55),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+      0 8px 18px rgba(0, 0, 0, 0.5);
+  }
+  .btn-strike:active {
+    transform: translateY(0);
+    box-shadow:
+      inset 0 1px 0 rgba(242, 234, 214, 0.35),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+      0 1px 3px rgba(0, 0, 0, 0.45);
+  }
+  /* sheen sweep on hover */
+  .btn-strike::after,
+  .sheen::after {
+    content: "";
+    position: absolute;
+    inset: -20% auto -20% 0;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, rgba(242, 234, 214, 0.4), transparent);
+    transform: translateX(-130%) skewX(-18deg);
+    pointer-events: none;
+  }
+  .btn-strike:hover::after,
+  .sheen:hover::after {
+    animation: sheen-sweep 0.5s ease forwards;
+  }
+
+  .btn-ledger {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden font-sans font-semibold uppercase text-brass-500;
+    min-height: 40px;
+    padding: 12px 20px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    border: 1px solid rgba(138, 107, 51, 0.8);
+    background: transparent;
+    transition: background-color 150ms ease, transform 150ms ease, border-color 150ms ease;
+  }
+  .btn-ledger:hover {
+    background: rgba(201, 164, 92, 0.12);
+    border-color: var(--brass-500);
+    transform: translateY(-2px);
+  }
+
+  .btn-loan {
+    @apply inline-flex items-center justify-center gap-2 font-sans font-semibold uppercase;
+    min-height: 40px;
+    padding: 12px 20px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    border: 1px solid var(--rust-500);
+    color: var(--rust-500);
+    background: transparent;
+    transition: background-color 150ms ease;
+  }
+  .btn-loan:hover {
+    background: rgba(142, 59, 47, 0.14);
+  }
+
+  /* ---------- Beta / approximation ribbon (design.md §12) ---------- */
+  .beta-ribbon {
+    @apply font-sans font-semibold uppercase;
+    position: absolute;
+    top: 10px;
+    right: -32px;
+    transform: rotate(38deg);
+    padding: 3px 36px;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--cream-100);
+    background: var(--rust-500);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+  }
+
+  /* ---------- Engraved divider with centered diamond ---------- */
+  .divider-brass {
+    @apply relative mx-auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201, 164, 92, 0.7), transparent);
+  }
+  .divider-brass::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background: var(--brass-500);
+    box-shadow: 0 0 0 3px var(--coal-900);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* ---------- Reduced motion (design.md §5) ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.15s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+    scroll-behavior: auto !important;
+  }
+}

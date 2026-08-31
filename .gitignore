@@ -1,0 +1,20 @@
+# local working notes and tooling state
+CLAUDE.local.md
+.claude/settings.local.json
+
+# performance probes, Playwright browsers and screenshot dumps
+.perf/
+verify-*.png
+
+# build output and dependencies
+app/node_modules/
+app/dist/
+
+# backups of generated art
+*.orig.png
+
+.DS_Store
+
+# IDE and AI-tooling files
+.idea/
+AGENTS.md
