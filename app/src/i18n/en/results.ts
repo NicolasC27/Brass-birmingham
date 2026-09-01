@@ -1,0 +1,57 @@
+const results = {
+  empty: {
+    eyebrow: "Le Bilan",
+    title: "The ledgers are not yet closed",
+    body: "No finished game rests on this table. When the final era is scored, the podium, the décompte and the frieze will be engraved here.",
+    setTable: "Set the Table",
+    backTitle: "Back to the Title",
+  },
+  page: {
+    back: "Title",
+    title: "Le Bilan — 1870",
+    skip: "Click to skip the ceremony",
+    podiumAria: "Final podium",
+    scoringAria: "Detailed scoring",
+    scoringTitle: "Detailed Scoring",
+  },
+  tiebreak: "tie-break: income £{hi} > £{lo}",
+  share: {
+    text: "BRASSWORKS — Le Bilan : {summary}",
+    share: "Share the Ledger",
+    copied: "Copied",
+  },
+  actions: {
+    revanche: "Rematch",
+    backToMenu: "Back to the Menu",
+    consultManual: "Consult the Manual",
+  },
+  podium: {
+    standingsAria: "Current standings",
+    podiumAria: "Final podium",
+    ranks: { 0: "1st", 1: "2nd", 2: "3rd", 3: "4th" },
+    places: { 0: "1st place", 1: "2nd place", 2: "3rd place", 3: "4th place" },
+    vp: "{vp} VP",
+    incomeShort: "inc. £{income}",
+    winnerHuman: "Your empire prospers.",
+    winnerAi: "{name}'s empire prospers… this time.",
+    finalIncome: "Final income £{income}",
+    victoryPoints: "victory points",
+  },
+  table: {
+    header: "Scoring",
+    eraCanal: "Canal Era",
+    eraRail: "Rail Era",
+    vpScored: "Victory points scored",
+    total: "Total",
+    finalIncome: "Final income",
+    linksBuilt: "Links built",
+    tilesBuilt: "Tiles built / flipped",
+  },
+  frieze: {
+    title: "Game Timeline",
+    railBannerAlt: "The Rail Era begins",
+  },
+  nameless: "Nameless",
+};
+
+export default results;
