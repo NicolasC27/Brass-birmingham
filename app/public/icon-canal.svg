@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<title>Narrowboat</title>
+<g>
+  <path d="M 4 30 L 8 36 H 40 L 44 30 Z"/>
+  <path d="M 12 30 V 22 H 30 V 30"/>
+  <path d="M 16 22 v -4 h 10 v 4" stroke-width="1.6"/>
+  <path d="M 15 26 h 4 M 23 26 h 4" stroke-width="1.3" opacity="0.8"/>
+  <path d="M 36 30 v -8 l 4 -2" stroke-width="1.6"/>
+  <path d="M 8 33 h 32" stroke-width="1.1" opacity="0.6"/>
+</g>
+<g stroke-width="1.3" opacity="0.8">
+  <path d="M 6 41 q 4 3 8 0 q 4 3 8 0 q 4 3 8 0 q 4 3 8 0 q 3 2.4 6 0.4"/>
+</g>
+</svg>
