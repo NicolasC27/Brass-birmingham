@@ -75,7 +75,10 @@ export default function Game() {
   const [skipAnim, setSkipAnim] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [ledgerOpen, setLedgerOpen] = useState(false);
-  const [marketOpen, setMarketOpen] = useState(true);
+  /* the exchange starts folded; it unfolds by itself while a planned action
+     draws coal or iron from it, and folds back once that plan is gone */
+  const [marketOpen, setMarketOpen] = useState(false);
+  const marketAutoOpened = useRef(false);
   /* board renderer: WebGL/PixiJS (default) or the legacy SVG — persisted choice */
   const [glRenderer, setGlRenderer] = useState(() => {
     try {
@@ -258,6 +261,17 @@ export default function Game() {
     for (const m of ghost?.market ?? []) out[m.resource as Resource] = (out[m.resource as Resource] ?? 0) + m.amount;
     return out;
   }, [ghost]);
+  const drawsFromMarket = (consumePreview.coal ?? 0) > 0 || (consumePreview.iron ?? 0) > 0;
+  useEffect(() => {
+    if (drawsFromMarket && !marketOpen) {
+      marketAutoOpened.current = true;
+      setMarketOpen(true);
+    } else if (!drawsFromMarket && marketAutoOpened.current) {
+      marketAutoOpened.current = false;
+      setMarketOpen(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawsFromMarket]);
 
   if (!game) {
     return <div className="flex min-h-[60vh] items-center justify-center font-fell text-brass-400">{t('game.page.settingTable')}</div>;
