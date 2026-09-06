@@ -9,6 +9,13 @@ const fr: typeof enresults = {
     backTitle: "Retour au titre",
   },
   page: {
+    curvesTitle: "Le livre de comptes",
+    curvesAria: "Points de victoire et revenu manche par manche",
+    curvesVp: "Points de victoire",
+    curvesIncome: "Niveau de revenu",
+    curvesCanal: "Canal",
+    curvesRail: "Rail",
+    curvesRound: "M{n}",
     back: "Titre",
     title: "Le Bilan — 1870",
     skip: "Cliquez pour passer la cérémonie",

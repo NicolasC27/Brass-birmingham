@@ -22,11 +22,20 @@ export interface FinalEra {
   scores: number[];
 }
 
+export interface FinalRound {
+  era: "canal" | "rail";
+  round: number;
+  vp: number[];
+  income: number[];
+  money: number[];
+}
+
 export interface FinalResult {
   players: FinalPlayer[];
   eras: FinalEra[];
   winnerIndex: number;
   timeline: string[];
+  history: FinalRound[];
 }
 
 function isPlayerColor(c: unknown): c is PlayerColor {
@@ -72,7 +81,15 @@ export function readFinalResult(): FinalResult | null {
       ? data.timeline.filter((t): t is string => typeof t === "string")
       : [];
 
-    return { players, eras, winnerIndex, timeline };
+    const nums = (v: unknown): number[] =>
+      Array.isArray(v) ? players.map((_, i) => (Number.isFinite(v[i]) ? Number(v[i]) : 0)) : players.map(() => 0);
+    const history: FinalRound[] = Array.isArray((data as { history?: unknown }).history)
+      ? ((data as { history: Partial<FinalRound>[] }).history)
+          .filter((h) => h && (h.era === "canal" || h.era === "rail"))
+          .map((h) => ({ era: h.era as "canal" | "rail", round: Number(h.round) || 0, vp: nums(h.vp), income: nums(h.income), money: nums(h.money) }))
+      : [];
+
+    return { players, eras, winnerIndex, timeline, history };
   } catch {
     return null;
   }

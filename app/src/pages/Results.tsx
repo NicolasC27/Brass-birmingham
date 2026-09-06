@@ -5,6 +5,7 @@ import { ArrowLeft, BookOpen, RotateCcw, Share2, Check } from "lucide-react";
 import Podium, { type PodiumEntry } from "@/components/results/Podium";
 import ScoringTable from "@/components/results/ScoringTable";
 import TimelineFrieze from "@/components/results/TimelineFrieze";
+import ScoreCurves from "@/components/results/ScoreCurves";
 import EmberParticles from "@/components/results/EmberParticles";
 import {
   rankPlayers,
@@ -254,7 +255,26 @@ export default function Results() {
           </div>
         </motion.section>
 
-        {/* 4 — Timeline frieze */}
+        {/* 4 — Round-by-round curves */}
+        {result.history.length > 1 && (
+          <motion.section
+            aria-label={t("results.page.curvesAria")}
+            initial={false}
+            animate={{ opacity: phase >= 2 ? 1 : 0, y: phase >= 2 ? 0 : 16 }}
+            transition={{ duration: 0.35, delay: 0.1 }}
+            className={cn("mt-14", phase < 2 && "pointer-events-none")}
+          >
+            <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">
+              {t("results.page.curvesTitle")}
+            </h2>
+            <div className="divider-brass mt-3 !mx-0" />
+            <div className="mt-6">
+              <ScoreCurves result={result} reveal={phase >= 2} />
+            </div>
+          </motion.section>
+        )}
+
+        {/* 5 — Timeline frieze */}
         <motion.div
           initial={false}
           animate={{ opacity: phase >= 2 ? 1 : 0, y: phase >= 2 ? 0 : 16 }}

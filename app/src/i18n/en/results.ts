@@ -7,6 +7,13 @@ const results = {
     backTitle: "Back to the Title",
   },
   page: {
+    curvesTitle: "The Account Book",
+    curvesAria: "Victory points and income round by round",
+    curvesVp: "Victory points",
+    curvesIncome: "Income level",
+    curvesCanal: "Canal",
+    curvesRail: "Rail",
+    curvesRound: "R{n}",
     back: "Title",
     title: "Le Bilan — 1870",
     skip: "Click to skip the ceremony",
