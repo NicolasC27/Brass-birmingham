@@ -78,13 +78,7 @@ function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; labe
   );
 }
 
-export default function BoardSettings({
-  glRenderer,
-  onToggleRenderer,
-}: {
-  glRenderer: boolean;
-  onToggleRenderer: () => void;
-}) {
+export default function BoardSettings() {
   const opts = useBoardOptions();
   const lang = useLang();
   const t = useT();
@@ -216,17 +210,6 @@ export default function BoardSettings({
                 </button>
               </Row>
             </div>
-
-            <Row label={t('game.settings.renderer')}>
-              <div className="flex overflow-hidden rounded-md border border-brass-700/60">
-                <button type="button" aria-pressed={glRenderer} onClick={() => !glRenderer && onToggleRenderer()} className={segBtn(glRenderer)}>
-                  WebGL
-                </button>
-                <button type="button" aria-pressed={!glRenderer} onClick={() => glRenderer && onToggleRenderer()} className={segBtn(!glRenderer)}>
-                  SVG
-                </button>
-              </div>
-            </Row>
 
             <Row label={t('game.settings.followBots')}>
               <Switch on={followBots} onClick={toggleFollowBots} label={t('game.settings.followBots')} />

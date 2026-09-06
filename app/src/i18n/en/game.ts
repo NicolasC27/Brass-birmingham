@@ -10,7 +10,6 @@ const game = {
     closeLedger: 'Close the ledger',
     settingsChip: 'Settings',
     ledgerChip: 'Ledger',
-    toSvg: 'Back to the SVG renderer',
     toGl: 'Try the WebGL engine (PixiJS)',
     followBotsTitle:
       'The camera glides to where each bot plays. Any manual interaction takes back control for a few seconds.',
@@ -63,7 +62,6 @@ const game = {
     incomeSide: 'Income track',
     side: { bottom: 'Along the bottom', left: 'Down the left edge' },
     size: { s: 'Small', m: 'Medium', l: 'Large' },
-    renderer: 'Board renderer',
     followBots: 'Follow the bots (camera)',
     boardSection: 'Board',
     showUnbuilt: 'Show unbuilt links',

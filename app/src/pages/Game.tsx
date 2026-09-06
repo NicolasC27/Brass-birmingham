@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Scale, ScrollText, Settings2, X } from 'lucide-react';
-import Board from '@/components/game/Board';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -30,7 +29,6 @@ import { cn } from '@/lib/utils';
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
-const RENDERER_KEY = 'brassworks.renderer';
 
 /**
  * /game — full-viewport immersive scene (map-v3 §2): the authentic Roxley
@@ -79,24 +77,6 @@ export default function Game() {
      draws coal or iron from it, and folds back once that plan is gone */
   const [marketOpen, setMarketOpen] = useState(false);
   const marketAutoOpened = useRef(false);
-  /* board renderer: WebGL/PixiJS (default) or the legacy SVG — persisted choice */
-  const [glRenderer, setGlRenderer] = useState(() => {
-    try {
-      return localStorage.getItem(RENDERER_KEY) !== 'svg';
-    } catch {
-      return true;
-    }
-  });
-  const toggleRenderer = () => {
-    setGlRenderer((on) => {
-      try {
-        localStorage.setItem(RENDERER_KEY, on ? 'svg' : 'gl');
-      } catch {
-        /* non-fatal */
-      }
-      return !on;
-    });
-  };
   const finalWritten = useRef(false);
   const prevPlayer = useRef(-1);
 
@@ -174,12 +154,6 @@ export default function Game() {
         setBoardOption('settingsOpen', false);
         return;
       }
-      /* fullscreen — in WebGL the board handles F itself (avoid a double toggle) */
-      if (!glRenderer && (e.key === 'f' || e.key === 'F')) {
-        if (document.fullscreenElement) void document.exitFullscreen();
-        else void document.documentElement.requestFullscreen();
-        return;
-      }
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         setRulesOpen(true);
         return;
@@ -209,7 +183,7 @@ export default function Game() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, passTo, isHumanTurn, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight, glRenderer]);
+  }, [game, passTo, isHumanTurn, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
 
   /* ---------------------- planning targets ---------------------- */
   const selectedCard = useMemo(() => {
@@ -287,19 +261,8 @@ export default function Game() {
       {/* the board fills 100% of the screen and stays interactive
           wherever no floating panel is open */}
       <div className="absolute inset-0">
-        {glRenderer ? (
-          <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
-            <PixiBoard
-              game={game}
-              targets={targets}
-              linkTargetsList={linkTargetsList}
-              sellTargetsList={sellTargetsList}
-              ghost={ghost}
-              onInvalid={reject}
-            />
-          </Suspense>
-        ) : (
-          <Board
+        <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
+          <PixiBoard
             game={game}
             targets={targets}
             linkTargetsList={linkTargetsList}
@@ -307,7 +270,7 @@ export default function Game() {
             ghost={ghost}
             onInvalid={reject}
           />
-        )}
+        </Suspense>
       </div>
 
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
@@ -414,7 +377,7 @@ export default function Game() {
       <HandDock />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
-      <BoardSettings glRenderer={glRenderer} onToggleRenderer={toggleRenderer} />
+      <BoardSettings />
 
       {/* skip bot animation chip */}
       {botThinking && (

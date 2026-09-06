@@ -12,7 +12,6 @@ const fr: typeof engame = {
     closeLedger: 'Fermer le registre',
     settingsChip: 'Réglages',
     ledgerChip: 'Registre',
-    toSvg: 'Revenir au rendu SVG',
     toGl: 'Essayer le moteur WebGL (PixiJS)',
     followBotsTitle:
       'La caméra glisse vers la zone où chaque bot joue. Toute interaction manuelle reprend la main quelques secondes.',
@@ -65,7 +64,6 @@ const fr: typeof engame = {
     side: { bottom: 'Le long du bas', left: 'Sur le bord gauche' },
     minimapSize: 'Taille de la mini-carte',
     size: { s: 'Petite', m: 'Moyenne', l: 'Grande' },
-    renderer: 'Moteur du plateau',
     followBots: 'Suivre les bots (caméra)',
     boardSection: 'Plateau',
     showUnbuilt: 'Afficher les liens non construits',
