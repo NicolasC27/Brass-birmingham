@@ -18,3 +18,7 @@ app/dist/
 # IDE and AI-tooling files
 .idea/
 AGENTS.md
+
+# secrets (API keys) — never committed
+.env
+.env.*
