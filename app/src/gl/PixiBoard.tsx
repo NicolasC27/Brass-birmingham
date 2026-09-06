@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics, Sprite, Text } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LINKS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
-import { tileKey } from '@/game/engine';
+import { INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
+import { merchantBarrelSlots, merchantDemand, merchantOpen, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { GameState } from '@/game/types';
@@ -73,6 +73,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [hoverTown, setHoverTown] = useState<string | null>(null);
   const [hoverLink, setHoverLink] = useState<string | null>(null);
+  const [hoverMerchant, setHoverMerchant] = useState<string | null>(null);
   const [inspect, setInspect] = useState<string | null>(null);
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
@@ -93,8 +94,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
   const propsRef = useRef({ targets, linkTargetsList, sellTargetsList, onInvalid });
   propsRef.current = { targets, linkTargetsList, sellTargetsList, onInvalid };
-  const hoverRef = useRef({ setHoverTown, setHoverLink, setInspect });
-  hoverRef.current = { setHoverTown, setHoverLink, setInspect };
+  const hoverRef = useRef({ setHoverTown, setHoverLink, setInspect, setHoverMerchant });
+  hoverRef.current = { setHoverTown, setHoverLink, setInspect, setHoverMerchant };
   const suppressClick = useRef(false);
   useEffect(() => {
     sceneRef.current?.setHideUnbuilt(hideUnbuilt);
@@ -492,6 +493,16 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         return null;
       };
+      /* merchant plates (paint.ts): 1.15-scaled cards centred on the node, southern ones lifted 34 units */
+      const merchantAt = (wx: number, wy: number) => {
+        for (const m of MERCHANTS) {
+          const w = (16 + m.slots * 40 + (m.slots - 1) * 12 + 18 + 40 + 16) * 1.15;
+          const h = 88 * 1.15;
+          const cy = m.y - (m.y > 1500 ? 34 : 0);
+          if (Math.abs(wx - m.x) <= w / 2 && Math.abs(wy - cy) <= h / 2) return m;
+        }
+        return null;
+      };
 
       const distToSeg = (px: number, py: number, x1: number, y1: number, x2: number, y2: number): number => {
         const dx = x2 - x1;
@@ -572,7 +583,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           el.style.cursor = ok ? 'pointer' : 'grab';
           return;
         }
-        /* idle browsing: town first, then links */
+        /* idle browsing: merchant plates, then towns, then links */
+        const merch = merchantAt(wx, wy);
+        hoverRef.current.setHoverMerchant(merch?.id ?? null);
+        if (merch) {
+          hoverRef.current.setHoverTown(null);
+          hoverRef.current.setHoverLink(null);
+          el.style.cursor = 'help';
+          return;
+        }
         const town = townAt(wx, wy);
         hoverRef.current.setHoverTown(town?.id ?? null);
         if (town) {
@@ -979,6 +998,25 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const hoverTownDef = idle && hoverTown && !inspect ? TOWN_BY_ID[hoverTown] : undefined;
   const hoverTownPos = hoverTownDef ? worldToScreen(hoverTownDef.x, hoverTownDef.y, view, size.w, size.h) : null;
   const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink) : undefined;
+  /* merchant hover: the plate's tooltip, and only the goods YOU could sell there stay lit */
+  const hoverMerchantDef = idle && hoverMerchant ? MERCHANT_BY_ID[hoverMerchant] : undefined;
+  const hoverMerchantPos = hoverMerchantDef ? worldToScreen(hoverMerchantDef.x, hoverMerchantDef.y - (hoverMerchantDef.y > 1500 ? 34 : 0), view, size.w, size.h) : null;
+  const viewerIdx = (() => {
+    const cur = game.players[game.current];
+    if (!cur.isBot) return game.current;
+    const humans = game.players.map((p, i) => (p.isBot ? -1 : i)).filter((i) => i >= 0);
+    return humans.length === 1 ? humans[0] : -1;
+  })();
+  const sellableHere = hoverMerchantDef && viewerIdx >= 0 ? sellTargets(game, viewerIdx).filter((s) => s.merchant === hoverMerchantDef.id) : [];
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    if (hoverMerchantDef && merchantOpen(game, hoverMerchantDef.id) && viewerIdx >= 0) {
+      const keys = [...new Set(sellableHere.map((s) => tileKey(s.town, s.slot)))];
+      scene.setHighlight(keys);
+    } else scene.setHighlight(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hoverMerchant, game.ledgerSeq, idle]);
   const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef), view, size.w, size.h) : null;
   const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
 
@@ -1042,6 +1080,40 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           <div className="mt-1 font-sans text-[11.5px] text-cream-100/65">
             {hoverLinkBuilt ? t('board.link.builtBy', { name: game.players[hoverLinkBuilt.owner].name, era: t(`board.era.${hoverLinkBuilt.era}`) }) : t('board.link.unbuilt')}
           </div>
+        </div>
+      )}
+
+      {/* merchant hover tooltip (idle browsing) */}
+      {hoverMerchantDef && hoverMerchantPos && (
+        <div
+          className="pointer-events-none absolute z-30 w-[240px] rounded-lg border border-brass-700/70 bg-coal-900/95 p-3 shadow-e3"
+          style={
+            hoverMerchantPos[1] > 220
+              ? { left: hoverMerchantPos[0], top: hoverMerchantPos[1] - 64, transform: 'translate(-50%, -100%)' }
+              : { left: hoverMerchantPos[0], top: hoverMerchantPos[1] + 64, transform: 'translate(-50%, 0)' }
+          }
+          role="tooltip"
+        >
+          <div className="font-fell text-[14px] tracking-wide text-brass-400">{hoverMerchantDef.name}</div>
+          <div className="my-1.5 h-px bg-brass-700/50" />
+          {merchantOpen(game, hoverMerchantDef.id) ? (
+            <div className="space-y-1 font-sans text-[12px] leading-relaxed text-cream-100/90">
+              <div>
+                {t('board.merchant.buys')}{' '}
+                <span className="text-cream-100">{merchantDemand(game, hoverMerchantDef.id).map((x) => INDUSTRY_LABEL[x]).join(', ') || t('board.merchant.buysNothing')}</span>
+              </div>
+              <div>
+                {t('board.merchant.barrels', { left: game.merchantBeer[hoverMerchantDef.id] ?? 0, total: merchantBarrelSlots(game, hoverMerchantDef.id) })}
+                {' · '}
+                {t('board.merchant.bonusIs', { bonus: hoverMerchantDef.bonusLabel })}
+              </div>
+              <div className={sellableHere.length ? 'text-bottle-600 brightness-150' : 'text-cream-100/55'}>
+                {viewerIdx < 0 ? t('board.merchant.noViewer') : sellableHere.length ? t('board.merchant.youCanSell', { n: new Set(sellableHere.map((s) => tileKey(s.town, s.slot))).size }) : t('board.merchant.nothingToSell')}
+              </div>
+            </div>
+          ) : (
+            <div className="font-sans text-[12px] text-cream-100/65">{t('board.merchant.closed')}</div>
+          )}
         </div>
       )}
 

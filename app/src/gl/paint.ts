@@ -87,6 +87,8 @@ export interface BoardScene {
   ribbons: Container[];
   redraw: (game: GameState) => void;
   setSpotlight: (player: number | null) => void;
+  /** light only these slots (null = back to the spotlight rule) */
+  setHighlight: (keys: string[] | null) => void;
   /** hide unbuilt link traces (board option, keyboard C) */
   setHideUnbuilt: (hide: boolean) => void;
   /** larger income/VP chips on built tiles (board option) */
@@ -1048,6 +1050,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   };
 
   let spotlight: number | null = null;
+  /* a transient highlight (merchant hover): only these slot keys stay lit */
+  let highlight: Set<string> | null = null;
   const applySpotlight = (game: GameState | null) => {
     if (!game) return;
     for (const def of LINKS) {
@@ -1062,7 +1066,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         const tile = game.tiles[tileKey(town.id, si)];
         /* spotlight = only the player's possessions stay at full strength:
            others' tiles AND empty slots step back */
-        view.slots[si].spotAlpha = spotlight === null ? 1 : tile && tile.owner === spotlight ? 1 : 0.3;
+        const key = tileKey(town.id, si);
+        view.slots[si].spotAlpha = highlight ? (highlight.has(key) ? 1 : 0.28) : spotlight === null ? 1 : tile && tile.owner === spotlight ? 1 : 0.3;
       }
     }
   };
@@ -1087,6 +1092,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     },
     setSpotlight(player: number | null) {
       spotlight = player;
+      applySpotlight(lastGame);
+    },
+    setHighlight(keys: string[] | null) {
+      highlight = keys ? new Set(keys) : null;
       applySpotlight(lastGame);
     },
     setHideUnbuilt(hide: boolean) {
