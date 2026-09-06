@@ -10,6 +10,7 @@ import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
 import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
+import PlayerMat from '@/components/game/PlayerMat';
 import { MM_H_FOR } from '@/components/game/Minimap';
 import { hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import HandDock from '@/components/game/HandDock';
@@ -156,6 +157,17 @@ export default function Game() {
       }
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         setRulesOpen(true);
+        return;
+      }
+      if (e.key.toLowerCase() === 'p') {
+        const st = useGame.getState();
+        if (st.matPlayer !== null) st.closeMat();
+        else if (st.game) {
+          /* your own mat first: the lone human when a bot is at the table */
+          const cur = st.game.players[st.game.current];
+          const humans = st.game.players.map((pl, i) => (pl.isBot ? -1 : i)).filter((i) => i >= 0);
+          st.openMat(!cur.isBot ? st.game.current : humans.length === 1 ? humans[0] : st.game.current);
+        }
         return;
       }
       if (e.key.toLowerCase() === 'm') {
@@ -378,6 +390,7 @@ export default function Game() {
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />
+      <PlayerMat />
 
       {/* skip bot animation chip */}
       {botThinking && (

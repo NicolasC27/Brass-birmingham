@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PLAYER_COLORS, incomeLevel } from '@/game/data';
+import { LayoutGrid } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
 import { hudInsets, useBoardOptions } from './boardOptions';
@@ -91,6 +92,7 @@ function RailChip({ p, index, active, nextRank, nowRank }: { p: PlayerState; ind
   const vp = useCountTween(p.vp);
   const spotlight = useGame((s) => s.spotlight);
   const setSpotlight = useGame((s) => s.setSpotlight);
+  const openMat = useGame((s) => s.openMat);
   const spotlighted = spotlight === index;
 
   return (
@@ -136,6 +138,19 @@ function RailChip({ p, index, active, nextRank, nowRank }: { p: PlayerState; ind
           </span>
         </span>
       </div>
+      {/* the player's mat: remaining tiles by industry and level */}
+      <button
+        type="button"
+        aria-label={t('game.mat.openAria', { name: p.name })}
+        title={t('game.mat.openTip')}
+        onClick={(e) => {
+          e.stopPropagation();
+          openMat(index);
+        }}
+        className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-md border border-brass-700/50 text-brass-500/70 transition-colors hover:border-brass-400 hover:text-brass-400"
+      >
+        <LayoutGrid className="h-3.5 w-3.5" />
+      </button>
     </div>
   );
 }

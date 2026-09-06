@@ -67,6 +67,8 @@ interface GameStore {
   /** hovering the Loan chip → ghost pawn on the income track */
   loanPeek: boolean;
   rulesOpen: boolean;
+  /** player whose mat (remaining tiles) is open, null = closed */
+  matPlayer: number | null;
   marketFocus: boolean;
   ledgerFilter: 'all' | 'me' | 'economy' | 'network';
   /** camera fly-to request (Ledger click, bot follow) — `at` dedupes repeats */
@@ -99,6 +101,8 @@ interface GameStore {
   setLoanConfirm: (open: boolean) => void;
   setLoanPeek: (on: boolean) => void;
   setRulesOpen: (open: boolean) => void;
+  openMat: (i: number) => void;
+  closeMat: () => void;
   setMarketFocus: (on: boolean) => void;
   setLedgerFilter: (f: GameStore['ledgerFilter']) => void;
   flyToRegion: (key: string) => void;
@@ -182,6 +186,7 @@ export const useGame = create<GameStore>((set, get) => ({
   ceremony: null,
   gameOverOpen: false,
   rulesOpen: false,
+  matPlayer: null,
 
   init: () => {
     const resumed = (() => {
@@ -314,6 +319,8 @@ export const useGame = create<GameStore>((set, get) => ({
   setLoanConfirm: (open) => set({ loanConfirm: open }),
   setLoanPeek: (on) => set({ loanPeek: on }),
   setRulesOpen: (open) => set({ rulesOpen: open }),
+  openMat: (i) => set({ matPlayer: i }),
+  closeMat: () => set({ matPlayer: null }),
   setMarketFocus: (on) => set({ marketFocus: on }),
   setLedgerFilter: (f) => set({ ledgerFilter: f }),
   flyToRegion: (key) => set({ flyTo: { key, at: Date.now() } }),
