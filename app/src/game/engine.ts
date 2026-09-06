@@ -138,6 +138,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     ledgerSeq: 0,
     phase: 'action',
     fxSeq: 0,
+    history: [],
   };
   dealHands(state);
   log(state, undefined, 'system', `The table is set — ${players.map((p) => p.name).join(', ')}. The Canal Era begins.`);
@@ -945,6 +946,17 @@ function payday(s: GameState) {
   log(s, undefined, 'system', 'Payday — the counting-houses settle up.');
 }
 
+/** one line of the game's account book: where everyone stands after this round */
+function snapshot(s: GameState) {
+  s.history.push({
+    era: s.era,
+    round: s.round,
+    vp: s.players.map((p) => p.vp),
+    income: s.players.map((p) => incomeLevel(p.income)),
+    money: s.players.map((p) => p.money),
+  });
+}
+
 /** end of round: turn order by money spent (least first, ties keep order), payday, era check */
 function endRound(s: GameState) {
   const sorted = [...s.order].sort((a, b) => s.players[a].spent - s.players[b].spent);
@@ -958,13 +970,16 @@ function endRound(s: GameState) {
   if (over) {
     if (s.era === 'canal') {
       scoreEra(s, 'canal');
+      snapshot(s);
       s.phase = 'scoring-canal';
       return;
     }
     scoreEra(s, 'rail');
+    snapshot(s);
     finishGame(s);
     return;
   }
+  snapshot(s);
   s.round += 1;
   s.turnPos = 0;
   s.current = s.order[0];

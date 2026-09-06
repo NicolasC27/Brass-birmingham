@@ -190,6 +190,17 @@ export interface GameState {
   canalScores?: number[];
   finalScores?: number[];
   winner?: number;
+  /** one snapshot per completed round (after payday / era scoring) */
+  history: RoundSnapshot[];
+}
+
+export interface RoundSnapshot {
+  era: Era;
+  round: number;
+  vp: number[];
+  /** income LEVEL per player (what a payday pays) */
+  income: number[];
+  money: number[];
 }
 
 /* ------------------------- persistence ---------------------------- */
@@ -221,6 +232,7 @@ export interface FinalPayload {
   eras: { name: 'Canal' | 'Rail'; scores: number[] }[];
   winnerIndex: number;
   timeline: string[];
+  history: RoundSnapshot[];
 }
 
 export const SETUP_KEY = 'brassworks.setup.v1';

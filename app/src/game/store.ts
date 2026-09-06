@@ -150,6 +150,7 @@ export function buildFinalPayload(g: GameState): FinalPayload {
       .filter((e) => e.verb !== 'system' || e.text.includes('Era'))
       .slice(-40)
       .map((e) => `[${e.era === 'canal' ? 'Canal' : 'Rail'} R${e.round}] ${e.text}`),
+    history: g.history ?? [],
   };
 }
 
