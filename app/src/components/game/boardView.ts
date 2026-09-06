@@ -32,10 +32,15 @@ export function fitScale(cw: number, ch: number): number {
 }
 
 /** clamp pan so at least `margin` px of the map stays reachable on each axis */
-export function clampPan(v: View, cw: number, ch: number, margin = 90): View {
+/** the paintings run BLEED px of countryside past the play area on every
+ *  side; the camera may drift into that margin but never past it, so the
+ *  table's black never shows */
+export const BLEED_X = 480;
+export const BLEED_Y = 270;
+export function clampPan(v: View, cw: number, ch: number): View {
   const s = fitScale(cw, ch) * v.k;
-  const mx = cw / 2 + (WORLD_W * s) / 2 - margin;
-  const my = ch / 2 + (WORLD_H * s) / 2 - margin;
+  const mx = Math.max(0, (WORLD_W * s) / 2 + BLEED_X * s - cw / 2);
+  const my = Math.max(0, (WORLD_H * s) / 2 + BLEED_Y * s - ch / 2);
   return {
     k: clampK(v.k),
     x: Math.min(mx, Math.max(-mx, v.x)),

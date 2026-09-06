@@ -10,15 +10,7 @@ import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, tr, useT } from '@/i18n';
 import { getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import {
-  FAR_LOD_SCREEN,
-  SCHEMATIC_SCREEN,
-  WORLD_H,
-  WORLD_W,
-  fitScale,
-  ribbonLabelScale,
-  worldToScreen,
-} from '@/components/game/boardView';
+import { FAR_LOD_SCREEN, SCHEMATIC_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -157,12 +149,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       if (destroyed) return;
 
       const { Texture, Sprite } = await import('pixi.js');
+      /* both paintings carry a bleed of countryside around the play area */
       const bgCanal = new Sprite(Texture.from('/map-era-canal.png'));
-      bgCanal.width = WORLD_W;
-      bgCanal.height = WORLD_H;
+      bgCanal.width = WORLD_W + 2 * BLEED_X;
+      bgCanal.height = WORLD_H + 2 * BLEED_Y;
+      bgCanal.position.set(-BLEED_X, -BLEED_Y);
       const bgRail = new Sprite(Texture.from('/map-era-rail.png'));
-      bgRail.width = WORLD_W;
-      bgRail.height = WORLD_H;
+      bgRail.width = WORLD_W + 2 * BLEED_X;
+      bgRail.height = WORLD_H + 2 * BLEED_Y;
+      bgRail.position.set(-BLEED_X, -BLEED_Y);
 
       const scene = buildBoardScene(bgCanal, bgRail);
       sceneRef.current = scene;
