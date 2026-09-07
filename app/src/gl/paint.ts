@@ -25,9 +25,28 @@ export type StockStyle = 'counter' | 'big' | 'tag' | 'top' | 'corner';
 export type SlotArt = 'engraved' | 'painted';
 /** income / VP on built cards: one quiet bottom band, or two boxed chips */
 export type ChipStyle = 'band' | 'chips';
-/** tile painting set: the original icons (cart, barrel…) or the buildings
- *  drawn in tools/tiles (colliery, brewhouse…) — served from /tiles-works */
-export type TileStyle = 'icons' | 'works';
+/** Painting variants per industry. Each variant is a directory holding the
+ *  full file set (cutout, colour cards, dual-slot paintings) for that
+ *  industry: '' = app/public, the drawn sets live in /tiles-<name>. */
+export interface TileVariant {
+  id: string;
+  dir: string;
+}
+export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
+  coal: [
+    { id: 'wagon', dir: '' },
+    { id: 'cart', dir: '/tiles-classic' },
+    { id: 'colliery', dir: '/tiles-works' },
+  ],
+  brewery: [
+    { id: 'barrel', dir: '' },
+    { id: 'mug', dir: '/tiles-classic' },
+    { id: 'brewhouse', dir: '/tiles-works' },
+  ],
+};
+/** chosen variant id per industry (missing = the first, default one) */
+export type TileArt = Partial<Record<IndustryType, string>>;
+export const variantDir = (i: IndustryType, art: TileArt): string => TILE_VARIANTS[i]?.find((v) => v.id === art[i])?.dir ?? '';
 /** how a built card is dressed (board options) */
 export interface TileLook {
   slotArt: SlotArt;
@@ -117,8 +136,8 @@ export interface BoardScene {
   setStockStyle: (s: StockStyle) => void;
   /** empty-slot art, owner seal, paper grain, income/VP layout (board options) */
   setTileLook: (look: TileLook) => void;
-  /** swap the painting set (loads the alternate set on first use) */
-  setTileStyle: (style: TileStyle) => Promise<void>;
+  /** swap painting variants per industry (alternate files fetched on first use) */
+  setTileArt: (art: TileArt) => Promise<void>;
 }
 
 /** every painting-derived texture for one tile style */
@@ -134,10 +153,19 @@ interface TileSet {
   printHalfR: Record<IndustryType, Texture>; // engraved right half (fallback)
   printPair: Record<string, Texture>; // engraved combined dual-industry prints
 }
-/** industries that have a building painting in /tiles-works */
-const WORKS_INDUSTRIES: IndustryType[] = ['coal', 'brewery'];
-const WORKS_DIR = '/tiles-works';
-const tileSets: Partial<Record<TileStyle, TileSet>> = {};
+/** one industry's textures from one variant directory */
+interface IndustryArt {
+  cut: Texture;
+  built: Record<string, Texture>;
+  builtGrain: Record<string, Texture>;
+  halfL: Texture;
+  halfR: Texture;
+  print: Texture;
+  printHalfL: Texture;
+  printHalfR: Texture;
+}
+const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
+const pairCache = new Map<string, Promise<Texture | null>>(); // `${dir}|${a}-${b}`
 let tileSet: TileSet; // the set currently painted
 let iconTex: Record<IndustryType, Texture>;
 let schematicTex: Record<IndustryType, Texture>;
@@ -266,56 +294,70 @@ function dualPairs(): [IndustryType, IndustryType][] {
   return pairs;
 }
 
-/** Load one painting set from `dir`. With a `base` set, only WORKS_INDUSTRIES
- *  (and the pairs involving them) are fetched — everything else is shared. */
-async function loadTileSet(dir: string, base?: TileSet): Promise<TileSet> {
-  const industries = Object.keys(ICON_FOR) as IndustryType[];
-  const colorNames = Object.keys(PLAYER_COLORS);
-  const own = (i: IndustryType) => !base || WORKS_INDUSTRIES.includes(i);
-  const fetched = industries.filter(own);
-  const loaded = await Assets.load([...fetched.map((i) => dir + CUT_FOR(i)), ...fetched.flatMap((i) => colorNames.map((c) => dir + BUILT_FOR(i, c)))]);
-  const cut = Object.fromEntries(industries.map((i) => [i, own(i) ? loaded[dir + CUT_FOR(i)] : base!.cut[i]])) as TileSet['cut'];
-  const built = Object.fromEntries(
-    industries.map((i) => [i, own(i) ? Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c)]])) : base!.built[i]]),
-  ) as TileSet['built'];
-  const builtGrain = Object.fromEntries(
-    industries.map((i) => [i, own(i) ? Object.fromEntries(colorNames.map((c) => [c, grainTexture(built[i][c])])) : base!.builtGrain[i]]),
-  ) as TileSet['builtGrain'];
-  /* combined dual-industry cutouts (generated: tile-<a>-<b>-cut.png, sorted
-     FILE stems) — loaded tolerantly, dual slots fall back to half-crops */
-  const pair: Record<string, Texture> = {};
-  await Promise.all(
-    dualPairs().map(async ([a, b]) => {
-      const k = pairKey(a, b);
-      if (!own(a) && !own(b)) {
-        if (base!.pair[k]) pair[k] = base!.pair[k];
-        return;
-      }
-      try {
-        pair[k] = await Assets.load(`${dir}/tile-${pairFile(a, b)}-cut.png`);
-      } catch {
-        /* not generated — half-crop fallback applies */
-      }
-    }),
-  );
-  /* clean vertical halves for dual slots without a combined painting */
-  const halves = (src: Record<IndustryType, Texture>, right: boolean) =>
-    Object.fromEntries(
-      industries.map((i) => {
-        const t = src[i];
-        return [i, new Texture({ source: t.source, frame: new Rectangle(right ? t.width / 2 : 0, 0, t.width / 2, t.height) })];
-      }),
-    ) as Record<IndustryType, Texture>;
-  /* engraved prints for the empty slots (see engraveTexture) */
-  const print = Object.fromEntries(industries.map((i) => [i, own(i) ? engraveTexture(cut[i]) : base!.print[i]])) as TileSet['print'];
-  const printPair = Object.fromEntries(Object.entries(pair).map(([k, t]) => [k, base?.pair[k] === t ? base.printPair[k] : engraveTexture(t)]));
-  return { cut, built, builtGrain, halfL: halves(cut, false), halfR: halves(cut, true), pair, print, printHalfL: halves(print, false), printHalfR: halves(print, true), printPair };
+const half = (t: Texture, right: boolean): Texture => new Texture({ source: t.source, frame: new Rectangle(right ? t.width / 2 : 0, 0, t.width / 2, t.height) });
+
+/** fetch (once) one industry's cutout + colour cards from a variant dir and
+ *  derive the halves, the grained cards and the engraved prints */
+function loadIndustryArt(dir: string, i: IndustryType): Promise<IndustryArt> {
+  const key = `${dir}|${i}`;
+  let p = artCache.get(key);
+  if (!p) {
+    p = (async () => {
+      const colorNames = Object.keys(PLAYER_COLORS);
+      const loaded = await Assets.load([dir + CUT_FOR(i), ...colorNames.map((c) => dir + BUILT_FOR(i, c))]);
+      const cut: Texture = loaded[dir + CUT_FOR(i)];
+      const built = Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c)]])) as Record<string, Texture>;
+      const builtGrain = Object.fromEntries(colorNames.map((c) => [c, grainTexture(built[c])])) as Record<string, Texture>;
+      const print = engraveTexture(cut);
+      return { cut, built, builtGrain, halfL: half(cut, false), halfR: half(cut, true), print, printHalfL: half(print, false), printHalfR: half(print, true) };
+    })();
+    artCache.set(key, p);
+  }
+  return p;
 }
 
-/** the painting set for a style, fetched on first use */
-async function ensureTileSet(style: TileStyle): Promise<TileSet> {
-  if (!tileSets[style]) tileSets[style] = style === 'works' ? await loadTileSet(WORKS_DIR, tileSets.icons) : await loadTileSet('');
-  return tileSets[style]!;
+/** fetch (once, tolerantly) a dual-slot painting from a variant dir */
+function loadPair(dir: string, a: IndustryType, b: IndustryType): Promise<Texture | null> {
+  const key = `${dir}|${pairKey(a, b)}`;
+  let p = pairCache.get(key);
+  if (!p) {
+    p = Assets.load(`${dir}/tile-${pairFile(a, b)}-cut.png`).catch(() => null) as Promise<Texture | null>;
+    pairCache.set(key, p);
+  }
+  return p;
+}
+
+/** Assemble the painting set for a per-industry variant choice. A dual-slot
+ *  painting comes from the variant dir of whichever industry is not on its
+ *  default; when both are (or the file is missing) the half-crops apply. */
+async function buildTileSet(art: TileArt): Promise<TileSet> {
+  const industries = Object.keys(ICON_FOR) as IndustryType[];
+  const arts = Object.fromEntries(await Promise.all(industries.map(async (i) => [i, await loadIndustryArt(variantDir(i, art), i)]))) as Record<IndustryType, IndustryArt>;
+  const pair: Record<string, Texture> = {};
+  const printPair: Record<string, Texture> = {};
+  await Promise.all(
+    dualPairs().map(async ([a, b]) => {
+      const da = variantDir(a, art);
+      const db = variantDir(b, art);
+      if (da && db && da !== db) return; // two drawn variants never share a painting
+      const t = await loadPair(da || db, a, b);
+      if (!t) return;
+      pair[pairKey(a, b)] = t;
+      printPair[pairKey(a, b)] = await engravedPair(da || db, a, b, t);
+    }),
+  );
+  const by = <K extends keyof IndustryArt>(k: K) => Object.fromEntries(industries.map((i) => [i, arts[i][k]])) as Record<IndustryType, IndustryArt[K]>;
+  return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair };
+}
+const printPairCache = new Map<string, Texture>();
+async function engravedPair(dir: string, a: IndustryType, b: IndustryType, t: Texture): Promise<Texture> {
+  const key = `${dir}|${pairKey(a, b)}`;
+  let e = printPairCache.get(key);
+  if (!e) {
+    e = engraveTexture(t);
+    printPairCache.set(key, e);
+  }
+  return e;
 }
 
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
@@ -323,7 +365,7 @@ export async function loadBoardAssets(): Promise<void> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
   const urls = ['/beer-barrel.png', '/merchant-boat.png', '/town-village.png', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg', ...industries.map((i) => ICON_FOR[i])];
   const loaded = await Assets.load(urls);
-  tileSet = await ensureTileSet('icons');
+  tileSet = await buildTileSet({});
   iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
   boatTex = loaded['/merchant-boat.png'];
@@ -1283,9 +1325,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       stockStyle = s;
       if (lastGame) drawTowns(lastGame);
     },
-    async setTileStyle(style: TileStyle) {
+    async setTileArt(art: TileArt) {
       const req = ++styleReq;
-      const set = await ensureTileSet(style);
+      const set = await buildTileSet(art);
       if (req !== styleReq) return; // a later switch won
       tileSet = set;
       if (lastGame) {

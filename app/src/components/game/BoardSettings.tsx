@@ -6,7 +6,9 @@ import { setLang, useLang, useT } from '@/i18n';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
 import { STOCK_STYLE_IDS } from './stockStyles';
-import type { ChipStyle, SlotArt, StockStyle, TileStyle } from '@/gl/paint';
+import { TILE_VARIANTS } from '@/gl/paint';
+import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
+import type { IndustryType } from '@/game/types';
 import { useGame } from '@/game/store';
 import { cn } from '@/lib/utils';
 
@@ -30,14 +32,14 @@ const SECTIONS: { id: SectionId; icon: LucideIcon }[] = [
 
 const CARD = 'relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border';
 
-/** the two paintings of an industry side by side: icon set vs. buildings */
-function StylePreview({ style, active }: { style: TileStyle; active: boolean }) {
-  const dir = style === 'works' ? '/tiles-works' : '';
+/** industry key → asset file stem ('manufacturer' vs file 'manufacture') */
+const FILE_FOR: Record<IndustryType, string> = { coal: 'coal', iron: 'iron', cotton: 'cotton', manufacturer: 'manufacture', pottery: 'pottery', brewery: 'brewery' };
+
+/** one painting variant of an industry on the dark tile ground */
+function VariantPreview({ industry, dir, active }: { industry: IndustryType; dir: string; active: boolean }) {
   return (
-    <span aria-hidden className={cn('flex shrink-0 gap-1 rounded-md border bg-[#12100C] p-1', active ? 'border-brass-400' : 'border-brass-700/50')}>
-      {['coal', 'brewery'].map((i) => (
-        <span key={i} className="block h-10 w-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${dir}/tile-${i}-cut.png)` }} />
-      ))}
+    <span aria-hidden className={cn(CARD, 'bg-[#12100C]', active ? 'border-brass-400' : 'border-brass-700/50')}>
+      <span className="absolute inset-1 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${dir}/tile-${FILE_FOR[industry]}-cut.png)` }} />
     </span>
   );
 }
@@ -167,6 +169,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
 function ChoiceCards<T extends string>({
   label,
   hint,
+  sublabel,
   value,
   options,
   onChange,
@@ -174,6 +177,8 @@ function ChoiceCards<T extends string>({
 }: {
   label: string;
   hint?: string;
+  /** small brass caption under the label (e.g. the industry name) */
+  sublabel?: string;
   value: T;
   options: { id: T; label: string; preview: (active: boolean) => React.ReactNode }[];
   onChange: (v: T) => void;
@@ -181,8 +186,9 @@ function ChoiceCards<T extends string>({
 }) {
   return (
     <div className="border-b border-brass-700/25 py-2.5 last:border-b-0">
-      <div className="font-sans text-[12px] font-semibold text-cream-100/90">{label}</div>
+      {label && <div className="font-sans text-[12px] font-semibold text-cream-100/90">{label}</div>}
       {hint && <div className="mt-0.5 font-sans text-[10.5px] leading-snug text-cream-100/50">{hint}</div>}
+      {sublabel && <div className={cn('font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-brass-400/80', (label || hint) && 'mt-1.5')}>{sublabel}</div>}
       <div className={cn('mt-2 grid gap-1.5', columns === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
         {options.map((o) => {
           const active = value === o.id;
@@ -286,17 +292,22 @@ export default function BoardSettings() {
 
                 {section === 'tiles' && (
                   <>
-                    <ChoiceCards<TileStyle>
-                      label={t('game.settings.tileStyle')}
-                      hint={t('game.settings.tileStyleHint')}
-                      value={opts.tileStyle}
-                      onChange={(v) => setBoardOption('tileStyle', v)}
-                      options={(['icons', 'works'] as TileStyle[]).map((id) => ({
-                        id,
-                        label: t(`game.settings.tile.${id}`),
-                        preview: (active) => <StylePreview style={id} active={active} />,
-                      }))}
-                    />
+                    {(Object.entries(TILE_VARIANTS) as [IndustryType, NonNullable<(typeof TILE_VARIANTS)[IndustryType]>][]).map(([industry, variants], idx) => (
+                      <ChoiceCards<string>
+                        key={industry}
+                        label={idx === 0 ? t('game.settings.tileArt') : ''}
+                        hint={idx === 0 ? t('game.settings.tileArtHint') : undefined}
+                        sublabel={t(`game.settings.industry.${industry}`)}
+                        value={opts.tileArt[industry] ?? variants[0].id}
+                        onChange={(v) => setBoardOption('tileArt', { ...opts.tileArt, [industry]: v })}
+                        columns={3}
+                        options={variants.map((v) => ({
+                          id: v.id,
+                          label: t(`game.settings.variant.${v.id}`),
+                          preview: (active) => <VariantPreview industry={industry} dir={v.dir} active={active} />,
+                        }))}
+                      />
+                    ))}
                     <ChoiceCards<SlotArt>
                       label={t('game.settings.slotArt')}
                       hint={t('game.settings.slotArtHint')}
