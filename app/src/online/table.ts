@@ -29,7 +29,7 @@ export interface Table {
   updatedAt: number;
 }
 
-export type LobbyError = 'not-found' | 'full' | 'started' | 'refused';
+export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline';
 
 export interface Identity {
   id: string;

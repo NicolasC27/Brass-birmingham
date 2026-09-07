@@ -22,9 +22,10 @@ export default {
       copy: 'The host gave you four letters: type them in, your seat is waiting.',
       code: 'Table code',
       cta: 'Join',
-      error: { 'not-found': 'No table carries this code.', full: 'This table is full.', started: 'This game has already started.' },
+      error: { 'not-found': 'No table carries this code.', full: 'This table is full.', started: 'This game has already started.', refused: 'The table would not have that.', offline: 'The table server is not answering.' },
     },
     localNote: 'For now tables live in this browser: open a second tab to play the guest.',
+    serverNote: 'Tables are held by the table server: share the code and play from anywhere.',
   },
   room: {
     back: 'The office',

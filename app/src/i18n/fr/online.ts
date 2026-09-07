@@ -22,9 +22,10 @@ export default {
       copy: 'L’hôte vous a donné quatre lettres : entrez-les, votre siège vous attend.',
       code: 'Code de la table',
       cta: 'Rejoindre',
-      error: { 'not-found': 'Aucune table ne porte ce code.', full: 'Cette table est complète.', started: 'Cette partie a déjà commencé.' },
+      error: { 'not-found': 'Aucune table ne porte ce code.', full: 'Cette table est complète.', started: 'Cette partie a déjà commencé.', refused: 'La table n’a pas accepté.', offline: 'Le serveur des tables ne répond pas.' },
     },
     localNote: 'Pour l’instant, les tables vivent dans ce navigateur : ouvrez un second onglet pour jouer l’invité.',
+    serverNote: 'Les tables sont tenues par le serveur : partagez le code et jouez d’où vous voulez.',
   },
   room: {
     back: 'Le bureau',

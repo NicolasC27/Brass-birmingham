@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Copy, KeyRound } from 'lucide-react';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
-import { lobby, normalizeCode } from '@/online/lobby';
+import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import type { LobbyError } from '@/online/lobby';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -184,7 +184,7 @@ export default function Online() {
         </div>
 
         <p className="mt-6 flex items-center gap-2 font-sans text-[11px] text-cream-100/40">
-          <Copy className="h-3 w-3" /> {t('online.entry.localNote')}
+          <Copy className="h-3 w-3" /> {t(isOnline ? 'online.entry.serverNote' : 'online.entry.localNote')}
         </p>
       </div>
     </div>

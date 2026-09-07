@@ -1,6 +1,9 @@
 import { useSyncExternalStore } from 'react';
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
+import { loadIdentity, rememberName } from './identity';
+import { onlineWire } from './net';
+import { RemoteLobbyClient } from './remote';
 import { MAX_SEATS, freeColor, randomId } from './table';
 import type { Identity, LobbyError, Table, TableSeat } from './table';
 
@@ -32,10 +35,9 @@ export interface LobbyClient {
 /* ----------------------------- local client ------------------------ */
 
 const TABLES_KEY = 'brassworks.lobby.tables.v1';
-const NAME_KEY = 'brassworks.player.name.v1';
-const ID_KEY = 'brassworks.player.id.v1'; // sessionStorage: one identity per tab
 const CHANNEL = 'brassworks-lobby';
 
+/** a table code: four glyphs, drawn from the same alphabet as the ids */
 const rid = randomId;
 
 function readTables(): Record<string, Table> {
@@ -52,19 +54,7 @@ class LocalLobbyClient implements LobbyClient {
   private channel: BroadcastChannel | null = null;
 
   constructor() {
-    let id = '';
-    let name = '';
-    try {
-      id = sessionStorage.getItem(ID_KEY) ?? '';
-      if (!id) {
-        id = 'p-' + rid(10);
-        sessionStorage.setItem(ID_KEY, id);
-      }
-      name = localStorage.getItem(NAME_KEY) ?? '';
-    } catch {
-      id = id || 'p-' + rid(10);
-    }
-    this.me = { id, name };
+    this.me = loadIdentity();
     if (typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel(CHANNEL);
       this.channel.onmessage = (e: MessageEvent<{ code: string }>) => this.emit(e.data.code);
@@ -74,11 +64,7 @@ class LocalLobbyClient implements LobbyClient {
 
   setName(name: string): void {
     this.me = { ...this.me, name };
-    try {
-      localStorage.setItem(NAME_KEY, name);
-    } catch {
-      /* non-fatal */
-    }
+    rememberName(name);
   }
 
   private write(tables: Record<string, Table>, code: string): void {
@@ -180,7 +166,12 @@ class LocalLobbyClient implements LobbyClient {
   }
 }
 
-export const lobby: LobbyClient = new LocalLobbyClient();
+/** the office in this browser, or the one at the far end of the wire */
+const wire = onlineWire();
+export const lobby: LobbyClient = wire ? new RemoteLobbyClient(wire) : new LocalLobbyClient();
+
+/** tables live on a server (and not only in this browser) */
+export const isOnline = !!wire;
 
 /** the live table (or null once it is gone) */
 export function useTable(code: string): Table | null {
