@@ -24,6 +24,42 @@ const setup = (n: number, eraLength: 'short' | 'standard' = 'standard'): SetupPa
   options: { eraLength, marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 });
 
+const HUMANS: SetupPayload['players'] = [
+  { name: 'Nico', color: 'brass', type: 'human' },
+  { name: 'Eve', color: 'oxblood', type: 'human' },
+  { name: 'Cy', color: 'verdigris', type: 'bot', difficulty: 'foreman' },
+];
+
+describe('abandoning the game', () => {
+  const s0 = newGame({ players: HUMANS, options: setup(2).options }, 7);
+  /* seats 0 and 1 are the humans, 2 the bot — whoever is to act */
+  const yes = (s: GameState, player: number) => applyAction(s, player, { kind: 'concede', player, vote: 'yes' });
+
+  it("is a vote cast on anyone's turn, in one's own name", () => {
+    expect(yes(s0, 0).state).not.toBeNull();
+    expect(yes(s0, 1).state).not.toBeNull();
+    expect(applyAction(s0, 0, { kind: 'concede', player: 1, vote: 'yes' }).state).toBeNull();
+    expect(yes(s0, 2).state).toBeNull();
+  });
+
+  it('folds the table only when every human agrees, and a refusal clears it', () => {
+    const one = yes(s0, 1).state!;
+    expect(one.phase).toBe('action');
+    expect(one.concessions).toEqual([1]);
+    expect(one.current).toBe(s0.current); // a vote is not a turn
+    const refused = applyAction(one, 0, { kind: 'concede', player: 0, vote: 'no' }).state!;
+    expect(refused.concessions).toEqual([]);
+    expect(refused.phase).toBe('action');
+    const both = yes(one, 0).state!;
+    expect(both.phase).toBe('game-over');
+    expect(both.abandoned).toBe(true);
+    expect(both.winner).toBeDefined();
+    /* the log replays, votes included, and votes are never undo points */
+    expect(serialize(replay(setupOf(both), both.seed, both.actions))).toBe(serialize(both));
+    expect(humanActionIndices(setupOf(both), both.seed, both.actions)).toEqual([]);
+  });
+});
+
 /** bots play until the game is over (or a generous cap) */
 function selfPlay(s0: GameState, cap = 600): GameState {
   let s = s0;

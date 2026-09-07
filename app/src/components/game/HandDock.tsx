@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, X, Undo2 } from 'lucide-react';
+import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, SkipForward, X, Undo2 } from 'lucide-react';
 import { INDUSTRY_ICON, INDUSTRY_LABEL, incomeLevel } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
@@ -22,6 +22,8 @@ const VERB_META: { verb: Verb; label: string; icon: typeof Hammer }[] = [
   { verb: 'sell', label: 'game.hand.verbSell', icon: Scale },
   { verb: 'loan', label: 'game.hand.verbLoan', icon: Landmark },
   { verb: 'scout', label: 'game.hand.verbScout', icon: Binoculars },
+  /* nothing to play: the card is discarded and the action skipped */
+  { verb: 'pass', label: 'game.hand.verbPass', icon: SkipForward },
 ];
 
 /* ------------------- collector engraving flavour lines ------------------- */
@@ -513,6 +515,7 @@ export default function HandDock() {
                   onBlur={v === 'loan' ? () => setLoanPeek(false) : undefined}
                   className={cn(
                     'flex w-full items-center gap-1.5 rounded-sm border px-2 py-[3px] font-sans text-[10px] font-bold uppercase tracking-wider transition-colors',
+                    v === 'pass' && 'col-span-2 justify-center border-dashed',
                     verb === v
                       ? 'border-brass-400 bg-brass-500/20 text-brass-400 shadow-[0_0_8px_rgba(201,164,92,.3)]'
                       : ok

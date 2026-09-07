@@ -129,7 +129,7 @@ export interface MarketState {
   iron: number;
 }
 
-export type Verb = 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
+export type Verb = 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout' | 'pass';
 
 export interface LedgerEntry {
   id: number;
@@ -192,6 +192,11 @@ export interface GameState {
   canalScores?: number[];
   finalScores?: number[];
   winner?: number;
+  /** seats that have voted to abandon the game — unanimity among the
+   *  humans folds the table */
+  concessions?: number[];
+  /** the game ended by the table's own vote, not by the last card */
+  abandoned?: boolean;
   /** one snapshot per completed round (after payday / era scoring) */
   history: RoundSnapshot[];
   /** every accepted action since setup — with the seed, the whole game */

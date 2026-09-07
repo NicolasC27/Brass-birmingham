@@ -906,6 +906,29 @@ export function applyPass(s: GameState, playerIdx: number, cardId?: string, reas
   return true;
 }
 
+/** a vote to abandon: every human must agree; one refusal clears the
+ *  proposal. Bots never object. When the table folds the game is scored
+ *  as it stands. */
+export function applyConcede(s: GameState, playerIdx: number, vote: 'yes' | 'no'): void {
+  const p = s.players[playerIdx];
+  const humans = s.players.map((_, i) => i).filter((i) => !s.players[i].isBot);
+  if (vote === 'no') {
+    s.concessions = [];
+    log(s, playerIdx, 'system', `${p.name} refuses to fold — the game goes on.`);
+    return;
+  }
+  const votes = new Set(s.concessions ?? []);
+  votes.add(playerIdx);
+  s.concessions = [...votes].sort((a, b) => a - b);
+  if (humans.every((i) => votes.has(i))) {
+    s.abandoned = true;
+    log(s, playerIdx, 'system', `${p.name} folds too: the table abandons the game.`);
+    finishGame(s);
+    return;
+  }
+  log(s, playerIdx, 'system', `${p.name} proposes to abandon the game (${votes.size} of ${humans.length} agree).`);
+}
+
 /* ========================== turn & era flow ======================== */
 
 export function drawUp(s: GameState, p: PlayerState) {

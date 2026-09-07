@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
+import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
 import { MAT_ORDER_DEFAULT, MAT_STYLES, hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
@@ -303,6 +303,57 @@ function ShortcutEditor() {
   );
 }
 
+/* ------------------------------ abandon ---------------------------- */
+
+/** propose to abandon the game: a two-step button, then the table votes */
+function AbandonRow() {
+  const t = useT();
+  const game = useGame((s) => s.game);
+  const seat = useGame((s) => s.seat);
+  const voteConcede = useGame((s) => s.voteConcede);
+  const [armed, setArmed] = useState(false);
+  if (!game || game.phase !== 'action') return null;
+  const votes = game.concessions ?? [];
+  const humans = game.players.map((_, i) => i).filter((i) => !game.players[i].isBot);
+  /* online: my seat; at one table: the player to act, or the next human
+     who has not spoken (the bots' turns are nobody's to wait for) */
+  const me = seat ?? (humans.includes(game.current) && !votes.includes(game.current) ? game.current : (humans.find((i) => !votes.includes(i)) ?? game.current));
+  const mine = humans.includes(me);
+  const pending = votes.length > 0;
+  const voted = votes.includes(me);
+  return (
+    <OptionRow label={t('game.settings.abandon')} hint={t(pending ? 'game.settings.abandonPending' : 'game.settings.abandonHint')}>
+      {armed ? (
+        <span className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              voteConcede(me, 'yes');
+              setArmed(false);
+            }}
+            className="rounded-md border border-rust-500/80 bg-rust-500/20 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-rust-500 brightness-150 transition-colors hover:bg-rust-500/30"
+          >
+            {t('game.settings.abandonYes')}
+          </button>
+          <button type="button" onClick={() => setArmed(false)} className="rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 hover:text-brass-400">
+            {t('game.settings.abandonNo')}
+          </button>
+        </span>
+      ) : (
+        <button
+          type="button"
+          disabled={!mine || voted}
+          onClick={() => setArmed(true)}
+          className="flex items-center gap-1.5 rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 transition-colors hover:border-rust-500/70 hover:text-rust-500 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Flag className="h-3 w-3" />
+          {t(voted ? 'game.settings.abandonVoted' : 'game.settings.abandonBtn')}
+        </button>
+      )}
+    </OptionRow>
+  );
+}
+
 /* ------------------------------ dialog ----------------------------- */
 
 export default function BoardSettings() {
@@ -528,6 +579,7 @@ export default function BoardSettings() {
                         {t('game.settings.fullscreenBtn')}
                       </button>
                     </OptionRow>
+                    <AbandonRow />
                   </>
                 )}
 

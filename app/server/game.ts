@@ -106,6 +106,13 @@ export class TableGame {
   act(playerId: string, action: GameAction): string | null {
     const seat = this.seatOf(playerId);
     if (seat < 0) return 'You are not seated at this table';
+    if (action.kind === 'concede') {
+      /* a vote is cast on anyone's turn, in one's own name, and leaves the
+         candle burning: it is nobody's to take back */
+      if (this.state.phase !== 'action') return 'The game is not in play';
+      if (action.player !== seat) return 'A vote is cast in one\'s own name';
+      return this.commit(seat, action, false, true);
+    }
     if (action.kind !== 'begin-rail') {
       if (this.state.phase !== 'action') return 'The game is not in play';
       if (seat !== this.state.current) return 'Not your turn';
@@ -156,7 +163,7 @@ export class TableGame {
 
   /** `marked` false: the action stands, but it is nobody's to take back —
    *  a pass the candle imposed must not be undone to buy another turn */
-  private commit(seat: number, action: GameAction, marked = true): string | null {
+  private commit(seat: number, action: GameAction, marked = true, keepClock = false): string | null {
     const before = this.state;
     const r = applyAction(before, seat, action);
     if (!r.state) return r.error ?? 'The engine refused the action';
@@ -165,7 +172,8 @@ export class TableGame {
     this.state = r.state;
     this.journal?.append(at, action);
     this.emit();
-    this.schedule();
+    /* a vote must not re-light the candle — unless it just closed the game */
+    if (!keepClock || this.state.phase !== 'action') this.schedule();
     return null;
   }
 

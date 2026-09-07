@@ -5,6 +5,7 @@ import { FastForward, Scale, ScrollText, Settings2, X } from 'lucide-react';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
+import ConcedeBanner from '@/components/game/ConcedeBanner';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -442,6 +443,7 @@ export default function Game() {
       </div>
 
       <HandDock />
+      <ConcedeBanner />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />

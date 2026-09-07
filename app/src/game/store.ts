@@ -21,7 +21,7 @@ import {
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
-import { applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
+import { actorOf, applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
@@ -142,6 +142,8 @@ interface GameStore {
   runBot: () => BotMove | null;
   takeLoan: () => void;
   pass: (reason?: string) => void;
+  /** cast a vote to abandon the game for a seat; false when it is not this seat's to cast */
+  voteConcede: (player: number, vote: 'yes' | 'no') => boolean;
 
   /* ---- derived ---- */
   currentTargets: () => BuildTarget[];
@@ -438,6 +440,9 @@ export const useGame = create<GameStore>((set, get) => ({
       case 'scout':
         if (st.scoutPick.length === 3) action = { kind: 'scout', cards: st.scoutPick };
         break;
+      case 'pass':
+        if (card) action = { kind: 'pass', card: card.id };
+        break;
     }
     if (action) get().dispatch(action);
   },
@@ -458,11 +463,12 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ ...clearSelection });
       return true;
     }
-    const r = applyAction(g, g.current, action);
+    const r = applyAction(g, actorOf(g, action), action);
     if (!r.state) return false;
     const mut = r.state;
     const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
-    const human = g.phase === 'action' && !g.players[g.current].isBot;
+    /* a vote is not a turn: nothing to take back */
+    const human = action.kind !== 'concede' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
     return true;
@@ -526,6 +532,16 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!g || g.phase !== 'action') return;
     // passing costs a card per action skipped; the selected card goes first
     get().dispatch({ kind: 'pass', card: get().selectedCardId ?? undefined, reason });
+  },
+
+  /* a vote to abandon: online it is cast for one's own seat, at one table
+     every human seat votes from this device */
+  voteConcede: (player, vote) => {
+    const st = get();
+    const g = st.game;
+    if (!g || g.phase !== 'action') return false;
+    if (st.seat !== null && st.seat !== player) return false;
+    return st.dispatch({ kind: 'concede', player, vote });
   },
 
   /* ---------------------------- bots ---------------------------- */
@@ -673,6 +689,8 @@ export function confirmSummary(st: {
     }
     case 'scout':
       return st.scoutPick.length === 3 ? 'Scout · discard 3, draw 2 wild cards' : null;
+    case 'pass':
+      return st.selectedCardId ? 'Pass · discard this card, no action' : null;
     default:
       return null;
   }
@@ -696,6 +714,7 @@ export function verbsForCard(st: { game: GameState | null; selectedCardId: strin
       { verb: 'sell', ok: false, reason: 'Select a card first' },
       { verb: 'loan', ok: !!g && canLoan(g, g.current).ok, reason: g ? canLoan(g, g.current).reason : undefined },
       { verb: 'scout', ok: !!g && canScout(g, g.current).ok, reason: g ? canScout(g, g.current).reason : undefined },
+      { verb: 'pass', ok: false, reason: 'Select the card to discard first' },
     ];
   }
   const i = g.current;
@@ -710,6 +729,8 @@ export function verbsForCard(st: { game: GameState | null; selectedCardId: strin
     { verb: 'sell', ok: sellTargets(g, i).some((t) => t.valid), reason: 'No goods connected to a demanding merchant' },
     { verb: 'loan', ok: canLoan(g, i).ok, reason: canLoan(g, i).reason },
     { verb: 'scout', ok: canScout(g, i).ok, reason: canScout(g, i).reason },
+    /* nothing to play: a pass still costs the card */
+    { verb: 'pass', ok: true },
   ];
 }
 

@@ -1,19 +1,4 @@
-import {
-  advance,
-  applyBuild,
-  applyDevelop,
-  applyLoan,
-  applyNetwork,
-  applyPass,
-  applyScout,
-  applySell,
-  beginRailEra,
-  buildTargets,
-  canScout,
-  linkTargets,
-  newGame,
-  sellTargets,
-} from './engine';
+import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets } from './engine';
 import type { BotMove } from './bot';
 import type { GameState, IndustryType, SetupPayload } from './types';
 
@@ -38,6 +23,8 @@ export type GameAction =
   | { kind: 'loan'; card?: string }
   | { kind: 'scout'; cards: string[] }
   | { kind: 'pass'; card?: string; reason?: string }
+  /** a vote to abandon the game — cast in one's own name, on anyone's turn */
+  | { kind: 'concede'; player: number; vote: 'yes' | 'no' }
   /** the canal ceremony is over: sweep the board and deal the rail era */
   | { kind: 'begin-rail' };
 
@@ -54,6 +41,15 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     if (s.phase !== 'scoring-canal') return fail('No ceremony to close');
     const mut = structuredClone(s);
     beginRailEra(mut);
+    mut.actions.push(action);
+    return { state: mut };
+  }
+  if (action.kind === 'concede') {
+    if (s.phase !== 'action') return fail('The game is not in play');
+    if (playerIdx !== action.player) return fail('A vote is cast in one\'s own name');
+    if (s.players[action.player]?.isBot) return fail('That seat plays itself');
+    const mut = structuredClone(s);
+    applyConcede(mut, action.player, action.vote);
     mut.actions.push(action);
     return { state: mut };
   }
@@ -145,11 +141,14 @@ export function fallbackAction(s: GameState, playerIdx: number): GameAction {
   return { kind: 'pass' };
 }
 
+/** who takes an action of the log: the player to act, except a vote, which is cast in its author's name */
+export const actorOf = (s: GameState, a: GameAction): number => (a.kind === 'concede' ? a.player : s.current);
+
 /** rebuild a game from its seed and its log; throws on the first refused action */
 export function replay(setup: SetupPayload, seed: number, actions: GameAction[]): GameState {
   let s = newGame(setup, seed);
   actions.forEach((a, i) => {
-    const r = applyAction(s, s.current, a);
+    const r = applyAction(s, actorOf(s, a), a);
     if (!r.state) throw new Error(`replay: action ${i} (${a.kind}) refused — ${r.error}`);
     s = r.state;
   });
@@ -168,8 +167,9 @@ export function humanActionIndices(setup: SetupPayload, seed: number, actions: G
   const marks: UndoMark[] = [];
   let s = newGame(setup, seed);
   actions.forEach((a, i) => {
-    if (s.phase === 'action' && !s.players[s.current].isBot) marks.push({ at: i, by: s.current });
-    const r = applyAction(s, s.current, a);
+    /* a vote is nobody's turn: it is not an undo point */
+    if (a.kind !== 'concede' && s.phase === 'action' && !s.players[s.current].isBot) marks.push({ at: i, by: s.current });
+    const r = applyAction(s, actorOf(s, a), a);
     if (!r.state) throw new Error(`replay: action ${i} (${a.kind}) refused — ${r.error}`);
     s = r.state;
   });

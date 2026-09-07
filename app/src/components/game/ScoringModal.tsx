@@ -69,7 +69,7 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
           {t('game.scoring.eyebrow')}
         </p>
         <h2 className="relative mt-2 text-center font-display text-4xl font-black text-ink-900">
-          {t('game.scoring.title')}
+          {t(game.abandoned ? 'game.scoring.abandonedTitle' : 'game.scoring.title')}
         </h2>
         <p className="relative mt-1 text-center font-fell text-xl text-ink-900/85">
           {t('game.scoring.winnerLine', { name: winner.name, vp: winner.vp })}
