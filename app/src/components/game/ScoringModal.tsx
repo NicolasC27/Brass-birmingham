@@ -13,6 +13,7 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
   const t = useT();
   const game = useGame((s) => s.game);
   const open = useGame((s) => s.gameOverOpen);
+  const online = useGame((s) => s.code !== null);
   const navigate = useNavigate();
 
   const rows = useMemo(() => {
@@ -115,9 +116,17 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
         </table>
 
         <div className="relative mt-6 flex flex-wrap items-center justify-center gap-3">
-          <button type="button" onClick={onRematch} className="btn-strike">
-            {t('game.scoring.rematch')}
-          </button>
+          {/* a rematch reshuffles this browser's own game: at an online
+              table it is the room's business, so the button steps aside */}
+          {online ? (
+            <button type="button" onClick={() => navigate('/online')} className="btn-strike">
+              {t('game.scoring.backToRoom')}
+            </button>
+          ) : (
+            <button type="button" onClick={onRematch} className="btn-strike">
+              {t('game.scoring.rematch')}
+            </button>
+          )}
           <button type="button" onClick={() => navigate('/setup')} className="btn-ledger !text-ink-900 !border-ink-900/40 hover:!bg-ink-900/10">
             {t('game.scoring.changeTable')}
           </button>

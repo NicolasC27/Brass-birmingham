@@ -6,7 +6,8 @@ import HouseRules from '@/components/setup/HouseRules';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
-import { MAX_SEATS, canStart, freeColor, lobby, setupFromTable, useTable } from '@/online/lobby';
+import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
+import { enterTable, leaveTable } from '@/online/net';
 import type { Table, TableSeat } from '@/online/lobby';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -179,6 +180,9 @@ export default function Lobby() {
     } catch {
       /* the game page falls back to its defaults */
     }
+    /* on a server the game itself is played at the table, not in this tab */
+    if (isOnline) enterTable(table.code);
+    else leaveTable();
     navigate('/game');
   }, [table, navigate]);
 

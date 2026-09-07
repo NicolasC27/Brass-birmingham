@@ -41,6 +41,10 @@ export default function Game() {
   const t = useT();
   const navigate = useNavigate();
   const game = useGame((s) => s.game);
+  const seat = useGame((s) => s.seat);
+  const line = useGame((s) => s.line);
+  const myTurn = useGame((s) => s.myTurn());
+  const mySeat = useGame((s) => s.mySeat());
   const init = useGame((s) => s.init);
   const reset = useGame((s) => s.reset);
   const runBot = useGame((s) => s.runBot);
@@ -87,29 +91,31 @@ export default function Game() {
     init();
   }, [init]);
 
-  const isHumanTurn = !!game && game.phase === 'action' && !game.players[game.current].isBot;
+  /* at an online table the turn is mine only when the seat to act is mine */
+  const isHumanTurn = myTurn;
 
   /* --------------------- hot-seat interstitial ------------------ */
   useEffect(() => {
     if (!game) return;
     const cur = game.current;
-    if (prevPlayer.current !== -1 && prevPlayer.current !== cur && game.phase === 'action') {
+    if (seat === null && prevPlayer.current !== -1 && prevPlayer.current !== cur && game.phase === 'action') {
       const humans = game.players.filter((p) => !p.isBot);
       const prev = game.players[prevPlayer.current];
       const next = game.players[cur];
       if (humans.length > 1 && !next.isBot && !prev.isBot) setPassTo(next.name);
     }
     prevPlayer.current = cur;
-  }, [game]);
+  }, [game, seat]);
 
   /* --------------------------- bots ----------------------------- */
   useEffect(() => {
-    if (!game || game.phase !== 'action' || ceremony || passTo) return;
+    /* online the table plays its own bots */
+    if (!game || seat !== null || game.phase !== 'action' || ceremony || passTo) return;
     const p = game.players[game.current];
     if (!p.isBot) return;
     const t = window.setTimeout(() => runBot(), skipAnim ? 180 : 1350);
     return () => window.clearTimeout(t);
-  }, [game, ceremony, passTo, skipAnim, runBot]);
+  }, [game, seat, ceremony, passTo, skipAnim, runBot]);
 
   /* --------------------------- timer ---------------------------- */
   useEffect(() => {
@@ -215,19 +221,19 @@ export default function Game() {
       if (n >= 1 && n <= 8) {
         /* the open mat takes the digits: 1–4 pick whose mat to read */
         if (useGame.getState().matPlayer !== null) return;
-        const card = game.players[game.current].hand[n - 1];
+        const card = game.players[mySeat].hand[n - 1];
         if (card) selectCard(card.id);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, passTo, isHumanTurn, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
+  }, [game, mySeat, passTo, isHumanTurn, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
 
   /* ---------------------- planning targets ---------------------- */
   const selectedCard = useMemo(() => {
     if (!game || !selectedCardId) return null;
-    return game.players[game.current].hand.find((c) => c.id === selectedCardId) ?? null;
-  }, [game, selectedCardId]);
+    return game.players[mySeat].hand.find((c) => c.id === selectedCardId) ?? null;
+  }, [game, mySeat, selectedCardId]);
 
   const targets = useMemo(
     () => (game && isHumanTurn && verb === 'build' && selectedCard ? buildTargets(game, game.current, selectedCard) : []),
@@ -289,7 +295,8 @@ export default function Game() {
     return <div className="flex min-h-[60vh] items-center justify-center font-fell text-brass-400">{t('game.page.settingTable')}</div>;
   }
 
-  const botThinking = game.phase === 'action' && game.players[game.current].isBot && !ceremony;
+  /* the skip chip is a local courtesy: online the table sets the pace */
+  const botThinking = seat === null && game.phase === 'action' && game.players[game.current].isBot && !ceremony;
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
@@ -436,6 +443,13 @@ export default function Game() {
           <FastForward className="h-3.5 w-3.5" />
           {skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')}
         </button>
+      )}
+
+      {/* the line to the table went quiet: say so, the wire is already trying */}
+      {line !== null && line !== 'online' && (
+        <div role="status" className="fixed left-1/2 top-3 z-[80] -translate-x-1/2 rounded-full border border-rust-500/70 bg-coal-950/90 px-4 py-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-rust-500 backdrop-blur-md brightness-125">
+          {t('game.page.reconnecting')}
+        </div>
       )}
 
       {/* hot-seat pass interstitial — fully opaque: the board and every hand

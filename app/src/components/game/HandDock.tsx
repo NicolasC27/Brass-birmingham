@@ -209,6 +209,7 @@ function GameCard({
 export default function HandDock() {
   const t = useT();
   const game = useGame((s) => s.game);
+  const seat = useGame((s) => s.seat);
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
   const buildPick = useGame((s) => s.buildPick);
@@ -333,12 +334,13 @@ export default function HandDock() {
 
   if (!game) return null;
   const p = game.players[game.current];
-  const isHumanTurn = !p.isBot && game.phase === 'action';
-  /* whose cards to show: the player to act when human; during a bot's turn
-     the lone human keeps seeing their own hand (dimmed). With several humans
-     at one screen nothing is shown — the pass interstitial guards privacy. */
+  const isHumanTurn = game.phase === 'action' && (seat === null ? !p.isBot : seat === game.current);
+  /* whose cards to show: online, always my own — dimmed while I wait my turn.
+     Here, the player to act when human; during a bot's turn the lone human
+     keeps seeing their own hand. With several humans at one screen nothing
+     is shown — the pass interstitial guards privacy. */
   const humans = game.players.filter((x) => !x.isBot);
-  const shown = !p.isBot ? p : humans.length === 1 ? humans[0] : null;
+  const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
   const verbs = verbsForCard({ game, selectedCardId });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId });
   const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick }, game) : null;
@@ -412,7 +414,7 @@ export default function HandDock() {
           )}
         >
           <span className="engraved-brass font-fell normal-case tracking-[0.08em]">
-            {isHumanTurn ? t('game.hand.cardsInHand', { count: p.hand.length }) : t('game.hand.atTable', { name: p.name })}
+            {isHumanTurn ? t('game.hand.cardsInHand', { count: (shown ?? p).hand.length }) : t('game.hand.atTable', { name: p.name })}
           </span>
           {/* the purse, right where the eyes already are: money, income level */}
           {shown && (

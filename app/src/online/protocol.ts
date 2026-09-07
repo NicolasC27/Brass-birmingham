@@ -12,9 +12,6 @@ import type { LobbyError, Table } from './table';
 /* see. Requests that expect an answer carry a `rid` the reply echoes. */
 /* ------------------------------------------------------------------ */
 
-/** localStorage: the table code the game page is playing over the wire */
-export const ONLINE_KEY = 'brassworks.online.v1';
-
 /** the game as one seat may see it — hands of others and deck redacted */
 export interface GameView {
   code: string;

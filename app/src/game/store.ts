@@ -26,6 +26,9 @@ import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
+import { leaveTable, onlineWire, tableInPlay } from '@/online/net';
+import type { ServerMessage } from '@/online/protocol';
+import type { Wire, WireStatus } from '@/online/wire';
 import type {
   Card,
   FinalPayload,
@@ -44,6 +47,15 @@ export interface Shake {
 
 interface GameStore {
   game: GameState | null;
+  /* ---- the table, when the game is played over the wire ---- */
+  /** the online table's code, null when the game is played in this browser */
+  code: string | null;
+  /** my seat at that table (the engine's player index), null offline */
+  seat: number | null;
+  /** the state of the line, null offline */
+  line: WireStatus | null;
+  /** what the server says about taking the last action back */
+  serverUndo: boolean;
   /* ---- selection ---- */
   selectedCardId: string | null;
   verb: Verb | null;
@@ -81,6 +93,10 @@ interface GameStore {
 
   /* ---- lifecycle ---- */
   init: () => void;
+  /** is the seat to act mine? (always, when the game is played here) */
+  myTurn: () => boolean;
+  /** the player whose hand this screen shows */
+  mySeat: () => number;
   reset: () => void;
   save: () => void;
 
@@ -186,6 +202,10 @@ const clearSelection = {
 
 export const useGame = create<GameStore>((set, get) => ({
   game: null,
+  code: null,
+  seat: null,
+  line: null,
+  serverUndo: false,
   ...clearSelection,
   marketFocus: false,
   ledgerFilter: 'all',
@@ -200,6 +220,14 @@ export const useGame = create<GameStore>((set, get) => ({
   matPlayer: null,
 
   init: () => {
+    /* a table waiting on the wire takes precedence over anything saved here */
+    const code = tableInPlay();
+    const wire = code ? onlineWire() : null;
+    if (code && wire) {
+      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
+      listen(code, wire);
+      return;
+    }
     const resumed = (() => {
       try {
         const raw = localStorage.getItem(RESUME_KEY);
@@ -226,6 +254,9 @@ export const useGame = create<GameStore>((set, get) => ({
     set({
       ...clearSelection,
       game,
+      code: null,
+      seat: null,
+      line: null,
       humanMarks,
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
@@ -233,7 +264,19 @@ export const useGame = create<GameStore>((set, get) => ({
     });
   },
 
+  myTurn: () => {
+    const st = get();
+    return !!st.game && st.game.phase === 'action' && (st.seat === null ? !st.game.players[st.game.current].isBot : st.seat === st.game.current);
+  },
+
+  mySeat: () => {
+    const st = get();
+    return st.seat ?? st.game?.current ?? 0;
+  },
+
   reset: () => {
+    /* a rematch is a table's business, not a page's: online it does nothing */
+    if (get().code) return;
     const game = newGame(readSetup());
     set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false });
     try {
@@ -245,7 +288,8 @@ export const useGame = create<GameStore>((set, get) => ({
 
   save: () => {
     const g = get().game;
-    if (!g) return;
+    /* a filtered state is nobody's save: it would resume a crippled game */
+    if (!g || get().code) return;
     try {
       localStorage.setItem(RESUME_KEY, serialize(g));
     } catch {
@@ -389,8 +433,18 @@ export const useGame = create<GameStore>((set, get) => ({
      store only translates the selection into an action and commits the
      state the engine hands back */
   dispatch: (action) => {
-    const g = get().game;
+    const st = get();
+    const g = st.game;
     if (!g) return false;
+    /* online the client only ever proposes: the board moves when the table
+       answers, and a refusal comes back as the engine's own words */
+    if (st.code) {
+      const wire = onlineWire();
+      if (!wire) return false;
+      wire.send({ t: 'act', code: st.code, action });
+      set({ ...clearSelection });
+      return true;
+    }
     const r = applyAction(g, g.current, action);
     if (!r.state) return false;
     const mut = r.state;
@@ -402,12 +456,20 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   canUndo: () => {
-    const g = get().game;
+    const st = get();
+    if (st.code) return st.serverUndo;
+    const g = st.game;
     return !!g && canUndoNow(g, get().humanMarks);
   },
 
   undo: () => {
-    const g = get().game;
+    const st = get();
+    if (st.code) {
+      if (!st.serverUndo) return false;
+      onlineWire()?.send({ t: 'undo', code: st.code });
+      return true;
+    }
+    const g = st.game;
     const marks = get().humanMarks;
     if (!g || !canUndoNow(g, marks)) return false;
     let back: GameState | null = null;
@@ -428,6 +490,10 @@ export const useGame = create<GameStore>((set, get) => ({
   endCeremony: () => {
     const g = get().game;
     if (!g || g.phase !== 'scoring-canal') return;
+    if (get().code) {
+      get().dispatch({ kind: 'begin-rail' });
+      return;
+    }
     const r = applyAction(g, g.current, { kind: 'begin-rail' });
     if (!r.state) return;
     set({ game: r.state, ceremony: null, gameOverOpen: r.state.phase === 'game-over' });
@@ -454,7 +520,8 @@ export const useGame = create<GameStore>((set, get) => ({
   runBot: () => {
     const st = get();
     const g = st.game;
-    if (!g || g.phase !== 'action') return null;
+    /* online the bots are played by the table, never by a browser */
+    if (!g || g.phase !== 'action' || st.code) return null;
     const p = g.players[g.current];
     if (!p.isBot) return null;
     const move = chooseBotMove(g, g.current);
@@ -631,6 +698,47 @@ export function verbsForCard(st: { game: GameState | null; selectedCardId: strin
     { verb: 'loan', ok: canLoan(g, i).ok, reason: canLoan(g, i).reason },
     { verb: 'scout', ok: canScout(g, i).ok, reason: canScout(g, i).reason },
   ];
+}
+
+/* ---------------------- the table on the wire ---------------------- */
+
+/** stop listening to the table we were following, if any */
+let deafen: (() => void) | null = null;
+
+/** follow a table: every state it sends replaces the one on this screen */
+function listen(code: string, wire: Wire): void {
+  deafen?.();
+  const onFrame = wire.on((m: ServerMessage) => {
+    if (m.t === 'game' && m.view.code === code) {
+      const view = m.view;
+      /* the game is over: the log opens, and with the seed the replay works */
+      const game = view.archive ? { ...view.state, seed: view.archive.seed } : view.state;
+      useGame.setState({
+        ...clearSelection,
+        game,
+        seat: view.seat,
+        serverUndo: view.canUndo,
+        ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
+        gameOverOpen: game.phase === 'game-over',
+      });
+      return;
+    }
+    if (m.t === 'rejected' && m.code === code) useGame.setState({ shake: { key: '', reason: m.error, at: Date.now() } });
+  });
+  const onLine = wire.onStatus(() => useGame.setState({ line: wire.status }));
+  wire.watch(code);
+  deafen = () => {
+    onFrame();
+    onLine();
+    deafen = null;
+  };
+}
+
+/** leave the online table for good (the title screen, a local game) */
+export function leaveOnlineTable(): void {
+  deafen?.();
+  leaveTable();
+  useGame.setState({ code: null, seat: null, line: null, serverUndo: false });
 }
 
 /* dev only: the store at hand in the console (window.__brass.getState()) */
