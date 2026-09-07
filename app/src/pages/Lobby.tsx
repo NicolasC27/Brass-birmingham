@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Check, Cog, Copy, Crown, LogOut, Plus, X } from 'lucide-react';
+import { ArrowLeft, Check, Cog, Copy, Crown, LogOut, Plus, Send, X } from 'lucide-react';
 import HouseRules from '@/components/setup/HouseRules';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { useStranger } from '@/online/session';
+import { invite, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -162,6 +162,46 @@ function EmptyChair({ iAmHost, onAddBot }: { iAmHost: boolean; onAddBot: () => v
   );
 }
 
+/** a letter to a player by name — their desk gets it at once */
+function InviteBox({ code }: { code: string }) {
+  const t = useT();
+  const [name, setName] = useState('');
+  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const send = async () => {
+    if (!name.trim()) return;
+    try {
+      await invite(code, name);
+      setNote({ ok: true, text: t('site.room.invited', { name: name.trim() }) });
+      setName('');
+    } catch (e) {
+      setNote({ ok: false, text: t(`site.desk.error.${(e as Error).message}`) });
+    }
+  };
+  return (
+    <div className="relative mt-4 rounded-md border border-brass-700/50 bg-coal-950/50 px-4 py-3">
+      <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-400/80">{t('site.room.invite')}</p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          value={name}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNote(null);
+          }}
+          onKeyDown={(e) => e.key === 'Enter' && send()}
+          maxLength={20}
+          placeholder={t('site.room.invitePlaceholder')}
+          className="w-[14rem] rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-1.5 font-sans text-[13px] text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
+        />
+        <button type="button" onClick={send} disabled={!name.trim()} className="btn-ledger !min-h-[34px] !px-3.5 !py-1 !text-[10.5px] disabled:cursor-not-allowed disabled:opacity-40">
+          <Send className="h-3.5 w-3.5" /> {t('site.room.inviteCta')}
+        </button>
+        <span className="font-sans text-[11px] text-cream-100/45">{t('site.room.inviteHint')}</span>
+      </div>
+      {note && <p className={cn('mt-2 font-sans text-[12px]', note.ok ? 'text-bottle-600 brightness-150' : 'text-rust-500 brightness-150')}>{note.text}</p>}
+    </div>
+  );
+}
+
 export default function Lobby() {
   const t = useT();
   const navigate = useNavigate();
@@ -240,7 +280,7 @@ export default function Lobby() {
     });
   const leave = () => {
     lobby.leave(code);
-    navigate('/online');
+    navigate(isOnline ? '/desk' : '/online');
   };
   const start = () => startable && iAmHost && edit((tb) => ({ ...tb, status: 'starting' }));
 
@@ -251,9 +291,9 @@ export default function Lobby() {
       <div className="relative mx-auto max-w-[1180px] px-6 py-10 lg:py-14">
         <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
           <div className="min-w-0">
-            <Link to="/online" className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
+            <Link to={isOnline ? '/desk' : '/online'} className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
               <ArrowLeft className="h-3.5 w-3.5" />
-              {t('online.room.back')}
+              {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
             </Link>
             <p className="eyebrow">{t('online.room.eyebrow')}</p>
             {iAmHost && renaming ? (
@@ -336,6 +376,7 @@ export default function Lobby() {
                 )}
               </div>
             )}
+            {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && <InviteBox code={code} />}
             <p className="relative mt-4 font-sans text-[12px] leading-relaxed text-cream-100/50">{t('online.room.shareHint')}</p>
           </motion.section>
 

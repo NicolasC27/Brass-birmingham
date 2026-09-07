@@ -8,6 +8,9 @@ import Results from "@/pages/Results";
 import Replay from "@/pages/Replay";
 import Online from "@/pages/Online";
 import Lobby from "@/pages/Lobby";
+import Account from "@/pages/Account";
+import Desk from "@/pages/Desk";
+import Profile from "@/pages/Profile";
 
 export default function App() {
   return (
@@ -22,6 +25,11 @@ export default function App() {
         <Route path="replay" element={<Replay />} />
         <Route path="online" element={<Online />} />
         <Route path="online/:code" element={<Lobby />} />
+        <Route path="account" element={<Account />} />
+        <Route path="account/verify/:token" element={<Account />} />
+        <Route path="account/reset/:token" element={<Account />} />
+        <Route path="desk" element={<Desk />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
     </Routes>
   );

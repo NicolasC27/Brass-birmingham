@@ -91,6 +91,7 @@ module.exports = {
         fell: ['"IM Fell English SC"', 'Georgia', 'serif'],
         sans: ['Archivo', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        serif: ['Spectral', 'Georgia', 'serif'],
       },
       borderRadius: {
         xl: "calc(var(--radius) + 4px)",

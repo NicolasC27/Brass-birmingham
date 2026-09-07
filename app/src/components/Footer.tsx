@@ -30,7 +30,7 @@ export default function Footer() {
           <span className="eyebrow mb-1">{t("home.footer.gameEyebrow")}</span>
           {[
             { to: "/setup", label: t("home.footer.setTable") },
-            { to: "/game", label: t("home.footer.board") },
+            { to: "/online", label: t("site.nav.desk") },
             { to: "/rules", label: t("home.footer.rulesCodex") },
             { to: "/results", label: t("home.footer.bilan") },
           ].map(({ to, label }) => (

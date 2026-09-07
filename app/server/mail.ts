@@ -16,6 +16,8 @@ export interface Mail {
 
 export interface Mailer {
   send(mail: Mail): Promise<void>;
+  /** the letters kept on the counter — only the console post keeps any */
+  readonly kept?: Mail[];
 }
 
 export interface Letters {
@@ -72,10 +74,15 @@ export function mailerFromEnv(env: NodeJS.ProcessEnv = process.env): Mailer {
   return consoleMailer();
 }
 
-/** letters printed on the console — the house on one machine */
+/** letters printed on the console, and kept on the counter for the
+ *  /letters page — the house on one machine, where no post calls */
 export function consoleMailer(out: (line: string) => void = (l) => console.log(l)): Mailer {
+  const kept: Mail[] = [];
   return {
+    kept,
     async send(mail) {
+      kept.unshift(mail);
+      kept.splice(50);
       out(`--- letter to ${mail.to} · ${mail.subject}`);
       for (const line of mail.text.split('\n')) out(`    ${line}`);
       out('---');

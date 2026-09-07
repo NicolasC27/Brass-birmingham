@@ -65,7 +65,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const post = options.mailer ?? mailerFromEnv();
   const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:5173');
   const clients = new Set<Client>();
-  const http = createServer((_req, res) => {
+  const http = createServer((req, res) => {
+    /* the counter: with no real post, the letters can be read here */
+    if (req.url === '/letters' && post.kept) {
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      res.end(post.kept.length ? post.kept.map((m) => `To: ${m.to}\nSubject: ${m.subject}\n\n${m.text}\n\n${'─'.repeat(60)}\n`).join('\n') : 'No letter yet.\n');
+      return;
+    }
     res.writeHead(200, { 'content-type': 'text/plain' });
     res.end('brassworks\n');
   });

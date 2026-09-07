@@ -1,95 +1,37 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Copy, KeyRound, LogOut } from 'lucide-react';
+import { Navigate, useNavigate, useSearchParams } from 'react-router';
+import { ArrowRight, KeyRound } from 'lucide-react';
+import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
-import type { LobbyError } from '@/online/lobby';
-import { signIn, signOut, signUp, useSession, useStranger } from '@/online/session';
+import { useSession, useStranger } from '@/online/session';
 import { useT } from '@/i18n';
-import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* Online — the telegraph office. Sign the visitors' book, then either */
-/* open a table (you get a brass code to pass around) or answer an     */
-/* invitation by typing its four glyphs. Both roads lead to the room.  */
-/*                                                                     */
-/* Against a table server the book is a real register: a seat belongs  */
-/* to an account, so the name comes with a password and nothing else   */
-/* on this page works until it is signed. Playing in this browser      */
-/* alone, a name is all the book ever wanted.                          */
+/* The telegraph office, when there is no server: tables live in this  */
+/* browser and a second tab plays the guest. With a server, this door  */
+/* leads to the desk (or to the register first).                       */
 /* ------------------------------------------------------------------ */
 
-/** the four-glyph code as brass slots — filled or waiting */
-function CodeSlots({ value, large }: { value: string; large?: boolean }) {
-  return (
-    <span className={cn('inline-flex gap-1.5', large && 'gap-2')} aria-hidden>
-      {Array.from({ length: 4 }, (_, i) => (
-        <span
-          key={i}
-          className={cn(
-            'flex items-center justify-center rounded-[5px] border font-mono font-bold text-brass-400',
-            large ? 'h-14 w-12 text-[26px]' : 'h-9 w-8 text-[16px]',
-            value[i] ? 'border-brass-400/80 bg-coal-950 shadow-[inset_0_2px_6px_rgba(0,0,0,.6),0_0_0_1px_rgba(201,164,92,.25)]' : 'border-dashed border-brass-700/50 bg-coal-950/40 text-brass-700/60',
-          )}
-        >
-          {value[i] ?? '·'}
-        </span>
-      ))}
-    </span>
-  );
-}
-
-export default function Online() {
+function LocalOffice() {
   const t = useT();
   const navigate = useNavigate();
-  const session = useSession();
-  const stranger = useStranger();
-  /* an invitation followed while signed out waits here for the book */
   const [params] = useSearchParams();
-  const invited = normalizeCode(params.get('table') ?? '');
   const [name, setName] = useState(lobby.me.name);
-  const [password, setPassword] = useState('');
   const [tableName, setTableName] = useState('');
-  const [code, setCode] = useState(invited);
-  const [error, setError] = useState<LobbyError | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  /* online nothing opens before the register is signed; locally a name is all.
-     A token still on its way is not a stranger: show the chair, not the form. */
-  const signed = isOnline && !stranger;
-  const named = isOnline ? !!session : name.trim().length > 0;
-  const canEnter = name.trim().length > 0 && password.length > 0;
+  const [code, setCode] = useState(normalizeCode(params.get('table') ?? ''));
+  const [error, setError] = useState<string | null>(null);
+  const named = name.trim().length > 0;
   const commitName = () => lobby.setName(name.trim());
-
-  const enter = async (door: 'in' | 'up') => {
-    if (!canEnter) return;
-    setAuthError(null);
-    try {
-      await (door === 'in' ? signIn(name, password) : signUp(name, `${name}@example.test`, password));
-      setPassword('');
-    } catch (e) {
-      setAuthError((e as Error).message);
-      return;
-    }
-    /* they came for a table: take them straight back to it. A table that
-       will not have them is a different disappointment, said elsewhere. */
-    if (invited.length !== 4) return;
-    try {
-      await lobby.join(invited);
-      navigate(`/online/${invited}`);
-    } catch (e) {
-      setError((e as Error).message as LobbyError);
-    }
-  };
 
   const create = async () => {
     if (!named) return;
     commitName();
     try {
-      const table = await lobby.create(tableName.trim() || t('online.entry.create.defaultName', { name: name.trim() }), DEFAULT_OPTIONS);
+      const table = await lobby.create(tableName.trim() || t('site.desk.defaultName', { name: name.trim() }), DEFAULT_OPTIONS);
       navigate(`/online/${table.code}`);
     } catch (e) {
-      setError((e as Error).message as LobbyError);
+      setError(t(`site.desk.error.${(e as Error).message}`));
     }
   };
   const join = async () => {
@@ -99,190 +41,78 @@ export default function Online() {
       await lobby.join(code);
       navigate(`/online/${code}`);
     } catch (e) {
-      setError((e as Error).message as LobbyError);
+      setError(t(`site.desk.error.${(e as Error).message}`));
     }
   };
 
-  const label = 'font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-400/80';
-
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 50% 30%, transparent 40%, rgba(16,13,11,0.75) 100%)' }} />
-      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.05]" />
-      <div className="relative mx-auto max-w-[1180px] px-6 py-10 lg:py-14">
-        <header className="mb-8">
-          <Link to="/" className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
-            <ArrowLeft className="h-3.5 w-3.5" />
-            {t('online.entry.back')}
-          </Link>
-          <p className="eyebrow">{t('online.entry.eyebrow')}</p>
-          <h1 className="mt-2 font-display text-[44px] font-black leading-none tracking-[-0.01em] text-cream-100">{t('online.entry.title')}</h1>
-          <p className="mt-3 max-w-2xl font-sans text-[14px] leading-relaxed text-cream-100/65">{t('online.entry.subtitle')}</p>
-        </header>
-
-        <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-          {/* the visitors' book: who you are at the table */}
-          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="paper relative self-start p-6">
-            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.35]" />
-            <div className="relative">
-              <p className="font-fell text-[11px] uppercase tracking-[0.2em] text-ink-900/60">{t('online.entry.book')}</p>
-              {signed ? (
-                <div className="mt-4">
-                  <p className="font-serif text-[22px] italic leading-tight text-ink-900">{session?.name ?? '…'}</p>
-                  <p className="mt-1 font-sans text-[11.5px] text-ink-900/60">{session ? t('online.entry.signedInAs', { name: session.name }) : t('online.entry.gate')}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      signOut();
-                      setPassword('');
-                    }}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-sm border border-ink-900/40 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-ink-900/70 transition-colors hover:border-ink-900 hover:text-ink-900"
-                  >
-                    <LogOut className="h-3 w-3" /> {t('online.entry.signOut')}
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <label htmlFor="online-name" className="mt-4 block font-fell text-lg text-ink-900">
-                    {t('online.entry.yourName')}
-                  </label>
-                  <input
-                    id="online-name"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setAuthError(null);
-                    }}
-                    onBlur={() => !isOnline && commitName()}
-                    onKeyDown={(e) => e.key === 'Enter' && isOnline && enter('in')}
-                    maxLength={20}
-                    placeholder={t('online.entry.namePlaceholder')}
-                    autoComplete="username"
-                    className="mt-2 w-full border-0 border-b-2 border-ink-900/40 bg-transparent px-0 py-1.5 font-serif text-[22px] italic text-ink-900 placeholder:text-ink-900/30 focus:border-ink-900 focus:outline-none"
-                  />
-                  {isOnline ? (
-                    <>
-                      <label htmlFor="online-password" className="mt-5 block font-fell text-lg text-ink-900">
-                        {t('online.entry.password')}
-                      </label>
-                      <input
-                        id="online-password"
-                        type="password"
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setAuthError(null);
-                        }}
-                        onKeyDown={(e) => e.key === 'Enter' && enter('in')}
-                        maxLength={72}
-                        autoComplete="current-password"
-                        className="mt-2 w-full border-0 border-b-2 border-ink-900/40 bg-transparent px-0 py-1.5 font-mono text-[18px] text-ink-900 focus:border-ink-900 focus:outline-none"
-                      />
-                      <p className="mt-3 font-sans text-[11.5px] leading-relaxed text-ink-900/60">{t('online.entry.passwordHint')}</p>
-                      {authError && (
-                        <p role="alert" className="mt-2 font-sans text-[12px] font-semibold text-rust-500">
-                          {t(`online.entry.error.${authError}`)}
-                        </p>
-                      )}
-                      <div className="mt-4 flex flex-wrap items-center gap-2">
-                        <button type="button" onClick={() => enter('in')} disabled={!canEnter} className="btn-ledger !h-10 !px-4 !text-ink-900 !border-ink-900/50 hover:!bg-ink-900/10 disabled:cursor-not-allowed disabled:opacity-40">
-                          {t('online.entry.signIn')}
-                        </button>
-                        <button type="button" onClick={() => enter('up')} disabled={!canEnter} className="font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-ink-900/60 underline-offset-4 transition-colors hover:text-ink-900 hover:underline disabled:cursor-not-allowed disabled:opacity-40">
-                          {t('online.entry.signUp')}
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <p className="mt-3 font-sans text-[11.5px] leading-relaxed text-ink-900/60">{t('online.entry.nameHint')}</p>
-                  )}
-                </>
-              )}
+    <PageShell back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.local.eyebrow')} title={t('site.local.title')} lede={t('site.local.lede')}>
+      <Refusal text={error} />
+      <div className="mt-2 grid gap-6 lg:grid-cols-[360px_1fr]">
+        <Panel tone="paper" title={t('online.entry.book')}>
+          <label htmlFor="online-name" className="block font-fell text-lg text-ink-900">
+            {t('online.entry.yourName')}
+          </label>
+          <input
+            id="online-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            onBlur={commitName}
+            maxLength={20}
+            placeholder={t('online.entry.namePlaceholder')}
+            autoComplete="nickname"
+            className="mt-2 w-full border-0 border-b-2 border-ink-900/40 bg-transparent px-0 py-1.5 font-serif text-[22px] italic text-ink-900 placeholder:text-ink-900/30 focus:border-ink-900 focus:outline-none"
+          />
+          <p className="mt-3 font-sans text-[11.5px] leading-relaxed text-ink-900/60">{t('online.entry.nameHint')}</p>
+        </Panel>
+        <div className="grid content-start gap-6">
+          <Panel title={t('site.desk.open')}>
+            <p className="font-serif text-[14px] leading-relaxed text-cream-100/65">{t('site.desk.openCopy')}</p>
+            <div className="mt-4 flex flex-wrap items-end gap-3">
+              <div className="min-w-[240px] flex-1">
+                <Field id="online-table" label={t('site.desk.tableName')}>
+                  <input id="online-table" value={tableName} onChange={(e) => setTableName(e.target.value)} maxLength={28} placeholder={t('site.desk.tablePlaceholder')} onKeyDown={(e) => e.key === 'Enter' && create()} className={inputClass} />
+                </Field>
+              </div>
+              <button type="button" onClick={create} disabled={!named} className="btn-strike disabled:cursor-not-allowed disabled:opacity-40">
+                {t('site.desk.openCta')}
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
-          </motion.section>
-
-          <div className="grid gap-6">
-            {/* open a table */}
-            <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.06, ease: 'easeOut' }} className="plate relative p-6">
-              <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[8px] opacity-[0.05]" />
-              <div className="relative grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
-                <div>
-                  <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">{t('online.entry.create.title')}</h2>
-                  <div className="divider-brass mt-3 !mx-0" />
-                  <p className="mt-3 font-sans text-[12.5px] leading-relaxed text-cream-100/60">{t('online.entry.create.copy')}</p>
-                  <label className={cn(label, 'mt-4 block')} htmlFor="online-table">
-                    {t('online.entry.create.tableName')}
-                  </label>
-                  <input
-                    id="online-table"
-                    value={tableName}
-                    onChange={(e) => setTableName(e.target.value)}
-                    maxLength={28}
-                    placeholder={t('online.entry.create.tablePlaceholder')}
-                    onKeyDown={(e) => e.key === 'Enter' && create()}
-                    className="mt-1.5 w-full max-w-sm rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-2 font-sans text-[14px] text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
-                  />
-                </div>
-                <div className="flex flex-col items-center gap-3">
-                  <span className="font-sans text-[9px] uppercase tracking-[0.2em] text-cream-100/40">{t('online.entry.create.codePreview')}</span>
-                  <CodeSlots value="" large />
-                  <button type="button" onClick={create} disabled={!named} className="btn-strike !h-12 !px-6 disabled:cursor-not-allowed disabled:opacity-40">
-                    {t('online.entry.create.cta')}
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </motion.section>
-
-            {/* answer an invitation */}
-            <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.12, ease: 'easeOut' }} className="plate relative p-6">
-              <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[8px] opacity-[0.05]" />
-              <div className="relative grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
-                <div>
-                  <h2 className="flex items-center gap-2 font-fell text-lg uppercase tracking-[0.06em] text-cream-100">
-                    <KeyRound className="h-4 w-4 text-brass-400" />
-                    {t('online.entry.join.title')}
-                  </h2>
-                  <div className="divider-brass mt-3 !mx-0" />
-                  <p className="mt-3 font-sans text-[12.5px] leading-relaxed text-cream-100/60">{t('online.entry.join.copy')}</p>
-                  <label className={cn(label, 'mt-4 block')} htmlFor="online-code">
-                    {t('online.entry.join.code')}
-                  </label>
-                  <div className="mt-1.5 flex items-center gap-3">
-                    <input
-                      id="online-code"
-                      value={code}
-                      onChange={(e) => {
-                        setCode(normalizeCode(e.target.value));
-                        setError(null);
-                      }}
-                      onKeyDown={(e) => e.key === 'Enter' && join()}
-                      maxLength={4}
-                      spellCheck={false}
-                      autoCapitalize="characters"
-                      placeholder="····"
-                      className="w-[9rem] rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-2 text-center font-mono text-[22px] font-bold uppercase tracking-[0.4em] text-brass-400 placeholder:text-brass-700/50 focus:border-brass-400 focus:outline-none"
-                    />
-                    <CodeSlots value={code} />
-                  </div>
-                  {error && (
-                    <p role="alert" className="mt-2 font-sans text-[12px] text-rust-500 brightness-150">
-                      {t(`online.entry.join.error.${error}`)}
-                    </p>
-                  )}
-                </div>
-                <button type="button" onClick={join} disabled={!named || code.length < 4} className="btn-ledger !h-12 !px-6 self-end disabled:cursor-not-allowed disabled:opacity-40 md:self-center">
-                  {t('online.entry.join.cta')}
-                </button>
-              </div>
-            </motion.section>
-          </div>
+          </Panel>
+          <Panel title={t('site.desk.join')}>
+            <div className="flex flex-wrap items-center gap-3">
+              <KeyRound className="h-4 w-4 text-brass-400" />
+              <input
+                aria-label={t('site.desk.code')}
+                value={code}
+                onChange={(e) => setCode(normalizeCode(e.target.value))}
+                onKeyDown={(e) => e.key === 'Enter' && join()}
+                maxLength={4}
+                spellCheck={false}
+                placeholder="····"
+                className="w-[7.5rem] rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-1.5 text-center font-mono text-[20px] font-bold uppercase tracking-[0.4em] text-brass-400 placeholder:text-brass-700/50 focus:border-brass-400 focus:outline-none"
+              />
+              <button type="button" onClick={join} disabled={!named || code.length < 4} className="btn-ledger disabled:cursor-not-allowed disabled:opacity-40">
+                {t('site.desk.joinCta')}
+              </button>
+            </div>
+          </Panel>
         </div>
-
-        <p className="mt-6 flex items-center gap-2 font-sans text-[11px] text-cream-100/40">
-          <Copy className="h-3 w-3" /> {isOnline && !signed ? t('online.entry.gate') : t(isOnline ? 'online.entry.serverNote' : 'online.entry.localNote')}
-        </p>
       </div>
-    </div>
+    </PageShell>
   );
+}
+
+export default function Online() {
+  const session = useSession();
+  const stranger = useStranger();
+  const [params] = useSearchParams();
+  if (!isOnline) return <LocalOffice />;
+  const table = normalizeCode(params.get('table') ?? '');
+  const query = table ? `?table=${table}` : '';
+  if (session) return <Navigate to={table ? `/account${query}` : '/desk'} replace />;
+  if (stranger) return <Navigate to={`/account${query}`} replace />;
+  /* a token on its way: a moment, then one of the two doors */
+  return null;
 }
