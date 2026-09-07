@@ -248,22 +248,22 @@ export default function SupplyDiagram() {
             <text x={561} y={236} textAnchor="middle" fontSize={11} fill={CREAM} fillOpacity={0.7} fontFamily={FELL}>
               {t("rules.supply.marketLabel")}
             </text>
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 7 }).map((_, i) => (
               <g key={i}>
                 <rect
-                  x={444 + i * 31}
+                  x={444 + i * 35}
                   y={251}
-                  width={28}
+                  width={32}
                   height={32}
                   rx={3}
                   fill="#211C17"
                   stroke={BRASS_DIM}
                   strokeOpacity={0.5}
                 />
-                <text x={458 + i * 31} y={264} textAnchor="middle" fontSize={9} fill={BRASS} fontFamily={MONO}>
+                <text x={460 + i * 35} y={264} textAnchor="middle" fontSize={9} fill={BRASS} fontFamily={MONO}>
                   £{i + 1}
                 </text>
-                {i < 2 && <circle cx={458 + i * 31} cy={275} r={6} fill={INK} stroke={CREAM} strokeOpacity={0.5} strokeWidth={1} />}
+                {i >= 2 && <circle cx={460 + i * 35} cy={275} r={6} fill={INK} stroke={CREAM} strokeOpacity={0.5} strokeWidth={1} />}
               </g>
             ))}
           </g>

@@ -53,7 +53,7 @@ function MarketTrayMock() {
         {t("rules.marketTray.title")}
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 7 }).map((_, i) => (
           <div
             key={i}
             className={
@@ -63,7 +63,7 @@ function MarketTrayMock() {
             }
           >
             <span className="font-mono text-[9.5px] text-brass-500">£{i + 1}</span>
-            {i < 2 ? (
+            {i >= 2 ? (
               <span className="mt-0.5 h-3 w-3 rounded-full bg-ink-900 ring-1 ring-cream-100/40" />
             ) : (
               <span className="mt-0.5 h-3 w-3 rounded-full border border-dashed border-cream-100/20" />
@@ -583,11 +583,11 @@ export default function Rules() {
                 </h3>
                 <p className="mt-1 text-[13.5px] leading-relaxed text-ink-900/80">
                   {t("rules.approx.botsBody1")}
-                  <strong>Apprentice</strong>
+                  <strong>{t("setup.difficulty.foreman.label")}</strong>
                   {t("rules.approx.botsBody2")}
-                  <strong>Foreman</strong>
+                  <strong>{t("setup.difficulty.industrialist.label")}</strong>
                   {t("rules.approx.botsBody3")}
-                  <strong>Baron</strong>
+                  <strong>{t("setup.difficulty.magnate.label")}</strong>
                   {t("rules.approx.botsBody4")}
                 </p>
               </div>

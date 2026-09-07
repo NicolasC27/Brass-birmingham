@@ -12,7 +12,7 @@ gsap.registerPlugin(ScrollTrigger);
 function MarketTrayMini() {
   const t = useT();
   const prices = ["£1", "£2", "£3", "£4", "£5", "£6", "£7"];
-  const coalCubes = [1, 2, 3, 4, 5, 6];
+  const coalCubes = [2, 3, 4, 5, 6];
   const ironCubes = [2, 3, 4];
   return (
     <div className="space-y-4">
@@ -29,7 +29,7 @@ function MarketTrayMini() {
           <div className="flex flex-1 items-center gap-1.5">
             {prices.slice(0, ti === 0 ? 7 : 5).map((p, i) => {
               const filled = tray.cubes.includes(i);
-              const current = i === (ti === 0 ? 1 : 2);
+              const current = i === 2;
               return (
                 <div
                   key={p}

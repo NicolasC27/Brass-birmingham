@@ -34,7 +34,7 @@ const rules = {
       'Chapter XII is the honest ledger of what this prototype simplifies — linked wherever a fidelity chip appears.',
   },
   quickstart: {
-    note: 'Every turn begins with a card. Everything else follows from where it lets you reach.',
+    note: 'Every action begins with a card. Everything else follows from where it lets you reach.',
   },
   quick: {
     goal: {
@@ -43,7 +43,7 @@ const rules = {
     },
     turn: {
       title: 'Your Turn',
-      body: 'Play one card from your hand, then take one or two actions — build, connect, sell, borrow, develop or scout.',
+      body: 'Take two actions, each paid with a card from your hand — build, connect, sell, borrow, develop or scout. The first round of the game allows one action only.',
     },
     build: {
       title: 'Build Industries',
@@ -67,16 +67,16 @@ const rules = {
     railAlt: 'Engraved frieze of the Rail Era',
     canalTitle: 'The Canal Era, 1770–1830',
     canalBody:
-      'Turns proceed round by round: play a card, take one or two actions, draw back to a full hand. Canals cost £3 per link and are the era’s only roads. When the deck and every hand are spent, the era is scored — flipped industries pay their VP, and each link scores the link icons of the industry tiles in the locations it joins, and two per merchant.',
-    railTitle: 'The Rail Era, 1830–1850',
+      'Turns proceed round by round: a card for each of your two actions (one action only in the first round), then draw back to a full hand. Canals cost £3 per link and are the era’s only roads. When the deck and every hand are spent, the era is scored — flipped industries pay their VP, and each link scores the link icons of the industry tiles in the locations it joins, and two per merchant.',
+    railTitle: 'The Rail Era, 1830–1870',
     railBody:
-      'A new deck, fresh hands, and rails at £5 plus a coal per link — two links may be laid in one action for £15 and two coal. No new canals may be cut. Stronger works sell dearer and demand two beer. When this deck too is spent, the board is scored a second time and the richest ledger wins.',
+      'A new deck, fresh hands, and rails at £5 plus a coal per link — two links may be laid in one action for £15, two coal and a beer. No new canals may be cut, and breweries now arrive with two barrels instead of one. When this deck too is spent, the board is scored a second time and the richest ledger wins.',
     betweenTitle: 'Between eras',
     betweenBody:
-      'Level-1 works are swept from the board when the waters recede — plan their flipping before the Canal Era closes, or watch them vanish uncounted.',
+      'Level-1 works are swept from the board when the waters recede — plan their flipping before the Canal Era closes, or watch them vanish uncounted. Every link tile is lifted too, once scored: the Rail Era starts from your industries alone.',
   },
   actionsIntro:
-    'Each card played buys you one or two of the six actions below. Open any row for its costs, its steps, and the edge cases that decide close games.',
+    'Every action costs a card from your hand — two actions, two cards. Open any row for its costs, its steps, and the edge cases that decide close games.',
   actionsUi: {
     edgeCases: 'Edge cases',
     diagram: {
@@ -88,7 +88,7 @@ const rules = {
       mill: 'mill',
       beer: 'beer',
       merchant: 'merchant',
-      loanLabel: '−3 steps · +£30',
+      loanLabel: '−3 levels · +£30',
     },
   },
   actions: {
@@ -101,21 +101,21 @@ const rules = {
         s3: 'Pay the money cost, then deliver the coal and iron it requires (see Chapter VI).',
       },
       edges: {
-        e1: 'Your first build of the game may go anywhere; afterwards you must build on — or connected to — your network.',
+        e1: 'A location card builds in its town whether or not that town is on your network; an industry card needs a town of your network. While you have nothing on the board, your network is the whole map.',
         e2: 'A wild card may stand for any location or any industry.',
-        e3: "One tile per slot; an opponent's tile may be overbuilt only by a higher level of the same industry.",
+        e3: "One tile per slot. Your own tile may be overbuilt by a higher level of the same industry; a rival's coal mine or iron works only once no cube of that resource is left anywhere — the market included. In the Canal Era, one tile per town per player.",
       },
     },
     network: {
       name: 'Network',
-      cost: 'Canal £3 · Rail £5 + 1 coal',
+      cost: 'Canal £3 · Rail £5 + 1 coal · Double rail £15 + 2 coal + 1 beer',
       steps: {
         s1: 'Play any card and place one canal link (Canal Era) or one rail link (Rail Era) on an empty route between two towns.',
         s2: 'The link must touch your existing network — a town holding your tile, or the end of one of your links.',
         s3: 'Pay the cost; rail links also consume one coal, delivered as in Chapter VI.',
       },
       edges: {
-        e1: 'In the Rail Era you may lay two rail links in a single action for £15 and 2 coal.',
+        e1: 'In the Rail Era you may lay two rail links in a single action for £15, 2 coal and one beer — drawn from a brewery, never from a merchant barrel.',
         e2: 'No new canals may be built once the Rail Era begins; existing canals remain.',
         e3: 'Merchant ports count as towns for connection purposes.',
       },
@@ -129,34 +129,34 @@ const rules = {
         s3: 'Removed tiles return to the box, revealing the stronger levels beneath.',
       },
       edges: {
-        e1: 'Developing is the only way to reach your level-3 and level-4 works early.',
+        e1: 'Developing is the quickest way down to your stronger works; building consumes the stack too, and the Gloucester merchant bonus removes a tile for free.',
         e2: 'You may remove tiles of two different industries in one develop action.',
       },
     },
     sell: {
       name: 'Sell',
-      cost: 'Beer: 1 per tile (2 for late works)',
+      cost: 'Beer: as printed on the tile (1, or 2 for the great works)',
       steps: {
         s1: 'Play any card and choose one or more of your cotton mills, manufacturers or potteries.',
-        s2: 'Each must trace a connection to a merchant port whose demand pips still match the industry.',
-        s3: "Spend the required beer — from your own breweries, a connected brewery, or the merchant's own supply — then flip each sold tile.",
+        s2: 'Each must trace a connection to a merchant tile showing its goods — cotton, manufactured goods, pottery, or any goods.',
+        s3: "Spend the required beer — the merchant's own barrel, your breweries, or a connected brewery — then flip each sold tile.",
       },
       edges: {
         e1: "Flipped tiles pay their income bonus immediately and score VP at era's end.",
-        e2: "A merchant's demand is exhausted as pips are claimed; latecomers find bare shelves.",
-        e3: 'In the Rail Era, stronger works demand two beer to sell.',
+        e2: "A merchant's appetite never runs out: its tile buys again and again. Only its bonus barrel is drunk once per era.",
+        e3: 'The beer a tile drinks is printed on it: two barrels for the level-5 manufacturer and the level-3 and level-5 potteries, in either era.',
       },
     },
     loan: {
       name: 'Loan',
-      cost: 'Income −3 steps · take £30',
+      cost: 'Income −3 levels · take £30',
       steps: {
-        s1: 'Play any card, move your income marker three steps down the track, and take £30 from the bank.',
+        s1: 'Play any card, drop your income marker three levels down the track, and take £30 from the bank.',
       },
       edges: {
         e1: 'A loan may be taken in either action slot of your turn — even as the second action.',
         e2: 'Loans are never repaid; the income loss is permanent.',
-        e3: "If your income falls below £0, you pay the bank at each round's end.",
+        e3: "If your income falls below £0, you pay the bank at each round's end. A loan that would sink you below level −10 is refused.",
       },
     },
     scout: {
@@ -167,13 +167,13 @@ const rules = {
         s2: 'Take the two wild cards — one wild location, one wild industry — into your hand.',
       },
       edges: {
-        e1: "Scouting consumes your whole turn's card play; take it when your hand has no honest future.",
+        e1: 'Scouting is one action like any other — but not while a wild card sits in your hand, nor once a wild pile is empty.',
         e2: 'Wild cards may be played for any town or any industry thereafter.',
       },
     },
   },
   industriesIntro:
-    'Six trades keep the Midlands turning. Each exists in four levels on your player board; you always build the lowest remaining level, and develop to reach the stronger ones. Learn to read a tile: pips mark the level, the brass chip the income gained on flipping, the cream chip the victory points.',
+    'Six trades keep the Midlands turning. Each climbs its own column on your player board — four levels for most, five for pottery, eight for the manufacturer; you always build the lowest remaining level, and develop to reach the stronger ones. Learn to read a tile: pips mark the level, the brass chip the income gained on flipping, the cream chip the victory points.',
   industries: {
     tuningTag: 'Printed tiles',
     tuningNote:
@@ -260,7 +260,7 @@ const rules = {
     brewery: {
       name: 'Brewery',
       blurb:
-        "Beer makes the sales go down. Breweries arrive stocked with barrels and flip when drained — yours, or anyone's, if connected.",
+        "Beer makes the sales go down. Breweries arrive with one barrel in the Canal Era and two in the Rail Era, and flip when drained — yours from anywhere, anyone's if connected.",
       notes: {
         n1: 'Canal Era only. Needs 1 iron; 2 link icons; ×2.',
         n2: 'Needs 1 iron; ×2.',
@@ -274,13 +274,13 @@ const rules = {
       'Your network is every town holding one of your tiles and every link you have laid — plus whatever it touches through other players’ routes. Building beyond your first move, delivering coal and iron, and selling to merchants all trace along it.',
     canalChip: 'Canal link · £3 · Canal Era',
     railChip: 'Rail link · £5 + 1 coal · Rail Era',
-    doubleRailChip: 'Double rail · £15 + 2 coal · one action',
+    doubleRailChip: 'Double rail · £15 + 2 coal + 1 beer · one action',
     outro:
       'Links are scored, not merely used: at each era’s end every link counts the link icons printed on the industry tiles in the locations it joins — whoever owns them — and two for each merchant. A well-placed canal through a rival’s flourishing town is worth as much to you as to them.',
   },
   supply: {
-    intro: 'This is the heart of the game, and it is not abstracted. Every cube of coal or iron a build demands must physically arrive: from your own connected mines and works for free, from a rival’s connected works at no cost to you (their tile empties — a gift that flips their industry!), or bought from the market at the current price. If no source can be reached, the build cannot happen.',
-    note: 'Iron travels the same roads as coal; beer obeys the same law, sourced from breweries or from a merchant’s own cellar when selling.',
+    intro: 'This is the heart of the game, and it is not abstracted. Every cube of coal a build demands must physically arrive: from a connected mine — yours or a rival’s, at no cost to you (their tile empties — a gift that flips their industry!) — or bought from the market, which itself asks for a connection to a merchant. If no source can be reached, the build cannot happen.',
+    note: 'Iron needs no road at all: any iron works on the board serves you, then the iron market, connection or not. Beer comes from your own breweries anywhere, a rival’s only if connected, or the merchant’s barrel when selling there.',
     aria:
       'Diagram of coal supply: a connected mine delivers free coal along your canals, the market sells at the current price, and a broken connection refuses the build.',
     groupAria: 'Supply scenarios',
@@ -314,20 +314,20 @@ const rules = {
   },
   market: {
     p1:
-      'When supply runs short, the market answers — at a price. Coal and iron each sit in a tray of cells priced £1 to £8. Buying takes the cheapest cube and the price climbs; selling resources back (or the era-end refill) restocks from the dear end and the price falls.',
+      'When supply runs short, the market answers — at a price. Coal sits in fourteen cells priced £1 to £7, iron in ten cells priced £1 to £5; an empty tray still sells, at £8 and £6. Buying takes the cheapest cube and the price climbs. Nothing refills the trays on its own: a newly built mine or works that is connected to a merchant sells its spare cubes to the market, restocking from the dear end so the price falls.',
     p2:
       'An empty market is a wall, not an inconvenience: coal that cannot be bought and cannot be reached simply cannot be had. Watch the trays the way a foreman watches the sky.',
   },
   selling: {
-    intro: 'Cotton mills, manufacturers and potteries flip only by selling to a merchant port at the map’s edge. The port must still hold a demand pip for your industry, you must trace a connection to it, and each tile drinks beer before it sells — one barrel in the Canal Era, two for the great late works.',
-    li1: "Beer comes first from your own breweries, then any connected brewery, then the merchant's own cellar.",
+    intro: 'Cotton mills, manufacturers and potteries flip only by selling to a merchant port at the map’s edge. The port must show your goods (or any goods), you must trace a connection to it, and each tile drinks the beer printed on it before it sells — one barrel for most, two for the great works.',
+    li1: "Beer comes first from the merchant's own barrel when you sell there — it fires the merchant's bonus — then from your breweries, then any connected brewery.",
     li2: "Flipping pays the income bonus immediately and banks the tile's VP for era scoring.",
-    li3: 'Claimed pips are gone for good — a merchant once sold out is only a view of the sea.',
+    li3: 'Each merchant tile keeps one barrel per era; drink it and its bonus pays out, and the barrel is set again when the Rail Era opens.',
     choice:
       'The choice is the game in miniature: income now raises every future round’s purse, while VP waits quietly for the reckoning.',
     flip: {
       aria: 'Demonstration tile: hover or focus to flip it from its parchment face to its sold ember face',
-      tileName: 'cotton mill II',
+      tileName: 'cotton mill I',
       vp: 'victory points',
       sold: 'sold · flipped',
       caption: 'Hover or focus — the flip is the payday.',
@@ -337,14 +337,14 @@ const rules = {
     vpChip: '{vp}VP',
   },
   money: {
-    intro: 'At each round’s end your income marker pays you its rung in pounds. Flipping industries climbs the ladder; there is no ceiling worth respecting.',
-    li1: 'A loan may be taken in either action slot: drop three rungs, take £30, play on.',
-    li2: 'Loans are never repaid. The rungs are simply gone.',
+    intro: 'At each round’s end your income marker pays you its level in pounds. Flipping industries climbs the ladder, which tops out at level 30.',
+    li1: 'A loan may be taken in either action slot: drop three levels, take £30, play on.',
+    li2: 'Loans are never repaid. The levels are simply gone.',
     li3: 'Below £0 the ladder turns creditor — you pay the bank at each round’s end.',
     develop:
       'Develop, the quiet sixth sense of strong players, trades one iron for the removal of a weak tile, uncovering the powerful levels beneath without spending a build.',
     ladderAria:
-      'Income track ladder: rungs from minus ten pounds up to sixty, with a brass pawn resting on the thirty-pound rung',
+      'Income track ladder: levels from minus ten pounds up to thirty, the ceiling, with a brass pawn resting on the ten-pound rung',
     ladderCaption: 'the income track',
   },
   scoring: {
@@ -358,7 +358,7 @@ const rules = {
     r2c: 'link icons in both locations joined',
     r2w: 'End of each era (canals then rails)',
     r3s: 'Tiebreakers',
-    r3c: 'most money → earlier turn order',
+    r3c: 'highest income level → most money',
     r3w: 'Final reckoning only',
     exampleTitle: 'A worked example',
     exampleBody:
@@ -386,11 +386,11 @@ const rules = {
     },
     merchantPort: {
       term: 'Merchant port',
-      def: "A harbour tile at the map's edge with demand pips; the only buyer for mills, manufacturers and potteries.",
+      def: "A harbour tile at the map's edge showing the goods it buys; the only buyer for mills, manufacturers and potteries.",
     },
     demandPip: {
-      term: 'Demand pip',
-      def: 'A marked space on a merchant; one is claimed each time the matching industry sells there.',
+      term: 'Merchant goods',
+      def: 'The icon on a merchant tile — cotton, manufactured goods, pottery, or any goods. It never sells out.',
     },
     beer: {
       term: 'Beer / barrel',
@@ -406,11 +406,11 @@ const rules = {
     },
     incomeTrack: {
       term: 'Income track',
-      def: 'The ladder recording your earnings each round. Building flips raise it; loans lower it three steps.',
+      def: 'The ladder recording your earnings each round. Flipped tiles raise it; loans lower it three levels.',
     },
     overbuild: {
       term: 'Overbuild',
-      def: "Replacing a tile with a higher level of the same industry; rivals' exhausted mines and works may be overbuilt freely.",
+      def: "Replacing a tile with a higher level of the same industry — your own freely, a rival's coal mine or iron works only when no cube of that resource remains anywhere, market included.",
     },
     linkVp: {
       term: 'Link VP',
@@ -426,7 +426,7 @@ const rules = {
     },
     clockworkClub: {
       term: 'The Clockwork Club',
-      def: 'The mechanical players — Apprentice, Foreman and Baron bots that fill an empty chair.',
+      def: 'The mechanical players — Foreman, Industrialist and Magnate bots that fill an empty chair.',
     },
   },
   approx: {
@@ -447,11 +447,11 @@ const rules = {
     },
     industryValues: {
       area: 'Automatic choices',
-      note: 'Where the rules let you choose, the engine picks for you: the nearest mine when two tie, the merchant barrel before your own beer, the first card when you pass or borrow, the cheapest tiles when a negative payday must be covered.',
+      note: 'Where the rules let you choose, the engine picks for you: the nearest mine, then the fuller one, when two could serve; the merchant barrel before your own beer; the first card when you pass or borrow; the cheapest tiles when a negative payday must be covered.',
     },
     map: {
       area: 'The Midlands map',
-      note: 'Towns, slots and routes are compressed for the browser board; the geography is faithful in spirit, not in count.',
+      note: 'The board carries the printed geography: twenty towns, two farm breweries, five merchants and thirty-nine routes, slot for slot.',
     },
     deck: {
       area: 'Merchant tiles',
@@ -459,11 +459,11 @@ const rules = {
     },
     bots: {
       area: 'The Clockwork Club (bots)',
-      note: 'Apprentice, Foreman and Baron are heuristics with differing appetites — not deep-search opponents.',
+      note: 'Foreman, Industrialist and Magnate are heuristics with differing appetites — not deep-search opponents.',
     },
     multiplayer: {
       area: 'Online multiplayer',
-      note: 'This preview is local-only: solo versus the Club, or hot-seat at one table. Networked and asynchronous play are on the drawing board.',
+      note: 'Tables live in rooms: open one, pass its four-glyph code around, and play across the wire when a server answers — or between two tabs of one browser when none does.',
     },
   },
   finis: 'Finis · set the table and play',

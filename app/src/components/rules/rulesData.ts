@@ -1,11 +1,9 @@
 /**
  * rulesData.ts — single source of truth for the Rules Codex content.
  *
- * PROTOTYPE TUNING NOTICE: industry level values below are original,
- * Brass: Birmingham–style approximations authored for this fan-made
- * preview. They are internally consistent (cost/income/VP scale with
- * level) but are NOT reproductions of the printed tile statistics.
- * The game board reads from this same file so codex and play agree.
+ * Industry level values are read straight from the engine's data
+ * (src/game/data.ts), which transcribes the printed player mat — so the
+ * codex and the board can never disagree on a cost, an income or a VP.
  *
  * User-visible strings live in src/i18n (rules.*); the getters below read
  * tr() at call time so text resolves in the current language on every render.
@@ -293,7 +291,7 @@ export const getApproximations = (): Approximation[] => [
   },
   {
     area: tr("rules.approximations.map.area"),
-    status: "approximate",
+    status: "faithful",
     note: tr("rules.approximations.map.note"),
   },
   {
@@ -308,7 +306,7 @@ export const getApproximations = (): Approximation[] => [
   },
   {
     area: tr("rules.approximations.multiplayer.area"),
-    status: "planned",
+    status: "faithful",
     note: tr("rules.approximations.multiplayer.note"),
   },
 ];

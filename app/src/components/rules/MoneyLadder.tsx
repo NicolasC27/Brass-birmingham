@@ -6,8 +6,8 @@ import { useT } from "@/i18n";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const RUNGS = ["−£10", "£0", "£10", "£20", "£30", "£40", "£50", "£60"];
-const MID = 4; // pawn rests on the £30 rung
+const RUNGS = ["−£10", "£0", "£5", "£10", "£15", "£20", "£25", "£30"]; // level 30 is the ceiling
+const MID = 3; // pawn rests on the £10 rung
 
 /**
  * §IX ornament — the income ladder. A brass pawn drifts ±3 rungs with the
