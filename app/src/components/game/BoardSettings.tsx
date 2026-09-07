@@ -1,66 +1,117 @@
+import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
-import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
-import type { IncomeSide, MapStyle } from './boardOptions';
-import type { MinimapSize } from './boardOptions';
+import { setBoardOption, useBoardOptions } from './boardOptions';
+import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
 import { STOCK_STYLE_IDS } from './stockStyles';
-import type { StockStyle } from '@/gl/paint';
+import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
 import { useGame } from '@/game/store';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* Board settings panel (gear in the board options row): language,     */
-/* stock-badge style WITH a live mini preview of each variant, minimap */
-/* size, renderer and camera toggles — the chips that used to crowd    */
-/* the market panel's right edge live here now.                        */
+/* Board settings — a centred dialog with a section rail on the left   */
+/* (tiles / board / interface / shortcuts) and, on the right, one row  */
+/* per option: label, a one-line hint, the control. Visual choices     */
+/* (slot art, income band, stock badge) carry a live mini preview so   */
+/* the reader can pick without trying each one on the board.          */
 /* ------------------------------------------------------------------ */
+
+type SectionId = 'tiles' | 'board' | 'interface' | 'keys';
+const SECTIONS: { id: SectionId; icon: LucideIcon }[] = [
+  { id: 'tiles', icon: LayoutGrid },
+  { id: 'board', icon: Map },
+  { id: 'interface', icon: MonitorCog },
+  { id: 'keys', icon: Keyboard },
+];
+
+/* ----------------------------- previews ---------------------------- */
+
+const CARD = 'relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border';
+
+/** the cotton mill painting: full colour, or the engraved sepia print */
+function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
+  return (
+    <span aria-hidden className={cn(CARD, 'bg-[#12100C]', active ? 'border-brass-400' : 'border-brass-700/50')}>
+      <span
+        className="absolute inset-1 bg-contain bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(/tile-cotton-cut.png)',
+          filter: art === 'engraved' ? 'grayscale(1) sepia(0.55) brightness(0.72) contrast(0.95)' : undefined,
+          opacity: art === 'engraved' ? 0.88 : 1,
+        }}
+      />
+    </span>
+  );
+}
+
+/** brass card with the income / VP layout */
+function ChipPreview({ style, active }: { style: ChipStyle; active: boolean }) {
+  const num = 'font-mono text-[6.5px] font-semibold text-[#F4ECD8]';
+  return (
+    <span
+      aria-hidden
+      className={cn(CARD, active ? 'border-brass-400' : 'border-brass-700/50')}
+      style={{ background: 'radial-gradient(circle at 50% 40%, #D8B46A, #8C6F33)', boxShadow: 'inset 0 0 0 2px #C9A45C' }}
+    >
+      {style === 'band' ? (
+        <span className="absolute inset-x-[3px] bottom-[3px] flex h-3 items-center justify-between rounded-[2px] bg-[#0C0A08]/60 px-1">
+          <span className={num}>+2</span>
+          <span className={num}>3vp</span>
+        </span>
+      ) : (
+        <>
+          <span className={cn('absolute bottom-[3px] left-[3px] flex h-3 w-[18px] items-center justify-center rounded-[2px] bg-[#17110C] ring-1 ring-[#F4ECD8]/35', num)}>+2</span>
+          <span className={cn('absolute bottom-[3px] right-[3px] flex h-3 w-[18px] items-center justify-center rounded-[2px] bg-[#17110C] ring-1 ring-[#F4ECD8]/35', num)}>3vp</span>
+        </>
+      )}
+    </span>
+  );
+}
 
 /** tiny tile mock showing where the stock badge sits for a given style */
 function StockPreview({ style, active }: { style: StockStyle; active: boolean }) {
-  /* 44px brass tile */
   const badge = (() => {
     const base = 'absolute flex items-center justify-center rounded-[3px] bg-[#17110C] font-mono font-bold text-[#F4ECD8] shadow-sm';
     switch (style) {
       case 'corner':
-        return <span className={`${base} -right-1.5 -top-1.5 h-4 w-4 rounded-full text-[9px] ring-1 ring-[#C9A45C]`}>3</span>;
+        return <span className={`${base} right-0.5 top-0.5 h-4 w-4 rounded-full text-[9px] ring-1 ring-[#C9A45C]`}>3</span>;
       case 'big':
         return <span className={`${base} left-1/2 top-1/2 h-5 w-9 -translate-x-1/2 -translate-y-1/2 gap-0.5 text-[9px]`}>▪×3</span>;
       case 'counter':
         return <span className={`${base} left-1/2 top-1/2 h-3.5 w-7 -translate-x-1/2 -translate-y-1/2 text-[7px]`}>▪×3</span>;
       case 'tag':
-        return <span className={`${base} left-1/2 top-1/2 h-3.5 w-7 -translate-y-1/2 text-[7px]`} style={{ transform: 'translate(-10%, -50%)' }}>▪×3</span>;
+        return <span className={`${base} right-0 top-1/2 h-3.5 w-7 -translate-y-1/2 translate-x-1 text-[7px]`}>▪×3</span>;
       case 'top':
-        return <span className={`${base} -top-1.5 left-1/2 h-3.5 w-7 -translate-x-1/2 text-[7px]`}>▪×3</span>;
+        return <span className={`${base} left-1/2 top-0 h-3.5 w-7 -translate-x-1/2 -translate-y-1 text-[7px]`}>▪×3</span>;
     }
   })();
   return (
     <span
       aria-hidden
-      className={cn(
-        'relative block h-11 w-11 shrink-0 rounded-md border transition-colors',
-        active ? 'border-brass-400 bg-[radial-gradient(circle_at_50%_40%,#D8B46A,#8C6F33)]' : 'border-brass-700/60 bg-[radial-gradient(circle_at_50%_40%,#C9A45C,#6F5426)]',
-      )}
+      className={cn(CARD, active ? 'border-brass-400' : 'border-brass-700/50')}
+      style={{ background: 'radial-gradient(circle at 50% 40%, #D8B46A, #8C6F33)' }}
     >
       {badge}
     </span>
   );
 }
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+/* ----------------------------- controls ---------------------------- */
+
+/** one option: label + hint on the left, its control on the right */
+function OptionRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2">
-      <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{label}</span>
-      {children}
+    <div className="flex items-center justify-between gap-4 border-b border-brass-700/25 py-2.5 last:border-b-0">
+      <div className="min-w-0">
+        <div className="font-sans text-[12px] font-semibold text-cream-100/90">{label}</div>
+        {hint && <div className="mt-0.5 font-sans text-[10.5px] leading-snug text-cream-100/50">{hint}</div>}
+      </div>
+      <div className="shrink-0">{children}</div>
     </div>
   );
 }
-
-const segBtn = (on: boolean) =>
-  cn(
-    'px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] transition-colors',
-    on ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400',
-  );
 
 /** small brass toggle switch (same grammar as the follow-bots switch) */
 function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; label: string }) {
@@ -78,195 +129,281 @@ function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; labe
   );
 }
 
+/** segmented control */
+function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
+  return (
+    <div className="flex overflow-hidden rounded-md border border-brass-700/60">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          aria-pressed={value === o.id}
+          onClick={() => onChange(o.id)}
+          className={cn(
+            'px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] transition-colors',
+            value === o.id ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400',
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** a visual choice: label + hint above, one previewed card per option */
+function ChoiceCards<T extends string>({
+  label,
+  hint,
+  value,
+  options,
+  onChange,
+  columns = 2,
+}: {
+  label: string;
+  hint?: string;
+  value: T;
+  options: { id: T; label: string; preview: (active: boolean) => React.ReactNode }[];
+  onChange: (v: T) => void;
+  columns?: 2 | 3;
+}) {
+  return (
+    <div className="border-b border-brass-700/25 py-2.5 last:border-b-0">
+      <div className="font-sans text-[12px] font-semibold text-cream-100/90">{label}</div>
+      {hint && <div className="mt-0.5 font-sans text-[10.5px] leading-snug text-cream-100/50">{hint}</div>}
+      <div className={cn('mt-2 grid gap-1.5', columns === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+        {options.map((o) => {
+          const active = value === o.id;
+          return (
+            <button
+              key={o.id}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(o.id)}
+              className={cn(
+                'flex items-center gap-2.5 rounded-md border px-2 py-1.5 text-left transition-colors',
+                active ? 'border-brass-400 bg-coal-800/80' : 'border-brass-700/40 hover:border-brass-700',
+              )}
+            >
+              {o.preview(active)}
+              <span className={cn('font-sans text-[11px] font-semibold leading-tight', active ? 'text-brass-400' : 'text-cream-100/75')}>{o.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------ dialog ----------------------------- */
+
 export default function BoardSettings() {
   const opts = useBoardOptions();
   const lang = useLang();
   const t = useT();
   const followBots = useGame((s) => s.followBots);
   const toggleFollowBots = useGame((s) => s.toggleFollowBots);
+  const [section, setSection] = useState<SectionId>('tiles');
   const open = opts.settingsOpen;
-  const insets = hudInsets(opts);
   const close = () => setBoardOption('settingsOpen', false);
+
+  const toggleFullscreen = () => {
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void document.documentElement.requestFullscreen();
+  };
 
   return (
     <AnimatePresence>
       {open && (
-        <>
-          {/* click-away backdrop */}
-          <div className="fixed inset-0 z-[69]" onClick={close} aria-hidden />
-          <motion.aside
-            initial={{ opacity: 0, y: 10, scale: 0.97 }}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.16 }}
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-coal-950/60 p-4 backdrop-blur-[2px]"
+          onClick={close}
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.97 }}
-            transition={{ duration: 0.16, ease: 'easeOut' }}
-            className="plate fixed z-[70] max-h-[78vh] w-[min(340px,92vw)] overflow-y-auto p-4 shadow-e4"
-            style={{ left: insets.left, bottom: insets.bottom + 76 }}
+            exit={{ opacity: 0, y: 12, scale: 0.98 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="plate flex max-h-[86vh] w-[min(740px,100%)] flex-col overflow-hidden shadow-e4 sm:min-h-[min(560px,86vh)]"
             role="dialog"
+            aria-modal
             aria-label={t('game.settings.title')}
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between">
-              <h2 className="font-fell text-[15px] tracking-wide text-brass-400">{t('game.settings.title')}</h2>
+            {/* header */}
+            <div className="flex items-start justify-between gap-4 border-b border-brass-700/40 px-5 py-3.5">
+              <div>
+                <h2 className="font-fell text-[18px] leading-tight tracking-wide text-brass-400">{t('game.settings.title')}</h2>
+                <p className="mt-0.5 font-sans text-[11px] text-cream-100/50">{t('game.settings.subtitle')}</p>
+              </div>
               <button type="button" onClick={close} aria-label={t('game.settings.close')} className="rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100">
-                <X className="h-3.5 w-3.5" />
+                <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="my-2 h-px bg-brass-700/50" />
 
-            <Row label={t('game.settings.language')}>
-              <div className="flex overflow-hidden rounded-md border border-brass-700/60">
-                {(['fr', 'en'] as const).map((l) => (
-                  <button key={l} type="button" aria-pressed={lang === l} onClick={() => setLang(l)} className={segBtn(lang === l)}>
-                    {l}
-                  </button>
-                ))}
+            <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
+              {/* section rail */}
+              <nav aria-label={t('game.settings.title')} className="flex shrink-0 gap-1 overflow-x-auto border-b border-brass-700/40 p-2 sm:w-[168px] sm:flex-col sm:border-b-0 sm:border-r">
+                {SECTIONS.map(({ id, icon: Icon }) => {
+                  const active = section === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setSection(id)}
+                      className={cn(
+                        'flex items-center gap-2 rounded-md px-2.5 py-2 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors',
+                        active ? 'bg-brass-400/15 text-brass-400' : 'text-cream-100/60 hover:bg-coal-800 hover:text-cream-100',
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5 shrink-0" />
+                      {t(`game.settings.sections.${id}`)}
+                    </button>
+                  );
+                })}
+              </nav>
+
+              {/* section body */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
+                <p className="mb-1 font-sans text-[11px] text-cream-100/50">{t(`game.settings.sectionHint.${section}`)}</p>
+
+                {section === 'tiles' && (
+                  <>
+                    <ChoiceCards<SlotArt>
+                      label={t('game.settings.slotArt')}
+                      hint={t('game.settings.slotArtHint')}
+                      value={opts.slotArt}
+                      onChange={(v) => setBoardOption('slotArt', v)}
+                      options={(['engraved', 'painted'] as SlotArt[]).map((id) => ({
+                        id,
+                        label: t(`game.settings.slot.${id}`),
+                        preview: (active) => <SlotPreview art={id} active={active} />,
+                      }))}
+                    />
+                    <ChoiceCards<ChipStyle>
+                      label={t('game.settings.chipStyle')}
+                      hint={t('game.settings.chipStyleHint')}
+                      value={opts.chipStyle}
+                      onChange={(v) => setBoardOption('chipStyle', v)}
+                      options={(['band', 'chips'] as ChipStyle[]).map((id) => ({
+                        id,
+                        label: t(`game.settings.chip.${id}`),
+                        preview: (active) => <ChipPreview style={id} active={active} />,
+                      }))}
+                    />
+                    <OptionRow label={t('game.settings.bigChips')} hint={t('game.settings.bigChipsHint')}>
+                      <Switch on={opts.bigChips} onClick={() => setBoardOption('bigChips', !opts.bigChips)} label={t('game.settings.bigChips')} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.ownerSeal')} hint={t('game.settings.ownerSealHint')}>
+                      <Switch on={opts.ownerSeal} onClick={() => setBoardOption('ownerSeal', !opts.ownerSeal)} label={t('game.settings.ownerSeal')} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.cardGrain')} hint={t('game.settings.cardGrainHint')}>
+                      <Switch on={opts.cardGrain} onClick={() => setBoardOption('cardGrain', !opts.cardGrain)} label={t('game.settings.cardGrain')} />
+                    </OptionRow>
+                    <ChoiceCards<StockStyle>
+                      label={t('game.settings.stockBadge')}
+                      hint={t('game.settings.stockBadgeHint')}
+                      value={opts.stockStyle}
+                      onChange={(v) => setBoardOption('stockStyle', v)}
+                      columns={3}
+                      options={STOCK_STYLE_IDS.map((id) => ({
+                        id,
+                        label: t(`board.stockStyle.${id}`),
+                        preview: (active) => <StockPreview style={id} active={active} />,
+                      }))}
+                    />
+                  </>
+                )}
+
+                {section === 'board' && (
+                  <>
+                    <OptionRow label={t('game.settings.mapStyle')} hint={t('game.settings.mapStyleHint')}>
+                      <Segmented<MapStyle>
+                        value={opts.mapStyle}
+                        onChange={(v) => setBoardOption('mapStyle', v)}
+                        options={(['etched', 'painted'] as MapStyle[]).map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
+                      />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.showUnbuilt')} hint={t('game.settings.showUnbuiltHint')}>
+                      <Switch on={!opts.hideUnbuilt} onClick={() => setBoardOption('hideUnbuilt', !opts.hideUnbuilt)} label={t('game.settings.showUnbuilt')} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
+                      <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.followBots')} hint={t('game.settings.followBotsHint')}>
+                      <Switch on={followBots} onClick={toggleFollowBots} label={t('game.settings.followBots')} />
+                    </OptionRow>
+                  </>
+                )}
+
+                {section === 'interface' && (
+                  <>
+                    <OptionRow label={t('game.settings.language')}>
+                      <Segmented<'fr' | 'en'> value={lang} onChange={setLang} options={[{ id: 'fr', label: 'fr' }, { id: 'en', label: 'en' }]} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.minimapSize')}>
+                      <Segmented<MinimapSize>
+                        value={opts.minimapSize}
+                        onChange={(v) => setBoardOption('minimapSize', v)}
+                        options={(['s', 'm', 'l'] as MinimapSize[]).map((id) => ({ id, label: t(`game.settings.size.${id}`) }))}
+                      />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.incomeSide')} hint={t('game.settings.incomeSideHint')}>
+                      <Segmented<IncomeSide>
+                        value={opts.incomeSide}
+                        onChange={(v) => setBoardOption('incomeSide', v)}
+                        options={(['bottom', 'left'] as IncomeSide[]).map((id) => ({ id, label: t(`game.settings.side.${id}`) }))}
+                      />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.fullscreen')} hint={t('game.settings.fullscreenHint')}>
+                      <button
+                        type="button"
+                        onClick={toggleFullscreen}
+                        className="rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 transition-colors hover:text-brass-400"
+                      >
+                        {t('game.settings.fullscreenBtn')}
+                      </button>
+                    </OptionRow>
+                  </>
+                )}
+
+                {section === 'keys' && (
+                  <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5 py-1">
+                    {(
+                      [
+                        ['F', t('game.settings.keys.fs')],
+                        ['C', t('game.settings.keys.links')],
+                        ['M', t('game.settings.keys.market')],
+                        ['L', t('game.settings.keys.ledger')],
+                        ['0', t('game.settings.keys.fit')],
+                        ['+ / −', t('game.settings.keys.zoom')],
+                        ['← / →', t('game.settings.keys.towns')],
+                        ['1–8', t('game.settings.keys.cards')],
+                        ['H', t('game.settings.keys.hand')],
+                        ['Wheel', t('game.settings.keys.tracks')],
+                        ['Enter', t('game.settings.keys.confirm')],
+                        ['Esc', t('game.settings.keys.cancel')],
+                        ['?', t('game.settings.keys.rules')],
+                      ] as const
+                    ).map(([k, label]) => (
+                      <div key={k} className="contents">
+                        <dt>
+                          <kbd className="rounded-[3px] border border-brass-700/60 bg-coal-950/80 px-1.5 py-0.5 font-mono text-[9.5px] font-semibold text-brass-400">{k}</kbd>
+                        </dt>
+                        <dd className="font-sans text-[11px] text-cream-100/70">{label}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                )}
               </div>
-            </Row>
-
-            {/* stock badge style, each with its live mini preview */}
-            <div className="py-2">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.stockBadge')}</span>
-              <div className="mt-1.5 grid grid-cols-1 gap-1">
-                {STOCK_STYLE_IDS.map((id) => (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={opts.stockStyle === id}
-                    onClick={() => setBoardOption('stockStyle', id)}
-                    className={cn(
-                      'flex items-center gap-3 rounded-md border px-2 py-1.5 text-left transition-colors',
-                      opts.stockStyle === id ? 'border-brass-400 bg-coal-800/80' : 'border-brass-700/40 hover:border-brass-700',
-                    )}
-                  >
-                    <StockPreview style={id} active={opts.stockStyle === id} />
-                    <span className={cn('font-sans text-[11.5px] font-semibold', opts.stockStyle === id ? 'text-brass-400' : 'text-cream-100/75')}>
-                      {t(`board.stockStyle.${id}`)}
-                    </span>
-                  </button>
-                ))}
-              </div>
             </div>
-
-            {/* minimap size: stacked (long words need the full width) */}
-            <div className="py-2">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.minimapSize')}</span>
-              <div className="mt-1.5 flex overflow-hidden rounded-md border border-brass-700/60">
-                {(['s', 'm', 'l'] as MinimapSize[]).map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    aria-pressed={opts.minimapSize === s}
-                    onClick={() => setBoardOption('minimapSize', s)}
-                    className={cn('flex-1', segBtn(opts.minimapSize === s))}
-                  >
-                    {t(`game.settings.size.${s}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* income track side: bottom edge (default) or down the left edge */}
-            <div className="py-2">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.incomeSide')}</span>
-              <div className="mt-1.5 flex overflow-hidden rounded-md border border-brass-700/60">
-                {(['bottom', 'left'] as IncomeSide[]).map((side) => (
-                  <button
-                    key={side}
-                    type="button"
-                    aria-pressed={opts.incomeSide === side}
-                    onClick={() => setBoardOption('incomeSide', side)}
-                    className={cn('flex-1', segBtn(opts.incomeSide === side))}
-                  >
-                    {t(`game.settings.side.${side}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* the painting under the board */}
-            <div className="py-2">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.mapStyle')}</span>
-              <div className="mt-1.5 flex overflow-hidden rounded-md border border-brass-700/60">
-                {(['etched', 'painted'] as MapStyle[]).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    aria-pressed={opts.mapStyle === m}
-                    onClick={() => setBoardOption('mapStyle', m)}
-                    className={cn('flex-1', segBtn(opts.mapStyle === m))}
-                  >
-                    {t(`game.settings.map.${m}`)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="my-1 h-px bg-brass-700/40" />
-
-            {/* board display toggles — moved here from the old bottom-left
-                HUD row so the map stays clear */}
-            <div className="pt-1">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.boardSection')}</span>
-              <Row label={t('game.settings.showUnbuilt')}>
-                <Switch on={!opts.hideUnbuilt} onClick={() => setBoardOption('hideUnbuilt', !opts.hideUnbuilt)} label={t('game.settings.showUnbuilt')} />
-              </Row>
-              <Row label={t('game.settings.bigChips')}>
-                <Switch on={opts.bigChips} onClick={() => setBoardOption('bigChips', !opts.bigChips)} label={t('game.settings.bigChips')} />
-              </Row>
-              <Row label={t('game.settings.greyMerch')}>
-                <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
-              </Row>
-              <Row label={t('game.settings.fullscreen')}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (document.fullscreenElement) void document.exitFullscreen();
-                    else void document.documentElement.requestFullscreen();
-                  }}
-                  className="rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 transition-colors hover:text-brass-400"
-                >
-                  F
-                </button>
-              </Row>
-            </div>
-
-            <Row label={t('game.settings.followBots')}>
-              <Switch on={followBots} onClick={toggleFollowBots} label={t('game.settings.followBots')} />
-            </Row>
-
-            <div className="my-1 h-px bg-brass-700/40" />
-
-            {/* keyboard shortcuts — the HUD no longer advertises them */}
-            <div className="py-1">
-              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.keysSection')}</span>
-              <dl className="mt-1.5 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1">
-                {(
-                  [
-                    ['F', t('game.settings.keys.fs')],
-                    ['C', t('game.settings.keys.links')],
-                    ['M', t('game.settings.keys.market')],
-                    ['L', t('game.settings.keys.ledger')],
-                    ['0', t('game.settings.keys.fit')],
-                    ['+ / −', t('game.settings.keys.zoom')],
-                    ['← / →', t('game.settings.keys.towns')],
-                    ['1–8', t('game.settings.keys.cards')],
-                    ['H', t('game.settings.keys.hand')],
-                    ['Wheel', t('game.settings.keys.tracks')],
-                    ['Enter', t('game.settings.keys.confirm')],
-                    ['Esc', t('game.settings.keys.cancel')],
-                    ['?', t('game.settings.keys.rules')],
-                  ] as const
-                ).map(([k, label]) => (
-                  <div key={k} className="contents">
-                    <dt>
-                      <kbd className="rounded-[3px] border border-brass-700/60 bg-coal-950/80 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-brass-400">{k}</kbd>
-                    </dt>
-                    <dd className="font-sans text-[10.5px] text-cream-100/65">{label}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          </motion.aside>
-        </>
+          </motion.div>
+        </motion.div>
       )}
     </AnimatePresence>
   );
