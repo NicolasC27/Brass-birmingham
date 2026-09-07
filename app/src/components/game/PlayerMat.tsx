@@ -138,11 +138,21 @@ export default function PlayerMat() {
     /* one left-hand panel at a time: the mat takes the settings' place */
     setBoardOption('settingsOpen', false);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeMat();
+      if (e.key === 'Escape') {
+        closeMat();
+        return;
+      }
+      /* 1–4: read that seat's mat (the digits leave the hand while it is open) */
+      const n = Number(e.key);
+      const g = useGame.getState().game;
+      if (g && n >= 1 && n <= g.players.length && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        openMat(n - 1);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [matPlayer, closeMat]);
+  }, [matPlayer, closeMat, openMat]);
 
   return (
     <AnimatePresence>
@@ -162,8 +172,15 @@ export default function PlayerMat() {
               : { left: insets.left + RAIL_W, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + RAIL_W + 12}px))` }
           }
         >
-          {/* player tabs */}
-          <div className="flex flex-wrap items-center gap-1.5 border-b border-brass-700/40 px-3 py-2">
+          {/* player tabs — numbered like their shortcut; the wheel cycles seats */}
+          <div
+            className="flex flex-wrap items-center gap-1.5 border-b border-brass-700/40 px-3 py-2"
+            onWheel={(e) => {
+              const n = game.players.length;
+              const dir = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
+              if (dir) openMat((matPlayer + dir + n) % n);
+            }}
+          >
             {game.players.map((pl, i) => {
               const col = PLAYER_COLORS[pl.color]?.hex ?? '#C9A45C';
               const active = i === matPlayer;
@@ -179,6 +196,7 @@ export default function PlayerMat() {
                   )}
                   style={active ? { boxShadow: `inset 0 0 0 1px ${col}55` } : undefined}
                 >
+                  <kbd className={cn('rounded-[3px] border px-1 font-mono text-[8.5px] font-semibold leading-[13px]', active ? 'border-brass-400/70 text-brass-400' : 'border-brass-700/60 text-cream-100/45')}>{i + 1}</kbd>
                   <ShapeChip color={pl.color} size={10} />
                   {pl.name}
                 </button>
