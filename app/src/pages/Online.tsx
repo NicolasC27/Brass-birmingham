@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Copy, KeyRound, LogOut } from 'lucide-react';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
@@ -45,10 +45,13 @@ export default function Online() {
   const navigate = useNavigate();
   const session = useSession();
   const stranger = useStranger();
+  /* an invitation followed while signed out waits here for the book */
+  const [params] = useSearchParams();
+  const invited = normalizeCode(params.get('table') ?? '');
   const [name, setName] = useState(lobby.me.name);
   const [password, setPassword] = useState('');
   const [tableName, setTableName] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(invited);
   const [error, setError] = useState<LobbyError | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   /* online nothing opens before the register is signed; locally a name is all.
@@ -66,6 +69,16 @@ export default function Online() {
       setPassword('');
     } catch (e) {
       setAuthError((e as Error).message);
+      return;
+    }
+    /* they came for a table: take them straight back to it. A table that
+       will not have them is a different disappointment, said elsewhere. */
+    if (invited.length !== 4) return;
+    try {
+      await lobby.join(invited);
+      navigate(`/online/${invited}`);
+    } catch (e) {
+      setError((e as Error).message as LobbyError);
     }
   };
 
