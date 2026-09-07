@@ -322,6 +322,16 @@ export default function BoardSettings() {
                     <OptionRow label={t('game.settings.colorBlind')} hint={t('game.settings.colorBlindHint')}>
                       <Switch on={opts.colorBlind} onClick={() => setBoardOption('colorBlind', !opts.colorBlind)} label={t('game.settings.colorBlind')} />
                     </OptionRow>
+                    {opts.colorBlind && (
+                      <div className="mb-1 ml-3 border-l-2 border-brass-400/40 pl-3">
+                        <OptionRow label={t('game.settings.colorBlindTiles')} hint={t('game.settings.colorBlindTilesHint')}>
+                          <Switch on={opts.sealTiles} onClick={() => setBoardOption('sealTiles', !opts.sealTiles)} label={t('game.settings.colorBlindTiles')} />
+                        </OptionRow>
+                        <OptionRow label={t('game.settings.colorBlindLinks')} hint={t('game.settings.colorBlindLinksHint')}>
+                          <Switch on={opts.sealLinks} onClick={() => setBoardOption('sealLinks', !opts.sealLinks)} label={t('game.settings.colorBlindLinks')} />
+                        </OptionRow>
+                      </div>
+                    )}
                     <OptionRow label={t('game.settings.mapStyle')} hint={t('game.settings.mapStyleHint')}>
                       <Segmented<MapStyle>
                         value={opts.mapStyle}

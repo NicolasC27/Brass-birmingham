@@ -25,8 +25,10 @@ export interface BoardOptions {
   stockStyle: StockStyle;
   /** empty-slot face: engraved print or colour painting */
   slotArt: SlotArt;
-  /** colour-blind mode: owner shape medallions on built cards and links */
+  /** colour-blind mode: owner shape medallions on built cards and/or links */
   colorBlind: boolean;
+  sealTiles: boolean;
+  sealLinks: boolean;
   /** paper grain baked on built cards */
   cardGrain: boolean;
   /** income / VP layout on built cards */
@@ -44,6 +46,8 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   stockStyle: 'brassworks.stockStyle',
   slotArt: 'brassworks.slotArt',
   colorBlind: 'brassworks.colorBlind',
+  sealTiles: 'brassworks.colorBlind.tiles',
+  sealLinks: 'brassworks.colorBlind.links',
   cardGrain: 'brassworks.cardGrain',
   chipStyle: 'brassworks.chipStyle',
   minimapSize: 'brassworks.minimapSize',
@@ -69,6 +73,8 @@ let state: BoardOptions = {
   stockStyle: read('stockStyle', 'corner'),
   slotArt: read('slotArt', 'engraved'),
   colorBlind: read('colorBlind', false),
+  sealTiles: read('sealTiles', true),
+  sealLinks: read('sealLinks', true),
   cardGrain: read('cardGrain', true),
   chipStyle: read('chipStyle', 'band'),
   minimapSize: read('minimapSize', 's'),

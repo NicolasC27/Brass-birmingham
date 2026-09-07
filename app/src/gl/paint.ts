@@ -28,12 +28,14 @@ export type ChipStyle = 'band' | 'chips';
 /** how a built card is dressed (board options) */
 export interface TileLook {
   slotArt: SlotArt;
-  /** colour-blind mode: the owner's shape on every built card and link */
+  /** colour-blind mode: the owner's shape on built cards and/or links */
   colorBlind: boolean;
+  sealTiles: boolean;
+  sealLinks: boolean;
   cardGrain: boolean;
   chipStyle: ChipStyle;
 }
-export const DEFAULT_TILE_LOOK: TileLook = { slotArt: 'engraved', colorBlind: false, cardGrain: true, chipStyle: 'band' };
+export const DEFAULT_TILE_LOOK: TileLook = { slotArt: 'engraved', colorBlind: false, sealTiles: true, sealLinks: true, cardGrain: true, chipStyle: 'band' };
 const playerHex = (game: GameState, i: number): number => hex(PLAYER_COLORS[game.players[i].color]?.hex ?? '#C9A45C');
 /** industry key → icon asset (key 'manufacturer' vs file 'manufacture') */
 const ICON_FOR: Record<IndustryType, string> = {
@@ -872,7 +874,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         }
         /* colour-blind mode: owner medallion seated mid-route (brass rim +
            colour + shape) — otherwise the owner's hue on the route is enough */
-        if (look.colorBlind) {
+        if (look.colorBlind && look.sealLinks) {
           const mid = pts[Math.floor(pts.length / 2)];
           g.circle(mid[0], mid[1], 10).fill(0x100d0b).stroke({ width: 1.6, color: 0xc9a45c });
           g.circle(mid[0], mid[1], 7.6).fill(col).stroke({ width: 0.8, color: 0xf2ead6, alpha: 0.35 });
@@ -983,7 +985,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             vpLabel.position.set(x, y + TILE_HALF - 5.5);
             vpLabel.eventMode = 'none';
             badges.addChild(wash, rim, plate, vpText, vpLabel);
-            if (look.colorBlind) drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
+            if (look.colorBlind && look.sealTiles) drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
             /* level pips, dark on the muted card */
             for (let i = 0; i < tile.level; i++) {
               extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x241d14).stroke({ width: 0.5, color: shade(col, 1.25) });
@@ -1007,7 +1009,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             /* owner medallion (colour-blind safe): the player's shape on a
                small disc in the top-right corner — bottom-right when the
                stock disc already sits there ('corner' layout) */
-            if (look.colorBlind) drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
+            if (look.colorBlind && look.sealTiles) drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
             const numStyle = { fontFamily: "'IBM Plex Mono', monospace", fontSize: bigChips ? 10.5 : 7.5, fontWeight: '600' as const, fill: 0xf4ecd8 };
             const incText = new Text({ text: `+${lv.incomeDelta}`, style: numStyle });
             incText.eventMode = 'none';
@@ -1256,7 +1258,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       if (lastGame) drawTowns(lastGame);
     },
     setTileLook(l: TileLook) {
-      const linksToo = l.colorBlind !== look.colorBlind;
+      const linksToo = (l.colorBlind && l.sealLinks) !== (look.colorBlind && look.sealLinks);
       look = { ...l };
       if (!lastGame) return;
       drawTowns(lastGame);
