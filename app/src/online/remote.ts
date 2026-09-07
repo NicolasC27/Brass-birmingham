@@ -126,8 +126,18 @@ export class RemoteLobbyClient implements LobbyClient {
     return w;
   }
 
+  /* useSyncExternalStore wants the same object back while nothing changed:
+     the server's echo of our own guess must not count as a new table, or
+     the room re-renders (and its animations restart) for nothing */
   private remember(code: string, table: Table | null): void {
+    const had = this.tables.get(code);
+    if (had && table && shape(had) === shape(table)) return;
     this.tables.set(code, table);
     this.listeners.get(code)?.forEach((cb) => cb());
   }
+}
+
+/** a table without the clock that ticks on every write */
+function shape(t: Table): string {
+  return JSON.stringify({ ...t, updatedAt: 0 });
 }
