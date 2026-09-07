@@ -21,12 +21,27 @@ npm install
 npm run dev
 ```
 
-Then open `http://localhost:5173`. `npm run build` produces a static bundle in `app/dist`, `npm run lint` runs ESLint.
+Then open `http://localhost:3000`. `npm run build` produces a static bundle in `app/dist`, `npm run lint` runs ESLint.
+
+### Playing online
+
+Tables live in the browser by default: open a second tab and it plays the guest. To play across machines, run the table server and point the app at it.
+
+```bash
+cd app
+npm run server                       # ws://localhost:8787, PORT and HOST override it
+echo 'VITE_ONLINE_URL=ws://localhost:8787' > .env.local
+npm run dev
+```
+
+The server holds the whole truth — it applies every action through the engine, keeps the log, plays the mechanical seats, and sends each player a state with the other hands, the deck and the seed struck out. `npm test` plays a full four-handed game through a real socket.
 
 ## Project layout
 
 ```
 app/src/game/        pure rules engine (engine.ts), data tables (data.ts), bots (bot.ts), zustand store
+app/src/online/      tables and seats, the wire protocol, the lobby clients (this browser or a server)
+app/server/          the table server: the hall of tables, a table in play, the websocket switchboard
 app/src/gl/          WebGL board: scene painting (paint.ts), camera, ambiance (traffic, smoke, mist)
 app/src/components/  HUD (tracks, hand dock, player rail, merchants on the minimap), rules codex, setup, results
 app/src/i18n/        French and English dictionaries
@@ -48,6 +63,6 @@ Bug reports with a saved game are the most useful: the current game lives in `lo
 
 ## Status
 
-Local play only for now: solo against bots or hot-seat. Online multiplayer is the next big step; the engine is already free of UI concerns to make that possible.
+Solo against bots, hot-seat around one screen, and online tables against the table server. Tables are held in memory for now: accounts, tables that outlive a restart and asynchronous games are the next step.
 
 *Brass: Birmingham* is a trademark of Roxley Games. This is an independent fan project, not affiliated with or endorsed by the publisher.
