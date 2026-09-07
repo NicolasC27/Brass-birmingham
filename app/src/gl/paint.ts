@@ -382,6 +382,13 @@ function drawShapeGlyph(g: Graphics, shape: string, x: number, y: number): void 
   else g.circle(x, y, 4.4).fill(0x100d0b);
 }
 
+/** owner seal on a built card: dark ring, colour disc, the player's shape */
+function drawOwnerMedallion(g: Graphics, x: number, y: number, col: number, shape: string): void {
+  g.circle(x, y, 7).fill(0x100d0b).stroke({ width: 0.8, color: 0xf2ead6, alpha: 0.35 });
+  g.circle(x, y, 5.6).fill(col);
+  drawShapeGlyph(g, shape, x, y);
+}
+
 /**
  * Name ribbon (RibbonShape in TownNode.tsx): scroll bar with small side
  * hats and engraved small caps. Shared by towns AND merchants. Without a
@@ -904,6 +911,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           art2.visible = false;
           const colorName = game.players[tile.owner].color;
           const col = playerHex(game, tile.owner);
+          const shape = PLAYER_COLORS[colorName]?.shape ?? 'circle';
           const lv = INDUSTRIES[tile.industry][tile.level - 1];
           bakeSchematic(sv, x, y, [tile.industry]);
           /* the whole tile CARD is the ownership marker (physical game):
@@ -951,6 +959,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             vpLabel.position.set(x, y + TILE_HALF - 5.5);
             vpLabel.eventMode = 'none';
             badges.addChild(wash, rim, plate, vpText, vpLabel);
+            drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
             /* level pips, dark on the muted card */
             for (let i = 0; i < tile.level; i++) {
               extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x241d14).stroke({ width: 0.5, color: shade(col, 1.25) });
@@ -971,6 +980,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             extras.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col });
             extras.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
             extras.roundRect(x - TILE_HALF + 0.5, y - TILE_HALF + 0.5, TILE - 1, TILE - 1, 6).stroke({ width: 0.8, color: tint(col, 0.45), alpha: 0.8 });
+            /* owner medallion (colour-blind safe): the player's shape on a
+               small disc in the top-right corner — bottom-right when the
+               stock disc already sits there ('corner' layout) */
+            drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
             /* income/VP tokens riding the bottom edge — dark tokens with
                cream numerals, readable on ANY player colour. bigChips
                (board option) enlarges them. */
