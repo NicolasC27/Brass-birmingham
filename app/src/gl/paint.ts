@@ -101,9 +101,11 @@ export interface BoardScene {
 
 let cutTex: Record<IndustryType, Texture>; // transparent cutouts (empty slots)
 let builtTex: Record<IndustryType, Record<string, Texture>>; // per-owner-colour cards
-let artHalfL: Record<IndustryType, Texture>; // left-half crop (dual slots, fallback)
-let artHalfR: Record<IndustryType, Texture>; // right-half crop (fallback)
 let pairTex: Record<string, Texture>; // combined dual-industry cutouts: key "a-b" (sorted)
+let printTex: Record<IndustryType, Texture>; // engraved sepia print (empty slots)
+let printHalfL: Record<IndustryType, Texture>; // engraved left half (dual slots, fallback)
+let printHalfR: Record<IndustryType, Texture>; // engraved right half (fallback)
+let printPairTex: Record<string, Texture>; // engraved combined dual-industry prints
 let iconTex: Record<IndustryType, Texture>;
 let schematicTex: Record<IndustryType, Texture>;
 let barrelTex: Texture;
@@ -149,6 +151,38 @@ async function parchmentTexture(url: string): Promise<Texture> {
   return Texture.from(c);
 }
 
+/** Empty slots are PRINTED on the board, built works are physical cards
+ *  laid on top (official board: grey printed icons vs. player-colour tiles).
+ *  Rebake a painting as a monochrome sepia engraving — ink for the darks,
+ *  parchment for the lights — so the colour of a placed tile is the only
+ *  colour in the slot grid. Done once per texture at load. */
+function engraveTexture(tex: Texture): Texture {
+  const src = tex.source.resource as CanvasImageSource | undefined;
+  if (!src) return tex;
+  const w = tex.width;
+  const h = tex.height;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  if (!ctx) return tex;
+  ctx.drawImage(src, 0, 0, w, h);
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  /* ink #2a2118 → faded parchment #bfa982, slight gamma so mid-tones stay legible */
+  const ink = [0x2a, 0x21, 0x18];
+  const paper = [0xbf, 0xa9, 0x82];
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const lum = Math.pow((0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, 0.85);
+    d[i] = ink[0] + (paper[0] - ink[0]) * lum;
+    d[i + 1] = ink[1] + (paper[1] - ink[1]) * lum;
+    d[i + 2] = ink[2] + (paper[2] - ink[2]) * lum;
+  }
+  ctx.putImageData(img, 0, 0);
+  return Texture.from(c);
+}
+
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
@@ -183,20 +217,6 @@ export async function loadBoardAssets(): Promise<void> {
     }),
   );
   villageTex = loaded['/town-village.png'];
-  /* clean vertical halves for dual-industry slots (the old diagonal slash
-     read as a broken icon) */
-  artHalfL = Object.fromEntries(
-    industries.map((i) => {
-      const t = cutTex[i];
-      return [i, new Texture({ source: t.source, frame: new Rectangle(0, 0, t.width / 2, t.height) })];
-    }),
-  ) as Record<IndustryType, Texture>;
-  artHalfR = Object.fromEntries(
-    industries.map((i) => {
-      const t = cutTex[i];
-      return [i, new Texture({ source: t.source, frame: new Rectangle(t.width / 2, 0, t.width / 2, t.height) })];
-    }),
-  ) as Record<IndustryType, Texture>;
   /* combined dual-industry cutouts (generated: /tile-<a>-<b>-cut.png, sorted
      FILE stems) — loaded tolerantly, dual slots fall back to half-crops */
   pairTex = {};
@@ -220,6 +240,22 @@ export async function loadBoardAssets(): Promise<void> {
   schematicTex = Object.fromEntries(
     await Promise.all(industries.map(async (i) => [i, await parchmentTexture(ICON_FOR[i])])),
   ) as Record<IndustryType, Texture>;
+  /* engraved prints for the empty slots (see engraveTexture); clean
+     vertical halves for dual slots without a combined painting */
+  printTex = Object.fromEntries(industries.map((i) => [i, engraveTexture(cutTex[i])])) as Record<IndustryType, Texture>;
+  printHalfL = Object.fromEntries(
+    industries.map((i) => {
+      const t = printTex[i];
+      return [i, new Texture({ source: t.source, frame: new Rectangle(0, 0, t.width / 2, t.height) })];
+    }),
+  ) as Record<IndustryType, Texture>;
+  printHalfR = Object.fromEntries(
+    industries.map((i) => {
+      const t = printTex[i];
+      return [i, new Texture({ source: t.source, frame: new Rectangle(t.width / 2, 0, t.width / 2, t.height) })];
+    }),
+  ) as Record<IndustryType, Texture>;
+  printPairTex = Object.fromEntries(Object.entries(pairTex).map(([k, t]) => [k, engraveTexture(t)]));
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -834,8 +870,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           const lv = INDUSTRIES[tile.industry][tile.level - 1];
           bakeSchematic(sv, x, y, [tile.industry]);
           /* the whole tile CARD is the ownership marker (physical game):
-             the painting comes precomposed on the owner's colour — no halo,
-             no ring, no pennant. The dark card edge is baked into the art. */
+             the painting comes precomposed on the owner's colour. The card
+             is a physical object laid ON the printed board: soft drop
+             shadow, a darker bottom edge for thickness, and the owner's
+             colour on the rim so ownership reads at every zoom. */
+          frame.roundRect(x - TILE_HALF + 1, y - TILE_HALF + 4, TILE - 2, TILE, 7).fill({ color: 0x000000, alpha: 0.42 });
+          frame.roundRect(x - TILE_HALF, y - TILE_HALF + 2.5, TILE, TILE, 6).fill(shade(col, 0.42));
           if (tile.flipped) {
             /* flipped = muted player-colour back (soft vertical shading,
                dark VP numeral) — same printed feel as the built cards */
@@ -890,6 +930,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             sv.artBase = 1;
             art.alpha = sv.artBase;
             art.visible = true;
+            /* owner rim: colour band + dark inner hairline + light bevel */
+            extras.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col });
+            extras.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
+            extras.roundRect(x - TILE_HALF + 0.5, y - TILE_HALF + 0.5, TILE - 1, TILE - 1, 6).stroke({ width: 0.8, color: tint(col, 0.45), alpha: 0.8 });
             /* income/VP tokens riding the bottom edge — dark tokens with
                cream numerals, readable on ANY player colour. bigChips
                (board option) enlarges them. */
@@ -940,7 +984,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
              Dual slot: the generated combined painting when available
              (one cohesive composition), otherwise the half-crop split. */
           if (allows.length > 1) {
-            const combined = pairTex[pairKey(allows[0], allows[1])];
+            const combined = printPairTex[pairKey(allows[0], allows[1])];
             if (combined) {
               art.texture = combined;
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
@@ -949,11 +993,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               art2.visible = false;
             } else {
               const hw = (TILE - 8) / 2;
-              art.texture = artHalfL[allows[0]];
+              art.texture = printHalfL[allows[0]];
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
               art.width = hw;
               art.height = TILE - 8;
-              art2.texture = artHalfR[allows[1]];
+              art2.texture = printHalfR[allows[1]];
               art2.position.set(x - TILE_HALF + 4 + hw, y - TILE_HALF + 4);
               art2.width = hw;
               art2.height = TILE - 8;
@@ -961,13 +1005,13 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               frame.moveTo(x, y - TILE_HALF + 4).lineTo(x, y + TILE_HALF - 4).stroke({ width: 2, color: 0x0c0a08 });
             }
           } else {
-            art.texture = cutTex[allows[0]];
+            art.texture = printTex[allows[0]];
             art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
             art.width = TILE - 8;
             art.height = TILE - 8;
             art2.visible = false;
           }
-          sv.artBase = 1;
+          sv.artBase = 0.88;
           art.alpha = sv.artBase;
           art2.alpha = sv.artBase;
           art.visible = true;
