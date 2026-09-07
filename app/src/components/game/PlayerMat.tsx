@@ -6,26 +6,32 @@ import { useGame } from '@/game/store';
 import type { IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import { INDUSTRY_COLOR } from './townChrome';
 import { ShapeChip } from './TownInspector';
 
 /* ------------------------------------------------------------------ */
 /* The player MAT — the physical board every player keeps in front of  */
-/* them: six industry columns, the tiles still to build stacked by     */
-/* level (lowest on top, the only one you may build), with each        */
-/* level's cost, resources, era restriction and lightbulb. Any player's */
-/* mat can be opened; below the stacks, what that player already has   */
-/* on the board. Opened from the player rail or with P.                */
+/* them: the tiles still to build per industry, stacked by level       */
+/* (lowest on top, the only one you may build), with the next tile's   */
+/* cost, resources, era restriction and lightbulb. Any player's mat    */
+/* can be opened; under each stack, what that player already has on   */
+/* the board. It docks beside the player rail (top-left) as a slim     */
+/* panel, no veil, so the board stays in view and usable. Opened from  */
+/* the rail or with P.                                                 */
 /* ------------------------------------------------------------------ */
 
 const ORDER: IndustryType[] = ['cotton', 'manufacturer', 'pottery', 'brewery', 'coal', 'iron'];
+/** width of a rail chip + gap: where the mat's left edge lands */
+const RAIL_W = 236;
 
-function Column({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; playerIdx: number }) {
+function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; playerIdx: number }) {
   const t = useT();
   const game = useGame((s) => s.game)!;
   const levels = INDUSTRIES[ind];
   const left = p.stacks[ind];
-  const next = left[0];
+  const nextLevel = left[0];
+  const next = levels.find((lv) => lv.level === nextLevel);
   const total = levels.reduce((a, l) => a + l.count, 0);
   const onBoard = Object.entries(game.tiles)
     .filter(([, x]) => x.owner === playerIdx && x.industry === ind)
@@ -33,12 +39,12 @@ function Column({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; play
     .sort((a, b) => a.x.level - b.x.level);
   const color = INDUSTRY_COLOR[ind];
   return (
-    <div className="flex min-w-0 flex-col rounded-md border border-brass-700/40 bg-coal-950/60">
-      {/* column head */}
-      <div className="flex items-center gap-2 border-b border-brass-700/40 px-2.5 py-2">
+    <section className="rounded-md border border-brass-700/40 bg-coal-950/60 px-2.5 py-2">
+      {/* head: icon, name, remaining */}
+      <div className="flex items-center gap-2">
         <span
           aria-hidden
-          className="block h-5 w-5 shrink-0"
+          className="block h-4 w-4 shrink-0"
           style={{
             WebkitMaskImage: `url(${INDUSTRY_ICON[ind]})`,
             maskImage: `url(${INDUSTRY_ICON[ind]})`,
@@ -51,78 +57,69 @@ function Column({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; play
             backgroundColor: color,
           }}
         />
-        <div className="min-w-0">
-          <div className="truncate font-fell text-[13px] tracking-wide text-cream-100">{INDUSTRY_LABEL[ind]}</div>
-          <div className="font-mono text-[9.5px] text-cream-100/55">{t('game.mat.remaining', { left: left.length, total })}</div>
-        </div>
+        <span className="truncate font-fell text-[13px] tracking-wide text-cream-100">{INDUSTRY_LABEL[ind]}</span>
+        <span className="ml-auto shrink-0 font-mono text-[9.5px] text-cream-100/55">{t('game.mat.remaining', { left: left.length, total })}</span>
       </div>
-      {/* the stack, level I on top like the printed mat */}
-      <ul className="flex flex-col gap-1.5 p-2">
+      {/* the stack laid flat: one chip per level, level I first like the printed mat */}
+      <ul className="mt-1.5 flex flex-wrap gap-1">
         {levels.map((lv) => {
           const count = left.filter((l) => l === lv.level).length;
-          const isNext = next === lv.level;
+          const isNext = nextLevel === lv.level;
           const gone = count === 0;
-          const canalOnly = !lv.eras.includes('rail');
-          const railOnly = !lv.eras.includes('canal');
           return (
             <li
               key={lv.level}
+              title={`L${lv.level} · £${lv.cost} · +${lv.incomeDelta} · ${lv.vp} VP`}
               className={cn(
-                'relative rounded-[5px] border px-2 py-1.5 transition-colors',
-                isNext ? 'border-brass-400 bg-brass-500/15 shadow-[0_0_10px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 bg-coal-900/40 opacity-45' : 'border-brass-700/50 bg-coal-900/70',
+                'flex items-center gap-1 rounded-[4px] border px-1.5 py-[3px] font-mono text-[9.5px]',
+                isNext ? 'border-brass-400 bg-brass-500/15 text-cream-100 shadow-[0_0_8px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 text-cream-100/35' : 'border-brass-700/50 text-cream-100/80',
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="flex items-center gap-1.5">
-                  {/* level pips */}
-                  <span className="flex gap-[2px]">
-                    {Array.from({ length: lv.level }, (_, i) => (
-                      <span key={i} className={cn('h-[5px] w-[5px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
-                    ))}
-                  </span>
-                  <span className="font-mono text-[10px] font-bold text-cream-100">L{lv.level}</span>
-                </span>
-                <span className={cn('rounded-sm px-1 font-mono text-[9.5px] font-bold leading-[14px]', gone ? 'text-cream-100/40' : 'bg-coal-950/80 text-brass-400')}>
-                  {gone ? t('game.mat.gone') : `×${count}`}
-                </span>
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] text-cream-100/70">
-                <span className="text-brass-400">{t('game.mat.costs', { cost: lv.cost })}</span>
-                {(lv.coal > 0 || lv.iron > 0) && <span>{t('game.mat.needs', { coal: lv.coal, iron: lv.iron })}</span>}
-                <span className="text-cream-100/85">+{lv.incomeDelta} · {lv.vp} VP</span>
-                {lv.beerToSell > 0 && <span>{t('game.mat.beer', { n: lv.beerToSell })}</span>}
-              </div>
-              {(canalOnly || railOnly || lv.noDevelop || isNext) && (
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {isNext && <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>}
-                  {canalOnly && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
-                  {railOnly && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
-                  {lv.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
-                </div>
-              )}
+              <span className="flex gap-[2px]">
+                {Array.from({ length: lv.level }, (_, i) => (
+                  <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
+                ))}
+              </span>
+              <span className="font-bold">{gone ? '—' : `×${count}`}</span>
             </li>
           );
         })}
       </ul>
+      {/* the next tile to build: what it costs and gives */}
+      {next ? (
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] text-cream-100/70">
+          <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
+          <span className="font-bold text-cream-100">L{next.level}</span>
+          <span className="text-brass-400">{t('game.mat.costs', { cost: next.cost })}</span>
+          {(next.coal > 0 || next.iron > 0) && <span>{t('game.mat.needs', { coal: next.coal, iron: next.iron })}</span>}
+          <span className="text-cream-100/85">
+            +{next.incomeDelta} · {next.vp} VP
+          </span>
+          {next.beerToSell > 0 && <span>{t('game.mat.beer', { n: next.beerToSell })}</span>}
+          {!next.eras.includes('rail') && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
+          {!next.eras.includes('canal') && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
+          {next.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
+        </div>
+      ) : (
+        <div className="mt-1.5 font-mono text-[9.5px] text-cream-100/40">{t('game.mat.gone')}</div>
+      )}
       {/* what this player already has on the board for this industry */}
-      <div className="mt-auto border-t border-brass-700/40 px-2.5 py-2">
-        <div className="font-sans text-[8.5px] font-semibold uppercase tracking-[0.14em] text-cream-100/45">{t('game.mat.onBoard')}</div>
-        {onBoard.length === 0 ? (
-          <div className="mt-0.5 font-mono text-[9.5px] text-cream-100/35">{t('game.mat.nothingBuilt')}</div>
-        ) : (
-          <ul className="mt-1 flex flex-col gap-0.5">
-            {onBoard.map(({ key, x, town }) => (
-              <li key={key} className="flex items-center justify-between gap-1 font-mono text-[9.5px]">
-                <span className="truncate text-cream-100/80">
-                  L{x.level} · {town}
-                </span>
-                <span className={x.flipped ? 'text-brass-400' : 'text-cream-100/50'}>{x.flipped ? t('game.mat.flipped') : x.cubes > 0 ? t('game.mat.stock', { n: x.cubes }) : '—'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+      {onBoard.length > 0 && (
+        <ul className="mt-1.5 flex flex-wrap gap-1 border-t border-brass-700/30 pt-1.5">
+          {onBoard.map(({ key, x, town }) => (
+            <li
+              key={key}
+              className={cn('rounded-[4px] border px-1.5 py-[2px] font-mono text-[9px]', x.flipped ? 'border-brass-500/60 text-brass-400' : 'border-brass-700/40 text-cream-100/75')}
+              title={x.flipped ? t('game.mat.flipped') : x.cubes > 0 ? t('game.mat.stock', { n: x.cubes }) : undefined}
+            >
+              L{x.level} {town}
+              {!x.flipped && x.cubes > 0 && <span className="text-cream-100/45"> · {x.cubes}</span>}
+              {x.flipped && <span> ✓</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
@@ -132,9 +129,12 @@ export default function PlayerMat() {
   const matPlayer = useGame((s) => s.matPlayer);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
+  const insets = hudInsets(useBoardOptions());
 
   useEffect(() => {
     if (matPlayer === null) return;
+    /* one left-hand panel at a time: the mat takes the settings' place */
+    setBoardOption('settingsOpen', false);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeMat();
     };
@@ -147,82 +147,78 @@ export default function PlayerMat() {
       {game && matPlayer !== null && (
         <motion.div
           key="mat"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.18 }}
-          className="fixed inset-0 z-[78] flex items-center justify-center bg-coal-950/55 p-4 backdrop-blur-[2px]"
-          onClick={closeMat}
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          role="dialog"
+          aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
+          className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
+          style={{ left: insets.left + RAIL_W, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + RAIL_W + 12}px))` }}
         >
-          <motion.div
-            initial={{ y: 18, scale: 0.98 }}
-            animate={{ y: 0, scale: 1 }}
-            exit={{ y: 18, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            role="dialog"
-            aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
-            onClick={(e) => e.stopPropagation()}
-            className="plate relative max-h-[90vh] w-[min(1120px,96vw)] overflow-y-auto p-4 shadow-e4"
-          >
-            {/* player tabs */}
-            <div className="flex flex-wrap items-center gap-2">
-              {game.players.map((pl, i) => {
-                const col = PLAYER_COLORS[pl.color]?.hex ?? '#C9A45C';
-                const active = i === matPlayer;
-                return (
-                  <button
-                    key={i}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => openMat(i)}
-                    className={cn(
-                      'flex items-center gap-2 rounded-md border px-2.5 py-1.5 font-fell text-[13px] tracking-wide transition-colors',
-                      active ? 'border-brass-400 bg-brass-500/15 text-cream-100' : 'border-brass-700/50 text-cream-100/70 hover:border-brass-500 hover:text-cream-100',
-                    )}
-                    style={active ? { boxShadow: `inset 0 0 0 1px ${col}55` } : undefined}
-                  >
-                    <ShapeChip color={pl.color} size={11} />
-                    {pl.name}
-                    {i === game.current && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
-                  </button>
-                );
-              })}
-              <button
-                type="button"
-                onClick={closeMat}
-                aria-label={t('game.mat.close')}
-                className="ml-auto flex h-7 w-7 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            {(() => {
-              const p = game.players[matPlayer];
-              const links = Object.values(game.links).filter((l) => l.owner === matPlayer).length;
+          {/* player tabs */}
+          <div className="flex flex-wrap items-center gap-1.5 border-b border-brass-700/40 px-3 py-2">
+            {game.players.map((pl, i) => {
+              const col = PLAYER_COLORS[pl.color]?.hex ?? '#C9A45C';
+              const active = i === matPlayer;
               return (
-                <>
-                  {/* the counting-house line */}
-                  <div className="mt-3 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-brass-700/40 pb-3">
-                    <h2 className="font-fell text-xl tracking-wide text-brass-400">{t('game.mat.title', { name: p.name })}</h2>
-                    <span className="font-mono text-[11px] text-cream-100/85">£{p.money}</span>
-                    <span className="font-mono text-[11px] text-cream-100/85">{t('game.mat.income', { lvl: incomeLevel(p.income), pay: fmtPay(INCOME_PAYOUT[p.income]) })}</span>
-                    <span className="font-mono text-[11px] text-cream-100/85">{p.vp} VP</span>
-                    <span className="font-mono text-[11px] text-cream-100/60">{t('game.mat.links', { n: links })}</span>
-                    <span className="font-mono text-[11px] text-cream-100/60">{t('game.mat.loans', { n: p.loans })}</span>
-                    <span className="font-mono text-[11px] text-cream-100/60">{t('game.mat.hand', { n: p.hand.length })}</span>
-                    <span className="ml-auto font-sans text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.mat.keyHint')}</span>
-                  </div>
-                  {/* six columns, like the printed mat */}
-                  <div className="mt-3 grid grid-cols-3 gap-3 lg:grid-cols-6">
-                    {ORDER.map((ind) => (
-                      <Column key={ind} ind={ind} p={p} playerIdx={matPlayer} />
-                    ))}
-                  </div>
-                </>
+                <button
+                  key={i}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => openMat(i)}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-md border px-2 py-1 font-fell text-[12px] tracking-wide transition-colors',
+                    active ? 'border-brass-400 bg-brass-500/15 text-cream-100' : 'border-brass-700/50 text-cream-100/70 hover:border-brass-500 hover:text-cream-100',
+                  )}
+                  style={active ? { boxShadow: `inset 0 0 0 1px ${col}55` } : undefined}
+                >
+                  <ShapeChip color={pl.color} size={10} />
+                  {pl.name}
+                </button>
               );
-            })()}
-          </motion.div>
+            })}
+            <button
+              type="button"
+              onClick={closeMat}
+              aria-label={t('game.mat.close')}
+              className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+
+          {(() => {
+            const p = game.players[matPlayer];
+            const links = Object.values(game.links).filter((l) => l.owner === matPlayer).length;
+            const stat = (v: string, dim = false) => <span className={cn('font-mono text-[10.5px]', dim ? 'text-cream-100/55' : 'text-cream-100/90')}>{v}</span>;
+            return (
+              <>
+                {/* the counting-house line */}
+                <div className="border-b border-brass-700/40 px-3 py-2">
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-fell text-[15px] tracking-wide text-brass-400">{t('game.mat.title', { name: p.name })}</h2>
+                    {matPlayer === game.current && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
+                    <span className="ml-auto font-sans text-[8.5px] uppercase tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint')}</span>
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+                    {stat(`£${p.money}`)}
+                    {stat(t('game.mat.income', { lvl: incomeLevel(p.income), pay: fmtPay(INCOME_PAYOUT[p.income]) }))}
+                    {stat(`${p.vp} VP`)}
+                    {stat(t('game.mat.links', { n: links }), true)}
+                    {stat(t('game.mat.loans', { n: p.loans }), true)}
+                    {stat(t('game.mat.hand', { n: p.hand.length }), true)}
+                  </div>
+                </div>
+                {/* six industries, stacked like the printed mat read top to bottom */}
+                <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-2">
+                  {ORDER.map((ind) => (
+                    <IndustryBlock key={ind} ind={ind} p={p} playerIdx={matPlayer} />
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </motion.div>
       )}
     </AnimatePresence>
