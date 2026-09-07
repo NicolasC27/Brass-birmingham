@@ -36,6 +36,10 @@ npm run dev
 
 `PORT`, `HOST` and `BRASSWORKS_DB` (the register file, `brassworks.db` by default) configure the server.
 
+An account is opened with an e-mail address, and the tables open once the address has answered its letter. The post goes through [Resend](https://resend.com) when `RESEND_API_KEY` is set (`MAIL_FROM` is the sender, `APP_URL` the address the links point at — the app, not the server). Without a key the letters are printed on the server's console and kept at `http://localhost:8787/letters`, enough for a house on one machine: follow the link by hand.
+
+Signed in, the desk (`/desk`) lists your tables with whose move it is first, the invitations waiting for you, your past games and what they add up to; the record (`/profile`) holds your address, a motto, a favourite colour and the password. A table is a four-letter code: open one, hand the code around or ask a player by name from the room, and the letter lands on their desk.
+
 The server holds the whole truth. It applies every action through the engine, keeps the log, plays the mechanical seats, burns the turn candle, and sends each player a state with the other hands, the deck and the seed struck out. A seat belongs to an account: the office signs you in and hands the browser a session token, so a reload — or a server restart — gives you your chair, your hand and your turn back. Accounts, tables and logs live in SQLite (the one that ships with Node: no dependency, no native build); a game is stored as its seed and its moves, and replaying them is how a table comes back.
 
 Over a wire that is not `wss://`, a password crosses in clear: put the server behind TLS before letting anyone but yourself sign in.
