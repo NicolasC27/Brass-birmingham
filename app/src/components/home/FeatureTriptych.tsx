@@ -11,9 +11,9 @@ gsap.registerPlugin(ScrollTrigger);
 /* ---------------- Row 1 visual: miniature coal/iron market tray ---------------- */
 function MarketTrayMini() {
   const t = useT();
-  const prices = ["£1", "£2", "£3", "£4", "£5", "£6", "£7", "£8"];
-  const coalCubes = [2, 3, 4, 5];
-  const ironCubes = [3, 4, 5];
+  const prices = ["£1", "£2", "£3", "£4", "£5", "£6", "£7"];
+  const coalCubes = [1, 2, 3, 4, 5, 6];
+  const ironCubes = [2, 3, 4];
   return (
     <div className="space-y-4">
       {(
@@ -23,11 +23,11 @@ function MarketTrayMini() {
         ] as const
       ).map((tray, ti) => (
         <div key={tray.name} className="flex items-center gap-3">
-          <span className="w-12 font-fell text-sm uppercase tracking-[0.08em] text-cream-100/70">
+          <span className="w-16 shrink-0 font-fell text-[12px] uppercase tracking-[0.06em] text-cream-100/70">
             {tray.name}
           </span>
           <div className="flex flex-1 items-center gap-1.5">
-            {prices.map((p, i) => {
+            {prices.slice(0, ti === 0 ? 7 : 5).map((p, i) => {
               const filled = tray.cubes.includes(i);
               const current = i === (ti === 0 ? 1 : 2);
               return (
@@ -72,13 +72,13 @@ function EraFriezes() {
         <img
           src="/era-canal-banner.webp"
           alt={t("home.triptych.eras.canalAlt")}
-          className="h-36 w-full object-cover transition-all group-hover/frieze:opacity-0"
+          className="h-28 w-full object-cover transition-all group-hover/frieze:opacity-0"
           style={{ transitionDuration: "600ms" }}
         />
         <img
           src="/era-rail-banner.webp"
           alt={t("home.triptych.eras.railAlt")}
-          className="absolute inset-0 h-36 w-full translate-x-2 object-cover opacity-0 transition-all group-hover/frieze:translate-x-0 group-hover/frieze:opacity-100"
+          className="absolute inset-0 h-28 w-full translate-x-2 object-cover opacity-0 transition-all group-hover/frieze:translate-x-0 group-hover/frieze:opacity-100"
           style={{ transitionDuration: "600ms" }}
         />
       </div>
@@ -109,7 +109,7 @@ function MiniMapTrace() {
   return (
     <svg
       viewBox="0 0 360 200"
-      className="h-44 w-full rounded-sm border border-brass-700/50 bg-cream-100"
+      className="h-40 w-full rounded-sm border border-brass-700/50 bg-cream-100"
       role="img"
       aria-label={t("home.triptych.map.aria")}
     >
@@ -171,54 +171,24 @@ function MiniMapTrace() {
   );
 }
 
-/** Section 3 — Feature Triptych ("Inside the Box", home.md §3). */
+/** Inside the box — three panels, one glance: what makes the game tick. */
 export default function FeatureTriptych() {
   const root = useRef<HTMLElement>(null);
   const t = useT();
 
-  /* ---------------- Rows ---------------- */
-  const ROWS = [
-    {
-      eyebrow: t("home.triptych.rows.market.eyebrow"),
-      title: t("home.triptych.rows.market.title"),
-      body: t("home.triptych.rows.market.body"),
-      link: { to: "/rules#market", label: t("home.triptych.learnMore") },
-      visual: <MarketTrayMini />,
-    },
-    {
-      eyebrow: t("home.triptych.rows.eras.eyebrow"),
-      title: t("home.triptych.rows.eras.title"),
-      body: t("home.triptych.rows.eras.body"),
-      link: { to: "/rules#eras", label: t("home.triptych.learnMore") },
-      visual: <EraFriezes />,
-    },
-    {
-      eyebrow: t("home.triptych.rows.supply.eyebrow"),
-      title: t("home.triptych.rows.supply.title"),
-      body: t("home.triptych.rows.supply.body"),
-      link: { to: "/rules#supply", label: t("home.triptych.learnMore") },
-      visual: <MiniMapTrace />,
-    },
-  ];
+  const PANELS = [
+    { key: "market", to: "/rules#market", visual: <MarketTrayMini /> },
+    { key: "eras", to: "/rules#eras", visual: <EraFriezes /> },
+    { key: "supply", to: "/rules#supply", visual: <MiniMapTrace /> },
+  ] as const;
 
   useGSAP(
     () => {
-      gsap.utils.toArray<HTMLElement>(".triptych-row").forEach((row) => {
-        const fromLeft = row.dataset.side === "left";
-        const tl = gsap.timeline({
-          scrollTrigger: { trigger: row, start: "top 70%" },
-        });
-        tl.fromTo(
-          row.querySelector(".triptych-visual"),
-          { opacity: 0, x: fromLeft ? -60 : 60, clipPath: fromLeft ? "inset(0 100% 0 0)" : "inset(0 0 0 100%)" },
-          { opacity: 1, x: 0, clipPath: "inset(0 0% 0 0%)", duration: 0.8, ease: "power3.out" },
-        ).fromTo(
-          row.querySelectorAll(".triptych-text > *"),
-          { opacity: 0, y: 24 },
-          { opacity: 1, y: 0, duration: 0.55, stagger: 0.09, ease: "power3.out" },
-          "-=0.45",
-        );
-      });
+      gsap.fromTo(
+        ".box-panel",
+        { opacity: 0, y: 28 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power3.out", stagger: 0.1, scrollTrigger: { trigger: root.current, start: "top 80%" } },
+      );
     },
     { scope: root },
   );
@@ -226,46 +196,30 @@ export default function FeatureTriptych() {
   return (
     <section ref={root} className="relative bg-coal-950" aria-label={t("home.triptych.aria")}>
       <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 opacity-[0.04]" />
-      <div className="relative mx-auto max-w-[1200px] space-y-20 px-6 py-24">
-        <header className="text-center">
-          <p className="eyebrow">{t("home.triptych.eyebrow")}</p>
-          <h2 className="mt-3 font-display text-[34px] font-bold text-cream-100">
-            {t("home.triptych.title")}
-          </h2>
-          <div className="divider-brass mt-6 w-64" />
+      <div className="relative mx-auto max-w-[1200px] px-6 py-16">
+        <header className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+          <div>
+            <p className="eyebrow">{t("home.triptych.eyebrow")}</p>
+            <h2 className="mt-1.5 font-display text-[26px] font-bold text-cream-100">{t("home.triptych.title")}</h2>
+          </div>
+          <Link to="/rules" className="font-sans text-[12px] font-semibold uppercase tracking-[0.12em] text-brass-400 transition-colors hover:text-brass-500">
+            {t("home.triptych.allRules")}
+          </Link>
         </header>
 
-        {ROWS.map((row, i) => {
-          const imageLeft = i % 2 === 0;
-          return (
-            <div
-              key={row.eyebrow}
-              data-side={imageLeft ? "left" : "right"}
-              className="triptych-row grid items-center gap-10 md:grid-cols-2"
-            >
-              <div className={cn("triptych-visual group", !imageLeft && "md:order-2")}>
-                <div className="rounded-md border border-brass-700/60 bg-coal-800 p-5 shadow-e2">
-                  {row.visual}
-                </div>
-              </div>
-              <div className={cn("triptych-text", !imageLeft && "md:order-1")}>
-                <p className="eyebrow">{row.eyebrow}</p>
-                <h3 className="mt-3 font-display text-[26px] font-bold text-cream-100">
-                  {row.title}
-                </h3>
-                <p className="mt-3 max-w-md text-[15px] leading-[1.6] text-cream-100/85">
-                  {row.body}
-                </p>
-                <Link
-                  to={row.link.to}
-                  className="mt-4 inline-block font-sans text-sm font-semibold text-brass-400 transition-colors hover:text-brass-500"
-                >
-                  {row.link.label}
-                </Link>
-              </div>
-            </div>
-          );
-        })}
+        <div className="mt-8 grid gap-5 md:grid-cols-3">
+          {PANELS.map((p) => (
+            <article key={p.key} className="box-panel group flex flex-col rounded-md border border-brass-700/50 bg-coal-800 p-4 opacity-0 shadow-e2 transition-colors hover:border-brass-500">
+              <div className="flex h-44 flex-col justify-center">{p.visual}</div>
+              <p className="eyebrow mt-4 !text-[10px]">{t(`home.triptych.rows.${p.key}.eyebrow`)}</p>
+              <h3 className="mt-1.5 font-display text-[19px] font-bold text-cream-100">{t(`home.triptych.rows.${p.key}.title`)}</h3>
+              <p className="mt-2 flex-1 text-[13.5px] leading-[1.55] text-cream-100/80">{t(`home.triptych.rows.${p.key}.body`)}</p>
+              <Link to={p.to} className="mt-3 inline-block w-fit font-sans text-[12.5px] font-semibold text-brass-400 transition-colors hover:text-brass-500">
+                {t("home.triptych.learnMore")}
+              </Link>
+            </article>
+          ))}
+        </div>
       </div>
     </section>
   );

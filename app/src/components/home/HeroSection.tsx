@@ -1,85 +1,62 @@
-import { useRef } from "react";
-import { Link } from "react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
-import { ChevronDown } from "lucide-react";
+import { BookOpen, Play, RotateCcw, Users, Wifi } from "lucide-react";
 import LogoMark from "@/components/LogoMark";
+import ShutterWipe from "@/components/setup/ShutterWipe";
+import { quickSetup, readResume, startQuickGame } from "@/game/quickplay";
 import { useT } from "@/i18n";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const WORDMARK = "BRASSWORKS".split("");
 
-/** Read any locally saved game (design.md §7.7 — autosave + Resume chip). */
-function readSave(): { era: "rail" | "canal"; round: number } | null {
-  try {
-    const raw =
-      localStorage.getItem("brassworks-save") ??
-      localStorage.getItem("brassworks:save");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return {
-      era: parsed?.era === "rail" ? "rail" : "canal",
-      round: typeof parsed?.round === "number" ? parsed.round : 1,
-    };
-  } catch {
-    return { era: "canal", round: 1 };
-  }
-}
-
 /**
- * Section 1 — Hero Diorama ("Open the Box", home.md §1).
+ * The title screen — one viewport, and the board one click away.
  * Full-bleed: opts out of the Layout nav offset with -mt-14 and re-pads itself.
  */
 export default function HeroSection() {
   const root = useRef<HTMLElement>(null);
-  const save = readSave();
+  const navigate = useNavigate();
   const t = useT();
+  const [starting, setStarting] = useState(false);
+  const [save] = useState(readResume);
+  const rivals = quickSetup()
+    .players.filter((p) => p.type === "bot")
+    .map((p) => p.name);
+
+  /* play now: dress the table and drop the shutter; the board opens behind it */
+  const play = useCallback(() => {
+    if (starting) return;
+    startQuickGame();
+    setStarting(true);
+  }, [starting]);
+
+  /* Enter plays (or resumes) — a title screen should answer the keyboard */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
+      if (save) navigate("/game");
+      else play();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [save, play, navigate]);
 
   useGSAP(
     () => {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const d = (n: number) => (reduced ? 0.15 : n);
 
-      // Load sequence (~1.4s, 120ms stagger): black lift → logo → letters → tagline → CTAs
+      // Load sequence: black lift → logo → letters → tagline → the deck
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      tl.to(".hero-blackout", { opacity: 0, duration: reduced ? 0.15 : 0.5 })
-        .fromTo(
-          ".hero-logo",
-          { opacity: 0, scale: 0.85 },
-          { opacity: 1, scale: 1, duration: reduced ? 0.15 : 0.4 },
-          "-=0.15",
-        )
-        .fromTo(
-          ".hero-letter",
-          { opacity: 0, y: 24 },
-          { opacity: 1, y: 0, duration: reduced ? 0.15 : 0.5, stagger: 0.045 },
-          "-=0.1",
-        )
-        .fromTo(
-          [".hero-eyebrow", ".hero-tagline"],
-          { opacity: 0, y: 14 },
-          { opacity: 1, y: 0, duration: reduced ? 0.15 : 0.4, stagger: 0.12 },
-          "-=0.25",
-        )
-        .fromTo(
-          [".hero-resume", ".hero-ctas", ".hero-scrollhint"],
-          { opacity: 0, y: 18 },
-          { opacity: 1, y: 0, duration: reduced ? 0.15 : 0.45, stagger: 0.12, ease: "back.out(1.6)" },
-          "-=0.1",
-        );
-
-      // Parallax: diorama at ~0.35x scroll speed, content fades out by 60% viewport
-      gsap.to(".hero-bg", {
-        yPercent: 22,
-        ease: "none",
-        scrollTrigger: { trigger: root.current, start: "top top", end: "bottom top", scrub: true },
-      });
-      gsap.to(".hero-content", {
-        opacity: 0,
-        ease: "none",
-        scrollTrigger: { trigger: root.current, start: "top top", end: "60% top", scrub: true },
-      });
+      tl.to(".hero-blackout", { opacity: 0, duration: d(0.5) })
+        .fromTo(".hero-logo", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: d(0.4) }, "-=0.15")
+        .fromTo(".hero-letter", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: d(0.5), stagger: 0.04 }, "-=0.1")
+        .fromTo([".hero-eyebrow", ".hero-tagline"], { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: d(0.4), stagger: 0.1 }, "-=0.25")
+        .fromTo(".hero-deck", { opacity: 0, y: 22 }, { opacity: 1, y: 0, duration: d(0.45), ease: "back.out(1.4)" }, "-=0.15")
+        .fromTo(".hero-facts", { opacity: 0 }, { opacity: 1, duration: d(0.4) }, "-=0.2");
     },
     { scope: root },
   );
@@ -90,25 +67,12 @@ export default function HeroSection() {
       className="relative -mt-14 flex min-h-[100svh] items-center justify-center overflow-hidden"
       aria-label={t("home.hero.ariaTitle")}
     >
-      {/* Diorama background, darkened 25% */}
-      <div className="hero-bg absolute inset-[-12%] will-change-transform">
-        <img
-          src="/hero-diorama.webp"
-          alt={t("home.hero.dioramaAlt")}
-          className="h-full w-full object-cover brightness-75"
-        />
+      {/* Diorama background, darkened, under a soot vignette */}
+      <div className="hero-bg absolute inset-0">
+        <img src="/hero-diorama.webp" alt={t("home.hero.dioramaAlt")} className="h-full w-full object-cover brightness-[0.7]" />
       </div>
-      {/* Soot vignette (white-centre matte, multiply blend) */}
-      <img
-        src="/hero-vignette.webp"
-        alt=""
-        aria-hidden
-        className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-multiply"
-      />
-      {/* Coal soot atmosphere at 8% */}
+      <img src="/hero-vignette.webp" alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-multiply" />
       <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.08]" />
-
-      {/* Ambient smoke drift (single ambient effect) */}
       <div
         aria-hidden
         className="animate-smoke-drift-a pointer-events-none absolute left-[8%] top-[18%] h-[46vh] w-[34vw] rounded-full opacity-25 blur-3xl"
@@ -121,20 +85,14 @@ export default function HeroSection() {
       />
 
       {/* Content column */}
-      <div className="hero-content relative z-10 mx-auto flex max-w-[900px] flex-col items-center px-6 pb-24 pt-28 text-center">
+      <div className="hero-content relative z-10 mx-auto flex w-full max-w-[760px] flex-col items-center px-6 pb-14 pt-24 text-center">
         <div className="hero-logo opacity-0">
-          <LogoMark size={64} />
+          <LogoMark size={52} />
         </div>
 
-        <p className="hero-eyebrow mt-7 font-sans text-xs font-semibold uppercase tracking-[0.3em] text-brass-400 opacity-0">
-          {t("home.hero.eyebrow")}
-        </p>
+        <p className="hero-eyebrow mt-5 font-sans text-[11px] font-semibold uppercase tracking-[0.3em] text-brass-400 opacity-0">{t("home.hero.eyebrow")}</p>
 
-        <h1
-          className="mt-3 font-display font-black leading-none tracking-[-0.01em]"
-          style={{ fontSize: "clamp(56px, 9vw, 96px)" }}
-          aria-label={t("home.hero.wordmark")}
-        >
+        <h1 className="mt-2 font-display font-black leading-none tracking-[-0.01em]" style={{ fontSize: "clamp(52px, 8vw, 84px)" }} aria-label={t("home.hero.wordmark")}>
           {WORDMARK.map((ch, i) => (
             <span key={i} aria-hidden className="hero-letter wordmark-gradient inline-block opacity-0">
               {ch}
@@ -142,55 +100,81 @@ export default function HeroSection() {
           ))}
         </h1>
 
-        <p className="hero-tagline mt-5 max-w-xl font-fell text-[22px] leading-snug text-cream-100/90 opacity-0">
-          {t("home.hero.tagline")}
-        </p>
+        <p className="hero-tagline mt-3 max-w-lg font-fell text-[19px] leading-snug text-cream-100/85 opacity-0">{t("home.hero.tagline")}</p>
 
-        {save && (
-          <Link
-            to="/game"
-            className="hero-resume mt-7 inline-flex items-center gap-2.5 rounded-full border border-brass-500/70 bg-coal-900/70 px-4 py-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-brass-400 opacity-0 backdrop-blur-sm transition-colors hover:border-brass-400 hover:text-brass-400"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brass-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-brass-500" />
-            </span>
-            {t("home.hero.resume", {
-              era: save.era === "rail" ? t("home.hero.eraRail") : t("home.hero.eraCanal"),
-              round: save.round,
-            })}
-          </Link>
-        )}
+        {/* The command deck: play now, or pick your table */}
+        <div className="hero-deck mt-8 w-full max-w-[560px] rounded-xl border border-brass-700/50 bg-coal-950/70 p-4 opacity-0 shadow-e3 backdrop-blur-md">
+          {save ? (
+            <>
+              <Link
+                to="/game"
+                className="btn-strike w-full !rounded-lg !font-display !text-[20px] !font-bold normal-case !tracking-normal"
+                style={{ minHeight: 60 }}
+              >
+                <Play className="h-5 w-5 fill-current" aria-hidden />
+                {t("home.hero.resume", { era: save.era === "rail" ? t("home.hero.eraRail") : t("home.hero.eraCanal"), round: save.round })}
+              </Link>
+              <button
+                type="button"
+                onClick={play}
+                className="mt-2 inline-flex items-center gap-1.5 font-sans text-[12px] font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400"
+              >
+                <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+                {t("home.hero.quickNew")}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={play}
+                disabled={starting}
+                className="btn-strike w-full !rounded-lg !font-display !text-[22px] !font-bold normal-case !tracking-normal"
+                style={{ minHeight: 64 }}
+              >
+                <Play className="h-5 w-5 fill-current" aria-hidden />
+                {t("home.hero.quick")}
+              </button>
+              <p className="mt-2.5 font-sans text-[12px] text-cream-100/60">{t("home.hero.quickNote", { a: rivals[0] ?? "", b: rivals[1] ?? "" })}</p>
+            </>
+          )}
 
-        <div className="hero-ctas mt-8 flex flex-col items-center gap-4 opacity-0 sm:flex-row">
-          <Link
-            to="/setup"
-            className="btn-strike w-full sm:w-auto"
-            style={{ minHeight: 52, fontSize: 18, padding: "14px 34px", letterSpacing: "0.06em" }}
-          >
-            {t("home.hero.ctaSetup")}
-          </Link>
-          <Link
-            to="/rules"
-            className="btn-ledger w-full sm:w-auto"
-            style={{ minHeight: 52, fontSize: 15, padding: "14px 30px" }}
-          >
-            {t("home.hero.ctaRules")}
-          </Link>
+          <div className="mt-4 grid grid-cols-3 gap-2">
+            <Link to="/setup" className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
+              <Users className="h-3.5 w-3.5" aria-hidden />
+              {t("home.hero.ctaSetup")}
+            </Link>
+            <Link to="/online" className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
+              <Wifi className="h-3.5 w-3.5" aria-hidden />
+              {t("home.hero.ctaOnline")}
+            </Link>
+            <Link to="/rules" className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
+              <BookOpen className="h-3.5 w-3.5" aria-hidden />
+              {t("home.hero.ctaRules")}
+            </Link>
+          </div>
+
+          <p className="mt-3 font-sans text-[10px] uppercase tracking-[0.16em] text-cream-100/40">
+            <kbd className="mr-1.5 rounded border border-brass-700/60 bg-coal-900 px-1.5 py-0.5 font-mono text-[10px] normal-case tracking-normal text-brass-400">↵</kbd>
+            {t(save ? "home.hero.enterResume" : "home.hero.enterPlay")}
+          </p>
         </div>
-      </div>
 
-      {/* Bottom brass rule + scroll hint */}
-      <div className="hero-scrollhint absolute inset-x-0 bottom-0 z-10 flex flex-col items-center gap-2 pb-5 opacity-0">
-        <div className="divider-brass w-56" />
-        <span className="mt-2 font-sans text-[11px] font-semibold uppercase tracking-[0.24em] text-cream-100/60">
-          {t("home.hero.scrollHint")}
-        </span>
-        <ChevronDown className="animate-chevron-drift h-4 w-4 text-brass-500" aria-hidden />
+        {/* what kind of game this is, in one line */}
+        <ul className="hero-facts mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 font-sans text-[11px] font-semibold uppercase tracking-[0.16em] text-cream-100/55 opacity-0">
+          {(["players", "time", "solo", "online"] as const).map((k) => (
+            <li key={k} className="flex items-center gap-2">
+              <span aria-hidden className="h-1 w-1 rounded-full bg-brass-500" />
+              {t(`home.hero.facts.${k}`)}
+            </li>
+          ))}
+        </ul>
       </div>
 
       {/* Load blackout */}
       <div aria-hidden className="hero-blackout pointer-events-none absolute inset-0 z-20 bg-coal-950" />
+
+      <ShutterWipe active={starting} onDone={() => navigate("/game")} />
     </section>
   );
 }

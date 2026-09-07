@@ -3,16 +3,13 @@ import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import HeroSection from "@/components/home/HeroSection";
-import ModeSelect from "@/components/home/ModeSelect";
 import FeatureTriptych from "@/components/home/FeatureTriptych";
-import EraStrip from "@/components/home/EraStrip";
-import ClosingCTA from "@/components/home/ClosingCTA";
 
 gsap.registerPlugin(ScrollTrigger);
 
 /**
- * Home / Title screen (home.md) — Lenis smooth scroll + GSAP ScrollTrigger.
- * All motion on this page is GSAP-driven (library isolation per react-dev.md).
+ * Home / Title screen: the deck to play from, then one glance inside the box.
+ * Lenis smooth scroll + GSAP ScrollTrigger; all motion here is GSAP-driven.
  */
 export default function Home() {
   useEffect(() => {
@@ -34,10 +31,7 @@ export default function Home() {
   return (
     <>
       <HeroSection />
-      <ModeSelect />
       <FeatureTriptych />
-      <EraStrip />
-      <ClosingCTA />
     </>
   );
 }
