@@ -41,6 +41,8 @@ export interface BoardOptions {
   mapStyle: MapStyle;
   /** boats and trains on built links */
   traffic: TrafficLevel;
+  /** player mat spread wide (six columns) instead of the slim docked panel */
+  matWide: boolean;
   settingsOpen: boolean;
 }
 
@@ -60,6 +62,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   incomeSide: 'brassworks.incomeSide',
   mapStyle: 'brassworks.mapStyle',
   traffic: 'brassworks.traffic',
+  matWide: 'brassworks.matWide',
 };
 
 const read = <K extends keyof typeof KEYS>(k: K, fallback: BoardOptions[K]): BoardOptions[K] => {
@@ -90,6 +93,7 @@ let state: BoardOptions = {
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),
   traffic: read('traffic', 'light'),
+  matWide: read('matWide', false),
   settingsOpen: false,
 };
 

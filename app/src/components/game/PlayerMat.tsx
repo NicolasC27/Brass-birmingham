@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Maximize2, Minimize2, X } from 'lucide-react';
 import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
 import { useGame } from '@/game/store';
 import type { IndustryType, PlayerState } from '@/game/types';
@@ -129,7 +129,9 @@ export default function PlayerMat() {
   const matPlayer = useGame((s) => s.matPlayer);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
-  const insets = hudInsets(useBoardOptions());
+  const opts = useBoardOptions();
+  const insets = hudInsets(opts);
+  const wide = opts.matWide;
 
   useEffect(() => {
     if (matPlayer === null) return;
@@ -154,7 +156,11 @@ export default function PlayerMat() {
           role="dialog"
           aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
           className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
-          style={{ left: insets.left + RAIL_W, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + RAIL_W + 12}px))` }}
+          style={
+            wide
+              ? { left: insets.left + RAIL_W, right: 12, top: insets.top, maxHeight: `calc(100vh - ${insets.top + insets.bottom + 8}px)` }
+              : { left: insets.left + RAIL_W, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + RAIL_W + 12}px))` }
+          }
         >
           {/* player tabs */}
           <div className="flex flex-wrap items-center gap-1.5 border-b border-brass-700/40 px-3 py-2">
@@ -178,11 +184,21 @@ export default function PlayerMat() {
                 </button>
               );
             })}
+            {/* slim docked panel ↔ spread wide over the board (remembered) */}
+            <button
+              type="button"
+              onClick={() => setBoardOption('matWide', !wide)}
+              aria-label={wide ? t('game.mat.shrink') : t('game.mat.expand')}
+              title={wide ? t('game.mat.shrink') : t('game.mat.expand')}
+              className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
+            >
+              {wide ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
+            </button>
             <button
               type="button"
               onClick={closeMat}
               aria-label={t('game.mat.close')}
-              className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
             >
               <X className="h-3 w-3" />
             </button>
@@ -211,7 +227,7 @@ export default function PlayerMat() {
                   </div>
                 </div>
                 {/* six industries, stacked like the printed mat read top to bottom */}
-                <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto px-3 py-2">
+                <div className={cn('min-h-0 flex-1 overflow-y-auto px-3 py-2', wide ? 'grid auto-rows-min grid-cols-3 gap-2 2xl:grid-cols-6' : 'flex flex-col gap-1.5')}>
                   {ORDER.map((ind) => (
                     <IndustryBlock key={ind} ind={ind} p={p} playerIdx={matPlayer} />
                   ))}

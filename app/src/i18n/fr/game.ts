@@ -174,6 +174,8 @@ const fr: typeof engame = {
     links: '{n} liaisons',
     income: 'revenu {lvl} ({pay})',
     keyHint: 'P ouvre ou ferme le tapis',
+    expand: 'Agrandir le tapis',
+    shrink: 'Réduire le tapis',
   },
   rail: {
     playersAria: 'Joueurs',

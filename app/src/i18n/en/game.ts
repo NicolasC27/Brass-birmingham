@@ -172,6 +172,8 @@ const game = {
     links: '{n} links',
     income: 'income {lvl} ({pay})',
     keyHint: 'P opens or closes the mat',
+    expand: 'Expand the mat',
+    shrink: 'Shrink the mat',
   },
   rail: {
     playersAria: 'Players',
