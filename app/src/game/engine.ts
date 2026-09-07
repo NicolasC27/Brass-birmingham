@@ -54,7 +54,7 @@ import type {
   TileState,
 } from './types';
 
-export const ENGINE_VERSION = 2;
+export const ENGINE_VERSION = 3;
 export { eraRounds };
 
 /* ============================ setup ================================ */
@@ -139,6 +139,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     phase: 'action',
     fxSeq: 0,
     history: [],
+    actions: [],
   };
   dealHands(state);
   log(state, undefined, 'system', `The table is set — ${players.map((p) => p.name).join(', ')}. The Canal Era begins.`);

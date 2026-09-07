@@ -2,6 +2,8 @@
 /* BRASSWORKS — core game types (game.md §13 data snapshot)            */
 /* ------------------------------------------------------------------ */
 
+import type { GameAction } from './actions';
+
 export type IndustryType = 'coal' | 'iron' | 'brewery' | 'cotton' | 'manufacturer' | 'pottery';
 
 export type Resource = 'coal' | 'iron';
@@ -192,6 +194,8 @@ export interface GameState {
   winner?: number;
   /** one snapshot per completed round (after payday / era scoring) */
   history: RoundSnapshot[];
+  /** every accepted action since setup — with the seed, the whole game */
+  actions: GameAction[];
 }
 
 export interface RoundSnapshot {
