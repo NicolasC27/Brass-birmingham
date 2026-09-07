@@ -132,17 +132,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       }
       case 'act': {
         const error = hall.act(m.code, c.me.id, m.action);
+        /* put the board right first, then say why: the reason must land
+           after the state, or the state's arrival would wipe it away */
         if (error) {
-          send(c, { t: 'rejected', code: m.code, error });
           pushGame(c, m.code);
+          send(c, { t: 'rejected', code: m.code, error });
         }
         return;
       }
       case 'undo': {
         const error = hall.undo(m.code, c.me.id);
         if (error) {
-          send(c, { t: 'rejected', code: m.code, error });
           pushGame(c, m.code);
+          send(c, { t: 'rejected', code: m.code, error });
         }
         return;
       }

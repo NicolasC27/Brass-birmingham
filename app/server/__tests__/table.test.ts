@@ -29,6 +29,8 @@ class Guest {
   rejected: string[] = [];
   /** every view ever received — the secrecy audit reads them all */
   seen: GameView[] = [];
+  /** the tags of the frames as they arrived, in order */
+  trace: string[] = [];
 
   constructor(id: string, name: string) {
     this.id = id;
@@ -44,6 +46,7 @@ class Guest {
     this.socket.on('message', (raw: Buffer) => {
       const m = decode<ServerMessage>(String(raw));
       if (!m) return;
+      this.trace.push(m.t);
       if (m.t === 'table') this.table = m.table;
       if (m.t === 'seated') this.table = m.table;
       if (m.t === 'game') {
@@ -195,5 +198,8 @@ describe('a table over the wire', () => {
     await idle.until('the refusal', () => idle.rejected.length > 0);
     expect(idle.rejected[0]).toBe('Not your turn');
     expect(server.hall.game(code)!.state.actions.length).toBe(0);
+    /* the board comes back first, the reason second — the other way round
+       the state landing on the client would wipe the reason off the screen */
+    expect(idle.trace.slice(-2)).toEqual(['game', 'rejected']);
   }, 30000);
 });
