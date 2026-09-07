@@ -6,15 +6,6 @@
 
 import { create } from 'zustand';
 import {
-  advance,
-  applyBuild,
-  applyDevelop,
-  applyLoan,
-  applyNetwork,
-  applyPass,
-  applyScout,
-  applySell,
-  beginRailEra,
   buildTargets,
   canLoan,
   canScout,
@@ -29,6 +20,8 @@ import {
 } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 import { chooseBotMove } from './bot';
+import { applyAction, botAction, fallbackAction } from './actions';
+import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import type {
@@ -98,6 +91,8 @@ interface GameStore {
   reject: (key: string, reason: string) => void;
   cancel: () => void;
   confirm: () => void;
+  /** apply one action of the log for the player to act; false = refused */
+  dispatch: (action: GameAction) => boolean;
   setLoanConfirm: (open: boolean) => void;
   setLoanPeek: (on: boolean) => void;
   setRulesOpen: (open: boolean) => void;
@@ -343,53 +338,49 @@ export const useGame = create<GameStore>((set, get) => ({
     const st = get();
     const g = st.game;
     if (!g || g.phase !== 'action') return;
-    const p = g.players[g.current];
-    const card = p.hand.find((c) => c.id === st.selectedCardId);
-    const mut = structuredClone(g);
-    let ok = false;
-
+    const card = g.players[g.current].hand.find((c) => c.id === st.selectedCardId);
+    let action: GameAction | null = null;
     switch (st.verb) {
-      case 'build': {
-        if (!card || !st.buildPick?.valid) return;
-        ok = applyBuild(mut, mut.current, card, st.buildPick);
+      case 'build':
+        if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry };
         break;
-      }
-      case 'network': {
-        if (!card || !st.linkPick?.valid) return;
-        ok = applyNetwork(mut, mut.current, card, st.linkPick, st.secondLinkPick ?? undefined);
+      case 'network':
+        if (card && st.linkPick?.valid) action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id };
         break;
-      }
-      case 'develop': {
-        if (!card || st.developPick.length === 0) return;
-        ok = applyDevelop(mut, mut.current, card, st.developPick);
+      case 'develop':
+        if (card && st.developPick.length > 0) action = { kind: 'develop', card: card.id, industries: st.developPick };
         break;
-      }
-      case 'sell': {
-        if (!card || !st.sellPicks.some((x) => x.valid)) return;
-        ok = applySell(mut, mut.current, card, st.sellPicks.filter((x) => x.valid));
+      case 'sell':
+        if (card && st.sellPicks.some((x) => x.valid)) action = { kind: 'sell', card: card.id, sales: st.sellPicks.filter((x) => x.valid).map((x) => ({ town: x.town, slot: x.slot, merchant: x.merchant })) };
         break;
-      }
-      case 'scout': {
-        if (st.scoutPick.length !== 3) return;
-        ok = applyScout(mut, mut.current, st.scoutPick);
+      case 'scout':
+        if (st.scoutPick.length === 3) action = { kind: 'scout', cards: st.scoutPick };
         break;
-      }
-      default:
-        return;
     }
-    if (!ok) return;
-    advance(mut);
+    if (action) get().dispatch(action);
+  },
+
+  /* every change of the game goes through the engine's action log: the
+     store only translates the selection into an action and commits the
+     state the engine hands back */
+  dispatch: (action) => {
+    const g = get().game;
+    if (!g) return false;
+    const r = applyAction(g, g.current, action);
+    if (!r.state) return false;
+    const mut = r.state;
     const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over' });
     get().save();
+    return true;
   },
 
   endCeremony: () => {
     const g = get().game;
     if (!g || g.phase !== 'scoring-canal') return;
-    const mut = structuredClone(g);
-    beginRailEra(mut);
-    set({ game: mut, ceremony: null, gameOverOpen: mut.phase === 'game-over' });
+    const r = applyAction(g, g.current, { kind: 'begin-rail' });
+    if (!r.state) return;
+    set({ game: r.state, ceremony: null, gameOverOpen: r.state.phase === 'game-over' });
     get().save();
   },
 
@@ -398,25 +389,14 @@ export const useGame = create<GameStore>((set, get) => ({
   takeLoan: () => {
     const g = get().game;
     if (!g || g.phase !== 'action') return;
-    const mut = structuredClone(g);
-    const card = mut.players[mut.current].hand.find((c) => c.id === get().selectedCardId);
-    if (!applyLoan(mut, mut.current, card)) return;
-    advance(mut);
-    const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
-    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over' });
-    get().save();
+    get().dispatch({ kind: 'loan', card: get().selectedCardId ?? undefined });
   },
 
   pass: (reason) => {
     const g = get().game;
     if (!g || g.phase !== 'action') return;
-    const mut = structuredClone(g);
     // passing costs a card per action skipped; the selected card goes first
-    applyPass(mut, mut.current, get().selectedCardId ?? undefined, reason);
-    advance(mut);
-    const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
-    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over' });
-    get().save();
+    get().dispatch({ kind: 'pass', card: get().selectedCardId ?? undefined, reason });
   },
 
   /* ---------------------------- bots ---------------------------- */
@@ -428,40 +408,9 @@ export const useGame = create<GameStore>((set, get) => ({
     const p = g.players[g.current];
     if (!p.isBot) return null;
     const move = chooseBotMove(g, g.current);
-    const mut = structuredClone(g);
-    let ok = false;
-    if (move) {
-      switch (move.kind) {
-        case 'build':
-          ok = !!(move.card && move.build && applyBuild(mut, mut.current, move.card, move.build));
-          break;
-        case 'network':
-          ok = !!(move.card && move.link && applyNetwork(mut, mut.current, move.card, move.link));
-          break;
-        case 'develop':
-          ok = !!(move.card && move.develop && applyDevelop(mut, mut.current, move.card, move.develop));
-          break;
-        case 'sell':
-          ok = !!(move.card && move.sell && applySell(mut, mut.current, move.card, move.sell));
-          break;
-        case 'loan':
-          ok = applyLoan(mut, mut.current);
-          break;
-        case 'scout':
-          ok = !!(move.scoutCards && applyScout(mut, mut.current, move.scoutCards));
-          break;
-      }
-    }
-    if (!ok) {
-      // nothing playable: scout if allowed, else pass (which still costs a card)
-      if (!(canScout(mut, mut.current).ok && applyScout(mut, mut.current, p.hand.slice(0, 3).map((c) => c.id)))) {
-        applyPass(mut, mut.current);
-      }
-    }
-    advance(mut);
-    const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
-    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over' });
-    get().save();
+    const wanted = botAction(move);
+    // nothing playable (or a move the engine refuses): scout if allowed, else pass
+    if (!(wanted && get().dispatch(wanted))) get().dispatch(fallbackAction(g, g.current));
     return move;
   },
 
