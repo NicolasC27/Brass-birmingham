@@ -240,7 +240,7 @@ export default function BoardSettings() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -14 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="plate fixed left-3 z-[70] flex w-[min(400px,calc(100vw-24px))] flex-col overflow-hidden shadow-e4"
+          className="plate fixed left-3 z-[70] flex w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden shadow-e4"
           style={{ top: insets.top + 8, bottom: insets.bottom + 8 }}
           role="dialog"
           aria-label={t('game.settings.title')}
