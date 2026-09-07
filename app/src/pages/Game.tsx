@@ -12,7 +12,7 @@ import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MM_H_FOR } from '@/components/game/Minimap';
-import { hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { getBoardOptions, hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
 import MarketTray from '@/components/game/MarketTray';
@@ -159,6 +159,13 @@ export default function Game() {
         setRulesOpen(true);
         return;
       }
+      if (e.key.toLowerCase() === 's') {
+        /* S toggles the settings panel; it shares the left edge with the mat */
+        const openNow = getBoardOptions().settingsOpen;
+        if (!openNow) useGame.getState().closeMat();
+        setBoardOption('settingsOpen', !openNow);
+        return;
+      }
       if (e.key.toLowerCase() === 'p') {
         const st = useGame.getState();
         if (st.matPlayer !== null) st.closeMat();
@@ -189,6 +196,8 @@ export default function Game() {
       }
       const n = Number(e.key);
       if (n >= 1 && n <= 8) {
+        /* the open mat takes the digits: 1–4 pick whose mat to read */
+        if (useGame.getState().matPlayer !== null) return;
         const card = game.players[game.current].hand[n - 1];
         if (card) selectCard(card.id);
       }

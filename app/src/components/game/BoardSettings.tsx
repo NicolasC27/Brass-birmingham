@@ -434,6 +434,8 @@ export default function BoardSettings() {
                         ['Enter', t('game.settings.keys.confirm')],
                         ['Esc', t('game.settings.keys.cancel')],
                         ['?', t('game.settings.keys.rules')],
+                        ['P', t('game.settings.keys.mat')],
+                        ['S', t('game.settings.keys.settings')],
                       ] as const
                     ).map(([k, label]) => (
                       <div key={k} className="contents">
