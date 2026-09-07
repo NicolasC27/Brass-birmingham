@@ -7,7 +7,6 @@ import PlayerToken from '@/components/setup/PlayerToken';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { enterTable, leaveTable } from '@/online/net';
 import { useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import { useT } from '@/i18n';
@@ -172,10 +171,11 @@ export default function Lobby() {
   const me = lobby.me;
 
   /* a room is no place for a stranger: the office signs you in first.
-     A session on its way back is not a stranger — we wait for it. */
+     A session on its way back is not a stranger — we wait for it. The code
+     travels with them, so an invitation survives the visitors' book. */
   useEffect(() => {
-    if (isOnline && stranger) navigate('/online');
-  }, [stranger, navigate]);
+    if (isOnline && stranger) navigate(`/online?table=${code}`, { replace: true });
+  }, [stranger, code, navigate]);
   const [copied, setCopied] = useState(false);
   const [renaming, setRenaming] = useState(false);
 
@@ -188,10 +188,8 @@ export default function Lobby() {
     } catch {
       /* the game page falls back to its defaults */
     }
-    /* on a server the game itself is played at the table, not in this tab */
-    if (isOnline) enterTable(table.code);
-    else leaveTable();
-    navigate('/game');
+    /* on a server the game is a place of its own: it carries the code */
+    navigate(isOnline ? `/game/${table.code}` : '/game');
   }, [table, navigate]);
 
   if (!table) {

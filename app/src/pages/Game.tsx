@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Scale, ScrollText, Settings2, X } from 'lucide-react';
 import { ghostFromPlan } from '@/game/ghost';
@@ -40,6 +40,8 @@ const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 export default function Game() {
   const t = useT();
   const navigate = useNavigate();
+  /* /game/ABCD is a table on the server, /game a game played in this browser */
+  const { code: tableCode } = useParams();
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const line = useGame((s) => s.line);
@@ -88,8 +90,8 @@ export default function Game() {
 
   /* ------------------------- lifecycle ------------------------- */
   useEffect(() => {
-    init();
-  }, [init]);
+    init(tableCode);
+  }, [init, tableCode]);
 
   /* at an online table the turn is mine only when the seat to act is mine */
   const isHumanTurn = myTurn;

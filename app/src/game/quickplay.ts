@@ -1,6 +1,5 @@
 import { BOT_NAME_POOL, SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
-import { leaveTable } from '@/online/net';
 import { tr } from '@/i18n';
 import { deserialize } from './engine';
 import { RESUME_KEY } from './types';
@@ -45,5 +44,4 @@ export function startQuickGame(): void {
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }
-  leaveTable();
 }

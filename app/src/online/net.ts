@@ -15,34 +15,3 @@ export function onlineWire(): Wire | null {
   if (!opened) opened = new Wire(ONLINE_URL);
   return opened;
 }
-
-/* ------------------------- the table in play ----------------------- */
-
-const ONLINE_KEY = 'brassworks.online.v1';
-
-/** the table the game page is playing over the wire, if any */
-export function tableInPlay(): string | null {
-  try {
-    return localStorage.getItem(ONLINE_KEY) || null;
-  } catch {
-    return null;
-  }
-}
-
-/** the game page will play this table when it opens */
-export function enterTable(code: string): void {
-  try {
-    localStorage.setItem(ONLINE_KEY, code);
-  } catch {
-    /* the game page will simply play locally */
-  }
-}
-
-/** back to games played in this browser */
-export function leaveTable(): void {
-  try {
-    localStorage.removeItem(ONLINE_KEY);
-  } catch {
-    /* non-fatal */
-  }
-}

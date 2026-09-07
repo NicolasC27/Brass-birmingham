@@ -8,7 +8,6 @@ import HouseRules from "@/components/setup/HouseRules";
 import ShutterWipe from "@/components/setup/ShutterWipe";
 import PlayerToken from "@/components/setup/PlayerToken";
 import Tip from "@/components/setup/Tip";
-import { leaveTable } from "@/online/net";
 import {
   SETUP_STORAGE_KEY,
   dedupeNames,
@@ -94,8 +93,6 @@ export default function Setup() {
     } catch {
       /* storage unavailable — the game page will fall back to defaults */
     }
-    /* a game set up here is played here, whatever table was open before */
-    leaveTable();
     setStarting(true);
   }, [canStart, starting, seats, options]);
 

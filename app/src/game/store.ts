@@ -26,7 +26,7 @@ import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
-import { leaveTable, onlineWire, tableInPlay } from '@/online/net';
+import { onlineWire } from '@/online/net';
 import type { ServerMessage } from '@/online/protocol';
 import type { Wire, WireStatus } from '@/online/wire';
 import type {
@@ -95,7 +95,8 @@ interface GameStore {
   gameOverOpen: boolean;
 
   /* ---- lifecycle ---- */
-  init: () => void;
+  /** `code` names an online table; without one the game is played here */
+  init: (code?: string) => void;
   /** is the seat to act mine? (always, when the game is played here) */
   myTurn: () => boolean;
   /** the player whose hand this screen shows */
@@ -225,9 +226,9 @@ export const useGame = create<GameStore>((set, get) => ({
   rulesOpen: false,
   matPlayer: null,
 
-  init: () => {
-    /* a table waiting on the wire takes precedence over anything saved here */
-    const code = tableInPlay();
+  init: (code) => {
+    /* the table's code is in the address bar: a game online is a place you
+       can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
     if (code && wire) {
       set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, ceremony: null, gameOverOpen: false, coachStep: -1 });
@@ -747,10 +748,9 @@ function listen(code: string, wire: Wire): void {
   };
 }
 
-/** leave the online table for good (the title screen, a local game) */
+/** stop following the online table (leaving the board for good) */
 export function leaveOnlineTable(): void {
   deafen?.();
-  leaveTable();
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null });
 }
 
