@@ -183,6 +183,43 @@ function engraveTexture(tex: Texture): Texture {
   return Texture.from(c);
 }
 
+/** Built cards are cardboard: a faint paper grain (art direction: 4–7 %
+ *  overlay) baked once into the owner-colour card texture. Deterministic
+ *  hashed cells of a few texels so the grain still shows once the card is
+ *  scaled down to its ~60–100 px on screen. */
+function grainTexture(tex: Texture): Texture {
+  const src = tex.source.resource as CanvasImageSource | undefined;
+  if (!src) return tex;
+  const w = tex.width;
+  const h = tex.height;
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  if (!ctx) return tex;
+  ctx.drawImage(src, 0, 0, w, h);
+  const img = ctx.getImageData(0, 0, w, h);
+  const d = img.data;
+  const cell = Math.max(1, Math.round(w / 110));
+  const amp = 14; // ≈ ±5.5 % of full range
+  for (let y = 0; y < h; y++) {
+    const cy = Math.floor(y / cell);
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      if (d[i + 3] === 0) continue;
+      const cx = Math.floor(x / cell);
+      let n = (cx * 374761393 + cy * 668265263) | 0;
+      n = ((n ^ (n >>> 13)) * 1274126177) | 0;
+      const g = (((n ^ (n >>> 16)) & 0xffff) / 0xffff - 0.5) * 2 * amp;
+      d[i] = Math.max(0, Math.min(255, d[i] + g));
+      d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + g));
+      d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + g));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return Texture.from(c);
+}
+
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
@@ -202,7 +239,7 @@ export async function loadBoardAssets(): Promise<void> {
   const loaded = await Assets.load(urls);
   cutTex = Object.fromEntries(industries.map((i) => [i, loaded[CUT_FOR(i)]])) as Record<IndustryType, Texture>;
   builtTex = Object.fromEntries(
-    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, loaded[BUILT_FOR(i, c)]]))]),
+    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, grainTexture(loaded[BUILT_FOR(i, c)])]))]),
   ) as Record<IndustryType, Record<string, Texture>>;
   iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
