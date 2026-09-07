@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { StockStyle } from '@/gl/paint';
+import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
 
 /* ------------------------------------------------------------------ */
 /* Board display options — one tiny shared store (localStorage-backed) */
@@ -23,6 +23,14 @@ export interface BoardOptions {
   bigChips: boolean;
   greyFreeMerchants: boolean;
   stockStyle: StockStyle;
+  /** empty-slot face: engraved print or colour painting */
+  slotArt: SlotArt;
+  /** owner's shape seal on built cards */
+  ownerSeal: boolean;
+  /** paper grain baked on built cards */
+  cardGrain: boolean;
+  /** income / VP layout on built cards */
+  chipStyle: ChipStyle;
   minimapSize: MinimapSize;
   incomeSide: IncomeSide;
   mapStyle: MapStyle;
@@ -34,6 +42,10 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   bigChips: 'brassworks.bigChips',
   greyFreeMerchants: 'brassworks.greyFreeMerchants',
   stockStyle: 'brassworks.stockStyle',
+  slotArt: 'brassworks.slotArt',
+  ownerSeal: 'brassworks.ownerSeal',
+  cardGrain: 'brassworks.cardGrain',
+  chipStyle: 'brassworks.chipStyle',
   minimapSize: 'brassworks.minimapSize',
   incomeSide: 'brassworks.incomeSide',
   mapStyle: 'brassworks.mapStyle',
@@ -55,6 +67,10 @@ let state: BoardOptions = {
   bigChips: read('bigChips', false),
   greyFreeMerchants: read('greyFreeMerchants', false),
   stockStyle: read('stockStyle', 'corner'),
+  slotArt: read('slotArt', 'engraved'),
+  ownerSeal: read('ownerSeal', true),
+  cardGrain: read('cardGrain', true),
+  chipStyle: read('chipStyle', 'band'),
   minimapSize: read('minimapSize', 's'),
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),

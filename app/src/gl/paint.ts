@@ -21,6 +21,18 @@ import { RIBBON_FONT, RIBBON_H, TILE, TILE_HALF, ribbonWidth, townChrome } from 
 const hex = (s: string): number => parseInt(s.replace('#', ''), 16);
 /** stock-badge layouts on built tiles (A-B probe) */
 export type StockStyle = 'counter' | 'big' | 'tag' | 'top' | 'corner';
+/** empty-slot face: sepia engraving printed on the board, or the colour painting */
+export type SlotArt = 'engraved' | 'painted';
+/** income / VP on built cards: one quiet bottom band, or two boxed chips */
+export type ChipStyle = 'band' | 'chips';
+/** how a built card is dressed (board options) */
+export interface TileLook {
+  slotArt: SlotArt;
+  ownerSeal: boolean;
+  cardGrain: boolean;
+  chipStyle: ChipStyle;
+}
+export const DEFAULT_TILE_LOOK: TileLook = { slotArt: 'engraved', ownerSeal: true, cardGrain: true, chipStyle: 'band' };
 const playerHex = (game: GameState, i: number): number => hex(PLAYER_COLORS[game.players[i].color]?.hex ?? '#C9A45C');
 /** industry key → icon asset (key 'manufacturer' vs file 'manufacture') */
 const ICON_FOR: Record<IndustryType, string> = {
@@ -97,10 +109,15 @@ export interface BoardScene {
   setGreyFreeMerchants: (grey: boolean) => void;
   /** switch the stock-badge layout on built tiles (A-B probe) */
   setStockStyle: (s: StockStyle) => void;
+  /** empty-slot art, owner seal, paper grain, income/VP layout (board options) */
+  setTileLook: (look: TileLook) => void;
 }
 
 let cutTex: Record<IndustryType, Texture>; // transparent cutouts (empty slots)
-let builtTex: Record<IndustryType, Record<string, Texture>>; // per-owner-colour cards
+let builtTex: Record<IndustryType, Record<string, Texture>>; // per-owner-colour cards (plain)
+let builtGrainTex: Record<IndustryType, Record<string, Texture>>; // same, paper grain baked in
+let artHalfL: Record<IndustryType, Texture>; // colour left half (dual slots, fallback)
+let artHalfR: Record<IndustryType, Texture>; // colour right half (fallback)
 let pairTex: Record<string, Texture>; // combined dual-industry cutouts: key "a-b" (sorted)
 let printTex: Record<IndustryType, Texture>; // engraved sepia print (empty slots)
 let printHalfL: Record<IndustryType, Texture>; // engraved left half (dual slots, fallback)
@@ -239,7 +256,10 @@ export async function loadBoardAssets(): Promise<void> {
   const loaded = await Assets.load(urls);
   cutTex = Object.fromEntries(industries.map((i) => [i, loaded[CUT_FOR(i)]])) as Record<IndustryType, Texture>;
   builtTex = Object.fromEntries(
-    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, grainTexture(loaded[BUILT_FOR(i, c)])]))]),
+    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, loaded[BUILT_FOR(i, c)]]))]),
+  ) as Record<IndustryType, Record<string, Texture>>;
+  builtGrainTex = Object.fromEntries(
+    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, grainTexture(builtTex[i][c])]))]),
   ) as Record<IndustryType, Record<string, Texture>>;
   iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
@@ -277,21 +297,20 @@ export async function loadBoardAssets(): Promise<void> {
   schematicTex = Object.fromEntries(
     await Promise.all(industries.map(async (i) => [i, await parchmentTexture(ICON_FOR[i])])),
   ) as Record<IndustryType, Texture>;
-  /* engraved prints for the empty slots (see engraveTexture); clean
-     vertical halves for dual slots without a combined painting */
+  /* clean vertical halves for dual slots without a combined painting */
+  const halves = (src: Record<IndustryType, Texture>, right: boolean) =>
+    Object.fromEntries(
+      industries.map((i) => {
+        const t = src[i];
+        return [i, new Texture({ source: t.source, frame: new Rectangle(right ? t.width / 2 : 0, 0, t.width / 2, t.height) })];
+      }),
+    ) as Record<IndustryType, Texture>;
+  artHalfL = halves(cutTex, false);
+  artHalfR = halves(cutTex, true);
+  /* engraved prints for the empty slots (see engraveTexture) */
   printTex = Object.fromEntries(industries.map((i) => [i, engraveTexture(cutTex[i])])) as Record<IndustryType, Texture>;
-  printHalfL = Object.fromEntries(
-    industries.map((i) => {
-      const t = printTex[i];
-      return [i, new Texture({ source: t.source, frame: new Rectangle(0, 0, t.width / 2, t.height) })];
-    }),
-  ) as Record<IndustryType, Texture>;
-  printHalfR = Object.fromEntries(
-    industries.map((i) => {
-      const t = printTex[i];
-      return [i, new Texture({ source: t.source, frame: new Rectangle(t.width / 2, 0, t.width / 2, t.height) })];
-    }),
-  ) as Record<IndustryType, Texture>;
+  printHalfL = halves(printTex, false);
+  printHalfR = halves(printTex, true);
   printPairTex = Object.fromEntries(Object.entries(pairTex).map(([k, t]) => [k, engraveTexture(t)]));
 }
 
@@ -722,6 +741,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   let bigChips = false;
   let greyFreeMerchants = false;
   let stockStyle: StockStyle = 'counter';
+  let look: TileLook = { ...DEFAULT_TILE_LOOK };
 
   /* resource stock badge layouts on a built tile (A-B choice) */
   const drawStock = (badges: Container, x: number, y: number, n: number, kind: 'coal' | 'iron' | 'beer') => {
@@ -926,7 +946,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
                dark VP numeral) — same printed feel as the built cards */
             /* the painting STAYS (dimmed under a wash of the owner colour) so a
                flipped mill still reads as a mill; the VP sits on a dark plate */
-            art.texture = builtTex[tile.industry][colorName] ?? cutTex[tile.industry];
+            art.texture = (look.cardGrain ? builtGrainTex : builtTex)[tile.industry][colorName] ?? cutTex[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -959,7 +979,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             vpLabel.position.set(x, y + TILE_HALF - 5.5);
             vpLabel.eventMode = 'none';
             badges.addChild(wash, rim, plate, vpText, vpLabel);
-            drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
+            if (look.ownerSeal) drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
             /* level pips, dark on the muted card */
             for (let i = 0; i < tile.level; i++) {
               extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x241d14).stroke({ width: 0.5, color: shade(col, 1.25) });
@@ -967,7 +987,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           } else {
             /* player-colour card painting (builtTex), full opacity, clipped
                to the slot's rounded rect by the GPU mask */
-            art.texture = builtTex[tile.industry][colorName] ?? cutTex[tile.industry];
+            art.texture = (look.cardGrain ? builtGrainTex : builtTex)[tile.industry][colorName] ?? cutTex[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -983,26 +1003,43 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             /* owner medallion (colour-blind safe): the player's shape on a
                small disc in the top-right corner — bottom-right when the
                stock disc already sits there ('corner' layout) */
-            drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
-            /* income / VP: ONE quiet band along the bottom edge instead of
-               two boxed chips — income left, VP right, cream numerals on a
-               translucent dark strip. bigChips (board option) enlarges it. */
-            const ch = bigChips ? 15 : 11;
-            const cy0 = y + TILE_HALF - 2.75 - ch;
-            const band = new Graphics().roundRect(x - TILE_HALF + 2.75, cy0, TILE - 5.5, ch, 3.5).fill({ color: 0x0c0a08, alpha: 0.62 });
-            band.eventMode = 'none';
+            if (look.ownerSeal) drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
             const numStyle = { fontFamily: "'IBM Plex Mono', monospace", fontSize: bigChips ? 10.5 : 7.5, fontWeight: '600' as const, fill: 0xf4ecd8 };
             const incText = new Text({ text: `+${lv.incomeDelta}`, style: numStyle });
-            incText.anchor.set(0, 0.5);
-            incText.position.set(x - TILE_HALF + 7, cy0 + ch / 2 + 0.5);
-            incText.alpha = 0.95;
             incText.eventMode = 'none';
             const vpText = new Text({ text: tr('board.tile.vpChip', { vp: lv.vp }), style: numStyle });
-            vpText.anchor.set(1, 0.5);
-            vpText.position.set(x + TILE_HALF - 7, cy0 + ch / 2 + 0.5);
-            vpText.alpha = 0.95;
             vpText.eventMode = 'none';
-            detailC.addChild(band, incText, vpText);
+            if (look.chipStyle === 'band') {
+              /* income / VP: ONE quiet band along the bottom edge — income
+                 left, VP right, cream numerals on a translucent dark strip.
+                 bigChips (board option) enlarges it. */
+              const ch = bigChips ? 15 : 11;
+              const cy0 = y + TILE_HALF - 2.75 - ch;
+              const band = new Graphics().roundRect(x - TILE_HALF + 2.75, cy0, TILE - 5.5, ch, 3.5).fill({ color: 0x0c0a08, alpha: 0.62 });
+              band.eventMode = 'none';
+              incText.anchor.set(0, 0.5);
+              incText.position.set(x - TILE_HALF + 7, cy0 + ch / 2 + 0.5);
+              incText.alpha = 0.95;
+              vpText.anchor.set(1, 0.5);
+              vpText.position.set(x + TILE_HALF - 7, cy0 + ch / 2 + 0.5);
+              vpText.alpha = 0.95;
+              detailC.addChild(band, incText, vpText);
+            } else {
+              /* two boxed chips riding the bottom edge — dark tokens with
+                 cream numerals, readable on ANY player colour */
+              const cw = bigChips ? 30 : 22;
+              const ch = bigChips ? 16 : 12;
+              const cy0 = y + TILE_HALF - ch;
+              const chipInc = new Graphics().roundRect(x - TILE_HALF + 4, cy0, cw, ch, 3).fill({ color: 0x17110c, alpha: 0.92 }).stroke({ width: 0.8, color: 0xf4ecd8, alpha: 0.35 });
+              chipInc.eventMode = 'none';
+              incText.anchor.set(0.5);
+              incText.position.set(x - TILE_HALF + 4 + cw / 2, cy0 + ch / 2 + 0.5);
+              const chipVp = new Graphics().roundRect(x + TILE_HALF - 4 - cw, cy0, cw, ch, 3).fill({ color: 0x17110c, alpha: 0.92 }).stroke({ width: 0.8, color: 0xf4ecd8, alpha: 0.35 });
+              chipVp.eventMode = 'none';
+              vpText.anchor.set(0.5);
+              vpText.position.set(x + TILE_HALF - 4 - cw / 2, cy0 + ch / 2 + 0.5);
+              detailC.addChild(chipInc, incText, chipVp, vpText);
+            }
             /* level pips along the top edge — dark on the colour card */
             for (let i = 0; i < tile.level; i++) {
               extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x17110c).stroke({ width: 0.6, color: 0xf4ecd8, alpha: 0.7 });
@@ -1027,8 +1064,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           /* the painted art IS the face, full colour at every zoom.
              Dual slot: the generated combined painting when available
              (one cohesive composition), otherwise the half-crop split. */
+          const engraved = look.slotArt === 'engraved';
           if (allows.length > 1) {
-            const combined = printPairTex[pairKey(allows[0], allows[1])];
+            const combined = (engraved ? printPairTex : pairTex)[pairKey(allows[0], allows[1])];
             if (combined) {
               art.texture = combined;
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
@@ -1037,11 +1075,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               art2.visible = false;
             } else {
               const hw = (TILE - 8) / 2;
-              art.texture = printHalfL[allows[0]];
+              art.texture = (engraved ? printHalfL : artHalfL)[allows[0]];
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
               art.width = hw;
               art.height = TILE - 8;
-              art2.texture = printHalfR[allows[1]];
+              art2.texture = (engraved ? printHalfR : artHalfR)[allows[1]];
               art2.position.set(x - TILE_HALF + 4 + hw, y - TILE_HALF + 4);
               art2.width = hw;
               art2.height = TILE - 8;
@@ -1049,13 +1087,13 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               frame.moveTo(x, y - TILE_HALF + 4).lineTo(x, y + TILE_HALF - 4).stroke({ width: 2, color: 0x0c0a08 });
             }
           } else {
-            art.texture = printTex[allows[0]];
+            art.texture = (engraved ? printTex : cutTex)[allows[0]];
             art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
             art.width = TILE - 8;
             art.height = TILE - 8;
             art2.visible = false;
           }
-          sv.artBase = 0.88;
+          sv.artBase = engraved ? 0.88 : 1;
           art.alpha = sv.artBase;
           art2.alpha = sv.artBase;
           art.visible = true;
@@ -1211,6 +1249,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     },
     setStockStyle(s: StockStyle) {
       stockStyle = s;
+      if (lastGame) drawTowns(lastGame);
+    },
+    setTileLook(l: TileLook) {
+      look = { ...l };
       if (lastGame) drawTowns(lastGame);
     },
   };
