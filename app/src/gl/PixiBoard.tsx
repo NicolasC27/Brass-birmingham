@@ -70,7 +70,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
+  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, tileStyle, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
   /* fullscreen is a keyboard-only affair now (F) — no HUD button */
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -101,6 +101,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     sceneRef.current?.setStockStyle(stockStyle);
   }, [stockStyle]);
+  useEffect(() => {
+    void sceneRef.current?.setTileStyle(tileStyle);
+  }, [tileStyle]);
   useEffect(() => {
     sceneRef.current?.setTileLook({ slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle });
   }, [slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle]);
@@ -191,6 +194,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);
       scene.setStockStyle(bootOpts.stockStyle);
+      if (bootOpts.tileStyle !== 'icons') void scene.setTileStyle(bootOpts.tileStyle);
       scene.setTileLook({ slotArt: bootOpts.slotArt, colorBlind: bootOpts.colorBlind, sealTiles: bootOpts.sealTiles, sealLinks: bootOpts.sealLinks, cardGrain: bootOpts.cardGrain, chipStyle: bootOpts.chipStyle });
       a.stage.addChild(scene.world);
       /* language switch repaints the WebGL scene (Pixi Text labels) */

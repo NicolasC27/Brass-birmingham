@@ -25,6 +25,9 @@ export type StockStyle = 'counter' | 'big' | 'tag' | 'top' | 'corner';
 export type SlotArt = 'engraved' | 'painted';
 /** income / VP on built cards: one quiet bottom band, or two boxed chips */
 export type ChipStyle = 'band' | 'chips';
+/** tile painting set: the original icons (cart, barrel…) or the buildings
+ *  drawn in tools/tiles (colliery, brewhouse…) — served from /tiles-works */
+export type TileStyle = 'icons' | 'works';
 /** how a built card is dressed (board options) */
 export interface TileLook {
   slotArt: SlotArt;
@@ -114,18 +117,28 @@ export interface BoardScene {
   setStockStyle: (s: StockStyle) => void;
   /** empty-slot art, owner seal, paper grain, income/VP layout (board options) */
   setTileLook: (look: TileLook) => void;
+  /** swap the painting set (loads the alternate set on first use) */
+  setTileStyle: (style: TileStyle) => Promise<void>;
 }
 
-let cutTex: Record<IndustryType, Texture>; // transparent cutouts (empty slots)
-let builtTex: Record<IndustryType, Record<string, Texture>>; // per-owner-colour cards (plain)
-let builtGrainTex: Record<IndustryType, Record<string, Texture>>; // same, paper grain baked in
-let artHalfL: Record<IndustryType, Texture>; // colour left half (dual slots, fallback)
-let artHalfR: Record<IndustryType, Texture>; // colour right half (fallback)
-let pairTex: Record<string, Texture>; // combined dual-industry cutouts: key "a-b" (sorted)
-let printTex: Record<IndustryType, Texture>; // engraved sepia print (empty slots)
-let printHalfL: Record<IndustryType, Texture>; // engraved left half (dual slots, fallback)
-let printHalfR: Record<IndustryType, Texture>; // engraved right half (fallback)
-let printPairTex: Record<string, Texture>; // engraved combined dual-industry prints
+/** every painting-derived texture for one tile style */
+interface TileSet {
+  cut: Record<IndustryType, Texture>; // transparent cutouts (empty slots, merchants)
+  built: Record<IndustryType, Record<string, Texture>>; // per-owner-colour cards (plain)
+  builtGrain: Record<IndustryType, Record<string, Texture>>; // same, paper grain baked in
+  halfL: Record<IndustryType, Texture>; // colour left half (dual slots, fallback)
+  halfR: Record<IndustryType, Texture>; // colour right half (fallback)
+  pair: Record<string, Texture>; // combined dual-industry cutouts: key "a-b" (sorted)
+  print: Record<IndustryType, Texture>; // engraved sepia print (empty slots)
+  printHalfL: Record<IndustryType, Texture>; // engraved left half (dual slots, fallback)
+  printHalfR: Record<IndustryType, Texture>; // engraved right half (fallback)
+  printPair: Record<string, Texture>; // engraved combined dual-industry prints
+}
+/** industries that have a building painting in /tiles-works */
+const WORKS_INDUSTRIES: IndustryType[] = ['coal', 'brewery'];
+const WORKS_DIR = '/tiles-works';
+const tileSets: Partial<Record<TileStyle, TileSet>> = {};
+let tileSet: TileSet; // the set currently painted
 let iconTex: Record<IndustryType, Texture>;
 let schematicTex: Record<IndustryType, Texture>;
 let barrelTex: Texture;
@@ -240,30 +253,77 @@ function grainTexture(tex: Texture): Texture {
   return Texture.from(c);
 }
 
+/** the dual-industry slot pairs printed on the board */
+function dualPairs(): [IndustryType, IndustryType][] {
+  const pairs: [IndustryType, IndustryType][] = [];
+  for (const town of TOWNS) {
+    for (const s of town.slots) {
+      if (s.allows.length === 2 && !pairs.some(([a, b]) => pairKey(a, b) === pairKey(s.allows[0], s.allows[1]))) {
+        pairs.push([s.allows[0], s.allows[1]]);
+      }
+    }
+  }
+  return pairs;
+}
+
+/** Load one painting set from `dir`. With a `base` set, only WORKS_INDUSTRIES
+ *  (and the pairs involving them) are fetched — everything else is shared. */
+async function loadTileSet(dir: string, base?: TileSet): Promise<TileSet> {
+  const industries = Object.keys(ICON_FOR) as IndustryType[];
+  const colorNames = Object.keys(PLAYER_COLORS);
+  const own = (i: IndustryType) => !base || WORKS_INDUSTRIES.includes(i);
+  const fetched = industries.filter(own);
+  const loaded = await Assets.load([...fetched.map((i) => dir + CUT_FOR(i)), ...fetched.flatMap((i) => colorNames.map((c) => dir + BUILT_FOR(i, c)))]);
+  const cut = Object.fromEntries(industries.map((i) => [i, own(i) ? loaded[dir + CUT_FOR(i)] : base!.cut[i]])) as TileSet['cut'];
+  const built = Object.fromEntries(
+    industries.map((i) => [i, own(i) ? Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c)]])) : base!.built[i]]),
+  ) as TileSet['built'];
+  const builtGrain = Object.fromEntries(
+    industries.map((i) => [i, own(i) ? Object.fromEntries(colorNames.map((c) => [c, grainTexture(built[i][c])])) : base!.builtGrain[i]]),
+  ) as TileSet['builtGrain'];
+  /* combined dual-industry cutouts (generated: tile-<a>-<b>-cut.png, sorted
+     FILE stems) — loaded tolerantly, dual slots fall back to half-crops */
+  const pair: Record<string, Texture> = {};
+  await Promise.all(
+    dualPairs().map(async ([a, b]) => {
+      const k = pairKey(a, b);
+      if (!own(a) && !own(b)) {
+        if (base!.pair[k]) pair[k] = base!.pair[k];
+        return;
+      }
+      try {
+        pair[k] = await Assets.load(`${dir}/tile-${pairFile(a, b)}-cut.png`);
+      } catch {
+        /* not generated — half-crop fallback applies */
+      }
+    }),
+  );
+  /* clean vertical halves for dual slots without a combined painting */
+  const halves = (src: Record<IndustryType, Texture>, right: boolean) =>
+    Object.fromEntries(
+      industries.map((i) => {
+        const t = src[i];
+        return [i, new Texture({ source: t.source, frame: new Rectangle(right ? t.width / 2 : 0, 0, t.width / 2, t.height) })];
+      }),
+    ) as Record<IndustryType, Texture>;
+  /* engraved prints for the empty slots (see engraveTexture) */
+  const print = Object.fromEntries(industries.map((i) => [i, own(i) ? engraveTexture(cut[i]) : base!.print[i]])) as TileSet['print'];
+  const printPair = Object.fromEntries(Object.entries(pair).map(([k, t]) => [k, base?.pair[k] === t ? base.printPair[k] : engraveTexture(t)]));
+  return { cut, built, builtGrain, halfL: halves(cut, false), halfR: halves(cut, true), pair, print, printHalfL: halves(print, false), printHalfR: halves(print, true), printPair };
+}
+
+/** the painting set for a style, fetched on first use */
+async function ensureTileSet(style: TileStyle): Promise<TileSet> {
+  if (!tileSets[style]) tileSets[style] = style === 'works' ? await loadTileSet(WORKS_DIR, tileSets.icons) : await loadTileSet('');
+  return tileSets[style]!;
+}
+
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
-  const colorNames = Object.keys(PLAYER_COLORS);
-  const urls = [
-    '/beer-barrel.png',
-    '/merchant-boat.png',
-    '/town-village.png',
-    '/vehicle-boat.png',
-    '/boat-fx.png',
-    '/icon-canal.svg',
-    '/icon-rail.svg',
-    ...industries.map((i) => CUT_FOR(i)),
-    ...industries.flatMap((i) => colorNames.map((c) => BUILT_FOR(i, c))),
-    ...industries.map((i) => ICON_FOR[i]),
-  ];
+  const urls = ['/beer-barrel.png', '/merchant-boat.png', '/town-village.png', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg', ...industries.map((i) => ICON_FOR[i])];
   const loaded = await Assets.load(urls);
-  cutTex = Object.fromEntries(industries.map((i) => [i, loaded[CUT_FOR(i)]])) as Record<IndustryType, Texture>;
-  builtTex = Object.fromEntries(
-    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, loaded[BUILT_FOR(i, c)]]))]),
-  ) as Record<IndustryType, Record<string, Texture>>;
-  builtGrainTex = Object.fromEntries(
-    industries.map((i) => [i, Object.fromEntries(colorNames.map((c) => [c, grainTexture(builtTex[i][c])]))]),
-  ) as Record<IndustryType, Record<string, Texture>>;
+  tileSet = await ensureTileSet('icons');
   iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
   boatTex = loaded['/merchant-boat.png'];
@@ -277,44 +337,9 @@ export async function loadBoardAssets(): Promise<void> {
     }),
   );
   villageTex = loaded['/town-village.png'];
-  /* combined dual-industry cutouts (generated: /tile-<a>-<b>-cut.png, sorted
-     FILE stems) — loaded tolerantly, dual slots fall back to half-crops */
-  pairTex = {};
-  const pairs: [IndustryType, IndustryType][] = [];
-  for (const town of TOWNS) {
-    for (const s of town.slots) {
-      if (s.allows.length === 2 && !pairs.some(([a, b]) => pairKey(a, b) === pairKey(s.allows[0], s.allows[1]))) {
-        pairs.push([s.allows[0], s.allows[1]]);
-      }
-    }
-  }
-  await Promise.all(
-    pairs.map(async ([a, b]) => {
-      try {
-        pairTex[pairKey(a, b)] = await Assets.load(`/tile-${pairFile(a, b)}-cut.png`);
-      } catch {
-        /* not generated — half-crop fallback applies */
-      }
-    }),
-  );
   schematicTex = Object.fromEntries(
     await Promise.all(industries.map(async (i) => [i, await parchmentTexture(ICON_FOR[i])])),
   ) as Record<IndustryType, Texture>;
-  /* clean vertical halves for dual slots without a combined painting */
-  const halves = (src: Record<IndustryType, Texture>, right: boolean) =>
-    Object.fromEntries(
-      industries.map((i) => {
-        const t = src[i];
-        return [i, new Texture({ source: t.source, frame: new Rectangle(right ? t.width / 2 : 0, 0, t.width / 2, t.height) })];
-      }),
-    ) as Record<IndustryType, Texture>;
-  artHalfL = halves(cutTex, false);
-  artHalfR = halves(cutTex, true);
-  /* engraved prints for the empty slots (see engraveTexture) */
-  printTex = Object.fromEntries(industries.map((i) => [i, engraveTexture(cutTex[i])])) as Record<IndustryType, Texture>;
-  printHalfL = halves(printTex, false);
-  printHalfR = halves(printTex, true);
-  printPairTex = Object.fromEntries(Object.entries(pairTex).map(([k, t]) => [k, engraveTexture(t)]));
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -745,6 +770,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   let greyFreeMerchants = false;
   let stockStyle: StockStyle = 'counter';
   let look: TileLook = { ...DEFAULT_TILE_LOOK };
+  let styleReq = 0;
 
   /* resource stock badge layouts on a built tile (A-B choice) */
   const drawStock = (badges: Container, x: number, y: number, n: number, kind: 'coal' | 'iron' | 'beer') => {
@@ -952,7 +978,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
                dark VP numeral) — same printed feel as the built cards */
             /* the painting STAYS (dimmed under a wash of the owner colour) so a
                flipped mill still reads as a mill; the VP sits on a dark plate */
-            art.texture = (look.cardGrain ? builtGrainTex : builtTex)[tile.industry][colorName] ?? cutTex[tile.industry];
+            art.texture = (look.cardGrain ? tileSet.builtGrain : tileSet.built)[tile.industry][colorName] ?? tileSet.cut[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -993,7 +1019,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           } else {
             /* player-colour card painting (builtTex), full opacity, clipped
                to the slot's rounded rect by the GPU mask */
-            art.texture = (look.cardGrain ? builtGrainTex : builtTex)[tile.industry][colorName] ?? cutTex[tile.industry];
+            art.texture = (look.cardGrain ? tileSet.builtGrain : tileSet.built)[tile.industry][colorName] ?? tileSet.cut[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -1072,7 +1098,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
              (one cohesive composition), otherwise the half-crop split. */
           const engraved = look.slotArt === 'engraved';
           if (allows.length > 1) {
-            const combined = (engraved ? printPairTex : pairTex)[pairKey(allows[0], allows[1])];
+            const combined = (engraved ? tileSet.printPair : tileSet.pair)[pairKey(allows[0], allows[1])];
             if (combined) {
               art.texture = combined;
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
@@ -1081,11 +1107,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               art2.visible = false;
             } else {
               const hw = (TILE - 8) / 2;
-              art.texture = (engraved ? printHalfL : artHalfL)[allows[0]];
+              art.texture = (engraved ? tileSet.printHalfL : tileSet.halfL)[allows[0]];
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
               art.width = hw;
               art.height = TILE - 8;
-              art2.texture = (engraved ? printHalfR : artHalfR)[allows[1]];
+              art2.texture = (engraved ? tileSet.printHalfR : tileSet.halfR)[allows[1]];
               art2.position.set(x - TILE_HALF + 4 + hw, y - TILE_HALF + 4);
               art2.width = hw;
               art2.height = TILE - 8;
@@ -1093,7 +1119,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               frame.moveTo(x, y - TILE_HALF + 4).lineTo(x, y + TILE_HALF - 4).stroke({ width: 2, color: 0x0c0a08 });
             }
           } else {
-            art.texture = (engraved ? printTex : cutTex)[allows[0]];
+            art.texture = (engraved ? tileSet.print : tileSet.cut)[allows[0]];
             art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
             art.width = TILE - 8;
             art.height = TILE - 8;
@@ -1134,7 +1160,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         dyn.slots.addChild(g);
       };
       const painting = (ind: IndustryType, px: number, py: number, size: number) => {
-        const art = new Sprite(cutTex[ind]);
+        const art = new Sprite(tileSet.cut[ind]);
         art.anchor.set(0.5);
         art.width = size;
         art.height = size;
@@ -1256,6 +1282,16 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     setStockStyle(s: StockStyle) {
       stockStyle = s;
       if (lastGame) drawTowns(lastGame);
+    },
+    async setTileStyle(style: TileStyle) {
+      const req = ++styleReq;
+      const set = await ensureTileSet(style);
+      if (req !== styleReq) return; // a later switch won
+      tileSet = set;
+      if (lastGame) {
+        drawTowns(lastGame);
+        drawMerchants(lastGame);
+      }
     },
     setTileLook(l: TileLook) {
       const linksToo = (l.colorBlind && l.sealLinks) !== (look.colorBlind && look.sealLinks);

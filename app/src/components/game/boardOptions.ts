@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
+import type { ChipStyle, SlotArt, StockStyle, TileStyle } from '@/gl/paint';
 
 /* ------------------------------------------------------------------ */
 /* Board display options — one tiny shared store (localStorage-backed) */
@@ -23,6 +23,8 @@ export interface BoardOptions {
   bigChips: boolean;
   greyFreeMerchants: boolean;
   stockStyle: StockStyle;
+  /** painting set: original icons or the drawn buildings */
+  tileStyle: TileStyle;
   /** empty-slot face: engraved print or colour painting */
   slotArt: SlotArt;
   /** colour-blind mode: owner shape medallions on built cards and/or links */
@@ -44,6 +46,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   bigChips: 'brassworks.bigChips',
   greyFreeMerchants: 'brassworks.greyFreeMerchants',
   stockStyle: 'brassworks.stockStyle',
+  tileStyle: 'brassworks.tileStyle',
   slotArt: 'brassworks.slotArt',
   colorBlind: 'brassworks.colorBlind',
   sealTiles: 'brassworks.colorBlind.tiles',
@@ -71,6 +74,7 @@ let state: BoardOptions = {
   bigChips: read('bigChips', false),
   greyFreeMerchants: read('greyFreeMerchants', false),
   stockStyle: read('stockStyle', 'corner'),
+  tileStyle: read('tileStyle', 'icons'),
   slotArt: read('slotArt', 'engraved'),
   colorBlind: read('colorBlind', false),
   sealTiles: read('sealTiles', true),

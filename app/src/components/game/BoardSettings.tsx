@@ -6,7 +6,7 @@ import { setLang, useLang, useT } from '@/i18n';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
 import { STOCK_STYLE_IDS } from './stockStyles';
-import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
+import type { ChipStyle, SlotArt, StockStyle, TileStyle } from '@/gl/paint';
 import { useGame } from '@/game/store';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +29,18 @@ const SECTIONS: { id: SectionId; icon: LucideIcon }[] = [
 /* ----------------------------- previews ---------------------------- */
 
 const CARD = 'relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border';
+
+/** the two paintings of an industry side by side: icon set vs. buildings */
+function StylePreview({ style, active }: { style: TileStyle; active: boolean }) {
+  const dir = style === 'works' ? '/tiles-works' : '';
+  return (
+    <span aria-hidden className={cn('flex shrink-0 gap-1 rounded-md border bg-[#12100C] p-1', active ? 'border-brass-400' : 'border-brass-700/50')}>
+      {['coal', 'brewery'].map((i) => (
+        <span key={i} className="block h-10 w-10 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${dir}/tile-${i}-cut.png)` }} />
+      ))}
+    </span>
+  );
+}
 
 /** the cotton mill painting: full colour, or the engraved sepia print */
 function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
@@ -274,6 +286,17 @@ export default function BoardSettings() {
 
                 {section === 'tiles' && (
                   <>
+                    <ChoiceCards<TileStyle>
+                      label={t('game.settings.tileStyle')}
+                      hint={t('game.settings.tileStyleHint')}
+                      value={opts.tileStyle}
+                      onChange={(v) => setBoardOption('tileStyle', v)}
+                      options={(['icons', 'works'] as TileStyle[]).map((id) => ({
+                        id,
+                        label: t(`game.settings.tile.${id}`),
+                        preview: (active) => <StylePreview style={id} active={active} />,
+                      }))}
+                    />
                     <ChoiceCards<SlotArt>
                       label={t('game.settings.slotArt')}
                       hint={t('game.settings.slotArtHint')}
