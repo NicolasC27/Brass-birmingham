@@ -29,19 +29,25 @@ Tables live in the browser by default: open a second tab and it plays the guest.
 
 ```bash
 cd app
-npm run server                       # ws://localhost:8787, PORT and HOST override it
+npm run server                       # ws://localhost:8787
 echo 'VITE_ONLINE_URL=ws://localhost:8787' > .env.local
 npm run dev
 ```
 
-The server holds the whole truth — it applies every action through the engine, keeps the log, plays the mechanical seats, and sends each player a state with the other hands, the deck and the seed struck out. `npm test` plays a full four-handed game through a real socket.
+`PORT`, `HOST` and `BRASSWORKS_DB` (the register file, `brassworks.db` by default) configure the server.
+
+The server holds the whole truth. It applies every action through the engine, keeps the log, plays the mechanical seats, burns the turn candle, and sends each player a state with the other hands, the deck and the seed struck out. A seat belongs to an account: the office signs you in and hands the browser a session token, so a reload — or a server restart — gives you your chair, your hand and your turn back. Accounts, tables and logs live in SQLite (the one that ships with Node: no dependency, no native build); a game is stored as its seed and its moves, and replaying them is how a table comes back.
+
+Over a wire that is not `wss://`, a password crosses in clear: put the server behind TLS before letting anyone but yourself sign in.
+
+`npm test` plays a full four-handed game through a real socket, restarts the server mid-game, and lets a candle burn out.
 
 ## Project layout
 
 ```
 app/src/game/        pure rules engine (engine.ts), data tables (data.ts), bots (bot.ts), zustand store
-app/src/online/      tables and seats, the wire protocol, the lobby clients (this browser or a server)
-app/server/          the table server: the hall of tables, a table in play, the websocket switchboard
+app/src/online/      tables and seats, the wire protocol, the session, the lobby clients
+app/server/          the table server: the register, the hall of tables, a table in play, the switchboard
 app/src/gl/          WebGL board: scene painting (paint.ts), camera, ambiance (traffic, smoke, mist)
 app/src/components/  HUD (tracks, hand dock, player rail, merchants on the minimap), rules codex, setup, results
 app/src/i18n/        French and English dictionaries
@@ -63,6 +69,6 @@ Bug reports with a saved game are the most useful: the current game lives in `lo
 
 ## Status
 
-Solo against bots, hot-seat around one screen, and online tables against the table server. Tables are held in memory for now: accounts, tables that outlive a restart and asynchronous games are the next step.
+Solo against bots, hot-seat around one screen, and online tables against the table server, with accounts, tables that outlive a restart and a turn candle the table itself holds. Asynchronous games and a lobby of open tables are the next step.
 
 *Brass: Birmingham* is a trademark of Roxley Games. This is an independent fan project, not affiliated with or endorsed by the publisher.
