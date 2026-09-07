@@ -5,6 +5,7 @@ import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
+import type { TrafficLevel } from '@/gl/ambiance';
 import { STOCK_STYLE_IDS } from './stockStyles';
 import { TILE_VARIANTS } from '@/gl/paint';
 import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
@@ -371,6 +372,13 @@ export default function BoardSettings() {
                     </OptionRow>
                     <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
                       <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.traffic')} hint={t('game.settings.trafficHint')}>
+                      <Segmented<TrafficLevel>
+                        value={opts.traffic}
+                        onChange={(v) => setBoardOption('traffic', v)}
+                        options={(['none', 'light', 'busy'] as TrafficLevel[]).map((id) => ({ id, label: t(`game.settings.trafficLevel.${id}`) }))}
+                      />
                     </OptionRow>
                     <OptionRow label={t('game.settings.followBots')} hint={t('game.settings.followBotsHint')}>
                       <Switch on={followBots} onClick={toggleFollowBots} label={t('game.settings.followBots')} />

@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { ChipStyle, SlotArt, StockStyle, TileArt } from '@/gl/paint';
+import type { TrafficLevel } from '@/gl/ambiance';
 
 /* ------------------------------------------------------------------ */
 /* Board display options — one tiny shared store (localStorage-backed) */
@@ -38,6 +39,8 @@ export interface BoardOptions {
   minimapSize: MinimapSize;
   incomeSide: IncomeSide;
   mapStyle: MapStyle;
+  /** boats and trains on built links */
+  traffic: TrafficLevel;
   settingsOpen: boolean;
 }
 
@@ -56,6 +59,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   minimapSize: 'brassworks.minimapSize',
   incomeSide: 'brassworks.incomeSide',
   mapStyle: 'brassworks.mapStyle',
+  traffic: 'brassworks.traffic',
 };
 
 const read = <K extends keyof typeof KEYS>(k: K, fallback: BoardOptions[K]): BoardOptions[K] => {
@@ -85,6 +89,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),
+  traffic: read('traffic', 'light'),
   settingsOpen: false,
 };
 

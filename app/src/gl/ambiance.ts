@@ -211,9 +211,14 @@ const ETCH_DUR = 1.5;
 /** cubic ease-in-out, approximating the CSS animation timing */
 const easeInOut = (p: number): number => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 
+/** how much traffic runs on built links: none, a light trickle (one vehicle
+ *  per link, moored most of the time) or the busy two-per-link parade */
+export type TrafficLevel = 'none' | 'light' | 'busy';
+
 export interface Ambiance {
   layer: Container;
   tick: (t: number, game: GameState | null) => void;
+  setTraffic: (level: TrafficLevel) => void;
 }
 
 export function buildAmbiance(reduced: boolean): Ambiance {
@@ -363,8 +368,11 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     puffs: Puff[];
     lastPuff: number;
     len: number;
+    /** seconds moored out of sight between two crossings (0 = continuous) */
+    rest: number;
   }
   let vehicles: Vehicle[] = [];
+  let traffic: TrafficLevel = 'light';
 
   /* a narrowboat seen from above, pointing +x: long dark hull, the owner's
      livery stripe, a stern cabin with a brass chimney and a bow lantern */
@@ -488,13 +496,13 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     }
     /* traffic: one vehicle per built link, following its polyline */
     const links = Object.entries(game.links);
-    const tKey = links.map(([id, l]) => `${id}:${l.era}`).join('|');
+    const tKey = traffic + '|' + links.map(([id, l]) => `${id}:${l.era}`).join('|');
     if (tKey !== trafficKey && iconCanal && iconRail) {
       trafficKey = tKey;
       for (const child of trafficLayer.removeChildren()) child.destroy({ children: true });
       for (const child of wakeLayer.removeChildren()) child.destroy();
       vehicles = [];
-      if (!reduced) {
+      if (!reduced && traffic !== 'none') {
         for (const [id, l] of links) {
           const def = LINKS.find((d) => d.id === id);
           if (!def) continue;
@@ -524,16 +532,19 @@ export function buildAmbiance(reduced: boolean): Ambiance {
               wakeLayer.addChild(s);
               puffs.push({ s, born: -99, x: 0, y: 0 });
             }
-            vehicles.push({ c, wake, sam: makeSampler(pts), dur, ph: phase, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48 });
+            /* light traffic: one vehicle that moors for 1.5–2.5 crossings
+               between trips, so only a third of the lines are busy at once */
+            const rest = traffic === 'light' ? dur * (1.5 + ((h >> 3) % 10) / 10) : 0;
+            vehicles.push({ c, wake, sam: makeSampler(pts), dur, ph: phase, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48, rest });
           };
-          /* two vehicles per link: the second casts off when the first reaches
-             80 % of the crossing, so the line never looks idle. Barges run in
-             opposite directions and pass each other mid-canal; trains follow
-             one another the same way down the line. */
           const first = h % 2 === 0;
           const ph = (h % 900) / 100;
           spawn(first, ph);
-          spawn(boat ? !first : first, ph + 0.2 * dur);
+          /* busy traffic: two vehicles per link, the second casts off when the
+             first reaches 80 % of the crossing, so the line never looks idle.
+             Barges run in opposite directions and pass each other mid-canal;
+             trains follow one another the same way down the line. */
+          if (traffic === 'busy') spawn(boat ? !first : first, ph + 0.2 * dur);
         }
       }
     }
@@ -605,6 +616,9 @@ export function buildAmbiance(reduced: boolean): Ambiance {
 
   return {
     layer,
+    setTraffic(level: TrafficLevel) {
+      traffic = level; // the next tick rebuilds the vehicles (tKey changes)
+    },
     tick(t: number, game: GameState | null) {
       for (const a of animated) a.tick(t);
       for (const fx of rivers) {
@@ -627,8 +641,20 @@ export function buildAmbiance(reduced: boolean): Ambiance {
         w.s.alpha = p < 0.18 ? (p / 0.18) * 0.3 : 0.3 * (1 - p);
       }
       for (const v of vehicles) {
+        /* moored spell between two crossings: out of sight, wake and smoke off */
+        const cycle = v.dur + v.rest;
+        const inCycle = (t + v.ph) % cycle;
+        if (inCycle >= v.dur) {
+          if (v.c.visible) {
+            v.c.visible = false;
+            v.wake.clear();
+            for (const puff of v.puffs) puff.s.alpha = 0;
+          }
+          continue;
+        }
+        v.c.visible = true;
         /* ease in and out at the quays: a barge casts off and moors, it never teleports */
-        const raw = ((t + v.ph) % v.dur) / v.dur;
+        const raw = inCycle / v.dur;
         const p = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
         /* keep to the open water between the quays: the vehicle never hides under a town's tiles */
         const d = (0.1 + 0.8 * (v.reverse ? 1 - p : p)) * v.sam.total;

@@ -21,6 +21,7 @@ import { Camera } from './camera';
 import { buildBoardScene, loadBoardAssets } from './paint';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
+import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
 
@@ -70,7 +71,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
+  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
   /* fullscreen is a keyboard-only affair now (F) — no HUD button */
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -81,6 +82,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
   /* imperative handles shared between the boot effect and prop effects */
   const sceneRef = useRef<ReturnType<typeof buildBoardScene> | null>(null);
+  const ambianceRef = useRef<Ambiance | null>(null);
   const cameraRef = useRef<Camera | null>(null);
   const overlayRef = useRef<Container | null>(null);
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
@@ -104,6 +106,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     void sceneRef.current?.setTileArt(tileArt);
   }, [tileArt]);
+  useEffect(() => {
+    ambianceRef.current?.setTraffic(traffic);
+  }, [traffic]);
   useEffect(() => {
     sceneRef.current?.setTileLook({ slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle });
   }, [slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle]);
@@ -206,6 +211,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       );
 
       const ambiance = buildAmbiance(reduced);
+      ambiance.setTraffic(bootOpts.traffic);
+      ambianceRef.current = ambiance;
       /* mist + halos under the towns, smoke + traffic above */
       scene.world.addChildAt(ambiance.layer, 3);
 
