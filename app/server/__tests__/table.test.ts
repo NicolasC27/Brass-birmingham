@@ -174,6 +174,48 @@ describe('a table over the wire', () => {
     expect(guest.rejected).toEqual([]);
   }, 60000);
 
+  it('gives a reconnecting player their own seat back, mid-game', async () => {
+    server = await serve({ port: 0, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0 });
+    const host = new Guest('p-host', 'Ada');
+    const guest = new Guest('p-guest', 'Bob');
+    guests.push(host, guest);
+    await host.open(server.port);
+    await guest.open(server.port);
+    host.send({ t: 'create', rid: 1, name: 'The Works', options: OPTIONS });
+    await host.until('the table', () => !!host.table);
+    const code = host.table!.code;
+    guest.send({ t: 'join', rid: 2, code });
+    await guest.until('a chair', () => !!guest.table);
+    await host.until('the guest', () => host.table!.seats.length === 2);
+    guest.send({ t: 'table', code, table: { ...guest.table!, seats: guest.table!.seats.map((s) => (s.id === guest.id ? { ...s, ready: true } : s)) } });
+    await host.until('the guest to be ready', () => host.table!.seats.some((s) => s.id === guest.id && s.ready));
+    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === host.id ? { ...s, ready: true } : s)), status: 'starting' } });
+    await host.until('the game', () => !!host.view);
+    await guest.until('the game', () => !!guest.view);
+
+    /* the guest's browser goes away and comes back — same id, same chair */
+    const played = server.hall.game(code)!.state.actions.length;
+    guest.close();
+    const again = new Guest('p-guest', 'Bob');
+    guests.push(again);
+    await again.open(server.port);
+    again.send({ t: 'watch', code });
+    await again.until('the table back', () => !!again.view && !!again.table);
+    expect(again.view!.seat).toBe(1);
+    expect(again.view!.state.actions.length).toBe(played);
+    expect(again.view!.state.players[1].hand.every((c) => !c.id.startsWith('hidden:'))).toBe(true);
+    expect(keepsItsSecrets(again.view!)).toBe(true);
+
+    /* and a stranger who merely follows the code sees no hand at all */
+    const passer = new Guest('p-passer', 'Nobody');
+    guests.push(passer);
+    await passer.open(server.port);
+    passer.send({ t: 'watch', code });
+    await passer.until('the table', () => !!passer.view);
+    expect(passer.view!.seat).toBe(-1);
+    expect(passer.view!.state.players.every((p) => p.hand.every((c) => c.id.startsWith('hidden:')))).toBe(true);
+  }, 30000);
+
   it('turns down an action taken out of turn', async () => {
     server = await serve({ port: 0, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0 });
     const host = new Guest('p-host', 'Ada');

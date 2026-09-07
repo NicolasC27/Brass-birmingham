@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { PLAYER_COLORS } from '@/game/data';
-import { useGame } from '@/game/store';
+import { leaveOnlineTable, useGame } from '@/game/store';
 import { useT } from '@/i18n';
 
 /**
@@ -119,7 +119,14 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
           {/* a rematch reshuffles this browser's own game: at an online
               table it is the room's business, so the button steps aside */}
           {online ? (
-            <button type="button" onClick={() => navigate('/online')} className="btn-strike">
+            <button
+              type="button"
+              onClick={() => {
+                leaveOnlineTable();
+                navigate('/online');
+              }}
+              className="btn-strike"
+            >
               {t('game.scoring.backToRoom')}
             </button>
           ) : (
