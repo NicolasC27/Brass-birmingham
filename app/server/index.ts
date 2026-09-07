@@ -3,12 +3,15 @@ import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { decode, encode } from '@/online/protocol';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
-import type { Identity } from '@/online/table';
+import type { Me } from '@/online/table';
 import { normalizeCode } from '@/online/table';
 import { Hall, STALE_MS } from './hall';
 import { DEFAULT_PACE } from './game';
 import type { Pace } from './game';
+import { letters, mailerFromEnv } from './mail';
+import type { Mailer } from './mail';
 import { Store } from './store';
+import type { Account } from './store';
 
 /* ------------------------------------------------------------------ */
 /* The switchboard.                                                    */
@@ -19,12 +22,14 @@ import { Store } from './store';
 /* view it is entitled to. Reconnecting is just watching again.        */
 /*                                                                     */
 /* A socket is nobody until it signs in or presents a session token;   */
-/* until then the only thing it may say is who it claims to be.        */
+/* until then the only things it may say are who it claims to be, and  */
+/* the two letters anyone may answer. The tables open to an account    */
+/* once its address has answered its letter.                           */
 /* ------------------------------------------------------------------ */
 
 interface Client {
   socket: WebSocket;
-  me: Identity | null;
+  me: Me | null;
   /** the session token this socket presented, if any */
   token: string | null;
   /** the table codes this socket follows */
@@ -39,6 +44,10 @@ export interface ServeOptions {
   file?: string;
   /** how often stale tables are swept (0 = never) */
   sweepEvery?: number;
+  /** where the letters go (the console, unless the environment says Resend) */
+  mailer?: Mailer;
+  /** the address the letters' links point at */
+  appUrl?: string;
 }
 
 export interface Serving {
@@ -48,9 +57,13 @@ export interface Serving {
   close(): Promise<void>;
 }
 
+const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt });
+
 export function serve(options: ServeOptions = {}): Promise<Serving> {
   const store = new Store(options.file ?? 'brassworks.db');
   const hall = new Hall(store, options.pace ?? DEFAULT_PACE);
+  const post = options.mailer ?? mailerFromEnv();
+  const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:5173');
   const clients = new Set<Client>();
   const http = createServer((_req, res) => {
     res.writeHead(200, { 'content-type': 'text/plain' });
@@ -62,11 +75,24 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (c.socket.readyState === 1) c.socket.send(encode(m));
   };
   const watchers = (code: string) => [...clients].filter((c) => c.watching.has(code));
+  const socketsOf = (accountId: string) => [...clients].filter((c) => c.me?.id === accountId);
 
   const pushTable = (c: Client, code: string) => send(c, { t: 'table', code, table: hall.table(code) });
   const pushGame = (c: Client, code: string) => {
     const game = hall.game(code);
     if (game && c.me) send(c, { t: 'game', view: game.view(c.me.id) });
+  };
+  const pushDesk = (c: Client, rid?: number) => {
+    if (c.me) send(c, { t: 'desk', rid, desk: hall.desk(c.me.id) });
+  };
+  /** the account changed: every socket it holds hears the new `me` */
+  const pushMe = (accountId: string, rid?: number, to?: Client) => {
+    const account = store.account(accountId);
+    if (!account) return;
+    for (const c of socketsOf(accountId)) {
+      c.me = me(account);
+      send(c, { t: 'me', rid: c === to ? rid : undefined, me: c.me });
+    }
   };
 
   hall.onChange((code, what) => {
@@ -75,6 +101,17 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       else pushGame(c, code);
     }
   });
+  hall.onDesk((accountId) => {
+    for (const c of socketsOf(accountId)) pushDesk(c);
+  });
+
+  /** a letter on its way — a post that fails is logged, never thrown at the client */
+  const mail = (kind: 'verify' | 'reset', account: Account) => {
+    if (!account.email) return;
+    const token = store.writeLetter(account.id, kind);
+    const m = kind === 'verify' ? letter.verify(account.email, account.name, token) : letter.reset(account.email, account.name, token);
+    post.send(m).catch((e: unknown) => console.error(`mail to ${account.email} failed:`, (e as Error).message));
+  };
 
   wss.on('connection', (socket: WebSocket) => {
     const client: Client = { socket, me: null, token: null, watching: new Set() };
@@ -98,11 +135,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         send(c, { t: 'pong' });
         return;
       case 'signup': {
-        const made = store.signUp(m.name, m.password);
+        const made = store.signUp(m.name, m.email, m.password);
         if ('error' in made) {
           send(c, { t: 'refused', rid: m.rid, error: made.error });
           return;
         }
+        mail('verify', made.account);
         open(c, made.account, m.rid);
         return;
       }
@@ -121,7 +159,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'no-session' });
           return;
         }
-        c.me = { id: account.id, name: account.name };
+        c.me = me(account);
         c.token = m.token;
         send(c, { t: 'welcome', rid: m.rid, me: c.me });
         return;
@@ -133,25 +171,107 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         c.watching.clear();
         return;
       }
+      /* the two letters anyone may answer, signed in or not */
+      case 'verify': {
+        const account = store.verify(m.token);
+        if (!account) {
+          send(c, { t: 'refused', rid: m.rid, error: 'bad-token' });
+          return;
+        }
+        /* answered from a fresh browser: it is signed in as a courtesy */
+        if (!c.me) open(c, account, m.rid);
+        else send(c, { t: 'done', rid: m.rid });
+        pushMe(account.id);
+        return;
+      }
+      case 'forgot': {
+        const account = store.accountByEmail(m.email);
+        /* an unknown address gets the same answer: the letter is the only tell */
+        if (account) mail('reset', account);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
+      case 'reset': {
+        const r = store.resetPassword(m.token, m.password);
+        if (r === 'weak-password' || r === null) {
+          send(c, { t: 'refused', rid: m.rid, error: r ?? 'bad-token' });
+          return;
+        }
+        open(c, r, m.rid);
+        return;
+      }
     }
-    const me = c.me;
-    if (!me) {
+    const who = c.me;
+    if (!who) {
       send(c, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: 'sign-in-first' });
       return;
     }
     switch (m.t) {
+      case 'resend': {
+        if (m.email !== undefined) {
+          const error = store.setEmail(who.id, m.email);
+          if (error) {
+            send(c, { t: 'refused', rid: m.rid, error });
+            return;
+          }
+        }
+        const account = store.account(who.id);
+        if (account && !account.verified) mail('verify', account);
+        send(c, { t: 'done', rid: m.rid });
+        pushMe(who.id);
+        return;
+      }
+      case 'profile': {
+        store.setProfile(who.id, { motto: m.motto, favoriteColor: m.favoriteColor });
+        pushMe(who.id, m.rid, c);
+        return;
+      }
+      case 'password': {
+        const error = store.changePassword(who.id, m.current, m.next);
+        if (error) {
+          send(c, { t: 'refused', rid: m.rid, error });
+          return;
+        }
+        /* every session was closed with the old password: this one is opened again */
+        c.token = store.openSession(who.id);
+        send(c, { t: 'session', rid: m.rid, token: c.token, me: who });
+        return;
+      }
+      case 'desk':
+        pushDesk(c, m.rid);
+        return;
+    }
+    /* from here on, the tables: an address must have answered its letter */
+    if (!who.verified) {
+      send(c, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: 'verify-first' });
+      return;
+    }
+    switch (m.t) {
       case 'create': {
-        const table = hall.create(me, m.name, m.options, m.color);
+        const table = hall.create(who, m.name, m.options, m.color);
         c.watching.add(table.code);
         send(c, { t: 'seated', rid: m.rid, table });
         return;
       }
       case 'join': {
         const code = normalizeCode(m.code);
-        const table = hall.join(code, me, m.color);
+        const table = hall.join(code, who, m.color);
         c.watching.add(code);
         send(c, { t: 'seated', rid: m.rid, table });
         pushGame(c, code);
+        return;
+      }
+      case 'invite': {
+        hall.invite(normalizeCode(m.code), who, m.name);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
+      case 'answer': {
+        const table = hall.answer(m.id, who, m.accept);
+        if (table) {
+          c.watching.add(table.code);
+          send(c, { t: 'seated', rid: m.rid, table });
+        } else send(c, { t: 'done', rid: m.rid });
         return;
       }
       case 'watch': {
@@ -164,17 +284,17 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'leave': {
         const code = normalizeCode(m.code);
         c.watching.delete(code);
-        hall.leave(code, me.id);
+        hall.leave(code, who.id);
         return;
       }
       case 'table': {
-        const { error } = hall.rewrite(m.code, me.id, m.table);
+        const { error } = hall.rewrite(m.code, who.id, m.table);
         /* refused: the client's optimistic copy is wrong — hand back the truth */
         if (error) pushTable(c, m.code);
         return;
       }
       case 'act': {
-        const error = hall.act(m.code, me.id, m.action);
+        const error = hall.act(m.code, who.id, m.action);
         /* put the board right first, then say why: the reason must land
            after the state, or the state's arrival would wipe it away */
         if (error) {
@@ -184,7 +304,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'undo': {
-        const error = hall.undo(m.code, me.id);
+        const error = hall.undo(m.code, who.id);
         if (error) {
           pushGame(c, m.code);
           send(c, { t: 'rejected', code: m.code, error });
@@ -195,8 +315,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   }
 
   /** signed in: a fresh token, and the socket speaks for the account */
-  function open(c: Client, account: { id: string; name: string }, rid: number): void {
-    c.me = { id: account.id, name: account.name };
+  function open(c: Client, account: Account, rid: number): void {
+    c.me = me(account);
     c.token = store.openSession(account.id);
     send(c, { t: 'session', rid, token: c.token, me: c.me });
   }

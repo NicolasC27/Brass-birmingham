@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { Identity } from './table';
+import type { Desk, Me } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -29,7 +29,10 @@ export class Wire {
   readonly url: string;
   status: WireStatus = 'offline';
   /** the account this socket speaks for, null until it is signed in */
-  session: Identity | null = null;
+  session: Me | null = null;
+  /** the desk as the server last sent it (null until asked) */
+  desk: Desk | null = null;
+  private desks = new Set<() => void>();
   private token: string | null = null;
   private socket: WebSocket | null = null;
   private outbox: ClientMessage[] = [];
@@ -72,10 +75,21 @@ export class Wire {
     return () => this.states.delete(cb);
   }
 
-  /** somebody signed in or out */
+  /** somebody signed in or out, or the account changed */
   onSession(cb: () => void): () => void {
     this.sessions.add(cb);
     return () => this.sessions.delete(cb);
+  }
+
+  /** the desk changed */
+  onDesk(cb: () => void): () => void {
+    this.desks.add(cb);
+    return () => this.desks.delete(cb);
+  }
+
+  /** ask for the desk: it comes back as a frame, and again whenever it changes */
+  askDesk(): void {
+    this.send({ t: 'desk' });
   }
 
   send(m: ClientMessage): void {
@@ -107,12 +121,31 @@ export class Wire {
 
   /* ---------------------------- accounts --------------------------- */
 
-  async signUp(name: string, password: string): Promise<Identity> {
-    return this.enter(await this.ask((rid) => ({ t: 'signup', rid, name, password }), true));
+  async signUp(name: string, email: string, password: string): Promise<Me> {
+    return this.enter(await this.ask((rid) => ({ t: 'signup', rid, name, email, password }), true));
   }
 
-  async signIn(name: string, password: string): Promise<Identity> {
+  async signIn(name: string, password: string): Promise<Me> {
     return this.enter(await this.ask((rid) => ({ t: 'signin', rid, name, password }), true));
+  }
+
+  /** the letter's link, followed: signed in as a courtesy when nobody was */
+  async verify(token: string): Promise<void> {
+    const m = await this.ask((rid) => ({ t: 'verify', rid, token }), true);
+    if (m.t === 'session') this.enter(m);
+  }
+
+  async forgot(email: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'forgot', rid, email }), true);
+  }
+
+  async reset(token: string, password: string): Promise<Me> {
+    return this.enter(await this.ask((rid) => ({ t: 'reset', rid, token, password }), true));
+  }
+
+  /** a new password: the office hands out a fresh session for it */
+  async changePassword(current: string, next: string): Promise<void> {
+    this.enter(await this.ask((rid) => ({ t: 'password', rid, current, next })));
   }
 
   signOut(): void {
@@ -129,7 +162,7 @@ export class Wire {
     this.setSession(null);
   }
 
-  private enter(m: ServerMessage): Identity {
+  private enter(m: ServerMessage): Me {
     if (m.t !== 'session') throw new Error('refused');
     this.token = m.token;
     try {
@@ -193,6 +226,12 @@ export class Wire {
       this.setSession(m.me);
       this.flush();
     }
+    /* the account changed (verified, a new motto): every page hears it */
+    if (m.t === 'me') this.setSession(m.me);
+    if (m.t === 'desk') {
+      this.desk = m.desk;
+      for (const cb of this.desks) cb();
+    }
     /* the token no longer stands for anyone: sign in again */
     if (m.t === 'refused' && m.error === 'no-session') {
       this.token = null;
@@ -247,8 +286,12 @@ export class Wire {
     for (const cb of this.states) cb();
   }
 
-  private setSession(session: Identity | null): void {
+  private setSession(session: Me | null): void {
     this.session = session;
+    if (!session) {
+      this.desk = null;
+      for (const cb of this.desks) cb();
+    }
     for (const cb of this.sessions) cb();
   }
 }

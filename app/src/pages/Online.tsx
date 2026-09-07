@@ -65,7 +65,7 @@ export default function Online() {
     if (!canEnter) return;
     setAuthError(null);
     try {
-      await (door === 'in' ? signIn(name, password) : signUp(name, password));
+      await (door === 'in' ? signIn(name, password) : signUp(name, `${name}@example.test`, password));
       setPassword('');
     } catch (e) {
       setAuthError((e as Error).message);

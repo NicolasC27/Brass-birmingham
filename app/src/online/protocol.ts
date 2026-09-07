@@ -1,7 +1,7 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { AuthError, Identity, LobbyError, Table } from './table';
+import type { AuthError, Desk, Identity, LobbyError, Me, Table } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -12,7 +12,9 @@ import type { AuthError, Identity, LobbyError, Table } from './table';
 /* see. Requests that expect an answer carry a `rid` the reply echoes. */
 /*                                                                     */
 /* A socket says nothing but signup, signin and auth until it holds a  */
-/* session: a seat belongs to an account, not to a browser tab.        */
+/* session: a seat belongs to an account, not to a browser tab. An     */
+/* account is opened with an address, and the tables open once the     */
+/* address has answered its letter.                                    */
 /* ------------------------------------------------------------------ */
 
 /** the game as one seat may see it — hands of others and deck redacted */
@@ -32,13 +34,29 @@ export interface GameView {
 }
 
 export type ClientMessage =
-  /** open an account, and be signed in with it */
-  | { t: 'signup'; rid: number; name: string; password: string }
+  /** open an account, and be signed in with it — the letter leaves at once */
+  | { t: 'signup'; rid: number; name: string; email: string; password: string }
   | { t: 'signin'; rid: number; name: string; password: string }
   /** first frame of a socket that already holds a session */
   | { t: 'auth'; rid?: number; token: string }
   /** forget this session for good */
   | { t: 'signout' }
+  /** the letter's link: this address is mine */
+  | { t: 'verify'; rid: number; token: string }
+  /** the letter never came: send it again (or to a new address) */
+  | { t: 'resend'; rid: number; email?: string }
+  /** a password forgotten: a letter to the address on the account */
+  | { t: 'forgot'; rid: number; email: string }
+  | { t: 'reset'; rid: number; token: string; password: string }
+  /** the profile, as its owner would have it */
+  | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null }
+  | { t: 'password'; rid: number; current: string; next: string }
+  /** the desk: my tables, my invitations, my past games */
+  | { t: 'desk'; rid?: number }
+  /** ask a player by name to a table I sit at */
+  | { t: 'invite'; rid: number; code: string; name: string }
+  /** answer an invitation — accepting takes the chair */
+  | { t: 'answer'; rid: number; id: string; accept: boolean }
   | { t: 'create'; rid: number; name: string; options: SetupOptions; color?: PlayerColor }
   | { t: 'join'; rid: number; code: string; color?: PlayerColor }
   /** follow a table without taking a seat (a link, a reconnection) */
@@ -52,9 +70,15 @@ export type ClientMessage =
 
 export type ServerMessage =
   /** the socket now speaks for this account */
-  | { t: 'welcome'; rid?: number; me: Identity }
+  | { t: 'welcome'; rid?: number; me: Me }
   /** a fresh session: the token is the client's to keep */
-  | { t: 'session'; rid: number; token: string; me: Identity }
+  | { t: 'session'; rid: number; token: string; me: Me }
+  /** the account changed (verified, a new motto…) */
+  | { t: 'me'; rid?: number; me: Me }
+  /** the answer to a request that has nothing else to say */
+  | { t: 'done'; rid: number }
+  /** the desk, whenever it changes */
+  | { t: 'desk'; rid?: number; desk: Desk }
   /** the table changed (null = it is gone) */
   | { t: 'table'; code: string; table: Table | null }
   /** the answer to a create or a join */
@@ -64,6 +88,9 @@ export type ServerMessage =
   /** the engine turned an action down — its own words, for the shake */
   | { t: 'rejected'; code: string; error: string }
   | { t: 'pong' };
+
+/** a name or an address: the office does not say which was wrong */
+export type { Identity };
 
 export const encode = (m: ServerMessage | ClientMessage): string => JSON.stringify(m);
 

@@ -38,7 +38,8 @@ const MINUTE = 60_000;
 export interface Journal {
   append(idx: number, action: GameAction): void;
   drop(idx: number): void;
-  finish(): void;
+  /** the game is over: the state as it ended, for the record */
+  finish(state: GameState): void;
 }
 
 export interface TableGameOptions {
@@ -190,7 +191,7 @@ export class TableGame {
     if (s.phase !== 'action') {
       if (!this.closed) {
         this.closed = true;
-        this.journal?.finish();
+        this.journal?.finish(s);
       }
       return;
     }

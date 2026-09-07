@@ -9,8 +9,9 @@ import { chooseBotMove } from '@/game/bot';
 import { serialize } from '@/game/engine';
 import { decode, encode } from '@/online/protocol';
 import type { ClientMessage, GameView, ServerMessage } from '@/online/protocol';
-import type { Table } from '@/online/table';
+import type { Desk, Me, Table } from '@/online/table';
 import { serve } from '../index';
+import type { Mail, Mailer } from '../mail';
 import type { Pace } from '../game';
 import type { Serving } from '../index';
 
@@ -24,6 +25,15 @@ import type { Serving } from '../index';
 const OPTIONS = { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' } as const;
 const PASSWORD = 'a-good-long-password';
 
+/** the post, read by the tests: the last letter to each address */
+const letters = new Map<string, Mail>();
+const post: Mailer = {
+  async send(mail) {
+    letters.set(mail.to, mail);
+  },
+};
+const tokenIn = (mail: Mail | undefined, kind: 'verify' | 'reset'): string => mail?.text.match(new RegExp(`/account/${kind}/([a-f0-9]+)`))?.[1] ?? '';
+
 /** a player at the far end of a socket: the last table and view it was sent */
 class Guest {
   readonly name: string;
@@ -34,6 +44,8 @@ class Guest {
   private rid = 0;
   table: Table | null = null;
   view: GameView | null = null;
+  me: Me | null = null;
+  desk: Desk | null = null;
   rejected: string[] = [];
   /** every view ever received — the secrecy audit reads them all */
   seen: GameView[] = [];
@@ -56,11 +68,17 @@ class Guest {
       this.trace.push(m.t);
       if (m.t === 'table') this.table = m.table;
       if (m.t === 'seated') this.table = m.table;
+      if (m.t === 'me') this.me = m.me;
+      if (m.t === 'desk') this.desk = m.desk;
       if (m.t === 'session') {
+        this.me = m.me;
         this.id = m.me.id;
         this.token = m.token;
       }
-      if (m.t === 'welcome') this.id = m.me.id;
+      if (m.t === 'welcome') {
+        this.id = m.me.id;
+        this.me = m.me;
+      }
       if (m.t === 'game') {
         this.view = m.view;
         this.seen.push(m.view);
@@ -69,10 +87,18 @@ class Guest {
     });
   }
 
-  /** open an account and be signed in with it */
-  async signUp(): Promise<void> {
-    this.send({ t: 'signup', rid: ++this.rid, name: this.name, password: PASSWORD });
+  get email(): string {
+    return `${this.name.toLowerCase()}@example.test`;
+  }
+
+  /** open an account, be signed in with it, and answer the letter */
+  async signUp(verify = true): Promise<void> {
+    this.send({ t: 'signup', rid: ++this.rid, name: this.name, email: this.email, password: PASSWORD });
     await this.until('a session', () => !!this.id);
+    if (!verify) return;
+    await this.until('the letter', () => letters.has(this.email));
+    this.send({ t: 'verify', rid: ++this.rid, token: tokenIn(letters.get(this.email), 'verify') });
+    await this.until('the address to be verified', () => this.me?.verified === true);
   }
 
   /** come back with a token already in hand */
@@ -135,7 +161,7 @@ describe('a table over the wire', () => {
 
   /** two signed-in accounts at a table, the guest ready, waiting on the bell */
   async function seatTwo(pace: Pace = { bot: 0, ceremony: 0 }, file = ':memory:') {
-    server = await serve({ port: 0, pace, sweepEvery: 0, file });
+    server = await serve({ port: 0, mailer: post, pace, sweepEvery: 0, file });
     const host = new Guest('Ada');
     const guest = new Guest('Bob');
     guests.push(host, guest);
@@ -277,7 +303,7 @@ describe('a table over the wire', () => {
     await server!.close();
 
     /* and opens on the same tables, the game exactly where it stood */
-    server = await serve({ port: 0, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file });
+    server = await serve({ port: 0, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file });
     expect(server.hall.table(code)?.name).toBe('The Works');
     expect(serialize(server.hall.game(code)!.state)).toBe(before);
 
@@ -311,8 +337,51 @@ describe('a table over the wire', () => {
     expect(table.mayUndo(seat)).toBe(false);
   }, 30000);
 
+  it('opens the tables only to a verified address, and carries invitations to the desk', async () => {
+    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    const host = new Guest('Ada');
+    const guest = new Guest('Bob');
+    guests.push(host, guest);
+    await host.open(server.port);
+    await guest.open(server.port);
+    /* an account whose letter is unanswered is signed in, but the tables are shut */
+    await host.signUp(false);
+    expect(host.me?.verified).toBe(false);
+    host.send({ t: 'create', rid: 10, name: 'The Works', options: OPTIONS });
+    await host.until('the refusal', () => host.rejected.includes('verify-first'));
+    host.send({ t: 'verify', rid: 11, token: tokenIn(letters.get(host.email), 'verify') });
+    await host.until('the address to be verified', () => host.me?.verified === true);
+    host.send({ t: 'create', rid: 12, name: 'The Works', options: OPTIONS });
+    await host.until('the table', () => !!host.table);
+    const code = host.table!.code;
+
+    /* the guest is asked by name; the letter lands on their desk */
+    await guest.signUp();
+    guest.send({ t: 'desk', rid: 20 });
+    await guest.until('an empty desk', () => !!guest.desk);
+    expect(guest.desk!.invitations).toEqual([]);
+    host.send({ t: 'invite', rid: 13, code, name: 'bob' });
+    await guest.until('the invitation', () => (guest.desk?.invitations.length ?? 0) === 1);
+    expect(guest.desk!.invitations[0]).toMatchObject({ code, tableName: 'The Works', from: { id: host.id, name: 'Ada' } });
+    host.send({ t: 'invite', rid: 14, code, name: 'bob' });
+    await host.until('the second letter to be refused', () => host.rejected.includes('already-invited'));
+    host.send({ t: 'invite', rid: 15, code, name: 'nobody' });
+    await host.until('the stranger to be refused', () => host.rejected.includes('no-such-player'));
+
+    /* accepting takes the chair; the desk of both lists the table */
+    guest.send({ t: 'answer', rid: 21, id: guest.desk!.invitations[0].id, accept: true });
+    await guest.until('a chair', () => !!guest.table);
+    await guest.until('the letter to be answered', () => guest.desk?.invitations.length === 0);
+    expect(guest.desk!.tables.map((t) => t.code)).toEqual([code]);
+    expect(guest.desk!.tables[0]).toMatchObject({ status: 'open', myTurn: false, seats: [{ name: 'Ada' }, { name: 'Bob' }] });
+    host.send({ t: 'desk', rid: 16 });
+    await host.until('the desk', () => !!host.desk?.tables.length);
+    expect(host.desk!.sent).toEqual([]);
+    expect(host.desk!.tables[0].hostId).toBe(host.id);
+  });
+
   it('says nothing to a socket that has not signed in', async () => {
-    server = await serve({ port: 0, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const stranger = new Guest('Nobody');
     guests.push(stranger);
     await stranger.open(server.port);
@@ -326,7 +395,7 @@ describe('a table over the wire', () => {
     const twice = new Guest('nobody');
     guests.push(twice);
     await twice.open(server.port);
-    twice.send({ t: 'signup', rid: 2, name: 'nobody', password: PASSWORD });
+    twice.send({ t: 'signup', rid: 2, name: 'nobody', email: 'nobody@example.test', password: PASSWORD });
     await twice.until('the refusal', () => twice.rejected.length > 0);
     expect(twice.rejected.at(-1)).toBe('name-taken');
     twice.send({ t: 'signin', rid: 3, name: 'Nobody', password: 'not-the-password' });

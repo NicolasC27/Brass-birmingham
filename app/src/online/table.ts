@@ -1,4 +1,5 @@
 import type { BotDifficulty, PlayerColor, SetupOptions, StoredSetup } from '@/components/setup/constants';
+import type { Era } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* The table model — seats, colours, readiness. Deliberately free of   */
@@ -29,14 +30,89 @@ export interface Table {
   updatedAt: number;
 }
 
-export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline';
+export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline' | 'verify-first' | 'no-such-player' | 'already-seated' | 'already-invited' | 'not-yours';
 
 /** why the office would not sign you in */
-export type AuthError = 'bad-name' | 'weak-password' | 'name-taken' | 'bad-credentials' | 'no-session' | 'sign-in-first';
+export type AuthError =
+  | 'bad-name'
+  | 'bad-email'
+  | 'weak-password'
+  | 'name-taken'
+  | 'email-taken'
+  | 'bad-credentials'
+  | 'wrong-password'
+  | 'no-session'
+  | 'sign-in-first'
+  | 'bad-token'
+  | 'unknown-email';
 
 export interface Identity {
   id: string;
   name: string;
+}
+
+/** the account, as its owner sees it */
+export interface Me extends Identity {
+  email: string | null;
+  /** the address has answered its letter: the tables are open */
+  verified: boolean;
+  motto: string;
+  favoriteColor: PlayerColor | null;
+  createdAt: number;
+}
+
+/** a table as the desk lists it: who sits there, and whose move it is */
+export interface TableSummary {
+  code: string;
+  name: string;
+  hostId: string;
+  seats: { id: string; name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
+  status: 'open' | 'playing' | 'over';
+  era?: Era;
+  round?: number;
+  /** the seat to act, while the game is in play */
+  current?: number;
+  /** it is my move */
+  myTurn: boolean;
+  updatedAt: number;
+}
+
+export interface Invitation {
+  id: string;
+  code: string;
+  tableName: string;
+  from: Identity;
+  to: Identity;
+  createdAt: number;
+}
+
+/** a finished game, as the desk remembers it */
+export interface PastGame {
+  code: string;
+  name: string;
+  finishedAt: number;
+  players: { id: string; name: string; color: PlayerColor; vp: number; bot: boolean }[];
+  winner: number;
+  /** the game ended by the table's own vote */
+  abandoned: boolean;
+}
+
+export interface Stats {
+  played: number;
+  won: number;
+  /** victory points, on average, over finished games */
+  averageVp: number;
+  bestVp: number;
+}
+
+/** everything the desk shows: my tables, my letters, my past games */
+export interface Desk {
+  tables: TableSummary[];
+  invitations: Invitation[];
+  /** the invitations I sent that are still unanswered */
+  sent: Invitation[];
+  history: PastGame[];
+  stats: Stats;
 }
 
 export const MAX_SEATS = 4;

@@ -2,7 +2,7 @@ import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { SetupPayload } from '@/game/types';
 import { MAX_SEATS, canStart, freeColor, randomId, setupFromTable } from '@/online/table';
-import type { Identity, LobbyError, Table, TableSeat } from '@/online/table';
+import type { Desk, Identity, Invitation, LobbyError, Table, TableSeat, TableSummary } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
 import type { Store } from './store';
@@ -26,6 +26,8 @@ interface Room {
 }
 
 export type Changed = (code: string, what: 'table' | 'game') => void;
+/** an account's desk changed: a letter came, a table moved */
+export type DeskChanged = (accountId: string) => void;
 
 /** a table nobody has touched for this long is swept away */
 export const STALE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -33,6 +35,7 @@ export const STALE_MS = 30 * 24 * 60 * 60 * 1000;
 export class Hall {
   private rooms = new Map<string, Room>();
   private listeners = new Set<Changed>();
+  private deskListeners = new Set<DeskChanged>();
   private readonly pace: Pace;
   private readonly store: Store;
 
@@ -59,6 +62,74 @@ export class Hall {
 
   private announce(code: string, what: 'table' | 'game'): void {
     for (const cb of this.listeners) cb(code, what);
+    /* whoever sits at this table has a desk that just changed */
+    const room = this.rooms.get(code);
+    if (room) for (const s of room.table.seats) if (s.kind === 'human') this.announceDesk(s.id);
+  }
+
+  onDesk(cb: DeskChanged): () => void {
+    this.deskListeners.add(cb);
+    return () => this.deskListeners.delete(cb);
+  }
+
+  private announceDesk(accountId: string): void {
+    for (const cb of this.deskListeners) cb(accountId);
+  }
+
+  /* ------------------------------ the desk ----------------------------- */
+
+  /** every table this account sits at, as the desk lists them */
+  tablesFor(accountId: string): TableSummary[] {
+    const out: TableSummary[] = [];
+    for (const room of this.rooms.values()) {
+      const seat = room.table.seats.findIndex((s) => s.id === accountId);
+      if (seat < 0) continue;
+      const g = room.game;
+      out.push({
+        code: room.table.code,
+        name: room.table.name,
+        hostId: room.table.hostId,
+        seats: room.table.seats.map((s) => ({ id: s.id, name: s.name, color: s.color, kind: s.kind })),
+        status: g ? (g.over ? 'over' : 'playing') : 'open',
+        ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current } : {}),
+        myTurn: !!g && !g.over && g.state.phase === 'action' && g.seatOf(accountId) === g.state.current,
+        updatedAt: room.table.updatedAt,
+      });
+    }
+    return out.sort((a, b) => Number(b.myTurn) - Number(a.myTurn) || b.updatedAt - a.updatedAt);
+  }
+
+  desk(accountId: string): Desk {
+    const { received, sent } = this.store.invitationsFor(accountId);
+    return { tables: this.tablesFor(accountId), invitations: received, sent, history: this.store.historyFor(accountId), stats: this.store.statsFor(accountId) };
+  }
+
+  /** a letter from a player at the table to a player by name */
+  invite(code: string, from: Identity, toName: string): Invitation {
+    const room = this.rooms.get(code);
+    if (!room) throw new Error('not-found' satisfies LobbyError);
+    if (!room.table.seats.some((s) => s.id === from.id)) throw new Error('not-yours' satisfies LobbyError);
+    if (room.game || room.table.status !== 'open') throw new Error('started' satisfies LobbyError);
+    if (room.table.seats.length >= MAX_SEATS) throw new Error('full' satisfies LobbyError);
+    const to = this.store.accountByName(toName);
+    if (!to || to.id === from.id) throw new Error('no-such-player' satisfies LobbyError);
+    if (room.table.seats.some((s) => s.id === to.id)) throw new Error('already-seated' satisfies LobbyError);
+    if (this.store.pendingInvitation(code, to.id)) throw new Error('already-invited' satisfies LobbyError);
+    const letter = this.store.invite(code, from, { id: to.id, name: to.name });
+    this.announceDesk(to.id);
+    this.announceDesk(from.id);
+    return letter;
+  }
+
+  /** the letter answered: accepting takes the chair (or says why it cannot) */
+  answer(id: string, me: Identity, accept: boolean): Table | null {
+    const letter = this.store.invitation(id);
+    if (!letter || letter.to.id !== me.id) throw new Error('not-found' satisfies LobbyError);
+    this.store.answerInvitation(id);
+    this.announceDesk(letter.from.id);
+    this.announceDesk(me.id);
+    if (!accept) return null;
+    return this.join(letter.code, me);
   }
 
   table(code: string): Table | null {
@@ -129,9 +200,12 @@ export class Hall {
     const room = this.rooms.get(code);
     if (!room) return;
     room.game?.dispose();
+    /* the table is gone: whoever was asked to it, or sat at it, hears of it */
+    const told = new Set([...this.store.voidInvitations(code), ...room.table.seats.filter((s) => s.kind === 'human').map((s) => s.id)]);
     this.rooms.delete(code);
     this.store.dropTable(code);
     this.announce(code, 'table');
+    for (const id of told) this.announceDesk(id);
   }
 
   /** sweep the tables nobody has touched in a long while */
@@ -167,6 +241,7 @@ export class Hall {
     const seed = Math.floor(Math.random() * 1e9);
     this.store.openGame(code, seed, setup, seatIds);
     room.game = this.deal(code, seatIds, setup, seed);
+    for (const id of this.store.voidInvitations(code)) this.announceDesk(id);
     this.announce(code, 'game');
   }
 
@@ -185,7 +260,7 @@ export class Hall {
       journal: {
         append: (idx: number, action: GameAction) => this.store.appendMove(code, idx, action),
         drop: (idx: number) => this.store.dropMove(code, idx),
-        finish: () => this.store.finishGame(code),
+        finish: (state) => this.store.finishGame(code, state),
       },
     });
   }
