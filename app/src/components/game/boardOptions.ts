@@ -10,6 +10,13 @@ import type { StockStyle } from '@/gl/paint';
 export type MinimapSize = 's' | 'm' | 'l';
 /** where the income track runs: along the bottom edge or down the left edge */
 export type IncomeSide = 'bottom' | 'left';
+/** the era paintings under the board: the original terrain with etched
+ *  waterways, or the fully painted countryside with its canals and rails */
+export type MapStyle = 'etched' | 'painted';
+export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
+  etched: { canal: '/map-era-canal.png', rail: '/map-era-rail.png' },
+  painted: { canal: '/map-painted-canal.jpg', rail: '/map-painted-rail.jpg' },
+};
 
 export interface BoardOptions {
   hideUnbuilt: boolean;
@@ -18,6 +25,7 @@ export interface BoardOptions {
   stockStyle: StockStyle;
   minimapSize: MinimapSize;
   incomeSide: IncomeSide;
+  mapStyle: MapStyle;
   settingsOpen: boolean;
 }
 
@@ -28,6 +36,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   stockStyle: 'brassworks.stockStyle',
   minimapSize: 'brassworks.minimapSize',
   incomeSide: 'brassworks.incomeSide',
+  mapStyle: 'brassworks.mapStyle',
 };
 
 const read = <K extends keyof typeof KEYS>(k: K, fallback: BoardOptions[K]): BoardOptions[K] => {
@@ -48,6 +57,7 @@ let state: BoardOptions = {
   stockStyle: read('stockStyle', 'corner'),
   minimapSize: read('minimapSize', 's'),
   incomeSide: read('incomeSide', 'bottom'),
+  mapStyle: read('mapStyle', 'etched'),
   settingsOpen: false,
 };
 

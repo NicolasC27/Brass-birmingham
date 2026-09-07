@@ -154,8 +154,6 @@ export async function loadBoardAssets(): Promise<void> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
   const colorNames = Object.keys(PLAYER_COLORS);
   const urls = [
-    '/map-era-canal.png',
-    '/map-era-rail.png',
     '/beer-barrel.png',
     '/merchant-boat.png',
     '/town-village.png',

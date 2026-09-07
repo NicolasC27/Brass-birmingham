@@ -61,6 +61,8 @@ const game = {
     minimapSize: 'Minimap size',
     incomeSide: 'Income track',
     side: { bottom: 'Along the bottom', left: 'Down the left edge' },
+    mapStyle: 'Map painting',
+    map: { etched: 'Etched terrain', painted: 'Painted canals' },
     size: { s: 'Small', m: 'Medium', l: 'Large' },
     followBots: 'Follow the bots (camera)',
     boardSection: 'Board',

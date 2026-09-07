@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
-import type { IncomeSide } from './boardOptions';
+import type { IncomeSide, MapStyle } from './boardOptions';
 import type { MinimapSize } from './boardOptions';
 import { STOCK_STYLE_IDS } from './stockStyles';
 import type { StockStyle } from '@/gl/paint';
@@ -177,6 +177,24 @@ export default function BoardSettings() {
                     className={cn('flex-1', segBtn(opts.incomeSide === side))}
                   >
                     {t(`game.settings.side.${side}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* the painting under the board */}
+            <div className="py-2">
+              <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/70">{t('game.settings.mapStyle')}</span>
+              <div className="mt-1.5 flex overflow-hidden rounded-md border border-brass-700/60">
+                {(['etched', 'painted'] as MapStyle[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={opts.mapStyle === m}
+                    onClick={() => setBoardOption('mapStyle', m)}
+                    className={cn('flex-1', segBtn(opts.mapStyle === m))}
+                  >
+                    {t(`game.settings.map.${m}`)}
                   </button>
                 ))}
               </div>

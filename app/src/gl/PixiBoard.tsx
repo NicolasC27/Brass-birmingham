@@ -8,7 +8,7 @@ import type { PlanGhost } from '@/game/ghost';
 import type { GameState } from '@/game/types';
 import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, tr, useT } from '@/i18n';
-import { getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { MAP_URL, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
 import { FAR_LOD_SCREEN, SCHEMATIC_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
@@ -70,7 +70,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle } = opts;
+  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle } = opts;
   /* fullscreen is a keyboard-only affair now (F) — no HUD button */
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -101,6 +101,25 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     sceneRef.current?.setStockStyle(stockStyle);
   }, [stockStyle]);
+  /* map painting switch: swap both era textures under the live scene */
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    let cancelled = false;
+    void (async () => {
+      const { Assets } = await import('pixi.js');
+      const [canal, rail] = await Promise.all([Assets.load(MAP_URL[mapStyle].canal), Assets.load(MAP_URL[mapStyle].rail)]);
+      if (cancelled) return;
+      for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail]] as const) {
+        sp.texture = tex;
+        sp.width = WORLD_W + 2 * BLEED_X;
+        sp.height = WORLD_H + 2 * BLEED_Y;
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mapStyle]);
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
@@ -148,20 +167,23 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       await loadBoardAssets();
       if (destroyed) return;
 
-      const { Texture, Sprite } = await import('pixi.js');
+      const { Assets, Sprite, Texture } = await import('pixi.js');
+      const bootOpts = getBoardOptions();
       /* both paintings carry a bleed of countryside around the play area */
-      const bgCanal = new Sprite(Texture.from('/map-era-canal.png'));
+      const bgUrls = MAP_URL[bootOpts.mapStyle];
+      const [canalTex, railTex] = await Promise.all([Assets.load(bgUrls.canal), Assets.load(bgUrls.rail)]);
+      if (destroyed) return;
+      const bgCanal = new Sprite(canalTex);
       bgCanal.width = WORLD_W + 2 * BLEED_X;
       bgCanal.height = WORLD_H + 2 * BLEED_Y;
       bgCanal.position.set(-BLEED_X, -BLEED_Y);
-      const bgRail = new Sprite(Texture.from('/map-era-rail.png'));
+      const bgRail = new Sprite(railTex);
       bgRail.width = WORLD_W + 2 * BLEED_X;
       bgRail.height = WORLD_H + 2 * BLEED_Y;
       bgRail.position.set(-BLEED_X, -BLEED_Y);
 
       const scene = buildBoardScene(bgCanal, bgRail);
       sceneRef.current = scene;
-      const bootOpts = getBoardOptions();
       scene.setHideUnbuilt(bootOpts.hideUnbuilt);
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);

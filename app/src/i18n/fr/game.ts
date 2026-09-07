@@ -62,6 +62,8 @@ const fr: typeof engame = {
     stockBadge: 'Badge de stock sur les tuiles posées',
     incomeSide: 'Piste de revenu',
     side: { bottom: 'Le long du bas', left: 'Sur le bord gauche' },
+    mapStyle: 'Fond de carte',
+    map: { etched: 'Terrain gravé', painted: 'Canaux peints' },
     minimapSize: 'Taille de la mini-carte',
     size: { s: 'Petite', m: 'Moyenne', l: 'Grande' },
     followBots: 'Suivre les bots (caméra)',

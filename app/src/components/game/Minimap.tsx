@@ -7,7 +7,7 @@ import { LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } fr
 import { merchantOpen } from '@/game/engine';
 import { tileKey } from '@/game/engine';
 import type { GameState } from '@/game/types';
-import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAP_URL, hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import { useT } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
@@ -44,7 +44,7 @@ export default function Minimap({
   const plate = useRef<HTMLDivElement>(null);
   const tracking = useRef(false);
   const boardOpts = useBoardOptions();
-  const { minimapSize } = boardOpts;
+  const { minimapSize, mapStyle } = boardOpts;
   const insets = hudInsets(boardOpts);
   const t = useT();
   const MM_W = MM_W_FOR[minimapSize];
@@ -96,14 +96,14 @@ export default function Minimap({
       }}
     >
       <img
-        src="/map-era-canal.png"
+        src={MAP_URL[mapStyle].canal}
         alt=""
         draggable={false}
         className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover transition-opacity duration-[1500ms] ease-in-out"
         style={{ opacity: era === 'canal' ? 0.9 : 0 }}
       />
       <img
-        src="/map-era-rail.png"
+        src={MAP_URL[mapStyle].rail}
         alt=""
         draggable={false}
         className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover transition-opacity duration-[1500ms] ease-in-out"
