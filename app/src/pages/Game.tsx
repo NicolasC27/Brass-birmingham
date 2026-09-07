@@ -13,6 +13,7 @@ import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MM_H_FOR } from '@/components/game/Minimap';
 import { getBoardOptions, hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
 import MarketTray from '@/components/game/MarketTray';
@@ -155,18 +156,18 @@ export default function Game() {
         setBoardOption('settingsOpen', false);
         return;
       }
-      if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+      if (isKey(e, 'rules')) {
         setRulesOpen(true);
         return;
       }
-      if (e.key.toLowerCase() === 's') {
+      if (isKey(e, 'settings')) {
         /* S toggles the settings panel; it shares the left edge with the mat */
         const openNow = getBoardOptions().settingsOpen;
         if (!openNow) useGame.getState().closeMat();
         setBoardOption('settingsOpen', !openNow);
         return;
       }
-      if (e.key.toLowerCase() === 'p') {
+      if (isKey(e, 'mat')) {
         const st = useGame.getState();
         if (st.matPlayer !== null) st.closeMat();
         else if (st.game) {
@@ -177,14 +178,14 @@ export default function Game() {
         }
         return;
       }
-      if (e.key.toLowerCase() === 'm') {
+      if (isKey(e, 'market')) {
         setMarketOpen((o) => {
           setMarketFocus(!o);
           return !o;
         });
         return;
       }
-      if (e.key.toLowerCase() === 'l') {
+      if (isKey(e, 'ledger')) {
         setLedgerOpen((o) => !o);
         return;
       }

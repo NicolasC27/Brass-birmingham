@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -6,6 +6,8 @@ import { setLang, useLang, useT } from '@/i18n';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
+import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
+import type { KeyAction } from './keybindings';
 import { STOCK_STYLE_IDS } from './stockStyles';
 import { TILE_VARIANTS } from '@/gl/paint';
 import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
@@ -214,6 +216,92 @@ function ChoiceCards<T extends string>({
   );
 }
 
+/** the rebindable shortcuts (click a keycap, press the new key) + the fixed ones */
+function ShortcutEditor() {
+  const t = useT();
+  const keys = useKeybindings();
+  const [listening, setListening] = useState<KeyAction | null>(null);
+  const [refused, setRefused] = useState(false);
+  useEffect(() => {
+    if (!listening) return;
+    const onKey = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        setListening(null);
+        return;
+      }
+      if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+      const k = eventKey(e);
+      if (RESERVED_KEYS.has(k) || e.ctrlKey || e.metaKey || e.altKey) {
+        setRefused(true);
+        window.setTimeout(() => setRefused(false), 900);
+        return;
+      }
+      setKeybinding(listening, k);
+      setListening(null);
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [listening]);
+  const cap = 'rounded-[3px] border px-1.5 py-0.5 font-mono text-[9.5px] font-semibold';
+  const fixed: [string, string][] = [
+    ['+ / −', t('game.settings.keys.zoom')],
+    ['← / →', t('game.settings.keys.towns')],
+    ['1–8', t('game.settings.keys.cards')],
+    ['Wheel', t('game.settings.keys.tracks')],
+    ['Enter', t('game.settings.keys.confirm')],
+    ['Esc', t('game.settings.keys.cancel')],
+  ];
+  return (
+    <div className="py-1">
+      <p className="mb-2 font-sans text-[10.5px] leading-snug text-cream-100/50">{t('game.settings.keysRebind')}</p>
+      <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5">
+        {KEY_ACTIONS.map((action) => {
+          const on = listening === action;
+          return (
+            <div key={action} className="contents">
+              <dt>
+                <button
+                  type="button"
+                  onClick={() => setListening(on ? null : action)}
+                  aria-pressed={on}
+                  className={cn(
+                    cap,
+                    'min-w-[34px] transition-colors',
+                    on ? (refused ? 'border-rust-500 text-rust-500' : 'border-brass-400 bg-brass-500/20 text-brass-400') : 'border-brass-700/60 bg-coal-950/80 text-brass-400 hover:border-brass-400',
+                  )}
+                >
+                  {on ? (refused ? t('game.settings.keys.unbindable') : t('game.settings.keysListening')) : keyLabel(keys[action])}
+                </button>
+              </dt>
+              <dd className="font-sans text-[11px] text-cream-100/70">{t(`game.settings.keys.${action}`)}</dd>
+            </div>
+          );
+        })}
+      </dl>
+      <button
+        type="button"
+        onClick={resetKeybindings}
+        className="mt-2 rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 transition-colors hover:text-brass-400"
+      >
+        {t('game.settings.keysReset')}
+      </button>
+      <div className="mt-3 font-sans text-[10px] font-semibold uppercase tracking-[0.12em] text-cream-100/40">{t('game.settings.keysFixed')}</div>
+      <dl className="mt-1.5 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5">
+        {fixed.map(([k, label]) => (
+          <div key={k} className="contents">
+            <dt>
+              <kbd className={cn(cap, 'border-brass-700/40 bg-coal-950/60 text-cream-100/60')}>{k}</kbd>
+            </dt>
+            <dd className="font-sans text-[11px] text-cream-100/60">{label}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 /* ------------------------------ dialog ----------------------------- */
 
 export default function BoardSettings() {
@@ -417,36 +505,7 @@ export default function BoardSettings() {
                   </>
                 )}
 
-                {section === 'keys' && (
-                  <dl className="grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-1.5 py-1">
-                    {(
-                      [
-                        ['F', t('game.settings.keys.fs')],
-                        ['C', t('game.settings.keys.links')],
-                        ['M', t('game.settings.keys.market')],
-                        ['L', t('game.settings.keys.ledger')],
-                        ['0', t('game.settings.keys.fit')],
-                        ['+ / −', t('game.settings.keys.zoom')],
-                        ['← / →', t('game.settings.keys.towns')],
-                        ['1–8', t('game.settings.keys.cards')],
-                        ['H', t('game.settings.keys.hand')],
-                        ['Wheel', t('game.settings.keys.tracks')],
-                        ['Enter', t('game.settings.keys.confirm')],
-                        ['Esc', t('game.settings.keys.cancel')],
-                        ['?', t('game.settings.keys.rules')],
-                        ['P', t('game.settings.keys.mat')],
-                        ['S', t('game.settings.keys.settings')],
-                      ] as const
-                    ).map(([k, label]) => (
-                      <div key={k} className="contents">
-                        <dt>
-                          <kbd className="rounded-[3px] border border-brass-700/60 bg-coal-950/80 px-1.5 py-0.5 font-mono text-[9.5px] font-semibold text-brass-400">{k}</kbd>
-                        </dt>
-                        <dd className="font-sans text-[11px] text-cream-100/70">{label}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                )}
+                {section === 'keys' && <ShortcutEditor />}
               </div>
             </div>
         </motion.div>

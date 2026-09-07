@@ -10,6 +10,7 @@ import { INDUSTRY_COLOR } from './townChrome';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
 import { hudInsets, useBoardOptions } from './boardOptions';
+import { isKey } from './keybindings';
 import { MM_W_FOR } from './Minimap';
 
 const PIN_KEY = 'brassworks.dockPinned';
@@ -251,9 +252,9 @@ export default function HandDock() {
   /* H pins / unpins the hand from anywhere (not while typing) */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'h' && e.key !== 'H') return;
+      if (!isKey(e, 'hand')) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       setPinned((v) => !v);
     };
     window.addEventListener('keydown', onKey);

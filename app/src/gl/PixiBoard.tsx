@@ -21,6 +21,7 @@ import { Camera } from './camera';
 import { buildBoardScene, loadBoardAssets } from './paint';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
+import { isKey } from '@/components/game/keybindings';
 import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
@@ -757,9 +758,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
         if (e.key === '+' || e.key === '=') cam.zoomStep(1.35);
         else if (e.key === '-' || e.key === '_') cam.zoomStep(1 / 1.35);
-        else if (e.key === '0') cam.fit();
-        else if (e.key === 'c' || e.key === 'C') setBoardOption('hideUnbuilt', !getBoardOptions().hideUnbuilt);
-        else if (e.key === 'f' || e.key === 'F') fsRef.current();
+        else if (isKey(e, 'fit')) cam.fit();
+        else if (isKey(e, 'links')) setBoardOption('hideUnbuilt', !getBoardOptions().hideUnbuilt);
+        else if (isKey(e, 'fullscreen')) fsRef.current();
         else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
           tourIdx = (tourIdx + (e.key === 'ArrowRight' ? 1 : -1) + TOUR.length) % TOUR.length;
           const town = TOUR[tourIdx];
