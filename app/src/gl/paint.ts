@@ -107,7 +107,10 @@ let pairTex: Record<string, Texture>; // combined dual-industry cutouts: key "a-
 let iconTex: Record<IndustryType, Texture>;
 let schematicTex: Record<IndustryType, Texture>;
 let barrelTex: Texture;
-let boatTex: Texture; // night barge — the merchants' framed painting
+let boatTex: Texture; // night barge — the merchants' default framed painting
+/* one painting per merchant when /merchant-<id>.png exists (e.g. Gloucester
+   docks); the shared barge otherwise */
+const merchantArt = new Map<string, Texture>();
 let villageTex: Texture;
 
 /** canonical key for a dual-industry slot painting */
@@ -172,6 +175,15 @@ export async function loadBoardAssets(): Promise<void> {
   iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
   boatTex = loaded['/merchant-boat.png'];
+  await Promise.all(
+    MERCHANTS.map(async (m) => {
+      try {
+        merchantArt.set(m.id, await Assets.load(`/merchant-${m.id.replace(/^m-/, '')}.png`));
+      } catch {
+        /* no dedicated painting for this merchant: the barge is used */
+      }
+    }),
+  );
   villageTex = loaded['/town-village.png'];
   /* clean vertical halves for dual-industry slots (the old diagonal slash
      read as a broken icon) */
@@ -419,12 +431,13 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
 
     /* the painting, masked to the inner frame, darkened toward the bottom so
        the tiles and barrels in front of it stay crisp */
-    const art = new Sprite(boatTex);
+    const artTex = merchantArt.get(m.id) ?? boatTex;
+    const art = new Sprite(artTex);
     const innerW = W - 14;
     const innerH = PLATE_H - 14;
-    const scale = Math.max(innerW / boatTex.width, innerH / boatTex.height);
-    art.width = boatTex.width * scale;
-    art.height = boatTex.height * scale;
+    const scale = Math.max(innerW / artTex.width, innerH / artTex.height);
+    art.width = artTex.width * scale;
+    art.height = artTex.height * scale;
     art.anchor.set(0.5, 0.42);
     art.position.set(0, 0);
     art.eventMode = 'none';
