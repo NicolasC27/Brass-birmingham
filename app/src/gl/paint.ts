@@ -984,31 +984,25 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
                small disc in the top-right corner — bottom-right when the
                stock disc already sits there ('corner' layout) */
             drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
-            /* income/VP tokens riding the bottom edge — dark tokens with
-               cream numerals, readable on ANY player colour. bigChips
-               (board option) enlarges them. */
-            const cw = bigChips ? 30 : 22;
-            const ch = bigChips ? 16 : 12;
-            const cy0 = y + TILE_HALF - ch;
-            const chipInc = new Graphics().roundRect(x - TILE_HALF + 4, cy0, cw, ch, 3).fill({ color: 0x17110c, alpha: 0.92 }).stroke({ width: 0.8, color: 0xf4ecd8, alpha: 0.35 });
-            chipInc.eventMode = 'none';
-            const incText = new Text({
-              text: `+${lv.incomeDelta}`,
-              style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: bigChips ? 11 : 8, fontWeight: '600', fill: 0xf4ecd8 },
-            });
-            incText.anchor.set(0.5);
-            incText.position.set(x - TILE_HALF + 4 + cw / 2, cy0 + ch / 2 + 0.5);
+            /* income / VP: ONE quiet band along the bottom edge instead of
+               two boxed chips — income left, VP right, cream numerals on a
+               translucent dark strip. bigChips (board option) enlarges it. */
+            const ch = bigChips ? 15 : 11;
+            const cy0 = y + TILE_HALF - 2.75 - ch;
+            const band = new Graphics().roundRect(x - TILE_HALF + 2.75, cy0, TILE - 5.5, ch, 3.5).fill({ color: 0x0c0a08, alpha: 0.62 });
+            band.eventMode = 'none';
+            const numStyle = { fontFamily: "'IBM Plex Mono', monospace", fontSize: bigChips ? 10.5 : 7.5, fontWeight: '600' as const, fill: 0xf4ecd8 };
+            const incText = new Text({ text: `+${lv.incomeDelta}`, style: numStyle });
+            incText.anchor.set(0, 0.5);
+            incText.position.set(x - TILE_HALF + 7, cy0 + ch / 2 + 0.5);
+            incText.alpha = 0.95;
             incText.eventMode = 'none';
-            const chipVp = new Graphics().roundRect(x + TILE_HALF - 4 - cw, cy0, cw, ch, 3).fill({ color: 0x17110c, alpha: 0.92 }).stroke({ width: 0.8, color: 0xf4ecd8, alpha: 0.35 });
-            chipVp.eventMode = 'none';
-            const vpText = new Text({
-              text: tr('board.tile.vpChip', { vp: lv.vp }),
-              style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: bigChips ? 10.5 : 7.5, fontWeight: '600', fill: 0xf4ecd8 },
-            });
-            vpText.anchor.set(0.5);
-            vpText.position.set(x + TILE_HALF - 4 - cw / 2, cy0 + ch / 2 + 0.5);
+            const vpText = new Text({ text: tr('board.tile.vpChip', { vp: lv.vp }), style: numStyle });
+            vpText.anchor.set(1, 0.5);
+            vpText.position.set(x + TILE_HALF - 7, cy0 + ch / 2 + 0.5);
+            vpText.alpha = 0.95;
             vpText.eventMode = 'none';
-            detailC.addChild(chipInc, incText, chipVp, vpText);
+            detailC.addChild(band, incText, vpText);
             /* level pips along the top edge — dark on the colour card */
             for (let i = 0; i < tile.level; i++) {
               extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x17110c).stroke({ width: 0.6, color: 0xf4ecd8, alpha: 0.7 });
