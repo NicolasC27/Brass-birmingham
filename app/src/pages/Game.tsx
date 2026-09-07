@@ -119,7 +119,23 @@ export default function Game() {
 
   /* --------------------------- timer ---------------------------- */
   useEffect(() => {
-    if (!game?.timerMinutes || game.phase !== 'action' || !isHumanTurn) {
+    if (!game || game.phase !== 'action') {
+      setSecondsLeft(null);
+      return;
+    }
+    /* online the candle belongs to the table: it burns for whoever is to
+       act, it keeps burning while this browser is away, and the table is
+       the one that puts the turn down when it goes out */
+    if (seat !== null) {
+      const tick = () => {
+        const ms = useGame.getState().msLeft();
+        setSecondsLeft(ms === null ? null : Math.ceil(ms / 1000));
+      };
+      tick();
+      const iv = window.setInterval(tick, 500);
+      return () => window.clearInterval(iv);
+    }
+    if (!game.timerMinutes || !isHumanTurn) {
       setSecondsLeft(null);
       return;
     }
@@ -127,10 +143,10 @@ export default function Game() {
     const iv = window.setInterval(() => setSecondsLeft((s) => (s === null ? null : Math.max(0, s - 1))), 1000);
     return () => window.clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game?.current, game?.round, game?.timerMinutes, game?.phase, isHumanTurn]);
+  }, [game?.current, game?.round, game?.timerMinutes, game?.phase, isHumanTurn, seat]);
 
   useEffect(() => {
-    if (secondsLeft === 0 && isHumanTurn && game) {
+    if (secondsLeft === 0 && isHumanTurn && seat === null && game) {
       cancel();
       pass(t('game.page.candleOut', { name: game.players[game.current].name }));
     }

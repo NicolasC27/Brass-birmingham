@@ -8,6 +8,7 @@ import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/set
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
 import { enterTable, leaveTable } from '@/online/net';
+import { useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -166,8 +167,15 @@ export default function Lobby() {
   const t = useT();
   const navigate = useNavigate();
   const { code = '' } = useParams();
+  const stranger = useStranger();
   const table = useTable(code);
   const me = lobby.me;
+
+  /* a room is no place for a stranger: the office signs you in first.
+     A session on its way back is not a stranger — we wait for it. */
+  useEffect(() => {
+    if (isOnline && stranger) navigate('/online');
+  }, [stranger, navigate]);
   const [copied, setCopied] = useState(false);
   const [renaming, setRenaming] = useState(false);
 

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Copy, KeyRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, KeyRound, LogOut } from 'lucide-react';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import type { LobbyError } from '@/online/lobby';
+import { signIn, signOut, signUp, useSession, useStranger } from '@/online/session';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -12,6 +13,11 @@ import { cn } from '@/lib/utils';
 /* Online — the telegraph office. Sign the visitors' book, then either */
 /* open a table (you get a brass code to pass around) or answer an     */
 /* invitation by typing its four glyphs. Both roads lead to the room.  */
+/*                                                                     */
+/* Against a table server the book is a real register: a seat belongs  */
+/* to an account, so the name comes with a password and nothing else   */
+/* on this page works until it is signed. Playing in this browser      */
+/* alone, a name is all the book ever wanted.                          */
 /* ------------------------------------------------------------------ */
 
 /** the four-glyph code as brass slots — filled or waiting */
@@ -37,12 +43,31 @@ function CodeSlots({ value, large }: { value: string; large?: boolean }) {
 export default function Online() {
   const t = useT();
   const navigate = useNavigate();
+  const session = useSession();
+  const stranger = useStranger();
   const [name, setName] = useState(lobby.me.name);
+  const [password, setPassword] = useState('');
   const [tableName, setTableName] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState<LobbyError | null>(null);
-  const named = name.trim().length > 0;
+  const [authError, setAuthError] = useState<string | null>(null);
+  /* online nothing opens before the register is signed; locally a name is all.
+     A token still on its way is not a stranger: show the chair, not the form. */
+  const signed = isOnline && !stranger;
+  const named = isOnline ? !!session : name.trim().length > 0;
+  const canEnter = name.trim().length > 0 && password.length > 0;
   const commitName = () => lobby.setName(name.trim());
+
+  const enter = async (door: 'in' | 'up') => {
+    if (!canEnter) return;
+    setAuthError(null);
+    try {
+      await (door === 'in' ? signIn(name, password) : signUp(name, password));
+      setPassword('');
+    } catch (e) {
+      setAuthError((e as Error).message);
+    }
+  };
 
   const create = async () => {
     if (!named) return;
@@ -88,20 +113,78 @@ export default function Online() {
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.35]" />
             <div className="relative">
               <p className="font-fell text-[11px] uppercase tracking-[0.2em] text-ink-900/60">{t('online.entry.book')}</p>
-              <label htmlFor="online-name" className="mt-4 block font-fell text-lg text-ink-900">
-                {t('online.entry.yourName')}
-              </label>
-              <input
-                id="online-name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={commitName}
-                maxLength={18}
-                placeholder={t('online.entry.namePlaceholder')}
-                autoComplete="nickname"
-                className="mt-2 w-full border-0 border-b-2 border-ink-900/40 bg-transparent px-0 py-1.5 font-serif text-[22px] italic text-ink-900 placeholder:text-ink-900/30 focus:border-ink-900 focus:outline-none"
-              />
-              <p className="mt-3 font-sans text-[11.5px] leading-relaxed text-ink-900/60">{t('online.entry.nameHint')}</p>
+              {signed ? (
+                <div className="mt-4">
+                  <p className="font-serif text-[22px] italic leading-tight text-ink-900">{session?.name ?? '…'}</p>
+                  <p className="mt-1 font-sans text-[11.5px] text-ink-900/60">{session ? t('online.entry.signedInAs', { name: session.name }) : t('online.entry.gate')}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      signOut();
+                      setPassword('');
+                    }}
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-sm border border-ink-900/40 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-ink-900/70 transition-colors hover:border-ink-900 hover:text-ink-900"
+                  >
+                    <LogOut className="h-3 w-3" /> {t('online.entry.signOut')}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <label htmlFor="online-name" className="mt-4 block font-fell text-lg text-ink-900">
+                    {t('online.entry.yourName')}
+                  </label>
+                  <input
+                    id="online-name"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setAuthError(null);
+                    }}
+                    onBlur={() => !isOnline && commitName()}
+                    onKeyDown={(e) => e.key === 'Enter' && isOnline && enter('in')}
+                    maxLength={20}
+                    placeholder={t('online.entry.namePlaceholder')}
+                    autoComplete="username"
+                    className="mt-2 w-full border-0 border-b-2 border-ink-900/40 bg-transparent px-0 py-1.5 font-serif text-[22px] italic text-ink-900 placeholder:text-ink-900/30 focus:border-ink-900 focus:outline-none"
+                  />
+                  {isOnline ? (
+                    <>
+                      <label htmlFor="online-password" className="mt-5 block font-fell text-lg text-ink-900">
+                        {t('online.entry.password')}
+                      </label>
+                      <input
+                        id="online-password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setAuthError(null);
+                        }}
+                        onKeyDown={(e) => e.key === 'Enter' && enter('in')}
+                        maxLength={72}
+                        autoComplete="current-password"
+                        className="mt-2 w-full border-0 border-b-2 border-ink-900/40 bg-transparent px-0 py-1.5 font-mono text-[18px] text-ink-900 focus:border-ink-900 focus:outline-none"
+                      />
+                      <p className="mt-3 font-sans text-[11.5px] leading-relaxed text-ink-900/60">{t('online.entry.passwordHint')}</p>
+                      {authError && (
+                        <p role="alert" className="mt-2 font-sans text-[12px] font-semibold text-rust-500">
+                          {t(`online.entry.error.${authError}`)}
+                        </p>
+                      )}
+                      <div className="mt-4 flex flex-wrap items-center gap-2">
+                        <button type="button" onClick={() => enter('in')} disabled={!canEnter} className="btn-ledger !h-10 !px-4 !text-ink-900 !border-ink-900/50 hover:!bg-ink-900/10 disabled:cursor-not-allowed disabled:opacity-40">
+                          {t('online.entry.signIn')}
+                        </button>
+                        <button type="button" onClick={() => enter('up')} disabled={!canEnter} className="font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-ink-900/60 underline-offset-4 transition-colors hover:text-ink-900 hover:underline disabled:cursor-not-allowed disabled:opacity-40">
+                          {t('online.entry.signUp')}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-3 font-sans text-[11.5px] leading-relaxed text-ink-900/60">{t('online.entry.nameHint')}</p>
+                  )}
+                </>
+              )}
             </div>
           </motion.section>
 
@@ -184,7 +267,7 @@ export default function Online() {
         </div>
 
         <p className="mt-6 flex items-center gap-2 font-sans text-[11px] text-cream-100/40">
-          <Copy className="h-3 w-3" /> {t(isOnline ? 'online.entry.serverNote' : 'online.entry.localNote')}
+          <Copy className="h-3 w-3" /> {isOnline && !signed ? t('online.entry.gate') : t(isOnline ? 'online.entry.serverNote' : 'online.entry.localNote')}
         </p>
       </div>
     </div>

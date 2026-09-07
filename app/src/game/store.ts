@@ -56,6 +56,9 @@ interface GameStore {
   line: WireStatus | null;
   /** what the server says about taking the last action back */
   serverUndo: boolean;
+  /** the turn candle as the table last reported it, anchored to this clock
+   *  so the two need not agree on the time of day */
+  candle: { msLeft: number; at: number } | null;
   /* ---- selection ---- */
   selectedCardId: string | null;
   verb: Verb | null;
@@ -97,6 +100,8 @@ interface GameStore {
   myTurn: () => boolean;
   /** the player whose hand this screen shows */
   mySeat: () => number;
+  /** what is left of the turn candle right now, in ms (null: none burns) */
+  msLeft: () => number | null;
   reset: () => void;
   save: () => void;
 
@@ -206,6 +211,7 @@ export const useGame = create<GameStore>((set, get) => ({
   seat: null,
   line: null,
   serverUndo: false,
+  candle: null,
   ...clearSelection,
   marketFocus: false,
   ledgerFilter: 'all',
@@ -224,7 +230,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const code = tableInPlay();
     const wire = code ? onlineWire() : null;
     if (code && wire) {
-      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
+      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, ceremony: null, gameOverOpen: false, coachStep: -1 });
       listen(code, wire);
       return;
     }
@@ -257,6 +263,7 @@ export const useGame = create<GameStore>((set, get) => ({
       code: null,
       seat: null,
       line: null,
+      candle: null,
       humanMarks,
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
@@ -272,6 +279,11 @@ export const useGame = create<GameStore>((set, get) => ({
   mySeat: () => {
     const st = get();
     return st.seat ?? st.game?.current ?? 0;
+  },
+
+  msLeft: () => {
+    const c = get().candle;
+    return c === null ? null : Math.max(0, c.msLeft - (Date.now() - c.at));
   },
 
   reset: () => {
@@ -718,6 +730,7 @@ function listen(code: string, wire: Wire): void {
         game,
         seat: view.seat,
         serverUndo: view.canUndo,
+        candle: view.msLeft === null ? null : { msLeft: view.msLeft, at: Date.now() },
         ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
         gameOverOpen: game.phase === 'game-over',
       });
@@ -738,7 +751,7 @@ function listen(code: string, wire: Wire): void {
 export function leaveOnlineTable(): void {
   deafen?.();
   leaveTable();
-  useGame.setState({ code: null, seat: null, line: null, serverUndo: false });
+  useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null });
 }
 
 /* dev only: the store at hand in the console (window.__brass.getState()) */

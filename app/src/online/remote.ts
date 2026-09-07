@@ -1,5 +1,4 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
-import { rememberName } from './identity';
 import type { LobbyClient } from './lobby';
 import type { ServerMessage } from './protocol';
 import type { Identity, LobbyError, Table } from './table';
@@ -15,41 +14,38 @@ import type { Wire } from './wire';
 /* guess a moment later if it was too generous.                        */
 /* ------------------------------------------------------------------ */
 
-/** how long a create or a join waits for the office to answer */
-const ANSWER_MS = 8000;
-
-interface Waiting {
-  ok: (t: Table) => void;
-  ko: (e: Error) => void;
-  timer: number;
+/** the table in the answer to a create or a join */
+function seated(m: ServerMessage): Table {
+  if (m.t !== 'seated') throw new Error('refused' satisfies LobbyError);
+  return m.table;
 }
 
 export class RemoteLobbyClient implements LobbyClient {
-  me: Identity;
   private wire: Wire;
   private tables = new Map<string, Table | null>();
   private listeners = new Map<string, Set<() => void>>();
-  private waiting = new Map<number, Waiting>();
-  private rid = 0;
 
   constructor(wire: Wire) {
     this.wire = wire;
-    this.me = wire.me;
     wire.on((m) => this.receive(m));
   }
 
-  setName(name: string): void {
-    this.me = { ...this.me, name };
-    rememberName(name);
-    this.wire.setName(name);
+  /** online you are your account: no seat exists before you have signed in */
+  get me(): Identity {
+    return this.wire.session ?? { id: '', name: '' };
   }
 
-  create(tableName: string, options: SetupOptions, color?: PlayerColor): Promise<Table> {
-    return this.ask((rid) => this.wire.send({ t: 'create', rid, name: tableName, options, color }));
+  /** the name at the table is the name on the account */
+  setName(): void {
+    /* nothing to remember: the office knows who you are */
   }
 
-  join(code: string, color?: PlayerColor): Promise<Table> {
-    return this.ask((rid) => this.wire.send({ t: 'join', rid, code, color }));
+  async create(tableName: string, options: SetupOptions, color?: PlayerColor): Promise<Table> {
+    return seated(await this.wire.ask((rid) => ({ t: 'create', rid, name: tableName, options, color })));
+  }
+
+  async join(code: string, color?: PlayerColor): Promise<Table> {
+    return seated(await this.wire.ask((rid) => ({ t: 'join', rid, code, color })));
   }
 
   leave(code: string): void {
@@ -89,41 +85,9 @@ export class RemoteLobbyClient implements LobbyClient {
     };
   }
 
-  private ask(fire: (rid: number) => void): Promise<Table> {
-    const rid = ++this.rid;
-    return new Promise<Table>((ok, ko) => {
-      const timer = window.setTimeout(() => {
-        this.waiting.delete(rid);
-        ko(new Error('offline' satisfies LobbyError));
-      }, ANSWER_MS);
-      this.waiting.set(rid, { ok, ko, timer });
-      fire(rid);
-    });
-  }
-
   private receive(m: ServerMessage): void {
-    if (m.t === 'table') {
-      this.remember(m.code, m.table);
-      return;
-    }
-    if (m.t === 'seated') {
-      const w = this.take(m.rid);
-      this.remember(m.table.code, m.table);
-      w?.ok(m.table);
-      return;
-    }
-    if (m.t === 'refused') {
-      const w = m.rid === undefined ? null : this.take(m.rid);
-      w?.ko(new Error(m.error));
-    }
-  }
-
-  private take(rid: number): Waiting | null {
-    const w = this.waiting.get(rid);
-    if (!w) return null;
-    window.clearTimeout(w.timer);
-    this.waiting.delete(rid);
-    return w;
+    if (m.t === 'table') this.remember(m.code, m.table);
+    if (m.t === 'seated') this.remember(m.table.code, m.table);
   }
 
   /* useSyncExternalStore wants the same object back while nothing changed:

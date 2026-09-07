@@ -1,4 +1,3 @@
-import { loadIdentity } from './identity';
 import { Wire } from './wire';
 
 /* The table server this build talks to. Without VITE_ONLINE_URL the app
@@ -8,14 +7,12 @@ import { Wire } from './wire';
 
 export const ONLINE_URL: string = String(import.meta.env.VITE_ONLINE_URL ?? '').trim();
 
-export const identity = loadIdentity();
-
 let opened: Wire | null = null;
 
 /** the shared wire, opened on first use — null when no server is configured */
 export function onlineWire(): Wire | null {
   if (!ONLINE_URL) return null;
-  if (!opened) opened = new Wire(ONLINE_URL, identity);
+  if (!opened) opened = new Wire(ONLINE_URL);
   return opened;
 }
 
