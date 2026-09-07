@@ -1,7 +1,7 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { LobbyError, Table } from './table';
+import type { AuthError, Identity, LobbyError, Table } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -10,6 +10,9 @@ import type { LobbyError, Table } from './table';
 /* ever proposes (an action, a rewritten table); the server alone      */
 /* decides, keeps the log and hands back what each seat is allowed to  */
 /* see. Requests that expect an answer carry a `rid` the reply echoes. */
+/*                                                                     */
+/* A socket says nothing but signup, signin and auth until it holds a  */
+/* session: a seat belongs to an account, not to a browser tab.        */
 /* ------------------------------------------------------------------ */
 
 /** the game as one seat may see it — hands of others and deck redacted */
@@ -20,13 +23,22 @@ export interface GameView {
   state: GameState;
   /** may this seat take back the action it has just played? */
   canUndo: boolean;
+  /** what is left of the turn's candle when this frame was sent, in ms
+   *  (null when the table plays without a timer) — the client anchors it
+   *  to its own clock, so the two need not agree on the time of day */
+  msLeft: number | null;
   /** the game is over: the whole log opens up, and the replay with it */
   archive?: { seed: number; setup: SetupPayload; actions: GameAction[] };
 }
 
 export type ClientMessage =
-  /** first frame of every socket: who is speaking */
-  | { t: 'hello'; id: string; name: string }
+  /** open an account, and be signed in with it */
+  | { t: 'signup'; rid: number; name: string; password: string }
+  | { t: 'signin'; rid: number; name: string; password: string }
+  /** first frame of a socket that already holds a session */
+  | { t: 'auth'; rid?: number; token: string }
+  /** forget this session for good */
+  | { t: 'signout' }
   | { t: 'create'; rid: number; name: string; options: SetupOptions; color?: PlayerColor }
   | { t: 'join'; rid: number; code: string; color?: PlayerColor }
   /** follow a table without taking a seat (a link, a reconnection) */
@@ -39,12 +51,15 @@ export type ClientMessage =
   | { t: 'ping' };
 
 export type ServerMessage =
-  | { t: 'welcome'; id: string }
+  /** the socket now speaks for this account */
+  | { t: 'welcome'; rid?: number; me: Identity }
+  /** a fresh session: the token is the client's to keep */
+  | { t: 'session'; rid: number; token: string; me: Identity }
   /** the table changed (null = it is gone) */
   | { t: 'table'; code: string; table: Table | null }
   /** the answer to a create or a join */
   | { t: 'seated'; rid: number; table: Table }
-  | { t: 'refused'; rid?: number; error: LobbyError | string }
+  | { t: 'refused'; rid?: number; error: AuthError | LobbyError | string }
   | { t: 'game'; view: GameView }
   /** the engine turned an action down — its own words, for the shake */
   | { t: 'rejected'; code: string; error: string }

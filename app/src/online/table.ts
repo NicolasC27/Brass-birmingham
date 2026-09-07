@@ -31,6 +31,9 @@ export interface Table {
 
 export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline';
 
+/** why the office would not sign you in */
+export type AuthError = 'bad-name' | 'weak-password' | 'name-taken' | 'bad-credentials' | 'no-session' | 'sign-in-first';
+
 export interface Identity {
   id: string;
   name: string;

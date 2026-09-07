@@ -5,6 +5,7 @@ import { MAX_SEATS, canStart, freeColor, randomId, setupFromTable } from '@/onli
 import type { Identity, LobbyError, Table, TableSeat } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
+import type { Store } from './store';
 
 /* ------------------------------------------------------------------ */
 /* The hall — every table in the house.                                */
@@ -13,6 +14,10 @@ import type { Pace } from './game';
 /* what that client is allowed to change (your own chair, the host's   */
 /* pen for the rules and the bots) and answers with the table that     */
 /* now stands. Ringing the bell turns the table into a game.           */
+/*                                                                     */
+/* Nothing lives only in memory: tables are written to the register as */
+/* they change and games as they are played, so the house opens again  */
+/* on the same tables, with every game exactly where it was left.      */
 /* ------------------------------------------------------------------ */
 
 interface Room {
@@ -23,15 +28,28 @@ interface Room {
 export type Changed = (code: string, what: 'table' | 'game') => void;
 
 /** a table nobody has touched for this long is swept away */
-export const STALE_MS = 6 * 60 * 60 * 1000;
+export const STALE_MS = 30 * 24 * 60 * 60 * 1000;
 
 export class Hall {
   private rooms = new Map<string, Room>();
   private listeners = new Set<Changed>();
   private readonly pace: Pace;
+  private readonly store: Store;
 
-  constructor(pace: Pace = DEFAULT_PACE) {
+  constructor(store: Store, pace: Pace = DEFAULT_PACE) {
+    this.store = store;
     this.pace = pace;
+    this.reopen();
+  }
+
+  /** the house as the register left it: tables back, games replayed */
+  private reopen(): void {
+    for (const table of this.store.tables()) this.rooms.set(table.code, { table, game: null });
+    for (const g of this.store.games()) {
+      const room = this.rooms.get(g.code);
+      if (!room || g.finishedAt !== null) continue;
+      room.game = this.deal(g.code, g.seatIds, g.setup, g.seed, g.actions);
+    }
   }
 
   onChange(cb: Changed): () => void {
@@ -61,7 +79,7 @@ export class Hall {
     const now = Date.now();
     const table: Table = {
       code,
-      name: tableName,
+      name: tableName.trim().slice(0, 28) || `${me.name}'s table`,
       hostId: me.id,
       seats: [seatFor(me, { seats: [] }, color)],
       options: houseRules(options),
@@ -70,7 +88,7 @@ export class Hall {
       updatedAt: now,
     };
     this.rooms.set(code, { table, game: null });
-    this.announce(code, 'table');
+    this.write(code);
     return table;
   }
 
@@ -84,7 +102,7 @@ export class Hall {
     if (room.table.status !== 'open' || room.game) throw new Error('started' satisfies LobbyError);
     if (room.table.seats.length >= MAX_SEATS) throw new Error('full' satisfies LobbyError);
     room.table = { ...room.table, seats: [...room.table.seats, seatFor(me, room.table, color)], updatedAt: Date.now() };
-    this.announce(code, 'table');
+    this.write(code);
     return room.table;
   }
 
@@ -104,7 +122,7 @@ export class Hall {
       hostId = next.id;
     }
     room.table = { ...room.table, seats, hostId, updatedAt: Date.now() };
-    this.announce(code, 'table');
+    this.write(code);
   }
 
   close(code: string): void {
@@ -112,6 +130,7 @@ export class Hall {
     if (!room) return;
     room.game?.dispose();
     this.rooms.delete(code);
+    this.store.dropTable(code);
     this.announce(code, 'table');
   }
 
@@ -119,6 +138,11 @@ export class Hall {
   sweep(maxAge = STALE_MS): void {
     const cut = Date.now() - maxAge;
     for (const [code, room] of this.rooms) if (room.table.updatedAt < cut) this.close(code);
+  }
+
+  /** stop every clock in the house (the process is going down) */
+  dispose(): void {
+    for (const room of this.rooms.values()) room.game?.dispose();
   }
 
   /** the table as `playerId` would have it — kept down to what they may change */
@@ -130,7 +154,7 @@ export class Hall {
     if (!next) return { table: room.table, error: 'refused' satisfies LobbyError };
     room.table = next;
     if (next.status === 'starting') this.start(code);
-    this.announce(code, 'table');
+    this.write(code);
     return { table: room.table };
   }
 
@@ -139,30 +163,64 @@ export class Hall {
     const room = this.rooms.get(code);
     if (!room || room.game) return;
     const setup: SetupPayload = setupFromTable(room.table);
-    room.game = new TableGame(code, room.table.seats.map((s) => s.id), setup, () => this.announce(code, 'game'), this.pace);
+    const seatIds = room.table.seats.map((s) => s.id);
+    const seed = Math.floor(Math.random() * 1e9);
+    this.store.openGame(code, seed, setup, seatIds);
+    room.game = this.deal(code, seatIds, setup, seed);
     this.announce(code, 'game');
+  }
+
+  private deal(code: string, seatIds: string[], setup: SetupPayload, seed: number, actions?: GameAction[]): TableGame {
+    return new TableGame({
+      code,
+      seatIds,
+      setup,
+      seed,
+      actions,
+      pace: this.pace,
+      emit: () => {
+        this.touch(code);
+        this.announce(code, 'game');
+      },
+      journal: {
+        append: (idx: number, action: GameAction) => this.store.appendMove(code, idx, action),
+        drop: (idx: number) => this.store.dropMove(code, idx),
+        finish: () => this.store.finishGame(code),
+      },
+    });
   }
 
   act(code: string, playerId: string, action: GameAction): string | null {
     const game = this.rooms.get(code)?.game;
     if (!game) return 'No game at this table';
-    const error = game.act(playerId, action);
-    if (!error) this.touch(code);
-    return error;
+    return game.act(playerId, action);
   }
 
   undo(code: string, playerId: string): string | null {
     const game = this.rooms.get(code)?.game;
     if (!game) return 'No game at this table';
-    const error = game.undo(playerId);
-    if (!error) this.touch(code);
-    return error;
+    return game.undo(playerId);
   }
 
+  /** the table changed: to the register, then to everyone watching */
+  private write(code: string): void {
+    const room = this.rooms.get(code);
+    if (!room) return;
+    this.store.saveTable(room.table);
+    this.announce(code, 'table');
+  }
+
+  /** the table is alive — a played action keeps it from being swept */
   private touch(code: string): void {
     const room = this.rooms.get(code);
-    if (room) room.table = { ...room.table, updatedAt: Date.now() };
+    if (!room) return;
+    room.table = { ...room.table, updatedAt: Date.now() };
+    this.store.saveTable(room.table);
   }
+}
+
+function seatFor(me: Identity, table: Pick<Table, 'seats'>, color?: PlayerColor): TableSeat {
+  return { id: me.id, name: me.name, color: freeColor(table, color), kind: 'human', ready: false, joinedAt: Date.now() };
 }
 
 /** the house rules as the server will have them — never the client's object */
@@ -175,10 +233,6 @@ function houseRules(o: Partial<SetupOptions> | undefined): SetupOptions {
     fidelity: one(o?.fidelity, ['core', 'approx'] as const, 'core'),
     timerMinutes: typeof minutes === 'number' && minutes > 0 ? Math.min(180, Math.round(minutes)) : null,
   };
-}
-
-function seatFor(me: Identity, table: Pick<Table, 'seats'>, color?: PlayerColor): TableSeat {
-  return { id: me.id, name: me.name || 'Player', color: freeColor(table, color), kind: 'human', ready: false, joinedAt: Date.now() };
 }
 
 /* ---------------------- what a rewrite may touch ------------------- */
@@ -205,7 +259,8 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
       seats.push(was);
       continue;
     }
-    seats.push({ ...was, name: w.name || was.name, color: w.color, difficulty: w.difficulty ?? was.difficulty, ready: was.kind === 'bot' ? true : !!w.ready });
+    /* your own name at the table is your account's, not the client's word */
+    seats.push({ ...was, color: w.color, difficulty: w.difficulty ?? was.difficulty, ready: was.kind === 'bot' ? true : !!w.ready, name: was.kind === 'bot' ? w.name : was.name });
   }
   if (!host && seats.length !== cur.seats.length) return null;
   if (seats.length < 1 || seats.length > MAX_SEATS) return null;

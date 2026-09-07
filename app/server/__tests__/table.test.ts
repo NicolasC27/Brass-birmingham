@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import WebSocket from 'ws';
 import { botAction, fallbackAction, replay } from '@/game/actions';
@@ -8,22 +11,27 @@ import { decode, encode } from '@/online/protocol';
 import type { ClientMessage, GameView, ServerMessage } from '@/online/protocol';
 import type { Table } from '@/online/table';
 import { serve } from '../index';
+import type { Pace } from '../game';
 import type { Serving } from '../index';
 
 /* ------------------------------------------------------------------ */
-/* A whole table played over the wire: two humans, two bots, a real    */
+/* A whole table played over the wire: two accounts, two bots, a real  */
 /* socket each. The humans decide from the state the server sends them */
 /* and nothing else — proof that a filtered view is enough to play —   */
 /* and at the end the server's log must replay to the very same game.  */
 /* ------------------------------------------------------------------ */
 
 const OPTIONS = { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' } as const;
+const PASSWORD = 'a-good-long-password';
 
 /** a player at the far end of a socket: the last table and view it was sent */
 class Guest {
-  readonly id: string;
   readonly name: string;
+  /** the account id, once the office has recognised it */
+  id = '';
+  token = '';
   private socket!: WebSocket;
+  private rid = 0;
   table: Table | null = null;
   view: GameView | null = null;
   rejected: string[] = [];
@@ -32,8 +40,7 @@ class Guest {
   /** the tags of the frames as they arrived, in order */
   trace: string[] = [];
 
-  constructor(id: string, name: string) {
-    this.id = id;
+  constructor(name: string) {
     this.name = name;
   }
 
@@ -49,13 +56,29 @@ class Guest {
       this.trace.push(m.t);
       if (m.t === 'table') this.table = m.table;
       if (m.t === 'seated') this.table = m.table;
+      if (m.t === 'session') {
+        this.id = m.me.id;
+        this.token = m.token;
+      }
+      if (m.t === 'welcome') this.id = m.me.id;
       if (m.t === 'game') {
         this.view = m.view;
         this.seen.push(m.view);
       }
       if (m.t === 'rejected' || m.t === 'refused') this.rejected.push(m.error);
     });
-    this.send({ t: 'hello', id: this.id, name: this.name });
+  }
+
+  /** open an account and be signed in with it */
+  async signUp(): Promise<void> {
+    this.send({ t: 'signup', rid: ++this.rid, name: this.name, password: PASSWORD });
+    await this.until('a session', () => !!this.id);
+  }
+
+  /** come back with a token already in hand */
+  async signInWith(token: string): Promise<void> {
+    this.send({ t: 'auth', token });
+    await this.until('the welcome back', () => !!this.id);
   }
 
   send(m: ClientMessage): void {
@@ -93,35 +116,50 @@ function keepsItsSecrets(view: GameView): boolean {
 describe('a table over the wire', () => {
   let server: Serving | null = null;
   const guests: Guest[] = [];
+  const dirs: string[] = [];
+
+  /** a register of its own, swept away with the test */
+  const registerFile = () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'brassworks-'));
+    dirs.push(dir);
+    return path.join(dir, 'house.db');
+  };
 
   afterEach(async () => {
     for (const g of guests) g.close();
     guests.length = 0;
     await server?.close();
     server = null;
+    for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
   });
 
-  it('seats two players and two bots, plays the game out and replays its log', async () => {
-    server = await serve({ port: 0, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0 });
-    const host = new Guest('p-host', 'Ada');
-    const guest = new Guest('p-guest', 'Bob');
+  /** two signed-in accounts at a table, the guest ready, waiting on the bell */
+  async function seatTwo(pace: Pace = { bot: 0, ceremony: 0 }, file = ':memory:') {
+    server = await serve({ port: 0, pace, sweepEvery: 0, file });
+    const host = new Guest('Ada');
+    const guest = new Guest('Bob');
     guests.push(host, guest);
     await host.open(server.port);
     await guest.open(server.port);
-
-    /* the host opens a table, the guest answers the code */
-    host.send({ t: 'create', rid: 1, name: 'The Works', options: OPTIONS });
+    await host.signUp();
+    await guest.signUp();
+    host.send({ t: 'create', rid: 10, name: 'The Works', options: OPTIONS });
     await host.until('the table', () => !!host.table);
     const code = host.table!.code;
-    guest.send({ t: 'join', rid: 2, code });
+    guest.send({ t: 'join', rid: 11, code });
     await guest.until('a chair', () => !!guest.table);
     await host.until('the guest', () => host.table!.seats.length === 2);
-
     /* each human stamps their own chair — a host cannot do it for a guest */
     guest.send({ t: 'table', code, table: { ...guest.table!, seats: guest.table!.seats.map((s) => (s.id === guest.id ? { ...s, ready: true } : s)) } });
-    await host.until('the guest to be ready', () => host.table!.seats.every((s) => s.kind === 'bot' || s.ready || s.id === host.id));
+    await host.until('the guest to be ready', () => host.table!.seats.some((s) => s.id === guest.id && s.ready));
+    return { host, guest, code };
+  }
 
-    /* two mechanical players fill the table */
+  const ring = (host: Guest, code: string, seats = host.table!.seats) =>
+    host.send({ t: 'table', code, table: { ...host.table!, seats: seats.map((s) => (s.id === host.id ? { ...s, ready: true } : s)), status: 'starting' } });
+
+  it('seats two players and two bots, plays the game out and replays its log', async () => {
+    const { host, guest, code } = await seatTwo();
     host.send({
       t: 'table',
       code,
@@ -135,9 +173,7 @@ describe('a table over the wire', () => {
       },
     });
     await host.until('four seats', () => host.table!.seats.length === 4);
-
-    /* the bell */
-    host.send({ t: 'table', code, table: { ...host.table!, status: 'starting' } });
+    ring(host, code);
     await host.until('the game', () => !!host.view);
     await guest.until('the game', () => !!guest.view);
     expect(host.view!.seat).toBe(0);
@@ -157,7 +193,7 @@ describe('a table over the wire', () => {
       await g.until('my action to land', () => g.view!.state.actions.length > at);
     }
 
-    const truth = server.hall.game(code)!;
+    const truth = server!.hall.game(code)!;
     expect(truth.state.phase).toBe('game-over');
     await host.until('the archive', () => !!host.view!.archive);
 
@@ -175,30 +211,19 @@ describe('a table over the wire', () => {
   }, 60000);
 
   it('gives a reconnecting player their own seat back, mid-game', async () => {
-    server = await serve({ port: 0, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0 });
-    const host = new Guest('p-host', 'Ada');
-    const guest = new Guest('p-guest', 'Bob');
-    guests.push(host, guest);
-    await host.open(server.port);
-    await guest.open(server.port);
-    host.send({ t: 'create', rid: 1, name: 'The Works', options: OPTIONS });
-    await host.until('the table', () => !!host.table);
-    const code = host.table!.code;
-    guest.send({ t: 'join', rid: 2, code });
-    await guest.until('a chair', () => !!guest.table);
-    await host.until('the guest', () => host.table!.seats.length === 2);
-    guest.send({ t: 'table', code, table: { ...guest.table!, seats: guest.table!.seats.map((s) => (s.id === guest.id ? { ...s, ready: true } : s)) } });
-    await host.until('the guest to be ready', () => host.table!.seats.some((s) => s.id === guest.id && s.ready));
-    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === host.id ? { ...s, ready: true } : s)), status: 'starting' } });
+    const { host, guest, code } = await seatTwo({ bot: 60000, ceremony: 60000 });
+    ring(host, code);
     await host.until('the game', () => !!host.view);
     await guest.until('the game', () => !!guest.view);
 
-    /* the guest's browser goes away and comes back — same id, same chair */
-    const played = server.hall.game(code)!.state.actions.length;
+    /* the guest's browser goes away and comes back with the same session */
+    const played = server!.hall.game(code)!.state.actions.length;
+    const token = guest.token;
     guest.close();
-    const again = new Guest('p-guest', 'Bob');
+    const again = new Guest('Bob');
     guests.push(again);
-    await again.open(server.port);
+    await again.open(server!.port);
+    await again.signInWith(token);
     again.send({ t: 'watch', code });
     await again.until('the table back', () => !!again.view && !!again.table);
     expect(again.view!.seat).toBe(1);
@@ -207,9 +232,10 @@ describe('a table over the wire', () => {
     expect(keepsItsSecrets(again.view!)).toBe(true);
 
     /* and a stranger who merely follows the code sees no hand at all */
-    const passer = new Guest('p-passer', 'Nobody');
+    const passer = new Guest('Nobody');
     guests.push(passer);
-    await passer.open(server.port);
+    await passer.open(server!.port);
+    await passer.signUp();
     passer.send({ t: 'watch', code });
     await passer.until('the table', () => !!passer.view);
     expect(passer.view!.seat).toBe(-1);
@@ -217,21 +243,8 @@ describe('a table over the wire', () => {
   }, 30000);
 
   it('turns down an action taken out of turn', async () => {
-    server = await serve({ port: 0, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0 });
-    const host = new Guest('p-host', 'Ada');
-    const guest = new Guest('p-guest', 'Bob');
-    guests.push(host, guest);
-    await host.open(server.port);
-    await guest.open(server.port);
-    host.send({ t: 'create', rid: 1, name: 'The Works', options: OPTIONS });
-    await host.until('the table', () => !!host.table);
-    const code = host.table!.code;
-    guest.send({ t: 'join', rid: 2, code });
-    await guest.until('a chair', () => !!guest.table);
-    await host.until('the guest', () => host.table!.seats.length === 2);
-    guest.send({ t: 'table', code, table: { ...guest.table!, seats: guest.table!.seats.map((s) => (s.id === guest.id ? { ...s, ready: true } : s)) } });
-    await host.until('the guest to be ready', () => host.table!.seats.some((s) => s.id === guest.id && s.ready));
-    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === host.id ? { ...s, ready: true } : s)), status: 'starting' } });
+    const { host, guest, code } = await seatTwo({ bot: 60000, ceremony: 60000 });
+    ring(host, code);
     await host.until('the game', () => !!host.view);
     await guest.until('the game', () => !!guest.view);
 
@@ -239,9 +252,86 @@ describe('a table over the wire', () => {
     idle.send({ t: 'act', code, action: decide({ ...idle.view!, seat: idle.view!.state.current }) });
     await idle.until('the refusal', () => idle.rejected.length > 0);
     expect(idle.rejected[0]).toBe('Not your turn');
-    expect(server.hall.game(code)!.state.actions.length).toBe(0);
+    expect(server!.hall.game(code)!.state.actions.length).toBe(0);
     /* the board comes back first, the reason second — the other way round
        the state landing on the client would wipe the reason off the screen */
     expect(idle.trace.slice(-2)).toEqual(['game', 'rejected']);
+  }, 30000);
+
+  it('opens again on the same tables, with the game where it was left', async () => {
+    const file = registerFile();
+    const { host, guest, code } = await seatTwo({ bot: 60000, ceremony: 60000 }, file);
+    ring(host, code);
+    await host.until('the game', () => !!host.view);
+    await guest.until('the game', () => !!guest.view);
+
+    /* one real move, so the log has something to say */
+    const first = [host, guest].find((g) => g.view!.state.current === g.view!.seat)!;
+    first.send({ t: 'act', code, action: decide(first.view!) });
+    await first.until('the move to land', () => first.view!.state.actions.length === 1);
+    const before = serialize(server!.hall.game(code)!.state);
+    const token = host.token;
+
+    /* the house closes for the night */
+    for (const g of guests.splice(0)) g.close();
+    await server!.close();
+
+    /* and opens on the same tables, the game exactly where it stood */
+    server = await serve({ port: 0, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file });
+    expect(server.hall.table(code)?.name).toBe('The Works');
+    expect(serialize(server.hall.game(code)!.state)).toBe(before);
+
+    const back = new Guest('Ada');
+    guests.push(back);
+    await back.open(server.port);
+    await back.signInWith(token);
+    back.send({ t: 'watch', code });
+    await back.until('the game back', () => !!back.view);
+    expect(back.view!.seat).toBe(0);
+    expect(back.view!.state.actions.length).toBe(1);
+  }, 30000);
+
+  it('passes for a seat that lets its candle burn out, and that pass stands', async () => {
+    /* a candle whose minute lasts 40ms: the same code path, a shorter wait */
+    const { host, code } = await seatTwo({ bot: 60000, ceremony: 60000, minute: 40 });
+    /* the shortest candle the office allows a table to set */
+    host.send({ t: 'table', code, table: { ...host.table!, options: { ...OPTIONS, timerMinutes: 1 } } });
+    await host.until('the candle', () => host.table!.options.timerMinutes === 1);
+    ring(host, code);
+    await host.until('the game', () => !!host.view);
+
+    const table = server!.hall.game(code)!;
+    const seat = table.state.current;
+    expect(host.view!.msLeft).toBeGreaterThan(0);
+    /* nobody plays: the candle burns down and the table puts the turn itself */
+    await host.until('the candle to go out', () => table.state.actions.length > 0);
+    expect(table.state.actions).toEqual([{ kind: 'pass', reason: expect.stringContaining('candle') }]);
+    expect(table.state.current).not.toBe(seat);
+    /* and it is nobody's to take back: the clock is not a second chance */
+    expect(table.mayUndo(seat)).toBe(false);
+  }, 30000);
+
+  it('says nothing to a socket that has not signed in', async () => {
+    server = await serve({ port: 0, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    const stranger = new Guest('Nobody');
+    guests.push(stranger);
+    await stranger.open(server.port);
+    stranger.send({ t: 'create', rid: 1, name: 'A table', options: OPTIONS });
+    await stranger.until('the door to be shut', () => stranger.rejected.length > 0);
+    expect(stranger.rejected[0]).toBe('sign-in-first');
+    expect(server.hall.codes()).toEqual([]);
+
+    /* the same name cannot be taken twice, and a bad password opens nothing */
+    await stranger.signUp();
+    const twice = new Guest('nobody');
+    guests.push(twice);
+    await twice.open(server.port);
+    twice.send({ t: 'signup', rid: 2, name: 'nobody', password: PASSWORD });
+    await twice.until('the refusal', () => twice.rejected.length > 0);
+    expect(twice.rejected.at(-1)).toBe('name-taken');
+    twice.send({ t: 'signin', rid: 3, name: 'Nobody', password: 'not-the-password' });
+    await twice.until('the second refusal', () => twice.rejected.length > 1);
+    expect(twice.rejected.at(-1)).toBe('bad-credentials');
+    expect(twice.id).toBe('');
   }, 30000);
 });

@@ -1,5 +1,4 @@
-import { applyAction, botAction, canUndoNow, fallbackAction } from '@/game/actions';
-import { undoLastHuman } from '@/game/actions';
+import { applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, replay, undoLastHuman } from '@/game/actions';
 import type { GameAction, UndoMark } from '@/game/actions';
 import { chooseBotMove } from '@/game/bot';
 import { newGame } from '@/game/engine';
@@ -14,8 +13,12 @@ import { viewFor } from './view';
 /* a player's or a bot's — goes through applyAction, the one door the  */
 /* engine opens; whatever it refuses simply never happened. The bots   */
 /* are played by the table itself, after a pause long enough to watch, */
-/* and the canal ceremony closes on its own so an absent player cannot */
-/* hold the era open.                                                  */
+/* the canal ceremony closes on its own so an absent player cannot     */
+/* hold the era open, and the turn candle burns here too: a seat that  */
+/* lets it go out passes, whether or not anyone is at the screen.      */
+/*                                                                     */
+/* Nothing is kept but the seed and the moves: handed a log, the table */
+/* replays it and is exactly where it was before the server stopped.   */
 /* ------------------------------------------------------------------ */
 
 export interface Pace {
@@ -23,41 +26,80 @@ export interface Pace {
   bot: number;
   /** how long the canal ceremony stays on the table before the rail era */
   ceremony: number;
+  /** how long a minute of the turn candle lasts, in ms — a minute, unless
+   *  a test would rather not wait one */
+  minute?: number;
 }
 
 export const DEFAULT_PACE: Pace = { bot: 1200, ceremony: 7000 };
+const MINUTE = 60_000;
+
+/** where the moves are written down as they are accepted */
+export interface Journal {
+  append(idx: number, action: GameAction): void;
+  drop(idx: number): void;
+  finish(): void;
+}
+
+export interface TableGameOptions {
+  code: string;
+  /** the account id of each seat, in player order */
+  seatIds: string[];
+  setup: SetupPayload;
+  seed?: number;
+  /** a log to sit back down in front of (a server that has restarted) */
+  actions?: GameAction[];
+  pace?: Pace;
+  /** the state moved on: hand every watcher their view again */
+  emit: () => void;
+  journal?: Journal;
+}
 
 export class TableGame {
   readonly code: string;
-  /** the lobby id of each seat, in player order */
   readonly seatIds: string[];
   readonly seed: number;
   readonly setup: SetupPayload;
   state: GameState;
   private readonly emit: () => void;
   private readonly pace: Pace;
+  private readonly journal: Journal | null;
   /** the actions taken by humans — the undo marks, kept as the store does */
   private marks: UndoMark[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
+  /** when this turn's candle goes out (epoch ms), null when none burns */
+  private burnsOut: number | null = null;
+  private closed = false;
 
-  constructor(code: string, seatIds: string[], setup: SetupPayload, emit: () => void, pace: Pace = DEFAULT_PACE, seed = Math.floor(Math.random() * 1e9)) {
-    this.code = code;
-    this.seatIds = seatIds;
-    this.emit = emit;
-    this.pace = pace;
-    this.seed = seed;
-    this.setup = setup;
-    this.state = newGame(setup, seed);
+  constructor(o: TableGameOptions) {
+    this.code = o.code;
+    this.seatIds = o.seatIds;
+    this.setup = o.setup;
+    this.emit = o.emit;
+    this.pace = o.pace ?? DEFAULT_PACE;
+    this.journal = o.journal ?? null;
+    this.seed = o.seed ?? Math.floor(Math.random() * 1e9);
+    if (o.actions?.length) {
+      this.state = replay(o.setup, this.seed, o.actions);
+      this.marks = humanActionIndices(o.setup, this.seed, o.actions);
+    } else {
+      this.state = newGame(o.setup, this.seed);
+    }
     this.schedule();
   }
 
-  /** the player index of a lobby id, or -1 for anyone else */
+  /** the player index of an account id, or -1 for anyone else */
   seatOf(playerId: string): number {
     return this.seatIds.indexOf(playerId);
   }
 
   get over(): boolean {
     return this.state.phase === 'game-over';
+  }
+
+  /** what is left of this turn's candle, in ms (null when none burns) */
+  get msLeft(): number | null {
+    return this.burnsOut === null ? null : Math.max(0, this.burnsOut - Date.now());
   }
 
   /** play an action for a seat; null when it was accepted, else the reason */
@@ -79,6 +121,7 @@ export class TableGame {
     if (!this.mayUndo(seat)) return 'Too late — the turn has moved on';
     const back = undoLastHuman(this.state, this.marks);
     if (!back) return 'Nothing to take back';
+    this.journal?.drop(this.marks[this.marks.length - 1].at);
     this.state = back;
     this.marks = this.marks.slice(0, -1);
     this.emit();
@@ -99,6 +142,7 @@ export class TableGame {
       seat,
       state: viewFor(this.state, seat),
       canUndo: seat >= 0 && this.mayUndo(seat),
+      msLeft: this.msLeft,
       /* over: the log is nobody's secret any more, and the replay needs it */
       ...(this.over ? { archive: { seed: this.seed, setup: this.setup, actions: this.state.actions } } : {}),
     };
@@ -110,27 +154,46 @@ export class TableGame {
     this.timer = null;
   }
 
-  private commit(seat: number, action: GameAction): string | null {
+  /** `marked` false: the action stands, but it is nobody's to take back —
+   *  a pass the candle imposed must not be undone to buy another turn */
+  private commit(seat: number, action: GameAction, marked = true): string | null {
     const before = this.state;
     const r = applyAction(before, seat, action);
     if (!r.state) return r.error ?? 'The engine refused the action';
-    if (before.phase === 'action' && !before.players[before.current].isBot) this.marks.push({ at: before.actions.length, by: before.current });
+    const at = before.actions.length;
+    if (marked && before.phase === 'action' && !before.players[before.current].isBot) this.marks.push({ at, by: before.current });
     this.state = r.state;
+    this.journal?.append(at, action);
     this.emit();
     this.schedule();
     return null;
   }
 
-  /** whatever the table owes next: a bot's turn, or the end of the ceremony */
+  /** whatever the table owes next: a bot's turn, the end of the ceremony,
+   *  or the candle it lit for the player to act */
   private schedule(): void {
     this.dispose();
+    this.burnsOut = null;
     const s = this.state;
     if (s.phase === 'scoring-canal') {
       this.timer = setTimeout(() => this.commit(s.current, { kind: 'begin-rail' }), this.pace.ceremony);
       return;
     }
-    if (s.phase !== 'action' || !s.players[s.current].isBot) return;
-    this.timer = setTimeout(() => this.playBot(), this.pace.bot);
+    if (s.phase !== 'action') {
+      if (!this.closed) {
+        this.closed = true;
+        this.journal?.finish();
+      }
+      return;
+    }
+    if (s.players[s.current].isBot) {
+      this.timer = setTimeout(() => this.playBot(), this.pace.bot);
+      return;
+    }
+    if (!s.timerMinutes) return;
+    const burn = s.timerMinutes * (this.pace.minute ?? MINUTE);
+    this.burnsOut = Date.now() + burn;
+    this.timer = setTimeout(() => this.burnOut(), burn);
   }
 
   private playBot(): void {
@@ -140,5 +203,11 @@ export class TableGame {
     const wanted = botAction(chooseBotMove(s, seat));
     /* nothing playable, or a move the engine turns down: scout, else pass */
     if (!wanted || this.commit(seat, wanted) !== null) this.commit(seat, fallbackAction(s, seat));
+  }
+
+  private burnOut(): void {
+    const s = this.state;
+    if (s.phase !== 'action' || s.players[s.current].isBot) return;
+    this.commit(s.current, { kind: 'pass', reason: `${s.players[s.current].name}'s candle burned out.` }, false);
   }
 }
