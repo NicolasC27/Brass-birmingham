@@ -266,7 +266,7 @@ export default function Game() {
   const botThinking = game.phase === 'action' && game.players[game.current].isBot && !ceremony;
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-hidden bg-coal-950">
+    <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
       {/* mahogany table under the board */}
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-0 opacity-35" />
 
