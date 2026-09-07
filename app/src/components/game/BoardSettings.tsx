@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
-import { setBoardOption, useBoardOptions } from './boardOptions';
+import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
 import { STOCK_STYLE_IDS } from './stockStyles';
 import { TILE_VARIANTS } from '@/gl/paint';
@@ -223,6 +223,7 @@ export default function BoardSettings() {
   const toggleFollowBots = useGame((s) => s.toggleFollowBots);
   const [section, setSection] = useState<SectionId>('tiles');
   const open = opts.settingsOpen;
+  const insets = hudInsets(opts);
   const close = () => setBoardOption('settingsOpen', false);
 
   const toggleFullscreen = () => {
@@ -234,26 +235,17 @@ export default function BoardSettings() {
     <AnimatePresence>
       {open && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.16 }}
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-coal-950/60 p-4 backdrop-blur-[2px]"
-          onClick={close}
+          initial={{ opacity: 0, x: -14 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -14 }}
+          transition={{ duration: 0.18, ease: 'easeOut' }}
+          className="plate fixed left-3 z-[70] flex w-[min(400px,calc(100vw-24px))] flex-col overflow-hidden shadow-e4"
+          style={{ top: insets.top + 8, bottom: insets.bottom + 8 }}
+          role="dialog"
+          aria-label={t('game.settings.title')}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 12, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.98 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="plate flex max-h-[86vh] w-[min(740px,100%)] flex-col overflow-hidden shadow-e4 sm:min-h-[min(560px,86vh)]"
-            role="dialog"
-            aria-modal
-            aria-label={t('game.settings.title')}
-            onClick={(e) => e.stopPropagation()}
-          >
             {/* header */}
-            <div className="flex items-start justify-between gap-4 border-b border-brass-700/40 px-5 py-3.5">
+            <div className="flex items-start justify-between gap-4 border-b border-brass-700/40 px-4 py-3">
               <div>
                 <h2 className="font-fell text-[18px] leading-tight tracking-wide text-brass-400">{t('game.settings.title')}</h2>
                 <p className="mt-0.5 font-sans text-[11px] text-cream-100/50">{t('game.settings.subtitle')}</p>
@@ -263,9 +255,10 @@ export default function BoardSettings() {
               </button>
             </div>
 
-            <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
-              {/* section rail */}
-              <nav aria-label={t('game.settings.title')} className="flex shrink-0 gap-1 overflow-x-auto border-b border-brass-700/40 p-2 sm:w-[168px] sm:flex-col sm:border-b-0 sm:border-r">
+            <div className="flex min-h-0 flex-1 flex-col">
+              {/* section tabs — the panel is docked beside the board, so the
+                  sections run across the top and the board stays in view */}
+              <nav aria-label={t('game.settings.title')} className="flex shrink-0 gap-1 overflow-x-auto border-b border-brass-700/40 p-2">
                 {SECTIONS.map(({ id, icon: Icon }) => {
                   const active = section === id;
                   return (
@@ -275,7 +268,7 @@ export default function BoardSettings() {
                       aria-current={active ? 'page' : undefined}
                       onClick={() => setSection(id)}
                       className={cn(
-                        'flex items-center gap-2 rounded-md px-2.5 py-2 text-left font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors',
+                        'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-2 font-sans text-[10.5px] font-semibold uppercase tracking-[0.1em] transition-colors',
                         active ? 'bg-brass-400/15 text-brass-400' : 'text-cream-100/60 hover:bg-coal-800 hover:text-cream-100',
                       )}
                     >
@@ -287,7 +280,7 @@ export default function BoardSettings() {
               </nav>
 
               {/* section body */}
-              <div className="min-h-0 flex-1 overflow-y-auto px-5 py-3">
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 <p className="mb-1 font-sans text-[11px] text-cream-100/50">{t(`game.settings.sectionHint.${section}`)}</p>
 
                 {section === 'tiles' && (
@@ -446,7 +439,6 @@ export default function BoardSettings() {
                 )}
               </div>
             </div>
-          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

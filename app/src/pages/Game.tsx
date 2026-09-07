@@ -368,7 +368,7 @@ export default function Game() {
       <div className="fixed right-3 z-[64] flex items-center gap-1.5" style={{ bottom: MM_H_FOR[minimapSize] + insets.bottom + 20 }}>
         <button
           type="button"
-          onClick={() => setBoardOption('settingsOpen', true)}
+          onClick={() => setBoardOption('settingsOpen', !boardOpts.settingsOpen)}
           aria-label={t('board.options.settingsAria')}
           title={t('board.options.settingsTip')}
           className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100"
