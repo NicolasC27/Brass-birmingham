@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:server": "node server/build.mjs",
+    "server": "node server/build.mjs && node server/dist/brassworks-server.mjs",
+    "server:dev": "node server/build.mjs --watch & node --watch server/dist/brassworks-server.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run"
@@ -61,6 +64,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
     "vaul": "^1.1.2",
+    "ws": "^8.21.3",
     "zod": "^4.3.5",
     "zustand": "^5.0.15"
   },
@@ -69,8 +73,10 @@
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.1.1",
     "autoprefixer": "^10.4.23",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
