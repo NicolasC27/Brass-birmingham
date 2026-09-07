@@ -44,17 +44,21 @@ export default function Online() {
   const named = name.trim().length > 0;
   const commitName = () => lobby.setName(name.trim());
 
-  const create = () => {
+  const create = async () => {
     if (!named) return;
     commitName();
-    const table = lobby.create(tableName.trim() || t('online.entry.create.defaultName', { name: name.trim() }), DEFAULT_OPTIONS);
-    navigate(`/online/${table.code}`);
+    try {
+      const table = await lobby.create(tableName.trim() || t('online.entry.create.defaultName', { name: name.trim() }), DEFAULT_OPTIONS);
+      navigate(`/online/${table.code}`);
+    } catch (e) {
+      setError((e as Error).message as LobbyError);
+    }
   };
-  const join = () => {
+  const join = async () => {
     if (!named || code.length < 4) return;
     commitName();
     try {
-      lobby.join(code);
+      await lobby.join(code);
       navigate(`/online/${code}`);
     } catch (e) {
       setError((e as Error).message as LobbyError);

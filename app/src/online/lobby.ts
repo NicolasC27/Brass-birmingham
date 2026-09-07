@@ -1,78 +1,32 @@
 import { useSyncExternalStore } from 'react';
-import type { BotDifficulty, PlayerColor, SetupOptions, StoredSetup } from '@/components/setup/constants';
-import { DEFAULT_OPTIONS, PLAYER_COLORS } from '@/components/setup/constants';
+import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
+import { DEFAULT_OPTIONS } from '@/components/setup/constants';
+import { MAX_SEATS, freeColor, randomId } from './table';
+import type { Identity, LobbyError, Table, TableSeat } from './table';
 
 /* ------------------------------------------------------------------ */
 /* Lobby — tables, seats, readiness. The UI talks to a LobbyClient and  */
 /* nothing else; the local client below keeps tables in localStorage   */
 /* and mirrors every change to the other tabs of this browser through  */
 /* a BroadcastChannel, so two tabs already play host and guest. The    */
-/* online transport implements the same interface against a server.   */
+/* online transport implements the same interface against a server.    */
 /* ------------------------------------------------------------------ */
 
-export interface TableSeat {
-  /** the player's id (per tab locally, the account online) — bots get their own */
-  id: string;
-  name: string;
-  color: PlayerColor;
-  kind: 'human' | 'bot';
-  difficulty?: BotDifficulty;
-  ready: boolean;
-  joinedAt: number;
-}
+export * from './table';
 
-export interface Table {
-  code: string;
-  name: string;
-  hostId: string;
-  seats: TableSeat[];
-  options: SetupOptions;
-  status: 'open' | 'starting';
-  createdAt: number;
-  updatedAt: number;
-}
-
-export type LobbyError = 'not-found' | 'full' | 'started';
-
-export interface Identity {
-  id: string;
-  name: string;
-}
+/** create and join cross the wire online, and answer at once locally */
+export type Awaitable<T> = T | Promise<T>;
 
 export interface LobbyClient {
   readonly me: Identity;
   setName(name: string): void;
-  create(tableName: string, options: SetupOptions, color?: PlayerColor): Table;
-  join(code: string, color?: PlayerColor): Table;
+  create(tableName: string, options: SetupOptions, color?: PlayerColor): Awaitable<Table>;
+  join(code: string, color?: PlayerColor): Awaitable<Table>;
   leave(code: string): void;
   /** rewrite a table (seat edits, rules, start) — the callback gets the latest copy */
   update(code: string, patch: (t: Table) => Table): Table | null;
   get(code: string): Table | null;
   subscribe(code: string, cb: () => void): () => void;
-}
-
-export const MAX_SEATS = 4;
-/** a table code: four glyphs from an alphabet without look-alikes */
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-export const normalizeCode = (raw: string): string => raw.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
-
-/** the first colour nobody at the table holds */
-export function freeColor(table: Pick<Table, 'seats'>, wanted?: PlayerColor): PlayerColor {
-  const taken = new Set(table.seats.map((s) => s.color));
-  if (wanted && !taken.has(wanted)) return wanted;
-  return PLAYER_COLORS.map((c) => c.id).find((c) => !taken.has(c)) ?? 'brass';
-}
-
-/** the game page's setup contract, from a table about to start */
-export function setupFromTable(table: Table): StoredSetup {
-  return {
-    players: table.seats.map((s) => ({ name: s.name, color: s.color, type: s.kind, ...(s.kind === 'bot' ? { difficulty: s.difficulty ?? 'industrialist' } : {}) })),
-    options: table.options,
-  };
-}
-
-export function canStart(table: Table): boolean {
-  return table.status === 'open' && table.seats.length >= 2 && table.seats.every((s) => s.kind === 'bot' || s.ready);
 }
 
 /* ----------------------------- local client ------------------------ */
@@ -82,7 +36,7 @@ const NAME_KEY = 'brassworks.player.name.v1';
 const ID_KEY = 'brassworks.player.id.v1'; // sessionStorage: one identity per tab
 const CHANNEL = 'brassworks-lobby';
 
-const rid = (n = 8) => Array.from({ length: n }, () => CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)]).join('');
+const rid = randomId;
 
 function readTables(): Record<string, Table> {
   try {
@@ -236,3 +190,4 @@ export function useTable(code: string): Table | null {
     () => null,
   );
 }
+

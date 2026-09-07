@@ -210,13 +210,13 @@ export default function Lobby() {
       /* clipboard blocked: the code is on screen anyway */
     }
   };
-  const sitDown = () => {
+  const sitDown = async () => {
     if (!me.name) {
       navigate('/online');
       return;
     }
     try {
-      lobby.join(code);
+      await lobby.join(code);
     } catch {
       /* full or started: the room says so */
     }
