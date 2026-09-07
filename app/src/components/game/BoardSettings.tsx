@@ -299,9 +299,6 @@ export default function BoardSettings() {
                     <OptionRow label={t('game.settings.bigChips')} hint={t('game.settings.bigChipsHint')}>
                       <Switch on={opts.bigChips} onClick={() => setBoardOption('bigChips', !opts.bigChips)} label={t('game.settings.bigChips')} />
                     </OptionRow>
-                    <OptionRow label={t('game.settings.ownerSeal')} hint={t('game.settings.ownerSealHint')}>
-                      <Switch on={opts.ownerSeal} onClick={() => setBoardOption('ownerSeal', !opts.ownerSeal)} label={t('game.settings.ownerSeal')} />
-                    </OptionRow>
                     <OptionRow label={t('game.settings.cardGrain')} hint={t('game.settings.cardGrainHint')}>
                       <Switch on={opts.cardGrain} onClick={() => setBoardOption('cardGrain', !opts.cardGrain)} label={t('game.settings.cardGrain')} />
                     </OptionRow>
@@ -322,6 +319,9 @@ export default function BoardSettings() {
 
                 {section === 'board' && (
                   <>
+                    <OptionRow label={t('game.settings.colorBlind')} hint={t('game.settings.colorBlindHint')}>
+                      <Switch on={opts.colorBlind} onClick={() => setBoardOption('colorBlind', !opts.colorBlind)} label={t('game.settings.colorBlind')} />
+                    </OptionRow>
                     <OptionRow label={t('game.settings.mapStyle')} hint={t('game.settings.mapStyleHint')}>
                       <Segmented<MapStyle>
                         value={opts.mapStyle}

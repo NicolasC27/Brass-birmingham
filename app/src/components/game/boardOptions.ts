@@ -25,8 +25,8 @@ export interface BoardOptions {
   stockStyle: StockStyle;
   /** empty-slot face: engraved print or colour painting */
   slotArt: SlotArt;
-  /** owner's shape seal on built cards */
-  ownerSeal: boolean;
+  /** colour-blind mode: owner shape medallions on built cards and links */
+  colorBlind: boolean;
   /** paper grain baked on built cards */
   cardGrain: boolean;
   /** income / VP layout on built cards */
@@ -43,7 +43,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   greyFreeMerchants: 'brassworks.greyFreeMerchants',
   stockStyle: 'brassworks.stockStyle',
   slotArt: 'brassworks.slotArt',
-  ownerSeal: 'brassworks.ownerSeal',
+  colorBlind: 'brassworks.colorBlind',
   cardGrain: 'brassworks.cardGrain',
   chipStyle: 'brassworks.chipStyle',
   minimapSize: 'brassworks.minimapSize',
@@ -68,7 +68,7 @@ let state: BoardOptions = {
   greyFreeMerchants: read('greyFreeMerchants', false),
   stockStyle: read('stockStyle', 'corner'),
   slotArt: read('slotArt', 'engraved'),
-  ownerSeal: read('ownerSeal', true),
+  colorBlind: read('colorBlind', false),
   cardGrain: read('cardGrain', true),
   chipStyle: read('chipStyle', 'band'),
   minimapSize: read('minimapSize', 's'),
