@@ -247,6 +247,7 @@ export default function HandDock() {
       return next;
     });
   const leaveTimer = useRef<number | null>(null);
+  const enterTimer = useRef<number | null>(null);
   /* H pins / unpins the hand from anywhere (not while typing) */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -279,18 +280,24 @@ export default function HandDock() {
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
+  /* hover intent: the collapsed strip sits right above the income track, so
+     a pointer merely crossing it on the way down must NOT pop the hand open.
+     It expands only once the pointer has rested on it for a beat. */
   const onEnter = () => {
     if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
     leaveTimer.current = null;
-    setHovered(true);
+    if (enterTimer.current === null) enterTimer.current = window.setTimeout(() => setHovered(true), 260);
   };
   const onLeave = () => {
+    if (enterTimer.current !== null) window.clearTimeout(enterTimer.current);
+    enterTimer.current = null;
     // small grace period so the strip doesn't snap shut between cards
     leaveTimer.current = window.setTimeout(() => setHovered(false), 350);
   };
   useEffect(
     () => () => {
       if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+      if (enterTimer.current !== null) window.clearTimeout(enterTimer.current);
     },
     [],
   );
