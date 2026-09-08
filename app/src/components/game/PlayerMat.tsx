@@ -54,54 +54,56 @@ function LevelTile({ ind, lv, count, isNext, gone }: { ind: IndustryType; lv: In
   const railOnly = !lv.eras.includes('canal');
   const sheets = gone ? 0 : Math.min(3, count - 1);
   return (
-    <li
-      ref={ref}
-      onPointerEnter={show}
-      onPointerLeave={hide}
-      className={cn(
-        'relative isolate flex w-[76px] cursor-help flex-col rounded-[5px] border px-1.5 py-1 transition-colors',
-        isNext
-          ? 'border-brass-400 bg-brass-500/15 shadow-[0_0_10px_rgba(201,164,92,.25)]'
-          : gone
-            ? 'border-brass-700/25 bg-coal-900/40 opacity-45'
-            : 'border-brass-700/50 bg-coal-900/70 hover:border-brass-500',
-      )}
-      style={{ marginRight: sheets * 2, marginBottom: sheets * 2 }}
-    >
-      {/* the pile: one faint sheet per extra tile behind this one (at most
-          three), stepped down and right like a stack on the printed mat */}
+    <li ref={ref} onPointerEnter={show} onPointerLeave={hide} className="group relative h-[52px] w-[76px] cursor-help" style={{ marginBottom: sheets * 2 }}>
+      {/* the pile: each extra tile (at most three) shows only as its bottom
+          edge — a solid sheet a little narrower than the one above, stepped
+          two pixels down — the way a short deck reads on the printed mat */}
       {Array.from({ length: sheets }, (_, i) => (
         <span
           key={i}
           aria-hidden
-          className={cn('pointer-events-none absolute inset-0 -z-10 rounded-[5px] border', isNext ? 'border-brass-500/50 bg-brass-500/10' : 'border-brass-700/40 bg-coal-900/80')}
-          style={{ transform: `translate(${(i + 1) * 2}px, ${(i + 1) * 2}px)`, opacity: 1 - (i + 1) * 0.22 }}
+          className={cn('pointer-events-none absolute rounded-b-[5px] border-x border-b', isNext ? 'border-brass-500/60 bg-[#251e13]' : 'border-brass-700/50 bg-[#191410]')}
+          style={{ left: 3 * (i + 1), right: 3 * (i + 1), top: '50%', bottom: -2 * (i + 1) }}
         />
       ))}
-      {/* level pips + how many left */}
-      <div className="flex items-center justify-between">
-        <span className="flex gap-[2px]">
-          {Array.from({ length: lv.level }, (_, i) => (
-            <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
-          ))}
-        </span>
-        <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+      {/* the face, painted above the pile (opaque so nothing shows through) */}
+      <span
+        aria-hidden
+        className={cn(
+          'absolute inset-0 z-10 rounded-[5px] border transition-colors',
+          isNext
+            ? 'border-brass-400 bg-[#2b2316] shadow-[0_0_10px_rgba(201,164,92,.25)]'
+            : gone
+              ? 'border-brass-700/25 bg-[#161210]'
+              : 'border-brass-700/50 bg-[#1e1913] group-hover:border-brass-500',
+        )}
+      />
+      <div className={cn('relative z-20 flex h-full flex-col px-1.5 py-1', gone && 'opacity-45')}>
+        {/* level pips + how many left */}
+        <div className="flex items-center justify-between">
+          <span className="flex gap-[2px]">
+            {Array.from({ length: lv.level }, (_, i) => (
+              <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
+            ))}
+          </span>
+          <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+        </div>
+        {/* the printed numbers: price, then income and VP */}
+        <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
+        <div className="mt-1 flex items-baseline justify-between font-mono text-[9px] leading-none">
+          <span className="text-bottle-600 brightness-150">+{lv.incomeDelta}</span>
+          <span className="text-cream-100/85">{lv.vp} VP</span>
+        </div>
+        {/* era / develop marks as small dots, spelled out in the sheet */}
+        {(canalOnly || railOnly || lv.noDevelop) && (
+          <span className="absolute right-1 top-[13px] flex gap-[3px]">
+            {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150" />}
+            {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500" />}
+            {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500" />}
+          </span>
+        )}
       </div>
-      {/* the printed numbers: price, then income and VP */}
-      <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
-      <div className="mt-1 flex items-baseline justify-between font-mono text-[9px] leading-none">
-        <span className="text-bottle-600 brightness-150">+{lv.incomeDelta}</span>
-        <span className="text-cream-100/85">{lv.vp} VP</span>
-      </div>
-      {/* era / develop marks as small dots, spelled out in the sheet */}
-      {(canalOnly || railOnly || lv.noDevelop) && (
-        <span className="absolute right-1 top-[13px] flex gap-[3px]">
-          {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150" />}
-          {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500" />}
-          {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500" />}
-        </span>
-      )}
-      {isNext && <span className="absolute -top-[7px] left-1.5 rounded-sm bg-brass-400 px-1 font-sans text-[7px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>}
+      {isNext && <span className="absolute -top-[7px] left-1.5 z-30 rounded-sm bg-brass-400 px-1 font-sans text-[7px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>}
       {tip &&
         createPortal(
           <div
@@ -191,7 +193,7 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           printed mat. Each tile carries what the printed one does — price,
           income, VP, and how many are left — so nothing needs a hover to be
           read; the full sheet floats in a tooltip anchored to the tile. */}
-      <ul className="mt-1.5 flex flex-wrap gap-1.5 pb-0.5 pr-0.5">
+      <ul className="mt-1.5 flex flex-wrap items-start gap-1.5 pb-1">
         {levels.map((lv) => {
           const count = left.filter((l) => l === lv.level).length;
           const isNext = nextLevel === lv.level;
