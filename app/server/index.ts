@@ -1,4 +1,6 @@
 import { createServer } from 'node:http';
+import { appendFile } from 'node:fs/promises';
+import path from 'node:path';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { decode, encode } from '@/online/protocol';
@@ -48,6 +50,11 @@ export interface ServeOptions {
   mailer?: Mailer;
   /** the address the letters' links point at */
   appUrl?: string;
+  /** where ideas and bugs are posted (FEEDBACK_TO; nowhere when unset) */
+  feedbackTo?: string;
+  /** the book ideas and bugs are written in (FEEDBACK_FILE; feedback.md
+   *  next to the register by default, none for a house that forgets) */
+  feedbackFile?: string | null;
 }
 
 export interface Serving {
@@ -57,6 +64,10 @@ export interface Serving {
   close(): Promise<void>;
 }
 
+/** one idea or bug as it is written in the book, the page and the post */
+const noteText = (n: { name: string; page: string; kind: string; text: string; createdAt: number }): string =>
+  [`## ${n.kind === 'bug' ? 'Bug' : 'Idea'} — ${n.name} · ${new Date(n.createdAt).toISOString().slice(0, 16).replace('T', ' ')} · ${n.page}`, '', n.text, ''].join('\n');
+
 const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt });
 
 export function serve(options: ServeOptions = {}): Promise<Serving> {
@@ -64,12 +75,22 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const hall = new Hall(store, options.pace ?? DEFAULT_PACE);
   const post = options.mailer ?? mailerFromEnv();
   const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:5173');
+  const feedbackTo = (options.feedbackTo ?? process.env.FEEDBACK_TO ?? '').trim();
+  const file = options.file ?? 'brassworks.db';
+  const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
   const http = createServer((req, res) => {
     /* the counter: with no real post, the letters can be read here */
     if (req.url === '/letters' && post.kept) {
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(post.kept.length ? post.kept.map((m) => `To: ${m.to}\nSubject: ${m.subject}\n\n${m.text}\n\n${'─'.repeat(60)}\n`).join('\n') : 'No letter yet.\n');
+      return;
+    }
+    /* the suggestion box, as a page: every idea and bug, newest first */
+    if (req.url === '/feedback') {
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      const notes = store.feedbackList();
+      res.end(notes.length ? notes.map((n) => noteText(n)).join('\n') : 'No idea yet.\n');
       return;
     }
     res.writeHead(200, { 'content-type': 'text/plain' });
@@ -274,9 +295,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'refused' });
           return;
         }
-        store.feedback(who.id, m.page, m.kind, m.text);
-        console.log(`feedback (${m.kind}) from ${who.name} on ${m.page}: ${m.text.trim().slice(0, 200)}`);
+        const note = store.feedback(who.id, m.page, m.kind, m.text);
+        console.log(`feedback (${note.kind}) from ${who.name} on ${note.page}: ${note.text.slice(0, 200)}`);
         send(c, { t: 'done', rid: m.rid });
+        /* the book and the post follow; neither holds the player up */
+        const text = noteText({ ...note, name: who.name });
+        if (feedbackFile) void appendFile(feedbackFile, text + '\n').catch((e) => console.error(`feedback book: ${e}`));
+        if (feedbackTo) void post.send({ to: feedbackTo, subject: `Brassworks — ${note.kind === 'bug' ? 'a bug' : 'an idea'} from ${who.name}`, text }).catch((e) => console.error(`feedback post: ${e}`));
         return;
       }
     }

@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -467,6 +467,30 @@ describe('a table over the wire', () => {
     first.send({ t: 'act', code, action: decide(first.view!) });
     await first.until('the action to land', () => first.view!.state.actions.length > at);
     expectCandle();
+  });
+
+  it('keeps an idea in the book, on the page and in the post', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'brass-'));
+    dirs.push(dir);
+    const book = path.join(dir, 'ideas.md');
+    server = await serve({ port: 0, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file: ':memory:', feedbackFile: book, feedbackTo: 'owner@brass.works' });
+    const ada = new Guest('Ada');
+    guests.push(ada);
+    await ada.open(server.port);
+    await ada.signUp(false);
+    ada.send({ t: 'feedback', rid: 30, page: '/game', kind: 'bug', text: 'The barge sails backwards.' });
+    await ada.until('the post', () => letters.get('owner@brass.works')?.text.includes('barge') === true);
+    expect(letters.get('owner@brass.works')?.subject).toContain('a bug from Ada');
+    await ada.until('the book', () => {
+      try {
+        return readFileSync(book, 'utf8').includes('backwards');
+      } catch {
+        return false;
+      }
+    });
+    const page = await fetch(`http://127.0.0.1:${server.port}/feedback`).then((r) => r.text());
+    expect(page).toContain('## Bug — Ada');
+    expect(page).toContain('The barge sails backwards.');
   });
 
   it('says nothing to a socket that has not signed in', async () => {

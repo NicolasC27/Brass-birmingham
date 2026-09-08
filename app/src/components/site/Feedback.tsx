@@ -9,11 +9,12 @@ import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* The suggestion box. An idea or a bug, written from any page, goes   */
-/* to the house (the server keeps it); without a server, or for those  */
-/* who prefer it, the repository's issues are one link away.           */
+/* to the house: the server writes it in its book and posts it to the   */
+/* owner. Without a server it leaves as a plain e-mail, when the build  */
+/* knows an address (VITE_FEEDBACK_EMAIL).                              */
 /* ------------------------------------------------------------------ */
 
-const ISSUES = 'https://github.com/NicolasC27/Brass-birmingham/issues/new';
+const MAIL_TO = String(import.meta.env.VITE_FEEDBACK_EMAIL ?? '').trim();
 
 export function FeedbackButton({ className, compact }: { className?: string; compact?: boolean }) {
   const t = useT();
@@ -55,7 +56,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
       setState('failed');
     }
   };
-  const issueUrl = `${ISSUES}?title=${encodeURIComponent(`[${kind}] `)}&body=${encodeURIComponent(`${text}\n\n(page: ${pathname})`)}`;
+  const mailUrl = `mailto:${MAIL_TO}?subject=${encodeURIComponent(`Brassworks — ${kind === 'bug' ? 'bug' : 'idea'}`)}&body=${encodeURIComponent(`${text}\n\n(page: ${pathname})`)}`;
 
   return (
     <AnimatePresence>
@@ -98,18 +99,21 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
                 placeholder={t(`site.feedback.placeholder.${kind}`)}
                 className="mt-3 w-full resize-y rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-2 font-serif text-[14px] leading-relaxed text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
               />
-              <p className="mt-1.5 font-sans text-[11px] text-cream-100/45">{t(canSend ? 'site.feedback.hintOnline' : 'site.feedback.hintOffline')}</p>
+              <p className="mt-1.5 font-sans text-[11px] text-cream-100/45">{t(canSend ? 'site.feedback.hintOnline' : isOnline ? 'site.feedback.hintSignIn' : MAIL_TO ? 'site.feedback.hintMail' : 'site.feedback.hintNone')}</p>
               {state === 'sent' && <p className="mt-2 font-sans text-[12px] font-semibold text-bottle-600 brightness-150">{t('site.feedback.sent')}</p>}
               {state === 'failed' && <p className="mt-2 font-sans text-[12px] font-semibold text-rust-500 brightness-150">{t('site.feedback.failed')}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                {canSend && (
+                {canSend ? (
                   <button type="button" onClick={send} disabled={!text.trim()} className="btn-strike !min-h-[38px] !px-4 !py-1.5 !text-[11px] disabled:cursor-not-allowed disabled:opacity-40">
                     {t('site.feedback.send')}
                   </button>
+                ) : (
+                  !isOnline && MAIL_TO && (
+                    <a href={mailUrl} className={cn('btn-strike !min-h-[38px] !px-4 !py-1.5 !text-[11px]', !text.trim() && 'pointer-events-none opacity-40')}>
+                      {t('site.feedback.mail')}
+                    </a>
+                  )
                 )}
-                <a href={issueUrl} target="_blank" rel="noreferrer" className="btn-ledger !min-h-[38px] !px-4 !py-1.5 !text-[11px]">
-                  {t('site.feedback.github')}
-                </a>
               </div>
             </div>
           </motion.div>

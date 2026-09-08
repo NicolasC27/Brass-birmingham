@@ -21,6 +21,16 @@ import type { Friend, Identity, Invitation, Me, PastGame, Stats, Table } from '@
 /* SQLite comes with Node itself — no native build, no dependency.     */
 /* ------------------------------------------------------------------ */
 
+/** an idea or a bug in the suggestion box */
+export interface Note {
+  id: string;
+  accountId: string;
+  page: string;
+  kind: 'idea' | 'bug';
+  text: string;
+  createdAt: number;
+}
+
 export interface Account extends Me {
   createdAt: number;
 }
@@ -438,10 +448,17 @@ export class Store {
   /* ---------------------------- feedback --------------------------- */
 
   /** an idea or a bug, as a player wrote it */
-  feedback(accountId: string, page: string, kind: string, text: string): void {
-    this.db
-      .prepare('insert into feedback (id, accountId, page, kind, text, createdAt) values (?, ?, ?, ?, ?, ?)')
-      .run('f-' + randomBytes(6).toString('hex'), accountId, page.slice(0, 120), kind === 'bug' ? 'bug' : 'idea', text.trim().slice(0, 4000), Date.now());
+  feedback(accountId: string, page: string, kind: string, text: string): Note {
+    const note: Note = { id: 'f-' + randomBytes(6).toString('hex'), accountId, page: page.slice(0, 120), kind: kind === 'bug' ? 'bug' : 'idea', text: text.trim().slice(0, 4000), createdAt: Date.now() };
+    this.db.prepare('insert into feedback (id, accountId, page, kind, text, createdAt) values (?, ?, ?, ?, ?, ?)').run(note.id, note.accountId, note.page, note.kind, note.text, note.createdAt);
+    return note;
+  }
+
+  /** the whole suggestion box, newest first, each note with its author's name */
+  feedbackList(): (Note & { name: string })[] {
+    return this.db
+      .prepare('select f.id, f.accountId, f.page, f.kind, f.text, f.createdAt, a.name from feedback f join accounts a on a.id = f.accountId order by f.createdAt desc')
+      .all() as unknown as (Note & { name: string })[];
   }
 
   /* ----------------------------- tables ---------------------------- */
