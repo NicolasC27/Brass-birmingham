@@ -57,6 +57,8 @@ export function startTutorial(): void {
     localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(tutorialSetup()));
     localStorage.removeItem(RESUME_KEY);
     localStorage.setItem(TUTORIAL_KEY, 'new');
+    localStorage.removeItem('brassworks.tutorial.step');
+    localStorage.removeItem('brassworks.tutorial.reached');
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }

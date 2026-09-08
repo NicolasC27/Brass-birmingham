@@ -71,6 +71,7 @@ const STEPS: Step[] = [
 ];
 
 const STEP_KEY = 'brassworks.tutorial.step';
+const REACH_KEY = 'brassworks.tutorial.reached';
 
 /* ---------------------------- the machine ---------------------------- */
 
@@ -200,18 +201,37 @@ export default function Guide() {
   const myTurn = !!game && game.phase === 'action' && game.current === me && !game.players[me].isBot;
   const aid = !!game && aidOn(game.assist, code !== null);
 
-  /* the lesson: the first step not done — a read step is done once read past */
-  const stepIndex = useMemo(() => {
+  /* the lesson: the first step not done — a read step is done once read past,
+     and a step once passed stays passed (closing the mat again is no reason
+     to teach the mat again) */
+  const [reached, setReached] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem(REACH_KEY) ?? 0);
+    } catch {
+      return 0;
+    }
+  });
+  const rawIndex = useMemo(() => {
     if (!game || !tutorial) return -1;
     for (let i = 0; i < STEPS.length; i++) {
       const s = STEPS[i];
+      if (i < reached) continue;
       if (s.done ? s.done(game, me, selectedCardId, matPlayer) : i < readPast) continue;
       /* a read step waiting on the game: skipped until it makes sense */
       if (!s.done && s.when && !s.when(game, me)) continue;
       return i;
     }
     return STEPS.length;
-  }, [game, tutorial, me, selectedCardId, matPlayer, readPast]);
+  }, [game, tutorial, me, selectedCardId, matPlayer, readPast, reached]);
+  const stepIndex = rawIndex < 0 ? -1 : Math.max(rawIndex, reached);
+  if (tutorial && rawIndex > reached) {
+    setReached(rawIndex);
+    try {
+      localStorage.setItem(REACH_KEY, String(rawIndex));
+    } catch {
+      /* non-fatal */
+    }
+  }
 
   const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, selectedCardId, verb, buildPick]);
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
@@ -235,8 +255,10 @@ export default function Guide() {
 
   const advance = (to: number) => {
     setReadPast(to);
+    setReached(to);
     try {
       localStorage.setItem(STEP_KEY, String(to));
+      localStorage.setItem(REACH_KEY, String(to));
     } catch {
       /* non-fatal */
     }
