@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
-import { MAT_STYLES, hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAT_ORDER_DEFAULT, MAT_STYLES, hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import { NARROW_RAIL_TOP, useNarrow } from '@/hooks/use-narrow';
 import type { IncomeSide, MapStyle, MatStyle, MinimapSize } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
@@ -438,6 +438,15 @@ export default function BoardSettings() {
                         onChange={(v) => setBoardOption('matStyle', v)}
                         options={MAT_STYLES.map((id) => ({ id, label: t(`game.settings.matStyles.${id}`) }))}
                       />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.matOrder')} hint={t('game.settings.matOrderHint')}>
+                      <button
+                        type="button"
+                        onClick={() => setBoardOption('matOrder', [...MAT_ORDER_DEFAULT])}
+                        className="rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 transition-colors hover:text-brass-400"
+                      >
+                        {t('game.settings.matOrderReset')}
+                      </button>
                     </OptionRow>
                     {opts.matStyle === 'cards' && (
                       <OptionRow label={t('game.settings.matCount')} hint={t('game.settings.matCountHint')}>

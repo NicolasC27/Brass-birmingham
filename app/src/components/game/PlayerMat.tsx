@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Maximize2, Minimize2, X } from 'lucide-react';
+import { GripVertical, Maximize2, Minimize2, X } from 'lucide-react';
 import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
 import { useGame } from '@/game/store';
 import type { IndustryLevel, IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { hudInsets, sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
 import { FILE_FOR, variantDir } from '@/gl/paint';
@@ -25,7 +25,6 @@ import { ShapeChip } from './TownInspector';
 /* the rail or with P.                                                 */
 /* ------------------------------------------------------------------ */
 
-const ORDER: IndustryType[] = ['cotton', 'manufacturer', 'pottery', 'brewery', 'coal', 'iron'];
 /** fallback width of the player rail (measured live once mounted) */
 const RAIL_W = 236;
 
@@ -233,7 +232,20 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
   );
 }
 
-function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; playerIdx: number }) {
+/** where a dragged block would land relative to the one under the pointer */
+type DropSide = 'before' | 'after';
+
+function IndustryBlock({
+  ind,
+  p,
+  playerIdx,
+  drag,
+}: {
+  ind: IndustryType;
+  p: PlayerState;
+  playerIdx: number;
+  drag: { dragging: IndustryType | null; over: { ind: IndustryType; side: DropSide } | null; wide: boolean; start: (i: IndustryType) => void; hover: (i: IndustryType, side: DropSide) => void; drop: () => void; end: () => void };
+}) {
   const t = useT();
   const game = useGame((s) => s.game)!;
   const dir = variantDir(ind, useBoardOptions().tileArt);
@@ -247,9 +259,45 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
     .sort((a, b) => a.x.level - b.x.level);
   const color = INDUSTRY_COLOR[ind];
   return (
-    <section className="rounded-md border border-brass-700/40 bg-coal-950/60 px-2.5 py-2">
-      {/* head: icon, name, remaining */}
+    <section
+      className={cn(
+        'relative rounded-md border border-brass-700/40 bg-coal-950/60 px-2.5 py-2 transition-opacity',
+        drag.dragging === ind && 'opacity-40',
+        drag.over?.ind === ind && drag.over.side === 'before' && (drag.wide ? 'shadow-[-3px_0_0_0_#DDBE7E]' : 'shadow-[0_-3px_0_0_#DDBE7E]'),
+        drag.over?.ind === ind && drag.over.side === 'after' && (drag.wide ? 'shadow-[3px_0_0_0_#DDBE7E]' : 'shadow-[0_3px_0_0_#DDBE7E]'),
+      )}
+      onDragOver={(e) => {
+        if (!drag.dragging || drag.dragging === ind) return;
+        e.preventDefault();
+        const r = e.currentTarget.getBoundingClientRect();
+        const side: DropSide = drag.wide ? (e.clientX < r.left + r.width / 2 ? 'before' : 'after') : e.clientY < r.top + r.height / 2 ? 'before' : 'after';
+        if (drag.over?.ind !== ind || drag.over.side !== side) drag.hover(ind, side);
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        drag.drop();
+      }}
+    >
+      {/* head: grip, icon, name, remaining — the grip drags the block to reorder the mat */}
       <div className="flex items-center gap-2">
+        <span
+          draggable
+          role="button"
+          aria-label={t('game.mat.dragAria', { name: INDUSTRY_LABEL[ind] })}
+          title={t('game.mat.dragTip')}
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', ind);
+            /* drag the whole block as the ghost, not just the grip */
+            const sec = e.currentTarget.closest('section');
+            if (sec) e.dataTransfer.setDragImage(sec, 24, 16);
+            drag.start(ind);
+          }}
+          onDragEnd={drag.end}
+          className="-ml-1 flex h-5 w-4 shrink-0 cursor-grab items-center justify-center rounded text-brass-500/50 hover:text-brass-400 active:cursor-grabbing"
+        >
+          <GripVertical className="h-3.5 w-3.5" />
+        </span>
         <span
           aria-hidden
           className="block h-4 w-4 shrink-0"
@@ -310,6 +358,31 @@ export default function PlayerMat() {
   const closeMat = useGame((s) => s.closeMat);
   const opts = useBoardOptions();
   const keys = useKeybindings();
+  const order = sanitizeMatOrder(opts.matOrder);
+  /* drag-and-drop of the industry blocks: the grip starts it, the block
+     under the pointer says before/after, the drop rewrites matOrder */
+  const [dragging, setDragging] = useState<IndustryType | null>(null);
+  const [over, setOver] = useState<{ ind: IndustryType; side: DropSide } | null>(null);
+  const dragApi = {
+    dragging,
+    over,
+    wide: false,
+    start: (i: IndustryType) => setDragging(i),
+    hover: (i: IndustryType, side: DropSide) => setOver({ ind: i, side }),
+    drop: () => {
+      if (dragging && over && over.ind !== dragging) {
+        const rest = order.filter((i) => i !== dragging);
+        const at = rest.indexOf(over.ind) + (over.side === 'after' ? 1 : 0);
+        setBoardOption('matOrder', [...rest.slice(0, at), dragging, ...rest.slice(at)]);
+      }
+      setDragging(null);
+      setOver(null);
+    },
+    end: () => {
+      setDragging(null);
+      setOver(null);
+    },
+  };
   const insets = hudInsets(opts);
   const narrow = useNarrow();
   const wide = opts.matWide && !narrow;
@@ -447,8 +520,8 @@ export default function PlayerMat() {
                 </div>
                 {/* six industries, stacked like the printed mat read top to bottom */}
                 <div className={cn('min-h-0 flex-1 overflow-y-auto px-3 py-2 [scrollbar-gutter:stable]', wide ? 'grid auto-rows-min grid-cols-3 gap-2 2xl:grid-cols-6' : 'flex flex-col gap-1.5')}>
-                  {ORDER.map((ind) => (
-                    <IndustryBlock key={ind} ind={ind} p={p} playerIdx={matPlayer} />
+                  {order.map((ind) => (
+                    <IndustryBlock key={ind} ind={ind} p={p} playerIdx={matPlayer} drag={{ ...dragApi, wide }} />
                   ))}
                 </div>
               </>

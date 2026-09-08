@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import type { ChipStyle, SlotArt, StockStyle, TileArt } from '@/gl/paint';
 import type { TrafficLevel } from '@/gl/ambiance';
+import type { IndustryType } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* Board display options — one tiny shared store (localStorage-backed) */
@@ -11,6 +12,13 @@ import type { TrafficLevel } from '@/gl/ambiance';
 export type MinimapSize = 's' | 'm' | 'l';
 /** the mat's levels: the player's cards with a pile, flat compact boxes, or bare pills */
 export type MatStyle = 'cards' | 'compact' | 'chips';
+/** the printed mat's order, left to right */
+export const MAT_ORDER_DEFAULT: IndustryType[] = ['cotton', 'manufacturer', 'pottery', 'brewery', 'coal', 'iron'];
+/** a stored order, made whole again (every industry once, unknown ones dropped) */
+export const sanitizeMatOrder = (o: unknown): IndustryType[] => {
+  const seen = Array.isArray(o) ? (o as IndustryType[]).filter((i, k, a) => MAT_ORDER_DEFAULT.includes(i) && a.indexOf(i) === k) : [];
+  return [...seen, ...MAT_ORDER_DEFAULT.filter((i) => !seen.includes(i))];
+};
 export const MAT_STYLES: MatStyle[] = ['cards', 'compact', 'chips'];
 /** where the income track runs: along the bottom edge or down the left edge */
 export type IncomeSide = 'bottom' | 'left';
@@ -29,6 +37,8 @@ export interface BoardOptions {
   stockStyle: StockStyle;
   /** painting variant per industry (see TILE_VARIANTS) */
   tileArt: TileArt;
+  /** the mat's industry blocks, in the order the player dragged them into */
+  matOrder: IndustryType[];
   /** empty-slot face: engraved print or colour painting */
   slotArt: SlotArt;
   /** colour-blind mode: owner shape medallions on built cards and/or links */
@@ -59,6 +69,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   greyFreeMerchants: 'brassworks.greyFreeMerchants',
   stockStyle: 'brassworks.stockStyle',
   tileArt: 'brassworks.tileArt',
+  matOrder: 'brassworks.matOrder',
   slotArt: 'brassworks.slotArt',
   colorBlind: 'brassworks.colorBlind',
   sealTiles: 'brassworks.colorBlind.tiles',
@@ -92,6 +103,7 @@ let state: BoardOptions = {
   greyFreeMerchants: read('greyFreeMerchants', false),
   stockStyle: read('stockStyle', 'corner'),
   tileArt: read('tileArt', {}),
+  matOrder: read('matOrder', [...MAT_ORDER_DEFAULT]),
   slotArt: read('slotArt', 'engraved'),
   colorBlind: read('colorBlind', false),
   sealTiles: read('sealTiles', true),
