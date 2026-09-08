@@ -6,6 +6,8 @@ import { BookOpen, Play, RotateCcw, Users, Wifi } from "lucide-react";
 import LogoMark from "@/components/LogoMark";
 import ShutterWipe from "@/components/setup/ShutterWipe";
 import { quickSetup, readResume, startQuickGame } from "@/game/quickplay";
+import { isOnline } from "@/online/lobby";
+import { useSession } from "@/online/session";
 import { useT } from "@/i18n";
 
 const WORDMARK = "BRASSWORKS".split("");
@@ -20,6 +22,7 @@ export default function HeroSection() {
   const t = useT();
   const [starting, setStarting] = useState(false);
   const [save] = useState(readResume);
+  const session = useSession();
   const rivals = quickSetup()
     .players.filter((p) => p.type === "bot")
     .map((p) => p.name);
@@ -37,7 +40,8 @@ export default function HeroSection() {
       if (e.key !== "Enter" || e.metaKey || e.ctrlKey || e.altKey) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
-      if (save) navigate("/game");
+      if (isOnline) navigate(session ? "/desk" : "/account");
+      else if (save) navigate("/game");
       else play();
     };
     window.addEventListener("keydown", onKey);
@@ -104,7 +108,19 @@ export default function HeroSection() {
 
         {/* The command deck: play now, or pick your table */}
         <div className="hero-deck mt-8 w-full max-w-[560px] rounded-xl border border-brass-700/50 bg-coal-950/70 p-4 opacity-0 shadow-e3 backdrop-blur-md">
-          {save ? (
+          {isOnline ? (
+            <>
+              <Link
+                to={session ? "/desk" : "/account"}
+                className="btn-strike w-full !rounded-lg !font-display !text-[22px] !font-bold normal-case !tracking-normal"
+                style={{ minHeight: 64 }}
+              >
+                <Wifi className="h-5 w-5" aria-hidden />
+                {session ? t("home.hero.desk", { name: session.name }) : t("home.hero.online")}
+              </Link>
+              <p className="mt-2.5 font-sans text-[12px] text-cream-100/60">{t("home.hero.onlineNote")}</p>
+            </>
+          ) : save ? (
             <>
               <Link
                 to="/game"
@@ -144,10 +160,17 @@ export default function HeroSection() {
               <Users className="h-3.5 w-3.5" aria-hidden />
               {t("home.hero.ctaSetup")}
             </Link>
-            <Link to="/online" className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
-              <Wifi className="h-3.5 w-3.5" aria-hidden />
-              {t("home.hero.ctaOnline")}
-            </Link>
+            {isOnline ? (
+              <button type="button" onClick={play} disabled={starting} className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
+                <Play className="h-3.5 w-3.5" aria-hidden />
+                {t("home.hero.practice")}
+              </button>
+            ) : (
+              <Link to="/online" className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
+                <Wifi className="h-3.5 w-3.5" aria-hidden />
+                {t("home.hero.ctaOnline")}
+              </Link>
+            )}
             <Link to="/rules" className="btn-ledger !px-2 !text-[11px] !tracking-[0.06em]">
               <BookOpen className="h-3.5 w-3.5" aria-hidden />
               {t("home.hero.ctaRules")}
@@ -156,7 +179,7 @@ export default function HeroSection() {
 
           <p className="mt-3 font-sans text-[10px] uppercase tracking-[0.16em] text-cream-100/40">
             <kbd className="mr-1.5 rounded border border-brass-700/60 bg-coal-900 px-1.5 py-0.5 font-mono text-[10px] normal-case tracking-normal text-brass-400">↵</kbd>
-            {t(save ? "home.hero.enterResume" : "home.hero.enterPlay")}
+            {t(isOnline ? "home.hero.enterDesk" : save ? "home.hero.enterResume" : "home.hero.enterPlay")}
           </p>
         </div>
 

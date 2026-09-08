@@ -26,6 +26,8 @@ export interface SetupOptions {
   marketTemper: MarketTemper;
   timerMinutes: number | null;
   fidelity: Fidelity;
+  /** beginner assistance for everyone at the table: playable slots lit, prices itemised, tips */
+  assist?: boolean;
 }
 
 /** Exact persisted contract (brassworks.setup.v1). */
@@ -78,6 +80,7 @@ export const DEFAULT_OPTIONS: SetupOptions = {
   marketTemper: "standard",
   timerMinutes: null,
   fidelity: "core",
+  assist: false,
 };
 
 const DEFAULT_SEAT_COLORS: PlayerColor[] = ["brass", "oxblood", "verdigris", "steel"];

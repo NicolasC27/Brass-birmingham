@@ -33,6 +33,12 @@ const fr: typeof ensetup = {
       volatile: "Volatil",
       beta: "Bêta",
     },
+    assist: {
+      label: "Assistance débutant",
+      hint: "Pour toute la table : emplacements jouables allumés, prix détaillés, conseils au fil de la partie. Se règle ici pour une table en ligne ; chez soi, c’est aussi un réglage du plateau.",
+      on: "Activée",
+      off: "Désactivée",
+    },
     timer: {
       label: "Chronomètre de tour",
       hint: "Quand il est réglé, le plateau affiche une petite plaque de laiton avec un compte à rebours pour chaque tour — idéal autour d'une même table.",

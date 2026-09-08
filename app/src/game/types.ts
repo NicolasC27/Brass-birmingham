@@ -157,6 +157,8 @@ export interface GameState {
   marketTemper: 'calm' | 'standard' | 'volatile';
   fidelity: 'core' | 'approx';
   timerMinutes: number | null;
+  /** the table plays with beginner assistance (a house rule) */
+  assist?: boolean;
   players: PlayerState[];
   /** player indices in this round's turn order (least money spent first) */
   order: number[];
@@ -226,6 +228,7 @@ export interface SetupPayload {
     marketTemper: 'calm' | 'standard' | 'volatile';
     timerMinutes: number | null;
     fidelity: 'core' | 'approx';
+    assist?: boolean;
   };
 }
 

@@ -361,6 +361,8 @@ export default function BoardSettings() {
   const lang = useLang();
   const t = useT();
   const followBots = useGame((s) => s.followBots);
+  const game = useGame((s) => s.game);
+  const online = useGame((s) => s.code !== null);
   const toggleFollowBots = useGame((s) => s.toggleFollowBots);
   const [section, setSection] = useState<SectionId>('tiles');
   const open = opts.settingsOpen;
@@ -535,8 +537,12 @@ export default function BoardSettings() {
                     <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
                       <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
                     </OptionRow>
-                    <OptionRow label={t('game.settings.beginnerAid')} hint={t('game.settings.beginnerAidHint')}>
-                      <Switch on={opts.beginnerAid} onClick={() => setBoardOption('beginnerAid', !opts.beginnerAid)} label={t('game.settings.beginnerAid')} />
+                    <OptionRow label={t('game.settings.beginnerAid')} hint={t(online ? 'game.settings.beginnerAidTable' : 'game.settings.beginnerAidHint')}>
+                      {online ? (
+                        <span className="font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-cream-100/50">{t(game?.assist ? 'setup.houseRules.assist.on' : 'setup.houseRules.assist.off')}</span>
+                      ) : (
+                        <Switch on={opts.beginnerAid} onClick={() => setBoardOption('beginnerAid', !opts.beginnerAid)} label={t('game.settings.beginnerAid')} />
+                      )}
                     </OptionRow>
                     <OptionRow label={t('game.settings.traffic')} hint={t('game.settings.trafficHint')}>
                       <Segmented<TrafficLevel>

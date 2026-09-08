@@ -120,6 +120,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     marketTemper: setup.options.marketTemper,
     fidelity: setup.options.fidelity,
     timerMinutes: setup.options.timerMinutes,
+    assist: !!setup.options.assist,
     players,
     order,
     turnPos: 0,

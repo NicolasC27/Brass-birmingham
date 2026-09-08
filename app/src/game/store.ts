@@ -219,7 +219,7 @@ export const useGame = create<GameStore>((set, get) => ({
   marketFocus: false,
   ledgerFilter: 'all',
   flyTo: null,
-  followBots: false,
+  followBots: true,
   spotlight: null,
   netPeek: null,
   coachStep: -1,

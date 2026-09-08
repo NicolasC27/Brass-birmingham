@@ -110,12 +110,14 @@ export default function Navbar() {
         </Link>
 
         <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 md:flex">
-          <NavLink to="/setup" className={link}>
-            {t('site.nav.play')}
-          </NavLink>
           <NavLink to={isOnline ? '/desk' : '/online'} className={link}>
             {t('site.nav.desk')}
           </NavLink>
+          {!isOnline && (
+            <NavLink to="/setup" className={link}>
+              {t('site.nav.play')}
+            </NavLink>
+          )}
           <NavLink to="/rules" className={link}>
             {t('site.nav.rules')}
           </NavLink>

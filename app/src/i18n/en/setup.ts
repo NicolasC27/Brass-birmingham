@@ -31,6 +31,12 @@ export default {
       volatile: "Volatile",
       beta: "Beta",
     },
+    assist: {
+      label: "Beginner assistance",
+      hint: "For everyone at the table: playable slots lit up, prices itemised, tips as the game goes. Set here for an online table; at home it is also a board setting.",
+      on: "On",
+      off: "Off",
+    },
     timer: {
       label: "Turn timer",
       hint: "When set, the board shows a small brass countdown plate for each turn — best around one table.",

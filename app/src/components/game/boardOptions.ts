@@ -30,6 +30,11 @@ export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
   painted: { canal: '/map-painted-canal.webp', rail: '/map-painted-rail.webp' },
 };
 
+/** beginner assistance: the table's house rule, or at home the board setting */
+export function aidOn(assist: boolean | undefined, online: boolean): boolean {
+  return !!assist || (!online && getBoardOptions().beginnerAid);
+}
+
 export interface BoardOptions {
   hideUnbuilt: boolean;
   bigChips: boolean;

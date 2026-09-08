@@ -5,6 +5,7 @@ import { useT } from "@/i18n";
 import Segmented from "./Segmented";
 import Tip from "./Tip";
 import type { EraLength, MarketTemper, SetupOptions } from "./constants";
+import { cn } from "@/lib/utils";
 
 const TIMER_VALUES = ["off", "2", "5"];
 
@@ -118,11 +119,31 @@ export default function HouseRules({
           />
         </RuleRow>
 
+        <RuleRow
+          index={3}
+          label={t("setup.houseRules.assist.label")}
+          hint={t("setup.houseRules.assist.hint")}
+        >
+          <button
+            type="button"
+            role="switch"
+            aria-checked={!!options.assist}
+            onClick={() => onChange({ assist: !options.assist })}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] transition-colors",
+              options.assist ? "border-brass-400 bg-brass-500/20 text-brass-400" : "border-brass-700/60 text-cream-100/60 hover:text-cream-100/90",
+            )}
+          >
+            <span className={cn("h-2 w-2 rounded-full", options.assist ? "bg-brass-400" : "bg-cream-100/30")} />
+            {options.assist ? t("setup.houseRules.assist.on") : t("setup.houseRules.assist.off")}
+          </button>
+        </RuleRow>
+
         {/* Rules fidelity — read-only info row, not a control */}
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 + 3 * 0.06, duration: 0.35, ease: "easeOut" }}
+          transition={{ delay: 0.15 + 4 * 0.06, duration: 0.35, ease: "easeOut" }}
           className="flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3"
         >
           <span className="font-sans text-sm font-medium text-cream-100/85">

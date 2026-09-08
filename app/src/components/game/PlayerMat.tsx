@@ -421,8 +421,18 @@ export default function PlayerMat() {
         openMat(n - 1);
       }
     };
+    /* a click anywhere else — the board, the hand — puts the mat away */
+    const onDown = (e: PointerEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (!el || el.closest('[data-player-mat]') || el.closest('[data-player-rail]') || el.closest('[data-tooltip]')) return;
+      closeMat();
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('pointerdown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointerdown', onDown);
+    };
   }, [matPlayer, closeMat, openMat]);
 
   return (
@@ -435,6 +445,7 @@ export default function PlayerMat() {
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
           role="dialog"
+          data-player-mat
           aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
           className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
           style={

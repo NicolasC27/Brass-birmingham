@@ -306,6 +306,7 @@ function houseRules(o: Partial<SetupOptions> | undefined): SetupOptions {
     eraLength: one(o?.eraLength, ['short', 'standard'] as const, 'standard'),
     marketTemper: one(o?.marketTemper, ['calm', 'standard', 'volatile'] as const, 'standard'),
     fidelity: one(o?.fidelity, ['core', 'approx'] as const, 'core'),
+    assist: !!o?.assist,
     timerMinutes: typeof minutes === 'number' && minutes > 0 ? Math.min(180, Math.round(minutes)) : null,
   };
 }

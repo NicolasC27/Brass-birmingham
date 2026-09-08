@@ -8,7 +8,7 @@ import type { PlanGhost } from '@/game/ghost';
 import type { GameState } from '@/game/types';
 import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, tr, useT } from '@/i18n';
-import { MAP_URL, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { MAP_URL, aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
 import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
@@ -153,6 +153,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
+  const code = useGame((s) => s.code);
   const verb = useGame((s) => s.verb);
   const hoverKey = useGame((s) => s.hoverKey);
   const buildPick = useGame((s) => s.buildPick);
@@ -432,11 +433,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const pos = regionPos(s.flyTo.key);
           if (pos) cam.flyTo(pos[0], pos[1], Math.max(cam.target.k, 1.5));
         }
-        /* follow-the-bots: glide to wherever a bot just played */
+        /* follow the others: glide to wherever a bot, or another player
+           at an online table, just played */
         if (s.followBots && s.game && s.game.ledgerSeq !== lastLedgerSeq) {
           lastLedgerSeq = s.game.ledgerSeq;
           const e = s.game.ledger[s.game.ledger.length - 1];
-          if (e?.region && e.player !== undefined && s.game.players[e.player]?.isBot && Date.now() - cam.lastManual > 4000) {
+          const other = e?.player !== undefined && (s.game.players[e.player]?.isBot || (s.seat !== null && e.player !== s.seat));
+          if (e?.region && other && Date.now() - cam.lastManual > 4000) {
             const pos = regionPos(e.region);
             if (pos) cam.flyTo(pos[0], pos[1], Math.max(cam.target.k, 1.4));
           }
@@ -836,7 +839,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const coal = t.coalPlan.totalCost;
           const iron = t.ironPlan.totalCost;
           const label =
-            getBoardOptions().beginnerAid && coal + iron > 0
+            aidOn(game.assist, useGame.getState().code !== null) && coal + iron > 0
               ? `£${t.total} = ${t.cost}${coal ? ` + ${coal} ${tr('board.aid.coal')}` : ''}${iron ? ` + ${iron} ${tr('board.aid.iron')}` : ''}`
               : `£${t.total}`;
           priceTag(pos.x, pos.y - TILE_R - 13.5, Math.max(52, label.length * 6.2 + 12), 15, label);
@@ -1046,9 +1049,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     /* what stays lit, by priority: the beginner aid's playable slots while
        planning, a hovered player's network, the tiles a hovered merchant
        would buy — otherwise everything */
-    if (opts.beginnerAid && selectedCardId && verb === 'build') {
+    const aid = aidOn(game.assist, code !== null);
+    if (aid && selectedCardId && verb === 'build') {
       scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
-    } else if (opts.beginnerAid && selectedCardId && verb === 'sell') {
+    } else if (aid && selectedCardId && verb === 'sell') {
       scene.setHighlight([...new Set(sellTargetsList.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
     } else if (netPeek !== null) {
       const towns = networkTowns(game, netPeek);
@@ -1058,7 +1062,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setHighlight(keys);
     } else scene.setHighlight(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoverMerchant, game.ledgerSeq, idle, netPeek, opts.beginnerAid, selectedCardId, verb, targets, sellTargetsList]);
+  }, [hoverMerchant, game.ledgerSeq, idle, netPeek, opts.beginnerAid, game.assist, code, selectedCardId, verb, targets, sellTargetsList]);
   const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef), view, size.w, size.h) : null;
   const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
 
