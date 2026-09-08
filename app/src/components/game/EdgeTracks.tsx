@@ -22,11 +22,12 @@ import { TRACK_H, TRACK_W, useBoardOptions } from './boardOptions';
 type Axis = 'x' | 'y';
 type Kind = 'vp' | 'income';
 
-const VP_LAP = 100;
 const LVL_N = INCOME_MAX + 1; // spaces 0..99
 export { TRACK_H };
 
-const vpPct = (vp: number) => ((vp % VP_LAP) / VP_LAP) * 100;
+/* the VP ruler grows with the leader: 0–100, then 0–150 past 100, then
+ * 0–300 past 150 — no wrap-around, every pawn stays on the ruler */
+const vpTrackMax = (best: number) => (best > 150 ? 300 : best > 100 ? 150 : 100);
 
 /* levels 0–10 (one payout each, where everybody starts) get DOUBLE width
  * so their −£n labels fit and the opening pile has room to breathe */
@@ -180,7 +181,6 @@ function Pawn({
   const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
   const pay = fmtPay(INCOME_PAYOUT[p.income]);
   const after = loanLanding(p.income) ?? p.income;
-  const lap = kind === 'vp' ? Math.floor(p.vp / VP_LAP) : 0;
   const fan = (fanIndex - (fanSize - 1) / 2) * 10;
   const zig = fanSize > 1 ? (fanIndex % 2 ? 4 : -4) : 0;
   const label = kind === 'vp' ? String(p.vp) : pay;
@@ -225,11 +225,6 @@ function Pawn({
           style={{ width: CHIP, height: CHIP, background: `${col}55` }}
         >
           <ShapeChip color={p.color} size={10} />
-          {lap > 0 && (
-            <span aria-hidden className="absolute -right-1.5 -top-1.5 rounded-sm border border-coal-950 bg-brass-400 px-[2px] font-mono text-[7px] font-black leading-[9px] text-coal-950">
-              +{lap * VP_LAP}
-            </span>
-          )}
         </motion.button>
         {showLabel && (
           <span
@@ -290,7 +285,17 @@ export default function EdgeTracks() {
   const reduced = useReducedMotion();
   const incAxis: Axis = incomeSide === 'left' ? 'y' : 'x';
 
-  const vpLane = useLaneZoom('x');
+  /* the VP lane frames every pawn: the ruler stretches with the leader and
+     the lane zooms on the pack, 6 points of air either side, never narrower
+     than a third of the ruler */
+  const vps = game ? game.players.map((p) => p.vp) : [0];
+  const vpMax = vpTrackMax(Math.max(...vps));
+  const vpPct = (vp: number) => (Math.min(vp, vpMax) / vpMax) * 100;
+  const vpLo = vpPct(Math.max(0, Math.min(...vps) - 6));
+  const vpHi = vpPct(Math.min(vpMax, Math.max(...vps) + 6));
+  const vpPad = Math.max(0, 34 - (vpHi - vpLo)) / 2;
+  const vpWindow: [number, number] = [Math.max(0, vpLo - vpPad), Math.min(100, vpHi + vpPad)];
+  const vpLane = useLaneZoom('x', vpWindow);
   /* the income lane frames the pawns: tight at the start (everyone sits on
      level 0), wider as incomes spread; 8 spaces of air either side, never
      narrower than a third of the track */
@@ -336,7 +341,7 @@ export default function EdgeTracks() {
   const groups = (kind: Kind) => {
     const map = new Map<number, number[]>();
     game.players.forEach((p, i) => {
-      const v = kind === 'vp' ? p.vp % VP_LAP : p.income;
+      const v = kind === 'vp' ? p.vp : p.income;
       map.set(v, [...(map.get(v) ?? []), i]);
     });
     return map;
@@ -347,7 +352,7 @@ export default function EdgeTracks() {
   const pawns = (kind: Kind, axis: Axis) =>
     game.players.map((p, i) => {
       const map = kind === 'vp' ? vpAt : incAt;
-      const key = kind === 'vp' ? p.vp % VP_LAP : p.income;
+      const key = kind === 'vp' ? p.vp : p.income;
       const list = map.get(key) ?? [i];
       const crowded = kind === 'vp' ? map.has(key + 1) || map.has(key + 2) : key > 10 ? map.has(key + 1) || map.has(key + 2) : map.has(key + 1);
       return (
@@ -397,17 +402,17 @@ export default function EdgeTracks() {
         </span>
         <div ref={vpLane.ref} className={`relative mx-12 h-full overflow-hidden ${grab(vpLane)}`} {...vpLane.handlers}>
           <div style={vpLane.inner}>
-            {Array.from({ length: VP_LAP / 10 + 1 }, (_, k) => k * 10).map((v) => (
-              <span key={v} aria-hidden className="absolute top-[2px] -translate-x-1/2 font-mono text-[9px] font-bold leading-none text-brass-400" style={{ left: `${(v / VP_LAP) * 100}%` }}>
+            {Array.from({ length: vpMax / 10 + 1 }, (_, k) => k * 10).map((v) => (
+              <span key={v} aria-hidden className="absolute top-[2px] -translate-x-1/2 font-mono text-[9px] font-bold leading-none text-brass-400" style={{ left: `${(v / vpMax) * 100}%` }}>
                 {v}
               </span>
             ))}
-            {Array.from({ length: VP_LAP + 1 }, (_, v) => (
+            {Array.from({ length: vpMax + 1 }, (_, v) => (
               <span
                 key={v}
                 aria-hidden
                 className={`absolute bottom-0 w-px ${v % 10 === 0 ? 'h-[10px] bg-brass-400' : v % 5 === 0 ? 'h-[7px] bg-brass-500/80' : 'h-[4px] bg-brass-700/60'}`}
-                style={{ left: `${(v / VP_LAP) * 100}%` }}
+                style={{ left: `${(v / vpMax) * 100}%` }}
               />
             ))}
             {fx('vp', 'x')}
