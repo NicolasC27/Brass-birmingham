@@ -33,7 +33,7 @@ function useNow(): number {
   return now;
 }
 
-/** the chip next to the settings: pause the table, take a break */
+/** the chip under the settings: pause the table, take a break */
 export function TableMenu({ className }: { className: string }) {
   const t = useT();
   const code = useGame((s) => s.code);
@@ -59,7 +59,7 @@ export function TableMenu({ className }: { className: string }) {
         <Users className="h-3.5 w-3.5" /> {t('game.mood.table')}
       </button>
       {open && (
-        <div role="menu" className="plate absolute bottom-[calc(100%+6px)] right-0 z-[70] w-64 p-2">
+        <div role="menu" className="plate absolute bottom-0 right-[calc(100%+8px)] z-[70] w-64 p-2">
           <button
             type="button"
             role="menuitem"

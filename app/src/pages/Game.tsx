@@ -35,6 +35,10 @@ import { cn } from '@/lib/utils';
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
+/** the bottom-right column's chips, one chrome for all */
+const CHIP =
+  'flex w-full items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100';
+
 
 /**
  * /game — full-viewport immersive scene (map-v3 §2): the authentic Roxley
@@ -86,6 +90,9 @@ export default function Game() {
   const [skipAnim, setSkipAnim] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [ledgerOpen, setLedgerOpen] = useState(false);
+  /* the ledger index the reader has looked up to (closing the drawer
+     moves it); their own last move counts as read too */
+  const [ledgerRead, setLedgerRead] = useState(0);
   /* the exchange starts folded; it unfolds by itself while a planned action
      draws coal or iron from it, and folds back once that plan is gone */
   const [marketOpen, setMarketOpen] = useState(false);
@@ -181,6 +188,7 @@ export default function Game() {
       if (e.key === 'Escape') {
         cancel();
         setRulesOpen(false);
+        if (ledgerOpen) setLedgerRead(game.ledger.length);
         setLedgerOpen(false);
         setSpotlight(null);
         setBoardOption('settingsOpen', false);
@@ -233,6 +241,7 @@ export default function Game() {
       }
       if (isKey(e, 'ledger')) {
         setLedgerOpen((o) => !o);
+        if (ledgerOpen && game) setLedgerRead(game.ledger.length);
         return;
       }
       if (!isHumanTurn) return;
@@ -251,7 +260,7 @@ export default function Game() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, mySeat, passTo, isHumanTurn, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
+  }, [game, mySeat, passTo, isHumanTurn, ledgerOpen, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
 
   /* ---------------------- planning targets ---------------------- */
   const selectedCard = useMemo(() => {
@@ -321,6 +330,10 @@ export default function Game() {
 
   /* the skip chip is a local courtesy: online the table sets the pace */
   const botThinking = seat === null && game.phase === 'action' && game.players[game.current].isBot && !ceremony;
+  /* read up to: the drawer's last closing, or the reader's own last move */
+  const lastMine = game.ledger.reduce((acc, e, i) => (e.player === mySeat ? i + 1 : acc), 0);
+  const seenIdx = Math.max(ledgerRead, lastMine);
+  const unread = game.ledger.slice(seenIdx).filter((e) => e.player !== undefined && e.player !== mySeat).length;
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
@@ -406,10 +419,13 @@ export default function Game() {
             aria-label={t('game.page.ledgerDrawerAria')}
           >
             <div className="relative h-full rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e4 backdrop-blur-md [&>.plate]:h-full [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">
-              <Ledger />
+              <Ledger seen={seenIdx} />
               <button
                 type="button"
-                onClick={() => setLedgerOpen(false)}
+                onClick={() => {
+                  setLedgerRead(game.ledger.length);
+                  setLedgerOpen(false);
+                }}
                 aria-label={t('game.page.closeLedger')}
                 className="absolute right-2 top-2 z-10 rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100"
               >
@@ -420,9 +436,17 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {/* bottom-right chip row (rides above the minimap whatever its size):
-          settings gear + ledger opener, same chrome */}
-      <div className="fixed right-3 z-[64] flex items-center gap-1.5" style={{ bottom: MM_H_FOR[minimapSize] + insets.bottom + 20 }}>
+      {/* bottom-right column (rides above the minimap whatever its size):
+          the bots' pace while they play, then settings, ideas, the table
+          and the ledger — the ledger chip counts what others did since
+          the reader last looked */}
+      <div className="fixed right-3 z-[64] flex w-[124px] flex-col items-stretch gap-1.5" style={{ bottom: MM_H_FOR[minimapSize] + insets.bottom + 20 }}>
+        {botThinking && (
+          <button type="button" onClick={() => setSkipAnim((s) => !s)} className={cn(CHIP, skipAnim && '!border-brass-400 !bg-brass-500/20 !opacity-100')}>
+            <FastForward className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')}</span>
+          </button>
+        )}
         <button
           type="button"
           onClick={() => {
@@ -432,19 +456,22 @@ export default function Game() {
           }}
           aria-label={t('board.options.settingsAria')}
           title={t('board.options.settingsTip')}
-          className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100"
+          className={CHIP}
         >
-          <Settings2 className="h-3.5 w-3.5" /> {t('game.page.settingsChip')}
+          <Settings2 className="h-3.5 w-3.5 shrink-0" /> {t('game.page.settingsChip')}
         </button>
-        <TableMenu className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100" />
-        <FeedbackButton className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100" />
+        <FeedbackButton className={CHIP} />
+        <TableMenu className={CHIP} />
         {!ledgerOpen && (
-          <button
-            type="button"
-            onClick={() => setLedgerOpen(true)}
-            className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100"
-          >
-            <ScrollText className="h-3.5 w-3.5" /> {t('game.page.ledgerChip')} <kbd className="font-mono text-[9px] text-cream-100/50">L</kbd>
+          <button type="button" onClick={() => setLedgerOpen(true)} className={CHIP}>
+            <ScrollText className="h-3.5 w-3.5 shrink-0" /> {t('game.page.ledgerChip')}
+            {unread > 0 ? (
+              <span className="ml-auto rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
+                {unread > 9 ? '9+' : unread}
+              </span>
+            ) : (
+              <kbd className="ml-auto font-mono text-[9px] text-cream-100/50">L</kbd>
+            )}
           </button>
         )}
       </div>
