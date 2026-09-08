@@ -72,7 +72,8 @@ interface GameStore {
   /** player whose mat (remaining tiles) is open, null = closed */
   matPlayer: number | null;
   marketFocus: boolean;
-  ledgerFilter: 'all' | 'me' | 'economy' | 'network';
+  /** everything, one player's doings (`p<seat>`), the money or the map */
+  ledgerFilter: 'all' | 'economy' | 'network' | `p${number}`;
   /** camera fly-to request (Ledger click, bot follow) — `at` dedupes repeats */
   flyTo: { key: string; at: number } | null;
   /** camera glides to wherever a bot just played */
