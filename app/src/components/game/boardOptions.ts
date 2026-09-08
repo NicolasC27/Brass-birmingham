@@ -43,6 +43,10 @@ export interface BoardOptions {
   traffic: TrafficLevel;
   /** player mat spread wide (six columns) instead of the slim docked panel */
   matWide: boolean;
+  /** mat levels as the player's real cards with a pile, or compact boxes */
+  matStyle: 'cards' | 'compact';
+  /** ×n count badge on the cards (the pile already shows it) */
+  matCount: boolean;
   settingsOpen: boolean;
 }
 
@@ -63,6 +67,8 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   mapStyle: 'brassworks.mapStyle',
   traffic: 'brassworks.traffic',
   matWide: 'brassworks.matWide',
+  matStyle: 'brassworks.matStyle',
+  matCount: 'brassworks.matCount',
 };
 
 const read = <K extends keyof typeof KEYS>(k: K, fallback: BoardOptions[K]): BoardOptions[K] => {
@@ -94,6 +100,8 @@ let state: BoardOptions = {
   mapStyle: read('mapStyle', 'etched'),
   traffic: read('traffic', 'light'),
   matWide: read('matWide', false),
+  matStyle: read('matStyle', 'cards'),
+  matCount: read('matCount', false),
   settingsOpen: false,
 };
 

@@ -432,6 +432,18 @@ export default function BoardSettings() {
                         preview: (active) => <StockPreview style={id} active={active} />,
                       }))}
                     />
+                    <OptionRow label={t('game.settings.matStyle')} hint={t('game.settings.matStyleHint')}>
+                      <Segmented<'cards' | 'compact'>
+                        value={opts.matStyle}
+                        onChange={(v) => setBoardOption('matStyle', v)}
+                        options={(['cards', 'compact'] as const).map((id) => ({ id, label: t(`game.settings.matStyles.${id}`) }))}
+                      />
+                    </OptionRow>
+                    {opts.matStyle === 'cards' && (
+                      <OptionRow label={t('game.settings.matCount')} hint={t('game.settings.matCountHint')}>
+                        <Switch on={opts.matCount} onClick={() => setBoardOption('matCount', !opts.matCount)} label={t('game.settings.matCount')} />
+                      </OptionRow>
+                    )}
                   </>
                 )}
 

@@ -167,6 +167,14 @@ export default function Game() {
         setBoardOption('settingsOpen', !openNow);
         return;
       }
+      if (isKey(e, 'matWide')) {
+        setBoardOption('matWide', !getBoardOptions().matWide);
+        return;
+      }
+      if (isKey(e, 'matStyle')) {
+        setBoardOption('matStyle', getBoardOptions().matStyle === 'cards' ? 'compact' : 'cards');
+        return;
+      }
       if (isKey(e, 'mat')) {
         const st = useGame.getState();
         if (st.matPlayer !== null) st.closeMat();

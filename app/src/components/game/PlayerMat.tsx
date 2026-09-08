@@ -57,14 +57,17 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
   const railOnly = !lv.eras.includes('canal');
   const face = `url(${dir}/tile-${FILE_FOR[ind]}-${color}.png)`;
   /* the pile: up to three more cards behind, stepped up and to the right */
-  const behind = gone ? 0 : Math.min(3, count - 1);
+  const { matStyle, matCount } = useBoardOptions();
+  const cards = matStyle === 'cards';
+  /* the pile: up to three more cards behind, stepped up and to the right */
+  const behind = cards && !gone ? Math.min(3, count - 1) : 0;
   const STEP = 3;
   return (
     <li
       ref={ref}
       onPointerEnter={show}
       onPointerLeave={hide}
-      className="group relative h-[68px] w-[74px] cursor-help"
+      className={cn('group relative cursor-help', cards ? 'h-[68px] w-[74px]' : 'h-[52px] w-[76px]')}
       style={{ marginRight: behind * STEP, marginTop: behind * STEP }}
     >
       {Array.from({ length: behind }, (_, i) => {
@@ -78,43 +81,70 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
           />
         );
       })}
-      {/* the top card */}
-      <span
-        aria-hidden
-        className={cn(
-          'absolute inset-0 rounded-[6px] border bg-cover bg-center transition-[box-shadow,border-color]',
-          gone ? 'border-brass-700/30 bg-[#161210] [background-image:none]' : isNext ? 'border-brass-400' : 'border-black/70 group-hover:border-brass-400/80',
-        )}
-        style={{
-          backgroundImage: gone ? undefined : face,
-          boxShadow: gone ? undefined : isNext ? '0 0 0 1px rgba(201,164,92,.5), 0 0 12px rgba(201,164,92,.35), 0 2px 4px rgba(0,0,0,.6)' : '0 2px 4px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.35)',
-        }}
-      />
-      {gone ? (
-        /* an empty slot: the level is all on the board */
-        <span aria-hidden className="absolute inset-[6px] rounded-[4px] border border-dashed border-brass-700/40" />
-      ) : null}
-      {/* printed figures */}
-      <div className={cn('relative z-10 flex h-full flex-col justify-between', gone && 'opacity-50')}>
-        <div className="flex items-start justify-between p-1">
-          <span className="flex gap-[2px] rounded-[3px] bg-black/55 px-1 py-[3px]">
-            {Array.from({ length: lv.level }, (_, i) => (
-              <span key={i} className="h-[4px] w-[4px] rounded-full bg-brass-400" />
-            ))}
-          </span>
-          <span className="rounded-[3px] bg-black/55 px-1 font-mono text-[9.5px] font-bold leading-[14px] text-brass-400">{gone ? '—' : `×${count}`}</span>
-        </div>
-        <div className="flex items-baseline justify-between whitespace-nowrap rounded-b-[5px] bg-black/65 px-1.5 py-[4px] font-mono leading-none">
-          <span className="text-[11px] font-bold text-cream-100">£{lv.cost}</span>
-          <span className="flex items-baseline gap-[5px] text-[8.5px]">
-            <span className="text-bottle-600 brightness-[1.7]">+{lv.incomeDelta}</span>
-            <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
-          </span>
-        </div>
-      </div>
+      {cards ? (
+        <>
+          {/* the top card */}
+          <span
+            aria-hidden
+            className={cn(
+              'absolute inset-0 rounded-[6px] border bg-cover bg-center transition-[box-shadow,border-color]',
+              gone ? 'border-brass-700/30 bg-[#161210] [background-image:none]' : isNext ? 'border-brass-400' : 'border-black/70 group-hover:border-brass-400/80',
+            )}
+            style={{
+              backgroundImage: gone ? undefined : face,
+              boxShadow: gone ? undefined : isNext ? '0 0 0 1px rgba(201,164,92,.5), 0 0 12px rgba(201,164,92,.35), 0 2px 4px rgba(0,0,0,.6)' : '0 2px 4px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.35)',
+            }}
+          />
+          {gone && <span aria-hidden className="absolute inset-[6px] rounded-[4px] border border-dashed border-brass-700/40" />}
+          {/* printed figures */}
+          <div className={cn('relative z-10 flex h-full flex-col justify-between', gone && 'opacity-50')}>
+            <div className="flex items-start justify-between p-1">
+              <span className="flex gap-[2px] rounded-[3px] bg-black/55 px-1 py-[3px]">
+                {Array.from({ length: lv.level }, (_, i) => (
+                  <span key={i} className="h-[4px] w-[4px] rounded-full bg-brass-400" />
+                ))}
+              </span>
+              {(matCount || gone) && <span className="rounded-[3px] bg-black/55 px-1 font-mono text-[9.5px] font-bold leading-[14px] text-brass-400">{gone ? '—' : `×${count}`}</span>}
+            </div>
+            <div className="flex items-baseline justify-between whitespace-nowrap rounded-b-[5px] bg-black/65 px-1.5 py-[4px] font-mono leading-none">
+              <span className="text-[11px] font-bold text-cream-100">£{lv.cost}</span>
+              <span className="flex items-baseline gap-[5px] text-[8.5px]">
+                <span className="text-bottle-600 brightness-[1.7]">+{lv.incomeDelta}</span>
+                <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
+              </span>
+            </div>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* compact: a flat printed box, the count always spelled out */}
+          <span
+            aria-hidden
+            className={cn(
+              'absolute inset-0 rounded-[5px] border transition-colors',
+              isNext ? 'border-brass-400 bg-[#2b2316] shadow-[0_0_10px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 bg-[#161210]' : 'border-brass-700/50 bg-[#1e1913] group-hover:border-brass-500',
+            )}
+          />
+          <div className={cn('relative z-10 flex h-full flex-col px-1.5 py-1', gone && 'opacity-45')}>
+            <div className="flex items-center justify-between">
+              <span className="flex gap-[2px]">
+                {Array.from({ length: lv.level }, (_, i) => (
+                  <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
+                ))}
+              </span>
+              <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+            </div>
+            <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
+            <div className="mt-1 flex items-baseline justify-between whitespace-nowrap font-mono text-[9px] leading-none">
+              <span className="text-bottle-600 brightness-150">+{lv.incomeDelta}</span>
+              <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
+            </div>
+          </div>
+        </>
+      )}
       {/* era / develop marks as small dots, spelled out in the sheet */}
       {(canalOnly || railOnly || lv.noDevelop) && (
-        <span className="absolute left-1 top-[20px] z-10 flex gap-[3px]">
+        <span className={cn('absolute z-10 flex gap-[3px]', cards ? 'left-1 top-[20px]' : 'right-1 top-[13px]')}>
           {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150 ring-1 ring-black/60" />}
           {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500 ring-1 ring-black/60" />}
           {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500 ring-1 ring-black/60" />}
