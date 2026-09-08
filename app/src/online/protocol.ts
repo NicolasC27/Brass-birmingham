@@ -55,6 +55,10 @@ export type ClientMessage =
   | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
   /** the desk: my tables, my invitations, my past games */
   | { t: 'desk'; rid?: number }
+  /** ask a player by name to be friends — or accept their asking */
+  | { t: 'friend'; rid: number; name: string }
+  /** end a friendship, or decline one on its way */
+  | { t: 'unfriend'; rid: number; id: string }
   /** ask a player by name to a table I sit at */
   | { t: 'invite'; rid: number; code: string; name: string }
   /** answer an invitation — accepting takes the chair */

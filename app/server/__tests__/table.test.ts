@@ -378,6 +378,18 @@ describe('a table over the wire', () => {
     await host.until('the desk', () => !!host.desk?.tables.length);
     expect(host.desk!.sent).toEqual([]);
     expect(host.desk!.tables[0].hostId).toBe(host.id);
+
+    /* friends: asked by name, answered from the desk, seen online */
+    host.send({ t: 'friend', rid: 17, name: 'BOB' });
+    await guest.until('the asking', () => guest.desk?.friends[0]?.status === 'asks');
+    await host.until('the waiting', () => host.desk?.friends[0]?.status === 'asked');
+    expect(host.desk!.friends[0]).toMatchObject({ account: { name: 'Bob' }, online: true });
+    guest.send({ t: 'friend', rid: 22, name: 'ada' });
+    await host.until('the friendship', () => host.desk?.friends[0]?.status === 'friends');
+    host.send({ t: 'friend', rid: 18, name: 'Bob' });
+    await host.until('the refusal', () => host.rejected.includes('already-friends'));
+    host.send({ t: 'unfriend', rid: 19, id: host.desk!.friends[0].id });
+    await guest.until('the end of it', () => guest.desk?.friends.length === 0);
   });
 
   it('says nothing to a socket that has not signed in', async () => {

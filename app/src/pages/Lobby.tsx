@@ -7,7 +7,7 @@ import PlayerToken from '@/components/setup/PlayerToken';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { invite, useStranger } from '@/online/session';
+import { invite, useDesk, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -189,20 +189,22 @@ function EmptyChair({ iAmHost, onAddBot }: { iAmHost: boolean; onAddBot: () => v
 }
 
 /** a letter to a player by name — their desk gets it at once */
-function InviteBox({ code }: { code: string }) {
+function InviteBox({ code, seated }: { code: string; seated: string[] }) {
   const t = useT();
+  const desk = useDesk();
   const [name, setName] = useState('');
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
-  const send = async () => {
-    if (!name.trim()) return;
+  const send = async (who = name) => {
+    if (!who.trim()) return;
     try {
-      await invite(code, name);
-      setNote({ ok: true, text: t('site.room.invited', { name: name.trim() }) });
+      await invite(code, who);
+      setNote({ ok: true, text: t('site.room.invited', { name: who.trim() }) });
       setName('');
     } catch (e) {
       setNote({ ok: false, text: t(`site.desk.error.${(e as Error).message}`) });
     }
   };
+  const friends = (desk?.friends ?? []).filter((f) => f.status === 'friends' && !seated.includes(f.account.id));
   return (
     <div className="relative mt-4 rounded-md border border-brass-700/50 bg-coal-950/50 px-4 py-3">
       <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-400/80">{t('site.room.invite')}</p>
@@ -218,11 +220,22 @@ function InviteBox({ code }: { code: string }) {
           placeholder={t('site.room.invitePlaceholder')}
           className="w-[14rem] rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-1.5 font-sans text-[13px] text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
         />
-        <button type="button" onClick={send} disabled={!name.trim()} className="btn-ledger !min-h-[34px] !px-3.5 !py-1 !text-[10.5px] disabled:cursor-not-allowed disabled:opacity-40">
+        <button type="button" onClick={() => send()} disabled={!name.trim()} className="btn-ledger !min-h-[34px] !px-3.5 !py-1 !text-[10.5px] disabled:cursor-not-allowed disabled:opacity-40">
           <Send className="h-3.5 w-3.5" /> {t('site.room.inviteCta')}
         </button>
         <span className="font-sans text-[11px] text-cream-100/45">{t('site.room.inviteHint')}</span>
       </div>
+      {friends.length > 0 && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="font-sans text-[9.5px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">{t('site.friends.chips')}</span>
+          {friends.map((f) => (
+            <button key={f.id} type="button" onClick={() => send(f.account.name)} className="inline-flex items-center gap-1.5 rounded-full border border-brass-700/50 py-0.5 pl-2 pr-2.5 font-sans text-[11px] font-semibold text-cream-100/85 transition-colors hover:border-brass-400 hover:text-brass-400">
+              <span className={cn('h-1.5 w-1.5 rounded-full', f.online ? 'bg-bottle-600' : 'bg-cream-100/25')} />
+              {f.account.name}
+            </button>
+          ))}
+        </div>
+      )}
       {note && <p className={cn('mt-2 font-sans text-[12px]', note.ok ? 'text-bottle-600 brightness-150' : 'text-rust-500 brightness-150')}>{note.text}</p>}
     </div>
   );
@@ -414,7 +427,7 @@ export default function Lobby() {
                 )}
               </div>
             )}
-            {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && <InviteBox code={code} />}
+            {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && <InviteBox code={code} seated={table.seats.map((s) => s.id)} />}
             <p className="relative mt-4 font-sans text-[12px] leading-relaxed text-cream-100/50">{t('online.room.shareHint')}</p>
           </motion.section>
 

@@ -89,7 +89,15 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (game && c.me) send(c, { t: 'game', view: game.view(c.me.id) });
   };
   const pushDesk = (c: Client, rid?: number) => {
-    if (c.me) send(c, { t: 'desk', rid, desk: hall.desk(c.me.id) });
+    if (!c.me) return;
+    const desk = hall.desk(c.me.id);
+    /* a friend is online when a socket of theirs is open */
+    desk.friends = desk.friends.map((f) => ({ ...f, online: socketsOf(f.account.id).length > 0 }));
+    send(c, { t: 'desk', rid, desk });
+  };
+  /** this account came or went: its friends' desks show it */
+  const tellFriends = (accountId: string) => {
+    for (const id of hall.friendsToTell(accountId)) for (const c of socketsOf(id)) pushDesk(c);
   };
   /** the account changed: every socket it holds hears the new `me` */
   const pushMe = (accountId: string, rid?: number, to?: Client) => {
@@ -131,8 +139,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         send(client, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: (e as Error).message });
       }
     });
-    socket.on('close', () => clients.delete(client));
-    socket.on('error', () => clients.delete(client));
+    const gone = () => {
+      clients.delete(client);
+      if (client.me) tellFriends(client.me.id);
+    };
+    socket.on('close', gone);
+    socket.on('error', gone);
   });
 
   function handle(c: Client, m: ClientMessage): void {
@@ -168,6 +180,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         c.me = me(account);
         c.token = m.token;
         send(c, { t: 'welcome', rid: m.rid, me: c.me });
+        tellFriends(account.id);
         return;
       }
       case 'signout': {
@@ -246,6 +259,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'desk':
         pushDesk(c, m.rid);
         return;
+      case 'friend': {
+        hall.befriend(who, m.name);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
+      case 'unfriend': {
+        hall.unfriend(who, m.id);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
       case 'feedback': {
         if (!m.text.trim()) {
           send(c, { t: 'refused', rid: m.rid, error: 'refused' });
@@ -335,6 +358,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     c.me = me(account);
     c.token = store.openSession(account.id);
     send(c, { t: 'session', rid, token: c.token, me: c.me });
+    tellFriends(account.id);
   }
 
   const every = options.sweepEvery ?? 15 * 60 * 1000;

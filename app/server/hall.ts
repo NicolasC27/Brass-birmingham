@@ -101,7 +101,29 @@ export class Hall {
 
   desk(accountId: string): Desk {
     const { received, sent } = this.store.invitationsFor(accountId);
-    return { tables: this.tablesFor(accountId), invitations: received, sent, history: this.store.historyFor(accountId), stats: this.store.statsFor(accountId) };
+    return { tables: this.tablesFor(accountId), invitations: received, sent, friends: this.store.friendsOf(accountId), history: this.store.historyFor(accountId), stats: this.store.statsFor(accountId) };
+  }
+
+  /** ask a player by name to be friends (accepting when they asked first) */
+  befriend(me: Identity, name: string): void {
+    const to = this.store.accountByName(name);
+    if (!to) throw new Error('no-such-player' satisfies LobbyError);
+    const error = this.store.befriend(me.id, to.id);
+    if (error) throw new Error(error satisfies LobbyError);
+    this.announceDesk(me.id);
+    this.announceDesk(to.id);
+  }
+
+  unfriend(me: Identity, id: string): void {
+    const other = this.store.friendsOf(me.id).find((f) => f.id === id)?.account.id;
+    if (!this.store.unfriend(id, me.id)) throw new Error('not-found' satisfies LobbyError);
+    this.announceDesk(me.id);
+    if (other) this.announceDesk(other);
+  }
+
+  /** whoever should hear that this account came or went: its friends */
+  friendsToTell(accountId: string): string[] {
+    return this.store.friendIds(accountId);
   }
 
   /** a letter from a player at the table to a player by name */

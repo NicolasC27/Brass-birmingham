@@ -32,7 +32,7 @@ export interface Table {
   updatedAt: number;
 }
 
-export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline' | 'verify-first' | 'no-such-player' | 'already-seated' | 'already-invited' | 'not-yours';
+export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline' | 'verify-first' | 'no-such-player' | 'already-seated' | 'already-invited' | 'not-yours' | 'already-friends' | 'yourself';
 
 /** why the office would not sign you in */
 export type AuthError =
@@ -107,12 +107,22 @@ export interface Stats {
   bestVp: number;
 }
 
-/** everything the desk shows: my tables, my letters, my past games */
+/** a friend, or a friendship on its way: 'asks' = they asked me, 'asked' = I asked them */
+export interface Friend {
+  id: string;
+  account: Identity;
+  status: 'friends' | 'asks' | 'asked';
+  /** a socket of theirs is open right now */
+  online: boolean;
+}
+
+/** everything the desk shows: my tables, my letters, my friends, my past games */
 export interface Desk {
   tables: TableSummary[];
   invitations: Invitation[];
   /** the invitations I sent that are still unanswered */
   sent: Invitation[];
+  friends: Friend[];
   history: PastGame[];
   stats: Stats;
 }

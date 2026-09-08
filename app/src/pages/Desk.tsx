@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowRight, Crown, KeyRound, Mail, Send } from 'lucide-react';
+import { ArrowRight, Crown, KeyRound, Mail, Send, UserPlus, X } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
-import { answerInvitation, useDesk, useLine, useSession, useStranger } from '@/online/session';
-import type { PastGame, TableSummary } from '@/online/table';
+import { answerInvitation, befriend, invite, unfriend, useDesk, useLine, useSession, useStranger } from '@/online/session';
+import type { Friend, PastGame, TableSummary } from '@/online/table';
 import { useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -98,6 +98,78 @@ function PastRow({ game, me }: { game: PastGame; me: string }) {
   );
 }
 
+/** the friends: ask by name, answer, and one click to a table I host */
+function FriendsPanel({ friends, table }: { friends: Friend[]; table: TableSummary | null }) {
+  const t = useT();
+  const [name, setName] = useState('');
+  const [note, setNote] = useState<string | null>(null);
+  const [sent, setSent] = useState<Set<string>>(new Set());
+  const fail = (e: unknown) => setNote(t(`site.desk.error.${(e as Error).message}`));
+  const ask = async () => {
+    if (!name.trim()) return;
+    setNote(null);
+    try {
+      await befriend(name);
+      setName('');
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const toTable = async (f: Friend) => {
+    if (!table) return;
+    setNote(null);
+    try {
+      await invite(table.code, f.account.name);
+      setSent((s) => new Set(s).add(f.id));
+    } catch (e) {
+      fail(e);
+    }
+  };
+  return (
+    <Panel title={t('site.friends.title')} meta={friends.filter((f) => f.status === 'friends').length}>
+      <div className="flex items-center gap-2">
+        <UserPlus className="h-4 w-4 shrink-0 text-brass-400" />
+        <input value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && ask()} maxLength={20} placeholder={t('site.friends.placeholder')} className={inputClass} />
+        <button type="button" onClick={ask} disabled={!name.trim()} className="btn-ledger !min-h-[38px] !px-3 !py-1.5 !text-[11px] disabled:cursor-not-allowed disabled:opacity-40">
+          {t('site.friends.addCta')}
+        </button>
+      </div>
+      <Refusal text={note} />
+      {friends.length === 0 ? (
+        <p className="mt-3 font-serif text-[14px] italic text-cream-100/55">{t('site.friends.none')}</p>
+      ) : (
+        <ul className="mt-3 grid gap-2">
+          {friends.map((f) => (
+            <li key={f.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-brass-700/40 bg-coal-950/40 px-3 py-2">
+              <span className="flex items-center gap-2">
+                <span className={cn('h-2 w-2 rounded-full', f.online ? 'bg-bottle-600' : 'bg-cream-100/25')} title={t(f.online ? 'site.friends.online' : 'site.friends.offline')} />
+                <span className="font-sans text-[12.5px] font-semibold text-cream-100">{f.account.name}</span>
+                {f.status !== 'friends' && <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-cream-100/45">{t(`site.friends.${f.status}`)}</span>}
+              </span>
+              <span className="flex items-center gap-1.5">
+                {f.status === 'asks' && (
+                  <button type="button" onClick={() => befriend(f.account.name).catch(fail)} className="btn-strike !min-h-[28px] !px-2.5 !py-0.5 !text-[10px]">
+                    {t('site.friends.accept')}
+                  </button>
+                )}
+                {f.status === 'friends' && table && !table.seats.some((s) => s.id === f.account.id) && (
+                  <button type="button" onClick={() => toTable(f)} disabled={sent.has(f.id)} className="btn-ledger !min-h-[28px] !px-2.5 !py-0.5 !text-[10px] disabled:opacity-50">
+                    {sent.has(f.id) ? t('site.friends.invited') : t('site.friends.inviteToTable', { table: table.name })}
+                  </button>
+                )}
+                <button type="button" onClick={() => unfriend(f.id).catch(fail)} aria-label={f.status === 'asks' ? t('site.friends.decline') : t('site.friends.remove')} title={f.status === 'asks' ? t('site.friends.decline') : t('site.friends.remove')} className="rounded-full p-1 text-cream-100/35 hover:text-rust-500">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {friends.some((f) => f.status === 'friends') && !table && <p className="mt-2 font-sans text-[11px] text-cream-100/45">{t('site.friends.noTable')}</p>}
+    </Panel>
+  );
+}
+
 export default function Desk() {
   const t = useT();
   const navigate = useNavigate();
@@ -151,6 +223,8 @@ export default function Desk() {
   const mine = tables.filter((x) => x.myTurn);
   const rest = tables.filter((x) => !x.myTurn);
   const stats = desk?.stats;
+  /* the open table I host, if any: friends can be asked to it in one click */
+  const hosting = tables.find((x) => x.status === 'open' && x.hostId === me && x.seats.length < 4) ?? null;
 
   return (
     <PageShell
@@ -277,6 +351,8 @@ export default function Desk() {
               </ul>
             )}
           </Panel>
+
+          <FriendsPanel friends={desk?.friends ?? []} table={hosting} />
 
           <Panel title={t('site.desk.stats.title')} tone="paper">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">

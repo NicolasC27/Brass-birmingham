@@ -3,7 +3,7 @@ import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { Identity, Invitation, Me, PastGame, Stats, Table } from '@/online/table';
+import type { Friend, Identity, Invitation, Me, PastGame, Stats, Table } from '@/online/table';
 
 /* ------------------------------------------------------------------ */
 /* The register — everything the house must not forget.                */
@@ -100,6 +100,15 @@ create table if not exists games (
   startedAt  integer not null,
   finishedAt integer,
   result     text
+);
+create table if not exists friends (
+  id         text primary key,
+  aId        text not null,
+  bId        text not null,
+  askedBy    text not null,
+  createdAt  integer not null,
+  acceptedAt integer,
+  unique (aId, bId)
 );
 create table if not exists feedback (
   id        text primary key,
@@ -385,6 +394,45 @@ export class Store {
   private tableName(code: string): string {
     const row = this.db.prepare('select name from tables where code = ?').get(code) as { name: string } | undefined;
     return row?.name ?? code;
+  }
+
+  /* ----------------------------- friends --------------------------- */
+
+  /** ask to be friends — or, if they asked first, accept; null when done, else why not */
+  befriend(fromId: string, toId: string): 'yourself' | 'already-friends' | null {
+    if (fromId === toId) return 'yourself';
+    const [a, b] = [fromId, toId].sort();
+    const row = this.db.prepare('select id, askedBy, acceptedAt from friends where aId = ? and bId = ?').get(a, b) as { id: string; askedBy: string; acceptedAt: number | null } | undefined;
+    if (row?.acceptedAt) return 'already-friends';
+    if (row) {
+      /* they asked me: asking back is accepting */
+      if (row.askedBy !== fromId) this.db.prepare('update friends set acceptedAt = ? where id = ?').run(Date.now(), row.id);
+      return null;
+    }
+    this.db.prepare('insert into friends (id, aId, bId, askedBy, createdAt, acceptedAt) values (?, ?, ?, ?, ?, null)').run('fr-' + randomBytes(6).toString('hex'), a, b, fromId, Date.now());
+    return null;
+  }
+
+  /** the friendship (or the asking) is over — only one of the two may end it */
+  unfriend(id: string, byId: string): boolean {
+    const r = this.db.prepare('delete from friends where id = ? and (aId = ? or bId = ?)').run(id, byId, byId);
+    return r.changes > 0;
+  }
+
+  friendsOf(accountId: string): Friend[] {
+    const rows = this.db.prepare('select id, aId, bId, askedBy, acceptedAt from friends where aId = ? or bId = ? order by createdAt desc').all(accountId, accountId) as { id: string; aId: string; bId: string; askedBy: string; acceptedAt: number | null }[];
+    const out: Friend[] = [];
+    for (const r of rows) {
+      const other = this.account(r.aId === accountId ? r.bId : r.aId);
+      if (!other) continue;
+      out.push({ id: r.id, account: { id: other.id, name: other.name }, status: r.acceptedAt ? 'friends' : r.askedBy === accountId ? 'asked' : 'asks', online: false });
+    }
+    return out;
+  }
+
+  /** the ids of everyone this account is friends with, or asked, or was asked by */
+  friendIds(accountId: string): string[] {
+    return this.friendsOf(accountId).map((f) => f.account.id);
   }
 
   /* ---------------------------- feedback --------------------------- */

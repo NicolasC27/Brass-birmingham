@@ -87,6 +87,15 @@ export async function sendFeedback(page: string, kind: 'idea' | 'bug', text: str
   await wire().ask((rid) => ({ t: 'feedback', rid, page, kind, text }));
 }
 
+/** ask a player by name to be friends — or accept them */
+export async function befriend(name: string): Promise<void> {
+  await wire().ask((rid) => ({ t: 'friend', rid, name: name.trim() }));
+}
+
+export async function unfriend(id: string): Promise<void> {
+  await wire().ask((rid) => ({ t: 'unfriend', rid, id }));
+}
+
 /** ask a player by name to a table I sit at */
 export async function invite(code: string, name: string): Promise<void> {
   await wire().ask((rid) => ({ t: 'invite', rid, code, name: name.trim() }));
