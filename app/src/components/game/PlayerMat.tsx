@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
@@ -35,6 +35,25 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
   /* hovering a level chip swaps the detail line to that level; at rest it
      describes the next tile to build */
   const [peek, setPeek] = useState<number | null>(null);
+  /* the peek holds while the pointer crosses the gaps between chips and
+     only lets go a beat after it leaves the whole row — no flicker back
+     to "next" between two chips */
+  const leaveTimer = useRef<number | null>(null);
+  const holdPeek = (level: number) => {
+    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = null;
+    setPeek(level);
+  };
+  const releasePeek = () => {
+    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(() => setPeek(null), 220);
+  };
+  useEffect(
+    () => () => {
+      if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
+    },
+    [],
+  );
   const shownLevel = peek ?? nextLevel;
   const next = levels.find((lv) => lv.level === shownLevel);
   const isNextShown = shownLevel === nextLevel && peek === null;
@@ -67,7 +86,7 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
         <span className="ml-auto shrink-0 font-mono text-[9.5px] text-cream-100/55">{t('game.mat.remaining', { left: left.length, total })}</span>
       </div>
       {/* the stack laid flat: one chip per level, level I first like the printed mat */}
-      <ul className="mt-1.5 flex flex-wrap gap-1">
+      <ul className="mt-1.5 flex flex-wrap gap-1" onPointerLeave={releasePeek}>
         {levels.map((lv) => {
           const count = left.filter((l) => l === lv.level).length;
           const isNext = nextLevel === lv.level;
@@ -75,8 +94,7 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           return (
             <li
               key={lv.level}
-              onPointerEnter={() => setPeek(lv.level)}
-              onPointerLeave={() => setPeek(null)}
+              onPointerEnter={() => holdPeek(lv.level)}
               className={cn(
                 'flex cursor-help items-center gap-1 rounded-[4px] border px-1.5 py-[3px] font-mono text-[9.5px] transition-colors',
                 isNext ? 'border-brass-400 bg-brass-500/15 text-cream-100 shadow-[0_0_8px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 text-cream-100/35' : 'border-brass-700/50 text-cream-100/80',
