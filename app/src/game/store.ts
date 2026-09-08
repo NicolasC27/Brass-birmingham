@@ -5,19 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import {
-  buildTargets,
-  canLoan,
-  canScout,
-  doubleLinkPlan,
-  defaultSetup,
-  deserialize,
-  developOptions,
-  linkTargets,
-  newGame,
-  sellTargets,
-  serialize,
-} from './engine';
+import { buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, sellTargets, serialize } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
@@ -38,6 +26,7 @@ import type {
   Verb,
 } from './types';
 import { RESUME_KEY, SETUP_KEY } from './types';
+import { ledgerText } from './ledgerText';
 
 export interface Shake {
   key: string;
@@ -183,7 +172,7 @@ export function buildFinalPayload(g: GameState): FinalPayload {
     timeline: g.ledger
       .filter((e) => e.verb !== 'system' || e.text.includes('Era'))
       .slice(-40)
-      .map((e) => `[${e.era === 'canal' ? 'Canal' : 'Rail'} R${e.round}] ${e.text}`),
+      .map((e) => `[${e.era === 'canal' ? 'Canal' : 'Rail'} R${e.round}] ${ledgerText(e, tr)}`),
     history: g.history ?? [],
     seed: g.seed,
     setup: setupOf(g),
@@ -662,11 +651,15 @@ export function confirmSummary(st: {
       const t = st.buildPick;
       if (!t) return null;
       const lv = INDUSTRIES[t.industry][t.level - 1];
-      const bits = [`Build · ${INDUSTRY_LABEL[t.industry]} L${t.level}`, TOWN_BY_ID[t.town].name, `£${lv.cost}`];
+      const bits = [tr('game.confirm.build', { industry: tr(`game.log.industry.${t.industry}`), level: t.level, town: TOWN_BY_ID[t.town].name, price: lv.cost })];
       const marketCoal = t.coalPlan.sources.filter((x) => x.kind === 'market');
-      if (marketCoal.length) bits.push(`coal ×${marketCoal.length} ← market £${t.coalPlan.totalCost}`);
+      if (marketCoal.length) bits.push(tr('game.confirm.marketCoal', { n: marketCoal.length, cost: t.coalPlan.totalCost }));
       const marketIron = t.ironPlan.sources.filter((x) => x.kind === 'market');
-      if (marketIron.length) bits.push(`iron ×${marketIron.length} ← market £${t.ironPlan.totalCost}`);
+      if (marketIron.length) bits.push(tr('game.confirm.marketIron', { n: marketIron.length, cost: t.ironPlan.totalCost }));
+      /* a mine or works that reaches a merchant sells its spare cubes at once: say so */
+      const g = useGame.getState().game;
+      const sale = g ? marketSaleOnBuild(g, t.town, t.industry, t.level) : { sold: 0, earned: 0 };
+      if (sale.sold) bits.push(tr('game.confirm.sale', { n: sale.sold, res: tr(`game.log.res.${t.industry}`), gain: sale.earned }));
       return bits.join(' · ');
     }
     case 'network': {
@@ -675,22 +668,20 @@ export function confirmSummary(st: {
       const name = (id: string) => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
       if (st.secondLinkPick) {
         const s2 = st.secondLinkPick;
-        return `Double rail · ${name(t.link.a)} ⇄ ${name(t.link.b)} + ${name(s2.link.a)} ⇄ ${name(s2.link.b)} · £${s2.total} · 2 coal · 1 beer`;
+        return tr('game.confirm.double', { a: name(t.link.a), b: name(t.link.b), a2: name(s2.link.a), b2: name(s2.link.b), price: s2.total });
       }
-      return [`Network · ${name(t.link.a)} ⇄ ${name(t.link.b)}`, `£${t.total}`].join(' · ');
+      return tr('game.confirm.network', { a: name(t.link.a), b: name(t.link.b), price: t.total });
     }
     case 'develop':
-      return st.developPick.length
-        ? `Develop · ${st.developPick.map((i) => INDUSTRY_LABEL[i]).join(' + ')} · iron ×${st.developPick.length}`
-        : null;
+      return st.developPick.length ? tr('game.confirm.develop', { list: st.developPick.map((i) => tr(`game.log.industry.${i}`)).join(' + '), n: st.developPick.length }) : null;
     case 'sell': {
       if (!st.sellPicks.length) return null;
-      return `Sell · ${st.sellPicks.map((t) => `${INDUSTRY_LABEL[t.tile.industry]} L${t.tile.level} → ${MERCHANT_BY_ID[t.merchant].name}`).join(' + ')}`;
+      return tr('game.confirm.sell', { list: st.sellPicks.map((t) => `${tr(`game.log.industry.${t.tile.industry}`)} L${t.tile.level} → ${MERCHANT_BY_ID[t.merchant].name}`).join(' + ') });
     }
     case 'scout':
-      return st.scoutPick.length === 3 ? 'Scout · discard 3, draw 2 wild cards' : null;
+      return st.scoutPick.length === 3 ? tr('game.confirm.scout') : null;
     case 'pass':
-      return st.selectedCardId ? 'Pass · discard this card, no action' : null;
+      return st.selectedCardId ? tr('game.confirm.pass') : null;
     default:
       return null;
   }
@@ -699,8 +690,8 @@ export function confirmSummary(st: {
 export function cardLabel(card: Card): string {
   if (card.kind === 'location') return TOWN_BY_ID[card.town!]?.name ?? card.town!;
   if (card.kind === 'industry') return card.industry2 ? `${INDUSTRY_LABEL[card.industry!]} / ${INDUSTRY_LABEL[card.industry2]}` : INDUSTRY_LABEL[card.industry!];
-  if (card.kind === 'wild-location') return 'Wild Location';
-  return 'Wild Industry';
+  if (card.kind === 'wild-location') return tr('game.confirm.wildLocation');
+  return tr('game.confirm.wildIndustry');
 }
 
 export function verbsForCard(st: { game: GameState | null; selectedCardId: string | null }): { verb: Verb; ok: boolean; reason?: string }[] {

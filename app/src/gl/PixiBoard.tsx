@@ -7,7 +7,7 @@ import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { GameState } from '@/game/types';
 import { useGame, verbsForCard } from '@/game/store';
-import { onLangChange, tr, useT } from '@/i18n';
+import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { MAP_URL, aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
 import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
@@ -1198,7 +1198,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             style={{ left: calloutPos.x, top: calloutPos.y, transform: calloutPos.up ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
             role="alert"
           >
-            {shake.reason}
+            {reasonText(shake.reason)}
             <span
               aria-hidden
               className="absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-rust-500/80 bg-coal-900/95"

@@ -7,6 +7,7 @@ import { newGame } from '@/game/engine';
 import type { FinalPayload, GameState } from '@/game/types';
 import { FINAL_KEY } from '@/game/types';
 import { useT } from '@/i18n';
+import { ledgerText } from '@/game/ledgerText';
 import { useGame } from '@/game/store';
 import { setupOf } from '@/game/actions';
 import { cn } from '@/lib/utils';
@@ -155,7 +156,7 @@ export default function Replay() {
               {game.era === 'canal' ? 'Canal' : 'Rail'} · R{game.round}
             </span>
           </span>
-          <span className="min-w-0 truncate font-mono text-[11.5px] text-cream-100/90">{entry ? entry.text : t('results.page.replayStart')}</span>
+          <span className="min-w-0 truncate font-mono text-[11.5px] text-cream-100/90">{entry ? ledgerText(entry, t) : t('results.page.replayStart')}</span>
         </div>
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => step(-1)} aria-label="−1" className="flex h-7 w-7 items-center justify-center rounded-full border border-brass-700/60 text-brass-400 hover:bg-coal-800">

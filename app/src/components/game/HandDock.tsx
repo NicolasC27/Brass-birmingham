@@ -5,7 +5,7 @@ import { INDUSTRY_ICON, INDUSTRY_LABEL, incomeLevel } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
 import type { Card, IndustryType, Verb } from '@/game/types';
-import { tr, useT } from '@/i18n';
+import { reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
@@ -528,7 +528,7 @@ export default function HandDock() {
                 </button>
               );
               return !ok && meta?.reason && isHumanTurn ? (
-                <Tooltip key={v} side="top" title={t(label)} content={meta.reason}>
+                <Tooltip key={v} side="top" title={t(label)} content={reasonText(meta.reason)}>
                   {chip}
                 </Tooltip>
               ) : (
@@ -561,7 +561,7 @@ export default function HandDock() {
                           ? 'border-brass-700/60 text-ink-900/85 hover:bg-brass-500/20'
                           : 'cursor-not-allowed border-brass-700/30 text-ink-900/35',
                     )}
-                    title={d.reason ?? t('game.hand.devOption', { name: INDUSTRY_LABEL[d.industry], level: d.level, cost: d.iron.totalCost })}
+                    title={d.reason ? reasonText(d.reason) : t('game.hand.devOption', { name: INDUSTRY_LABEL[d.industry], level: d.level, cost: d.iron.totalCost })}
                   >
                     <img src={INDUSTRY_ICON[d.industry]} alt="" className="h-3.5 w-3.5" />
                     L{d.level}

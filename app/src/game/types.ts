@@ -140,6 +140,9 @@ export interface LedgerEntry {
   text: string;
   /** board region to flash when clicked */
   region?: string;
+  /** the entry as a key of game.log.* and its facts — the client says it in its own language */
+  key?: string;
+  vars?: Record<string, string | number>;
 }
 
 export type Phase =

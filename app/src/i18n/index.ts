@@ -72,6 +72,18 @@ function fmt(s: string, vars?: Record<string, string | number>): string {
   return out;
 }
 
+/** an engine refusal in the reader's language — the English sentence is the key, and stands when unknown */
+export function reasonText(text: string | null | undefined): string {
+  if (!text) return '';
+  const dict = (lang === 'fr' ? fr : en) as AnyDict;
+  const said = (dict.game as AnyDict | undefined)?.reasons as Record<string, string> | undefined;
+  if (said?.[text]) return said[text];
+  /* the few refusals that carry a number: match on the words around it */
+  const money = text.match(/^Needs £(\d+) — you hold £(\d+)$/);
+  if (money && said?.needsMoney) return fmt(said.needsMoney, { need: money[1], have: money[2] });
+  return text;
+}
+
 /** translate outside React (current language, English fallback) */
 export function tr(key: string, vars?: Record<string, string | number>): string {
   const dict = (lang === 'fr' ? fr : en) as AnyDict;

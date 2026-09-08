@@ -4,6 +4,7 @@ import { PLAYER_COLORS } from '@/game/data';
 import { useGame } from '@/game/store';
 import type { LedgerEntry } from '@/game/types';
 import { useT } from '@/i18n';
+import { ledgerText } from '@/game/ledgerText';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router';
 import { keyLabel, useKeybindings } from './keybindings';
@@ -165,7 +166,7 @@ export default function Ledger() {
                   <span className={cn('shrink-0 font-sans text-[9px] font-bold tracking-wider', VERB_CLASS[e.verb])}>
                     {t(VERB_LABEL[e.verb])}
                   </span>
-                  <span className="font-sans leading-snug text-cream-100/80">{e.text}</span>
+                  <span className="font-sans leading-snug text-cream-100/80">{ledgerText(e, t)}</span>
                 </button>
               </motion.li>
             );

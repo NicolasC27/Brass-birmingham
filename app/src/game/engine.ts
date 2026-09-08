@@ -143,14 +143,14 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     actions: [],
   };
   dealHands(state);
-  log(state, undefined, 'system', `The table is set — ${players.map((p) => p.name).join(', ')}. The Canal Era begins.`);
+  log(state, undefined, 'system', `The table is set — ${players.map((p) => p.name).join(', ')}. The Canal Era begins.`, undefined, 'setup', { names: players.map((p) => p.name).join(', ') });
   return state;
 }
 
 /* ============================ helpers ============================== */
 
-export function log(s: GameState, player: number | undefined, verb: LedgerEntry['verb'], text: string, region?: string) {
-  s.ledger.push({ id: s.ledgerSeq++, round: s.round, era: s.era, player, verb, text, region });
+export function log(s: GameState, player: number | undefined, verb: LedgerEntry['verb'], text: string, region?: string, key?: string, vars?: Record<string, string | number>) {
+  s.ledger.push({ id: s.ledgerSeq++, round: s.round, era: s.era, player, verb, text, region, ...(key ? { key, vars } : {}) });
   if (s.ledger.length > 200) s.ledger = s.ledger.slice(-200);
 }
 
@@ -659,14 +659,22 @@ function advanceIncome(s: GameState, playerIdx: number, spaces: number) {
   p.incomeHistory.push(p.income);
 }
 
-function flipTile(s: GameState, key: string, why: string) {
+const FLIP_WHY = {
+  empties: 'empties and flips',
+  barrel: 'pours its last barrel and flips',
+  market: 'sells out to the market and flips',
+  merchant: 'sells to {merchant} and flips',
+} as const;
+
+function flipTile(s: GameState, key: string, why: keyof typeof FLIP_WHY, merchant?: string) {
   const tile = s.tiles[key];
   if (!tile || tile.flipped) return;
   tile.flipped = true;
   const lv = INDUSTRIES[tile.industry][tile.level - 1];
   advanceIncome(s, tile.owner, lv.incomeDelta);
   const owner = s.players[tile.owner];
-  log(s, tile.owner, 'score', `${owner.name}'s ${INDUSTRY_LABEL[tile.industry]} L${tile.level} ${why} (+${lv.incomeDelta} income)`, key.split(':')[0]);
+  const said = FLIP_WHY[why].replace('{merchant}', merchant ?? '');
+  log(s, tile.owner, 'score', `${owner.name}'s ${INDUSTRY_LABEL[tile.industry]} L${tile.level} ${said} (+${lv.incomeDelta} income)`, key.split(':')[0], 'flip', { name: owner.name, industry: tile.industry, level: tile.level, why, merchant: merchant ?? '', income: lv.incomeDelta });
 }
 
 function paySupply(s: GameState, p: PlayerState, plan: SupplyPlan) {
@@ -677,7 +685,7 @@ function paySupply(s: GameState, p: PlayerState, plan: SupplyPlan) {
       tile.cubes -= src.amount;
       if (tile.cubes <= 0) {
         tile.cubes = 0;
-        flipTile(s, key, 'empties and flips');
+        flipTile(s, key, 'empties');
       }
     } else {
       s.market[src.resource] = Math.max(0, s.market[src.resource] - src.amount);
@@ -696,7 +704,7 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]) {
       t.cubes -= 1;
       if (t.cubes <= 0) {
         t.cubes = 0;
-        flipTile(s, key, 'pours its last barrel and flips');
+        flipTile(s, key, 'barrel');
       }
     } else {
       const mid = b.merchant!;
@@ -749,8 +757,26 @@ function sellToMarket(s: GameState, playerIdx: number, key: string, resource: Re
   }
   if (!sold) return '';
   p.money += earned;
-  if (tile.cubes <= 0) flipTile(s, key, 'sells out to the market and flips');
+  if (tile.cubes <= 0) flipTile(s, key, 'market');
   return ` · ${sold} ${resource} to market for £${earned}`;
+}
+
+/** what a new mine or works would sell to the market on being built — the
+ *  cubes that fit, at the tray's prices — without touching the state */
+export function marketSaleOnBuild(s: GameState, town: string, industry: IndustryType, level: number): { sold: number; earned: number } {
+  if (industry !== 'coal' && industry !== 'iron') return { sold: 0, earned: 0 };
+  if (industry === 'coal' && !merchantReachable(reachable(s, town, s.era, null))) return { sold: 0, earned: 0 };
+  let cubes = INDUSTRIES[industry][level - 1].cubes;
+  let count = s.market[industry];
+  let sold = 0;
+  let earned = 0;
+  while (cubes > 0 && count < MARKET_MAX[industry]) {
+    earned += marketSellPrice(industry, count);
+    count += 1;
+    cubes -= 1;
+    sold += 1;
+  }
+  return { sold, earned };
 }
 
 export function applyBuild(s: GameState, playerIdx: number, card: Card, target: BuildTarget): boolean {
@@ -778,9 +804,25 @@ export function applyBuild(s: GameState, playerIdx: number, card: Card, target: 
   if (lv.coal) costBits.push(`coal ×${lv.coal}`);
   if (lv.iron) costBits.push(`iron ×${lv.iron}`);
   let extra = replaced ? ` (overbuilds ${s.players[replaced.owner].name}'s L${replaced.level})` : '';
+  const before = p.money;
+  const cubesBefore = s.tiles[key].cubes;
   if (target.industry === 'iron') extra += sellToMarket(s, playerIdx, key, 'iron');
   if (target.industry === 'coal' && merchantReachable(reachable(s, target.town, s.era, null))) extra += sellToMarket(s, playerIdx, key, 'coal');
-  log(s, playerIdx, 'build', `${p.name} builds ${INDUSTRY_LABEL[target.industry]} L${level} in ${TOWN_BY_ID[target.town].name} (${costBits.join(' · ')})${extra}`, target.town);
+  const saleN = cubesBefore - (s.tiles[key]?.cubes ?? 0);
+  log(s, playerIdx, 'build', `${p.name} builds ${INDUSTRY_LABEL[target.industry]} L${level} in ${TOWN_BY_ID[target.town].name} (${costBits.join(' · ')})${extra}`, target.town, 'build', {
+    name: p.name,
+    industry: target.industry,
+    level,
+    town: TOWN_BY_ID[target.town].name,
+    price: lv.cost,
+    coal: lv.coal,
+    iron: lv.iron,
+    overName: replaced ? s.players[replaced.owner].name : '',
+    overLevel: replaced?.level ?? 0,
+    saleN,
+    saleRes: target.industry,
+    saleGain: p.money - before,
+  });
   return true;
 }
 
@@ -809,7 +851,15 @@ export function applyNetwork(s: GameState, playerIdx: number, card: Card, target
   discardCard(s, p, card.id);
   s.fxSeq += 1;
   s.lastFx = { kind: 'link', at: [0, 0], linkId: target.link.id, player: playerIdx };
-  log(s, playerIdx, 'network', `${p.name} lays ${s.era === 'canal' ? 'a canal' : 'rail'} ${name(target.link.a)} ⇄ ${name(target.link.b)}${extra}`, target.link.a);
+  log(s, playerIdx, 'network', `${p.name} lays ${s.era === 'canal' ? 'a canal' : 'rail'} ${name(target.link.a)} ⇄ ${name(target.link.b)}${extra}`, target.link.a, 'network', {
+    name: p.name,
+    era: s.era,
+    a: name(target.link.a),
+    b: name(target.link.b),
+    a2: second ? name(second.link.a) : '',
+    b2: second ? name(second.link.b) : '',
+    price: second ? COSTS.doubleRail : target.cost,
+  });
   return true;
 }
 
@@ -830,7 +880,7 @@ export function applyDevelop(s: GameState, playerIdx: number, card: Card, indust
   industries.forEach((ind, k) => {
     paySupply(s, p, plans[k]);
     const level = p.stacks[ind].shift()!;
-    log(s, playerIdx, 'develop', `${p.name} develops away ${INDUSTRY_LABEL[ind]} L${level} (iron ×1)`);
+    log(s, playerIdx, 'develop', `${p.name} develops away ${INDUSTRY_LABEL[ind]} L${level} (iron ×1)`, undefined, 'develop', { name: p.name, industry: ind, level });
     p.stats.developed += 1;
   });
   discardCard(s, p, card.id);
@@ -850,12 +900,28 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
   if (!reachable(s, target.town, s.era, null).has(target.merchant)) return false;
   const beer = planBeer(s, playerIdx, target.town, target.merchant, lv.beerToSell);
   if (beer.shortage > 0) return false;
+  const vpBefore = p.vp;
+  const moneyBefore = p.money;
+  const incomeBefore = incomeLevel(p.income);
   const bonus = drinkBeer(s, playerIdx, beer.sources);
-  flipTile(s, key, `sells to ${MERCHANT_BY_ID[target.merchant].name} and flips`);
+  const bonusVp = p.vp - vpBefore;
+  const bonusMoney = p.money - moneyBefore;
+  const bonusIncome = incomeLevel(p.income) - incomeBefore;
+  flipTile(s, key, 'merchant', MERCHANT_BY_ID[target.merchant].name);
   p.stats.sold += 1;
   s.fxSeq += 1;
   s.lastFx = { kind: 'sell', at: slotXY(target.town, target.slot), player: playerIdx };
-  log(s, playerIdx, 'sell', `${p.name} sells ${INDUSTRY_LABEL[tile.industry]} L${tile.level} to ${MERCHANT_BY_ID[target.merchant].name} (${lv.beerToSell} beer${bonus})`, target.town);
+  log(s, playerIdx, 'sell', `${p.name} sells ${INDUSTRY_LABEL[tile.industry]} L${tile.level} to ${MERCHANT_BY_ID[target.merchant].name} (${lv.beerToSell} beer${bonus})`, target.town, 'sell', {
+    name: p.name,
+    industry: tile.industry,
+    level: tile.level,
+    merchant: MERCHANT_BY_ID[target.merchant].name,
+    beer: lv.beerToSell,
+    bonusVp,
+    bonusMoney,
+    bonusIncome,
+    bonusDevelop: bonus.includes('develop') ? 1 : 0,
+  });
   return true;
 }
 
@@ -881,7 +947,7 @@ export function applyLoan(s: GameState, playerIdx: number, card?: Card): boolean
   p.incomeHistory.push(p.income);
   if (card) discardCard(s, p, card.id);
   else if (p.hand[0]) discardCard(s, p, p.hand[0].id); // APPROX: the engine discards the first card
-  log(s, playerIdx, 'loan', `${p.name} borrows £${LOAN_AMOUNT} — income falls from level ${before} to ${incomeLevel(p.income)}`);
+  log(s, playerIdx, 'loan', `${p.name} borrows £${LOAN_AMOUNT} — income falls from level ${before} to ${incomeLevel(p.income)}`, undefined, 'loan', { name: p.name, amount: LOAN_AMOUNT, from: before, to: incomeLevel(p.income) });
   return true;
 }
 
@@ -894,7 +960,7 @@ export function applyScout(s: GameState, playerIdx: number, cardIds: string[]): 
   s.wildLeft.industry -= 1;
   const tag = `${s.ledgerSeq.toString(36)}`;
   p.hand.push({ id: `wild-loc-${tag}`, kind: 'wild-location' }, { id: `wild-ind-${tag}`, kind: 'wild-industry' });
-  log(s, playerIdx, 'scout', `${p.name} scouts the territory — takes both wild cards`);
+  log(s, playerIdx, 'scout', `${p.name} scouts the territory — takes both wild cards`, undefined, 'scout', { name: p.name });
   return true;
 }
 
@@ -903,7 +969,7 @@ export function applyPass(s: GameState, playerIdx: number, cardId?: string, reas
   const p = s.players[playerIdx];
   const card = (cardId && p.hand.find((c) => c.id === cardId)) || p.hand[0];
   if (card) discardCard(s, p, card.id);
-  log(s, playerIdx, 'pass', reason ?? `${p.name} passes${card ? ' and discards a card' : ''}.`);
+  log(s, playerIdx, 'pass', reason ?? `${p.name} passes${card ? ' and discards a card' : ''}.`, undefined, reason ? 'candle' : 'pass', { name: p.name, card: card ? 1 : 0 });
   return true;
 }
 
@@ -915,7 +981,7 @@ export function applyConcede(s: GameState, playerIdx: number, vote: 'yes' | 'no'
   const humans = s.players.map((_, i) => i).filter((i) => !s.players[i].isBot);
   if (vote === 'no') {
     s.concessions = [];
-    log(s, playerIdx, 'system', `${p.name} refuses to fold — the game goes on.`);
+    log(s, playerIdx, 'system', `${p.name} refuses to fold — the game goes on.`, undefined, 'refuse', { name: p.name });
     return;
   }
   const votes = new Set(s.concessions ?? []);
@@ -923,11 +989,11 @@ export function applyConcede(s: GameState, playerIdx: number, vote: 'yes' | 'no'
   s.concessions = [...votes].sort((a, b) => a - b);
   if (humans.every((i) => votes.has(i))) {
     s.abandoned = true;
-    log(s, playerIdx, 'system', `${p.name} folds too: the table abandons the game.`);
+    log(s, playerIdx, 'system', `${p.name} folds too: the table abandons the game.`, undefined, 'fold', { name: p.name });
     finishGame(s);
     return;
   }
-  log(s, playerIdx, 'system', `${p.name} proposes to abandon the game (${votes.size} of ${humans.length} agree).`);
+  log(s, playerIdx, 'system', `${p.name} proposes to abandon the game (${votes.size} of ${humans.length} agree).`, undefined, 'propose', { name: p.name, n: votes.size, h: humans.length });
 }
 
 /* ========================== turn & era flow ======================== */
@@ -960,15 +1026,15 @@ function payday(s: GameState) {
       if (pl.money >= 0) break;
       delete s.tiles[o.key];
       pl.money += o.value;
-      log(s, idx, 'system', `${pl.name} sells off ${INDUSTRY_LABEL[o.t.industry]} L${o.t.level} for £${o.value} to cover the shortfall`, o.key.split(':')[0]);
+      log(s, idx, 'system', `${pl.name} sells off ${INDUSTRY_LABEL[o.t.industry]} L${o.t.level} for £${o.value} to cover the shortfall`, o.key.split(':')[0], 'sellOff', { name: pl.name, industry: o.t.industry, level: o.t.level, value: o.value });
     }
     if (pl.money < 0) {
       pl.vp -= -pl.money;
-      log(s, idx, 'system', `${pl.name} is £${-pl.money} short — loses ${-pl.money} VP`);
+      log(s, idx, 'system', `${pl.name} is £${-pl.money} short — loses ${-pl.money} VP`, undefined, 'short', { name: pl.name, amount: -pl.money });
       pl.money = 0;
     }
   }
-  log(s, undefined, 'system', 'Payday — the counting-houses settle up.');
+  log(s, undefined, 'system', 'Payday — the counting-houses settle up.', undefined, 'payday', {});
 }
 
 /** one line of the game's account book: where everyone stands after this round */
@@ -1074,7 +1140,7 @@ export function beginRailEra(s: GameState) {
   s.current = s.order[0];
   s.actionsLeft = actionsFor(s, s.players[s.current]);
   s.phase = 'action';
-  log(s, undefined, 'system', `The sweep takes ${removed} level-1 works. Merchants restock their beer. THE RAIL ERA begins.`);
+  log(s, undefined, 'system', `The sweep takes ${removed} level-1 works. Merchants restock their beer. THE RAIL ERA begins.`, undefined, 'sweep', { removed });
 }
 
 /** link icons of the tiles sitting at a node (merchant locations print 2) */
@@ -1132,7 +1198,7 @@ export function scoreEra(s: GameState, era: Era): number[] {
   s.links = {};
   if (era === 'canal') s.canalScores = scores;
   else s.finalScores = scores;
-  log(s, undefined, 'score', `${era === 'canal' ? 'Canal' : 'Rail'} Era scoring: ${scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ')}`);
+  log(s, undefined, 'score', `${era === 'canal' ? 'Canal' : 'Rail'} Era scoring: ${scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ')}`, undefined, 'eraScore', { era, scores: scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ') });
   return scores;
 }
 
@@ -1142,7 +1208,7 @@ function canalOnlyBonus(s: GameState) {
     let extra = Math.min(15, Math.floor(p.money / 4)) + incomeLevel(p.income);
     for (const t of Object.values(s.tiles)) if (t.owner === i && t.flipped && t.level >= 2) extra += INDUSTRIES[t.industry][t.level - 1].vp;
     p.vp += extra;
-    log(s, i, 'score', `${p.name} closes the books: ${extra >= 0 ? '+' : ''}${extra} VP (money, income level, level 2+ works)`);
+    log(s, i, 'score', `${p.name} closes the books: ${extra >= 0 ? '+' : ''}${extra} VP (money, income level, level 2+ works)`, undefined, 'books', { name: p.name, extra: `${extra >= 0 ? '+' : ''}${extra}` });
   });
 }
 
@@ -1155,7 +1221,7 @@ export function finishGame(s: GameState) {
     if (p.vp > b.vp || (p.vp === b.vp && (incomeLevel(p.income) > incomeLevel(b.income) || (incomeLevel(p.income) === incomeLevel(b.income) && p.money > b.money)))) best = i;
   });
   s.winner = best;
-  log(s, undefined, 'score', `${s.players[best].name} is Master of the Midlands with ${s.players[best].vp} VP!`);
+  log(s, undefined, 'score', `${s.players[best].name} is Master of the Midlands with ${s.players[best].vp} VP!`, undefined, 'master', { name: s.players[best].name, vp: s.players[best].vp });
 }
 
 /* ========================== persistence ============================ */
