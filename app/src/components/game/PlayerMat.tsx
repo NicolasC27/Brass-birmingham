@@ -62,7 +62,12 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
   const cards = matStyle === 'cards';
   const chips = matStyle === 'chips';
   /* the barrels a sale needs, printed top-right like on the real tile */
-  const beer = Array.from({ length: lv.beerToSell }, (_, i) => <span key={i} aria-hidden className="inline-block h-[10px] w-[10px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url(/beer-barrel.png)' }} />);
+  const beer = Array.from({ length: lv.beerToSell }, (_, i) => (
+    <span key={i} aria-hidden className="relative inline-block h-[10px] w-[10px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url(/beer-barrel.png)' }}>
+      {/* the bar across the barrel: one beer drunk to sell, as printed on the tile */}
+      <span className="absolute left-[-1px] right-[-1px] top-1/2 h-[2px] -translate-y-1/2 rotate-[-35deg] rounded-full bg-cream-100 shadow-[0_0_0_1px_rgba(0,0,0,.7)]" />
+    </span>
+  ));
   /* the pile: up to three more cards behind, stepped up and to the right */
   const behind = cards && !gone ? Math.min(3, count - 1) : 0;
   const STEP = 3;
