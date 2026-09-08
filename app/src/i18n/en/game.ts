@@ -68,7 +68,7 @@ const game = {
     tileArt: 'Artwork per industry',
     tileArtHint: 'Every industry with more than one drawing is chosen here.',
     industry: { coal: 'Coal mine', iron: 'Iron works', cotton: 'Cotton mill', manufacturer: 'Manufactory', pottery: 'Pottery', brewery: 'Brewery' },
-    variant: { crate: 'Goods crate', parcels: 'Original crate', manufactory: 'Manufactory', wagon: 'Mine tub', cart: 'Original cart', colliery: 'Colliery', barrel: 'Barrel', mug: 'Barrel and mug', brewhouse: 'Brewhouse' },
+    variant: { crate: 'Goods crate', parcels: 'Original crate', manufactory: 'Manufactory', wagon: 'Mine tub', cart: 'Original cart', colliery: 'Colliery', barrel: 'Barrel', mug: 'Barrel and mug', brewhouse: 'Brewhouse', painted: 'Painted set', mill: 'Cotton mill', foundry: 'Foundry', kiln: 'Bottle kiln' },
     slotArt: 'Empty slots',
     slotArtHint: 'Engraved, only built works carry colour.',
     slot: { engraved: 'Sepia engraving', painted: 'Colour painting' },

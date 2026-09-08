@@ -10,7 +10,8 @@ import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
 import type { KeyAction } from './keybindings';
 import { STOCK_STYLE_IDS } from './stockStyles';
-import { TILE_VARIANTS } from '@/gl/paint';
+import { TILE_VARIANTS, variantFaceUrl } from '@/gl/paint';
+import type { TileVariant } from '@/gl/paint';
 import type { ChipStyle, SlotArt, StockStyle } from '@/gl/paint';
 import type { IndustryType } from '@/game/types';
 import { useGame } from '@/game/store';
@@ -37,13 +38,11 @@ const SECTIONS: { id: SectionId; icon: LucideIcon }[] = [
 const CARD = 'relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border';
 
 /** industry key → asset file stem ('manufacturer' vs file 'manufacture') */
-const FILE_FOR: Record<IndustryType, string> = { coal: 'coal', iron: 'iron', cotton: 'cotton', manufacturer: 'manufacture', pottery: 'pottery', brewery: 'brewery' };
-
 /** one painting variant of an industry on the dark tile ground */
-function VariantPreview({ industry, dir, active }: { industry: IndustryType; dir: string; active: boolean }) {
+function VariantPreview({ industry, variant, active }: { industry: IndustryType; variant: TileVariant; active: boolean }) {
   return (
     <span aria-hidden className={cn(CARD, 'bg-[#12100C]', active ? 'border-brass-400' : 'border-brass-700/50')}>
-      <span className="absolute inset-1 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${dir}/tile-${FILE_FOR[industry]}-cut.png)` }} />
+      <span className="absolute inset-1 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${variantFaceUrl(variant, industry)})` }} />
     </span>
   );
 }
@@ -441,7 +440,7 @@ export default function BoardSettings() {
                         options={variants.map((v) => ({
                           id: v.id,
                           label: t(`game.settings.variant.${v.id}`),
-                          preview: (active) => <VariantPreview industry={industry} dir={v.dir} active={active} />,
+                          preview: (active) => <VariantPreview industry={industry} variant={v} active={active} />,
                         }))}
                       />
                     ))}

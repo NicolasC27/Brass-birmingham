@@ -10,7 +10,8 @@ import { cn } from '@/lib/utils';
 import { hudInsets, sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
-import { FILE_FOR, variantDir } from '@/gl/paint';
+import { tileFaceUrl } from '@/gl/paint';
+import type { TileArt } from '@/gl/paint';
 import { keyLabel, useKeybindings } from './keybindings';
 import { ShapeChip } from './TownInspector';
 
@@ -33,7 +34,7 @@ const RAIL_W = 236;
  *  in pips, and the printed figures on a dark band — price at the top, income
  *  and VP at the bottom. Extra tiles of the level stack behind it like a real
  *  pile. A floating sheet (portal) carries the rest on hover. */
-function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: IndustryType; lv: IndustryLevel; count: number; isNext: boolean; gone: boolean; color: string; dir: string }) {
+function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: IndustryType; lv: IndustryLevel; count: number; isNext: boolean; gone: boolean; color: string; tileArt: TileArt }) {
   const t = useT();
   const ref = useRef<HTMLLIElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; up: boolean } | null>(null);
@@ -55,7 +56,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
   useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
   const canalOnly = !lv.eras.includes('rail');
   const railOnly = !lv.eras.includes('canal');
-  const face = `url(${dir}/tile-${FILE_FOR[ind]}-${color}.png)`;
+  const face = `url(${tileFaceUrl(ind, tileArt, color)})`;
   /* the pile: up to three more cards behind, stepped up and to the right */
   const { matStyle, matCount } = useBoardOptions();
   const cards = matStyle === 'cards';
@@ -248,7 +249,7 @@ function IndustryBlock({
 }) {
   const t = useT();
   const game = useGame((s) => s.game)!;
-  const dir = variantDir(ind, useBoardOptions().tileArt);
+  const tileArt = useBoardOptions().tileArt;
   const levels = INDUSTRIES[ind];
   const left = p.stacks[ind];
   const nextLevel = left[0];
@@ -326,7 +327,7 @@ function IndustryBlock({
           const isNext = nextLevel === lv.level;
           const gone = count === 0;
           return (
-            <LevelTile key={lv.level} ind={ind} lv={lv} count={count} isNext={isNext} gone={gone} color={p.color} dir={dir} />
+            <LevelTile key={lv.level} ind={ind} lv={lv} count={count} isNext={isNext} gone={gone} color={p.color} tileArt={tileArt} />
           );
         })}
       </ul>
