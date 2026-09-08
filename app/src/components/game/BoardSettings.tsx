@@ -4,6 +4,7 @@ import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { NARROW_RAIL_TOP, useNarrow } from '@/hooks/use-narrow';
 import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
@@ -313,6 +314,7 @@ export default function BoardSettings() {
   const [section, setSection] = useState<SectionId>('tiles');
   const open = opts.settingsOpen;
   const insets = hudInsets(opts);
+  const narrow = useNarrow();
   const close = () => setBoardOption('settingsOpen', false);
 
   const toggleFullscreen = () => {
@@ -329,7 +331,7 @@ export default function BoardSettings() {
           exit={{ opacity: 0, x: -14 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
           className="plate fixed left-3 z-[70] flex w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden shadow-e4"
-          style={{ top: insets.top + 8, bottom: insets.bottom + 8 }}
+          style={{ top: narrow ? NARROW_RAIL_TOP : insets.top + 8, bottom: insets.bottom + 8 }}
           role="dialog"
           aria-label={t('game.settings.title')}
         >

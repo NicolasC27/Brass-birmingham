@@ -4,6 +4,7 @@ import { LayoutGrid } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
 import { hudInsets, useBoardOptions } from './boardOptions';
+import { NARROW_RAIL_TOP, useNarrow } from '@/hooks/use-narrow';
 import { useT } from '@/i18n';
 import type { PlayerState } from '@/game/types';
 import { cn } from '@/lib/utils';
@@ -85,7 +86,7 @@ function PortraitMedallion({ p, index, active, size }: { p: PlayerState; index: 
   );
 }
 
-function RailChip({ p, index, active, nextRank, nowRank }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number }) {
+function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number; compact?: boolean }) {
   const t = useT();
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   const money = useCountTween(p.money);
@@ -115,7 +116,7 @@ function RailChip({ p, index, active, nextRank, nowRank }: { p: PlayerState; ind
         spotlighted && 'ring-1 ring-brass-400',
       )}
     >
-      <PortraitMedallion p={p} index={index} active={active} size={34} />
+      <PortraitMedallion p={p} index={index} active={active} size={compact ? 28 : 34} />
       <div className="flex min-w-0 flex-col items-start gap-px">
         <span className="max-w-[110px] truncate font-fell text-[12px] leading-tight tracking-wide text-cream-100">
           {p.name}
@@ -128,8 +129,8 @@ function RailChip({ p, index, active, nextRank, nowRank }: { p: PlayerState; ind
           {active && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
         </span>
         {/* turn order: what this round cost so far, and the seat it earns next
-            round (least spent plays first) */}
-        <span className="flex items-center gap-1.5 font-mono text-[9px] leading-tight text-cream-100/55" title={t('game.rail.orderTip')}>
+            round (least spent plays first) — folded away on narrow screens */}
+        <span className={cn('flex items-center gap-1.5 font-mono text-[9px] leading-tight text-cream-100/55', compact && 'hidden')} title={t('game.rail.orderTip')}>
           <span>{t('game.rail.spent', { amount: p.spent })}</span>
           <span className="text-cream-100/30">·</span>
           <span className={nextRank < nowRank ? 'text-bottle-600 brightness-150' : nextRank > nowRank ? 'text-rust-500 brightness-150' : ''}>
@@ -162,13 +163,21 @@ export default function PlayerRail() {
   const t = useT();
   const game = useGame((s) => s.game);
   const insets = hudInsets(useBoardOptions());
+  const narrow = useNarrow();
   if (!game) return null;
   const next = projectedOrder(game);
 
+  /* wide: a vertical stack top-left. Narrow: a wrapping strip under the top
+     bar, chips trimmed to portrait, name and the three numbers */
   return (
-    <div data-player-rail className="fixed z-[64] flex flex-col gap-2" style={{ left: insets.left, top: insets.top }} aria-label={t('game.rail.playersAria')}>
+    <div
+      data-player-rail
+      className={cn('fixed z-[64] flex gap-2', narrow ? 'flex-row flex-wrap' : 'flex-col')}
+      style={narrow ? { left: insets.left, right: 12, top: NARROW_RAIL_TOP } : { left: insets.left, top: insets.top }}
+      aria-label={t('game.rail.playersAria')}
+    >
       {game.players.map((p, i) => (
-        <RailChip key={i} p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} />
+        <RailChip key={i} p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={narrow} />
       ))}
     </div>
   );

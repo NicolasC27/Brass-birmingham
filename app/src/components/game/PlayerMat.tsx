@@ -7,6 +7,7 @@ import type { IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
 import { ShapeChip } from './TownInspector';
 
@@ -131,14 +132,20 @@ export default function PlayerMat() {
   const closeMat = useGame((s) => s.closeMat);
   const opts = useBoardOptions();
   const insets = hudInsets(opts);
-  const wide = opts.matWide;
+  const narrow = useNarrow();
+  const wide = opts.matWide && !narrow;
   /* the mat sits flush right of the rail: measure it rather than guess */
   const [railW, setRailW] = useState(RAIL_W);
+  const [railBottom, setRailBottom] = useState(0);
   useEffect(() => {
     if (matPlayer === null) return;
     const rail = document.querySelector<HTMLElement>('[data-player-rail]');
     if (!rail) return;
-    const measure = () => setRailW(Math.round(rail.getBoundingClientRect().width) + 12);
+    const measure = () => {
+      const r = rail.getBoundingClientRect();
+      setRailW(Math.round(r.width) + 12);
+      setRailBottom(Math.round(r.bottom));
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(rail);
@@ -179,9 +186,11 @@ export default function PlayerMat() {
           aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
           className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
           style={
-            wide
-              ? { left: insets.left + railW, right: 12, top: insets.top, maxHeight: `calc(100vh - ${insets.top + insets.bottom + 8}px)` }
-              : { left: insets.left + railW, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + railW + 12}px))` }
+            narrow
+              ? /* under the player strip, full width */ { left: 12, right: 12, top: railBottom + 8, bottom: insets.bottom + 8 }
+              : wide
+                ? { left: insets.left + railW, right: 12, top: insets.top, maxHeight: `calc(100vh - ${insets.top + insets.bottom + 8}px)` }
+                : { left: insets.left + railW, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + railW + 12}px))` }
           }
         >
           {/* player tabs — numbered like their shortcut; the wheel cycles seats */}
@@ -217,6 +226,7 @@ export default function PlayerMat() {
             {/* slim docked panel ↔ spread wide over the board (remembered) */}
             <button
               type="button"
+              hidden={narrow}
               onClick={() => setBoardOption('matWide', !wide)}
               aria-label={wide ? t('game.mat.shrink') : t('game.mat.expand')}
               title={wide ? t('game.mat.shrink') : t('game.mat.expand')}
