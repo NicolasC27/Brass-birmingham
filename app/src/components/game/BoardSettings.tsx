@@ -3,9 +3,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
-import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAT_STYLES, hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import { NARROW_RAIL_TOP, useNarrow } from '@/hooks/use-narrow';
-import type { IncomeSide, MapStyle, MinimapSize } from './boardOptions';
+import type { IncomeSide, MapStyle, MatStyle, MinimapSize } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
 import type { KeyAction } from './keybindings';
@@ -433,10 +433,10 @@ export default function BoardSettings() {
                       }))}
                     />
                     <OptionRow label={t('game.settings.matStyle')} hint={t('game.settings.matStyleHint')}>
-                      <Segmented<'cards' | 'compact'>
+                      <Segmented<MatStyle>
                         value={opts.matStyle}
                         onChange={(v) => setBoardOption('matStyle', v)}
-                        options={(['cards', 'compact'] as const).map((id) => ({ id, label: t(`game.settings.matStyles.${id}`) }))}
+                        options={MAT_STYLES.map((id) => ({ id, label: t(`game.settings.matStyles.${id}`) }))}
                       />
                     </OptionRow>
                     {opts.matStyle === 'cards' && (

@@ -9,6 +9,9 @@ import type { TrafficLevel } from '@/gl/ambiance';
 /* ------------------------------------------------------------------ */
 
 export type MinimapSize = 's' | 'm' | 'l';
+/** the mat's levels: the player's cards with a pile, flat compact boxes, or bare pills */
+export type MatStyle = 'cards' | 'compact' | 'chips';
+export const MAT_STYLES: MatStyle[] = ['cards', 'compact', 'chips'];
 /** where the income track runs: along the bottom edge or down the left edge */
 export type IncomeSide = 'bottom' | 'left';
 /** the era paintings under the board: the original terrain with etched
@@ -44,7 +47,7 @@ export interface BoardOptions {
   /** player mat spread wide (six columns) instead of the slim docked panel */
   matWide: boolean;
   /** mat levels as the player's real cards with a pile, or compact boxes */
-  matStyle: 'cards' | 'compact';
+  matStyle: MatStyle;
   /** ×n count badge on the cards (the pile already shows it) */
   matCount: boolean;
   settingsOpen: boolean;

@@ -11,6 +11,7 @@ import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
 import { FILE_FOR, variantDir } from '@/gl/paint';
+import { keyLabel, useKeybindings } from './keybindings';
 import { ShapeChip } from './TownInspector';
 
 /* ------------------------------------------------------------------ */
@@ -59,6 +60,9 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
   /* the pile: up to three more cards behind, stepped up and to the right */
   const { matStyle, matCount } = useBoardOptions();
   const cards = matStyle === 'cards';
+  const chips = matStyle === 'chips';
+  /* the barrels a sale needs, printed top-right like on the real tile */
+  const beer = Array.from({ length: lv.beerToSell }, (_, i) => <span key={i} aria-hidden className="inline-block h-[10px] w-[10px] bg-contain bg-center bg-no-repeat" style={{ backgroundImage: 'url(/beer-barrel.png)' }} />);
   /* the pile: up to three more cards behind, stepped up and to the right */
   const behind = cards && !gone ? Math.min(3, count - 1) : 0;
   const STEP = 3;
@@ -67,7 +71,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
       ref={ref}
       onPointerEnter={show}
       onPointerLeave={hide}
-      className={cn('group relative cursor-help', cards ? 'h-[68px] w-[74px]' : 'h-[52px] w-[76px]')}
+      className={cn('group relative cursor-help', cards ? 'h-[68px] w-[74px]' : chips ? 'h-[22px]' : 'h-[52px] w-[76px]')}
       style={{ marginRight: behind * STEP, marginTop: behind * STEP }}
     >
       {Array.from({ length: behind }, (_, i) => {
@@ -104,7 +108,10 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
                   <span key={i} className="h-[4px] w-[4px] rounded-full bg-brass-400" />
                 ))}
               </span>
-              {(matCount || gone) && <span className="rounded-[3px] bg-black/55 px-1 font-mono text-[9.5px] font-bold leading-[14px] text-brass-400">{gone ? '—' : `×${count}`}</span>}
+              <span className="flex items-center gap-1">
+                {!gone && lv.beerToSell > 0 && <span className="flex items-center gap-[1px] rounded-[3px] bg-black/55 px-[3px] py-[2px]">{beer}</span>}
+                {(matCount || gone) && <span className="rounded-[3px] bg-black/55 px-1 font-mono text-[9.5px] font-bold leading-[14px] text-brass-400">{gone ? '—' : `×${count}`}</span>}
+              </span>
             </div>
             <div className="flex items-baseline justify-between whitespace-nowrap rounded-b-[5px] bg-black/65 px-1.5 py-[4px] font-mono leading-none">
               <span className="text-[11px] font-bold text-cream-100">£{lv.cost}</span>
@@ -115,6 +122,22 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
             </div>
           </div>
         </>
+      ) : chips ? (
+        /* pills: the very first mat — pips and count, everything else in the sheet */
+        <span
+          className={cn(
+            'flex h-full items-center gap-1 rounded-[4px] border px-1.5 font-mono text-[9.5px] transition-colors',
+            isNext ? 'border-brass-400 bg-brass-500/15 text-cream-100 shadow-[0_0_8px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 text-cream-100/35' : 'border-brass-700/50 text-cream-100/80 group-hover:border-brass-500',
+          )}
+        >
+          <span className="flex gap-[2px]">
+            {Array.from({ length: lv.level }, (_, i) => (
+              <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
+            ))}
+          </span>
+          {!gone && lv.beerToSell > 0 && <span className="flex gap-[1px]">{beer}</span>}
+          <span className="font-bold">{gone ? '—' : `×${count}`}</span>
+        </span>
       ) : (
         <>
           {/* compact: a flat printed box, the count always spelled out */}
@@ -132,7 +155,10 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
                   <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
                 ))}
               </span>
-              <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+              <span className="flex items-center gap-1">
+                {!gone && lv.beerToSell > 0 && <span className="flex gap-[1px] opacity-90">{beer}</span>}
+                <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+              </span>
             </div>
             <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
             <div className="mt-1 flex items-baseline justify-between whitespace-nowrap font-mono text-[9px] leading-none">
@@ -143,7 +169,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: Industry
         </>
       )}
       {/* era / develop marks as small dots, spelled out in the sheet */}
-      {(canalOnly || railOnly || lv.noDevelop) && (
+      {!chips && (canalOnly || railOnly || lv.noDevelop) && (
         <span className={cn('absolute z-10 flex gap-[3px]', cards ? 'left-1 top-[20px]' : 'right-1 top-[13px]')}>
           {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150 ring-1 ring-black/60" />}
           {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500 ring-1 ring-black/60" />}
@@ -278,6 +304,7 @@ export default function PlayerMat() {
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const opts = useBoardOptions();
+  const keys = useKeybindings();
   const insets = hudInsets(opts);
   const narrow = useNarrow();
   const wide = opts.matWide && !narrow;
@@ -376,7 +403,7 @@ export default function PlayerMat() {
               hidden={narrow}
               onClick={() => setBoardOption('matWide', !wide)}
               aria-label={wide ? t('game.mat.shrink') : t('game.mat.expand')}
-              title={wide ? t('game.mat.shrink') : t('game.mat.expand')}
+              title={`${wide ? t('game.mat.shrink') : t('game.mat.expand')} (${keyLabel(keys.matWide)})`}
               className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
             >
               {wide ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
@@ -402,7 +429,7 @@ export default function PlayerMat() {
                   <div className="flex items-baseline gap-2">
                     <h2 className="font-fell text-[15px] tracking-wide text-brass-400">{t('game.mat.title', { name: p.name })}</h2>
                     {matPlayer === game.current && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
-                    <span className="ml-auto font-sans text-[8.5px] uppercase tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint')}</span>
+                    <span className="ml-auto font-sans text-[8.5px] uppercase tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint', { p: keyLabel(keys.mat), t: keyLabel(keys.matStyle), w: keyLabel(keys.matWide) })}</span>
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                     {stat(`£${p.money}`)}

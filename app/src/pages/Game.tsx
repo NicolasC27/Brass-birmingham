@@ -12,7 +12,7 @@ import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MM_H_FOR } from '@/components/game/Minimap';
-import { getBoardOptions, hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { MAT_STYLES, getBoardOptions, hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
@@ -172,7 +172,7 @@ export default function Game() {
         return;
       }
       if (isKey(e, 'matStyle')) {
-        setBoardOption('matStyle', getBoardOptions().matStyle === 'cards' ? 'compact' : 'cards');
+        setBoardOption('matStyle', MAT_STYLES[(MAT_STYLES.indexOf(getBoardOptions().matStyle) + 1) % MAT_STYLES.length]);
         return;
       }
       if (isKey(e, 'mat')) {
