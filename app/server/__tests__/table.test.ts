@@ -446,6 +446,29 @@ describe('a table over the wire', () => {
     expect(serialize(server!.hall.game(code)!.state)).toBe(serialize(replay(server!.hall.game(code)!.setup, server!.hall.game(code)!.seed, server!.hall.game(code)!.state.actions)));
   });
 
+  it('burns a candle only for the seat that carries one', async () => {
+    const { host, guest, code } = await seatTwo({ bot: 0, ceremony: 0, minute: 1000 });
+    /* the host gives the guest a three-minute candle; the table itself has none */
+    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === guest.id ? { ...s, minutes: 3 } : s)) } });
+    await host.until('the candle', () => host.table!.seats.find((s) => s.id === guest.id)?.minutes === 3);
+    ring(host, code);
+    await host.until('the game', () => !!host.view);
+    const game = server!.hall.game(code)!;
+    const expectCandle = () => {
+      const current = game.state.current;
+      const guestSeat = game.seatOf(guest.id);
+      if (current === guestSeat) expect(game.msLeft).toBeGreaterThan(2000);
+      else expect(game.msLeft).toBeNull();
+    };
+    expectCandle();
+    /* after the first action the other seat acts: the candle follows the seat */
+    const first = [host, guest].find((g) => g.view!.state.current === g.view!.seat)!;
+    const at = first.view!.state.actions.length;
+    first.send({ t: 'act', code, action: decide(first.view!) });
+    await first.until('the action to land', () => first.view!.state.actions.length > at);
+    expectCandle();
+  });
+
   it('says nothing to a socket that has not signed in', async () => {
     server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const stranger = new Guest('Nobody');
