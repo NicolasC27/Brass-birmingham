@@ -15,7 +15,7 @@ import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { onlineWire } from '@/online/net';
-import type { ServerMessage } from '@/online/protocol';
+import type { Pause, Rollback, ServerMessage } from '@/online/protocol';
 import type { Wire, WireStatus } from '@/online/wire';
 import type {
   Card,
@@ -48,6 +48,8 @@ interface GameStore {
   /** the turn candle as the table last reported it, anchored to this clock
    *  so the two need not agree on the time of day */
   candle: { msLeft: number; at: number } | null;
+  /** the table's mood, as the server last sent it: pauses, breaks, a rollback on the table */
+  mood: { pause: Pause | null; breaks: number[]; rollback: Rollback | null; frozen: boolean; host: number };
   /* ---- selection ---- */
   selectedCardId: string | null;
   verb: Verb | null;
@@ -131,6 +133,12 @@ interface GameStore {
   runBot: () => BotMove | null;
   takeLoan: () => void;
   pass: (reason?: string) => void;
+  /** a pause of the whole table — proposed, agreed, refused, lifted */
+  pauseTable: (want: 'propose' | 'agree' | 'refuse' | 'resume') => void;
+  /** my own break, on or off */
+  takeBreak: (on: boolean) => void;
+  /** the host's rollback to before action `to`, and the answers to it */
+  rollbackTable: (want: 'propose' | 'agree' | 'refuse', to?: number) => void;
   /** cast a vote to abandon the game for a seat; false when it is not this seat's to cast */
   voteConcede: (player: number, vote: 'yes' | 'no') => boolean;
 
@@ -140,6 +148,8 @@ interface GameStore {
   currentSells: () => SellTarget[];
   currentDevelops: () => ReturnType<typeof developOptions>;
 }
+
+const NO_MOOD = { pause: null, breaks: [] as number[], rollback: null, frozen: false, host: -1 };
 
 function readSetup(): SetupPayload {
   try {
@@ -204,6 +214,7 @@ export const useGame = create<GameStore>((set, get) => ({
   line: null,
   serverUndo: false,
   candle: null,
+  mood: NO_MOOD,
   ...clearSelection,
   marketFocus: false,
   ledgerFilter: 'all',
@@ -222,7 +233,7 @@ export const useGame = create<GameStore>((set, get) => ({
        can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
     if (code && wire) {
-      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, ceremony: null, gameOverOpen: false, coachStep: -1 });
+      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, ceremony: null, gameOverOpen: false, coachStep: -1 });
       listen(code, wire);
       return;
     }
@@ -256,6 +267,7 @@ export const useGame = create<GameStore>((set, get) => ({
       seat: null,
       line: null,
       candle: null,
+      mood: NO_MOOD,
       humanMarks,
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
@@ -275,7 +287,10 @@ export const useGame = create<GameStore>((set, get) => ({
 
   msLeft: () => {
     const c = get().candle;
-    return c === null ? null : Math.max(0, c.msLeft - (Date.now() - c.at));
+    if (c === null) return null;
+    /* a frozen candle does not burn */
+    if (get().mood.frozen) return c.msLeft;
+    return Math.max(0, c.msLeft - (Date.now() - c.at));
   },
 
   reset: () => {
@@ -523,6 +538,19 @@ export const useGame = create<GameStore>((set, get) => ({
     get().dispatch({ kind: 'pass', card: get().selectedCardId ?? undefined, reason });
   },
 
+  pauseTable: (want) => {
+    const st = get();
+    if (st.code) onlineWire()?.send({ t: 'pause', code: st.code, want });
+  },
+  takeBreak: (on) => {
+    const st = get();
+    if (st.code) onlineWire()?.send({ t: 'break', code: st.code, on });
+  },
+  rollbackTable: (want, to) => {
+    const st = get();
+    if (st.code) onlineWire()?.send({ t: 'rollback', code: st.code, want, to });
+  },
+
   /* a vote to abandon: online it is cast for one's own seat, at one table
      every human seat votes from this device */
   voteConcede: (player, vote) => {
@@ -744,6 +772,7 @@ function listen(code: string, wire: Wire): void {
         seat: view.seat,
         serverUndo: view.canUndo,
         candle: view.msLeft === null ? null : { msLeft: view.msLeft, at: Date.now() },
+        mood: { pause: view.pause ?? null, breaks: view.breaks ?? [], rollback: view.rollback ?? null, frozen: !!view.frozen, host: view.host ?? -1 },
         ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
         gameOverOpen: game.phase === 'game-over',
       });
@@ -763,7 +792,7 @@ function listen(code: string, wire: Wire): void {
 /** stop following the online table (leaving the board for good) */
 export function leaveOnlineTable(): void {
   deafen?.();
-  useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null });
+  useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
 }
 
 /* dev only: the store at hand in the console (window.__brass.getState()) */

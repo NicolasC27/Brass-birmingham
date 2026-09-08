@@ -151,7 +151,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
 /* ============================ helpers ============================== */
 
 export function log(s: GameState, player: number | undefined, verb: LedgerEntry['verb'], text: string, region?: string, key?: string, vars?: Record<string, string | number>) {
-  s.ledger.push({ id: s.ledgerSeq++, round: s.round, era: s.era, player, verb, text, region, ...(key ? { key, vars } : {}) });
+  s.ledger.push({ id: s.ledgerSeq++, round: s.round, era: s.era, player, verb, text, region, at: s.actions.length, ...(key ? { key, vars } : {}) });
   if (s.ledger.length > 200) s.ledger = s.ledger.slice(-200);
 }
 

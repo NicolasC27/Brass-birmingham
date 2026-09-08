@@ -392,6 +392,60 @@ describe('a table over the wire', () => {
     await guest.until('the end of it', () => guest.desk?.friends.length === 0);
   });
 
+  it('stops for a pause everyone agreed to, waits for a seat on a break, and rolls back on the host\'s word', async () => {
+    /* a minute lasts 50 ms here: the break ends on its own within the test */
+    const { host, guest, code } = await seatTwo({ bot: 0, ceremony: 0, minute: 50 });
+    host.send({ t: 'table', code, table: { ...host.table!, options: { ...host.table!.options, timerMinutes: 5 } } });
+    await host.until('the timer', () => host.table!.options.timerMinutes === 5);
+    ring(host, code);
+    await host.until('the game', () => !!host.view);
+    await guest.until('the game', () => !!guest.view);
+    const views = () => [host, guest];
+    const toAct = () => views().find((x) => x.view!.state.current === x.view!.seat)!;
+    const other = () => views().find((x) => x.view!.state.current !== x.view!.seat)!;
+
+    /* a pause: proposed by one, held once the other agrees, and the candle stops */
+    other().send({ t: 'pause', code, want: 'propose' });
+    await host.until('the proposal', () => host.view?.pause?.kind === 'table' && !host.view.pause.held);
+    toAct().send({ t: 'pause', code, want: 'agree' });
+    await host.until('the pause to hold', () => host.view?.pause?.kind === 'table' && host.view.pause.held);
+    expect(host.view!.frozen).toBe(true);
+    const frozenAt = host.view!.msLeft;
+    await new Promise((r) => setTimeout(r, 120));
+    toAct().send({ t: 'act', code, action: decide(toAct().view!) });
+    await toAct().until('the refusal', () => toAct().rejected.includes('The table is paused'));
+    expect(server!.hall.game(code)!.msLeft).toBe(frozenAt);
+    guest.send({ t: 'pause', code, want: 'resume' });
+    await host.until('the table to move again', () => host.view?.pause === null);
+    expect(host.view!.frozen).toBe(false);
+
+    /* a break for the seat to act: its candle waits, and the break ends on its own */
+    const breaker = toAct();
+    breaker.send({ t: 'break', code, on: true });
+    await host.until('the break', () => host.view?.pause?.kind === 'break');
+    expect(host.view!.breaks[breaker.view!.seat]).toBe(1);
+    expect(host.view!.frozen).toBe(true);
+    await host.until('the break to end', () => host.view?.pause === null, 4000);
+    expect(host.view!.frozen).toBe(false);
+
+    /* two actions, then the host takes the table back to before the first */
+    for (let i = 0; i < 2; i++) {
+      const g = toAct();
+      const at = g.view!.state.actions.length;
+      g.send({ t: 'act', code, action: decide(g.view!) });
+      await g.until('the action to land', () => g.view!.state.actions.length > at);
+    }
+    const n = host.view!.state.actions.length;
+    guest.send({ t: 'rollback', code, want: 'propose', to: n - 2 });
+    await guest.until('the guest to be refused', () => guest.rejected.includes('Only the host may roll the table back'));
+    host.send({ t: 'rollback', code, want: 'propose', to: n - 2 });
+    await guest.until('the proposal', () => guest.view?.rollback?.to === n - 2);
+    guest.send({ t: 'rollback', code, want: 'agree' });
+    await host.until('the table to go back', () => host.view!.state.actions.length === n - 2);
+    expect(host.view!.rollback).toBeNull();
+    expect(serialize(server!.hall.game(code)!.state)).toBe(serialize(replay(server!.hall.game(code)!.setup, server!.hall.game(code)!.seed, server!.hall.game(code)!.state.actions)));
+  });
+
   it('says nothing to a socket that has not signed in', async () => {
     server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
     const stranger = new Guest('Nobody');

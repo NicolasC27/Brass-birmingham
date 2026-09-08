@@ -350,6 +350,21 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         return;
       }
+      case 'pause': {
+        const error = hall.pause(m.code, who.id, m.want);
+        if (error) send(c, { t: 'rejected', code: m.code, error });
+        return;
+      }
+      case 'break': {
+        const error = hall.takeBreak(m.code, who.id, m.on);
+        if (error) send(c, { t: 'rejected', code: m.code, error });
+        return;
+      }
+      case 'rollback': {
+        const error = hall.rollback(m.code, who.id, m.want, m.to);
+        if (error) send(c, { t: 'rejected', code: m.code, error });
+        return;
+      }
     }
   }
 

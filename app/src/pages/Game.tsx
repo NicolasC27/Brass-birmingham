@@ -7,6 +7,7 @@ import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
 import ConcedeBanner from '@/components/game/ConcedeBanner';
 import { FeedbackButton } from '@/components/site/Feedback';
+import TableMood, { TableMenu } from '@/components/game/TableMood';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -433,6 +434,7 @@ export default function Game() {
         >
           <Settings2 className="h-3.5 w-3.5" /> {t('game.page.settingsChip')}
         </button>
+        <TableMenu className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100" />
         <FeedbackButton className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100" />
         {!ledgerOpen && (
           <button
@@ -447,6 +449,7 @@ export default function Game() {
 
       <HandDock />
       <ConcedeBanner />
+      <TableMood />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />

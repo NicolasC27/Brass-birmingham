@@ -145,6 +145,9 @@ export interface LedgerEntry {
   /** the entry as a key of game.log.* and its facts — the client says it in its own language */
   key?: string;
   vars?: Record<string, string | number>;
+  /** the index in the log of the action this entry belongs to (the state
+   *  before it is `actions.slice(0, at)`) */
+  at?: number;
 }
 
 export type Phase =

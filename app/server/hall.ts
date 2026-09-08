@@ -221,7 +221,7 @@ export class Hall {
   close(code: string): void {
     const room = this.rooms.get(code);
     if (!room) return;
-    room.game?.dispose();
+    room.game?.close();
     /* the table is gone: whoever was asked to it, or sat at it, hears of it */
     const told = new Set([...this.store.voidInvitations(code), ...room.table.seats.filter((s) => s.kind === 'human').map((s) => s.id)]);
     this.rooms.delete(code);
@@ -238,7 +238,7 @@ export class Hall {
 
   /** stop every clock in the house (the process is going down) */
   dispose(): void {
-    for (const room of this.rooms.values()) room.game?.dispose();
+    for (const room of this.rooms.values()) room.game?.close();
   }
 
   /** the table as `playerId` would have it — kept down to what they may change */
@@ -274,6 +274,7 @@ export class Hall {
       setup,
       seed,
       actions,
+      hostId: this.rooms.get(code)?.table.hostId,
       pace: this.pace,
       emit: () => {
         this.touch(code);
@@ -297,6 +298,24 @@ export class Hall {
     const game = this.rooms.get(code)?.game;
     if (!game) return 'No game at this table';
     return game.undo(playerId);
+  }
+
+  pause(code: string, playerId: string, want: 'propose' | 'agree' | 'refuse' | 'resume'): string | null {
+    const game = this.rooms.get(code)?.game;
+    if (!game) return 'No game at this table';
+    return game.pauseTable(playerId, want);
+  }
+
+  takeBreak(code: string, playerId: string, on: boolean): string | null {
+    const game = this.rooms.get(code)?.game;
+    if (!game) return 'No game at this table';
+    return game.breakSeat(playerId, on);
+  }
+
+  rollback(code: string, playerId: string, want: 'propose' | 'agree' | 'refuse', to?: number): string | null {
+    const game = this.rooms.get(code)?.game;
+    if (!game) return 'No game at this table';
+    return game.rollbackTable(playerId, want, to);
   }
 
   /** the table changed: to the register, then to everyone watching */

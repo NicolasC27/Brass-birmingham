@@ -17,6 +17,18 @@ import type { AuthError, Desk, Identity, LobbyError, Me, Table } from './table';
 /* address has answered its letter.                                    */
 /* ------------------------------------------------------------------ */
 
+/** the table stopped: everyone agreed to a pause, or one seat took a break */
+export type Pause =
+  | { kind: 'table'; by: number; since: number; /** seats that agreed — it holds once every human has */ votes: number[]; held: boolean }
+  | { kind: 'break'; by: number; since: number; /** when the break ends on its own */ until: number };
+
+/** the host proposes to return the table to before action `to`; it happens once every human agrees */
+export interface Rollback {
+  to: number;
+  by: number;
+  votes: number[];
+}
+
 /** the game as one seat may see it — hands of others and deck redacted */
 export interface GameView {
   code: string;
@@ -29,6 +41,14 @@ export interface GameView {
    *  (null when the table plays without a timer) — the client anchors it
    *  to its own clock, so the two need not agree on the time of day */
   msLeft: number | null;
+  /** the candle is frozen: a pause holds */
+  frozen: boolean;
+  /** the host's seat (-1 when the host has no seat) — the one who may roll the table back */
+  host: number;
+  pause: Pause | null;
+  /** breaks taken so far, per seat (three at most) */
+  breaks: number[];
+  rollback: Rollback | null;
   /** the game is over: the whole log opens up, and the replay with it */
   archive?: { seed: number; setup: SetupPayload; actions: GameAction[] };
 }
@@ -72,6 +92,12 @@ export type ClientMessage =
   | { t: 'table'; code: string; table: Table }
   | { t: 'act'; code: string; action: GameAction }
   | { t: 'undo'; code: string }
+  /** a pause of the whole table: proposed, agreed, refused, or lifted */
+  | { t: 'pause'; code: string; want: 'propose' | 'agree' | 'refuse' | 'resume' }
+  /** my own break: five minutes, three times a game */
+  | { t: 'break'; code: string; on: boolean }
+  /** the host's rollback to before action `to`, and the answers to it */
+  | { t: 'rollback'; code: string; want: 'propose' | 'agree' | 'refuse'; to?: number }
   | { t: 'ping' };
 
 export type ServerMessage =

@@ -51,6 +51,11 @@ export default function Ledger() {
   const setLedgerFilter = useGame((s) => s.setLedgerFilter);
   const setHover = useGame((s) => s.setHover);
   const flyToRegion = useGame((s) => s.flyToRegion);
+  const code = useGame((s) => s.code);
+  const seat = useGame((s) => s.seat);
+  const rollbackTable = useGame((s) => s.rollbackTable);
+  const rollbackOpen = useGame((s) => s.mood.rollback !== null);
+  const hostSeat = useGame((s) => s.mood.host);
   const listRef = useRef<HTMLOListElement>(null);
   const [flash, setFlash] = useState<number | null>(null);
 
@@ -168,6 +173,18 @@ export default function Ledger() {
                   </span>
                   <span className="font-sans leading-snug text-cream-100/80">{ledgerText(e, t)}</span>
                 </button>
+                {/* online, the host may propose to return the table to before this action */}
+                {code && seat !== null && seat === hostSeat && !rollbackOpen && e.at !== undefined && e.at < (game.actions?.length ?? 0) && e.verb !== 'system' && e.verb !== 'score' && game.phase === 'action' && (
+                  <button
+                    type="button"
+                    onClick={() => rollbackTable('propose', e.at)}
+                    title={t('game.mood.rollbackHere')}
+                    aria-label={t('game.mood.rollbackHere')}
+                    className="mt-0.5 shrink-0 rounded-sm border border-brass-700/40 px-1 font-mono text-[9px] text-cream-100/40 hover:border-rust-500 hover:text-rust-500"
+                  >
+                    ⟲
+                  </button>
+                )}
               </motion.li>
             );
           })}
