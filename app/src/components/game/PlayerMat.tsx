@@ -93,9 +93,10 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           );
         })}
       </ul>
-      {/* the level in focus: what it costs to build, what it gives once flipped */}
+      {/* the level in focus: what it costs to build, what it gives once flipped.
+          Fixed height (two lines) so a hover never reflows the chips under the pointer */}
       {next ? (
-        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] text-cream-100/70">
+        <div className="mt-1.5 flex min-h-[34px] flex-wrap content-start items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] leading-[14px] text-cream-100/70">
           {isNextShown ? (
             <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
           ) : (
@@ -112,7 +113,7 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           {next.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
         </div>
       ) : (
-        <div className="mt-1.5 font-mono text-[9.5px] text-cream-100/40">{t('game.mat.gone')}</div>
+        <div className="mt-1.5 min-h-[34px] font-mono text-[9.5px] leading-[14px] text-cream-100/40">{t('game.mat.gone')}</div>
       )}
       {/* what this player already has on the board for this industry */}
       {onBoard.length > 0 && (
