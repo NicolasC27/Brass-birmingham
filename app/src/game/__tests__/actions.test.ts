@@ -13,13 +13,14 @@ import type { GameState, SetupPayload } from '../types';
 /* the seed must land on the very same state.                          */
 /* ------------------------------------------------------------------ */
 
+const SEATS: SetupPayload['players'] = [
+  { name: 'Ada', color: 'oxblood', type: 'bot', difficulty: 'magnate' },
+  { name: 'Bob', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
+  { name: 'Cy', color: 'brass', type: 'bot', difficulty: 'foreman' },
+  { name: 'Di', color: 'steel', type: 'bot', difficulty: 'industrialist' },
+];
 const setup = (n: number, eraLength: 'short' | 'standard' = 'standard'): SetupPayload => ({
-  players: [
-    { name: 'Ada', color: 'oxblood', type: 'bot', difficulty: 'magnate' },
-    { name: 'Bob', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
-    { name: 'Cy', color: 'brass', type: 'bot', difficulty: 'foreman' },
-    { name: 'Di', color: 'steel', type: 'bot', difficulty: 'industrialist' },
-  ].slice(0, n),
+  players: SEATS.slice(0, n),
   options: { eraLength, marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 });
 
