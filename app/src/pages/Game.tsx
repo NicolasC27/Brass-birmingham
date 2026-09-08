@@ -8,6 +8,7 @@ import Ceremony from '@/components/game/Ceremony';
 import ConcedeBanner from '@/components/game/ConcedeBanner';
 import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
+import Guide from '@/components/game/Guide';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -450,6 +451,7 @@ export default function Game() {
       <HandDock />
       <ConcedeBanner />
       <TableMood />
+      <Guide />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />

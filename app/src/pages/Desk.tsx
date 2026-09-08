@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowRight, Crown, KeyRound, Mail, Send, UserPlus, X } from 'lucide-react';
+import { ArrowRight, Crown, GraduationCap, KeyRound, Mail, Send, UserPlus, X } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
+import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useLine, useSession, useStranger } from '@/online/session';
 import type { Friend, PastGame, TableSummary } from '@/online/table';
@@ -281,6 +282,20 @@ export default function Desk() {
         </div>
 
         <div className="grid content-start gap-6">
+          <Panel title={t('site.tutorial.title')} tone="paper">
+            <p className="font-serif text-[14px] leading-relaxed text-ink-900/75">{t('site.tutorial.copy')}</p>
+            <button
+              type="button"
+              onClick={() => {
+                startTutorial();
+                navigate('/game');
+              }}
+              className="btn-ledger mt-3 !border-ink-900/60 !text-ink-900 hover:!bg-ink-900/10"
+            >
+              <GraduationCap className="h-4 w-4" /> {t('site.tutorial.cta')}
+            </button>
+          </Panel>
+
           <Panel title={t('site.desk.open')}>
             <p className="font-serif text-[14px] leading-relaxed text-cream-100/65">{t('site.desk.openCopy')}</p>
             <div className="mt-4 grid gap-3">

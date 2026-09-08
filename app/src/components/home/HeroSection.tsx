@@ -5,7 +5,7 @@ import { useGSAP } from "@gsap/react";
 import { BookOpen, Play, RotateCcw, Users, Wifi } from "lucide-react";
 import LogoMark from "@/components/LogoMark";
 import ShutterWipe from "@/components/setup/ShutterWipe";
-import { quickSetup, readResume, startQuickGame } from "@/game/quickplay";
+import { quickSetup, readResume, startQuickGame, startTutorial } from "@/game/quickplay";
 import { isOnline } from "@/online/lobby";
 import { useSession } from "@/online/session";
 import { useT } from "@/i18n";
@@ -177,6 +177,17 @@ export default function HeroSection() {
             </Link>
           </div>
 
+          <button
+            type="button"
+            onClick={() => {
+              if (starting) return;
+              startTutorial();
+              setStarting(true);
+            }}
+            className="mt-3 font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-cream-100/55 underline decoration-brass-700/60 underline-offset-4 transition-colors hover:text-brass-400"
+          >
+            {t("home.hero.tutorial")}
+          </button>
           <p className="mt-3 font-sans text-[10px] uppercase tracking-[0.16em] text-cream-100/40">
             <kbd className="mr-1.5 rounded border border-brass-700/60 bg-coal-900 px-1.5 py-0.5 font-mono text-[10px] normal-case tracking-normal text-brass-400">↵</kbd>
             {t(isOnline ? "home.hero.enterDesk" : save ? "home.hero.enterResume" : "home.hero.enterPlay")}

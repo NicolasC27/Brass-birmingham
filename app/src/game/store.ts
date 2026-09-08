@@ -27,6 +27,7 @@ import type {
 } from './types';
 import { RESUME_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
+import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 
 export interface Shake {
   key: string;
@@ -82,6 +83,10 @@ interface GameStore {
   netPeek: number | null;
   setNetPeek: (i: number | null) => void;
   coachStep: number; // -1 hidden
+  /** this game is the guided one: the guide's steps show */
+  tutorial: boolean;
+  /** the guide is done with: the game goes on as a plain one */
+  endTutorial: () => void;
   ceremony: 'canal-end' | null;
   gameOverOpen: boolean;
 
@@ -220,6 +225,7 @@ export const useGame = create<GameStore>((set, get) => ({
   ledgerFilter: 'all',
   flyTo: null,
   followBots: true,
+  tutorial: false,
   spotlight: null,
   netPeek: null,
   coachStep: -1,
@@ -233,7 +239,7 @@ export const useGame = create<GameStore>((set, get) => ({
        can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
     if (code && wire) {
-      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, ceremony: null, gameOverOpen: false, coachStep: -1 });
+      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
       listen(code, wire);
       return;
     }
@@ -245,7 +251,26 @@ export const useGame = create<GameStore>((set, get) => ({
         return null;
       }
     })();
-    const game = resumed ?? newGame(readSetup());
+    /* the guided game: a fixed deal, remembered by its seed so a reload keeps the guide */
+    const wanted = (() => {
+      try {
+        return localStorage.getItem(TUTORIAL_KEY);
+      } catch {
+        return null;
+      }
+    })();
+    const seedWanted = wanted === 'new' ? TUTORIAL_SEED : wanted && /^\d+$/.test(wanted) ? Number(wanted) : null;
+    const game = resumed ?? (seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
+    const tutorial = seedWanted !== null && game.seed === seedWanted;
+    if (tutorial) {
+      try {
+        localStorage.setItem(TUTORIAL_KEY, String(game.seed));
+        /* the deal is kept at once: a reload before the first move keeps the guide */
+        if (!resumed) localStorage.setItem(RESUME_KEY, serialize(game));
+      } catch {
+        /* non-fatal */
+      }
+    }
     const coached = (() => {
       try {
         return localStorage.getItem('brassworks.coached.v1') === '1';
@@ -268,10 +293,11 @@ export const useGame = create<GameStore>((set, get) => ({
       line: null,
       candle: null,
       mood: NO_MOOD,
+      tutorial,
       humanMarks,
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
-      coachStep: coached ? -1 : 0,
+      coachStep: coached || tutorial ? -1 : 0,
     });
   },
 
@@ -536,6 +562,15 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!g || g.phase !== 'action') return;
     // passing costs a card per action skipped; the selected card goes first
     get().dispatch({ kind: 'pass', card: get().selectedCardId ?? undefined, reason });
+  },
+
+  endTutorial: () => {
+    try {
+      localStorage.removeItem(TUTORIAL_KEY);
+    } catch {
+      /* non-fatal */
+    }
+    set({ tutorial: false });
   },
 
   pauseTable: (want) => {

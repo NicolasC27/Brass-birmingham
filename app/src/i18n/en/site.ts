@@ -145,6 +145,11 @@ const site = {
       yourself: 'That is you.',
     },
   },
+  tutorial: {
+    title: 'New to the game?',
+    copy: 'A guided first game: the Canal Era against one gentle machine, the guide at your side for your first turns, no candle.',
+    cta: 'Start the guided game',
+  },
   friends: {
     title: 'Friends',
     add: 'Add a friend',

@@ -10,6 +10,7 @@ const home = {
     online: 'Sign in and play',
     onlineNote: 'Open a table, ask your friends by name, ring the bell. Your games wait for you on the desk.',
     practice: 'Practise vs the machine',
+    tutorial: 'New here? A guided first game',
     enterDesk: 'Enter for the desk',
     quickNote: 'You against {a} and {b}, two clockwork rivals. The table is already set.',
     quickNew: 'Start a fresh quick game',

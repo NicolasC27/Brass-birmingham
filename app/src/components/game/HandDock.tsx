@@ -4,6 +4,8 @@ import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scal
 import { INDUSTRY_ICON, INDUSTRY_LABEL, incomeLevel } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
+import { buildTargets } from '@/game/engine';
+import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
@@ -74,6 +76,7 @@ function GameCard({
   selected,
   scoutMarked,
   disabled,
+  canBuild,
   onClick,
   onDoubleClick,
 }: {
@@ -82,6 +85,8 @@ function GameCard({
   selected: boolean;
   scoutMarked: boolean;
   disabled: boolean;
+  /** the aid: this card can build something right now */
+  canBuild?: boolean;
   onClick: () => void;
   onDoubleClick?: () => void;
 }) {
@@ -128,6 +133,11 @@ function GameCard({
           slot frames + ribbon dash — physical Brass location colours) */}
       {card.town && (
         <span aria-hidden className="absolute bottom-[4px] left-[4px] top-[4px] w-[3px] rounded-full" style={{ backgroundColor: townColor(card.town) }} />
+      )}
+      {canBuild && (
+        <span aria-hidden title={t('game.guide.canBuild')} className="absolute right-[5px] top-[5px] z-10 flex h-4 w-4 items-center justify-center rounded-full border border-[#8A6B33] bg-[#C9A45C] shadow-[0_1px_2px_rgba(0,0,0,.4)]">
+          <Hammer className="h-2.5 w-2.5 text-[#2A241C]" />
+        </span>
       )}
       {/* top band: name in small caps over an engraved rule */}
       <div className="absolute inset-x-[8px] top-[6px] border-b border-[#8A6B33]/60 pb-[2px]">
@@ -228,6 +238,8 @@ export default function HandDock() {
   const toggleDevelop = useGame((s) => s.toggleDevelop);
   const cancel = useGame((s) => s.cancel);
   const confirm = useGame((s) => s.confirm);
+  const onlineCode = useGame((s) => s.code);
+  const aid = !!game && aidOn(game.assist, onlineCode !== null);
   const undo = useGame((s) => s.undo);
   const canUndo = useGame((s) => s.canUndo());
   const currentDevelops = useGame((s) => s.currentDevelops);
@@ -591,6 +603,7 @@ export default function HandDock() {
                     selected={isHumanTurn && selectedCardId === card.id}
                     scoutMarked={isHumanTurn && scoutPick.includes(card.id)}
                     disabled={!isHumanTurn}
+                    canBuild={aid && isHumanTurn && buildTargets(game, game.current, card).some((x) => x.valid)}
                     onClick={() => isHumanTurn && selectCard(card.id)}
                     /* double-click a town card = camera flies to that town.
                        The two clicks before it toggle the card off, so

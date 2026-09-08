@@ -147,6 +147,11 @@ const site: typeof enSite = {
       yourself: 'C’est vous.',
     },
   },
+  tutorial: {
+    title: 'Nouveau dans le jeu ?',
+    copy: 'Une première partie guidée : l’ère canal contre une machine douce, le guide à vos côtés pour vos premiers tours, sans bougie.',
+    cta: 'Lancer la partie guidée',
+  },
   friends: {
     title: 'Amis',
     add: 'Ajouter un ami',

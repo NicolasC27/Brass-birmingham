@@ -12,6 +12,7 @@ const fr: typeof enHome = {
     online: 'Se connecter et jouer',
     onlineNote: 'Ouvrez une table, invitez vos amis par leur nom, sonnez la cloche. Vos parties vous attendent sur le bureau.',
     practice: 'S’entraîner contre la machine',
+    tutorial: 'Nouveau ? Une première partie guidée',
     enterDesk: 'Entrée pour le bureau',
     quickNote: 'Vous contre {a} et {b}, deux rivaux mécaniques. La table est déjà dressée.',
     quickNew: 'Lancer une nouvelle partie rapide',

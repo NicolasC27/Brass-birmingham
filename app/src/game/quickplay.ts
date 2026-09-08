@@ -36,11 +36,38 @@ export function quickSetup(): StoredSetup {
   };
 }
 
+/** the guided game: you against one gentle machine, canal era only, assistance on,
+ *  and a fixed deal so the guide knows the hand */
+export const TUTORIAL_KEY = 'brassworks.tutorial.v1';
+export const TUTORIAL_SEED = 3;
+
+export function tutorialSetup(): StoredSetup {
+  return {
+    players: [
+      { name: tr('setup.defaults.playerOne'), color: 'brass', type: 'human' },
+      { name: BOT_NAME_POOL[0], color: 'oxblood', type: 'bot', difficulty: 'foreman' },
+    ],
+    options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core', assist: true },
+  };
+}
+
+/** dress the guided table — the caller then opens /game, where the guide takes over */
+export function startTutorial(): void {
+  try {
+    localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(tutorialSetup()));
+    localStorage.removeItem(RESUME_KEY);
+    localStorage.setItem(TUTORIAL_KEY, 'new');
+  } catch {
+    /* storage unavailable — the game page falls back to its default table */
+  }
+}
+
 /** dress the table and forget any game in progress — the caller then opens /game */
 export function startQuickGame(): void {
   try {
     localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(quickSetup()));
     localStorage.removeItem(RESUME_KEY);
+    localStorage.removeItem(TUTORIAL_KEY);
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }
