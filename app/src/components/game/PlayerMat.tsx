@@ -93,28 +93,42 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           );
         })}
       </ul>
-      {/* the level in focus: what it costs to build, what it gives once flipped.
-          Fixed height (two lines) so a hover never reflows the chips under the pointer */}
-      {next ? (
-        <div className="mt-1.5 flex min-h-[34px] flex-wrap content-start items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] leading-[14px] text-cream-100/70">
-          {isNextShown ? (
-            <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
-          ) : (
-            <span className="rounded-sm border border-cream-100/40 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-cream-100/80">{t('game.mat.level', { n: next.level })}</span>
-          )}
-          <span className="text-brass-400">{t('game.mat.costs', { cost: next.cost })}</span>
-          {(next.coal > 0 || next.iron > 0) && <span>{t('game.mat.needs', { coal: next.coal, iron: next.iron })}</span>}
-          <span className="text-cream-100/85">{t('game.mat.flipGives', { inc: next.incomeDelta, vp: next.vp })}</span>
-          {next.links > 0 && <span>{t('game.mat.linkVp', { n: next.links })}</span>}
-          {next.cubes > 0 && <span>{t(ind === 'brewery' ? 'game.mat.barrels' : 'game.mat.cubes', { n: next.cubes })}</span>}
-          {next.beerToSell > 0 && <span>{t('game.mat.beer', { n: next.beerToSell })}</span>}
-          {!next.eras.includes('rail') && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
-          {!next.eras.includes('canal') && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
-          {next.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
+      {/* the level in focus: what it costs to build, what it gives once
+          flipped. EVERY level's line is rendered, stacked in one grid cell,
+          only the focused one visible — the cell is as tall as the longest
+          line, so a hover never reflows the chips under the pointer */}
+      <div className="mt-1.5 grid">
+        {levels.map((lv) => {
+          const shown = lv.level === shownLevel;
+          const asNext = shown && isNextShown;
+          return (
+            <div
+              key={lv.level}
+              aria-hidden={!shown}
+              className={cn('col-start-1 row-start-1 flex flex-wrap content-start items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] leading-[14px] text-cream-100/70', !shown && 'invisible')}
+            >
+              {asNext ? (
+                <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
+              ) : (
+                <span className="rounded-sm border border-cream-100/40 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-cream-100/80">{t('game.mat.level', { n: lv.level })}</span>
+              )}
+              <span className="text-brass-400">{t('game.mat.costs', { cost: lv.cost })}</span>
+              {(lv.coal > 0 || lv.iron > 0) && <span>{t('game.mat.needs', { coal: lv.coal, iron: lv.iron })}</span>}
+              <span className="text-cream-100/85">{t('game.mat.flipGives', { inc: lv.incomeDelta, vp: lv.vp })}</span>
+              {lv.links > 0 && <span>{t('game.mat.linkVp', { n: lv.links })}</span>}
+              {lv.cubes > 0 && <span>{t(ind === 'brewery' ? 'game.mat.barrels' : 'game.mat.cubes', { n: lv.cubes })}</span>}
+              {lv.beerToSell > 0 && <span>{t('game.mat.beer', { n: lv.beerToSell })}</span>}
+              {!lv.eras.includes('rail') && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
+              {!lv.eras.includes('canal') && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
+              {lv.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
+            </div>
+          );
+        })}
+        {/* everything placed and nothing hovered: the stack is empty */}
+        <div aria-hidden={next !== undefined} className={cn('col-start-1 row-start-1 font-mono text-[9.5px] leading-[14px] text-cream-100/40', next !== undefined && 'invisible')}>
+          {t('game.mat.gone')}
         </div>
-      ) : (
-        <div className="mt-1.5 min-h-[34px] font-mono text-[9.5px] leading-[14px] text-cream-100/40">{t('game.mat.gone')}</div>
-      )}
+      </div>
       {/* what this player already has on the board for this industry */}
       {onBoard.length > 0 && (
         <ul className="mt-1.5 flex flex-wrap gap-1 border-t border-brass-700/30 pt-1.5">
@@ -278,7 +292,7 @@ export default function PlayerMat() {
                   </div>
                 </div>
                 {/* six industries, stacked like the printed mat read top to bottom */}
-                <div className={cn('min-h-0 flex-1 overflow-y-auto px-3 py-2', wide ? 'grid auto-rows-min grid-cols-3 gap-2 2xl:grid-cols-6' : 'flex flex-col gap-1.5')}>
+                <div className={cn('min-h-0 flex-1 overflow-y-auto px-3 py-2 [scrollbar-gutter:stable]', wide ? 'grid auto-rows-min grid-cols-3 gap-2 2xl:grid-cols-6' : 'flex flex-col gap-1.5')}>
                   {ORDER.map((ind) => (
                     <IndustryBlock key={ind} ind={ind} p={p} playerIdx={matPlayer} />
                   ))}
