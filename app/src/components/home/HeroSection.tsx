@@ -93,14 +93,14 @@ export default function HeroSection() {
       {/* Diorama background, darkened 25% */}
       <div className="hero-bg absolute inset-[-12%] will-change-transform">
         <img
-          src="/hero-diorama.png"
+          src="/hero-diorama.webp"
           alt={t("home.hero.dioramaAlt")}
           className="h-full w-full object-cover brightness-75"
         />
       </div>
       {/* Soot vignette (white-centre matte, multiply blend) */}
       <img
-        src="/hero-vignette.png"
+        src="/hero-vignette.webp"
         alt=""
         aria-hidden
         className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-multiply"

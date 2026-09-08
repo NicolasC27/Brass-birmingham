@@ -78,7 +78,7 @@ export default function TimelineFrieze({
 
                 {railTurn && (
                   <img
-                    src="/era-rail-banner.png"
+                    src="/era-rail-banner.webp"
                     alt={t("results.frieze.railBannerAlt")}
                     className="mt-2 h-[54px] w-24 rounded-sm border border-copper-700/60 object-cover shadow-e2"
                   />

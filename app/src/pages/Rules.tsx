@@ -354,7 +354,7 @@ export default function Rules() {
                 ))}
               </div>
               <p className="flex items-center gap-3 text-[13px] italic text-ink-900/60">
-                <img src="/card-back.png" alt="" className="h-14 w-10 rounded-sm border border-brass-700/40 shadow-e2" />
+                <img src="/card-back.webp" alt="" className="h-14 w-10 rounded-sm border border-brass-700/40 shadow-e2" />
                 {t("rules.quickstart.note")}
               </p>
             </ChapterSection>
@@ -363,7 +363,7 @@ export default function Rules() {
             <ChapterSection id="eras" numeral="II." title={t("rules.chapters.eras")}>
               <div>
                 <div className="rules-era-banner overflow-hidden rounded-md border border-brass-700/40 shadow-e2">
-                  <img src="/era-canal-banner.png" alt={t("rules.eras.canalAlt")} className="block h-16 w-full object-cover md:h-20" />
+                  <img src="/era-canal-banner.webp" alt={t("rules.eras.canalAlt")} className="block h-16 w-full object-cover md:h-20" />
                 </div>
                 <h3 className="mt-3 font-fell text-[17px] uppercase tracking-[0.08em] text-bottle-800">
                   {t("rules.eras.canalTitle")}
@@ -384,7 +384,7 @@ export default function Rules() {
 
               <div>
                 <div className="rules-era-banner overflow-hidden rounded-md border border-brass-700/40 shadow-e2">
-                  <img src="/era-rail-banner.png" alt={t("rules.eras.railAlt")} className="block h-16 w-full object-cover md:h-20" />
+                  <img src="/era-rail-banner.webp" alt={t("rules.eras.railAlt")} className="block h-16 w-full object-cover md:h-20" />
                 </div>
                 <h3 className="mt-3 font-fell text-[17px] uppercase tracking-[0.08em] text-copper-700">
                   {t("rules.eras.railTitle")}

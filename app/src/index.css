@@ -83,23 +83,23 @@
 @layer components {
   /* ---------- Texture overlays (applied over a base color, never under small text at high opacity) ---------- */
   .tex-paper {
-    background-image: url("/tex-paper.png");
+    background-image: url("/tex-paper.webp");
     background-size: 512px;
   }
   .tex-brass {
-    background-image: url("/tex-brass.png");
+    background-image: url("/tex-brass.webp");
     background-size: 512px;
   }
   .tex-coal {
-    background-image: url("/tex-coal.png");
+    background-image: url("/tex-coal.webp");
     background-size: 512px;
   }
   .tex-wood {
-    background-image: url("/tex-wood.png");
+    background-image: url("/tex-wood.webp");
     background-size: 1024px;
   }
   .tex-felt {
-    background-image: url("/table-felt.png");
+    background-image: url("/table-felt.webp");
     background-size: 512px;
   }
 

@@ -64,13 +64,13 @@ export default function EraStrip() {
       />
       {/* Friezes at 18% */}
       <img
-        src="/era-canal-banner.png"
+        src="/era-canal-banner.webp"
         alt=""
         aria-hidden
         className="pointer-events-none absolute left-0 top-0 h-full w-[62%] object-cover opacity-[0.18]"
       />
       <img
-        src="/era-rail-banner.png"
+        src="/era-rail-banner.webp"
         alt=""
         aria-hidden
         className="pointer-events-none absolute right-0 top-0 h-full w-[62%] object-cover opacity-[0.18]"

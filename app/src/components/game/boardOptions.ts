@@ -15,8 +15,8 @@ export type IncomeSide = 'bottom' | 'left';
  *  waterways, or the fully painted countryside with its canals and rails */
 export type MapStyle = 'etched' | 'painted';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
-  etched: { canal: '/map-era-canal.png', rail: '/map-era-rail.png' },
-  painted: { canal: '/map-painted-canal.jpg', rail: '/map-painted-rail.jpg' },
+  etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
+  painted: { canal: '/map-painted-canal.webp', rail: '/map-painted-rail.webp' },
 };
 
 export interface BoardOptions {

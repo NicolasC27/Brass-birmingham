@@ -63,7 +63,7 @@ export default function Ceremony() {
       >
         {/* banners are capped in height so the whole ceremony (both banners
             never show together) fits a 900px-tall window with its button */}
-        <img src="/era-canal-banner.png" alt={t('game.ceremony.canalAlt')} className="mx-auto max-h-[30vh] w-auto max-w-full rounded-md border border-brass-700/60 shadow-e4" />
+        <img src="/era-canal-banner.webp" alt={t('game.ceremony.canalAlt')} className="mx-auto max-h-[30vh] w-auto max-w-full rounded-md border border-brass-700/60 shadow-e4" />
       </motion.div>
 
       <motion.h2
@@ -111,7 +111,7 @@ export default function Ceremony() {
         transition={{ duration: reduced ? 0.15 : 0.9, ease: [0.16, 1, 0.3, 1] }}
         className="mt-6 w-[min(860px,90vw)]"
       >
-        <img src="/era-rail-banner.png" alt={t('game.ceremony.railAlt')} className="mx-auto max-h-[30vh] w-auto max-w-full rounded-md border border-copper-500/70 shadow-e4" />
+        <img src="/era-rail-banner.webp" alt={t('game.ceremony.railAlt')} className="mx-auto max-h-[30vh] w-auto max-w-full rounded-md border border-copper-500/70 shadow-e4" />
         <p className="mt-2 text-center font-display text-2xl font-black tracking-wide text-copper-500 brightness-125">
           {t('game.ceremony.railEra')}
         </p>

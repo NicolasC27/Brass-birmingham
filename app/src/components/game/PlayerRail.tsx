@@ -54,7 +54,7 @@ function ShapeToken({ color, size = 12 }: { color: string; size?: number }) {
 export { ShapeToken };
 
 /** victorian oil-portrait medallion per seat (human first, then the bots) */
-const portraitFor = (index: number): string => `/portrait-${(index % 4) + 1}.png`;
+const portraitFor = (index: number): string => `/portrait-${(index % 4) + 1}.webp`;
 
 /** circular portrait medallion with a player-colour rim (Steam reference);
  *  the active player gets a glowing ring. */

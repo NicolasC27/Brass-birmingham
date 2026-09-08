@@ -101,7 +101,7 @@ export default function SeatRow({
           {seat.type === "bot" && (
             <motion.img
               key="bot-portrait"
-              src="/avatar-bot.png"
+              src="/avatar-bot.webp"
               alt={t("setup.seat.botPortraitAlt")}
               initial={{ opacity: 0, x: -10, scale: 0.85 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}

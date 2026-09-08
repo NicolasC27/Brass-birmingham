@@ -70,13 +70,13 @@ function EraFriezes() {
     <div className="group/frieze relative">
       <div className="relative overflow-hidden rounded-sm border border-brass-700/50">
         <img
-          src="/era-canal-banner.png"
+          src="/era-canal-banner.webp"
           alt={t("home.triptych.eras.canalAlt")}
           className="h-36 w-full object-cover transition-all group-hover/frieze:opacity-0"
           style={{ transitionDuration: "600ms" }}
         />
         <img
-          src="/era-rail-banner.png"
+          src="/era-rail-banner.webp"
           alt={t("home.triptych.eras.railAlt")}
           className="absolute inset-0 h-36 w-full translate-x-2 object-cover opacity-0 transition-all group-hover/frieze:translate-x-0 group-hover/frieze:opacity-100"
           style={{ transitionDuration: "600ms" }}

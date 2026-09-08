@@ -363,22 +363,22 @@ async function engravedPair(dir: string, a: IndustryType, b: IndustryType, t: Te
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
-  const urls = ['/beer-barrel.png', '/merchant-boat.png', '/town-village.png', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg', ...industries.map((i) => ICON_FOR[i])];
+  const urls = ['/beer-barrel.png', '/merchant-boat.webp', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg', ...industries.map((i) => ICON_FOR[i])];
   const loaded = await Assets.load(urls);
   tileSet = await buildTileSet({});
   iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
-  boatTex = loaded['/merchant-boat.png'];
+  boatTex = loaded['/merchant-boat.webp'];
   await Promise.all(
     MERCHANTS.map(async (m) => {
       try {
-        merchantArt.set(m.id, await Assets.load(`/merchant-${m.id.replace(/^m-/, '')}.png`));
+        merchantArt.set(m.id, await Assets.load(`/merchant-${m.id.replace(/^m-/, '')}.webp`));
       } catch {
         /* no dedicated painting for this merchant: the barge is used */
       }
     }),
   );
-  villageTex = loaded['/town-village.png'];
+  villageTex = loaded['/town-village.webp'];
   schematicTex = Object.fromEntries(
     await Promise.all(industries.map(async (i) => [i, await parchmentTexture(ICON_FOR[i])])),
   ) as Record<IndustryType, Texture>;

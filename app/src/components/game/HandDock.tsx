@@ -410,7 +410,7 @@ export default function HandDock() {
           {/* deck plate */}
           <div className="flex w-[64px] flex-col items-center justify-center gap-1">
             <div className="relative h-[74px] w-[52px]">
-              <img src="/card-back.png" alt={t('game.hand.deckAlt')} className="h-full w-full rounded border border-brass-700/60 object-cover shadow-e2" />
+              <img src="/card-back.webp" alt={t('game.hand.deckAlt')} className="h-full w-full rounded border border-brass-700/60 object-cover shadow-e2" />
               <span className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-brass-700 bg-coal-900 px-1 font-mono text-[10px] text-brass-400">
                 {game.deck.length}
               </span>
