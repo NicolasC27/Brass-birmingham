@@ -1,37 +1,6 @@
 import { TOWNS, TOWN_BY_ID } from '@/game/data';
 import type { IndustryType, Town } from '@/game/types';
-import type { CSSProperties } from 'react';
 import { WORLD_H, WORLD_W } from './boardView';
-
-/**
- * v14 far-zoom LOD: fine details fade out (200ms, no flicker) whenever
- * Board.tsx flips `--bw-detail` to 0 (effective screen scale below
- * FAR_LOD_SCREEN, evaluated in ONE place there). Applied ONLY to details
- * that are unreadable from afar — income/VP chips, level pips, etched
- * tile marks, merchant name ribbons. Town ribbons, industry tiles with
- * their cubes and links always stay visible (critical game state).
- */
-export const DETAIL_FADE: CSSProperties = {
-  opacity: 'var(--bw-detail, 1)',
-  transition: 'opacity 200ms ease',
-};
-
-/**
- * v15 schematic mode: Board.tsx flips `--bw-schematic` to 1 when the
- * effective screen scale drops below SCHEMATIC_SCREEN (tile < ~50px on
- * screen). SCHEMATIC_SHOW fades the large industry glyph IN, while
- * SCHEMATIC_DETAIL_FADE steps the detailed engraving back to 0.25
- * (multiplied with --bw-detail so the v14 far-LOD still wins when both
- * apply). Same 200ms no-flicker mechanics as DETAIL_FADE.
- */
-export const SCHEMATIC_SHOW: CSSProperties = {
-  opacity: 'var(--bw-schematic, 0)',
-  transition: 'opacity 200ms ease',
-};
-export const SCHEMATIC_DETAIL_FADE: CSSProperties = {
-  opacity: 'calc(var(--bw-detail, 1) * (1 - 0.75 * var(--bw-schematic, 0)))',
-  transition: 'opacity 200ms ease',
-};
 
 /* ------------------------------------------------------------------ */
 /* townChrome — shared geometry/art constants for the map-v5 towns     */
@@ -47,16 +16,6 @@ export const SCHEMATIC_DETAIL_FADE: CSSProperties = {
 /* brassforge-style small islands with generous spacing).              */
 /* ------------------------------------------------------------------ */
 
-/** painted miniature illustration per industry (public/, 1:1) */
-export const TILE_ART: Record<IndustryType, string> = {
-  coal: '/tile-coal.png',
-  iron: '/tile-iron.png',
-  cotton: '/tile-cotton.png',
-  manufacturer: '/tile-manufacture.png',
-  pottery: '/tile-pottery.png',
-  brewery: '/tile-brewery.png',
-};
-
 /** industry identity colours (v8: edge stripes + corner glyphs on slots) */
 export const INDUSTRY_COLOR: Record<IndustryType, string> = {
   coal: '#232323',
@@ -67,20 +26,6 @@ export const INDUSTRY_COLOR: Record<IndustryType, string> = {
   brewery: '#4E7A4E',
 };
 
-/**
- * v15: per-industry ring/halo colour (always-visible identity ring around
- * every industry tile). Same palette as INDUSTRY_COLOR EXCEPT coal: its
- * near-black #232323 would vanish against the dark map, so coal reads as
- * a warm light grey that still evokes anthracite without going flashy.
- */
-export const INDUSTRY_RING: Record<IndustryType, string> = {
-  ...INDUSTRY_COLOR,
-  coal: '#9A938A',
-};
-
-/** slot tile edge at world scale (square) — v13: 70 → 56 (×0.8) so
- *  clusters read as small islands inside the ×1.25 airier world;
- *  v16: 56 → 62 (+~11%) — user read: tile art a touch too small */
 export const TILE = 62;
 export const TILE_HALF = TILE / 2;
 /** gap between adjacent slot tiles inside a cluster (v13: 6 → 5) */
