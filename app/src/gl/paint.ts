@@ -48,6 +48,11 @@ export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
     { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
     { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
+  manufacturer: [
+    { id: 'crate', dir: '', front: { scale: 62 } },
+    { id: 'parcels', dir: '/tiles-classic', front: { scale: 62 } },
+    { id: 'manufactory', dir: '/tiles-works', front: { crop: [10, 300], scale: 84, partnerX: { cotton: 160, iron: 160, pottery: 160 } } },
+  ],
   brewery: [
     { id: 'barrel', dir: '', front: { scale: 60 } },
     { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },

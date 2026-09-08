@@ -29,6 +29,9 @@ case "$NAME:$STYLE" in
   manufacture:icons)
     SVG=goods-crate.svg; CROP=none; CROP_SCALE=62
     PAIRS="cotton:70:150 iron:70:150 pottery:70:150" ;;
+  manufacture:works)
+    SVG=manufactory.svg; CROP=300x512+10+0; CROP_SCALE=84
+    PAIRS="cotton:70:160 iron:70:160 pottery:70:160" ;;
   brewery:icons)
     SVG=brewery-barrel.svg; CROP=none; CROP_SCALE=60
     PAIRS="cotton:70:150 iron:70:150 manufacture:62:195" ;;

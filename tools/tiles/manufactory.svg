@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- smoke -->
+  <g fill="#6f6a66">
+    <ellipse cx="78" cy="92" rx="13" ry="10" opacity="0.85"/>
+    <ellipse cx="94" cy="70" rx="17" ry="13" opacity="0.65"/>
+    <ellipse cx="116" cy="48" rx="21" ry="15" opacity="0.45"/>
+  </g>
+  <!-- chimney, behind the hall -->
+  <rect x="62" y="112" width="30" height="130" fill="#7a2e26"/>
+  <rect x="62" y="112" width="8" height="130" fill="#9c3d32"/>
+  <rect x="56" y="100" width="42" height="14" fill="#3a1c18"/>
+  <rect x="56" y="160" width="42" height="8" fill="#3a1c18"/>
+  <!-- mill hall: brick, two rows of arched windows -->
+  <rect x="40" y="220" width="270" height="220" fill="#9a5040"/>
+  <g stroke="#874536" stroke-width="2">
+    <line x1="58" y1="238" x2="310" y2="238"/><line x1="58" y1="256" x2="310" y2="256"/><line x1="58" y1="274" x2="310" y2="274"/>
+    <line x1="58" y1="292" x2="310" y2="292"/><line x1="58" y1="310" x2="310" y2="310"/><line x1="58" y1="328" x2="310" y2="328"/>
+    <line x1="58" y1="346" x2="310" y2="346"/><line x1="58" y1="364" x2="310" y2="364"/><line x1="58" y1="382" x2="310" y2="382"/>
+    <line x1="58" y1="400" x2="310" y2="400"/><line x1="58" y1="418" x2="310" y2="418"/>
+  </g>
+  <rect x="40" y="220" width="18" height="220" fill="#7a3d30"/>
+  <!-- upper windows -->
+  <g>
+    <path d="M76 292 V254 a13 13 0 0 1 26 0 V292 Z" fill="#241d18"/><path d="M80 292 V256 a9 9 0 0 1 18 0 V292 Z" fill="#f2d98a"/>
+    <path d="M122 292 V254 a13 13 0 0 1 26 0 V292 Z" fill="#241d18"/><path d="M126 292 V256 a9 9 0 0 1 18 0 V292 Z" fill="#f2d98a"/>
+    <path d="M168 292 V254 a13 13 0 0 1 26 0 V292 Z" fill="#241d18"/><path d="M172 292 V256 a9 9 0 0 1 18 0 V292 Z" fill="#f2d98a"/>
+    <path d="M214 292 V254 a13 13 0 0 1 26 0 V292 Z" fill="#241d18"/><path d="M218 292 V256 a9 9 0 0 1 18 0 V292 Z" fill="#f2d98a"/>
+    <path d="M260 292 V254 a13 13 0 0 1 26 0 V292 Z" fill="#241d18"/><path d="M264 292 V256 a9 9 0 0 1 18 0 V292 Z" fill="#f2d98a"/>
+    <g stroke="#241d18" stroke-width="2">
+      <line x1="89" y1="256" x2="89" y2="292"/><line x1="135" y1="256" x2="135" y2="292"/><line x1="181" y1="256" x2="181" y2="292"/>
+      <line x1="227" y1="256" x2="227" y2="292"/><line x1="273" y1="256" x2="273" y2="292"/>
+      <line x1="80" y1="274" x2="98" y2="274"/><line x1="126" y1="274" x2="144" y2="274"/><line x1="172" y1="274" x2="190" y2="274"/>
+      <line x1="218" y1="274" x2="236" y2="274"/><line x1="264" y1="274" x2="282" y2="274"/>
+    </g>
+  </g>
+  <!-- the works' mark: a cog plaque between the rows -->
+  <g transform="translate(181 318)">
+    <circle r="21" fill="#e0b878"/>
+    <circle r="12" fill="#7a5530"/>
+    <g fill="#7a5530">
+      <rect x="-2.5" y="-17" width="5" height="7"/><rect x="-2.5" y="10" width="5" height="7"/>
+      <rect x="-17" y="-2.5" width="7" height="5"/><rect x="10" y="-2.5" width="7" height="5"/>
+      <rect x="-2.5" y="-17" width="5" height="7" transform="rotate(45)"/><rect x="-2.5" y="10" width="5" height="7" transform="rotate(45)"/>
+      <rect x="-17" y="-2.5" width="7" height="5" transform="rotate(45)"/><rect x="10" y="-2.5" width="7" height="5" transform="rotate(45)"/>
+    </g>
+    <circle r="8" fill="#e0b878"/>
+    <circle r="3" fill="#7a5530"/>
+  </g>
+  <!-- lower windows and the goods door -->
+  <g>
+    <path d="M80 402 V360 a13 13 0 0 1 26 0 V402 Z" fill="#241d18"/><path d="M84 402 V362 a9 9 0 0 1 18 0 V402 Z" fill="#f2d98a"/>
+    <path d="M256 402 V360 a13 13 0 0 1 26 0 V402 Z" fill="#241d18"/><path d="M260 402 V362 a9 9 0 0 1 18 0 V402 Z" fill="#f2d98a"/>
+    <g stroke="#241d18" stroke-width="2">
+      <line x1="93" y1="362" x2="93" y2="402"/><line x1="269" y1="362" x2="269" y2="402"/>
+      <line x1="84" y1="382" x2="102" y2="382"/><line x1="260" y1="382" x2="278" y2="382"/>
+    </g>
+    <path d="M148 440 V384 a33 33 0 0 1 66 0 V440 Z" fill="#b0703c"/>
+    <path d="M154 440 V386 a27 27 0 0 1 54 0 V440 Z" fill="#241d18"/>
+    <path d="M158 398 a23 23 0 0 1 46 0 Z" fill="#f2d98a"/>
+    <line x1="181" y1="398" x2="181" y2="440" stroke="#3a2414" stroke-width="3"/>
+  </g>
+  <!-- sawtooth roof: slate slopes, glazed north faces -->
+  <g fill="#4a3a30">
+    <polygon points="40,220 70,166 130,220"/><polygon points="130,220 160,166 220,220"/><polygon points="220,220 250,166 310,220"/>
+  </g>
+  <g fill="#5a473a">
+    <polygon points="70,166 130,220 130,214 76,166"/><polygon points="160,166 220,220 220,214 166,166"/><polygon points="250,166 310,220 310,214 256,166"/>
+  </g>
+  <g fill="#b9d3d8">
+    <polygon points="40,220 70,166 80,166 52,220"/><polygon points="130,220 160,166 170,166 142,220"/><polygon points="220,220 250,166 260,166 232,220"/>
+  </g>
+  <g stroke="#3a2c24" stroke-width="2">
+    <line x1="46" y1="208" x2="56" y2="208"/><line x1="55" y1="190" x2="65" y2="190"/>
+    <line x1="136" y1="208" x2="146" y2="208"/><line x1="145" y1="190" x2="155" y2="190"/>
+    <line x1="226" y1="208" x2="236" y2="208"/><line x1="235" y1="190" x2="245" y2="190"/>
+  </g>
+  <rect x="34" y="216" width="282" height="8" fill="#3a2c24"/>
+  <!-- warehouse wing -->
+  <rect x="310" y="292" width="160" height="148" fill="#8c6b40"/>
+  <rect x="452" y="292" width="18" height="148" fill="#6b4f2e"/>
+  <rect x="304" y="278" width="172" height="16" fill="#4a3a30"/>
+  <rect x="304" y="274" width="172" height="6" fill="#5a473a"/>
+  <path d="M352 440 V354 a28 28 0 0 1 56 0 V440 Z" fill="#241d18"/>
+  <path d="M356 440 V356 a24 24 0 0 1 48 0 V440 Z" fill="#3a2414"/>
+  <line x1="380" y1="356" x2="380" y2="440" stroke="#241d18" stroke-width="3"/>
+  <!-- hoist over the door -->
+  <rect x="372" y="300" width="16" height="30" fill="#3a2c24"/>
+  <rect x="366" y="326" width="28" height="6" fill="#5a473a"/>
+  <!-- crates on the yard -->
+  <rect x="318" y="404" width="30" height="36" fill="#c99a5a"/>
+  <g fill="#2f2b28"><rect x="318" y="404" width="4" height="36"/><rect x="344" y="404" width="4" height="36"/><rect x="318" y="404" width="30" height="4"/><rect x="318" y="436" width="30" height="4"/></g>
+  <rect x="418" y="396" width="46" height="44" fill="#c99a5a"/>
+  <g fill="#2f2b28"><rect x="418" y="396" width="5" height="44"/><rect x="459" y="396" width="5" height="44"/><rect x="418" y="396" width="46" height="5"/><rect x="418" y="435" width="46" height="5"/></g>
+  <rect x="424" y="358" width="34" height="38" fill="#d3a866"/>
+  <g fill="#2f2b28"><rect x="424" y="358" width="4" height="38"/><rect x="454" y="358" width="4" height="38"/><rect x="424" y="358" width="34" height="4"/><rect x="424" y="392" width="34" height="4"/></g>
+  <!-- plinth -->
+  <rect x="30" y="440" width="452" height="14" fill="#3b2a1e"/>
+  <rect x="30" y="438" width="452" height="4" fill="#5a4030"/>
+</svg>
