@@ -452,6 +452,8 @@ const game = {
     aria: 'The guide',
     botAria: 'Why the machine played that',
     botWhy: 'Why {name} did that',
+    botNext: 'Understood, {name} may go on',
+    botHeld: '{name} waits for you to read this before playing on.',
     canBuild: 'This card can build something now',
     hide: 'Hide',
     stepOf: 'Lesson {n} of {total}',

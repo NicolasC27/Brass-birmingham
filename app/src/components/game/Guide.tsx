@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, X } from 'lucide-react';
 import { aidOn } from '@/components/game/boardOptions';
@@ -76,7 +76,7 @@ const REACH_KEY = 'brassworks.tutorial.reached';
 /* ---------------------------- the machine ---------------------------- */
 
 /** the last move a machine made, said as a player would reason it */
-function botReason(g: GameState, me: number, t: T): { name: string; what: string; why: string } | null {
+function botReason(g: GameState, me: number, t: T): { name: string; what: string; why: string; fresh: boolean } | null {
   const e = [...g.ledger].reverse().find((x) => x.player !== undefined && x.player !== me && g.players[x.player]?.isBot && x.key && x.key !== 'flip');
   if (!e || e.player === undefined) return null;
   const p = g.players[e.player];
@@ -114,7 +114,8 @@ function botReason(g: GameState, me: number, t: T): { name: string; what: string
     default:
       return null;
   }
-  return { name: p.name, what: ledgerText(e, t), why };
+  /* fresh: the machine's move is the latest action of the log — the one being played through */
+  return { name: p.name, what: ledgerText(e, t), why, fresh: e.at === g.actions.length - 1 };
 }
 
 /* ----------------------------- the alerts ---------------------------- */
@@ -187,6 +188,7 @@ export default function Guide() {
   const setMarketFocus = useGame((s) => s.setMarketFocus);
   const [hidden, setHidden] = useState(false);
   const [botHidden, setBotHidden] = useState<number>(-1);
+  const setBotHold = useGame((s) => s.setBotHold);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   const [readPast, setReadPast] = useState<number>(() => {
     try {
@@ -242,6 +244,13 @@ export default function Guide() {
   const page = paged.key === situation ? paged.page : 0;
   const setPage = (p: number) => setPaged({ key: situation, page: p });
 
+  /* the machine's next move waits while its last one is being read (guided game only) */
+  const holdWanted = !!(tutorial && game && game.phase === 'action' && bot && bot.fresh && botHidden !== game.ledger.length && game.players[game.current]?.isBot);
+  useEffect(() => {
+    setBotHold(holdWanted);
+    return () => setBotHold(false);
+  }, [holdWanted, setBotHold]);
+
   if (!game || game.phase !== 'action') return null;
   const showSteps = tutorial && stepIndex >= 0;
   const step = showSteps ? STEPS[Math.min(stepIndex, STEPS.length - 1)] : null;
@@ -251,6 +260,8 @@ export default function Guide() {
   const shown = lines.slice(page * 2, page * 2 + 2);
   const botSeq = game.ledger.length;
   const showBot = bot && botHidden !== botSeq && (showSteps || !hidden);
+  /* the guided game waits: the machine's next move comes once this one is read */
+  const holding = !!(tutorial && showBot && bot?.fresh && game.players[game.current]?.isBot);
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
@@ -362,10 +373,18 @@ export default function Guide() {
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
                 <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
               </div>
-              <button type="button" onClick={() => setBotHidden(botSeq)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
-                <X className="h-3.5 w-3.5" />
-              </button>
+              {holding ? (
+                <button type="button" onClick={() => setBotHidden(botSeq)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
+                  {t('game.guide.botNext', { name: bot.name })}
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              ) : (
+                <button type="button" onClick={() => setBotHidden(botSeq)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
+            {holding && <p className="mt-1.5 pl-7 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
           </motion.aside>
         )}
       </AnimatePresence>

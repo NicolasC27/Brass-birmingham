@@ -87,6 +87,9 @@ interface GameStore {
   tutorial: boolean;
   /** the guide is done with: the game goes on as a plain one */
   endTutorial: () => void;
+  /** the guide holds the machine: it explains one move before the next is played */
+  botHold: boolean;
+  setBotHold: (on: boolean) => void;
   ceremony: 'canal-end' | null;
   gameOverOpen: boolean;
 
@@ -226,6 +229,8 @@ export const useGame = create<GameStore>((set, get) => ({
   flyTo: null,
   followBots: true,
   tutorial: false,
+  botHold: false,
+  setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
   spotlight: null,
   netPeek: null,
   coachStep: -1,

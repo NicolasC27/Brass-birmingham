@@ -454,6 +454,8 @@ const fr: typeof engame = {
     aria: 'Le guide',
     botAria: 'Pourquoi la machine a joué cela',
     botWhy: 'Pourquoi {name} fait ça',
+    botNext: 'Compris, {name} peut continuer',
+    botHeld: '{name} attend que vous ayez lu avant de continuer.',
     canBuild: 'Cette carte peut construire quelque chose maintenant',
     hide: 'Masquer',
     stepOf: 'Leçon {n} sur {total}',

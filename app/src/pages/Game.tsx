@@ -55,6 +55,7 @@ export default function Game() {
   const reset = useGame((s) => s.reset);
   const runBot = useGame((s) => s.runBot);
   const pass = useGame((s) => s.pass);
+  const botHold = useGame((s) => s.botHold);
   const takeLoan = useGame((s) => s.takeLoan);
   const ceremony = useGame((s) => s.ceremony);
   const gameOverOpen = useGame((s) => s.gameOverOpen);
@@ -116,12 +117,12 @@ export default function Game() {
   /* --------------------------- bots ----------------------------- */
   useEffect(() => {
     /* online the table plays its own bots */
-    if (!game || seat !== null || game.phase !== 'action' || ceremony || passTo) return;
+    if (!game || seat !== null || game.phase !== 'action' || ceremony || passTo || botHold) return;
     const p = game.players[game.current];
     if (!p.isBot) return;
     const t = window.setTimeout(() => runBot(), skipAnim ? 180 : 1350);
     return () => window.clearTimeout(t);
-  }, [game, seat, ceremony, passTo, skipAnim, runBot]);
+  }, [game, seat, ceremony, passTo, skipAnim, runBot, botHold]);
 
   /* --------------------------- timer ---------------------------- */
   useEffect(() => {
