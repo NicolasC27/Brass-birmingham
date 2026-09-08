@@ -23,6 +23,9 @@ case "$NAME:$STYLE" in
     SVG=colliery.svg; CROP=280x512+22+0; CROP_SCALE=88
     PAIR_SED='/x1="249" y1="82"/d' # no rope to the cropped engine house
     PAIRS="cotton:70:154 manufacture:62:195" ;;
+  manufacture:icons)
+    SVG=goods-crate.svg; CROP=none; CROP_SCALE=62
+    PAIRS="cotton:70:150 iron:70:150 pottery:70:150" ;;
   brewery:icons)
     SVG=brewery-barrel.svg; CROP=none; CROP_SCALE=60
     PAIRS="cotton:70:150 iron:70:150 manufacture:62:195" ;;

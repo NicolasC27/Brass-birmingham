@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- ground -->
+  <rect x="60" y="452" width="392" height="12" rx="6" fill="#3b2a1e"/>
+  <!-- crate body (front + right face + top, light oak) -->
+  <polygon points="72,176 72,448 336,448 336,176" fill="#c99a5a"/>
+  <polygon points="336,176 440,120 440,392 336,448" fill="#9a6e3a"/>
+  <polygon points="72,176 176,120 440,120 336,176" fill="#e0b878"/>
+  <!-- plank lines -->
+  <g stroke="#a67a42" stroke-width="4">
+    <line x1="72" y1="244" x2="336" y2="244"/><line x1="72" y1="312" x2="336" y2="312"/><line x1="72" y1="380" x2="336" y2="380"/>
+  </g>
+  <g stroke="#7a5530" stroke-width="4">
+    <line x1="336" y1="244" x2="440" y2="188"/><line x1="336" y1="312" x2="440" y2="256"/><line x1="336" y1="380" x2="440" y2="324"/>
+  </g>
+  <g stroke="#c9a46a" stroke-width="4">
+    <line x1="120" y1="150" x2="384" y2="150"/><line x1="240" y1="120" x2="136" y2="176"/><line x1="340" y1="120" x2="236" y2="176"/>
+  </g>
+  <!-- iron corner straps -->
+  <g fill="#2f2b28">
+    <rect x="72" y="176" width="22" height="272"/><rect x="314" y="176" width="22" height="272"/>
+    <rect x="72" y="176" width="264" height="16"/><rect x="72" y="432" width="264" height="16"/>
+    <polygon points="336,176 440,120 440,134 336,190"/><polygon points="336,432 440,376 440,392 336,448"/>
+    <polygon points="426,120 440,120 440,392 426,400"/>
+  </g>
+  <g fill="#8a8380">
+    <circle cx="83" cy="200" r="3.5"/><circle cx="83" cy="424" r="3.5"/><circle cx="325" cy="200" r="3.5"/><circle cx="325" cy="424" r="3.5"/>
+    <circle cx="120" cy="184" r="2.5"/><circle cx="204" cy="184" r="2.5"/><circle cx="288" cy="184" r="2.5"/>
+    <circle cx="120" cy="440" r="2.5"/><circle cx="204" cy="440" r="2.5"/><circle cx="288" cy="440" r="2.5"/>
+  </g>
+  <!-- stencilled mark: a cog on the front face -->
+  <g transform="translate(204 312)">
+    <circle r="54" fill="#7a5530"/>
+    <g fill="#7a5530">
+      <rect x="-9" y="-70" width="18" height="24"/><rect x="-9" y="46" width="18" height="24"/>
+      <rect x="-70" y="-9" width="24" height="18"/><rect x="46" y="-9" width="24" height="18"/>
+      <rect x="-9" y="-70" width="18" height="24" transform="rotate(45)"/><rect x="-9" y="46" width="18" height="24" transform="rotate(45)"/>
+      <rect x="-70" y="-9" width="24" height="18" transform="rotate(45)"/><rect x="46" y="-9" width="24" height="18" transform="rotate(45)"/>
+    </g>
+    <circle r="40" fill="#c99a5a"/>
+    <circle r="26" fill="#7a5530"/>
+    <circle r="12" fill="#c99a5a"/>
+  </g>
+  <!-- rope over the top -->
+  <path d="M96 168 Q200 128 320 120" fill="none" stroke="#b0703c" stroke-width="7" stroke-linecap="round"/>
+  <path d="M96 168 Q200 128 320 120" fill="none" stroke="#e0b878" stroke-width="2" stroke-dasharray="6 8" stroke-linecap="round"/>
+  <!-- parcel on top -->
+  <polygon points="200,88 300,88 300,128 200,128" fill="#e6cfa0"/>
+  <polygon points="300,88 340,66 340,106 300,128" fill="#c9a97a"/>
+  <polygon points="200,88 240,66 340,66 300,88" fill="#f2e0b8"/>
+  <line x1="250" y1="88" x2="250" y2="128" stroke="#4e7a4e" stroke-width="4"/>
+  <line x1="200" y1="108" x2="300" y2="108" stroke="#4e7a4e" stroke-width="4"/>
+</svg>
