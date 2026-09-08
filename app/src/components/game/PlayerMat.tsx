@@ -32,7 +32,12 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
   const levels = INDUSTRIES[ind];
   const left = p.stacks[ind];
   const nextLevel = left[0];
-  const next = levels.find((lv) => lv.level === nextLevel);
+  /* hovering a level chip swaps the detail line to that level; at rest it
+     describes the next tile to build */
+  const [peek, setPeek] = useState<number | null>(null);
+  const shownLevel = peek ?? nextLevel;
+  const next = levels.find((lv) => lv.level === shownLevel);
+  const isNextShown = shownLevel === nextLevel && peek === null;
   const total = levels.reduce((a, l) => a + l.count, 0);
   const onBoard = Object.entries(game.tiles)
     .filter(([, x]) => x.owner === playerIdx && x.industry === ind)
@@ -70,10 +75,12 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           return (
             <li
               key={lv.level}
-              title={`L${lv.level} · £${lv.cost} · +${lv.incomeDelta} · ${lv.vp} VP`}
+              onPointerEnter={() => setPeek(lv.level)}
+              onPointerLeave={() => setPeek(null)}
               className={cn(
-                'flex items-center gap-1 rounded-[4px] border px-1.5 py-[3px] font-mono text-[9.5px]',
+                'flex cursor-help items-center gap-1 rounded-[4px] border px-1.5 py-[3px] font-mono text-[9.5px] transition-colors',
                 isNext ? 'border-brass-400 bg-brass-500/15 text-cream-100 shadow-[0_0_8px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 text-cream-100/35' : 'border-brass-700/50 text-cream-100/80',
+                peek === lv.level && 'border-cream-100/60 text-cream-100',
               )}
             >
               <span className="flex gap-[2px]">
@@ -86,16 +93,19 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           );
         })}
       </ul>
-      {/* the next tile to build: what it costs and gives */}
+      {/* the level in focus: what it costs to build, what it gives once flipped */}
       {next ? (
         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] text-cream-100/70">
-          <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
-          <span className="font-bold text-cream-100">L{next.level}</span>
+          {isNextShown ? (
+            <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
+          ) : (
+            <span className="rounded-sm border border-cream-100/40 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-cream-100/80">{t('game.mat.level', { n: next.level })}</span>
+          )}
           <span className="text-brass-400">{t('game.mat.costs', { cost: next.cost })}</span>
           {(next.coal > 0 || next.iron > 0) && <span>{t('game.mat.needs', { coal: next.coal, iron: next.iron })}</span>}
-          <span className="text-cream-100/85">
-            +{next.incomeDelta} · {next.vp} VP
-          </span>
+          <span className="text-cream-100/85">{t('game.mat.flipGives', { inc: next.incomeDelta, vp: next.vp })}</span>
+          {next.links > 0 && <span>{t('game.mat.linkVp', { n: next.links })}</span>}
+          {next.cubes > 0 && <span>{t(ind === 'brewery' ? 'game.mat.barrels' : 'game.mat.cubes', { n: next.cubes })}</span>}
           {next.beerToSell > 0 && <span>{t('game.mat.beer', { n: next.beerToSell })}</span>}
           {!next.eras.includes('rail') && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
           {!next.eras.includes('canal') && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
