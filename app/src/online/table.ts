@@ -15,6 +15,8 @@ export interface TableSeat {
   color: PlayerColor;
   kind: 'human' | 'bot';
   difficulty?: BotDifficulty;
+  /** this seat's candle: undefined = the table's timer, null = no candle, or minutes */
+  minutes?: number | null;
   ready: boolean;
   joinedAt: number;
 }
@@ -136,7 +138,7 @@ export function freeColor(table: Pick<Table, 'seats'>, wanted?: PlayerColor): Pl
 /** the game page's setup contract, from a table about to start */
 export function setupFromTable(table: Table): StoredSetup {
   return {
-    players: table.seats.map((s) => ({ name: s.name, color: s.color, type: s.kind, ...(s.kind === 'bot' ? { difficulty: s.difficulty ?? 'industrialist' } : {}) })),
+    players: table.seats.map((s) => ({ name: s.name, color: s.color, type: s.kind, ...(s.kind === 'bot' ? { difficulty: s.difficulty ?? 'industrialist' } : {}), ...(s.minutes !== undefined ? { minutes: s.minutes } : {}) })),
     options: table.options,
   };
 }

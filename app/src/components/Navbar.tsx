@@ -4,6 +4,7 @@ import { ChevronDown, LogOut, MailWarning, ScrollText, UserRound } from 'lucide-
 import PlayerToken from '@/components/setup/PlayerToken';
 import { isOnline } from '@/online/lobby';
 import { signOut, useLine, useSession } from '@/online/session';
+import { FeedbackButton } from '@/components/site/Feedback';
 import { cn } from '@/lib/utils';
 import { useLang, useT, setLang } from '@/i18n';
 
@@ -137,6 +138,7 @@ export default function Navbar() {
               </button>
             ))}
           </div>
+          <FeedbackButton compact className="rounded-md border border-brass-700/60 p-1.5 text-cream-100/60 transition-colors hover:border-brass-400 hover:text-brass-400" />
           {isOnline && <AccountMenu />}
         </div>
       </div>

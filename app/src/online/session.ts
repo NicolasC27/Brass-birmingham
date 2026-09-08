@@ -82,6 +82,11 @@ export async function updateProfile(patch: { motto?: string; favoriteColor?: Pla
   await wire().ask((rid) => ({ t: 'profile', rid, ...patch }));
 }
 
+/** an idea or a bug, to the house */
+export async function sendFeedback(page: string, kind: 'idea' | 'bug', text: string): Promise<void> {
+  await wire().ask((rid) => ({ t: 'feedback', rid, page, kind, text }));
+}
+
 /** ask a player by name to a table I sit at */
 export async function invite(code: string, name: string): Promise<void> {
   await wire().ask((rid) => ({ t: 'invite', rid, code, name: name.trim() }));

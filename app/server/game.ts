@@ -1,7 +1,7 @@
 import { applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, replay, undoLastHuman } from '@/game/actions';
 import type { GameAction, UndoMark } from '@/game/actions';
 import { chooseBotMove } from '@/game/bot';
-import { newGame } from '@/game/engine';
+import { candleMinutes, newGame } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { GameView } from '@/online/protocol';
 import { viewFor } from './view';
@@ -199,8 +199,9 @@ export class TableGame {
       this.timer = setTimeout(() => this.playBot(), this.pace.bot);
       return;
     }
-    if (!s.timerMinutes) return;
-    const burn = s.timerMinutes * (this.pace.minute ?? MINUTE);
+    const minutes = candleMinutes(s, s.current);
+    if (!minutes) return;
+    const burn = minutes * (this.pace.minute ?? MINUTE);
     this.burnsOut = Date.now() + burn;
     this.timer = setTimeout(() => this.burnOut(), burn);
   }

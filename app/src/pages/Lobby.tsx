@@ -32,6 +32,7 @@ function PlaceCard({
   onReady,
   onRemove,
   onDifficulty,
+  onMinutes,
 }: {
   seat: TableSeat;
   table: Table;
@@ -42,6 +43,7 @@ function PlaceCard({
   onReady: () => void;
   onRemove: () => void;
   onDifficulty: (d: BotDifficulty) => void;
+  onMinutes: (m: number | null | undefined) => void;
 }) {
   const t = useT();
   const bot = seat.kind === 'bot';
@@ -113,6 +115,30 @@ function PlaceCard({
             </div>
           )}
           {bot && !iAmHost && <p className="mt-1 font-sans text-[11px] text-ink-900/60">{t(`setup.difficulty.${seat.difficulty ?? 'industrialist'}.label`)}</p>}
+          {/* this seat's candle: the table's, none (a beginner takes their time), or its own minutes */}
+          {!bot && (
+            <div className="mt-2 flex flex-wrap items-center gap-1">
+              <span className="mr-1 font-sans text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-900/50">{t('site.room.candle')}</span>
+              {iAmHost ? (
+                ([undefined, null, 3, 5, 10] as const).map((m) => {
+                  const on = seat.minutes === m;
+                  return (
+                    <button
+                      key={String(m)}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => onMinutes(m)}
+                      className={cn('rounded-sm border px-1.5 py-[2px] font-sans text-[9px] font-bold uppercase tracking-[0.12em]', on ? 'border-ink-900 bg-ink-900 text-cream-100' : 'border-ink-900/30 text-ink-900/60 hover:border-ink-900/60')}
+                    >
+                      {m === undefined ? t('site.room.candleTable') : m === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: m })}
+                    </button>
+                  );
+                })
+              ) : (
+                <span className="font-sans text-[10px] text-ink-900/70">{seat.minutes === undefined ? t('site.room.candleTable') : seat.minutes === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: seat.minutes })}</span>
+              )}
+            </div>
+          )}
         </div>
         {/* remove: the host clears any seat but their own, a guest only leaves */}
         {iAmHost && !isHostSeat && (
@@ -359,6 +385,18 @@ export default function Lobby() {
                     onReady={() => edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === seat.id ? { ...s, ready: !s.ready } : s)) }))}
                     onRemove={() => edit((tb) => ({ ...tb, seats: tb.seats.filter((s) => s.id !== seat.id) }))}
                     onDifficulty={(difficulty) => edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === seat.id ? { ...s, difficulty } : s)) }))}
+                    onMinutes={(minutes) =>
+                      edit((tb) => ({
+                        ...tb,
+                        seats: tb.seats.map((s) => {
+                          if (s.id !== seat.id) return s;
+                          const next = { ...s };
+                          if (minutes === undefined) delete next.minutes;
+                          else next.minutes = minutes;
+                          return next;
+                        }),
+                      }))
+                    }
                   />
                 ))}
                 {Array.from({ length: empty }, (_, i) => (

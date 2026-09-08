@@ -311,6 +311,11 @@ function houseRules(o: Partial<SetupOptions> | undefined): SetupOptions {
   };
 }
 
+/** a seat's candle as the host would have it: none, or a sane number of minutes */
+function minutesOf(v: unknown): number | null {
+  return typeof v === 'number' && v > 0 ? Math.min(180, Math.round(v)) : null;
+}
+
 /* ---------------------- what a rewrite may touch ------------------- */
 
 /** the table that stands after `wanted`, or null when the author overreached */
@@ -323,12 +328,13 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
     /* a seat that was not there can only be a bot, and only the host seats it */
     if (!was) {
       if (!host || w.kind !== 'bot') return null;
-      seats.push({ id: w.id, name: w.name, color: w.color, kind: 'bot', difficulty: w.difficulty ?? 'industrialist', ready: true, joinedAt: Date.now() });
+      seats.push({ id: w.id, name: w.name, color: w.color, kind: 'bot', difficulty: w.difficulty ?? 'industrialist', ...(w.minutes !== undefined ? { minutes: minutesOf(w.minutes) } : {}), ready: true, joinedAt: Date.now() });
       continue;
     }
-    /* another human's chair is theirs: the host may clear it, never edit it */
+    /* another human's chair is theirs: the host may clear it, never edit it —
+       except its candle, which is the host's to set */
     if (was.kind === 'human' && was.id !== playerId) {
-      seats.push(was);
+      seats.push(host && w.minutes !== was.minutes ? { ...was, ...(w.minutes === undefined ? {} : { minutes: minutesOf(w.minutes) }) } : was);
       continue;
     }
     if (was.kind === 'bot' && !host) {
@@ -336,7 +342,7 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
       continue;
     }
     /* your own name at the table is your account's, not the client's word */
-    seats.push({ ...was, color: w.color, difficulty: w.difficulty ?? was.difficulty, ready: was.kind === 'bot' ? true : !!w.ready, name: was.kind === 'bot' ? w.name : was.name });
+    seats.push({ ...was, color: w.color, difficulty: w.difficulty ?? was.difficulty, ready: was.kind === 'bot' ? true : !!w.ready, name: was.kind === 'bot' ? w.name : was.name, ...(host && w.minutes !== undefined ? { minutes: minutesOf(w.minutes) } : {}) });
   }
   if (!host && seats.length !== cur.seats.length) return null;
   if (seats.length < 1 || seats.length > MAX_SEATS) return null;

@@ -110,6 +110,8 @@ export interface PlayerState {
   color: string; // token id: brass | oxblood | verdigris | steel
   isBot: boolean;
   difficulty: 'foreman' | 'industrialist' | 'magnate';
+  /** this seat's own candle (null = none), when it differs from the table's */
+  minutes?: number | null;
   money: number;
   /** SPACE on the progress track (0–99); the level it pays = incomeLevel(space) */
   income: number;
@@ -225,6 +227,7 @@ export interface SetupPayload {
     color: string;
     type: 'human' | 'bot';
     difficulty?: 'foreman' | 'industrialist' | 'magnate';
+    minutes?: number | null;
   }[];
   options: {
     eraLength: 'short' | 'standard';

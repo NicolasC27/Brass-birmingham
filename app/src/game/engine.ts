@@ -86,6 +86,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     color: p.color,
     isBot: p.type === 'bot',
     difficulty: p.difficulty ?? 'industrialist',
+    ...(p.minutes !== undefined ? { minutes: p.minutes } : {}),
     money: START_MONEY,
     income: START_INCOME_SPACE,
     vp: 0,
@@ -1225,6 +1226,12 @@ export function finishGame(s: GameState) {
 }
 
 /* ========================== persistence ============================ */
+
+/** the minutes this seat's candle burns — its own, else the table's; 0/null = none */
+export function candleMinutes(s: GameState, playerIdx: number): number | null {
+  const own = s.players[playerIdx]?.minutes;
+  return own === undefined ? s.timerMinutes : own;
+}
 
 export function serialize(s: GameState): string {
   return JSON.stringify(s);

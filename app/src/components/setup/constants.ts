@@ -37,6 +37,8 @@ export interface StoredSetup {
     color: PlayerColor;
     type: "human" | "bot";
     difficulty?: BotDifficulty;
+    /** this seat's candle: null for none, minutes otherwise; absent = the table's */
+    minutes?: number | null;
   }[];
   options: SetupOptions;
 }

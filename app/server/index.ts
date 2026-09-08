@@ -246,6 +246,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'desk':
         pushDesk(c, m.rid);
         return;
+      case 'feedback': {
+        if (!m.text.trim()) {
+          send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+          return;
+        }
+        store.feedback(who.id, m.page, m.kind, m.text);
+        console.log(`feedback (${m.kind}) from ${who.name} on ${m.page}: ${m.text.trim().slice(0, 200)}`);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
     }
     /* from here on, the tables: an address must have answered its letter */
     if (!who.verified) {

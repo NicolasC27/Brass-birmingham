@@ -101,6 +101,14 @@ create table if not exists games (
   finishedAt integer,
   result     text
 );
+create table if not exists feedback (
+  id        text primary key,
+  accountId text not null,
+  page      text not null,
+  kind      text not null,
+  text      text not null,
+  createdAt integer not null
+);
 create table if not exists moves (
   code   text not null,
   idx    integer not null,
@@ -377,6 +385,15 @@ export class Store {
   private tableName(code: string): string {
     const row = this.db.prepare('select name from tables where code = ?').get(code) as { name: string } | undefined;
     return row?.name ?? code;
+  }
+
+  /* ---------------------------- feedback --------------------------- */
+
+  /** an idea or a bug, as a player wrote it */
+  feedback(accountId: string, page: string, kind: string, text: string): void {
+    this.db
+      .prepare('insert into feedback (id, accountId, page, kind, text, createdAt) values (?, ?, ?, ?, ?, ?)')
+      .run('f-' + randomBytes(6).toString('hex'), accountId, page.slice(0, 120), kind === 'bug' ? 'bug' : 'idea', text.trim().slice(0, 4000), Date.now());
   }
 
   /* ----------------------------- tables ---------------------------- */

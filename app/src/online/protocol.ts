@@ -51,6 +51,8 @@ export type ClientMessage =
   /** the profile, as its owner would have it */
   | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null }
   | { t: 'password'; rid: number; current: string; next: string }
+  /** an idea or a bug for the house, from any page */
+  | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
   /** the desk: my tables, my invitations, my past games */
   | { t: 'desk'; rid?: number }
   /** ask a player by name to a table I sit at */

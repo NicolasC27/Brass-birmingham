@@ -6,6 +6,7 @@ import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
 import ConcedeBanner from '@/components/game/ConcedeBanner';
+import { FeedbackButton } from '@/components/site/Feedback';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -21,7 +22,7 @@ import MarketTray from '@/components/game/MarketTray';
 import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
-import { buildTargets, linkTargets, sellTargets, slotXY, tileKey } from '@/game/engine';
+import { buildTargets, candleMinutes, linkTargets, sellTargets, slotXY, tileKey } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { buildFinalPayload, confirmSummary, useGame } from '@/game/store';
 import { FINAL_KEY } from '@/game/types';
@@ -138,11 +139,12 @@ export default function Game() {
       const iv = window.setInterval(tick, 500);
       return () => window.clearInterval(iv);
     }
-    if (!game.timerMinutes || !isHumanTurn) {
+    const minutes = candleMinutes(game, game.current);
+    if (!minutes || !isHumanTurn) {
       setSecondsLeft(null);
       return;
     }
-    setSecondsLeft(game.timerMinutes * 60);
+    setSecondsLeft(minutes * 60);
     const iv = window.setInterval(() => setSecondsLeft((s) => (s === null ? null : Math.max(0, s - 1))), 1000);
     return () => window.clearInterval(iv);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -431,6 +433,7 @@ export default function Game() {
         >
           <Settings2 className="h-3.5 w-3.5" /> {t('game.page.settingsChip')}
         </button>
+        <FeedbackButton className="flex items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100" />
         {!ledgerOpen && (
           <button
             type="button"
