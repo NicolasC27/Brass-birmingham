@@ -467,6 +467,39 @@ export const useGame = create<GameStore>((set, get) => ({
 
 /* -------------------- selection summary helper -------------------- */
 
+/** what the pending action really costs — tile or link price PLUS the coal
+ *  and iron bought at the market — and what the player keeps afterwards */
+export function confirmCost(
+  st: { verb: Verb | null; buildPick: BuildTarget | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[] },
+  game: GameState,
+): { total: number; after: number } | null {
+  const money = game.players[game.current].money;
+  let total: number;
+  switch (st.verb) {
+    case 'build':
+      if (!st.buildPick) return null;
+      total = st.buildPick.total;
+      break;
+    case 'network':
+      if (!st.linkPick) return null;
+      total = st.secondLinkPick ? doubleLinkPlan(game, game.current, st.linkPick, st.secondLinkPick.link).total : st.linkPick.total;
+      break;
+    case 'develop': {
+      if (!st.developPick.length) return null;
+      const opts = developOptions(game, game.current);
+      total = st.developPick.reduce((a, ind) => a + (opts.find((o) => o.industry === ind)?.iron.totalCost ?? 0), 0);
+      break;
+    }
+    case 'sell':
+    case 'scout':
+      total = 0;
+      break;
+    default:
+      return null;
+  }
+  return { total, after: money - total };
+}
+
 export function confirmSummary(st: {
   verb: Verb | null;
   buildPick: BuildTarget | null;

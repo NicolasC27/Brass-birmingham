@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, X } from 'lucide-react';
 import { INDUSTRY_ICON, INDUSTRY_LABEL } from '@/game/data';
 import { townColor } from '@/game/townColors';
-import { cardLabel, confirmSummary, useGame, verbsForCard } from '@/game/store';
+import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
@@ -313,6 +313,7 @@ export default function HandDock() {
   const shown = !p.isBot ? p : humans.length === 1 ? humans[0] : null;
   const verbs = verbsForCard({ game, selectedCardId });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId });
+  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick }, game) : null;
   const devOptions = verb === 'develop' ? currentDevelops() : [];
 
   const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout';
@@ -338,6 +339,17 @@ export default function HandDock() {
             className="absolute -top-[52px] left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-brass-700/70 bg-coal-900/85 px-4 py-2 shadow-e3 backdrop-blur-md"
           >
             <span className="max-w-[46vw] truncate font-mono text-xs text-cream-100/90">{summary}</span>
+            {/* the real bill: price plus market coal and iron, and what stays in the purse */}
+            {cost && (
+              <span
+                className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-0.5 font-mono text-[11px]', cost.after < 0 ? 'border-rust-500/70 text-rust-500 brightness-150' : 'border-brass-700/60 text-brass-400')}
+                title={t('game.hand.costTip')}
+              >
+                <span>{t('game.hand.total', { n: cost.total })}</span>
+                <span className="text-cream-100/40">·</span>
+                <span className={cost.after < 0 ? '' : 'text-cream-100/75'}>{t('game.hand.left', { n: cost.after })}</span>
+              </span>
+            )}
             <button type="button" onClick={confirm} className="btn-strike !min-h-[34px] !px-4 !py-1.5 text-xs">
               {t('game.hand.strike')}
             </button>
