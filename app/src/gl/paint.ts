@@ -26,27 +26,47 @@ export type SlotArt = 'engraved' | 'painted';
 /** income / VP on built cards: one quiet bottom band, or two boxed chips */
 export type ChipStyle = 'band' | 'chips';
 /** Painting variants per industry. Each variant is a directory holding the
- *  full file set (cutout, colour cards, dual-slot paintings) for that
- *  industry: '' = app/public, the drawn sets live in /tiles-<name>. */
+ *  industry's file set (cutout and colour cards): '' = app/public, the drawn
+ *  sets live in /tiles-<name>. `front` says how the painting sits in a
+ *  dual-slot composition (see composePair). */
 export interface TileVariant {
   id: string;
   dir: string;
+  front: FrontRecipe;
+}
+/** the front industry of a dual-slot painting: whole, or cropped to its
+ *  tallest part (x, width in the 512 square), scaled; partners may be
+ *  pushed right of their usual place */
+interface FrontRecipe {
+  crop?: [x: number, w: number];
+  scale: number;
+  partnerX?: Partial<Record<IndustryType, number>>;
 }
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
-    { id: 'wagon', dir: '' },
-    { id: 'cart', dir: '/tiles-classic' },
-    { id: 'colliery', dir: '/tiles-works' },
+    { id: 'wagon', dir: '', front: { scale: 64 } },
+    { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
+    { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
   brewery: [
-    { id: 'barrel', dir: '' },
-    { id: 'mug', dir: '/tiles-classic' },
-    { id: 'brewhouse', dir: '/tiles-works' },
+    { id: 'barrel', dir: '', front: { scale: 60 } },
+    { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },
+    { id: 'brewhouse', dir: '/tiles-works', front: { crop: [40, 305], scale: 80, partnerX: { cotton: 160, iron: 160 } } },
   ],
 };
 /** chosen variant id per industry (missing = the first, default one) */
 export type TileArt = Partial<Record<IndustryType, string>>;
-export const variantDir = (i: IndustryType, art: TileArt): string => TILE_VARIANTS[i]?.find((v) => v.id === art[i])?.dir ?? '';
+const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefined => TILE_VARIANTS[i]?.find((v) => v.id === art[i]) ?? TILE_VARIANTS[i]?.[0];
+export const variantDir = (i: IndustryType, art: TileArt): string => variantOf(i, art)?.dir ?? '';
+/** which of two industries stands in front of a dual-slot painting, and
+ *  how the one behind is placed (tools/tiles/build-tile.sh says the same) */
+const FRONT_RANK: Record<IndustryType, number> = { brewery: 0, coal: 1, manufacturer: 2, cotton: 3, iron: 3, pottery: 3 };
+const PARTNER: Partial<Record<IndustryType, { scale: number; x: number }>> = {
+  cotton: { scale: 70, x: 150 },
+  iron: { scale: 70, x: 150 },
+  pottery: { scale: 70, x: 150 },
+  manufacturer: { scale: 62, x: 195 },
+};
 /** how a built card is dressed (board options) */
 export interface TileLook {
   slotArt: SlotArt;
@@ -161,7 +181,7 @@ interface IndustryArt {
   printHalfR: Texture;
 }
 const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
-const pairCache = new Map<string, Promise<Texture | null>>(); // `${dir}|${a}-${b}`
+const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pairs, `${a}-${b}`
 let tileSet: TileSet; // the set currently painted
 let barrelTex: Texture;
 let boatTex: Texture; // night barge — the merchants' default framed painting
@@ -292,20 +312,49 @@ function loadIndustryArt(dir: string, i: IndustryType): Promise<IndustryArt> {
   return p;
 }
 
-/** fetch (once, tolerantly) a dual-slot painting from a variant dir */
-function loadPair(dir: string, a: IndustryType, b: IndustryType): Promise<Texture | null> {
-  const key = `${dir}|${pairKey(a, b)}`;
+/** fetch (once, tolerantly) a dual-slot painting of the default set — some
+ *  of those are painted as one scene, not assembled */
+function loadPair(a: IndustryType, b: IndustryType): Promise<Texture | null> {
+  const key = pairKey(a, b);
   let p = pairCache.get(key);
   if (!p) {
-    p = Assets.load(`${dir}/tile-${pairFile(a, b)}-cut.png`).catch(() => null) as Promise<Texture | null>;
+    p = Assets.load(`/tile-${pairFile(a, b)}-cut.png`).catch(() => null) as Promise<Texture | null>;
     pairCache.set(key, p);
   }
   return p;
 }
 
+/** Assemble a dual-slot painting from two cutouts, the way the build script
+ *  does for the default set: the front industry low left, whole or cropped
+ *  to its tallest part; the partner behind, right, scaled down. Null when
+ *  neither industry has a front recipe (the half-crops apply then). */
+function composePair(a: IndustryType, ta: Texture, va: TileVariant | undefined, b: IndustryType, tb: Texture, vb: TileVariant | undefined): Texture | null {
+  const aFront = FRONT_RANK[a] <= FRONT_RANK[b];
+  const [front, ft, fv, back, bt] = aFront ? [a, ta, va, b, tb] : [b, tb, vb, a, ta];
+  const recipe = fv?.front;
+  const place = PARTNER[back];
+  const fs = ft.source.resource as CanvasImageSource | undefined;
+  const bs = bt.source.resource as CanvasImageSource | undefined;
+  if (!recipe || !place || !fs || !bs || FRONT_RANK[front] === FRONT_RANK[back]) return null;
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext('2d');
+  if (!ctx) return null;
+  const bw = (512 * place.scale) / 100;
+  ctx.drawImage(bs, recipe.partnerX?.[back] ?? place.x, 512 - bw - 38, bw, bw);
+  const [cx, cw] = recipe.crop ?? [0, 512];
+  const sx = ft.width / 512;
+  const fh = (512 * recipe.scale) / 100;
+  ctx.drawImage(fs, cx * sx, 0, cw * sx, ft.height, 4, 512 - fh - 38, (cw * recipe.scale) / 100, fh);
+  return Texture.from(c);
+}
+const composedCache = new Map<string, Texture>(); // `${variant a}|${a}|${variant b}|${b}`
+
 /** Assemble the painting set for a per-industry variant choice. A dual-slot
- *  painting comes from the variant dir of whichever industry is not on its
- *  default; when both are (or the file is missing) the half-crops apply. */
+ *  painting is the default file when both industries are on their default,
+ *  and is composed from the two chosen cutouts otherwise — so the crate on
+ *  a coal-and-goods slot is always the crate of the goods slots. */
 async function buildTileSet(art: TileArt): Promise<TileSet> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
   const arts = Object.fromEntries(await Promise.all(industries.map(async (i) => [i, await loadIndustryArt(variantDir(i, art), i)]))) as Record<IndustryType, IndustryArt>;
@@ -313,21 +362,24 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
   const printPair: Record<string, Texture> = {};
   await Promise.all(
     dualPairs().map(async ([a, b]) => {
-      const da = variantDir(a, art);
-      const db = variantDir(b, art);
-      if (da && db && da !== db) return; // two drawn variants never share a painting
-      const t = await loadPair(da || db, a, b);
+      const va = variantOf(a, art);
+      const vb = variantOf(b, art);
+      const key = `${va?.id ?? ''}|${a}|${vb?.id ?? ''}|${b}`;
+      let t: Texture | null | undefined = composedCache.get(key);
+      if (!t) {
+        t = !va?.dir && !vb?.dir ? await loadPair(a, b) : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
+        if (t) composedCache.set(key, t);
+      }
       if (!t) return;
       pair[pairKey(a, b)] = t;
-      printPair[pairKey(a, b)] = await engravedPair(da || db, a, b, t);
+      printPair[pairKey(a, b)] = engravedPair(key, t);
     }),
   );
   const by = <K extends keyof IndustryArt>(k: K) => Object.fromEntries(industries.map((i) => [i, arts[i][k]])) as Record<IndustryType, IndustryArt[K]>;
   return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair };
 }
 const printPairCache = new Map<string, Texture>();
-async function engravedPair(dir: string, a: IndustryType, b: IndustryType, t: Texture): Promise<Texture> {
-  const key = `${dir}|${pairKey(a, b)}`;
+function engravedPair(key: string, t: Texture): Texture {
   let e = printPairCache.get(key);
   if (!e) {
     e = engraveTexture(t);

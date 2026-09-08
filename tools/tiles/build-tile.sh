@@ -8,9 +8,12 @@
 #   tile-<i>.png               cutout on the dark tile ground
 #   tile-<i>-<colour>.png      owner-colour card: 8 px dark rim, colour ground,
 #                              black outline around the painting
-#   tile-<a>-<b>-cut.png       dual-slot painting: this industry in front-left
-#                              (whole, or cropped to its tallest part), the
-#                              partner behind-right
+#   tile-<a>-<b>-cut.png       dual-slot painting (icon set only): this industry
+#                              in front-left (whole, or cropped to its tallest
+#                              part), the partner behind-right. With a drawn
+#                              variant in play the board composes the pair
+#                              itself (paint.ts composePair) from the same
+#                              crop, scale and partner placement as below.
 set -euo pipefail
 NAME=${1:?industry name}
 STYLE=${2:-icons}
@@ -54,10 +57,10 @@ if [[ "$CROP" == none ]]; then
 else
   magick -background none "$T/front.svg" -resize 512x512 -crop "$CROP" +repage -resize "$CROP_SCALE%" "$T/front.png"
 fi
-# partner paintings always come from the same style directory
+[[ "$STYLE" == icons ]] || PAIRS=''
 for pair in $PAIRS; do
   n=${pair%%:*}; r=${pair#*:}; sc=${r%%:*}; x=${r##*:}
-  partner="$P/tile-$n-cut.png"; [[ -f "$partner" ]] || partner="app/public/tile-$n-cut.png"
+  partner="app/public/tile-$n-cut.png"
   # dual-slot files are named with the industry stems sorted (see paint.ts pairFile)
   if [[ "$NAME" < "$n" ]]; then out="tile-$NAME-$n"; else out="tile-$n-$NAME"; fi
   magick -size 512x512 xc:none \( "$partner" -resize "$sc%" \) -geometry "+$x+$((512 - 512 * sc / 100 - 38))" -compose Over -composite \
