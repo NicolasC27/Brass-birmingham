@@ -251,14 +251,15 @@ export default function Guide() {
   };
 
   return (
-    <div className="pointer-events-none fixed left-1/2 top-[100px] z-[63] flex w-[min(600px,92vw)] -translate-x-1/2 flex-col gap-2">
-      <AnimatePresence initial={false}>
+    <div className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] -translate-x-1/2 flex-col gap-2">
+      <AnimatePresence initial={false} mode="popLayout">
         {(showSteps || lines.length > 0) && !(hidden && !showSteps) && (
           <motion.aside
-            key={showSteps ? `step-${stepIndex}` : 'tips'}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+            key="note"
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
             aria-label={t('game.guide.aria')}
             className="paper pointer-events-auto relative px-4 py-3 shadow-e3"
           >
@@ -331,7 +332,7 @@ export default function Guide() {
 
         {/* the machine's reasons: why a player would have made that move */}
         {showBot && bot && (
-          <motion.aside key={`bot-${botSeq}`} initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative px-4 py-2.5">
+          <motion.aside key={`bot-${botSeq}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative px-4 py-2.5">
             <div className="flex items-start gap-3">
               <Bot className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
               <div className="min-w-0 flex-1">
