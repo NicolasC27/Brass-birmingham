@@ -1053,6 +1053,7 @@ function snapshot(s: GameState) {
 function endRound(s: GameState) {
   const sorted = [...s.order].sort((a, b) => s.players[a].spent - s.players[b].spent);
   s.order = sorted;
+  s.lastSpent = s.players.map((p) => p.spent);
   for (const p of s.players) p.spent = 0;
 
   const over = eraOver(s);

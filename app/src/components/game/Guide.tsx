@@ -76,7 +76,7 @@ const REACH_KEY = 'brassworks.tutorial.reached';
 /* ---------------------------- the machine ---------------------------- */
 
 /** the last move a machine made, said as a player would reason it */
-function botReason(g: GameState, me: number, t: T): { name: string; what: string; why: string; fresh: boolean } | null {
+function botReason(g: GameState, me: number, t: T): { name: string; what: string; why: string; turn: string; fresh: boolean } | null {
   const e = [...g.ledger].reverse().find((x) => x.player !== undefined && x.player !== me && g.players[x.player]?.isBot && x.key && x.key !== 'flip');
   if (!e || e.player === undefined) return null;
   const p = g.players[e.player];
@@ -114,8 +114,19 @@ function botReason(g: GameState, me: number, t: T): { name: string; what: string
     default:
       return null;
   }
+  /* the turn: why the machine is the one moving — its first or second action, and the round's order */
+  const played = g.ledger.filter((x) => x.era === e.era && x.round === e.round && x.player === e.player && x.verb !== 'system' && x.verb !== 'score').length;
+  const you = g.players[me]?.name ?? '';
+  const meIdx = g.order.indexOf(me);
+  const botIdx = g.order.indexOf(e.player);
+  const spentBot = g.lastSpent?.[e.player];
+  const spentMe = g.lastSpent?.[me];
+  let turn: string;
+  if (e.round === 1 && e.era === 'canal') turn = t('game.guide.turn.first', { name: p.name });
+  else if (played <= 1) turn = spentBot !== undefined && spentMe !== undefined ? t(botIdx < meIdx ? 'game.guide.turn.orderBefore' : 'game.guide.turn.orderAfter', { name: p.name, you, spentBot, spentMe, round: e.round }) : t('game.guide.turn.order', { name: p.name, round: e.round });
+  else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
-  return { name: p.name, what: ledgerText(e, t), why, fresh: e.at === g.actions.length - 1 };
+  return { name: p.name, what: ledgerText(e, t), why, turn, fresh: e.at === g.actions.length - 1 };
 }
 
 /* ----------------------------- the alerts ---------------------------- */
@@ -286,7 +297,7 @@ export default function Guide() {
   return (
     <div className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] -translate-x-1/2 flex-col gap-2">
       <AnimatePresence initial={false} mode="popLayout">
-        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && (
+        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && (
           <motion.aside
             key="note"
             layout
@@ -372,6 +383,7 @@ export default function Guide() {
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.botWhy', { name: bot.name })}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
                 <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
+                <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
               </div>
               {holding ? (
                 <button type="button" onClick={() => setBotHidden(botSeq)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">

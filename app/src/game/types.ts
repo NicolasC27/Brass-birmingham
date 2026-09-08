@@ -209,6 +209,8 @@ export interface GameState {
   abandoned?: boolean;
   /** one snapshot per completed round (after payday / era scoring) */
   history: RoundSnapshot[];
+  /** what each player spent in the round just ended — it decided this round's order */
+  lastSpent?: number[];
   /** every accepted action since setup — with the seed, the whole game */
   actions: GameAction[];
 }
