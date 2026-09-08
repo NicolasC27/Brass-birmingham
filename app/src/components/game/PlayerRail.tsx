@@ -166,7 +166,7 @@ export default function PlayerRail() {
   const next = projectedOrder(game);
 
   return (
-    <div className="fixed z-[64] flex flex-col gap-2" style={{ left: insets.left, top: insets.top }} aria-label={t('game.rail.playersAria')}>
+    <div data-player-rail className="fixed z-[64] flex flex-col gap-2" style={{ left: insets.left, top: insets.top }} aria-label={t('game.rail.playersAria')}>
       {game.players.map((p, i) => (
         <RailChip key={i} p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} />
       ))}

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
@@ -22,7 +22,7 @@ import { ShapeChip } from './TownInspector';
 /* ------------------------------------------------------------------ */
 
 const ORDER: IndustryType[] = ['cotton', 'manufacturer', 'pottery', 'brewery', 'coal', 'iron'];
-/** width of a rail chip + gap: where the mat's left edge lands */
+/** fallback width of the player rail (measured live once mounted) */
 const RAIL_W = 236;
 
 function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; playerIdx: number }) {
@@ -132,6 +132,18 @@ export default function PlayerMat() {
   const opts = useBoardOptions();
   const insets = hudInsets(opts);
   const wide = opts.matWide;
+  /* the mat sits flush right of the rail: measure it rather than guess */
+  const [railW, setRailW] = useState(RAIL_W);
+  useEffect(() => {
+    if (matPlayer === null) return;
+    const rail = document.querySelector<HTMLElement>('[data-player-rail]');
+    if (!rail) return;
+    const measure = () => setRailW(Math.round(rail.getBoundingClientRect().width) + 12);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(rail);
+    return () => ro.disconnect();
+  }, [matPlayer]);
 
   useEffect(() => {
     if (matPlayer === null) return;
@@ -168,8 +180,8 @@ export default function PlayerMat() {
           className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
           style={
             wide
-              ? { left: insets.left + RAIL_W, right: 12, top: insets.top, maxHeight: `calc(100vh - ${insets.top + insets.bottom + 8}px)` }
-              : { left: insets.left + RAIL_W, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + RAIL_W + 12}px))` }
+              ? { left: insets.left + railW, right: 12, top: insets.top, maxHeight: `calc(100vh - ${insets.top + insets.bottom + 8}px)` }
+              : { left: insets.left + railW, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + railW + 12}px))` }
           }
         >
           {/* player tabs — numbered like their shortcut; the wheel cycles seats */}
