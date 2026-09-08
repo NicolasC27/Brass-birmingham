@@ -52,20 +52,32 @@ function LevelTile({ ind, lv, count, isNext, gone }: { ind: IndustryType; lv: In
   useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
   const canalOnly = !lv.eras.includes('rail');
   const railOnly = !lv.eras.includes('canal');
+  const sheets = gone ? 0 : Math.min(3, count - 1);
   return (
     <li
       ref={ref}
       onPointerEnter={show}
       onPointerLeave={hide}
       className={cn(
-        'relative flex w-[76px] cursor-help flex-col rounded-[5px] border px-1.5 py-1 transition-colors',
+        'relative isolate flex w-[76px] cursor-help flex-col rounded-[5px] border px-1.5 py-1 transition-colors',
         isNext
           ? 'border-brass-400 bg-brass-500/15 shadow-[0_0_10px_rgba(201,164,92,.25)]'
           : gone
             ? 'border-brass-700/25 bg-coal-900/40 opacity-45'
             : 'border-brass-700/50 bg-coal-900/70 hover:border-brass-500',
       )}
+      style={{ marginRight: sheets * 2, marginBottom: sheets * 2 }}
     >
+      {/* the pile: one faint sheet per extra tile behind this one (at most
+          three), stepped down and right like a stack on the printed mat */}
+      {Array.from({ length: sheets }, (_, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className={cn('pointer-events-none absolute inset-0 -z-10 rounded-[5px] border', isNext ? 'border-brass-500/50 bg-brass-500/10' : 'border-brass-700/40 bg-coal-900/80')}
+          style={{ transform: `translate(${(i + 1) * 2}px, ${(i + 1) * 2}px)`, opacity: 1 - (i + 1) * 0.22 }}
+        />
+      ))}
       {/* level pips + how many left */}
       <div className="flex items-center justify-between">
         <span className="flex gap-[2px]">
@@ -179,7 +191,7 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           printed mat. Each tile carries what the printed one does — price,
           income, VP, and how many are left — so nothing needs a hover to be
           read; the full sheet floats in a tooltip anchored to the tile. */}
-      <ul className="mt-1.5 flex flex-wrap gap-1.5">
+      <ul className="mt-1.5 flex flex-wrap gap-1.5 pb-0.5 pr-0.5">
         {levels.map((lv) => {
           const count = left.filter((l) => l === lv.level).length;
           const isNext = nextLevel === lv.level;
