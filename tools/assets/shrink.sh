@@ -3,6 +3,7 @@
 # (ImageMagick 7). Run from the repository root; idempotent.
 #  - opaque paintings (maps, banners, hero, textures, cards, portraits,
 #    merchant scenes) → lossy WebP; the alpha village → WebP with alpha
+#  - the painted tile set (public/v3) → lossy WebP, backdrops and all
 #  - every 16-bit tile PNG → 8-bit (same pixels, half the bytes)
 #  - generator sources and superseded renders leave the served folder
 set -euo pipefail
@@ -24,6 +25,14 @@ for t in tex-paper tex-brass tex-coal tex-wood table-felt; do webp "$t" 80 -alph
 for c in card-back avatar-bot portrait-1 portrait-2 portrait-3 portrait-4 merchant-boat; do webp "$c" 85 -alpha off; done
 for f in "$P"/merchant-*.png; do [[ -f "$f" ]] || continue; s=$(basename "$f" .png); [[ "$s" == merchant-boat ]] && continue; webp "$s" 85 -alpha off; done
 webp town-village 90
+echo "painted tile set:"
+for f in "$P"/v3/*-clean.png; do
+  [[ -f "$f" ]] || continue
+  out="${f%-clean.png}.webp"
+  magick "$f" -alpha off -quality 86 "$out"
+  rm "$f"
+  echo "  $(basename "$out") ($(du -h "$out" | cut -f1))"
+done
 echo "tiles to 8-bit:"
 n=0
 for f in "$P"/tile-*.png "$P"/tiles-classic/*.png "$P"/tiles-works/*.png; do
