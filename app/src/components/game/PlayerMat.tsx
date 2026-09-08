@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
 import { useGame } from '@/game/store';
-import type { IndustryType, PlayerState } from '@/game/types';
+import type { IndustryLevel, IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
@@ -26,37 +27,126 @@ const ORDER: IndustryType[] = ['cotton', 'manufacturer', 'pottery', 'brewery', '
 /** fallback width of the player rail (measured live once mounted) */
 const RAIL_W = 236;
 
+/** one printed tile of the mat: pips, price, income, VP, count — and a
+ *  floating sheet with the rest on hover (a portal, so the scrolling mat
+ *  never clips it and the tile itself never moves) */
+function LevelTile({ ind, lv, count, isNext, gone }: { ind: IndustryType; lv: IndustryLevel; count: number; isNext: boolean; gone: boolean }) {
+  const t = useT();
+  const ref = useRef<HTMLLIElement>(null);
+  const [tip, setTip] = useState<{ x: number; y: number; up: boolean } | null>(null);
+  const timer = useRef<number | null>(null);
+  const show = () => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => {
+      const r = ref.current?.getBoundingClientRect();
+      if (!r) return;
+      const up = r.bottom + 150 > window.innerHeight;
+      setTip({ x: r.left + r.width / 2, y: up ? r.top - 6 : r.bottom + 6, up });
+    }, 180);
+  };
+  const hide = () => {
+    if (timer.current !== null) window.clearTimeout(timer.current);
+    timer.current = null;
+    setTip(null);
+  };
+  useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
+  const canalOnly = !lv.eras.includes('rail');
+  const railOnly = !lv.eras.includes('canal');
+  return (
+    <li
+      ref={ref}
+      onPointerEnter={show}
+      onPointerLeave={hide}
+      className={cn(
+        'relative flex w-[76px] cursor-help flex-col rounded-[5px] border px-1.5 py-1 transition-colors',
+        isNext
+          ? 'border-brass-400 bg-brass-500/15 shadow-[0_0_10px_rgba(201,164,92,.25)]'
+          : gone
+            ? 'border-brass-700/25 bg-coal-900/40 opacity-45'
+            : 'border-brass-700/50 bg-coal-900/70 hover:border-brass-500',
+      )}
+    >
+      {/* level pips + how many left */}
+      <div className="flex items-center justify-between">
+        <span className="flex gap-[2px]">
+          {Array.from({ length: lv.level }, (_, i) => (
+            <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
+          ))}
+        </span>
+        <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+      </div>
+      {/* the printed numbers: price, then income and VP */}
+      <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
+      <div className="mt-1 flex items-baseline justify-between font-mono text-[9px] leading-none">
+        <span className="text-bottle-600 brightness-150">+{lv.incomeDelta}</span>
+        <span className="text-cream-100/85">{lv.vp} VP</span>
+      </div>
+      {/* era / develop marks as small dots, spelled out in the sheet */}
+      {(canalOnly || railOnly || lv.noDevelop) && (
+        <span className="absolute right-1 top-[13px] flex gap-[3px]">
+          {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150" />}
+          {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500" />}
+          {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500" />}
+        </span>
+      )}
+      {isNext && <span className="absolute -top-[7px] left-1.5 rounded-sm bg-brass-400 px-1 font-sans text-[7px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>}
+      {tip &&
+        createPortal(
+          <div
+            role="tooltip"
+            className="plate pointer-events-none fixed z-[95] w-[220px] px-3 py-2 shadow-e3"
+            style={{ left: tip.x, top: tip.y, transform: tip.up ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
+          >
+            <div className="flex items-baseline justify-between border-b border-brass-700/40 pb-1">
+              <span className="font-fell text-[12px] tracking-wide text-brass-400">{INDUSTRY_LABEL[ind]} · {t('game.mat.level', { n: lv.level })}</span>
+              <span className="font-mono text-[9px] text-cream-100/55">{gone ? t('game.mat.gone') : `×${count}`}</span>
+            </div>
+            <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-[3px] font-mono text-[9.5px] leading-[13px]">
+              <dt className="text-cream-100/50">{t('game.mat.sheet.build')}</dt>
+              <dd className="text-cream-100/90">
+                {t('game.mat.costs', { cost: lv.cost })}
+                {lv.coal > 0 && <span className="text-cream-100/70"> · {t('game.mat.coalN', { n: lv.coal })}</span>}
+                {lv.iron > 0 && <span className="text-cream-100/70"> · {t('game.mat.ironN', { n: lv.iron })}</span>}
+              </dd>
+              <dt className="text-cream-100/50">{t('game.mat.sheet.flip')}</dt>
+              <dd className="text-cream-100/90">{t('game.mat.sheet.flipGives', { inc: lv.incomeDelta, vp: lv.vp })}</dd>
+              {lv.links > 0 && (
+                <>
+                  <dt className="text-cream-100/50">{t('game.mat.sheet.links')}</dt>
+                  <dd className="text-cream-100/90">{t('game.mat.linkVp', { n: lv.links })}</dd>
+                </>
+              )}
+              {(lv.cubes > 0 || lv.beerToSell > 0) && (
+                <>
+                  <dt className="text-cream-100/50">{t('game.mat.sheet.sell')}</dt>
+                  <dd className="text-cream-100/90">
+                    {lv.cubes > 0 && t(ind === 'brewery' ? 'game.mat.barrels' : 'game.mat.cubes', { n: lv.cubes })}
+                    {lv.cubes > 0 && lv.beerToSell > 0 && ' · '}
+                    {lv.beerToSell > 0 && t('game.mat.beer', { n: lv.beerToSell })}
+                  </dd>
+                </>
+              )}
+            </dl>
+            {(canalOnly || railOnly || lv.noDevelop) && (
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {canalOnly && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
+                {railOnly && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
+                {lv.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
+              </div>
+            )}
+          </div>,
+          document.body,
+        )}
+    </li>
+  );
+}
+
 function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; playerIdx: number }) {
   const t = useT();
   const game = useGame((s) => s.game)!;
   const levels = INDUSTRIES[ind];
   const left = p.stacks[ind];
   const nextLevel = left[0];
-  /* hovering a level chip swaps the detail line to that level; at rest it
-     describes the next tile to build */
-  const [peek, setPeek] = useState<number | null>(null);
-  /* the peek holds while the pointer crosses the gaps between chips and
-     only lets go a beat after it leaves the whole row — no flicker back
-     to "next" between two chips */
-  const leaveTimer = useRef<number | null>(null);
-  const holdPeek = (level: number) => {
-    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
-    leaveTimer.current = null;
-    setPeek(level);
-  };
-  const releasePeek = () => {
-    if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
-    leaveTimer.current = window.setTimeout(() => setPeek(null), 220);
-  };
-  useEffect(
-    () => () => {
-      if (leaveTimer.current !== null) window.clearTimeout(leaveTimer.current);
-    },
-    [],
-  );
-  const shownLevel = peek ?? nextLevel;
-  const next = levels.find((lv) => lv.level === shownLevel);
-  const isNextShown = shownLevel === nextLevel && peek === null;
   const total = levels.reduce((a, l) => a + l.count, 0);
   const onBoard = Object.entries(game.tiles)
     .filter(([, x]) => x.owner === playerIdx && x.industry === ind)
@@ -85,68 +175,20 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
         <span className="truncate font-fell text-[13px] tracking-wide text-cream-100">{INDUSTRY_LABEL[ind]}</span>
         <span className="ml-auto shrink-0 font-mono text-[9.5px] text-cream-100/55">{t('game.mat.remaining', { left: left.length, total })}</span>
       </div>
-      {/* the stack laid flat: one chip per level, level I first like the printed mat */}
-      <ul className="mt-1.5 flex flex-wrap gap-1" onPointerLeave={releasePeek}>
+      {/* the stack laid flat: one MINI TILE per level, level I first like the
+          printed mat. Each tile carries what the printed one does — price,
+          income, VP, and how many are left — so nothing needs a hover to be
+          read; the full sheet floats in a tooltip anchored to the tile. */}
+      <ul className="mt-1.5 flex flex-wrap gap-1.5">
         {levels.map((lv) => {
           const count = left.filter((l) => l === lv.level).length;
           const isNext = nextLevel === lv.level;
           const gone = count === 0;
           return (
-            <li
-              key={lv.level}
-              onPointerEnter={() => holdPeek(lv.level)}
-              className={cn(
-                'flex cursor-help items-center gap-1 rounded-[4px] border px-1.5 py-[3px] font-mono text-[9.5px] transition-colors',
-                isNext ? 'border-brass-400 bg-brass-500/15 text-cream-100 shadow-[0_0_8px_rgba(201,164,92,.25)]' : gone ? 'border-brass-700/25 text-cream-100/35' : 'border-brass-700/50 text-cream-100/80',
-                peek === lv.level && 'border-cream-100/60 text-cream-100',
-              )}
-            >
-              <span className="flex gap-[2px]">
-                {Array.from({ length: lv.level }, (_, i) => (
-                  <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
-                ))}
-              </span>
-              <span className="font-bold">{gone ? '—' : `×${count}`}</span>
-            </li>
+            <LevelTile key={lv.level} ind={ind} lv={lv} count={count} isNext={isNext} gone={gone} />
           );
         })}
       </ul>
-      {/* the level in focus: what it costs to build, what it gives once
-          flipped. EVERY level's line is rendered, stacked in one grid cell,
-          only the focused one visible — the cell is as tall as the longest
-          line, so a hover never reflows the chips under the pointer */}
-      <div className="mt-1.5 grid">
-        {levels.map((lv) => {
-          const shown = lv.level === shownLevel;
-          const asNext = shown && isNextShown;
-          return (
-            <div
-              key={lv.level}
-              aria-hidden={!shown}
-              className={cn('col-start-1 row-start-1 flex flex-wrap content-start items-center gap-x-2 gap-y-0.5 font-mono text-[9.5px] leading-[14px] text-cream-100/70', !shown && 'invisible')}
-            >
-              {asNext ? (
-                <span className="rounded-sm bg-brass-400 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>
-              ) : (
-                <span className="rounded-sm border border-cream-100/40 px-1 font-sans text-[8px] font-black uppercase tracking-[0.14em] text-cream-100/80">{t('game.mat.level', { n: lv.level })}</span>
-              )}
-              <span className="text-brass-400">{t('game.mat.costs', { cost: lv.cost })}</span>
-              {(lv.coal > 0 || lv.iron > 0) && <span>{t('game.mat.needs', { coal: lv.coal, iron: lv.iron })}</span>}
-              <span className="text-cream-100/85">{t('game.mat.flipGives', { inc: lv.incomeDelta, vp: lv.vp })}</span>
-              {lv.links > 0 && <span>{t('game.mat.linkVp', { n: lv.links })}</span>}
-              {lv.cubes > 0 && <span>{t(ind === 'brewery' ? 'game.mat.barrels' : 'game.mat.cubes', { n: lv.cubes })}</span>}
-              {lv.beerToSell > 0 && <span>{t('game.mat.beer', { n: lv.beerToSell })}</span>}
-              {!lv.eras.includes('rail') && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
-              {!lv.eras.includes('canal') && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
-              {lv.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
-            </div>
-          );
-        })}
-        {/* everything placed and nothing hovered: the stack is empty */}
-        <div aria-hidden={next !== undefined} className={cn('col-start-1 row-start-1 font-mono text-[9.5px] leading-[14px] text-cream-100/40', next !== undefined && 'invisible')}>
-          {t('game.mat.gone')}
-        </div>
-      </div>
       {/* what this player already has on the board for this industry */}
       {onBoard.length > 0 && (
         <ul className="mt-1.5 flex flex-wrap gap-1 border-t border-brass-700/30 pt-1.5">
