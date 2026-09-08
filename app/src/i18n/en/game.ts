@@ -174,6 +174,7 @@ const game = {
     ironN: '{n} iron',
     beer: '{n} beer to sell',
     level: 'Level {n}',
+    vpShort: ' VP',
     flipGives: 'flipped: +{inc} income · {vp} VP',
     sheet: { build: 'Build', flip: 'Flipped', flipGives: '+{inc} income · {vp} VP', links: 'Links', sell: 'Sell' },
     linkVp: '{n} VP per adjacent link',

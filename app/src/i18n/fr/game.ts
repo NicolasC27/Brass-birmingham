@@ -176,6 +176,7 @@ const fr: typeof engame = {
     ironN: '{n} fer',
     beer: '{n} bière pour vendre',
     level: 'Niveau {n}',
+    vpShort: ' PV',
     flipGives: 'retournée : +{inc} revenu · {vp} PV',
     sheet: { build: 'Poser', flip: 'Retournée', flipGives: '+{inc} revenu · {vp} PV', links: 'Liaisons', sell: 'Vendre' },
     linkVp: '{n} PV par liaison voisine',

@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
+import { FILE_FOR, variantDir } from '@/gl/paint';
 import { ShapeChip } from './TownInspector';
 
 /* ------------------------------------------------------------------ */
@@ -27,10 +28,12 @@ const ORDER: IndustryType[] = ['cotton', 'manufacturer', 'pottery', 'brewery', '
 /** fallback width of the player rail (measured live once mounted) */
 const RAIL_W = 236;
 
-/** one printed tile of the mat: pips, price, income, VP, count — and a
- *  floating sheet with the rest on hover (a portal, so the scrolling mat
- *  never clips it and the tile itself never moves) */
-function LevelTile({ ind, lv, count, isNext, gone }: { ind: IndustryType; lv: IndustryLevel; count: number; isNext: boolean; gone: boolean }) {
+/** One tile of the mat, as it will sit on the board: the industry's card in
+ *  the player's colour (the very texture the WebGL board paints), the level
+ *  in pips, and the printed figures on a dark band — price at the top, income
+ *  and VP at the bottom. Extra tiles of the level stack behind it like a real
+ *  pile. A floating sheet (portal) carries the rest on hover. */
+function LevelTile({ ind, lv, count, isNext, gone, color, dir }: { ind: IndustryType; lv: IndustryLevel; count: number; isNext: boolean; gone: boolean; color: string; dir: string }) {
   const t = useT();
   const ref = useRef<HTMLLIElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; up: boolean } | null>(null);
@@ -52,58 +55,72 @@ function LevelTile({ ind, lv, count, isNext, gone }: { ind: IndustryType; lv: In
   useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
   const canalOnly = !lv.eras.includes('rail');
   const railOnly = !lv.eras.includes('canal');
-  const sheets = gone ? 0 : Math.min(3, count - 1);
+  const face = `url(${dir}/tile-${FILE_FOR[ind]}-${color}.png)`;
+  /* the pile: up to three more cards behind, stepped up and to the right */
+  const behind = gone ? 0 : Math.min(3, count - 1);
+  const STEP = 3;
   return (
-    <li ref={ref} onPointerEnter={show} onPointerLeave={hide} className="group relative h-[52px] w-[76px] cursor-help" style={{ marginBottom: sheets * 2 }}>
-      {/* the pile: each extra tile (at most three) shows only as its bottom
-          edge — a solid sheet a little narrower than the one above, stepped
-          two pixels down — the way a short deck reads on the printed mat */}
-      {Array.from({ length: sheets }, (_, i) => (
-        <span
-          key={i}
-          aria-hidden
-          className={cn('pointer-events-none absolute rounded-b-[5px] border-x border-b', isNext ? 'border-brass-500/60 bg-[#251e13]' : 'border-brass-700/50 bg-[#191410]')}
-          style={{ left: 3 * (i + 1), right: 3 * (i + 1), top: '50%', bottom: -2 * (i + 1) }}
-        />
-      ))}
-      {/* the face, painted above the pile (opaque so nothing shows through) */}
+    <li
+      ref={ref}
+      onPointerEnter={show}
+      onPointerLeave={hide}
+      className="group relative h-[68px] w-[74px] cursor-help"
+      style={{ marginRight: behind * STEP, marginTop: behind * STEP }}
+    >
+      {Array.from({ length: behind }, (_, i) => {
+        const k = behind - i; // farthest first
+        return (
+          <span
+            key={i}
+            aria-hidden
+            className="absolute inset-0 rounded-[6px] border border-black/60 bg-cover bg-center"
+            style={{ backgroundImage: face, transform: `translate(${k * STEP}px, ${-k * STEP}px)`, filter: `brightness(${1 - k * 0.14})`, boxShadow: '0 1px 2px rgba(0,0,0,.6)' }}
+          />
+        );
+      })}
+      {/* the top card */}
       <span
         aria-hidden
         className={cn(
-          'absolute inset-0 z-10 rounded-[5px] border transition-colors',
-          isNext
-            ? 'border-brass-400 bg-[#2b2316] shadow-[0_0_10px_rgba(201,164,92,.25)]'
-            : gone
-              ? 'border-brass-700/25 bg-[#161210]'
-              : 'border-brass-700/50 bg-[#1e1913] group-hover:border-brass-500',
+          'absolute inset-0 rounded-[6px] border bg-cover bg-center transition-[box-shadow,border-color]',
+          gone ? 'border-brass-700/30 bg-[#161210] [background-image:none]' : isNext ? 'border-brass-400' : 'border-black/70 group-hover:border-brass-400/80',
         )}
+        style={{
+          backgroundImage: gone ? undefined : face,
+          boxShadow: gone ? undefined : isNext ? '0 0 0 1px rgba(201,164,92,.5), 0 0 12px rgba(201,164,92,.35), 0 2px 4px rgba(0,0,0,.6)' : '0 2px 4px rgba(0,0,0,.6), 0 6px 14px rgba(0,0,0,.35)',
+        }}
       />
-      <div className={cn('relative z-20 flex h-full flex-col px-1.5 py-1', gone && 'opacity-45')}>
-        {/* level pips + how many left */}
-        <div className="flex items-center justify-between">
-          <span className="flex gap-[2px]">
+      {gone ? (
+        /* an empty slot: the level is all on the board */
+        <span aria-hidden className="absolute inset-[6px] rounded-[4px] border border-dashed border-brass-700/40" />
+      ) : null}
+      {/* printed figures */}
+      <div className={cn('relative z-10 flex h-full flex-col justify-between', gone && 'opacity-50')}>
+        <div className="flex items-start justify-between p-1">
+          <span className="flex gap-[2px] rounded-[3px] bg-black/55 px-1 py-[3px]">
             {Array.from({ length: lv.level }, (_, i) => (
-              <span key={i} className={cn('h-[4px] w-[4px] rounded-full', gone ? 'bg-brass-700/60' : 'bg-brass-400')} />
+              <span key={i} className="h-[4px] w-[4px] rounded-full bg-brass-400" />
             ))}
           </span>
-          <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
+          <span className="rounded-[3px] bg-black/55 px-1 font-mono text-[9.5px] font-bold leading-[14px] text-brass-400">{gone ? '—' : `×${count}`}</span>
         </div>
-        {/* the printed numbers: price, then income and VP */}
-        <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
-        <div className="mt-1 flex items-baseline justify-between font-mono text-[9px] leading-none">
-          <span className="text-bottle-600 brightness-150">+{lv.incomeDelta}</span>
-          <span className="text-cream-100/85">{lv.vp} VP</span>
-        </div>
-        {/* era / develop marks as small dots, spelled out in the sheet */}
-        {(canalOnly || railOnly || lv.noDevelop) && (
-          <span className="absolute right-1 top-[13px] flex gap-[3px]">
-            {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150" />}
-            {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500" />}
-            {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500" />}
+        <div className="flex items-baseline justify-between whitespace-nowrap rounded-b-[5px] bg-black/65 px-1.5 py-[4px] font-mono leading-none">
+          <span className="text-[11px] font-bold text-cream-100">£{lv.cost}</span>
+          <span className="flex items-baseline gap-[5px] text-[8.5px]">
+            <span className="text-bottle-600 brightness-[1.7]">+{lv.incomeDelta}</span>
+            <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
           </span>
-        )}
+        </div>
       </div>
-      {isNext && <span className="absolute -top-[7px] left-1.5 z-30 rounded-sm bg-brass-400 px-1 font-sans text-[7px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950">{t('game.mat.next')}</span>}
+      {/* era / develop marks as small dots, spelled out in the sheet */}
+      {(canalOnly || railOnly || lv.noDevelop) && (
+        <span className="absolute left-1 top-[20px] z-10 flex gap-[3px]">
+          {canalOnly && <span className="h-[5px] w-[5px] rounded-full bg-bottle-600 brightness-150 ring-1 ring-black/60" />}
+          {railOnly && <span className="h-[5px] w-[5px] rounded-full bg-copper-500 ring-1 ring-black/60" />}
+          {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500 ring-1 ring-black/60" />}
+        </span>
+      )}
+      {isNext && <span className="absolute -top-[7px] left-1/2 z-30 -translate-x-1/2 rounded-sm bg-brass-400 px-1 font-sans text-[7px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950 shadow-[0_1px_2px_rgba(0,0,0,.6)]">{t('game.mat.next')}</span>}
       {tip &&
         createPortal(
           <div
@@ -158,6 +175,7 @@ function LevelTile({ ind, lv, count, isNext, gone }: { ind: IndustryType; lv: In
 function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerState; playerIdx: number }) {
   const t = useT();
   const game = useGame((s) => s.game)!;
+  const dir = variantDir(ind, useBoardOptions().tileArt);
   const levels = INDUSTRIES[ind];
   const left = p.stacks[ind];
   const nextLevel = left[0];
@@ -193,13 +211,13 @@ function IndustryBlock({ ind, p, playerIdx }: { ind: IndustryType; p: PlayerStat
           printed mat. Each tile carries what the printed one does — price,
           income, VP, and how many are left — so nothing needs a hover to be
           read; the full sheet floats in a tooltip anchored to the tile. */}
-      <ul className="mt-1.5 flex flex-wrap items-start gap-1.5 pb-1">
+      <ul className="mt-2 flex flex-wrap items-start gap-2 pb-1 pt-1">
         {levels.map((lv) => {
           const count = left.filter((l) => l === lv.level).length;
           const isNext = nextLevel === lv.level;
           const gone = count === 0;
           return (
-            <LevelTile key={lv.level} ind={ind} lv={lv} count={count} isNext={isNext} gone={gone} />
+            <LevelTile key={lv.level} ind={ind} lv={lv} count={count} isNext={isNext} gone={gone} color={p.color} dir={dir} />
           );
         })}
       </ul>

@@ -69,7 +69,7 @@ const ICON_FOR: Record<IndustryType, string> = {
   brewery: '/icon-brewery.svg',
 };
 /** industry key → asset file stem ('manufacturer' vs file 'manufacture') */
-const FILE_FOR: Record<IndustryType, string> = {
+export const FILE_FOR: Record<IndustryType, string> = {
   coal: 'coal',
   iron: 'iron',
   cotton: 'cotton',
