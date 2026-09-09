@@ -59,7 +59,7 @@ const portraitFor = (index: number): string => `/portrait-${(index % 4) + 1}.web
 
 /** circular portrait medallion with a player-colour rim (Steam reference);
  *  the active player gets a glowing ring. */
-function PortraitMedallion({ p, index, active, size }: { p: PlayerState; index: number; active: boolean; size: number }) {
+export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; index: number; active: boolean; size: number }) {
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   return (
     <span

@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, SkipForward, X, Undo2 } from 'lucide-react';
 import { INDUSTRY_ICON, INDUSTRY_LABEL, incomeLevel } from '@/game/data';
 import { townColor } from '@/game/townColors';
-import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
+import { cardLabel, confirmSummary, useGame, verbsForCard } from '@/game/store';
 import { buildTargets } from '@/game/engine';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
@@ -236,8 +236,6 @@ export default function HandDock() {
   const setLoanPeek = useGame((s) => s.setLoanPeek);
   const flyToRegion = useGame((s) => s.flyToRegion);
   const toggleDevelop = useGame((s) => s.toggleDevelop);
-  const cancel = useGame((s) => s.cancel);
-  const confirm = useGame((s) => s.confirm);
   const onlineCode = useGame((s) => s.code);
   const aid = !!game && aidOn(game.assist, onlineCode !== null);
   const undo = useGame((s) => s.undo);
@@ -285,31 +283,6 @@ export default function HandDock() {
   const maxW = `min(1360px, calc(100vw - ${2 * (MM_W_FOR[boardOpts.minimapSize] + 28)}px))`;
   /* the fan scrolls sideways with a plain mouse wheel (no shift needed) */
   const fanRef = useRef<HTMLDivElement>(null);
-  /* the confirm bar rides above the CARDS, not the dock: track the fan's
-     centre within the footer */
-  const footRef = useRef<HTMLElement>(null);
-  const [fanCentre, setFanCentre] = useState<number | null>(null);
-  useLayoutEffect(() => {
-    const fan = fanRef.current;
-    const foot = footRef.current;
-    if (!fan || !foot) return;
-    const measure = () => {
-      const f = fan.getBoundingClientRect();
-      const o = foot.getBoundingClientRect();
-      const c = f.left - o.left + f.width / 2;
-      setFanCentre((prev) => (prev !== null && Math.abs(prev - c) < 0.5 ? prev : c));
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(fan);
-    ro.observe(foot);
-    window.addEventListener('resize', measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', measure);
-    };
-    /* re-measured whenever the selection or the dock's fold could move the fan */
-  }, [selectedCardId, verb, buildPick, linkPick, sellPicks, developPick, scoutPick, hovered, pinned]);
   useEffect(() => {
     const el = fanRef.current;
     if (!el) return;
@@ -357,7 +330,6 @@ export default function HandDock() {
   const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
   const verbs = verbsForCard({ game, selectedCardId });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId });
-  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick }, game) : null;
   const devOptions = verb === 'develop' ? currentDevelops() : [];
 
   const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout';
@@ -366,48 +338,12 @@ export default function HandDock() {
 
   return (
     <footer
-      ref={footRef}
       aria-label={t('game.hand.dockAria')}
       className="fixed left-1/2 z-[64] -translate-x-1/2"
       style={{ bottom: insets.bottom, width: maxW }}
       onPointerEnter={onEnter}
       onPointerLeave={onLeave}
     >
-      {/* Confirm bar floats above the dock */}
-      <AnimatePresence>
-        {isHumanTurn && summary && (
-          <motion.div
-            /* framer owns the transform: the horizontal centring goes through
-               its x, or the Tailwind translate would be overridden */
-            initial={{ x: '-50%', y: 56, opacity: 0 }}
-            animate={{ x: '-50%', y: 0, opacity: 1 }}
-            exit={{ x: '-50%', y: 56, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-            className="absolute -top-[52px] z-30 flex items-center gap-3 rounded-lg border border-brass-700/70 bg-coal-900/85 px-4 py-2 shadow-e3 backdrop-blur-md"
-            style={{ left: fanCentre ?? '50%' }}
-          >
-            <span className="max-w-[46vw] truncate font-mono text-xs text-cream-100/90">{summary}</span>
-            {/* the real bill: price plus market coal and iron, and what stays in the purse */}
-            {cost && (
-              <span
-                className={cn('flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-0.5 font-mono text-[11px]', cost.after < 0 ? 'border-rust-500/70 text-rust-500 brightness-150' : 'border-brass-700/60 text-brass-400')}
-                title={t('game.hand.costTip')}
-              >
-                <span>{t('game.hand.total', { n: cost.total })}</span>
-                <span className="text-cream-100/40">·</span>
-                <span className={cost.after < 0 ? '' : 'text-cream-100/75'}>{t('game.hand.left', { n: cost.after })}</span>
-              </span>
-            )}
-            <button type="button" onClick={confirm} className="btn-strike !min-h-[34px] !px-4 !py-1.5 text-xs">
-              {t('game.hand.strike')}
-            </button>
-            <button type="button" onClick={cancel} className="btn-ledger !min-h-[34px] !px-3 !py-1.5 text-xs">
-              {t('game.hand.cancel')}
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <motion.div
         initial={false}
         animate={{ height: expanded ? 180 : 32 }}
