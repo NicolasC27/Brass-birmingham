@@ -279,11 +279,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       let lastFxSeq = -1;
       const fxRings: { g: Graphics; t0: number }[] = [];
       const fxVehicles: { s: Sprite; pts: [number, number][]; t0: number }[] = [];
-      /* invalid-target shake: decaying sinusoidal x offset (320ms) */
-      let lastShakeAt = -1;
-      let shakeObjs: { o: Container; x0: number }[] = [];
-      let shakeT0 = 0;
-
       a.ticker.add((t) => {
         clock += t.deltaMS / 1000;
         cam.tick(t.deltaMS);
@@ -321,48 +316,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         /* pulses (planning highlights, hover rings) */
         const osc = 0.55 + 0.35 * Math.sin(clock * 4.5);
         for (const p of pulsesRef.current) p.g.alpha = p.base * osc;
-        /* shake the rejected slot / link (SVG: bw-shake keyframes) */
-        const shk = useGame.getState().shake;
-        if (shk && shk.at !== lastShakeAt) {
-          lastShakeAt = shk.at;
-          for (const s of shakeObjs) s.o.x = s.x0;
-          shakeObjs = [];
-          shakeT0 = clock;
-          const push = (o: Container | undefined) => {
-            if (o) shakeObjs.push({ o, x0: o.x });
-          };
-          const [townId, slotStr] = shk.key.split(':');
-          const tv = scene.towns.get(townId);
-          if (slotStr !== undefined && tv) {
-            const sl = tv.slots[Number(slotStr)];
-            if (sl) {
-              push(sl.frame);
-              push(sl.art);
-              push(sl.extras);
-              push(sl.hit);
-            }
-          } else if (scene.linkGfx.has(shk.key)) {
-            push(scene.linkGfx.get(shk.key));
-            push(scene.linkHit.get(shk.key));
-          } else if (tv) {
-            for (const sl of tv.slots) {
-              push(sl.frame);
-              push(sl.art);
-              push(sl.extras);
-              push(sl.hit);
-            }
-          }
-        }
-        if (shakeObjs.length) {
-          const age = clock - shakeT0;
-          if (age >= 0.32 || reduced) {
-            for (const s of shakeObjs) s.o.x = s.x0;
-            shakeObjs = [];
-          } else {
-            const dx = -2.5 * Math.sin((age / 0.32) * Math.PI * 2) * (1 - age / 0.32);
-            for (const s of shakeObjs) s.o.x = s.x0 + dx;
-          }
-        }
         /* era crossfade */
         scene.bgRail.alpha += (railAlphaTarget - scene.bgRail.alpha) * Math.min(1, t.deltaMS / 700);
         /* spark-ring FX for the last confirmed action + a vehicle sailing
@@ -1026,6 +979,31 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
   /* ------------------------- overlay positions ------------------------ */
   const shake = useGame((s) => s.shake);
+  /* the refusal callout sits next to the rejected slot or link and fades
+     by itself; a new refusal restarts it */
+  const [calloutAt, setCalloutAt] = useState<number | null>(null);
+  useEffect(() => {
+    if (!shake) return;
+    setCalloutAt(shake.at);
+    const tm = window.setTimeout(() => setCalloutAt(null), 2800);
+    return () => window.clearTimeout(tm);
+  }, [shake]);
+  const calloutPos = (() => {
+    if (!shake || calloutAt !== shake.at) return null;
+    const [townId, slotStr] = shake.key.split(':');
+    const town = TOWN_BY_ID[townId];
+    let at: [number, number] | null = null;
+    if (town && slotStr !== undefined) {
+      const sl = townChrome(town).slots[Number(slotStr)];
+      if (sl) at = [sl.x, sl.y - TILE_HALF];
+    }
+    if (!at) at = regionPos(shake.key);
+    if (!at) return null;
+    const [sx, sy] = worldToScreen(at[0], at[1], view, size.w, size.h);
+    /* keep the sentence on screen: flip below when there is no room above */
+    const up = sy > 70;
+    return { x: Math.max(120, Math.min(size.w - 120, sx)), y: up ? sy - 10 : sy + 2 * TILE_HALF + 10, up };
+  })();
   const inspectTown = idle && inspect ? TOWN_BY_ID[inspect] : undefined;
   const inspectPos = inspectTown ? worldToScreen(inspectTown.x, inspectTown.y, view, size.w, size.h) : null;
   const hoverTownDef = idle && hoverTown && !inspect ? TOWN_BY_ID[hoverTown] : undefined;
@@ -1172,19 +1150,25 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
       <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />
 
-      {/* invalid-target reason toast */}
+      {/* why the slot or link is refused — one sentence, right next to it */}
       <AnimatePresence>
-        {shake && (
+        {shake && calloutPos && (
           <motion.div
             key={shake.at}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: calloutPos.up ? 6 : -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="pointer-events-none absolute bottom-3 left-1/2 z-30 -translate-x-1/2 rounded-md border border-rust-500 bg-coal-900/95 px-3 py-1.5 font-sans text-xs text-cream-100 shadow-e3"
+            className="pointer-events-none absolute z-30 max-w-[240px] rounded-md border border-rust-500/80 bg-coal-900/95 px-2.5 py-1.5 text-center font-sans text-[11.5px] leading-snug text-cream-100 shadow-e3"
+            style={{ left: calloutPos.x, top: calloutPos.y, transform: calloutPos.up ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
             role="alert"
           >
             {shake.reason}
+            <span
+              aria-hidden
+              className="absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-rust-500/80 bg-coal-900/95"
+              style={calloutPos.up ? { bottom: -5, borderRight: '1px solid', borderBottom: '1px solid' } : { top: -5, borderLeft: '1px solid', borderTop: '1px solid' }}
+            />
           </motion.div>
         )}
       </AnimatePresence>
