@@ -70,6 +70,9 @@ interface GameStore {
   followBots: boolean;
   /** player index highlighted on the map (others dimmed), null = off */
   spotlight: number | null;
+  /** a player rail chip under the pointer: their whole network lights up */
+  netPeek: number | null;
+  setNetPeek: (i: number | null) => void;
   coachStep: number; // -1 hidden
   ceremony: 'canal-end' | null;
   gameOverOpen: boolean;
@@ -182,6 +185,7 @@ export const useGame = create<GameStore>((set, get) => ({
   flyTo: null,
   followBots: false,
   spotlight: null,
+  netPeek: null,
   coachStep: -1,
   ceremony: null,
   gameOverOpen: false,
@@ -334,6 +338,7 @@ export const useGame = create<GameStore>((set, get) => ({
   flyToRegion: (key) => set({ flyTo: { key, at: Date.now() } }),
   toggleFollowBots: () => set((s) => ({ followBots: !s.followBots })),
   setSpotlight: (i) => set({ spotlight: i }),
+  setNetPeek: (i) => set({ netPeek: i }),
   setCoachStep: (n) => {
     set({ coachStep: n });
     if (n < 0) {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Application, Container, Graphics, Sprite, Text } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
-import { merchantBarrelSlots, merchantDemand, merchantOpen, sellTargets, tileKey } from '@/game/engine';
+import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { GameState } from '@/game/types';
@@ -412,9 +412,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           lastGame = s.game;
           scene.redraw(s.game);
         }
-        if (s.spotlight !== lastSpot) {
-          lastSpot = s.spotlight;
-          scene.setSpotlight(s.spotlight);
+        /* a hovered rail chip borrows the spotlight for its network */
+        const spot = s.netPeek ?? s.spotlight;
+        if (spot !== lastSpot) {
+          lastSpot = spot;
+          scene.setSpotlight(spot);
         }
         if (s.flyTo && s.flyTo.at !== lastFlyAt) {
           lastFlyAt = s.flyTo.at;
@@ -814,12 +816,19 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           overlay.addChild(g);
         } else pulse(g, 0.8);
       }
-      /* price tag above the hovered valid slot (Board: TownNode £-plaque) */
+      /* price tag above the hovered valid slot (Board: TownNode £-plaque);
+         the beginner aid itemises it: tile + market coal + market iron */
       if (hoverKey) {
         const t = targets.filter((x) => tileKey(x.town, x.slot) === hoverKey).find((x) => x.valid);
         if (t) {
           const pos = townChrome(TOWN_BY_ID[t.town]).slots[t.slot];
-          priceTag(pos.x, pos.y - TILE_R - 13.5, 52, 15, `£${t.total}`);
+          const coal = t.coalPlan.totalCost;
+          const iron = t.ironPlan.totalCost;
+          const label =
+            getBoardOptions().beginnerAid && coal + iron > 0
+              ? `£${t.total} = ${t.cost}${coal ? ` + ${coal} ${tr('board.aid.coal')}` : ''}${iron ? ` + ${iron} ${tr('board.aid.iron')}` : ''}`
+              : `£${t.total}`;
+          priceTag(pos.x, pos.y - TILE_R - 13.5, Math.max(52, label.length * 6.2 + 12), 15, label);
         }
       }
     }
@@ -1019,15 +1028,26 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return humans.length === 1 ? humans[0] : -1;
   })();
   const sellableHere = hoverMerchantDef && viewerIdx >= 0 ? sellTargets(game, viewerIdx).filter((s) => s.merchant === hoverMerchantDef.id) : [];
+  const netPeek = useGame((s) => s.netPeek);
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
-    if (hoverMerchantDef && merchantOpen(game, hoverMerchantDef.id) && viewerIdx >= 0) {
+    /* what stays lit, by priority: the beginner aid's playable slots while
+       planning, a hovered player's network, the tiles a hovered merchant
+       would buy — otherwise everything */
+    if (opts.beginnerAid && selectedCardId && verb === 'build') {
+      scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
+    } else if (opts.beginnerAid && selectedCardId && verb === 'sell') {
+      scene.setHighlight([...new Set(sellTargetsList.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
+    } else if (netPeek !== null) {
+      const towns = networkTowns(game, netPeek);
+      scene.setHighlight(TOWNS.filter((t) => towns.has(t.id)).flatMap((t) => t.slots.map((_, si) => tileKey(t.id, si))));
+    } else if (hoverMerchantDef && merchantOpen(game, hoverMerchantDef.id) && viewerIdx >= 0) {
       const keys = [...new Set(sellableHere.map((s) => tileKey(s.town, s.slot)))];
       scene.setHighlight(keys);
     } else scene.setHighlight(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoverMerchant, game.ledgerSeq, idle]);
+  }, [hoverMerchant, game.ledgerSeq, idle, netPeek, opts.beginnerAid, selectedCardId, verb, targets, sellTargetsList]);
   const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef), view, size.w, size.h) : null;
   const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
 

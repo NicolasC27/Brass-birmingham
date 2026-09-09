@@ -94,6 +94,8 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
   const spotlight = useGame((s) => s.spotlight);
   const setSpotlight = useGame((s) => s.setSpotlight);
   const openMat = useGame((s) => s.openMat);
+  const setNetPeek = useGame((s) => s.setNetPeek);
+  const peekTimer = useRef<number | null>(null);
   const spotlighted = spotlight === index;
 
   return (
@@ -103,6 +105,16 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
       aria-pressed={spotlighted}
       aria-label={t('game.rail.compactAria', { name: p.name, money: p.money, income: incomeLevel(p.income), vp: p.vp })}
       title={spotlighted ? t('game.rail.spotRelease') : t('game.rail.spotMap')}
+      onPointerEnter={() => {
+        /* a beat of hover lights the player's whole network on the map */
+        if (peekTimer.current !== null) window.clearTimeout(peekTimer.current);
+        peekTimer.current = window.setTimeout(() => setNetPeek(index), 180);
+      }}
+      onPointerLeave={() => {
+        if (peekTimer.current !== null) window.clearTimeout(peekTimer.current);
+        peekTimer.current = null;
+        setNetPeek(null);
+      }}
       onClick={() => setSpotlight(spotlighted ? null : index)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
