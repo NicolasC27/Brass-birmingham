@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyAction, botAction, fallbackAction, replay, setupOf } from '../actions';
+import { applyAction, botAction, fallbackAction, humanActionIndices, replay, setupOf, undoLastHuman } from '../actions';
 import type { GameAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { INDUSTRIES } from '../data';
@@ -127,5 +127,30 @@ describe('action log', () => {
       }
       for (const t of Object.values(s.tiles)) expect(t.cubes).toBeGreaterThanOrEqual(0);
     }
+  });
+
+  it('undoes the human\'s last action together with the bots\' replies', () => {
+    const table: SetupPayload = { ...setup(4), players: setup(4).players.map((p, i) => (i === 0 ? { ...p, type: 'human' as const } : p)) };
+    let s = newGame(table, 21);
+    /* twelve turns, the human choosing like a bot would */
+    for (let i = 0; i < 12; i++) {
+      const wanted = botAction(chooseBotMove(s, s.current));
+      s = ((wanted && applyAction(s, s.current, wanted).state) || applyAction(s, s.current, fallbackAction(s, s.current)).state)!;
+    }
+    const marks = humanActionIndices(setupOf(s), s.seed, s.actions);
+    expect(marks.length).toBeGreaterThan(0);
+    const at = marks[marks.length - 1];
+    const back = undoLastHuman(s, marks)!;
+    expect(back.actions.length).toBe(at);
+    /* it is the human's turn again, on the very state they acted from */
+    expect(back.phase).toBe('action');
+    expect(back.players[back.current].isBot).toBe(false);
+    /* identical but for the board FX, which undo deliberately suppresses */
+    const strip = (g: GameState) => serialize({ ...g, fxSeq: 0, lastFx: undefined });
+    expect(strip(back)).toBe(strip(replay(setupOf(s), s.seed, s.actions.slice(0, at))));
+    /* undoing again steps back to the previous human action */
+    const again = undoLastHuman(back, marks.slice(0, -1));
+    if (marks.length > 1) expect(again!.actions.length).toBe(marks[marks.length - 2]);
+    else expect(again).toBeNull();
   });
 });

@@ -153,6 +153,32 @@ export function replay(setup: SetupPayload, seed: number, actions: GameAction[])
   return s;
 }
 
+/** indices, in `actions`, of the actions taken by a human (replayed from the
+ *  seed — the log itself never says who acted, the state at that point does) */
+export function humanActionIndices(setup: SetupPayload, seed: number, actions: GameAction[]): number[] {
+  const marks: number[] = [];
+  let s = newGame(setup, seed);
+  actions.forEach((a, i) => {
+    if (s.phase === 'action' && !s.players[s.current].isBot) marks.push(i);
+    const r = applyAction(s, s.current, a);
+    if (!r.state) throw new Error(`replay: action ${i} (${a.kind}) refused — ${r.error}`);
+    s = r.state;
+  });
+  return marks;
+}
+
+/** the game as it stood before the human's last action — bots' replies
+ *  included — or null when no human has acted yet */
+export function undoLastHuman(s: GameState, marks: number[]): GameState | null {
+  const at = marks[marks.length - 1];
+  if (at === undefined) return null;
+  const back = replay(setupOf(s), s.seed, s.actions.slice(0, at));
+  /* no build/link FX should replay on the board: bump past the live counter */
+  back.fxSeq = s.fxSeq + 1;
+  delete back.lastFx;
+  return back;
+}
+
 /** the setup a state was created from (what replay needs besides the seed) */
 export function setupOf(s: GameState): SetupPayload {
   return {
