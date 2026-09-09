@@ -7,7 +7,8 @@ import { useGame } from '@/game/store';
 import type { IndustryLevel, IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { hudInsets, sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
+import { sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
+import { useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
 import { tileFaceUrl } from '@/gl/paint';
@@ -384,7 +385,7 @@ export default function PlayerMat() {
       setOver(null);
     },
   };
-  const insets = hudInsets(opts);
+  const insets = useHudInsets();
   const narrow = useNarrow();
   const wide = opts.matWide && !narrow;
   /* the mat sits flush right of the rail: measure it rather than guess */

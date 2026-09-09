@@ -161,6 +161,6 @@ export const getBoardOptions = (): BoardOptions => state;
 export const TRACK_H = 36;
 export const TRACK_W = 56;
 /** pixel insets every floating HUD element keeps from the screen edges */
-export function hudInsets(o: BoardOptions): { left: number; bottom: number; top: number } {
-  return { top: TRACK_H + 8, left: o.incomeSide === 'left' ? TRACK_W + 8 : 12, bottom: o.incomeSide === 'bottom' ? TRACK_H + 8 : 12 };
+export function hudInsets(o: BoardOptions, vpTrack = true): { left: number; bottom: number; top: number } {
+  return { top: vpTrack ? TRACK_H + 8 : 8, left: o.incomeSide === 'left' ? TRACK_W + 8 : 12, bottom: o.incomeSide === 'bottom' ? TRACK_H + 8 : 12 };
 }

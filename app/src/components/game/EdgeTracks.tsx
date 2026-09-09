@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, loanLanding } from '@/game/data';
+import { vpTrackShown } from '@/game/engine';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
 import Tooltip from './Tooltip';
@@ -185,9 +186,7 @@ function Pawn({
   const zig = fanSize > 1 ? (fanIndex % 2 ? 4 : -4) : 0;
   const label = kind === 'vp' ? String(p.vp) : pay;
   const place: CSSProperties =
-    axis === 'x'
-      ? { top: '50%', marginLeft: fan - CHIP / 2, marginTop: -CHIP / 2 + zig, zIndex: 10 + fanIndex }
-      : { left: 18, marginTop: fan - CHIP / 2, marginLeft: zig, zIndex: 10 + fanIndex };
+    axis === 'x' ? { top: '50%', marginLeft: fan - CHIP / 2, marginTop: -CHIP / 2 + zig, zIndex: 10 + fanIndex } : { left: 18, marginTop: fan - CHIP / 2, marginLeft: zig, zIndex: 10 + fanIndex };
 
   return (
     <motion.div
@@ -212,9 +211,7 @@ function Pawn({
           whileHover={{ scale: 1.25 }}
           whileTap={{ scale: 0.9 }}
           animate={{
-            boxShadow: spot
-              ? [`0 0 0 1.5px ${col}, 0 0 6px ${col}`, `0 0 0 2px ${col}, 0 0 14px ${col}`]
-              : `0 0 0 1.5px ${col}, 0 1px 3px rgba(0,0,0,.8)`,
+            boxShadow: spot ? [`0 0 0 1.5px ${col}, 0 0 6px ${col}`, `0 0 0 2px ${col}, 0 0 14px ${col}`] : `0 0 0 1.5px ${col}, 0 1px 3px rgba(0,0,0,.8)`,
           }}
           transition={spot ? { boxShadow: { repeat: Infinity, repeatType: 'reverse', duration: 0.9 } } : undefined}
           aria-pressed={spot}
@@ -229,9 +226,7 @@ function Pawn({
         {showLabel && (
           <span
             aria-hidden
-            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${
-              kind === 'income' && INCOME_PAYOUT[p.income] < 0 ? 'text-rust-500 brightness-150' : 'text-cream-100'
-            }`}
+            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${kind === 'income' && INCOME_PAYOUT[p.income] < 0 ? 'text-rust-500 brightness-150' : 'text-cream-100'}`}
             style={{ textShadow: '0 1px 1px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.8)' }}
           >
             {label}
@@ -245,8 +240,7 @@ function Pawn({
 /** "+3" that rises and fades from the landing cell, plus the run the pawn crossed */
 function MoveFx({ axis, move, pct, from, to, col, reduced }: { axis: Axis; move: Move; pct: number; from: number; to: number; col: string; reduced: boolean }) {
   const dur = reduced ? 0.01 : 1.1;
-  const runStyle: CSSProperties =
-    axis === 'x' ? { ...span('x', from, to), top: '50%', height: 3, marginTop: -1.5 } : { ...span('y', from, to), left: 22, width: 3 };
+  const runStyle: CSSProperties = axis === 'x' ? { ...span('x', from, to), top: '50%', height: 3, marginTop: -1.5 } : { ...span('y', from, to), left: 22, width: 3 };
   const labelStyle: CSSProperties = axis === 'x' ? { ...at('x', pct), top: '50%' } : { ...at('y', pct), left: 36 };
   return (
     <>
@@ -321,8 +315,7 @@ export default function EdgeTracks() {
       const old = was.get(i);
       if (!old) return;
       if (old.vp !== cur.vp) fresh.push({ id: `vp-${i}-${cur.vp}-${Date.now()}`, kind: 'vp', idx: i, from: old.vp, to: cur.vp, delta: cur.vp - old.vp });
-      if (old.income !== cur.income)
-        fresh.push({ id: `inc-${i}-${cur.income}-${Date.now()}`, kind: 'income', idx: i, from: old.income, to: cur.income, delta: cur.income - old.income });
+      if (old.income !== cur.income) fresh.push({ id: `inc-${i}-${cur.income}-${Date.now()}`, kind: 'income', idx: i, from: old.income, to: cur.income, delta: cur.income - old.income });
     });
     if (!fresh.length) return;
     setMoves((m) => [...m, ...fresh]);
@@ -394,32 +387,47 @@ export default function EdgeTracks() {
 
   return (
     <div role="group" aria-label={t('game.frame.aria')}>
-      {/* ====================== TOP — victory points ====================== */}
-      <div className={`fixed inset-x-0 top-0 z-[58] border-b ${belt}`} style={{ height: TRACK_H }} aria-label={t('game.frame.vpTrackLabel')}>
-        <span aria-hidden className="absolute left-1.5 top-[3px] font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
-          {t('game.frame.vpTrackShort')}
-          {vpLane.zoom > 1.01 && <span className="ml-1 text-cream-100/50">×{vpLane.zoom.toFixed(1)}</span>}
-        </span>
-        <div ref={vpLane.ref} className={`relative mx-12 h-full overflow-hidden ${grab(vpLane)}`} {...vpLane.handlers}>
-          <div style={vpLane.inner}>
-            {Array.from({ length: vpMax / 10 + 1 }, (_, k) => k * 10).map((v) => (
-              <span key={v} aria-hidden className="absolute top-[2px] -translate-x-1/2 font-mono text-[9px] font-bold leading-none text-brass-400" style={{ left: `${(v / vpMax) * 100}%` }}>
-                {v}
-              </span>
-            ))}
-            {Array.from({ length: vpMax + 1 }, (_, v) => (
-              <span
-                key={v}
-                aria-hidden
-                className={`absolute bottom-0 w-px ${v % 10 === 0 ? 'h-[10px] bg-brass-400' : v % 5 === 0 ? 'h-[7px] bg-brass-500/80' : 'h-[4px] bg-brass-700/60'}`}
-                style={{ left: `${(v / vpMax) * 100}%` }}
-              />
-            ))}
-            {fx('vp', 'x')}
-            {pawns('vp', 'x')}
-          </div>
-        </div>
-      </div>
+      {/* ====================== TOP — victory points ======================
+          on screen once points are on the board: before that, a row of
+          zeros would only take the board's room (engine vpTrackShown) */}
+      <AnimatePresence initial={false}>
+        {game && vpTrackShown(game) && (
+          <motion.div
+            key="vp"
+            initial={{ y: -TRACK_H }}
+            animate={{ y: 0 }}
+            exit={{ y: -TRACK_H }}
+            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+            className={`fixed inset-x-0 top-0 z-[58] border-b ${belt}`}
+            style={{ height: TRACK_H }}
+            aria-label={t('game.frame.vpTrackLabel')}
+          >
+            <span aria-hidden className="absolute left-1.5 top-[3px] font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
+              {t('game.frame.vpTrackShort')}
+              {vpLane.zoom > 1.01 && <span className="ml-1 text-cream-100/50">×{vpLane.zoom.toFixed(1)}</span>}
+            </span>
+            <div ref={vpLane.ref} className={`relative mx-12 h-full overflow-hidden ${grab(vpLane)}`} {...vpLane.handlers}>
+              <div style={vpLane.inner}>
+                {Array.from({ length: vpMax / 10 + 1 }, (_, k) => k * 10).map((v) => (
+                  <span key={v} aria-hidden className="absolute top-[2px] -translate-x-1/2 font-mono text-[9px] font-bold leading-none text-brass-400" style={{ left: `${(v / vpMax) * 100}%` }}>
+                    {v}
+                  </span>
+                ))}
+                {Array.from({ length: vpMax + 1 }, (_, v) => (
+                  <span
+                    key={v}
+                    aria-hidden
+                    className={`absolute bottom-0 w-px ${v % 10 === 0 ? 'h-[10px] bg-brass-400' : v % 5 === 0 ? 'h-[7px] bg-brass-500/80' : 'h-[4px] bg-brass-700/60'}`}
+                    style={{ left: `${(v / vpMax) * 100}%` }}
+                  />
+                ))}
+                {fx('vp', 'x')}
+                {pawns('vp', 'x')}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ====================== income: BOTTOM edge or LEFT edge ====================== */}
       <div
@@ -427,10 +435,7 @@ export default function EdgeTracks() {
         style={incAxis === 'x' ? { height: TRACK_H } : { width: TRACK_W, top: TRACK_H }}
         aria-label={t('game.incomeRail.aria')}
       >
-        <span
-          aria-hidden
-          className={`absolute font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}
-        >
+        <span aria-hidden className={`absolute font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}>
           {t('game.incomeRail.trackShort')}
           {incLane.zoom > 1.01 && <span className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
         </span>

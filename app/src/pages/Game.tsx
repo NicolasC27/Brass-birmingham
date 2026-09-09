@@ -16,7 +16,8 @@ import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MM_H_FOR } from '@/components/game/Minimap';
-import { MAT_STYLES, getBoardOptions, hudInsets, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { useHudInsets } from '@/components/game/useHudInsets';
 import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
@@ -84,7 +85,7 @@ export default function Game() {
   const setSpotlight = useGame((s) => s.setSpotlight);
   const boardOpts = useBoardOptions();
   const { minimapSize } = boardOpts;
-  const insets = hudInsets(boardOpts);
+  const insets = useHudInsets();
 
   const [passTo, setPassTo] = useState<string | null>(null);
   const [skipAnim, setSkipAnim] = useState(false);
@@ -370,7 +371,8 @@ export default function Game() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed right-3 top-[44px] z-[64] max-h-[70vh] w-[min(320px,88vw)] overflow-y-auto"
+            className="fixed right-3 z-[64] max-h-[70vh] w-[min(320px,88vw)] overflow-y-auto"
+            style={{ top: insets.top }}
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >
@@ -400,7 +402,8 @@ export default function Game() {
             onClick={() => setMarketOpen(true)}
             data-market
             aria-label={t('game.page.openMarket')}
-            className="fixed right-3 top-[44px] z-[64] flex items-center gap-2 rounded-lg border border-brass-700/70 bg-coal-900/85 px-3 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-brass-400 shadow-e3 backdrop-blur-md hover:bg-coal-800/90"
+            className="fixed right-3 z-[64] flex items-center gap-2 rounded-lg border border-brass-700/70 bg-coal-900/85 px-3 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-brass-400 shadow-e3 backdrop-blur-md hover:bg-coal-800/90"
+            style={{ top: insets.top }}
           >
             <Scale className="h-3.5 w-3.5" />
             {t('game.page.marketTab')}

@@ -1229,6 +1229,13 @@ export function finishGame(s: GameState) {
 /* ========================== persistence ============================ */
 
 /** the minutes this seat's candle burns — its own, else the table's; 0/null = none */
+/** The victory-point track is worth its strip of screen once points are
+ *  on the board: from the first bonus scored, the canal scoring, or the
+ *  rail era. Before that it would be a row of zeros. */
+export function vpTrackShown(s: GameState): boolean {
+  return s.era === 'rail' || s.phase !== 'action' || s.players.some((p) => p.vp > 0);
+}
+
 export function candleMinutes(s: GameState, playerIdx: number): number | null {
   const own = s.players[playerIdx]?.minutes;
   return own === undefined ? s.timerMinutes : own;

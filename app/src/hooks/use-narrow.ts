@@ -20,5 +20,3 @@ export function useNarrow(): boolean {
   );
 }
 
-/** the strip's top edge on narrow screens: under the top bar (44 + 44 + 8) */
-export const NARROW_RAIL_TOP = 96;

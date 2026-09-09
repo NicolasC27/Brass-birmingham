@@ -3,8 +3,8 @@ import { PLAYER_COLORS, incomeLevel } from '@/game/data';
 import { LayoutGrid } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
-import { hudInsets, useBoardOptions } from './boardOptions';
-import { NARROW_RAIL_TOP, useNarrow } from '@/hooks/use-narrow';
+import { useHudInsets, narrowRailTop } from './useHudInsets';
+import { useNarrow } from '@/hooks/use-narrow';
 import { useT } from '@/i18n';
 import type { PlayerState } from '@/game/types';
 import { cn } from '@/lib/utils';
@@ -174,7 +174,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
 export default function PlayerRail() {
   const t = useT();
   const game = useGame((s) => s.game);
-  const insets = hudInsets(useBoardOptions());
+  const insets = useHudInsets();
   const narrow = useNarrow();
   if (!game) return null;
   const next = projectedOrder(game);
@@ -185,7 +185,7 @@ export default function PlayerRail() {
     <div
       data-player-rail
       className={cn('fixed z-[64] flex gap-2', narrow ? 'flex-row flex-wrap' : 'flex-col')}
-      style={narrow ? { left: insets.left, right: 12, top: NARROW_RAIL_TOP } : { left: insets.left, top: insets.top }}
+      style={narrow ? { left: insets.left, right: 12, top: narrowRailTop(insets) } : { left: insets.left, top: insets.top }}
       aria-label={t('game.rail.playersAria')}
     >
       {game.players.map((p, i) => (

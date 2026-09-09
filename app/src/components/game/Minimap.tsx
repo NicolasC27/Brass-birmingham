@@ -7,7 +7,8 @@ import { LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } fr
 import { merchantOpen } from '@/game/engine';
 import { tileKey } from '@/game/engine';
 import type { GameState } from '@/game/types';
-import { MAP_URL, hudInsets, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAP_URL, setBoardOption, useBoardOptions } from './boardOptions';
+import { useHudInsets } from './useHudInsets';
 import { useT } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
@@ -45,7 +46,7 @@ export default function Minimap({
   const tracking = useRef(false);
   const boardOpts = useBoardOptions();
   const { minimapSize, mapStyle } = boardOpts;
-  const insets = hudInsets(boardOpts);
+  const insets = useHudInsets();
   const t = useT();
   const MM_W = MM_W_FOR[minimapSize];
   const MM_H = Math.round((MM_W * WORLD_H) / WORLD_W);

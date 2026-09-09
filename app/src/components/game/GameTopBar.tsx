@@ -7,6 +7,7 @@ import { cardLabel, confirmCost, confirmSummary, useGame } from '@/game/store';
 import type { Verb } from '@/game/types';
 import { useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
+import { useHudInsets } from './useHudInsets';
 import { PortraitMedallion } from './PlayerRail';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
@@ -80,6 +81,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const confirm = useGame((s) => s.confirm);
   const cancel = useGame((s) => s.cancel);
   const { beginnerAid } = useBoardOptions();
+  const insets = useHudInsets();
   if (!game) return null;
   const me = game.current;
   const p = game.players[me];
@@ -147,7 +149,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
 
   const rowH = mine ? 52 : 36;
   return (
-    <div className="pointer-events-none fixed top-[44px] z-[64] flex justify-center" style={{ left: band.left, right: band.right }}>
+    <div className="pointer-events-none fixed z-[64] flex justify-center" style={{ left: band.left, right: band.right, top: insets.top }}>
       <motion.div
         key={mine ? 'mine' : 'theirs'}
         initial={{ scale: 0.97, opacity: 0.4 }}
