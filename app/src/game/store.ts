@@ -626,4 +626,4 @@ export function verbsForCard(st: { game: GameState | null; selectedCardId: strin
 }
 
 /* dev only: the store at hand in the console (window.__brass.getState()) */
-if (import.meta.env.DEV) (window as unknown as { __brass?: typeof useGame }).__brass = useGame;
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __brass?: typeof useGame }).__brass = useGame;
