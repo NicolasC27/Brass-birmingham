@@ -62,11 +62,14 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
   const mut = structuredClone(s);
   const p = mut.players[playerIdx];
   const cardOf = (id: string | undefined) => (id ? p.hand.find((c) => c.id === id) : undefined);
+  /* a refused card is the classic sign of a log that no longer matches its
+     seed: say who was to act and what they hold, it is the whole diagnosis */
+  const noCard = (id: string) => fail(`Card not in hand — ${p.name} (seat ${playerIdx}, ${s.era} R${s.round}) holds ${p.hand.map((c) => c.id).join(' ') || 'nothing'}, action names ${id}`);
   let ok = false;
   switch (action.kind) {
     case 'build': {
       const card = cardOf(action.card);
-      if (!card) return fail('Card not in hand');
+      if (!card) return noCard(action.card);
       const target = buildTargets(mut, playerIdx, card).find((t) => t.town === action.town && t.slot === action.slot && t.industry === action.industry);
       if (!target) return fail('No such slot for this card');
       if (!target.valid) return fail(target.reason ?? 'Cannot build there');
@@ -75,7 +78,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     }
     case 'network': {
       const card = cardOf(action.card);
-      if (!card) return fail('Card not in hand');
+      if (!card) return noCard(action.card);
       const list = linkTargets(mut, playerIdx);
       const first = list.find((t) => t.link.id === action.link);
       if (!first) return fail('No such link');
@@ -87,13 +90,13 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     }
     case 'develop': {
       const card = cardOf(action.card);
-      if (!card) return fail('Card not in hand');
+      if (!card) return noCard(action.card);
       ok = applyDevelop(mut, playerIdx, card, action.industries);
       break;
     }
     case 'sell': {
       const card = cardOf(action.card);
-      if (!card) return fail('Card not in hand');
+      if (!card) return noCard(action.card);
       const list = sellTargets(mut, playerIdx);
       const picks = action.sales.map((x) => list.find((t) => t.town === x.town && t.slot === x.slot && t.merchant === x.merchant && t.valid));
       if (picks.some((t) => !t)) return fail('A sale is not possible');
