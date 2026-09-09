@@ -5,6 +5,7 @@ import Setup from "@/pages/Setup";
 import Game from "@/pages/Game";
 import Rules from "@/pages/Rules";
 import Results from "@/pages/Results";
+import Replay from "@/pages/Replay";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <Route path="game" element={<Game />} />
         <Route path="rules" element={<Rules />} />
         <Route path="results" element={<Results />} />
+        <Route path="replay" element={<Replay />} />
       </Route>
     </Routes>
   );

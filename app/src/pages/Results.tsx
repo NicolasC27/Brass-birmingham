@@ -101,7 +101,8 @@ export default function Results() {
   const t = useT();
   const reduced = useReducedMotion();
   const [result] = useState<FinalResult | null>(() => readFinalResult());
-  const [phase, setPhase] = useState(0);
+  /* reduced motion skips the ceremony outright */
+  const [phase, setPhase] = useState(() => (reduced ? 3 : 0));
   const [bursting, setBursting] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -111,10 +112,6 @@ export default function Results() {
   // Ceremony sequencing — skippable with any click.
   useEffect(() => {
     if (!result || settled) return;
-    if (reduced) {
-      setPhase(3);
-      return;
-    }
     const timers = PHASE_TIMES.map((t, i) =>
       window.setTimeout(() => setPhase(i + 1), t),
     );
@@ -303,6 +300,9 @@ export default function Results() {
             {t("results.actions.revanche")}
             {bursting && <EmberBurst />}
           </button>
+          <Link to="/replay" className="btn-ledger !h-12" aria-label={t("results.page.replayAria")}>
+            {t("results.page.replay")}
+          </Link>
           <Link to="/" className="btn-ledger !h-12">
             {t("results.actions.backToMenu")}
           </Link>
