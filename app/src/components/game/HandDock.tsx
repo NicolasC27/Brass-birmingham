@@ -11,7 +11,8 @@ import { reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
-import { hudInsets, useBoardOptions } from './boardOptions';
+import { useBoardOptions } from './boardOptions';
+import { useHudInsets } from './useHudInsets';
 import { isKey, keyLabel, useKeybindings } from './keybindings';
 import { MM_W_FOR } from './Minimap';
 
@@ -278,9 +279,10 @@ export default function HandDock() {
   }, []);
   const boardOpts = useBoardOptions();
   const keys = useKeybindings();
-  const insets = hudInsets(boardOpts);
-  /* never wider than the room between the minimap and its mirror on the left */
-  const maxW = `min(1360px, calc(100vw - ${2 * (MM_W_FOR[boardOpts.minimapSize] + 28)}px))`;
+  const insets = useHudInsets();
+  /* the dock lives in the band between the left edge and the minimap, and
+     takes what it needs of it, centred */
+  const bandRight = MM_W_FOR[boardOpts.minimapSize] + 28;
   /* the fan scrolls sideways with a plain mouse wheel (no shift needed) */
   const fanRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -337,18 +339,14 @@ export default function HandDock() {
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (
-    <footer
-      aria-label={t('game.hand.dockAria')}
-      className="fixed left-1/2 z-[64] -translate-x-1/2"
-      style={{ bottom: insets.bottom, width: maxW }}
-      onPointerEnter={onEnter}
-      onPointerLeave={onLeave}
-    >
+    <footer aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={{ bottom: insets.bottom, left: insets.left, right: bandRight }}>
       <motion.div
         initial={false}
         animate={{ height: expanded ? 180 : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-        className="relative overflow-hidden rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e3 backdrop-blur-md"
+        className="pointer-events-auto relative w-full max-w-[1360px] overflow-hidden rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e3 backdrop-blur-md"
+        onPointerEnter={onEnter}
+        onPointerLeave={onLeave}
       >
         <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.08]" />
 
