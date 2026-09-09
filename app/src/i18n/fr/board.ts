@@ -47,6 +47,7 @@ const fr: typeof enboard = {
     sizeAria: 'Changer la taille de la mini-carte',
     sizeTip: 'Taille de la mini-carte — petite / moyenne / grande',
   },
+  aid: { coal: 'charbon', iron: 'fer' },
   stockStyle: {
     corner: 'Disque coin',
     big: 'Gros jeton',

@@ -484,6 +484,9 @@ export default function BoardSettings() {
                     <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
                       <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
                     </OptionRow>
+                    <OptionRow label={t('game.settings.beginnerAid')} hint={t('game.settings.beginnerAidHint')}>
+                      <Switch on={opts.beginnerAid} onClick={() => setBoardOption('beginnerAid', !opts.beginnerAid)} label={t('game.settings.beginnerAid')} />
+                    </OptionRow>
                     <OptionRow label={t('game.settings.traffic')} hint={t('game.settings.trafficHint')}>
                       <Segmented<TrafficLevel>
                         value={opts.traffic}

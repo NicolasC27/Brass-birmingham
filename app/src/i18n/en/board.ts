@@ -45,6 +45,7 @@ const board = {
     sizeAria: 'Cycle minimap size',
     sizeTip: 'Minimap size — small / medium / large',
   },
+  aid: { coal: 'coal', iron: 'iron' },
   stockStyle: {
     corner: 'Corner disc',
     big: 'Big token',

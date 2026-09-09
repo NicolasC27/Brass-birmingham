@@ -54,6 +54,8 @@ export interface BoardOptions {
   mapStyle: MapStyle;
   /** boats and trains on built links */
   traffic: TrafficLevel;
+  /** beginner aid: dim unplayable slots while planning, itemised price tags */
+  beginnerAid: boolean;
   /** player mat spread wide (six columns) instead of the slim docked panel */
   matWide: boolean;
   /** mat levels as the player's real cards with a pile, or compact boxes */
@@ -80,6 +82,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   incomeSide: 'brassworks.incomeSide',
   mapStyle: 'brassworks.mapStyle',
   traffic: 'brassworks.traffic',
+  beginnerAid: 'brassworks.beginnerAid',
   matWide: 'brassworks.matWide',
   matStyle: 'brassworks.matStyle',
   matCount: 'brassworks.matCount',
@@ -114,6 +117,7 @@ let state: BoardOptions = {
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),
   traffic: read('traffic', 'light'),
+  beginnerAid: read('beginnerAid', false),
   matWide: read('matWide', false),
   matStyle: read('matStyle', 'cards'),
   matCount: read('matCount', false),

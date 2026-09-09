@@ -97,6 +97,8 @@ const fr: typeof engame = {
     map: { etched: 'Terrain gravé', painted: 'Canaux peints' },
     minimapSize: 'Mini-carte',
     size: { s: 'Petite', m: 'Moyenne', l: 'Grande' },
+    beginnerAid: 'Aide au placement (débutants)',
+    beginnerAidHint: 'Carte en main : les cases injouables s’estompent et le prix détaille charbon et fer de bourse.',
     traffic: 'Trafic sur les liaisons',
     trafficHint: 'Péniches et locomotives sur les canaux et rails construits.',
     trafficLevel: { none: 'Aucun', light: 'Léger', busy: 'Dense' },

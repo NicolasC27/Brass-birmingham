@@ -95,6 +95,8 @@ const game = {
     map: { etched: 'Etched terrain', painted: 'Painted canals' },
     minimapSize: 'Minimap',
     size: { s: 'Small', m: 'Medium', l: 'Large' },
+    beginnerAid: 'Placement aid (beginners)',
+    beginnerAidHint: 'Card in hand: unplayable slots fade and the price itemises market coal and iron.',
     traffic: 'Traffic on links',
     trafficHint: 'Barges and locomotives on built canals and rails.',
     trafficLevel: { none: 'None', light: 'Light', busy: 'Busy' },
