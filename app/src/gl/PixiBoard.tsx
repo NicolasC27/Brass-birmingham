@@ -10,7 +10,7 @@ import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, tr, useT } from '@/i18n';
 import { MAP_URL, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { FAR_LOD_SCREEN, SCHEMATIC_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
+import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -301,16 +301,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const s = fitScale(w, h) * cam.view.k;
         scene.world.scale.set(s);
         scene.world.position.set(w / 2 + cam.view.x - (WORLD_W / 2) * s, h / 2 + cam.view.y - (WORLD_H / 2) * s);
-        /* ribbon counter-scale + zoom-driven slot alphas (SVG vars
-           --bw-detail / --bw-schematic / --bw-ring, combined with the
-           spotlight dimming — all plain alpha writes, no re-raster) */
+        /* ribbon counter-scale + zoom-driven slot alphas, combined with the
+           spotlight dimming — all plain alpha writes, no re-raster */
         const ls = ribbonLabelScale(cam.view.k, fitScale(w, h), RIBBON_FONT);
         for (const r of scene.ribbons) r.scale.set(ls);
         const detail = s < FAR_LOD_SCREEN ? 0 : 1;
-        const schem = s < SCHEMATIC_SCREEN ? 1 : 0;
-        /* industry rings step down when the schematic glyph carries the
-           identity — they no longer fight for attention at 100% */
-        const ringI = (s <= 1.1 ? 1 : Math.max(0.6, 1 - (s - 1.1) * 0.8)) * (schem ? 0.55 : 1);
+        const ringI = s <= 1.1 ? 1 : Math.max(0.6, 1 - (s - 1.1) * 0.8);
         for (const tv of scene.towns.values()) {
           for (const sl of tv.slots) {
             sl.ring.alpha = ringI * sl.spotAlpha;
@@ -319,13 +315,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             sl.art.alpha = sl.artBase * sl.spotAlpha;
             sl.art2.alpha = sl.art.alpha;
             sl.extras.alpha = detail * sl.spotAlpha;
-            /* etched mark + income/VP chips: far-LOD × schematic step-back */
-            sl.detailC.alpha = detail * (1 - 0.75 * schem) * sl.spotAlpha;
+            /* etched mark + income/VP chips fade at far zoom */
+            sl.detailC.alpha = detail * sl.spotAlpha;
             sl.badges.alpha = sl.spotAlpha;
             sl.deco.alpha = sl.spotAlpha;
-            /* big glyph: empty slots only — a built tile is already a full
-               player-colour card, a superimposed icon just dirties it */
-            sl.schematic.alpha = sl.hasTile ? 0 : schem;
           }
         }
         /* pulses (planning highlights, hover rings) */

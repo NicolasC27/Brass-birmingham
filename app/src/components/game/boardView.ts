@@ -109,17 +109,6 @@ export const RIBBON_MAX_SCALE = 1.5;
  */
 export const FAR_LOD_SCREEN = 0.55;
 
-/**
- * v15: schematic-mode threshold. When the effective screen scale drops
- * below this, tile paintings step back and a large parchment industry
- * glyph on a tinted disc takes over.
- * v17: dropped to 0.35 — at fit/100% the paintings are perfectly readable
- * and the overlaid glyphs read as clutter (user feedback); glyphs are now
- * a last-resort aid for very small windows only.
- * Kept as a literal: boardView cannot import TILE (townChrome already
- * imports WORLD_W/WORLD_H from here — a cycle).
- */
-export const SCHEMATIC_SCREEN = 0.35;
 
 /**
  * Plaque counter-scale with a hard screen-size floor (v11) and a hard

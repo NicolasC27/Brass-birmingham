@@ -89,10 +89,6 @@ export interface SlotView {
   art: Sprite; // painted face (slot cutout / built player-colour card)
   art2: Sprite; // right-half painting for dual-industry slots
   artMask: Graphics; // GPU-rounded clip on the built card (empty otherwise)
-  schematic: Container; // far-zoom parchment industry glyph(s)
-  schemDisc: Graphics; // schematic neutral disc (redrawn per industry)
-  schemGlyph: Sprite; // schematic icon, first (or only) industry
-  schemGlyph2: Sprite; // second icon — dual-industry slots show BOTH, big
   extras: Graphics; // far-LOD details: level pips
   detailC: Container; // LOD text details: etched mark, income/VP chips
   badges: Container; // flipped rim/VP + resource cubes/barrels (always visible)
@@ -102,7 +98,7 @@ export interface SlotView {
   artBase: number; // painting alpha at rest (1 shown / 0 flipped)
   spotAlpha: number; // player spotlight dimming (1 or 0.3)
   hasTile: boolean; // built works present
-  flipped: boolean; // ember VP face — no schematic glyph, no painting
+  flipped: boolean; // ember VP face — no painting
 }
 
 export interface TownView {
@@ -167,8 +163,6 @@ interface IndustryArt {
 const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
 const pairCache = new Map<string, Promise<Texture | null>>(); // `${dir}|${a}-${b}`
 let tileSet: TileSet; // the set currently painted
-let iconTex: Record<IndustryType, Texture>;
-let schematicTex: Record<IndustryType, Texture>;
 let barrelTex: Texture;
 let boatTex: Texture; // night barge — the merchants' default framed painting
 /* one painting per merchant when /merchant-<id>.png exists (e.g. Gloucester
@@ -193,24 +187,6 @@ const shade = (c: number, f: number): number => {
   const b = Math.min(255, Math.round((c & 0xff) * f));
   return (r << 16) | (g << 8) | b;
 };
-
-/** The /icon-*.svg line art is black; tint multiplies and can never turn
- *  black into parchment — so rasterize a light version once via canvas
- *  (invert + warm lift), matching the SVG's SchematicGlyph (#F5EBD2). */
-async function parchmentTexture(url: string): Promise<Texture> {
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const i = new Image();
-    i.onload = () => resolve(i);
-    i.onerror = reject;
-    i.src = url;
-  });
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const ctx = c.getContext('2d')!;
-  ctx.filter = 'invert(0.92) sepia(0.35) brightness(1.15)';
-  ctx.drawImage(img, 0, 0, 64, 64);
-  return Texture.from(c);
-}
 
 /** Empty slots are PRINTED on the board, built works are physical cards
  *  laid on top (official board: grey printed icons vs. player-colour tiles).
@@ -362,11 +338,9 @@ async function engravedPair(dir: string, a: IndustryType, b: IndustryType, t: Te
 
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
-  const industries = Object.keys(ICON_FOR) as IndustryType[];
-  const urls = ['/beer-barrel.png', '/merchant-boat.webp', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg', ...industries.map((i) => ICON_FOR[i])];
+  const urls = ['/beer-barrel.png', '/merchant-boat.webp', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
   const loaded = await Assets.load(urls);
   tileSet = await buildTileSet({});
-  iconTex = Object.fromEntries(industries.map((i) => [i, loaded[ICON_FOR[i]]])) as Record<IndustryType, Texture>;
   barrelTex = loaded['/beer-barrel.png'];
   boatTex = loaded['/merchant-boat.webp'];
   await Promise.all(
@@ -379,9 +353,6 @@ export async function loadBoardAssets(): Promise<void> {
     }),
   );
   villageTex = loaded['/town-village.webp'];
-  schematicTex = Object.fromEntries(
-    await Promise.all(industries.map(async (i) => [i, await parchmentTexture(ICON_FOR[i])])),
-  ) as Record<IndustryType, Texture>;
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -773,30 +744,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
 
       hit.rect(pos.x - TILE_HALF, pos.y - TILE_HALF, TILE, TILE).fill({ color: 0xffffff, alpha: 0 });
       hit.eventMode = 'static';
-      /* schematic mode (SVG SchematicGlyph, --bw-schematic): big parchment
-         line icon of the FIRST industry on a tinted disc, shown at far
-         zoom over the stepped-back painting. Alpha driven by the ticker. */
-      /* schematic mode: at far zoom the painting steps back and big
-         parchment icon(s) name the slot — ONE centered for single-industry,
-         TWO side by side for dual (reads "cotton OR coal" at a glance).
-         The disc stays NEUTRAL (dark + brass rim): no industry tint. */
-      const schematic = new Container();
-      schematic.eventMode = 'none';
-      schematic.alpha = 0;
-      const schemDisc = new Graphics();
-      schemDisc.eventMode = 'none';
-      const schemGlyph = new Sprite(iconTex[town.slots[si].allows[0]]);
-      schemGlyph.anchor.set(0.5);
-      schemGlyph.eventMode = 'none';
-      const schemGlyph2 = new Sprite(iconTex[town.slots[si].allows[0]]);
-      schemGlyph2.anchor.set(0.5);
-      schemGlyph2.eventMode = 'none';
-      schemGlyph2.visible = false;
-      schematic.addChild(schemDisc, schemGlyph, schemGlyph2);
       const detailC = new Container();
       detailC.eventMode = 'none';
-      townsLayer.addChild(ring, frame, art, art2, artMask, schematic, deco, extras, detailC, badges, hit);
-      slots.push({ ring, frame, art, art2, artMask, schematic, schemDisc, schemGlyph, schemGlyph2, extras, detailC, badges, deco, hit, artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
+      townsLayer.addChild(ring, frame, art, art2, artMask, deco, extras, detailC, badges, hit);
+      slots.push({ ring, frame, art, art2, artMask, extras, detailC, badges, deco, hit, artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
     }
     /* town colour code (physical Brass): the name banner itself takes the
        town's own colour — no dash, no underline */
@@ -952,32 +903,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     }
   };
 
-  /* rebake the schematic disc + glyph(s) for the slot's industry(ies).
-     Single industry: one big parchment icon centred on a neutral disc.
-     Dual industry: BOTH icons side by side on a wider plaque — the two
-     options read at a glance, no clutter (stripes/chips hide at this zoom). */
-  const bakeSchematic = (sv: SlotView, x: number, y: number, inds: IndustryType[]) => {
-    sv.schemDisc.clear();
-    if (inds.length > 1) {
-      sv.schemDisc.roundRect(x - 31, y - 23, 62, 46, 12).fill({ color: 0x15110d, alpha: 0.94 });
-      sv.schemDisc.roundRect(x - 31, y - 23, 62, 46, 12).stroke({ width: 1.4, color: 0xc9a45c, alpha: 0.55 });
-      sv.schemGlyph.texture = schematicTex[inds[0]];
-      sv.schemGlyph.position.set(x - 14, y);
-      sv.schemGlyph.width = sv.schemGlyph.height = 25;
-      sv.schemGlyph2.texture = schematicTex[inds[1]];
-      sv.schemGlyph2.position.set(x + 14, y);
-      sv.schemGlyph2.width = sv.schemGlyph2.height = 25;
-      sv.schemGlyph2.visible = true;
-    } else {
-      sv.schemDisc.circle(x, y, 23).fill({ color: 0x15110d, alpha: 0.94 });
-      sv.schemDisc.circle(x, y, 23).stroke({ width: 1.4, color: 0xc9a45c, alpha: 0.55 });
-      sv.schemGlyph.texture = schematicTex[inds[0]];
-      sv.schemGlyph.position.set(x, y);
-      sv.schemGlyph.width = sv.schemGlyph.height = 40;
-      sv.schemGlyph2.visible = false;
-    }
-  };
-
   const drawTowns = (game: GameState) => {
     for (const town of TOWNS) {
       const view = towns.get(town.id)!;
@@ -1007,7 +932,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           const col = playerHex(game, tile.owner);
           const shape = PLAYER_COLORS[colorName]?.shape ?? 'circle';
           const lv = INDUSTRIES[tile.industry][tile.level - 1];
-          bakeSchematic(sv, x, y, [tile.industry]);
           /* the whole tile CARD is the ownership marker (physical game):
              the painting comes precomposed on the owner's colour. The card
              is a physical object laid ON the printed board: soft drop
@@ -1128,7 +1052,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         } else {
           const allows = town.slots[si].allows;
           deco.visible = true;
-          bakeSchematic(sv, x, y, [...allows]);
           /* NO ring on empty slots — a contour only appears once a player
              owns the tile, and then in THEIR colour (see built branch) */
           /* tile body: dark face, NO border on empty slots — the frame is
