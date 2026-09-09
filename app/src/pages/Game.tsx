@@ -357,7 +357,7 @@ export default function Game() {
 
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
       <EdgeTracks />
-      <GameTopBar secondsLeft={secondsLeft} />
+      <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />
       <PlayerRail />
 
       {/* MarketTray — top-right drawer, DROPS DOWN from under the score belt;
@@ -371,6 +371,7 @@ export default function Game() {
             exit={{ y: -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed right-3 top-[44px] z-[64] max-h-[70vh] w-[min(320px,88vw)] overflow-y-auto"
+            data-market
             aria-label={t('game.page.marketPanelAria')}
           >
             <div className="relative rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e3 backdrop-blur-md [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">
@@ -397,6 +398,7 @@ export default function Game() {
             exit={{ y: -24, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             onClick={() => setMarketOpen(true)}
+            data-market
             aria-label={t('game.page.openMarket')}
             className="fixed right-3 top-[44px] z-[64] flex items-center gap-2 rounded-lg border border-brass-700/70 bg-coal-900/85 px-3 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-brass-400 shadow-e3 backdrop-blur-md hover:bg-coal-800/90"
           >
