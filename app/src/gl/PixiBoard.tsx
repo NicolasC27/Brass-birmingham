@@ -44,6 +44,10 @@ interface Props {
   sellTargetsList: SellTarget[];
   ghost: PlanGhost | null;
   onInvalid: (key: string, reason: string) => void;
+  /** off for a read-only board (replay): no town tour, zoom or option keys */
+  keyboard?: boolean;
+  /** fly the camera here whenever `seq` changes (replay follows the action) */
+  focus?: { at: [number, number]; seq: number } | null;
 }
 
 /** world coords for anything a ledger entry can point at */
@@ -57,7 +61,11 @@ function regionPos(key: string): [number, number] | null {
   return null;
 }
 
-export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid }: Props) {
+export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null }: Props) {
+  /* the scene paints THIS game — the store's for the live table, a replayed
+     state for the reviewer — read through a ref by the ticker */
+  const gameRef = useRef(game);
+  gameRef.current = game;
   const host = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
   const t = useT();
@@ -83,6 +91,16 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
   /* imperative handles shared between the boot effect and prop effects */
   const sceneRef = useRef<ReturnType<typeof buildBoardScene> | null>(null);
+  const keyboardRef = useRef(keyboard);
+  keyboardRef.current = keyboard;
+  /* a replayed state: repaint the scene whenever the prop changes */
+  useEffect(() => {
+    sceneRef.current?.redraw(game);
+  }, [game]);
+  useEffect(() => {
+    if (focus) cameraRef.current?.flyTo(focus.at[0], focus.at[1], Math.max(cameraRef.current.target.k, 1.4));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus?.seq]);
   const ambianceRef = useRef<Ambiance | null>(null);
   const cameraRef = useRef<Camera | null>(null);
   const overlayRef = useRef<Container | null>(null);
@@ -205,10 +223,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       a.stage.addChild(scene.world);
       /* language switch repaints the WebGL scene (Pixi Text labels) */
       cleanups.push(
-        onLangChange(() => {
-          const g = useGame.getState().game;
-          if (g) scene.redraw(g);
-        }),
+        onLangChange(() => scene.redraw(gameRef.current)),
       );
 
       const ambiance = buildAmbiance(reduced);
@@ -321,8 +336,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         /* spark-ring FX for the last confirmed action + a vehicle sailing
            the whole route when a link is built (boat on canals, train on
            rail, tinted with the owner's colour) */
-        const g0 = useGame.getState().game;
-        if (g0 && g0.fxSeq !== lastFxSeq && g0.lastFx) {
+        const g0 = gameRef.current;
+        if (g0.fxSeq !== lastFxSeq && g0.lastFx) {
           lastFxSeq = g0.fxSeq;
           const at = displayPosFor(g0.lastFx.at[0], g0.lastFx.at[1]);
           const ring = new Graphics();
@@ -396,19 +411,20 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             fx.g.circle(0, 0, 6 + age * 85).stroke({ width: 2.5, color: 0xc9a45c, alpha: 0.9 * (1 - age / 0.55) });
           }
         }
-        ambiance.tick(clock, useGame.getState().game);
-        railAlphaTarget = (useGame.getState().game?.era ?? 'canal') === 'rail' ? 1 : 0;
+        ambiance.tick(clock, gameRef.current);
+        railAlphaTarget = gameRef.current.era === 'rail' ? 1 : 0;
       });
 
       /* --------------------- game state → scene ----------------------- */
-      const st0 = useGame.getState().game;
-      if (st0) scene.redraw(st0);
-      let lastGame: GameState | null = null;
+      scene.redraw(gameRef.current);
+      let lastGame: GameState | null = gameRef.current;
       let lastSpot: number | null = null;
       let lastFlyAt = 0;
       let lastLedgerSeq = -1;
       const unsub = useGame.subscribe((s) => {
-        if (s.game && s.game !== lastGame) {
+        /* the live table repaints from the store; a replayed board is
+           repainted by the prop effect below instead */
+        if (s.game && s.game !== lastGame && s.game === gameRef.current) {
           lastGame = s.game;
           scene.redraw(s.game);
         }
@@ -723,8 +739,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         } else return;
         e.preventDefault();
       };
-      window.addEventListener('keydown', onKey);
-      cleanups.push(() => window.removeEventListener('keydown', onKey));
+      if (keyboardRef.current) {
+        window.addEventListener('keydown', onKey);
+        cleanups.push(() => window.removeEventListener('keydown', onKey));
+      }
 
       /* container size for React overlays */
       const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));

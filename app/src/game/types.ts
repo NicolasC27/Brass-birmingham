@@ -237,6 +237,10 @@ export interface FinalPayload {
   winnerIndex: number;
   timeline: string[];
   history: RoundSnapshot[];
+  /** the whole game, replayable: seed, setup and the action log */
+  seed?: number;
+  setup?: SetupPayload;
+  actions?: GameAction[];
 }
 
 export const SETUP_KEY = 'brassworks.setup.v1';

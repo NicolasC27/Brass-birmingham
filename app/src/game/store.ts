@@ -157,6 +157,9 @@ export function buildFinalPayload(g: GameState): FinalPayload {
       .slice(-40)
       .map((e) => `[${e.era === 'canal' ? 'Canal' : 'Rail'} R${e.round}] ${e.text}`),
     history: g.history ?? [],
+    seed: g.seed,
+    setup: setupOf(g),
+    actions: g.actions,
   };
 }
 
