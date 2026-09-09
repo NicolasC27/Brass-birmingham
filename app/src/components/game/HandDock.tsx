@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, X, Undo2 } from 'lucide-react';
 import { INDUSTRY_ICON, INDUSTRY_LABEL } from '@/game/data';
@@ -270,6 +270,31 @@ export default function HandDock() {
   const maxW = `min(1360px, calc(100vw - ${2 * (MM_W_FOR[boardOpts.minimapSize] + 28)}px))`;
   /* the fan scrolls sideways with a plain mouse wheel (no shift needed) */
   const fanRef = useRef<HTMLDivElement>(null);
+  /* the confirm bar rides above the CARDS, not the dock: track the fan's
+     centre within the footer */
+  const footRef = useRef<HTMLElement>(null);
+  const [fanCentre, setFanCentre] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const fan = fanRef.current;
+    const foot = footRef.current;
+    if (!fan || !foot) return;
+    const measure = () => {
+      const f = fan.getBoundingClientRect();
+      const o = foot.getBoundingClientRect();
+      const c = f.left - o.left + f.width / 2;
+      setFanCentre((prev) => (prev !== null && Math.abs(prev - c) < 0.5 ? prev : c));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(fan);
+    ro.observe(foot);
+    window.addEventListener('resize', measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+    /* re-measured whenever the selection or the dock's fold could move the fan */
+  }, [selectedCardId, verb, buildPick, linkPick, sellPicks, developPick, scoutPick, hovered, pinned]);
   useEffect(() => {
     const el = fanRef.current;
     if (!el) return;
@@ -325,6 +350,7 @@ export default function HandDock() {
 
   return (
     <footer
+      ref={footRef}
       aria-label={t('game.hand.dockAria')}
       className="fixed left-1/2 z-[64] -translate-x-1/2"
       style={{ bottom: insets.bottom, width: maxW }}
@@ -335,11 +361,14 @@ export default function HandDock() {
       <AnimatePresence>
         {isHumanTurn && summary && (
           <motion.div
-            initial={{ y: 56, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 56, opacity: 0 }}
+            /* framer owns the transform: the horizontal centring goes through
+               its x, or the Tailwind translate would be overridden */
+            initial={{ x: '-50%', y: 56, opacity: 0 }}
+            animate={{ x: '-50%', y: 0, opacity: 1 }}
+            exit={{ x: '-50%', y: 56, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-            className="absolute -top-[52px] left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-brass-700/70 bg-coal-900/85 px-4 py-2 shadow-e3 backdrop-blur-md"
+            className="absolute -top-[52px] z-30 flex items-center gap-3 rounded-lg border border-brass-700/70 bg-coal-900/85 px-4 py-2 shadow-e3 backdrop-blur-md"
+            style={{ left: fanCentre ?? '50%' }}
           >
             <span className="max-w-[46vw] truncate font-mono text-xs text-cream-100/90">{summary}</span>
             {/* the real bill: price plus market coal and iron, and what stays in the purse */}
