@@ -100,6 +100,10 @@ interface March {
   /** the works, in world coordinates */
   to: [number, number];
   color: number;
+  /** the plaque (cubes and price), kept on the line a little way from the works */
+  tag: Container;
+  /** the plaque's distance from the works along the line */
+  along: number;
 }
 const CASING = 0xf2ead6;
 
@@ -398,6 +402,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             dashPath(m.g, [[sx, sy], end], 9, 7, -clock * 36);
             m.g.stroke({ width: 3, color: m.color, cap: 'round' });
             m.g.poly(head).fill(m.color).stroke({ width: 2, color: CASING, join: 'round' });
+            const dx = sx - end[0];
+            const dy = sy - end[1];
+            const len = Math.hypot(dx, dy) || 1;
+            m.tag.position.set(end[0] + (dx / len) * m.along, end[1] + (dy / len) * m.along);
           }
         }
         /* era crossfade */
@@ -969,8 +977,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const g = new Graphics();
         g.eventMode = 'none';
         overlay.addChild(g);
-        marchRef.current.push({ g, tray: m.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: coreOf(m.resource) });
-        priceTag(gx + 46, gy - 21.5 - i * 20, 64, 17, tr('board.ghost.mkt', { n: m.amount, cost: m.cost }));
+        /* the plaque rides the line, clear of the tile: how many cubes, at what price */
+        const tag = new Container();
+        const label = new Text({ text: tr('board.ghost.mkt', { n: m.amount, cost: m.cost }), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, fontWeight: '600', fill: 0xf2ead6 } });
+        label.anchor.set(0.5);
+        const w = label.width + 18;
+        tag.addChild(new Graphics().roundRect(-w / 2, -11, w, 22, 4).fill({ color: 0x171310, alpha: 0.94 }).stroke({ width: 1.4, color: coreOf(m.resource) === 0x171310 ? 0xc9a45c : coreOf(m.resource) }), label);
+        tag.eventMode = 'none';
+        overlay.addChild(tag);
+        marchRef.current.push({ g, tray: m.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: coreOf(m.resource), tag, along: 78 + i * 30 });
       });
     }
 

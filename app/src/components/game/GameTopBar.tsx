@@ -92,7 +92,9 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const aid = aidOn(game.assist, code !== null) || (code === null && beginnerAid);
 
   const card = selectedCardId ? p.hand.find((c) => c.id === selectedCardId) : undefined;
-  const summary = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId }) : null;
+  const summaryFull = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId }) : null;
+  /* the verb chip already says it: the summary starts after the verb */
+  const summary = summaryFull && verb && summaryFull.startsWith(`${t(VERB_LABEL[verb])} · `) ? summaryFull.slice(t(VERB_LABEL[verb]).length + 3) : summaryFull;
   const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick }, game) : null;
   /* what the banner asks of the reader, in one line */
   const stage = !mine ? 'theirs' : summary ? 'ready' : verb ? 'target' : card ? 'verb' : 'card';
@@ -227,7 +229,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
             <div className="flex min-w-0 items-center gap-2.5">
               {verb && <span className="shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-brass-400">{t(VERB_LABEL[verb])}</span>}
               {summary && (
-                <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-cream-100/90" title={summary}>
+                <span className="line-clamp-2 min-w-0 flex-1 font-mono text-[11px] leading-snug text-cream-100/90" title={summaryFull ?? undefined}>
                   {summary}
                 </span>
               )}
