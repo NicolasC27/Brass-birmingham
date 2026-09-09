@@ -8,7 +8,8 @@ const results = {
   },
   page: {
     curvesTitle: "The Account Book",
-    curvesAria: "Victory points and income round by round",
+    curvesAria: "Victory points, income and money round by round",
+    curvesMoney: "Money in hand",
     curvesVp: "Victory points",
     curvesIncome: "Income level",
     curvesCanal: "Canal",

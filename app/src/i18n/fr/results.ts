@@ -10,7 +10,8 @@ const fr: typeof enresults = {
   },
   page: {
     curvesTitle: "Le livre de comptes",
-    curvesAria: "Points de victoire et revenu manche par manche",
+    curvesAria: "Points de victoire, revenu et argent manche par manche",
+    curvesMoney: "Argent en caisse",
     curvesVp: "Points de victoire",
     curvesIncome: "Niveau de revenu",
     curvesCanal: "Canal",

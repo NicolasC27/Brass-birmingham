@@ -117,9 +117,10 @@ function Chart({ result, series, title, reveal }: { result: FinalResult; series:
 export default function ScoreCurves({ result, reveal }: { result: FinalResult; reveal: boolean }) {
   const t = useT();
   return (
-    <div className="grid gap-8 md:grid-cols-2">
+    <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
       <Chart result={result} series={(r) => r.vp} title={t("results.page.curvesVp")} reveal={reveal} />
       <Chart result={result} series={(r) => r.income} title={t("results.page.curvesIncome")} reveal={reveal} />
+      <Chart result={result} series={(r) => r.money} title={t("results.page.curvesMoney")} reveal={reveal} />
       {/* legend */}
       <ul className="col-span-full flex flex-wrap gap-x-5 gap-y-1.5 font-sans text-[12px] text-cream-100/80">
         {result.players.map((p, i) => (
