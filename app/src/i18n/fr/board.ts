@@ -62,7 +62,7 @@ const fr: typeof enboard = {
     flipsByEmptying: 'Cet établissement se retourne en se vidant, pas par une vente',
   },
   ghost: {
-    mkt: '£{cost} marché',
+    mkt: '×{n} · £{cost} marché',
   },
   merchant: {
     claimed: '✓ RÉCLAMÉ',

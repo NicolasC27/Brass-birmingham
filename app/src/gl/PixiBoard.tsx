@@ -90,14 +90,31 @@ function dashPath(g: Graphics, pts: number[][], dash: number, gap: number, offse
   }
 }
 
-/** a supply line that marches: redrawn by the ticker with a sliding dash offset */
+/** a supply line from the exchange to the works being planned: the
+ *  exchange is a panel of the page, not of the board, so the line is
+ *  redrawn every frame from wherever its coal or iron tray stands on
+ *  screen, with a sliding dash offset that marches toward the works */
 interface March {
   g: Graphics;
-  pts: number[][];
-  dash: number;
-  gap: number;
-  width: number;
+  tray: 'coal' | 'iron';
+  /** the works, in world coordinates */
+  to: [number, number];
   color: number;
+}
+const CASING = 0xf2ead6;
+
+/** a supply line's geometry: it stops short of the tile, on an arrowhead */
+function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [number, number]; head: number[] } {
+  const dx = gx - sx;
+  const dy = gy - sy;
+  const len = Math.hypot(dx, dy) || 1;
+  const ux = dx / len;
+  const uy = dy / len;
+  const tipX = gx - ux * (TILE_R + 3);
+  const tipY = gy - uy * (TILE_R + 3);
+  const baseX = tipX - ux * 13;
+  const baseY = tipY - uy * 13;
+  return { end: [tipX - ux * 10, tipY - uy * 10], head: [tipX, tipY, baseX - uy * 7, baseY + ux * 7, baseX + uy * 7, baseY - ux * 7] };
 }
 
 export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null }: Props) {
@@ -365,11 +382,23 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         /* pulses (planning highlights, hover rings) */
         const osc = 0.55 + 0.35 * Math.sin(clock * 4.5);
         for (const p of pulsesRef.current) p.g.alpha = p.base * osc;
-        /* supply lines march toward the works being planned */
-        for (const m of marchRef.current) {
-          m.g.clear();
-          dashPath(m.g, m.pts, m.dash, m.gap, -clock * 36);
-          m.g.stroke({ width: m.width, color: m.color });
+        /* supply lines from the exchange march toward the works being
+           planned — from the tray's own place on screen (the drawer's coal
+           or iron row, or the folded pill), turned into world coordinates */
+        if (marchRef.current.length) {
+          const host = el.getBoundingClientRect();
+          for (const m of marchRef.current) {
+            const tray = document.querySelector(`[data-market-tray="${m.tray}"]`) ?? document.querySelector('[data-market]');
+            const r = tray?.getBoundingClientRect();
+            const sx = r && r.width > 0 ? (r.left - 6 - host.left - scene.world.position.x) / scene.world.scale.x : WORLD_W - 52;
+            const sy = r && r.width > 0 ? (r.top + r.height / 2 - host.top - scene.world.position.y) / scene.world.scale.y : (m.tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71);
+            const { end, head } = supplyLine(sx, sy, m.to[0], m.to[1]);
+            m.g.clear();
+            m.g.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
+            dashPath(m.g, [[sx, sy], end], 9, 7, -clock * 36);
+            m.g.stroke({ width: 3, color: m.color, cap: 'round' });
+            m.g.poly(head).fill(m.color).stroke({ width: 2, color: CASING, join: 'round' });
+          }
         }
         /* era crossfade */
         scene.bgRail.alpha += (railAlphaTarget - scene.bgRail.alpha) * Math.min(1, t.deltaMS / 700);
@@ -915,35 +944,16 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
        orange of the exchange). */
     if (ghost) {
       const [gx, gy] = displayPosFor(ghost.at[0], ghost.at[1]);
-      const CASING = 0xf2ead6;
       const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : 0xe07020);
-      /* the line ends short of the tile, on an arrowhead */
-      const arrow = (sx: number, sy: number, color: number) => {
-        const dx = gx - sx;
-        const dy = gy - sy;
-        const len = Math.hypot(dx, dy) || 1;
-        const ux = dx / len;
-        const uy = dy / len;
-        const tipX = gx - ux * (TILE_R + 3);
-        const tipY = gy - uy * (TILE_R + 3);
-        const baseX = tipX - ux * 13;
-        const baseY = tipY - uy * 13;
-        const head = new Graphics()
-          .poly([tipX, tipY, baseX - uy * 7, baseY + ux * 7, baseX + uy * 7, baseY - ux * 7])
-          .fill(color)
-          .stroke({ width: 2, color: CASING, join: 'round' });
-        head.eventMode = 'none';
-        overlay.addChild(head);
-        return [tipX - ux * 10, tipY - uy * 10] as [number, number];
-      };
       for (const src of ghost.tileSources) {
         const [sx, sy] = displayPosFor(src.x, src.y);
-        const end = arrow(sx, sy, coreOf(src.resource));
-        const casing = new Graphics().moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
-        const core = new Graphics().moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 3, color: coreOf(src.resource), cap: 'round' });
-        casing.eventMode = 'none';
-        core.eventMode = 'none';
-        overlay.addChild(casing, core);
+        const { end, head } = supplyLine(sx, sy, gx, gy);
+        const line = new Graphics();
+        line.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
+        line.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 3, color: coreOf(src.resource), cap: 'round' });
+        line.poly(head).fill(coreOf(src.resource)).stroke({ width: 2, color: CASING, join: 'round' });
+        line.eventMode = 'none';
+        overlay.addChild(line);
         const tag = new Graphics().roundRect(-14, -9, 28, 16, 3).fill(0x171310).stroke({ width: 0.8, color: 0x8a6b33 });
         tag.position.set((sx + gx) / 2, (sy + gy) / 2);
         const txt = new Text({ text: `×${src.amount}`, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, fill: 0xf2ead6 } });
@@ -953,31 +963,14 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         txt.eventMode = 'none';
         overlay.addChild(tag, txt);
       }
-      /* market supply: from the coal/iron trays at the right edge of the
-         world, marching dashes on a pale casing, a cube where they start,
-         a £-plaque per resource by the works (Board ghost.market) */
+      /* market supply: a line from the exchange's own tray, drawn by the
+         ticker (see March), and a £-plaque per resource by the works */
       ghost.market.forEach((m, i) => {
-        const sx = WORLD_W - 52;
-        const sy = m.resource === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71;
-        const color = coreOf(m.resource);
-        const end = arrow(sx, sy, color);
-        const casing = new Graphics().moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
-        casing.eventMode = 'none';
-        overlay.addChild(casing);
-        const core = new Graphics();
-        core.eventMode = 'none';
-        overlay.addChild(core);
-        marchRef.current.push({ g: core, pts: [[sx, sy], end], dash: 9, gap: 7, width: 3, color });
-        /* the cube the line leaves from: the resource, as on the exchange */
-        const cube = new Graphics().roundRect(sx - 9, sy - 9, 18, 18, 3).fill(color).stroke({ width: 2, color: CASING });
-        cube.eventMode = 'none';
-        overlay.addChild(cube);
-        const n = new Text({ text: `×${m.amount}`, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, fill: m.resource === 'coal' ? 0xf2ead6 : 0x171310 } });
-        n.anchor.set(0.5);
-        n.position.set(sx, sy);
-        n.eventMode = 'none';
-        overlay.addChild(n);
-        priceTag(gx + 40, gy - 21.5 - i * 20, 52, 17, tr('board.ghost.mkt', { cost: m.cost }));
+        const g = new Graphics();
+        g.eventMode = 'none';
+        overlay.addChild(g);
+        marchRef.current.push({ g, tray: m.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: coreOf(m.resource) });
+        priceTag(gx + 46, gy - 21.5 - i * 20, 64, 17, tr('board.ghost.mkt', { n: m.amount, cost: m.cost }));
       });
     }
 

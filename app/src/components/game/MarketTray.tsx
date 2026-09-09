@@ -63,7 +63,7 @@ function QuotationRow({
   const [note, setNote] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5" data-market-tray={resource}>
       {/* quotation header: resource, HERO buy price (chalk on slate), stock */}
       <div className="flex items-end gap-2 px-0.5">
         <img src={resource === 'coal' ? '/icon-coal.svg' : '/icon-iron.svg'} alt="" className="mb-0.5 h-5 w-5 opacity-90" />

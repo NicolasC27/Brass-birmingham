@@ -60,7 +60,7 @@ const board = {
     flipsByEmptying: 'This works flips by emptying, not by sale',
   },
   ghost: {
-    mkt: '£{cost} mkt',
+    mkt: '×{n} · £{cost} mkt',
   },
   merchant: {
     claimed: '✓ CLAIMED',
