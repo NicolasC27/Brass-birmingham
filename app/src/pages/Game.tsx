@@ -167,6 +167,10 @@ export default function Game() {
         setBoardOption('settingsOpen', !openNow);
         return;
       }
+      if (isKey(e, 'replay')) {
+        navigate('/replay?live=1');
+        return;
+      }
       if (isKey(e, 'undo')) {
         useGame.getState().undo();
         return;

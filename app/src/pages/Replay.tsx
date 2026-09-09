@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { applyAction } from '@/game/actions';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
@@ -7,6 +7,8 @@ import { newGame } from '@/game/engine';
 import type { FinalPayload, GameState } from '@/game/types';
 import { FINAL_KEY } from '@/game/types';
 import { useT } from '@/i18n';
+import { useGame } from '@/game/store';
+import { setupOf } from '@/game/actions';
 import { cn } from '@/lib/utils';
 import { ShapeChip } from '@/components/game/TownInspector';
 
@@ -47,9 +49,19 @@ function rebuild(final: FinalPayload): GameState[] | null {
 export default function Replay() {
   const t = useT();
   const navigate = useNavigate();
-  const final = useMemo(() => readFinal(), []);
+  /* ?live=1: the table in play, as far as it got — otherwise the finished
+     game saved with the results */
+  const [params] = useSearchParams();
+  const live = params.get('live') === '1';
+  const liveGame = useGame((s) => s.game);
+  const final = useMemo<FinalPayload | null>(() => {
+    if (!live) return readFinal();
+    if (!liveGame) return null;
+    return { players: [], eras: [], winnerIndex: 0, timeline: [], history: liveGame.history, seed: liveGame.seed, setup: setupOf(liveGame), actions: liveGame.actions };
+  }, [live, liveGame]);
+  const backTo = live ? '/game' : '/results';
   const states = useMemo(() => (final ? rebuild(final) : null), [final]);
-  const [i, setI] = useState(0);
+  const [i, setI] = useState(() => (live && states ? states.length - 1 : 0));
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const n = states ? states.length - 1 : 0;
@@ -78,18 +90,18 @@ export default function Replay() {
       else if (e.key === 'ArrowLeft') step(-1);
       else if (e.key === 'Home') setI(0);
       else if (e.key === 'End') setI(n);
-      else if (e.key === 'Escape') navigate('/results');
+      else if (e.key === 'Escape') navigate(backTo);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [n, navigate]);
+  }, [n, navigate, backTo]);
 
   if (!final || !states) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="font-fell text-lg text-cream-100/80">{t('results.page.replayMissing')}</p>
-        <Link to="/results" className="btn-ledger">
-          {t('results.page.replayBack')}
+        <Link to={backTo} className="btn-ledger">
+          {live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
         </Link>
       </div>
     );
@@ -130,8 +142,8 @@ export default function Replay() {
       </div>
 
       {/* back */}
-      <Link to="/results" className="plate fixed right-3 top-3 z-[64] flex items-center gap-1.5 px-3 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-cream-100/75 hover:text-brass-400">
-        <ArrowLeft className="h-3 w-3" /> {t('results.page.replayBack')}
+      <Link to={backTo} className="plate fixed right-3 top-3 z-[64] flex items-center gap-1.5 px-3 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-cream-100/75 hover:text-brass-400">
+        <ArrowLeft className="h-3 w-3" /> {live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
       </Link>
 
       {/* the reel: what just happened, the scrubber, transport */}

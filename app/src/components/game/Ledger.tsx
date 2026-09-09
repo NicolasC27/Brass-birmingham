@@ -5,6 +5,8 @@ import { useGame } from '@/game/store';
 import type { LedgerEntry } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router';
+import { keyLabel, useKeybindings } from './keybindings';
 
 const VERB_CLASS: Record<LedgerEntry['verb'], string> = {
   build: 'text-brass-400',
@@ -42,6 +44,7 @@ const FILTERS = [
  */
 export default function Ledger() {
   const t = useT();
+  const keys = useKeybindings();
   const game = useGame((s) => s.game);
   const ledgerFilter = useGame((s) => s.ledgerFilter);
   const setLedgerFilter = useGame((s) => s.setLedgerFilter);
@@ -86,8 +89,18 @@ export default function Ledger() {
       <header className="relative mb-2">
         <div className="flex items-center justify-between">
           <h2 className="font-fell text-[15px] tracking-[0.08em] text-brass-400">{t('game.ledger.heading')}</h2>
-          <span className="font-mono text-[9px] text-cream-100/35" title={t('game.ledger.hashTitle')}>
-            #{game.ledgerSeq.toString(36)}
+          <span className="flex items-center gap-2">
+            {/* the whole game so far, action by action, on the board */}
+            <Link
+              to="/replay?live=1"
+              className="rounded-sm border border-brass-700/60 px-1.5 py-0.5 font-sans text-[9px] font-semibold uppercase tracking-wider text-brass-400 transition-colors hover:border-brass-400"
+              title={`${t('game.ledger.replay')} (${keyLabel(keys.replay)})`}
+            >
+              {t('game.ledger.replay')}
+            </Link>
+            <span className="font-mono text-[9px] text-cream-100/35" title={t('game.ledger.hashTitle')}>
+              #{game.ledgerSeq.toString(36)}
+            </span>
           </span>
         </div>
         <div className="mt-1.5 flex gap-1">

@@ -135,6 +135,7 @@ const game = {
       rules: 'Rules',
       unbindable: 'Reserved key',
       undo: 'Undo your last action',
+      replay: 'Replay the game so far',
       mat: 'Player mat (1–4: switch player)',
       matWide: 'Mat wide / docked',
       matStyle: 'Mat tiles: cards / compact / pills',
@@ -259,7 +260,8 @@ const game = {
     aboutAria: 'About the market',
   },
   hand: {
-    undo: 'Undo your last action (the bots’ replies with it)',
+    undo: 'Undo your last action — the bots’ moves since are undone too',
+    undoFailed: 'This action cannot be undone',
     undoShort: 'Undo',
     verbBuild: 'Build',
     verbNetwork: 'Network',
@@ -315,6 +317,7 @@ const game = {
   ledger: {
     aria: 'The Ledger',
     heading: 'THE LEDGER',
+    replay: 'Replay',
     hashTitle: 'State hash (debug)',
     filterAll: 'All',
     filterMe: 'Me',

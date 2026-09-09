@@ -21,6 +21,7 @@ const fr: typeof enresults = {
     replayPause: "Pause",
     replaySpeed: "Vitesse",
     replayBack: "Retour aux résultats",
+    replayBackGame: "Retour à la partie",
     replayKeys: "Espace lecture · ← → coup par coup · Échap retour",
     curvesVp: "Points de victoire",
     curvesIncome: "Niveau de revenu",

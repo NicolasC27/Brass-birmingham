@@ -137,6 +137,7 @@ const fr: typeof engame = {
       rules: 'Règles',
       unbindable: 'Touche réservée',
       undo: 'Annuler votre dernier coup',
+      replay: 'Revoir la partie jusqu’ici',
       mat: 'Tapis du joueur (1–4 : changer de joueur)',
       matWide: 'Tapis large / compact',
       matStyle: 'Tuiles du tapis : cartes / compact / pastilles',
@@ -261,7 +262,8 @@ const fr: typeof engame = {
     aboutAria: 'À propos de la bourse',
   },
   hand: {
-    undo: 'Annuler votre dernier coup (les réponses des bots avec)',
+    undo: 'Annuler votre dernier coup — les coups joués par les bots depuis sont annulés aussi',
+    undoFailed: 'Impossible d’annuler ce coup',
     undoShort: 'Annuler',
     verbBuild: 'Construire',
     verbNetwork: 'Réseau',
@@ -317,6 +319,7 @@ const fr: typeof engame = {
   ledger: {
     aria: 'Le Registre',
     heading: 'LE REGISTRE',
+    replay: 'Revoir',
     hashTitle: 'Empreinte d’état (débogage)',
     filterAll: 'Tout',
     filterMe: 'Moi',

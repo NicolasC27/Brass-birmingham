@@ -8,11 +8,12 @@ import { useSyncExternalStore } from 'react';
 /* keys stay fixed: they mirror the hand and the camera, not a panel.  */
 /* ------------------------------------------------------------------ */
 
-export type KeyAction = 'undo' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit';
-export const KEY_ACTIONS: KeyAction[] = ['undo', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'hand', 'links', 'fullscreen', 'rules', 'fit'];
+export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit';
+export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'hand', 'links', 'fullscreen', 'rules', 'fit'];
 
 export const DEFAULT_KEYS: Record<KeyAction, string> = {
   undo: 'z',
+  replay: 'r',
   fullscreen: 'f',
   links: 'c',
   market: 'm',

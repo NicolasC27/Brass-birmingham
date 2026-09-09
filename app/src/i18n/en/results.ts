@@ -19,6 +19,7 @@ const results = {
     replayPause: "Pause",
     replaySpeed: "Speed",
     replayBack: "Back to the results",
+    replayBackGame: "Back to the game",
     replayKeys: "Space play · ← → step · Esc back",
     curvesVp: "Victory points",
     curvesIncome: "Income level",
