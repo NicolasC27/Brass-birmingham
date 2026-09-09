@@ -52,6 +52,17 @@ const game = {
     cancel: 'Cancel',
     pass: 'Pass',
     passTip: 'Nothing to play: discard this card and skip the action',
+    last: 'last move: {what}',
+    aid: {
+      count: '{n} possible',
+      none: {
+        build: 'This card can build nowhere: sell, develop, or pass with it',
+        network: 'No link you can afford from your network',
+        sell: 'Nothing to sell: no works of yours reaches a merchant who wants it',
+        develop: 'Nothing to develop: no iron within reach',
+      },
+      coalMarket: 'The coal comes from the market: no mine is linked to {town}. A link toward {mine} would have made it free.',
+    },
     hint: {
       pickCard: 'Pick a card from your hand',
       pickVerb: '{card} — pick an action',
@@ -63,6 +74,7 @@ const game = {
       pass: 'Confirm to discard the card',
       loan: 'Confirm the loan',
       ready: 'Check the bill, then confirm',
+      second: 'Second action — pick a card',
     },
   },
   score: {

@@ -54,6 +54,17 @@ const fr: typeof engame = {
     cancel: 'Annuler',
     pass: 'Passer',
     passTip: 'Rien à jouer : défausse cette carte et saute l’action',
+    last: 'dernier coup : {what}',
+    aid: {
+      count: '{n} possibles',
+      none: {
+        build: 'Cette carte ne peut rien bâtir : vendez, développez ou passez avec',
+        network: 'Aucune liaison abordable depuis votre réseau',
+        sell: 'Rien à vendre : aucun de vos ouvrages n’atteint un marchand preneur',
+        develop: 'Rien à développer : pas de fer à portée',
+      },
+      coalMarket: 'Le charbon vient du marché : aucune mine n’est reliée à {town}. Une liaison vers {mine} l’aurait rendu gratuit.',
+    },
     hint: {
       pickCard: 'Choisissez une carte dans votre main',
       pickVerb: '{card} — choisissez une action',
@@ -65,6 +76,7 @@ const fr: typeof engame = {
       pass: 'Confirmez pour défausser la carte',
       loan: 'Confirmez l’emprunt',
       ready: 'Vérifiez la note, puis confirmez',
+      second: 'Seconde action — choisissez une carte',
     },
   },
   score: {
