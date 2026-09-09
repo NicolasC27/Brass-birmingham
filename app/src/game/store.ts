@@ -20,7 +20,7 @@ import {
 } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 import { chooseBotMove } from './bot';
-import { applyAction, botAction, fallbackAction } from './actions';
+import { applyAction, botAction, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
@@ -93,6 +93,10 @@ interface GameStore {
   confirm: () => void;
   /** apply one action of the log for the player to act; false = refused */
   dispatch: (action: GameAction) => boolean;
+  /** indices of the log's actions taken by a human (undo points) */
+  humanMarks: number[];
+  /** back to before the human's last action (bot replies included) */
+  undo: () => boolean;
   setLoanConfirm: (open: boolean) => void;
   setLoanPeek: (on: boolean) => void;
   setRulesOpen: (open: boolean) => void;
@@ -165,6 +169,7 @@ const clearSelection = {
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
+  humanMarks: [] as number[],
   loanConfirm: false,
   loanPeek: false,
 };
@@ -200,9 +205,17 @@ export const useGame = create<GameStore>((set, get) => ({
         return true;
       }
     })();
+    const humanMarks = (() => {
+      try {
+        return humanActionIndices(setupOf(game), game.seed, game.actions);
+      } catch {
+        return [];
+      }
+    })();
     set({
       ...clearSelection,
       game,
+      humanMarks,
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
       coachStep: coached ? -1 : 0,
@@ -211,7 +224,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   reset: () => {
     const game = newGame(readSetup());
-    set({ ...clearSelection, game, ceremony: null, gameOverOpen: false });
+    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false });
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
     } catch {
@@ -370,7 +383,19 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!r.state) return false;
     const mut = r.state;
     const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
-    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over' });
+    const human = g.phase === 'action' && !g.players[g.current].isBot;
+    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, g.actions.length] : get().humanMarks });
+    get().save();
+    return true;
+  },
+
+  undo: () => {
+    const g = get().game;
+    const marks = get().humanMarks;
+    if (!g || marks.length === 0) return false;
+    const back = undoLastHuman(g, marks);
+    if (!back) return false;
+    set({ ...clearSelection, game: back, humanMarks: marks.slice(0, -1), ceremony: back.phase === 'scoring-canal' ? 'canal-end' : null, gameOverOpen: false });
     get().save();
     return true;
   },

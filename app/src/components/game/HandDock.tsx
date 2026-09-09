@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, X } from 'lucide-react';
+import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, X, Undo2 } from 'lucide-react';
 import { INDUSTRY_ICON, INDUSTRY_LABEL } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
@@ -10,7 +10,7 @@ import { INDUSTRY_COLOR } from './townChrome';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
 import { hudInsets, useBoardOptions } from './boardOptions';
-import { isKey } from './keybindings';
+import { isKey, keyLabel, useKeybindings } from './keybindings';
 import { MM_W_FOR } from './Minimap';
 
 const PIN_KEY = 'brassworks.dockPinned';
@@ -225,6 +225,8 @@ export default function HandDock() {
   const toggleDevelop = useGame((s) => s.toggleDevelop);
   const cancel = useGame((s) => s.cancel);
   const confirm = useGame((s) => s.confirm);
+  const undo = useGame((s) => s.undo);
+  const canUndo = useGame((s) => s.humanMarks.length > 0 && !!s.game && s.game.phase !== 'game-over');
   const currentDevelops = useGame((s) => s.currentDevelops);
 
   /* -------------------- auto-collapse state -------------------- */
@@ -262,6 +264,7 @@ export default function HandDock() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const boardOpts = useBoardOptions();
+  const keys = useKeybindings();
   const insets = hudInsets(boardOpts);
   /* never wider than the room between the minimap and its mirror on the left */
   const maxW = `min(1360px, calc(100vw - ${2 * (MM_W_FOR[boardOpts.minimapSize] + 28)}px))`;
@@ -382,6 +385,30 @@ export default function HandDock() {
           <span className="engraved-brass font-fell normal-case tracking-[0.08em]">
             {isHumanTurn ? t('game.hand.cardsInHand', { count: p.hand.length }) : t('game.hand.atTable', { name: p.name })}
           </span>
+          {/* undo: back to before your last action, the bots' replies with it */}
+          {canUndo && (
+            <span
+              role="button"
+              tabIndex={0}
+              aria-label={t('game.hand.undo')}
+              title={`${t('game.hand.undo')} (${keyLabel(keys.undo)})`}
+              onClick={(e) => {
+                e.stopPropagation();
+                undo();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  undo();
+                }
+              }}
+              className="absolute left-3 top-1/2 flex h-6 -translate-y-1/2 items-center gap-1 rounded-full border border-brass-700/50 px-2 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-500/70 transition-colors hover:border-brass-400 hover:text-brass-400"
+            >
+              <Undo2 className="h-3 w-3" />
+              {t('game.hand.undoShort')}
+            </span>
+          )}
           {/* pin: keeps the dock open whatever the pointer does */}
           <span
             role="button"

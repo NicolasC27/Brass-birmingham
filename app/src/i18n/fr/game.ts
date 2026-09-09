@@ -134,6 +134,7 @@ const fr: typeof engame = {
       towns: 'Sauter de ville en ville',
       rules: 'Règles',
       unbindable: 'Touche réservée',
+      undo: 'Annuler votre dernier coup',
       mat: 'Tapis du joueur (1–4 : changer de joueur)',
       matWide: 'Tapis large / compact',
       matStyle: 'Tuiles du tapis : cartes / compact / pastilles',
@@ -258,6 +259,8 @@ const fr: typeof engame = {
     aboutAria: 'À propos de la bourse',
   },
   hand: {
+    undo: 'Annuler votre dernier coup (les réponses des bots avec)',
+    undoShort: 'Annuler',
     verbBuild: 'Construire',
     verbNetwork: 'Réseau',
     verbDevelop: 'Développer',

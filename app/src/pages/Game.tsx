@@ -167,6 +167,10 @@ export default function Game() {
         setBoardOption('settingsOpen', !openNow);
         return;
       }
+      if (isKey(e, 'undo')) {
+        useGame.getState().undo();
+        return;
+      }
       if (isKey(e, 'matWide')) {
         setBoardOption('matWide', !getBoardOptions().matWide);
         return;

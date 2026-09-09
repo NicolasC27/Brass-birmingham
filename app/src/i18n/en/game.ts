@@ -132,6 +132,7 @@ const game = {
       towns: 'Jump from town to town',
       rules: 'Rules',
       unbindable: 'Reserved key',
+      undo: 'Undo your last action',
       mat: 'Player mat (1–4: switch player)',
       matWide: 'Mat wide / docked',
       matStyle: 'Mat tiles: cards / compact / pills',
@@ -256,6 +257,8 @@ const game = {
     aboutAria: 'About the market',
   },
   hand: {
+    undo: 'Undo your last action (the bots’ replies with it)',
+    undoShort: 'Undo',
     verbBuild: 'Build',
     verbNetwork: 'Network',
     verbDevelop: 'Develop',
