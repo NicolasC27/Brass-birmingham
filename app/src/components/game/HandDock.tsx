@@ -436,6 +436,7 @@ export default function HandDock() {
             >
               <Undo2 className="h-3 w-3" />
               {t('game.hand.undoShort')}
+              <kbd className="ml-0.5 rounded-[2px] border border-brass-700/60 px-1 font-mono text-[8px] leading-[11px] text-brass-500/80">{keyLabel(keys.undo)}</kbd>
             </span>
           )}
           {/* pin: keeps the dock open whatever the pointer does */}

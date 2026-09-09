@@ -20,6 +20,7 @@ import {
 } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 import { chooseBotMove } from './bot';
+import { tr } from '@/i18n';
 import { applyAction, botAction, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
@@ -401,7 +402,15 @@ export const useGame = create<GameStore>((set, get) => ({
     const g = get().game;
     const marks = get().humanMarks;
     if (!g || marks.length === 0) return false;
-    const back = undoLastHuman(g, marks);
+    let back: GameState | null = null;
+    try {
+      back = undoLastHuman(g, marks);
+    } catch (err) {
+      /* a log that will not replay is a bug worth seeing, not swallowing */
+      console.error('undo: replay failed', err);
+      set({ shake: { key: '', reason: tr('game.hand.undoFailed'), at: Date.now() } });
+      return false;
+    }
     if (!back) return false;
     set({ ...clearSelection, game: back, humanMarks: marks.slice(0, -1), ceremony: back.phase === 'scoring-canal' ? 'canal-end' : null, gameOverOpen: false });
     get().save();
