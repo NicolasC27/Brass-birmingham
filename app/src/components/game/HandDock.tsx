@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, X, Undo2 } from 'lucide-react';
-import { INDUSTRY_ICON, INDUSTRY_LABEL } from '@/game/data';
+import { INDUSTRY_ICON, INDUSTRY_LABEL, incomeLevel } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
 import type { Card, IndustryType, Verb } from '@/game/types';
@@ -226,7 +226,7 @@ export default function HandDock() {
   const cancel = useGame((s) => s.cancel);
   const confirm = useGame((s) => s.confirm);
   const undo = useGame((s) => s.undo);
-  const canUndo = useGame((s) => s.humanMarks.length > 0 && !!s.game && s.game.phase !== 'game-over');
+  const canUndo = useGame((s) => s.canUndo());
   const currentDevelops = useGame((s) => s.currentDevelops);
 
   /* -------------------- auto-collapse state -------------------- */
@@ -414,6 +414,13 @@ export default function HandDock() {
           <span className="engraved-brass font-fell normal-case tracking-[0.08em]">
             {isHumanTurn ? t('game.hand.cardsInHand', { count: p.hand.length }) : t('game.hand.atTable', { name: p.name })}
           </span>
+          {/* the purse, right where the eyes already are: money, income level */}
+          {shown && (
+            <span className="flex items-center gap-1.5 font-mono text-[10.5px] normal-case tracking-normal" title={t('game.hand.purseTip', { name: shown.name })}>
+              <span className="rounded-sm border border-brass-700/60 bg-coal-950/70 px-1.5 py-[1px] font-bold text-brass-400">£{shown.money}</span>
+              <span className="rounded-sm border border-brass-700/40 bg-coal-950/50 px-1.5 py-[1px] text-bottle-600 brightness-150">↗ {incomeLevel(shown.income)}</span>
+            </span>
+          )}
           {/* undo: back to before your last action, the bots' replies with it */}
           {canUndo && (
             <span

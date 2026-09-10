@@ -265,6 +265,7 @@ const fr: typeof engame = {
     undo: 'Annuler votre dernier coup — les coups joués par les bots depuis sont annulés aussi',
     undoFailed: 'Impossible d’annuler ce coup',
     undoShort: 'Annuler',
+    purseTip: 'La caisse et le niveau de revenu de {name}',
     verbBuild: 'Construire',
     verbNetwork: 'Réseau',
     verbDevelop: 'Développer',

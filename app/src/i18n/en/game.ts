@@ -263,6 +263,7 @@ const game = {
     undo: 'Undo your last action — the bots’ moves since are undone too',
     undoFailed: 'This action cannot be undone',
     undoShort: 'Undo',
+    purseTip: '{name}’s purse and income level',
     verbBuild: 'Build',
     verbNetwork: 'Network',
     verbDevelop: 'Develop',
