@@ -364,8 +364,9 @@ export default function Game() {
       <PlayerRail />
 
       {/* the exchange: the quotation strip is always there at the top right;
-          the full tray drops down under the banner's rows when asked, and
-          the banner never moves for it */}
+          the full tray hangs right under it when asked, whole, no scrolling,
+          and the banner never moves for it (it keeps clear of the tray's
+          column by itself) */}
       <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />
       <AnimatePresence initial={false}>
         {marketOpen && (
@@ -375,8 +376,8 @@ export default function Game() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed right-3 z-[64] w-[min(320px,88vw)] overflow-y-auto"
-            style={{ top: insets.top + 116, maxHeight: `calc(100vh - ${insets.top + 116 + MM_H_FOR[minimapSize] + insets.bottom + 140}px)` }}
+            className="fixed right-3 z-[64] w-[min(320px,88vw)]"
+            style={{ top: insets.top + 48 }}
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >

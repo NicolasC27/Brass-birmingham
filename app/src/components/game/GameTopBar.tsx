@@ -148,6 +148,11 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const candleLow = secondsLeft !== null && secondsLeft < 20;
 
   const rowH = mine ? 52 : 36;
+  /* the exchange's tray hangs at the right edge, 320px wide: the banner,
+     centred in its band, stays narrow enough never to run under it */
+  const trayLeft = typeof window === 'undefined' ? 9999 : window.innerWidth - 12 - 320;
+  const mid = typeof window === 'undefined' ? 0 : (band.left + (window.innerWidth - band.right)) / 2;
+  const maxW = Math.max(520, Math.min(920, 2 * (trayLeft - 8 - mid)));
   return (
     <div className="pointer-events-none fixed z-[64] flex justify-center" style={{ left: band.left, right: band.right, top: insets.top }}>
       <motion.div
@@ -155,7 +160,8 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
         initial={{ scale: 0.97, opacity: 0.4 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-        className={cn('pointer-events-auto relative flex flex-col overflow-hidden rounded-lg border border-brass-700/60 bg-coal-900/90 shadow-e3 backdrop-blur-md', mine ? 'w-full max-w-[920px]' : 'max-w-full')}
+        className={cn('pointer-events-auto relative flex flex-col overflow-hidden rounded-lg border border-brass-700/60 bg-coal-900/90 shadow-e3 backdrop-blur-md', mine ? 'w-full' : 'max-w-full')}
+        style={mine ? { maxWidth: maxW } : undefined}
       >
         <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-lg opacity-[0.05]" />
         <motion.div className="flex items-stretch" initial={false} animate={{ height: rowH }} transition={{ type: 'spring', stiffness: 320, damping: 30 }}>
