@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { PLAYER_COLORS, incomeLevel } from '@/game/data';
-import { LayoutGrid } from 'lucide-react';
+import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
+import { ChevronsDownUp, ChevronsUpDown, Coins, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
+import { setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets, narrowRailTop } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
 import { useT } from '@/i18n';
@@ -97,13 +98,16 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
   const setNetPeek = useGame((s) => s.setNetPeek);
   const peekTimer = useRef<number | null>(null);
   const spotlighted = spotlight === index;
+  const lvl = incomeLevel(p.income);
+  const pay = fmtPay(INCOME_PAYOUT[p.income]);
 
   return (
     <div
       role="button"
       tabIndex={0}
       aria-pressed={spotlighted}
-      aria-label={t('game.rail.compactAria', { name: p.name, money: p.money, income: incomeLevel(p.income), vp: p.vp })}
+      aria-current={active ? 'true' : undefined}
+      aria-label={t('game.rail.compactAria', { name: p.name, money: p.money, income: lvl, vp: p.vp })}
       title={spotlighted ? t('game.rail.spotRelease') : t('game.rail.spotMap')}
       onPointerEnter={() => {
         /* a beat of hover lights the player's whole network on the map */
@@ -123,33 +127,48 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
         }
       }}
       className={cn(
-        'flex cursor-pointer items-center gap-2 rounded-md border border-brass-700/40 bg-coal-900/80 px-2 py-1.5 shadow-e2 backdrop-blur-md',
-        active && 'border-brass-700/70',
+        'relative flex cursor-pointer items-center gap-2 overflow-hidden rounded-md border bg-coal-900/80 py-1.5 pl-3 pr-2 shadow-e2 backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-300',
+        active ? 'border-brass-400/90 bg-coal-800/90' : 'border-brass-700/40 opacity-90',
         spotlighted && 'ring-1 ring-brass-400',
       )}
+      style={active ? { boxShadow: `0 0 0 1px ${color.hex}55, 0 0 22px ${color.hex}66, 0 4px 14px rgba(0,0,0,.45)` } : undefined}
     >
-      <PortraitMedallion p={p} index={index} active={active} size={compact ? 28 : 34} />
-      <div className="flex min-w-0 flex-col items-start gap-px">
-        <span className="max-w-[110px] truncate font-fell text-[12px] leading-tight tracking-wide text-cream-100">
-          {p.name}
-          {p.isBot && <span className="ml-1 font-mono text-[8px] uppercase text-brass-500/80">{p.difficulty.slice(0, 4)}</span>}
+      {/* the seat's colour down the left edge; solid and bright when it is their turn */}
+      <span aria-hidden className="absolute inset-y-0 left-0 w-[4px] transition-opacity" style={{ background: color.hex, opacity: active ? 1 : 0.45 }} />
+      <PortraitMedallion p={p} index={index} active={active} size={compact ? 26 : 36} />
+      <div className="flex min-w-0 flex-col items-start gap-[3px]">
+        <span className="flex items-center gap-1.5">
+          <span className={cn('max-w-[104px] truncate font-fell leading-tight tracking-wide', active ? 'text-cream-100' : 'text-cream-100/85', compact ? 'text-[12px]' : 'text-[13px]')}>{p.name}</span>
+          {p.isBot && <span className="font-mono text-[8px] uppercase text-brass-500/80">{p.difficulty.slice(0, 4)}</span>}
+          {active && <span className="rounded-sm bg-brass-400 px-1 py-px font-sans text-[8px] font-bold uppercase tracking-widest text-coal-950">{t('game.rail.toAct')}</span>}
         </span>
-        <span className="flex items-center gap-1.5 font-mono text-[9.5px] leading-tight">
-          <span className="font-semibold" style={{ color: color.hex }}>£{money}</span>
-          <span className="text-bottle-600 brightness-150">↗ {incomeLevel(p.income)}</span>
-          <span className="text-cream-100/70">{vp} VP</span>
-          {active && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
-        </span>
-        {/* turn order: what this round cost so far, and the seat it earns next
-            round (least spent plays first) — folded away on narrow screens */}
-        <span className={cn('flex items-center gap-1.5 font-mono text-[9px] leading-tight text-cream-100/55', compact && 'hidden')} title={t('game.rail.orderTip')}>
-          <span>{t('game.rail.spent', { amount: p.spent })}</span>
-          <span className="text-cream-100/30">·</span>
-          <span className={nextRank < nowRank ? 'text-bottle-600 brightness-150' : nextRank > nowRank ? 'text-rust-500 brightness-150' : ''}>
-            {t('game.rail.next', { rank: nextRank })}
-            {nextRank < nowRank ? ' ↑' : nextRank > nowRank ? ' ↓' : ''}
+        {/* the three figures, money first and largest, each behind its own icon */}
+        <span className="flex items-baseline gap-2 font-mono leading-none">
+          <span className={cn('flex items-baseline gap-0.5 font-bold', compact ? 'text-[12px]' : 'text-[14px]')} style={{ color: color.hex }} title={t('game.rail.moneyTip')}>
+            <Coins aria-hidden className={cn('shrink-0 self-center opacity-80', compact ? 'h-2.5 w-2.5' : 'h-3 w-3')} />£{money}
+          </span>
+          <span className="flex items-center gap-0.5 text-[10px] text-bottle-600 brightness-150" title={t('game.rail.incomeTitle', { income: lvl }) + ' — ' + t('game.rail.incomeContent', { amount: pay })}>
+            <TrendingUp aria-hidden className="h-2.5 w-2.5 shrink-0" />
+            {lvl}
+            {!compact && <span className="text-cream-100/45">({pay})</span>}
+          </span>
+          <span className="flex items-center gap-0.5 text-[10px] text-cream-100/75" title={t('game.rail.vpTip')}>
+            <Trophy aria-hidden className="h-2.5 w-2.5 shrink-0" />
+            {vp}
           </span>
         </span>
+        {/* turn order: what this round cost so far, and the seat it earns next
+            round (least spent plays first) — folded away when compact */}
+        {!compact && (
+          <span className="flex items-center gap-1.5 font-mono text-[9px] leading-tight text-cream-100/55" title={t('game.rail.orderTip')}>
+            <span>{t('game.rail.spent', { amount: p.spent })}</span>
+            <span className="text-cream-100/30">·</span>
+            <span className={cn('flex items-center gap-0.5 rounded-sm border px-1 py-px', nextRank < nowRank ? 'border-bottle-600/60 text-bottle-600 brightness-150' : nextRank > nowRank ? 'border-rust-500/60 text-rust-500 brightness-150' : 'border-brass-700/50 text-cream-100/60')}>
+              {t('game.rail.nextShort', { rank: nextRank })}
+              {nextRank < nowRank ? ' ↑' : nextRank > nowRank ? ' ↓' : ''}
+            </span>
+          </span>
+        )}
       </div>
       {/* the player's mat: remaining tiles by industry and level */}
       <button
@@ -176,8 +195,10 @@ export default function PlayerRail() {
   const game = useGame((s) => s.game);
   const insets = useHudInsets();
   const narrow = useNarrow();
+  const { railCompact } = useBoardOptions();
   if (!game) return null;
   const next = projectedOrder(game);
+  const compact = narrow || railCompact;
 
   /* wide: a vertical stack top-left. Narrow: a wrapping strip under the top
      bar, chips trimmed to portrait, name and the three numbers */
@@ -189,8 +210,21 @@ export default function PlayerRail() {
       aria-label={t('game.rail.playersAria')}
     >
       {game.players.map((p, i) => (
-        <RailChip key={i} p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={narrow} />
+        <RailChip key={i} p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={compact} />
       ))}
+      {/* fold the rail to one line per seat, for more board */}
+      {!narrow && (
+        <button
+          type="button"
+          onClick={() => setBoardOption('railCompact', !railCompact)}
+          aria-pressed={railCompact}
+          aria-label={t(railCompact ? 'game.rail.expand' : 'game.rail.fold')}
+          title={t(railCompact ? 'game.rail.expand' : 'game.rail.fold')}
+          className="flex h-5 w-full items-center justify-center rounded-md border border-brass-700/40 bg-coal-900/70 text-brass-500/70 opacity-70 transition-opacity hover:opacity-100"
+        >
+          {railCompact ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
+        </button>
+      )}
     </div>
   );
 }
