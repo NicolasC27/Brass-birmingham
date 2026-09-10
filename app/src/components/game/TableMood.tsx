@@ -59,7 +59,7 @@ export function TableMenu({ className }: { className: string }) {
         <Users className="h-3.5 w-3.5" /> {t('game.mood.table')}
       </button>
       {open && (
-        <div role="menu" className="plate absolute bottom-0 right-[calc(100%+8px)] z-[70] w-64 p-2">
+        <div role="menu" className="plaque absolute bottom-0 right-[calc(100%+8px)] z-[70] w-64 rounded-lg p-2">
           <button
             type="button"
             role="menuitem"

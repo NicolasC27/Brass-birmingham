@@ -127,8 +127,8 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
         }
       }}
       className={cn(
-        'relative flex cursor-pointer items-center gap-2 overflow-hidden rounded-md border bg-coal-900/80 py-1.5 pl-3 pr-2 shadow-e2 backdrop-blur-md transition-[border-color,box-shadow,background-color] duration-300',
-        active ? 'border-brass-400/90 bg-coal-800/90' : 'border-brass-700/40 opacity-90',
+        'relative flex cursor-pointer items-center gap-2 plaque overflow-hidden rounded-md border py-1.5 pl-3 pr-2 transition-[border-color,box-shadow,background-color] duration-300',
+        active ? '!border-brass-400/90' : 'opacity-90',
         spotlighted && 'ring-1 ring-brass-400',
       )}
       style={active ? { boxShadow: `0 0 0 1px ${color.hex}55, 0 0 22px ${color.hex}66, 0 4px 14px rgba(0,0,0,.45)` } : undefined}
@@ -220,7 +220,7 @@ export default function PlayerRail() {
           aria-pressed={railCompact}
           aria-label={t(railCompact ? 'game.rail.expand' : 'game.rail.fold')}
           title={t(railCompact ? 'game.rail.expand' : 'game.rail.fold')}
-          className="flex h-5 w-full items-center justify-center rounded-md border border-brass-700/40 bg-coal-900/70 text-brass-500/70 opacity-70 transition-opacity hover:opacity-100"
+          className="flex h-5 w-full items-center justify-center plaque rounded-md text-brass-500/70 opacity-80 transition-opacity hover:opacity-100"
         >
           {railCompact ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
         </button>

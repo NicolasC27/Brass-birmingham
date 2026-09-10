@@ -60,7 +60,7 @@ export default function MarketPill({ market, consume, top, open, onToggle }: { m
       aria-expanded={open}
       aria-label={t(open ? 'game.page.foldMarket' : 'game.page.openMarket')}
       className={cn(
-        'fixed right-3 z-[64] flex flex-col items-stretch gap-1 rounded-lg border bg-coal-900/85 px-3 py-1.5 shadow-e3 backdrop-blur-md transition-colors hover:bg-coal-800/90',
+        'fixed right-3 z-[64] flex flex-col items-stretch plaque gap-1 rounded-lg border px-3 py-1.5 transition-shadow',
         move.text ? 'border-brass-400 shadow-[0_0_0_1px_rgba(201,164,92,.5),0_0_18px_rgba(201,164,92,.35)]' : open ? 'border-brass-400/80' : 'border-brass-700/70',
       )}
       style={{ top }}

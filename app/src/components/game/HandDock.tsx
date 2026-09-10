@@ -201,7 +201,7 @@ function GameCard({
       {scoutMarked && (
         <>
           {/* discard stamp: red ✕ badge + diagonal "OUT" ribbon, unmistakable */}
-          <span className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-cream-100/70 bg-rust-500 text-cream-100 shadow-e2">
+          <span className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-brass-400/70 bg-rust-500 text-cream-100 shadow-e2">
             <X className="h-3.5 w-3.5" strokeWidth={3} />
           </span>
           <span className="pointer-events-none absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 -rotate-12 rounded-sm border-2 border-rust-500 bg-coal-950/85 px-2 py-0.5 font-sans text-[10px] font-black uppercase tracking-[0.2em] text-rust-500 brightness-150">
@@ -344,7 +344,7 @@ export default function HandDock() {
         initial={false}
         animate={{ height: expanded ? 180 : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-        className="pointer-events-auto relative w-full max-w-[1360px] overflow-hidden rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e3 backdrop-blur-md"
+        className="pointer-events-auto relative w-full max-w-[1360px] plaque overflow-hidden rounded-lg"
         onPointerEnter={onEnter}
         onPointerLeave={onLeave}
       >

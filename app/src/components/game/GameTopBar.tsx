@@ -160,7 +160,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
         initial={{ scale: 0.97, opacity: 0.4 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-        className={cn('pointer-events-auto relative flex flex-col overflow-hidden rounded-lg border border-brass-700/60 bg-coal-900/90 shadow-e3 backdrop-blur-md', mine ? 'w-full' : 'max-w-full')}
+        className={cn('pointer-events-auto relative plaque flex flex-col overflow-hidden rounded-lg', mine ? 'w-full' : 'max-w-full')}
         style={mine ? { maxWidth: maxW } : undefined}
       >
         <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-lg opacity-[0.05]" />
@@ -171,7 +171,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
             title={t('game.topbar.eraRoundTitle', { era: game.era === 'canal' ? t('game.topbar.eraCanal') : t('game.topbar.eraRail'), round: game.round, total })}
             content={game.era === 'canal' ? t('game.topbar.canalTip') : t('game.topbar.railTip')}
           >
-            <span className={cn('relative flex h-full items-center justify-center whitespace-nowrap border-r border-brass-700/40 px-3 leading-none', mine ? 'flex-col' : 'gap-2')}>
+            <span className={cn('plaque-brass relative m-1 flex items-center justify-center whitespace-nowrap rounded-md px-3 leading-none', mine ? 'flex-col' : 'gap-2')}>
               <span
                 className={cn('font-fell text-[12px] tracking-[0.18em]', game.era === 'canal' ? 'text-cream-100' : 'text-copper-500 brightness-150')}
                 style={{ textShadow: '0 1px 0 rgba(0,0,0,.8), 0 0 8px rgba(201,164,92,.25)' }}

@@ -39,7 +39,7 @@ const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
 /** the bottom-right column's chips, one chrome for all */
 const CHIP =
-  'flex w-full items-center gap-1.5 rounded-md border border-brass-700/60 bg-coal-900/85 px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-80 shadow-e3 backdrop-blur-md transition-opacity hover:opacity-100';
+  'flex w-full items-center gap-1.5 plaque rounded-md px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-90 transition-opacity hover:opacity-100';
 
 
 /**
@@ -381,7 +381,7 @@ export default function Game() {
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >
-            <div className="relative rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e3 backdrop-blur-md [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">
+            <div className="plaque relative rounded-lg [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">
               <MarketTray consumePreview={consumePreview} />
               <button
                 type="button"
