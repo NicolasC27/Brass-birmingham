@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { ChevronsDownUp, ChevronsUpDown, Coins, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
 import { useGame } from '@/game/store';
@@ -190,7 +191,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
 /* PlayerRail — plain VERTICAL stack in play order (seat 0 = first to act,
  * top of the stack). Click = spotlight that player's possessions on the
  * map. No hover expansion: the strip is all there is. */
-export default function PlayerRail() {
+export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   const t = useT();
   const game = useGame((s) => s.game);
   const insets = useHudInsets();
@@ -225,6 +226,7 @@ export default function PlayerRail() {
           {railCompact ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
         </button>
       )}
+      {tools && <div className="flex flex-wrap items-center gap-1.5">{tools}</div>}
     </div>
   );
 }

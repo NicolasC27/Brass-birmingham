@@ -34,7 +34,7 @@ function useNow(): number {
 }
 
 /** the chip under the settings: pause the table, take a break */
-export function TableMenu({ className }: { className: string }) {
+export function TableMenu({ className, compact }: { className: string; compact?: boolean }) {
   const t = useT();
   const code = useGame((s) => s.code);
   const seat = useGame((s) => s.seat);
@@ -55,11 +55,12 @@ export function TableMenu({ className }: { className: string }) {
   const left = MAX_BREAKS - used;
   return (
     <div ref={root} className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} className={className} aria-haspopup="menu" aria-expanded={open}>
-        <Users className="h-3.5 w-3.5" /> {t('game.mood.table')}
+      <button type="button" onClick={() => setOpen((o) => !o)} className={className} aria-haspopup="menu" aria-expanded={open} title={t('game.mood.table')} aria-label={t('game.mood.table')}>
+        <Users className={compact ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
+        {!compact && t('game.mood.table')}
       </button>
       {open && (
-        <div role="menu" className="plaque absolute bottom-0 right-[calc(100%+8px)] z-[70] w-64 rounded-lg p-2">
+        <div role="menu" className={cn('plaque absolute z-[70] w-64 rounded-lg p-2', compact ? 'left-0 top-[calc(100%+6px)]' : 'bottom-0 right-[calc(100%+8px)]')}>
           <button
             type="button"
             role="menuitem"

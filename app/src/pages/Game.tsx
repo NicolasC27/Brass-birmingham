@@ -15,7 +15,6 @@ import EdgeTracks from '@/components/game/EdgeTracks';
 import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
-import { MM_H_FOR } from '@/components/game/Minimap';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useHudInsets } from '@/components/game/useHudInsets';
 import { isKey } from '@/components/game/keybindings';
@@ -37,9 +36,8 @@ import { cn } from '@/lib/utils';
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
-/** the bottom-right column's chips, one chrome for all */
-const CHIP =
-  'flex w-full items-center gap-1.5 plaque rounded-md px-2.5 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-brass-400 opacity-90 transition-opacity hover:opacity-100';
+/** the tools under the player rail: one plaque each, icon only */
+const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brass-400 opacity-90 transition-opacity hover:opacity-100';
 
 
 /**
@@ -85,7 +83,6 @@ export default function Game() {
   const setMarketFocus = useGame((s) => s.setMarketFocus);
   const setSpotlight = useGame((s) => s.setSpotlight);
   const boardOpts = useBoardOptions();
-  const { minimapSize } = boardOpts;
   const insets = useHudInsets();
 
   const [passTo, setPassTo] = useState<string | null>(null);
@@ -361,7 +358,44 @@ export default function Game() {
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
       <EdgeTracks />
       <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />
-      <PlayerRail />
+      <PlayerRail
+        tools={
+          /* the tools under the players: the bots' pace while they play,
+             then settings, ideas, the table and the ledger — the ledger
+             counts what others did since the reader last looked. Nothing
+             at the right edge, where the exchange unfolds. */
+          <>
+            {botThinking && (
+              <button type="button" onClick={() => setSkipAnim((s) => !s)} aria-pressed={skipAnim} title={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} aria-label={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} className={cn(TOOL, skipAnim && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
+                <FastForward className="h-4 w-4" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                /* one left-hand panel at a time: the settings take the mat's place */
+                if (!boardOpts.settingsOpen) useGame.getState().closeMat();
+                setBoardOption('settingsOpen', !boardOpts.settingsOpen);
+              }}
+              aria-label={t('board.options.settingsAria')}
+              title={t('game.page.settingsChip')}
+              className={TOOL}
+            >
+              <Settings2 className="h-4 w-4" />
+            </button>
+            <FeedbackButton compact className={TOOL} />
+            <TableMenu compact className={TOOL} />
+            <button type="button" onClick={() => setLedgerOpen((o) => !o)} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (L)`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
+              <ScrollText className="h-4 w-4" />
+              {unread > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold leading-[14px] text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
+                  {unread > 9 ? '9+' : unread}
+                </span>
+              )}
+            </button>
+          </>
+        }
+      />
 
       {/* the exchange: the quotation strip is always there at the top right;
           the full tray hangs right under it when asked, whole, no scrolling,
@@ -429,46 +463,6 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {/* bottom-right column (rides above the minimap whatever its size):
-          the bots' pace while they play, then settings, ideas, the table
-          and the ledger — the ledger chip counts what others did since
-          the reader last looked */}
-      <div className="fixed right-3 z-[64] flex w-[124px] flex-col items-stretch gap-1.5" style={{ bottom: MM_H_FOR[minimapSize] + insets.bottom + 20 }}>
-        {botThinking && (
-          <button type="button" onClick={() => setSkipAnim((s) => !s)} className={cn(CHIP, skipAnim && '!border-brass-400 !bg-brass-500/20 !opacity-100')}>
-            <FastForward className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">{skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')}</span>
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            /* one left-hand panel at a time: the settings take the mat's place */
-            if (!boardOpts.settingsOpen) useGame.getState().closeMat();
-            setBoardOption('settingsOpen', !boardOpts.settingsOpen);
-          }}
-          aria-label={t('board.options.settingsAria')}
-          title={t('board.options.settingsTip')}
-          className={CHIP}
-        >
-          <Settings2 className="h-3.5 w-3.5 shrink-0" /> {t('game.page.settingsChip')}
-        </button>
-        <FeedbackButton className={CHIP} />
-        <TableMenu className={CHIP} />
-        {!ledgerOpen && (
-          <button type="button" onClick={() => setLedgerOpen(true)} className={CHIP}>
-            <ScrollText className="h-3.5 w-3.5 shrink-0" /> {t('game.page.ledgerChip')}
-            {unread > 0 ? (
-              <span className="ml-auto rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
-                {unread > 9 ? '9+' : unread}
-              </span>
-            ) : (
-              <kbd className="ml-auto font-mono text-[9px] text-cream-100/50">L</kbd>
-            )}
-          </button>
-        )}
-      </div>
-
       <HandDock />
       <ConcedeBanner />
       <TableMood />
@@ -477,22 +471,6 @@ export default function Game() {
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />
       <PlayerMat />
-
-      {/* skip bot animation chip */}
-      {botThinking && (
-        <button
-          type="button"
-          onClick={() => setSkipAnim((s) => !s)}
-          className={cn(
-            'fixed right-3 z-[64] flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-sans text-[11px] font-semibold uppercase tracking-wider backdrop-blur-md',
-            skipAnim ? 'border-brass-400 bg-brass-500/20 text-brass-400' : 'border-brass-700/60 bg-coal-800/90 text-cream-100/75',
-          )}
-          style={{ bottom: MM_H_FOR[minimapSize] + insets.bottom + 62 }}
-        >
-          <FastForward className="h-3.5 w-3.5" />
-          {skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')}
-        </button>
-      )}
 
       {/* the line to the table went quiet: say so, the wire is already trying */}
       {line !== null && line !== 'online' && (
