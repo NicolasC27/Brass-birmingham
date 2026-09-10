@@ -63,7 +63,7 @@ const VERB_HEX: Record<LedgerEntry['verb'], string> = {
 /** Every player's every round at a glance, the way a contributions graph
  *  reads: one cell per player and round, split by the round's actions and
  *  coloured by what each was. Hover says the moves; a click opens the round. */
-function RoundsGrid({ rounds, players, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; onPick: (key: string) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
+function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
   if (rounds.length < 2) return null;
   return (
     <div className="mb-2 overflow-x-auto" aria-label={t('game.ledger.gridAria')}>
@@ -79,7 +79,14 @@ function RoundsGrid({ rounds, players, onPick, t }: { rounds: { key: string; era
                 const title = `${t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })} — ${p.name}: ${moves.length ? moves.map((e) => ledgerParts(e, t).head).join(' · ') : '—'}`;
                 return (
                   <td key={r.key} className="p-0">
-                    <button type="button" onClick={() => onPick(r.key)} title={title} aria-label={title} className={cn('flex h-[13px] w-[13px] overflow-hidden rounded-[2px] ring-1 ring-black/40 transition-transform hover:scale-125', r.era === 'rail' && 'ring-copper-500/50')}>
+                    <button
+                      type="button"
+                      onClick={() => onPick(r.key, pi)}
+                      title={title}
+                      aria-label={title}
+                      aria-pressed={picked?.key === r.key && picked.player === pi}
+                      className={cn('flex h-[13px] w-[13px] overflow-hidden rounded-[2px] ring-1 ring-black/40 transition-transform hover:scale-125', r.era === 'rail' && 'ring-copper-500/50', picked?.key === r.key && picked.player === pi && 'scale-125 !ring-2 !ring-brass-400 shadow-[0_0_10px_rgba(221,190,126,.8)]')}
+                    >
                       {moves.length ? moves.slice(0, 2).map((e) => <span key={e.id} className="h-full flex-1" style={{ background: VERB_HEX[e.verb] }} />) : <span className="h-full flex-1" style={{ background: '#2a231c' }} />}
                     </button>
                   </td>
@@ -118,6 +125,8 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
   const [flash, setFlash] = useState<number | null>(null);
   /* rounds the reader folded or unfolded by hand; the rest follow the rule above */
   const [folded, setFolded] = useState<Record<string, boolean>>({});
+  /* the cell of the grid the reader clicked: that player's moves of that round wear a halo */
+  const [picked, setPicked] = useState<{ key: string; player: number } | null>(null);
 
   useEffect(() => {
     const el = listRef.current;
@@ -200,15 +209,20 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
         </div>
       </header>
 
-      <RoundsGrid
-        rounds={allRounds}
-        players={game.players.map((p) => ({ name: p.name, color: p.color }))}
-        t={t}
-        onPick={(key) => {
-          setFolded((f) => ({ ...f, [key]: false }));
-          window.setTimeout(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50);
-        }}
-      />
+      {ledgerFilter === 'all' && (
+        <RoundsGrid
+          rounds={allRounds}
+          players={game.players.map((p) => ({ name: p.name, color: p.color }))}
+          picked={picked}
+          t={t}
+          onPick={(key, player) => {
+            const same = picked?.key === key && picked.player === player;
+            setPicked(same ? null : { key, player });
+            setFolded((f) => ({ ...f, [key]: false }));
+            if (!same) window.setTimeout(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"] [data-player="${player}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+          }}
+        />
+      )}
       <ol ref={listRef} aria-live="polite" className="relative min-h-0 flex-1 overflow-y-auto pr-1 text-[12.5px]">
         {rounds.map((r, ri) => {
           const open = isOpen(r, ri);
@@ -267,7 +281,14 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                               {game.players[e.player!].name}
                             </p>
                           )}
-                          <div className={cn('flex items-start gap-1', fresh && 'border-l-2 border-brass-400/80')}>
+                          <div
+                            data-player={e.player}
+                            className={cn(
+                              'flex items-start gap-1 rounded-sm transition-shadow',
+                              fresh && 'border-l-2 border-brass-400/80',
+                              picked && picked.key === r.key && picked.player === e.player && 'bg-brass-500/15 shadow-[0_0_0_1px_rgba(221,190,126,.7),0_0_12px_rgba(221,190,126,.35)]',
+                            )}
+                          >
                             <button
                               type="button"
                               onClick={() => {
