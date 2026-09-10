@@ -5,6 +5,7 @@ const game = {
     marketPanelAria: 'Market panel',
     foldMarket: 'Fold the market panel',
     openMarket: 'Open the Coal & Iron Exchange',
+    marketAfter: 'the price after the purchase being planned',
     marketTab: 'Market',
     ledgerDrawerAria: 'Ledger drawer',
     closeLedger: 'Close the ledger',

@@ -75,7 +75,7 @@ export default function Minimap({
       ref={plate}
       role="presentation"
       /* sits just above the income track that runs along the bottom */
-      className="absolute right-3 z-20 cursor-crosshair touch-none overflow-hidden rounded border border-brass-700/80 bg-coal-900/85 shadow-e3"
+      className="fixed right-3 z-[62] cursor-crosshair touch-none overflow-hidden rounded border border-brass-700/80 bg-coal-900/85 shadow-e3"
       style={{ width: MM_W, height: MM_H, bottom: insets.bottom }}
       onPointerDown={(e) => {
         e.stopPropagation();

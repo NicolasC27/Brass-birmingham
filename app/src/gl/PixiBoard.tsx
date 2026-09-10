@@ -1151,7 +1151,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
       {/* beta ribbon: merchant tiles/availability + market sizes remain
           simplified — under the market pill, whatever the top track does */}
-      <div className="pointer-events-none absolute right-3 z-10 overflow-hidden rounded-sm" style={{ top: insets.top + 40 }}>
+      <div className="pointer-events-none fixed right-3 z-[62] overflow-hidden rounded-sm" style={{ top: insets.top + 40 }}>
         <span className="beta-ribbon !static !transform-none block !px-2 !py-1" title={t('board.beta.title')}>
           {t('board.beta.label')}
         </span>

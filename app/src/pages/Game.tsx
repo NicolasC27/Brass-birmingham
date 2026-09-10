@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FastForward, Scale, ScrollText, Settings2, X } from 'lucide-react';
+import { FastForward, ScrollText, Settings2, X } from 'lucide-react';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -22,6 +22,7 @@ import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
 import MarketTray from '@/components/game/MarketTray';
+import MarketPill from '@/components/game/MarketPill';
 import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
@@ -341,9 +342,10 @@ export default function Game() {
       {/* mahogany table under the board */}
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-0 opacity-35" />
 
-      {/* the board fills 100% of the screen and stays interactive
-          wherever no floating panel is open */}
-      <div className="absolute inset-0">
+      {/* the board fills the screen and stays interactive wherever no
+          floating panel is open; the market, open, gets a column of its
+          own at the right and the board keeps whole beside it */}
+      <div className="absolute inset-y-0 left-0 transition-[right] duration-300 ease-out" style={{ right: marketOpen ? 336 : 0 }}>
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
             game={game}
@@ -361,8 +363,8 @@ export default function Game() {
       <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />
       <PlayerRail />
 
-      {/* MarketTray — top-right drawer, DROPS DOWN from under the score belt;
-          collapses to a small horizontal brass pill at the same spot */}
+      {/* MarketTray — a side panel at the right edge, the board making room
+          for it; folded, a quotation strip at the same spot */}
       <AnimatePresence initial={false}>
         {marketOpen ? (
           <motion.aside
@@ -371,8 +373,8 @@ export default function Game() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed right-3 z-[64] max-h-[70vh] w-[min(320px,88vw)] overflow-y-auto"
-            style={{ top: insets.top }}
+            className="fixed right-3 z-[64] w-[min(320px,88vw)] overflow-y-auto"
+            style={{ top: insets.top, maxHeight: `calc(100vh - ${insets.top + MM_H_FOR[minimapSize] + insets.bottom + 140}px)` }}
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >
@@ -392,22 +394,7 @@ export default function Game() {
             </div>
           </motion.aside>
         ) : (
-          <motion.button
-            key="market-tab"
-            type="button"
-            initial={{ y: -24, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -24, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            onClick={() => setMarketOpen(true)}
-            data-market
-            aria-label={t('game.page.openMarket')}
-            className="fixed right-3 z-[64] flex items-center gap-2 rounded-lg border border-brass-700/70 bg-coal-900/85 px-3 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.22em] text-brass-400 shadow-e3 backdrop-blur-md hover:bg-coal-800/90"
-            style={{ top: insets.top }}
-          >
-            <Scale className="h-3.5 w-3.5" />
-            {t('game.page.marketTab')}
-          </motion.button>
+          <MarketPill key="market-tab" market={game.market} consume={consumePreview ?? {}} top={insets.top} onOpen={() => setMarketOpen(true)} />
         )}
       </AnimatePresence>
 

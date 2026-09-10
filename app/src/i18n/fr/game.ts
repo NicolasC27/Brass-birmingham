@@ -7,6 +7,7 @@ const fr: typeof engame = {
     marketPanelAria: 'Panneau du marché',
     foldMarket: 'Replier le panneau du marché',
     openMarket: 'Ouvrir la bourse charbon & fer',
+    marketAfter: 'le prix après l’achat en préparation',
     marketTab: 'Marché',
     ledgerDrawerAria: 'Tiroir du registre',
     closeLedger: 'Fermer le registre',
