@@ -499,6 +499,7 @@ const fr: typeof engame = {
     verbPass: 'PASSE',
     eraCanal: 'CANAL',
     eraRail: 'RAIL',
+    roundCount: '{n} coups',
     roundSep: '{era} · MANCHE {round}',
   },
   ceremony: {
