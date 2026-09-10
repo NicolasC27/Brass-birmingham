@@ -6,6 +6,8 @@ import Game from "@/pages/Game";
 import Rules from "@/pages/Rules";
 import Results from "@/pages/Results";
 import Replay from "@/pages/Replay";
+import Online from "@/pages/Online";
+import Lobby from "@/pages/Lobby";
 
 export default function App() {
   return (
@@ -17,6 +19,8 @@ export default function App() {
         <Route path="rules" element={<Rules />} />
         <Route path="results" element={<Results />} />
         <Route path="replay" element={<Replay />} />
+        <Route path="online" element={<Online />} />
+        <Route path="online/:code" element={<Lobby />} />
       </Route>
     </Routes>
   );
