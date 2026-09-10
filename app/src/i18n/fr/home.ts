@@ -32,7 +32,9 @@ const fr: typeof enHome = {
     },
     correspondence: {
       title: 'La partie par correspondance',
-      copy: 'Le jeu en ligne, un tour à la fois, à votre rythme — et en temps réel.',
+      copy: 'Ouvrez une table, passez son code, retrouvez vos rivaux dans le salon.',
+      cta: 'Jouer en ligne',
+      tag: 'Salons',
       tooltip:
         "Le jeu en ligne et asynchrone figure sur la feuille de route — cet aperçu propose d'abord le solo local et le passe-et-joue.",
     },

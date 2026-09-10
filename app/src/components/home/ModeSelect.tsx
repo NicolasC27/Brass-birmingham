@@ -44,10 +44,10 @@ export default function ModeSelect() {
     {
       title: t("home.modes.correspondence.title"),
       copy: t("home.modes.correspondence.copy"),
-      cta: t("home.modes.inTheWorks"),
+      cta: t("home.modes.correspondence.cta"),
+      to: "/online",
       icon: <Mail className="h-9 w-9 text-ink-900" strokeWidth={1.8} />,
-      disabled: true,
-      tooltip: t("home.modes.correspondence.tooltip"),
+      tag: t("home.modes.correspondence.tag"),
     },
   ];
 

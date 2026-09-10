@@ -30,7 +30,9 @@ const home = {
     },
     correspondence: {
       title: 'The Correspondence Game',
-      copy: 'Online play, one turn at a time, at your leisure — and in real time.',
+      copy: 'Open a table, pass its code around, meet your rivals in the room.',
+      cta: 'Play online',
+      tag: 'Rooms',
       tooltip:
         'Online and asynchronous play are on the roadmap — this preview ships local solo and hot-seat first.',
     },
