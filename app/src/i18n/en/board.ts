@@ -2,10 +2,6 @@ const board = {
   ariaLabel: 'Midlands board',
   ariaLabelWebgl: 'Midlands board (WebGL)',
   svgAria: 'Towns, links and industries',
-  beta: {
-    label: 'Approx. merchants',
-    title: 'Authentic board geography. Simplified: merchant tile mix & availability by player count, market sizes, fixed turn order.',
-  },
   hover: {
     townHint: 'Click to inspect · double-click to zoom',
   },

@@ -4,10 +4,6 @@ const fr: typeof enboard = {
   ariaLabel: 'Plateau des Midlands',
   ariaLabelWebgl: 'Plateau des Midlands (WebGL)',
   svgAria: 'Villes, liaisons et industries',
-  beta: {
-    label: 'Marchands approx.',
-    title: 'Géographie authentique du plateau. Simplifications : mix et disponibilité des tuiles négociant selon le nombre de joueurs, tailles des marchés, ordre de tour fixe.',
-  },
   hover: {
     townHint: 'Clic pour inspecter · double-clic pour zoomer',
   },

@@ -9,7 +9,6 @@ import type { GameState } from '@/game/types';
 import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { MAP_URL, aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
-import { useHudInsets } from '@/components/game/useHudInsets';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
 import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
@@ -141,7 +140,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const insets = useHudInsets();
   const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
   /* fullscreen is a keyboard-only affair now (F) — no HUD button */
   const toggleFullscreen = () => {
@@ -1149,13 +1147,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* board-edge inner shadow for relief */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md shadow-[inset_0_0_60px_rgba(0,0,0,.35)]" />
 
-      {/* beta ribbon: merchant tiles/availability + market sizes remain
-          simplified — under the market pill, whatever the top track does */}
-      <div className="pointer-events-none fixed right-3 z-[62] overflow-hidden rounded-sm" style={{ top: insets.top + 40 }}>
-        <span className="beta-ribbon !static !transform-none block !px-2 !py-1" title={t('board.beta.title')}>
-          {t('board.beta.label')}
-        </span>
-      </div>
 
       {/* town hover tooltip (idle browsing) */}
       {hoverTownDef && hoverTownPos && (
