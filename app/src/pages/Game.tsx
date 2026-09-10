@@ -345,7 +345,7 @@ export default function Game() {
       {/* the board fills the screen and stays interactive wherever no
           floating panel is open; the market, open, gets a column of its
           own at the right and the board keeps whole beside it */}
-      <div className="absolute inset-y-0 left-0 transition-[right] duration-300 ease-out" style={{ right: marketOpen ? 336 : 0 }}>
+      <div className="absolute inset-0">
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
             game={game}
@@ -354,6 +354,7 @@ export default function Game() {
             sellTargetsList={sellTargetsList}
             ghost={ghost}
             onInvalid={reject}
+            padRight={marketOpen ? 336 : 0}
           />
         </Suspense>
       </div>

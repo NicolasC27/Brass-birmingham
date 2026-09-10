@@ -49,6 +49,9 @@ interface Props {
   keyboard?: boolean;
   /** fly the camera here whenever `seq` changes (replay follows the action) */
   focus?: { at: [number, number]; seq: number } | null;
+  /** screen pixels at the right edge given to a side panel: the board
+   *  fits and centres in what is left, the canvas still under the panel */
+  padRight?: number;
 }
 
 /** world coords for anything a ledger entry can point at */
@@ -122,7 +125,9 @@ function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [num
   return { end: [tipX - ux * 10, tipY - uy * 10], head: [tipX, tipY, baseX - uy * 7, baseY + ux * 7, baseX + uy * 7, baseY - ux * 7] };
 }
 
-export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null }: Props) {
+export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null, padRight = 0 }: Props) {
+  const padRef = useRef(padRight);
+  padRef.current = padRight;
   /* the scene paints THIS game — the store's for the live table, a replayed
      state for the reviewer — read through a ref by the ticker */
   const gameRef = useRef(game);
@@ -296,7 +301,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       /* mist + halos under the towns, smoke + traffic above */
       scene.world.addChildAt(ambiance.layer, 3);
 
-      const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }));
+      /* the board's room: the screen less the side panel's column */
+      const roomW = () => a.screen.width - padRef.current;
+      const cam = new Camera(() => ({ w: roomW(), h: a.screen.height }));
       cameraRef.current = cam;
       cam.onCommit = (v) => setView(v);
 
@@ -306,19 +313,19 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         (window as unknown as { __board?: unknown }).__board = {
           townScreen: (id: string) => {
             const t = TOWN_BY_ID[id];
-            return t ? worldToScreen(t.x, t.y, cam.view, a.screen.width, a.screen.height) : null;
+            return t ? worldToScreen(t.x, t.y, cam.view, roomW(), a.screen.height) : null;
           },
           slotScreen: (id: string, si: number) => {
             const t = TOWN_BY_ID[id];
             if (!t) return null;
             const c = townChrome(t);
             const p = c.slots[si];
-            return p ? worldToScreen(p.x, p.y, cam.view, a.screen.width, a.screen.height) : null;
+            return p ? worldToScreen(p.x, p.y, cam.view, roomW(), a.screen.height) : null;
           },
           linkMidScreen: (id: string) => {
             const def = LINKS.find((l) => l.id === id);
             if (!def) return null;
-            return worldToScreen(...linkMidWorld(def), cam.view, a.screen.width, a.screen.height);
+            return worldToScreen(...linkMidWorld(def), cam.view, roomW(), a.screen.height);
           },
           fly: (id: string) => {
             const t = TOWN_BY_ID[id];
@@ -361,7 +368,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       a.ticker.add((t) => {
         clock += t.deltaMS / 1000;
         cam.tick(t.deltaMS);
-        const { w, h } = { w: a.screen.width, h: a.screen.height };
+        const { w, h } = { w: roomW(), h: a.screen.height };
         const s = fitScale(w, h) * cam.view.k;
         scene.world.scale.set(s);
         scene.world.position.set(w / 2 + cam.view.x - (WORLD_W / 2) * s, h / 2 + cam.view.y - (WORLD_H / 2) * s);
@@ -553,7 +560,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
       const toWorld = (clientX: number, clientY: number): [number, number] => {
         const r = el.getBoundingClientRect();
-        const w = a.screen.width;
+        const w = roomW();
         const h = a.screen.height;
         const s = fitScale(w, h) * cam.view.k;
         if (s === 0) return [0, 0];
@@ -786,7 +793,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const sx = e.clientX - r.left;
         const sy = e.clientY - r.top;
         /* over a town → fly to it; elsewhere → cursor-anchored step zoom */
-        const { w, h } = { w: a.screen.width, h: a.screen.height };
+        const { w, h } = { w: roomW(), h: a.screen.height };
         const s = fitScale(w, h) * cam.view.k;
         const wx = WORLD_W / 2 + (sx - w / 2 - cam.view.x) / s;
         const wy = WORLD_H / 2 + (sy - h / 2 - cam.view.y) / s;
@@ -1254,7 +1261,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* the settings gear lives in the bottom-right chip row (pages/Game.tsx);
           zoom lives on the wheel / + / − / 0 keys */}
 
-      <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />
+      <Minimap view={view} container={{ w: size.w - padRight, h: size.h }} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />
 
       {/* why the slot or link is refused — one sentence, right next to it */}
       <AnimatePresence>
