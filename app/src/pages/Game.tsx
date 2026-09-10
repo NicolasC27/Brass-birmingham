@@ -342,9 +342,9 @@ export default function Game() {
       {/* mahogany table under the board */}
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-0 opacity-35" />
 
-      {/* the board fills the screen and stays interactive wherever no
-          floating panel is open; the market, open, gets a column of its
-          own at the right and the board keeps whole beside it */}
+      {/* the board fills 100% of the screen and stays interactive
+          wherever no floating panel is open; panels float over it and
+          never move it */}
       <div className="absolute inset-0">
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
@@ -354,7 +354,6 @@ export default function Game() {
             sellTargetsList={sellTargetsList}
             ghost={ghost}
             onInvalid={reject}
-            padRight={marketOpen ? 336 : 0}
           />
         </Suspense>
       </div>
