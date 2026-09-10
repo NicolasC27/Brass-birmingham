@@ -363,10 +363,12 @@ export default function Game() {
       <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />
       <PlayerRail />
 
-      {/* MarketTray — a side panel at the right edge, the board making room
-          for it; folded, a quotation strip at the same spot */}
+      {/* the exchange: the quotation strip is always there at the top right;
+          the full tray drops down under the banner's rows when asked, and
+          the banner never moves for it */}
+      <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />
       <AnimatePresence initial={false}>
-        {marketOpen ? (
+        {marketOpen && (
           <motion.aside
             key="market-panel"
             initial={{ y: -28, opacity: 0 }}
@@ -374,7 +376,7 @@ export default function Game() {
             exit={{ y: -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed right-3 z-[64] w-[min(320px,88vw)] overflow-y-auto"
-            style={{ top: insets.top, maxHeight: `calc(100vh - ${insets.top + MM_H_FOR[minimapSize] + insets.bottom + 140}px)` }}
+            style={{ top: insets.top + 116, maxHeight: `calc(100vh - ${insets.top + 116 + MM_H_FOR[minimapSize] + insets.bottom + 140}px)` }}
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >
@@ -393,8 +395,6 @@ export default function Game() {
               </button>
             </div>
           </motion.aside>
-        ) : (
-          <MarketPill key="market-tab" market={game.market} consume={consumePreview ?? {}} top={insets.top} onOpen={() => setMarketOpen(true)} />
         )}
       </AnimatePresence>
 

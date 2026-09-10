@@ -394,7 +394,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         if (marchRef.current.length) {
           const host = el.getBoundingClientRect();
           for (const m of marchRef.current) {
-            const tray = document.querySelector(`[data-market-tray="${m.tray}"]`) ?? document.querySelector('[data-market]');
+            const tray = document.querySelector(`[data-market-tray="${m.tray}"]`) ?? document.querySelector('[data-market-pill]');
             const r = tray?.getBoundingClientRect();
             const sx = r && r.width > 0 ? (r.left - 6 - host.left - scene.world.position.x) / scene.world.scale.x : WORLD_W - 52;
             const sy = r && r.width > 0 ? (r.top + r.height / 2 - host.top - scene.world.position.y) / scene.world.scale.y : (m.tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71);

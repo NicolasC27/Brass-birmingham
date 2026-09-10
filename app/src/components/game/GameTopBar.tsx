@@ -40,10 +40,10 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
     const measure = () => {
       const narrow = window.innerWidth < 1024;
       const left = rail && !narrow ? Math.round(rail.getBoundingClientRect().right) + 12 : 12;
-      /* the market is a pill or a drawer, and both exist for the moment one
-         gives way to the other: take whichever is laid out, leftmost */
-      const markets = [...document.querySelectorAll('[data-market]')].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.left > window.innerWidth / 2);
-      const right = markets.length ? Math.round(window.innerWidth - Math.min(...markets.map((r) => r.left))) + 12 : 12;
+      /* the quotation strip is always there; the tray opens under the
+         banner's rows, so the band never changes with it */
+      const pill = document.querySelector('[data-market-pill]')?.getBoundingClientRect();
+      const right = pill && pill.width > 0 ? Math.round(window.innerWidth - pill.left) + 12 : 12;
       setBand((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
     };
     measure();
@@ -51,7 +51,7 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
     const later = window.setTimeout(measure, 450);
     const ro = new ResizeObserver(measure);
     if (rail) ro.observe(rail);
-    for (const m of document.querySelectorAll('[data-market]')) ro.observe(m);
+    for (const m of document.querySelectorAll('[data-market-pill]')) ro.observe(m);
     window.addEventListener('resize', measure);
     return () => {
       window.clearTimeout(later);
