@@ -499,6 +499,7 @@ const fr: typeof engame = {
     verbPass: 'PASSE',
     eraCanal: 'CANAL',
     eraRail: 'RAIL',
+    gridAria: 'Chaque joueur, chaque manche',
     roundCount: '{n} coups',
     roundSep: '{era} · MANCHE {round}',
   },

@@ -47,6 +47,52 @@ const VERB_ICON: Record<LedgerEntry['verb'], ComponentType<{ className?: string;
   pass: CircleMinus,
 };
 
+/** the verbs' colours on the rounds grid */
+const VERB_HEX: Record<LedgerEntry['verb'], string> = {
+  build: '#DDBE7E',
+  network: '#5FA37A',
+  sell: '#8FD3A8',
+  develop: '#F2EAD6',
+  loan: '#E0604C',
+  scout: '#C9B58C',
+  pass: '#4A423A',
+  score: '#6b5d45',
+  system: '#3a3129',
+};
+
+/** Every player's every round at a glance, the way a contributions graph
+ *  reads: one cell per player and round, split by the round's actions and
+ *  coloured by what each was. Hover says the moves; a click opens the round. */
+function RoundsGrid({ rounds, players, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; onPick: (key: string) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
+  if (rounds.length < 2) return null;
+  return (
+    <div className="mb-2 overflow-x-auto" aria-label={t('game.ledger.gridAria')}>
+      <table className="border-separate border-spacing-[2px]">
+        <tbody>
+          {players.map((p, pi) => (
+            <tr key={pi}>
+              <th scope="row" className="pr-1.5 text-left font-sans text-[9px] font-bold" style={{ color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }}>
+                {p.name.slice(0, 8)}
+              </th>
+              {rounds.map((r) => {
+                const moves = r.items.filter((e) => e.player === pi && e.verb !== 'system' && e.verb !== 'score');
+                const title = `${t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })} — ${p.name}: ${moves.length ? moves.map((e) => ledgerParts(e, t).head).join(' · ') : '—'}`;
+                return (
+                  <td key={r.key} className="p-0">
+                    <button type="button" onClick={() => onPick(r.key)} title={title} aria-label={title} className={cn('flex h-[13px] w-[13px] overflow-hidden rounded-[2px] ring-1 ring-black/40 transition-transform hover:scale-125', r.era === 'rail' && 'ring-copper-500/50')}>
+                      {moves.length ? moves.slice(0, 2).map((e) => <span key={e.id} className="h-full flex-1" style={{ background: VERB_HEX[e.verb] }} />) : <span className="h-full flex-1" style={{ background: '#2a231c' }} />}
+                    </button>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 /**
  * The Ledger (game.md §7) — right-rail action log, live region, filter chips.
  *
@@ -100,6 +146,13 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
     else rounds.push({ key, era: e.era, round: e.round, items: [e] });
   }
   const firstNew = visible.find((e) => e.id >= newFrom)?.id;
+  const allRounds: typeof rounds = [];
+  for (const e of game.ledger) {
+    const key = `${e.era}:${e.round}`;
+    const last = allRounds[allRounds.length - 1];
+    if (last && last.key === key) last.items.push(e);
+    else allRounds.push({ key, era: e.era, round: e.round, items: [e] });
+  }
   const isOpen = (r: (typeof rounds)[number], i: number) => folded[r.key] === undefined ? i === rounds.length - 1 || r.items.some((e) => e.id >= newFrom) : !folded[r.key];
 
   return (
@@ -147,13 +200,23 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
         </div>
       </header>
 
+      <RoundsGrid
+        rounds={allRounds}
+        players={game.players.map((p) => ({ name: p.name, color: p.color }))}
+        t={t}
+        onPick={(key) => {
+          setFolded((f) => ({ ...f, [key]: false }));
+          window.setTimeout(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 50);
+        }}
+      />
       <ol ref={listRef} aria-live="polite" className="relative min-h-0 flex-1 overflow-y-auto pr-1 text-[12.5px]">
         {rounds.map((r, ri) => {
           const open = isOpen(r, ri);
           const acted = r.items.filter((e) => e.player !== undefined && e.verb !== 'system' && e.verb !== 'score');
           return (
-            <li key={r.key} className="mb-1">
-              {/* the round's heading: click to fold or unfold; folded, a glance of who did what */}
+            <li key={r.key} data-round={r.key} className="group relative mb-1">
+              {/* the round's heading: click to fold or unfold; folded, hovering
+                  it shows the round's moves in a plaque without unfolding */}
               <button
                 type="button"
                 onClick={() => setFolded((f) => ({ ...f, [r.key]: open }))}
@@ -164,18 +227,22 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                 <span className="font-fell text-[10.5px] tracking-[0.2em] text-brass-500/90">
                   {t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })}
                 </span>
-                {!open && (
-                  <span className="ml-1 flex min-w-0 flex-1 items-center gap-1 overflow-hidden" aria-label={t('game.ledger.roundCount', { n: acted.length })}>
-                    {acted.slice(0, 12).map((e) => {
-                      const I = VERB_ICON[e.verb];
-                      return <I key={e.id} aria-hidden className="h-3 w-3 shrink-0" style={{ color: PLAYER_COLORS[game.players[e.player!].color]?.hex ?? '#C9A45C' }} />;
-                    })}
-                    {acted.length > 12 && <span className="font-mono text-[9px] text-cream-100/45">+{acted.length - 12}</span>}
-                  </span>
-                )}
-                {open && <span className="h-px flex-1 bg-brass-700/50" />}
+                <span className="h-px flex-1 bg-brass-700/50" />
                 <span className="font-mono text-[9px] text-cream-100/40">{t('game.ledger.roundCount', { n: acted.length })}</span>
               </button>
+              {!open && acted.length > 0 && (
+                <div className="plaque pointer-events-none absolute left-4 right-0 top-full z-20 hidden rounded-md p-2 group-hover:block">
+                  {acted.map((e) => (
+                    <p key={e.id} className="flex items-baseline gap-1.5 py-px font-sans text-[11px] leading-snug">
+                      <span className="shrink-0 font-bold" style={{ color: PLAYER_COLORS[game.players[e.player!].color]?.hex ?? '#C9A45C' }}>
+                        {game.players[e.player!].name}
+                      </span>
+                      <span className={cn('shrink-0 text-[8px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
+                      <span className="min-w-0 truncate text-cream-100/85">{ledgerParts(e, t).head}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
               {open && (
                 <ol>
                   <AnimatePresence initial={false}>

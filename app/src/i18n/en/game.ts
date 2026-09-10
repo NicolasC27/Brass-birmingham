@@ -497,6 +497,7 @@ const game = {
     verbPass: 'PASS',
     eraCanal: 'CANAL',
     eraRail: 'RAIL',
+    gridAria: 'Every player, every round',
     roundCount: '{n} moves',
     roundSep: '{era} · ROUND {round}',
   },
