@@ -21,7 +21,8 @@ import {
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
-import { applyAction, botAction, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
+import { applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
+import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
@@ -97,9 +98,11 @@ interface GameStore {
   confirm: () => void;
   /** apply one action of the log for the player to act; false = refused */
   dispatch: (action: GameAction) => boolean;
-  /** indices of the log's actions taken by a human (undo points) */
-  humanMarks: number[];
-  /** back to before the human's last action (bot replies included) */
+  /** the log's actions taken by humans (undo points) */
+  humanMarks: UndoMark[];
+  /** may the player to act take back the action they just took? */
+  canUndo: () => boolean;
+  /** back to before that action */
   undo: () => boolean;
   setLoanConfirm: (open: boolean) => void;
   setLoanPeek: (on: boolean) => void;
@@ -176,7 +179,7 @@ const clearSelection = {
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
-  humanMarks: [] as number[],
+  humanMarks: [] as UndoMark[],
   loanConfirm: false,
   loanPeek: false,
 };
@@ -393,15 +396,20 @@ export const useGame = create<GameStore>((set, get) => ({
     const mut = r.state;
     const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
     const human = g.phase === 'action' && !g.players[g.current].isBot;
-    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, g.actions.length] : get().humanMarks });
+    set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
     return true;
+  },
+
+  canUndo: () => {
+    const g = get().game;
+    return !!g && canUndoNow(g, get().humanMarks);
   },
 
   undo: () => {
     const g = get().game;
     const marks = get().humanMarks;
-    if (!g || marks.length === 0) return false;
+    if (!g || !canUndoNow(g, marks)) return false;
     let back: GameState | null = null;
     try {
       back = undoLastHuman(g, marks);

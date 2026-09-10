@@ -139,7 +139,7 @@ describe('action log', () => {
     }
     const marks = humanActionIndices(setupOf(s), s.seed, s.actions);
     expect(marks.length).toBeGreaterThan(0);
-    const at = marks[marks.length - 1];
+    const at = marks[marks.length - 1].at;
     const back = undoLastHuman(s, marks)!;
     expect(back.actions.length).toBe(at);
     /* it is the human's turn again, on the very state they acted from */
@@ -150,7 +150,7 @@ describe('action log', () => {
     expect(strip(back)).toBe(strip(replay(setupOf(s), s.seed, s.actions.slice(0, at))));
     /* undoing again steps back to the previous human action */
     const again = undoLastHuman(back, marks.slice(0, -1));
-    if (marks.length > 1) expect(again!.actions.length).toBe(marks[marks.length - 2]);
+    if (marks.length > 1) expect(again!.actions.length).toBe(marks[marks.length - 2].at);
     else expect(again).toBeNull();
   });
 });

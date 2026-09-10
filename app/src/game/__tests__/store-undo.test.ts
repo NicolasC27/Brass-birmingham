@@ -22,7 +22,7 @@ const table: SetupPayload = {
 };
 
 describe('undo through the store', () => {
-  it('rolls back to the state before the human acted, at any point of a game', () => {
+  it('takes back the action just taken while the turn is still the human\'s, never later', () => {
     for (const seed of [3, 17, 99]) {
       useGame.setState({ game: newGame(table, seed), humanMarks: [] });
       let rng = seed * 7919;
@@ -42,9 +42,9 @@ describe('undo through the store', () => {
           st.runBot();
           continue;
         }
-        /* now and then, undo instead of playing */
-        if (st.humanMarks.length > 0 && rand() < 0.15) {
-          const at = st.humanMarks[st.humanMarks.length - 1];
+        /* now and then, take the action just played back instead of playing on */
+        if (st.canUndo() && rand() < 0.3) {
+          const at = st.humanMarks[st.humanMarks.length - 1].at;
           expect(st.undo()).toBe(true);
           const back = useGame.getState().game!;
           expect(back.actions.length).toBe(at);
@@ -57,6 +57,9 @@ describe('undo through the store', () => {
         if (!wanted || !st.dispatch(wanted)) st.pass();
       }
       expect(undos).toBeGreaterThan(2);
+      /* once the turn has passed, nothing can be taken back */
+      const g = useGame.getState().game!;
+      if (g.phase === 'action' && g.players[g.current].isBot) expect(useGame.getState().canUndo()).toBe(false);
     }
   });
 });
