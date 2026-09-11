@@ -11,6 +11,3 @@ server/dist/
 *.db-wal
 *.db-shm
 
-# the painted tile set is served as WebP (tools/assets/shrink.sh); the
-# 512px PNG sources stay on the artist's disk, not in the bundle
-public/v3/*.png
