@@ -65,6 +65,9 @@ const VERB_HEX: Record<LedgerEntry['verb'], string> = {
  *  coloured by what each was. Hover says the moves; a click opens the round. */
 function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
   if (rounds.length < 2) return null;
+  /* what a player's round cost the purse, from the entries' own figures */
+  const spentIn = (r: (typeof rounds)[number], pi: number) => r.items.filter((e) => e.player === pi).reduce((a, e) => a + Number(e.vars?.spent ?? 0), 0);
+  const railStart = rounds.findIndex((r) => r.era === 'rail');
   return (
     <div className="mb-2 overflow-x-auto" aria-label={t('game.ledger.gridAria')}>
       <table className="border-separate border-spacing-[2px]">
@@ -74,11 +77,12 @@ function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: str
               <th scope="row" className="pr-1.5 text-left font-sans text-[9px] font-bold" style={{ color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }}>
                 {p.name.slice(0, 8)}
               </th>
-              {rounds.map((r) => {
+              {rounds.map((r, ri) => {
                 const moves = r.items.filter((e) => e.player === pi && e.verb !== 'system' && e.verb !== 'score');
-                const title = `${t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })} — ${p.name}: ${moves.length ? moves.map((e) => ledgerParts(e, t).head).join(' · ') : '—'}`;
+                const spent = spentIn(r, pi);
+                const title = `${t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })} — ${p.name}: ${moves.length ? moves.map((e) => ledgerParts(e, t).head).join(' · ') : '—'} · ${t('game.ledger.spentTip', { n: spent })}`;
                 return (
-                  <td key={r.key} className="p-0">
+                  <td key={r.key} className={cn('p-0', ri === railStart && ri > 0 && 'border-l-2 border-copper-500/70 pl-[3px]')}>
                     <button
                       type="button"
                       onClick={() => onPick(r.key, pi)}
@@ -89,6 +93,10 @@ function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: str
                     >
                       {moves.length ? moves.slice(0, 2).map((e) => <span key={e.id} className="h-full flex-1" style={{ background: VERB_HEX[e.verb] }} />) : <span className="h-full flex-1" style={{ background: '#2a231c' }} />}
                     </button>
+                    {/* what the round cost: the figure under the cell, a loan's gain in green */}
+                    <span className={cn('block w-[13px] text-center font-mono text-[7.5px] leading-[9px]', spent < 0 ? 'text-bottle-600 brightness-150' : spent >= 10 ? 'text-brass-400' : 'text-cream-100/45')} aria-hidden>
+                      {spent === 0 ? '·' : spent < 0 ? `+${-spent}` : spent}
+                    </span>
                   </td>
                 );
               })}
@@ -155,6 +163,12 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
     else rounds.push({ key, era: e.era, round: e.round, items: [e] });
   }
   const firstNew = visible.find((e) => e.id >= newFrom)?.id;
+  /* another player's build where the reader holds a card: a red mark, it is
+     what one looks for in the register */
+  const me = seat ?? game.players.findIndex((p) => !p.isBot);
+  const myHand = me >= 0 ? game.players[me].hand : [];
+  const hitsMe = (e: LedgerEntry): boolean =>
+    e.verb === 'build' && e.player !== undefined && e.player !== me && myHand.some((c) => (c.kind === 'location' && c.town === e.region) || (c.kind === 'industry' && (c.industry === e.vars?.industry || c.industry2 === e.vars?.industry)));
   const allRounds: typeof rounds = [];
   for (const e of game.ledger) {
     const key = `${e.era}:${e.round}`;
@@ -219,7 +233,15 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
             const same = picked?.key === key && picked.player === player;
             setPicked(same ? null : { key, player });
             setFolded((f) => ({ ...f, [key]: false }));
-            if (!same) window.setTimeout(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"] [data-player="${player}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+            if (same) return;
+            window.setTimeout(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"] [data-player="${player}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+            /* and on the board: the camera goes to the first of the moves, each flashes in turn */
+            const regions = allRounds.find((r) => r.key === key)?.items.filter((e) => e.player === player && e.region).map((e) => e.region!) ?? [];
+            if (regions.length) flyToRegion(regions[0]);
+            regions.forEach((region, i) => {
+              window.setTimeout(() => setHover(region), i * 900);
+              window.setTimeout(() => setHover(null), i * 900 + 800);
+            });
           }}
         />
       )}
@@ -252,6 +274,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                         {game.players[e.player!].name}
                       </span>
                       <span className={cn('shrink-0 text-[8px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
+                      {hitsMe(e) && <span className="h-2 w-2 shrink-0 self-center rounded-full bg-rust-500" title={t('game.ledger.hitsMe')} />}
                       <span className="min-w-0 truncate text-cream-100/85">{ledgerParts(e, t).head}</span>
                     </p>
                   ))}
@@ -302,7 +325,10 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                               }}
                               className={cn('flex min-w-0 flex-1 items-start gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-brass-500/10', flash === e.id && 'bg-brass-500/15')}
                             >
-                              <Icon aria-hidden className="mt-[3px] h-3.5 w-3.5 shrink-0" style={{ color: color ?? 'rgba(244,236,216,0.45)' }} />
+                              <span className="relative mt-[3px] shrink-0">
+                                <Icon aria-hidden className="h-3.5 w-3.5" style={{ color: color ?? 'rgba(244,236,216,0.45)' }} />
+                                {hitsMe(e) && <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-rust-500 ring-1 ring-coal-950" title={t('game.ledger.hitsMe')} aria-label={t('game.ledger.hitsMe')} />}
+                              </span>
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-baseline gap-1.5">
                                   <span className={cn('shrink-0 font-sans text-[8.5px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>

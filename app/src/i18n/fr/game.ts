@@ -501,6 +501,8 @@ const fr: typeof engame = {
     eraRail: 'RAIL',
     gridAria: 'Chaque joueur, chaque manche',
     roundCount: '{n} coups',
+    spentTip: 'dépensé £{n}',
+    hitsMe: 'Vous tenez une carte pour cette ville ou cette industrie',
     roundSep: '{era} · MANCHE {round}',
   },
   ceremony: {

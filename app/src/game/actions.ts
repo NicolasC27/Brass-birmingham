@@ -110,6 +110,11 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       break;
   }
   if (!ok) return fail('The engine refused the action');
+  /* the action's own ledger entry learns what it cost the purse (a loan
+     shows as a gain), so the register can add up a round per player */
+  const spent = s.players[playerIdx].money - mut.players[playerIdx].money;
+  const entry = [...mut.ledger].reverse().find((e) => e.player === playerIdx && e.at === s.actions.length);
+  if (entry?.vars) entry.vars.spent = spent;
   advance(mut);
   mut.actions.push(action);
   return { state: mut };

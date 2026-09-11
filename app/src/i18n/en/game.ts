@@ -499,6 +499,8 @@ const game = {
     eraRail: 'RAIL',
     gridAria: 'Every player, every round',
     roundCount: '{n} moves',
+    spentTip: 'spent £{n}',
+    hitsMe: 'You hold a card for this town or industry',
     roundSep: '{era} · ROUND {round}',
   },
   ceremony: {
