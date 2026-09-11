@@ -477,6 +477,9 @@ const fr: typeof engame = {
     wildLocation: 'Lieu joker',
     wildIndustry: 'Industrie joker',
   },
+  flip: {
+    title: '{name} · {what} se retourne',
+  },
   ledger: {
     aria: 'Le Registre',
     heading: 'LE REGISTRE',

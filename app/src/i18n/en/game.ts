@@ -475,6 +475,9 @@ const game = {
     wildLocation: 'Wild Location',
     wildIndustry: 'Wild Industry',
   },
+  flip: {
+    title: '{name} · {what} flips',
+  },
   ledger: {
     aria: 'The Ledger',
     heading: 'THE LEDGER',
