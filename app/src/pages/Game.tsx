@@ -25,7 +25,8 @@ import MarketPill from '@/components/game/MarketPill';
 import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
-import { buildTargets, candleMinutes, linkTargets, sellTargets, slotXY, tileKey } from '@/game/engine';
+import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
+import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { buildFinalPayload, confirmSummary, useGame } from '@/game/store';
 import { FINAL_KEY } from '@/game/types';
@@ -283,9 +284,16 @@ export default function Game() {
   const ghost: PlanGhost | null = useMemo(() => {
     if (!game) return null;
     if (verb === 'build') {
-      if (buildPick?.valid) return ghostFromPlan(slotXY(buildPick.town, buildPick.slot), buildPick.coalPlan, buildPick.ironPlan);
+      /* a works that would sell to the market the moment it is built sends
+         its cubes the other way: the ghost carries that too */
+      const withSale = (t: BuildTarget): PlanGhost => {
+        const g = ghostFromPlan(slotXY(t.town, t.slot), t.coalPlan, t.ironPlan);
+        const sale = marketSaleOnBuild(game, t.town, t.industry, t.level);
+        return sale.sold ? { ...g, sale: { resource: t.industry, amount: sale.sold, gain: sale.earned } } : g;
+      };
+      if (buildPick?.valid) return withSale(buildPick);
       const t = hoverKey ? targets.find((x) => tileKey(x.town, x.slot) === hoverKey && x.valid) : null;
-      if (t) return ghostFromPlan(slotXY(t.town, t.slot), t.coalPlan, t.ironPlan);
+      if (t) return withSale(t);
     }
     if (verb === 'network') {
       const id = linkPick?.link.id ?? hoverKey;

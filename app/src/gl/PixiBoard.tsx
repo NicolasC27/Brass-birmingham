@@ -104,21 +104,31 @@ interface March {
   tag: Container;
   /** the plaque's distance from the works along the line */
   along: number;
+  /** the cubes go to the exchange, not away from it: the dashes and the
+   *  arrow run the other way, and the line is the colour of a gain */
+  selling?: boolean;
 }
 const CASING = 0xf2ead6;
 
-/** a supply line's geometry: it stops short of the tile, on an arrowhead */
-function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [number, number]; head: number[] } {
+/** an arrowhead at (gx,gy) pointing away from (sx,sy), stopping `back` short */
+function arrowHead(sx: number, sy: number, gx: number, gy: number, back: number): number[] {
   const dx = gx - sx;
   const dy = gy - sy;
   const len = Math.hypot(dx, dy) || 1;
   const ux = dx / len;
   const uy = dy / len;
-  const tipX = gx - ux * (TILE_R + 3);
-  const tipY = gy - uy * (TILE_R + 3);
+  const tipX = gx - ux * back;
+  const tipY = gy - uy * back;
   const baseX = tipX - ux * 13;
   const baseY = tipY - uy * 13;
-  return { end: [tipX - ux * 10, tipY - uy * 10], head: [tipX, tipY, baseX - uy * 7, baseY + ux * 7, baseX + uy * 7, baseY - ux * 7] };
+  return [tipX, tipY, baseX - uy * 7, baseY + ux * 7, baseX + uy * 7, baseY - ux * 7];
+}
+
+/** a supply line's geometry: it stops short of the tile, on an arrowhead */
+function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [number, number]; head: number[] } {
+  const len = Math.hypot(gx - sx, gy - sy) || 1;
+  const back = TILE_R + 13;
+  return { end: [gx - ((gx - sx) / len) * back, gy - ((gy - sy) / len) * back], head: arrowHead(sx, sy, gx, gy, TILE_R + 3) };
 }
 
 export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null }: Props) {
@@ -396,16 +406,23 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             const r = tray?.getBoundingClientRect();
             const sx = r && r.width > 0 ? (r.left - 6 - host.left - scene.world.position.x) / scene.world.scale.x : WORLD_W - 52;
             const sy = r && r.width > 0 ? (r.top + r.height / 2 - host.top - scene.world.position.y) / scene.world.scale.y : (m.tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71);
-            const { end, head } = supplyLine(sx, sy, m.to[0], m.to[1]);
+            /* selling: the works is the source and the exchange the target,
+               so the dashes march the other way and the head sits on the tray */
+            const [ax, ay] = m.selling ? m.to : [sx, sy];
+            const [bx, by] = m.selling ? [sx, sy] : m.to;
+            const { end, head } = m.selling ? { end: [bx, by] as [number, number], head: arrowHead(ax, ay, bx, by, 14) } : supplyLine(ax, ay, bx, by);
             m.g.clear();
-            m.g.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
-            dashPath(m.g, [[sx, sy], end], 9, 7, -clock * 36);
+            m.g.moveTo(ax, ay).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
+            dashPath(m.g, [[ax, ay], end], 9, 7, -clock * 36);
             m.g.stroke({ width: 3, color: m.color, cap: 'round' });
             m.g.poly(head).fill(m.color).stroke({ width: 2, color: CASING, join: 'round' });
-            const dx = sx - end[0];
-            const dy = sy - end[1];
+            /* the plaque rides the line, a little way from the works */
+            const tx = m.selling ? ax : end[0];
+            const ty = m.selling ? ay : end[1];
+            const dx = (m.selling ? bx : ax) - tx;
+            const dy = (m.selling ? by : ay) - ty;
             const len = Math.hypot(dx, dy) || 1;
-            m.tag.position.set(end[0] + (dx / len) * m.along, end[1] + (dy / len) * m.along);
+            m.tag.position.set(tx + (dx / len) * m.along, ty + (dy / len) * m.along);
           }
         }
         /* era crossfade */
@@ -987,6 +1004,21 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         overlay.addChild(tag);
         marchRef.current.push({ g, tray: m.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: coreOf(m.resource), tag, along: 78 + i * 30 });
       });
+      /* what the works would sell to the exchange the moment it is built:
+         the same line the other way round, in the green of a gain */
+      if (ghost.sale) {
+        const g = new Graphics();
+        g.eventMode = 'none';
+        overlay.addChild(g);
+        const tag = new Container();
+        const label = new Text({ text: tr('board.ghost.sale', { n: ghost.sale.amount, gain: ghost.sale.gain }), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, fontWeight: '600', fill: 0xd6f0dd } });
+        label.anchor.set(0.5);
+        const w = label.width + 18;
+        tag.addChild(new Graphics().roundRect(-w / 2, -11, w, 22, 4).fill({ color: 0x0f1a12, alpha: 0.94 }).stroke({ width: 1.4, color: 0x5fa37a }), label);
+        tag.eventMode = 'none';
+        overlay.addChild(tag);
+        marchRef.current.push({ g, tray: ghost.sale.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: 0x5fa37a, selling: true, tag, along: 78 + ghost.market.length * 30 });
+      }
     }
 
     /* ledger flash: hoverKey naming a town or link outside planning pulses

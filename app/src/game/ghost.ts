@@ -9,6 +9,9 @@ export interface PlanGhost {
   tileSources: { x: number; y: number; resource: string; amount: number }[];
   /** cubes drawn from the market */
   market: { resource: string; amount: number; cost: number }[];
+  /** cubes the new works would sell to the market at once — a mine that
+   *  reaches a merchant, a forge always: the cubes go the other way */
+  sale?: { resource: string; amount: number; gain: number };
   /** target slot */
   at: [number, number];
 }
