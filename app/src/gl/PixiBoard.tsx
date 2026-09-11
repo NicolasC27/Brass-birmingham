@@ -137,6 +137,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const [hoverLink, setHoverLink] = useState<string | null>(null);
   const [hoverMerchant, setHoverMerchant] = useState<string | null>(null);
   const [inspect, setInspect] = useState<string | null>(null);
+  /* the town card shows once the pointer has settled on a town for a
+     moment, not on every town the pointer crosses */
+  const [settled, setSettled] = useState<string | null>(null);
+  useEffect(() => {
+    if (!hoverTown) {
+      const off = window.setTimeout(() => setSettled(null), 0);
+      return () => window.clearTimeout(off);
+    }
+    const on = window.setTimeout(() => setSettled(hoverTown), 650);
+    return () => window.clearTimeout(on);
+  }, [hoverTown]);
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
@@ -1012,18 +1023,16 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-    /* idle browsing: hovering a town pulses its adjacent routes in brass;
-       a hovered unbuilt link gets a bright brass trace (Board: adjacent /
-       linkHovered paths) */
-    if (idle && hoverTown) {
-      for (const def of LINKS) {
-        if (def.a !== hoverTown && def.b !== hoverTown) continue;
-        const pts = routeFor(def).pts;
-        const g = new Graphics();
-        trace(g, pts);
-        g.stroke({ width: 8, color: 0xc9a45c, cap: 'round', join: 'round' });
+    /* idle browsing: a hovered town gets a quiet brass outline and nothing
+       more — no pulse, no lit routes; a hovered unbuilt link gets a thin
+       brass trace */
+    if (idle && hoverTown && hoverKey !== hoverTown) {
+      const town = TOWN_BY_ID[hoverTown];
+      if (town) {
+        const c = townChrome(town);
+        const g = new Graphics().roundRect(c.minX + 4, c.minY + 4, c.maxX - c.minX - 8, c.maxY - c.minY - 8, 10).stroke({ width: 2, color: 0xc9a45c, alpha: 0.55 });
         g.eventMode = 'none';
-        pulse(g, 0.45);
+        overlay.addChild(g);
       }
     }
     if (idle && hoverLink) {
@@ -1097,7 +1106,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   })();
   const inspectTown = idle && inspect ? TOWN_BY_ID[inspect] : undefined;
   const inspectPos = inspectTown ? worldToScreen(inspectTown.x, inspectTown.y, view, size.w, size.h) : null;
-  const hoverTownDef = idle && hoverTown && !inspect ? TOWN_BY_ID[hoverTown] : undefined;
+  const hoverTownDef = idle && settled && settled === hoverTown && !inspect ? TOWN_BY_ID[settled] : undefined;
   const hoverTownPos = hoverTownDef ? worldToScreen(hoverTownDef.x, hoverTownDef.y, view, size.w, size.h) : null;
   const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink) : undefined;
   /* merchant hover: the plate's tooltip, and only the goods YOU could sell there stay lit */
