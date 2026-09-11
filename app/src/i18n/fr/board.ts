@@ -57,6 +57,10 @@ const fr: typeof enboard = {
     cannotBuild: 'Impossible de construire ici',
     flipsByEmptying: 'Cet établissement se retourne en se vidant, pas par une vente',
   },
+  chooser: {
+    which: 'Quel ouvrage ici ?',
+    unavailable: 'Pas possible avec cette carte',
+  },
   ghost: {
     sale: '×{n} → £{gain}',
     mkt: '×{n} · £{cost} marché',

@@ -9,6 +9,7 @@ import ConcedeBanner from '@/components/game/ConcedeBanner';
 import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
+import FlipToast from '@/components/game/FlipToast';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -25,7 +26,7 @@ import MarketPill from '@/components/game/MarketPill';
 import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
-import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
+import { buildTargets, candleMinutes, developOptions, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { buildFinalPayload, confirmSummary, useGame } from '@/game/store';
@@ -303,6 +304,12 @@ export default function Game() {
         return ghostFromPlan(mid, t.coalPlan);
       }
     }
+    if (verb === 'develop' && developPick.length) {
+      /* iron ships from any works on the board, or the exchange: mark where
+         this development would take it from */
+      const plans = developOptions(game, mySeat).filter((o) => developPick.includes(o.industry) && o.valid).map((o) => o.iron);
+      if (plans.length) return { ...ghostFromPlan([0, 0], ...plans), noTarget: true };
+    }
     if (verb === 'sell') {
       const key = sellPick ? tileKey(sellPick.town, sellPick.slot) : hoverKey;
       const t = key ? sellTargetsList.find((x) => tileKey(x.town, x.slot) === key && x.valid) : null;
@@ -312,7 +319,7 @@ export default function Game() {
       }
     }
     return null;
-  }, [game, verb, buildPick, linkPick, sellPick, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [game, verb, buildPick, linkPick, sellPick, developPick, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};
@@ -475,6 +482,7 @@ export default function Game() {
       <ConcedeBanner />
       <TableMood />
       <Guide />
+      <FlipToast />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />

@@ -14,6 +14,9 @@ export interface PlanGhost {
   sale?: { resource: string; amount: number; gain: number };
   /** target slot */
   at: [number, number];
+  /** the plan has no place on the board (a development takes its iron to
+   *  the player's mat): the sources are marked, no line is drawn */
+  noTarget?: boolean;
 }
 
 export function ghostFromPlan(at: [number, number], ...plans: SupplyPlan[]): PlanGhost {

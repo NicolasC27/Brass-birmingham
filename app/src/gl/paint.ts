@@ -90,6 +90,8 @@ export const tileFaceUrl = (i: IndustryType, art: TileArt, color: string): strin
 };
 /** the face one variant shows for an industry — its cutout, or its painting */
 export const variantFaceUrl = (v: TileVariant, i: IndustryType): string => v.dir + CUT_FOR(i, v.ext);
+/** the face of an industry under the reader's chosen variant */
+export const industryFaceUrl = (i: IndustryType, art: TileArt): string => variantFaceUrl(variantOf(i, art) ?? { id: '', dir: '', front: { scale: 64 } }, i);
 /** which of two industries stands in front of a dual-slot painting, and
  *  how the one behind is placed (tools/tiles/build-tile.sh says the same) */
 const FRONT_RANK: Record<IndustryType, number> = { brewery: 0, coal: 1, manufacturer: 2, cotton: 3, iron: 3, pottery: 3 };

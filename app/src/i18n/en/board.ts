@@ -55,6 +55,10 @@ const board = {
     cannotBuild: 'Cannot build here',
     flipsByEmptying: 'This works flips by emptying, not by sale',
   },
+  chooser: {
+    which: 'Which works here?',
+    unavailable: 'Not possible with this card',
+  },
   ghost: {
     sale: '×{n} → £{gain}',
     mkt: '×{n} · £{cost} mkt',

@@ -18,7 +18,8 @@ import Minimap from '@/components/game/Minimap';
 import TownInspector from '@/components/game/TownInspector';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
-import { buildBoardScene, loadBoardAssets } from './paint';
+import { buildBoardScene, industryFaceUrl, loadBoardAssets } from './paint';
+import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
 import { isKey } from '@/components/game/keybindings';
@@ -972,6 +973,21 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : 0xe07020);
       for (const src of ghost.tileSources) {
         const [sx, sy] = displayPosFor(src.x, src.y);
+        if (ghost.noTarget) {
+          /* nowhere on the board to run to: the source itself is marked */
+          const ring = new Graphics().roundRect(sx - TILE_R - 4, sy - TILE_R - 4, TILE_R * 2 + 8, TILE_R * 2 + 8, 9).stroke({ width: 3, color: coreOf(src.resource) === 0x171310 ? 0xc9a45c : coreOf(src.resource) });
+          ring.eventMode = 'none';
+          pulse(ring, 0.95);
+          const tag = new Graphics().roundRect(-16, -9, 32, 18, 3).fill(0x171310).stroke({ width: 1, color: coreOf(src.resource) === 0x171310 ? 0xc9a45c : coreOf(src.resource) });
+          tag.position.set(sx, sy - TILE_R - 14);
+          const txt = new Text({ text: `−${src.amount}`, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, fontWeight: '600', fill: 0xf2ead6 } });
+          txt.anchor.set(0.5);
+          txt.position.set(sx, sy - TILE_R - 14);
+          tag.eventMode = 'none';
+          txt.eventMode = 'none';
+          overlay.addChild(tag, txt);
+          continue;
+        }
         const { end, head } = supplyLine(sx, sy, gx, gy);
         const line = new Graphics();
         line.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
@@ -990,6 +1006,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
       /* market supply: a line from the exchange's own tray, drawn by the
          ticker (see March), and a £-plaque per resource by the works */
+      if (ghost.noTarget) return;
       ghost.market.forEach((m, i) => {
         const g = new Graphics();
         g.eventMode = 'none';
@@ -1086,6 +1103,25 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     const tm = window.setTimeout(() => setCalloutAt(null), 2800);
     return () => window.clearTimeout(tm);
   }, [shake]);
+  /* the dual slot picked to build on, if any: its two industries and where
+     on screen to hang the choice */
+  const chooser = (() => {
+    if (!idle && verb === 'build' && selectedCardId && buildPick) {
+      const town = TOWN_BY_ID[buildPick.town];
+      const allows = town?.slots[buildPick.slot]?.allows ?? [];
+      if (allows.length < 2) return null;
+      const key = tileKey(buildPick.town, buildPick.slot);
+      const pos = townChrome(town).slots[buildPick.slot];
+      const [x, y] = worldToScreen(pos.x, pos.y, view, size.w, size.h);
+      return {
+        key,
+        x,
+        y: y + TILE_R * fitScale(size.w, size.h) * view.k + 12,
+        options: allows.map((industry) => ({ industry, target: targets.find((tg) => tileKey(tg.town, tg.slot) === key && tg.industry === industry), picked: buildPick.industry === industry })),
+      };
+    }
+    return null;
+  })();
   const calloutPos = (() => {
     if (!shake || calloutAt !== shake.at) return null;
     const [townId, slotStr] = shake.key.split(':');
@@ -1209,6 +1245,47 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           zoom lives on the wheel / + / − / 0 keys */}
 
       <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />
+
+      {/* a slot that takes either of two industries, picked to build on: the
+          two faces side by side, the one to be built ringed; the other is a
+          click away, or says why it cannot be (Board chooser) */}
+      <AnimatePresence>
+        {chooser && (
+          <motion.div
+            key={chooser.key}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="plaque absolute z-30 flex flex-col items-center gap-1.5 rounded-lg px-2.5 py-2"
+            style={{ left: chooser.x, top: chooser.y, transform: 'translate(-50%, 0)' }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => e.stopPropagation()}
+            role="group"
+            aria-label={t('board.chooser.which')}
+          >
+            <span className="font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-brass-400">{t('board.chooser.which')}</span>
+            <span className="flex items-stretch gap-2">
+              {chooser.options.map((o) => (
+                <button
+                  key={o.industry}
+                  type="button"
+                  onClick={() => (o.target?.valid ? useGame.getState().pickBuild(o.target) : onInvalid(chooser.key, o.target?.reason ?? tr('board.invalid.tileCard')))}
+                  title={o.target?.valid ? undefined : reasonText(o.target?.reason ?? tr('board.chooser.unavailable'))}
+                  aria-pressed={o.picked}
+                  className={cn('flex w-[76px] flex-col items-center gap-1 rounded-md border p-1 transition-all', o.picked ? 'scale-105 border-brass-400 bg-brass-500/15 shadow-[0_0_14px_rgba(221,190,126,.45)]' : o.target?.valid ? 'border-brass-700/50 hover:border-brass-400' : 'border-brass-700/30 opacity-45 grayscale')}
+                >
+                  <span className="h-14 w-14 overflow-hidden rounded-[5px] bg-[#12100C]">
+                    <img src={industryFaceUrl(o.industry, opts.tileArt)} alt="" className="h-full w-full object-contain p-0.5" />
+                  </span>
+                  <span className="font-sans text-[9.5px] font-semibold leading-tight text-cream-100/90">{tr(`game.log.industry.${o.industry}`)}</span>
+                  {!o.target?.valid && <span className="font-sans text-[8px] uppercase tracking-wider text-rust-500 brightness-150">{t('board.chooser.unavailable')}</span>}
+                </button>
+              ))}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* why the slot or link is refused — one sentence, right next to it */}
       <AnimatePresence>
