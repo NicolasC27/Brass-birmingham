@@ -11,8 +11,9 @@ import { useHudInsets } from './useHudInsets';
 /* ------------------------------------------------------------------ */
 /* A tile turning over is the moment of the game — income rises, the   */
 /* points are banked — and it happened in the corner of the eye. Each  */
-/* flip now lands as a plaque under the banner, the card in the owner's */
-/* colour on it, for a few seconds, one under the other when several.  */
+/* flip now lands as a plaque in the middle of the board, above every  */
+/* other panel, the card in the owner's colour on it, for a few seconds, */
+/* one under the other when several. It takes no clicks.               */
 /* ------------------------------------------------------------------ */
 
 interface Flip {
@@ -59,7 +60,7 @@ export default function FlipToast() {
 
   if (!game) return null;
   return (
-    <div className="pointer-events-none fixed left-1/2 z-[78] flex -translate-x-1/2 flex-col items-center gap-2" style={{ top: insets.top + 120 }} aria-live="polite">
+    <div className="pointer-events-none fixed left-1/2 z-[82] flex -translate-x-1/2 flex-col items-center gap-2" style={{ top: 'max(38vh, ' + (insets.top + 130) + 'px)' }} aria-live="polite">
       <AnimatePresence>
         {flips.map((f) => {
           const color = PLAYER_COLORS[game.players[f.owner]?.color]?.hex ?? '#C9A45C';
