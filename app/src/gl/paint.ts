@@ -36,6 +36,10 @@ export interface TileVariant {
   /** the format this set's files are written in. The flat drawings are PNG;
    *  a painted set does not compress as PNG and is written as WebP. */
   ext?: 'png' | 'webp';
+  /** a set that paints the dual slots itself, as one scene: where its file
+   *  for the slot taking either of two industries lives. Without it the
+   *  board assembles the two cutouts (composePair). */
+  pair?: (a: IndustryType, b: IndustryType) => string;
   /** a set whose art is already finished: the backdrop belongs to the
    *  painting, so there is no cutout to lay on a card and no per-owner
    *  cards — the owner's colour is the rim the board draws around it —
@@ -70,7 +74,7 @@ const painted = (front: FrontRecipe): TileVariant => ({ id: 'painted', dir: '/v3
  *  painted set, but with no backdrop of their own, so an owner's colour
  *  shows through the card and the slot grid keeps its printed look.
  *  (The finished paintings live in /v3, these in /tiles-v3.) */
-const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v3', front, ext: 'webp' });
+const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v3', front, ext: 'webp', pair: (a, b) => `/tile-combo-${pairKey(a, b)}.webp` });
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
@@ -372,6 +376,17 @@ function loadIndustryArt(v: TileVariant | undefined, i: IndustryType): Promise<I
   return p;
 }
 
+/** fetch (once, tolerantly) one painting by url — null when the set does not
+ *  carry it, so a missing scene falls back rather than breaking the board */
+function loadUrl(url: string): Promise<Texture | null> {
+  let p = pairCache.get(url);
+  if (!p) {
+    p = Assets.load(url).catch(() => null) as Promise<Texture | null>;
+    pairCache.set(url, p);
+  }
+  return p;
+}
+
 /** fetch (once, tolerantly) a dual-slot painting painted as one scene rather
  *  than assembled: a finished set's own, or the default set's */
 function loadPair(a: IndustryType, b: IndustryType, from?: { dir: string; whole: WholeSet }): Promise<Texture | null> {
@@ -432,7 +447,17 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
            Anything mixed is assembled from the two cutouts — and a finished
            painting cannot be assembled, so those fall to the half-split. */
         const together = va?.whole && vb?.whole && va.dir === vb.dir ? { dir: va.dir, whole: va.whole } : null;
-        t = together ? await loadPair(a, b, together) : !va?.dir && !vb?.dir ? await loadPair(a, b) : va?.whole || vb?.whole ? null : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
+        /* a set that paints its own dual slots, both industries on it */
+        const sameSet = !together && va && vb && va.id === vb.id && va.pair ? va.dir + va.pair(a, b) : null;
+        t = together
+          ? await loadPair(a, b, together)
+          : sameSet
+            ? await loadUrl(sameSet)
+            : !va?.dir && !vb?.dir
+              ? await loadPair(a, b)
+              : va?.whole || vb?.whole
+                ? null
+                : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
         if (t) composedCache.set(key, t);
       }
       if (!t) return;
