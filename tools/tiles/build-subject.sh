@@ -11,7 +11,8 @@
 #                              board draws the card body and its shadow
 # and per dual slot the board actually has:
 #   tile-combo-<a>-<b>.webp    the two industries painted as one yard, the
-#                              front one low and left, the other behind
+#                              one that needs room large at the back, the
+#                              compact one small and in front of it
 # The subject fills the square: the board masks the card to its rounded
 # corners, so nothing is lost and the painting reads at every zoom. Painted
 # art does not compress as PNG, a third of a megabyte apiece, so the set is
@@ -42,29 +43,26 @@ for NAME in coal iron cotton manufacture pottery brewery; do
 done
 
 # --- the dual slots, as one scene ------------------------------------
-# front:back — the front industry is the one with a face, the partner
-# stands behind it and to the right (paint.ts FRONT_RANK says the same)
-COMBOS="brewery:cotton brewery:iron brewery:manufacture coal:cotton coal:manufacture manufacture:cotton manufacture:iron iron:pottery"
+# hero:companion — the industry that needs room to read stands large at
+# the back, the compact one small and in front of it, so both are named
+# at a glance and the slot still has one subject
+COMBOS="cotton:brewery brewery:iron brewery:manufacture cotton:coal coal:manufacture cotton:manufacture manufacture:iron iron:pottery"
 for combo in $COMBOS; do
-  FRONT=${combo%%:*}; BACK=${combo##*:}
+  HERO=${combo%%:*}; SMALL=${combo##*:}
   # the file is named by the industry KEYS, sorted (paint.ts pairKey)
-  ka=$FRONT; kb=$BACK
+  ka=$HERO; kb=$SMALL
   [[ $ka == manufacture ]] && ka=manufacturer
   [[ $kb == manufacture ]] && kb=manufacturer
   if [[ "$ka" < "$kb" ]]; then OUT="tile-combo-$ka-$kb"; else OUT="tile-combo-$kb-$ka"; fi
-  # Side by side rather than one behind the other: at a tile's size on
-  # screen both industries must be recognisable, and depth stacking hid
-  # whichever stood at the back. They overlap by a seventh, the front one
-  # low and left, the partner a little higher and to the right.
-  magick "$T/$BACK.png" -resize 58% "$T/back.png"
-  magick "$T/$FRONT.png" -resize 58% "$T/front.png"
-  # a soft ground shadow under each, so the two stand in one yard
+  magick "$T/$HERO.png" -resize 86% "$T/hero.png"
+  magick "$T/$SMALL.png" -resize 46% "$T/small.png"
+  # a ground shadow under each, so the two stand in one yard
   magick -size 512x512 xc:none -fill '#00000052' \
-    -draw 'ellipse 148,462 132,26 0,360' -draw 'ellipse 356,404 120,24 0,360' -blur 0x16 "$T/ground.png"
+    -draw 'ellipse 286,470 190,26 0,360' -draw 'ellipse 118,492 104,20 0,360' -blur 0x16 "$T/ground.png"
   magick -size 512x512 xc:none \
-    "$T/back.png" -geometry +215+66 -compose Over -composite \
+    "$T/hero.png" -geometry +76+18 -compose Over -composite \
     "$T/ground.png" -compose Over -composite \
-    "$T/front.png" -geometry +0+180 -compose Over -composite \
+    "$T/small.png" -geometry +0+270 -compose Over -composite \
     -depth 8 "${Q[@]}" "$P/$OUT.webp"
   echo "  $OUT"
 done
