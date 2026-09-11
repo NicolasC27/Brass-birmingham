@@ -33,6 +33,9 @@ export interface TileVariant {
   id: string;
   dir: string;
   front: FrontRecipe;
+  /** the format this set's files are written in. The flat drawings are PNG;
+   *  a painted set does not compress as PNG and is written as WebP. */
+  ext?: 'png' | 'webp';
   /** a set whose art is already finished: the backdrop belongs to the
    *  painting, so there is no cutout to lay on a card and no per-owner
    *  cards — the owner's colour is the rim the board draws around it —
@@ -63,25 +66,30 @@ const PAINTED: WholeSet = {
   pair: (a, b) => `/tile-combo-${pairKey(a, b)}.webp`,
 };
 const painted = (front: FrontRecipe): TileVariant => ({ id: 'painted', dir: '/v3', front, whole: PAINTED });
+/** The painted subjects, cut out on transparency: the same hand as the
+ *  painted set, but with no backdrop of their own, so an owner's colour
+ *  shows through the card and the slot grid keeps its printed look.
+ *  (The finished paintings live in /v3, these in /tiles-v3.) */
+const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v3', front, ext: 'webp' });
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
-    painted({ scale: 64 }),
+    painted({ scale: 64 }), subject({ scale: 64 }),
     { id: 'wagon', dir: '', front: { scale: 64 } },
     { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
     { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
-  iron: [painted({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
-  cotton: [painted({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
+  iron: [painted({ scale: 70 }), subject({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
+  cotton: [painted({ scale: 70 }), subject({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
   manufacturer: [
-    painted({ scale: 62 }),
+    painted({ scale: 62 }), subject({ scale: 62 }),
     { id: 'crate', dir: '', front: { scale: 62 } },
     { id: 'parcels', dir: '/tiles-classic', front: { scale: 62 } },
     { id: 'manufactory', dir: '/tiles-works', front: { crop: [10, 300], scale: 84, partnerX: { cotton: 160, iron: 160, pottery: 160 } } },
   ],
-  pottery: [painted({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
+  pottery: [painted({ scale: 70 }), subject({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
   brewery: [
-    painted({ scale: 60 }),
+    painted({ scale: 60 }), subject({ scale: 60 }),
     { id: 'barrel', dir: '', front: { scale: 60 } },
     { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },
     { id: 'brewhouse', dir: '/tiles-works', front: { crop: [40, 305], scale: 80, partnerX: { cotton: 160, iron: 160 } } },
@@ -95,10 +103,10 @@ const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefined => TI
  *  very same image the board does) */
 export const tileFaceUrl = (i: IndustryType, art: TileArt, color: string): string => {
   const v = variantOf(i, art);
-  return v?.whole ? v.dir + v.whole.file(i) : `${v?.dir ?? ''}/tile-${FILE_FOR[i]}-${color}.png`;
+  return v?.whole ? v.dir + v.whole.file(i) : (v?.dir ?? '') + BUILT_FOR(i, color, v?.ext);
 };
 /** the face one variant shows for an industry — its cutout, or its painting */
-export const variantFaceUrl = (v: TileVariant, i: IndustryType): string => (v.whole ? v.dir + v.whole.file(i) : `${v.dir}/tile-${FILE_FOR[i]}-cut.png`);
+export const variantFaceUrl = (v: TileVariant, i: IndustryType): string => (v.whole ? v.dir + v.whole.file(i) : v.dir + CUT_FOR(i, v.ext));
 /** which of two industries stands in front of a dual-slot painting, and
  *  how the one behind is placed (tools/tiles/build-tile.sh says the same) */
 const FRONT_RANK: Record<IndustryType, number> = { brewery: 0, coal: 1, manufacturer: 2, cotton: 3, iron: 3, pottery: 3 };
@@ -139,10 +147,10 @@ export const FILE_FOR: Record<IndustryType, string> = {
   brewery: 'brewery',
 };
 /** empty-slot art: the painting cut out on transparency (no baked backdrop) */
-const CUT_FOR = (i: IndustryType): string => `/tile-${FILE_FOR[i]}-cut.png`;
+const CUT_FOR = (i: IndustryType, ext = 'png'): string => `/tile-${FILE_FOR[i]}-cut.${ext}`;
 /** built works: painting precomposed on the OWNER's colour, like the
  *  physical game — the whole tile card is the ownership marker */
-const BUILT_FOR = (i: IndustryType, color: string): string => `/tile-${FILE_FOR[i]}-${color}.png`;
+const BUILT_FOR = (i: IndustryType, color: string, ext = 'png'): string => `/tile-${FILE_FOR[i]}-${color}.${ext}`;
 
 export interface SlotView {
   ring: Graphics; // unused by towns (kept for the ticker's alpha write)
@@ -354,10 +362,10 @@ function loadIndustryArt(v: TileVariant | undefined, i: IndustryType): Promise<I
         const face: Texture = await Assets.load(dir + v.whole.file(i));
         return artFrom(face, every(face), every(grainTexture(face)));
       }
-      const loaded = await Assets.load([dir + CUT_FOR(i), ...colorNames.map((c) => dir + BUILT_FOR(i, c))]);
-      const built = Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c)]])) as Record<string, Texture>;
+      const loaded = await Assets.load([dir + CUT_FOR(i, v?.ext), ...colorNames.map((c) => dir + BUILT_FOR(i, c, v?.ext))]);
+      const built = Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c, v?.ext)]])) as Record<string, Texture>;
       const builtGrain = Object.fromEntries(colorNames.map((c) => [c, grainTexture(built[c])])) as Record<string, Texture>;
-      return artFrom(loaded[dir + CUT_FOR(i)], built, builtGrain);
+      return artFrom(loaded[dir + CUT_FOR(i, v?.ext)], built, builtGrain);
     })();
     artCache.set(key, p);
   }
