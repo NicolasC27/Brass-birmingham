@@ -735,6 +735,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           } else p.onInvalid(key, cands[0]?.reason ?? tr('board.invalid.tileCard'));
           return;
         }
+        if (m.isBuilding && st().buildPick) {
+          /* a click on the open map lets the picked slot go, like Escape
+             would — the card and the action stay chosen */
+          st().pickBuild(null);
+          return;
+        }
         if (m.isSelling && slot) {
           const key = tileKey(slot.town.id, slot.si);
           const t = p.sellTargetsList.find((x) => tileKey(x.town, x.slot) === key);

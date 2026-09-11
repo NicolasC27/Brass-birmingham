@@ -1047,43 +1047,44 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           frame.roundRect(x - TILE_HALF + 1, y - TILE_HALF + 4, TILE - 2, TILE, 7).fill({ color: 0x000000, alpha: 0.42 });
           frame.roundRect(x - TILE_HALF, y - TILE_HALF + 2.5, TILE, TILE, 6).fill(shade(col, 0.42));
           if (tile.flipped) {
-            /* flipped = muted player-colour back (soft vertical shading,
-               dark VP numeral) — same printed feel as the built cards */
-            /* the painting STAYS (dimmed under a wash of the owner colour) so a
-               flipped mill still reads as a mill; the VP sits on a dark plate */
-            art.texture = (look.cardGrain ? tileSet.builtGrain : tileSet.built)[tile.industry][colorName] ?? tileSet.cut[tile.industry];
+            /* flipped = the works has paid out: the painting stays as a sepia
+               engraving over the owner's colour, so a flipped mill still
+               reads as a mill, and the score sits in the middle on a brass
+               token, stamped like a counter laid on the card. The owner's
+               rim stays, quieter. */
+            art.texture = tileSet.print[tile.industry] ?? tileSet.cut[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
             art.width = TILE;
             art.height = TILE;
-            sv.artBase = 0.55;
+            sv.artBase = 0.42;
             art.alpha = sv.artBase;
             art.visible = true;
-            frame
-              .roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6)
-              .stroke({ width: 1.5, color: shade(col, 0.4), alpha: 0.9 });
-            const wash = new Graphics().roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill({ color: shade(col, 0.6), alpha: 0.35 });
-            wash.eventMode = 'none';
-            const rim = new Graphics().roundRect(x - TILE_HALF + 3, y - TILE_HALF + 3, TILE - 6, TILE - 6, 4.5).stroke({ width: 1.5, color: 0xa6562b, alpha: 0.9 });
-            rim.eventMode = 'none';
-            const plate = new Graphics().roundRect(x - 15, y + TILE_HALF - 24, 30, 21, 4).fill({ color: 0x100d0b, alpha: 0.82 }).stroke({ width: 0.8, color: 0xa6562b, alpha: 0.8 });
-            plate.eventMode = 'none';
+            extras.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col, alpha: 0.6 });
+            extras.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
+            /* the token: a brass coin, dark face, milled edge, the score stamped */
+            const R = 14;
+            const token = new Graphics();
+            token.circle(x + 1, y + 2, R).fill({ color: 0x000000, alpha: 0.4 });
+            token.circle(x, y, R).fill(0x2a2118).stroke({ width: 2, color: 0xc9a45c });
+            token.circle(x, y, R - 3).stroke({ width: 0.8, color: 0xc9a45c, alpha: 0.55 });
+            token.eventMode = 'none';
             const vpText = new Text({
               text: String(lv.vp),
-              style: { fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: '900', fill: 0xe8b26a },
+              style: { fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: '900', fill: 0xe8c47a },
             });
             vpText.anchor.set(0.5);
-            vpText.position.set(x, y + TILE_HALF - 15.5);
+            vpText.position.set(x, y - 2);
             vpText.eventMode = 'none';
             const vpLabel = new Text({
               text: tr('board.tile.vp'),
-              style: { fontFamily: "'Archivo', sans-serif", fontSize: 6, fontWeight: '600', letterSpacing: 1.2, fill: 0xa6562b },
+              style: { fontFamily: "'Archivo', sans-serif", fontSize: 5.5, fontWeight: '700', letterSpacing: 1.4, fill: 0xc9a45c },
             });
             vpLabel.anchor.set(0.5);
-            vpLabel.position.set(x, y + TILE_HALF - 5.5);
+            vpLabel.position.set(x, y + 7.5);
             vpLabel.eventMode = 'none';
-            badges.addChild(wash, rim, plate, vpText, vpLabel);
+            badges.addChild(token, vpText, vpLabel);
             if (look.colorBlind && look.sealTiles) drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
             /* level pips, dark on the muted card */
             for (let i = 0; i < tile.level; i++) {
