@@ -26,7 +26,7 @@ export const INDUSTRY_COLOR: Record<IndustryType, string> = {
   brewery: '#4E7A4E',
 };
 
-export const TILE = 62;
+export const TILE = 68;
 export const TILE_HALF = TILE / 2;
 /** gap between adjacent slot tiles inside a cluster (v13: 6 → 5) */
 export const TILE_GAP = 5;
