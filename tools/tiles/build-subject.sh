@@ -52,16 +52,19 @@ for combo in $COMBOS; do
   [[ $ka == manufacture ]] && ka=manufacturer
   [[ $kb == manufacture ]] && kb=manufacturer
   if [[ "$ka" < "$kb" ]]; then OUT="tile-combo-$ka-$kb"; else OUT="tile-combo-$kb-$ka"; fi
-  # the partner behind: smaller, up and to the right
-  magick "$T/$BACK.png" -resize 62% "$T/back.png"
-  # the front: larger, low and to the left
-  magick "$T/$FRONT.png" -resize 78% "$T/front.png"
-  # a soft ground shadow under both, so the two sit in one yard
-  magick -size 512x512 xc:none -fill '#0000004d' -draw 'ellipse 250,432 200,34 0,360' -blur 0x18 "$T/ground.png"
+  # Side by side rather than one behind the other: at a tile's size on
+  # screen both industries must be recognisable, and depth stacking hid
+  # whichever stood at the back. They overlap by a seventh, the front one
+  # low and left, the partner a little higher and to the right.
+  magick "$T/$BACK.png" -resize 58% "$T/back.png"
+  magick "$T/$FRONT.png" -resize 58% "$T/front.png"
+  # a soft ground shadow under each, so the two stand in one yard
+  magick -size 512x512 xc:none -fill '#00000052' \
+    -draw 'ellipse 148,462 132,26 0,360' -draw 'ellipse 356,404 120,24 0,360' -blur 0x16 "$T/ground.png"
   magick -size 512x512 xc:none \
-    "$T/back.png" -geometry +190+18 -compose Over -composite \
+    "$T/back.png" -geometry +215+66 -compose Over -composite \
     "$T/ground.png" -compose Over -composite \
-    "$T/front.png" -geometry +6+106 -compose Over -composite \
+    "$T/front.png" -geometry +0+180 -compose Over -composite \
     -depth 8 "${Q[@]}" "$P/$OUT.webp"
   echo "  $OUT"
 done
