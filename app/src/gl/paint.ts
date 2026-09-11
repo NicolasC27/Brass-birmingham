@@ -40,18 +40,6 @@ export interface TileVariant {
    *  for the slot taking either of two industries lives. Without it the
    *  board assembles the two cutouts (composePair). */
   pair?: (a: IndustryType, b: IndustryType) => string;
-  /** a set whose art is already finished: the backdrop belongs to the
-   *  painting, so there is no cutout to lay on a card and no per-owner
-   *  cards — the owner's colour is the rim the board draws around it —
-   *  and the dual slots are painted as one scene, not assembled. */
-  whole?: WholeSet;
-}
-/** where a finished set keeps its paintings */
-export interface WholeSet {
-  /** one industry's painting */
-  file: (i: IndustryType) => string;
-  /** the painting of a slot that takes either of two industries */
-  pair: (a: IndustryType, b: IndustryType) => string;
 }
 /** the front industry of a dual-slot painting: whole, or cropped to its
  *  tallest part (x, width in the 512 square), scaled; partners may be
@@ -61,15 +49,6 @@ interface FrontRecipe {
   scale: number;
   partnerX?: Partial<Record<IndustryType, number>>;
 }
-/** The painted set: a finished painting for each industry and one for each
- *  of the eight dual slots the board actually has, so nothing is assembled
- *  and nothing is missing. It is every industry's first variant — the set
- *  the game opens with — and the flat drawings stay a click away. */
-const PAINTED: WholeSet = {
-  file: (i) => `/tile-${FILE_FOR[i]}-v3.webp`,
-  pair: (a, b) => `/tile-combo-${pairKey(a, b)}.webp`,
-};
-const painted = (front: FrontRecipe): TileVariant => ({ id: 'painted', dir: '/v3', front, whole: PAINTED });
 /** The painted subjects, cut out on transparency: the same hand as the
  *  painted set, but with no backdrop of their own, so an owner's colour
  *  shows through the card and the slot grid keeps its printed look.
@@ -78,22 +57,22 @@ const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
-    painted({ scale: 64 }), subject({ scale: 64 }),
+    subject({ scale: 64 }),
     { id: 'wagon', dir: '', front: { scale: 64 } },
     { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
     { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
-  iron: [painted({ scale: 70 }), subject({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
-  cotton: [painted({ scale: 70 }), subject({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
+  iron: [subject({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
+  cotton: [subject({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
   manufacturer: [
-    painted({ scale: 62 }), subject({ scale: 62 }),
+    subject({ scale: 62 }),
     { id: 'crate', dir: '', front: { scale: 62 } },
     { id: 'parcels', dir: '/tiles-classic', front: { scale: 62 } },
     { id: 'manufactory', dir: '/tiles-works', front: { crop: [10, 300], scale: 84, partnerX: { cotton: 160, iron: 160, pottery: 160 } } },
   ],
-  pottery: [painted({ scale: 70 }), subject({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
+  pottery: [subject({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
   brewery: [
-    painted({ scale: 60 }), subject({ scale: 60 }),
+    subject({ scale: 60 }),
     { id: 'barrel', dir: '', front: { scale: 60 } },
     { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },
     { id: 'brewhouse', dir: '/tiles-works', front: { crop: [40, 305], scale: 80, partnerX: { cotton: 160, iron: 160 } } },
@@ -107,10 +86,10 @@ const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefined => TI
  *  very same image the board does) */
 export const tileFaceUrl = (i: IndustryType, art: TileArt, color: string): string => {
   const v = variantOf(i, art);
-  return v?.whole ? v.dir + v.whole.file(i) : (v?.dir ?? '') + BUILT_FOR(i, color, v?.ext);
+  return (v?.dir ?? '') + BUILT_FOR(i, color, v?.ext);
 };
 /** the face one variant shows for an industry — its cutout, or its painting */
-export const variantFaceUrl = (v: TileVariant, i: IndustryType): string => (v.whole ? v.dir + v.whole.file(i) : v.dir + CUT_FOR(i, v.ext));
+export const variantFaceUrl = (v: TileVariant, i: IndustryType): string => v.dir + CUT_FOR(i, v.ext);
 /** which of two industries stands in front of a dual-slot painting, and
  *  how the one behind is placed (tools/tiles/build-tile.sh says the same) */
 const FRONT_RANK: Record<IndustryType, number> = { brewery: 0, coal: 1, manufacturer: 2, cotton: 3, iron: 3, pottery: 3 };
@@ -361,11 +340,6 @@ function loadIndustryArt(v: TileVariant | undefined, i: IndustryType): Promise<I
   if (!p) {
     p = (async () => {
       const colorNames = Object.keys(PLAYER_COLORS);
-      const every = (t: Texture) => Object.fromEntries(colorNames.map((c) => [c, t])) as Record<string, Texture>;
-      if (v?.whole) {
-        const face: Texture = await Assets.load(dir + v.whole.file(i));
-        return artFrom(face, every(face), every(grainTexture(face)));
-      }
       const loaded = await Assets.load([dir + CUT_FOR(i, v?.ext), ...colorNames.map((c) => dir + BUILT_FOR(i, c, v?.ext))]);
       const built = Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c, v?.ext)]])) as Record<string, Texture>;
       const builtGrain = Object.fromEntries(colorNames.map((c) => [c, grainTexture(built[c])])) as Record<string, Texture>;
@@ -389,8 +363,8 @@ function loadUrl(url: string): Promise<Texture | null> {
 
 /** fetch (once, tolerantly) a dual-slot painting painted as one scene rather
  *  than assembled: a finished set's own, or the default set's */
-function loadPair(a: IndustryType, b: IndustryType, from?: { dir: string; whole: WholeSet }): Promise<Texture | null> {
-  const url = from ? from.dir + from.whole.pair(a, b) : `/tile-${pairFile(a, b)}-cut.png`;
+function loadPair(a: IndustryType, b: IndustryType): Promise<Texture | null> {
+  const url = `/tile-${pairFile(a, b)}-cut.png`;
   let p = pairCache.get(url);
   if (!p) {
     p = Assets.load(url).catch(() => null) as Promise<Texture | null>;
@@ -442,22 +416,11 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
       const key = `${va?.id ?? ''}|${a}|${vb?.id ?? ''}|${b}`;
       let t: Texture | null | undefined = composedCache.get(key);
       if (!t) {
-        /* both industries on the same finished set: it has painted this very
-           slot. Both on the default set: that one has its own scenes too.
-           Anything mixed is assembled from the two cutouts — and a finished
-           painting cannot be assembled, so those fall to the half-split. */
-        const together = va?.whole && vb?.whole && va.dir === vb.dir ? { dir: va.dir, whole: va.whole } : null;
-        /* a set that paints its own dual slots, both industries on it */
-        const sameSet = !together && va && vb && va.id === vb.id && va.pair ? va.dir + va.pair(a, b) : null;
-        t = together
-          ? await loadPair(a, b, together)
-          : sameSet
-            ? await loadUrl(sameSet)
-            : !va?.dir && !vb?.dir
-              ? await loadPair(a, b)
-              : va?.whole || vb?.whole
-                ? null
-                : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
+        /* both industries on a set that paints this very slot: its scene.
+           Both on the default set: that one has its own scenes too.
+           Anything mixed is assembled from the two cutouts. */
+        const sameSet = va && vb && va.id === vb.id && va.pair ? va.dir + va.pair(a, b) : null;
+        t = sameSet ? await loadUrl(sameSet) : !va?.dir && !vb?.dir ? await loadPair(a, b) : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
         if (t) composedCache.set(key, t);
       }
       if (!t) return;

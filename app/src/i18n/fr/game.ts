@@ -103,7 +103,7 @@ const fr: typeof engame = {
     tileArt: 'Dessin par industrie',
     tileArtHint: 'Chaque industrie qui a plusieurs dessins se choisit ici.',
     industry: { coal: 'Mine de charbon', iron: 'Forge', cotton: 'Filature', manufacturer: 'Manufacture', pottery: 'Poterie', brewery: 'Brasserie' },
-    variant: { v3: 'Tuiles v3', crate: 'Caisse de marchandises', parcels: 'Caisse d’origine', manufactory: 'Manufacture', wagon: 'Wagonnet', cart: 'Chariot d’origine', colliery: 'Chevalement', barrel: 'Tonneau', mug: 'Tonneau et chope', brewhouse: 'Brasserie', painted: 'Jeu peint', mill: 'Filature', foundry: 'Fonderie', kiln: 'Four-bouteille' },
+    variant: { v3: 'Tuiles v3', crate: 'Caisse de marchandises', parcels: 'Caisse d’origine', manufactory: 'Manufacture', wagon: 'Wagonnet', cart: 'Chariot d’origine', colliery: 'Chevalement', barrel: 'Tonneau', mug: 'Tonneau et chope', brewhouse: 'Brasserie', mill: 'Filature', foundry: 'Fonderie', kiln: 'Four-bouteille' },
     slotArt: 'Cases vides',
     slotArtHint: 'Gravées, seules les tuiles posées sont en couleur.',
     slot: { engraved: 'Gravure sépia', painted: 'Peinture couleur' },
