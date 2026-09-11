@@ -1,41 +1,68 @@
 #!/usr/bin/env bash
-# Tile art from a painted subject: take a 512x512 transparent PNG and derive
-# every file the board loads from it (ImageMagick 7). Run from the repository
-# root, naming the directory the subjects sit in and the style directory to
-# write:
+# Tile art from a painted subject: take a 512x512 transparent PNG per
+# industry and derive every file the board loads (ImageMagick 7). Run from
+# the repository root:
 #   ./tools/tiles/build-subject.sh tools/tiles/subjects tiles-v3
 # Written per industry:
 #   tile-<i>-cut.webp          transparent cutout (empty slots, merchants)
 #   tile-<i>.webp              cutout on the dark tile ground
-#   tile-<i>-<colour>.webp     owner-colour card: 8 px dark rim, colour ground,
-#                              dark outline around the painting
-# Painted subjects do not compress as PNG (a third of a megabyte each), so
-# this set is written as WebP; a variant declares its format in paint.ts.
-# Dual-slot paintings are not written: the board composes those itself from
-# whichever two paintings are in play (paint.ts composePair).
+#   tile-<i>-<colour>.webp     owner-colour card: the painting full bleed on
+#                              the owner's ground, no rim of its own — the
+#                              board draws the card body and its shadow
+# and per dual slot the board actually has:
+#   tile-combo-<a>-<b>.webp    the two industries painted as one yard, the
+#                              front one low and left, the other behind
+# The subject fills the square: the board masks the card to its rounded
+# corners, so nothing is lost and the painting reads at every zoom. Painted
+# art does not compress as PNG, a third of a megabyte apiece, so the set is
+# written as WebP; a variant declares its format in paint.ts.
 set -euo pipefail
-SRC=${1:-tools/tiles/subjects}  # directory holding subject-<name>-512.png
+SRC=${1:-tools/tiles/subjects}
 STYLE=${2:?style directory under app/public}
 P="app/public/$STYLE"
+Q=(-quality 82 -define webp:method=6)
 mkdir -p "$P"
 T=$(mktemp -d)
 trap 'rm -rf "$T"' EXIT
 shade() { python3 -c "import sys;h=sys.argv[1].lstrip('#');f=float(sys.argv[2]);print('#%02x%02x%02x'%tuple(min(255,round(int(h[i:i+2],16)*f)) for i in (0,2,4)))" "$1" "$2"; }
+
+# --- one painting per industry, filling the square -------------------
 for NAME in coal iron cotton manufacture pottery brewery; do
   SUBJECT="$SRC/subject-$NAME-512.png"
   [[ -f "$SUBJECT" ]] || { echo "missing $SUBJECT" >&2; exit 1; }
-  # trimmed, then set back in the square at 92% so the rim of a built card
-  # never cuts the painting
-  magick "$SUBJECT" -trim +repage -resize 471x471\> -background none -gravity center -extent 512x512 -depth 8 "$T/art.png"
-  magick "$T/art.png" -quality 82 -define webp:method=6 "$P/tile-$NAME-cut.webp"
-  magick "$T/art.png" -background '#252629' -flatten -quality 82 -define webp:method=6 "$P/tile-$NAME.webp"
-  magick "$T/art.png" -alpha extract -morphology Dilate Disk:4 "$T/mask.png"
-  magick -size 512x512 xc:'#0a0806' "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/outline.png"
+  magick "$SUBJECT" -trim +repage -resize 512x512 -background none -gravity center -extent 512x512 -depth 8 "$T/$NAME.png"
+  magick "$T/$NAME.png" "${Q[@]}" "$P/tile-$NAME-cut.webp"
+  magick "$T/$NAME.png" -background '#252629' -flatten "${Q[@]}" "$P/tile-$NAME.webp"
   for pair in brass:#C9A45C oxblood:#9E3B30 verdigris:#3F7A55 steel:#4E6E8E; do
     n=${pair%%:*}; h=${pair##*:}
-    magick -size 496x496 "radial-gradient:$(shade "$h" 0.80)-$(shade "$h" 0.74)" -gravity center -background "$(shade "$h" 0.42)" -extent 512x512 \
-      "$T/outline.png" -compose Over -composite "$T/art.png" -composite -quality 82 -define webp:method=6 "$P/tile-$NAME-$n.webp"
+    magick -size 512x512 "radial-gradient:$(shade "$h" 0.80)-$(shade "$h" 0.68)" \
+      "$T/$NAME.png" -compose Over -composite "${Q[@]}" "$P/tile-$NAME-$n.webp"
   done
   echo "  $NAME"
+done
+
+# --- the dual slots, as one scene ------------------------------------
+# front:back — the front industry is the one with a face, the partner
+# stands behind it and to the right (paint.ts FRONT_RANK says the same)
+COMBOS="brewery:cotton brewery:iron brewery:manufacture coal:cotton coal:manufacture manufacture:cotton manufacture:iron iron:pottery"
+for combo in $COMBOS; do
+  FRONT=${combo%%:*}; BACK=${combo##*:}
+  # the file is named by the industry KEYS, sorted (paint.ts pairKey)
+  ka=$FRONT; kb=$BACK
+  [[ $ka == manufacture ]] && ka=manufacturer
+  [[ $kb == manufacture ]] && kb=manufacturer
+  if [[ "$ka" < "$kb" ]]; then OUT="tile-combo-$ka-$kb"; else OUT="tile-combo-$kb-$ka"; fi
+  # the partner behind: smaller, up and to the right
+  magick "$T/$BACK.png" -resize 62% "$T/back.png"
+  # the front: larger, low and to the left
+  magick "$T/$FRONT.png" -resize 78% "$T/front.png"
+  # a soft ground shadow under both, so the two sit in one yard
+  magick -size 512x512 xc:none -fill '#0000004d' -draw 'ellipse 250,432 200,34 0,360' -blur 0x18 "$T/ground.png"
+  magick -size 512x512 xc:none \
+    "$T/back.png" -geometry +190+18 -compose Over -composite \
+    "$T/ground.png" -compose Over -composite \
+    "$T/front.png" -geometry +6+106 -compose Over -composite \
+    -depth 8 "${Q[@]}" "$P/$OUT.webp"
+  echo "  $OUT"
 done
 echo "subject tile art written to $P"
