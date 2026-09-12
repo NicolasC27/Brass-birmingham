@@ -1,4 +1,4 @@
-import { Assets, Container, FillGradient, Graphics, NineSliceSprite, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { Assets, Container, FillGradient, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { INDUSTRIES, LINKS, MERCHANTS, PLAYER_COLORS, TOWNS } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { routeFor } from '@/components/game/routePaths';
@@ -6,6 +6,7 @@ import { merchantOpen, tileKey } from '@/game/engine';
 import { tr } from '@/i18n';
 import type { GameState, IndustryType, LinkDef } from '@/game/types';
 import { RIBBON_FONT, RIBBON_H, TILE, TILE_HALF, townChrome } from '@/components/game/townChrome';
+import { HOUSES } from './houses';
 
 /* ------------------------------------------------------------------ */
 /* paint.ts — WebGL scene graph for the board, at visual parity with   */
@@ -218,11 +219,9 @@ const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}
 const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pairs, `${a}-${b}`
 let tileSet: TileSet; // the set currently painted
 let barrelTex: Texture;
-let boatTex: Texture; // night barge — the merchants' default framed painting
-let frameTex: Texture; // the gilded frame every merchant house wears, cut in nine
 /* one painting per merchant when /merchant-<id>.png exists (e.g. Gloucester
    docks); the shared barge otherwise */
-const merchantArt = new Map<string, Texture>();
+const houseArt = new Map<string, Texture>();
 let villageTex: Texture;
 
 /** canonical key for a dual-industry slot painting */
@@ -446,18 +445,16 @@ function engravedPair(key: string, t: Texture): Texture {
 
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
-  const urls = ['/beer-barrel.png', '/merchant-boat.webp', '/merchant-frame.webp', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
+  const urls = ['/beer-barrel.png', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
   const loaded = await Assets.load(urls);
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
-  boatTex = loaded['/merchant-boat.webp'];
-  frameTex = loaded['/merchant-frame.webp'];
   await Promise.all(
     MERCHANTS.map(async (m) => {
       try {
-        merchantArt.set(m.id, await Assets.load(`/merchant-${m.id.replace(/^m-/, '')}.webp`));
+        houseArt.set(m.id, await Assets.load(`/merchant-house-${m.id.replace(/^m-/, '')}.webp`));
       } catch {
-        /* no dedicated painting for this merchant: the barge is used */
+        /* no sign painted for this house: it is not drawn */
       }
     }),
   );
@@ -608,7 +605,8 @@ function makeRibbon(labelText: string, cx: number, cy: number, w: number, h: num
 
 /** A brass nameplate, the kind screwed to a gallery frame: dark face,
  *  double brass fillet, a screw at each end, the name engraved in cream.
- *  Counter-scaled with the town ribbons so it reads at every zoom. */
+ *  It sits over the plate painted on the sign, so the name reads at every
+ *  zoom: counter-scaled with the town ribbons. */
 function makeNameplate(labelText: string, cx: number, cy: number): Container {
   const box = new Container();
   box.position.set(cx, cy);
@@ -669,42 +667,34 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   }
 
   /* ---------------------------- merchants ---------------------------- */
-  /* The international market: a small FRAMED PAINTING (a night barge on   */
-  /* the canal) in a dark wood frame with a brass bevel. In front of it,   */
-  /* one physical tile per printed slot — the dealt merchant tile with the */
-  /* same painted industry face as the town slots — and the beer barrel   */
-  /* standing at each tile's foot. On the right, a brass bonus medallion.  */
-  /* Everything that changes (tiles, barrels, claimed, closed) is redrawn  */
-  /* in drawMerchants.                                                      */
-  const PLATE_H = 100;
-  const MT = 42; // merchant tile size
-  const MT_GAP = 13;
-  const MEDAL_R = 22;
-  const PAD = 20;
-  /** the gilded frame's border on the plate, and how far its carving
-   *  reaches past the plate's edge */
-  const FRAME_IN = 14;
-  const FRAME_OUT = 4;
-  const TILE_TOP = -PLATE_H / 2 + 18;
-  const plateWidth = (slots: number) => PAD + slots * MT + (slots - 1) * MT_GAP + 18 + MEDAL_R * 2 + PAD;
+  /* The merchant houses: each one a painted SIGN — gilded frame, the quay
+     at dusk, the name on a brass plate, a blank brass medallion — served as
+     one picture (tools/assets/build-houses.py). In front of the painting,
+     one physical tile per printed slot and the beer barrel at its foot; on
+     the medallion, the bonus engraved. Everything that changes (tiles,
+     barrels, claimed, closed) is redrawn in drawMerchants.               */
+  const SIGN_W = 236; // every sign the same width; its height follows the picture
+  const MT = 40; // merchant tile size
+  const MT_GAP = 10;
   const merchantBeer = new Map<string, Container>();
-  const merchantDyn = new Map<
-    string,
-    { plate: Container; halo: Graphics; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; medalX: number }
-  >();
+  const merchantDyn = new Map<string, { plate: Container; halo: Graphics; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; tileTop: number }>();
   const ribbons: Container[] = [];
   for (const m of MERCHANTS) {
-    const W = plateWidth(m.slots);
+    const id = m.id.replace(/^m-/, '');
+    const house = HOUSES[id];
+    const tex = houseArt.get(m.id);
+    if (!house || !tex) continue;
+    const W = SIGN_W;
+    const H = W / house.aspect;
     const plate = new Container();
     /* southern merchants (Oxford, Gloucester) sit on the map's bottom edge:
-       their plate rides 34 units above the node so the hand dock never hides it */
+       their sign rides 34 units above the node so the hand dock never hides it */
     const south = m.y > 1500;
     plate.position.set(m.x, m.y - (south ? 34 : 0));
-    plate.scale.set(1.3);
+    plate.scale.set(1.45);
     plate.eventMode = 'none';
 
-    /* a warm light behind an open house, like a lit shopfront — three soft
-       rounds of gold, faint, widening */
+    /* a warm light behind an open house, like a lit shopfront */
     const halo = new Graphics();
     halo.eventMode = 'none';
     for (const [k, a] of [
@@ -712,86 +702,44 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       [16, 0.07],
       [8, 0.1],
     ] as const) {
-      halo.roundRect(-W / 2 - k, -PLATE_H / 2 - k, W + 2 * k, PLATE_H + 2 * k, 14 + k).fill({ color: 0xf0c060, alpha: a });
+      halo.roundRect(-W / 2 - k, -H / 2 - k, W + 2 * k, H + 2 * k, 14 + k).fill({ color: 0xf0c060, alpha: a });
     }
-    plate.addChild(halo);
+    const shadow = new Graphics().roundRect(-W / 2 + 4, -H / 2 + 8, W, H, 6).fill({ color: 0x000000, alpha: 0.55 });
+    shadow.eventMode = 'none';
+    const sign = new Sprite(tex);
+    sign.anchor.set(0.5);
+    sign.width = W;
+    sign.height = H;
+    sign.eventMode = 'none';
+    plate.addChild(halo, shadow, sign);
 
-    /* drop shadow and a dark ground under the painting */
-    const frame = new Graphics();
-    frame.eventMode = 'none';
-    frame.roundRect(-W / 2 + 4, -PLATE_H / 2 + 8, W, PLATE_H, 10).fill({ color: 0x000000, alpha: 0.55 });
-    frame.roundRect(-W / 2, -PLATE_H / 2, W, PLATE_H, 8).fill(0x1a120a);
-    plate.addChild(frame);
-
-    /* the painting, masked to the inner frame, darkened toward the bottom so
-       the tiles and barrels in front of it stay crisp */
-    const artTex = merchantArt.get(m.id) ?? boatTex;
-    const art = new Sprite(artTex);
-    const innerW = W - 2 * (FRAME_IN - 5);
-    const innerH = PLATE_H - 2 * (FRAME_IN - 5);
-    const scale = Math.max(innerW / artTex.width, innerH / artTex.height);
-    art.width = artTex.width * scale;
-    art.height = artTex.height * scale;
-    art.anchor.set(0.5, 0.42);
-    art.position.set(0, 0);
-    art.eventMode = 'none';
-    const artMaskG = new Graphics().roundRect(-W / 2 + FRAME_IN - 5, -PLATE_H / 2 + FRAME_IN - 5, innerW, innerH, 4).fill(0xffffff);
-    art.mask = artMaskG;
-    const veil = new Graphics();
-    const veilGrad = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
-    veilGrad.addColorStop(0, 'rgba(10,8,6,0.02)').addColorStop(0.55, 'rgba(10,8,6,0.3)').addColorStop(1, 'rgba(10,8,6,0.66)');
-    veil.roundRect(-W / 2 + FRAME_IN - 5, -PLATE_H / 2 + FRAME_IN - 5, innerW, innerH, 4).fill(veilGrad);
-    veil.eventMode = 'none';
-    plate.addChild(artMaskG, art, veil);
-    /* the gilded frame, a painting of one cut in nine: the carved corners
-       keep their shape, the plain bands between them stretch to the house's
-       width. Its border is FRAME_IN wide on the plate. */
-    const gilt = new NineSliceSprite({ texture: frameTex, leftWidth: 121, topHeight: 121, rightWidth: 121, bottomHeight: 121 });
-    const fk = FRAME_IN / 121;
-    gilt.scale.set(fk);
-    gilt.width = (W + 2 * FRAME_OUT) / fk;
-    gilt.height = (PLATE_H + 2 * FRAME_OUT) / fk;
-    gilt.position.set(-W / 2 - FRAME_OUT, -PLATE_H / 2 - FRAME_OUT);
-    gilt.eventMode = 'none';
-    plate.addChild(gilt);
-
-    /* tile shelves (static): a faint recess where each merchant tile sits */
+    /* tile shelves (static): a faint recess where each merchant tile sits,
+       low and left on the painting */
     const slotX: number[] = [];
-    const x0 = -W / 2 + PAD + MT / 2;
+    const x0 = -W / 2 + W * 0.09 + MT / 2;
+    const tileTop = -H * 0.14;
     const shelf = new Graphics();
     shelf.eventMode = 'none';
     for (let i = 0; i < m.slots; i++) {
       const x = x0 + i * (MT + MT_GAP);
       slotX.push(x);
-      shelf.roundRect(x - MT / 2 - 2, TILE_TOP - 2, MT + 4, MT + 4, 6).fill({ color: 0x000000, alpha: 0.35 }).stroke({ width: 0.8, color: 0xc9a45c, alpha: 0.35 });
+      shelf.roundRect(x - MT / 2 - 2, tileTop - 2, MT + 4, MT + 4, 6).fill({ color: 0x000000, alpha: 0.4 }).stroke({ width: 0.8, color: 0xc9a45c, alpha: 0.35 });
     }
-    /* the counter the barrels stand on: a brass ledge under the tiles */
-    const ledgeL = -W / 2 + PAD - 6;
-    const ledgeR = x0 + (m.slots - 1) * (MT + MT_GAP) + MT / 2 + 12;
-    const ledgeY = TILE_TOP + MT + 13;
-    shelf.roundRect(ledgeL, ledgeY, ledgeR - ledgeL, 3, 1.5).fill(0xc9a45c);
-    shelf.roundRect(ledgeL, ledgeY + 3, ledgeR - ledgeL, 2.5, 1).fill({ color: 0x000000, alpha: 0.45 });
     plate.addChild(shelf);
 
-    /* bonus medallion: brass disc, double ring, engraved caption */
-    const medalX = W / 2 - PAD - MEDAL_R;
-    const medalY = -6;
-    const medalG = new Graphics();
-    medalG.eventMode = 'none';
-    medalG.circle(medalX + 1.5, medalY + 2.5, MEDAL_R).fill({ color: 0x000000, alpha: 0.5 });
-    const brass = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
-    brass.addColorStop(0, '#F0D89A').addColorStop(0.45, '#C9A45C').addColorStop(1, '#7E5F28');
-    medalG.circle(medalX, medalY, MEDAL_R).fill(brass).stroke({ width: 1.4, color: 0x4a3618 });
-    medalG.circle(medalX, medalY, MEDAL_R - 3.5).stroke({ width: 1, color: 0x5a4520, alpha: 0.9 });
-    medalG.circle(medalX, medalY, MEDAL_R - 1.6).stroke({ width: 0.8, color: 0xfff3c8, alpha: 0.55 });
+    /* the bonus, engraved on the sign's own medallion */
+    const medalX = (house.medal[0] - 0.5) * W;
+    const medalY = (house.medal[1] - 0.5) * H;
+    const medalR = house.medal[2] * W;
     const cap = new Text({
       text: tr('board.merchant.bonus').toUpperCase(),
       style: { fontFamily: "'Archivo',sans-serif", fontSize: 6.5, fontWeight: '700', letterSpacing: 1.8, fill: 0xe8c87a },
     });
     cap.anchor.set(0.5);
-    cap.position.set(medalX, PLATE_H / 2 - 12);
+    cap.position.set(medalX, medalY + medalR + 7);
     cap.eventMode = 'none';
-    plate.addChild(medalG, cap);
+    /* only where it fits between the medallion and the frame's bottom band */
+    if (medalY + medalR + 12 < H / 2 - 8) plate.addChild(cap);
 
     const slots = new Container();
     slots.eventMode = 'none';
@@ -801,7 +749,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     const words = m.bonusLabel.split(' ');
     const big = words.length > 1 ? words[0] : m.bonusLabel;
     const small = words.length > 1 ? words.slice(1).join(' ') : '';
-    const bigFont = big.length <= 3 ? 15 : big.length <= 5 ? 12.5 : big.length <= 6 ? 9.5 : 8.5;
+    const bigFont = Math.min(medalR * 0.95, big.length <= 3 ? 17 : big.length <= 5 ? 14 : big.length <= 6 ? 11 : 9.5);
     const engrave = (text: string, size: number, y: number, serif: boolean) => {
       const style = serif
         ? { fontFamily: "'Playfair Display',serif", fontSize: size, fontWeight: '900' as const }
@@ -818,15 +766,15 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       medal.addChild(under, main);
     };
     if (small) {
-      engrave(big, bigFont, medalY - 3.5, true);
-      engrave(small.toUpperCase(), 6, medalY + 7.5, false);
+      engrave(big, bigFont, medalY - 4, true);
+      engrave(small.toUpperCase(), 6.5, medalY + 8, false);
     } else {
       engrave(big, bigFont, medalY, true);
     }
     /* claimed: the medallion is spent — dark wash and a cream check */
     const claimed = new Container();
     claimed.eventMode = 'none';
-    const wash = new Graphics().circle(medalX, medalY, MEDAL_R).fill({ color: 0x100d0b, alpha: 0.62 });
+    const wash = new Graphics().circle(medalX, medalY, medalR).fill({ color: 0x100d0b, alpha: 0.62 });
     const tick = new Text({ text: '✓', style: { fontFamily: "'Archivo',sans-serif", fontSize: 18, fontWeight: '900', fill: 0xf4ecd8 } });
     tick.anchor.set(0.5);
     tick.position.set(medalX, medalY);
@@ -843,19 +791,18 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     stamp.rotation = -0.12;
     const stampBox = new Graphics().roundRect(-stamp.width / 2 - 7, -stamp.height / 2 - 2, stamp.width + 14, stamp.height + 4, 3).stroke({ width: 1.8, color: 0xd05a48 });
     stampBox.rotation = -0.12;
+    closed.position.set(-W * 0.12, 0);
     closed.addChild(stampBox, stamp);
     closed.visible = false;
     plate.addChild(slots, medal, claimed, closed);
 
     merchantsLayer.addChild(plate);
     merchantBeer.set(m.id, slots);
-    merchantDyn.set(m.id, { plate, halo, slots, medal, claimed, closed, slotX, medalX });
+    merchantDyn.set(m.id, { plate, halo, slots, medal, claimed, closed, slotX, tileTop });
 
-    /* the brass nameplate on the frame's edge — over it, or under it for the
-       northern houses (Warrington, Nottingham) so the top bar never covers
-       the name */
-    const north = m.y < 400;
-    const box = makeNameplate(m.name.toUpperCase(), m.x, m.y - (south ? 34 : 0) + (north ? 1 : -1) * ((PLATE_H / 2 + FRAME_OUT) * 1.3 - 1));
+    /* the name, legible at every zoom: a counter-scaled brass plate laid over
+       the one painted on the sign's top band */
+    const box = makeNameplate(m.name.toUpperCase(), m.x, m.y - (south ? 34 : 0) - (H / 2 - H * 0.1) * 1.45);
     ribbonsLayer.addChild(box);
     ribbons.push(box);
   }
@@ -1291,6 +1238,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       let barrelIdx = 0;
       /* a physical tile: dark card with a bottom-edge thickness, brass hairline,
          the painted industry face inside */
+      const TILE_TOP = dyn.tileTop;
       const card = (x: number) => {
         const g = new Graphics();
         g.roundRect(x - MT / 2, TILE_TOP + 2, MT, MT, 5).fill(0x0b0806);

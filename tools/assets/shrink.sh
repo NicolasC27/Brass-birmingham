@@ -21,8 +21,7 @@ echo "paintings:"
 for m in map-era-canal map-era-rail map-painted-canal map-painted-rail; do webp "$m" 82 -alpha off; done
 for b in era-canal-banner era-rail-banner hero-diorama hero-vignette; do webp "$b" 82 -alpha off; done
 for t in tex-paper tex-brass tex-coal tex-wood table-felt; do webp "$t" 80 -alpha off; done
-for c in card-back avatar-bot portrait-1 portrait-2 portrait-3 portrait-4 merchant-boat; do webp "$c" 85 -alpha off; done
-for f in "$P"/merchant-*.png; do [[ -f "$f" ]] || continue; s=$(basename "$f" .png); [[ "$s" == merchant-boat ]] && continue; webp "$s" 85 -alpha off; done
+for c in card-back avatar-bot portrait-1 portrait-2 portrait-3 portrait-4; do webp "$c" 85 -alpha off; done
 webp town-village 90
 echo "tiles to 8-bit:"
 n=0
