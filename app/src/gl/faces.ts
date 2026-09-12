@@ -9,8 +9,8 @@ import type { IndustryType } from '@/game/types';
 
 /** stock-badge layouts on built tiles (A-B probe) */
 export type StockStyle = 'counter' | 'big' | 'tag' | 'top' | 'corner';
-/** empty-slot face: sepia engraving printed on the board, the colour painting, or ink on the engraved sheet */
-export type SlotArt = 'engraved' | 'mono' | 'painted' | 'ink';
+/** empty-slot face: sepia engraving printed on the board, or the colour painting */
+export type SlotArt = 'engraved' | 'mono' | 'painted';
 /** income / VP on built cards: one quiet bottom band, or two boxed chips */
 export type ChipStyle = 'band' | 'chips';
 /** Painting variants per industry. Each variant is a directory holding the

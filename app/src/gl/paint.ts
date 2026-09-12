@@ -112,10 +112,6 @@ interface TileSet {
   monoHalfL: Record<IndustryType, Texture>;
   monoHalfR: Record<IndustryType, Texture>;
   monoPair: Record<string, Texture>;
-  ink: Record<IndustryType, Texture>; // the drawing as line engraving, white ink to tint (engraved sheet)
-  inkHalfL: Record<IndustryType, Texture>;
-  inkHalfR: Record<IndustryType, Texture>;
-  inkPair: Record<string, Texture>;
 }
 /** one industry's textures from one variant directory */
 interface IndustryArt {
@@ -130,9 +126,6 @@ interface IndustryArt {
   mono: Texture;
   monoHalfL: Texture;
   monoHalfR: Texture;
-  ink: Texture;
-  inkHalfL: Texture;
-  inkHalfR: Texture;
 }
 const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
 const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pairs, `${a}-${b}`
@@ -234,62 +227,6 @@ function grainTexture(tex: Texture): Texture {
   return Texture.from(c);
 }
 
-/** The ink set for the engraved sheet: the drawing redone as a copperplate
- *  engraving — outlines where the flat colours meet, diagonal hatching in
- *  the dark tones, crossed in the darkest, the cutout's rim — white ink on
- *  transparency, tinted at draw time (sepia printed on the sheet, near-black
- *  on an owner's card). Done once per texture at load. */
-function inkTexture(tex: Texture): Texture {
-  const src = tex.source.resource as CanvasImageSource | undefined;
-  if (!src) return tex;
-  const w = tex.width;
-  const h = tex.height;
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext('2d');
-  if (!ctx) return tex;
-  ctx.drawImage(src, 0, 0, w, h);
-  const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
-  const lum = new Float32Array(w * h);
-  const solid = new Uint8Array(w * h);
-  for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-    lum[p] = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
-    solid[p] = d[i + 3] > 127 ? 1 : 0;
-  }
-  /* the hatch pitch follows the texture size: 11 texels per line at 512 */
-  const pitch = Math.max(4, Math.round((11 * w) / 512));
-  const lineW = Math.max(1, Math.round((1.6 * w) / 512));
-  const at = (x: number, y: number) => lum[Math.min(h - 1, Math.max(0, y)) * w + Math.min(w - 1, Math.max(0, x))];
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      const p = y * w + x;
-      let m = 0;
-      if (solid[p]) {
-        const gx = at(x + 1, y - 1) + 2 * at(x + 1, y) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x - 1, y) - at(x - 1, y + 1);
-        const gy = at(x - 1, y + 1) + 2 * at(x, y + 1) + at(x + 1, y + 1) - at(x - 1, y - 1) - 2 * at(x, y - 1) - at(x + 1, y - 1);
-        const g = Math.hypot(gx, gy);
-        if (g > 0.35) m = 1;
-        else if (g > 0.18) m = 0.6;
-        const l = lum[p];
-        if (l < 0.62 && (x + y) % pitch < lineW) m = 1;
-        if (l < 0.3 && (((x - y) % pitch) + pitch) % pitch < lineW) m = 1;
-        if ((x > 0 && !solid[p - 1]) || (x < w - 1 && !solid[p + 1]) || (y > 0 && !solid[p - w]) || (y < h - 1 && !solid[p + w])) m = 1;
-      }
-      d[p * 4] = 255;
-      d[p * 4 + 1] = 255;
-      d[p * 4 + 2] = 255;
-      d[p * 4 + 3] = Math.round(m * 230);
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  return Texture.from(c);
-}
-/** ink tints: printed on the sheet, and on an owner's card */
-const INK_SEPIA = 0x3c2e20;
-const INK_DARK = 0x1c1610;
-
 /** the dual-industry slot pairs printed on the board */
 function dualPairs(): [IndustryType, IndustryType][] {
   const pairs: [IndustryType, IndustryType][] = [];
@@ -309,8 +246,7 @@ const half = (t: Texture, right: boolean): Texture => new Texture({ source: t.so
 const artFrom = (cut: Texture, built: Record<string, Texture>, builtGrain: Record<string, Texture>): IndustryArt => {
   const print = engraveTexture(cut);
   const mono = engraveTexture(cut, true);
-  const ink = inkTexture(cut);
-  return { cut, built, builtGrain, halfL: half(cut, false), halfR: half(cut, true), print, printHalfL: half(print, false), printHalfR: half(print, true), mono, monoHalfL: half(mono, false), monoHalfR: half(mono, true), ink, inkHalfL: half(ink, false), inkHalfR: half(ink, true) };
+  return { cut, built, builtGrain, halfL: half(cut, false), halfR: half(cut, true), print, printHalfL: half(print, false), printHalfR: half(print, true), mono, monoHalfL: half(mono, false), monoHalfR: half(mono, true) };
 };
 
 /** fetch (once) one industry's art from a variant: a finished painting that
@@ -393,7 +329,6 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
   const pair: Record<string, Texture> = {};
   const printPair: Record<string, Texture> = {};
   const monoPair: Record<string, Texture> = {};
-  const inkPair: Record<string, Texture> = {};
   await Promise.all(
     dualPairs().map(async ([a, b]) => {
       const va = variantOf(a, art);
@@ -412,20 +347,10 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
       pair[pairKey(a, b)] = t;
       printPair[pairKey(a, b)] = engravedPair(key, t);
       monoPair[pairKey(a, b)] = engravedPair(key, t, true);
-      inkPair[pairKey(a, b)] = inkedPair(key, t);
     }),
   );
   const by = <K extends keyof IndustryArt>(k: K) => Object.fromEntries(industries.map((i) => [i, arts[i][k]])) as Record<IndustryType, IndustryArt[K]>;
-  return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair, mono: by('mono'), monoHalfL: by('monoHalfL'), monoHalfR: by('monoHalfR'), monoPair, ink: by('ink'), inkHalfL: by('inkHalfL'), inkHalfR: by('inkHalfR'), inkPair };
-}
-const inkPairCache = new Map<string, Texture>();
-function inkedPair(key: string, t: Texture): Texture {
-  let e = inkPairCache.get(key);
-  if (!e) {
-    e = inkTexture(t);
-    inkPairCache.set(key, e);
-  }
-  return e;
+  return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair, mono: by('mono'), monoHalfL: by('monoHalfL'), monoHalfR: by('monoHalfR'), monoPair };
 }
 const printPairCache = new Map<string, Texture>();
 function engravedPair(key: string, t: Texture, mono = false): Texture {
@@ -1127,9 +1052,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
                reads as a mill, and the score sits in the middle on a brass
                token, stamped like a counter laid on the card. The owner's
                rim stays, quieter. */
-            const ink = look.slotArt === 'ink';
-            art.texture = (ink ? tileSet.ink[tile.industry] : tileSet.print[tile.industry]) ?? tileSet.cut[tile.industry];
-            art.tint = ink ? INK_DARK : 0xffffff;
+            art.texture = tileSet.print[tile.industry] ?? tileSet.cut[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -1167,24 +1090,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           } else {
             /* player-colour card painting (builtTex), full opacity, clipped
                to the slot's rounded rect by the GPU mask */
-            if (look.slotArt === 'ink') {
-              /* on the engraved sheet the card is the owner's colour, plain,
-                 the industry inked on it in near-black like a printed label */
-              frame.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(col);
-              art.texture = tileSet.ink[tile.industry];
-              art.tint = INK_DARK;
-              art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
-              art.width = TILE - 8;
-              art.height = TILE - 8;
-            } else {
-              art.texture = (look.cardGrain ? tileSet.builtGrain : tileSet.built)[tile.industry][colorName] ?? tileSet.cut[tile.industry];
-              art.tint = 0xffffff;
-              art.position.set(x - TILE_HALF, y - TILE_HALF);
-              artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
-              art.mask = artMask;
-              art.width = TILE;
-              art.height = TILE;
-            }
+            art.texture = (look.cardGrain ? tileSet.builtGrain : tileSet.built)[tile.industry][colorName] ?? tileSet.cut[tile.industry];
+            art.position.set(x - TILE_HALF, y - TILE_HALF);
+            artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
+            art.mask = artMask;
+            art.width = TILE;
+            art.height = TILE;
             sv.artBase = 1;
             art.alpha = sv.artBase;
             art.visible = true;
@@ -1248,29 +1159,14 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           /* tile body: dark face, NO border on empty slots — the frame is
              the owner marker, it only means something once a tile is built;
              the town colour code stays on the name banner (physical game) */
-          const ink = look.slotArt === 'ink';
-          if (ink) {
-            /* on the engraved sheet an empty slot is a plot printed on the
-               paper: a double sepia rule, the paper showing through */
-            frame.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 5).fill({ color: 0xeee4c8, alpha: 0.55 }).stroke({ width: 1.4, color: INK_SEPIA, alpha: 0.75 });
-            frame.roundRect(x - TILE_HALF + 3.5, y - TILE_HALF + 3.5, TILE - 7, TILE - 7, 3).stroke({ width: 0.6, color: INK_SEPIA, alpha: 0.55 });
-          } else {
-            frame.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0x12100c);
-          }
+          frame.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0x12100c);
           /* the painted art IS the face, full colour at every zoom.
              Dual slot: the generated combined painting when available
              (one cohesive composition), otherwise the half-crop split. */
           const engraved = look.slotArt !== 'painted';
-          /* the print set: sepia, black ink on white for plainer slots, or
-             the line engraving inked on the sheet */
+          /* the print set: sepia, or black ink on white for plainer slots */
           const mono = look.slotArt === 'mono';
-          const prints = ink
-            ? { pair: tileSet.inkPair, halfL: tileSet.inkHalfL, halfR: tileSet.inkHalfR, print: tileSet.ink }
-            : mono
-              ? { pair: tileSet.monoPair, halfL: tileSet.monoHalfL, halfR: tileSet.monoHalfR, print: tileSet.mono }
-              : { pair: tileSet.printPair, halfL: tileSet.printHalfL, halfR: tileSet.printHalfR, print: tileSet.print };
-          art.tint = ink ? INK_SEPIA : 0xffffff;
-          art2.tint = ink ? INK_SEPIA : 0xffffff;
+          const prints = mono ? { pair: tileSet.monoPair, halfL: tileSet.monoHalfL, halfR: tileSet.monoHalfR, print: tileSet.mono } : { pair: tileSet.printPair, halfL: tileSet.printHalfL, halfR: tileSet.printHalfR, print: tileSet.print };
           if (allows.length > 1) {
             const combined = (engraved ? prints.pair : tileSet.pair)[pairKey(allows[0], allows[1])];
             if (combined) {
@@ -1290,7 +1186,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               art2.width = hw;
               art2.height = TILE - 8;
               art2.visible = true;
-              frame.moveTo(x, y - TILE_HALF + 4).lineTo(x, y + TILE_HALF - 4).stroke(ink ? { width: 0.8, color: INK_SEPIA, alpha: 0.6 } : { width: 2, color: 0x0c0a08 });
+              frame.moveTo(x, y - TILE_HALF + 4).lineTo(x, y + TILE_HALF - 4).stroke({ width: 2, color: 0x0c0a08 });
             }
           } else {
             art.texture = (engraved ? prints.print : tileSet.cut)[allows[0]];
@@ -1299,7 +1195,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             art.height = TILE - 8;
             art2.visible = false;
           }
-          sv.artBase = ink ? 0.92 : engraved ? 0.88 : 1;
+          sv.artBase = engraved ? 0.88 : 1;
           art.alpha = sv.artBase;
           art2.alpha = sv.artBase;
           art.visible = true;
