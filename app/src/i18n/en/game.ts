@@ -477,6 +477,11 @@ const game = {
     wildLocation: 'Wild Location',
     wildIndustry: 'Wild Industry',
   },
+  notice: {
+    beerTaken: '{name} drank a beer from your brewery at {town}',
+    income: '+{n} income',
+    dismiss: 'Dismiss',
+  },
   flip: {
     title: '{name} · {what} flips',
   },

@@ -479,6 +479,11 @@ const fr: typeof engame = {
     wildLocation: 'Lieu joker',
     wildIndustry: 'Industrie joker',
   },
+  notice: {
+    beerTaken: '{name} a bu une bière de votre brasserie de {town}',
+    income: '+{n} revenu',
+    dismiss: 'Fermer',
+  },
   flip: {
     title: '{name} · {what} se retourne',
   },

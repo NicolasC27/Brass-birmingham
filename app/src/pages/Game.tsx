@@ -9,7 +9,7 @@ import ConcedeBanner from '@/components/game/ConcedeBanner';
 import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
-import FlipToast from '@/components/game/FlipToast';
+import Notices from '@/components/game/Notices';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -488,7 +488,7 @@ export default function Game() {
       <ConcedeBanner />
       <TableMood />
       <Guide />
-      <FlipToast />
+      <Notices />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />

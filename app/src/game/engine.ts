@@ -904,6 +904,11 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
   const vpBefore = p.vp;
   const moneyBefore = p.money;
   const incomeBefore = incomeLevel(p.income);
+  /* beer drawn from another player's brewery: their loss to know about */
+  const beerFrom = beer.sources
+    .filter((b) => b.kind === 'brewery' && s.tiles[tileKey(b.town!, b.slot!)]?.owner !== playerIdx)
+    .map((b) => `${s.tiles[tileKey(b.town!, b.slot!)].owner}:${b.town}`)
+    .join(',');
   const bonus = drinkBeer(s, playerIdx, beer.sources);
   const bonusVp = p.vp - vpBefore;
   const bonusMoney = p.money - moneyBefore;
@@ -922,6 +927,7 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
     bonusMoney,
     bonusIncome,
     bonusDevelop: bonus.includes('develop') ? 1 : 0,
+    beerFrom,
   });
   return true;
 }
