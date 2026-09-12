@@ -529,8 +529,10 @@ export default function HandDock() {
                       const plan = developPlans(game, developIron)[k];
                       const marketCost = plan?.sources[0]?.kind === 'market' ? plan.sources[0].cost : marketBuyPrice('iron', game.market.iron);
                       return (
-                        <label key={k} className="flex items-center gap-1.5 font-sans text-[10px] text-ink-900/80">
-                          <span>{t('game.hand.devIron', { name: INDUSTRY_LABEL[ind], level })}</span>
+                        <label key={k} className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80" title={t('game.hand.devIron', { name: INDUSTRY_LABEL[ind], level })}>
+                          <img src={INDUSTRY_ICON[ind]} alt="" className="h-3.5 w-3.5" />
+                          <span className="font-semibold">L{level}</span>
+                          <span className="text-ink-900/45">←</span>
                           <select
                             value={developIron[k] ?? ''}
                             onChange={(e) => setDevelopIron(k, e.target.value || null)}
