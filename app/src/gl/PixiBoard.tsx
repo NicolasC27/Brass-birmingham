@@ -232,6 +232,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const linkPick = useGame((s) => s.linkPick);
   const secondLinkPick = useGame((s) => s.secondLinkPick);
   const sellPick = useGame((s) => s.sellPick);
+  const sellPicks = useGame((s) => s.sellPicks);
   const idle = !selectedCardId;
   const [prevIdle, setPrevIdle] = useState(idle);
   if (prevIdle !== idle) {
@@ -960,11 +961,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         if (!t.valid) continue;
         const c = townChrome(TOWN_BY_ID[t.town]);
         const pos = c.slots[t.slot];
-        const picked = sellPick && tileKey(sellPick.town, sellPick.slot) === tileKey(t.town, t.slot);
-        const g = new Graphics().circle(pos.x, pos.y, TILE_R + 5).stroke({ width: 3, color: 0x2e5540 });
+        const picked = sellPicks.some((x) => tileKey(x.town, x.slot) === tileKey(t.town, t.slot));
+        const g = new Graphics().roundRect(pos.x - TILE_R - 4, pos.y - TILE_R - 4, TILE_R * 2 + 8, TILE_R * 2 + 8, 9).stroke({ width: picked ? 4 : 3, color: 0xc9a45c });
         g.eventMode = 'none';
         if (picked) overlay.addChild(g);
-        else pulse(g, 0.8);
+        else pulse(g, 0.9);
       }
     }
 
@@ -975,10 +976,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
        the world with the resource's own colour (coal near-black, iron the
        orange of the exchange). */
     if (ghost) {
-      const [gx, gy] = displayPosFor(ghost.at[0], ghost.at[1]);
+      const [gx0, gy0] = displayPosFor(ghost.at[0], ghost.at[1]);
+      const gx = gx0;
+      const gy = gy0;
       const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : 0xe07020);
       for (const src of ghost.tileSources) {
         const [sx, sy] = displayPosFor(src.x, src.y);
+        const [gx, gy] = src.to ? displayPosFor(src.to[0], src.to[1]) : [gx0, gy0];
         if (ghost.noTarget) {
           /* nowhere on the board to run to: the source itself is marked */
           const ring = new Graphics().roundRect(sx - TILE_R - 4, sy - TILE_R - 4, TILE_R * 2 + 8, TILE_R * 2 + 8, 9).stroke({ width: 3, color: coreOf(src.resource) === 0x171310 ? 0xc9a45c : coreOf(src.resource) });
@@ -1067,7 +1071,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, buildPick, linkPick, secondLinkPick, sellPick, idle, game.ledgerSeq]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq]);
 
   /* pointer affordances on the WebGL hit areas (SVG: cursor-pointer/help).
      Anything left at 'inherit' falls back to the frame's grab/grabbing. */
@@ -1166,7 +1170,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     const aid = aidOn(game.assist, code !== null);
     if (aid && selectedCardId && verb === 'build') {
       scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
-    } else if (aid && selectedCardId && verb === 'sell') {
+    } else if (selectedCardId && verb === 'sell') {
+      /* what can be sold is one's own affair: the rest of the board dims */
       scene.setHighlight([...new Set(sellTargetsList.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
     } else if (netPeek !== null) {
       const towns = networkTowns(game, netPeek);
@@ -1285,7 +1290,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
                     <img src={industryFaceUrl(o.industry, opts.tileArt)} alt="" className="h-full w-full object-contain p-0.5" />
                   </span>
                   <span className="font-sans text-[9.5px] font-semibold leading-tight text-cream-100/90">{tr(`game.log.industry.${o.industry}`)}</span>
-                  {!o.target?.valid && <span className="font-sans text-[8px] uppercase tracking-wider text-rust-500 brightness-150">{t('board.chooser.unavailable')}</span>}
+                  {!o.target?.valid && <span className="max-w-[72px] font-sans text-[8.5px] leading-tight text-rust-500 brightness-150">{reasonText(o.target?.reason ?? tr('board.chooser.unavailable'))}</span>}
                 </button>
               ))}
             </span>

@@ -465,6 +465,8 @@ const fr: typeof engame = {
   },
   confirm: {
     build: 'Construire · {industry} N{level} · {town} · {price} £',
+    coalFrom: 'charbon ×{n} ← {town} ({owner})',
+    ironFrom: 'fer ×{n} ← {town} ({owner})',
     marketCoal: 'charbon ×{n} ← marché {cost} £',
     marketIron: 'fer ×{n} ← marché {cost} £',
     sale: 'vend {n} {res} au marché +{gain} £',

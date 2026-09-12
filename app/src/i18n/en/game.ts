@@ -463,6 +463,8 @@ const game = {
   },
   confirm: {
     build: 'Build · {industry} L{level} · {town} · £{price}',
+    coalFrom: 'coal ×{n} ← {town} ({owner})',
+    ironFrom: 'iron ×{n} ← {town} ({owner})',
     marketCoal: 'coal ×{n} ← market £{cost}',
     marketIron: 'iron ×{n} ← market £{cost}',
     sale: 'sells {n} {res} to market +£{gain}',

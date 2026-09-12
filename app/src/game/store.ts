@@ -5,8 +5,8 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, sellTargets, serialize } from './engine';
-import type { BuildTarget, LinkTarget, SellTarget } from './engine';
+import { buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, sellTargets, serialize, tileKey } from './engine';
+import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
 import { actorOf, applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
@@ -721,8 +721,18 @@ export function confirmSummary(st: {
       if (!t) return null;
       const lv = INDUSTRIES[t.industry][t.level - 1];
       const bits = [tr('game.confirm.build', { industry: tr(`game.log.industry.${t.industry}`), level: t.level, town: TOWN_BY_ID[t.town].name, price: lv.cost })];
+      const g0 = useGame.getState().game;
+      const fromTiles = (plan: SupplyPlan, key: 'coalFrom' | 'ironFrom') => {
+        for (const src of plan.sources) {
+          if (src.kind !== 'tile' || !g0) continue;
+          const owner = g0.tiles[tileKey(src.town!, src.slot!)]?.owner;
+          bits.push(tr(`game.confirm.${key}`, { n: src.amount, town: TOWN_BY_ID[src.town!]?.name ?? src.town!, owner: owner === undefined ? '' : g0.players[owner].name }));
+        }
+      };
+      fromTiles(t.coalPlan, 'coalFrom');
       const marketCoal = t.coalPlan.sources.filter((x) => x.kind === 'market');
       if (marketCoal.length) bits.push(tr('game.confirm.marketCoal', { n: marketCoal.length, cost: t.coalPlan.totalCost }));
+      fromTiles(t.ironPlan, 'ironFrom');
       const marketIron = t.ironPlan.sources.filter((x) => x.kind === 'market');
       if (marketIron.length) bits.push(tr('game.confirm.marketIron', { n: marketIron.length, cost: t.ironPlan.totalCost }));
       /* a mine or works that reaches a merchant sells its spare cubes at once: say so */

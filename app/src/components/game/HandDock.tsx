@@ -335,7 +335,8 @@ export default function HandDock() {
   const devOptions = verb === 'develop' ? currentDevelops() : [];
 
   const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout';
-  const expanded = pinned || hovered || busy;
+  /* open through the reader's own turn — a second action is still to play */
+  const expanded = pinned || hovered || busy || isHumanTurn;
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (

@@ -311,15 +311,21 @@ export default function Game() {
       if (plans.length) return { ...ghostFromPlan([0, 0], ...plans), noTarget: true };
     }
     if (verb === 'sell') {
-      const key = sellPick ? tileKey(sellPick.town, sellPick.slot) : hoverKey;
-      const t = key ? sellTargetsList.find((x) => tileKey(x.town, x.slot) === key && x.valid) : null;
-      if (t) {
-        const m = MERCHANT_BY_ID[t.merchant];
-        return { tileSources: [{ x: m.x, y: m.y, resource: 'beer', amount: 1 }], market: [], at: slotXY(t.town, t.slot) };
+      /* every sale picked so far, and the one under the pointer: each with
+         its own line from the merchant's barrel to the works */
+      const picks = [...sellPicks];
+      const hovered = hoverKey && !picks.some((x) => tileKey(x.town, x.slot) === hoverKey) ? sellTargetsList.find((x) => tileKey(x.town, x.slot) === hoverKey && x.valid) : null;
+      if (hovered) picks.push(hovered);
+      if (picks.length) {
+        return {
+          tileSources: picks.map((t) => ({ x: MERCHANT_BY_ID[t.merchant].x, y: MERCHANT_BY_ID[t.merchant].y, resource: 'beer', amount: 1, to: slotXY(t.town, t.slot) })),
+          market: [],
+          at: slotXY(picks[0].town, picks[0].slot),
+        };
       }
     }
     return null;
-  }, [game, verb, buildPick, linkPick, sellPick, developPick, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [game, verb, buildPick, linkPick, sellPicks, developPick, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};

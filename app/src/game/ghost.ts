@@ -5,8 +5,9 @@ import { TOWNS } from './data';
 import type { SupplyPlan } from './engine';
 
 export interface PlanGhost {
-  /** board-space endpoints for tile sources */
-  tileSources: { x: number; y: number; resource: string; amount: number }[];
+  /** board-space endpoints for tile sources; a source may name its own
+   *  target when several works are served at once (two sales) */
+  tileSources: { x: number; y: number; resource: string; amount: number; to?: [number, number] }[];
   /** cubes drawn from the market */
   market: { resource: string; amount: number; cost: number }[];
   /** cubes the new works would sell to the market at once — a mine that
