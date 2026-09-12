@@ -76,6 +76,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const sellPick = useGame((s) => s.sellPick);
   const sellPicks = useGame((s) => s.sellPicks);
   const developPick = useGame((s) => s.developPick);
+  const developIron = useGame((s) => s.developIron);
   const scoutPick = useGame((s) => s.scoutPick);
   const setVerb = useGame((s) => s.setVerb);
   const confirm = useGame((s) => s.confirm);
@@ -94,10 +95,10 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const aid = aidOn(game.assist, code !== null) || (code === null && beginnerAid);
 
   const card = selectedCardId ? p.hand.find((c) => c.id === selectedCardId) : undefined;
-  const summaryFull = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId }) : null;
+  const summaryFull = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId }) : null;
   /* the verb chip already says it: the summary starts after the verb */
   const summary = summaryFull && verb && summaryFull.startsWith(`${t(VERB_LABEL[verb])} · `) ? summaryFull.slice(t(VERB_LABEL[verb]).length + 3) : summaryFull;
-  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick }, game) : null;
+  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick, developIron }, game) : null;
   /* what the banner asks of the reader, in one line */
   const stage = !mine ? 'theirs' : summary ? 'ready' : verb ? 'target' : card ? 'verb' : 'card';
 

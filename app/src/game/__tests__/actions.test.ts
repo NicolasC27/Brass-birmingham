@@ -190,3 +190,26 @@ describe('action log', () => {
     else expect(again).toBeNull();
   });
 });
+
+describe('developing', () => {
+  const s0 = newGame({ players: HUMANS, options: setup(2).options }, 11);
+  const me = s0.current;
+  const card = s0.players[me].hand[0];
+
+  it('retires the same industry twice, the top tile then the one beneath', () => {
+    const before = [...s0.players[me].stacks.cotton];
+    const r = applyAction(s0, me, { kind: 'develop', card: card.id, industries: ['cotton', 'cotton'], ironFrom: ['market', 'market'] });
+    expect(r.state).not.toBeNull();
+    expect(r.state!.players[me].stacks.cotton).toEqual(before.slice(2));
+    expect(r.state!.players[me].money).toBeLessThan(s0.players[me].money);
+  });
+
+  it('takes its iron from the works it names', () => {
+    const s = structuredClone(s0);
+    s.tiles['coalbrookdale:1'] = { owner: 1 - me, industry: 'iron', level: 1, flipped: false, cubes: 2 };
+    const r = applyAction(s, me, { kind: 'develop', card: card.id, industries: ['cotton'], ironFrom: ['coalbrookdale:1'] });
+    expect(r.state).not.toBeNull();
+    expect(r.state!.tiles['coalbrookdale:1'].cubes).toBe(1);
+    expect(r.state!.players[me].money).toBe(s.players[me].money);
+  });
+});

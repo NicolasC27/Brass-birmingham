@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, SkipForward, X, Undo2 } from 'lucide-react';
-import { INDUSTRY_ICON, INDUSTRY_LABEL, incomeLevel } from '@/game/data';
+import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
 import { townColor } from '@/game/townColors';
-import { cardLabel, confirmSummary, useGame, verbsForCard } from '@/game/store';
-import { buildTargets } from '@/game/engine';
+import { cardLabel, confirmSummary, developPlans, useGame, verbsForCard } from '@/game/store';
+import { buildTargets, ironSources } from '@/game/engine';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { reasonText, tr, useT } from '@/i18n';
@@ -231,12 +231,15 @@ export default function HandDock() {
   const sellPick = useGame((s) => s.sellPick);
   const sellPicks = useGame((s) => s.sellPicks);
   const developPick = useGame((s) => s.developPick);
+  const developIron = useGame((s) => s.developIron);
+  const addDevelop = useGame((s) => s.addDevelop);
+  const dropDevelop = useGame((s) => s.dropDevelop);
+  const setDevelopIron = useGame((s) => s.setDevelopIron);
   const scoutPick = useGame((s) => s.scoutPick);
   const selectCard = useGame((s) => s.selectCard);
   const setVerb = useGame((s) => s.setVerb);
   const setLoanPeek = useGame((s) => s.setLoanPeek);
   const flyToRegion = useGame((s) => s.flyToRegion);
-  const toggleDevelop = useGame((s) => s.toggleDevelop);
   const onlineCode = useGame((s) => s.code);
   const aid = !!game && aidOn(game.assist, onlineCode !== null);
   const undo = useGame((s) => s.undo);
@@ -331,7 +334,7 @@ export default function HandDock() {
   const humans = game.players.filter((x) => !x.isBot);
   const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
   const verbs = verbsForCard({ game, selectedCardId });
-  const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId });
+  const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
   const devOptions = verb === 'develop' ? currentDevelops() : [];
 
   const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout';
@@ -494,26 +497,58 @@ export default function HandDock() {
                 className="paper flex items-center gap-2 self-center rounded-md px-3 py-2"
               >
                 <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.hand.retire')}</span>
-                {devOptions.map((d) => (
-                  <button
-                    key={d.industry}
-                    type="button"
-                    disabled={!d.valid}
-                    onClick={() => toggleDevelop(d.industry)}
-                    className={cn(
-                      'flex items-center gap-1 rounded-sm border px-1.5 py-1 font-sans text-[10px] font-semibold',
-                      developPick.includes(d.industry)
-                        ? 'border-rust-500 bg-rust-500/15 text-ink-900'
-                        : d.valid
-                          ? 'border-brass-700/60 text-ink-900/85 hover:bg-brass-500/20'
-                          : 'cursor-not-allowed border-brass-700/30 text-ink-900/35',
-                    )}
-                    title={d.reason ? reasonText(d.reason) : t('game.hand.devOption', { name: INDUSTRY_LABEL[d.industry], level: d.level, cost: d.iron.totalCost })}
-                  >
-                    <img src={INDUSTRY_ICON[d.industry]} alt="" className="h-3.5 w-3.5" />
-                    L{d.level}
-                  </button>
-                ))}
+                {/* one row per industry: the tile on top of the stack, the one
+                    beneath it, and how many of them this action retires */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {devOptions.map((d) => {
+                    const count = developPick.filter((x) => x === d.industry).length;
+                    const stack = game.players[game.current].stacks[d.industry];
+                    const next = stack[1];
+                    const nextOk = next !== undefined && !INDUSTRIES[d.industry][next - 1].noDevelop;
+                    const canAdd = developPick.length < 2 && (count === 0 ? d.valid : nextOk);
+                    return (
+                      <span key={d.industry} className={cn('flex items-center gap-1 rounded-sm border px-1.5 py-1 font-sans text-[10px] font-semibold', count ? 'border-rust-500 bg-rust-500/15 text-ink-900' : d.valid ? 'border-brass-700/60 text-ink-900/85' : 'border-brass-700/30 text-ink-900/35')} title={d.reason ? reasonText(d.reason) : undefined}>
+                        <img src={INDUSTRY_ICON[d.industry]} alt="" className="h-3.5 w-3.5" />
+                        <span>L{d.level}</span>
+                        <span className="text-ink-900/45">{next !== undefined ? t('game.hand.devNext', { level: next }) : t('game.hand.devDone')}</span>
+                        {count > 0 && <span className="rounded-full bg-rust-500 px-1.5 text-[9px] font-bold text-cream-100">×{count}</span>}
+                        <button type="button" disabled={!canAdd} onClick={() => addDevelop(d.industry)} aria-label={t('game.hand.devMore')} title={t('game.hand.devMore')} className="ml-0.5 rounded-sm border border-brass-700/50 px-1 leading-none hover:bg-brass-500/20 disabled:cursor-not-allowed disabled:opacity-30">+</button>
+                        <button type="button" disabled={!count} onClick={() => dropDevelop(d.industry)} aria-label={t('game.hand.devLess')} title={t('game.hand.devLess')} className="rounded-sm border border-brass-700/50 px-1 leading-none hover:bg-brass-500/20 disabled:cursor-not-allowed disabled:opacity-30">−</button>
+                      </span>
+                    );
+                  })}
+                </div>
+                {/* the iron each retirement takes: any works on the board that
+                    holds some, whoever's, or the market */}
+                {developPick.length > 0 && (
+                  <div className="flex flex-col gap-1 border-l border-brass-700/40 pl-2">
+                    {developPick.map((ind, k) => {
+                      const depth = developPick.slice(0, k).filter((x) => x === ind).length;
+                      const level = game.players[game.current].stacks[ind][depth];
+                      const sources = ironSources(game);
+                      const plan = developPlans(game, developIron)[k];
+                      const marketCost = plan?.sources[0]?.kind === 'market' ? plan.sources[0].cost : marketBuyPrice('iron', game.market.iron);
+                      return (
+                        <label key={k} className="flex items-center gap-1.5 font-sans text-[10px] text-ink-900/80">
+                          <span>{t('game.hand.devIron', { name: INDUSTRY_LABEL[ind], level })}</span>
+                          <select
+                            value={developIron[k] ?? ''}
+                            onChange={(e) => setDevelopIron(k, e.target.value || null)}
+                            className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                          >
+                            <option value="">{t('game.hand.devIronAuto')}</option>
+                            {sources.map((src) => (
+                              <option key={src.key} value={src.key}>
+                                {t('game.hand.devIronWorks', { owner: game.players[src.owner].name, town: TOWN_BY_ID[src.town]?.name ?? src.town, cubes: src.cubes })}
+                              </option>
+                            ))}
+                            <option value="market">{t('game.hand.devIronMarket', { cost: marketCost })}</option>
+                          </select>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, sellTargets, serialize, tileKey } from './engine';
+import { buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, sellTargets, serialize, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
@@ -62,6 +62,8 @@ interface GameStore {
   /** every tile queued for this Sell action — one card sells any number */
   sellPicks: SellTarget[];
   developPick: IndustryType[];
+  /** per pick, the iron works chosen (its key), 'market', or null for the engine's choice */
+  developIron: (string | null)[];
   scoutPick: string[];
   hoverKey: string | null;
   shake: Shake | null;
@@ -113,6 +115,10 @@ interface GameStore {
   pickLink: (t: LinkTarget | null) => void;
   pickSell: (t: SellTarget | null) => void;
   toggleDevelop: (ind: IndustryType) => void;
+  /** one more or one fewer development of this industry */
+  addDevelop: (ind: IndustryType) => void;
+  dropDevelop: (ind: IndustryType) => void;
+  setDevelopIron: (k: number, from: string | null) => void;
   toggleScout: (cardId: string) => void;
   setHover: (key: string | null) => void;
   reject: (key: string, reason: string) => void;
@@ -208,6 +214,7 @@ const clearSelection = {
   sellPick: null,
   sellPicks: [] as SellTarget[],
   developPick: [] as IndustryType[],
+  developIron: [] as (string | null)[],
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
@@ -358,10 +365,10 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     if (st.selectedCardId === id) {
-      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [] });
+      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [] });
       return;
     }
-    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], shake: null });
+    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], shake: null });
   },
 
   setVerb: (v) => {
@@ -375,7 +382,7 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ ...clearSelection, verb: 'scout' });
       return;
     }
-    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], shake: null });
+    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], shake: null });
   },
 
   pickBuild: (t) => set({ buildPick: t, shake: null }),
@@ -416,7 +423,28 @@ export const useGame = create<GameStore>((set, get) => ({
 
   toggleDevelop: (ind) => {
     const cur = get().developPick;
-    set({ developPick: cur.includes(ind) ? cur.filter((x) => x !== ind) : cur.length < 2 ? [...cur, ind] : cur });
+    if (cur.includes(ind)) get().dropDevelop(ind);
+    else get().addDevelop(ind);
+  },
+  addDevelop: (ind) => {
+    const st = get();
+    const cur = st.developPick;
+    if (cur.length >= 2) return;
+    const have = cur.filter((x) => x === ind).length;
+    if (have >= 2) return;
+    if (have === 1 && (!st.game || !developTwice(st.game, st.game.current, ind))) return;
+    set({ developPick: [...cur, ind], developIron: [...st.developIron, null] });
+  },
+  dropDevelop: (ind) => {
+    const st = get();
+    const at = st.developPick.lastIndexOf(ind);
+    if (at < 0) return;
+    set({ developPick: st.developPick.filter((_, i) => i !== at), developIron: st.developIron.filter((_, i) => i !== at) });
+  },
+  setDevelopIron: (k, from) => {
+    const iron = [...get().developIron];
+    iron[k] = from;
+    set({ developIron: iron });
   },
 
   toggleScout: (cardId) => {
@@ -468,7 +496,7 @@ export const useGame = create<GameStore>((set, get) => ({
         if (card && st.linkPick?.valid) action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id };
         break;
       case 'develop':
-        if (card && st.developPick.length > 0) action = { kind: 'develop', card: card.id, industries: st.developPick };
+        if (card && st.developPick.length > 0) action = { kind: 'develop', card: card.id, industries: st.developPick, ironFrom: st.developIron };
         break;
       case 'sell':
         if (card && st.sellPicks.some((x) => x.valid)) action = { kind: 'sell', card: card.id, sales: st.sellPicks.filter((x) => x.valid).map((x) => ({ town: x.town, slot: x.slot, merchant: x.merchant })) };
@@ -673,8 +701,22 @@ export const useGame = create<GameStore>((set, get) => ({
 
 /** what the pending action really costs — tile or link price PLUS the coal
  *  and iron bought at the market — and what the player keeps afterwards */
+/** the iron each development would take, one plan per pick, in order —
+ *  a chosen works, the market, or the engine's choice */
+export function developPlans(game: GameState, ironFrom: (string | null)[]): SupplyPlan[] {
+  const reserved = new Map<string, number>();
+  return ironFrom.map((from) => {
+    const plan = planIronFrom(game, from, reserved);
+    for (const src of plan.sources) {
+      const k = src.kind === 'tile' ? tileKey(src.town!, src.slot!) : 'market:iron';
+      reserved.set(k, (reserved.get(k) ?? 0) + src.amount);
+    }
+    return plan;
+  });
+}
+
 export function confirmCost(
-  st: { verb: Verb | null; buildPick: BuildTarget | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[] },
+  st: { verb: Verb | null; buildPick: BuildTarget | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[]; developIron: (string | null)[] },
   game: GameState,
 ): { total: number; after: number } | null {
   const money = game.players[game.current].money;
@@ -690,8 +732,7 @@ export function confirmCost(
       break;
     case 'develop': {
       if (!st.developPick.length) return null;
-      const opts = developOptions(game, game.current);
-      total = st.developPick.reduce((a, ind) => a + (opts.find((o) => o.industry === ind)?.iron.totalCost ?? 0), 0);
+      total = developPlans(game, st.developIron).reduce((a, plan) => a + plan.totalCost, 0);
       break;
     }
     case 'sell':
@@ -712,6 +753,7 @@ export function confirmSummary(st: {
   sellPick: SellTarget | null;
   sellPicks: SellTarget[];
   developPick: IndustryType[];
+  developIron: (string | null)[];
   scoutPick: string[];
   selectedCardId: string | null;
 }): string | null {
@@ -751,8 +793,22 @@ export function confirmSummary(st: {
       }
       return tr('game.confirm.network', { a: name(t.link.a), b: name(t.link.b), price: t.total });
     }
-    case 'develop':
-      return st.developPick.length ? tr('game.confirm.develop', { list: st.developPick.map((i) => tr(`game.log.industry.${i}`)).join(' + '), n: st.developPick.length }) : null;
+    case 'develop': {
+      if (!st.developPick.length) return null;
+      const g1 = useGame.getState().game;
+      /* each pick names its tile — the second of an industry is the one beneath — and its iron */
+      const depth: Partial<Record<IndustryType, number>> = {};
+      const plans = g1 ? developPlans(g1, st.developIron) : [];
+      const list = st.developPick.map((ind, k) => {
+        const at = depth[ind] ?? 0;
+        depth[ind] = at + 1;
+        const level = g1?.players[g1.current].stacks[ind][at] ?? '';
+        const src = plans[k]?.sources[0];
+        const from = !src ? '' : src.kind === 'market' ? tr('game.confirm.ironMarket', { cost: src.cost }) : tr('game.confirm.ironWorks', { town: TOWN_BY_ID[src.town!]?.name ?? src.town!, owner: g1 ? g1.players[g1.tiles[tileKey(src.town!, src.slot!)]?.owner]?.name ?? '' : '' });
+        return `${tr(`game.log.industry.${ind}`)} N${level}${from ? ` (${from})` : ''}`;
+      });
+      return tr('game.confirm.develop', { list: list.join(' + '), n: st.developPick.length });
+    }
     case 'sell': {
       if (!st.sellPicks.length) return null;
       return tr('game.confirm.sell', { list: st.sellPicks.map((t) => `${tr(`game.log.industry.${t.tile.industry}`)} L${t.tile.level} → ${MERCHANT_BY_ID[t.merchant].name}`).join(' + ') });

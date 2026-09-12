@@ -864,15 +864,56 @@ export function applyNetwork(s: GameState, playerIdx: number, card: Card, target
   return true;
 }
 
-export function applyDevelop(s: GameState, playerIdx: number, card: Card, industries: IndustryType[]): boolean {
+/** the works on the board a development may take its iron from — any
+ *  iron works with cubes, whoever owns it: iron ships freely */
+export function ironSources(s: GameState): { key: string; town: string; slot: number; owner: number; cubes: number }[] {
+  return Object.entries(s.tiles)
+    .filter(([, t]) => t.industry === 'iron' && !t.flipped && t.cubes > 0)
+    .map(([key, t]) => ({ key, town: key.split(':')[0], slot: Number(key.split(':')[1]), owner: t.owner, cubes: t.cubes }));
+}
+
+/** one cube of iron from a named works (its key), or the engine's own
+ *  choice when none is named or the named one has run dry */
+export function planIronFrom(s: GameState, from: string | null | undefined, reserved: Map<string, number>): SupplyPlan {
+  if (from && from !== 'market') {
+    const tile = s.tiles[from];
+    if (tile && tile.industry === 'iron' && !tile.flipped && tile.cubes - (reserved.get(from) ?? 0) > 0) {
+      const plan = emptyPlan();
+      plan.sources.push({ kind: 'tile', resource: 'iron', town: from.split(':')[0], slot: Number(from.split(':')[1]), amount: 1, cost: 0 });
+      return plan;
+    }
+  }
+  if (from === 'market') {
+    const plan = emptyPlan();
+    const count = s.market.iron - (reserved.get('market:iron') ?? 0);
+    const price = marketBuyPrice('iron', count);
+    plan.sources.push({ kind: 'market', resource: 'iron', amount: 1, cost: price, price });
+    plan.totalCost = price;
+    return plan;
+  }
+  return planSupply(s, 'birmingham', 'iron', 1, [], reserved);
+}
+
+/** the tile a second development of the same industry would take: the
+ *  one under the top of the stack, if it may be developed */
+export function developTwice(s: GameState, playerIdx: number, ind: IndustryType): boolean {
+  const next = s.players[playerIdx].stacks[ind][1];
+  return !!next && !INDUSTRIES[ind][next - 1].noDevelop;
+}
+
+export function applyDevelop(s: GameState, playerIdx: number, card: Card, industries: IndustryType[], ironFrom: (string | null)[] = []): boolean {
   const p = s.players[playerIdx];
   if (industries.length < 1 || industries.length > 2) return false;
   const reserved = new Map<string, number>();
   const plans: SupplyPlan[] = [];
-  for (const ind of industries) {
-    const lvl = p.stacks[ind][0];
+  /* the same industry twice takes the top tile and the one beneath it */
+  const depth: Partial<Record<IndustryType, number>> = {};
+  for (const [k, ind] of industries.entries()) {
+    const at = depth[ind] ?? 0;
+    depth[ind] = at + 1;
+    const lvl = p.stacks[ind][at];
     if (!lvl || INDUSTRIES[ind][lvl - 1].noDevelop) return false;
-    const iron = planSupply(s, 'birmingham', 'iron', 1, [], reserved);
+    const iron = planIronFrom(s, ironFrom[k], reserved);
     if (iron.shortage > 0) return false;
     reserveFrom(iron, reserved);
     plans.push(iron);

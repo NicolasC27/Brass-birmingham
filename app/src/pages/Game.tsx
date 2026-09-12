@@ -26,10 +26,10 @@ import MarketPill from '@/components/game/MarketPill';
 import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
-import { buildTargets, candleMinutes, developOptions, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
+import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
-import { buildFinalPayload, confirmSummary, useGame } from '@/game/store';
+import { buildFinalPayload, confirmSummary, developPlans, useGame } from '@/game/store';
 import { FINAL_KEY } from '@/game/types';
 import type { Resource } from '@/game/types';
 import { useT } from '@/i18n';
@@ -76,6 +76,7 @@ export default function Game() {
   const sellPicks = useGame((s) => s.sellPicks);
   const secondLinkPick = useGame((s) => s.secondLinkPick);
   const developPick = useGame((s) => s.developPick);
+  const developIron = useGame((s) => s.developIron);
   const scoutPick = useGame((s) => s.scoutPick);
   const hoverKey = useGame((s) => s.hoverKey);
   const reject = useGame((s) => s.reject);
@@ -247,7 +248,7 @@ export default function Game() {
       }
       if (!isHumanTurn) return;
       if (e.key === 'Enter') {
-        const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, scoutPick, selectedCardId });
+        const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
         if (ok) confirm();
         return;
       }
@@ -307,7 +308,7 @@ export default function Game() {
     if (verb === 'develop' && developPick.length) {
       /* iron ships from any works on the board, or the exchange: mark where
          this development would take it from */
-      const plans = developOptions(game, mySeat).filter((o) => developPick.includes(o.industry) && o.valid).map((o) => o.iron);
+      const plans = developPlans(game, developIron);
       if (plans.length) return { ...ghostFromPlan([0, 0], ...plans), noTarget: true };
     }
     if (verb === 'sell') {
@@ -325,7 +326,7 @@ export default function Game() {
       }
     }
     return null;
-  }, [game, verb, buildPick, linkPick, sellPicks, developPick, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [game, verb, buildPick, linkPick, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};

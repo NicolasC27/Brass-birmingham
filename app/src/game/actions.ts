@@ -18,7 +18,7 @@ import type { GameState, IndustryType, SetupPayload } from './types';
 export type GameAction =
   | { kind: 'build'; card: string; town: string; slot: number; industry: IndustryType }
   | { kind: 'network'; card: string; link: string; second?: string }
-  | { kind: 'develop'; card: string; industries: IndustryType[] }
+  | { kind: 'develop'; card: string; industries: IndustryType[]; /** per industry, the iron works to draw from (its key), 'market', or nothing for the engine's choice */ ironFrom?: (string | null)[] }
   | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string }[] }
   | { kind: 'loan'; card?: string }
   | { kind: 'scout'; cards: string[] }
@@ -87,7 +87,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     case 'develop': {
       const card = cardOf(action.card);
       if (!card) return noCard(action.card);
-      ok = applyDevelop(mut, playerIdx, card, action.industries);
+      ok = applyDevelop(mut, playerIdx, card, action.industries, action.ironFrom);
       break;
     }
     case 'sell': {
