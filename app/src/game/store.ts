@@ -15,6 +15,8 @@ import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { onlineWire } from '@/online/net';
+import { DIALECT, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
+import type { Telegram, TelegramKey } from './telegrams';
 import type { Pause, Rollback, ServerMessage } from '@/online/protocol';
 import type { Wire, WireStatus } from '@/online/wire';
 import type {
@@ -67,6 +69,16 @@ interface GameStore {
   scoutPick: string[];
   hoverKey: string | null;
   shake: Shake | null;
+  /* ---- telegrams: the printed lines wired across the table ---- */
+  telegrams: Telegram[];
+  /** seats the reader no longer hears */
+  mutedSeats: number[];
+  telegramSentAt: number;
+  /** wire a line to the table (false: too soon, or nothing to wire to) */
+  sendTelegram: (key: TelegramKey) => boolean;
+  /** a line arrived from a seat: shown for a while, unless that seat is muted */
+  receiveTelegram: (from: number, key: string) => void;
+  muteSeat: (seat: number, on: boolean) => void;
   loanConfirm: boolean;
   /** hovering the Loan chip → ghost pawn on the income track */
   loanPeek: boolean;
@@ -218,6 +230,9 @@ const clearSelection = {
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
+  telegrams: [] as Telegram[],
+  mutedSeats: [] as number[],
+  telegramSentAt: 0,
   humanMarks: [] as UndoMark[],
   loanConfirm: false,
   loanPeek: false,
@@ -453,6 +468,37 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   setHover: (key) => set({ hoverKey: key }),
+  sendTelegram: (key) => {
+    const st = get();
+    if (!isTelegramKey(key)) return false;
+    const now = Date.now();
+    if (now - st.telegramSentAt < TELEGRAM_COOLDOWN_MS) return false;
+    if (st.code) {
+      const wire = onlineWire();
+      if (!wire) return false;
+      wire.send({ t: 'telegram', code: st.code, key });
+      set({ telegramSentAt: now });
+      return true;
+    }
+    const g = st.game;
+    const me = g ? g.players.findIndex((p) => !p.isBot) : -1;
+    if (me < 0) return false;
+    set({ telegramSentAt: now });
+    get().receiveTelegram(me, key);
+    /* a jibe at the machines gets one back, now and then */
+    if (DIALECT[key] && Math.random() < 0.6) botWires(pickBot(g!, me), pickDialect(key), 1500 + Math.random() * 1500);
+    return true;
+  },
+  receiveTelegram: (from, key) => {
+    if (!isTelegramKey(key) || get().mutedSeats.includes(from)) return;
+    const id = Date.now() + Math.random();
+    set({ telegrams: [...get().telegrams.filter((x) => x.from !== from), { id, from, key, at: Date.now() }] });
+    setTimeout(() => set({ telegrams: get().telegrams.filter((x) => x.id !== id) }), TELEGRAM_SHOWN_MS);
+  },
+  muteSeat: (seat, on) => {
+    const muted = get().mutedSeats.filter((s) => s !== seat);
+    set({ mutedSeats: on ? [...muted, seat] : muted, telegrams: on ? get().telegrams.filter((x) => x.from !== seat) : get().telegrams });
+  },
 
   reject: (key, reason) => set({ shake: { key, reason, at: Date.now() } }),
 
@@ -535,6 +581,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const human = action.kind !== 'concede' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
+    if (human) botBanter(mut, g.current, action);
     return true;
   },
 
@@ -916,6 +963,7 @@ function listen(code: string, wire: Wire): void {
       return;
     }
     if (m.t === 'rejected' && m.code === code) useGame.setState({ shake: { key: '', reason: m.error, at: Date.now() } });
+    if (m.t === 'telegram' && m.code === code) useGame.getState().receiveTelegram(m.from, m.key);
   });
   const onLine = wire.onStatus(() => useGame.setState({ line: wire.status }));
   wire.watch(code);
@@ -930,6 +978,43 @@ function listen(code: string, wire: Wire): void {
 export function leaveOnlineTable(): void {
   deafen?.();
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
+}
+
+/* ------------------------- the bots' banter ------------------------- */
+
+/** a bot other than `me`, at random */
+function pickBot(g: GameState, me: number): number {
+  const bots = g.players.map((p, i) => (p.isBot && i !== me ? i : -1)).filter((i) => i >= 0);
+  return bots.length ? bots[Math.floor(Math.random() * bots.length)] : -1;
+}
+function pickDialect(not?: TelegramKey): TelegramKey {
+  const keys = (Object.keys(DIALECT) as TelegramKey[]).filter((k) => k !== not);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+/** a bot wires a line after a beat, if the game is still the same table */
+function botWires(seat: number, key: TelegramKey, delay: number): void {
+  /* headless (the tests, the server's bots) has no table to wire to */
+  if (seat < 0 || typeof window === 'undefined') return;
+  setTimeout(() => {
+    const st = useGame.getState();
+    if (st.code || !st.game || st.game.phase === 'game-over') return;
+    st.receiveTelegram(seat, key);
+  }, delay);
+}
+/** what a human just did, seen from the machines: beer drunk from their
+ *  brewery earns a grumble or a jibe; a big sale, a hat tipped now and then */
+function botBanter(after: GameState, actor: number, action: GameAction): void {
+  const last = after.ledger[after.ledger.length - 1];
+  if (!last || last.player !== actor) return;
+  if (action.kind === 'sell' && typeof last.vars?.beerFrom === 'string') {
+    const owners = new Set(String(last.vars.beerFrom).split(',').map((bit) => Number(bit.split(':')[0])));
+    for (const owner of owners) {
+      if (!after.players[owner]?.isBot || owner === actor) continue;
+      if (Math.random() < 0.7) botWires(owner, Math.random() < 0.5 ? 'myBeer' : pickDialect(), 1200 + Math.random() * 1500);
+      return;
+    }
+  }
+  if (action.kind === 'sell' && action.sales.length >= 2 && Math.random() < 0.25) botWires(pickBot(after, actor), 'hatsOff', 1500 + Math.random() * 1000);
 }
 
 /* dev only: the store at hand in the console (window.__brass.getState()),

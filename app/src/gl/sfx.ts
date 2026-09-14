@@ -129,3 +129,30 @@ export function houseHover(id: string | null): void {
 
 /* dev only: what is sounding right now (window.__sfx.playing()) */
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __sfx?: { playing: () => string | null } }).__sfx = { playing: () => playing?.id ?? null };
+
+/** the counter bell of the telegraph office: one bright strike */
+export function counterBell(): void {
+  void context().then((ac) => {
+    if (!ac) return;
+    const now = ac.currentTime;
+    const master = ac.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.09, now + 0.005);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+    master.connect(ac.destination);
+    for (const [f, level, decay] of [
+      [1760, 1, 0.7],
+      [4230, 0.35, 0.3],
+    ] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, now);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(level, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      o.connect(g).connect(master);
+      o.start(now);
+      o.stop(now + decay + 0.05);
+    }
+  });
+}
