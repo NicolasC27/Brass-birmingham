@@ -2,7 +2,7 @@
    a grumble about beer, a hurry-up, and some Midlands jibes of the 1800s.
    No free text: the office only carries what is printed here. */
 
-export const TELEGRAMS = ['wellPlayed', 'myBeer', 'coalShort', 'hatsOff', 'hurry', 'sacrebleu', 'gawby', 'mardy', 'saft', 'cakeHole', 'bostin', 'clemmed'] as const;
+export const TELEGRAMS = ['wellPlayed', 'cheers', 'myBeer', 'coalShort', 'hatsOff', 'hurry', 'sacrebleu', 'gawby', 'mardy', 'saft', 'cakeHole', 'bostin', 'clemmed'] as const;
 export type TelegramKey = (typeof TELEGRAMS)[number];
 
 /** the dialect lines: said as printed, whatever the reader's language, with a gloss */

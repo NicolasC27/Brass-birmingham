@@ -84,6 +84,10 @@ interface GameStore {
   pingSentAt: number;
   sendPing: (key: string) => boolean;
   receivePing: (from: number, key: string) => void;
+  /* ---- the toast once the game is over: seats that raised a glass ---- */
+  toasts: number[];
+  /** raise mine; at home the machines follow after a beat */
+  sendToast: () => boolean;
   loanConfirm: boolean;
   /** hovering the Loan chip → ghost pawn on the income track */
   loanPeek: boolean;
@@ -205,6 +209,8 @@ export function buildFinalPayload(g: GameState): FinalPayload {
       income: incomeLevel(p.income),
       links: Object.values(g.links).filter((l) => l.owner === g.players.indexOf(p)).length,
       industries: Object.values(g.tiles).filter((t) => t.owner === g.players.indexOf(p)).length + p.stats.sold,
+      stats: { ...p.stats },
+      bot: p.isBot,
     })),
     eras: [
       { name: 'Canal' as const, scores: g.canalScores ?? g.players.map(() => 0) },
@@ -240,6 +246,7 @@ const clearSelection = {
   telegramSentAt: 0,
   pings: [] as Ping[],
   pingSentAt: 0,
+  toasts: [] as number[],
   humanMarks: [] as UndoMark[],
   loanConfirm: false,
   loanPeek: false,
@@ -358,7 +365,7 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a rematch is a table's business, not a page's: online it does nothing */
     if (get().code) return;
     const game = newGame(readSetup());
-    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false });
+    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false, toasts: [], telegrams: [], pings: [] });
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
     } catch {
@@ -498,9 +505,27 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   receiveTelegram: (from, key) => {
     if (!isTelegramKey(key) || get().mutedSeats.includes(from)) return;
+    if (key === 'cheers' && !get().toasts.includes(from)) set({ toasts: [...get().toasts, from] });
     const id = Date.now() + Math.random();
     set({ telegrams: [...get().telegrams.filter((x) => x.from !== from), { id, from, key, at: Date.now() }] });
     setTimeout(() => set({ telegrams: get().telegrams.filter((x) => x.id !== id) }), TELEGRAM_SHOWN_MS);
+  },
+  sendToast: () => {
+    const st = get();
+    const g = st.game;
+    const me = st.seat ?? (g ? g.players.findIndex((p) => !p.isBot) : -1);
+    if (!g || me < 0 || st.toasts.includes(me)) return false;
+    if (st.code) {
+      const wire = onlineWire();
+      if (!wire) return false;
+      wire.send({ t: 'telegram', code: st.code, key: 'cheers' });
+      return true;
+    }
+    set({ toasts: [...st.toasts, me] });
+    g.players.forEach((p, i) => {
+      if (p.isBot && Math.random() < 0.85) botWires(i, 'cheers', 800 + Math.random() * 2500);
+    });
+    return true;
   },
   sendPing: (key) => {
     const st = get();
@@ -1029,7 +1054,7 @@ function botWires(seat: number, key: TelegramKey, delay: number): void {
   if (seat < 0 || typeof window === 'undefined') return;
   setTimeout(() => {
     const st = useGame.getState();
-    if (st.code || !st.game || st.game.phase === 'game-over') return;
+    if (st.code || !st.game || (st.game.phase === 'game-over' && key !== 'cheers')) return;
     st.receiveTelegram(seat, key);
   }, delay);
 }

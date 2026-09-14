@@ -508,6 +508,7 @@ const fr: typeof engame = {
     mute: 'Ne plus entendre {name}',
     line: {
       wellPlayed: 'Bien joué, monsieur.',
+      cheers: 'Santé !',
       myBeer: 'Vous me volez ma bière !',
       coalShort: 'Le charbon va manquer…',
       hatsOff: 'Coup de chapeau.',

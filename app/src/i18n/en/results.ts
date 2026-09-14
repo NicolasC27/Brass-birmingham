@@ -39,6 +39,21 @@ const results = {
     share: "Share the Ledger",
     copied: "Copied",
   },
+  toast: {
+    button: "Raise a glass",
+    raised: "{name} raises a tankard",
+    clink: "Tankards clink",
+    aria: "Raise a glass with the table",
+  },
+  titles: {
+    heading: "Titles of the game",
+    merchant: "Merchant",
+    builder: "Builder",
+    railwayman: "Railwayman",
+    engineer: "Engineer",
+    banker: "Banker",
+    headToHead: "{won} – {lost} against {name}",
+  },
   actions: {
     revanche: "Rematch",
     backToMenu: "Back to the Menu",

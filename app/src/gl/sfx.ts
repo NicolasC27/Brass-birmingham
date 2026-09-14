@@ -175,3 +175,31 @@ export function pingTap(): void {
     o.stop(now + 0.3);
   });
 }
+
+/** two pewter tankards meeting: a bright clink and a short ring */
+export function mugClink(): void {
+  void context().then((ac) => {
+    if (!ac) return;
+    const now = ac.currentTime;
+    const master = ac.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.1, now + 0.004);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+    master.connect(ac.destination);
+    for (const [f, level, decay] of [
+      [2960, 1, 0.5],
+      [4410, 0.5, 0.25],
+      [6830, 0.25, 0.12],
+    ] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, now);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(level, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      o.connect(g).connect(master);
+      o.start(now);
+      o.stop(now + decay + 0.05);
+    }
+  });
+}

@@ -15,6 +15,9 @@ export interface FinalPlayer {
   income: number;
   links: number;
   industries: number;
+  /** the tally of what the player did, for the titles */
+  stats?: { built: number; links: number; sold: number; loans: number; developed: number };
+  bot?: boolean;
 }
 
 export interface FinalEra {
@@ -57,6 +60,8 @@ export function readFinalResult(): FinalResult | null {
       income: Number.isFinite(p?.income) ? Number(p.income) : 0,
       links: Number.isFinite(p?.links) ? Number(p.links) : 0,
       industries: Number.isFinite(p?.industries) ? Number(p.industries) : 0,
+      stats: p?.stats && typeof p.stats === "object" ? p.stats : undefined,
+      bot: !!p?.bot,
     }));
 
     const eras: FinalEra[] = Array.isArray(data.eras)

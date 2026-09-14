@@ -41,6 +41,21 @@ const fr: typeof enresults = {
     share: "Partager le bilan",
     copied: "Copié",
   },
+  toast: {
+    button: "Trinquer",
+    raised: "{name} lève sa chope",
+    clink: "Les chopes s'entrechoquent",
+    aria: "Trinquer avec la table",
+  },
+  titles: {
+    heading: "Titres de la partie",
+    merchant: "Négociant",
+    builder: "Bâtisseur",
+    railwayman: "Cheminot",
+    engineer: "Ingénieur",
+    banker: "Banquier",
+    headToHead: "{won} – {lost} contre {name}",
+  },
   actions: {
     revanche: "Revanche",
     backToMenu: "Retour au menu",

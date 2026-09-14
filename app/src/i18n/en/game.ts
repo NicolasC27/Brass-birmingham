@@ -506,6 +506,7 @@ const game = {
     mute: 'Stop hearing {name}',
     line: {
       wellPlayed: 'Well played, sir.',
+      cheers: 'Cheers!',
       myBeer: 'You are drinking my beer!',
       coalShort: 'Coal is running short…',
       hatsOff: 'Hats off.',
