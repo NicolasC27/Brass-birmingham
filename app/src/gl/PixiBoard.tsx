@@ -1073,16 +1073,21 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
       }
     }
-    /* browsing: the route under the pointer glows a little — the one hover
-       effect kept on the board, quiet and on links only */
+    /* browsing: the route under the pointer lights up in brass — the one
+       hover effect kept on the board, on links only (not when the pointer
+       is on a town at its end: the town owns that hover) */
     if (idle && !hoverKey && hoverLink) {
       const def = LINKS.find((l) => l.id === hoverLink);
-      if (def) {
+      const adjacent = def && hoverTown !== null && (def.a === hoverTown || def.b === hoverTown);
+      if (def && !adjacent) {
+        const pts = routeFor(def, game.era).pts;
         const g = new Graphics();
-        trace(g, routeFor(def, game.era).pts);
-        g.stroke({ width: 7, color: 0xc9a45c, alpha: 0.55, cap: 'round', join: 'round' });
+        trace(g, pts);
+        g.stroke({ width: 10, color: 0xddbe7e, alpha: 0.22, cap: 'round', join: 'round' });
+        trace(g, pts);
+        g.stroke({ width: 3.6, color: 0xddbe7e, alpha: 0.92, cap: 'round', join: 'round' });
         g.eventMode = 'none';
-        pulse(g, 0.3);
+        overlay.addChild(g);
       }
     }
 
@@ -1165,6 +1170,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   })();
   const inspectTown = idle && inspect ? TOWN_BY_ID[inspect] : undefined;
   const inspectPos = inspectTown ? worldToScreen(inspectTown.x, inspectTown.y, view, size.w, size.h) : null;
+  const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink) : undefined;
+  const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef, game.era), view, size.w, size.h) : null;
+  const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
   /* merchant hover: the plate's tooltip, and only the goods YOU could sell there stay lit */
   const hoverMerchantDef = idle && hoverMerchant ? MERCHANT_BY_ID[hoverMerchant] : undefined;
   const hoverMerchantPos = hoverMerchantDef ? worldToScreen(hoverMerchantDef.x, hoverMerchantDef.y - (hoverMerchantDef.y > 1500 ? 34 : 0), view, size.w, size.h) : null;
@@ -1215,6 +1223,29 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* town hover tooltip (idle browsing) */}
 
       {/* link hover tooltip (idle browsing) */}
+      {hoverLinkDef && hoverLinkPos && (
+        <div
+          className="pointer-events-none absolute z-30 w-[220px] rounded-lg border border-brass-700/70 bg-coal-900/95 p-3 shadow-e3"
+          style={
+            hoverLinkPos[1] > 150
+              ? { left: hoverLinkPos[0], top: hoverLinkPos[1] - 16, transform: 'translate(-50%, -100%)' }
+              : { left: hoverLinkPos[0], top: hoverLinkPos[1] + 20, transform: 'translate(-50%, 0)' }
+          }
+          role="tooltip"
+        >
+          <div className="font-fell text-[14px] tracking-wide text-brass-400">
+            {hoverLinkBuilt ? (hoverLinkBuilt.era === 'rail' ? t('board.link.railLine') : t('board.link.canalLine')) : hoverLinkDef.canal && hoverLinkDef.rail ? t('board.link.canalOrRail') : hoverLinkDef.canal ? t('board.link.canalLink') : t('board.link.railLink')}
+          </div>
+          <div className="my-1.5 h-px bg-brass-700/50" />
+          <div className="font-sans text-[12px] leading-relaxed text-cream-100/90">
+            {(TOWN_BY_ID[hoverLinkDef.a]?.name ?? MERCHANT_BY_ID[hoverLinkDef.a]?.name) ?? hoverLinkDef.a} ↔{' '}
+            {(TOWN_BY_ID[hoverLinkDef.b]?.name ?? MERCHANT_BY_ID[hoverLinkDef.b]?.name) ?? hoverLinkDef.b}
+          </div>
+          <div className="mt-1 font-sans text-[11.5px] text-cream-100/65">
+            {hoverLinkBuilt ? t('board.link.builtBy', { name: game.players[hoverLinkBuilt.owner].name, era: t(`board.era.${hoverLinkBuilt.era}`) }) : t('board.link.unbuilt')}
+          </div>
+        </div>
+      )}
 
       {/* merchant hover tooltip (idle browsing) */}
       {hoverMerchantDef && hoverMerchantPos && (
