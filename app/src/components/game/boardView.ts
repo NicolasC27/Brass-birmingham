@@ -10,9 +10,10 @@
 
 export const WORLD_W = 3200;
 export const WORLD_H = 1800;
-/* v14: max zoom-out is ~the fitted view — zooming below only shrinks the
-   map into empty space, and the ribbon floor would blow the plaques up. */
-export const MIN_K = 0.75;
+/* zoom is a factor over the fit: 1 shows the whole world, and the board
+   never zooms out past it — a smaller map only pushed plaques and tiles
+   below what the eye can read and left empty space around. */
+export const MIN_K = 1;
 export const MAX_K = 3;
 
 export interface View {
