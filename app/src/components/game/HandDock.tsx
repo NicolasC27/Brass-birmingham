@@ -9,6 +9,7 @@ import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
+import { industryFaceUrl } from '@/gl/paint';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
 import { useBoardOptions } from './boardOptions';
@@ -502,24 +503,43 @@ export default function HandDock() {
                 className="paper flex items-center gap-2 self-center rounded-md px-3 py-2"
               >
                 <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.hand.retire')}</span>
-                {/* one row per industry: the tile on top of the stack, the one
-                    beneath it, and how many of them this action retires */}
-                <div className="flex flex-wrap items-center gap-1.5">
+                {/* one tile per industry, painted as on the board: the one on
+                    top of the stack, its level stamped, the one beneath named
+                    under it, and how many of them this action retires */}
+                <div className="flex flex-wrap items-start gap-2">
                   {devOptions.map((d) => {
                     const count = developPick.filter((x) => x === d.industry).length;
                     const stack = game.players[game.current].stacks[d.industry];
                     const next = stack[1];
                     const nextOk = next !== undefined && !INDUSTRIES[d.industry][next - 1].noDevelop;
                     const canAdd = developPick.length < 2 && (count === 0 ? d.valid : nextOk);
+                    const usable = d.valid || count > 0;
                     return (
-                      <span key={d.industry} className={cn('flex items-center gap-1 rounded-sm border px-1.5 py-1 font-sans text-[10px] font-semibold', count ? 'border-rust-500 bg-rust-500/15 text-ink-900' : d.valid ? 'border-brass-700/60 text-ink-900/85' : 'border-brass-700/30 text-ink-900/35')} title={d.reason ? reasonText(d.reason) : undefined}>
-                        <img src={INDUSTRY_ICON[d.industry]} alt="" className="h-3.5 w-3.5" />
-                        <span>L{d.level}</span>
-                        <span className="text-ink-900/45">{next !== undefined ? t('game.hand.devNext', { level: next }) : t('game.hand.devDone')}</span>
-                        {count > 0 && <span className="rounded-full bg-rust-500 px-1.5 text-[9px] font-bold text-cream-100">×{count}</span>}
-                        <button type="button" disabled={!canAdd} onClick={() => addDevelop(d.industry)} aria-label={t('game.hand.devMore')} title={t('game.hand.devMore')} className="ml-0.5 rounded-sm border border-brass-700/50 px-1 leading-none hover:bg-brass-500/20 disabled:cursor-not-allowed disabled:opacity-30">+</button>
-                        <button type="button" disabled={!count} onClick={() => dropDevelop(d.industry)} aria-label={t('game.hand.devLess')} title={t('game.hand.devLess')} className="rounded-sm border border-brass-700/50 px-1 leading-none hover:bg-brass-500/20 disabled:cursor-not-allowed disabled:opacity-30">−</button>
-                      </span>
+                      <div key={d.industry} className="flex flex-col items-center gap-1" title={d.reason ? reasonText(d.reason) : INDUSTRY_LABEL[d.industry]}>
+                        <button
+                          type="button"
+                          disabled={!canAdd}
+                          onClick={() => addDevelop(d.industry)}
+                          aria-label={`${INDUSTRY_LABEL[d.industry]} L${d.level} — ${t('game.hand.devMore')}`}
+                          className={cn(
+                            'relative h-[52px] w-[52px] overflow-hidden rounded-md border-2 shadow-[0_2px_4px_rgba(0,0,0,.35)] transition-transform',
+                            count ? 'border-rust-500 ring-2 ring-rust-500/40' : d.valid ? 'border-brass-700/70 hover:-translate-y-0.5 hover:border-brass-500' : 'border-brass-700/30',
+                            !usable && 'opacity-40 grayscale-[.6]',
+                            !canAdd && 'cursor-not-allowed',
+                          )}
+                          style={{ backgroundColor: INDUSTRY_COLOR[d.industry] }}
+                        >
+                          <img src={industryFaceUrl(d.industry, boardOpts.tileArt)} alt="" className="h-full w-full object-contain p-0.5" draggable={false} />
+                          {/* the level, stamped top-left as on the board */}
+                          <span className="absolute left-[3px] top-[3px] rounded-[3px] bg-ink-900/75 px-1 font-fell text-[10px] font-bold leading-[14px] text-cream-100">{['', 'I', 'II', 'III', 'IV'][d.level] ?? d.level}</span>
+                          {count > 0 && <span className="absolute -right-0.5 -top-0.5 rounded-full bg-rust-500 px-1.5 font-sans text-[9px] font-bold leading-[14px] text-cream-100">×{count}</span>}
+                        </button>
+                        <span className="flex items-center gap-1 font-sans text-[9.5px] leading-none text-ink-900/60">
+                          <button type="button" disabled={!count} onClick={() => dropDevelop(d.industry)} aria-label={t('game.hand.devLess')} title={t('game.hand.devLess')} className="rounded-sm border border-brass-700/50 px-1 leading-[12px] hover:bg-brass-500/20 disabled:cursor-not-allowed disabled:opacity-30">−</button>
+                          <span>{next !== undefined ? t('game.hand.devNext', { level: next }) : t('game.hand.devDone')}</span>
+                          <button type="button" disabled={!canAdd} onClick={() => addDevelop(d.industry)} aria-label={t('game.hand.devMore')} title={t('game.hand.devMore')} className="rounded-sm border border-brass-700/50 px-1 leading-[12px] hover:bg-brass-500/20 disabled:cursor-not-allowed disabled:opacity-30">+</button>
+                        </span>
+                      </div>
                     );
                   })}
                 </div>
