@@ -15,8 +15,10 @@ Scripts need Playwright's Chromium (`PLAYWRIGHT_BROWSERS_PATH` pointing at a bro
 ## Rail era, painted
 
 The rail-era background is no longer a grade of the canal painting: it is a
-Midjourney painting of the same land under industry (source kept as
-`tools/assets/map/map-era-rail-midjourney.jpg`), composed into the canal
-map's frame by `tools/assets/map/compose-rail.sh <painting> <geo.json>`:
-scaled to cover the world, 15 % mirrored bleed, soft embankments along the
-rail routes, mist in the far edges, served as WebP.
+Midjourney painting of the same land under industry. Three of them are
+served (`map-era-rail.webp`, `-2`, `-3`; the board setting "Rail-era
+painting" picks one), each composed into the canal map's frame by
+`tools/assets/map/compose-rail.sh <painting> <geo.json> [stem]`: the
+painting keeps its own pixels, centred on the world, the rest mirrored from
+its edges to fill the 15 % bleed; rail beds engraved along the rail routes;
+mist in the far edges; served as WebP. Sources stay in `tools/assets/map/`.
