@@ -222,6 +222,8 @@ let barrelTex: Texture;
 /* one painting per merchant when /merchant-<id>.png exists (e.g. Gloucester
    docks); the shared barge otherwise */
 const houseArt = new Map<string, Texture>();
+/* dev only: the signs' textures at hand in the console (a film's clock) */
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __houseArt?: typeof houseArt }).__houseArt = houseArt;
 let villageTex: Texture;
 
 /** canonical key for a dual-industry slot painting */
@@ -449,10 +451,23 @@ export async function loadBoardAssets(): Promise<void> {
   const loaded = await Assets.load(urls);
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
+  /* a house may come alive: a short looping film of its quay served beside
+     the still (smoke drifting, lamps flickering). The still stands in when
+     no film is served, or when the reader has asked for less motion. */
+  const stillOnly = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   await Promise.all(
     MERCHANTS.map(async (m) => {
+      const name = m.id.replace(/^m-/, '');
       try {
-        houseArt.set(m.id, await Assets.load(`/merchant-house-${m.id.replace(/^m-/, '')}.webp`));
+        let tex: Texture | null = null;
+        if (!stillOnly) {
+          const film = `/merchant-house-${name}.webm`;
+          const head = await fetch(film, { method: 'HEAD' }).catch(() => null);
+          if (head?.ok && (head.headers.get('content-type') ?? '').startsWith('video/')) {
+            tex = await Assets.load<Texture>({ src: film, data: { autoPlay: true, loop: true, muted: true, playsInline: true, preload: true } }).catch(() => null);
+          }
+        }
+        houseArt.set(m.id, tex ?? (await Assets.load(`/merchant-house-${name}.webp`)));
       } catch {
         /* no sign painted for this house: it is not drawn */
       }
