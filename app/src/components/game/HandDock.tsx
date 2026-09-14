@@ -269,6 +269,8 @@ export default function HandDock() {
     });
   const leaveTimer = useRef<number | null>(null);
   const enterTimer = useRef<number | null>(null);
+  const [folded, setFolded] = useState(false);
+  const [hoverMuted, setHoverMuted] = useState(false);
   /* H pins / unpins the hand from anywhere (not while typing) */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -316,6 +318,7 @@ export default function HandDock() {
     enterTimer.current = null;
     // small grace period so the strip doesn't snap shut between cards
     leaveTimer.current = window.setTimeout(() => setHovered(false), 350);
+    setHoverMuted(false);
   };
   useEffect(
     () => () => {
@@ -324,6 +327,12 @@ export default function HandDock() {
     },
     [],
   );
+
+  const turnKey = game ? `${game.era}:${game.round}:${game.current}:${game.actionsLeft}` : '';
+  useEffect(() => {
+    const id = window.setTimeout(() => setFolded(false), 0);
+    return () => window.clearTimeout(id);
+  }, [turnKey]);
 
   if (!game) return null;
   const p = game.players[game.current];
@@ -340,7 +349,11 @@ export default function HandDock() {
 
   const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout';
   /* open through the reader's own turn — a second action is still to play */
-  const expanded = pinned || hovered || busy || isHumanTurn;
+  /* folded by a click on the strip: holds through the reader's own turn
+     (which otherwise keeps the hand open) until the next turn, a pick, or
+     the pin. The hover that would reopen it is muted until the pointer has
+     left once, so the click itself does not bounce the hand back open. */
+  const expanded = pinned || busy || (hovered && !hoverMuted) || (isHumanTurn && !folded);
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (
@@ -360,7 +373,16 @@ export default function HandDock() {
           type="button"
           aria-expanded={expanded}
           aria-label={expanded ? t('game.hand.foldDock') : t('game.hand.openDock')}
-          onClick={() => setPinned((v) => !v)}
+          onClick={() => {
+            if (expanded) {
+              if (pinned) setPinned(() => false);
+              setFolded(true);
+              setHoverMuted(true);
+            } else {
+              setFolded(false);
+              setHoverMuted(false);
+            }
+          }}
           className={cn(
             'relative flex h-[32px] w-full items-center justify-center gap-3 px-4 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
             expanded ? 'text-brass-500/70 hover:text-brass-400' : 'text-brass-400 hover:text-brass-400',
