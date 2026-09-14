@@ -703,9 +703,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           hoverRef.current.setHoverLink(null);
           el.style.cursor = 'pointer';
         } else {
+          /* a route hidden with C is not there to be hovered either */
           const def = linkAt(wx, wy);
-          hoverRef.current.setHoverLink(def?.id ?? null);
-          el.style.cursor = def ? 'help' : 'grab';
+          const shown = def && !(getBoardOptions().hideUnbuilt && !gameRef.current?.links[def.id]);
+          hoverRef.current.setHoverLink(shown ? def.id : null);
+          el.style.cursor = shown ? 'help' : 'grab';
         }
       };
       el.addEventListener('pointermove', onHoverMove);
@@ -1079,7 +1081,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (idle && !hoverKey && hoverLink) {
       const def = LINKS.find((l) => l.id === hoverLink);
       const adjacent = def && hoverTown !== null && (def.a === hoverTown || def.b === hoverTown);
-      if (def && !adjacent) {
+      const hidden = def && hideUnbuilt && !game.links[def.id];
+      if (def && !adjacent && !hidden) {
         const pts = routeFor(def, game.era).pts;
         const g = new Graphics();
         trace(g, pts);
@@ -1091,7 +1094,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq]);
 
   /* pointer affordances on the WebGL hit areas (SVG: cursor-pointer/help).
      Anything left at 'inherit' falls back to the frame's grab/grabbing. */
@@ -1170,7 +1173,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   })();
   const inspectTown = idle && inspect ? TOWN_BY_ID[inspect] : undefined;
   const inspectPos = inspectTown ? worldToScreen(inspectTown.x, inspectTown.y, view, size.w, size.h) : null;
-  const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink) : undefined;
+  const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink && (!hideUnbuilt || game.links[l.id])) : undefined;
   const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef, game.era), view, size.w, size.h) : null;
   const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
   /* merchant hover: the plate's tooltip, and only the goods YOU could sell there stay lit */
