@@ -1073,6 +1073,18 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
       }
     }
+    /* browsing: the route under the pointer glows a little — the one hover
+       effect kept on the board, quiet and on links only */
+    if (idle && !hoverKey && hoverLink) {
+      const def = LINKS.find((l) => l.id === hoverLink);
+      if (def) {
+        const g = new Graphics();
+        trace(g, routeFor(def, game.era).pts);
+        g.stroke({ width: 7, color: 0xc9a45c, alpha: 0.55, cap: 'round', join: 'round' });
+        g.eventMode = 'none';
+        pulse(g, 0.3);
+      }
+    }
 
   }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq]);
 
