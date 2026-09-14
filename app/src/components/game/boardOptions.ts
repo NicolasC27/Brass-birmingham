@@ -74,6 +74,8 @@ export interface BoardOptions {
   matWide: boolean;
   /** the board's small sounds (a bell over a hovered house) */
   sound: boolean;
+  /** the telegrams wired across the table, and the machines' banter */
+  telegrams: boolean;
   /** mat levels as the player's real cards with a pile, or compact boxes */
   matStyle: MatStyle;
   /** ×n count badge on the cards (the pile already shows it) */
@@ -103,6 +105,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   railCompact: 'brassworks.railCompact',
   matWide: 'brassworks.matWide',
   sound: 'brassworks.sound',
+  telegrams: 'brassworks.telegrams',
   matStyle: 'brassworks.matStyle',
   matCount: 'brassworks.matCount',
 };
@@ -141,6 +144,7 @@ let state: BoardOptions = {
   railCompact: read('railCompact', false),
   matWide: read('matWide', false),
   sound: read('sound', true),
+  telegrams: read('telegrams', true),
   matStyle: read('matStyle', 'cards'),
   matCount: read('matCount', false),
   settingsOpen: false,

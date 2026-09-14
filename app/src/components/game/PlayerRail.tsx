@@ -6,6 +6,7 @@ import { useGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets, narrowRailTop } from './useHudInsets';
+import { TelegramPlaque } from './Telegrams';
 import { useNarrow } from '@/hooks/use-narrow';
 import { useT } from '@/i18n';
 import type { PlayerState } from '@/game/types';
@@ -211,7 +212,10 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
       aria-label={t('game.rail.playersAria')}
     >
       {game.players.map((p, i) => (
-        <RailChip key={i} p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={compact} />
+        <div key={i} className="flex flex-col">
+          <RailChip p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={compact} />
+          <TelegramPlaque seat={i} compact={compact} />
+        </div>
       ))}
       {/* fold the rail to one line per seat, for more board */}
       {!narrow && (

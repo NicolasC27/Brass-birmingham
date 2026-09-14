@@ -540,6 +540,9 @@ export default function BoardSettings() {
                         />
                       </OptionRow>
                     )}
+                    <OptionRow label={t('game.settings.telegrams')} hint={t('game.settings.telegramsHint')}>
+                      <Switch on={opts.telegrams} onClick={() => setBoardOption('telegrams', !opts.telegrams)} label={t('game.settings.telegrams')} />
+                    </OptionRow>
                     <OptionRow label={t('game.settings.sound')} hint={t('game.settings.soundHint')}>
                       <Switch on={opts.sound} onClick={() => setBoardOption('sound', !opts.sound)} label={t('game.settings.sound')} />
                     </OptionRow>

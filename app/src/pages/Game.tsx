@@ -10,6 +10,7 @@ import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
 import Notices from '@/components/game/Notices';
+import { TelegramButton } from '@/components/game/Telegrams';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -394,6 +395,7 @@ export default function Game() {
                 <FastForward className="h-4 w-4" />
               </button>
             )}
+            <TelegramButton className={TOOL} />
             <button
               type="button"
               onClick={() => {
