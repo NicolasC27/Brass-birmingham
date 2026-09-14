@@ -72,6 +72,8 @@ export interface BoardOptions {
   railCompact: boolean;
   /** player mat spread wide (six columns) instead of the slim docked panel */
   matWide: boolean;
+  /** the board's small sounds (a bell over a hovered house) */
+  sound: boolean;
   /** mat levels as the player's real cards with a pile, or compact boxes */
   matStyle: MatStyle;
   /** ×n count badge on the cards (the pile already shows it) */
@@ -100,6 +102,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   beginnerAid: 'brassworks.beginnerAid',
   railCompact: 'brassworks.railCompact',
   matWide: 'brassworks.matWide',
+  sound: 'brassworks.sound',
   matStyle: 'brassworks.matStyle',
   matCount: 'brassworks.matCount',
 };
@@ -137,6 +140,7 @@ let state: BoardOptions = {
   beginnerAid: read('beginnerAid', false),
   railCompact: read('railCompact', false),
   matWide: read('matWide', false),
+  sound: read('sound', true),
   matStyle: read('matStyle', 'cards'),
   matCount: read('matCount', false),
   settingsOpen: false,

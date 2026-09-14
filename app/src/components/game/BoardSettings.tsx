@@ -540,6 +540,9 @@ export default function BoardSettings() {
                         />
                       </OptionRow>
                     )}
+                    <OptionRow label={t('game.settings.sound')} hint={t('game.settings.soundHint')}>
+                      <Switch on={opts.sound} onClick={() => setBoardOption('sound', !opts.sound)} label={t('game.settings.sound')} />
+                    </OptionRow>
                     <OptionRow label={t('game.settings.showUnbuilt')} hint={t('game.settings.showUnbuiltHint')}>
                       <Switch on={!opts.hideUnbuilt} onClick={() => setBoardOption('hideUnbuilt', !opts.hideUnbuilt)} label={t('game.settings.showUnbuilt')} />
                     </OptionRow>

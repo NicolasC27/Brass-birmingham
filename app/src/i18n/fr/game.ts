@@ -144,6 +144,8 @@ const fr: typeof engame = {
     followBotsHint: 'La caméra glisse vers la ville où un bot, ou un rival en ligne, vient de jouer.',
     beginnerAidTable: 'À une table en ligne, l’hôte la règle dans la salle, pour tout le monde.',
     boardSection: 'Plateau',
+    sound: 'Sons',
+    soundHint: 'Une clochette de boutique au survol d’un marchand.',
     showUnbuilt: 'Liens non construits',
     showUnbuiltHint: 'Les tracés de canaux et de rails encore disponibles. Touche C.',
     greyMerch: 'Griser les marchands non pris',

@@ -142,6 +142,8 @@ const game = {
     followBotsHint: 'The camera glides to the town a bot, or a rival online, just played in.',
     beginnerAidTable: 'At an online table the host sets it in the room, for everyone.',
     boardSection: 'Board',
+    sound: 'Sounds',
+    soundHint: 'A shop bell when a merchant is hovered.',
     showUnbuilt: 'Unbuilt links',
     showUnbuiltHint: 'Canal and rail routes still open. C key.',
     greyMerch: 'Grey out unclaimed merchants',
