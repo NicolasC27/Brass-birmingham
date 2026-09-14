@@ -333,7 +333,9 @@ export default function Game() {
     for (const m of ghost?.market ?? []) out[m.resource as Resource] = (out[m.resource as Resource] ?? 0) + m.amount;
     return out;
   }, [ghost]);
-  const drawsFromMarket = (consumePreview.coal ?? 0) > 0 || (consumePreview.iron ?? 0) > 0;
+  /* the tray opens whenever the plan trades with the exchange: buying
+     coal or iron, or a mine/works selling its output on the spot */
+  const drawsFromMarket = (consumePreview.coal ?? 0) > 0 || (consumePreview.iron ?? 0) > 0 || !!ghost?.sale;
   useEffect(() => {
     if (drawsFromMarket && !marketOpen) {
       marketAutoOpened.current = true;

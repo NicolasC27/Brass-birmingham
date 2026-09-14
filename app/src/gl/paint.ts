@@ -677,7 +677,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   const MT = 40; // merchant tile size
   const MT_GAP = 10;
   const merchantBeer = new Map<string, Container>();
-  const merchantDyn = new Map<string, { plate: Container; halo: Graphics; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; tileTop: number }>();
+  const merchantDyn = new Map<string, { plate: Container; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; tileTop: number }>();
   const ribbons: Container[] = [];
   for (const m of MERCHANTS) {
     const id = m.id.replace(/^m-/, '');
@@ -694,16 +694,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     plate.scale.set(1.45);
     plate.eventMode = 'none';
 
-    /* a warm light behind an open house, like a lit shopfront */
-    const halo = new Graphics();
-    halo.eventMode = 'none';
-    for (const [k, a] of [
-      [26, 0.05],
-      [16, 0.07],
-      [8, 0.1],
-    ] as const) {
-      halo.roundRect(-W / 2 - k, -H / 2 - k, W + 2 * k, H + 2 * k, 14 + k).fill({ color: 0xf0c060, alpha: a });
-    }
     const shadow = new Graphics().roundRect(-W / 2 + 4, -H / 2 + 8, W, H, 6).fill({ color: 0x000000, alpha: 0.55 });
     shadow.eventMode = 'none';
     const sign = new Sprite(tex);
@@ -711,7 +701,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     sign.width = W;
     sign.height = H;
     sign.eventMode = 'none';
-    plate.addChild(halo, shadow, sign);
+    plate.addChild(shadow, sign);
 
     /* tile shelves (static): a faint recess where each merchant tile sits,
        low and left on the painting */
@@ -798,7 +788,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
 
     merchantsLayer.addChild(plate);
     merchantBeer.set(m.id, slots);
-    merchantDyn.set(m.id, { plate, halo, slots, medal, claimed, closed, slotX, tileTop });
+    merchantDyn.set(m.id, { plate, slots, medal, claimed, closed, slotX, tileTop });
 
     /* the name, legible at every zoom: a counter-scaled brass plate laid over
        the one painted on the sign's top band */
@@ -1225,7 +1215,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       const open = merchantOpen(game, m.id);
       const isClaimed = !!game.merchantBonusTaken[m.id];
       dyn.plate.alpha = open ? 1 : 0.42;
-      dyn.halo.visible = open;
       dyn.closed.visible = !open;
       /* board option: unclaimed medallions can be greyed back so claimed
          ones pop off the board (claimed always stay dimmed + ✓) */
