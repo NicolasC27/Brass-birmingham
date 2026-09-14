@@ -36,6 +36,7 @@ const fr: typeof engame = {
     eraCanal: 'Ère canal',
     eraRail: 'Ère rail',
     eraRoundTitle: '{era} — manche {round} sur {total}',
+    noWay: '{verb} impossible :',
     canalTip:
       'Canaux £3. Les manufactures de niveau 1 sont balayées à la fin de cette ère. Le revenu est payé à la clôture de chaque manche.',
     railTip:
@@ -435,6 +436,8 @@ const fr: typeof engame = {
     'Select a card first': 'Choisissez d’abord une carte',
     'Select the card to discard first': 'Choisissez d’abord la carte à défausser',
     'No valid construction site for this card': 'Aucun emplacement valable pour cette carte',
+    'No connected coal — reach a mine or a merchant': 'Pas de charbon relié : atteignez une mine ou un marchand',
+    'No coal left anywhere': 'Plus de charbon nulle part',
     'Nothing worth developing (needs iron)': 'Rien à développer (il faut du fer)',
     'No goods connected to a demanding merchant': 'Aucune marchandise reliée à un marchand preneur',
     'No affordable link from your network': 'Aucune liaison abordable depuis votre réseau',

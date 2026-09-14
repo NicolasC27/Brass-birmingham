@@ -453,11 +453,14 @@ export default function HandDock() {
             {VERB_META.map(({ verb: v, label, icon: Icon }) => {
               const meta = verbs.find((x) => x.verb === v);
               const ok = !!meta?.ok && isHumanTurn;
+              /* a verb nothing takes still answers the click: the banner
+                 then says what blocks it, instead of a tooltip nobody sees */
+              const clickable = ok || (!!meta?.tryable && isHumanTurn);
               const chip = (
                 <button
                   key={v}
                   type="button"
-                  disabled={!ok}
+                  disabled={!clickable}
                   onClick={() => setVerb(verb === v ? null : v)}
                   onPointerEnter={v === 'loan' && ok ? () => setLoanPeek(true) : undefined}
                   onPointerLeave={v === 'loan' ? () => setLoanPeek(false) : undefined}
@@ -470,14 +473,16 @@ export default function HandDock() {
                       ? 'border-brass-400 bg-brass-500/20 text-brass-400 shadow-[0_0_8px_rgba(201,164,92,.3)]'
                       : ok
                         ? 'border-brass-700/70 bg-coal-800 text-cream-100/85 hover:border-brass-500 hover:text-brass-400'
-                        : 'cursor-not-allowed border-brass-700/30 bg-coal-800/60 text-cream-100/30',
+                        : clickable
+                          ? 'border-brass-700/40 bg-coal-800/70 text-cream-100/45 hover:border-brass-700 hover:text-cream-100/70'
+                          : 'cursor-not-allowed border-brass-700/30 bg-coal-800/60 text-cream-100/30',
                   )}
                 >
                   <Icon className="h-3 w-3" />
                   {t(label)}
                 </button>
               );
-              return !ok && meta?.reason && isHumanTurn ? (
+              return !clickable && meta?.reason && isHumanTurn ? (
                 <Tooltip key={v} side="top" title={t(label)} content={reasonText(meta.reason)}>
                   {chip}
                 </Tooltip>

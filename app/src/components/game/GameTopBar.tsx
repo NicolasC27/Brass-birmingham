@@ -3,9 +3,9 @@ import { motion } from 'framer-motion';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
-import { cardLabel, confirmCost, confirmSummary, useGame } from '@/game/store';
+import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
 import type { Verb } from '@/game/types';
-import { useT } from '@/i18n';
+import { reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { PortraitMedallion } from './PlayerRail';
@@ -113,8 +113,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
     line = t('game.topbar.hint.ready');
   } else if (stage === 'target') {
     line = t(`game.topbar.hint.${verb}`);
-    /* the beginner's aid counts the choices, and says when there are none */
-    if (aid && card && (verb === 'build' || verb === 'network' || verb === 'sell' || verb === 'develop')) {
+    if (card && (verb === 'build' || verb === 'network' || verb === 'sell' || verb === 'develop')) {
       const n =
         verb === 'build'
           ? buildTargets(game, me, card).filter((x) => x.valid).length
@@ -123,7 +122,16 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
             : verb === 'sell'
               ? sellTargets(game, me).filter((x) => x.valid).length
               : developOptions(game, me).filter((x) => x.valid).length;
-      line = n === 0 ? t(`game.topbar.aid.none.${verb}`) : `${line} · ${t('game.topbar.aid.count', { n })}`;
+      /* nothing takes the verb: name what blocks it — the hand let the
+         reader pick it so the answer lands here, not in a tooltip */
+      if (n === 0) {
+        const why = verbsForCard({ game, selectedCardId }).find((v) => v.verb === verb)?.reason;
+        line = `${t('game.topbar.noWay', { verb: t(VERB_LABEL[verb]) })} ${reasonText(why)}`;
+        if (aid) line += ` — ${t(`game.topbar.aid.none.${verb}`)}`;
+      } else if (aid) {
+        /* the beginner's aid counts the choices */
+        line = `${line} · ${t('game.topbar.aid.count', { n })}`;
+      }
     }
   } else if (stage === 'verb') {
     line = t('game.topbar.hint.pickVerb', { card: card ? cardLabel(card) : '' });

@@ -829,7 +829,40 @@ export function cardLabel(card: Card): string {
   return tr('game.confirm.wildIndustry');
 }
 
-export function verbsForCard(st: { game: GameState | null; selectedCardId: string | null }): { verb: Verb; ok: boolean; reason?: string }[] {
+/** the one refusal worth telling when no site takes the card: the most
+ *  actionable reason among the sites the card could otherwise reach —
+ *  missing coal or iron, money, network — before the merely structural
+ *  ones (wrong slot, occupied) that apply to every other slot on the map */
+const BUILD_REASON_RANK: (string | RegExp)[] = [
+  'No connected coal — reach a mine or a merchant',
+  'No coal left anywhere',
+  'No iron available anywhere',
+  /^Needs £/,
+  'Not in your network',
+  'Canal Era: one tile per location',
+  /overbuil/,
+  'Occupied by another industry',
+  /era$/,
+  /tiles left$/,
+];
+export function whyNoBuild(targets: BuildTarget[]): string {
+  let best: { rank: number; n: number; reason: string } | null = null;
+  const seen = new Map<string, number>();
+  for (const t of targets) {
+    if (t.valid || !t.reason) continue;
+    seen.set(t.reason, (seen.get(t.reason) ?? 0) + 1);
+  }
+  for (const [reason, n] of seen) {
+    let rank = BUILD_REASON_RANK.findIndex((r) => (typeof r === 'string' ? r === reason : r.test(reason)));
+    if (rank < 0) rank = BUILD_REASON_RANK.length;
+    if (!best || rank < best.rank || (rank === best.rank && n > best.n)) best = { rank, n, reason };
+  }
+  return best?.reason ?? 'No valid construction site for this card';
+}
+
+/** the verbs a selected card allows. `tryable` marks the ones the hand still
+ *  lets the reader pick when nothing takes them, so the banner can say why */
+export function verbsForCard(st: { game: GameState | null; selectedCardId: string | null }): { verb: Verb; ok: boolean; reason?: string; tryable?: boolean }[] {
   const g = st.game;
   const card = g?.players[g.current]?.hand.find((c) => c.id === st.selectedCardId);
   if (!g || !card) {
@@ -844,15 +877,12 @@ export function verbsForCard(st: { game: GameState | null; selectedCardId: strin
     ];
   }
   const i = g.current;
+  const sites = buildTargets(g, i, card);
   return [
-    {
-      verb: 'build',
-      ok: buildTargets(g, i, card).some((t) => t.valid),
-      reason: 'No valid construction site for this card',
-    },
-    { verb: 'network', ok: linkTargets(g, i).some((t) => t.valid), reason: 'No affordable link from your network' },
-    { verb: 'develop', ok: developOptions(g, i).some((d) => d.valid), reason: 'Nothing worth developing (needs iron)' },
-    { verb: 'sell', ok: sellTargets(g, i).some((t) => t.valid), reason: 'No goods connected to a demanding merchant' },
+    { verb: 'build', ok: sites.some((t) => t.valid), reason: whyNoBuild(sites), tryable: true },
+    { verb: 'network', ok: linkTargets(g, i).some((t) => t.valid), reason: 'No affordable link from your network', tryable: true },
+    { verb: 'develop', ok: developOptions(g, i).some((d) => d.valid), reason: 'Nothing worth developing (needs iron)', tryable: true },
+    { verb: 'sell', ok: sellTargets(g, i).some((t) => t.valid), reason: 'No goods connected to a demanding merchant', tryable: true },
     { verb: 'loan', ok: canLoan(g, i).ok, reason: canLoan(g, i).reason },
     { verb: 'scout', ok: canScout(g, i).ok, reason: canScout(g, i).reason },
     /* nothing to play: a pass still costs the card */

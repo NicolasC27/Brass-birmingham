@@ -34,6 +34,7 @@ const game = {
     eraCanal: 'Canal Era',
     eraRail: 'Rail Era',
     eraRoundTitle: '{era} — Round {round} of {total}',
+    noWay: '{verb} impossible:',
     canalTip:
       'Canals £3. Level-1 works are swept away when this era ends. Income pays at each round’s close.',
     railTip:
@@ -433,6 +434,8 @@ const game = {
     'Select a card first': 'Select a card first',
     'Select the card to discard first': 'Select the card to discard first',
     'No valid construction site for this card': 'No valid construction site for this card',
+    'No connected coal — reach a mine or a merchant': 'No connected coal — reach a mine or a merchant',
+    'No coal left anywhere': 'No coal left anywhere',
     'Nothing worth developing (needs iron)': 'Nothing worth developing (needs iron)',
     'No goods connected to a demanding merchant': 'No goods connected to a demanding merchant',
     'No affordable link from your network': 'No affordable link from your network',
