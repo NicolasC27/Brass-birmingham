@@ -15,8 +15,8 @@ import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { onlineWire } from '@/online/net';
-import { DIALECT, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
-import type { Telegram, TelegramKey } from './telegrams';
+import { DIALECT, PING_COOLDOWN_MS, PING_SHOWN_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
+import type { Ping, Telegram, TelegramKey } from './telegrams';
 import type { Pause, Rollback, ServerMessage } from '@/online/protocol';
 import type { Wire, WireStatus } from '@/online/wire';
 import type {
@@ -79,6 +79,11 @@ interface GameStore {
   /** a line arrived from a seat: shown for a while, unless that seat is muted */
   receiveTelegram: (from: number, key: string) => void;
   muteSeat: (seat: number, on: boolean) => void;
+  /* ---- pings: "look here" on a town, a house or a route ---- */
+  pings: Ping[];
+  pingSentAt: number;
+  sendPing: (key: string) => boolean;
+  receivePing: (from: number, key: string) => void;
   loanConfirm: boolean;
   /** hovering the Loan chip → ghost pawn on the income track */
   loanPeek: boolean;
@@ -233,6 +238,8 @@ const clearSelection = {
   telegrams: [] as Telegram[],
   mutedSeats: [] as number[],
   telegramSentAt: 0,
+  pings: [] as Ping[],
+  pingSentAt: 0,
   humanMarks: [] as UndoMark[],
   loanConfirm: false,
   loanPeek: false,
@@ -495,9 +502,33 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ telegrams: [...get().telegrams.filter((x) => x.from !== from), { id, from, key, at: Date.now() }] });
     setTimeout(() => set({ telegrams: get().telegrams.filter((x) => x.id !== id) }), TELEGRAM_SHOWN_MS);
   },
+  sendPing: (key) => {
+    const st = get();
+    const now = Date.now();
+    if (now - st.pingSentAt < PING_COOLDOWN_MS) return false;
+    if (st.code) {
+      const wire = onlineWire();
+      if (!wire) return false;
+      wire.send({ t: 'mark', code: st.code, key });
+      set({ pingSentAt: now });
+      return true;
+    }
+    const g = st.game;
+    const me = g ? g.players.findIndex((p) => !p.isBot) : -1;
+    if (me < 0) return false;
+    set({ pingSentAt: now });
+    get().receivePing(me, key);
+    return true;
+  },
+  receivePing: (from, key) => {
+    if (get().mutedSeats.includes(from)) return;
+    const id = Date.now() + Math.random();
+    set({ pings: [...get().pings.filter((x) => x.from !== from), { id, from, key, at: Date.now() }] });
+    setTimeout(() => set({ pings: get().pings.filter((x) => x.id !== id) }), PING_SHOWN_MS);
+  },
   muteSeat: (seat, on) => {
     const muted = get().mutedSeats.filter((s) => s !== seat);
-    set({ mutedSeats: on ? [...muted, seat] : muted, telegrams: on ? get().telegrams.filter((x) => x.from !== seat) : get().telegrams });
+    set({ mutedSeats: on ? [...muted, seat] : muted, telegrams: on ? get().telegrams.filter((x) => x.from !== seat) : get().telegrams, pings: on ? get().pings.filter((x) => x.from !== seat) : get().pings });
   },
 
   reject: (key, reason) => set({ shake: { key, reason, at: Date.now() } }),
@@ -964,6 +995,7 @@ function listen(code: string, wire: Wire): void {
     }
     if (m.t === 'rejected' && m.code === code) useGame.setState({ shake: { key: '', reason: m.error, at: Date.now() } });
     if (m.t === 'telegram' && m.code === code) useGame.getState().receiveTelegram(m.from, m.key);
+    if (m.t === 'mark' && m.code === code) useGame.getState().receivePing(m.from, m.key);
   });
   const onLine = wire.onStatus(() => useGame.setState({ line: wire.status }));
   wire.watch(code);

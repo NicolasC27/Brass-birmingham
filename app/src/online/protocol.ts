@@ -100,6 +100,8 @@ export type ClientMessage =
   | { t: 'rollback'; code: string; want: 'propose' | 'agree' | 'refuse'; to?: number }
   /** a telegram to the table: one of the printed lines, nothing else */
   | { t: 'telegram'; code: string; key: string }
+  /** look here: a town, a house or a route pointed at */
+  | { t: 'mark'; code: string; key: string }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -123,6 +125,7 @@ export type ServerMessage =
   | { t: 'rejected'; code: string; error: string }
   /** a seat's telegram, carried to everyone at the table */
   | { t: 'telegram'; code: string; from: number; key: string; at: number }
+  | { t: 'mark'; code: string; from: number; key: string; at: number }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

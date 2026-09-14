@@ -156,3 +156,22 @@ export function counterBell(): void {
     }
   });
 }
+
+/** a soft tap on the counter: someone points at the map */
+export function pingTap(): void {
+  void context().then((ac) => {
+    if (!ac) return;
+    const now = ac.currentTime;
+    const o = ac.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(660, now);
+    o.frequency.exponentialRampToValueAtTime(440, now + 0.12);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.06, now + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+    o.connect(g).connect(ac.destination);
+    o.start(now);
+    o.stop(now + 0.3);
+  });
+}

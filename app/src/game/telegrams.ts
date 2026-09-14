@@ -33,3 +33,15 @@ export interface Telegram {
  *  with a gloss in the reader's language */
 export const telegramText = (t: (key: string, vars?: Record<string, string | number>) => string, key: TelegramKey): { text: string; gloss: string | null } =>
   DIALECT[key] ? { text: DIALECT[key]!, gloss: t(`game.telegram.gloss.${key}`) } : { text: t(`game.telegram.line.${key}`), gloss: null };
+
+/* Pings — "look here": a seat points at a town, a house or a route, and
+   everyone sees a pulse there for a moment. Lighter than a wire. */
+export const PING_COOLDOWN_MS = 5_000;
+export const PING_SHOWN_MS = 3_500;
+export interface Ping {
+  id: number;
+  from: number;
+  /** a town id, a merchant id or a link id */
+  key: string;
+  at: number;
+}
