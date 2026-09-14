@@ -27,9 +27,9 @@ magick \( "$T/row.png" -crop "${FW}x${TY}+0+0" +repage -flip \) "$T/row.png" \( 
 magick -size ${SW}x${SH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x30 -negate "$T/outside.png"
 magick "$T/mirror.png" \( +clone -blur 0x14 -modulate 72,80 \) "$T/outside.png" -compose over -composite "$T/full.png"
 # 2. railways engraved along every rail route: a soft embankment blurred
-#    into the land, cold grey ballast, dark sleepers, two steel rails — no
-#    warm line anywhere, so the map reads as iron even with the board's
-#    own traces hidden.
+#    into the land, a thin umber ballast in the painting's own palette,
+#    dark sleepers, two fine rails catching a little light — quiet enough
+#    to read as painted, even with the board's own traces hidden.
 DRAW=$(python3 - "$GEO" "$BX" "$BY" <<'PY'
 import json, sys
 g = json.load(open(sys.argv[1])); bx, by = int(sys.argv[2]), int(sys.argv[3])
@@ -41,14 +41,13 @@ for l in g['links']:
 print('\n'.join(out))
 PY
 )
-magick -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(8,10,10,0.38)' -strokewidth 24 -draw "$DRAW" -channel RGBA -blur 0x5 +channel "$T/bank.png"
+magick -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(14,12,8,0.30)' -strokewidth 16 -draw "$DRAW" -channel RGBA -blur 0x4 +channel "$T/bank.png"
 magick -size ${FW}x${FH} xc:none -fill none \
-  -stroke 'rgba(84,88,86,0.55)' -strokewidth 11 -draw "$DRAW" \
-  -stroke 'rgba(128,132,128,0.35)' -strokewidth 7 -draw "$DRAW" \
-  -stroke 'rgba(30,26,22,0.72)' -strokewidth 9.5 -draw "stroke-dasharray 2.4 6.6 $DRAW" \
-  -stroke 'rgba(196,204,208,0.66)' -strokewidth 5.2 -draw "$DRAW" \
-  -stroke 'rgba(92,96,94,0.95)' -strokewidth 3 -draw "$DRAW" \
-  -channel RGBA -blur 0x0.5 +channel "$T/track.png"
+  -stroke 'rgba(72,66,52,0.45)' -strokewidth 7 -draw "$DRAW" \
+  -stroke 'rgba(24,20,14,0.55)' -strokewidth 6.5 -draw "stroke-dasharray 1.6 4.4 $DRAW" \
+  -stroke 'rgba(176,170,150,0.42)' -strokewidth 3.4 -draw "$DRAW" \
+  -stroke 'rgba(72,66,52,0.8)' -strokewidth 1.6 -draw "$DRAW" \
+  -channel RGBA -blur 0x0.4 +channel "$T/track.png"
 if [[ "${BEDS:-1}" == 0 ]]; then cp "$T/full.png" "$T/rails.png"; else magick "$T/full.png" "$T/bank.png" -compose over -composite "$T/track.png" -compose over -composite "$T/rails.png"; fi
 # 3. mist past the play area only, so the far edges read as distance
 magick -size $((WW + 80))x$((WH + 80)) xc:black -gravity center -background white -extent ${FW}x${FH} -blur 0x110 -evaluate multiply 0.45 "$T/mask.png"
