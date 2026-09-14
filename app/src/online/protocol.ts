@@ -98,6 +98,8 @@ export type ClientMessage =
   | { t: 'break'; code: string; on: boolean }
   /** the host's rollback to before action `to`, and the answers to it */
   | { t: 'rollback'; code: string; want: 'propose' | 'agree' | 'refuse'; to?: number }
+  /** a telegram to the table: one of the printed lines, nothing else */
+  | { t: 'telegram'; code: string; key: string }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -119,6 +121,8 @@ export type ServerMessage =
   | { t: 'game'; view: GameView }
   /** the engine turned an action down — its own words, for the shake */
   | { t: 'rejected'; code: string; error: string }
+  /** a seat's telegram, carried to everyone at the table */
+  | { t: 'telegram'; code: string; from: number; key: string; at: number }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

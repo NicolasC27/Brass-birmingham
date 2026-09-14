@@ -4,6 +4,7 @@ import path from 'node:path';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { decode, encode } from '@/online/protocol';
+import { TELEGRAM_COOLDOWN_MS, isTelegramKey } from '@/game/telegrams';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { Me } from '@/online/table';
 import { normalizeCode } from '@/online/table';
@@ -36,6 +37,8 @@ interface Client {
   token: string | null;
   /** the table codes this socket follows */
   watching: Set<string>;
+  /** when this socket last wired a telegram */
+  lastTelegram: number;
 }
 
 export interface ServeOptions {
@@ -149,7 +152,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket) => {
-    const client: Client = { socket, me: null, token: null, watching: new Set() };
+    const client: Client = { socket, me: null, token: null, watching: new Set(), lastTelegram: 0 };
     clients.add(client);
     socket.on('message', (raw: Buffer | string) => {
       const m = decode<ClientMessage>(String(raw));
@@ -388,6 +391,17 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'rollback': {
         const error = hall.rollback(m.code, who.id, m.want, m.to);
         if (error) send(c, { t: 'rejected', code: m.code, error });
+        return;
+      }
+      case 'telegram': {
+        /* a printed line only, from a seat at the table, not too often */
+        const table = hall.table(m.code);
+        const from = table?.seats.findIndex((s) => s.id === who.id) ?? -1;
+        if (from < 0 || !isTelegramKey(m.key)) return;
+        const now = Date.now();
+        if (now - c.lastTelegram < TELEGRAM_COOLDOWN_MS - 500) return;
+        c.lastTelegram = now;
+        for (const w of watchers(m.code)) send(w, { t: 'telegram', code: m.code, from, key: m.key, at: now });
         return;
       }
     }
