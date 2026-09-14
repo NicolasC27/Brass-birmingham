@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, BookOpen, RotateCcw, Share2, Check } from "lucide-react";
+import { ArrowLeft, Beer, BookOpen, RotateCcw, Share2, Check } from "lucide-react";
+import { useGame } from "@/game/store";
+import { PLAYER_COLORS } from "@/game/data";
+import { useDesk, useSession } from "@/online/session";
+import { mugClink } from "@/gl/sfx";
+import { getBoardOptions } from "@/components/game/boardOptions";
+import { titlesFor } from "@/components/results/titles";
 import Podium, { type PodiumEntry } from "@/components/results/Podium";
 import ScoringTable from "@/components/results/ScoringTable";
 import TimelineFrieze from "@/components/results/TimelineFrieze";
@@ -105,6 +111,20 @@ export default function Results() {
   const [phase, setPhase] = useState(() => (reduced ? 3 : 0));
   const [bursting, setBursting] = useState(false);
   const [copied, setCopied] = useState(false);
+  /* the toast: the table's glasses, raised from the game still on the shelf */
+  const liveGame = useGame((s) => s.game);
+  const toasts = useGame((s) => s.toasts);
+  const sendToast = useGame((s) => s.sendToast);
+  const seat = useGame((s) => s.seat);
+  const mySeat = liveGame ? (seat ?? liveGame.players.findIndex((p) => !p.isBot)) : -1;
+  const canToast = !!liveGame && liveGame.phase === "game-over" && mySeat >= 0 && !toasts.includes(mySeat);
+  const clinked = toasts.length >= 2;
+  useEffect(() => {
+    if (clinked && getBoardOptions().sound) mugClink();
+  }, [clinked]);
+  /* titles from the tally, and the record against each opponent met before */
+  const desk = useDesk();
+  const me = useSession();
 
   const entries = useMemo(() => (result ? buildEntries(result) : []), [result]);
   const settled = phase >= 3;
@@ -282,6 +302,51 @@ export default function Results() {
         </motion.div>
 
         {/* 5 — Final actions */}
+        {/* titles of the game, the glasses raised, and the record against
+            those met before (the desk remembers the past games) */}
+        {result && (() => {
+          const ranked = rankPlayers(result);
+          const titles = titlesFor(result.players.map((p) => p.stats), ranked.map((r) => r.index));
+          const rows = ranked.map(({ player, index }) => {
+            const title = titles[index];
+            const raised = toasts.includes(index);
+            let record: string | null = null;
+            if (desk && me && index !== mySeat && !player.bot) {
+              let won = 0;
+              let lost = 0;
+              for (const past of desk.history) {
+                const mine = past.players.find((x) => x.id === me.id);
+                const theirs = past.players.find((x) => x.name === player.name && x.id !== me.id);
+                if (!mine || !theirs || past.abandoned) continue;
+                if (mine.vp > theirs.vp) won += 1;
+                else if (mine.vp < theirs.vp) lost += 1;
+              }
+              if (won + lost > 0) record = t("results.titles.headToHead", { won, lost, name: player.name });
+            }
+            return { player, index, title, raised, record };
+          });
+          if (!rows.some((r) => r.title || r.raised || r.record)) return null;
+          return (
+            <motion.div initial={false} animate={{ opacity: settled ? 1 : 0 }} transition={{ duration: 0.3 }} className="plaque mx-auto mt-10 w-[min(560px,92vw)] rounded-md px-4 py-3">
+              <p className="engraved-brass mb-2 text-center font-fell text-[12px] uppercase tracking-[0.14em]">{t("results.titles.heading")}</p>
+              <ul className="flex flex-col gap-1">
+                {rows.map((r) => (
+                  <li key={r.index} className="flex items-center gap-3 font-sans text-[13px] text-cream-100/85">
+                    <span className="font-fell text-[14px]" style={{ color: PLAYER_COLORS[r.player.color]?.hex }}>{r.player.name}</span>
+                    {r.title && <span className="rounded-sm border border-brass-700/60 px-1.5 py-px font-fell text-[11.5px] tracking-wide text-brass-400">{t(`results.titles.${r.title}`)}</span>}
+                    {r.record && <span className="font-mono text-[11px] text-cream-100/55">{r.record}</span>}
+                    {r.raised && (
+                      <span className="ml-auto flex items-center gap-1 text-brass-400" title={t("results.toast.raised", { name: r.player.name })} aria-label={t("results.toast.raised", { name: r.player.name })}>
+                        <Beer className={cn("h-4 w-4", clinked && "animate-bounce")} />
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {clinked && <p className="mt-2 text-center font-fell text-[12px] italic text-brass-400/85">{t("results.toast.clink")}</p>}
+            </motion.div>
+          );
+        })()}
         <motion.div
           initial={false}
           animate={{ opacity: settled ? 1 : 0 }}
@@ -291,6 +356,12 @@ export default function Results() {
             !settled && "pointer-events-none",
           )}
         >
+          {canToast && (
+            <button type="button" onClick={() => sendToast()} className="btn-ledger !h-12" aria-label={t("results.toast.aria")}>
+              <Beer className="h-4 w-4" />
+              {t("results.toast.button")}
+            </button>
+          )}
           <button
             type="button"
             onClick={handleRevanche}
