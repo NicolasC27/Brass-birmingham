@@ -46,3 +46,76 @@ export function houseBell(id: string): void {
     o.stop(now + decay + 0.05);
   }
 }
+
+/* ---------------- a house's own ambience, while hovered ---------------- */
+
+const buffers = new Map<string, Promise<AudioBuffer | null>>();
+/** the recording served for a house (/sfx-<name>.mp3), decoded once; null
+ *  when the server has none */
+const ambience = (id: string): Promise<AudioBuffer | null> => {
+  const name = id.replace(/^m-/, '');
+  let p = buffers.get(name);
+  if (!p) {
+    p = (async () => {
+      const ac = ctx ?? context();
+      if (!ac) return null;
+      const url = `/sfx-${name}.mp3`;
+      const head = await fetch(url, { method: 'HEAD' }).catch(() => null);
+      if (!head?.ok || !(head.headers.get('content-type') ?? '').startsWith('audio/')) return null;
+      const bytes = await fetch(url).then((r) => r.arrayBuffer());
+      return await ac.decodeAudioData(bytes);
+    })().catch(() => null);
+    buffers.set(name, p);
+  }
+  return p;
+};
+
+let playing: { id: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+const FADE_IN = 0.3;
+const FADE_OUT = 0.5;
+
+/** the pointer left the house: the ambience fades out */
+export function houseLeave(): void {
+  if (!playing) return;
+  const { src, gain } = playing;
+  playing = null;
+  const ac = src.context;
+  const now = ac.currentTime;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.linearRampToValueAtTime(0.0001, now + FADE_OUT);
+  src.stop(now + FADE_OUT + 0.05);
+}
+
+/** the pointer reached a house: its recording loops under the pointer,
+ *  fading in — or the shop bell rings when no recording is served */
+export function houseHover(id: string | null): void {
+  if (playing && playing.id !== id) houseLeave();
+  if (!id || (playing && playing.id === id)) return;
+  void ambience(id).then((buf) => {
+    if (!buf || playing) return;
+    const ac = context();
+    if (!ac) return;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    /* an MP3 carries a sliver of silence at both ends: the loop skips it */
+    src.loopStart = 0.04;
+    src.loopEnd = Math.max(0.1, buf.duration - 0.04);
+    const gain = ac.createGain();
+    const now = ac.currentTime;
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.35, now + FADE_IN);
+    src.connect(gain).connect(ac.destination);
+    src.start(now);
+    playing = { id, src, gain };
+  });
+  /* the bell rings at once when there is nothing to hear; the check is
+     cached, so a house without a recording rings every time */
+  void ambience(id).then((buf) => {
+    if (!buf) houseBell(id);
+  });
+}
+
+/* dev only: what is sounding right now (window.__sfx.playing()) */
+if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __sfx?: { playing: () => string | null } }).__sfx = { playing: () => playing?.id ?? null };

@@ -145,7 +145,7 @@ const fr: typeof engame = {
     beginnerAidTable: 'À une table en ligne, l’hôte la règle dans la salle, pour tout le monde.',
     boardSection: 'Plateau',
     sound: 'Sons',
-    soundHint: 'Une clochette de boutique au survol d’un marchand.',
+    soundHint: 'L’ambiance d’un marchand au survol : son quai, ou une clochette.',
     showUnbuilt: 'Liens non construits',
     showUnbuiltHint: 'Les tracés de canaux et de rails encore disponibles. Touche C.',
     greyMerch: 'Griser les marchands non pris',

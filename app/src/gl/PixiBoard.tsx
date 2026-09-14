@@ -19,7 +19,7 @@ import TownInspector from '@/components/game/TownInspector';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
 import { buildBoardScene, industryFaceUrl, loadBoardAssets } from './paint';
-import { houseBell } from './sfx';
+import { houseHover } from './sfx';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
@@ -148,9 +148,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const [hoverTown, setHoverTown] = useState<string | null>(null);
   const [hoverLink, setHoverLink] = useState<string | null>(null);
   const [hoverMerchant, setHoverMerchant] = useState<string | null>(null);
-  /* a bell over the door when the pointer reaches a house (board option) */
+  /* the house's own sound while the pointer rests on it: its recording in
+     a loop, or a bell over the door (board option) */
   useEffect(() => {
-    if (hoverMerchant && getBoardOptions().sound) houseBell(hoverMerchant);
+    houseHover(hoverMerchant && getBoardOptions().sound ? hoverMerchant : null);
+    return () => houseHover(null);
   }, [hoverMerchant]);
   const [inspect, setInspect] = useState<string | null>(null);
   /* board display options — shared store (also driven from the settings

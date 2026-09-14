@@ -143,7 +143,7 @@ const game = {
     beginnerAidTable: 'At an online table the host sets it in the room, for everyone.',
     boardSection: 'Board',
     sound: 'Sounds',
-    soundHint: 'A shop bell when a merchant is hovered.',
+    soundHint: 'A merchant’s ambience while hovered: its quay, or a shop bell.',
     showUnbuilt: 'Unbuilt links',
     showUnbuiltHint: 'Canal and rail routes still open. C key.',
     greyMerch: 'Grey out unclaimed merchants',
