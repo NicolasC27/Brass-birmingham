@@ -875,6 +875,39 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   let styleReq = 0;
 
   /* resource stock badge layouts on a built tile (A-B choice) */
+  /* level and link value, top-left of a built tile: a dark plaque with the
+     level as a roman numeral, then one chain link per point the tile adds
+     to each neighbouring canal or rail at era's end. Sits in `badges` so it
+     reads at any zoom, like the stock disc. */
+  const ROMAN = ['', 'I', 'II', 'III', 'IV'];
+  const drawLevelMark = (into: Container, x: number, y: number, level: number, links: number, muted: boolean) => {
+    const h = bigChips ? 14 : 12;
+    const x0 = x - TILE_HALF + 2.75;
+    const y0 = y - TILE_HALF + 2.75;
+    const ink = muted ? 0xc9b48a : 0xf4ecd8;
+    const g = new Graphics();
+    g.eventMode = 'none';
+    const numeral = new Text({
+      text: ROMAN[level] ?? String(level),
+      style: { fontFamily: "'Playfair Display', serif", fontSize: bigChips ? 10.5 : 9, fontWeight: '900', fill: ink },
+    });
+    numeral.anchor.set(0.5);
+    numeral.eventMode = 'none';
+    const w1 = Math.max(h + 2, Math.ceil(numeral.width) + 8);
+    g.roundRect(x0, y0, w1, h, 3).fill({ color: 0x0c0a08, alpha: muted ? 0.5 : 0.74 }).stroke({ width: 0.6, color: ink, alpha: 0.3 });
+    numeral.position.set(x0 + w1 / 2, y0 + h / 2 + 0.5);
+    into.addChild(g, numeral);
+    if (links <= 0) return;
+    const lw = bigChips ? 8 : 7;
+    const lh = bigChips ? 5 : 4;
+    const step = lw - 2;
+    const w2 = 6 + step * (links - 1) + lw;
+    const x1 = x0 + w1 + 2;
+    g.roundRect(x1, y0, w2, h, 3).fill({ color: 0x0c0a08, alpha: muted ? 0.5 : 0.74 }).stroke({ width: 0.6, color: ink, alpha: 0.3 });
+    for (let i = 0; i < links; i++) {
+      g.roundRect(x1 + 3 + i * step, y0 + h / 2 - lh / 2, lw, lh, lh / 2).stroke({ width: 1.1, color: ink, alpha: muted ? 0.8 : 0.95 });
+    }
+  };
   const drawStock = (badges: Container, x: number, y: number, n: number, kind: 'coal' | 'iron' | 'beer') => {
     const iconAt = (cx: number, cy: number, s: number) => {
       if (kind === 'beer') {
@@ -1088,10 +1121,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
             vpLabel.eventMode = 'none';
             badges.addChild(token, vpText, vpLabel);
             if (look.colorBlind && look.sealTiles) drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
-            /* level pips, dark on the muted card */
-            for (let i = 0; i < tile.level; i++) {
-              extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x241d14).stroke({ width: 0.5, color: shade(col, 1.25) });
-            }
+            drawLevelMark(badges, x, y, tile.level, lv.links, true);
           } else {
             /* player-colour card painting (builtTex), full opacity, clipped
                to the slot's rounded rect by the GPU mask */
@@ -1148,10 +1178,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               vpText.position.set(x + TILE_HALF - 4 - cw / 2, cy0 + ch / 2 + 0.5);
               detailC.addChild(chipInc, incText, chipVp, vpText);
             }
-            /* level pips along the top edge — dark on the colour card */
-            for (let i = 0; i < tile.level; i++) {
-              extras.circle(x - TILE_HALF + 8 + i * 7, y - TILE_HALF + 6, 2.1).fill(0x17110c).stroke({ width: 0.6, color: 0xf4ecd8, alpha: 0.7 });
-            }
+            drawLevelMark(badges, x, y, tile.level, lv.links, false);
           }
           /* resource stock badge — layout is switchable (stockStyle, board
              option / A-B probe). The numeral is always exact; the industry
