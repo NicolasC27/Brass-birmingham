@@ -564,7 +564,7 @@ function drawShapeGlyph(g: Graphics, shape: string, x: number, y: number): void 
 }
 
 /** owner seal on a built card: dark ring, colour disc, the player's shape */
-function drawOwnerMedallion(g: Graphics, x: number, y: number, col: number, shape: string): void {
+export function drawOwnerMedallion(g: Graphics, x: number, y: number, col: number, shape: string): void {
   g.circle(x, y, 7).fill(0x100d0b).stroke({ width: 0.8, color: 0xf2ead6, alpha: 0.35 });
   g.circle(x, y, 5.6).fill(col);
   drawShapeGlyph(g, shape, x, y);

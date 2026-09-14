@@ -18,8 +18,8 @@ import Minimap from '@/components/game/Minimap';
 import TownInspector from '@/components/game/TownInspector';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
-import { buildBoardScene, industryFaceUrl, loadBoardAssets } from './paint';
-import { houseHover } from './sfx';
+import { buildBoardScene, drawOwnerMedallion, industryFaceUrl, loadBoardAssets } from './paint';
+import { houseHover, pingTap } from './sfx';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
@@ -236,6 +236,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const code = useGame((s) => s.code);
   const verb = useGame((s) => s.verb);
   const hoverKey = useGame((s) => s.hoverKey);
+  const pings = useGame((s) => s.pings);
   const buildPick = useGame((s) => s.buildPick);
   const linkPick = useGame((s) => s.linkPick);
   const secondLinkPick = useGame((s) => s.secondLinkPick);
@@ -718,6 +719,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
       };
       el.addEventListener('pointermove', onHoverMove);
+      /* right-click: "look here" — a town, a house or a route pointed at
+         for everyone at the table (board option: telegrams) */
+      const onMark = (e: MouseEvent) => {
+        e.preventDefault();
+        if (!getBoardOptions().telegrams) return;
+        const [wx, wy] = toWorld(e.clientX, e.clientY);
+        const key = merchantAt(wx, wy)?.id ?? townAt(wx, wy)?.id ?? linkAt(wx, wy)?.id ?? null;
+        if (key) st().sendPing(key);
+      };
+      el.addEventListener('contextmenu', onMark);
+      cleanups.push(() => el.removeEventListener('contextmenu', onMark));
       cleanups.push(() => el.removeEventListener('pointermove', onHoverMove));
 
       /* overlay UI (zoom/option buttons, inspector…) must NOT start a board
@@ -1060,6 +1072,26 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
+    /* "look here": every seat's last mark pulses in its colour, a medallion
+       with the seat's shape at the centre, whatever the reader is doing */
+    for (const mark of pings) {
+      const at = regionPos(mark.key, game.era);
+      const p = game.players[mark.from];
+      if (!at || !p) continue;
+      const col = parseInt((PLAYER_COLORS[p.color]?.hex ?? '#C9A45C').slice(1), 16);
+      const shape = PLAYER_COLORS[p.color]?.shape ?? 'circle';
+      const ring = new Graphics();
+      ring.circle(at[0], at[1], 78).stroke({ width: 4, color: col, alpha: 0.9 });
+      ring.circle(at[0], at[1], 96).stroke({ width: 2, color: col, alpha: 0.45 });
+      ring.eventMode = 'none';
+      pulse(ring, 1);
+      const disc = new Graphics();
+      disc.circle(at[0], at[1] - 92, 13).fill(0x2a2118).stroke({ width: 2, color: 0xc9a45c });
+      drawOwnerMedallion(disc, at[0], at[1] - 92, col, shape);
+      disc.eventMode = 'none';
+      overlay.addChild(disc);
+    }
+
     /* ledger flash: hoverKey naming a town or link outside planning pulses
        the cluster frame / the route (Board: TownNode flashing rect) */
     if (idle && hoverKey) {
@@ -1101,7 +1133,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings]);
+  /* a tap when a mark lands (board option: sounds) */
+  const lastPing = pings.length ? pings[pings.length - 1].id : 0;
+  useEffect(() => {
+    if (lastPing && getBoardOptions().sound) pingTap();
+  }, [lastPing]);
 
   /* pointer affordances on the WebGL hit areas (SVG: cursor-pointer/help).
      Anything left at 'inherit' falls back to the frame's grab/grabbing. */
