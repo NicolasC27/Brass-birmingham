@@ -21,7 +21,11 @@ LX=$(( (FW - SW) / 2 )) RX=$(( FW - SW - LX ))
 TY=$(( (FH - SH) / 2 )) BYY=$(( FH - SH - TY ))
 [[ $LX -ge 0 && $TY -ge 0 && $LX -le $SW && $TY -le $SH ]] || { echo "painting $SWx$SH does not fit the frame"; exit 1; }
 magick \( "$SRC" -crop "${LX}x${SH}+0+0" +repage -flop \) "$SRC" \( "$SRC" -crop "${RX}x${SH}+$((SW - RX))+0" +repage -flop \) +append "$T/row.png"
-magick \( "$T/row.png" -crop "${FW}x${TY}+0+0" +repage -flip \) "$T/row.png" \( "$T/row.png" -crop "${FW}x${BYY}+0+$((SH - BYY))" +repage -flip \) -append "$T/full.png"
+magick \( "$T/row.png" -crop "${FW}x${TY}+0+0" +repage -flip \) "$T/row.png" \( "$T/row.png" -crop "${FW}x${BYY}+0+$((SH - BYY))" +repage -flip \) -append "$T/mirror.png"
+#    the mirrored land is only distance: blurred and darkened, so a bright
+#    mill at the painting's edge does not come back as a kaleidoscope
+magick -size ${SW}x${SH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x30 -negate "$T/outside.png"
+magick "$T/mirror.png" \( +clone -blur 0x14 -modulate 72,80 \) "$T/outside.png" -compose over -composite "$T/full.png"
 # 2. railways engraved along every rail route: a soft embankment blurred
 #    into the land, cold grey ballast, dark sleepers, two steel rails — no
 #    warm line anywhere, so the map reads as iron even with the board's
@@ -39,10 +43,10 @@ PY
 )
 magick -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(8,10,10,0.38)' -strokewidth 24 -draw "$DRAW" -channel RGBA -blur 0x5 +channel "$T/bank.png"
 magick -size ${FW}x${FH} xc:none -fill none \
-  -stroke 'rgba(88,92,90,0.62)' -strokewidth 11 -draw "$DRAW" \
+  -stroke 'rgba(84,88,86,0.55)' -strokewidth 11 -draw "$DRAW" \
   -stroke 'rgba(128,132,128,0.35)' -strokewidth 7 -draw "$DRAW" \
   -stroke 'rgba(30,26,22,0.72)' -strokewidth 9.5 -draw "stroke-dasharray 2.4 6.6 $DRAW" \
-  -stroke 'rgba(206,212,216,0.82)' -strokewidth 5.4 -draw "$DRAW" \
+  -stroke 'rgba(196,204,208,0.66)' -strokewidth 5.2 -draw "$DRAW" \
   -stroke 'rgba(92,96,94,0.95)' -strokewidth 3 -draw "$DRAW" \
   -channel RGBA -blur 0x0.5 +channel "$T/track.png"
 if [[ "${BEDS:-1}" == 0 ]]; then cp "$T/full.png" "$T/rails.png"; else magick "$T/full.png" "$T/bank.png" -compose over -composite "$T/track.png" -compose over -composite "$T/rails.png"; fi
