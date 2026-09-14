@@ -4,11 +4,18 @@
    clicked once somewhere, which a game always brings). */
 
 let ctx: AudioContext | null = null;
-const context = (): AudioContext | null => {
+/** the context, whatever its state (decoding works while suspended) */
+const audio = (): AudioContext | null => {
   if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
   ctx ??= new AudioContext();
-  if (ctx.state === 'suspended') void ctx.resume();
-  return ctx.state === 'running' ? ctx : null;
+  return ctx;
+};
+/** the context once it runs: resumed if the browser allows it by now */
+const context = async (): Promise<AudioContext | null> => {
+  const ac = audio();
+  if (!ac) return null;
+  if (ac.state === 'suspended') await ac.resume().catch(() => undefined);
+  return ac.state === 'running' ? ac : null;
 };
 
 /** deterministic 31-hash, for a house's own note */
@@ -21,8 +28,11 @@ const hash = (s: string): number => {
 /** a small brass bell over a shop door: two partials, a quick strike and a
  *  slow ring, pitched a little differently for every house */
 export function houseBell(id: string): void {
-  const ac = context();
-  if (!ac) return;
+  void context().then((ac) => {
+    if (ac) ring(ac, id);
+  });
+}
+function ring(ac: AudioContext, id: string): void {
   const now = ac.currentTime;
   const base = 880 * Math.pow(2, ((hash(id) % 7) - 3) / 12);
   const master = ac.createGain();
@@ -57,7 +67,7 @@ const ambience = (id: string): Promise<AudioBuffer | null> => {
   let p = buffers.get(name);
   if (!p) {
     p = (async () => {
-      const ac = ctx ?? context();
+      const ac = audio();
       if (!ac) return null;
       const url = `/sfx-${name}.mp3`;
       const head = await fetch(url, { method: 'HEAD' }).catch(() => null);
@@ -92,10 +102,10 @@ export function houseLeave(): void {
 export function houseHover(id: string | null): void {
   if (playing && playing.id !== id) houseLeave();
   if (!id || (playing && playing.id === id)) return;
-  void ambience(id).then((buf) => {
+  void ambience(id).then(async (buf) => {
     if (!buf || playing) return;
-    const ac = context();
-    if (!ac) return;
+    const ac = await context();
+    if (!ac || playing) return;
     const src = ac.createBufferSource();
     src.buffer = buf;
     src.loop = true;
