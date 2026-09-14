@@ -10,7 +10,7 @@ The board is rendered with WebGL (PixiJS) on a painted map; the rules engine is 
 - **Bots** with three temperaments, tuned with a headless simulator so they sell, borrow sensibly and keep their networks connected.
 - **Board.** Two map paintings to choose from in the settings (etched terrain or painted canals), owner-coloured canals and rails, animated barges and locomotives, merchants as framed paintings with their dealt tiles and beer barrels, a minimap with every player's network.
 - **HUD.** Straight victory-point and income tracks that zoom under the wheel, a pinnable hand dock, turn-order preview on the player rail, an in-game rules codex, French and English.
-- **Telegrams.** A dozen printed lines a player can wire to the table (praise, a grumble about beer, some Midlands jibes of the 1800s), shown as a plaque under the sender's card; no free text, one wire every twenty seconds, any seat can be muted. At home the bots wire back.
+- **Between players.** Telegrams: a dozen printed lines wired to the table (praise, a grumble about beer, some Midlands jibes of the 1800s), shown as a plaque under the sender's card, no free text, one every twenty seconds, any seat can be muted, and at home the bots wire back. A right-click marks a place on the map for everyone. The Midlands Gazette prints three headlines on every round played. At the end, titles from the tally, the record against opponents met before, and a glass raised with the table.
 
 ## Getting started
 

@@ -11,6 +11,7 @@ import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
 import Notices from '@/components/game/Notices';
 import { TelegramButton } from '@/components/game/Telegrams';
+import Gazette from '@/components/game/Gazette';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -494,6 +495,7 @@ export default function Game() {
       <TableMood />
       <Guide />
       <Notices />
+      <Gazette />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />
