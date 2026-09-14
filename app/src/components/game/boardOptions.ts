@@ -132,7 +132,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),
-  railPainting: read('railPainting', '1'),
+  railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
   railCompact: read('railCompact', false),
