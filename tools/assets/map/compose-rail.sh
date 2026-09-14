@@ -32,7 +32,7 @@ g = json.load(open(sys.argv[1])); bx, by = int(sys.argv[2]), int(sys.argv[3])
 out = []
 for l in g['links']:
     if not l['rail']: continue
-    pts = ' '.join(f'{x + bx:.1f},{y + by:.1f}' for x, y in l['pts'])
+    pts = ' '.join(f'{x + bx:.1f},{y + by:.1f}' for x, y in (l.get('railPts') or l['pts']))
     out.append(f'polyline {pts}')
 print('\n'.join(out))
 PY
