@@ -8,7 +8,7 @@ import type { PlanGhost } from '@/game/ghost';
 import type { GameState } from '@/game/types';
 import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
-import { MAP_URL, aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
+import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
 import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
@@ -151,7 +151,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
+  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, railPainting, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
   /* fullscreen is a keyboard-only affair now (F) — no HUD button */
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -210,7 +210,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     let cancelled = false;
     void (async () => {
       const { Assets } = await import('pixi.js');
-      const [canal, rail] = await Promise.all([Assets.load(MAP_URL[mapStyle].canal), Assets.load(MAP_URL[mapStyle].rail)]);
+      const urls = mapUrls(mapStyle, railPainting);
+      const [canal, rail] = await Promise.all([Assets.load(urls.canal), Assets.load(urls.rail)]);
       if (cancelled) return;
       for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail]] as const) {
         sp.texture = tex;
@@ -221,7 +222,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => {
       cancelled = true;
     };
-  }, [mapStyle]);
+  }, [mapStyle, railPainting]);
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
@@ -274,7 +275,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const { Assets, Sprite, Texture } = await import('pixi.js');
       const bootOpts = getBoardOptions();
       /* both paintings carry a bleed of countryside around the play area */
-      const bgUrls = MAP_URL[bootOpts.mapStyle];
+      const bgUrls = mapUrls(bootOpts.mapStyle, bootOpts.railPainting);
       const [canalTex, railTex] = await Promise.all([Assets.load(bgUrls.canal), Assets.load(bgUrls.rail)]);
       if (destroyed) return;
       const bgCanal = new Sprite(canalTex);

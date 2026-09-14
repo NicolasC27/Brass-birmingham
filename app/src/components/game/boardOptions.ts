@@ -29,6 +29,11 @@ export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
   etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
   painted: { canal: '/map-painted-canal.webp', rail: '/map-painted-rail.webp' },
 };
+/** the rail era has three paintings to choose from (etched terrain only) */
+export type RailPainting = '1' | '2' | '3';
+export const RAIL_PAINTINGS: RailPainting[] = ['1', '2', '3'];
+export const mapUrls = (style: MapStyle, rail: RailPainting): { canal: string; rail: string } =>
+  style === 'etched' && rail !== '1' ? { canal: MAP_URL.etched.canal, rail: `/map-era-rail-${rail}.webp` } : MAP_URL[style];
 
 /** beginner assistance: the table's house rule, or at home the board setting */
 export function aidOn(assist: boolean | undefined, online: boolean): boolean {
@@ -57,6 +62,8 @@ export interface BoardOptions {
   minimapSize: MinimapSize;
   incomeSide: IncomeSide;
   mapStyle: MapStyle;
+  /** which rail-era painting lies under the etched terrain */
+  railPainting: RailPainting;
   /** boats and trains on built links */
   traffic: TrafficLevel;
   /** beginner aid: dim unplayable slots while planning, itemised price tags */
@@ -88,6 +95,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   minimapSize: 'brassworks.minimapSize',
   incomeSide: 'brassworks.incomeSide',
   mapStyle: 'brassworks.mapStyle',
+  railPainting: 'brassworks.railPainting',
   traffic: 'brassworks.traffic',
   beginnerAid: 'brassworks.beginnerAid',
   railCompact: 'brassworks.railCompact',
@@ -124,6 +132,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),
+  railPainting: read('railPainting', '1'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
   railCompact: read('railCompact', false),

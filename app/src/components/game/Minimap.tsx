@@ -7,7 +7,7 @@ import { LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } fr
 import { merchantOpen } from '@/game/engine';
 import { tileKey } from '@/game/engine';
 import type { GameState } from '@/game/types';
-import { MAP_URL, setBoardOption, useBoardOptions } from './boardOptions';
+import { mapUrls, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { useT } from '@/i18n';
 
@@ -45,7 +45,8 @@ export default function Minimap({
   const plate = useRef<HTMLDivElement>(null);
   const tracking = useRef(false);
   const boardOpts = useBoardOptions();
-  const { minimapSize, mapStyle } = boardOpts;
+  const { minimapSize, mapStyle, railPainting } = boardOpts;
+  const maps = mapUrls(mapStyle, railPainting);
   const insets = useHudInsets();
   const t = useT();
   const MM_W = MM_W_FOR[minimapSize];
@@ -97,14 +98,14 @@ export default function Minimap({
       }}
     >
       <img
-        src={MAP_URL[mapStyle].canal}
+        src={maps.canal}
         alt=""
         draggable={false}
         className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover transition-opacity duration-[1500ms] ease-in-out"
         style={{ opacity: era === 'canal' ? 0.9 : 0 }}
       />
       <img
-        src={MAP_URL[mapStyle].rail}
+        src={maps.rail}
         alt=""
         draggable={false}
         className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover transition-opacity duration-[1500ms] ease-in-out"

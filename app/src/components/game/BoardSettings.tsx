@@ -3,10 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
-import { MAT_ORDER_DEFAULT, MAT_STYLES, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAT_ORDER_DEFAULT, MAT_STYLES, RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
 import { narrowRailTop, useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
-import type { IncomeSide, MapStyle, MatStyle, MinimapSize } from './boardOptions';
+import type { IncomeSide, MapStyle, MatStyle, MinimapSize, RailPainting } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
 import type { KeyAction } from './keybindings';
@@ -531,6 +531,15 @@ export default function BoardSettings() {
                         options={(['etched', 'painted'] as MapStyle[]).map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
                       />
                     </OptionRow>
+                    {opts.mapStyle === 'etched' && (
+                      <OptionRow label={t('game.settings.railPainting')} hint={t('game.settings.railPaintingHint')}>
+                        <Segmented<RailPainting>
+                          value={opts.railPainting}
+                          onChange={(v) => setBoardOption('railPainting', v)}
+                          options={RAIL_PAINTINGS.map((id) => ({ id, label: t('game.settings.railPaint', { n: id }) }))}
+                        />
+                      </OptionRow>
+                    )}
                     <OptionRow label={t('game.settings.showUnbuilt')} hint={t('game.settings.showUnbuiltHint')}>
                       <Switch on={!opts.hideUnbuilt} onClick={() => setBoardOption('hideUnbuilt', !opts.hideUnbuilt)} label={t('game.settings.showUnbuilt')} />
                     </OptionRow>
