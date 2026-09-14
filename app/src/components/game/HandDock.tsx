@@ -271,13 +271,24 @@ export default function HandDock() {
   const enterTimer = useRef<number | null>(null);
   const [folded, setFolded] = useState(false);
   const [hoverMuted, setHoverMuted] = useState(false);
+  /* unpinning folds the hand on the spot (the reader's own turn and the
+     pointer resting on the strip would otherwise keep it open, and the
+     pin would seem stuck); pinning opens it */
+  const pinnedRef = useRef(pinned);
+  pinnedRef.current = pinned;
+  const togglePin = () => {
+    const next = !pinnedRef.current;
+    setPinned(() => next);
+    setFolded(!next);
+    setHoverMuted(!next);
+  };
   /* H pins / unpins the hand from anywhere (not while typing) */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (!isKey(e, 'hand')) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      setPinned((v) => !v);
+      togglePin();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -375,9 +386,11 @@ export default function HandDock() {
           aria-label={expanded ? t('game.hand.foldDock') : t('game.hand.openDock')}
           onClick={() => {
             if (expanded) {
-              if (pinned) setPinned(() => false);
-              setFolded(true);
-              setHoverMuted(true);
+              if (pinned) togglePin();
+              else {
+                setFolded(true);
+                setHoverMuted(true);
+              }
             } else {
               setFolded(false);
               setHoverMuted(false);
@@ -432,13 +445,13 @@ export default function HandDock() {
             title={pinned ? t('game.hand.unpin') : t('game.hand.pin')}
             onClick={(e) => {
               e.stopPropagation();
-              setPinned((v) => !v);
+              togglePin();
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 e.stopPropagation();
-                setPinned((v) => !v);
+                togglePin();
               }
             }}
             className={cn(
