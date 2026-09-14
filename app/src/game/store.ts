@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, sellTargets, serialize, tileKey } from './engine';
+import { beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
@@ -932,5 +932,22 @@ export function leaveOnlineTable(): void {
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
 }
 
-/* dev only: the store at hand in the console (window.__brass.getState()) */
-if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __brass?: typeof useGame }).__brass = useGame;
+/* dev only: the store at hand in the console (window.__brass.getState()),
+   and a jump straight to the Rail Era (window.__brassRail()) — the canal
+   ceremony played out on the spot: scoring, sweep, re-deal — to look at
+   the second painting without playing nine rounds. Home tables only. */
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  const w = window as unknown as { __brass?: typeof useGame; __brassRail?: () => string };
+  w.__brass = useGame;
+  w.__brassRail = () => {
+    const st = useGame.getState();
+    const g = st.game;
+    if (!g || st.code) return 'home tables only';
+    if (g.era === 'rail') return 'already the rail era';
+    const s = structuredClone(g);
+    scoreEra(s, 'canal');
+    beginRailEra(s);
+    useGame.setState({ game: s, selectedCardId: null, verb: null });
+    return 'rail era';
+  };
+}

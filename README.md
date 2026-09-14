@@ -23,6 +23,8 @@ npm run dev
 
 Then open `http://localhost:3000`. `npm run build` produces a static bundle in `app/dist`, `npm run lint` runs ESLint.
 
+In development the browser console holds the table: `__brass.getState()` reads the store, and `__brassRail()` jumps a home game straight to the Rail Era (canal scoring, sweep and re-deal played out on the spot) to look at the second painting without playing nine rounds.
+
 ### Playing online
 
 Tables live in the browser by default: open a second tab and it plays the guest. To play across machines, run the table server and point the app at it.
