@@ -987,7 +987,15 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         }
         if (furrow <= 0) continue;
         const railStyle = game.era === 'rail' ? def.rail : !def.canal;
-        if (railStyle) {
+        if (railStyle && game.era === 'rail') {
+          /* the railway itself is painted into the rail-era map (ballast,
+             sleepers, steel): the trace only lifts it — a faint dark bed
+             for readability over the mist, a steel glint down the middle */
+          tracePath(g, pts);
+          g.stroke({ width: 9, color: 0x0c0e0e, alpha: furrow * 0.35, cap: 'round', join: 'round' });
+          tracePath(g, pts);
+          g.stroke({ width: 2.4, color: 0xb4bcc2, alpha: furrow * 0.8, cap: 'round', join: 'round' });
+        } else if (railStyle) {
           /* railway survey: dark ballast bed, sleeper dashes, steel centre */
           tracePath(g, pts);
           g.stroke({ width: 11, color: 0x241d16, alpha: furrow, cap: 'round', join: 'round' });
