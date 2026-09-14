@@ -1,5 +1,6 @@
 import { LINKS, NODE_POS } from '@/game/data';
-import type { LinkDef } from '@/game/types';
+import type { Era, LinkDef } from '@/game/types';
+import { RAIL_ROUTES } from './railRoutes';
 
 /* ------------------------------------------------------------------ */
 /* routePaths — deterministic winding routes for every link (map-v5).  */
@@ -113,7 +114,19 @@ function buildRoute(def: LinkDef): Route {
 
 const ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
 
-/** winding route for a link (precomputed, deterministic) */
-export function routeFor(def: LinkDef): Route {
-  return ROUTES.get(def.id)!;
+/* the Rail Era's routes were traced on the relief of the rail-era painting
+   (tools/map/rail-routes.py): the map engraves the very same lines, so a
+   railway built on the board lies exactly on the one painted under it */
+const RAIL_ERA = new Map<string, Route>(
+  LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => {
+    const pts = RAIL_ROUTES[def.id];
+    const d = `M${pts.map(([x, y]) => `${x},${y}`).join(' L')}`;
+    return [def.id, { d, mid: pts[Math.floor(pts.length / 2)], pts }];
+  }),
+);
+
+/** winding route for a link (precomputed, deterministic); the Rail Era has
+ *  its own tracing for every link that can carry rails */
+export function routeFor(def: LinkDef, era: Era = 'canal'): Route {
+  return (era === 'rail' ? RAIL_ERA.get(def.id) : undefined) ?? ROUTES.get(def.id)!;
 }

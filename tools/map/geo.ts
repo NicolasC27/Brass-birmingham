@@ -2,7 +2,7 @@ import { LINKS, MERCHANTS, TOWNS } from '@/game/data';
 import { routeFor } from '@/components/game/routePaths';
 import { writeFileSync } from 'node:fs';
 const out = {
-  links: LINKS.map((d) => ({ id: d.id, canal: d.canal, rail: d.rail, pts: routeFor(d).pts })),
+  links: LINKS.map((d) => ({ id: d.id, canal: d.canal, rail: d.rail, pts: routeFor(d).pts, railPts: d.rail ? routeFor(d, 'rail').pts : undefined })),
   towns: TOWNS.map((t) => ({ id: t.id, x: t.x, y: t.y, farm: !!t.farm, slots: t.slots.map((s) => [s.x, s.y]) })),
   merchants: MERCHANTS.map((m) => ({ id: m.id, x: m.x, y: m.y })),
 };

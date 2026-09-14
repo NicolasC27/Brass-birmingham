@@ -5,7 +5,7 @@ import { INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS,
 import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
-import type { GameState } from '@/game/types';
+import type { Era, GameState } from '@/game/types';
 import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
@@ -27,9 +27,9 @@ import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
 
-function linkMidWorld(def: (typeof LINKS)[number]): [number, number] {
+function linkMidWorld(def: (typeof LINKS)[number], era: Era): [number, number] {
   /* most links have no explicit path — routeFor computes the winding route */
-  return routeFor(def).mid;
+  return routeFor(def, era).mid;
 }
 
 /* ------------------------------------------------------------------ */
@@ -52,13 +52,13 @@ interface Props {
 }
 
 /** world coords for anything a ledger entry can point at */
-function regionPos(key: string): [number, number] | null {
+function regionPos(key: string, era: Era): [number, number] | null {
   const town = TOWN_BY_ID[key];
   if (town) return [town.x, town.y];
   const merchant = MERCHANT_BY_ID[key];
   if (merchant) return [merchant.x, merchant.y];
   const link = LINKS.find((l) => l.id === key);
-  if (link) return routeFor(link).mid;
+  if (link) return routeFor(link, era).mid;
   return null;
 }
 
@@ -329,7 +329,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           linkMidScreen: (id: string) => {
             const def = LINKS.find((l) => l.id === id);
             if (!def) return null;
-            return worldToScreen(...linkMidWorld(def), cam.view, a.screen.width, a.screen.height);
+            return worldToScreen(...linkMidWorld(def, gameRef.current?.era ?? 'canal'), cam.view, a.screen.width, a.screen.height);
           },
           fly: (id: string) => {
             const t = TOWN_BY_ID[id];
@@ -463,7 +463,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
               }
               s.eventMode = 'none';
               fxLayer.addChild(s);
-              fxVehicles.push({ s, pts: routeFor(def).pts, t0: clock });
+              fxVehicles.push({ s, pts: routeFor(def, isRail ? 'rail' : 'canal').pts, t0: clock });
             }
           }
         }
@@ -533,7 +533,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         if (s.flyTo && s.flyTo.at !== lastFlyAt) {
           lastFlyAt = s.flyTo.at;
-          const pos = regionPos(s.flyTo.key);
+          const pos = regionPos(s.flyTo.key, s.game?.era ?? 'canal');
           if (pos) cam.flyTo(pos[0], pos[1], Math.max(cam.target.k, 1.5));
         }
         /* follow the others: glide to wherever a bot, or another player
@@ -543,7 +543,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const e = s.game.ledger[s.game.ledger.length - 1];
           const other = e?.player !== undefined && (s.game.players[e.player]?.isBot || (s.seat !== null && e.player !== s.seat));
           if (e?.region && other && Date.now() - cam.lastManual > 4000) {
-            const pos = regionPos(e.region);
+            const pos = regionPos(e.region, s.game.era);
             if (pos) cam.flyTo(pos[0], pos[1], Math.max(cam.target.k, 1.4));
           }
         } else if (s.game) {
@@ -641,17 +641,19 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       };
       for (const def of LINKS) {
         /* the same dense route sampling used for drawing (routeFor) —
-           hover tracks the visible curve exactly */
-        const pts = routeFor(def).pts.map((p) => [...p] as [number, number]);
-        trimEnd(pts, true);
-        trimEnd(pts, false);
-        linkHitPts.set(def.id, pts);
+           hover tracks the visible curve exactly, in either era */
+        for (const era of ['canal', 'rail'] as const) {
+          const pts = routeFor(def, era).pts.map((p) => [...p] as [number, number]);
+          trimEnd(pts, true);
+          trimEnd(pts, false);
+          linkHitPts.set(`${era}:${def.id}`, pts);
+        }
       }
 
       const linkAt = (wx: number, wy: number): (typeof LINKS)[number] | null => {
         let best: { def: (typeof LINKS)[number]; d: number } | null = null;
         for (const def of LINKS) {
-          const pts = linkHitPts.get(def.id)!;
+          const pts = linkHitPts.get(`${gameRef.current?.era ?? 'canal'}:${def.id}`)!;
           let d = Infinity;
           for (let i = 1; i < pts.length; i++) d = Math.min(d, distToSeg(wx, wy, pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]));
           if (d < 14 && (!best || d < best.d)) best = { def, d };
@@ -936,7 +938,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       for (const t of linkTargetsList) {
         if (!t.valid) continue;
         const def = t.link;
-        const pts = routeFor(def).pts;
+        const pts = routeFor(def, game.era).pts;
         const g = new Graphics();
         trace(g, pts);
         const picked = linkPick?.link.id === def.id || secondLinkPick?.link.id === def.id;
@@ -951,7 +953,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           d.stroke({ width: 2.4, color: 0xddbe7e, cap: 'round', join: 'round' });
           d.eventMode = 'none';
           pulse(d, 0.95); // alpha-pulsed stand-in for the SVG dash-flow
-          const [mx, my] = linkMidWorld(def);
+          const [mx, my] = linkMidWorld(def, game.era);
           priceTag(mx, my - 17.5, 48, 17, `£${t.total}`);
         }
       }
@@ -1064,7 +1066,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const def = LINKS.find((l) => l.id === hoverKey);
         if (def) {
           const g = new Graphics();
-          trace(g, routeFor(def).pts);
+          trace(g, routeFor(def, game.era).pts);
           g.stroke({ width: 8, color: 0xc9a45c, cap: 'round', join: 'round' });
           g.eventMode = 'none';
           pulse(g, 0.45);
@@ -1142,7 +1144,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const sl = townChrome(town).slots[Number(slotStr)];
       if (sl) at = [sl.x, sl.y - TILE_HALF];
     }
-    if (!at) at = regionPos(shake.key);
+    if (!at) at = regionPos(shake.key, gameRef.current?.era ?? 'canal');
     if (!at) return null;
     const [sx, sy] = worldToScreen(at[0], at[1], view, size.w, size.h);
     /* keep the sentence on screen: flip below when there is no room above */

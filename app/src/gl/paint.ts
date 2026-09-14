@@ -4,7 +4,7 @@ import { townColor } from '@/game/townColors';
 import { routeFor } from '@/components/game/routePaths';
 import { merchantOpen, tileKey } from '@/game/engine';
 import { tr } from '@/i18n';
-import type { GameState, IndustryType, LinkDef } from '@/game/types';
+import type { Era, GameState, IndustryType, LinkDef } from '@/game/types';
 import { RIBBON_FONT, RIBBON_H, TILE, TILE_HALF, townChrome } from '@/components/game/townChrome';
 import { HOUSES } from './houses';
 
@@ -464,7 +464,7 @@ export async function loadBoardAssets(): Promise<void> {
 /* The true winding route (same as the SVG board): a dense sampling of the
    bulged quad from routeFor — used for BOTH drawing and hit geometry, so
    the hover zone always sits exactly on the visible track. */
-const linkPoints = (def: LinkDef): [number, number][] => routeFor(def).pts;
+const linkPoints = (def: LinkDef, era: Era = 'canal'): [number, number][] => routeFor(def, era).pts;
 
 function tracePath(g: Graphics, pts: [number, number][]): void {
   g.moveTo(pts[0][0], pts[0][1]);
@@ -955,12 +955,23 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       badges.addChild(t);
     }
   };
+  /* the hit strokes follow the era's routes: retraced when the era turns */
+  let hitEra: Era = 'canal';
   const drawLinks = (game: GameState) => {
+    if (game.era !== hitEra) {
+      hitEra = game.era;
+      for (const def of LINKS) {
+        const hit = linkHit.get(def.id)!;
+        hit.clear();
+        tracePath(hit, linkPoints(def, hitEra));
+        hit.stroke({ width: 26, color: 0xffffff, alpha: 0 });
+      }
+    }
     for (const def of LINKS) {
       const g = linkGfx.get(def.id)!;
       g.clear();
       g.alpha = 1;
-      const pts = linkPoints(def);
+      const pts = linkPoints(def, game.era);
       const built = game.links[def.id];
       if (!built) {
         /* unbuilt visibility (v9, Board.tsx):

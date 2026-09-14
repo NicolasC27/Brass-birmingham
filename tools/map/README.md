@@ -22,3 +22,11 @@ painting" picks one), each composed into the canal map's frame by
 painting keeps its own pixels, centred on the world, the rest mirrored from
 its edges to fill the 15 % bleed; rail beds engraved along the rail routes;
 mist in the far edges; served as WebP. Sources stay in `tools/assets/map/`.
+
+The rail routes themselves are traced on that painting by
+`tools/map/rail-routes.py <terrain.pgm> <geo.json> <railRoutes.ts> <routes.json>`
+(terrain = the painting placed in the world at 1/4 scale, grey): a least-cost
+line per link that hugs valleys and contours, keeps clear of third towns and
+of the other lines. It writes `app/src/components/game/railRoutes.ts`, which
+the board uses for every rail link in the Rail Era, and `geo.ts` exports the
+same tracing (`railPts`) for the compositor to engrave.

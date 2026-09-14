@@ -508,7 +508,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
           if (!def) continue;
           /* vehicles follow the true winding route (routeFor sampling —
              same curve the board draws and hit-tests) */
-          const pts = routeFor(def).pts;
+          const pts = routeFor(def, game.era).pts;
           const boat = l.era !== 'rail';
           const col = hex(PLAYER_COLORS[game.players[l.owner].color]?.hex ?? '#C9A45C');
           const h = hashId(id);
@@ -567,7 +567,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
   }
   /* stagger order matches RAIL_ONLY_ORDER in Board.tsx */
   const etches: Etch[] = LINKS.filter((l) => !l.canal).map((def, i) => {
-    const pts = routeFor(def).pts;
+    const pts = routeFor(def, 'rail').pts;
     const g = new Graphics();
     etchLayer.addChild(g);
     return { id: def.id, delay: 0.5 + i * 0.09, sam: makeSampler(pts), g, lastP: -1 };
