@@ -994,7 +994,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           tracePath(g, pts);
           g.stroke({ width: 9, color: 0x0c0e0e, alpha: furrow * 0.35, cap: 'round', join: 'round' });
           tracePath(g, pts);
-          g.stroke({ width: 2.4, color: 0xb4bcc2, alpha: furrow * 0.8, cap: 'round', join: 'round' });
+          g.stroke({ width: 2, color: 0xb4bcc2, alpha: furrow * 0.5, cap: 'round', join: 'round' });
         } else if (railStyle) {
           /* railway survey: dark ballast bed, sleeper dashes, steel centre */
           tracePath(g, pts);
