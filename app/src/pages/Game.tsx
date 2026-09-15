@@ -405,8 +405,9 @@ export default function Game() {
              counts what others did since the reader last looked. Nothing
              at the right edge, where the exchange unfolds. */
           <>
-            {/* hold the machines where they stand: time to look, or to prepare a move */}
-            {(botThinking || botHold) && (
+            {/* hold the machines where they stand (a standing switch at a home
+                table, not only while one thinks): time to look, or to prepare a move */}
+            {seat === null && game.phase === 'action' && (
               <button type="button" onClick={() => setBotHold(!botHold)} aria-pressed={botHold} title={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} aria-label={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} className={cn(TOOL, botHold && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
                 {botHold ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
               </button>
