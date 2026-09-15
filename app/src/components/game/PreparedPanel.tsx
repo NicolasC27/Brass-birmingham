@@ -12,7 +12,6 @@ import type { Card, GameState } from '@/game/types';
 import { PortraitMedallion } from './PlayerRail';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { useHudInsets } from './useHudInsets';
 
 /* The orders for my turn — the moves prepared while others play, on a
    sheet under the banner: number, verb, what and where, what it costs,
@@ -112,16 +111,26 @@ export default function PreparedPanel() {
   const dropQueued = useGame((s) => s.dropQueued);
   const setUnless = useGame((s) => s.setUnless);
   const myTurn = useGame((s) => s.myTurn());
-  const insets = useHudInsets();
   const [editing, setEditing] = useState<number | null>(null);
-  /* the sheet stands where the banner does: right of the rail */
-  const [left, setLeft] = useState(360);
+  /* the sheet hangs right under the banner, flush with its left edge,
+     and follows it whenever the banner grows, moves or the window changes */
+  const [at, setAt] = useState<{ left: number; top: number }>({ left: 360, top: 100 });
   useEffect(() => {
-    const place = () => setLeft((document.querySelector('[data-player-rail]')?.getBoundingClientRect().right ?? 340) + 14);
+    const place = () => {
+      const bar = document.querySelector('[data-topbar]')?.getBoundingClientRect();
+      if (bar) setAt({ left: Math.round(bar.left), top: Math.round(bar.bottom) + 10 });
+    };
     place();
+    const ro = new ResizeObserver(place);
+    for (const el of document.querySelectorAll('[data-topbar]')) ro.observe(el);
     window.addEventListener('resize', place);
-    return () => window.removeEventListener('resize', place);
-  }, []);
+    const tick = window.setInterval(place, 800);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', place);
+      window.clearInterval(tick);
+    };
+  }, [queued.length, preparing]);
   const me = game ? (seat ?? game.players.findIndex((p) => !p.isBot)) : -1;
   /* each move costed on the table it will find: the one the previous moves leave */
   const rows = useMemo(() => {
@@ -144,16 +153,16 @@ export default function PreparedPanel() {
       animate={{ opacity: 1, y: 0 }}
       aria-label={t('game.prepared.title')}
       className={cn('dispatch pointer-events-auto fixed z-[66] w-[400px] px-4 pb-2.5 pt-2.5', previewQueue && 'ring-2 ring-brass-400 ring-offset-2 ring-offset-coal-950')}
-      style={{ top: insets.top + 88, left }}
+      style={{ top: at.top, left: at.left }}
     >
-      <div className="relative border-b border-ink-900/50 pb-1 text-center">
-        <p className="font-display text-[12px] font-black uppercase tracking-[0.22em] text-ink-900">
+      <div className="relative border-b border-ink-900/50 pb-1 pr-16 text-center">
+        <p className="whitespace-nowrap font-display text-[11px] font-black uppercase tracking-[0.16em] text-ink-900">
           <span aria-hidden className="mr-2 text-[8px] text-ink-900/50">◆</span>
           {t('game.prepared.title')}
           <span aria-hidden className="ml-2 text-[8px] text-ink-900/50">◆</span>
         </p>
         <p className="font-fell text-[9.5px] italic text-ink-900/60">{t('game.prepared.note')}</p>
-        {rows.length > 0 && rows.every((r) => r.holds) && <span className="ink-stamp absolute -right-1 -top-1 font-sans text-[9px]">{t('game.prepared.stampReady')}</span>}
+        {rows.length > 0 && rows.every((r) => r.holds) && <span className="ink-stamp absolute right-0 top-0 font-sans text-[9px]">{t('game.prepared.stampReady')}</span>}
       </div>
       <ol className="mt-1.5 flex flex-col gap-1">
         {rows.map(({ q, i, cost, card, holds, why }) => {

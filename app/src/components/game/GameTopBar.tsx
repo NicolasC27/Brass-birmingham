@@ -173,6 +173,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   return (
     <div className="pointer-events-none fixed z-[64] flex justify-center" style={{ left: band.left, right: band.right, top: insets.top }}>
       <motion.div
+        data-topbar
         key={mine ? 'mine' : 'theirs'}
         initial={{ scale: 0.97, opacity: 0.4 }}
         animate={{ scale: 1, opacity: 1 }}
