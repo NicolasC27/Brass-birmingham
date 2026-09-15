@@ -282,19 +282,20 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
               </button>
             </div>
             {aidNote && <p className="mt-1 truncate font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
-            {/* the moves ready for my turn, each with its cross */}
-            {queued.length > 0 && (
-              <p className="mt-1 flex flex-wrap items-center gap-1.5 font-sans text-[10.5px] text-cream-100/80">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-brass-400/80">{t('game.topbar.queued')}</span>
-                {queued.map((a, i) => (
-                  <span key={i} className="flex items-center gap-1 rounded-sm border border-brass-700/60 bg-coal-950/60 px-1.5 py-px">
-                    <span>{describeAction(a)}</span>
-                    <button type="button" onClick={() => dropQueued(i)} aria-label={t('game.topbar.queueDrop')} title={t('game.topbar.queueDrop')} className="text-cream-100/45 hover:text-rust-500">×</button>
-                  </span>
-                ))}
-              </p>
-            )}
           </div>
+        )}
+        {/* the moves ready for my turn, each with its cross — shown while
+            the others play too, that is when they matter */}
+        {queued.length > 0 && (
+          <p className="flex flex-wrap items-center gap-1.5 px-3 pb-1.5 font-sans text-[10.5px] text-cream-100/80">
+            <span className="font-mono text-[9px] uppercase tracking-wider text-brass-400/80">{t('game.topbar.queued')}</span>
+            {queued.map((a, i) => (
+              <span key={i} className="flex items-center gap-1 rounded-sm border border-brass-700/60 bg-coal-950/60 px-1.5 py-px">
+                <span>{describeAction(a)}</span>
+                <button type="button" onClick={() => dropQueued(i)} aria-label={t('game.topbar.queueDrop')} title={t('game.topbar.queueDrop')} className="text-cream-100/45 hover:text-rust-500">×</button>
+              </span>
+            ))}
+          </p>
         )}
 
         {/* the candle burns along the bottom edge */}
