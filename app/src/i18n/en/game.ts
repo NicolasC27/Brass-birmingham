@@ -43,6 +43,9 @@ const game = {
     unlessAdd: 'unless…',
     unlessTitle: 'The move is dropped if…',
     unlessLead: 'Drop if',
+    unlessOnMap: 'On the map',
+    unlessPicking: 'Click a town or a slot…',
+    unlessBuilds: 'builds a {works}',
     unlessWho: 'Player',
     unlessDoes: 'does',
     unlessWhere: 'where',
@@ -580,6 +583,7 @@ const game = {
     preparingHint: 'Card, verb, target, then “Prepare”',
     legend: 'In colour: your moves and the tiles still to flip',
     stampReady: 'Ready',
+    short: 'Orders',
     stampVoid: 'Void',
   },
   gazette: {

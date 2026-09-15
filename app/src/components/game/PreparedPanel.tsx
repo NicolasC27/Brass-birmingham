@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Binoculars, DraftingCompass, Eye, EyeOff, Hammer, Landmark, Route, Scale, SkipForward, X } from 'lucide-react';
+import { Binoculars, DraftingCompass, Eye, EyeOff, Hammer, Landmark, MapPin, Route, Scale, SkipForward, X } from 'lucide-react';
 import { INDUSTRY_COLOR } from './townChrome';
 import { INDUSTRY_ICON, TOWNS } from '@/game/data';
 import { applyAction } from '@/game/actions';
@@ -35,11 +35,17 @@ function MiniCard({ card }: { card: Card }) {
 
 /** the condition, set in place under the move: the player by portrait,
  *  the deed by icon, the place by name or anywhere */
-function UnlessRow({ game, players, value, onChange, onClose }: { game: GameState; players: number[]; value: Unless | null; onChange: (u: Unless | null) => void; onClose: () => void }) {
+function UnlessRow({ game, players, value, picking, onPick, onChange, onClose }: { game: GameState; players: number[]; value: Unless | null; picking: boolean; onPick: () => void; onChange: (u: Unless | null) => void; onClose: () => void }) {
   const t = useT();
   const [player, setPlayer] = useState<number>(value?.player ?? players[0] ?? 0);
   const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
   const [town, setTown] = useState<string>(value?.town ?? '');
+  const industry = value?.industry;
+  /* a place picked on the map lands in the store: the row follows */
+  const picked = value?.town ?? '';
+  useEffect(() => {
+    setTown(picked);
+  }, [picked]);
   const KINDS: { kind: Unless['kind']; icon: typeof Hammer }[] = [
     { kind: 'build', icon: Hammer },
     { kind: 'sell', icon: Scale },
@@ -85,13 +91,31 @@ function UnlessRow({ game, players, value, onChange, onClose }: { game: GameStat
           <option key={x.id} value={x.id}>{x.name}</option>
         ))}
       </select>
+      <button
+        type="button"
+        onClick={() => {
+          onChange({ player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined });
+          onPick();
+        }}
+        aria-pressed={picking}
+        className={cn('flex h-6 items-center gap-1 rounded-sm border px-1.5 font-sans text-[10.5px]', picking ? 'border-rust-500 bg-rust-500/15 text-ink-900' : 'border-ink-900/30 text-ink-900/70 hover:text-ink-900')}
+      >
+        <MapPin className="h-3 w-3" />
+        {picking ? t('game.topbar.unlessPicking') : t('game.topbar.unlessOnMap')}
+      </button>
+      {kind === 'build' && industry && (
+        <span className="flex items-center gap-1 font-sans text-[10.5px] text-ink-900/80">
+          <img src={INDUSTRY_ICON[industry]} alt="" className="h-3.5 w-3.5" />
+          {t(`game.log.industry.${industry}`)}
+        </span>
+      )}
       <span className="ml-auto flex items-center gap-1">
         {value && (
           <button type="button" onClick={() => { onChange(null); onClose(); }} className="rounded-sm border border-ink-900/30 px-1.5 py-px font-sans text-[10.5px] text-ink-900/70 hover:text-ink-900">
             {t('game.topbar.unlessNone')}
           </button>
         )}
-        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="wax-seal font-sans text-[10px] font-bold uppercase tracking-wider hover:brightness-110">
+        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined }); onClose(); }} className="wax-seal font-sans text-[10px] font-bold uppercase tracking-wider hover:brightness-110">
           {t('game.topbar.unlessOk')}
         </button>
       </span>
@@ -112,6 +136,12 @@ export default function PreparedPanel() {
   const setUnless = useGame((s) => s.setUnless);
   const myTurn = useGame((s) => s.myTurn());
   const [editing, setEditing] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const unlessPick = useGame((s) => s.unlessPick);
+  const beginUnlessPick = useGame((s) => s.beginUnlessPick);
+  /* the sheet unfolds under the pointer, while a move is prepared, a
+     condition edited or a place picked; otherwise a strip says the orders */
+  const unfolded = unlessPick === null && (open || preparing || editing !== null || previewQueue);
   /* the sheet hangs right under the banner, flush with its left edge,
      and follows it whenever the banner grows, moves or the window changes */
   const [at, setAt] = useState<{ left: number; top: number }>({ left: 360, top: 100 });
@@ -152,9 +182,28 @@ export default function PreparedPanel() {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       aria-label={t('game.prepared.title')}
-      className={cn('dispatch pointer-events-auto fixed z-[66] w-[400px] px-4 pb-2.5 pt-2.5', previewQueue && 'ring-2 ring-brass-400 ring-offset-2 ring-offset-coal-950')}
+      onPointerEnter={() => setOpen(true)}
+      onPointerLeave={() => setOpen(false)}
+      className={cn('dispatch pointer-events-auto fixed z-[66]', unfolded ? 'w-[400px] px-4 pb-2.5 pt-2.5' : 'w-auto max-w-[520px] px-3 py-1', previewQueue && 'ring-2 ring-brass-400 ring-offset-2 ring-offset-coal-950')}
       style={{ top: at.top, left: at.left }}
     >
+      {!unfolded && (
+        <div className="flex items-center gap-2">
+          <span className="font-display text-[9px] font-black uppercase tracking-[0.16em] text-ink-900/70">{t('game.prepared.short')}</span>
+          {unlessPick !== null && <span className="wax-seal font-sans text-[10px]">{t('game.topbar.unlessPicking')}</span>}
+          {rows.map(({ q, i, holds }) => (
+            <span key={i} className="flex items-center gap-1 font-fell text-[12px] text-ink-900" title={describeAction(q.action)}>
+              <span className={cn('brass-roundel h-4 w-4 text-[9px] font-bold', !holds && 'opacity-50')}>{i + 1}</span>
+              <span className="max-w-[150px] truncate">{describeAction(q.action)}</span>
+              {q.unless && <span className="wax-seal h-3.5 w-3.5 !p-0" aria-label={describeUnless(q.unless, game)} title={describeUnless(q.unless, game)} />}
+            </span>
+          ))}
+          {!myTurn && queued.length < 2 && game.phase === 'action' && (
+            <button type="button" onClick={() => setPreparing(true)} className="brass-roundel h-4 w-4 text-[11px] font-bold leading-none" title={t('game.hand.prepare')} aria-label={t('game.hand.prepare')}>+</button>
+          )}
+        </div>
+      )}
+      {unfolded && (<>
       <div className="relative border-b border-ink-900/50 pb-1 pr-16 text-center">
         <p className="whitespace-nowrap font-display text-[11px] font-black uppercase tracking-[0.16em] text-ink-900">
           <span aria-hidden className="mr-2 text-[8px] text-ink-900/50">◆</span>
@@ -195,7 +244,7 @@ export default function PreparedPanel() {
                 <X className="h-3.5 w-3.5" />
               </button>
               </div>
-              {editing === i && <UnlessRow game={game} players={others} value={q.unless ?? null} onChange={(u) => setUnless(i, u)} onClose={() => setEditing(null)} />}
+              {editing === i && <UnlessRow game={game} players={others} value={q.unless ?? null} picking={unlessPick === i} onPick={() => beginUnlessPick(unlessPick === i ? null : i)} onChange={(u) => setUnless(i, u)} onClose={() => { setEditing(null); beginUnlessPick(null); }} />}
             </li>
           );
         })}
@@ -218,6 +267,7 @@ export default function PreparedPanel() {
           )}
         </span>
       </div>
+      </>)}
     </motion.section>
   );
 }

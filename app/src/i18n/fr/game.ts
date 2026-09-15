@@ -45,6 +45,9 @@ const fr: typeof engame = {
     unlessAdd: 'sauf si…',
     unlessTitle: 'Le coup est abandonné si…',
     unlessLead: 'Abandonner si',
+    unlessOnMap: 'Sur la carte',
+    unlessPicking: 'Cliquez une ville ou une case…',
+    unlessBuilds: 'construit une {works}',
     unlessWho: 'Joueur',
     unlessDoes: 'fait',
     unlessWhere: 'où',
@@ -582,6 +585,7 @@ const fr: typeof engame = {
     preparingHint: 'Carte, verbe, cible, puis « Préparer »',
     legend: 'En couleur : vos coups et les tuiles encore à retourner',
     stampReady: 'Prêt',
+    short: 'Ordres',
     stampVoid: 'Ne tient pas',
   },
   gazette: {
