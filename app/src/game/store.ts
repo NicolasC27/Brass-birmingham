@@ -92,7 +92,9 @@ interface GameStore {
   /** the reader is planning a move out of turn */
   preparing: boolean;
   /** what is ready for my next turn, in order (two at most) */
-  queued: GameAction[];
+  queued: Prepared[];
+  /** a condition on a prepared move: it is dropped if that player did that since */
+  setUnless: (index: number, unless: Unless | null) => void;
   setPreparing: (on: boolean) => void;
   dropQueued: (index: number) => void;
   /** my turn has come: the first prepared move plays if the engine still takes it */
@@ -285,7 +287,7 @@ const freshTable = {
   toasts: [] as number[],
   pins: {} as Record<string, string>,
   preparing: false,
-  queued: [] as GameAction[],
+  queued: [] as Prepared[],
 };
 
 export const useGame = create<GameStore>((set, get) => ({
@@ -556,18 +558,26 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ ...clearSelection, preparing: on });
   },
   dropQueued: (index) => set({ queued: get().queued.filter((_, i) => i !== index) }),
+  setUnless: (index, unless) => set({ queued: get().queued.map((q, i) => (i === index ? { ...q, unless: unless ?? undefined } : q)) }),
   playQueued: () => {
     const st = get();
     const g = st.game;
     if (!g || !st.myTurn() || !st.queued.length) return;
     const [next, ...rest] = st.queued;
-    const r = applyAction(g, g.current, next);
+    /* the condition: what that player did since the move was prepared */
+    const u = next.unless;
+    const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player === u.player && e.key === u.kind && (!u.town || e.region === u.town)) : undefined;
+    if (hit) {
+      set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueUnless', { what: ledgerText(hit, tr) }), at: Date.now() } });
+      return;
+    }
+    const r = applyAction(g, g.current, next.action);
     if (!r.state) {
       set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueDropped', { reason: r.error ?? '' }), at: Date.now() } });
       return;
     }
     set({ queued: rest });
-    st.dispatch(next);
+    st.dispatch(next.action);
   },
   planGame: () => {
     const st = get();
@@ -711,7 +721,8 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!action) return;
     if (st.preparing) {
       /* ready for my turn: kept, not played */
-      set({ ...clearSelection, preparing: false, queued: [...st.queued, action].slice(0, 2) });
+      const since = g.ledger.length ? g.ledger[g.ledger.length - 1].id + 1 : 0;
+      set({ ...clearSelection, preparing: false, queued: [...st.queued, { action, since }].slice(0, 2) });
       return;
     }
     get().dispatch(action);
@@ -1147,14 +1158,35 @@ export function leaveOnlineTable(): void {
 /** `g` as it will stand after `queued` has played for `me`: my turn is
  *  pretended, the moves applied in order, the first refused one and those
  *  after it left out. The projection is what a further move is planned on. */
-export function projectQueued(g: GameState, me: number, queued: GameAction[]): GameState {
+export function projectQueued(g: GameState, me: number, queued: Prepared[]): GameState {
   let sim: GameState = { ...structuredClone(g), current: me, actionsLeft: Math.max(queued.length, 1), phase: 'action' };
-  for (const a of queued) {
+  for (const { action: a } of queued) {
     const r = applyAction(sim, me, a);
     if (!r.state) break;
     sim = { ...r.state, current: me, actionsLeft: Math.max(r.state.actionsLeft, 1), phase: 'action' };
   }
   return sim;
+}
+
+/* ------------------------- a prepared move ------------------------- */
+
+/** what would make a prepared move pointless: that player doing that (there) */
+export interface Unless {
+  player: number;
+  kind: 'sell' | 'build' | 'network';
+  town?: string;
+}
+export interface Prepared {
+  action: GameAction;
+  /** the first ledger id the condition looks at: the move was prepared before it */
+  since: number;
+  unless?: Unless;
+}
+/** the condition, said in a few words */
+export function describeUnless(u: Unless, g: GameState): string {
+  const name = g.players[u.player]?.name ?? '';
+  const where = u.town ? tr('game.topbar.unlessAt', { town: TOWN_BY_ID[u.town]?.name ?? u.town }) : '';
+  return tr('game.topbar.unless', { name, what: tr(`game.topbar.unlessKind.${u.kind}`), where });
 }
 
 /* ------------------------ a move in a few words ------------------------ */

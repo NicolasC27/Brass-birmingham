@@ -3,7 +3,9 @@ import { motion } from 'framer-motion';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
-import { cardLabel, confirmCost, confirmSummary, describeAction, useGame, verbsForCard } from '@/game/store';
+import { cardLabel, confirmCost, confirmSummary, describeAction, describeUnless, useGame, verbsForCard } from '@/game/store';
+import type { Unless } from '@/game/store';
+import { TOWNS } from '@/game/data';
 import type { Verb } from '@/game/types';
 import { reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
@@ -62,6 +64,55 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
   return band;
 }
 
+/** the small form behind "unless…": that player, that deed, there or anywhere */
+function UnlessEditor({ players, value, onChange, onClose }: { players: { idx: number; name: string }[]; value: Unless | null; onChange: (u: Unless | null) => void; onClose: () => void }) {
+  const t = useT();
+  const [player, setPlayer] = useState<number>(value?.player ?? players[0]?.idx ?? 0);
+  const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
+  const [town, setTown] = useState<string>(value?.town ?? '');
+  const sel = 'rounded-sm border border-brass-700/60 bg-coal-950 px-1 py-0.5 font-sans text-[11px] text-cream-100';
+  return (
+    <div role="dialog" aria-label={t('game.topbar.unlessTitle')} className="plaque absolute left-0 top-full z-[75] mt-1 flex w-[300px] flex-col gap-1.5 rounded-md p-2 text-left" onClick={(e) => e.stopPropagation()}>
+      <p className="engraved-brass font-fell text-[11px] uppercase tracking-[0.12em]">{t('game.topbar.unlessTitle')}</p>
+      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
+        {t('game.topbar.unlessWho')}
+        <select value={player} onChange={(e) => setPlayer(Number(e.target.value))} className={sel}>
+          {players.map((p) => (
+            <option key={p.idx} value={p.idx}>{p.name}</option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
+        {t('game.topbar.unlessDoes')}
+        <select value={kind} onChange={(e) => setKind(e.target.value as Unless['kind'])} className={sel}>
+          {(['build', 'sell', 'network'] as const).map((k) => (
+            <option key={k} value={k}>{t(`game.topbar.unlessKind.${k}`)}</option>
+          ))}
+        </select>
+      </label>
+      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
+        {t('game.topbar.unlessWhere')}
+        <select value={town} onChange={(e) => setTown(e.target.value)} className={sel}>
+          <option value="">{t('game.topbar.unlessAnywhere')}</option>
+          {TOWNS.filter((x) => !x.farm).map((x) => (
+            <option key={x.id} value={x.id}>{x.name}</option>
+          ))}
+        </select>
+      </label>
+      <div className="mt-1 flex justify-end gap-1.5">
+        {value && (
+          <button type="button" onClick={() => { onChange(null); onClose(); }} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
+            {t('game.topbar.unlessNone')}
+          </button>
+        )}
+        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="btn-strike !min-h-[26px] !px-3 !py-0.5 text-[11px]">
+          {t('game.topbar.unlessOk')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: number | null; marketOpen: boolean }) {
   const t = useT();
   const game = useGame((s) => s.game);
@@ -71,6 +122,10 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const preparing = useGame((s) => s.preparing);
   const queued = useGame((s) => s.queued);
   const dropQueued = useGame((s) => s.dropQueued);
+  const setUnless = useGame((s) => s.setUnless);
+  const seat = useGame((s) => s.seat);
+  /* which prepared move has its condition open for editing */
+  const [unlessOpen, setUnlessOpen] = useState<number | null>(null);
   const code = useGame((s) => s.code);
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
@@ -289,10 +344,27 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
         {queued.length > 0 && (
           <p className="flex flex-wrap items-center gap-1.5 px-3 pb-1.5 font-sans text-[10.5px] text-cream-100/80">
             <span className="font-mono text-[9px] uppercase tracking-wider text-brass-400/80">{t('game.topbar.queued')}</span>
-            {queued.map((a, i) => (
-              <span key={i} className="flex items-center gap-1 rounded-sm border border-brass-700/60 bg-coal-950/60 px-1.5 py-px">
-                <span>{describeAction(a)}</span>
+            {queued.map((q, i) => (
+              <span key={i} className="relative flex items-center gap-1 rounded-sm border border-brass-700/60 bg-coal-950/60 px-1.5 py-px">
+                <span>{describeAction(q.action)}</span>
+                {/* the condition: set, shown, or offered */}
+                <button
+                  type="button"
+                  onClick={() => setUnlessOpen((o) => (o === i ? null : i))}
+                  aria-expanded={unlessOpen === i}
+                  className={cn('rounded-sm border px-1 font-sans text-[9.5px]', q.unless ? 'border-rust-500/70 text-rust-500 brightness-150' : 'border-brass-700/50 text-brass-400/80 hover:text-brass-400')}
+                >
+                  {q.unless ? describeUnless(q.unless, game) : t('game.topbar.unlessAdd')}
+                </button>
                 <button type="button" onClick={() => dropQueued(i)} aria-label={t('game.topbar.queueDrop')} title={t('game.topbar.queueDrop')} className="text-cream-100/45 hover:text-rust-500">×</button>
+                {unlessOpen === i && (
+                  <UnlessEditor
+                    players={game.players.map((x, idx) => ({ idx, name: x.name })).filter((x) => x.idx !== (seat ?? game.players.findIndex((y) => !y.isBot)))}
+                    value={q.unless ?? null}
+                    onChange={(u) => setUnless(i, u)}
+                    onClose={() => setUnlessOpen(null)}
+                  />
+                )}
               </span>
             ))}
           </p>

@@ -362,7 +362,7 @@ export default function HandDock() {
   const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
   /* with moves already prepared, the hand plans on the table they leave */
   const planGame = preparing && queued.length && actor >= 0 ? projectQueued(game, actor, queued) : game;
-  const usedByQueue = new Set(queued.map((a) => ('card' in a ? a.card : undefined)).filter(Boolean));
+  const usedByQueue = new Set(queued.map((q) => ('card' in q.action ? q.action.card : undefined)).filter(Boolean));
   const verbs = verbsForCard({ game: planGame, selectedCardId, actor: actor >= 0 ? actor : undefined });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
   const devOptions = verb === 'develop' ? currentDevelops() : [];
