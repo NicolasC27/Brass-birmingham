@@ -1,4 +1,5 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
@@ -71,7 +72,9 @@ function UnlessEditor({ at, players, value, onChange, onClose }: { at: { x: numb
   const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
   const [town, setTown] = useState<string>(value?.town ?? '');
   const sel = 'rounded-sm border border-brass-700/60 bg-coal-950 px-1 py-0.5 font-sans text-[11px] text-cream-100';
-  return (
+  /* rendered at the document's root: the banner's own stacking context
+     would keep it under the notices and the Gazette */
+  return createPortal(
     <div role="dialog" aria-label={t('game.topbar.unlessTitle')} className="plaque fixed z-[90] flex w-[300px] flex-col gap-1.5 rounded-md p-2 text-left shadow-e4" style={{ left: Math.min(at.x, window.innerWidth - 316), top: at.y }} onClick={(e) => e.stopPropagation()}>
       <p className="engraved-brass font-fell text-[11px] uppercase tracking-[0.12em]">{t('game.topbar.unlessTitle')}</p>
       <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
@@ -109,7 +112,8 @@ function UnlessEditor({ at, players, value, onChange, onClose }: { at: { x: numb
           {t('game.topbar.unlessOk')}
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
