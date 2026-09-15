@@ -217,6 +217,7 @@ const fr: typeof engame = {
       matStyle: 'Tuiles du tapis : cartes / compact / pastilles',
       settings: 'Réglages d’affichage',
       focus: 'Vue épurée : le plateau et l’essentiel',
+      survey: 'Relevé des ordres : voir mes coups préparés sur le plateau',
       cards: 'Choisir la carte 1–8',
       hand: 'Épingler / libérer la main',
       tracks: 'Zoomer une piste de score (double-clic : réinitialise)',

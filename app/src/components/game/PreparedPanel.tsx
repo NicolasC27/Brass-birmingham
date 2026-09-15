@@ -12,6 +12,7 @@ import type { Card, GameState } from '@/game/types';
 import { PortraitMedallion } from './PlayerRail';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { keyLabel, useKeybindings } from './keybindings';
 
 /* The orders for my turn — the moves prepared while others play, on a
    sheet under the banner: number, verb, what and where, what it costs,
@@ -135,6 +136,7 @@ export default function PreparedPanel() {
   const dropQueued = useGame((s) => s.dropQueued);
   const setUnless = useGame((s) => s.setUnless);
   const myTurn = useGame((s) => s.myTurn());
+  const keys = useKeybindings();
   const [editing, setEditing] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const unlessPick = useGame((s) => s.unlessPick);
@@ -284,9 +286,10 @@ export default function PreparedPanel() {
         </span>
         <span className="flex items-center gap-1.5">
           {queued.length > 0 && (
-            <button type="button" onClick={() => setPreviewQueue(!previewQueue)} aria-pressed={previewQueue} className={cn('flex h-7 items-center gap-1.5 rounded-sm border border-[#8A6B33] bg-[linear-gradient(180deg,#e8c47a,#b58d3c)] px-2.5 font-sans text-[10.5px] font-bold uppercase tracking-wider text-[#2A241C] shadow-[inset_0_1px_0_rgba(255,244,214,.6),0_1px_2px_rgba(0,0,0,.45)] hover:brightness-110', previewQueue && 'ring-2 ring-rust-500/70')}>
+            <button type="button" onClick={() => setPreviewQueue(!previewQueue)} aria-pressed={previewQueue} title={`${t('game.prepared.visualise')} (${keyLabel(keys.survey)})`} className={cn('flex h-7 items-center gap-1.5 rounded-sm border border-[#8A6B33] bg-[linear-gradient(180deg,#e8c47a,#b58d3c)] px-2.5 font-sans text-[10.5px] font-bold uppercase tracking-wider text-[#2A241C] shadow-[inset_0_1px_0_rgba(255,244,214,.6),0_1px_2px_rgba(0,0,0,.45)] hover:brightness-110', previewQueue && 'ring-2 ring-rust-500/70')}>
               {previewQueue ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               {t(previewQueue ? 'game.prepared.visualising' : 'game.prepared.visualise')}
+              <kbd className="ml-0.5 rounded-sm border border-[#2A241C]/40 px-1 font-mono text-[9px] normal-case tracking-normal opacity-70">{keyLabel(keys.survey)}</kbd>
             </button>
           )}
           {!myTurn && !preparing && queued.length < 2 && game.phase === 'action' && (

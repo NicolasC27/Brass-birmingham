@@ -215,6 +215,7 @@ const game = {
       matStyle: 'Mat tiles: cards / compact / pills',
       settings: 'Display settings',
       focus: 'Focus view: the board and the essentials',
+      survey: 'Survey of the orders: show my prepared moves on the board',
       cards: 'Select card 1–8',
       hand: 'Pin / unpin the hand',
       tracks: 'Zoom a score track (double-click resets)',

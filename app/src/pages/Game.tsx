@@ -279,6 +279,13 @@ export default function Game() {
         setBoardOption('focus', !getBoardOptions().focus);
         return;
       }
+      /* the survey of the orders, from anywhere, as long as there are orders */
+      if (isKey(e, 'survey')) {
+        const st = useGame.getState();
+        if (st.previewQueue) setPreviewQueue(false);
+        else if (st.queued.length) setPreviewQueue(true);
+        return;
+      }
       if (planActor < 0) return;
       if (e.key === 'Enter') {
         const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });

@@ -8,8 +8,8 @@ import { useSyncExternalStore } from 'react';
 /* keys stay fixed: they mirror the hand and the camera, not a panel.  */
 /* ------------------------------------------------------------------ */
 
-export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit' | 'focus';
-export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'hand', 'links', 'focus', 'fullscreen', 'rules', 'fit'];
+export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit' | 'focus' | 'survey';
+export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'hand', 'links', 'focus', 'survey', 'fullscreen', 'rules', 'fit'];
 
 export const DEFAULT_KEYS: Record<KeyAction, string> = {
   undo: 'z',
@@ -26,6 +26,7 @@ export const DEFAULT_KEYS: Record<KeyAction, string> = {
   rules: '?',
   fit: '0',
   focus: 'v',
+  survey: 'o',
 };
 
 const KEY = 'brassworks.keys.v1';
