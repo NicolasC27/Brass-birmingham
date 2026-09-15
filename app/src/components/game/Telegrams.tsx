@@ -151,25 +151,46 @@ export function MarkWarning() {
   const t = useT();
   const warning = useGame((s) => s.markWarning);
   const dismiss = useGame((s) => s.dismissMarkWarning);
+  /* the word holds the whole screen until it is acknowledged: nothing
+     underneath takes a click, Enter or Escape stand for the button */
   useEffect(() => {
     if (!warning) return;
-    const id = window.setTimeout(dismiss, 6000);
-    return () => window.clearTimeout(id);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        dismiss();
+      }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [warning, dismiss]);
   return (
     <AnimatePresence>
       {warning && (
         <motion.div
           key={warning}
-          initial={{ opacity: 0, scale: 0.94 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
-          role="alert"
-          className="plaque pointer-events-auto fixed left-1/2 top-1/2 z-[78] w-[min(420px,90vw)] -translate-x-1/2 -translate-y-1/2 rounded-md px-5 py-4 text-center shadow-e4"
-          onClick={dismiss}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[90] flex items-center justify-center bg-coal-950/70 backdrop-blur-sm"
+          onPointerDown={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
         >
-          <p className="engraved-brass font-fell text-[13px] uppercase tracking-[0.16em]">{t('game.telegram.officeTitle')}</p>
-          <p className="mt-2 font-fell text-[16px] leading-snug text-cream-100/90">{t(warning === 'muted' ? 'game.telegram.marksMuted' : 'game.telegram.marksWarned')}</p>
+          <motion.div
+            initial={{ scale: 0.94, y: 8 }}
+            animate={{ scale: 1, y: 0 }}
+            role="alertdialog"
+            aria-modal="true"
+            aria-label={t('game.telegram.officeTitle')}
+            className="plaque w-[min(440px,90vw)] rounded-md px-6 py-5 text-center shadow-e4"
+          >
+            <p className="engraved-brass font-fell text-[13px] uppercase tracking-[0.16em]">{t('game.telegram.officeTitle')}</p>
+            <p className="mt-3 font-fell text-[17px] leading-snug text-cream-100/90">{t(warning === 'muted' ? 'game.telegram.marksMuted' : 'game.telegram.marksWarned')}</p>
+            <button type="button" autoFocus onClick={dismiss} className="btn-strike mt-5 !h-10 !px-8">
+              {t('game.telegram.agreed')}
+            </button>
+          </motion.div>
         </motion.div>
       )}
     </AnimatePresence>

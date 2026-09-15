@@ -524,6 +524,7 @@ const fr: typeof engame = {
     from: 'Télégramme de {name}',
     mute: 'Ne plus entendre {name}',
     officeTitle: 'Le bureau du télégraphe',
+    agreed: 'D’accord',
     marksWarned: 'Doucement sur les signaux. La prochaine averse, on vous coupe la ligne pour la partie.',
     marksMuted: 'Ligne coupée : vos signaux ne passent plus pour cette partie.',
     line: {
