@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Application, Container, Graphics, Sprite, Text } from 'pixi.js';
+import { Application, Assets, ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
 import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
@@ -18,7 +18,8 @@ import Minimap from '@/components/game/Minimap';
 import TownInspector from '@/components/game/TownInspector';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
-import { buildBoardScene, drawOwnerMedallion, industryFaceUrl, loadBoardAssets } from './paint';
+import { buildBoardScene, drawOwnerMedallion, industryFaceUrl, loadBoardAssets, tileFaceUrl } from './paint';
+import type { Prepared } from '@/game/store';
 import { houseHover, pingTap } from './sfx';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
@@ -50,6 +51,8 @@ interface Props {
   keyboard?: boolean;
   /** fly the camera here whenever `seq` changes (replay follows the action) */
   focus?: { at: [number, number]; seq: number } | null;
+  /** the orders for my turn shown in colour over a sepia table */
+  preview?: { queued: Prepared[]; actor: number } | null;
 }
 
 /** world coords for anything a ledger entry can point at */
@@ -133,7 +136,7 @@ function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [num
   return { end: [gx - ((gx - sx) / len) * back, gy - ((gy - sy) / len) * back], head: arrowHead(sx, sy, gx, gy, TILE_R + 3) };
 }
 
-export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null }: Props) {
+export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null, preview = null }: Props) {
   /* the scene paints THIS game — the store's for the live table, a replayed
      state for the reviewer — read through a ref by the ticker */
   const gameRef = useRef(game);
@@ -182,6 +185,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const ambianceRef = useRef<Ambiance | null>(null);
   const cameraRef = useRef<Camera | null>(null);
   const overlayRef = useRef<Container | null>(null);
+  const fxLayerRef = useRef<Container | null>(null);
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
   const marchRef = useRef<March[]>([]);
   const propsRef = useRef({ targets, linkTargetsList, sellTargetsList, onInvalid });
@@ -230,6 +234,27 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       cancelled = true;
     };
   }, [mapStyle, railPainting]);
+
+  /* the orders shown: the table turns sepia but for the overlay (where the
+     orders and the tiles still to flip are painted) and the FX */
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const sepia = preview ? new ColorMatrixFilter() : null;
+    if (sepia) {
+      sepia.sepia(false);
+      sepia.brightness(0.62, true);
+    }
+    for (const child of scene.world.children) {
+      if (child === scene.overlay || child === fxLayerRef.current) continue;
+      child.filters = sepia ? [sepia] : null;
+    }
+    /* the whole table in view, so every order can be seen at once */
+    if (preview) cameraRef.current?.fit();
+    return () => {
+      for (const child of scene.world.children) child.filters = null;
+    };
+  }, [preview]);
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
@@ -372,6 +397,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
          rebuilds (planning highlights, price tags, pulses) never detach
          an in-flight ring */
       const fxLayer = new Container();
+      fxLayerRef.current = fxLayer;
       scene.world.addChild(fxLayer);
       let clock = 0;
       let railAlphaTarget = 0;
@@ -1151,7 +1177,95 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins]);
+    /* the orders for my turn, in colour on the sepia table: every tile still
+       to flip keeps its face, each prepared move is painted where it lands
+       with its number on a brass disc */
+    let alive = true;
+    if (preview) {
+      const TILE = TILE_HALF * 2;
+      const face = (url: string, x: number, y: number, col: number) => {
+        const m = new Graphics().roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
+        const s = new Sprite(Texture.EMPTY);
+        s.position.set(x - TILE_HALF, y - TILE_HALF);
+        s.width = TILE;
+        s.height = TILE;
+        s.mask = m;
+        s.eventMode = 'none';
+        m.eventMode = 'none';
+        overlay.addChild(m, s);
+        const rim = new Graphics().roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col });
+        rim.eventMode = 'none';
+        overlay.addChild(rim);
+        void Assets.load<Texture>(url).then((tex) => {
+          if (!alive) return;
+          s.texture = tex;
+          s.width = TILE;
+          s.height = TILE;
+        });
+      };
+      const badge = (x: number, y: number, n: number) => {
+        const g = new Graphics();
+        g.circle(x + 1, y + 1.5, 12).fill({ color: 0x000000, alpha: 0.45 });
+        g.circle(x, y, 12).fill(0xc9a45c).stroke({ width: 1.6, color: 0x2a2118 });
+        g.eventMode = 'none';
+        overlay.addChild(g);
+        const tx = new Text({ text: String(n), style: { fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: '900', fill: 0x2a2118 } });
+        tx.anchor.set(0.5);
+        tx.position.set(x, y - 0.5);
+        tx.eventMode = 'none';
+        overlay.addChild(tx);
+      };
+      const colorOf = (owner: number) => parseInt((PLAYER_COLORS[game.players[owner]?.color ?? '']?.hex ?? '#C9A45C').slice(1), 16);
+      for (const [key, tile] of Object.entries(game.tiles)) {
+        if (tile.flipped) continue;
+        const [townId, si] = key.split(':');
+        const sp = TOWN_BY_ID[townId]?.slots[Number(si)];
+        if (!sp) continue;
+        const [x, y] = displayPosFor(sp.x, sp.y);
+        face(tileFaceUrl(tile.industry, opts.tileArt, game.players[tile.owner]?.color ?? 'brass'), x, y, colorOf(tile.owner));
+      }
+      const mine = colorOf(preview.actor);
+      const myColor = game.players[preview.actor]?.color ?? 'brass';
+      preview.queued.forEach(({ action: a }, i) => {
+        const n = i + 1;
+        if (a.kind === 'build') {
+          const sp = TOWN_BY_ID[a.town]?.slots[a.slot];
+          if (!sp) return;
+          const [x, y] = displayPosFor(sp.x, sp.y);
+          face(tileFaceUrl(a.industry, opts.tileArt, myColor), x, y, mine);
+          badge(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
+        } else if (a.kind === 'network') {
+          for (const id of [a.link, a.second].filter(Boolean) as string[]) {
+            const def = LINKS.find((l) => l.id === id);
+            if (!def) continue;
+            const pts = routeFor(def, game.era).pts;
+            const g = new Graphics();
+            trace(g, pts);
+            g.stroke({ width: 12, color: 0x0c0a08, alpha: 0.55, cap: 'round', join: 'round' });
+            trace(g, pts);
+            g.stroke({ width: 6, color: mine, cap: 'round', join: 'round' });
+            g.eventMode = 'none';
+            overlay.addChild(g);
+            const [mx, my] = routeFor(def, game.era).mid;
+            badge(mx, my, n);
+          }
+        } else if (a.kind === 'sell') {
+          for (const s of a.sales) {
+            const sp = TOWN_BY_ID[s.town]?.slots[s.slot];
+            if (!sp) continue;
+            const [x, y] = displayPosFor(sp.x, sp.y);
+            const g = new Graphics().roundRect(x - TILE_HALF - 4, y - TILE_HALF - 4, TILE + 8, TILE + 8, 9).stroke({ width: 3, color: 0xc9a45c });
+            g.eventMode = 'none';
+            overlay.addChild(g);
+            badge(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
+          }
+        }
+      });
+    }
+    return () => {
+      alive = false;
+    };
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt]);
   /* a tap when a mark lands (board option: sounds) */
   const lastPing = pings.length ? pings[pings.length - 1].id : 0;
   useEffect(() => {

@@ -12,6 +12,7 @@ import Guide from '@/components/game/Guide';
 import Notices from '@/components/game/Notices';
 import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
 import Gazette from '@/components/game/Gazette';
+import PreparedPanel from '@/components/game/PreparedPanel';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -61,7 +62,20 @@ export default function Game() {
   const planActor = useGame((s) => s.planActor());
   const queued = useGame((s) => s.queued);
   const preparing = useGame((s) => s.preparing);
+  const previewQueue = useGame((s) => s.previewQueue);
+  const setPreviewQueue = useGame((s) => s.setPreviewQueue);
   const queuedCount = queued.length;
+  /* showing the orders on the board: the focus view meanwhile, the reader's own setting back after */
+  const focusBefore = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (previewQueue) {
+      focusBefore.current = getBoardOptions().focus;
+      setBoardOption('focus', true);
+    } else if (focusBefore.current !== null) {
+      setBoardOption('focus', focusBefore.current);
+      focusBefore.current = null;
+    }
+  }, [previewQueue]);
   /* the table a plan is made on: with moves already prepared, the one they leave */
   const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const mySeat = useGame((s) => s.mySeat());
@@ -195,6 +209,12 @@ export default function Game() {
   /* -------------------------- keyboard -------------------------- */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      /* the orders shown on the board: Escape closes that first */
+      if (e.key === 'Escape' && useGame.getState().previewQueue) {
+        e.preventDefault();
+        setPreviewQueue(false);
+        return;
+      }
       if (!game || passTo) return;
       if (e.key === 'Escape') {
         cancel();
@@ -395,6 +415,7 @@ export default function Game() {
             sellTargetsList={sellTargetsList}
             ghost={ghost}
             onInvalid={reject}
+            preview={previewQueue && mySeat >= 0 ? { queued, actor: mySeat } : null}
           />
         </Suspense>
       </div>
@@ -521,6 +542,7 @@ export default function Game() {
       <Guide />
       <Notices />
       <Gazette />
+      <PreparedPanel />
       <MarkWarning />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
