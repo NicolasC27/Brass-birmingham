@@ -274,7 +274,7 @@ export default function EdgeTracks() {
   const setSpotlight = useGame((s) => s.setSpotlight);
   const loanConfirm = useGame((s) => s.loanConfirm);
   const loanPeek = useGame((s) => s.loanPeek);
-  const { incomeSide } = useBoardOptions();
+  const { incomeSide, vpTrack: vpTrackOn } = useBoardOptions();
   const t = useT();
   const reduced = useReducedMotion();
   const incAxis: Axis = incomeSide === 'left' ? 'y' : 'x';
@@ -391,7 +391,7 @@ export default function EdgeTracks() {
           on screen once points are on the board: before that, a row of
           zeros would only take the board's room (engine vpTrackShown) */}
       <AnimatePresence initial={false}>
-        {game && vpTrackShown(game) && (
+        {game && vpTrackShown(game) && vpTrackOn && (
           <motion.div
             key="vp"
             initial={{ y: -TRACK_H }}

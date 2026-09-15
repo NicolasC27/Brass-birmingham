@@ -540,6 +540,9 @@ export default function BoardSettings() {
                         />
                       </OptionRow>
                     )}
+                    <OptionRow label={t('game.settings.vpTrack')} hint={t('game.settings.vpTrackHint')}>
+                      <Switch on={opts.vpTrack} onClick={() => setBoardOption('vpTrack', !opts.vpTrack)} label={t('game.settings.vpTrack')} />
+                    </OptionRow>
                     <OptionRow label={t('game.settings.telegrams')} hint={t('game.settings.telegramsHint')}>
                       <Switch on={opts.telegrams} onClick={() => setBoardOption('telegrams', !opts.telegrams)} label={t('game.settings.telegrams')} />
                     </OptionRow>

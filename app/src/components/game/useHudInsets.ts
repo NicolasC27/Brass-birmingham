@@ -7,7 +7,7 @@ import { hudInsets, useBoardOptions } from './boardOptions';
 export function useHudInsets(): { left: number; bottom: number; top: number } {
   const opts = useBoardOptions();
   const vpTrack = useGame((s) => (s.game ? vpTrackShown(s.game) : false));
-  return hudInsets(opts, vpTrack);
+  return hudInsets(opts, vpTrack && opts.vpTrack);
 }
 
 /** on narrow screens the player rail is a strip under the top bar */
