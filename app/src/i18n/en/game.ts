@@ -17,6 +17,8 @@ const game = {
     followingBots: 'Following bots',
     followBots: 'Follow bots',
     botsBrisk: 'Bots brisk',
+    holdBots: 'Hold the machines (time to prepare a move)',
+    resumeBots: 'Let the machines play on',
     skipBots: 'Skip bot animation',
     reconnecting: 'Reconnecting to the table…',
     passDevice: 'Pass the device to {name}',

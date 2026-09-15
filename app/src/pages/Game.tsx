@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FastForward, ScrollText, Settings2, X } from 'lucide-react';
+import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -66,6 +66,7 @@ export default function Game() {
   const runBot = useGame((s) => s.runBot);
   const pass = useGame((s) => s.pass);
   const botHold = useGame((s) => s.botHold);
+  const setBotHold = useGame((s) => s.setBotHold);
   const takeLoan = useGame((s) => s.takeLoan);
   const ceremony = useGame((s) => s.ceremony);
   const gameOverOpen = useGame((s) => s.gameOverOpen);
@@ -404,6 +405,12 @@ export default function Game() {
              counts what others did since the reader last looked. Nothing
              at the right edge, where the exchange unfolds. */
           <>
+            {/* hold the machines where they stand: time to look, or to prepare a move */}
+            {(botThinking || botHold) && (
+              <button type="button" onClick={() => setBotHold(!botHold)} aria-pressed={botHold} title={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} aria-label={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} className={cn(TOOL, botHold && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
+                {botHold ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              </button>
+            )}
             {botThinking && (
               <button type="button" onClick={() => setSkipAnim((s) => !s)} aria-pressed={skipAnim} title={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} aria-label={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} className={cn(TOOL, skipAnim && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
                 <FastForward className="h-4 w-4" />

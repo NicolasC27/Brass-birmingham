@@ -19,6 +19,8 @@ const fr: typeof engame = {
     followingBots: 'Suivi des bots',
     followBots: 'Suivre les bots',
     botsBrisk: 'Bots rapides',
+    holdBots: 'Suspendre les machines (le temps de préparer un coup)',
+    resumeBots: 'Reprendre les machines',
     skipBots: 'Passer l’animation des bots',
     reconnecting: 'Reconnexion à la table…',
     passDevice: 'Passez l’appareil à {name}',
