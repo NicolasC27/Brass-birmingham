@@ -38,6 +38,7 @@ const board = {
     settingsAria: 'Open display settings',
   },
   minimap: {
+    resizeAria: 'Resize the minimap',
     sizeAria: 'Cycle minimap size',
     sizeTip: 'Minimap size — small / medium / large',
   },
@@ -93,6 +94,12 @@ const board = {
   },
   inspector: {
     links: '{n} link(s)',
+    pin: 'Pin',
+    unpin: 'Unpin',
+    pinTip: 'Watch this town: what others do there is reported to you, and you can leave a note',
+    unpinTip: 'Stop watching this town',
+    note: 'Note on the town',
+    notePlaceholder: 'A note to yourself: “keep the slot for my works”…',
     linksTip: 'The links already laid from this town, by owner',
     level: 'Level {level}',
     paid: 'Paid · {vp} VP',

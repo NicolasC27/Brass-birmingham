@@ -40,6 +40,7 @@ const fr: typeof enboard = {
     settingsAria: 'Ouvrir les réglages d’affichage',
   },
   minimap: {
+    resizeAria: 'Redimensionner la minimap',
     sizeAria: 'Changer la taille de la mini-carte',
     sizeTip: 'Taille de la mini-carte — petite / moyenne / grande',
   },
@@ -96,6 +97,12 @@ const fr: typeof enboard = {
   inspector: {
     ariaLabel: 'Inspecteur de {name}',
     links: '{n} liaison(s)',
+    pin: 'Épingler',
+    unpin: 'Désépingler',
+    pinTip: 'Suivre cette ville : ce que les autres y font vous sera signalé, et vous pouvez y laisser une note',
+    unpinTip: 'Ne plus suivre cette ville',
+    note: 'Note sur la ville',
+    notePlaceholder: 'Une note pour vous : « garder la case pour ma forge »…',
     linksTip: 'Les liaisons déjà posées depuis cette ville, par propriétaire',
     level: 'Niveau {level}',
     paid: 'A payé · {vp} PV',

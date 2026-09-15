@@ -237,6 +237,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const verb = useGame((s) => s.verb);
   const hoverKey = useGame((s) => s.hoverKey);
   const pings = useGame((s) => s.pings);
+  const pins = useGame((s) => s.pins);
   const buildPick = useGame((s) => s.buildPick);
   const linkPick = useGame((s) => s.linkPick);
   const secondLinkPick = useGame((s) => s.secondLinkPick);
@@ -1073,6 +1074,22 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
+    /* the reader's pinned towns: a brass pin at the cluster's top-right corner */
+    for (const townId of Object.keys(pins)) {
+      const town = TOWN_BY_ID[townId];
+      if (!town) continue;
+      const c = townChrome(town);
+      const px = c.maxX - 6;
+      const py = c.minY + 2;
+      const g = new Graphics();
+      g.moveTo(px, py + 22).lineTo(px, py + 8).stroke({ width: 2, color: 0x2a2118 });
+      g.moveTo(px - 1, py + 22).lineTo(px - 1, py + 8).stroke({ width: 1, color: 0xc9a45c, alpha: 0.7 });
+      g.circle(px, py + 6, 6).fill(0xc9a45c).stroke({ width: 1.2, color: 0x2a2118 });
+      g.circle(px - 1.5, py + 4.5, 2).fill({ color: 0xfff1c8, alpha: 0.8 });
+      g.eventMode = 'none';
+      overlay.addChild(g);
+    }
+
     /* "look here": every seat's last mark pulses in its colour, a medallion
        with the seat's shape at the centre, whatever the reader is doing */
     for (const mark of pings) {
@@ -1134,7 +1151,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins]);
   /* a tap when a mark lands (board option: sounds) */
   const lastPing = pings.length ? pings[pings.length - 1].id : 0;
   useEffect(() => {

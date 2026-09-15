@@ -88,6 +88,11 @@ interface GameStore {
   sendPing: (key: string) => boolean;
   dismissMarkWarning: () => void;
   receivePing: (from: number, key: string) => void;
+  /* ---- pins: towns the reader watches, each with a note of their own ---- */
+  pins: Record<string, string>;
+  /** pin a town (with an empty note) or drop the pin */
+  pinTown: (town: string, on: boolean) => void;
+  setPinNote: (town: string, note: string) => void;
   /* ---- the toast once the game is over: seats that raised a glass ---- */
   toasts: number[];
   /** raise mine; at home the machines follow after a beat */
@@ -253,6 +258,7 @@ const clearSelection = {
   markStrikes: 0,
   markWarning: null as 'warned' | 'muted' | null,
   toasts: [] as number[],
+  pins: readPins(),
   humanMarks: [] as UndoMark[],
   loanConfirm: false,
   loanPeek: false,
@@ -371,7 +377,8 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a rematch is a table's business, not a page's: online it does nothing */
     if (get().code) return;
     const game = newGame(readSetup());
-    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false, toasts: [], telegrams: [], pings: [], myMarks: [], markStrikes: 0, markWarning: null });
+    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false, toasts: [], telegrams: [], pings: [], myMarks: [], markStrikes: 0, markWarning: null, pins: {} });
+    writePins({});
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
     } catch {
@@ -515,6 +522,18 @@ export const useGame = create<GameStore>((set, get) => ({
     const id = Date.now() + Math.random();
     set({ telegrams: [...get().telegrams.filter((x) => x.from !== from), { id, from, key, at: Date.now() }] });
     setTimeout(() => set({ telegrams: get().telegrams.filter((x) => x.id !== id) }), TELEGRAM_SHOWN_MS);
+  },
+  pinTown: (town, on) => {
+    const pins = { ...get().pins };
+    if (on) pins[town] = pins[town] ?? '';
+    else delete pins[town];
+    set({ pins });
+    writePins(pins);
+  },
+  setPinNote: (town, note) => {
+    const pins = { ...get().pins, [town]: note };
+    set({ pins });
+    writePins(pins);
   },
   sendToast: () => {
     const st = get();
@@ -1049,6 +1068,27 @@ function listen(code: string, wire: Wire): void {
 export function leaveOnlineTable(): void {
   deafen?.();
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
+}
+
+/* ------------------------------ the pins ------------------------------ */
+
+const PINS_KEY = 'brassworks.pins.v1';
+/** the reader's pinned towns and notes, kept across reloads of the same table */
+function readPins(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(PINS_KEY);
+    const v = raw ? (JSON.parse(raw) as unknown) : null;
+    return v && typeof v === 'object' ? (v as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+function writePins(pins: Record<string, string>): void {
+  try {
+    localStorage.setItem(PINS_KEY, JSON.stringify(pins));
+  } catch {
+    /* non-fatal */
+  }
 }
 
 /* ------------------------- the bots' banter ------------------------- */

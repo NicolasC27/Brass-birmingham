@@ -562,6 +562,7 @@ const fr: typeof engame = {
   },
   notice: {
     beerTaken: '{name} a bu une bière de votre brasserie de {town}',
+    pinned: 'Ville épinglée · {town}',
     income: '+{n} revenu',
     dismiss: 'Fermer',
   },

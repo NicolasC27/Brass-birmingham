@@ -560,6 +560,7 @@ const game = {
   },
   notice: {
     beerTaken: '{name} drank a beer from your brewery at {town}',
+    pinned: 'Pinned town · {town}',
     income: '+{n} income',
     dismiss: 'Dismiss',
   },

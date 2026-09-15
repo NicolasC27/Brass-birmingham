@@ -22,7 +22,7 @@ import { useHudInsets } from './useHudInsets';
 interface Note {
   id: string;
   side: 'mine' | 'others';
-  kind: 'flip' | 'beer';
+  kind: 'flip' | 'beer' | 'pin';
   owner: number;
   industry?: string;
   title: string;
@@ -36,6 +36,7 @@ export default function Notices() {
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const { tileArt } = useBoardOptions();
+  const pins = useGame((s) => s.pins);
   const insets = useHudInsets();
   const [notes, setNotes] = useState<Note[]>([]);
   const [seen, setSeen] = useState<number | null>(null);
@@ -64,6 +65,11 @@ export default function Notices() {
           const { head, detail } = ledgerParts(e, t);
           items.push({ id: `f${e.id}`, side: e.player === me ? 'mine' : 'others', kind: 'flip', owner: e.player!, industry: String(e.vars?.industry ?? ''), title: t('game.flip.title', { name: players[e.player!].name, what: head }), detail });
         }
+        /* a pinned town: whatever another player does there is reported */
+        if (e.player !== me && e.region && pins[e.region] !== undefined && (e.key === 'build' || e.key === 'sell' || e.key === 'network' || e.key === 'flip')) {
+          const { head, detail } = ledgerParts(e, t);
+          items.push({ id: `p${e.id}`, side: 'others', kind: 'pin', owner: e.player!, industry: e.vars?.industry ? String(e.vars.industry) : undefined, title: t('game.notice.pinned', { town: TOWN_BY_ID[e.region]?.name ?? e.region }), detail: `${head}${detail ? ' · ' + detail : ''}` });
+        }
         if (e.key === 'sell' && e.player !== me && typeof e.vars?.beerFrom === 'string' && e.vars.beerFrom) {
           for (const bit of String(e.vars.beerFrom).split(',')) {
             const [owner, town] = bit.split(':');
@@ -77,7 +83,7 @@ export default function Notices() {
       for (const it of items) window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== it.id)), SHOWN_MS);
     }, 0);
     return () => window.clearTimeout(add);
-  }, [ledger, players, seen, me, t]);
+  }, [ledger, players, seen, me, t, pins]);
 
   /* the reader's income climbing: a figure floats up the board */
   useEffect(() => {
@@ -102,7 +108,7 @@ export default function Notices() {
   const dismiss = (id: string) => setNotes((n) => n.filter((x) => x.id !== id));
   const card = (f: Note) => {
     const color = PLAYER_COLORS[game.players[f.owner]?.color]?.hex ?? '#C9A45C';
-    const accent = f.kind === 'beer' ? '#E0604C' : color;
+    const accent = f.kind === 'beer' ? '#E0604C' : f.kind === 'pin' ? '#C9A45C' : color;
     return (
       <motion.div
         key={f.id}
