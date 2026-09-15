@@ -7,7 +7,7 @@ import { LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } fr
 import { merchantOpen } from '@/game/engine';
 import { tileKey } from '@/game/engine';
 import type { GameState } from '@/game/types';
-import { mapUrls, setBoardOption, useBoardOptions } from './boardOptions';
+import { MM_MAX_W, MM_MIN_W, MM_W_FOR, mapUrls, minimapWidth, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { useT } from '@/i18n';
 
@@ -18,7 +18,7 @@ import { useT } from '@/i18n';
 /* empty towns are GREY dots — colour means a player holds the town.   */
 /* ------------------------------------------------------------------ */
 
-export const MM_W_FOR = { s: 176, m: 264, l: 380 } as const;
+
 /** exported so HUD chips can dodge the minimap when it grows */
 export const MM_H_FOR = {
   s: Math.round((MM_W_FOR.s * WORLD_H) / WORLD_W),
@@ -49,10 +49,11 @@ export default function Minimap({
   const maps = mapUrls(mapStyle, railPainting);
   const insets = useHudInsets();
   const t = useT();
-  const MM_W = MM_W_FOR[minimapSize];
+  const MM_W = minimapWidth(boardOpts);
+  const resizing = useRef<{ x: number; w: number } | null>(null);
   const MM_H = Math.round((MM_W * WORLD_H) / WORLD_W);
   /* possession dots grow with the plate: 6 / 7 / 9 px */
-  const DOT = minimapSize === 's' ? 6 : minimapSize === 'm' ? 7 : 9;
+  const DOT = MM_W < 260 ? 6 : MM_W < 420 ? 7 : 9;
 
   // visible world rect → minimap fractions
   const [x0, y0] = screenToWorld(0, 0, view, container.w, container.h);
@@ -123,7 +124,7 @@ export default function Minimap({
           const b = TOWN_BY_ID[def.b] ?? MERCHANT_BY_ID[def.b];
           if (!a || !b) return null;
           const color = PLAYER_COLORS[game.players[built.owner].color]?.vivid ?? '#C9A45C';
-          const sw = minimapSize === 's' ? 2 : minimapSize === 'm' ? 2.5 : 3.5;
+          const sw = MM_W < 260 ? 2 : MM_W < 420 ? 2.5 : 3.5;
           return (
             <g key={def.id}>
               <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke="#100D0B" strokeWidth={sw + 2} strokeOpacity={0.8} strokeLinecap="round" />
@@ -134,7 +135,7 @@ export default function Minimap({
         {/* merchants: the board's own symbol — two arrows, in and out of the market */}
         {MERCHANTS.map((m) => {
           const open = merchantOpen(game, m.id);
-          const r = minimapSize === 's' ? 5 : minimapSize === 'm' ? 6.5 : 8.5;
+          const r = MM_W < 260 ? 5 : MM_W < 420 ? 6.5 : 8.5;
           const cx = (m.x / WORLD_W) * MM_W;
           const cy = (m.y / WORLD_H) * MM_H;
           const a = r * 0.62;
@@ -198,20 +199,42 @@ export default function Minimap({
       />
       {/* engraved corner ticks */}
       <div aria-hidden className="pointer-events-none absolute inset-0 rounded border border-brass-400/25" />
-      {/* size cycle (S→M→L) — its pointerdown must not trigger a map jump */}
-      <button
-        type="button"
-        aria-label={t('board.minimap.sizeAria')}
+      {/* the top-left corner resizes the plate by hand; a click on it
+          cycles the presets (S→M→L) — neither must trigger a map jump */}
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label={t('board.minimap.resizeAria')}
         title={t('board.minimap.sizeTip')}
-        className="absolute left-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-sm border border-brass-700/70 bg-coal-900/90 text-brass-400 shadow-e2 hover:bg-coal-800"
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
+        className="absolute left-0 top-0 z-10 flex h-6 w-6 cursor-nwse-resize items-center justify-center rounded-br-sm border-b border-r border-brass-700/70 bg-coal-900/90 text-brass-400 shadow-e2 hover:bg-coal-800"
+        onPointerDown={(e) => {
           e.stopPropagation();
-          setBoardOption('minimapSize', SIZE_ORDER[(SIZE_ORDER.indexOf(minimapSize) + 1) % SIZE_ORDER.length]);
+          resizing.current = { x: e.clientX, w: MM_W };
+          (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+        }}
+        onPointerMove={(e) => {
+          if (!resizing.current) return;
+          e.stopPropagation();
+          /* the corner is the top-left one: dragging it leftwards widens */
+          const w = Math.round(resizing.current.w + (resizing.current.x - e.clientX));
+          setBoardOption('minimapWidth', Math.min(MM_MAX_W, Math.max(MM_MIN_W, w)));
+        }}
+        onPointerUp={(e) => {
+          e.stopPropagation();
+          const start = resizing.current;
+          resizing.current = null;
+          /* a click, not a drag: the next preset */
+          if (start && Math.abs(start.x - e.clientX) < 4) {
+            setBoardOption('minimapWidth', 0);
+            setBoardOption('minimapSize', SIZE_ORDER[(SIZE_ORDER.indexOf(minimapSize) + 1) % SIZE_ORDER.length]);
+          }
+        }}
+        onPointerCancel={() => {
+          resizing.current = null;
         }}
       >
         <Maximize2 className="h-3 w-3" />
-      </button>
+      </div>
     </div>
   );
 }

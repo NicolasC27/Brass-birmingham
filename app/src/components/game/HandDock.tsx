@@ -12,10 +12,9 @@ import { INDUSTRY_COLOR } from './townChrome';
 import { industryFaceUrl } from '@/gl/paint';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
-import { useBoardOptions } from './boardOptions';
+import { minimapWidth, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { isKey, keyLabel, useKeybindings } from './keybindings';
-import { MM_W_FOR } from './Minimap';
 
 const PIN_KEY = 'brassworks.dockPinned';
 
@@ -299,7 +298,7 @@ export default function HandDock() {
   const insets = useHudInsets();
   /* the dock lives in the band between the left edge and the minimap, and
      takes what it needs of it, centred */
-  const bandRight = MM_W_FOR[boardOpts.minimapSize] + 28;
+  const bandRight = minimapWidth(boardOpts) + 28;
   /* the fan scrolls sideways with a plain mouse wheel (no shift needed) */
   const fanRef = useRef<HTMLDivElement>(null);
   useEffect(() => {

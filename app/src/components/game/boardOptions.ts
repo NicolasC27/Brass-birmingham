@@ -35,6 +35,13 @@ export const RAIL_PAINTINGS: RailPainting[] = ['1', '2', '3'];
 export const mapUrls = (style: MapStyle, rail: RailPainting): { canal: string; rail: string } =>
   style === 'etched' && rail !== '1' ? { canal: MAP_URL.etched.canal, rail: `/map-era-rail-${rail}.webp` } : MAP_URL[style];
 
+/* the minimap's plate: the small preset stands level with the open hand
+   dock (180px tall); a width dragged by hand overrides the preset */
+export const MM_W_FOR = { s: 320, m: 400, l: 480 } as const;
+export const MM_MIN_W = 160;
+export const MM_MAX_W = 640;
+export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number }): number => (o.minimapWidth ? Math.min(MM_MAX_W, Math.max(MM_MIN_W, o.minimapWidth)) : MM_W_FOR[o.minimapSize]);
+
 /** beginner assistance: the table's house rule, or at home the board setting */
 export function aidOn(assist: boolean | undefined, online: boolean): boolean {
   return !!assist || (!online && getBoardOptions().beginnerAid);
@@ -60,6 +67,8 @@ export interface BoardOptions {
   /** income / VP layout on built cards */
   chipStyle: ChipStyle;
   minimapSize: MinimapSize;
+  /** a width set by dragging the minimap's corner (0: the preset size) */
+  minimapWidth: number;
   incomeSide: IncomeSide;
   mapStyle: MapStyle;
   /** which rail-era painting lies under the etched terrain */
@@ -97,6 +106,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   cardGrain: 'brassworks.cardGrain',
   chipStyle: 'brassworks.chipStyle',
   minimapSize: 'brassworks.minimapSize',
+  minimapWidth: 'brassworks.minimapWidth',
   incomeSide: 'brassworks.incomeSide',
   mapStyle: 'brassworks.mapStyle',
   railPainting: 'brassworks.railPainting',
@@ -136,6 +146,7 @@ let state: BoardOptions = {
   cardGrain: read('cardGrain', true),
   chipStyle: read('chipStyle', 'band'),
   minimapSize: read('minimapSize', 's'),
+  minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
   mapStyle: read('mapStyle', 'etched'),
   railPainting: read('railPainting', '2'),

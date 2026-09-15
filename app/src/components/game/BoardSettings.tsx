@@ -580,7 +580,10 @@ export default function BoardSettings() {
                     <OptionRow label={t('game.settings.minimapSize')}>
                       <Segmented<MinimapSize>
                         value={opts.minimapSize}
-                        onChange={(v) => setBoardOption('minimapSize', v)}
+                        onChange={(v) => {
+                          setBoardOption('minimapWidth', 0);
+                          setBoardOption('minimapSize', v);
+                        }}
                         options={(['s', 'm', 'l'] as MinimapSize[]).map((id) => ({ id, label: t(`game.settings.size.${id}`) }))}
                       />
                     </OptionRow>
