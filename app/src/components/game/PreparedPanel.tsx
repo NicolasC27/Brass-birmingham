@@ -141,7 +141,7 @@ export default function PreparedPanel() {
   const beginUnlessPick = useGame((s) => s.beginUnlessPick);
   /* the sheet unfolds under the pointer, while a move is prepared, a
      condition edited or a place picked; otherwise a strip says the orders */
-  const unfolded = unlessPick === null && (open || preparing || editing !== null || previewQueue);
+  const unfolded = unlessPick === null && (open || preparing || editing !== null);
   /* the sheet hangs right under the banner, flush with its left edge,
      and follows it whenever the banner grows, moves or the window changes */
   const [at, setAt] = useState<{ left: number; top: number }>({ left: 360, top: 100 });
@@ -177,6 +177,35 @@ export default function PreparedPanel() {
   }, [game, me, queued]);
   if (!game || me < 0 || (!queued.length && !preparing)) return null;
   const others = game.players.map((_, idx) => idx).filter((idx) => idx !== me);
+  /* the orders on the board: one dark ribbon across the top says them, nothing else */
+  if (previewQueue) {
+    return (
+      <div className="pointer-events-none fixed inset-x-0 top-3 z-[66] flex justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        role="status"
+        aria-label={t('game.prepared.title')}
+        className="plaque pointer-events-auto flex max-w-[96vw] items-center gap-3 whitespace-nowrap rounded-md px-4 py-1.5"
+      >
+        <span className="engraved-brass font-fell text-[12px] uppercase tracking-[0.18em]">{t('game.prepared.survey')}</span>
+        <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+        {rows.map(({ q, i, holds }) => (
+          <span key={i} className="flex shrink-0 items-center gap-1.5 font-fell text-[12.5px] text-cream-100/90">
+            <span className={cn('brass-roundel h-5 w-5 shrink-0 text-[11px] font-bold', !holds && 'opacity-50')}>{i + 1}</span>
+            <span>{describeAction(q.action)}</span>
+            {q.unless && <span className="wax-seal font-fell text-[10px]">{describeUnless(q.unless, game)}</span>}
+          </span>
+        ))}
+        <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+        <span className="hidden font-sans text-[10px] text-cream-100/55 2xl:inline">{t('game.prepared.legend')}</span>
+        <button type="button" onClick={() => setPreviewQueue(false)} className="btn-ledger shrink-0 !min-h-[24px] !px-2 !py-0.5 text-[10.5px]">
+          {t('game.prepared.visualising')}
+        </button>
+      </motion.div>
+      </div>
+    );
+  }
   return (
     <motion.section
       initial={{ opacity: 0, y: -8 }}
@@ -184,7 +213,7 @@ export default function PreparedPanel() {
       aria-label={t('game.prepared.title')}
       onPointerEnter={() => setOpen(true)}
       onPointerLeave={() => setOpen(false)}
-      className={cn('dispatch pointer-events-auto fixed z-[66]', unfolded ? 'w-[400px] px-4 pb-2.5 pt-2.5' : 'w-auto max-w-[520px] px-3 py-1', previewQueue && 'ring-2 ring-brass-400 ring-offset-2 ring-offset-coal-950')}
+      className={cn('dispatch pointer-events-auto fixed z-[66]', unfolded ? 'w-[400px] px-4 pb-2.5 pt-2.5' : 'w-auto max-w-[520px] px-3 py-1')}
       style={{ top: at.top, left: at.left }}
     >
       {!unfolded && (
@@ -251,7 +280,7 @@ export default function PreparedPanel() {
       </ol>
       <div className="mt-1.5 flex items-center justify-between gap-2">
         <span className="font-sans text-[10px] text-ink-900/60">
-          {preparing ? t('game.prepared.preparingHint') : previewQueue ? t('game.prepared.legend') : ''}
+          {preparing ? t('game.prepared.preparingHint') : ''}
         </span>
         <span className="flex items-center gap-1.5">
           {queued.length > 0 && (

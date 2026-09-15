@@ -240,17 +240,48 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
+    /* the survey: the land drained of colour and dimmed to a night-blue
+       ink, so the orders and the tiles still to flip are the only warmth */
     const sepia = preview ? new ColorMatrixFilter() : null;
     if (sepia) {
-      sepia.sepia(false);
-      sepia.brightness(0.62, true);
+      sepia.desaturate();
+      sepia.tint(0x7f9cc8, true);
+      sepia.brightness(0.66, true);
+      sepia.contrast(0.12, true);
     }
     for (const child of scene.world.children) {
       if (child === scene.overlay || child === fxLayerRef.current) continue;
       child.filters = sepia ? [sepia] : null;
     }
-    /* the whole table in view, so every order can be seen at once */
-    if (preview) cameraRef.current?.fit();
+    /* the camera on the orders: close on them when they sit together, the
+       whole table when they are spread out */
+    if (preview) {
+      const pts: [number, number][] = [];
+      for (const { action: a } of preview.queued) {
+        if (a.kind === 'build') {
+          const sp = TOWN_BY_ID[a.town]?.slots[a.slot];
+          if (sp) pts.push(displayPosFor(sp.x, sp.y));
+        } else if (a.kind === 'network') {
+          for (const id of [a.link, a.second].filter(Boolean) as string[]) {
+            const def = LINKS.find((l) => l.id === id);
+            if (def) pts.push(routeFor(def, game.era).mid);
+          }
+        } else if (a.kind === 'sell') {
+          for (const s of a.sales) {
+            const sp = TOWN_BY_ID[s.town]?.slots[s.slot];
+            if (sp) pts.push(displayPosFor(sp.x, sp.y));
+          }
+        }
+      }
+      if (pts.length) {
+        const xs = pts.map((p) => p[0]);
+        const ys = pts.map((p) => p[1]);
+        const w = Math.max(...xs) - Math.min(...xs);
+        const h = Math.max(...ys) - Math.min(...ys);
+        if (w < 1000 && h < 600) cameraRef.current?.flyTo((Math.min(...xs) + Math.max(...xs)) / 2, (Math.min(...ys) + Math.max(...ys)) / 2, w < 400 && h < 300 ? 2 : 1.5);
+        else cameraRef.current?.fit();
+      } else cameraRef.current?.fit();
+    }
     return () => {
       for (const child of scene.world.children) child.filters = null;
     };
@@ -1196,6 +1227,22 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     let alive = true;
     if (preview) {
       const TILE = TILE_HALF * 2;
+      /* the surveyor's grid, faint, every 200 units */
+      const grid = new Graphics();
+      for (let gx = 0; gx <= WORLD_W; gx += 200) grid.moveTo(gx, 0).lineTo(gx, WORLD_H);
+      for (let gy = 0; gy <= WORLD_H; gy += 200) grid.moveTo(0, gy).lineTo(WORLD_W, gy);
+      grid.stroke({ width: 1, color: 0xbcd0ea, alpha: 0.07 });
+      grid.eventMode = 'none';
+      overlay.addChild(grid);
+      /* a warm glow under each order, pulsing */
+      const glow = (x: number, y: number, r: number) => {
+        const g = new Graphics();
+        g.circle(x, y, r + 26).fill({ color: 0xe8b25a, alpha: 0.1 });
+        g.circle(x, y, r + 12).fill({ color: 0xe8b25a, alpha: 0.16 });
+        g.circle(x, y, r + 4).stroke({ width: 3, color: 0xffd98a, alpha: 0.85 });
+        g.eventMode = 'none';
+        pulse(g, 1);
+      };
       const face = (url: string, x: number, y: number, col: number) => {
         const m = new Graphics().roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
         const s = new Sprite(Texture.EMPTY);
@@ -1237,6 +1284,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const [x, y] = displayPosFor(sp.x, sp.y);
         face(tileFaceUrl(tile.industry, opts.tileArt, game.players[tile.owner]?.color ?? 'brass'), x, y, colorOf(tile.owner));
       }
+      /* the still-to-flip tiles keep their face but a shade quieter than the orders */
+      for (const c of overlay.children) if (c instanceof Sprite) c.alpha = 0.82;
       const mine = colorOf(preview.actor);
       const myColor = game.players[preview.actor]?.color ?? 'brass';
       preview.queued.forEach(({ action: a }, i) => {
@@ -1245,6 +1294,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const sp = TOWN_BY_ID[a.town]?.slots[a.slot];
           if (!sp) return;
           const [x, y] = displayPosFor(sp.x, sp.y);
+          glow(x, y, TILE_HALF);
           face(tileFaceUrl(a.industry, opts.tileArt, myColor), x, y, mine);
           badge(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
         } else if (a.kind === 'network') {
@@ -1260,6 +1310,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             g.eventMode = 'none';
             overlay.addChild(g);
             const [mx, my] = routeFor(def, game.era).mid;
+            glow(mx, my, 6);
             badge(mx, my, n);
           }
         } else if (a.kind === 'sell') {
@@ -1267,9 +1318,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             const sp = TOWN_BY_ID[s.town]?.slots[s.slot];
             if (!sp) continue;
             const [x, y] = displayPosFor(sp.x, sp.y);
-            const g = new Graphics().roundRect(x - TILE_HALF - 4, y - TILE_HALF - 4, TILE + 8, TILE + 8, 9).stroke({ width: 3, color: 0xc9a45c });
-            g.eventMode = 'none';
-            overlay.addChild(g);
+            glow(x, y, TILE_HALF);
             badge(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
           }
         }
@@ -1493,7 +1542,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* the settings gear lives in the bottom-right chip row (pages/Game.tsx);
           zoom lives on the wheel / + / − / 0 keys */}
 
-      <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />
+      {!preview && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />}
 
       {/* a slot that takes either of two industries, picked to build on: the
           two faces side by side, the one to be built ringed; the other is a

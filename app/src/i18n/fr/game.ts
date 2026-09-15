@@ -583,9 +583,10 @@ const fr: typeof engame = {
     visualise: 'Visualiser',
     visualising: 'Fermer (Échap)',
     preparingHint: 'Carte, verbe, cible, puis « Préparer »',
-    legend: 'En couleur : vos coups et les tuiles encore à retourner',
+    legend: 'En couleur : vos coups, et les tuiles encore à retourner',
     stampReady: 'Prêt',
     short: 'Ordres',
+    survey: 'Relevé des ordres',
     stampVoid: 'Ne tient pas',
   },
   gazette: {

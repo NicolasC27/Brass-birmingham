@@ -421,9 +421,10 @@ export default function Game() {
       </div>
 
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
-      <EdgeTracks />
-      <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />
-      <PlayerRail
+      {/* the orders shown on the board: the whole HUD steps aside, the ribbon alone stays */}
+      {!previewQueue && <EdgeTracks />}
+      {!previewQueue && <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />}
+      {!previewQueue && <PlayerRail
         tools={
           /* the tools under the players: the bots' pace while they play,
              then settings, ideas, the table and the ledger — the ledger
@@ -468,13 +469,13 @@ export default function Game() {
             </button>
           </>
         }
-      />
+      />}
 
       {/* the exchange: the quotation strip is always there at the top right;
           the full tray hangs right under it when asked, whole, no scrolling,
           and the banner never moves for it (it keeps clear of the tray's
           column by itself) */}
-      <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />
+      {!previewQueue && <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
       <AnimatePresence initial={false}>
         {marketOpen && (
           <motion.aside
@@ -536,11 +537,11 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      <HandDock />
+      {!previewQueue && <HandDock />}
       <ConcedeBanner />
       <TableMood />
       <Guide />
-      <Notices />
+      {!previewQueue && <Notices />}
       <Gazette />
       <PreparedPanel />
       <MarkWarning />

@@ -584,6 +584,7 @@ const game = {
     legend: 'In colour: your moves and the tiles still to flip',
     stampReady: 'Ready',
     short: 'Orders',
+    survey: 'Survey of the orders',
     stampVoid: 'Void',
   },
   gazette: {
