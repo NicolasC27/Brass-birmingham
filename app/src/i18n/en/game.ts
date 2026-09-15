@@ -35,6 +35,9 @@ const game = {
     eraRail: 'Rail Era',
     eraRoundTitle: '{era} — Round {round} of {total}',
     noWay: '{verb} impossible:',
+    prepare: 'Prepare',
+    queued: 'Ready for my turn:',
+    queueDrop: 'Drop this move',
     canalTip:
       'Canals £3. Level-1 works are swept away when this era ends. Income pays at each round’s close.',
     railTip:
@@ -76,6 +79,8 @@ const game = {
       pass: 'Confirm to discard the card',
       loan: 'Confirm the loan',
       ready: 'Check the bill, then confirm',
+      prepared: 'The move will wait for your turn — prepare it',
+      preparing: 'Prepared move: pick a card, it plays on your turn if it still holds',
       second: 'Second action — pick a card',
     },
   },
@@ -348,6 +353,9 @@ const game = {
     retire: 'Retire:',
     devOption: '{name} L{level} · iron £{cost}',
     devNext: 'then L{level}',
+    prepare: 'Prepare a move',
+    preparing: 'A move prepared for my turn',
+    queueDropped: 'Prepared move dropped: {reason}',
     devDone: 'stack empty',
     devNoDev: 'lightbulb tile',
     devMore: 'One more of this industry',

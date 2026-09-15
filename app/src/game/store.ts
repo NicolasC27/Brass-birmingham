@@ -13,7 +13,7 @@ import { actorOf, applyAction, botAction, canUndoNow, fallbackAction, humanActio
 import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
 import type { BotMove } from './bot';
-import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
+import { INDUSTRIES, INDUSTRY_LABEL, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { onlineWire } from '@/online/net';
 import { DIALECT, PING_SHOWER, PING_SHOWN_MS, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
 import type { Ping, Telegram, TelegramKey } from './telegrams';
@@ -88,6 +88,18 @@ interface GameStore {
   sendPing: (key: string) => boolean;
   dismissMarkWarning: () => void;
   receivePing: (from: number, key: string) => void;
+  /* ---- prepared moves: planned while others play, played when my turn comes ---- */
+  /** the reader is planning a move out of turn */
+  preparing: boolean;
+  /** what is ready for my next turn, in order (two at most) */
+  queued: GameAction[];
+  setPreparing: (on: boolean) => void;
+  dropQueued: (index: number) => void;
+  /** my turn has come: the first prepared move plays if the engine still takes it */
+  playQueued: () => void;
+  /** the seat a plan is made for right now: the current human, or mine
+   *  while preparing; -1 when nothing may be planned */
+  planActor: () => number;
   /* ---- pins: towns the reader watches, each with a note of their own ---- */
   pins: Record<string, string>;
   /** pin a town (with an empty note) or drop the pin */
@@ -250,6 +262,16 @@ const clearSelection = {
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
+  humanMarks: [] as UndoMark[],
+  loanConfirm: false,
+  loanPeek: false,
+};
+
+/* what a table accumulates between actions and must NOT be cleared by one:
+   the telegrams and marks on show, who is muted, the office's frown, the
+   glasses raised, the pinned towns, the move prepared for my turn. Reset
+   only when a new table is sat at. */
+const freshTable = {
   telegrams: [] as Telegram[],
   mutedSeats: [] as number[],
   telegramSentAt: 0,
@@ -258,10 +280,9 @@ const clearSelection = {
   markStrikes: 0,
   markWarning: null as 'warned' | 'muted' | null,
   toasts: [] as number[],
-  pins: readPins(),
-  humanMarks: [] as UndoMark[],
-  loanConfirm: false,
-  loanPeek: false,
+  pins: {} as Record<string, string>,
+  preparing: false,
+  queued: [] as GameAction[],
 };
 
 export const useGame = create<GameStore>((set, get) => ({
@@ -273,6 +294,8 @@ export const useGame = create<GameStore>((set, get) => ({
   candle: null,
   mood: NO_MOOD,
   ...clearSelection,
+  ...freshTable,
+  pins: readPins(),
   marketFocus: false,
   ledgerFilter: 'all',
   flyTo: null,
@@ -293,7 +316,7 @@ export const useGame = create<GameStore>((set, get) => ({
        can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
     if (code && wire) {
-      set({ ...clearSelection, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
+      set({ ...clearSelection, ...freshTable, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
       listen(code, wire);
       return;
     }
@@ -341,6 +364,7 @@ export const useGame = create<GameStore>((set, get) => ({
     })();
     set({
       ...clearSelection,
+      ...freshTable,
       game,
       code: null,
       seat: null,
@@ -377,7 +401,7 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a rematch is a table's business, not a page's: online it does nothing */
     if (get().code) return;
     const game = newGame(readSetup());
-    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false, toasts: [], telegrams: [], pings: [], myMarks: [], markStrikes: 0, markWarning: null, pins: {} });
+    set({ ...clearSelection, ...freshTable, game, humanMarks: [], ceremony: null, gameOverOpen: false });
     writePins({});
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
@@ -523,6 +547,36 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ telegrams: [...get().telegrams.filter((x) => x.from !== from), { id, from, key, at: Date.now() }] });
     setTimeout(() => set({ telegrams: get().telegrams.filter((x) => x.id !== id) }), TELEGRAM_SHOWN_MS);
   },
+  setPreparing: (on) => {
+    const st = get();
+    if (on && (st.myTurn() || st.queued.length >= 2 || !st.game || st.game.phase !== 'action')) return;
+    set({ ...clearSelection, preparing: on });
+  },
+  dropQueued: (index) => set({ queued: get().queued.filter((_, i) => i !== index) }),
+  playQueued: () => {
+    const st = get();
+    const g = st.game;
+    if (!g || !st.myTurn() || !st.queued.length) return;
+    const [next, ...rest] = st.queued;
+    const r = applyAction(g, g.current, next);
+    if (!r.state) {
+      set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueDropped', { reason: r.error ?? '' }), at: Date.now() } });
+      return;
+    }
+    set({ queued: rest });
+    st.dispatch(next);
+  },
+  planActor: () => {
+    const st = get();
+    const g = st.game;
+    if (!g || g.phase !== 'action') return -1;
+    if (st.preparing) {
+      const me = st.seat ?? g.players.findIndex((x) => !x.isBot);
+      return me >= 0 && !g.players[me].isBot && me !== g.current ? me : -1;
+    }
+    if (g.players[g.current].isBot) return -1;
+    return st.seat === null || st.seat === g.current ? g.current : -1;
+  },
   pinTown: (town, on) => {
     const pins = { ...get().pins };
     if (on) pins[town] = pins[town] ?? '';
@@ -590,7 +644,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   reject: (key, reason) => set({ shake: { key, reason, at: Date.now() } }),
 
-  cancel: () => set({ ...clearSelection }),
+  cancel: () => set({ ...clearSelection, preparing: false }),
 
   setLoanConfirm: (open) => set({ loanConfirm: open }),
   setLoanPeek: (on) => set({ loanPeek: on }),
@@ -620,7 +674,9 @@ export const useGame = create<GameStore>((set, get) => ({
     const st = get();
     const g = st.game;
     if (!g || g.phase !== 'action') return;
-    const card = g.players[g.current].hand.find((c) => c.id === st.selectedCardId);
+    const actor = st.planActor();
+    if (actor < 0) return;
+    const card = g.players[actor].hand.find((c) => c.id === st.selectedCardId);
     let action: GameAction | null = null;
     switch (st.verb) {
       case 'build':
@@ -642,7 +698,13 @@ export const useGame = create<GameStore>((set, get) => ({
         if (card) action = { kind: 'pass', card: card.id };
         break;
     }
-    if (action) get().dispatch(action);
+    if (!action) return;
+    if (st.preparing) {
+      /* ready for my turn: kept, not played */
+      set({ ...clearSelection, preparing: false, queued: [...st.queued, action].slice(0, 2) });
+      return;
+    }
+    get().dispatch(action);
   },
 
   /* every change of the game goes through the engine's action log: the
@@ -786,21 +848,19 @@ export const useGame = create<GameStore>((set, get) => ({
   currentTargets: () => {
     const st = get();
     const g = st.game;
-    if (!g || g.phase !== 'action') return [];
-    const p = g.players[g.current];
-    if (p.isBot) return [];
-    const card = p.hand.find((c) => c.id === st.selectedCardId);
+    const actor = st.planActor();
+    if (!g || actor < 0) return [];
+    const card = g.players[actor].hand.find((c) => c.id === st.selectedCardId);
     if (!card || st.verb !== 'build') return [];
-    return buildTargets(g, g.current, card);
+    return buildTargets(g, actor, card);
   },
 
   currentLinks: () => {
     const st = get();
     const g = st.game;
-    if (!g || g.phase !== 'action') return [];
-    const p = g.players[g.current];
-    if (p.isBot || st.verb !== 'network') return [];
-    const list = linkTargets(g, g.current);
+    const actor = st.planActor();
+    if (!g || actor < 0 || st.verb !== 'network') return [];
+    const list = linkTargets(g, actor);
     /* rail era, first link picked: links touching it become the DOUBLE option
        (£15 + 1 coal each + 1 beer) even when they don't touch the network yet */
     const first = st.linkPick;
@@ -810,7 +870,7 @@ export const useGame = create<GameStore>((set, get) => ({
       const ends = [first.link.a, first.link.b, first.link.alsoConnects].filter(Boolean);
       const touches = ends.includes(t.link.a) || ends.includes(t.link.b);
       if (!touches) return t;
-      const dbl = doubleLinkPlan(g, g.current, first, t.link);
+      const dbl = doubleLinkPlan(g, actor, first, t.link);
       return { ...t, valid: dbl.valid, reason: dbl.reason, total: dbl.total, coalPlan: dbl.coal2 };
     });
   },
@@ -818,17 +878,17 @@ export const useGame = create<GameStore>((set, get) => ({
   currentSells: () => {
     const st = get();
     const g = st.game;
-    if (!g || g.phase !== 'action') return [];
-    const p = g.players[g.current];
-    if (p.isBot || st.verb !== 'sell') return [];
-    return sellTargets(g, g.current);
+    const actor = st.planActor();
+    if (!g || actor < 0 || st.verb !== 'sell') return [];
+    return sellTargets(g, actor);
   },
 
   currentDevelops: () => {
     const st = get();
     const g = st.game;
-    if (!g || g.phase !== 'action') return [];
-    return developOptions(g, g.current);
+    const actor = st.planActor();
+    if (!g || actor < 0 || st.verb !== 'develop') return [];
+    return developOptions(g, actor);
   },
 }));
 
@@ -853,8 +913,9 @@ export function developPlans(game: GameState, ironFrom: (string | null)[]): Supp
 export function confirmCost(
   st: { verb: Verb | null; buildPick: BuildTarget | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[]; developIron: (string | null)[] },
   game: GameState,
+  actor: number = game.current,
 ): { total: number; after: number } | null {
-  const money = game.players[game.current].money;
+  const money = game.players[actor].money;
   let total: number;
   switch (st.verb) {
     case 'build':
@@ -997,21 +1058,22 @@ export function whyNoBuild(targets: BuildTarget[]): string {
 
 /** the verbs a selected card allows. `tryable` marks the ones the hand still
  *  lets the reader pick when nothing takes them, so the banner can say why */
-export function verbsForCard(st: { game: GameState | null; selectedCardId: string | null }): { verb: Verb; ok: boolean; reason?: string; tryable?: boolean }[] {
+export function verbsForCard(st: { game: GameState | null; selectedCardId: string | null; actor?: number }): { verb: Verb; ok: boolean; reason?: string; tryable?: boolean }[] {
   const g = st.game;
-  const card = g?.players[g.current]?.hand.find((c) => c.id === st.selectedCardId);
+  const who = st.actor ?? g?.current ?? 0;
+  const card = g?.players[who]?.hand.find((c) => c.id === st.selectedCardId);
   if (!g || !card) {
     return [
       { verb: 'build', ok: false, reason: 'Select a card first' },
       { verb: 'network', ok: false, reason: 'Select a card first' },
       { verb: 'develop', ok: false, reason: 'Select a card first' },
       { verb: 'sell', ok: false, reason: 'Select a card first' },
-      { verb: 'loan', ok: !!g && canLoan(g, g.current).ok, reason: g ? canLoan(g, g.current).reason : undefined },
-      { verb: 'scout', ok: !!g && canScout(g, g.current).ok, reason: g ? canScout(g, g.current).reason : undefined },
+      { verb: 'loan', ok: !!g && canLoan(g, who).ok, reason: g ? canLoan(g, who).reason : undefined },
+      { verb: 'scout', ok: !!g && canScout(g, who).ok, reason: g ? canScout(g, who).reason : undefined },
       { verb: 'pass', ok: false, reason: 'Select the card to discard first' },
     ];
   }
-  const i = g.current;
+  const i = who;
   const sites = buildTargets(g, i, card);
   return [
     { verb: 'build', ok: sites.some((t) => t.valid), reason: whyNoBuild(sites), tryable: true },
@@ -1068,6 +1130,30 @@ function listen(code: string, wire: Wire): void {
 export function leaveOnlineTable(): void {
   deafen?.();
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
+}
+
+/* ------------------------ a move in a few words ------------------------ */
+
+const VERB_KEY: Record<string, string> = { build: 'verbBuild', network: 'verbNetwork', develop: 'verbDevelop', sell: 'verbSell', loan: 'verbLoan', scout: 'verbScout', pass: 'verbPass' };
+const placeName = (id: string): string => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
+/** a prepared move as the banner lists it */
+export function describeAction(a: GameAction): string {
+  const verb = tr(`game.hand.${VERB_KEY[a.kind] ?? 'verbPass'}`);
+  switch (a.kind) {
+    case 'build':
+      return `${verb} · ${tr(`game.log.industry.${a.industry}`)} → ${placeName(a.town)}`;
+    case 'network': {
+      const l = LINKS.find((x) => x.id === a.link);
+      const l2 = a.second ? LINKS.find((x) => x.id === a.second) : undefined;
+      return `${verb} · ${l ? `${placeName(l.a)} ⇄ ${placeName(l.b)}` : a.link}${l2 ? ` + ${placeName(l2.a)} ⇄ ${placeName(l2.b)}` : ''}`;
+    }
+    case 'sell':
+      return `${verb} · ${a.sales.map((x) => placeName(x.town)).join(', ')}`;
+    case 'develop':
+      return `${verb} · ${a.industries.map((i) => tr(`game.log.industry.${i}`)).join(', ')}`;
+    default:
+      return verb;
+  }
 }
 
 /* ------------------------------ the pins ------------------------------ */

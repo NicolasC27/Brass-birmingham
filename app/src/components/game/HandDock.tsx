@@ -225,6 +225,10 @@ export default function HandDock() {
   const seat = useGame((s) => s.seat);
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
+  const preparing = useGame((s) => s.preparing);
+  const queued = useGame((s) => s.queued);
+  const setPreparing = useGame((s) => s.setPreparing);
+  const planActor = useGame((s) => s.planActor());
   const buildPick = useGame((s) => s.buildPick);
   const linkPick = useGame((s) => s.linkPick);
   const secondLinkPick = useGame((s) => s.secondLinkPick);
@@ -347,17 +351,20 @@ export default function HandDock() {
   if (!game) return null;
   const p = game.players[game.current];
   const isHumanTurn = game.phase === 'action' && (seat === null ? !p.isBot : seat === game.current);
+  /* a move may also be planned out of turn: it waits for my turn */
+  const actor = planActor;
+  const canPlan = actor >= 0;
   /* whose cards to show: online, always my own — dimmed while I wait my turn.
      Here, the player to act when human; during a bot's turn the lone human
      keeps seeing their own hand. With several humans at one screen nothing
      is shown — the pass interstitial guards privacy. */
   const humans = game.players.filter((x) => !x.isBot);
   const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
-  const verbs = verbsForCard({ game, selectedCardId });
+  const verbs = verbsForCard({ game, selectedCardId, actor: actor >= 0 ? actor : undefined });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
   const devOptions = verb === 'develop' ? currentDevelops() : [];
 
-  const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout';
+  const busy = !!selectedCardId || !!summary || verb === 'develop' || verb === 'scout' || preparing;
   /* open through the reader's own turn — a second action is still to play */
   /* folded by a click on the strip: holds through the reader's own turn
      (which otherwise keeps the hand open) until the next turn, a pick, or
@@ -401,8 +408,29 @@ export default function HandDock() {
           )}
         >
           <span className="engraved-brass font-fell normal-case tracking-[0.08em]">
-            {isHumanTurn ? t('game.hand.cardsInHand', { count: (shown ?? p).hand.length }) : t('game.hand.atTable', { name: p.name })}
+            {preparing ? t('game.hand.preparing') : isHumanTurn ? t('game.hand.cardsInHand', { count: (shown ?? p).hand.length }) : t('game.hand.atTable', { name: p.name })}
           </span>
+          {/* while others play: prepare a move for my turn (two at most) */}
+          {!isHumanTurn && !preparing && shown && game.phase === 'action' && queued.length < 2 && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                setPreparing(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPreparing(true);
+                }
+              }}
+              className="rounded-sm border border-brass-700/60 px-2 py-[1px] font-sans text-[10px] font-bold normal-case tracking-wider text-brass-400 hover:border-brass-400"
+            >
+              {t('game.hand.prepare')}
+            </span>
+          )}
           {/* the purse, right where the eyes already are: money, income level */}
           {shown && (
             <span className="flex items-center gap-1.5 font-mono text-[10.5px] normal-case tracking-normal" title={t('game.hand.purseTip', { name: shown.name })}>
@@ -487,10 +515,10 @@ export default function HandDock() {
           <div className="grid w-[216px] shrink-0 grid-cols-2 content-start gap-1">
             {VERB_META.map(({ verb: v, label, icon: Icon }) => {
               const meta = verbs.find((x) => x.verb === v);
-              const ok = !!meta?.ok && isHumanTurn;
+              const ok = !!meta?.ok && canPlan;
               /* a verb nothing takes still answers the click: the banner
                  then says what blocks it, instead of a tooltip nobody sees */
-              const clickable = ok || (!!meta?.tryable && isHumanTurn);
+              const clickable = ok || (!!meta?.tryable && canPlan);
               const chip = (
                 <button
                   key={v}
@@ -517,7 +545,7 @@ export default function HandDock() {
                   {t(label)}
                 </button>
               );
-              return !clickable && meta?.reason && isHumanTurn ? (
+              return !clickable && meta?.reason && canPlan ? (
                 <Tooltip key={v} side="top" title={t(label)} content={reasonText(meta.reason)}>
                   {chip}
                 </Tooltip>
@@ -529,7 +557,7 @@ export default function HandDock() {
 
           {/* develop drawer strip */}
           <AnimatePresence>
-            {verb === 'develop' && isHumanTurn && (
+            {verb === 'develop' && canPlan && (
               <motion.div
                 initial={{ opacity: 0, x: -14 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -631,11 +659,11 @@ export default function HandDock() {
                   <GameCard
                     card={card}
                     index={i}
-                    selected={isHumanTurn && selectedCardId === card.id}
-                    scoutMarked={isHumanTurn && scoutPick.includes(card.id)}
-                    disabled={!isHumanTurn}
-                    canBuild={aid && isHumanTurn && buildTargets(game, game.current, card).some((x) => x.valid)}
-                    onClick={() => isHumanTurn && selectCard(card.id)}
+                    selected={canPlan && selectedCardId === card.id}
+                    scoutMarked={canPlan && scoutPick.includes(card.id)}
+                    disabled={!canPlan}
+                    canBuild={aid && canPlan && buildTargets(game, actor, card).some((x) => x.valid)}
+                    onClick={() => canPlan && selectCard(card.id)}
                     /* double-click a town card = camera flies to that town.
                        The two clicks before it toggle the card off, so
                        re-select it (not in scout mode, where clicks toggle marks) */

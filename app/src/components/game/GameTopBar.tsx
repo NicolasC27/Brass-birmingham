@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
-import { cardLabel, confirmCost, confirmSummary, useGame, verbsForCard } from '@/game/store';
+import { cardLabel, confirmCost, confirmSummary, describeAction, useGame, verbsForCard } from '@/game/store';
 import type { Verb } from '@/game/types';
 import { reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
@@ -66,7 +66,11 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const t = useT();
   const game = useGame((s) => s.game);
   const band = useBand(marketOpen, game?.players.length ?? 0);
-  const mine = useGame((s) => s.myTurn());
+  const mine = useGame((s) => s.planActor() >= 0);
+  const planActor = useGame((s) => s.planActor());
+  const preparing = useGame((s) => s.preparing);
+  const queued = useGame((s) => s.queued);
+  const dropQueued = useGame((s) => s.dropQueued);
   const code = useGame((s) => s.code);
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
@@ -84,7 +88,9 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const { beginnerAid } = useBoardOptions();
   const insets = useHudInsets();
   if (!game) return null;
-  const me = game.current;
+  /* the banner speaks for the seat the plan is made for: the one to act,
+     or mine while a move is prepared out of turn */
+  const me = planActor >= 0 ? planActor : game.current;
   const p = game.players[me];
   const color = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
   const total = eraRounds(game.players.length);
@@ -98,7 +104,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const summaryFull = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId }) : null;
   /* the verb chip already says it: the summary starts after the verb */
   const summary = summaryFull && verb && summaryFull.startsWith(`${t(VERB_LABEL[verb])} · `) ? summaryFull.slice(t(VERB_LABEL[verb]).length + 3) : summaryFull;
-  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick, developIron }, game) : null;
+  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick, developIron }, game, me) : null;
   /* what the banner asks of the reader, in one line */
   const stage = !mine ? 'theirs' : summary ? 'ready' : verb ? 'target' : card ? 'verb' : 'card';
 
@@ -110,7 +116,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   if (stage === 'theirs') {
     line = game.phase !== 'action' ? t('game.topbar.between') : p.isBot ? t('game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
   } else if (stage === 'ready') {
-    line = t('game.topbar.hint.ready');
+    line = preparing ? t('game.topbar.hint.prepared') : t('game.topbar.hint.ready');
   } else if (stage === 'target') {
     line = t(`game.topbar.hint.${verb}`);
     if (card && (verb === 'build' || verb === 'network' || verb === 'sell' || verb === 'develop')) {
@@ -136,7 +142,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   } else if (stage === 'verb') {
     line = t('game.topbar.hint.pickVerb', { card: card ? cardLabel(card) : '' });
   } else {
-    line = done === 1 && maxActions === 2 ? t('game.topbar.hint.second') : t('game.topbar.hint.pickCard');
+    line = preparing ? t('game.topbar.hint.preparing') : done === 1 && maxActions === 2 ? t('game.topbar.hint.second') : t('game.topbar.hint.pickCard');
   }
 
   /* the beginner's aid: coal bought at the market while a mine on the board
@@ -263,7 +269,7 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
               )}
               {stage === 'ready' && (
                 <button type="button" onClick={confirm} className="btn-strike !min-h-[32px] !px-4 !py-1 text-xs">
-                  {t('game.topbar.confirm')} <kbd className="ml-1 font-mono text-[9px] opacity-60">↵</kbd>
+                  {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} <kbd className="ml-1 font-mono text-[9px] opacity-60">↵</kbd>
                 </button>
               )}
               {stage === 'verb' && (
@@ -276,6 +282,18 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
               </button>
             </div>
             {aidNote && <p className="mt-1 truncate font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
+            {/* the moves ready for my turn, each with its cross */}
+            {queued.length > 0 && (
+              <p className="mt-1 flex flex-wrap items-center gap-1.5 font-sans text-[10.5px] text-cream-100/80">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-brass-400/80">{t('game.topbar.queued')}</span>
+                {queued.map((a, i) => (
+                  <span key={i} className="flex items-center gap-1 rounded-sm border border-brass-700/60 bg-coal-950/60 px-1.5 py-px">
+                    <span>{describeAction(a)}</span>
+                    <button type="button" onClick={() => dropQueued(i)} aria-label={t('game.topbar.queueDrop')} title={t('game.topbar.queueDrop')} className="text-cream-100/45 hover:text-rust-500">×</button>
+                  </span>
+                ))}
+              </p>
+            )}
           </div>
         )}
 

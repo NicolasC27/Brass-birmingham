@@ -37,6 +37,9 @@ const fr: typeof engame = {
     eraRail: 'Ère rail',
     eraRoundTitle: '{era} — manche {round} sur {total}',
     noWay: '{verb} impossible :',
+    prepare: 'Préparer',
+    queued: 'Prêt pour mon tour :',
+    queueDrop: 'Retirer ce coup',
     canalTip:
       'Canaux £3. Les manufactures de niveau 1 sont balayées à la fin de cette ère. Le revenu est payé à la clôture de chaque manche.',
     railTip:
@@ -78,6 +81,8 @@ const fr: typeof engame = {
       pass: 'Confirmez pour défausser la carte',
       loan: 'Confirmez l’emprunt',
       ready: 'Vérifiez la note, puis confirmez',
+      prepared: 'Le coup attendra votre tour — préparez-le',
+      preparing: 'Coup préparé : choisissez une carte, il jouera à votre tour s’il tient encore',
       second: 'Seconde action — choisissez une carte',
     },
   },
@@ -350,6 +355,9 @@ const fr: typeof engame = {
     retire: 'Retirez :',
     devOption: '{name} N{level} · fer £{cost}',
     devNext: 'puis N{level}',
+    prepare: 'Préparer un coup',
+    preparing: 'Coup préparé pour mon tour',
+    queueDropped: 'Coup préparé abandonné : {reason}',
     devDone: 'pile vide',
     devNoDev: 'tuile ampoule',
     devMore: 'Une de plus de cette industrie',

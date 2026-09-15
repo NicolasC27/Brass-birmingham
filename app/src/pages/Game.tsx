@@ -58,6 +58,8 @@ export default function Game() {
   const seat = useGame((s) => s.seat);
   const line = useGame((s) => s.line);
   const myTurn = useGame((s) => s.myTurn());
+  const planActor = useGame((s) => s.planActor());
+  const queuedCount = useGame((s) => s.queued.length);
   const mySeat = useGame((s) => s.mySeat());
   const init = useGame((s) => s.init);
   const reset = useGame((s) => s.reset);
@@ -252,7 +254,7 @@ export default function Game() {
         setBoardOption('focus', !getBoardOptions().focus);
         return;
       }
-      if (!isHumanTurn) return;
+      if (planActor < 0) return;
       if (e.key === 'Enter') {
         const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
         if (ok) confirm();
@@ -276,18 +278,25 @@ export default function Game() {
     return game.players[mySeat].hand.find((c) => c.id === selectedCardId) ?? null;
   }, [game, mySeat, selectedCardId]);
 
+  /* the plan is made for the acting human, or for me while preparing a move out of turn */
   const targets = useMemo(
-    () => (game && isHumanTurn && verb === 'build' && selectedCard ? buildTargets(game, game.current, selectedCard) : []),
-    [game, isHumanTurn, verb, selectedCard],
+    () => (game && planActor >= 0 && verb === 'build' && selectedCard ? buildTargets(game, planActor, selectedCard) : []),
+    [game, planActor, verb, selectedCard],
   );
   const linkTargetsList = useMemo(
-    () => (game && isHumanTurn && verb === 'network' ? linkTargets(game, game.current) : []),
-    [game, isHumanTurn, verb],
+    () => (game && planActor >= 0 && verb === 'network' ? linkTargets(game, planActor) : []),
+    [game, planActor, verb],
   );
   const sellTargetsList = useMemo(
-    () => (game && isHumanTurn && verb === 'sell' ? sellTargets(game, game.current) : []),
-    [game, isHumanTurn, verb],
+    () => (game && planActor >= 0 && verb === 'sell' ? sellTargets(game, planActor) : []),
+    [game, planActor, verb],
   );
+  /* my turn has come: a prepared move plays after a beat, if the engine still takes it */
+  useEffect(() => {
+    if (!myTurn || !queuedCount) return;
+    const id = window.setTimeout(() => useGame.getState().playQueued(), 1000);
+    return () => window.clearTimeout(id);
+  }, [myTurn, queuedCount, game?.actionsLeft]);
 
   const ghost: PlanGhost | null = useMemo(() => {
     if (!game) return null;
