@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, ZoomIn } from 'lucide-react';
 import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS } from '@/game/data';
@@ -125,8 +126,15 @@ export default function TownInspector({
   const t = useT();
   const W = 264;
   const EST_H = 240;
-  const left = Math.min(Math.max(x, W / 2 + 8), Math.max(W / 2 + 8, frameW - W / 2 - 8));
-  const below = y + 34 + EST_H <= frameH || y - 34 - EST_H < 0;
+  /* where the card sits is decided once, when it opens: below or above the
+     town, and how far it was nudged in from the frame's edge. After that
+     it follows the town rigidly as the map pans, instead of sliding about
+     to stay inside the frame. */
+  const [{ below, dx }] = useState(() => {
+    const left = Math.min(Math.max(x, W / 2 + 8), Math.max(W / 2 + 8, frameW - W / 2 - 8));
+    return { below: y + 34 + EST_H <= frameH || y - 34 - EST_H < 0, dx: left - x };
+  });
+  const left = x + dx;
   return (
     <div
       className="absolute z-30"
