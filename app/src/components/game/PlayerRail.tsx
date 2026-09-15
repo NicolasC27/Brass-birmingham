@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence } from 'framer-motion';
+import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { ChevronsDownUp, ChevronsUpDown, Coins, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
@@ -89,7 +91,7 @@ export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; 
   );
 }
 
-function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number; compact?: boolean }) {
+function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number; compact?: boolean; onCard: () => void }) {
   const t = useT();
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   const money = useCountTween(p.money);
@@ -137,7 +139,20 @@ function RailChip({ p, index, active, nextRank, nowRank, compact }: { p: PlayerS
     >
       {/* the seat's colour down the left edge; solid and bright when it is their turn */}
       <span aria-hidden className="absolute inset-y-0 left-0 w-[4px] transition-opacity" style={{ background: color.hex, opacity: active ? 1 : 0.45 }} />
-      <PortraitMedallion p={p} index={index} active={active} size={compact ? 26 : 36} />
+      {/* the portrait opens the player's card; the rest of the chip is the spotlight */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onCard();
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+        aria-label={t('game.card.open', { name: p.name })}
+        title={t('game.card.open', { name: p.name })}
+        className="rounded-full outline-none transition-transform hover:scale-105 focus-visible:ring-2 focus-visible:ring-brass-400"
+      >
+        <PortraitMedallion p={p} index={index} active={active} size={compact ? 26 : 36} />
+      </button>
       <div className="flex min-w-0 flex-col items-start gap-[3px]">
         <span className="flex items-center gap-1.5">
           <span className={cn('max-w-[104px] truncate font-fell leading-tight tracking-wide', active ? 'text-cream-100' : 'text-cream-100/85', compact ? 'text-[12px]' : 'text-[13px]')}>{p.name}</span>
@@ -198,6 +213,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   const insets = useHudInsets();
   const narrow = useNarrow();
   const { railCompact } = useBoardOptions();
+  const [cardSeat, setCardSeat] = useState<number | null>(null);
   if (!game) return null;
   const next = projectedOrder(game);
   const compact = narrow || railCompact;
@@ -212,9 +228,17 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
       aria-label={t('game.rail.playersAria')}
     >
       {game.players.map((p, i) => (
-        <div key={i} className="flex flex-col">
-          <RailChip p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={compact} />
+        <div key={i} className="relative flex flex-col">
+          <RailChip p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={compact} onCard={() => setCardSeat((c) => (c === i ? null : i))} />
           <TelegramPlaque seat={i} compact={compact} />
+          {/* the player's card, beside their chip */}
+          <AnimatePresence>
+            {cardSeat === i && (
+              <div className={cn('absolute z-[70]', narrow ? 'left-0 top-full mt-1' : 'left-full top-0 ml-2')}>
+                <PlayerCard game={game} seat={i} onClose={() => setCardSeat(null)} />
+              </div>
+            )}
+          </AnimatePresence>
         </div>
       ))}
       {/* fold the rail to one line per seat, for more board */}
