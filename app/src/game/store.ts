@@ -95,6 +95,9 @@ interface GameStore {
   queued: Prepared[];
   /** a condition on a prepared move: it is dropped if that player did that since */
   setUnless: (index: number, unless: Unless | null) => void;
+  /** the board shows the prepared moves in colour over a sepia table */
+  previewQueue: boolean;
+  setPreviewQueue: (on: boolean) => void;
   setPreparing: (on: boolean) => void;
   dropQueued: (index: number) => void;
   /** my turn has come: the first prepared move plays if the engine still takes it */
@@ -288,6 +291,7 @@ const freshTable = {
   pins: {} as Record<string, string>,
   preparing: false,
   queued: [] as Prepared[],
+  previewQueue: false,
 };
 
 export const useGame = create<GameStore>((set, get) => ({
@@ -557,13 +561,18 @@ export const useGame = create<GameStore>((set, get) => ({
     if (on && (st.myTurn() || st.queued.length >= 2 || !st.game || st.game.phase !== 'action')) return;
     set({ ...clearSelection, preparing: on });
   },
-  dropQueued: (index) => set({ queued: get().queued.filter((_, i) => i !== index) }),
+  dropQueued: (index) => {
+    const queued = get().queued.filter((_, i) => i !== index);
+    set({ queued, previewQueue: queued.length ? get().previewQueue : false });
+  },
+  setPreviewQueue: (on) => set({ previewQueue: on && get().queued.length > 0 }),
   setUnless: (index, unless) => set({ queued: get().queued.map((q, i) => (i === index ? { ...q, unless: unless ?? undefined } : q)) }),
   playQueued: () => {
     const st = get();
     const g = st.game;
     if (!g || !st.myTurn() || !st.queued.length) return;
     const [next, ...rest] = st.queued;
+    if (st.previewQueue) set({ previewQueue: false });
     /* the condition: what that player did since the move was prepared */
     const u = next.unless;
     const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player === u.player && e.key === u.kind && (!u.town || e.region === u.town)) : undefined;

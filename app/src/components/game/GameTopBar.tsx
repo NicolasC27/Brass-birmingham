@@ -1,12 +1,9 @@
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
-import { cardLabel, confirmCost, confirmSummary, describeAction, describeUnless, projectQueued, useGame, verbsForCard } from '@/game/store';
-import type { Unless } from '@/game/store';
-import { TOWNS } from '@/game/data';
+import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard } from '@/game/store';
 import type { Verb } from '@/game/types';
 import { reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
@@ -65,58 +62,6 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
   return band;
 }
 
-/** the small form behind "unless…": that player, that deed, there or anywhere */
-function UnlessEditor({ at, players, value, onChange, onClose }: { at: { x: number; y: number }; players: { idx: number; name: string }[]; value: Unless | null; onChange: (u: Unless | null) => void; onClose: () => void }) {
-  const t = useT();
-  const [player, setPlayer] = useState<number>(value?.player ?? players[0]?.idx ?? 0);
-  const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
-  const [town, setTown] = useState<string>(value?.town ?? '');
-  const sel = 'rounded-sm border border-brass-700/60 bg-coal-950 px-1 py-0.5 font-sans text-[11px] text-cream-100';
-  /* rendered at the document's root: the banner's own stacking context
-     would keep it under the notices and the Gazette */
-  return createPortal(
-    <div role="dialog" aria-label={t('game.topbar.unlessTitle')} className="plaque fixed z-[90] flex w-[300px] flex-col gap-1.5 rounded-md p-2 text-left shadow-e4" style={{ left: Math.min(at.x, window.innerWidth - 316), top: at.y }} onClick={(e) => e.stopPropagation()}>
-      <p className="engraved-brass font-fell text-[11px] uppercase tracking-[0.12em]">{t('game.topbar.unlessTitle')}</p>
-      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
-        {t('game.topbar.unlessWho')}
-        <select value={player} onChange={(e) => setPlayer(Number(e.target.value))} className={sel}>
-          {players.map((p) => (
-            <option key={p.idx} value={p.idx}>{p.name}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
-        {t('game.topbar.unlessDoes')}
-        <select value={kind} onChange={(e) => setKind(e.target.value as Unless['kind'])} className={sel}>
-          {(['build', 'sell', 'network'] as const).map((k) => (
-            <option key={k} value={k}>{t(`game.topbar.unlessKind.${k}`)}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
-        {t('game.topbar.unlessWhere')}
-        <select value={town} onChange={(e) => setTown(e.target.value)} className={sel}>
-          <option value="">{t('game.topbar.unlessAnywhere')}</option>
-          {TOWNS.filter((x) => !x.farm).map((x) => (
-            <option key={x.id} value={x.id}>{x.name}</option>
-          ))}
-        </select>
-      </label>
-      <div className="mt-1 flex justify-end gap-1.5">
-        {value && (
-          <button type="button" onClick={() => { onChange(null); onClose(); }} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
-            {t('game.topbar.unlessNone')}
-          </button>
-        )}
-        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="btn-strike !min-h-[26px] !px-3 !py-0.5 text-[11px]">
-          {t('game.topbar.unlessOk')}
-        </button>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
 export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: number | null; marketOpen: boolean }) {
   const t = useT();
   const game = useGame((s) => s.game);
@@ -125,13 +70,8 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
   const planActor = useGame((s) => s.planActor());
   const preparing = useGame((s) => s.preparing);
   const queued = useGame((s) => s.queued);
-  const dropQueued = useGame((s) => s.dropQueued);
-  const setUnless = useGame((s) => s.setUnless);
-  const seat = useGame((s) => s.seat);
   /* the table the hints count on: with moves prepared, the one they leave */
   const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
-  /* which prepared move has its condition open for editing */
-  const [unlessOpen, setUnlessOpen] = useState<{ index: number; x: number; y: number } | null>(null);
   const code = useGame((s) => s.code);
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
@@ -346,42 +286,6 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
             {aidNote && <p className="mt-1 truncate font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
           </div>
         )}
-        {/* the moves ready for my turn, each with its cross — shown while
-            the others play too, that is when they matter */}
-        {queued.length > 0 && (
-          <p className="flex flex-wrap items-center gap-1.5 px-3 pb-1.5 font-sans text-[10.5px] text-cream-100/80">
-            <span className="font-mono text-[9px] uppercase tracking-wider text-brass-400/80">{t('game.topbar.queued')}</span>
-            {queued.map((q, i) => (
-              <span key={i} className="relative flex items-center gap-1 rounded-sm border border-brass-700/60 bg-coal-950/60 px-1.5 py-px">
-                <span>{describeAction(q.action)}</span>
-                {/* the condition: set, shown, or offered */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    /* the editor floats over the page (the banner clips its overflow) */
-                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                    setUnlessOpen((o) => (o?.index === i ? null : { index: i, x: r.left, y: r.bottom + 6 }));
-                  }}
-                  aria-expanded={unlessOpen?.index === i}
-                  className={cn('rounded-sm border px-1 font-sans text-[9.5px]', q.unless ? 'border-rust-500/70 text-rust-500 brightness-150' : 'border-brass-700/50 text-brass-400/80 hover:text-brass-400')}
-                >
-                  {q.unless ? describeUnless(q.unless, game) : t('game.topbar.unlessAdd')}
-                </button>
-                <button type="button" onClick={() => dropQueued(i)} aria-label={t('game.topbar.queueDrop')} title={t('game.topbar.queueDrop')} className="text-cream-100/45 hover:text-rust-500">×</button>
-                {unlessOpen?.index === i && (
-                  <UnlessEditor
-                    at={unlessOpen}
-                    players={game.players.map((x, idx) => ({ idx, name: x.name })).filter((x) => x.idx !== (seat ?? game.players.findIndex((y) => !y.isBot)))}
-                    value={q.unless ?? null}
-                    onChange={(u) => setUnless(i, u)}
-                    onClose={() => setUnlessOpen(null)}
-                  />
-                )}
-              </span>
-            ))}
-          </p>
-        )}
-
         {/* the candle burns along the bottom edge */}
         {candleFrac !== null && (
           <span className="absolute inset-x-0 bottom-0 h-[3px] bg-coal-950" aria-label={t('game.topbar.secondsLeft', { seconds: secondsLeft ?? 0 })}>

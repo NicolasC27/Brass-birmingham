@@ -569,6 +569,16 @@ const fr: typeof engame = {
       clemmed: 'Vous allez tous nous affamer',
     },
   },
+  prepared: {
+    title: 'Ordres pour mon tour',
+    note: 'Ils partent à votre tour, s’ils tiennent encore',
+    cost: '£{n}',
+    wontHold: 'ne tiendra pas : {why}',
+    visualise: 'Visualiser',
+    visualising: 'Fermer (Échap)',
+    preparingHint: 'Carte, verbe, cible, puis « Préparer »',
+    legend: 'En couleur : vos coups et les tuiles encore à retourner',
+  },
   gazette: {
     title: 'La Gazette des Midlands',
     issue: '{era} · manche {round}',

@@ -567,6 +567,16 @@ const game = {
       clemmed: 'You will have us all starving',
     },
   },
+  prepared: {
+    title: 'Orders for my turn',
+    note: 'They play on your turn, if they still hold',
+    cost: '£{n}',
+    wontHold: 'will not hold: {why}',
+    visualise: 'Show on the board',
+    visualising: 'Close (Esc)',
+    preparingHint: 'Card, verb, target, then “Prepare”',
+    legend: 'In colour: your moves and the tiles still to flip',
+  },
   gazette: {
     title: 'The Midlands Gazette',
     issue: '{era} · round {round}',
