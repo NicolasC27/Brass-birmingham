@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import { motion } from 'framer-motion';
 import { Pin, PinOff, X, ZoomIn } from 'lucide-react';
 import { useGame } from '@/game/store';
@@ -114,6 +115,7 @@ export default function TownInspector({
   frameH,
   onClose,
   onZoomHere,
+  followRef,
 }: {
   town: Town;
   game: GameState;
@@ -124,6 +126,9 @@ export default function TownInspector({
   frameH: number;
   onClose: () => void;
   onZoomHere: () => void;
+  /** the board's ticker moves the card every frame through this, between
+   *  the camera's commits: the town, the card and the map stay glued */
+  followRef?: MutableRefObject<{ el: HTMLDivElement; dx: number; below: boolean } | null>;
 }) {
   const t = useT();
   const pinned = useGame((s) => s.pins[town.id] !== undefined);
@@ -141,8 +146,18 @@ export default function TownInspector({
     return { below: y + 34 + EST_H <= frameH || y - 34 - EST_H < 0, dx: left - x };
   });
   const left = x + dx;
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!followRef) return;
+    const el = box.current;
+    if (el) followRef.current = { el, dx, below };
+    return () => {
+      followRef.current = null;
+    };
+  }, [followRef, dx, below]);
   return (
     <div
+      ref={box}
       className="absolute z-30"
       style={
         below
