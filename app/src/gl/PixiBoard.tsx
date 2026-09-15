@@ -711,9 +711,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           hoverRef.current.setHoverLink(null);
           el.style.cursor = 'pointer';
         } else {
-          /* a route hidden with C is not there to be hovered either */
+          /* a built link is done with hovering; a route hidden with C is
+             not there to be hovered either */
           const def = linkAt(wx, wy);
-          const shown = def && !(getBoardOptions().hideUnbuilt && !gameRef.current?.links[def.id]);
+          const shown = def && !gameRef.current?.links[def.id] && !getBoardOptions().hideUnbuilt;
           hoverRef.current.setHoverLink(shown ? def.id : null);
           el.style.cursor = shown ? 'help' : 'grab';
         }
@@ -1120,7 +1121,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (idle && !hoverKey && hoverLink) {
       const def = LINKS.find((l) => l.id === hoverLink);
       const adjacent = def && hoverTown !== null && (def.a === hoverTown || def.b === hoverTown);
-      const hidden = def && hideUnbuilt && !game.links[def.id];
+      const hidden = def && (hideUnbuilt || !!game.links[def.id]);
       if (def && !adjacent && !hidden) {
         const pts = routeFor(def, game.era).pts;
         const g = new Graphics();
@@ -1217,7 +1218,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   })();
   const inspectTown = idle && inspect ? TOWN_BY_ID[inspect] : undefined;
   const inspectPos = inspectTown ? worldToScreen(inspectTown.x, inspectTown.y, view, size.w, size.h) : null;
-  const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink && (!hideUnbuilt || game.links[l.id])) : undefined;
+  const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink && !hideUnbuilt && !game.links[l.id]) : undefined;
   const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef, game.era), view, size.w, size.h) : null;
   const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
   /* merchant hover: the plate's tooltip, and only the goods YOU could sell there stay lit */
