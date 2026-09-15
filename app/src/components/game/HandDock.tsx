@@ -303,6 +303,17 @@ export default function HandDock() {
   /* the dock lives in the band between the left edge and the minimap, and
      takes what it needs of it, centred */
   const bandRight = minimapWidth(boardOpts) + 28;
+  /* the dock sits in the middle of the screen when the rail and the minimap
+     leave it room there; when they do not (a wide minimap), it takes the
+     middle of what is left between them instead of squeezing its cards */
+  const [vw, setVw] = useState(() => (typeof window === 'undefined' ? 1600 : window.innerWidth));
+  useEffect(() => {
+    const onResize = () => setVw(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const centredRoom = vw - 2 * Math.max(insets.left, bandRight);
+  const centredOnScreen = centredRoom >= 780;
   /* the fan scrolls sideways with a plain mouse wheel (no shift needed) */
   const fanRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -377,12 +388,14 @@ export default function HandDock() {
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (
-    <footer aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={{ bottom: insets.bottom, left: insets.left, right: bandRight }}>
+    <footer aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={centredOnScreen ? { bottom: insets.bottom, left: 0, right: 0 } : { bottom: insets.bottom, left: insets.left, right: bandRight }}>
       <motion.div
         initial={false}
         animate={{ height: expanded ? 180 : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-        className="pointer-events-auto relative w-auto max-w-full plaque overflow-hidden rounded-lg"
+        /* centred on the screen, never wider than the room between the rail and the minimap */
+        style={{ maxWidth: centredOnScreen ? centredRoom : vw - insets.left - bandRight }}
+        className="pointer-events-auto relative w-auto plaque overflow-hidden rounded-lg"
         onPointerEnter={onEnter}
         onPointerLeave={onLeave}
       >
