@@ -190,6 +190,7 @@ const game = {
       matWide: 'Mat wide / docked',
       matStyle: 'Mat tiles: cards / compact / pills',
       settings: 'Display settings',
+      focus: 'Focus view: the board and the essentials',
       cards: 'Select card 1–8',
       hand: 'Pin / unpin the hand',
       tracks: 'Zoom a score track (double-click resets)',
@@ -260,6 +261,7 @@ const game = {
   },
   rail: {
     playersAria: 'Players',
+    focusExit: 'Leave the focus view',
     spotReleaseEsc: 'Spotlight on — click to release (Esc works too)',
     spotPlayer: 'Click to spotlight this player on the map',
     spotRelease: 'Spotlight on — click to release',

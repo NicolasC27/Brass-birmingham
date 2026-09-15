@@ -3,7 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
-import { ChevronsDownUp, ChevronsUpDown, Coins, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
+import { ChevronsDownUp, ChevronsUpDown, Coins, Eye, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
 import { setBoardOption, useBoardOptions } from './boardOptions';
@@ -212,11 +212,11 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   const game = useGame((s) => s.game);
   const insets = useHudInsets();
   const narrow = useNarrow();
-  const { railCompact } = useBoardOptions();
+  const { railCompact, focus } = useBoardOptions();
   const [cardSeat, setCardSeat] = useState<number | null>(null);
   if (!game) return null;
   const next = projectedOrder(game);
-  const compact = narrow || railCompact;
+  const compact = narrow || railCompact || focus;
 
   /* wide: a vertical stack top-left. Narrow: a wrapping strip under the top
      bar, chips trimmed to portrait, name and the three numbers */
@@ -241,8 +241,20 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
           </AnimatePresence>
         </div>
       ))}
+      {/* the focus view: one small way back, the rest of the tools away */}
+      {focus && (
+        <button
+          type="button"
+          onClick={() => setBoardOption('focus', false)}
+          title={t('game.rail.focusExit')}
+          aria-label={t('game.rail.focusExit')}
+          className="flex h-6 w-6 items-center justify-center plaque rounded-md text-brass-400/80 opacity-80 transition-opacity hover:opacity-100"
+        >
+          <Eye className="h-3.5 w-3.5" />
+        </button>
+      )}
       {/* fold the rail to one line per seat, for more board */}
-      {!narrow && (
+      {!narrow && !focus && (
         <button
           type="button"
           onClick={() => setBoardOption('railCompact', !railCompact)}
@@ -254,7 +266,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
           {railCompact ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
         </button>
       )}
-      {tools && <div className="flex flex-wrap items-center gap-1.5">{tools}</div>}
+      {tools && !focus && <div className="flex flex-wrap items-center gap-1.5">{tools}</div>}
     </div>
   );
 }

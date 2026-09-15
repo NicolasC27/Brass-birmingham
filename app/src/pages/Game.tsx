@@ -248,6 +248,10 @@ export default function Game() {
         if (ledgerOpen && game) setLedgerRead(game.ledger.length);
         return;
       }
+      if (isKey(e, 'focus')) {
+        setBoardOption('focus', !getBoardOptions().focus);
+        return;
+      }
       if (!isHumanTurn) return;
       if (e.key === 'Enter') {
         const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });

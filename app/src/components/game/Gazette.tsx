@@ -18,7 +18,7 @@ const SHOWN_MS = 11_000;
 export default function Gazette() {
   const t = useT();
   const game = useGame((s) => s.game);
-  const { telegrams: enabled } = useBoardOptions();
+  const { telegrams: enabled, focus } = useBoardOptions();
   const insets = useHudInsets();
   const [issue, setIssue] = useState<{ id: string; round: number; era: GameState['era']; lines: Headline[] } | null>(null);
   const [seen, setSeen] = useState<string | null>(null);
@@ -46,7 +46,7 @@ export default function Gazette() {
     const id = window.setTimeout(() => setIssue(null), SHOWN_MS);
     return () => window.clearTimeout(id);
   }, [issue]);
-  if (!enabled) return null;
+  if (!enabled || focus) return null;
   const say = (h: Headline) => t(`game.gazette.${h.key}`, { ...h.vars, goods: h.vars.goods ? t(`game.log.industry.${h.vars.goods}`) : '' });
   return (
     <AnimatePresence>

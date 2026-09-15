@@ -40,7 +40,7 @@ export const mapUrls = (style: MapStyle, rail: RailPainting): { canal: string; r
 export const MM_W_FOR = { s: 320, m: 400, l: 480 } as const;
 export const MM_MIN_W = 160;
 export const MM_MAX_W = 640;
-export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number }): number => (o.minimapWidth ? Math.min(MM_MAX_W, Math.max(MM_MIN_W, o.minimapWidth)) : MM_W_FOR[o.minimapSize]);
+export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number; focus?: boolean }): number => (o.focus ? MM_MIN_W : o.minimapWidth ? Math.min(MM_MAX_W, Math.max(MM_MIN_W, o.minimapWidth)) : MM_W_FOR[o.minimapSize]);
 
 /** beginner assistance: the table's house rule, or at home the board setting */
 export function aidOn(assist: boolean | undefined, online: boolean): boolean {
@@ -85,6 +85,8 @@ export interface BoardOptions {
   sound: boolean;
   /** the telegrams wired across the table, and the machines' banter */
   telegrams: boolean;
+  /** the focus view: rail folded, tools away, minimap small, hand tucked, no Gazette */
+  focus: boolean;
   /** mat levels as the player's real cards with a pile, or compact boxes */
   matStyle: MatStyle;
   /** ×n count badge on the cards (the pile already shows it) */
@@ -116,6 +118,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   matWide: 'brassworks.matWide',
   sound: 'brassworks.sound',
   telegrams: 'brassworks.telegrams',
+  focus: 'brassworks.focus',
   matStyle: 'brassworks.matStyle',
   matCount: 'brassworks.matCount',
 };
@@ -156,6 +159,7 @@ let state: BoardOptions = {
   matWide: read('matWide', false),
   sound: read('sound', true),
   telegrams: read('telegrams', true),
+  focus: read('focus', false),
   matStyle: read('matStyle', 'cards'),
   matCount: read('matCount', false),
   settingsOpen: false,

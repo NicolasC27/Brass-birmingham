@@ -192,6 +192,7 @@ const fr: typeof engame = {
       matWide: 'Tapis large / compact',
       matStyle: 'Tuiles du tapis : cartes / compact / pastilles',
       settings: 'Réglages d’affichage',
+      focus: 'Vue épurée : le plateau et l’essentiel',
       cards: 'Choisir la carte 1–8',
       hand: 'Épingler / libérer la main',
       tracks: 'Zoomer une piste de score (double-clic : réinitialise)',
@@ -262,6 +263,7 @@ const fr: typeof engame = {
   },
   rail: {
     playersAria: 'Joueurs',
+    focusExit: 'Quitter la vue épurée',
     spotReleaseEsc: 'Projecteur activé — cliquer pour relâcher (Échap fonctionne aussi)',
     spotPlayer: 'Cliquer pour isoler ce joueur sur la carte',
     spotRelease: 'Projecteur activé — cliquer pour relâcher',
