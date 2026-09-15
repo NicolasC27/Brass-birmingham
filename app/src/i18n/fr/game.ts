@@ -581,6 +581,8 @@ const fr: typeof engame = {
     visualising: 'Fermer (Échap)',
     preparingHint: 'Carte, verbe, cible, puis « Préparer »',
     legend: 'En couleur : vos coups et les tuiles encore à retourner',
+    stampReady: 'Prêt',
+    stampVoid: 'Ne tient pas',
   },
   gazette: {
     title: 'La Gazette des Midlands',

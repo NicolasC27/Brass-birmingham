@@ -579,6 +579,8 @@ const game = {
     visualising: 'Close (Esc)',
     preparingHint: 'Card, verb, target, then “Prepare”',
     legend: 'In colour: your moves and the tiles still to flip',
+    stampReady: 'Ready',
+    stampVoid: 'Void',
   },
   gazette: {
     title: 'The Midlands Gazette',

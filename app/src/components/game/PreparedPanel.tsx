@@ -26,7 +26,7 @@ function MiniCard({ card }: { card: Card }) {
   const industry = card.kind === 'industry' ? card.industry! : null;
   const stripe = industry ? INDUSTRY_COLOR[industry] : card.town ? townColor(card.town) : '#C9A45C';
   return (
-    <span className="relative flex h-[38px] w-[28px] shrink-0 flex-col items-center justify-end overflow-hidden rounded-[3px] border border-[#2A241C]/60 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)] pb-0.5 shadow-[0_1px_2px_rgba(0,0,0,.4)]" title={cardLabel(card)}>
+    <span className="relative flex h-[42px] w-[30px] shrink-0 flex-col items-center justify-end overflow-hidden rounded-[3px] border border-[#2A241C]/70 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)] pb-0.5 shadow-[0_2px_3px_rgba(0,0,0,.45),inset_0_0_0_1px_rgba(138,107,51,.35)] -rotate-3" title={cardLabel(card)}>
       <span aria-hidden className="absolute bottom-[3px] left-[2px] top-[3px] w-[2px] rounded-full" style={{ backgroundColor: stripe }} />
       {industry ? <img src={INDUSTRY_ICON[industry]} alt="" className="mb-0.5 h-3.5 w-3.5" /> : <span className="mb-0.5 font-fell text-[12px] font-bold text-[#2A241C]">{cardLabel(card).slice(0, 1)}</span>}
       <span className="w-full truncate px-0.5 text-center font-fell text-[6px] uppercase leading-none text-[#2A241C]">{cardLabel(card)}</span>
@@ -47,8 +47,8 @@ function UnlessRow({ game, players, value, onChange, onClose }: { game: GameStat
     { kind: 'network', icon: Route },
   ];
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-sm border border-ink-900/25 bg-[#EFE4C6] px-2 py-1.5" role="group" aria-label={t('game.topbar.unlessTitle')}>
-      <span className="font-fell text-[11px] uppercase tracking-[0.1em] text-ink-900/70">{t('game.topbar.unlessLead')}</span>
+    <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-[2px] border border-ink-900/40 bg-[linear-gradient(180deg,#f7efd9,#ecdfbd)] px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]" role="group" aria-label={t('game.topbar.unlessTitle')}>
+      <span className="font-display text-[10px] font-black uppercase tracking-[0.16em] text-rust-500 brightness-75">{t('game.topbar.unlessLead')}</span>
       <span className="flex items-center gap-1">
         {players.map((idx) => (
           <button
@@ -92,7 +92,7 @@ function UnlessRow({ game, players, value, onChange, onClose }: { game: GameStat
             {t('game.topbar.unlessNone')}
           </button>
         )}
-        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="rounded-sm border border-[#8A6B33] bg-[#C9A45C] px-2 py-px font-sans text-[10.5px] font-bold text-[#2A241C] hover:brightness-110">
+        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="wax-seal font-sans text-[10px] font-bold uppercase tracking-wider hover:brightness-110">
           {t('game.topbar.unlessOk')}
         </button>
       </span>
@@ -143,31 +143,39 @@ export default function PreparedPanel() {
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       aria-label={t('game.prepared.title')}
-      className={cn('paper pointer-events-auto fixed z-[66] w-[400px] rounded-[3px] px-3 pb-2 pt-2 shadow-e3', previewQueue && 'ring-2 ring-brass-400')}
+      className={cn('dispatch pointer-events-auto fixed z-[66] w-[400px] px-4 pb-2.5 pt-2.5', previewQueue && 'ring-2 ring-brass-400 ring-offset-2 ring-offset-coal-950')}
       style={{ top: insets.top + 88, left }}
     >
-      <div className="flex items-baseline justify-between border-b border-ink-900/35 pb-0.5">
-        <p className="font-display text-[11px] font-black uppercase tracking-[0.14em] text-ink-900">{t('game.prepared.title')}</p>
+      <div className="relative border-b border-ink-900/50 pb-1 text-center">
+        <p className="font-display text-[12px] font-black uppercase tracking-[0.22em] text-ink-900">
+          <span aria-hidden className="mr-2 text-[8px] text-ink-900/50">◆</span>
+          {t('game.prepared.title')}
+          <span aria-hidden className="ml-2 text-[8px] text-ink-900/50">◆</span>
+        </p>
         <p className="font-fell text-[9.5px] italic text-ink-900/60">{t('game.prepared.note')}</p>
+        {rows.length > 0 && rows.every((r) => r.holds) && <span className="ink-stamp absolute -right-1 -top-1 font-sans text-[9px]">{t('game.prepared.stampReady')}</span>}
       </div>
       <ol className="mt-1.5 flex flex-col gap-1">
         {rows.map(({ q, i, cost, card, holds, why }) => {
           const Icon = VERB_ICON[q.action.kind] ?? Hammer;
           return (
-            <li key={i} className={cn('rounded-sm border px-1.5 py-1', holds ? 'border-ink-900/25 bg-ink-900/5' : 'border-rust-500/60 bg-rust-500/10')}>
+            <li key={i} className={cn('relative rounded-[2px] border-b border-dashed border-ink-900/30 px-1 py-1.5 last:border-b-0', !holds && 'bg-rust-500/10')}>
+              {!holds && <span className="ink-stamp absolute right-8 top-1 font-sans text-[8px]">{t('game.prepared.stampVoid')}</span>}
               <div className="flex items-center gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#8A6B33] bg-[#C9A45C] font-fell text-[11px] font-bold text-[#2A241C] shadow-[0_1px_2px_rgba(0,0,0,.4)]">{i + 1}</span>
-              <Icon className="h-3.5 w-3.5 shrink-0 text-ink-900/70" />
+              <span className="brass-roundel h-6 w-6 shrink-0 font-fell text-[12px] font-bold">{i + 1}</span>
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink-900/50 text-ink-900/75">
+                <Icon className="h-3.5 w-3.5" />
+              </span>
               <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                <span className="truncate font-fell text-[12.5px] text-ink-900">{describeAction(q.action)}</span>
+                <span className="truncate font-fell text-[13px] text-ink-900">{describeAction(q.action)}</span>
                 <span className="flex flex-wrap items-center gap-1.5 font-sans text-[10px] text-ink-900/65">
-                  {cost !== null && <span className="font-mono">{t('game.prepared.cost', { n: cost })}</span>}
+                  {cost !== null && <span className="rounded-sm border border-ink-900/30 px-1 font-mono text-[9.5px]">{t('game.prepared.cost', { n: cost })}</span>}
                   {!holds && <span className="text-rust-500 brightness-75">{t('game.prepared.wontHold', { why: why ?? '' })}</span>}
                   <button
                     type="button"
                     onClick={() => setEditing((o) => (o === i ? null : i))}
                     aria-expanded={editing === i}
-                    className={cn('rounded-sm border px-1.5 py-px font-sans text-[10px]', q.unless ? 'border-rust-500 bg-rust-500/15 font-semibold text-rust-500 brightness-75' : 'border-ink-900/35 text-ink-900/70 hover:border-ink-900')}
+                    className={cn(q.unless ? 'wax-seal font-fell text-[10px] tracking-wide' : 'rounded-sm border border-dashed border-ink-900/40 px-1.5 py-px font-sans text-[10px] text-ink-900/70 hover:border-ink-900 hover:text-ink-900')}
                   >
                     {q.unless ? describeUnless(q.unless, game) : t('game.topbar.unlessAdd')}
                   </button>
@@ -189,13 +197,13 @@ export default function PreparedPanel() {
         </span>
         <span className="flex items-center gap-1.5">
           {queued.length > 0 && (
-            <button type="button" onClick={() => setPreviewQueue(!previewQueue)} aria-pressed={previewQueue} className={cn('btn-ledger flex !min-h-[28px] items-center gap-1.5 !px-2.5 !py-0.5 text-[11px]', previewQueue && '!border-brass-400 !text-brass-400')}>
+            <button type="button" onClick={() => setPreviewQueue(!previewQueue)} aria-pressed={previewQueue} className={cn('flex h-7 items-center gap-1.5 rounded-sm border border-[#8A6B33] bg-[linear-gradient(180deg,#e8c47a,#b58d3c)] px-2.5 font-sans text-[10.5px] font-bold uppercase tracking-wider text-[#2A241C] shadow-[inset_0_1px_0_rgba(255,244,214,.6),0_1px_2px_rgba(0,0,0,.45)] hover:brightness-110', previewQueue && 'ring-2 ring-rust-500/70')}>
               {previewQueue ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               {t(previewQueue ? 'game.prepared.visualising' : 'game.prepared.visualise')}
             </button>
           )}
           {!myTurn && !preparing && queued.length < 2 && game.phase === 'action' && (
-            <button type="button" onClick={() => setPreparing(true)} className="btn-strike !min-h-[28px] !px-3 !py-0.5 text-[11px]">
+            <button type="button" onClick={() => setPreparing(true)} className="flex h-7 items-center gap-1.5 rounded-sm border border-ink-900/60 bg-ink-900 px-2.5 font-sans text-[10.5px] font-bold uppercase tracking-wider text-cream-100 shadow-[0_1px_2px_rgba(0,0,0,.45)] hover:bg-coal-800">
               {t('game.hand.prepare')}
             </button>
           )}
