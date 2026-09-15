@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Eye, EyeOff, Hammer, Landmark, Route, Scale, SkipForward, X } from 'lucide-react';
 import { INDUSTRY_COLOR } from './townChrome';
 import { INDUSTRY_ICON, TOWNS } from '@/game/data';
@@ -9,7 +8,8 @@ import type { GameAction } from '@/game/actions';
 import { cardLabel, describeAction, describeUnless, projectQueued, useGame } from '@/game/store';
 import type { Unless } from '@/game/store';
 import { townColor } from '@/game/townColors';
-import type { Card } from '@/game/types';
+import type { Card, GameState } from '@/game/types';
+import { PortraitMedallion } from './PlayerRail';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useHudInsets } from './useHudInsets';
@@ -26,66 +26,77 @@ function MiniCard({ card }: { card: Card }) {
   const industry = card.kind === 'industry' ? card.industry! : null;
   const stripe = industry ? INDUSTRY_COLOR[industry] : card.town ? townColor(card.town) : '#C9A45C';
   return (
-    <span className="relative flex h-[46px] w-[34px] shrink-0 flex-col items-center justify-end overflow-hidden rounded-[3px] border border-[#2A241C]/60 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)] pb-0.5 shadow-[0_1px_2px_rgba(0,0,0,.4)]" title={cardLabel(card)}>
+    <span className="relative flex h-[38px] w-[28px] shrink-0 flex-col items-center justify-end overflow-hidden rounded-[3px] border border-[#2A241C]/60 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)] pb-0.5 shadow-[0_1px_2px_rgba(0,0,0,.4)]" title={cardLabel(card)}>
       <span aria-hidden className="absolute bottom-[3px] left-[2px] top-[3px] w-[2px] rounded-full" style={{ backgroundColor: stripe }} />
-      {industry ? <img src={INDUSTRY_ICON[industry]} alt="" className="mb-1 h-4 w-4" /> : <span className="mb-1 font-fell text-[13px] font-bold text-[#2A241C]">{cardLabel(card).slice(0, 1)}</span>}
-      <span className="w-full truncate px-1 text-center font-fell text-[6.5px] uppercase leading-none text-[#2A241C]">{cardLabel(card)}</span>
+      {industry ? <img src={INDUSTRY_ICON[industry]} alt="" className="mb-0.5 h-3.5 w-3.5" /> : <span className="mb-0.5 font-fell text-[12px] font-bold text-[#2A241C]">{cardLabel(card).slice(0, 1)}</span>}
+      <span className="w-full truncate px-0.5 text-center font-fell text-[6px] uppercase leading-none text-[#2A241C]">{cardLabel(card)}</span>
     </span>
   );
 }
 
-/** the small form behind "unless…": that player, that deed, there or anywhere */
-function UnlessEditor({ at, players, value, onChange, onClose }: { at: { x: number; y: number }; players: { idx: number; name: string }[]; value: Unless | null; onChange: (u: Unless | null) => void; onClose: () => void }) {
+/** the condition, set in place under the move: the player by portrait,
+ *  the deed by icon, the place by name or anywhere */
+function UnlessRow({ game, players, value, onChange, onClose }: { game: GameState; players: number[]; value: Unless | null; onChange: (u: Unless | null) => void; onClose: () => void }) {
   const t = useT();
-  const [player, setPlayer] = useState<number>(value?.player ?? players[0]?.idx ?? 0);
+  const [player, setPlayer] = useState<number>(value?.player ?? players[0] ?? 0);
   const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
   const [town, setTown] = useState<string>(value?.town ?? '');
-  const sel = 'rounded-sm border border-brass-700/60 bg-coal-950 px-1 py-0.5 font-sans text-[11px] text-cream-100';
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey, true);
-    return () => window.removeEventListener('keydown', onKey, true);
-  }, [onClose]);
-  return createPortal(
-    <div role="dialog" aria-label={t('game.topbar.unlessTitle')} className="plaque fixed z-[90] flex w-[300px] flex-col gap-1.5 rounded-md p-2 text-left shadow-e4" style={{ left: Math.min(at.x, window.innerWidth - 316), top: at.y }} onClick={(e) => e.stopPropagation()}>
-      <p className="engraved-brass font-fell text-[11px] uppercase tracking-[0.12em]">{t('game.topbar.unlessTitle')}</p>
-      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
-        {t('game.topbar.unlessWho')}
-        <select value={player} onChange={(e) => setPlayer(Number(e.target.value))} className={sel}>
-          {players.map((p) => (
-            <option key={p.idx} value={p.idx}>{p.name}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
-        {t('game.topbar.unlessDoes')}
-        <select value={kind} onChange={(e) => setKind(e.target.value as Unless['kind'])} className={sel}>
-          {(['build', 'sell', 'network'] as const).map((k) => (
-            <option key={k} value={k}>{t(`game.topbar.unlessKind.${k}`)}</option>
-          ))}
-        </select>
-      </label>
-      <label className="flex items-center gap-1.5 font-sans text-[11px] text-cream-100/70">
-        {t('game.topbar.unlessWhere')}
-        <select value={town} onChange={(e) => setTown(e.target.value)} className={sel}>
-          <option value="">{t('game.topbar.unlessAnywhere')}</option>
-          {TOWNS.filter((x) => !x.farm).map((x) => (
-            <option key={x.id} value={x.id}>{x.name}</option>
-          ))}
-        </select>
-      </label>
-      <div className="mt-1 flex justify-end gap-1.5">
+  const KINDS: { kind: Unless['kind']; icon: typeof Hammer }[] = [
+    { kind: 'build', icon: Hammer },
+    { kind: 'sell', icon: Scale },
+    { kind: 'network', icon: Route },
+  ];
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-sm border border-ink-900/25 bg-[#EFE4C6] px-2 py-1.5" role="group" aria-label={t('game.topbar.unlessTitle')}>
+      <span className="font-fell text-[11px] uppercase tracking-[0.1em] text-ink-900/70">{t('game.topbar.unlessLead')}</span>
+      <span className="flex items-center gap-1">
+        {players.map((idx) => (
+          <button
+            key={idx}
+            type="button"
+            onClick={() => setPlayer(idx)}
+            aria-pressed={player === idx}
+            title={game.players[idx].name}
+            aria-label={game.players[idx].name}
+            className={cn('rounded-full p-[2px] transition-transform', player === idx ? 'scale-110 ring-2 ring-rust-500' : 'opacity-60 hover:opacity-100')}
+          >
+            <PortraitMedallion p={game.players[idx]} index={idx} active={false} size={22} />
+          </button>
+        ))}
+      </span>
+      <span className="flex items-center gap-1">
+        {KINDS.map(({ kind: k, icon: Icon }) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setKind(k)}
+            aria-pressed={kind === k}
+            title={t(`game.topbar.unlessKind.${k}`)}
+            aria-label={t(`game.topbar.unlessKind.${k}`)}
+            className={cn('flex h-6 items-center gap-1 rounded-sm border px-1.5 font-sans text-[10.5px]', kind === k ? 'border-rust-500 bg-rust-500/15 text-ink-900' : 'border-ink-900/30 text-ink-900/60 hover:text-ink-900')}
+          >
+            <Icon className="h-3 w-3" />
+            {t(`game.topbar.unlessKind.${k}`)}
+          </button>
+        ))}
+      </span>
+      <select value={town} onChange={(e) => setTown(e.target.value)} aria-label={t('game.topbar.unlessWhere')} className="h-6 rounded-sm border border-ink-900/30 bg-[#F7EFD9] px-1 font-sans text-[10.5px] text-ink-900">
+        <option value="">{t('game.topbar.unlessAnywhere')}</option>
+        {TOWNS.filter((x) => !x.farm).map((x) => (
+          <option key={x.id} value={x.id}>{x.name}</option>
+        ))}
+      </select>
+      <span className="ml-auto flex items-center gap-1">
         {value && (
-          <button type="button" onClick={() => { onChange(null); onClose(); }} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
+          <button type="button" onClick={() => { onChange(null); onClose(); }} className="rounded-sm border border-ink-900/30 px-1.5 py-px font-sans text-[10.5px] text-ink-900/70 hover:text-ink-900">
             {t('game.topbar.unlessNone')}
           </button>
         )}
-        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="btn-strike !min-h-[26px] !px-3 !py-0.5 text-[11px]">
+        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined }); onClose(); }} className="rounded-sm border border-[#8A6B33] bg-[#C9A45C] px-2 py-px font-sans text-[10.5px] font-bold text-[#2A241C] hover:brightness-110">
           {t('game.topbar.unlessOk')}
         </button>
-      </div>
-    </div>,
-    document.body,
+      </span>
+    </div>
   );
 }
 
@@ -102,7 +113,15 @@ export default function PreparedPanel() {
   const setUnless = useGame((s) => s.setUnless);
   const myTurn = useGame((s) => s.myTurn());
   const insets = useHudInsets();
-  const [editing, setEditing] = useState<{ index: number; x: number; y: number } | null>(null);
+  const [editing, setEditing] = useState<number | null>(null);
+  /* the sheet stands where the banner does: right of the rail */
+  const [left, setLeft] = useState(360);
+  useEffect(() => {
+    const place = () => setLeft((document.querySelector('[data-player-rail]')?.getBoundingClientRect().right ?? 340) + 14);
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, []);
   const me = game ? (seat ?? game.players.findIndex((p) => !p.isBot)) : -1;
   /* each move costed on the table it will find: the one the previous moves leave */
   const rows = useMemo(() => {
@@ -118,38 +137,36 @@ export default function PreparedPanel() {
     });
   }, [game, me, queued]);
   if (!game || me < 0 || (!queued.length && !preparing)) return null;
-  const others = game.players.map((x, idx) => ({ idx, name: x.name })).filter((x) => x.idx !== me);
+  const others = game.players.map((_, idx) => idx).filter((idx) => idx !== me);
   return (
     <motion.section
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       aria-label={t('game.prepared.title')}
-      className={cn('paper pointer-events-auto fixed left-1/2 z-[66] w-[min(560px,80vw)] -translate-x-1/2 rounded-[3px] px-4 pb-3 pt-2.5 shadow-e3', previewQueue && 'ring-2 ring-brass-400')}
-      style={{ top: insets.top + 92 }}
+      className={cn('paper pointer-events-auto fixed z-[66] w-[400px] rounded-[3px] px-3 pb-2 pt-2 shadow-e3', previewQueue && 'ring-2 ring-brass-400')}
+      style={{ top: insets.top + 88, left }}
     >
-      <div className="flex items-baseline justify-between border-b border-ink-900/35 pb-1">
-        <p className="font-display text-[13px] font-black uppercase tracking-[0.14em] text-ink-900">{t('game.prepared.title')}</p>
-        <p className="font-fell text-[10.5px] italic text-ink-900/60">{t('game.prepared.note')}</p>
+      <div className="flex items-baseline justify-between border-b border-ink-900/35 pb-0.5">
+        <p className="font-display text-[11px] font-black uppercase tracking-[0.14em] text-ink-900">{t('game.prepared.title')}</p>
+        <p className="font-fell text-[9.5px] italic text-ink-900/60">{t('game.prepared.note')}</p>
       </div>
-      <ol className="mt-2 flex flex-col gap-1.5">
+      <ol className="mt-1.5 flex flex-col gap-1">
         {rows.map(({ q, i, cost, card, holds, why }) => {
           const Icon = VERB_ICON[q.action.kind] ?? Hammer;
           return (
-            <li key={i} className={cn('flex items-center gap-2.5 rounded-sm border px-2 py-1.5', holds ? 'border-ink-900/25 bg-ink-900/5' : 'border-rust-500/60 bg-rust-500/10')}>
-              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-[#8A6B33] bg-[#C9A45C] font-fell text-[13px] font-bold text-[#2A241C] shadow-[0_1px_2px_rgba(0,0,0,.4)]">{i + 1}</span>
-              <Icon className="h-4 w-4 shrink-0 text-ink-900/70" />
+            <li key={i} className={cn('rounded-sm border px-1.5 py-1', holds ? 'border-ink-900/25 bg-ink-900/5' : 'border-rust-500/60 bg-rust-500/10')}>
+              <div className="flex items-center gap-2">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#8A6B33] bg-[#C9A45C] font-fell text-[11px] font-bold text-[#2A241C] shadow-[0_1px_2px_rgba(0,0,0,.4)]">{i + 1}</span>
+              <Icon className="h-3.5 w-3.5 shrink-0 text-ink-900/70" />
               <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                <span className="truncate font-fell text-[14px] text-ink-900">{describeAction(q.action)}</span>
-                <span className="flex flex-wrap items-center gap-1.5 font-sans text-[10.5px] text-ink-900/65">
+                <span className="truncate font-fell text-[12.5px] text-ink-900">{describeAction(q.action)}</span>
+                <span className="flex flex-wrap items-center gap-1.5 font-sans text-[10px] text-ink-900/65">
                   {cost !== null && <span className="font-mono">{t('game.prepared.cost', { n: cost })}</span>}
                   {!holds && <span className="text-rust-500 brightness-75">{t('game.prepared.wontHold', { why: why ?? '' })}</span>}
                   <button
                     type="button"
-                    onClick={(e) => {
-                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                      setEditing((o) => (o?.index === i ? null : { index: i, x: r.left, y: r.bottom + 6 }));
-                    }}
-                    aria-expanded={editing?.index === i}
+                    onClick={() => setEditing((o) => (o === i ? null : i))}
+                    aria-expanded={editing === i}
                     className={cn('rounded-sm border px-1.5 py-px font-sans text-[10px]', q.unless ? 'border-rust-500 bg-rust-500/15 font-semibold text-rust-500 brightness-75' : 'border-ink-900/35 text-ink-900/70 hover:border-ink-900')}
                   >
                     {q.unless ? describeUnless(q.unless, game) : t('game.topbar.unlessAdd')}
@@ -160,13 +177,14 @@ export default function PreparedPanel() {
               <button type="button" onClick={() => dropQueued(i)} aria-label={t('game.topbar.queueDrop')} title={t('game.topbar.queueDrop')} className="rounded-sm p-0.5 text-ink-900/45 hover:bg-ink-900/10 hover:text-rust-500">
                 <X className="h-3.5 w-3.5" />
               </button>
-              {editing?.index === i && <UnlessEditor at={editing} players={others} value={q.unless ?? null} onChange={(u) => setUnless(i, u)} onClose={() => setEditing(null)} />}
+              </div>
+              {editing === i && <UnlessRow game={game} players={others} value={q.unless ?? null} onChange={(u) => setUnless(i, u)} onClose={() => setEditing(null)} />}
             </li>
           );
         })}
       </ol>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <span className="font-sans text-[10.5px] text-ink-900/60">
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <span className="font-sans text-[10px] text-ink-900/60">
           {preparing ? t('game.prepared.preparingHint') : previewQueue ? t('game.prepared.legend') : ''}
         </span>
         <span className="flex items-center gap-1.5">
@@ -183,7 +201,6 @@ export default function PreparedPanel() {
           )}
         </span>
       </div>
-      <AnimatePresence>{null}</AnimatePresence>
     </motion.section>
   );
 }
