@@ -382,7 +382,7 @@ export default function HandDock() {
         initial={false}
         animate={{ height: expanded ? 180 : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-        className="pointer-events-auto relative w-full max-w-[1360px] plaque overflow-hidden rounded-lg"
+        className="pointer-events-auto relative w-auto max-w-full plaque overflow-hidden rounded-lg"
         onPointerEnter={onEnter}
         onPointerLeave={onLeave}
       >
@@ -658,7 +658,7 @@ export default function HandDock() {
             {shown && (
               <div className="mx-auto flex items-end pl-1 pr-1">
               {shown.hand.map((card, i) => (
-                <div key={card.id} className="-ml-4 first:ml-0" style={{ scrollSnapAlign: 'center' }}>
+                <div key={card.id} className={cn('first:ml-0', shown.hand.length >= 7 ? '-ml-9' : shown.hand.length === 6 ? '-ml-6' : '-ml-4')} style={{ scrollSnapAlign: 'center' }}>
                   <GameCard
                     card={card}
                     index={i}
@@ -687,7 +687,7 @@ export default function HandDock() {
           </div>
 
           {/* right status / hints */}
-          <div className="hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3 xl:flex">
+          <div className={cn('hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3', (shown?.hand.length ?? 0) < 7 && 'xl:flex')}>
             {game.round === 1 && game.era === 'canal' ? (
               <p className="paper px-2 py-1.5 font-fell text-[11px] italic leading-snug text-ink-900/85">
                 {t('game.hand.firstRound')}
