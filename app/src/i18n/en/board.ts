@@ -92,6 +92,13 @@ const board = {
     free: 'free',
   },
   inspector: {
+    links: '{n} link(s)',
+    linksTip: 'The links already laid from this town, by owner',
+    level: 'Level {level}',
+    paid: 'Paid · {vp} VP',
+    unsold: 'to sell',
+    worth: '{vp} VP · income +{income}',
+    stock: { coal: '{n} coal', iron: '{n} iron', beer: '{n} beer' },
     ariaLabel: '{name} inspector',
     close: 'Close inspector',
     zoomHere: 'Zoom here',

@@ -95,6 +95,13 @@ const fr: typeof enboard = {
   },
   inspector: {
     ariaLabel: 'Inspecteur de {name}',
+    links: '{n} liaison(s)',
+    linksTip: 'Les liaisons déjà posées depuis cette ville, par propriétaire',
+    level: 'Niveau {level}',
+    paid: 'A payé · {vp} PV',
+    unsold: 'à vendre',
+    worth: '{vp} PV · revenu +{income}',
+    stock: { coal: '{n} charbon', iron: '{n} fer', beer: '{n} bière' },
     close: "Fermer l'inspecteur",
     zoomHere: 'Zoomer ici',
   },

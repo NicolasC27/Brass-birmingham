@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { X, ZoomIn } from 'lucide-react';
-import { INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS } from '@/game/data';
+import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS } from '@/game/data';
 import { tileKey } from '@/game/engine';
 import type { GameState, Town } from '@/game/types';
 import { useT } from '@/i18n';
@@ -27,39 +27,73 @@ export function ShapeChip({ color, size = 10 }: { color: string; size?: number }
   );
 }
 
-/** rich town summary — slot industries, what's built, who owns what */
+const ROMAN = ['', 'I', 'II', 'III', 'IV'];
+
+/** the town at a glance: one row per slot — the level as a stamped numeral,
+ *  the works, its owner in their colour, what it still holds and whether
+ *  it has paid; a free slot only whispers what it takes */
 export function TownCardContent({ town, game }: { town: Town; game: GameState }) {
   const t = useT();
+  const linksHere = Object.entries(game.links).filter(([id]) => id.split('--').includes(town.id));
   return (
     <div>
-      <div className="font-fell text-[15px] tracking-wide text-brass-400">{town.name}</div>
+      <div className="flex items-baseline justify-between gap-2 pr-5">
+        <span className="font-fell text-[16px] tracking-wide text-brass-400">{town.name}</span>
+        {linksHere.length > 0 && (
+          <span className="flex items-center gap-1 font-mono text-[10px] text-cream-100/55" title={t('board.inspector.linksTip')}>
+            {linksHere.map(([id, l]) => (
+              <ShapeChip key={id} color={game.players[l.owner].color} size={8} />
+            ))}
+            <span>{t('board.inspector.links', { n: linksHere.length })}</span>
+          </span>
+        )}
+      </div>
       <div className="my-1.5 h-px bg-brass-700/50" />
-      <ul className="space-y-1.5">
+      <ul className="space-y-1">
         {town.slots.map((sp, si) => {
           const tile = game.tiles[tileKey(town.id, si)];
+          if (!tile) {
+            return (
+              <li key={si} className="flex items-center gap-2 rounded-sm px-1 py-1 font-sans text-[11.5px] text-cream-100/45">
+                <span className="w-[26px] text-center font-fell text-[13px] text-cream-100/25">·</span>
+                <span className="flex gap-0.5">
+                  {sp.allows.map((ind) => (
+                    <img key={ind} src={INDUSTRY_ICON[ind]} alt="" className="h-4 w-4 rounded-sm bg-cream-100/50 p-px opacity-70" />
+                  ))}
+                </span>
+                <span className="truncate">{sp.allows.map((a) => INDUSTRY_LABEL[a]).join(t('board.slot.or'))}</span>
+                <span className="ml-auto pl-2 font-mono text-[9px] uppercase tracking-wider text-brass-700 brightness-150">{t('board.slot.free')}</span>
+              </li>
+            );
+          }
+          const owner = game.players[tile.owner];
+          const hex = PLAYER_COLORS[owner.color]?.hex ?? '#C9A45C';
+          const lv = INDUSTRIES[tile.industry][tile.level - 1];
+          const stock = tile.industry === 'brewery' ? 'beer' : tile.industry === 'iron' ? 'iron' : tile.industry === 'coal' ? 'coal' : null;
           return (
-            <li key={si} className="flex items-center gap-1.5 font-sans text-[12px] leading-snug">
-              {tile ? (
-                <>
-                  <ShapeChip color={game.players[tile.owner].color} />
-                  <img src={INDUSTRY_ICON[tile.industry]} alt="" className="h-4 w-4 rounded-sm bg-cream-100/90 p-px" />
-                  <span className="text-cream-100/90">
-                    {INDUSTRY_LABEL[tile.industry]} L{tile.level}
-                    {tile.flipped && <span className="ml-1 text-[10px] font-semibold uppercase tracking-wider text-copper-500 brightness-150">{t('board.tile.flipped')}</span>}
-                  </span>
-                  <span className="ml-auto pl-2 text-cream-100/60">{game.players[tile.owner].name}</span>
-                </>
-              ) : (
-                <>
-                  <span className="flex gap-0.5">
-                    {sp.allows.map((ind) => (
-                      <img key={ind} src={INDUSTRY_ICON[ind]} alt="" className="h-4 w-4 rounded-sm bg-cream-100/75 p-px opacity-80" />
-                    ))}
-                  </span>
-                  <span className="text-cream-100/60">{sp.allows.map((a) => INDUSTRY_LABEL[a]).join(t('board.slot.or'))}</span>
-                  <span className="ml-auto pl-2 text-[10px] uppercase tracking-wider text-brass-700 brightness-150">{t('board.slot.free')}</span>
-                </>
-              )}
+            <li key={si} className="flex items-center gap-2 rounded-sm border px-1 py-1" style={{ borderColor: `${hex}66`, background: `${hex}14` }}>
+              {/* the level, stamped as on the tile */}
+              <span className="flex h-[22px] w-[26px] items-center justify-center rounded-[3px] bg-ink-900/85 font-fell text-[13px] font-bold text-cream-100" aria-label={t('board.inspector.level', { level: tile.level })}>
+                {ROMAN[tile.level] ?? tile.level}
+              </span>
+              <img src={INDUSTRY_ICON[tile.industry]} alt="" className="h-5 w-5 rounded-sm bg-cream-100/90 p-px" />
+              <span className="flex min-w-0 flex-col leading-tight">
+                <span className="truncate font-sans text-[12px] text-cream-100/90">{INDUSTRY_LABEL[tile.industry]}</span>
+                <span className="flex items-center gap-1 font-fell text-[12px]" style={{ color: hex }}>
+                  <ShapeChip color={owner.color} size={9} />
+                  <span className="truncate">{owner.name}</span>
+                </span>
+              </span>
+              <span className="ml-auto flex shrink-0 flex-col items-end gap-0.5 pl-2">
+                {tile.flipped ? (
+                  <span className="rounded-sm border border-brass-500/70 px-1 font-mono text-[9px] uppercase tracking-wider text-brass-400">{t('board.inspector.paid', { vp: lv.vp })}</span>
+                ) : stock && tile.cubes > 0 ? (
+                  <span className="font-mono text-[10px] text-cream-100/75">{t(`board.inspector.stock.${stock}`, { n: tile.cubes })}</span>
+                ) : (
+                  <span className="font-mono text-[10px] text-cream-100/45">{t('board.inspector.unsold')}</span>
+                )}
+                <span className="font-mono text-[9px] text-cream-100/40">{t('board.inspector.worth', { vp: lv.vp, income: lv.incomeDelta })}</span>
+              </span>
             </li>
           );
         })}
