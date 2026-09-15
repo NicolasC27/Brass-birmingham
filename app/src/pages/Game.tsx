@@ -31,7 +31,7 @@ import GameOverModal from '@/components/game/ScoringModal';
 import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
-import { buildFinalPayload, confirmSummary, developPlans, useGame } from '@/game/store';
+import { buildFinalPayload, confirmSummary, developPlans, projectQueued, useGame } from '@/game/store';
 import { FINAL_KEY } from '@/game/types';
 import type { Resource } from '@/game/types';
 import { useT } from '@/i18n';
@@ -59,7 +59,11 @@ export default function Game() {
   const line = useGame((s) => s.line);
   const myTurn = useGame((s) => s.myTurn());
   const planActor = useGame((s) => s.planActor());
-  const queuedCount = useGame((s) => s.queued.length);
+  const queued = useGame((s) => s.queued);
+  const preparing = useGame((s) => s.preparing);
+  const queuedCount = queued.length;
+  /* the table a plan is made on: with moves already prepared, the one they leave */
+  const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const mySeat = useGame((s) => s.mySeat());
   const init = useGame((s) => s.init);
   const reset = useGame((s) => s.reset);
@@ -281,16 +285,16 @@ export default function Game() {
 
   /* the plan is made for the acting human, or for me while preparing a move out of turn */
   const targets = useMemo(
-    () => (game && planActor >= 0 && verb === 'build' && selectedCard ? buildTargets(game, planActor, selectedCard) : []),
-    [game, planActor, verb, selectedCard],
+    () => (planGame && planActor >= 0 && verb === 'build' && selectedCard ? buildTargets(planGame, planActor, selectedCard) : []),
+    [planGame, planActor, verb, selectedCard],
   );
   const linkTargetsList = useMemo(
-    () => (game && planActor >= 0 && verb === 'network' ? linkTargets(game, planActor) : []),
-    [game, planActor, verb],
+    () => (planGame && planActor >= 0 && verb === 'network' ? linkTargets(planGame, planActor) : []),
+    [planGame, planActor, verb],
   );
   const sellTargetsList = useMemo(
-    () => (game && planActor >= 0 && verb === 'sell' ? sellTargets(game, planActor) : []),
-    [game, planActor, verb],
+    () => (planGame && planActor >= 0 && verb === 'sell' ? sellTargets(planGame, planActor) : []),
+    [planGame, planActor, verb],
   );
   /* my turn has come: a prepared move plays after a beat, if the engine still takes it */
   useEffect(() => {
@@ -300,13 +304,13 @@ export default function Game() {
   }, [myTurn, queuedCount, game?.actionsLeft]);
 
   const ghost: PlanGhost | null = useMemo(() => {
-    if (!game) return null;
+    if (!planGame) return null;
     if (verb === 'build') {
       /* a works that would sell to the market the moment it is built sends
          its cubes the other way: the ghost carries that too */
       const withSale = (t: BuildTarget): PlanGhost => {
         const g = ghostFromPlan(slotXY(t.town, t.slot), t.coalPlan, t.ironPlan);
-        const sale = marketSaleOnBuild(game, t.town, t.industry, t.level);
+        const sale = marketSaleOnBuild(planGame, t.town, t.industry, t.level);
         return sale.sold ? { ...g, sale: { resource: t.industry, amount: sale.sold, gain: sale.earned } } : g;
       };
       if (buildPick?.valid) return withSale(buildPick);
@@ -324,7 +328,7 @@ export default function Game() {
     if (verb === 'develop' && developPick.length) {
       /* iron ships from any works on the board, or the exchange: mark where
          this development would take it from */
-      const plans = developPlans(game, developIron);
+      const plans = developPlans(planGame, developIron);
       if (plans.length) return { ...ghostFromPlan([0, 0], ...plans), noTarget: true };
     }
     if (verb === 'sell') {
@@ -342,7 +346,7 @@ export default function Game() {
       }
     }
     return null;
-  }, [game, verb, buildPick, linkPick, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [planGame, verb, buildPick, linkPick, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};

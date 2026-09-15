@@ -100,6 +100,9 @@ interface GameStore {
   /** the seat a plan is made for right now: the current human, or mine
    *  while preparing; -1 when nothing may be planned */
   planActor: () => number;
+  /** the table a plan is made on: the real one, or, while preparing with
+   *  moves already queued, the table as it will be once they have played */
+  planGame: () => GameState | null;
   /* ---- pins: towns the reader watches, each with a note of their own ---- */
   pins: Record<string, string>;
   /** pin a town (with an empty note) or drop the pin */
@@ -566,6 +569,13 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ queued: rest });
     st.dispatch(next);
   },
+  planGame: () => {
+    const st = get();
+    const g = st.game;
+    if (!g || !st.preparing || !st.queued.length) return g;
+    const me = st.planActor();
+    return me < 0 ? g : projectQueued(g, me, st.queued);
+  },
   planActor: () => {
     const st = get();
     const g = st.game;
@@ -847,7 +857,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   currentTargets: () => {
     const st = get();
-    const g = st.game;
+    const g = st.planGame();
     const actor = st.planActor();
     if (!g || actor < 0) return [];
     const card = g.players[actor].hand.find((c) => c.id === st.selectedCardId);
@@ -857,7 +867,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   currentLinks: () => {
     const st = get();
-    const g = st.game;
+    const g = st.planGame();
     const actor = st.planActor();
     if (!g || actor < 0 || st.verb !== 'network') return [];
     const list = linkTargets(g, actor);
@@ -877,7 +887,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   currentSells: () => {
     const st = get();
-    const g = st.game;
+    const g = st.planGame();
     const actor = st.planActor();
     if (!g || actor < 0 || st.verb !== 'sell') return [];
     return sellTargets(g, actor);
@@ -885,7 +895,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   currentDevelops: () => {
     const st = get();
-    const g = st.game;
+    const g = st.planGame();
     const actor = st.planActor();
     if (!g || actor < 0 || st.verb !== 'develop') return [];
     return developOptions(g, actor);
@@ -959,7 +969,7 @@ export function confirmSummary(st: {
       if (!t) return null;
       const lv = INDUSTRIES[t.industry][t.level - 1];
       const bits = [tr('game.confirm.build', { industry: tr(`game.log.industry.${t.industry}`), level: t.level, town: TOWN_BY_ID[t.town].name, price: lv.cost })];
-      const g0 = useGame.getState().game;
+      const g0 = useGame.getState().planGame();
       const fromTiles = (plan: SupplyPlan, key: 'coalFrom' | 'ironFrom') => {
         for (const src of plan.sources) {
           if (src.kind !== 'tile' || !g0) continue;
@@ -974,7 +984,7 @@ export function confirmSummary(st: {
       const marketIron = t.ironPlan.sources.filter((x) => x.kind === 'market');
       if (marketIron.length) bits.push(tr('game.confirm.marketIron', { n: marketIron.length, cost: t.ironPlan.totalCost }));
       /* a mine or works that reaches a merchant sells its spare cubes at once: say so */
-      const g = useGame.getState().game;
+      const g = useGame.getState().planGame();
       const sale = g ? marketSaleOnBuild(g, t.town, t.industry, t.level) : { sold: 0, earned: 0 };
       if (sale.sold) bits.push(tr('game.confirm.sale', { n: sale.sold, res: tr(`game.log.res.${t.industry}`), gain: sale.earned }));
       return bits.join(' · ');
@@ -991,7 +1001,7 @@ export function confirmSummary(st: {
     }
     case 'develop': {
       if (!st.developPick.length) return null;
-      const g1 = useGame.getState().game;
+      const g1 = useGame.getState().planGame();
       /* each pick names its tile — the second of an industry is the one beneath — and its iron */
       const depth: Partial<Record<IndustryType, number>> = {};
       const plans = g1 ? developPlans(g1, st.developIron) : [];
@@ -1130,6 +1140,21 @@ function listen(code: string, wire: Wire): void {
 export function leaveOnlineTable(): void {
   deafen?.();
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
+}
+
+/* --------------------- the table once my moves have played --------------------- */
+
+/** `g` as it will stand after `queued` has played for `me`: my turn is
+ *  pretended, the moves applied in order, the first refused one and those
+ *  after it left out. The projection is what a further move is planned on. */
+export function projectQueued(g: GameState, me: number, queued: GameAction[]): GameState {
+  let sim: GameState = { ...structuredClone(g), current: me, actionsLeft: Math.max(queued.length, 1), phase: 'action' };
+  for (const a of queued) {
+    const r = applyAction(sim, me, a);
+    if (!r.state) break;
+    sim = { ...r.state, current: me, actionsLeft: Math.max(r.state.actionsLeft, 1), phase: 'action' };
+  }
+  return sim;
 }
 
 /* ------------------------ a move in a few words ------------------------ */

@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, SkipForward, X, Undo2 } from 'lucide-react';
 import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
 import { townColor } from '@/game/townColors';
-import { cardLabel, confirmSummary, developPlans, useGame, verbsForCard } from '@/game/store';
+import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
 import { buildTargets, ironSources } from '@/game/engine';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
@@ -360,7 +360,10 @@ export default function HandDock() {
      is shown — the pass interstitial guards privacy. */
   const humans = game.players.filter((x) => !x.isBot);
   const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
-  const verbs = verbsForCard({ game, selectedCardId, actor: actor >= 0 ? actor : undefined });
+  /* with moves already prepared, the hand plans on the table they leave */
+  const planGame = preparing && queued.length && actor >= 0 ? projectQueued(game, actor, queued) : game;
+  const usedByQueue = new Set(queued.map((a) => ('card' in a ? a.card : undefined)).filter(Boolean));
+  const verbs = verbsForCard({ game: planGame, selectedCardId, actor: actor >= 0 ? actor : undefined });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
   const devOptions = verb === 'develop' ? currentDevelops() : [];
 
@@ -661,9 +664,9 @@ export default function HandDock() {
                     index={i}
                     selected={canPlan && selectedCardId === card.id}
                     scoutMarked={canPlan && scoutPick.includes(card.id)}
-                    disabled={!canPlan}
-                    canBuild={aid && canPlan && buildTargets(game, actor, card).some((x) => x.valid)}
-                    onClick={() => canPlan && selectCard(card.id)}
+                    disabled={!canPlan || usedByQueue.has(card.id)}
+                    canBuild={aid && canPlan && !usedByQueue.has(card.id) && buildTargets(planGame, actor, card).some((x) => x.valid)}
+                    onClick={() => canPlan && !usedByQueue.has(card.id) && selectCard(card.id)}
                     /* double-click a town card = camera flies to that town.
                        The two clicks before it toggle the card off, so
                        re-select it (not in scout mode, where clicks toggle marks) */
