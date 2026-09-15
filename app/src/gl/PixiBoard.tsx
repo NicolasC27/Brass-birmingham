@@ -723,6 +723,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           el.style.cursor = ok ? 'pointer' : 'grab';
           return;
         }
+        /* picking a condition's place: a crosshair over towns and slots */
+        if (st().unlessPick !== null) {
+          const on = !!slotAt(wx, wy) || !!townAt(wx, wy);
+          el.style.cursor = on ? 'crosshair' : 'grab';
+          return;
+        }
         /* idle browsing: merchant plates, then towns, then links */
         const merch = merchantAt(wx, wy);
         hoverRef.current.setHoverMerchant(merch?.id ?? null);
@@ -813,6 +819,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           return;
         }
         if (m.idle) {
+          /* a condition's place: the slot or the town under the click */
+          if (st().unlessPick !== null) {
+            const slot = slotAt(wx, wy);
+            const town = slot?.town ?? townAt(wx, wy);
+            if (town) st().applyUnlessPick(town.id, slot ? slot.si : null);
+            return;
+          }
           const town = townAt(wx, wy);
           hoverRef.current.setInspect(town?.id ?? null); // click-away closes
         }

@@ -95,6 +95,11 @@ interface GameStore {
   queued: Prepared[];
   /** a condition on a prepared move: it is dropped if that player did that since */
   setUnless: (index: number, unless: Unless | null) => void;
+  /** a condition's place being picked on the map, for that prepared move */
+  unlessPick: number | null;
+  beginUnlessPick: (index: number | null) => void;
+  /** a town (and a slot) clicked on the map while picking: the place, and the works when the slot takes one */
+  applyUnlessPick: (town: string, slot: number | null) => void;
   /** the board shows the prepared moves in colour over a sepia table */
   previewQueue: boolean;
   setPreviewQueue: (on: boolean) => void;
@@ -292,6 +297,7 @@ const freshTable = {
   preparing: false,
   queued: [] as Prepared[],
   previewQueue: false,
+  unlessPick: null as number | null,
 };
 
 export const useGame = create<GameStore>((set, get) => ({
@@ -563,9 +569,22 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   dropQueued: (index) => {
     const queued = get().queued.filter((_, i) => i !== index);
-    set({ queued, previewQueue: queued.length ? get().previewQueue : false });
+    set({ queued, previewQueue: queued.length ? get().previewQueue : false, unlessPick: null });
   },
   setPreviewQueue: (on) => set({ previewQueue: on && get().queued.length > 0 }),
+  beginUnlessPick: (index) => set({ unlessPick: index }),
+  applyUnlessPick: (town, slot) => {
+    const st = get();
+    const i = st.unlessPick;
+    const g = st.game;
+    if (i === null || !g || !st.queued[i]) return;
+    const me = st.seat ?? g.players.findIndex((p) => !p.isBot);
+    const cur = st.queued[i].unless;
+    const allows = slot !== null ? TOWN_BY_ID[town]?.slots[slot]?.allows : undefined;
+    const industry = allows && allows.length === 1 ? allows[0] : undefined;
+    const unless: Unless = { player: cur?.player ?? g.players.findIndex((_, idx) => idx !== me), kind: cur?.kind ?? 'build', town, industry: (cur?.kind ?? 'build') === 'build' ? industry : undefined };
+    set({ queued: st.queued.map((q, k) => (k === i ? { ...q, unless } : q)), unlessPick: null });
+  },
   setUnless: (index, unless) => set({ queued: get().queued.map((q, i) => (i === index ? { ...q, unless: unless ?? undefined } : q)) }),
   playQueued: () => {
     const st = get();
@@ -575,7 +594,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (st.previewQueue) set({ previewQueue: false });
     /* the condition: what that player did since the move was prepared */
     const u = next.unless;
-    const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player === u.player && e.key === u.kind && (!u.town || e.region === u.town)) : undefined;
+    const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player === u.player && e.key === u.kind && (!u.town || e.region === u.town) && (!u.industry || e.vars?.industry === u.industry)) : undefined;
     if (hit) {
       set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueUnless', { what: ledgerText(hit, tr) }), at: Date.now() } });
       return;
@@ -1184,6 +1203,8 @@ export interface Unless {
   player: number;
   kind: 'sell' | 'build' | 'network';
   town?: string;
+  /** for a build: that works only (a slot picked on the map that takes one) */
+  industry?: IndustryType;
 }
 export interface Prepared {
   action: GameAction;
@@ -1195,7 +1216,8 @@ export interface Prepared {
 export function describeUnless(u: Unless, g: GameState): string {
   const name = g.players[u.player]?.name ?? '';
   const where = u.town ? tr('game.topbar.unlessAt', { town: TOWN_BY_ID[u.town]?.name ?? u.town }) : '';
-  return tr('game.topbar.unless', { name, what: tr(`game.topbar.unlessKind.${u.kind}`), where });
+  const what = u.kind === 'build' && u.industry ? tr('game.topbar.unlessBuilds', { works: tr(`game.log.industry.${u.industry}`) }) : tr(`game.topbar.unlessKind.${u.kind}`);
+  return tr('game.topbar.unless', { name, what, where });
 }
 
 /* ------------------------ a move in a few words ------------------------ */
