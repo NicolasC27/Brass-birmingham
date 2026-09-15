@@ -504,6 +504,9 @@ const game = {
     wait: 'Next telegram in {s} s',
     from: 'Telegram from {name}',
     mute: 'Stop hearing {name}',
+    officeTitle: 'The telegraph office',
+    marksWarned: 'Easy on the signals. The next shower cuts your line for the game.',
+    marksMuted: 'Line cut: your signals no longer go through for this game.',
     line: {
       wellPlayed: 'Well played, sir.',
       cheers: 'Cheers!',

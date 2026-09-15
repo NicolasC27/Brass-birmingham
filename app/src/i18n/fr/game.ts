@@ -506,6 +506,9 @@ const fr: typeof engame = {
     wait: 'Prochain télégramme dans {s} s',
     from: 'Télégramme de {name}',
     mute: 'Ne plus entendre {name}',
+    officeTitle: 'Le bureau du télégraphe',
+    marksWarned: 'Doucement sur les signaux. La prochaine averse, on vous coupe la ligne pour la partie.',
+    marksMuted: 'Ligne coupée : vos signaux ne passent plus pour cette partie.',
     line: {
       wellPlayed: 'Bien joué, monsieur.',
       cheers: 'Santé !',

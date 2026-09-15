@@ -4,7 +4,7 @@ import path from 'node:path';
 import { WebSocketServer } from 'ws';
 import type { WebSocket } from 'ws';
 import { decode, encode } from '@/online/protocol';
-import { PING_COOLDOWN_MS, TELEGRAM_COOLDOWN_MS, isTelegramKey } from '@/game/telegrams';
+import { PING_SHOWER, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, isTelegramKey } from '@/game/telegrams';
 import { LINKS, MERCHANT_BY_ID, TOWN_BY_ID } from '@/game/data';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { Me } from '@/online/table';
@@ -38,9 +38,12 @@ interface Client {
   token: string | null;
   /** the table codes this socket follows */
   watching: Set<string>;
-  /** when this socket last wired a telegram, last pointed at the map */
+  /** when this socket last wired a telegram */
   lastTelegram: number;
-  lastMark: number;
+  /** the marks of the last while, and how the office took them: a strike
+   *  is a warning, the second strike silence for the rest of the socket */
+  marks: number[];
+  strikes: number;
 }
 
 export interface ServeOptions {
@@ -154,7 +157,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket) => {
-    const client: Client = { socket, me: null, token: null, watching: new Set(), lastTelegram: 0, lastMark: 0 };
+    const client: Client = { socket, me: null, token: null, watching: new Set(), lastTelegram: 0, marks: [], strikes: 0 };
     clients.add(client);
     socket.on('message', (raw: Buffer | string) => {
       const m = decode<ClientMessage>(String(raw));
@@ -411,10 +414,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const table = hall.table(m.code);
         const from = table?.seats.findIndex((s) => s.id === who.id) ?? -1;
         const known = typeof m.key === 'string' && (!!TOWN_BY_ID[m.key] || !!MERCHANT_BY_ID[m.key] || LINKS.some((l) => l.id === m.key));
-        if (from < 0 || !known) return;
+        if (from < 0 || !known || c.strikes >= 2) return;
         const now = Date.now();
-        if (now - c.lastMark < PING_COOLDOWN_MS - 500) return;
-        c.lastMark = now;
+        c.marks = c.marks.filter((at) => now - at < PING_WINDOW_MS);
+        c.marks.push(now);
+        if (c.marks.length > PING_SHOWER) {
+          c.strikes += 1;
+          c.marks = [];
+          send(c, { t: 'warned', code: m.code, about: 'marks', muted: c.strikes >= 2 });
+          return;
+        }
         for (const w of watchers(m.code)) send(w, { t: 'mark', code: m.code, from, key: m.key, at: now });
         return;
       }

@@ -36,8 +36,11 @@ export const telegramText = (t: (key: string, vars?: Record<string, string | num
 
 /* Pings — "look here": a seat points at a town, a house or a route, and
    everyone sees a pulse there for a moment. Lighter than a wire. */
-export const PING_COOLDOWN_MS = 5_000;
 export const PING_SHOWN_MS = 3_500;
+/** more marks than this within the window is a shower: a warning first,
+ *  and silence for the rest of the game the second time */
+export const PING_WINDOW_MS = 10_000;
+export const PING_SHOWER = 8;
 export interface Ping {
   id: number;
   from: number;

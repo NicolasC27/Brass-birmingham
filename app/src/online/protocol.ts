@@ -126,6 +126,8 @@ export type ServerMessage =
   /** a seat's telegram, carried to everyone at the table */
   | { t: 'telegram'; code: string; from: number; key: string; at: number }
   | { t: 'mark'; code: string; from: number; key: string; at: number }
+  /** the office frowns at a shower of marks: a warning, then silence for the game */
+  | { t: 'warned'; code: string; about: 'marks'; muted: boolean }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

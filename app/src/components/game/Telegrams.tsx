@@ -144,3 +144,34 @@ export function TelegramPlaque({ seat, compact }: { seat: number; compact?: bool
     </AnimatePresence>
   );
 }
+
+/** the office frowned at a shower of marks: a word in the middle of the
+ *  screen, the second time a silence for the rest of the game */
+export function MarkWarning() {
+  const t = useT();
+  const warning = useGame((s) => s.markWarning);
+  const dismiss = useGame((s) => s.dismissMarkWarning);
+  useEffect(() => {
+    if (!warning) return;
+    const id = window.setTimeout(dismiss, 6000);
+    return () => window.clearTimeout(id);
+  }, [warning, dismiss]);
+  return (
+    <AnimatePresence>
+      {warning && (
+        <motion.div
+          key={warning}
+          initial={{ opacity: 0, scale: 0.94 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.96 }}
+          role="alert"
+          className="plaque pointer-events-auto fixed left-1/2 top-1/2 z-[78] w-[min(420px,90vw)] -translate-x-1/2 -translate-y-1/2 rounded-md px-5 py-4 text-center shadow-e4"
+          onClick={dismiss}
+        >
+          <p className="engraved-brass font-fell text-[13px] uppercase tracking-[0.16em]">{t('game.telegram.officeTitle')}</p>
+          <p className="mt-2 font-fell text-[16px] leading-snug text-cream-100/90">{t(warning === 'muted' ? 'game.telegram.marksMuted' : 'game.telegram.marksWarned')}</p>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

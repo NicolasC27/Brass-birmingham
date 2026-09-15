@@ -10,7 +10,7 @@ import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
 import Notices from '@/components/game/Notices';
-import { TelegramButton } from '@/components/game/Telegrams';
+import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
 import Gazette from '@/components/game/Gazette';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
@@ -496,6 +496,7 @@ export default function Game() {
       <Guide />
       <Notices />
       <Gazette />
+      <MarkWarning />
 
       {/* display settings panel (language, badges, minimap, renderer…) */}
       <BoardSettings />

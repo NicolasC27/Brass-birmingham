@@ -15,7 +15,7 @@ import type { GameAction } from './actions';
 import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { onlineWire } from '@/online/net';
-import { DIALECT, PING_COOLDOWN_MS, PING_SHOWN_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
+import { DIALECT, PING_SHOWER, PING_SHOWN_MS, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
 import type { Ping, Telegram, TelegramKey } from './telegrams';
 import type { Pause, Rollback, ServerMessage } from '@/online/protocol';
 import type { Wire, WireStatus } from '@/online/wire';
@@ -81,8 +81,12 @@ interface GameStore {
   muteSeat: (seat: number, on: boolean) => void;
   /* ---- pings: "look here" on a town, a house or a route ---- */
   pings: Ping[];
-  pingSentAt: number;
+  /** my marks of the last while, and the office's frown: a warning, then silence */
+  myMarks: number[];
+  markStrikes: number;
+  markWarning: 'warned' | 'muted' | null;
   sendPing: (key: string) => boolean;
+  dismissMarkWarning: () => void;
   receivePing: (from: number, key: string) => void;
   /* ---- the toast once the game is over: seats that raised a glass ---- */
   toasts: number[];
@@ -245,7 +249,9 @@ const clearSelection = {
   mutedSeats: [] as number[],
   telegramSentAt: 0,
   pings: [] as Ping[],
-  pingSentAt: 0,
+  myMarks: [] as number[],
+  markStrikes: 0,
+  markWarning: null as 'warned' | 'muted' | null,
   toasts: [] as number[],
   humanMarks: [] as UndoMark[],
   loanConfirm: false,
@@ -365,7 +371,7 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a rematch is a table's business, not a page's: online it does nothing */
     if (get().code) return;
     const game = newGame(readSetup());
-    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false, toasts: [], telegrams: [], pings: [] });
+    set({ ...clearSelection, game, humanMarks: [], ceremony: null, gameOverOpen: false, toasts: [], telegrams: [], pings: [], myMarks: [], markStrikes: 0, markWarning: null });
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
     } catch {
@@ -529,22 +535,29 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   sendPing: (key) => {
     const st = get();
-    const now = Date.now();
-    if (now - st.pingSentAt < PING_COOLDOWN_MS) return false;
+    if (st.markStrikes >= 2) return false;
     if (st.code) {
       const wire = onlineWire();
       if (!wire) return false;
       wire.send({ t: 'mark', code: st.code, key });
-      set({ pingSentAt: now });
       return true;
     }
     const g = st.game;
     const me = g ? g.players.findIndex((p) => !p.isBot) : -1;
     if (me < 0) return false;
-    set({ pingSentAt: now });
+    /* the same frown as the office's: a shower earns a warning, a second one silence */
+    const now = Date.now();
+    const marks = [...st.myMarks.filter((at) => now - at < PING_WINDOW_MS), now];
+    if (marks.length > PING_SHOWER) {
+      const strikes = st.markStrikes + 1;
+      set({ myMarks: [], markStrikes: strikes, markWarning: strikes >= 2 ? 'muted' : 'warned' });
+      return false;
+    }
+    set({ myMarks: marks });
     get().receivePing(me, key);
     return true;
   },
+  dismissMarkWarning: () => set({ markWarning: null }),
   receivePing: (from, key) => {
     if (get().mutedSeats.includes(from)) return;
     const id = Date.now() + Math.random();
@@ -1021,6 +1034,7 @@ function listen(code: string, wire: Wire): void {
     if (m.t === 'rejected' && m.code === code) useGame.setState({ shake: { key: '', reason: m.error, at: Date.now() } });
     if (m.t === 'telegram' && m.code === code) useGame.getState().receiveTelegram(m.from, m.key);
     if (m.t === 'mark' && m.code === code) useGame.getState().receivePing(m.from, m.key);
+    if (m.t === 'warned' && m.code === code) useGame.setState({ markStrikes: m.muted ? 2 : 1, markWarning: m.muted ? 'muted' : 'warned' });
   });
   const onLine = wire.onStatus(() => useGame.setState({ line: wire.status }));
   wire.watch(code);
