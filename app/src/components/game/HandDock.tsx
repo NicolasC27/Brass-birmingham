@@ -364,20 +364,14 @@ export default function HandDock() {
      (which otherwise keeps the hand open) until the next turn, a pick, or
      the pin. The hover that would reopen it is muted until the pointer has
      left once, so the click itself does not bounce the hand back open. */
-  /* three heights: the strip when nothing is mine to do, the compact row
-     of small cards while it is my turn and the pointer is elsewhere (the
-     board keeps its room), the full dock under the pointer, on a pick, or
-     when pinned */
-  const mode: 'full' | 'compact' | 'strip' = pinned || busy || (hovered && !hoverMuted) ? 'full' : isHumanTurn && !folded ? 'compact' : 'strip';
-  const expanded = mode !== 'strip';
-  const compactDock = mode === 'compact';
+  const expanded = pinned || busy || (hovered && !hoverMuted) || (isHumanTurn && !folded);
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (
     <footer aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={{ bottom: insets.bottom, left: insets.left, right: bandRight }}>
       <motion.div
         initial={false}
-        animate={{ height: mode === 'full' ? 180 : mode === 'compact' ? 96 : 32 }}
+        animate={{ height: expanded ? 180 : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
         className="pointer-events-auto relative w-full max-w-[1360px] plaque overflow-hidden rounded-lg"
         onPointerEnter={onEnter}
@@ -478,9 +472,9 @@ export default function HandDock() {
         {/* expanded dock body */}
         {/* body tall enough for a full 120px card PLUS the 12px lift of a
             selected one — nothing gets cropped at the top any more */}
-        <div className={cn('relative flex items-stretch gap-3 px-4 pb-3', compactDock ? 'h-[64px]' : 'h-[148px]')}>
+        <div className="relative flex h-[148px] items-stretch gap-3 px-4 pb-3">
           {/* deck plate */}
-          <div className={cn('flex w-[64px] flex-col items-center justify-center gap-1', compactDock && 'hidden')}>
+          <div className="flex w-[64px] flex-col items-center justify-center gap-1">
             <div className="relative h-[74px] w-[52px]">
               <img src="/card-back.webp" alt={t('game.hand.deckAlt')} className="h-full w-full rounded border border-brass-700/60 object-cover shadow-e2" />
               <span className="absolute -bottom-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-brass-700 bg-coal-900 px-1 font-mono text-[10px] text-brass-400">
@@ -491,7 +485,7 @@ export default function HandDock() {
           </div>
 
           {/* verb chips — a fixed 2×3 grid: nothing wraps behind the cards */}
-          <div className={cn('grid w-[216px] shrink-0 grid-cols-2 content-start gap-1', compactDock && 'hidden')}>
+          <div className="grid w-[216px] shrink-0 grid-cols-2 content-start gap-1">
             {VERB_META.map(({ verb: v, label, icon: Icon }) => {
               const meta = verbs.find((x) => x.verb === v);
               const ok = !!meta?.ok && isHumanTurn;
@@ -623,7 +617,7 @@ export default function HandDock() {
 
           {/* the fan — centred while it fits, scrollable from the FIRST card
               once it overflows (a centred flex row would clip its left edge) */}
-          <div ref={fanRef} className={cn('relative flex min-w-0 flex-1 items-end pb-1', compactDock ? 'overflow-hidden' : 'overflow-x-auto')} style={{ scrollSnapType: 'x proximity' }}>
+          <div ref={fanRef} className="relative flex min-w-0 flex-1 items-end overflow-x-auto pb-1" style={{ scrollSnapType: 'x proximity' }}>
             {/* the strip already names who is at the table; the fan only
                 speaks when there is nothing to show */}
             {!isHumanTurn && !shown && (
@@ -632,7 +626,7 @@ export default function HandDock() {
               </p>
             )}
             {shown && (
-              <div className={cn('mx-auto flex items-end pl-1 pr-1', compactDock && 'origin-bottom scale-[.46]')}>
+              <div className="mx-auto flex items-end pl-1 pr-1">
               {shown.hand.map((card, i) => (
                 <div key={card.id} className="-ml-4 first:ml-0" style={{ scrollSnapAlign: 'center' }}>
                   <GameCard
@@ -663,7 +657,7 @@ export default function HandDock() {
           </div>
 
           {/* right status / hints */}
-          <div className={cn('hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3', !compactDock && 'xl:flex')}>
+          <div className="hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3 xl:flex">
             {game.round === 1 && game.era === 'canal' ? (
               <p className="paper px-2 py-1.5 font-fell text-[11px] italic leading-snug text-ink-900/85">
                 {t('game.hand.firstRound')}
