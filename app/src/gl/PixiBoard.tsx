@@ -10,7 +10,7 @@ import { useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
+import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, screenToWorld, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -169,6 +169,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => houseHover(null);
   }, [hoverMerchant]);
   const [inspect, setInspect] = useState<string | null>(null);
+  /* the open inspector's box and the minimap's frame, moved by the ticker
+     every frame between the camera's commits */
+  const inspectFollow = useRef<{ el: HTMLDivElement; dx: number; below: boolean } | null>(null);
+  const inspectRef = useRef<string | null>(null);
+  inspectRef.current = inspect;
+  const mmFrameRef = useRef<HTMLDivElement>(null);
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
@@ -450,6 +456,31 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         clock += t.deltaMS / 1000;
         cam.tick(t.deltaMS);
         const { w, h } = { w: a.screen.width, h: a.screen.height };
+        /* the town inspector rides the map every frame, not only on commits */
+        const fol = inspectFollow.current;
+        const insp = inspectRef.current ? TOWN_BY_ID[inspectRef.current] : undefined;
+        if (fol && insp) {
+          const [sx, sy] = worldToScreen(insp.x, insp.y, cam.view, w, h);
+          fol.el.style.left = `${sx + fol.dx}px`;
+          fol.el.style.top = `${fol.below ? sy + 34 : sy - 30}px`;
+        }
+        /* the minimap's frame follows the camera every frame too */
+        const frame = mmFrameRef.current;
+        if (frame && frame.parentElement) {
+          const mw = frame.parentElement.clientWidth;
+          const mh = frame.parentElement.clientHeight;
+          const [x0, y0] = screenToWorld(0, 0, cam.view, w, h);
+          const [x1, y1] = screenToWorld(w, h, cam.view, w, h);
+          const c = (v: number) => Math.min(1, Math.max(0, v));
+          const fx0 = c(x0 / WORLD_W);
+          const fy0 = c(y0 / WORLD_H);
+          const fx1 = c(x1 / WORLD_W);
+          const fy1 = c(y1 / WORLD_H);
+          frame.style.left = `${fx0 * mw}px`;
+          frame.style.top = `${fy0 * mh}px`;
+          frame.style.width = `${Math.max(6, (fx1 - fx0) * mw)}px`;
+          frame.style.height = `${Math.max(6, (fy1 - fy0) * mh)}px`;
+        }
         const s = fitScale(w, h) * cam.view.k;
         scene.world.scale.set(s);
         scene.world.position.set(w / 2 + cam.view.x - (WORLD_W / 2) * s, h / 2 + cam.view.y - (WORLD_H / 2) * s);
@@ -1586,6 +1617,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             frameH={size.h}
             onClose={() => setInspect(null)}
             onZoomHere={() => cameraRef.current?.flyTo(inspectTown.x, inspectTown.y, 1.8)}
+            followRef={inspectFollow}
           />
         )}
       </AnimatePresence>
@@ -1593,7 +1625,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* the settings gear lives in the bottom-right chip row (pages/Game.tsx);
           zoom lives on the wheel / + / − / 0 keys */}
 
-      {!preview && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} />}
+      {!preview && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} frameRef={mmFrameRef} />}
 
       {/* a slot that takes either of two industries, picked to build on: the
           two faces side by side, the one to be built ringed; the other is a

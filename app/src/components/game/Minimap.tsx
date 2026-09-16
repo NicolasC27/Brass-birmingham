@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Maximize2 } from 'lucide-react';
@@ -34,13 +35,14 @@ export default function Minimap({
   container,
   onCenter,
   era,
-  game,
-}: {
+  game, frameRef }: {
   view: View;
   container: { w: number; h: number };
   onCenter: (wx: number, wy: number) => void;
   era: 'canal' | 'rail';
   game: GameState;
+  /** the viewport rectangle, moved every frame by the board's ticker between camera commits */
+  frameRef?: React.Ref<HTMLDivElement>;
 }) {
   const plate = useRef<HTMLDivElement>(null);
   const tracking = useRef(false);
@@ -186,6 +188,7 @@ export default function Minimap({
       })}
       {/* viewport rectangle */}
       <div
+        ref={frameRef}
         aria-hidden
         className="pointer-events-none absolute border border-brass-400"
         style={{
