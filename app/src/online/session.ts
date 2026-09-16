@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
-import type { Desk, Me } from './table';
+import type { Desk, Leaderboard, Me, PublicTable } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The visitors' book.                                                 */
@@ -59,6 +59,55 @@ export function useDesk(): Desk | null {
   }, [session?.id, session?.verified]); // eslint-disable-line react-hooks/exhaustive-deps
   return desk;
 }
+
+/** the register of tables in play: asked on first use, pushed for a while after */
+export function useTables(): PublicTable[] | null {
+  const session = useSession();
+  const tables = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => onlineWire()?.tables ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    if (!session) return;
+    const w = onlineWire();
+    w?.askTables();
+    /* the office pushes the register for two minutes after an asking: ask again before it forgets */
+    const iv = window.setInterval(() => w?.askTables(), 60_000);
+    return () => window.clearInterval(iv);
+  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return tables;
+}
+
+/** the roll of honour of the season */
+export function useLeaderboard(): Leaderboard | null {
+  const session = useSession();
+  const board = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => onlineWire()?.board ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    if (session) onlineWire()?.askLeaderboard();
+  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return board;
+}
+
+export const setQueue = (mode: 'quick' | 'ranked', on: boolean): void => onlineWire()?.setQueue(mode, on);
+
+/** the table the office dealt me from a queue, once; the page takes me there */
+export function useDealt(): string | null {
+  return useSyncExternalStore(
+    (cb) => onlineWire()?.onDesk(cb) ?? never(),
+    () => onlineWire()?.dealt ?? null,
+    () => null,
+  );
+}
+export const clearDealt = (): void => {
+  const w = onlineWire();
+  if (w) w.dealt = null;
+};
+export const buyItem = (item: string): Promise<void> => wire().buy(item);
 
 function wire() {
   const w = onlineWire();

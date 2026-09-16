@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { Desk, Me } from './table';
+import type { Desk, Me, Leaderboard, PublicTable } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -33,6 +33,12 @@ export class Wire {
   /** the desk as the server last sent it (null until asked) */
   desk: Desk | null = null;
   private desks = new Set<() => void>();
+  /** the register of tables in play, the roll of honour: asked for, then pushed */
+  tables: PublicTable[] | null = null;
+  board: Leaderboard | null = null;
+  /** the table the office just dealt me from a queue, until the page takes me there */
+  dealt: string | null = null;
+  private halls = new Set<() => void>();
   private token: string | null = null;
   private socket: WebSocket | null = null;
   private outbox: ClientMessage[] = [];
@@ -90,6 +96,30 @@ export class Wire {
   /** ask for the desk: it comes back as a frame, and again whenever it changes */
   askDesk(): void {
     this.send({ t: 'desk' });
+  }
+
+  /** the register or the roll changed */
+  onHall(cb: () => void): () => void {
+    this.halls.add(cb);
+    return () => this.halls.delete(cb);
+  }
+
+  /** the register of tables: pushed again for a while after the asking */
+  askTables(): void {
+    void this.ask((rid) => ({ t: 'tables', rid })).catch(() => undefined);
+  }
+
+  askLeaderboard(): void {
+    void this.ask((rid) => ({ t: 'leaderboard', rid })).catch(() => undefined);
+  }
+
+  /** stand in the quick or the ranked queue, or step out of it */
+  setQueue(mode: 'quick' | 'ranked', on: boolean): void {
+    this.send({ t: 'queue', mode, on });
+  }
+
+  async buy(item: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'buy', rid, item }));
   }
 
   send(m: ClientMessage): void {
@@ -240,6 +270,24 @@ export class Wire {
     if (m.t === 'me') this.setSession(m.me);
     if (m.t === 'desk') {
       this.desk = m.desk;
+      for (const cb of this.desks) cb();
+    }
+    /* dealt from a queue: the room is told, and the page goes to the table */
+    if (m.t === 'seated' && m.rid === 0) {
+      this.dealt = m.table.code;
+      for (const cb of this.desks) cb();
+    }
+    if (m.t === 'tables') {
+      this.tables = m.tables;
+      for (const cb of this.halls) cb();
+    }
+    if (m.t === 'leaderboard') {
+      this.board = m.board;
+      for (const cb of this.halls) cb();
+    }
+    /* the queue moved: the desk says where I stand, so ask it again */
+    if (m.t === 'queue' && this.desk) {
+      this.desk = { ...this.desk, queue: m.state };
       for (const cb of this.desks) cb();
     }
     /* the token no longer stands for anyone: sign in again */

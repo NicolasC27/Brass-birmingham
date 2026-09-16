@@ -8,5 +8,6 @@ import rules from './fr/rules';
 import results from './fr/results';
 import online from './fr/online';
 import site from './fr/site';
+import hall from './fr/hall';
 
-export const fr: Dict = { common, home, setup, game, board, rules, results, online, site };
+export const fr: Dict = { common, home, setup, game, board, rules, results, online, site, hall };

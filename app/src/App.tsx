@@ -1,4 +1,10 @@
-import { Routes, Route } from "react-router";
+import { Routes, Route, Navigate } from "react-router";
+import HallShell from "@/components/hall/HallShell";
+import Play from "@/pages/hall/Play";
+import Tables from "@/pages/hall/Tables";
+import Ranking from "@/pages/hall/Ranking";
+import Counter from "@/pages/hall/Counter";
+import Record from "@/pages/hall/Record";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 import Setup from "@/pages/Setup";
@@ -15,6 +21,14 @@ import Profile from "@/pages/Profile";
 export default function App() {
   return (
     <Routes>
+      {/* the hall: the site as a game client, its own frame */}
+      <Route element={<HallShell />}>
+        <Route path="play" element={<Play />} />
+        <Route path="tables" element={<Tables />} />
+        <Route path="ranking" element={<Ranking />} />
+        <Route path="counter" element={<Counter />} />
+        <Route path="record" element={<Record />} />
+      </Route>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="setup" element={<Setup />} />
@@ -28,7 +42,8 @@ export default function App() {
         <Route path="account" element={<Account />} />
         <Route path="account/verify/:token" element={<Account />} />
         <Route path="account/reset/:token" element={<Account />} />
-        <Route path="desk" element={<Desk />} />
+        <Route path="desk" element={<Navigate to="/play" replace />} />
+        <Route path="office" element={<Desk />} />
         <Route path="profile" element={<Profile />} />
       </Route>
     </Routes>
