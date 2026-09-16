@@ -38,6 +38,8 @@ const MINUTE = 60_000;
 /** a personal break: five minutes, three times a game */
 export const BREAK_MS = 5 * MINUTE;
 export const BREAKS_PER_GAME = 3;
+/** how often one may take an action back within one turn */
+export const UNDOS_PER_TURN = 2;
 
 /** where the moves are written down as they are accepted */
 export interface Journal {
@@ -79,6 +81,8 @@ export class TableGame {
   private burnsOut: number | null = null;
   /** what was left of the candle when the table stopped */
   private frozen: number | null = null;
+  /** the actions taken back this turn */
+  private undos = 0;
   private closed = false;
   /** the host id, for the rollback — the first human seat when unknown */
   readonly hostId: string | null;
@@ -244,6 +248,7 @@ export class TableGame {
       this.state = replay(this.setup, this.seed, actions);
       this.marks = humanActionIndices(this.setup, this.seed, actions);
       this.frozen = null;
+      this.undos = 0;
       this.schedule();
     }
     this.emit();
@@ -261,12 +266,17 @@ export class TableGame {
       if (action.player !== seat) return 'A vote is cast in one\'s own name';
       return this.commit(seat, action, false, true);
     }
-    if (action.kind !== 'begin-rail') {
-      if (this.state.phase !== 'action') return 'The game is not in play';
+    if (action.kind === 'begin-rail') {
+      /* the ceremony is closed by the seat to act, or by the table's own clock */
+      if (this.state.phase !== 'scoring-canal') return 'The canal era is not being scored';
       if (this.stopped) return 'The table is paused';
       if (seat !== this.state.current) return 'Not your turn';
-      if (this.state.players[seat].isBot) return 'That seat plays itself';
+      return this.commit(seat, action);
     }
+    if (this.state.phase !== 'action') return 'The game is not in play';
+    if (this.stopped) return 'The table is paused';
+    if (seat !== this.state.current) return 'Not your turn';
+    if (this.state.players[seat].isBot) return 'That seat plays itself';
     return this.commit(seat, action);
   }
 
@@ -275,13 +285,22 @@ export class TableGame {
     const seat = this.seatOf(playerId);
     if (seat < 0) return 'You are not seated at this table';
     if (!this.mayUndo(seat)) return 'Too late — the turn has moved on';
+    if (this.undos >= UNDOS_PER_TURN) return 'No more taking back this turn';
     const back = undoLastHuman(this.state, this.marks);
     if (!back) return 'Nothing to take back';
+    /* the candle burns on: taking back a move does not buy the time again */
+    const left = this.burnsOut === null ? null : this.msLeft;
     this.journal?.drop(this.marks[this.marks.length - 1].at);
     this.state = back;
     this.marks = this.marks.slice(0, -1);
+    this.undos += 1;
     this.emit();
     this.schedule();
+    if (left !== null && this.burnsOut !== null) {
+      this.dispose();
+      this.burnsOut = Date.now() + left;
+      this.timer = setTimeout(() => this.burnOut(), left);
+    }
     return null;
   }
 
@@ -331,6 +350,7 @@ export class TableGame {
     const at = before.actions.length;
     if (marked && before.phase === 'action' && !before.players[before.current].isBot) this.marks.push({ at, by: before.current });
     this.state = r.state;
+    if (this.state.current !== before.current || this.state.phase !== before.phase) this.undos = 0;
     this.journal?.append(at, action);
     this.emit();
     /* a vote must not re-light the candle — unless it just closed the game */
@@ -347,13 +367,23 @@ export class TableGame {
     if (this.stopped) return;
     const s = this.state;
     if (s.phase === 'scoring-canal') {
-      this.timer = setTimeout(() => this.commit(s.current, { kind: 'begin-rail' }), this.pace.ceremony);
+      this.timer = setTimeout(() => {
+        try {
+          this.commit(s.current, { kind: 'begin-rail' });
+        } catch (e) {
+          console.error(`table ${this.code}: the ceremony would not close:`, e);
+        }
+      }, this.pace.ceremony);
       return;
     }
     if (s.phase !== 'action') {
       if (!this.closed) {
         this.closed = true;
-        this.journal?.finish(s, tallyGame(this.setup, this.seed, s.actions));
+        try {
+          this.journal?.finish(s, tallyGame(this.setup, this.seed, s.actions));
+        } catch (e) {
+          console.error(`table ${this.code}: the record of the game could not be written:`, e);
+        }
       }
       return;
     }
@@ -374,14 +404,38 @@ export class TableGame {
     const s = this.state;
     if (s.phase !== 'action' || !s.players[s.current].isBot) return;
     const seat = s.current;
-    const wanted = botAction(chooseBotMove(s, seat));
-    /* nothing playable, or a move the engine turns down: scout, else pass */
-    if (!wanted || this.commit(seat, wanted) !== null) this.commit(seat, fallbackAction(s, seat));
+    try {
+      const wanted = botAction(chooseBotMove(s, seat));
+      /* nothing playable, or a move the engine turns down: scout, else pass */
+      if (!wanted || this.commit(seat, wanted) !== null) this.commit(seat, fallbackAction(s, seat));
+    } catch (e) {
+      this.recover(s, seat, 'the bot', e);
+    }
   }
 
   private burnOut(): void {
     const s = this.state;
     if (s.phase !== 'action' || s.players[s.current].isBot) return;
-    this.commit(s.current, { kind: 'pass', reason: `${s.players[s.current].name}'s candle burned out.` }, false);
+    try {
+      this.commit(s.current, { kind: 'pass', reason: `${s.players[s.current].name}'s candle burned out.` }, false);
+    } catch (e) {
+      this.recover(s, s.current, 'the candle', e);
+    }
+  }
+
+  /** a clock's turn threw: log it and put the turn anyway, so that the
+   *  table does not stand still on an error nobody is there to see */
+  private recover(before: GameState, seat: number, who: string, e: unknown): void {
+    console.error(`table ${this.code}: ${who} at seat ${seat} failed:`, e);
+    try {
+      /* the action did land and only its aftermath failed: just move on */
+      if (this.state !== before) {
+        this.schedule();
+        return;
+      }
+      if (this.commit(seat, fallbackAction(before, seat), false) !== null) this.commit(seat, { kind: 'pass', reason: 'The table put the turn.' }, false);
+    } catch (again) {
+      console.error(`table ${this.code}: still stuck after ${who} failed:`, again);
+    }
   }
 }

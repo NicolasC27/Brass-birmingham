@@ -1,4 +1,6 @@
 import { createServer } from 'node:http';
+import type { IncomingMessage } from 'node:http';
+import { timingSafeEqual } from 'node:crypto';
 import { appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { WebSocketServer } from 'ws';
@@ -33,17 +35,71 @@ import type { Account } from './store';
 
 interface Client {
   socket: WebSocket;
+  /** where the socket comes from, for the counters kept per address */
+  ip: string;
   me: Me | null;
   /** the session token this socket presented, if any */
   token: string | null;
   /** the table codes this socket follows */
   watching: Set<string>;
-  /** when this socket last wired a telegram */
+  /** how much this socket may still say, and how often it has been told no */
+  words: Bucket;
+  claims: Bucket;
+  refused: number;
+}
+
+/* ------------------------- how much may be said ------------------------ */
+
+/** a bucket of tokens: one per message, refilled at a steady rate */
+interface Bucket {
+  tokens: number;
+  at: number;
+}
+const bucket = (size: number): Bucket => ({ tokens: size, at: Date.now() });
+/** take one, or say there was none */
+function drip(b: Bucket, size: number, perSecond: number): boolean {
+  const now = Date.now();
+  b.tokens = Math.min(size, b.tokens + ((now - b.at) / 1000) * perSecond);
+  b.at = now;
+  if (b.tokens < 1) return false;
+  b.tokens -= 1;
+  return true;
+}
+/** thirty frames at once, then six a second */
+const WORDS = { size: 30, perSecond: 6 };
+/** the verbs that cost a key derivation or a letter: five a minute a socket, twenty an address */
+const CLAIMS = { size: 5, perSecond: 5 / 60 };
+const CLAIMS_PER_IP = { size: 20, perSecond: 20 / 60 };
+const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'signup' || t === 'forgot' || t === 'reset' || t === 'resend';
+/** after this many refusals the socket is simply closed */
+const PATIENCE = 60;
+/** ideas and bugs: five an hour an account */
+const NOTES_PER_HOUR = 5;
+
+/** the counter's own reading of the letters and the box: only from this machine */
+const loopback = (req: IncomingMessage): boolean => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
+const sameToken = (a: string, b: string): boolean => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+
+/* ----------------------- the office, per account ---------------------- */
+
+/** what the office remembers of an account across its sockets: when it
+ *  last wired a telegram, the marks of the last while, and the strikes —
+ *  a strike is a warning, the second silence; a new tab is no clean slate */
+interface Office {
   lastTelegram: number;
-  /** the marks of the last while, and how the office took them: a strike
-   *  is a warning, the second strike silence for the rest of the socket */
   marks: number[];
   strikes: number;
+  seenAt: number;
+}
+const offices = new Map<string, Office>();
+const OFFICE_IDLE_MS = 60 * 60 * 1000;
+function officeOf(accountId: string): Office {
+  const now = Date.now();
+  for (const [id, o] of offices) if (now - o.seenAt > OFFICE_IDLE_MS) offices.delete(id);
+  let o = offices.get(accountId);
+  if (!o) offices.set(accountId, (o = { lastTelegram: 0, marks: [], strikes: 0, seenAt: now }));
+  o.seenAt = now;
+  return o;
 }
 
 export interface ServeOptions {
@@ -87,15 +143,35 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
+  /** the claims made from each address of late */
+  const claimsByIp = new Map<string, Bucket>();
+  /* the counter's pages are for the developer's own machine: a house that
+     forgets, or one told DEV_LETTERS=1, and only from this very machine */
+  const dev = file === ':memory:' || process.env.DEV_LETTERS === '1';
+  const feedbackToken = (process.env.FEEDBACK_TOKEN ?? '').trim();
   const http = createServer((req, res) => {
+    const url = new URL(req.url ?? '/', 'http://brassworks');
+    const own = dev && loopback(req);
     /* the counter: with no real post, the letters can be read here */
-    if (req.url === '/letters' && post.kept) {
+    if (url.pathname === '/letters') {
+      if (!own || !post.kept) {
+        res.writeHead(404, { 'content-type': 'text/plain' });
+        res.end('Not found\n');
+        return;
+      }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
       res.end(post.kept.length ? post.kept.map((m) => `To: ${m.to}\nSubject: ${m.subject}\n\n${m.text}\n\n${'─'.repeat(60)}\n`).join('\n') : 'No letter yet.\n');
       return;
     }
-    /* the suggestion box, as a page: every idea and bug, newest first */
-    if (req.url === '/feedback') {
+    /* the suggestion box, as a page: every idea and bug, newest first —
+       from this machine, or with the token FEEDBACK_TOKEN names */
+    if (url.pathname === '/feedback') {
+      const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
+      if (!shown) {
+        res.writeHead(404, { 'content-type': 'text/plain' });
+        res.end('Not found\n');
+        return;
+      }
       res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
       const notes = store.feedbackList();
       res.end(notes.length ? notes.map((n) => noteText(n)).join('\n') : 'No idea yet.\n');
@@ -104,7 +180,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     res.writeHead(200, { 'content-type': 'text/plain' });
     res.end('brassworks\n');
   });
-  const wss = new WebSocketServer({ server: http });
+  const wss = new WebSocketServer({ server: http, maxPayload: 64 * 1024 });
 
   const send = (c: Client, m: ServerMessage) => {
     if (c.socket.readyState === 1) c.socket.send(encode(m));
@@ -143,6 +219,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       if (what === 'table') pushTable(c, code);
       else pushGame(c, code);
     }
+    /* the game is over: what the office held against its players is forgotten */
+    const game = what === 'game' ? hall.game(code) : null;
+    if (game?.over) for (const id of game.seatIds) offices.delete(id);
   });
   hall.onDesk((accountId) => {
     for (const c of socketsOf(accountId)) pushDesk(c);
@@ -156,17 +235,34 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     post.send(m).catch((e: unknown) => console.error(`mail to ${account.email} failed:`, (e as Error).message));
   };
 
-  wss.on('connection', (socket: WebSocket) => {
-    const client: Client = { socket, me: null, token: null, watching: new Set(), lastTelegram: 0, marks: [], strikes: 0 };
+  /** a claim from this address: its bucket, the stale ones swept on the way */
+  const claimFrom = (ip: string): boolean => {
+    const now = Date.now();
+    for (const [at, b] of claimsByIp) if (now - b.at > 60_000) claimsByIp.delete(at);
+    let b = claimsByIp.get(ip);
+    if (!b) claimsByIp.set(ip, (b = bucket(CLAIMS_PER_IP.size)));
+    return drip(b, CLAIMS_PER_IP.size, CLAIMS_PER_IP.perSecond);
+  };
+
+  wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
+    const client: Client = { socket, ip: req.socket.remoteAddress ?? '', me: null, token: null, watching: new Set(), words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
+    /* one frame after another, in the order they came, even across a wait */
+    let queue: Promise<void> = Promise.resolve();
     socket.on('message', (raw: Buffer | string) => {
       const m = decode<ClientMessage>(String(raw));
       if (!m) return;
-      try {
-        handle(client, m);
-      } catch (e) {
-        send(client, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: (e as Error).message });
+      const rid = 'rid' in m ? m.rid : undefined;
+      /* too much, too fast: the frame is dropped, and after a while the socket */
+      const allowed = drip(client.words, WORDS.size, WORDS.perSecond) && (!isClaim(m.t) || (drip(client.claims, CLAIMS.size, CLAIMS.perSecond) && claimFrom(client.ip)));
+      if (!allowed) {
+        if (rid !== undefined) send(client, { t: 'refused', rid, error: 'refused' });
+        if (++client.refused >= PATIENCE) socket.close(1008, 'too many messages');
+        return;
       }
+      queue = queue
+        .then(() => handle(client, m))
+        .catch((e: unknown) => send(client, { t: 'refused', rid, error: (e as Error).message }));
     });
     const gone = () => {
       clients.delete(client);
@@ -176,13 +272,25 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     socket.on('error', gone);
   });
 
-  function handle(c: Client, m: ClientMessage): void {
+  /** the account's other sockets are shown the door (their sessions are gone);
+   *  with `token`, only those that held that very session */
+  function evict(accountId: string, except: Client, token?: string): void {
+    for (const c of socketsOf(accountId)) {
+      if (c === except || (token !== undefined && c.token !== token)) continue;
+      c.me = null;
+      c.token = null;
+      c.watching.clear();
+      c.socket.close(4001, 'signed out');
+    }
+  }
+
+  async function handle(c: Client, m: ClientMessage): Promise<void> {
     switch (m.t) {
       case 'ping':
         send(c, { t: 'pong' });
         return;
       case 'signup': {
-        const made = store.signUp(m.name, m.email, m.password);
+        const made = await store.signUpAsync(m.name, m.email, m.password);
         if ('error' in made) {
           send(c, { t: 'refused', rid: m.rid, error: made.error });
           return;
@@ -192,7 +300,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'signin': {
-        const account = store.signIn(m.name, m.password);
+        const account = await store.signInAsync(m.name, m.password);
         if (!account) {
           send(c, { t: 'refused', rid: m.rid, error: 'bad-credentials' });
           return;
@@ -213,7 +321,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'signout': {
+        /* the session is closed: any other tab that held it goes with it */
         if (c.token) store.closeSession(c.token);
+        if (c.me && c.token) evict(c.me.id, c, c.token);
         c.token = null;
         c.me = null;
         c.watching.clear();
@@ -245,6 +355,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: r ?? 'bad-token' });
           return;
         }
+        evict(r.id, c);
         open(c, r, m.rid);
         return;
       }
@@ -281,6 +392,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           return;
         }
         /* every session was closed with the old password: this one is opened again */
+        evict(who.id, c);
         c.token = store.openSession(who.id);
         send(c, { t: 'session', rid: m.rid, token: c.token, me: who });
         return;
@@ -299,7 +411,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'feedback': {
-        if (!m.text.trim()) {
+        if (!m.text.trim() || store.feedbackSince(who.id, Date.now() - 60 * 60 * 1000) >= NOTES_PER_HOUR) {
           send(c, { t: 'refused', rid: m.rid, error: 'refused' });
           return;
         }
@@ -404,8 +516,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const from = table?.seats.findIndex((s) => s.id === who.id) ?? -1;
         if (from < 0 || !isTelegramKey(m.key)) return;
         const now = Date.now();
-        if (now - c.lastTelegram < TELEGRAM_COOLDOWN_MS - 500) return;
-        c.lastTelegram = now;
+        const office = officeOf(who.id);
+        if (now - office.lastTelegram < TELEGRAM_COOLDOWN_MS - 500) return;
+        office.lastTelegram = now;
         for (const w of watchers(m.code)) send(w, { t: 'telegram', code: m.code, from, key: m.key, at: now });
         return;
       }
@@ -414,14 +527,15 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const table = hall.table(m.code);
         const from = table?.seats.findIndex((s) => s.id === who.id) ?? -1;
         const known = typeof m.key === 'string' && (!!TOWN_BY_ID[m.key] || !!MERCHANT_BY_ID[m.key] || LINKS.some((l) => l.id === m.key));
-        if (from < 0 || !known || c.strikes >= 2) return;
+        const office = officeOf(who.id);
+        if (from < 0 || !known || office.strikes >= 2) return;
         const now = Date.now();
-        c.marks = c.marks.filter((at) => now - at < PING_WINDOW_MS);
-        c.marks.push(now);
-        if (c.marks.length > PING_SHOWER) {
-          c.strikes += 1;
-          c.marks = [];
-          send(c, { t: 'warned', code: m.code, about: 'marks', muted: c.strikes >= 2 });
+        office.marks = office.marks.filter((at) => now - at < PING_WINDOW_MS);
+        office.marks.push(now);
+        if (office.marks.length > PING_SHOWER) {
+          office.strikes += 1;
+          office.marks = [];
+          send(c, { t: 'warned', code: m.code, about: 'marks', muted: office.strikes >= 2 });
           return;
         }
         for (const w of watchers(m.code)) send(w, { t: 'mark', code: m.code, from, key: m.key, at: now });

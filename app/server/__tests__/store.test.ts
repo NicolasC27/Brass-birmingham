@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { SetupPayload } from '@/game/types';
+import type { GameState, SetupPayload } from '@/game/types';
 import type { Table } from '@/online/table';
 import { Store } from '../store';
 
@@ -126,9 +126,50 @@ describe('the register', () => {
     again.finishGame('AB12');
     expect(again.games()[0].finishedAt).toBeGreaterThan(0);
     expect(again.historyFor('a-1')).toEqual([]); // no result was recorded: nothing to show
+    /* the bell cannot ring twice at a table whose game was played out */
+    expect(again.gameFinished('AB12')).toBe(true);
+    expect(again.openGame('AB12', 1, SETUP, ['a-1', 'a-2'])).toBe(false);
+    expect(again.games()[0].seed).toBe(4242);
+    /* the table goes, the game played at it stays on the record */
     again.dropTable('AB12');
     expect(again.tables()).toEqual([]);
-    expect(again.games()).toEqual([]);
+    expect(again.games().map((g) => g.code)).toEqual(['AB12']);
+    /* one still in play goes with its table */
+    again.saveTable({ ...TABLE, code: 'CD34' });
+    again.openGame('CD34', 1, SETUP, ['a-1', 'a-2']);
+    again.dropTable('CD34');
+    expect(again.games().map((g) => g.code)).toEqual(['AB12']);
     again.close();
+  });
+
+  it('remembers the games each account sat at, and counts only the ones played out', () => {
+    const { store } = open();
+    const ended = (vp: [number, number], abandoned = false) =>
+      ({ players: [{ name: 'Ada', color: 'brass', vp: vp[0] }, { name: 'Bob', color: 'oxblood', vp: vp[1] }], winner: vp[0] >= vp[1] ? 0 : 1, abandoned }) as unknown as GameState;
+    store.openGame('AB12', 1, SETUP, ['a-1', 'a-2']);
+    store.finishGame('AB12', ended([40, 30]));
+    store.openGame('CD34', 2, SETUP, ['a-1', 'a-3']);
+    store.finishGame('CD34', ended([10, 50]));
+    store.openGame('EF56', 3, SETUP, ['a-1', 'a-2']);
+    store.finishGame('EF56', ended([99, 0], true));
+    store.openGame('GH78', 4, SETUP, ['a-2', 'a-3']);
+    store.finishGame('GH78', ended([20, 20]));
+    expect(store.historyFor('a-1').map((g) => g.code)).toEqual(['EF56', 'CD34', 'AB12']);
+    expect(store.historyFor('a-1', 1).map((g) => g.code)).toEqual(['EF56']);
+    expect(store.historyFor('a-3').map((g) => g.code)).toEqual(['GH78', 'CD34']);
+    expect(store.historyFor('a-1')[0].name).toBe('EF56'); // no table stands: the code is the name
+    /* the abandoned game is on the record, but counts for nothing */
+    expect(store.statsFor('a-1')).toMatchObject({ played: 2, won: 1, averageVp: 25, bestVp: 40, tallied: 0, tally: null });
+    expect(store.statsFor('a-2')).toMatchObject({ played: 2, won: 1 });
+  });
+
+  it('signs in off the event loop as well as on it', async () => {
+    const { store } = open();
+    const made = await store.signUpAsync('Ada', 'ada@example.test', 'countess-of-lovelace');
+    expect('account' in made).toBe(true);
+    expect(await store.signUpAsync('ada', 'other@example.test', 'countess-of-lovelace')).toEqual({ error: 'name-taken' });
+    expect((await store.signInAsync('ADA', 'countess-of-lovelace'))?.name).toBe('Ada');
+    expect(await store.signInAsync('Ada', 'wrong')).toBeNull();
+    expect(store.signIn('Ada', 'countess-of-lovelace')?.name).toBe('Ada');
   });
 });

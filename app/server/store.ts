@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
@@ -136,6 +137,11 @@ create table if not exists moves (
   action text not null,
   primary key (code, idx)
 );
+create table if not exists game_players (
+  code      text not null,
+  accountId text not null,
+  primary key (code, accountId)
+);
 `;
 
 /** columns added since the first register: an old file learns them on opening */
@@ -165,6 +171,23 @@ function matches(password: string, secret: string): boolean {
   if (!saltHex || !wantHex) return false;
   const want = Buffer.from(wantHex, 'hex');
   const got = scryptSync(password, Buffer.from(saltHex, 'hex'), want.length);
+  return got.length === want.length && timingSafeEqual(got, want);
+}
+
+/* the same seal and the same check, off the event loop: a sign-in must not
+   hold every table in the house still while the key is derived */
+const derive = promisify(scrypt) as (password: string, salt: Buffer, keylen: number) => Promise<Buffer>;
+
+async function sealAsync(password: string): Promise<string> {
+  const salt = randomBytes(16);
+  return `${salt.toString('hex')}:${(await derive(password, salt, 64)).toString('hex')}`;
+}
+
+async function matchesAsync(password: string, secret: string): Promise<boolean> {
+  const [saltHex, wantHex] = secret.split(':');
+  if (!saltHex || !wantHex) return false;
+  const want = Buffer.from(wantHex, 'hex');
+  const got = await derive(password, Buffer.from(saltHex, 'hex'), want.length);
   return got.length === want.length && timingSafeEqual(got, want);
 }
 
@@ -217,6 +240,15 @@ export class Store {
       const has = (this.db.prepare(`pragma table_info(${table})`).all() as { name: string }[]).some((c) => c.name === column);
       if (!has) this.db.exec(`alter table ${table} add column ${column} ${ddl}`);
     }
+    /* an address is one account's: a register grown from before the column
+       had no such rule, and one that already holds a twin keeps it, logged */
+    try {
+      this.db.exec('create unique index if not exists accounts_email on accounts(emailFolded) where emailFolded is not null');
+    } catch (e) {
+      console.error('register: two accounts share an address, the rule waits:', (e as Error).message);
+    }
+    /* the seats of every game, one row each, for the games before the ledger */
+    this.db.exec('insert or ignore into game_players (code, accountId) select g.code, j.value from games g, json_each(g.seats) j where not exists (select 1 from game_players p where p.code = g.code)');
   }
 
   close(): void {
@@ -225,31 +257,60 @@ export class Store {
 
   /* ---------------------------- accounts --------------------------- */
 
-  /** open an account, or say why it cannot be opened */
-  signUp(name: string, email: string, password: string): { account: Account } | { error: SignUpError } {
+  /** the name, the address and the password as the office will have them, or why not */
+  private application(name: string, email: string, password: string): { clean: string; address: string } | { error: SignUpError } {
     const clean = name.trim().replace(/\s+/g, ' ');
     if (!NAME_RULE.test(clean)) return { error: 'bad-name' };
     const address = email.trim();
     if (!EMAIL_RULE.test(address) || address.length > 120) return { error: 'bad-email' };
     if (password.length < MIN_PASSWORD) return { error: 'weak-password' };
-    const folded = fold(clean);
-    if (this.db.prepare('select 1 from accounts where folded = ?').get(folded)) return { error: 'name-taken' };
+    if (this.db.prepare('select 1 from accounts where folded = ?').get(fold(clean))) return { error: 'name-taken' };
     if (this.db.prepare('select 1 from accounts where emailFolded = ?').get(foldEmail(address))) return { error: 'email-taken' };
+    return { clean, address };
+  }
+
+  private enrol(clean: string, address: string, secret: string): { account: Account } | { error: SignUpError } {
     const id = 'a-' + randomBytes(8).toString('hex');
-    const now = Date.now();
-    this.db
-      .prepare('insert into accounts (id, name, folded, secret, createdAt, email, emailFolded, verifiedAt, motto, favoriteColor) values (?, ?, ?, ?, ?, ?, ?, null, ?, null)')
-      .run(id, clean, folded, seal(password), now, address, foldEmail(address), '');
+    try {
+      this.db
+        .prepare('insert into accounts (id, name, folded, secret, createdAt, email, emailFolded, verifiedAt, motto, favoriteColor) values (?, ?, ?, ?, ?, ?, ?, null, ?, null)')
+        .run(id, clean, fold(clean), secret, Date.now(), address, foldEmail(address), '');
+    } catch {
+      /* two applications for one name, the other sealed first */
+      return { error: this.db.prepare('select 1 from accounts where folded = ?').get(fold(clean)) ? 'name-taken' : 'email-taken' };
+    }
     return { account: this.account(id)! };
+  }
+
+  /** open an account, or say why it cannot be opened */
+  signUp(name: string, email: string, password: string): { account: Account } | { error: SignUpError } {
+    const a = this.application(name, email, password);
+    return 'error' in a ? a : this.enrol(a.clean, a.address, seal(password));
+  }
+
+  /** the same, with the key derived off the event loop */
+  async signUpAsync(name: string, email: string, password: string): Promise<{ account: Account } | { error: SignUpError }> {
+    const a = this.application(name, email, password);
+    return 'error' in a ? a : this.enrol(a.clean, a.address, await sealAsync(password));
+  }
+
+  private credentials(name: string): (AccountRow & { secret: string }) | undefined {
+    const key = name.trim();
+    return this.db
+      .prepare(`select ${ACCOUNT_COLUMNS}, secret from accounts where folded = ? or (emailFolded is not null and emailFolded = ?)`)
+      .get(fold(key), foldEmail(key)) as (AccountRow & { secret: string }) | undefined;
   }
 
   /** the account behind a name (or an address) and a password, or null */
   signIn(name: string, password: string): Account | null {
-    const key = name.trim();
-    const row = this.db
-      .prepare(`select ${ACCOUNT_COLUMNS}, secret from accounts where folded = ? or (emailFolded is not null and emailFolded = ?)`)
-      .get(fold(key), foldEmail(key)) as (AccountRow & { secret: string }) | undefined;
+    const row = this.credentials(name);
     if (!row || !matches(password, row.secret)) return null;
+    return accountOf(row);
+  }
+
+  async signInAsync(name: string, password: string): Promise<Account | null> {
+    const row = this.credentials(name);
+    if (!row || !(await matchesAsync(password, row.secret))) return null;
     return accountOf(row);
   }
 
@@ -456,6 +517,11 @@ export class Store {
     return note;
   }
 
+  /** how many notes this account has posted since `since` */
+  feedbackSince(accountId: string, since: number): number {
+    return (this.db.prepare('select count(*) as n from feedback where accountId = ? and createdAt >= ?').get(accountId, since) as { n: number }).n;
+  }
+
   /** the whole suggestion box, newest first, each note with its author's name */
   feedbackList(): (Note & { name: string })[] {
     return this.db
@@ -471,9 +537,13 @@ export class Store {
       .run(t.code, t.name, t.hostId, JSON.stringify(t.seats), JSON.stringify(t.options), t.status, t.createdAt, t.updatedAt);
   }
 
+  /** the table is gone; a game played out at it stays on the record */
   dropTable(code: string): void {
-    this.db.prepare('delete from moves where code = ?').run(code);
-    this.db.prepare('delete from games where code = ?').run(code);
+    if (!this.gameFinished(code)) {
+      this.db.prepare('delete from moves where code = ?').run(code);
+      this.db.prepare('delete from game_players where code = ?').run(code);
+      this.db.prepare('delete from games where code = ?').run(code);
+    }
     this.db.prepare('delete from invitations where code = ?').run(code);
     this.db.prepare('delete from tables where code = ?').run(code);
   }
@@ -503,11 +573,23 @@ export class Store {
 
   /* ------------------------------ games ---------------------------- */
 
-  openGame(code: string, seed: number, setup: SetupPayload, seatIds: string[]): void {
+  /** a game begins at this table — false when one was already played out here */
+  openGame(code: string, seed: number, setup: SetupPayload, seatIds: string[]): boolean {
+    if (this.gameFinished(code)) return false;
     this.db
       .prepare('insert or replace into games (code, seed, setup, seats, startedAt, finishedAt, result) values (?, ?, ?, ?, ?, null, null)')
       .run(code, seed, JSON.stringify(setup), JSON.stringify(seatIds), Date.now());
     this.db.prepare('delete from moves where code = ?').run(code);
+    this.db.prepare('delete from game_players where code = ?').run(code);
+    const seat = this.db.prepare('insert or ignore into game_players (code, accountId) values (?, ?)');
+    for (const id of seatIds) seat.run(code, id);
+    return true;
+  }
+
+  /** a game was played out at this table */
+  gameFinished(code: string): boolean {
+    const row = this.db.prepare('select finishedAt from games where code = ?').get(code) as { finishedAt: number | null } | undefined;
+    return !!row && row.finishedAt !== null;
   }
 
   /** one accepted action, at its place in the log */
@@ -553,29 +635,28 @@ export class Store {
   /** the finished games this account sat at, newest first */
   historyFor(accountId: string, limit = 20): PastGame[] {
     const rows = this.db
-      .prepare('select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null order by g.finishedAt desc')
-      .all() as { code: string; seats: string; finishedAt: number; result: string; name: string | null }[];
-    const out: PastGame[] = [];
-    for (const r of rows) {
+      .prepare(
+        'select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.code in (select code from game_players where accountId = ?) order by g.finishedAt desc, g.rowid desc limit ?',
+      )
+      .all(accountId, limit) as { code: string; seats: string; finishedAt: number; result: string; name: string | null }[];
+    return rows.map((r) => {
       const seatIds = JSON.parse(r.seats) as string[];
-      if (!seatIds.includes(accountId)) continue;
       const result = JSON.parse(r.result) as Result;
-      out.push({
+      return {
         code: r.code,
         name: r.name ?? r.code,
         finishedAt: r.finishedAt,
         players: result.players.map((p, i) => ({ id: seatIds[i] ?? '', ...p })),
         winner: result.winner,
         abandoned: result.abandoned,
-      });
-      if (out.length >= limit) break;
-    }
-    return out;
+      };
+    });
   }
 
   statsFor(accountId: string): Stats {
     const games = this.historyFor(accountId, 10_000);
-    const mine = games.map((g) => ({ vp: g.players[g.players.findIndex((p) => p.id === accountId)]?.vp ?? 0, won: g.players[g.winner]?.id === accountId }));
+    /* a game the table voted away was never played out: it counts for nothing */
+    const mine = games.filter((g) => !g.abandoned).map((g) => ({ vp: g.players[g.players.findIndex((p) => p.id === accountId)]?.vp ?? 0, won: g.players[g.winner]?.id === accountId }));
     const played = mine.length;
     /* the sum of every tally on record, the place at each table, the
        chair taken, and the record against every other person met */
@@ -612,6 +693,7 @@ export class Store {
       averageVp: played ? Math.round(mine.reduce((a, m) => a + m.vp, 0) / played) : 0,
       bestVp: mine.reduce((a, m) => Math.max(a, m.vp), 0),
       averagePlace: places.length ? Math.round((places.reduce((a, b) => a + b, 0) / places.length) * 10) / 10 : 0,
+      tallied,
       tally: tallied ? tally : null,
       colour,
       rivals: [...rivals.values()].sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)).slice(0, 8),

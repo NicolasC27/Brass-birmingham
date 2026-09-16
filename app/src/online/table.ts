@@ -108,6 +108,8 @@ export interface Stats {
   bestVp: number;
   /** the finishing place, on average (1 = first), over games played out */
   averagePlace: number;
+  /** the games that carry a tally — the ones the sum below is over */
+  tallied: number;
   /** everything done at the tables, added up over finished games */
   tally: Tally | null;
   /** the chair taken most often */

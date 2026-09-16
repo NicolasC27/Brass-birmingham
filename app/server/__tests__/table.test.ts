@@ -47,6 +47,8 @@ class Guest {
   me: Me | null = null;
   desk: Desk | null = null;
   rejected: string[] = [];
+  /** the server hung up (the code it gave) */
+  closedWith: number | null = null;
   /** every view ever received — the secrecy audit reads them all */
   seen: GameView[] = [];
   /** the tags of the frames as they arrived, in order */
@@ -61,6 +63,9 @@ class Guest {
     await new Promise<void>((ok, ko) => {
       this.socket.once('open', () => ok());
       this.socket.once('error', ko);
+    });
+    this.socket.on('close', (code: number) => {
+      this.closedWith = code;
     });
     this.socket.on('message', (raw: Buffer) => {
       const m = decode<ServerMessage>(String(raw));
@@ -282,6 +287,88 @@ describe('a table over the wire', () => {
     /* the board comes back first, the reason second — the other way round
        the state landing on the client would wipe the reason off the screen */
     expect(idle.trace.slice(-2)).toEqual(['game', 'rejected']);
+    /* and the ceremony cannot be closed while the canal era is still played */
+    const busy = [host, guest].find((g) => g.view!.state.current === g.view!.seat)!;
+    busy.send({ t: 'act', code, action: { kind: 'begin-rail' } });
+    await busy.until('the refusal', () => busy.rejected.length > 0);
+    expect(busy.rejected[0]).toBe('The canal era is not being scored');
+  }, 30000);
+
+  it('lets a move be taken back twice a turn, the candle burning on', async () => {
+    const { host, guest, code } = await seatTwo({ bot: 60000, ceremony: 60000, minute: 1000 });
+    host.send({ t: 'table', code, table: { ...host.table!, options: { ...OPTIONS, timerMinutes: 5 } } });
+    await host.until('the candle', () => host.table!.options.timerMinutes === 5);
+    ring(host, code);
+    await host.until('the game', () => !!host.view);
+    await guest.until('the game', () => !!guest.view);
+    const game = server!.hall.game(code)!;
+    const toAct = () => [host, guest].find((g) => g.view!.state.current === g.view!.seat)!;
+    const play = async (g: Guest) => {
+      const at = g.view!.state.actions.length;
+      g.send({ t: 'act', code, action: decide(g.view!) });
+      await g.until('the move to land', () => g.view!.state.actions.length > at);
+    };
+    const takeBack = async (g: Guest) => {
+      const at = g.view!.state.actions.length;
+      g.send({ t: 'undo', code });
+      await g.until('the move to be taken back', () => g.view!.state.actions.length < at || g.rejected.length > 0);
+    };
+    /* the opening round is one action a seat: only from the second is there a turn to take back within */
+    await play(toAct());
+    await play(toAct());
+    const mover = toAct();
+    const played = mover.view!.state.actions.length;
+    await play(mover);
+    await new Promise((r) => setTimeout(r, 250));
+    await takeBack(mover);
+    expect(mover.view!.state.actions.length).toBe(played);
+    /* the candle was not lit again: what was burnt stays burnt */
+    expect(game.msLeft).toBeLessThan(4800);
+    await play(mover);
+    await takeBack(mover);
+    await play(mover);
+    await takeBack(mover);
+    expect(mover.rejected).toEqual(['No more taking back this turn']);
+    expect(mover.view!.state.actions.length).toBe(played + 1);
+  }, 30000);
+
+  it('seats a bot under the house\'s own id when the client\'s is not a bot\'s, and turns down a chair of no known colour', async () => {
+    const { host, code } = await seatTwo({ bot: 60000, ceremony: 60000 });
+    /* an id shaped like an account's: the house names the machine itself */
+    const bot = { id: 'a-0123456789abcdef', name: '  Cy  ', color: 'verdigris' as const, kind: 'bot' as const, difficulty: 'foreman' as const, ready: true, joinedAt: 0 };
+    host.send({ t: 'table', code, table: { ...host.table!, seats: [...host.table!.seats, bot] } });
+    await host.until('the bot', () => host.table!.seats.length === 3);
+    const seated = host.table!.seats[2];
+    expect(seated.id).toMatch(/^bot-[0-9a-f]{8}$/);
+    expect(seated).toMatchObject({ name: 'Cy', color: 'verdigris', difficulty: 'foreman' });
+    /* a colour off the palette, or a bot of no known temper: the table stands as it was */
+    const before = host.trace.length;
+    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === host.id ? { ...s, color: 'plaid' as never } : s)) } });
+    await host.until('the answer', () => host.trace.length > before);
+    expect(host.table!.seats[0].color).toBe('brass');
+    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === seated.id ? { ...s, difficulty: 'genius' as never } : s)) } });
+    await host.until('the second answer', () => host.trace.length > before + 1);
+    expect(host.table!.seats[2].difficulty).toBe('foreman');
+  }, 30000);
+
+  it('shows the door to a socket that talks too fast, and to the other tabs once the password changes', async () => {
+    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:' });
+    const ada = new Guest('Ada');
+    guests.push(ada);
+    await ada.open(server.port);
+    await ada.signUp();
+    /* another tab with the same session */
+    const tab = new Guest('Ada');
+    guests.push(tab);
+    await tab.open(server.port);
+    await tab.signInWith(ada.token);
+    ada.send({ t: 'password', rid: 40, current: PASSWORD, next: 'a-newer-long-password' });
+    await tab.until('the other tab to be hung up on', () => tab.closedWith === 4001);
+    await ada.until('the new session', () => ada.trace.filter((t) => t === 'session').length === 2);
+    /* forty frames at once: the bucket runs dry and the rest are refused */
+    for (let i = 0; i < 40; i++) ada.send({ t: 'desk', rid: 100 + i });
+    await ada.until('the refusals', () => ada.rejected.includes('refused'));
+    expect(ada.closedWith).toBeNull();
   }, 30000);
 
   it('opens again on the same tables, with the game where it was left', async () => {
@@ -491,6 +578,25 @@ describe('a table over the wire', () => {
     const page = await fetch(`http://127.0.0.1:${server.port}/feedback`).then((r) => r.text());
     expect(page).toContain('## Bug — Ada');
     expect(page).toContain('The barge sails backwards.');
+    /* five notes an hour, no more */
+    for (let i = 0; i < 5; i++) ada.send({ t: 'feedback', rid: 31 + i, page: '/game', kind: 'idea', text: `Idea ${i}` });
+    await ada.until('the box to be full', () => ada.rejected.includes('refused'));
+    expect(server.store.feedbackSince(ada.id, 0)).toBe(5);
+  });
+
+  it('keeps the letters and the box off the public counter', async () => {
+    /* a real register, and no DEV_LETTERS: the pages are not for the road */
+    process.env.FEEDBACK_TOKEN = 'the-owners-key';
+    try {
+      server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: registerFile() });
+    } finally {
+      delete process.env.FEEDBACK_TOKEN;
+    }
+    const at = `http://127.0.0.1:${server.port}`;
+    expect((await fetch(`${at}/letters`)).status).toBe(404);
+    expect((await fetch(`${at}/feedback`)).status).toBe(404);
+    expect((await fetch(`${at}/feedback?token=wrong`)).status).toBe(404);
+    expect((await fetch(`${at}/feedback?token=the-owners-key`)).status).toBe(200);
   });
 
   it('says nothing to a socket that has not signed in', async () => {

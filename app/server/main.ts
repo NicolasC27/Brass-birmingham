@@ -12,6 +12,11 @@ process.on('warning', (w) => {
   if (quiet.length === 0) console.warn(w.stack ?? w.message);
 });
 
+/* an error nobody caught must not close the house on every table at once:
+   it is logged, and the process goes on */
+process.on('uncaughtException', (e) => console.error('uncaught:', e));
+process.on('unhandledRejection', (e) => console.error('unhandled:', e));
+
 const port = Number(process.env.PORT ?? 8787);
 const host = process.env.HOST ?? '0.0.0.0';
 const file = process.env.BRASSWORKS_DB ?? 'brassworks.db';
