@@ -85,7 +85,11 @@ const FADE_IN = 0.3;
 const FADE_OUT = 0.5;
 
 /** the pointer left the house: the ambience fades out */
+/** the house under the pointer right now */
+let hovered: string | null = null;
+
 export function houseLeave(): void {
+  hovered = null;
   if (!playing) return;
   const { src, gain } = playing;
   playing = null;
@@ -101,11 +105,13 @@ export function houseLeave(): void {
  *  fading in — or the shop bell rings when no recording is served */
 export function houseHover(id: string | null): void {
   if (playing && playing.id !== id) houseLeave();
+  hovered = id;
   if (!id || (playing && playing.id === id)) return;
   void ambience(id).then(async (buf) => {
-    if (!buf || playing) return;
+    /* the pointer may have moved on while the file was fetched */
+    if (!buf || playing || hovered !== id) return;
     const ac = await context();
-    if (!ac || playing) return;
+    if (!ac || playing || hovered !== id) return;
     const src = ac.createBufferSource();
     src.buffer = buf;
     src.loop = true;

@@ -860,6 +860,13 @@ export function applyNetwork(s: GameState, playerIdx: number, card: Card, target
     a2: second ? name(second.link.a) : '',
     b2: second ? name(second.link.b) : '',
     price: second ? COSTS.doubleRail : target.cost,
+    /* the ids, for whoever waits on this link or on either of its ends */
+    linkId: target.link.id,
+    townA: target.link.a,
+    townB: target.link.b,
+    linkId2: second?.link.id ?? '',
+    townA2: second?.link.a ?? '',
+    townB2: second?.link.b ?? '',
   });
   return true;
 }
@@ -963,6 +970,7 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
     industry: tile.industry,
     level: tile.level,
     merchant: MERCHANT_BY_ID[target.merchant].name,
+    merchantId: target.merchant,
     beer: lv.beerToSell,
     bonusVp,
     bonusMoney,

@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Eye, EyeOff, Hammer, Landmark, MapPin, Route, Scale, SkipForward, X } from 'lucide-react';
 import { INDUSTRY_COLOR } from './townChrome';
-import { INDUSTRY_ICON, TOWNS } from '@/game/data';
+import { INDUSTRY_ICON, MERCHANT_BY_ID, TOWNS } from '@/game/data';
 import { applyAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { cardLabel, describeAction, describeUnless, projectQueued, suggestUnless, useGame } from '@/game/store';
+import { cardLabel, describeAction, describeUnless, lastActionOf, projectQueued, suggestUnless, useGame } from '@/game/store';
 import type { Unless } from '@/game/store';
 import { townColor } from '@/game/townColors';
 import type { Card, GameState } from '@/game/types';
@@ -57,7 +57,7 @@ function Blank({ label, open, onToggle, children }: { label: string; open: boole
 /** the clause, written under the move as a sentence with three blanks —
  *  who, what deed, where — each a brass token opening its choices; the
  *  natural clauses for this move offered ready-made above it */
-function UnlessRow({ game, action, players, value, picking, onPick, onChange, onClose }: { game: GameState; action: GameAction; players: number[]; value: Unless | null; picking: boolean; onPick: () => void; onChange: (u: Unless | null) => void; onClose: () => void }) {
+function UnlessRow({ game, action, players, value, picking, onPick, onClear, onChange, onClose }: { game: GameState; action: GameAction; players: number[]; value: Unless | null; picking: boolean; onPick: () => void; onClear: () => void; onChange: (u: Unless | null) => void; onClose: () => void }) {
   const t = useT();
   const [player, setPlayer] = useState<Unless['player']>(value?.player ?? 'any');
   const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
@@ -72,9 +72,8 @@ function UnlessRow({ game, action, players, value, picking, onPick, onChange, on
   /* while the clause is open, a click on a town or a slot fills the place */
   useEffect(() => {
     if (!picking) onPick();
-    return () => {
-      if (picking) onPick();
-    };
+    /* the row gone, the map is a map again — whatever the pick was at */
+    return () => onClear();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const KINDS: { kind: Unless['kind']; icon: typeof Hammer }[] = [
@@ -82,7 +81,8 @@ function UnlessRow({ game, action, players, value, picking, onPick, onChange, on
     { kind: 'sell', icon: Scale },
     { kind: 'network', icon: Route },
   ];
-  const draft: Unless = { player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined };
+  /* a ready-made clause on a merchant or a very link keeps it until a town is named */
+  const draft: Unless = { player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined, merchant: !town && kind === 'sell' ? value?.merchant : undefined, link: !town && kind === 'network' ? value?.link : undefined };
   const item = 'flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900 hover:bg-ink-900/10';
   const suggestions = suggestUnless(action);
   return (
@@ -120,7 +120,7 @@ function UnlessRow({ game, action, players, value, picking, onPick, onChange, on
             </button>
           ))}
         </Blank>
-        <Blank label={town ? t('game.topbar.unlessAt', { town: TOWNS.find((x) => x.id === town)?.name ?? town }).trim() : t('game.topbar.unlessAnywhere')} open={blank === 'where'} onToggle={() => setBlank((b) => (b === 'where' ? null : 'where'))}>
+        <Blank label={town ? t('game.topbar.unlessAt', { town: TOWNS.find((x) => x.id === town)?.name ?? town }).trim() : draft.merchant ? t('game.topbar.unlessTo', { merchant: MERCHANT_BY_ID[draft.merchant]?.name ?? draft.merchant }).trim() : t('game.topbar.unlessAnywhere')} open={blank === 'where'} onToggle={() => setBlank((b) => (b === 'where' ? null : 'where'))}>
           <button type="button" className={item} onClick={() => { setTown(''); setBlank(null); }}>{t('game.topbar.unlessAnywhere')}</button>
           <span className="my-0.5 h-px bg-ink-900/20" />
           <span className="flex max-h-[160px] flex-col overflow-y-auto">
@@ -187,8 +187,7 @@ export default function PreparedPanel() {
   /* another seat's last move: its own ribbon */
   if (game && surveySeat !== null) {
     const p = game.players[surveySeat];
-    let last = -1;
-    for (const e of game.ledger) if (e.player === surveySeat && e.at !== undefined && e.at > last) last = e.at;
+    const last = lastActionOf(game, surveySeat);
     const action = last >= 0 ? game.actions[last] : undefined;
     return (
       <div className="pointer-events-none fixed inset-x-0 top-3 z-[66] flex justify-center">
@@ -310,7 +309,7 @@ export default function PreparedPanel() {
                 <X className="h-3.5 w-3.5" />
               </button>
               </div>
-              {editing === i && <UnlessRow game={game} action={q.action} players={others} value={q.unless ?? null} picking={unlessPick === i} onPick={() => beginUnlessPick(unlessPick === i ? null : i)} onChange={(u) => setUnless(i, u)} onClose={() => { setEditing(null); beginUnlessPick(null); }} />}
+              {editing === i && <UnlessRow game={game} action={q.action} players={others} value={q.unless ?? null} picking={unlessPick === i} onPick={() => beginUnlessPick(unlessPick === i ? null : i)} onClear={() => beginUnlessPick(null)} onChange={(u) => setUnless(i, u)} onClose={() => { setEditing(null); beginUnlessPick(null); }} />}
             </li>
           );
         })}

@@ -61,6 +61,8 @@ const game = {
     unlessKind: { build: 'builds', sell: 'sells', network: 'lays a link' },
     unlessAnywhere: 'anywhere',
     unlessAt: ' at {town}',
+    unlessTo: ' to {merchant}',
+    unlessLink: 'lays the link {a} ⇄ {b}',
     unless: 'unless {name} {what}{where}',
     unlessNone: 'No condition',
     unlessOk: 'Set the condition',

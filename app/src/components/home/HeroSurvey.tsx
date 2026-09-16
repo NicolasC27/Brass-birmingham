@@ -3,6 +3,7 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { BLEED_X, BLEED_Y, WORLD_H, WORLD_W } from "@/components/game/boardView";
 import { routeFor } from "@/components/game/routePaths";
+import { displayPosFor } from "@/components/game/townChrome";
 import { LINKS, PLAYER_COLORS, TOWN_BY_ID } from "@/game/data";
 import type { IndustryType } from "@/game/types";
 
@@ -48,7 +49,12 @@ const VIEW = { x: 690, y: 665, w: 1900, h: 1069 };
 const viewBox = (dx: number, dy: number) => `${VIEW.x + dx} ${VIEW.y + dy} ${VIEW.w} ${VIEW.h}`;
 
 const linkOf = (a: string, b: string) => LINKS.find((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a));
-const slotOf = (town: string, slot: number) => TOWN_BY_ID[town]?.slots[slot];
+const slotOf = (town: string, slot: number) => {
+  const sp = TOWN_BY_ID[town]?.slots[slot];
+  if (!sp) return undefined;
+  const [x, y] = displayPosFor(sp.x, sp.y);
+  return { x, y };
+};
 const tileKey = (town: string, slot: number) => `${town}:${slot}`;
 
 export default function HeroSurvey({ alt }: { alt: string }) {

@@ -32,13 +32,16 @@ export function TelegramButton({ className }: { className: string }) {
   const [now, setNow] = useState(0);
   const left = now ? Math.max(0, TELEGRAM_COOLDOWN_MS - (now - sentAt)) : 0;
   useEffect(() => {
-    const tick = () => setNow(Date.now());
-    const id = window.setInterval(tick, 500);
-    const first = window.setTimeout(tick, 0);
-    return () => {
-      window.clearInterval(id);
-      window.clearTimeout(first);
+    if (!sentAt || Date.now() - sentAt >= TELEGRAM_COOLDOWN_MS) return;
+    let id = 0;
+    const tick = () => {
+      const n = Date.now();
+      setNow(n);
+      if (n - sentAt >= TELEGRAM_COOLDOWN_MS) window.clearInterval(id);
     };
+    id = window.setInterval(tick, 500);
+    tick();
+    return () => window.clearInterval(id);
   }, [sentAt]);
   useEffect(() => {
     if (!open) return;

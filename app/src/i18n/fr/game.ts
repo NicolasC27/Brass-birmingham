@@ -63,6 +63,8 @@ const fr: typeof engame = {
     unlessKind: { build: 'construit', sell: 'vend', network: 'pose une liaison' },
     unlessAnywhere: 'n’importe où',
     unlessAt: ' à {town}',
+    unlessTo: ' chez {merchant}',
+    unlessLink: 'pose la liaison {a} ⇄ {b}',
     unless: 'sauf si {name} {what}{where}',
     unlessNone: 'Sans condition',
     unlessOk: 'Poser la condition',
