@@ -5,6 +5,7 @@ const fr: typeof enHome = {
     ariaTitle: 'Écran titre de Brassworks',
     wordmark: 'Brassworks',
     dioramaAlt: "Panorama gravé d'une vallée industrielle des Midlands au crépuscule",
+    surveyAlt: 'La carte peinte des Midlands, une partie qui se joue : canaux tracés, usines posées, ventes scellées',
     eyebrow: 'Un jeu industriel des Midlands · 1770–1870',
     tagline: "Canaux, charbon et fer. Bâtissez l'empire qui a bâti le monde.",
     quick: 'Jouer maintenant',

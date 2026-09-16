@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import { BookOpen, Play, RotateCcw, Users, Wifi } from "lucide-react";
 import LogoMark from "@/components/LogoMark";
 import ShutterWipe from "@/components/setup/ShutterWipe";
+import HeroSurvey from "@/components/home/HeroSurvey";
 import { quickSetup, readResume, startQuickGame, startTutorial } from "@/game/quickplay";
 import { isOnline } from "@/online/lobby";
 import { useSession } from "@/online/session";
@@ -71,9 +72,9 @@ export default function HeroSection() {
       className="relative -mt-14 flex min-h-[100svh] items-center justify-center overflow-hidden"
       aria-label={t("home.hero.ariaTitle")}
     >
-      {/* Diorama background, darkened, under a soot vignette */}
-      <div className="hero-bg absolute inset-0">
-        <img src="/hero-diorama.webp" alt={t("home.hero.dioramaAlt")} className="h-full w-full object-cover brightness-[0.7]" />
+      {/* the board in play behind the title, darkened, under a soot vignette */}
+      <div className="hero-bg absolute inset-0 brightness-[0.78]">
+        <HeroSurvey alt={t("home.hero.surveyAlt")} />
       </div>
       <img src="/hero-vignette.webp" alt="" aria-hidden className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-90 mix-blend-multiply" />
       <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.08]" />

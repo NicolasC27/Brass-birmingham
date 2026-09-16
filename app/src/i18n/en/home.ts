@@ -3,6 +3,7 @@ const home = {
     ariaTitle: 'Brassworks title',
     wordmark: 'Brassworks',
     dioramaAlt: 'Engraved panorama of an industrial Midlands valley at dusk',
+    surveyAlt: 'The painted map of the Midlands with a game in play: canals drawn, works laid, sales sealed',
     eyebrow: 'A Midlands Industrial Game · 1770–1870',
     tagline: 'Canals, coal and iron. Build the empire that built the world.',
     quick: 'Play now',
