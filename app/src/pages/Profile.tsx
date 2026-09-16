@@ -25,7 +25,8 @@ import { cn } from '@/lib/utils';
  *  bars, the rest as figures, and the towns they build in most */
 function Manner({ stats, tally }: { stats: Stats; tally: Tally }) {
   const t = useT();
-  const n = Math.max(1, stats.played);
+  /* per game: over the games that carry a tally (older ones were not counted) */
+  const n = Math.max(1, stats.tallied || stats.played);
   const per = (v: number) => (Math.round((v / n) * 10) / 10).toLocaleString();
   const inds = (Object.keys(INDUSTRIES) as IndustryType[]).map((k) => [k, tally.industries[k] ?? 0] as const);
   const most = Math.max(1, ...inds.map(([, v]) => v));
@@ -33,7 +34,7 @@ function Manner({ stats, tally }: { stats: Stats; tally: Tally }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4);
   return (
-    <Panel title={t('site.profile.manner')} tone="paper" meta={t('site.profile.mannerLede', { n: stats.played })}>
+    <Panel title={t('site.profile.manner')} tone="paper" meta={t('site.profile.mannerLede', { n: stats.tallied || stats.played })}>
       <div className="grid gap-6 sm:grid-cols-[1fr_1fr]">
         <dl className="grid grid-cols-2 gap-x-4 gap-y-3 content-start">
           {(
