@@ -163,6 +163,8 @@ interface GameStore {
   myTurn: () => boolean;
   /** the player whose hand this screen shows */
   mySeat: () => number;
+  /** watching an online table from no seat: every hand shut, nothing to play */
+  spectating: () => boolean;
   /** what is left of the turn candle right now, in ms (null: none burns) */
   msLeft: () => number | null;
   reset: () => void;
@@ -408,6 +410,11 @@ export const useGame = create<GameStore>((set, get) => ({
   mySeat: () => {
     const st = get();
     return st.seat ?? st.game?.current ?? 0;
+  },
+
+  spectating: () => {
+    const st = get();
+    return st.code !== null && st.seat !== null && st.seat < 0;
   },
 
   msLeft: () => {

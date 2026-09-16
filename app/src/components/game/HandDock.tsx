@@ -362,7 +362,8 @@ export default function HandDock() {
     return () => window.clearTimeout(id);
   }, [turnKey]);
 
-  if (!game) return null;
+  /* a spectator holds no cards: no dock at all */
+  if (!game || (seat !== null && seat < 0)) return null;
   const p = game.players[game.current];
   const isHumanTurn = game.phase === 'action' && (seat === null ? !p.isBot : seat === game.current);
   /* a move may also be planned out of turn: it waits for my turn */

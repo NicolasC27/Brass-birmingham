@@ -13,6 +13,7 @@ import Notices from '@/components/game/Notices';
 import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
 import Gazette from '@/components/game/Gazette';
 import PreparedPanel from '@/components/game/PreparedPanel';
+import SpectatorStrip from '@/components/game/SpectatorStrip';
 import CoachMarks from '@/components/game/CoachMarks';
 import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
@@ -83,6 +84,7 @@ export default function Game() {
   /* the table a plan is made on: with moves already prepared, the one they leave */
   const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const mySeat = useGame((s) => s.mySeat());
+  const spectating = useGame((s) => s.spectating());
   const init = useGame((s) => s.init);
   const reset = useGame((s) => s.reset);
   const runBot = useGame((s) => s.runBot);
@@ -287,7 +289,9 @@ export default function Game() {
       /* the survey of the orders, from anywhere, as long as there are orders */
       if (isKey(e, 'survey')) {
         const st = useGame.getState();
-        setPreviewQueue(!st.previewQueue);
+        /* a spectator has no orders: the survey shows the seat to act */
+        if (spectating) setSurveySeat(st.surveySeat === null ? game.current : null);
+        else setPreviewQueue(!st.previewQueue);
         return;
       }
       /* another seat's last move, seat after seat, then closed */
@@ -311,11 +315,11 @@ export default function Game() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, mySeat, passTo, isHumanTurn, ledgerOpen, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
+  }, [game, mySeat, spectating, passTo, isHumanTurn, ledgerOpen, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
 
   /* ---------------------- planning targets ---------------------- */
   const selectedCard = useMemo(() => {
-    if (!game || !selectedCardId) return null;
+    if (!game || !selectedCardId || mySeat < 0) return null;
     return game.players[mySeat].hand.find((c) => c.id === selectedCardId) ?? null;
   }, [game, mySeat, selectedCardId]);
 
@@ -553,7 +557,7 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {!surveying && <HandDock />}
+      {!surveying && (spectating ? <SpectatorStrip /> : <HandDock />)}
       <ConcedeBanner />
       <TableMood />
       <Guide />
