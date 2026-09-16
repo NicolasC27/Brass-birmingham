@@ -64,18 +64,22 @@ export default function Game() {
   const preparing = useGame((s) => s.preparing);
   const previewQueue = useGame((s) => s.previewQueue);
   const setPreviewQueue = useGame((s) => s.setPreviewQueue);
+  const surveySeat = useGame((s) => s.surveySeat);
+  const setSurveySeat = useGame((s) => s.setSurveySeat);
+  const cycleSurveySeat = useGame((s) => s.cycleSurveySeat);
+  const surveying = previewQueue || surveySeat !== null;
   const queuedCount = queued.length;
   /* showing the orders on the board: the focus view meanwhile, the reader's own setting back after */
   const focusBefore = useRef<boolean | null>(null);
   useEffect(() => {
-    if (previewQueue) {
-      focusBefore.current = getBoardOptions().focus;
+    if (surveying) {
+      if (focusBefore.current === null) focusBefore.current = getBoardOptions().focus;
       setBoardOption('focus', true);
     } else if (focusBefore.current !== null) {
       setBoardOption('focus', focusBefore.current);
       focusBefore.current = null;
     }
-  }, [previewQueue]);
+  }, [surveying]);
   /* the table a plan is made on: with moves already prepared, the one they leave */
   const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const mySeat = useGame((s) => s.mySeat());
@@ -210,9 +214,10 @@ export default function Game() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       /* the orders shown on the board: Escape closes that first */
-      if (e.key === 'Escape' && useGame.getState().previewQueue) {
+      if (e.key === 'Escape' && (useGame.getState().previewQueue || useGame.getState().surveySeat !== null)) {
         e.preventDefault();
         setPreviewQueue(false);
+        setSurveySeat(null);
         return;
       }
       if (!game || passTo) return;
@@ -283,6 +288,11 @@ export default function Game() {
       if (isKey(e, 'survey')) {
         const st = useGame.getState();
         setPreviewQueue(!st.previewQueue);
+        return;
+      }
+      /* another seat's last move, seat after seat, then closed */
+      if (isKey(e, 'lastMove')) {
+        cycleSurveySeat();
         return;
       }
       if (planActor < 0) return;
@@ -421,16 +431,16 @@ export default function Game() {
             sellTargetsList={sellTargetsList}
             ghost={ghost}
             onInvalid={reject}
-            preview={previewQueue && mySeat >= 0 ? { queued, actor: mySeat } : null}
+            preview={surveySeat !== null ? { kind: 'player', seat: surveySeat } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat } : null}
           />
         </Suspense>
       </div>
 
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
       {/* the orders shown on the board: the whole HUD steps aside, the ribbon alone stays */}
-      {!previewQueue && <EdgeTracks />}
-      {!previewQueue && <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />}
-      {!previewQueue && <PlayerRail
+      {!surveying && <EdgeTracks />}
+      {!surveying && <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />}
+      {!surveying && <PlayerRail
         tools={
           /* the tools under the players: the bots' pace while they play,
              then settings, ideas, the table and the ledger — the ledger
@@ -481,7 +491,7 @@ export default function Game() {
           the full tray hangs right under it when asked, whole, no scrolling,
           and the banner never moves for it (it keeps clear of the tray's
           column by itself) */}
-      {!previewQueue && <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
+      {!surveying && <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
       <AnimatePresence initial={false}>
         {marketOpen && (
           <motion.aside
@@ -543,11 +553,11 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {!previewQueue && <HandDock />}
+      {!surveying && <HandDock />}
       <ConcedeBanner />
       <TableMood />
       <Guide />
-      {!previewQueue && <Notices />}
+      {!surveying && <Notices />}
       <Gazette />
       <PreparedPanel />
       <MarkWarning />

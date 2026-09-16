@@ -160,6 +160,9 @@ export default function PreparedPanel() {
   const [editing, setEditing] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const unlessPick = useGame((s) => s.unlessPick);
+  const surveySeat = useGame((s) => s.surveySeat);
+  const setSurveySeat = useGame((s) => s.setSurveySeat);
+  const cycleSurveySeat = useGame((s) => s.cycleSurveySeat);
   const beginUnlessPick = useGame((s) => s.beginUnlessPick);
   /* the sheet unfolds under the pointer, while a move is prepared, a
      condition edited or a place picked; otherwise a strip says the orders */
@@ -181,6 +184,30 @@ export default function PreparedPanel() {
       return { q, i, cost, card, holds: !!r.state, why: r.error };
     });
   }, [game, me, queued]);
+  /* another seat's last move: its own ribbon */
+  if (game && surveySeat !== null) {
+    const p = game.players[surveySeat];
+    let last = -1;
+    for (const e of game.ledger) if (e.player === surveySeat && e.at !== undefined && e.at > last) last = e.at;
+    const action = last >= 0 ? game.actions[last] : undefined;
+    return (
+      <div className="pointer-events-none fixed inset-x-0 top-3 z-[66] flex justify-center">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} role="status" aria-label={t('game.prepared.lastMoveOf', { name: p?.name ?? '' })} className="plaque pointer-events-auto flex max-w-[96vw] items-center gap-3 whitespace-nowrap rounded-md px-4 py-1.5">
+          {p && <PortraitMedallion p={p} index={surveySeat} active={false} size={24} />}
+          <span className="engraved-brass font-fell text-[12px] uppercase tracking-[0.18em]">{t('game.prepared.lastMoveOf', { name: p?.name ?? '' })}</span>
+          <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+          <span className="font-fell text-[13px] text-cream-100/90">{action ? describeAction(action) : t('game.prepared.noMoveYet')}</span>
+          <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+          <button type="button" onClick={cycleSurveySeat} className="btn-ledger shrink-0 !min-h-[24px] !px-2 !py-0.5 text-[10.5px]">
+            {t('game.prepared.nextPlayer')} <kbd className="ml-1 font-mono text-[9px] opacity-60">{keyLabel(keys.lastMove)}</kbd>
+          </button>
+          <button type="button" onClick={() => setSurveySeat(null)} className="btn-ledger shrink-0 !min-h-[24px] !px-2 !py-0.5 text-[10.5px]">
+            {t('game.prepared.visualising')}
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
   if (!game || me < 0 || (!queued.length && !preparing && !previewQueue)) return null;
   const others = game.players.map((_, idx) => idx).filter((idx) => idx !== me);
   /* the orders on the board: one dark ribbon across the top says them, nothing else */

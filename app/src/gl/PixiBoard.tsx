@@ -20,6 +20,7 @@ import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
 import { buildBoardScene, drawOwnerMedallion, industryFaceUrl, loadBoardAssets, tileFaceUrl } from './paint';
 import type { Prepared } from '@/game/store';
+import type { GameAction } from '@/game/actions';
 import { houseHover, pingTap } from './sfx';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
@@ -52,7 +53,17 @@ interface Props {
   /** fly the camera here whenever `seq` changes (replay follows the action) */
   focus?: { at: [number, number]; seq: number } | null;
   /** the orders for my turn shown in colour over a sepia table */
-  preview?: { queued: Prepared[]; actor: number } | null;
+  preview?: { kind: 'orders'; queued: Prepared[]; actor: number } | { kind: 'player'; seat: number } | null;
+}
+
+/** the moves a survey paints: the orders, numbered, or a seat's last move
+ *  (every action of the game is in the log; the ledger says which was theirs last) */
+function surveyMoves(preview: NonNullable<Props['preview']>, game: GameState): { action: GameAction; n: number | null }[] {
+  if (preview.kind === 'orders') return preview.queued.map((q, i) => ({ action: q.action, n: i + 1 }));
+  let last = -1;
+  for (const e of game.ledger) if (e.player === preview.seat && e.at !== undefined && e.at > last) last = e.at;
+  const action = last >= 0 ? game.actions[last] : undefined;
+  return action ? [{ action, n: null }] : [];
 }
 
 /** world coords for anything a ledger entry can point at */
@@ -257,7 +268,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
        whole table when they are spread out */
     if (preview) {
       const pts: [number, number][] = [];
-      for (const { action: a } of preview.queued) {
+      for (const a of surveyMoves(preview, game).map((m) => m.action)) {
         if (a.kind === 'build') {
           const sp = TOWN_BY_ID[a.town]?.slots[a.slot];
           if (sp) pts.push(displayPosFor(sp.x, sp.y));
@@ -273,7 +284,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           }
         }
       }
-      if (pts.length && preview.queued.length) {
+      if (pts.length) {
         const xs = pts.map((p) => p[0]);
         const ys = pts.map((p) => p[1]);
         const w = Math.max(...xs) - Math.min(...xs);
@@ -1286,13 +1297,14 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
       /* the still-to-flip tiles keep their face but a shade quieter than the orders */
       for (const c of overlay.children) if (c instanceof Sprite) c.alpha = 0.82;
-      const mine = colorOf(preview.actor);
-      const myColor = game.players[preview.actor]?.color ?? 'brass';
-      /* no orders: the survey is of my empire — my links in my colour, a
-         glow on each of my works still to flip */
-      if (!preview.queued.length) {
+      const who = preview.kind === 'player' ? preview.seat : preview.actor;
+      const mine = colorOf(who);
+      const myColor = game.players[who]?.color ?? 'brass';
+      /* the seat's empire first: its links in its colour, a glow on each of
+         its works still to flip */
+      {
         for (const [id, l] of Object.entries(game.links)) {
-          if (l.owner !== preview.actor) continue;
+          if (l.owner !== who) continue;
           const def = LINKS.find((x) => x.id === id);
           if (!def) continue;
           const pts = routeFor(def, l.era).pts;
@@ -1305,7 +1317,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           overlay.addChild(g);
         }
         for (const [key, tile] of Object.entries(game.tiles)) {
-          if (tile.owner !== preview.actor || tile.flipped) continue;
+          if (tile.owner !== who || tile.flipped) continue;
           const [townId, si] = key.split(':');
           const sp = TOWN_BY_ID[townId]?.slots[Number(si)];
           if (sp) {
@@ -1314,15 +1326,28 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           }
         }
       }
-      preview.queued.forEach(({ action: a }, i) => {
-        const n = i + 1;
+      /* then the moves: the orders numbered, or the seat's last move under its shape */
+      const marks = surveyMoves(preview, game);
+      const shape = PLAYER_COLORS[game.players[who]?.color ?? '']?.shape ?? 'circle';
+      const mark = (x: number, y: number, n: number | null) => {
+        if (n !== null) badge(x, y, n);
+        else {
+          const d = new Graphics();
+          d.circle(x + 1, y + 1.5, 12).fill({ color: 0x000000, alpha: 0.45 });
+          d.circle(x, y, 12).fill(0x2a2118).stroke({ width: 1.6, color: 0xc9a45c });
+          drawOwnerMedallion(d, x, y, mine, shape);
+          d.eventMode = 'none';
+          overlay.addChild(d);
+        }
+      };
+      marks.forEach(({ action: a, n }) => {
         if (a.kind === 'build') {
           const sp = TOWN_BY_ID[a.town]?.slots[a.slot];
           if (!sp) return;
           const [x, y] = displayPosFor(sp.x, sp.y);
           glow(x, y, TILE_HALF);
           face(tileFaceUrl(a.industry, opts.tileArt, myColor), x, y, mine);
-          badge(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
+          mark(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
         } else if (a.kind === 'network') {
           for (const id of [a.link, a.second].filter(Boolean) as string[]) {
             const def = LINKS.find((l) => l.id === id);
@@ -1337,7 +1362,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             overlay.addChild(g);
             const [mx, my] = routeFor(def, game.era).mid;
             glow(mx, my, 6);
-            badge(mx, my, n);
+            mark(mx, my, n);
           }
         } else if (a.kind === 'sell') {
           for (const s of a.sales) {
@@ -1345,7 +1370,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             if (!sp) continue;
             const [x, y] = displayPosFor(sp.x, sp.y);
             glow(x, y, TILE_HALF);
-            badge(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
+            mark(x + TILE_HALF - 4, y - TILE_HALF + 4, n);
           }
         }
       });

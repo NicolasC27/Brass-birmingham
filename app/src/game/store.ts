@@ -103,6 +103,11 @@ interface GameStore {
   /** the board shows the prepared moves in colour over a sepia table */
   previewQueue: boolean;
   setPreviewQueue: (on: boolean) => void;
+  /** the survey of another seat: their empire and their last move */
+  surveySeat: number | null;
+  /** the next seat but mine (or none after the last) */
+  cycleSurveySeat: () => void;
+  setSurveySeat: (seat: number | null) => void;
   setPreparing: (on: boolean) => void;
   dropQueued: (index: number) => void;
   /** my turn has come: the first prepared move plays if the engine still takes it */
@@ -297,6 +302,7 @@ const freshTable = {
   preparing: false,
   queued: [] as Prepared[],
   previewQueue: false,
+  surveySeat: null as number | null,
   unlessPick: null as number | null,
 };
 
@@ -571,7 +577,19 @@ export const useGame = create<GameStore>((set, get) => ({
     const queued = get().queued.filter((_, i) => i !== index);
     set({ queued, unlessPick: null });
   },
-  setPreviewQueue: (on) => set({ previewQueue: on && !!get().game }),
+  setPreviewQueue: (on) => set({ previewQueue: on && !!get().game, surveySeat: null }),
+  setSurveySeat: (seat) => set({ surveySeat: seat, previewQueue: false }),
+  cycleSurveySeat: () => {
+    const st = get();
+    const g = st.game;
+    if (!g) return;
+    const me = st.seat ?? g.players.findIndex((p) => !p.isBot);
+    const others = g.players.map((_, i) => i).filter((i) => i !== me);
+    if (!others.length) return;
+    const k = st.surveySeat === null ? -1 : others.indexOf(st.surveySeat);
+    const next = k + 1 < others.length ? others[k + 1] : null;
+    set({ surveySeat: next, previewQueue: false });
+  },
   beginUnlessPick: (index) => set({ unlessPick: index }),
   applyUnlessPick: (town, slot) => {
     const st = get();
