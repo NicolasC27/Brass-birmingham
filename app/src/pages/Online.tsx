@@ -112,7 +112,7 @@ export default function Online() {
   if (!isOnline) return <LocalOffice />;
   const table = normalizeCode(params.get('table') ?? '');
   const query = table ? `?table=${table}` : '';
-  if (session) return <Navigate to={table ? `/account${query}` : '/desk'} replace />;
+  if (session) return <Navigate to={table ? `/account${query}` : '/play'} replace />;
   /* a stranger, or a token the office is not there to answer: the door */
   if (stranger || line === 'offline') return <Navigate to={`/account${query}`} replace />;
   /* a token on its way: a moment, then one of the two doors */

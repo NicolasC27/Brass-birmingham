@@ -41,7 +41,7 @@ export default function HeroSection() {
       if (e.key !== "Enter" || e.metaKey || e.ctrlKey || e.altKey) return;
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "BUTTON" || tag === "A") return;
-      if (isOnline) navigate(session ? "/desk" : "/account");
+      if (isOnline) navigate(session ? "/play" : "/account");
       else if (save) navigate("/game");
       else play();
     };
@@ -112,7 +112,7 @@ export default function HeroSection() {
           {isOnline ? (
             <>
               <Link
-                to={session ? "/desk" : "/account"}
+                to={session ? "/play" : "/account"}
                 className="btn-strike w-full !rounded-lg !font-display !text-[22px] !font-bold normal-case !tracking-normal"
                 style={{ minHeight: 64 }}
               >

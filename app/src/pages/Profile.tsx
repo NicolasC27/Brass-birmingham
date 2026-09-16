@@ -166,7 +166,7 @@ export default function Profile() {
   const stats = desk?.stats;
 
   return (
-    <PageShell back={{ to: '/desk', label: t('site.nav.desk') }} eyebrow={t('site.profile.eyebrow')} title={t('site.profile.title')} lede={t('site.profile.lede')}>
+    <PageShell back={{ to: '/record', label: t('hall.nav.record') }} eyebrow={t('site.profile.eyebrow')} title={t('site.profile.title')} lede={t('site.profile.lede')}>
       <VerifyBanner />
       <Refusal text={error} />
       <div className="mt-2 grid gap-6 lg:grid-cols-[1fr_360px]">

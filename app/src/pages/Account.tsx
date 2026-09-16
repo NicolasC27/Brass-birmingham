@@ -74,7 +74,7 @@ export default function Account() {
         .catch((e: Error) => setError(t(`site.desk.error.${e.message}`)));
       return;
     }
-    navigate('/desk', { replace: true });
+    navigate('/play', { replace: true });
   }, [session, invited, verifying, resetting, navigate, t]);
 
   const fail = (e: unknown) => setError(t(`site.account.error.${(e as Error).message}`));
@@ -110,7 +110,7 @@ export default function Account() {
     setBusy(true);
     try {
       await resetPassword(token, password);
-      navigate('/desk', { replace: true });
+      navigate('/play', { replace: true });
     } catch (e) {
       fail(e);
     } finally {
@@ -135,7 +135,7 @@ export default function Account() {
         {verdict !== 'pending' && (
           <div className="flex items-center gap-4">
             {ok ? <CheckCircle2 className="h-8 w-8 text-bottle-600 brightness-150" /> : <MailWarning className="h-8 w-8 text-rust-500 brightness-150" />}
-            <Link to={ok ? '/desk' : '/desk'} className="btn-strike">
+            <Link to="/play" className="btn-strike">
               {t('site.account.verifiedCta')}
             </Link>
           </div>

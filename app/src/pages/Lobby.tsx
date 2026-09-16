@@ -327,7 +327,7 @@ export default function Lobby() {
     });
   const leave = () => {
     lobby.leave(code);
-    navigate(isOnline ? '/desk' : '/online');
+    navigate(isOnline ? '/play' : '/online');
   };
   const start = () => startable && iAmHost && edit((tb) => ({ ...tb, status: 'starting' }));
 
@@ -339,7 +339,7 @@ export default function Lobby() {
         {isOnline && <VerifyBanner />}
         <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
           <div className="min-w-0">
-            <Link to={isOnline ? '/desk' : '/online'} className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
+            <Link to={isOnline ? '/play' : '/online'} className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
               <ArrowLeft className="h-3.5 w-3.5" />
               {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
             </Link>
