@@ -56,8 +56,8 @@ function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
         className="absolute inset-1 bg-contain bg-center bg-no-repeat"
         style={{
           backgroundImage: 'url(/tile-cotton-cut.png)',
-          filter: art === 'engraved' ? 'grayscale(1) sepia(0.55) brightness(0.72) contrast(0.95)' : undefined,
-          opacity: art === 'engraved' ? 0.88 : 1,
+          filter: art === 'engraved' ? 'grayscale(1) sepia(0.55) brightness(0.72) contrast(0.95)' : art === 'mono' ? 'grayscale(1) brightness(1.05) contrast(1.35)' : undefined,
+          opacity: art === 'painted' ? 1 : 0.9,
         }}
       />
     </span>
@@ -450,7 +450,7 @@ export default function BoardSettings() {
                       hint={t('game.settings.slotArtHint')}
                       value={opts.slotArt}
                       onChange={(v) => setBoardOption('slotArt', v)}
-                      options={(['engraved', 'painted'] as SlotArt[]).map((id) => ({
+                      options={(['engraved', 'mono', 'painted'] as SlotArt[]).map((id) => ({
                         id,
                         label: t(`game.settings.slot.${id}`),
                         preview: (active) => <SlotPreview art={id} active={active} />,

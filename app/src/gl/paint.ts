@@ -23,7 +23,7 @@ const hex = (s: string): number => parseInt(s.replace('#', ''), 16);
 /** stock-badge layouts on built tiles (A-B probe) */
 export type StockStyle = 'counter' | 'big' | 'tag' | 'top' | 'corner';
 /** empty-slot face: sepia engraving printed on the board, or the colour painting */
-export type SlotArt = 'engraved' | 'painted';
+export type SlotArt = 'engraved' | 'mono' | 'painted';
 /** income / VP on built cards: one quiet bottom band, or two boxed chips */
 export type ChipStyle = 'band' | 'chips';
 /** Painting variants per industry. Each variant is a directory holding the
@@ -203,6 +203,10 @@ interface TileSet {
   printHalfL: Record<IndustryType, Texture>; // engraved left half (dual slots, fallback)
   printHalfR: Record<IndustryType, Texture>; // engraved right half (fallback)
   printPair: Record<string, Texture>; // engraved combined dual-industry prints
+  mono: Record<IndustryType, Texture>; // black-and-white print (empty slots, plainer)
+  monoHalfL: Record<IndustryType, Texture>;
+  monoHalfR: Record<IndustryType, Texture>;
+  monoPair: Record<string, Texture>;
 }
 /** one industry's textures from one variant directory */
 interface IndustryArt {
@@ -214,6 +218,9 @@ interface IndustryArt {
   print: Texture;
   printHalfL: Texture;
   printHalfR: Texture;
+  mono: Texture;
+  monoHalfL: Texture;
+  monoHalfR: Texture;
 }
 const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
 const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pairs, `${a}-${b}`
@@ -249,7 +256,7 @@ const shade = (c: number, f: number): number => {
  *  Rebake a painting as a monochrome sepia engraving — ink for the darks,
  *  parchment for the lights — so the colour of a placed tile is the only
  *  colour in the slot grid. Done once per texture at load. */
-function engraveTexture(tex: Texture): Texture {
+function engraveTexture(tex: Texture, mono = false): Texture {
   const src = tex.source.resource as CanvasImageSource | undefined;
   if (!src) return tex;
   const w = tex.width;
@@ -262,12 +269,15 @@ function engraveTexture(tex: Texture): Texture {
   ctx.drawImage(src, 0, 0, w, h);
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
-  /* ink #2a2118 → faded parchment #bfa982, slight gamma so mid-tones stay legible */
-  const ink = [0x2a, 0x21, 0x18];
-  const paper = [0xbf, 0xa9, 0x82];
+  /* ink #2a2118 → faded parchment #bfa982, slight gamma so mid-tones stay
+     legible; the mono print is black ink on white paper, contrast pushed,
+     for eyes that want the empty slots plainer still */
+  const ink = mono ? [0x12, 0x10, 0x0e] : [0x2a, 0x21, 0x18];
+  const paper = mono ? [0xf0, 0xec, 0xe2] : [0xbf, 0xa9, 0x82];
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] === 0) continue;
-    const lum = Math.pow((0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255, 0.85);
+    const raw = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+    const lum = mono ? Math.min(1, Math.max(0, (Math.pow(raw, 0.9) - 0.5) * 1.35 + 0.5)) : Math.pow(raw, 0.85);
     d[i] = ink[0] + (paper[0] - ink[0]) * lum;
     d[i + 1] = ink[1] + (paper[1] - ink[1]) * lum;
     d[i + 2] = ink[2] + (paper[2] - ink[2]) * lum;
@@ -331,7 +341,8 @@ const half = (t: Texture, right: boolean): Texture => new Texture({ source: t.so
 /** derive the halves and the engraved print every set needs from its face */
 const artFrom = (cut: Texture, built: Record<string, Texture>, builtGrain: Record<string, Texture>): IndustryArt => {
   const print = engraveTexture(cut);
-  return { cut, built, builtGrain, halfL: half(cut, false), halfR: half(cut, true), print, printHalfL: half(print, false), printHalfR: half(print, true) };
+  const mono = engraveTexture(cut, true);
+  return { cut, built, builtGrain, halfL: half(cut, false), halfR: half(cut, true), print, printHalfL: half(print, false), printHalfR: half(print, true), mono, monoHalfL: half(mono, false), monoHalfR: half(mono, true) };
 };
 
 /** fetch (once) one industry's art from a variant: a finished painting that
@@ -413,6 +424,7 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
   const arts = Object.fromEntries(await Promise.all(industries.map(async (i) => [i, await loadIndustryArt(variantOf(i, art), i)]))) as Record<IndustryType, IndustryArt>;
   const pair: Record<string, Texture> = {};
   const printPair: Record<string, Texture> = {};
+  const monoPair: Record<string, Texture> = {};
   await Promise.all(
     dualPairs().map(async ([a, b]) => {
       const va = variantOf(a, art);
@@ -430,17 +442,19 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
       if (!t) return;
       pair[pairKey(a, b)] = t;
       printPair[pairKey(a, b)] = engravedPair(key, t);
+      monoPair[pairKey(a, b)] = engravedPair(key, t, true);
     }),
   );
   const by = <K extends keyof IndustryArt>(k: K) => Object.fromEntries(industries.map((i) => [i, arts[i][k]])) as Record<IndustryType, IndustryArt[K]>;
-  return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair };
+  return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair, mono: by('mono'), monoHalfL: by('monoHalfL'), monoHalfR: by('monoHalfR'), monoPair };
 }
 const printPairCache = new Map<string, Texture>();
-function engravedPair(key: string, t: Texture): Texture {
-  let e = printPairCache.get(key);
+function engravedPair(key: string, t: Texture, mono = false): Texture {
+  const k = mono ? `${key}|mono` : key;
+  let e = printPairCache.get(k);
   if (!e) {
-    e = engraveTexture(t);
-    printPairCache.set(key, e);
+    e = engraveTexture(t, mono);
+    printPairCache.set(k, e);
   }
   return e;
 }
@@ -1232,9 +1246,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           /* the painted art IS the face, full colour at every zoom.
              Dual slot: the generated combined painting when available
              (one cohesive composition), otherwise the half-crop split. */
-          const engraved = look.slotArt === 'engraved';
+          const engraved = look.slotArt !== 'painted';
+          /* the print set: sepia, or black ink on white for plainer slots */
+          const mono = look.slotArt === 'mono';
+          const prints = mono ? { pair: tileSet.monoPair, halfL: tileSet.monoHalfL, halfR: tileSet.monoHalfR, print: tileSet.mono } : { pair: tileSet.printPair, halfL: tileSet.printHalfL, halfR: tileSet.printHalfR, print: tileSet.print };
           if (allows.length > 1) {
-            const combined = (engraved ? tileSet.printPair : tileSet.pair)[pairKey(allows[0], allows[1])];
+            const combined = (engraved ? prints.pair : tileSet.pair)[pairKey(allows[0], allows[1])];
             if (combined) {
               art.texture = combined;
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
@@ -1243,11 +1260,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               art2.visible = false;
             } else {
               const hw = (TILE - 8) / 2;
-              art.texture = (engraved ? tileSet.printHalfL : tileSet.halfL)[allows[0]];
+              art.texture = (engraved ? prints.halfL : tileSet.halfL)[allows[0]];
               art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
               art.width = hw;
               art.height = TILE - 8;
-              art2.texture = (engraved ? tileSet.printHalfR : tileSet.halfR)[allows[1]];
+              art2.texture = (engraved ? prints.halfR : tileSet.halfR)[allows[1]];
               art2.position.set(x - TILE_HALF + 4 + hw, y - TILE_HALF + 4);
               art2.width = hw;
               art2.height = TILE - 8;
@@ -1255,7 +1272,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
               frame.moveTo(x, y - TILE_HALF + 4).lineTo(x, y + TILE_HALF - 4).stroke({ width: 2, color: 0x0c0a08 });
             }
           } else {
-            art.texture = (engraved ? tileSet.print : tileSet.cut)[allows[0]];
+            art.texture = (engraved ? prints.print : tileSet.cut)[allows[0]];
             art.position.set(x - TILE_HALF + 4, y - TILE_HALF + 4);
             art.width = TILE - 8;
             art.height = TILE - 8;
