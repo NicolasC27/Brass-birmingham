@@ -5,6 +5,10 @@ import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/
 import VerifyBanner from '@/components/site/VerifyBanner';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLAYER_COLORS } from '@/components/setup/constants';
+import { INDUSTRIES, TOWN_BY_ID } from '@/game/data';
+import type { IndustryType } from '@/game/types';
+import type { Tally } from '@/game/tally';
+import type { Stats } from '@/online/table';
 import type { PlayerColor } from '@/components/setup/constants';
 import { isOnline } from '@/online/lobby';
 import { changePassword, signOut, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
@@ -16,6 +20,98 @@ import { cn } from '@/lib/utils';
 /* does not change, the address and whether it answered, a motto, a    */
 /* favourite colour, the figures, and the password.                    */
 /* ------------------------------------------------------------------ */
+
+/** what the player does at a table, per game: the six industries as
+ *  bars, the rest as figures, and the towns they build in most */
+function Manner({ stats, tally }: { stats: Stats; tally: Tally }) {
+  const t = useT();
+  const n = Math.max(1, stats.played);
+  const per = (v: number) => (Math.round((v / n) * 10) / 10).toLocaleString();
+  const inds = (Object.keys(INDUSTRIES) as IndustryType[]).map((k) => [k, tally.industries[k] ?? 0] as const);
+  const most = Math.max(1, ...inds.map(([, v]) => v));
+  const towns = Object.entries(tally.towns)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4);
+  return (
+    <Panel title={t('site.profile.manner')} tone="paper" meta={t('site.profile.mannerLede', { n: stats.played })}>
+      <div className="grid gap-6 sm:grid-cols-[1fr_1fr]">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 content-start">
+          {(
+            [
+              ['built', tally.built],
+              ['links', tally.links],
+              ['sold', tally.sold],
+              ['developed', tally.developed],
+              ['loans', tally.loans],
+              ['flipped', tally.flipped],
+            ] as const
+          ).map(([k, v]) => (
+            <div key={k}>
+              <dt className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-900/55">{t(`site.profile.${k}`)}</dt>
+              <dd className="font-display text-[22px] font-black leading-none text-ink-900">{per(v)}</dd>
+            </div>
+          ))}
+        </dl>
+        <div>
+          <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-900/55">{t('site.profile.industries')}</p>
+          <ul className="mt-2 grid gap-1.5">
+            {inds.map(([k, v]) => (
+              <li key={k} className="grid grid-cols-[92px_1fr_28px] items-center gap-2">
+                <span className="truncate font-sans text-[11.5px] text-ink-900/80">{t(`game.settings.industry.${k}`)}</span>
+                <span className="h-2 rounded-sm bg-ink-900/10">
+                  <span className="block h-full rounded-sm bg-brass-500" style={{ width: `${Math.round((v / most) * 100)}%` }} />
+                </span>
+                <span className="text-right font-mono text-[11px] text-ink-900/70">{per(v)}</span>
+              </li>
+            ))}
+          </ul>
+          {towns.length > 0 && (
+            <>
+              <p className="mt-4 font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-900/55">{t('site.profile.towns')}</p>
+              <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                {towns.map(([id, v]) => (
+                  <li key={id} className="rounded-sm border border-ink-900/20 px-2 py-[3px] font-fell text-[11px] uppercase tracking-[0.1em] text-ink-900/80">
+                    {TOWN_BY_ID[id]?.name ?? id} <span className="font-mono text-[10px] text-ink-900/55">×{v}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+/** the record against every other person met at a table */
+function Rivals({ stats }: { stats: Stats }) {
+  const t = useT();
+  return (
+    <Panel title={t('site.profile.rivals')}>
+      <p className="font-sans text-[11.5px] text-cream-100/50">{t('site.profile.rivalsHint')}</p>
+      {stats.rivals.length === 0 ? (
+        <p className="mt-3 font-serif text-[14px] italic text-cream-100/55">{t('site.profile.rivalsNone')}</p>
+      ) : (
+        <ul className="mt-3 grid gap-2">
+          {stats.rivals.map((r) => {
+            const ahead = r.won > r.lost;
+            return (
+              <li key={r.id} className="flex items-center justify-between gap-3 rounded-md border border-brass-700/40 bg-coal-950/40 px-3 py-2">
+                <span className="min-w-0">
+                  <span className="block truncate font-sans text-[12.5px] font-semibold text-cream-100">{r.name}</span>
+                  <span className="block font-sans text-[10.5px] text-cream-100/50">{t(r.played === 1 ? 'site.profile.game' : 'site.profile.games', { n: r.played })}</span>
+                </span>
+                <span className={cn('shrink-0 rounded-sm border px-1.5 py-[2px] font-mono text-[10.5px] font-bold', ahead ? 'border-brass-400 text-brass-400' : r.won < r.lost ? 'border-rust-500/60 text-rust-500 brightness-150' : 'border-cream-100/25 text-cream-100/60')} title={t('site.profile.record', { won: r.won, lost: r.lost })}>
+                  {r.won} – {r.lost}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Panel>
+  );
+}
 
 export default function Profile() {
   const t = useT();
@@ -94,6 +190,8 @@ export default function Profile() {
             </div>
           </Panel>
 
+          {stats?.tally && <Manner stats={stats} tally={stats.tally} />}
+
           <Panel title={t('site.profile.motto')}>
             <div className="grid gap-5">
               <Field id="profile-motto" label={t('site.profile.motto')} hint={t('site.profile.mottoHint')}>
@@ -157,15 +255,18 @@ export default function Profile() {
                   ['rate', stats && stats.played ? `${Math.round((stats.won / stats.played) * 100)} %` : '—'],
                   ['average', stats?.averageVp ?? 0],
                   ['best', stats?.bestVp ?? 0],
+                  ['place', stats?.averagePlace ? t('site.profile.placeValue', { n: stats.averagePlace }) : '—'],
                 ] as const
               ).map(([k, v]) => (
                 <div key={k}>
-                  <dt className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-900/55">{t(`site.desk.stats.${k}`)}</dt>
+                  <dt className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-900/55">{t(k === 'place' ? 'site.profile.place' : `site.desk.stats.${k}`)}</dt>
                   <dd className="font-display text-[24px] font-black leading-none text-ink-900">{v}</dd>
                 </div>
               ))}
             </dl>
+            {!stats?.played && <p className="mt-3 font-serif text-[13px] italic text-ink-900/60">{t('site.profile.noFigures')}</p>}
           </Panel>
+          {stats && <Rivals stats={stats} />}
           <Panel>
             <p className="font-serif text-[14px] leading-relaxed text-cream-100/65">{t('site.profile.danger')}</p>
             <button
