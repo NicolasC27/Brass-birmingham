@@ -252,6 +252,8 @@ export default function HandDock() {
 
   /* -------------------- auto-collapse state -------------------- */
   const [hovered, setHovered] = useState(false);
+  /* the card under the pointer comes forward, the cards after it slide aside */
+  const [hoverCard, setHoverCard] = useState<number | null>(null);
   /* pinned = never folds by itself; remembered across games */
   const [pinned, setPinnedState] = useState(() => {
     try {
@@ -671,7 +673,17 @@ export default function HandDock() {
             {shown && (
               <div className="mx-auto flex items-end pl-1 pr-1">
               {shown.hand.map((card, i) => (
-                <div key={card.id} className={cn('first:ml-0', shown.hand.length >= 7 ? '-ml-9' : shown.hand.length === 6 ? '-ml-6' : '-ml-4')} style={{ scrollSnapAlign: 'center' }}>
+                <div
+                  key={card.id}
+                  className={cn('relative first:ml-0 transition-transform duration-150 ease-out', shown.hand.length >= 7 ? '-ml-9' : shown.hand.length === 6 ? '-ml-6' : '-ml-4', hoverCard === i && 'z-20')}
+                  style={{
+                    scrollSnapAlign: 'center',
+                    /* the hovered card rises and grows a touch; those to its right make room for it */
+                    transform: hoverCard === i ? 'translateY(-6px) scale(1.06)' : hoverCard !== null && i > hoverCard ? `translateX(${shown.hand.length >= 7 ? 30 : shown.hand.length === 6 ? 18 : 8}px)` : undefined,
+                  }}
+                  onPointerEnter={() => setHoverCard(i)}
+                  onPointerLeave={() => setHoverCard((h) => (h === i ? null : h))}
+                >
                   <GameCard
                     card={card}
                     index={i}
