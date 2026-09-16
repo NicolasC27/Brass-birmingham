@@ -1,7 +1,7 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { AuthError, Desk, Identity, LobbyError, Me, Table } from './table';
+import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, PublicTable, QueueState, Table } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -102,6 +102,13 @@ export type ClientMessage =
   | { t: 'telegram'; code: string; key: string }
   /** look here: a town, a house or a route pointed at */
   | { t: 'mark'; code: string; key: string }
+  /** the register of tables being played, for the hall */
+  | { t: 'tables'; rid: number }
+  | { t: 'leaderboard'; rid: number }
+  /** stand in (or leave) the quick or the ranked queue */
+  | { t: 'queue'; mode: 'quick' | 'ranked'; on: boolean }
+  /** buy an item at the counter with the guineas earned at the tables */
+  | { t: 'buy'; rid: number; item: string }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -128,6 +135,10 @@ export type ServerMessage =
   | { t: 'mark'; code: string; from: number; key: string; at: number }
   /** the office frowns at a shower of marks: a warning, then silence for the game */
   | { t: 'warned'; code: string; about: 'marks'; muted: boolean }
+  | { t: 'tables'; rid?: number; tables: PublicTable[] }
+  | { t: 'leaderboard'; rid: number; board: Leaderboard }
+  /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
+  | { t: 'queue'; state: QueueState | null }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

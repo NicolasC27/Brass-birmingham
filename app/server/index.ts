@@ -14,6 +14,7 @@ import { normalizeCode } from '@/online/table';
 import { Hall, STALE_MS } from './hall';
 import { DEFAULT_PACE } from './game';
 import type { Pace } from './game';
+import type { Waits } from './queue';
 import { letters, mailerFromEnv } from './mail';
 import type { Mailer } from './mail';
 import { Store } from './store';
@@ -42,6 +43,11 @@ interface Client {
   token: string | null;
   /** the table codes this socket follows */
   watching: Set<string>;
+  /** when this socket last asked for the register of tables (0: never) */
+  askedTables: number;
+  /** when the register was last sent, and the push waiting to go */
+  tablesAt: number;
+  tablesTimer: ReturnType<typeof setTimeout> | null;
   /** how much this socket may still say, and how often it has been told no */
   words: Bucket;
   claims: Bucket;
@@ -75,6 +81,12 @@ const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'sig
 const PATIENCE = 60;
 /** ideas and bugs: five an hour an account */
 const NOTES_PER_HOUR = 5;
+/** the register of tables keeps coming to whoever asked for it this recently */
+const REGISTER_FOLLOW_MS = 2 * 60 * 1000;
+/** and never more than once a second a socket */
+const REGISTER_PUSH_MS = 1000;
+/** how often the office looks down the queues */
+const QUEUE_EVERY_MS = 5000;
 
 /** the counter's own reading of the letters and the box: only from this machine */
 const loopback = (req: IncomingMessage): boolean => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
@@ -119,6 +131,11 @@ export interface ServeOptions {
   /** the book ideas and bugs are written in (FEEDBACK_FILE; feedback.md
    *  next to the register by default, none for a house that forgets) */
   feedbackFile?: string | null;
+  /** the clock the queues wait by, and how long they wait — for the tests */
+  clock?: () => number;
+  waits?: Partial<Waits>;
+  /** how often the queues are looked down (0 = only on a join) */
+  queueEvery?: number;
 }
 
 export interface Serving {
@@ -136,7 +153,7 @@ const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verifi
 
 export function serve(options: ServeOptions = {}): Promise<Serving> {
   const store = new Store(options.file ?? 'brassworks.db');
-  const hall = new Hall(store, options.pace ?? DEFAULT_PACE);
+  const hall = new Hall(store, options.pace ?? DEFAULT_PACE, { now: options.clock, waits: options.waits });
   const post = options.mailer ?? mailerFromEnv();
   const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:5173');
   const feedbackTo = (options.feedbackTo ?? process.env.FEEDBACK_TO ?? '').trim();
@@ -187,6 +204,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
   const watchers = (code: string) => [...clients].filter((c) => c.watching.has(code));
   const socketsOf = (accountId: string) => [...clients].filter((c) => c.me?.id === accountId);
+  hall.presence({
+    count: () => new Set([...clients].filter((c) => c.me).map((c) => c.me!.id)).size,
+    has: (accountId) => socketsOf(accountId).length > 0,
+    watchers: (code) => watchers(code).length,
+  });
 
   const pushTable = (c: Client, code: string) => send(c, { t: 'table', code, table: hall.table(code) });
   const pushGame = (c: Client, code: string) => {
@@ -204,6 +226,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const tellFriends = (accountId: string) => {
     for (const id of hall.friendsToTell(accountId)) for (const c of socketsOf(id)) pushDesk(c);
   };
+  /** the register of tables, to a socket that asked for it of late — at
+   *  most once a second, the changes in between folded into one push */
+  const pushTables = (c: Client) => {
+    if (c.tablesTimer || Date.now() - c.askedTables > REGISTER_FOLLOW_MS) return;
+    c.tablesTimer = setTimeout(
+      () => {
+        c.tablesTimer = null;
+        c.tablesAt = Date.now();
+        send(c, { t: 'tables', tables: hall.register() });
+      },
+      Math.max(0, REGISTER_PUSH_MS - (Date.now() - c.tablesAt)),
+    );
+  };
   /** the account changed: every socket it holds hears the new `me` */
   const pushMe = (accountId: string, rid?: number, to?: Client) => {
     const account = store.account(accountId);
@@ -219,12 +254,25 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       if (what === 'table') pushTable(c, code);
       else pushGame(c, code);
     }
+    for (const c of clients) pushTables(c);
     /* the game is over: what the office held against its players is forgotten */
     const game = what === 'game' ? hall.game(code) : null;
     if (game?.over) for (const id of game.seatIds) offices.delete(id);
   });
   hall.onDesk((accountId) => {
     for (const c of socketsOf(accountId)) pushDesk(c);
+  });
+  hall.onQueue((accountId, state) => {
+    for (const c of socketsOf(accountId)) send(c, { t: 'queue', state });
+  });
+  /* dealt from a queue: every socket of theirs sits down at the table */
+  hall.onDealt((accountIds, table) => {
+    for (const id of accountIds) {
+      for (const c of socketsOf(id)) {
+        c.watching.add(table.code);
+        send(c, { t: 'seated', rid: 0, table });
+      }
+    }
   });
 
   /** a letter on its way — a post that fails is logged, never thrown at the client */
@@ -245,7 +293,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, ip: req.socket.remoteAddress ?? '', me: null, token: null, watching: new Set(), words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, ip: req.socket.remoteAddress ?? '', me: null, token: null, watching: new Set(), askedTables: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
@@ -266,6 +314,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     });
     const gone = () => {
       clients.delete(client);
+      if (client.tablesTimer) clearTimeout(client.tablesTimer);
+      client.tablesTimer = null;
       if (client.me) tellFriends(client.me.id);
     };
     socket.on('close', gone);
@@ -400,6 +450,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'desk':
         pushDesk(c, m.rid);
         return;
+      case 'tables':
+        /* asked for once, the register keeps coming for a while */
+        c.askedTables = Date.now();
+        c.tablesAt = c.askedTables;
+        send(c, { t: 'tables', rid: m.rid, tables: hall.register() });
+        return;
+      case 'leaderboard':
+        send(c, { t: 'leaderboard', rid: m.rid, board: hall.leaderboard(who.id) });
+        return;
+      case 'queue':
+        /* the queues are for verified accounts, and say nothing to the others */
+        if (who.verified && (m.mode === 'quick' || m.mode === 'ranked')) hall.queue(who.id, m.mode, !!m.on);
+        return;
       case 'friend': {
         hall.befriend(who, m.name);
         send(c, { t: 'done', rid: m.rid });
@@ -448,6 +511,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'invite': {
         hall.invite(normalizeCode(m.code), who, m.name);
         send(c, { t: 'done', rid: m.rid });
+        return;
+      }
+      case 'buy': {
+        const error = typeof m.item === 'string' ? store.buy(who.id, m.item) : 'refused';
+        if (error) {
+          send(c, { t: 'refused', rid: m.rid, error });
+          return;
+        }
+        send(c, { t: 'done', rid: m.rid });
+        for (const s of socketsOf(who.id)) pushDesk(s);
         return;
       }
       case 'answer': {
@@ -554,6 +627,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
 
   const every = options.sweepEvery ?? 15 * 60 * 1000;
   const janitor = every > 0 ? setInterval(() => hall.sweep(STALE_MS), every) : null;
+  const queueEvery = options.queueEvery ?? QUEUE_EVERY_MS;
+  const usher = queueEvery > 0 ? setInterval(() => hall.matchQueues(), queueEvery) : null;
 
   return new Promise((resolve) => {
     http.listen(options.port ?? 8787, options.host ?? '0.0.0.0', () => {
@@ -565,8 +640,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         close: () =>
           new Promise<void>((done) => {
             if (janitor) clearInterval(janitor);
+            if (usher) clearInterval(usher);
             hall.dispose();
-            for (const c of clients) c.socket.terminate();
+            for (const c of clients) {
+              if (c.tablesTimer) clearTimeout(c.tablesTimer);
+              c.socket.terminate();
+            }
             wss.close(() =>
               http.close(() => {
                 store.close();

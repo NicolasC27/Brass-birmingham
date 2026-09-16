@@ -29,6 +29,8 @@ export interface Table {
   seats: TableSeat[];
   options: SetupOptions;
   status: 'open' | 'starting';
+  /** a table the office dealt from the ranked queue: the cote is at stake, no machines */
+  ranked?: boolean;
   createdAt: number;
   updatedAt: number;
 }
@@ -77,7 +79,93 @@ export interface TableSummary {
   current?: number;
   /** it is my move */
   myTurn: boolean;
+  ranked?: boolean;
   updatedAt: number;
+}
+
+/* ------------------------- the hall, the cote, the counter ------------------------- */
+
+/** a table anyone may look at: the register of what is being played */
+export interface PublicTable {
+  code: string;
+  name: string;
+  hostName: string;
+  seats: { name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
+  status: 'open' | 'playing';
+  era?: Era;
+  round?: number;
+  /** the seat to act */
+  current?: number;
+  ranked: boolean;
+  /** sockets watching the table right now, the seated ones included */
+  watchers: number;
+  updatedAt: number;
+}
+
+/** the guild ranks, by cote */
+export type Tier = 'apprentice' | 'journeyman' | 'foreman' | 'industrialist' | 'magnate';
+export const TIER_FLOOR: Record<Tier, number> = { apprentice: 0, journeyman: 1200, foreman: 1400, industrialist: 1600, magnate: 1800 };
+export const tierOf = (rating: number): Tier => (rating >= 1800 ? 'magnate' : rating >= 1600 ? 'industrialist' : rating >= 1400 ? 'foreman' : rating >= 1200 ? 'journeyman' : 'apprentice');
+
+/** where one stands this season */
+export interface Rating {
+  rating: number;
+  tier: Tier;
+  /** ranked games this season */
+  games: number;
+  won: number;
+  /** placement games still to play before the cote is firm */
+  placements: number;
+  /** the last cotes, oldest first (the trend) */
+  trend: number[];
+}
+
+export interface Season {
+  id: string;
+  /** "Exercice 1826 · T3" */
+  name: string;
+  endsAt: number;
+}
+
+export interface LeaderRow {
+  id: string;
+  name: string;
+  color: PlayerColor | null;
+  rating: number;
+  tier: Tier;
+  games: number;
+  won: number;
+  trend: number[];
+}
+
+export interface Leaderboard {
+  season: Season;
+  /** accounts ranked this season */
+  players: number;
+  rows: LeaderRow[];
+  /** my own row and rank, when I am ranked */
+  me: (LeaderRow & { rank: number }) | null;
+}
+
+/** the queue I stand in */
+export interface QueueState {
+  mode: 'quick' | 'ranked';
+  since: number;
+  /** people in this queue, me included */
+  waiting: number;
+}
+
+/** the counter's items: cosmetics paid in guineas earned at the tables */
+export interface Purse {
+  guineas: number;
+  owned: string[];
+}
+
+/** the house at a glance */
+export interface HallCounts {
+  online: number;
+  playing: number;
+  queued: number;
 }
 
 export interface Invitation {
@@ -138,6 +226,13 @@ export interface Desk {
   friends: Friend[];
   history: PastGame[];
   stats: Stats;
+  /** my cote this season (null before the first placement) */
+  rating: Rating | null;
+  season: Season;
+  purse: Purse;
+  hall: HallCounts;
+  /** the queue I stand in, if any */
+  queue: QueueState | null;
 }
 
 export const MAX_SEATS = 4;

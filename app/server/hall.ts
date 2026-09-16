@@ -3,9 +3,12 @@ import type { BotDifficulty, PlayerColor, SetupOptions } from '@/components/setu
 import type { GameAction } from '@/game/actions';
 import type { SetupPayload } from '@/game/types';
 import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
-import type { Desk, Identity, Invitation, LobbyError, Table, TableSeat, TableSummary } from '@/online/table';
+import type { Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableSeat, TableSummary } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
+import { Queue } from './queue';
+import type { Match, Mode, Waits } from './queue';
+import { seasonAt } from './rating';
 import type { Store } from './store';
 
 /* ------------------------------------------------------------------ */
@@ -19,6 +22,11 @@ import type { Store } from './store';
 /* Nothing lives only in memory: tables are written to the register as */
 /* they change and games as they are played, so the house opens again  */
 /* on the same tables, with every game exactly where it was left.      */
+/*                                                                     */
+/* The hall also keeps the two queues and deals their tables itself,   */
+/* and answers for the register of what is being played, the season's */
+/* board and the counts on the desk. What only the switchboard knows — */
+/* who holds a socket, who watches what — it is told through presence. */
 /* ------------------------------------------------------------------ */
 
 interface Room {
@@ -29,6 +37,36 @@ interface Room {
 export type Changed = (code: string, what: 'table' | 'game') => void;
 /** an account's desk changed: a letter came, a table moved */
 export type DeskChanged = (accountId: string) => void;
+/** an account's place in the queues changed (null: it stands in none) */
+export type QueueChanged = (accountId: string, state: QueueState | null) => void;
+/** the office dealt a table to these accounts from a queue */
+export type Dealt = (accountIds: string[], table: Table) => void;
+
+/** what the switchboard knows and the hall does not */
+export interface Presence {
+  /** distinct accounts with a socket open */
+  count: () => number;
+  /** does this account hold a socket right now? */
+  has: (accountId: string) => boolean;
+  /** sockets following this table */
+  watchers: (code: string) => number;
+}
+const NOBODY: Presence = { count: () => 0, has: () => true, watchers: () => 0 };
+
+export interface HallOptions {
+  /** the clock the queues wait by (a test would rather turn it itself) */
+  now?: () => number;
+  waits?: Partial<Waits>;
+}
+
+/** the tables the office deals from the queues */
+const QUICK_TABLE = { name: 'Partie rapide', options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 2, fidelity: 'core', assist: false } as SetupOptions };
+const RANKED_TABLE = { name: 'Classée', options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 3, fidelity: 'core', assist: false } as SetupOptions };
+/** the machines that keep a lone quick player company */
+const COMPANY: { name: string; difficulty: BotDifficulty }[] = [
+  { name: 'Mr Boulton', difficulty: 'industrialist' },
+  { name: 'Mrs Wedgwood', difficulty: 'foreman' },
+];
 
 /** a table nobody has touched for this long is swept away */
 export const STALE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -45,13 +83,23 @@ export class Hall {
   private ended = new Set<string>();
   private listeners = new Set<Changed>();
   private deskListeners = new Set<DeskChanged>();
+  private queueListeners = new Set<QueueChanged>();
+  private dealtListeners = new Set<Dealt>();
+  private readonly queues: Queue;
+  private who: Presence = NOBODY;
   private readonly pace: Pace;
   private readonly store: Store;
 
-  constructor(store: Store, pace: Pace = DEFAULT_PACE) {
+  constructor(store: Store, pace: Pace = DEFAULT_PACE, o: HallOptions = {}) {
     this.store = store;
     this.pace = pace;
+    this.queues = new Queue({ now: o.now, waits: o.waits, present: (id) => this.who.has(id) });
     this.reopen();
+  }
+
+  /** the switchboard tells the hall who is in and who watches what */
+  presence(p: Presence): void {
+    this.who = p;
   }
 
   /** the house as the register left it: tables back, games replayed */
@@ -101,6 +149,16 @@ export class Hall {
     for (const cb of this.deskListeners) cb(accountId);
   }
 
+  onQueue(cb: QueueChanged): () => void {
+    this.queueListeners.add(cb);
+    return () => this.queueListeners.delete(cb);
+  }
+
+  onDealt(cb: Dealt): () => void {
+    this.dealtListeners.add(cb);
+    return () => this.dealtListeners.delete(cb);
+  }
+
   /* ------------------------------ the desk ----------------------------- */
 
   /** every table this account sits at, as the desk lists them */
@@ -118,6 +176,7 @@ export class Hall {
         status: g ? (g.over ? 'over' : 'playing') : this.ended.has(room.table.code) ? 'over' : 'open',
         ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current } : {}),
         myTurn: !!g && !g.over && g.state.phase === 'action' && g.seatOf(accountId) === g.state.current,
+        ...(room.table.ranked ? { ranked: true } : {}),
         updatedAt: room.table.updatedAt,
       });
     }
@@ -134,7 +193,112 @@ export class Hall {
 
   desk(accountId: string): Desk {
     const { received, sent } = this.store.invitationsFor(accountId);
-    return { tables: this.tablesFor(accountId), invitations: received, sent, friends: this.store.friendsOf(accountId), history: this.store.historyFor(accountId), stats: this.store.statsFor(accountId) };
+    const season = seasonAt();
+    return {
+      tables: this.tablesFor(accountId),
+      invitations: received,
+      sent,
+      friends: this.store.friendsOf(accountId),
+      history: this.store.historyFor(accountId),
+      stats: this.store.statsFor(accountId),
+      rating: this.store.ratingFor(accountId, season.id),
+      season,
+      purse: this.store.purse(accountId),
+      hall: this.counts(),
+      queue: this.queues.stateOf(accountId),
+    };
+  }
+
+  /** the house at a glance */
+  counts(): HallCounts {
+    let playing = 0;
+    for (const room of this.rooms.values()) if (room.game && !room.game.over) playing += 1;
+    return { online: this.who.count(), playing, queued: this.queues.total() };
+  }
+
+  /** the register of tables anyone may look at: in play first, then the newest */
+  register(): PublicTable[] {
+    const out: PublicTable[] = [];
+    for (const room of this.rooms.values()) {
+      const g = room.game;
+      if (g?.over || (!g && this.ended.has(room.table.code))) continue;
+      out.push({
+        code: room.table.code,
+        name: room.table.name,
+        hostName: room.table.seats.find((s) => s.id === room.table.hostId)?.name ?? '',
+        seats: room.table.seats.map((s) => ({ name: s.name, color: s.color, kind: s.kind })),
+        status: g ? 'playing' : 'open',
+        ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current } : {}),
+        ranked: !!room.table.ranked,
+        watchers: this.who.watchers(room.table.code),
+        updatedAt: room.table.updatedAt,
+      });
+    }
+    return out.sort((a, b) => Number(b.status === 'playing') - Number(a.status === 'playing') || b.updatedAt - a.updatedAt);
+  }
+
+  leaderboard(accountId: string): Leaderboard {
+    return this.store.leaderboard(seasonAt(), accountId);
+  }
+
+  /* ----------------------------- the queues ---------------------------- */
+
+  /** stand in a line, or step out of it — then the office looks down the lines */
+  queue(accountId: string, mode: Mode, on: boolean): void {
+    const touched = on ? this.queues.join(accountId, mode) : [this.queues.leave(accountId)].filter((m): m is Mode => m !== null);
+    if (!touched.length) {
+      /* already standing there: a fresh tab is told where it stands */
+      if (on) for (const cb of this.queueListeners) cb(accountId, this.queues.stateOf(accountId));
+      return;
+    }
+    this.announceQueues(touched, [accountId]);
+    this.announceDesk(accountId);
+    this.matchQueues();
+  }
+
+  /** the office looks down the lines: the absent are dropped, the tables ready are dealt */
+  matchQueues(): void {
+    const dropped = this.queues.sweep();
+    const matches = this.queues.match();
+    for (const m of matches) this.dealQueue(m);
+    const touched = new Set<Mode>(matches.map((m) => m.mode));
+    if (dropped.length) touched.add('quick').add('ranked');
+    this.announceQueues([...touched], dropped);
+    for (const id of dropped) this.announceDesk(id);
+  }
+
+  /** everyone still in these lines hears the new count; `gone` hear they are out */
+  private announceQueues(modes: Mode[], gone: string[]): void {
+    for (const id of gone) if (!this.queues.modeOf(id)) for (const cb of this.queueListeners) cb(id, null);
+    for (const mode of new Set(modes)) for (const id of this.queues.members(mode)) for (const cb of this.queueListeners) cb(id, this.queues.stateOf(id));
+  }
+
+  /** a table dealt from a queue: seated, announced, and the bell rung at once */
+  private dealQueue(m: Match): void {
+    const ranked = m.mode === 'ranked';
+    const blueprint = ranked ? RANKED_TABLE : QUICK_TABLE;
+    const seats: TableSeat[] = [];
+    const now = Date.now();
+    for (const id of m.ids) {
+      const account = this.store.account(id);
+      if (!account || !account.verified) continue;
+      seats.push({ ...seatFor(account, { seats }, account.favoriteColor ?? undefined), ready: true });
+    }
+    if (!seats.length) return;
+    for (const machine of COMPANY.slice(0, ranked ? 0 : m.machines)) {
+      seats.push({ id: 'bot-' + randomBytes(4).toString('hex'), name: machine.name, color: freeColor({ seats }), kind: 'bot', difficulty: machine.difficulty, ready: true, joinedAt: now });
+    }
+    let code = mintCode();
+    while (this.rooms.has(code)) code = mintCode();
+    const table: Table = { code, name: blueprint.name, hostId: seats[0].id, seats, options: blueprint.options, status: 'starting', ...(ranked ? { ranked: true } : {}), createdAt: now, updatedAt: now };
+    this.rooms.set(code, { table, game: null });
+    this.write(code);
+    /* the players are told they sit here — and only then is the bell rung, so
+       that the first frame of the game finds them watching */
+    const ids = seats.filter((s) => s.kind === 'human').map((s) => s.id);
+    for (const id of ids) for (const cb of this.queueListeners) cb(id, null);
+    for (const cb of this.dealtListeners) cb(ids, table);
+    this.start(code);
   }
 
   /** ask a player by name to be friends (accepting when they asked first) */
@@ -233,6 +397,8 @@ export class Hall {
     const seated = room.table.seats.find((s) => s.id === me.id);
     /* coming back to your own chair is always allowed, game or no game */
     if (seated) return room.table;
+    /* a ranked table seats only those the office dealt into it */
+    if (room.table.ranked) throw new Error('refused' satisfies LobbyError);
     if (room.table.status !== 'open' || this.started(room)) throw new Error('started' satisfies LobbyError);
     if (room.table.seats.length >= MAX_SEATS) throw new Error('full' satisfies LobbyError);
     room.table = { ...room.table, seats: [...room.table.seats, seatFor(me, room.table, color)], updatedAt: Date.now() };
@@ -339,7 +505,11 @@ export class Hall {
       journal: {
         append: (idx: number, action: GameAction) => this.store.appendMove(code, idx, action),
         drop: (idx: number) => this.store.dropMove(code, idx),
-        finish: (state, tallies) => this.store.finishGame(code, state, tallies),
+        finish: (state, tallies) => {
+          this.store.finishGame(code, state, tallies, !!this.rooms.get(code)?.table.ranked);
+          /* the cote and the purse moved after the last frame went out: the desks again */
+          for (const id of seatIds) if (!id.startsWith('bot-')) this.announceDesk(id);
+        },
       },
     });
     return game;
@@ -438,7 +608,8 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
       const color = colorOf(w.color);
       const name = botName(w.name);
       const difficulty = w.difficulty === undefined ? 'industrialist' : difficultyOf(w.difficulty);
-      if (!host || w.kind !== 'bot' || !color || !name || !difficulty) return null;
+      /* no machine ever sits at a ranked table */
+      if (!host || w.kind !== 'bot' || !color || !name || !difficulty || cur.ranked) return null;
       /* the client's own bot id is kept when it is plainly a bot's (accounts
          are 'a-…'): a second edit sent before the echo then names the same
          machine, not a new one */
@@ -476,6 +647,7 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
     options: host ? houseRules(wanted.options) : cur.options,
     seats,
     status: 'open',
+    ...(cur.ranked ? { ranked: true } : {}),
     updatedAt: Date.now(),
   };
   /* only the host rings, and only when every human has stamped themselves ready */

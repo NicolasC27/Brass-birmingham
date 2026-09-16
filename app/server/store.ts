@@ -4,9 +4,12 @@ import { promisify } from 'node:util';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { Friend, Identity, Invitation, Me, PastGame, Stats, Table } from '@/online/table';
+import type { Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
+import { fresh, ratingOf, seasonAt, settle } from './rating';
+import type { Standing } from './rating';
 
 /* ------------------------------------------------------------------ */
 /* The register — everything the house must not forget.                */
@@ -20,6 +23,10 @@ import type { Tally } from '@/game/tally';
 /* that lets a password be chosen again, are tokens with an hour to    */
 /* live. Invitations are letters too: from one account to another,     */
 /* about one table, answered once.                                     */
+/*                                                                     */
+/* The cote of every account, season by season, and its purse — the    */
+/* guineas earned at the tables and what they bought — live here too,  */
+/* written when a game is played out.                                  */
 /*                                                                     */
 /* SQLite comes with Node itself — no native build, no dependency.     */
 /* ------------------------------------------------------------------ */
@@ -142,6 +149,21 @@ create table if not exists game_players (
   accountId text not null,
   primary key (code, accountId)
 );
+create table if not exists ratings (
+  accountId text not null,
+  season    text not null,
+  rating    integer not null,
+  games     integer not null,
+  won       integer not null,
+  trend     text not null,
+  updatedAt integer not null,
+  primary key (accountId, season)
+);
+create table if not exists purses (
+  accountId text primary key,
+  guineas   integer not null,
+  owned     text not null
+);
 `;
 
 /** columns added since the first register: an old file learns them on opening */
@@ -152,6 +174,7 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'motto', "text not null default ''"],
   ['accounts', 'favoriteColor', 'text'],
   ['games', 'result', 'text'],
+  ['tables', 'ranked', 'integer not null default 0'],
 ];
 
 /** a name is one name whatever the case or the stray spaces around it */
@@ -533,8 +556,8 @@ export class Store {
 
   saveTable(t: Table): void {
     this.db
-      .prepare('insert or replace into tables (code, name, hostId, seats, options, status, createdAt, updatedAt) values (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(t.code, t.name, t.hostId, JSON.stringify(t.seats), JSON.stringify(t.options), t.status, t.createdAt, t.updatedAt);
+      .prepare('insert or replace into tables (code, name, hostId, seats, options, status, createdAt, updatedAt, ranked) values (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(t.code, t.name, t.hostId, JSON.stringify(t.seats), JSON.stringify(t.options), t.status, t.createdAt, t.updatedAt, t.ranked ? 1 : 0);
   }
 
   /** the table is gone; a game played out at it stays on the record */
@@ -558,6 +581,7 @@ export class Store {
       status: string;
       createdAt: number;
       updatedAt: number;
+      ranked: number;
     }[];
     return rows.map((r) => ({
       code: r.code,
@@ -566,6 +590,7 @@ export class Store {
       seats: JSON.parse(r.seats) as Table['seats'],
       options: JSON.parse(r.options) as Table['options'],
       status: r.status === 'starting' ? 'starting' : 'open',
+      ...(r.ranked ? { ranked: true } : {}),
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
@@ -602,8 +627,9 @@ export class Store {
     this.db.prepare('delete from moves where code = ? and idx >= ?').run(code, idx);
   }
 
-  /** the game is over: the standings go on the record */
-  finishGame(code: string, state?: GameState, tallies?: Tally[]): void {
+  /** the game is over: the standings go on the record, the humans are
+   *  paid, and at a ranked table their cotes move */
+  finishGame(code: string, state?: GameState, tallies?: Tally[], ranked = false): void {
     const result: Result | null = state
       ? {
           players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot, ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
@@ -612,6 +638,20 @@ export class Store {
         }
       : null;
     this.db.prepare('update games set finishedAt = ?, result = ? where code = ?').run(Date.now(), result ? JSON.stringify(result) : null, code);
+    /* a game the table voted away pays nothing and moves no cote */
+    if (!state || state.abandoned) return;
+    const row = this.db.prepare('select seats from games where code = ?').get(code) as { seats: string } | undefined;
+    if (!row) return;
+    const seatIds = JSON.parse(row.seats) as string[];
+    const winner = state.winner ?? 0;
+    const times = ranked ? GUINEAS.rankedTimes : 1;
+    const humans = state.players.map((_, i) => i).filter((i) => !state.players[i].isBot && !!seatIds[i]);
+    for (const i of humans) this.earn(seatIds[i], (GUINEAS.sitting + (i === winner ? GUINEAS.win : 0)) * times);
+    if (!ranked || humans.length < 2) return;
+    const season = seasonAt().id;
+    const before = humans.map((i) => this.standing(seatIds[i], season) ?? fresh());
+    const after = settle(before, humans.map((i) => state.players[i].vp), humans.indexOf(winner));
+    humans.forEach((i, k) => this.saveStanding(seatIds[i], season, after[k]));
   }
 
   games(): StoredGame[] {
@@ -698,5 +738,65 @@ export class Store {
       colour,
       rivals: [...rivals.values()].sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)).slice(0, 8),
     };
+  }
+
+  /* ----------------------------- the cote -------------------------- */
+
+  /** where this account stands in a season, or null before its first ranked game */
+  standing(accountId: string, season: string): Standing | null {
+    const row = this.db.prepare('select rating, games, won, trend from ratings where accountId = ? and season = ?').get(accountId, season) as { rating: number; games: number; won: number; trend: string } | undefined;
+    return row ? { rating: row.rating, games: row.games, won: row.won, trend: JSON.parse(row.trend) as number[] } : null;
+  }
+
+  saveStanding(accountId: string, season: string, s: Standing): void {
+    this.db
+      .prepare('insert or replace into ratings (accountId, season, rating, games, won, trend, updatedAt) values (?, ?, ?, ?, ?, ?, ?)')
+      .run(accountId, season, s.rating, s.games, s.won, JSON.stringify(s.trend), Date.now());
+  }
+
+  ratingFor(accountId: string, season: string): Rating | null {
+    const s = this.standing(accountId, season);
+    return s ? ratingOf(s) : null;
+  }
+
+  /** the season's board: every account with a ranked game, best cote first,
+   *  the top fifty listed and my own place among them */
+  leaderboard(season: Season, meId: string, limit = 50): Leaderboard {
+    const rows = this.db
+      .prepare(
+        'select r.accountId as id, a.name, a.favoriteColor as color, r.rating, r.games, r.won, r.trend from ratings r join accounts a on a.id = r.accountId where r.season = ? and r.games >= 1 and a.verifiedAt is not null order by r.rating desc, r.games desc, a.name collate nocase',
+      )
+      .all(season.id) as { id: string; name: string; color: string | null; rating: number; games: number; won: number; trend: string }[];
+    const all: LeaderRow[] = rows.map((r) => {
+      const trend = JSON.parse(r.trend) as number[];
+      const { tier } = ratingOf({ rating: r.rating, games: r.games, won: r.won, trend });
+      return { id: r.id, name: r.name, color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, rating: r.rating, tier, games: r.games, won: r.won, trend };
+    });
+    const at = all.findIndex((r) => r.id === meId);
+    return { season, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };
+  }
+
+  /* ----------------------------- the purse ------------------------- */
+
+  /** the guineas earned and what they bought — the free items are everyone's */
+  purse(accountId: string): Purse {
+    const row = this.db.prepare('select guineas, owned from purses where accountId = ?').get(accountId) as { guineas: number; owned: string } | undefined;
+    const owned = row ? (JSON.parse(row.owned) as string[]) : [];
+    return { guineas: row?.guineas ?? 0, owned: [...new Set([...FREE_ITEMS, ...owned])] };
+  }
+
+  earn(accountId: string, guineas: number): void {
+    this.db.prepare('insert into purses (accountId, guineas, owned) values (?, ?, ?) on conflict (accountId) do update set guineas = guineas + excluded.guineas').run(accountId, guineas, '[]');
+  }
+
+  /** an item bought at the counter, or why not: unknown, already owned, or too dear */
+  buy(accountId: string, item: string): 'refused' | null {
+    const wanted = COUNTER_BY_ID[item];
+    if (!wanted) return 'refused';
+    const purse = this.purse(accountId);
+    if (purse.owned.includes(item) || purse.guineas < wanted.price) return 'refused';
+    const owned = JSON.stringify([...purse.owned.filter((i) => !FREE_ITEMS.includes(i)), item]);
+    this.db.prepare('insert into purses (accountId, guineas, owned) values (?, ?, ?) on conflict (accountId) do update set guineas = guineas - ?, owned = ?').run(accountId, -wanted.price, owned, wanted.price, owned);
+    return null;
   }
 }
