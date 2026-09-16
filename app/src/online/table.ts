@@ -1,4 +1,5 @@
 import type { BotDifficulty, PlayerColor, SetupOptions, StoredSetup } from '@/components/setup/constants';
+import type { Tally } from '@/game/tally';
 import type { Era } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -93,7 +94,7 @@ export interface PastGame {
   code: string;
   name: string;
   finishedAt: number;
-  players: { id: string; name: string; color: PlayerColor; vp: number; bot: boolean }[];
+  players: { id: string; name: string; color: PlayerColor; vp: number; bot: boolean; tally?: Tally }[];
   winner: number;
   /** the game ended by the table's own vote */
   abandoned: boolean;
@@ -105,6 +106,14 @@ export interface Stats {
   /** victory points, on average, over finished games */
   averageVp: number;
   bestVp: number;
+  /** the finishing place, on average (1 = first), over games played out */
+  averagePlace: number;
+  /** everything done at the tables, added up over finished games */
+  tally: Tally | null;
+  /** the chair taken most often */
+  colour: PlayerColor | null;
+  /** the record against every other person met at a table, most played first */
+  rivals: { id: string; name: string; played: number; won: number; lost: number }[];
 }
 
 /** a friend, or a friendship on its way: 'asks' = they asked me, 'asked' = I asked them */

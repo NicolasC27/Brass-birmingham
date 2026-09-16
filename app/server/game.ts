@@ -2,6 +2,8 @@ import { applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices,
 import type { GameAction, UndoMark } from '@/game/actions';
 import { chooseBotMove } from '@/game/bot';
 import { candleMinutes, newGame } from '@/game/engine';
+import { tallyGame } from '@/game/tally';
+import type { Tally } from '@/game/tally';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { GameView, Pause, Rollback } from '@/online/protocol';
 import { viewFor } from './view';
@@ -41,8 +43,8 @@ export const BREAKS_PER_GAME = 3;
 export interface Journal {
   append(idx: number, action: GameAction): void;
   drop(idx: number): void;
-  /** the game is over: the state as it ended, for the record */
-  finish(state: GameState): void;
+  /** the game is over: the state as it ended and what each seat did, for the record */
+  finish(state: GameState, tallies: Tally[]): void;
 }
 
 export interface TableGameOptions {
@@ -351,7 +353,7 @@ export class TableGame {
     if (s.phase !== 'action') {
       if (!this.closed) {
         this.closed = true;
-        this.journal?.finish(s);
+        this.journal?.finish(s, tallyGame(this.setup, this.seed, s.actions));
       }
       return;
     }

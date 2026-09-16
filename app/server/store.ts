@@ -4,6 +4,8 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Friend, Identity, Invitation, Me, PastGame, Stats, Table } from '@/online/table';
+import { emptyTally } from '@/game/tally';
+import type { Tally } from '@/game/tally';
 
 /* ------------------------------------------------------------------ */
 /* The register — everything the house must not forget.                */
@@ -193,7 +195,7 @@ function accountOf(r: AccountRow): Account {
 
 /** the game's outcome, kept with the game once it is over */
 interface Result {
-  players: { name: string; color: PlayerColor; vp: number; bot: boolean }[];
+  players: { name: string; color: PlayerColor; vp: number; bot: boolean; tally?: Tally }[];
   winner: number;
   abandoned: boolean;
 }
@@ -519,10 +521,10 @@ export class Store {
   }
 
   /** the game is over: the standings go on the record */
-  finishGame(code: string, state?: GameState): void {
+  finishGame(code: string, state?: GameState, tallies?: Tally[]): void {
     const result: Result | null = state
       ? {
-          players: state.players.map((p) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot })),
+          players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot, ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
           winner: state.winner ?? 0,
           abandoned: !!state.abandoned,
         }
@@ -575,11 +577,44 @@ export class Store {
     const games = this.historyFor(accountId, 10_000);
     const mine = games.map((g) => ({ vp: g.players[g.players.findIndex((p) => p.id === accountId)]?.vp ?? 0, won: g.players[g.winner]?.id === accountId }));
     const played = mine.length;
+    /* the sum of every tally on record, the place at each table, the
+       chair taken, and the record against every other person met */
+    const tally = emptyTally();
+    let tallied = 0;
+    const places: number[] = [];
+    const colours = new Map<PlayerColor, number>();
+    const rivals = new Map<string, Stats['rivals'][number]>();
+    for (const g of games) {
+      const me = g.players.find((p) => p.id === accountId);
+      if (!me) continue;
+      colours.set(me.color, (colours.get(me.color) ?? 0) + 1);
+      if (me.tally) {
+        tallied += 1;
+        for (const k of ['built', 'links', 'sold', 'developed', 'loans', 'scouts', 'flipped', 'money', 'income'] as const) tally[k] += me.tally[k];
+        for (const [ind, n] of Object.entries(me.tally.industries)) tally.industries[ind as keyof Tally['industries']] = (tally.industries[ind as keyof Tally['industries']] ?? 0) + (n ?? 0);
+        for (const [town, n] of Object.entries(me.tally.towns)) tally.towns[town] = (tally.towns[town] ?? 0) + n;
+      }
+      if (g.abandoned) continue;
+      places.push(1 + g.players.filter((p) => p.vp > me.vp).length);
+      for (const p of g.players) {
+        if (p.bot || p.id === accountId || !p.id) continue;
+        const r = rivals.get(p.id) ?? { id: p.id, name: p.name, played: 0, won: 0, lost: 0 };
+        r.played += 1;
+        if (me.vp > p.vp) r.won += 1;
+        else if (me.vp < p.vp) r.lost += 1;
+        rivals.set(p.id, r);
+      }
+    }
+    const colour = [...colours.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
     return {
       played,
       won: mine.filter((m) => m.won).length,
       averageVp: played ? Math.round(mine.reduce((a, m) => a + m.vp, 0) / played) : 0,
       bestVp: mine.reduce((a, m) => Math.max(a, m.vp), 0),
+      averagePlace: places.length ? Math.round((places.reduce((a, b) => a + b, 0) / places.length) * 10) / 10 : 0,
+      tally: tallied ? tally : null,
+      colour,
+      rivals: [...rivals.values()].sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)).slice(0, 8),
     };
   }
 }

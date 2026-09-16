@@ -293,7 +293,7 @@ export class Hall {
       journal: {
         append: (idx: number, action: GameAction) => this.store.appendMove(code, idx, action),
         drop: (idx: number) => this.store.dropMove(code, idx),
-        finish: (state) => this.store.finishGame(code, state),
+        finish: (state, tallies) => this.store.finishGame(code, state, tallies),
       },
     });
   }
