@@ -671,7 +671,8 @@ export default function HandDock() {
               </p>
             )}
             {shown && (
-              <div className="mx-auto flex items-end pl-1 pr-1">
+              /* room at the right for the cards that slide aside under the pointer */
+              <div className={cn('mx-auto flex items-end pl-1', shown.hand.length >= 6 ? 'pr-9' : 'pr-3')}>
               {shown.hand.map((card, i) => (
                 <div
                   key={card.id}
