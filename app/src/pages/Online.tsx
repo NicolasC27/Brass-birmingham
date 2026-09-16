@@ -4,7 +4,7 @@ import { ArrowRight, KeyRound } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { DEFAULT_OPTIONS } from '@/components/setup/constants';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
-import { useSession, useStranger } from '@/online/session';
+import { useLine, useSession, useStranger } from '@/online/session';
 import { useT } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
@@ -107,12 +107,14 @@ function LocalOffice() {
 export default function Online() {
   const session = useSession();
   const stranger = useStranger();
+  const line = useLine();
   const [params] = useSearchParams();
   if (!isOnline) return <LocalOffice />;
   const table = normalizeCode(params.get('table') ?? '');
   const query = table ? `?table=${table}` : '';
   if (session) return <Navigate to={table ? `/account${query}` : '/desk'} replace />;
-  if (stranger) return <Navigate to={`/account${query}`} replace />;
+  /* a stranger, or a token the office is not there to answer: the door */
+  if (stranger || line === 'offline') return <Navigate to={`/account${query}`} replace />;
   /* a token on its way: a moment, then one of the two doors */
   return null;
 }

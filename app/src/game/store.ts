@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
+import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotMove } from './bot';
 import { tr } from '@/i18n';
@@ -26,6 +26,7 @@ import type {
   IndustryType,
   SetupPayload,
   Verb,
+  LedgerEntry,
 } from './types';
 import { RESUME_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
@@ -340,6 +341,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const wire = code ? onlineWire() : null;
     if (code && wire) {
       set({ ...clearSelection, ...freshTable, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
+      writePins({});
       listen(code, wire);
       return;
     }
@@ -577,7 +579,10 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   setPreparing: (on) => {
     const st = get();
-    if (on && (st.myTurn() || st.queued.length >= 2 || !st.game || st.game.phase !== 'action')) return;
+    const g = st.game;
+    const me = st.seat ?? (g ? g.players.findIndex((p) => !p.isBot) : -1);
+    /* as many moves as the turn will grant, no more */
+    if (on && (st.myTurn() || !g || g.phase !== 'action' || me < 0 || st.queued.length >= actionsFor(g, g.players[me]))) return;
     set({ ...clearSelection, preparing: on });
   },
   dropQueued: (index) => {
@@ -607,6 +612,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const allows = slot !== null ? TOWN_BY_ID[town]?.slots[slot]?.allows : undefined;
     const industry = allows && allows.length === 1 ? allows[0] : undefined;
     const unless: Unless = { player: cur?.player ?? 'any', kind: cur?.kind ?? 'build', town, industry: (cur?.kind ?? 'build') === 'build' ? industry : undefined };
+    /* a town picked says where: the merchant or the very link no longer do */
     set({ queued: st.queued.map((q, k) => (k === i ? { ...q, unless } : q)) });
   },
   setUnless: (index, unless) => set({ queued: get().queued.map((q, i) => (i === index ? { ...q, unless: unless ?? undefined } : q)) }),
@@ -618,7 +624,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (st.previewQueue) set({ previewQueue: false });
     /* the condition: what that player did since the move was prepared */
     const u = next.unless;
-    const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player !== undefined && (u.player === 'any' ? e.player !== g.current : e.player === u.player) && e.key === u.kind && (!u.town || e.region === u.town) && (!u.industry || e.vars?.industry === u.industry)) : undefined;
+    const hit = u ? g.ledger.find((e) => e.id >= next.since && unlessHit(u, e, g.current)) : undefined;
     if (hit) {
       set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueUnless', { what: ledgerText(hit, tr) }), at: Date.now() } });
       return;
@@ -1173,8 +1179,13 @@ function listen(code: string, wire: Wire): void {
       const view = m.view;
       /* the game is over: the log opens, and with the seed the replay works */
       const game = view.archive ? { ...view.state, seed: view.archive.seed } : view.state;
+      /* my own move landed, or the game changed phase or table: the
+         selection is spent. Another seat's move, a vote, a pause: the plan
+         I am making (in my turn or out of it) stays where it is */
+      const prev = useGame.getState();
+      const spent = !prev.game || prev.code !== code || prev.game.phase !== game.phase || (prev.game.actions.length !== game.actions.length && prev.game.current === view.seat);
       useGame.setState({
-        ...clearSelection,
+        ...(spent ? clearSelection : {}),
         game,
         seat: view.seat,
         serverUndo: view.canUndo,
@@ -1202,6 +1213,8 @@ function listen(code: string, wire: Wire): void {
 /** stop following the online table (leaving the board for good) */
 export function leaveOnlineTable(): void {
   deafen?.();
+  const code = useGame.getState().code;
+  if (code) onlineWire()?.unwatch(code);
   useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
 }
 
@@ -1211,7 +1224,7 @@ export function leaveOnlineTable(): void {
  *  pretended, the moves applied in order, the first refused one and those
  *  after it left out. The projection is what a further move is planned on. */
 export function projectQueued(g: GameState, me: number, queued: Prepared[]): GameState {
-  let sim: GameState = { ...structuredClone(g), current: me, actionsLeft: Math.max(queued.length, 1), phase: 'action' };
+  let sim: GameState = { ...structuredClone(g), current: me, actionsLeft: Math.max(Math.min(queued.length, actionsFor(g, g.players[me])), 1), phase: 'action' };
   for (const { action: a } of queued) {
     const r = applyAction(sim, me, a);
     if (!r.state) break;
@@ -1227,10 +1240,38 @@ export interface Unless {
   /** a seat, or 'any' for anyone but me */
   player: number | 'any';
   kind: 'sell' | 'build' | 'network';
+  /** a town: built there, or a link laid to it (either end) */
   town?: string;
   /** for a build: that works only (a slot picked on the map that takes one) */
   industry?: IndustryType;
+  /** for a sale: sold to that merchant, from anywhere */
+  merchant?: string;
+  /** for a link: that very link, whichever way it is read */
+  link?: string;
 }
+
+/** does this ledger line fulfil the clause? (`me` never counts as anyone) */
+export function unlessHit(u: Unless, e: LedgerEntry, me: number): boolean {
+  if (e.player === undefined || e.key !== u.kind) return false;
+  if (u.player === 'any' ? e.player === me : e.player !== u.player) return false;
+  if (u.link && e.vars?.linkId !== u.link && e.vars?.linkId2 !== u.link) return false;
+  if (u.merchant && e.vars?.merchantId !== u.merchant) return false;
+  if (u.town) {
+    const ends = u.kind === 'network' ? [e.vars?.townA, e.vars?.townB, e.vars?.townA2, e.vars?.townB2] : [e.region];
+    if (!ends.includes(u.town)) return false;
+  }
+  if (u.industry && e.vars?.industry !== u.industry) return false;
+  return true;
+}
+
+/** the log index of the last action that seat took (a flip credited to
+ *  them is somebody else's move) */
+export function lastActionOf(g: GameState, seat: number): number {
+  let last = -1;
+  for (const e of g.ledger) if (e.player === seat && e.at !== undefined && e.at > last && ACTION_VERBS.has(e.verb)) last = e.at;
+  return last;
+}
+const ACTION_VERBS = new Set<LedgerEntry['verb']>(['build', 'network', 'develop', 'sell', 'loan', 'scout', 'pass']);
 export interface Prepared {
   action: GameAction;
   /** the first ledger id the condition looks at: the move was prepared before it */
@@ -1248,10 +1289,14 @@ export function suggestUnless(a: GameAction): { key: string; unless: Unless }[] 
       ];
     case 'network': {
       const l = LINKS.find((x) => x.id === a.link);
-      return l ? [{ key: 'linkTaken', unless: { player: 'any', kind: 'network', town: l.a } }, { key: 'builtThere', unless: { player: 'any', kind: 'build', town: l.b } }] : [];
+      if (!l) return [];
+      const out: { key: string; unless: Unless }[] = [{ key: 'linkTaken', unless: { player: 'any', kind: 'network', link: l.id } }];
+      /* the far end, when it is a town (nobody builds at a merchant's) */
+      if (TOWN_BY_ID[l.b]) out.push({ key: 'builtThere', unless: { player: 'any', kind: 'build', town: l.b } });
+      return out;
     }
     case 'sell':
-      return a.sales.length ? [{ key: 'beerDrunk', unless: { player: 'any', kind: 'sell', town: a.sales[0].town } }] : [];
+      return a.sales.length ? [{ key: 'beerDrunk', unless: { player: 'any', kind: 'sell', merchant: a.sales[0].merchant } }] : [];
     default:
       return [];
   }
@@ -1260,8 +1305,9 @@ export function suggestUnless(a: GameAction): { key: string; unless: Unless }[] 
 /** the condition, said in a few words */
 export function describeUnless(u: Unless, g: GameState): string {
   const name = u.player === 'any' ? tr('game.topbar.unlessAnyone') : (g.players[u.player]?.name ?? '');
-  const where = u.town ? tr('game.topbar.unlessAt', { town: TOWN_BY_ID[u.town]?.name ?? u.town }) : '';
-  const what = u.kind === 'build' && u.industry ? tr('game.topbar.unlessBuilds', { works: tr(`game.log.industry.${u.industry}`) }) : tr(`game.topbar.unlessKind.${u.kind}`);
+  const where = u.town ? tr('game.topbar.unlessAt', { town: TOWN_BY_ID[u.town]?.name ?? u.town }) : u.merchant ? tr('game.topbar.unlessTo', { merchant: MERCHANT_BY_ID[u.merchant]?.name ?? u.merchant }) : '';
+  const link = u.link ? LINKS.find((x) => x.id === u.link) : undefined;
+  const what = link ? tr('game.topbar.unlessLink', { a: placeName(link.a), b: placeName(link.b) }) : u.kind === 'build' && u.industry ? tr('game.topbar.unlessBuilds', { works: tr(`game.log.industry.${u.industry}`) }) : tr(`game.topbar.unlessKind.${u.kind}`);
   return tr('game.topbar.unless', { name, what, where });
 }
 

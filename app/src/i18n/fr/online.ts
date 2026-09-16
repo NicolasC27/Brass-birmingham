@@ -70,5 +70,7 @@ export default {
     sitDown: 'Prendre un siège',
     shareHint: 'Partagez le code ou le lien. Chacun choisit sa couleur, se déclare prêt, et l’hôte lance la partie.',
     notFound: 'Cette table n’existe plus.',
+    looking: 'On cherche la table…',
+    lineDown: 'Le bureau ne répond pas. La table vous attend ; réessayez dans un instant.',
   },
 };

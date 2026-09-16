@@ -50,7 +50,8 @@ export function TableMenu({ className, compact }: { className: string; compact?:
     window.addEventListener('pointerdown', away);
     return () => window.removeEventListener('pointerdown', away);
   }, [open]);
-  if (!code || seat === null || !game || game.phase !== 'action') return null;
+  /* a spectator has no say at the table */
+  if (!code || seat === null || seat < 0 || !game || game.phase !== 'action') return null;
   const used = mood.breaks[seat] ?? 0;
   const left = MAX_BREAKS - used;
   return (
@@ -124,7 +125,7 @@ export default function TableMood() {
           <motion.div key="pause-proposal" role="status" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className={cn(banner, 'border-brass-500/70')}>
             <Pause className="h-4 w-4 text-brass-400" />
             <span className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-brass-400">{t('game.mood.proposed', { name: name(pause.by), n: pause.votes.length, h: humans.length })}</span>
-            {seat !== null && !pause.votes.includes(seat) && (
+            {seat !== null && seat >= 0 && !pause.votes.includes(seat) && (
               <span className="flex items-center gap-1.5 border-l border-brass-700/40 pl-3">
                 <button type="button" onClick={() => pauseTable('agree')} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
                   {t('game.mood.agree')}
@@ -182,7 +183,7 @@ export default function TableMood() {
               <Pause className="mx-auto h-8 w-8 text-ink-900/70" />
               <h2 className="engraved-brass mt-2 font-display text-[34px] font-black">{t('game.mood.held')}</h2>
               <p className="mt-1 font-fell text-[14px] text-ink-900/80">{t('game.mood.heldSince', { time: clock(now - pause.since) })}</p>
-              {seat !== null && (
+              {seat !== null && seat >= 0 && (
                 <button type="button" onClick={() => pauseTable('resume')} className="btn-ledger mt-5 !border-ink-900/60 !text-ink-900 hover:!bg-ink-900/10">
                   <Play className="h-4 w-4" /> {t('game.mood.resume')}
                 </button>

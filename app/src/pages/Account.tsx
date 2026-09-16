@@ -51,7 +51,7 @@ export default function Account() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
-  const [verdict, setVerdict] = useState<'pending' | 'ok' | 'bad'>('pending');
+  const [verdict, setVerdict] = useState<'pending' | 'ok' | 'bad' | 'offline'>('pending');
 
   /* the letter's link: answered once, on arrival */
   useEffect(() => {
@@ -59,7 +59,7 @@ export default function Account() {
     let alive = true;
     verifyEmail(token)
       .then(() => alive && setVerdict('ok'))
-      .catch(() => alive && setVerdict('bad'));
+      .catch((e: Error) => alive && setVerdict(e.message === 'offline' ? 'offline' : 'bad'));
     return () => {
       alive = false;
     };
@@ -120,7 +120,7 @@ export default function Account() {
 
   if (!isOnline) {
     return (
-      <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={t('site.account.offlineTitle')} lede={t('site.account.offlineLede')}>
+      <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={t('site.account.lineDownTitle')} lede={t('site.account.lineDownLede')}>
         <Link to="/online" className="btn-ledger">
           {t('site.account.localCta')}
         </Link>
@@ -131,7 +131,7 @@ export default function Account() {
   if (verifying) {
     const ok = verdict === 'ok';
     return (
-      <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={verdict === 'pending' ? t('site.account.verifying') : ok ? t('site.account.verifiedTitle') : t('site.account.badLinkTitle')} lede={verdict === 'pending' ? undefined : ok ? t('site.account.verifiedLede') : t('site.account.badLinkLede')}>
+      <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={verdict === 'pending' ? t('site.account.verifying') : ok ? t('site.account.verifiedTitle') : verdict === 'offline' ? t('site.account.lineDownTitle') : t('site.account.badLinkTitle')} lede={verdict === 'pending' ? undefined : ok ? t('site.account.verifiedLede') : verdict === 'offline' ? t('site.account.lineDownLede') : t('site.account.badLinkLede')}>
         {verdict !== 'pending' && (
           <div className="flex items-center gap-4">
             {ok ? <CheckCircle2 className="h-8 w-8 text-bottle-600 brightness-150" /> : <MailWarning className="h-8 w-8 text-rust-500 brightness-150" />}

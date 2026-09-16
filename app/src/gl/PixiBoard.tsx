@@ -6,7 +6,7 @@ import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTa
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { Era, GameState } from '@/game/types';
-import { useGame, verbsForCard } from '@/game/store';
+import { lastActionOf, useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
@@ -60,8 +60,7 @@ interface Props {
  *  (every action of the game is in the log; the ledger says which was theirs last) */
 function surveyMoves(preview: NonNullable<Props['preview']>, game: GameState): { action: GameAction; n: number | null }[] {
   if (preview.kind === 'orders') return preview.queued.map((q, i) => ({ action: q.action, n: i + 1 }));
-  let last = -1;
-  for (const e of game.ledger) if (e.player === preview.seat && e.at !== undefined && e.at > last) last = e.at;
+  const last = lastActionOf(game, preview.seat);
   const action = last >= 0 ? game.actions[last] : undefined;
   return action ? [{ action, n: null }] : [];
 }
@@ -301,6 +300,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     }
     return () => {
       for (const child of scene.world.children) child.filters = null;
+      sepia?.destroy();
     };
   }, [preview]);
 
@@ -1668,6 +1668,14 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         )}
       </AnimatePresence>
 
+      {/* a refusal with no place on the map (the table said no): a line at the top */}
+      <AnimatePresence>
+        {shake && !shake.key && calloutAt === shake.at && (
+          <motion.div key={`banner-${shake.at}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} role="alert" className="pointer-events-none absolute left-1/2 top-16 z-30 max-w-[420px] -translate-x-1/2 rounded-md border border-rust-500/80 bg-coal-900/95 px-3 py-1.5 text-center font-sans text-[12px] leading-snug text-cream-100 shadow-e3">
+            {reasonText(shake.reason)}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* why the slot or link is refused — one sentence, right next to it */}
       <AnimatePresence>
         {shake && calloutPos && (

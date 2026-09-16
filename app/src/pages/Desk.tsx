@@ -10,6 +10,7 @@ import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useLine, useSession, useStranger } from '@/online/session';
 import type { Friend, PastGame, TableSummary } from '@/online/table';
+import { deskErrorKey } from '@/online/errors';
 import { useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -194,7 +195,7 @@ export default function Desk() {
     else if (stranger) navigate('/account', { replace: true });
   }, [stranger, navigate]);
 
-  const fail = (e: unknown) => setError(t(`site.desk.error.${(e as Error).message}`));
+  const fail = (e: unknown) => setError(t(deskErrorKey(e)));
   const create = async () => {
     if (!session) return;
     setError(null);
@@ -225,7 +226,17 @@ export default function Desk() {
     }
   };
 
-  if (!session) return null;
+  if (!session) {
+    /* a token in the pocket but no office answering: say so, and offer the door */
+    if (line !== 'offline') return null;
+    return (
+      <PageShell eyebrow={t('site.desk.eyebrow')} title={t('site.desk.offlineTitle')} lede={t('site.desk.offlineLede')}>
+        <Link to="/account" className="btn-ledger">
+          {t('site.nav.signIn')}
+        </Link>
+      </PageShell>
+    );
+  }
   const me = session.id;
   const tables = desk?.tables ?? [];
   const mine = tables.filter((x) => x.myTurn);

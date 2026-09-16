@@ -29,6 +29,8 @@ export interface LobbyClient {
   /** rewrite a table (seat edits, rules, start) — the callback gets the latest copy */
   update(code: string, patch: (t: Table) => Table): Table | null;
   get(code: string): Table | null;
+  /** false while the table is still being asked for: not found is not gone yet */
+  known(code: string): boolean;
   subscribe(code: string, cb: () => void): () => void;
 }
 
@@ -139,6 +141,10 @@ class LocalLobbyClient implements LobbyClient {
 
   /* useSyncExternalStore needs the same object back while nothing changed */
   private snapshots = new Map<string, { raw: string; table: Table }>();
+  known(): boolean {
+    return true;
+  }
+
   get(code: string): Table | null {
     let raw: string | null = null;
     try {
@@ -174,10 +180,10 @@ export const lobby: LobbyClient = wire ? new RemoteLobbyClient(wire) : new Local
 export const isOnline = !!wire;
 
 /** the live table (or null once it is gone) */
-export function useTable(code: string): Table | null {
+export function useTable(code: string | null): Table | null {
   return useSyncExternalStore(
-    (cb) => lobby.subscribe(code, cb),
-    () => lobby.get(code),
+    (cb) => (code ? lobby.subscribe(code, cb) : () => {}),
+    () => (code ? lobby.get(code) : null),
     () => null,
   );
 }

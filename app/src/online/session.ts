@@ -1,5 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
+import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
 import type { Desk, Me } from './table';
 
@@ -67,7 +68,10 @@ function wire() {
 
 export const signIn = (name: string, password: string): Promise<Me> => wire().signIn(name.trim(), password);
 export const signUp = (name: string, email: string, password: string): Promise<Me> => wire().signUp(name.trim(), email.trim(), password);
-export const signOut = (): void => onlineWire()?.signOut();
+export const signOut = (): void => {
+  leaveOnlineTable();
+  onlineWire()?.signOut();
+};
 export const verifyEmail = (token: string): Promise<void> => wire().verify(token);
 export const forgotPassword = (email: string): Promise<void> => wire().forgot(email.trim());
 export const resetPassword = (token: string, password: string): Promise<Me> => wire().reset(token, password);

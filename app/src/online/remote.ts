@@ -59,13 +59,20 @@ export class RemoteLobbyClient implements LobbyClient {
     const table = this.tables.get(code);
     if (!table) return null;
     const wanted = { ...patch(structuredClone(table)), updatedAt: Date.now() };
-    this.remember(code, wanted);
+    /* the bell is the one edit not shown ahead: the room moves to the
+       game only on the server's word, not on a wish it may refuse */
+    if (wanted.status === table.status) this.remember(code, wanted);
     this.wire.send({ t: 'table', code, table: wanted });
     return wanted;
   }
 
   get(code: string): Table | null {
     return this.tables.get(code) ?? null;
+  }
+
+  /** the server has spoken of this table (even to say it is gone) */
+  known(code: string): boolean {
+    return this.tables.has(code);
   }
 
   subscribe(code: string, cb: () => void): () => void {

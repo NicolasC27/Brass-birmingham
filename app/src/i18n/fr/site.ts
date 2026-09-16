@@ -49,6 +49,8 @@ const site: typeof enSite = {
     verifiedTitle: 'Adresse vérifiée',
     verifiedLede: 'Les tables vous sont ouvertes. Bienvenue dans les Midlands.',
     verifiedCta: 'Vers mon bureau',
+    lineDownTitle: 'Le bureau ne répond pas',
+    lineDownLede: 'La lettre reste bonne une heure : rechargez la page dans un instant.',
     badLinkTitle: 'Cette lettre a expiré',
     badLinkLede: 'Le lien est déjà utilisé ou trop ancien. Demandez une nouvelle lettre depuis votre bureau.',
     offlineTitle: 'Le bureau du télégraphe est fermé',
@@ -81,6 +83,8 @@ const site: typeof enSite = {
   },
   desk: {
     eyebrow: 'Le bureau',
+    offlineTitle: 'Le bureau ne répond pas',
+    offlineLede: 'La ligne est coupée. Vos tables vous attendent ; réessayez dans un instant, ou reconnectez-vous.',
     title: 'Bonjour, {name}.',
     lede: 'Vos tables, les lettres qui vous attendent, et les parties que vous avez jouées.',
     line: 'Ligne',

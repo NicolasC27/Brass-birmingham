@@ -7,7 +7,9 @@ import PlayerToken from '@/components/setup/PlayerToken';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { invite, useDesk, useStranger } from '@/online/session';
+import { invite, useDesk, useLine, useStranger } from '@/online/session';
+import { deskErrorKey } from '@/online/errors';
+import VerifyBanner from '@/components/site/VerifyBanner';
 import type { Table, TableSeat } from '@/online/lobby';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -201,7 +203,7 @@ function InviteBox({ code, seated }: { code: string; seated: string[] }) {
       setNote({ ok: true, text: t('site.room.invited', { name: who.trim() }) });
       setName('');
     } catch (e) {
-      setNote({ ok: false, text: t(`site.desk.error.${(e as Error).message}`) });
+      setNote({ ok: false, text: t(deskErrorKey(e)) });
     }
   };
   const friends = (desk?.friends ?? []).filter((f) => f.status === 'friends' && !seated.includes(f.account.id));
@@ -257,6 +259,9 @@ export default function Lobby() {
   }, [stranger, code, navigate]);
   const [copied, setCopied] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  /* what the room refused, said under the chair */
+  const [refusal, setRefusal] = useState<string | null>(null);
+  const line = useLine();
 
   /* the table has been rung: everyone at it sits down to the game */
   useEffect(() => {
@@ -272,9 +277,11 @@ export default function Lobby() {
   }, [table, navigate]);
 
   if (!table) {
+    /* still being asked for: a moment; the line down: say so, not "gone" */
+    const waiting = isOnline && !lobby.known(code);
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="font-fell text-2xl text-cream-100/85">{t('online.room.notFound')}</p>
+        <p className="font-fell text-2xl text-cream-100/85">{t(waiting ? (line === 'offline' ? 'online.room.lineDown' : 'online.room.looking') : 'online.room.notFound')}</p>
         <Link to="/online" className="btn-ledger">
           {t('online.room.back')}
         </Link>
@@ -304,10 +311,11 @@ export default function Lobby() {
       navigate('/online');
       return;
     }
+    setRefusal(null);
     try {
       await lobby.join(code);
-    } catch {
-      /* full or started: the room says so */
+    } catch (e) {
+      setRefusal(t(deskErrorKey(e)));
     }
   };
   const addBot = () =>
@@ -328,6 +336,7 @@ export default function Lobby() {
       <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 50% 30%, transparent 40%, rgba(16,13,11,0.75) 100%)' }} />
       <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.05]" />
       <div className="relative mx-auto max-w-[1180px] px-6 py-10 lg:py-14">
+        {isOnline && <VerifyBanner />}
         <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
           <div className="min-w-0">
             <Link to={isOnline ? '/desk' : '/online'} className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
@@ -425,6 +434,7 @@ export default function Lobby() {
                     {t('online.room.sitDown')}
                   </button>
                 )}
+                {refusal && <p role="alert" className="basis-full font-sans text-[12px] text-rust-500 brightness-150">{refusal}</p>}
               </div>
             )}
             {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && <InviteBox code={code} seated={table.seats.map((s) => s.id)} />}

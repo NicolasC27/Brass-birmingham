@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -33,7 +34,9 @@ import GameOverModal from '@/components/game/ScoringModal';
 import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
-import { buildFinalPayload, confirmSummary, developPlans, projectQueued, useGame } from '@/game/store';
+import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame } from '@/game/store';
+import { isOnline } from '@/online/lobby';
+import { useStranger } from '@/online/session';
 import { FINAL_KEY } from '@/game/types';
 import type { Resource } from '@/game/types';
 import { useT } from '@/i18n';
@@ -73,17 +76,22 @@ export default function Game() {
   /* showing the orders on the board: the focus view meanwhile, the reader's own setting back after */
   const focusBefore = useRef<boolean | null>(null);
   useEffect(() => {
-    if (surveying) {
-      if (focusBefore.current === null) focusBefore.current = getBoardOptions().focus;
-      setBoardOption('focus', true);
-    } else if (focusBefore.current !== null) {
+    if (!surveying) return;
+    if (focusBefore.current === null) focusBefore.current = getBoardOptions().focus;
+    setBoardOption('focus', true);
+    /* the survey closed, or the page left mid-survey: the reader's own setting back */
+    return () => {
+      if (focusBefore.current === null) return;
       setBoardOption('focus', focusBefore.current);
       focusBefore.current = null;
-    }
+    };
   }, [surveying]);
   /* the table a plan is made on: with moves already prepared, the one they leave */
   const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const mySeat = useGame((s) => s.mySeat());
+  /* the survey shown on the board: one object per survey, not one per render
+     (the board rebuilds its overlay and its filter whenever it changes) */
+  const preview = useMemo<ComponentProps<typeof PixiBoard>['preview']>(() => (surveySeat !== null ? { kind: 'player', seat: surveySeat } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat } : null), [surveySeat, previewQueue, queued, mySeat]);
   const spectating = useGame((s) => s.spectating());
   const init = useGame((s) => s.init);
   const reset = useGame((s) => s.reset);
@@ -134,7 +142,17 @@ export default function Game() {
   /* ------------------------- lifecycle ------------------------- */
   useEffect(() => {
     init(tableCode);
+    /* leaving the page leaves the table: its frames must not land on the next board */
+    return () => {
+      if (tableCode) leaveOnlineTable();
+    };
   }, [init, tableCode]);
+  /* a table on the server is no place for a stranger: the office signs
+     you in first, the code travelling along */
+  const stranger = useStranger();
+  useEffect(() => {
+    if (tableCode && isOnline && stranger) navigate(`/online?table=${tableCode}`, { replace: true });
+  }, [tableCode, stranger, navigate]);
 
   /* at an online table the turn is mine only when the seat to act is mine */
   const isHumanTurn = myTurn;
@@ -299,7 +317,8 @@ export default function Game() {
         cycleSurveySeat();
         return;
       }
-      if (planActor < 0) return;
+      /* read live: the actor changes when a move is prepared, with nothing else in this list */
+      if (useGame.getState().planActor() < 0) return;
       if (e.key === 'Enter') {
         const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
         if (ok) confirm();
@@ -435,7 +454,7 @@ export default function Game() {
             sellTargetsList={sellTargetsList}
             ghost={ghost}
             onInvalid={reject}
-            preview={surveySeat !== null ? { kind: 'player', seat: surveySeat } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat } : null}
+            preview={preview}
           />
         </Suspense>
       </div>

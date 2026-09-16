@@ -47,6 +47,8 @@ const site = {
     verifiedTitle: 'Address verified',
     verifiedLede: 'The tables are open to you. Welcome to the Midlands.',
     verifiedCta: 'To my desk',
+    lineDownTitle: 'The office is not answering',
+    lineDownLede: 'The letter stays good for an hour: reload the page in a moment.',
     badLinkTitle: 'This letter has expired',
     badLinkLede: 'The link is spent or too old. Ask for a fresh letter from your desk.',
     offlineTitle: 'The telegraph office is closed',
@@ -79,6 +81,8 @@ const site = {
   },
   desk: {
     eyebrow: 'The desk',
+    offlineTitle: 'The office is not answering',
+    offlineLede: 'The line is down. Your tables are waiting; try again in a moment, or sign in again.',
     title: 'Good day, {name}.',
     lede: 'Your tables, the letters waiting for you, and the games you have played.',
     line: 'Line',

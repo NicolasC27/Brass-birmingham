@@ -212,7 +212,7 @@ export default function Guide() {
   /* my seat: online the one the table gave me; at home the first human at the table */
   const me = seat ?? Math.max(0, game?.players.findIndex((p) => !p.isBot) ?? 0);
   const myTurn = !!game && game.phase === 'action' && game.current === me && !game.players[me].isBot;
-  const aid = !!game && aidOn(game.assist, code !== null);
+  const aid = !!game && me >= 0 && aidOn(game.assist, code !== null);
 
   /* the lesson: the first step not done — a read step is done once read past,
      and a step once passed stays passed (closing the mat again is no reason

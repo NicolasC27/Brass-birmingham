@@ -103,6 +103,8 @@ export class Wire {
     return new Promise<ServerMessage>((ok, ko) => {
       const timer = window.setTimeout(() => {
         this.waiting.delete(rid);
+        /* an answer given up on must not go out later on its own */
+        this.outbox = this.outbox.filter((m) => !('rid' in m) || m.rid !== rid);
         ko(new Error('offline'));
       }, ANSWER_MS);
       this.waiting.set(rid, { ok, ko, timer });
@@ -114,7 +116,9 @@ export class Wire {
   private post(m: ClientMessage, asStranger: boolean): void {
     if ((this.known || asStranger) && this.socket?.readyState === WebSocket.OPEN) this.socket.send(encode(m));
     else {
-      this.outbox.push(m);
+      /* a move or an undo is meant for the table as it stands now: held
+         back, it would play on a table that has moved on */
+      if (m.t !== 'act' && m.t !== 'undo') this.outbox.push(m);
       this.open();
     }
   }
@@ -154,6 +158,12 @@ export class Wire {
     this.known = false;
     this.outbox = [];
     this.watching.clear();
+    /* nothing asked under the old session may be answered under the next */
+    for (const [, w] of this.waiting) {
+      window.clearTimeout(w.timer);
+      w.ko(new Error('offline'));
+    }
+    this.waiting.clear();
     try {
       localStorage.removeItem(TOKEN_KEY);
     } catch {
@@ -260,6 +270,8 @@ export class Wire {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     for (const code of this.watching) socket.send(encode({ t: 'watch', code }));
+    /* the desk may have moved while the line was down */
+    if (this.desk) socket.send(encode({ t: 'desk' }));
     this.drain();
   }
 

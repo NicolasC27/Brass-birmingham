@@ -4,6 +4,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Beer, BookOpen, RotateCcw, Share2, Check } from "lucide-react";
 import { useGame } from "@/game/store";
 import { PLAYER_COLORS } from "@/game/data";
+import { useTable } from "@/online/lobby";
+import { recordAgainst } from "@/online/rivals";
 import { useDesk, useSession } from "@/online/session";
 import { mugClink } from "@/gl/sfx";
 import { getBoardOptions } from "@/components/game/boardOptions";
@@ -125,6 +127,8 @@ export default function Results() {
   /* titles from the tally, and the record against each opponent met before */
   const desk = useDesk();
   const me = useSession();
+  const code = useGame((s) => s.code);
+  const table = useTable(code);
 
   const entries = useMemo(() => (result ? buildEntries(result) : []), [result]);
   const settled = phase >= 3;
@@ -311,17 +315,9 @@ export default function Results() {
             const title = titles[index];
             const raised = toasts.includes(index);
             let record: string | null = null;
-            if (desk && me && index !== mySeat && !player.bot) {
-              let won = 0;
-              let lost = 0;
-              for (const past of desk.history) {
-                const mine = past.players.find((x) => x.id === me.id);
-                const theirs = past.players.find((x) => x.name === player.name && x.id !== me.id);
-                if (!mine || !theirs || past.abandoned) continue;
-                if (mine.vp > theirs.vp) won += 1;
-                else if (mine.vp < theirs.vp) lost += 1;
-              }
-              if (won + lost > 0) record = t("results.titles.headToHead", { won, lost, name: player.name });
+            if (me && index !== mySeat && !player.bot) {
+              const r = recordAgainst(desk, table, index);
+              if (r && r.won + r.lost > 0) record = t("results.titles.headToHead", { won: r.won, lost: r.lost, name: player.name });
             }
             return { player, index, title, raised, record };
           });

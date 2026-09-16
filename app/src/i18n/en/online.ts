@@ -70,5 +70,7 @@ export default {
     sitDown: 'Take a seat',
     shareHint: 'Share the code or the link. Everyone picks a colour, stamps themselves ready, and the host starts the game.',
     notFound: 'This table is gone.',
+    looking: 'Looking for the table…',
+    lineDown: 'The office is not answering. The table is waiting; try again in a moment.',
   },
 };

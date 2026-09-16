@@ -5,6 +5,8 @@ import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { useGame } from '@/game/store';
 import type { GameState } from '@/game/types';
 import { titlesFor } from '@/components/results/titles';
+import { useTable } from '@/online/lobby';
+import { recordAgainst } from '@/online/rivals';
 import { useDesk, useSession } from '@/online/session';
 import { useT } from '@/i18n';
 import { PortraitMedallion } from './PlayerRail';
@@ -22,6 +24,8 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
   const muteSeat = useGame((s) => s.muteSeat);
   const desk = useDesk();
   const me = useSession();
+  const code = useGame((s) => s.code);
+  const table = useTable(code);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -36,21 +40,7 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
   const flipped = tiles.filter((x) => x.flipped).length;
   const myIndex = mySeat ?? game.players.findIndex((x) => !x.isBot);
   /* the record against this player, from the desk's past games (online) */
-  let record: { won: number; lost: number; played: number } | null = null;
-  if (desk && me && seat !== myIndex && !p.isBot) {
-    let won = 0;
-    let lost = 0;
-    let played = 0;
-    for (const past of desk.history) {
-      const mine = past.players.find((x) => x.id === me.id);
-      const theirs = past.players.find((x) => x.name === p.name && x.id !== me.id);
-      if (!mine || !theirs || past.abandoned) continue;
-      played += 1;
-      if (mine.vp > theirs.vp) won += 1;
-      else if (mine.vp < theirs.vp) lost += 1;
-    }
-    if (played) record = { won, lost, played };
-  }
+  const record = me && seat !== myIndex && !p.isBot ? recordAgainst(desk, table, seat) : null;
   const mine = seat === myIndex;
   const muted = mutedSeats.includes(seat);
   const rows: [string, string][] = [
