@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import { PortraitMedallion } from './PlayerRail';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useHudInsets } from './useHudInsets';
 import { keyLabel, useKeybindings } from './keybindings';
 
 /* The orders for my turn — the moves prepared while others play, on a
@@ -68,6 +69,14 @@ function UnlessRow({ game, action, players, value, picking, onPick, onChange, on
   useEffect(() => {
     setTown(picked);
   }, [picked]);
+  /* while the clause is open, a click on a town or a slot fills the place */
+  useEffect(() => {
+    if (!picking) onPick();
+    return () => {
+      if (picking) onPick();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const KINDS: { kind: Unless['kind']; icon: typeof Hammer }[] = [
     { kind: 'build', icon: Hammer },
     { kind: 'sell', icon: Scale },
@@ -88,6 +97,10 @@ function UnlessRow({ game, action, players, value, picking, onPick, onChange, on
           ))}
         </p>
       )}
+      <p className="mb-1 flex items-center gap-1 font-sans text-[10px] italic text-ink-900/55">
+        <MapPin className="h-3 w-3" />
+        {t('game.topbar.unlessTapMap')}
+      </p>
       <p className="flex flex-wrap items-center gap-1.5 font-fell text-[12px] text-ink-900">
         <span className="font-display text-[10px] font-black uppercase tracking-[0.16em] text-rust-500 brightness-75">{t('game.topbar.unlessClause')}</span>
         <Blank label={player === 'any' ? t('game.topbar.unlessAnyone') : (game.players[player]?.name ?? '')} open={blank === 'who'} onToggle={() => setBlank((b) => (b === 'who' ? null : 'who'))}>
@@ -109,10 +122,6 @@ function UnlessRow({ game, action, players, value, picking, onPick, onChange, on
         </Blank>
         <Blank label={town ? t('game.topbar.unlessAt', { town: TOWNS.find((x) => x.id === town)?.name ?? town }).trim() : t('game.topbar.unlessAnywhere')} open={blank === 'where'} onToggle={() => setBlank((b) => (b === 'where' ? null : 'where'))}>
           <button type="button" className={item} onClick={() => { setTown(''); setBlank(null); }}>{t('game.topbar.unlessAnywhere')}</button>
-          <button type="button" className={cn(item, picking && 'bg-rust-500/15')} onClick={() => { onChange(draft); onPick(); setBlank(null); }}>
-            <MapPin className="h-3 w-3" />
-            {picking ? t('game.topbar.unlessPicking') : t('game.topbar.unlessOnMap')}
-          </button>
           <span className="my-0.5 h-px bg-ink-900/20" />
           <span className="flex max-h-[160px] flex-col overflow-y-auto">
             {TOWNS.filter((x) => !x.farm).map((x) => (
@@ -154,26 +163,10 @@ export default function PreparedPanel() {
   const beginUnlessPick = useGame((s) => s.beginUnlessPick);
   /* the sheet unfolds under the pointer, while a move is prepared, a
      condition edited or a place picked; otherwise a strip says the orders */
-  const unfolded = unlessPick === null && (open || preparing || editing !== null);
-  /* the sheet hangs right under the banner, flush with its left edge,
-     and follows it whenever the banner grows, moves or the window changes */
-  const [at, setAt] = useState<{ left: number; top: number }>({ left: 360, top: 100 });
-  useEffect(() => {
-    const place = () => {
-      const bar = document.querySelector('[data-topbar]')?.getBoundingClientRect();
-      if (bar) setAt({ left: Math.round(bar.left), top: Math.round(bar.bottom) + 10 });
-    };
-    place();
-    const ro = new ResizeObserver(place);
-    for (const el of document.querySelectorAll('[data-topbar]')) ro.observe(el);
-    window.addEventListener('resize', place);
-    const tick = window.setInterval(place, 800);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener('resize', place);
-      window.clearInterval(tick);
-    };
-  }, [queued.length, preparing]);
+  const unfolded = open || preparing || editing !== null || unlessPick !== null;
+  /* the sheet lies bottom-left, above the income track and clear of the
+     hand, and grows upward when it unfolds: the map's heart stays free */
+  const insets = useHudInsets();
   const me = game ? (seat ?? game.players.findIndex((p) => !p.isBot)) : -1;
   /* each move costed on the table it will find: the one the previous moves leave */
   const rows = useMemo(() => {
@@ -232,12 +225,11 @@ export default function PreparedPanel() {
       onPointerEnter={() => setOpen(true)}
       onPointerLeave={() => setOpen(false)}
       className={cn('dispatch pointer-events-auto fixed z-[66]', unfolded ? 'w-[400px] px-4 pb-2.5 pt-2.5' : 'w-auto max-w-[520px] px-3 py-1')}
-      style={{ top: at.top, left: at.left }}
+      style={{ bottom: insets.bottom + 10, left: insets.left }}
     >
       {!unfolded && (
         <div className="flex items-center gap-2">
           <span className="font-display text-[9px] font-black uppercase tracking-[0.16em] text-ink-900/70">{t('game.prepared.short')}</span>
-          {unlessPick !== null && <span className="wax-seal font-sans text-[10px]">{t('game.topbar.unlessPicking')}</span>}
           {rows.map(({ q, i, holds }) => (
             <span key={i} className="flex items-center gap-1 font-fell text-[12px] text-ink-900" title={describeAction(q.action)}>
               <span className={cn('brass-roundel h-4 w-4 text-[9px] font-bold', !holds && 'opacity-50')}>{i + 1}</span>

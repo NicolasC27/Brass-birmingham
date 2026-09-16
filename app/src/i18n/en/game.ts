@@ -48,6 +48,7 @@ const game = {
     unlessSuggestions: { slotTaken: 'the slot is taken', linkLaid: 'the town gets linked', linkTaken: 'the link is laid', builtThere: 'someone builds at the far end', beerDrunk: 'someone sells to the same merchant' },
     unlessClause: 'Unless',
     unlessOnMap: 'On the map',
+    unlessTapMap: 'Click a town or a slot on the map to fill in the place',
     unlessPicking: 'Click a town or a slot…',
     unlessBuilds: 'builds a {works}',
     unlessWho: 'Player',

@@ -50,6 +50,7 @@ const fr: typeof engame = {
     unlessSuggestions: { slotTaken: 'la case est prise', linkLaid: 'on relie la ville', linkTaken: 'on pose la liaison', builtThere: 'on bâtit à l’arrivée', beerDrunk: 'on vend au même marchand' },
     unlessClause: 'Sauf si',
     unlessOnMap: 'Sur la carte',
+    unlessTapMap: 'Cliquez une ville ou une case sur la carte pour remplir le lieu',
     unlessPicking: 'Cliquez une ville ou une case…',
     unlessBuilds: 'construit une {works}',
     unlessWho: 'Joueur',

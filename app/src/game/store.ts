@@ -582,7 +582,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const allows = slot !== null ? TOWN_BY_ID[town]?.slots[slot]?.allows : undefined;
     const industry = allows && allows.length === 1 ? allows[0] : undefined;
     const unless: Unless = { player: cur?.player ?? 'any', kind: cur?.kind ?? 'build', town, industry: (cur?.kind ?? 'build') === 'build' ? industry : undefined };
-    set({ queued: st.queued.map((q, k) => (k === i ? { ...q, unless } : q)), unlessPick: null });
+    set({ queued: st.queued.map((q, k) => (k === i ? { ...q, unless } : q)) });
   },
   setUnless: (index, unless) => set({ queued: get().queued.map((q, i) => (i === index ? { ...q, unless: unless ?? undefined } : q)) }),
   playQueued: () => {
