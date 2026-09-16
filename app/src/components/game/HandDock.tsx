@@ -386,7 +386,9 @@ export default function HandDock() {
      (which otherwise keeps the hand open) until the next turn, a pick, or
      the pin. The hover that would reopen it is muted until the pointer has
      left once, so the click itself does not bounce the hand back open. */
-  const expanded = pinned || busy || (hovered && !hoverMuted) || (isHumanTurn && !folded && !boardOpts.focus);
+  /* the focus view tucks the hand in even when pinned; the pin itself is
+     kept, so the hand is back up the moment the view is left */
+  const expanded = (pinned && !boardOpts.focus) || busy || (hovered && !hoverMuted) || (isHumanTurn && !folded && !boardOpts.focus);
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (
