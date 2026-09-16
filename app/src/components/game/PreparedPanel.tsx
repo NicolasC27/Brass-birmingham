@@ -5,10 +5,11 @@ import { INDUSTRY_COLOR } from './townChrome';
 import { INDUSTRY_ICON, TOWNS } from '@/game/data';
 import { applyAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { cardLabel, describeAction, describeUnless, projectQueued, useGame } from '@/game/store';
+import { cardLabel, describeAction, describeUnless, projectQueued, suggestUnless, useGame } from '@/game/store';
 import type { Unless } from '@/game/store';
 import { townColor } from '@/game/townColors';
 import type { Card, GameState } from '@/game/types';
+import type { ReactNode } from 'react';
 import { PortraitMedallion } from './PlayerRail';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -34,13 +35,33 @@ function MiniCard({ card }: { card: Card }) {
   );
 }
 
-/** the condition, set in place under the move: the player by portrait,
- *  the deed by icon, the place by name or anywhere */
-function UnlessRow({ game, players, value, picking, onPick, onChange, onClose }: { game: GameState; players: number[]; value: Unless | null; picking: boolean; onPick: () => void; onChange: (u: Unless | null) => void; onClose: () => void }) {
+/** a blank in the clause: a brass-framed token that opens its choices */
+function Blank({ label, open, onToggle, children }: { label: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className={cn('inline-flex h-6 items-center gap-1 rounded-sm border-b-2 border-[#8A6B33] bg-[#f7efd9] px-1.5 font-fell text-[12px] text-ink-900 shadow-[inset_0_-1px_0_rgba(138,107,51,.35)] hover:bg-[#fbf5e6]', open && 'bg-[#fbf5e6] ring-1 ring-[#8A6B33]')}
+      >
+        {label}
+        <span aria-hidden className="text-[8px] text-ink-900/50">▾</span>
+      </button>
+      {open && <span className="absolute left-0 top-full z-10 mt-1 flex min-w-[150px] flex-col gap-0.5 rounded-sm border border-ink-900/40 bg-[#f7efd9] p-1 shadow-e3">{children}</span>}
+    </span>
+  );
+}
+
+/** the clause, written under the move as a sentence with three blanks —
+ *  who, what deed, where — each a brass token opening its choices; the
+ *  natural clauses for this move offered ready-made above it */
+function UnlessRow({ game, action, players, value, picking, onPick, onChange, onClose }: { game: GameState; action: GameAction; players: number[]; value: Unless | null; picking: boolean; onPick: () => void; onChange: (u: Unless | null) => void; onClose: () => void }) {
   const t = useT();
-  const [player, setPlayer] = useState<number>(value?.player ?? players[0] ?? 0);
+  const [player, setPlayer] = useState<Unless['player']>(value?.player ?? 'any');
   const [kind, setKind] = useState<Unless['kind']>(value?.kind ?? 'build');
   const [town, setTown] = useState<string>(value?.town ?? '');
+  const [blank, setBlank] = useState<'who' | 'what' | 'where' | null>(null);
   const industry = value?.industry;
   /* a place picked on the map lands in the store: the row follows */
   const picked = value?.town ?? '';
@@ -52,74 +73,64 @@ function UnlessRow({ game, players, value, picking, onPick, onChange, onClose }:
     { kind: 'sell', icon: Scale },
     { kind: 'network', icon: Route },
   ];
+  const draft: Unless = { player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined };
+  const item = 'flex items-center gap-1.5 rounded-sm px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900 hover:bg-ink-900/10';
+  const suggestions = suggestUnless(action);
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-2 rounded-[2px] border border-ink-900/40 bg-[linear-gradient(180deg,#f7efd9,#ecdfbd)] px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]" role="group" aria-label={t('game.topbar.unlessTitle')}>
-      <span className="font-display text-[10px] font-black uppercase tracking-[0.16em] text-rust-500 brightness-75">{t('game.topbar.unlessLead')}</span>
-      <span className="flex items-center gap-1">
-        {players.map((idx) => (
-          <button
-            key={idx}
-            type="button"
-            onClick={() => setPlayer(idx)}
-            aria-pressed={player === idx}
-            title={game.players[idx].name}
-            aria-label={game.players[idx].name}
-            className={cn('rounded-full p-[2px] transition-transform', player === idx ? 'scale-110 ring-2 ring-rust-500' : 'opacity-60 hover:opacity-100')}
-          >
-            <PortraitMedallion p={game.players[idx]} index={idx} active={false} size={22} />
-          </button>
-        ))}
-      </span>
-      <span className="flex items-center gap-1">
-        {KINDS.map(({ kind: k, icon: Icon }) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setKind(k)}
-            aria-pressed={kind === k}
-            title={t(`game.topbar.unlessKind.${k}`)}
-            aria-label={t(`game.topbar.unlessKind.${k}`)}
-            className={cn('flex h-6 items-center gap-1 rounded-sm border px-1.5 font-sans text-[10.5px]', kind === k ? 'border-rust-500 bg-rust-500/15 text-ink-900' : 'border-ink-900/30 text-ink-900/60 hover:text-ink-900')}
-          >
-            <Icon className="h-3 w-3" />
-            {t(`game.topbar.unlessKind.${k}`)}
-          </button>
-        ))}
-      </span>
-      <select value={town} onChange={(e) => setTown(e.target.value)} aria-label={t('game.topbar.unlessWhere')} className="h-6 rounded-sm border border-ink-900/30 bg-[#F7EFD9] px-1 font-sans text-[10.5px] text-ink-900">
-        <option value="">{t('game.topbar.unlessAnywhere')}</option>
-        {TOWNS.filter((x) => !x.farm).map((x) => (
-          <option key={x.id} value={x.id}>{x.name}</option>
-        ))}
-      </select>
-      <button
-        type="button"
-        onClick={() => {
-          onChange({ player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined });
-          onPick();
-        }}
-        aria-pressed={picking}
-        className={cn('flex h-6 items-center gap-1 rounded-sm border px-1.5 font-sans text-[10.5px]', picking ? 'border-rust-500 bg-rust-500/15 text-ink-900' : 'border-ink-900/30 text-ink-900/70 hover:text-ink-900')}
-      >
-        <MapPin className="h-3 w-3" />
-        {picking ? t('game.topbar.unlessPicking') : t('game.topbar.unlessOnMap')}
-      </button>
-      {kind === 'build' && industry && (
-        <span className="flex items-center gap-1 font-sans text-[10.5px] text-ink-900/80">
-          <img src={INDUSTRY_ICON[industry]} alt="" className="h-3.5 w-3.5" />
-          {t(`game.log.industry.${industry}`)}
-        </span>
+    <div className="mt-1.5 rounded-[2px] border border-ink-900/40 bg-[linear-gradient(180deg,#f7efd9,#ecdfbd)] px-2 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,.5)]" role="group" aria-label={t('game.topbar.unlessTitle')}>
+      {suggestions.length > 0 && (
+        <p className="mb-1.5 flex flex-wrap items-center gap-1 font-sans text-[10px] text-ink-900/60">
+          <span className="font-fell uppercase tracking-[0.1em]">{t('game.topbar.unlessSuggest')}</span>
+          {suggestions.map((sg) => (
+            <button key={sg.key} type="button" onClick={() => { onChange(sg.unless); onClose(); }} className="rounded-full border border-rust-500/60 px-2 py-px font-fell text-[10.5px] text-rust-500 brightness-75 hover:bg-rust-500/10">
+              {t(`game.topbar.unlessSuggestions.${sg.key}`)}
+            </button>
+          ))}
+        </p>
       )}
-      <span className="ml-auto flex items-center gap-1">
-        {value && (
-          <button type="button" onClick={() => { onChange(null); onClose(); }} className="rounded-sm border border-ink-900/30 px-1.5 py-px font-sans text-[10.5px] text-ink-900/70 hover:text-ink-900">
-            {t('game.topbar.unlessNone')}
+      <p className="flex flex-wrap items-center gap-1.5 font-fell text-[12px] text-ink-900">
+        <span className="font-display text-[10px] font-black uppercase tracking-[0.16em] text-rust-500 brightness-75">{t('game.topbar.unlessClause')}</span>
+        <Blank label={player === 'any' ? t('game.topbar.unlessAnyone') : (game.players[player]?.name ?? '')} open={blank === 'who'} onToggle={() => setBlank((b) => (b === 'who' ? null : 'who'))}>
+          <button type="button" className={item} onClick={() => { setPlayer('any'); setBlank(null); }}>{t('game.topbar.unlessAnyone')}</button>
+          {players.map((idx) => (
+            <button key={idx} type="button" className={item} onClick={() => { setPlayer(idx); setBlank(null); }}>
+              <PortraitMedallion p={game.players[idx]} index={idx} active={false} size={18} />
+              {game.players[idx].name}
+            </button>
+          ))}
+        </Blank>
+        <Blank label={kind === 'build' && industry ? t('game.topbar.unlessBuilds', { works: t(`game.log.industry.${industry}`) }) : t(`game.topbar.unlessKind.${kind}`)} open={blank === 'what'} onToggle={() => setBlank((b) => (b === 'what' ? null : 'what'))}>
+          {KINDS.map(({ kind: k, icon: Icon }) => (
+            <button key={k} type="button" className={item} onClick={() => { setKind(k); setBlank(null); }}>
+              <Icon className="h-3 w-3" />
+              {t(`game.topbar.unlessKind.${k}`)}
+            </button>
+          ))}
+        </Blank>
+        <Blank label={town ? t('game.topbar.unlessAt', { town: TOWNS.find((x) => x.id === town)?.name ?? town }).trim() : t('game.topbar.unlessAnywhere')} open={blank === 'where'} onToggle={() => setBlank((b) => (b === 'where' ? null : 'where'))}>
+          <button type="button" className={item} onClick={() => { setTown(''); setBlank(null); }}>{t('game.topbar.unlessAnywhere')}</button>
+          <button type="button" className={cn(item, picking && 'bg-rust-500/15')} onClick={() => { onChange(draft); onPick(); setBlank(null); }}>
+            <MapPin className="h-3 w-3" />
+            {picking ? t('game.topbar.unlessPicking') : t('game.topbar.unlessOnMap')}
           </button>
-        )}
-        <button type="button" onClick={() => { onChange({ player, kind, town: town || undefined, industry: kind === 'build' ? industry : undefined }); onClose(); }} className="wax-seal font-sans text-[10px] font-bold uppercase tracking-wider hover:brightness-110">
-          {t('game.topbar.unlessOk')}
-        </button>
-      </span>
+          <span className="my-0.5 h-px bg-ink-900/20" />
+          <span className="flex max-h-[160px] flex-col overflow-y-auto">
+            {TOWNS.filter((x) => !x.farm).map((x) => (
+              <button key={x.id} type="button" className={item} onClick={() => { setTown(x.id); setBlank(null); }}>{x.name}</button>
+            ))}
+          </span>
+        </Blank>
+        <span className="ml-auto flex items-center gap-1">
+          {value && (
+            <button type="button" onClick={() => { onChange(null); onClose(); }} className="rounded-sm border border-ink-900/30 px-1.5 py-px font-sans text-[10px] text-ink-900/70 hover:text-ink-900">
+              {t('game.topbar.unlessNone')}
+            </button>
+          )}
+          <button type="button" onClick={() => { onChange(draft); onClose(); }} className="wax-seal font-sans text-[10px] font-bold uppercase tracking-wider hover:brightness-110">
+            {t('game.topbar.unlessOk')}
+          </button>
+        </span>
+      </p>
     </div>
   );
 }
@@ -177,7 +188,7 @@ export default function PreparedPanel() {
       return { q, i, cost, card, holds: !!r.state, why: r.error };
     });
   }, [game, me, queued]);
-  if (!game || me < 0 || (!queued.length && !preparing)) return null;
+  if (!game || me < 0 || (!queued.length && !preparing && !previewQueue)) return null;
   const others = game.players.map((_, idx) => idx).filter((idx) => idx !== me);
   /* the orders on the board: one dark ribbon across the top says them, nothing else */
   if (previewQueue) {
@@ -190,8 +201,13 @@ export default function PreparedPanel() {
         aria-label={t('game.prepared.title')}
         className="plaque pointer-events-auto flex max-w-[96vw] items-center gap-3 whitespace-nowrap rounded-md px-4 py-1.5"
       >
-        <span className="engraved-brass font-fell text-[12px] uppercase tracking-[0.18em]">{t('game.prepared.survey')}</span>
+        <span className="engraved-brass font-fell text-[12px] uppercase tracking-[0.18em]">{t(rows.length ? 'game.prepared.survey' : 'game.prepared.surveyEmpire')}</span>
         <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+        {!rows.length && (
+          <span className="font-fell text-[12.5px] text-cream-100/90">
+            {t('game.prepared.surveyCounts', { tiles: Object.values(game.tiles).filter((x) => x.owner === me).length, links: Object.values(game.links).filter((l) => l.owner === me).length, pending: Object.values(game.tiles).filter((x) => x.owner === me && !x.flipped).length })}
+          </span>
+        )}
         {rows.map(({ q, i, holds }) => (
           <span key={i} className="flex shrink-0 items-center gap-1.5 font-fell text-[12.5px] text-cream-100/90">
             <span className={cn('brass-roundel h-5 w-5 shrink-0 text-[11px] font-bold', !holds && 'opacity-50')}>{i + 1}</span>
@@ -275,7 +291,7 @@ export default function PreparedPanel() {
                 <X className="h-3.5 w-3.5" />
               </button>
               </div>
-              {editing === i && <UnlessRow game={game} players={others} value={q.unless ?? null} picking={unlessPick === i} onPick={() => beginUnlessPick(unlessPick === i ? null : i)} onChange={(u) => setUnless(i, u)} onClose={() => { setEditing(null); beginUnlessPick(null); }} />}
+              {editing === i && <UnlessRow game={game} action={q.action} players={others} value={q.unless ?? null} picking={unlessPick === i} onPick={() => beginUnlessPick(unlessPick === i ? null : i)} onChange={(u) => setUnless(i, u)} onClose={() => { setEditing(null); beginUnlessPick(null); }} />}
             </li>
           );
         })}

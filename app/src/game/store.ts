@@ -569,20 +569,19 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   dropQueued: (index) => {
     const queued = get().queued.filter((_, i) => i !== index);
-    set({ queued, previewQueue: queued.length ? get().previewQueue : false, unlessPick: null });
+    set({ queued, unlessPick: null });
   },
-  setPreviewQueue: (on) => set({ previewQueue: on && get().queued.length > 0 }),
+  setPreviewQueue: (on) => set({ previewQueue: on && !!get().game }),
   beginUnlessPick: (index) => set({ unlessPick: index }),
   applyUnlessPick: (town, slot) => {
     const st = get();
     const i = st.unlessPick;
     const g = st.game;
     if (i === null || !g || !st.queued[i]) return;
-    const me = st.seat ?? g.players.findIndex((p) => !p.isBot);
     const cur = st.queued[i].unless;
     const allows = slot !== null ? TOWN_BY_ID[town]?.slots[slot]?.allows : undefined;
     const industry = allows && allows.length === 1 ? allows[0] : undefined;
-    const unless: Unless = { player: cur?.player ?? g.players.findIndex((_, idx) => idx !== me), kind: cur?.kind ?? 'build', town, industry: (cur?.kind ?? 'build') === 'build' ? industry : undefined };
+    const unless: Unless = { player: cur?.player ?? 'any', kind: cur?.kind ?? 'build', town, industry: (cur?.kind ?? 'build') === 'build' ? industry : undefined };
     set({ queued: st.queued.map((q, k) => (k === i ? { ...q, unless } : q)), unlessPick: null });
   },
   setUnless: (index, unless) => set({ queued: get().queued.map((q, i) => (i === index ? { ...q, unless: unless ?? undefined } : q)) }),
@@ -594,7 +593,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (st.previewQueue) set({ previewQueue: false });
     /* the condition: what that player did since the move was prepared */
     const u = next.unless;
-    const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player === u.player && e.key === u.kind && (!u.town || e.region === u.town) && (!u.industry || e.vars?.industry === u.industry)) : undefined;
+    const hit = u ? g.ledger.find((e) => e.id >= next.since && e.player !== undefined && (u.player === 'any' ? e.player !== g.current : e.player === u.player) && e.key === u.kind && (!u.town || e.region === u.town) && (!u.industry || e.vars?.industry === u.industry)) : undefined;
     if (hit) {
       set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueUnless', { what: ledgerText(hit, tr) }), at: Date.now() } });
       return;
@@ -1200,7 +1199,8 @@ export function projectQueued(g: GameState, me: number, queued: Prepared[]): Gam
 
 /** what would make a prepared move pointless: that player doing that (there) */
 export interface Unless {
-  player: number;
+  /** a seat, or 'any' for anyone but me */
+  player: number | 'any';
   kind: 'sell' | 'build' | 'network';
   town?: string;
   /** for a build: that works only (a slot picked on the map that takes one) */
@@ -1212,9 +1212,29 @@ export interface Prepared {
   since: number;
   unless?: Unless;
 }
+/** the clauses a move naturally wants: the slot it needs kept free, the
+ *  link it needs left open, the merchant's beer left in the barrel */
+export function suggestUnless(a: GameAction): { key: string; unless: Unless }[] {
+  switch (a.kind) {
+    case 'build':
+      return [
+        { key: 'slotTaken', unless: { player: 'any', kind: 'build', town: a.town } },
+        { key: 'linkLaid', unless: { player: 'any', kind: 'network', town: a.town } },
+      ];
+    case 'network': {
+      const l = LINKS.find((x) => x.id === a.link);
+      return l ? [{ key: 'linkTaken', unless: { player: 'any', kind: 'network', town: l.a } }, { key: 'builtThere', unless: { player: 'any', kind: 'build', town: l.b } }] : [];
+    }
+    case 'sell':
+      return a.sales.length ? [{ key: 'beerDrunk', unless: { player: 'any', kind: 'sell', town: a.sales[0].town } }] : [];
+    default:
+      return [];
+  }
+}
+
 /** the condition, said in a few words */
 export function describeUnless(u: Unless, g: GameState): string {
-  const name = g.players[u.player]?.name ?? '';
+  const name = u.player === 'any' ? tr('game.topbar.unlessAnyone') : (g.players[u.player]?.name ?? '');
   const where = u.town ? tr('game.topbar.unlessAt', { town: TOWN_BY_ID[u.town]?.name ?? u.town }) : '';
   const what = u.kind === 'build' && u.industry ? tr('game.topbar.unlessBuilds', { works: tr(`game.log.industry.${u.industry}`) }) : tr(`game.topbar.unlessKind.${u.kind}`);
   return tr('game.topbar.unless', { name, what, where });
