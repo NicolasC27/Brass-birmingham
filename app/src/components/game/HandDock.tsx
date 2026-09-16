@@ -106,7 +106,8 @@ function GameCard({
       disabled={disabled}
       initial={{ y: 40, opacity: 0 }}
       animate={{ y: selected || scoutMarked ? -12 : 0, opacity: disabled ? 0.45 : 1, rotate: scoutMarked ? 0 : (index % 3 - 1) * 2 }}
-      whileHover={{ y: -12, rotate: scoutMarked ? 0 : -1 }}
+      /* no lift under the pointer: the dock has no room for one; the card only straightens */
+      whileHover={{ rotate: 0 }}
       transition={{ type: 'spring', stiffness: 180, damping: 20 }}
       className={cn(
         'relative h-[120px] w-[84px] shrink-0 overflow-hidden rounded-md border border-[#A8843F] text-left shadow-e3',
