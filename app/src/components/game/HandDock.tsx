@@ -680,7 +680,9 @@ export default function HandDock() {
                   style={{
                     scrollSnapAlign: 'center',
                     /* the hovered card rises and grows a touch; those to its right make room for it */
-                    transform: hoverCard === i ? 'translateY(-6px) scale(1.06)' : hoverCard !== null && i > hoverCard ? `translateX(${shown.hand.length >= 7 ? 30 : shown.hand.length === 6 ? 18 : 8}px)` : undefined,
+                    /* no lift: the dock is not tall enough for one — the card only comes forward, ringed in brass */
+                    transform: hoverCard !== null && i > hoverCard ? `translateX(${shown.hand.length >= 7 ? 30 : shown.hand.length === 6 ? 18 : 8}px)` : undefined,
+                    filter: hoverCard === i ? 'drop-shadow(0 0 4px rgba(232,196,122,.9))' : undefined,
                   }}
                   onPointerEnter={() => setHoverCard(i)}
                   onPointerLeave={() => setHoverCard((h) => (h === i ? null : h))}
