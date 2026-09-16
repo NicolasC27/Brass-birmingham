@@ -273,7 +273,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           }
         }
       }
-      if (pts.length) {
+      if (pts.length && preview.queued.length) {
         const xs = pts.map((p) => p[0]);
         const ys = pts.map((p) => p[1]);
         const w = Math.max(...xs) - Math.min(...xs);
@@ -1288,6 +1288,32 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       for (const c of overlay.children) if (c instanceof Sprite) c.alpha = 0.82;
       const mine = colorOf(preview.actor);
       const myColor = game.players[preview.actor]?.color ?? 'brass';
+      /* no orders: the survey is of my empire — my links in my colour, a
+         glow on each of my works still to flip */
+      if (!preview.queued.length) {
+        for (const [id, l] of Object.entries(game.links)) {
+          if (l.owner !== preview.actor) continue;
+          const def = LINKS.find((x) => x.id === id);
+          if (!def) continue;
+          const pts = routeFor(def, l.era).pts;
+          const g = new Graphics();
+          trace(g, pts);
+          g.stroke({ width: 10, color: 0x0c0a08, alpha: 0.5, cap: 'round', join: 'round' });
+          trace(g, pts);
+          g.stroke({ width: 5, color: mine, cap: 'round', join: 'round' });
+          g.eventMode = 'none';
+          overlay.addChild(g);
+        }
+        for (const [key, tile] of Object.entries(game.tiles)) {
+          if (tile.owner !== preview.actor || tile.flipped) continue;
+          const [townId, si] = key.split(':');
+          const sp = TOWN_BY_ID[townId]?.slots[Number(si)];
+          if (sp) {
+            const [x, y] = displayPosFor(sp.x, sp.y);
+            glow(x, y, TILE_HALF);
+          }
+        }
+      }
       preview.queued.forEach(({ action: a }, i) => {
         const n = i + 1;
         if (a.kind === 'build') {

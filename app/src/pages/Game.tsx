@@ -282,8 +282,7 @@ export default function Game() {
       /* the survey of the orders, from anywhere, as long as there are orders */
       if (isKey(e, 'survey')) {
         const st = useGame.getState();
-        if (st.previewQueue) setPreviewQueue(false);
-        else if (st.queued.length) setPreviewQueue(true);
+        setPreviewQueue(!st.previewQueue);
         return;
       }
       if (planActor < 0) return;
