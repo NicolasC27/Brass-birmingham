@@ -169,6 +169,8 @@ const site: typeof enSite = {
     invited: 'Lettre envoyée',
     noTable: 'Ouvrez une table pour l’y inviter.',
     chips: 'Vos amis',
+    watch: 'Regarder « {table} »',
+    watchHint: 'Suivre la partie sans y jouer',
   },
   profile: {
     eyebrow: 'La fiche',

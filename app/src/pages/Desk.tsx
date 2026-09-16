@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { ArrowRight, Crown, GraduationCap, KeyRound, Mail, Send, UserPlus, X } from 'lucide-react';
+import { ArrowRight, Crown, Eye, GraduationCap, KeyRound, Mail, Send, UserPlus, X } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import PlayerToken from '@/components/setup/PlayerToken';
@@ -100,7 +100,7 @@ function PastRow({ game, me }: { game: PastGame; me: string }) {
 }
 
 /** the friends: ask by name, answer, and one click to a table I host */
-function FriendsPanel({ friends, table }: { friends: Friend[]; table: TableSummary | null }) {
+function FriendsPanel({ friends, table, tables }: { friends: Friend[]; table: TableSummary | null; tables: TableSummary[] }) {
   const t = useT();
   const [name, setName] = useState('');
   const [note, setNote] = useState<string | null>(null);
@@ -152,6 +152,13 @@ function FriendsPanel({ friends, table }: { friends: Friend[]; table: TableSumma
                   <button type="button" onClick={() => befriend(f.account.name).catch(fail)} className="btn-strike !min-h-[28px] !px-2.5 !py-0.5 !text-[10px]">
                     {t('site.friends.accept')}
                   </button>
+                )}
+                {/* a friend at a table in play, one I do not sit at: go and watch */}
+                {f.status === 'friends' && f.playing && !tables.some((x) => x.code === f.playing?.code) && (
+                  <Link to={`/game/${f.playing.code}`} title={t('site.friends.watchHint')} className="btn-ledger flex items-center gap-1 !min-h-[28px] !px-2.5 !py-0.5 !text-[10px]">
+                    <Eye className="h-3 w-3" aria-hidden />
+                    {t('site.friends.watch', { table: f.playing.name })}
+                  </Link>
                 )}
                 {f.status === 'friends' && table && !table.seats.some((s) => s.id === f.account.id) && (
                   <button type="button" onClick={() => toTable(f)} disabled={sent.has(f.id)} className="btn-ledger !min-h-[28px] !px-2.5 !py-0.5 !text-[10px] disabled:opacity-50">
@@ -367,7 +374,7 @@ export default function Desk() {
             )}
           </Panel>
 
-          <FriendsPanel friends={desk?.friends ?? []} table={hosting} />
+          <FriendsPanel friends={desk?.friends ?? []} table={hosting} tables={desk?.tables ?? []} />
 
           <Panel title={t('site.desk.stats.title')} tone="paper">
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3">

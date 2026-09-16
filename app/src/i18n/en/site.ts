@@ -167,6 +167,8 @@ const site = {
     invited: 'Letter sent',
     noTable: 'Open a table to ask them to it.',
     chips: 'Your friends',
+    watch: 'Watch “{table}”',
+    watchHint: 'Follow the game without playing it',
   },
   profile: {
     eyebrow: 'The record',

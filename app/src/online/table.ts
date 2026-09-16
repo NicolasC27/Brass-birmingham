@@ -114,6 +114,8 @@ export interface Friend {
   status: 'friends' | 'asks' | 'asked';
   /** a socket of theirs is open right now */
   online: boolean;
+  /** the table they sit at that is in play: one may go and watch it */
+  playing?: { code: string; name: string };
 }
 
 /** everything the desk shows: my tables, my letters, my friends, my past games */

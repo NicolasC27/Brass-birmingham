@@ -121,7 +121,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (!c.me) return;
     const desk = hall.desk(c.me.id);
     /* a friend is online when a socket of theirs is open */
-    desk.friends = desk.friends.map((f) => ({ ...f, online: socketsOf(f.account.id).length > 0 }));
+    desk.friends = desk.friends.map((f) => ({ ...f, online: socketsOf(f.account.id).length > 0, playing: hall.playingOf(f.account.id) }));
     send(c, { t: 'desk', rid, desk });
   };
   /** this account came or went: its friends' desks show it */

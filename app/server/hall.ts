@@ -65,6 +65,8 @@ export class Hall {
     /* whoever sits at this table has a desk that just changed */
     const room = this.rooms.get(code);
     if (room) for (const s of room.table.seats) if (s.kind === 'human') this.announceDesk(s.id);
+    /* a table starting or ending: its players' friends see whom they may watch */
+    if (room && what === 'table') for (const s of room.table.seats) if (s.kind === 'human') for (const id of this.store.friendIds(s.id)) this.announceDesk(id);
   }
 
   onDesk(cb: DeskChanged): () => void {
@@ -97,6 +99,14 @@ export class Hall {
       });
     }
     return out.sort((a, b) => Number(b.myTurn) - Number(a.myTurn) || b.updatedAt - a.updatedAt);
+  }
+
+  /** the table this account sits at that is in play, for a friend to watch */
+  playingOf(accountId: string): { code: string; name: string } | undefined {
+    for (const room of this.rooms.values()) {
+      if (room.game && !room.game.over && room.table.seats.some((s) => s.id === accountId)) return { code: room.table.code, name: room.table.name };
+    }
+    return undefined;
   }
 
   desk(accountId: string): Desk {
