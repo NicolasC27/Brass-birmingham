@@ -4,6 +4,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import HeroSection from "@/components/home/HeroSection";
 import FeatureTriptych from "@/components/home/FeatureTriptych";
+import HowItPlays from "@/components/home/HowItPlays";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -31,6 +32,7 @@ export default function Home() {
   return (
     <>
       <HeroSection />
+      <HowItPlays />
       <FeatureTriptych />
     </>
   );

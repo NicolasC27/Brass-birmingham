@@ -71,6 +71,16 @@ const fr: typeof enHome = {
       },
     },
   },
+  how: {
+    aria: 'Comment ça se joue',
+    eyebrow: 'Comment ça se joue',
+    title: 'Un tour, une carte, une action',
+    rules: 'Lire les règles →',
+    step: 'Étape {n}',
+    card: { title: 'Jouez une carte', body: 'Une carte de lieu ou d’industrie ouvre l’action : bâtir, relier, développer, vendre, emprunter ou prospecter. Deux actions par tour.' },
+    build: { title: 'Bâtissez, reliez', body: 'Posez vos usines dans les villes, tirez des canaux puis des rails entre elles. Le charbon et le fer voyagent par votre réseau, ou coûtent cher au marché.' },
+    sell: { title: 'Vendez, marquez', body: 'Une usine vendue se retourne : elle rapporte des points et fait monter votre revenu. Deux ères, deux comptes, et le plus riche en points l’emporte.' },
+  },
   footer: {
     tagline: "Canaux, charbon et fer. Bâtissez l'empire qui a bâti le monde.",
     navAria: 'Pied de page',

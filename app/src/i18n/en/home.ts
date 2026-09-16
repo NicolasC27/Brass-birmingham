@@ -69,6 +69,16 @@ const home = {
       },
     },
   },
+  how: {
+    aria: 'How it plays',
+    eyebrow: 'How it plays',
+    title: 'A turn, a card, an action',
+    rules: 'Read the rules →',
+    step: 'Step {n}',
+    card: { title: 'Play a card', body: 'A location or an industry card opens the action: build, network, develop, sell, borrow or scout. Two actions a turn.' },
+    build: { title: 'Build and link', body: 'Lay your works in the towns, draw canals and later rails between them. Coal and iron travel along your network, or cost dear at the market.' },
+    sell: { title: 'Sell and score', body: 'A work sold turns over: it pays points and raises your income. Two eras, two reckonings, and the richest in points wins.' },
+  },
   footer: {
     tagline: 'Canals, coal and iron. Build the empire that built the world.',
     navAria: 'Footer',
