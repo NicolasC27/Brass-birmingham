@@ -45,6 +45,9 @@ interface Client {
   watching: Set<string>;
   /** when this socket last asked for the register of tables (0: never) */
   askedTables: number;
+  /** the last round trip measured on this socket, in ms */
+  latency: number | null;
+  pingAt: number;
   /** when the register was last sent, and the push waiting to go */
   tablesAt: number;
   tablesTimer: ReturnType<typeof setTimeout> | null;
@@ -211,6 +214,22 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   });
 
   const pushTable = (c: Client, code: string) => send(c, { t: 'table', code, table: hall.table(code) });
+  /** the line of each seat at a table: the best of the account's sockets */
+  const linesOf = (code: string): (number | null)[] | null => {
+    const game = hall.game(code);
+    if (!game || game.over) return null;
+    return game.seatIds.map((id) => {
+      if (id.startsWith('bot-')) return null;
+      const mine = socketsOf(id).map((s) => s.latency).filter((l): l is number => l !== null);
+      return mine.length ? Math.min(...mine) : null;
+    });
+  };
+  /** the seats' lines, to one watcher or to all of them */
+  const pulse = (code: string, only?: Client) => {
+    const latency = linesOf(code);
+    if (!latency) return;
+    for (const w of only ? [only] : watchers(code)) send(w, { t: 'pulse', code, latency });
+  };
   const pushGame = (c: Client, code: string) => {
     const game = hall.game(code);
     if (game && c.me) send(c, { t: 'game', view: game.view(c.me.id) });
@@ -293,10 +312,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, ip: req.socket.remoteAddress ?? '', me: null, token: null, watching: new Set(), askedTables: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, ip: req.socket.remoteAddress ?? '', me: null, token: null, watching: new Set(), askedTables: 0, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
+    socket.on('pong', () => {
+      if (client.pingAt) client.latency = Date.now() - client.pingAt;
+    });
     socket.on('message', (raw: Buffer | string) => {
       const m = decode<ClientMessage>(String(raw));
       if (!m) return;
@@ -536,6 +558,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         c.watching.add(code);
         pushTable(c, code);
         pushGame(c, code);
+        pulse(code, c);
         return;
       }
       case 'leave': {
@@ -629,6 +652,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const janitor = every > 0 ? setInterval(() => hall.sweep(STALE_MS), every) : null;
   const queueEvery = options.queueEvery ?? QUEUE_EVERY_MS;
   const usher = queueEvery > 0 ? setInterval(() => hall.matchQueues(), queueEvery) : null;
+  /* the pulse: every socket is pinged, and each table in play hears its seats' lines */
+  const pulses = setInterval(() => {
+    const codes = new Set<string>();
+    for (const c of clients) {
+      if (c.socket.readyState !== c.socket.OPEN) continue;
+      c.pingAt = Date.now();
+      c.socket.ping();
+      for (const code of c.watching) codes.add(code);
+    }
+    setTimeout(() => {
+      for (const code of codes) pulse(code);
+    }, 1500);
+  }, 10_000);
 
   return new Promise((resolve) => {
     http.listen(options.port ?? 8787, options.host ?? '0.0.0.0', () => {
@@ -641,6 +677,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           new Promise<void>((done) => {
             if (janitor) clearInterval(janitor);
             if (usher) clearInterval(usher);
+            clearInterval(pulses);
             hall.dispose();
             for (const c of clients) {
               if (c.tablesTimer) clearTimeout(c.tablesTimer);

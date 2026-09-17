@@ -135,6 +135,8 @@ export type ServerMessage =
   | { t: 'mark'; code: string; from: number; key: string; at: number }
   /** the office frowns at a shower of marks: a warning, then silence for the game */
   | { t: 'warned'; code: string; about: 'marks'; muted: boolean }
+  /** every seat's line to the office, in ms (null for a machine or an empty chair), now and then */
+  | { t: 'pulse'; code: string; latency: (number | null)[] }
   | { t: 'tables'; rid?: number; tables: PublicTable[] }
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */

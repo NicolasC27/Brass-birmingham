@@ -92,6 +92,8 @@ export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; 
 }
 
 function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number; compact?: boolean; onCard: () => void }) {
+  const latency = useGame((st) => st.latency);
+  const online = useGame((st) => st.code !== null);
   const t = useT();
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   const money = useCountTween(p.money);
@@ -157,6 +159,11 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
         <span className="flex items-center gap-1.5">
           <span className={cn('max-w-[104px] truncate font-fell leading-tight tracking-wide', active ? 'text-cream-100' : 'text-cream-100/85', compact ? 'text-[12px]' : 'text-[13px]')}>{p.name}</span>
           {p.isBot && <span className="font-mono text-[8px] uppercase text-brass-500/80">{p.difficulty.slice(0, 4)}</span>}
+          {online && !p.isBot && typeof latency[index] === 'number' && (
+            <span className="font-mono text-[8.5px] tabular-nums" style={{ color: latency[index]! < 90 ? '#4EE38F' : latency[index]! < 220 ? '#DDBE7E' : '#FF5F4C' }} title={t('game.rail.latency', { ms: latency[index]! })}>
+              {latency[index]} ms
+            </span>
+          )}
           {active && <span className="rounded-sm bg-brass-400 px-1 py-px font-sans text-[8px] font-bold uppercase tracking-widest text-coal-950">{t('game.rail.toAct')}</span>}
         </span>
         {/* the three figures, money first and largest, each behind its own icon */}
