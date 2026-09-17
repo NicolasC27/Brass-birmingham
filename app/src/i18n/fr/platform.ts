@@ -205,7 +205,6 @@ const platform = {
   lobby: {
     eyebrow: "SALON D'ATTENTE",
     leave: 'Quitter le salon',
-    rename: 'Renommer la table',
     medallion: 'Niveau de préparation de la table',
     readyCount: 'PRÊTS {ready}/{total}',
     emptySeat: 'SIÈGE LIBRE',
@@ -237,8 +236,7 @@ const platform = {
     identity: {
       heading: 'IDENTITÉ DE LA TABLE',
       nameLabel: 'Nom de la table',
-      namePlaceholder: 'Fonderie du Nord…',
-      defaultName: 'Table de {name}',
+      drawn: 'Tirée au sort dans le registre du club.',
       localTitle: 'Table locale',
       localCopy: 'Jouée sur cet appareil. Les tables en ligne se créent depuis l’onglet Jouer.',
     },

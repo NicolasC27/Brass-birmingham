@@ -9,6 +9,7 @@ import type { Pace } from './game';
 import { Queue } from './queue';
 import type { Match, Mode, Waits } from './queue';
 import { seasonAt } from './rating';
+import { pickTableName } from '@/online/tableNames';
 import type { Store } from './store';
 
 /* ------------------------------------------------------------------ */
@@ -60,8 +61,8 @@ export interface HallOptions {
 }
 
 /** the tables the office deals from the queues */
-const QUICK_TABLE = { name: 'Partie rapide', options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 2, fidelity: 'core', assist: false } as SetupOptions };
-const RANKED_TABLE = { name: 'Classée', options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 3, fidelity: 'core', assist: false } as SetupOptions };
+const QUICK_TABLE = { options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 2, fidelity: 'core', assist: false } as SetupOptions };
+const RANKED_TABLE = { options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 3, fidelity: 'core', assist: false } as SetupOptions };
 /** the machines that keep a lone quick player company */
 const COMPANY: { name: string; difficulty: BotDifficulty }[] = [
   { name: 'Mr Boulton', difficulty: 'industrialist' },
@@ -290,7 +291,7 @@ export class Hall {
     }
     let code = mintCode();
     while (this.rooms.has(code)) code = mintCode();
-    const table: Table = { code, name: blueprint.name, hostId: seats[0].id, seats, options: blueprint.options, status: 'starting', ...(ranked ? { ranked: true } : {}), createdAt: now, updatedAt: now };
+    const table: Table = { code, name: this.drawName(), hostId: seats[0].id, seats, options: blueprint.options, status: 'starting', ...(ranked ? { ranked: true } : {}), createdAt: now, updatedAt: now };
     this.rooms.set(code, { table, game: null });
     this.write(code);
     /* the players are told they sit here — and only then is the bell rung, so
@@ -368,7 +369,7 @@ export class Hall {
     return !!room.game || this.ended.has(room.table.code) || this.store.gameFinished(room.table.code);
   }
 
-  create(me: Identity, tableName: string, options: SetupOptions, color?: PlayerColor): Table {
+  create(me: Identity, options: SetupOptions, color?: PlayerColor): Table {
     let open = 0;
     for (const room of this.rooms.values()) if (room.table.hostId === me.id && !this.started(room)) open += 1;
     if (open >= OPEN_TABLES) throw new Error('refused' satisfies LobbyError);
@@ -377,7 +378,7 @@ export class Hall {
     const now = Date.now();
     const table: Table = {
       code,
-      name: tableName.trim().slice(0, 28) || `${me.name}'s table`,
+      name: this.drawName(),
       hostId: me.id,
       seats: [seatFor(me, { seats: [] }, color)],
       options: houseRules(options),
@@ -388,6 +389,13 @@ export class Hall {
     this.rooms.set(code, { table, game: null });
     this.write(code);
     return table;
+  }
+
+  /** a name from the register that no live table carries */
+  private drawName(): string {
+    const busy: string[] = [];
+    for (const room of this.rooms.values()) if (!room.game || !room.game.over) busy.push(room.table.name);
+    return pickTableName(busy);
   }
 
   /** take a chair — throws a LobbyError when the table will not have you */
@@ -643,7 +651,7 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
     code: cur.code,
     hostId: cur.hostId,
     createdAt: cur.createdAt,
-    name: host ? wanted.name.trim().slice(0, 28) || cur.name : cur.name,
+    name: cur.name,
     options: host ? houseRules(wanted.options) : cur.options,
     seats,
     status: 'open',

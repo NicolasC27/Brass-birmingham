@@ -205,7 +205,6 @@ const platform = {
   lobby: {
     eyebrow: 'WAITING ROOM',
     leave: 'Leave room',
-    rename: 'Rename the table',
     medallion: 'Table readiness',
     readyCount: 'READY {ready}/{total}',
     emptySeat: 'OPEN SEAT',
@@ -237,8 +236,7 @@ const platform = {
     identity: {
       heading: 'TABLE IDENTITY',
       nameLabel: 'Table name',
-      namePlaceholder: 'The Northern Foundry…',
-      defaultName: "{name}'s table",
+      drawn: 'Drawn by lot from the club register.',
       localTitle: 'Local table',
       localCopy: 'Played on this device. Online tables are created from the Play tab.',
     },

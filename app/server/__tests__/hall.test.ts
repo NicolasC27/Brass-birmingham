@@ -9,6 +9,7 @@ import type { GameState } from '@/game/types';
 import type { GameView } from '@/online/protocol';
 import { FREE_ITEMS, GUINEAS } from '@/online/counter';
 import type { Table } from '@/online/table';
+import { TABLE_NAMES } from '@/online/tableNames';
 import { serve } from '../index';
 import type { Serving } from '../index';
 import { seasonAt } from '../rating';
@@ -160,7 +161,7 @@ describe('the hall', () => {
     const ada = await arrive('Ada');
     const bob = await arrive('Bob');
     const passer = await arrive('Nobody');
-    ada.send({ t: 'create', rid: 10, name: 'The Works', options: OPTIONS });
+    ada.send({ t: 'create', rid: 10, options: OPTIONS });
     await ada.until('the table', () => !!ada.table);
     const code = ada.table!.code;
     bob.send({ t: 'join', rid: 11, code });
@@ -176,16 +177,18 @@ describe('the hall', () => {
     passer.send({ t: 'tables', rid: 20 });
     await passer.until('the register', () => !!passer.tables);
     expect(passer.tables).toHaveLength(1);
-    expect(passer.tables![0]).toMatchObject({ code, name: 'The Works', hostName: 'Ada', status: 'playing', ranked: false, watchers: 3, era: 'canal', round: 1, current: expect.any(Number) });
+    expect(passer.tables![0]).toMatchObject({ code, name: ada.table!.name, hostName: 'Ada', status: 'playing', ranked: false, watchers: 3, era: 'canal', round: 1, current: expect.any(Number) });
     expect(passer.tables![0].seats).toEqual([
       { name: 'Ada', color: 'brass', kind: 'human' },
       { name: 'Bob', color: 'oxblood', kind: 'human' },
     ]);
     /* having asked, the passer is told of the next table without asking again */
-    ada.send({ t: 'create', rid: 12, name: 'Another', options: OPTIONS });
+    ada.send({ t: 'create', rid: 12, options: OPTIONS });
     await passer.until('the register again', () => (passer.tables?.length ?? 0) === 2, 4000);
     expect(passer.tables!.map((t) => t.status)).toEqual(['playing', 'open']);
-    expect(passer.tables![1]).toMatchObject({ name: 'Another', hostName: 'Ada', watchers: 1 });
+    expect(passer.tables![1]).toMatchObject({ hostName: 'Ada', watchers: 1 });
+    expect(TABLE_NAMES).toContain(passer.tables![1].name);
+    expect(passer.tables![1].name).not.toBe(passer.tables![0].name);
     ada.send({ t: 'desk', rid: 13 });
     await ada.until('the desk', () => ada.desk?.hall.playing === 1);
   }, 30000);
@@ -207,7 +210,8 @@ describe('the hall', () => {
     for (const g of four) await g.until('the table', () => !!g.table && !!g.view);
     for (const g of four) {
       expect(g.queue).toBeNull();
-      expect(g.table).toMatchObject({ name: 'Partie rapide', status: 'starting', options: { eraLength: 'standard', timerMinutes: 2, assist: false } });
+      expect(TABLE_NAMES).toContain(g.table!.name);
+      expect(g.table).toMatchObject({ status: 'starting', options: { eraLength: 'standard', timerMinutes: 2, assist: false } });
       expect(g.table!.ranked).toBeUndefined();
       expect(g.trace.indexOf('seated')).toBeGreaterThan(g.trace.lastIndexOf('queue'));
     }
@@ -234,7 +238,7 @@ describe('the hall', () => {
     ]);
     ada.send({ t: 'desk', rid: 2 });
     await ada.until('the desk', () => ada.desk?.hall.playing === 2);
-    expect(ada.desk!.tables[0]).toMatchObject({ name: 'Partie rapide', status: 'playing' });
+    expect(ada.desk!.tables[0]).toMatchObject({ status: 'playing' });
   }, 30000);
 
   it('deals a ranked table to three after ninety seconds, and lets nobody else in', async () => {
@@ -253,7 +257,8 @@ describe('the hall', () => {
     now += 91_000;
     server!.hall.matchQueues();
     for (const g of [ada, bob, cy]) await g.until('the table', () => !!g.view);
-    expect(ada.table).toMatchObject({ name: 'Classée', ranked: true, options: { timerMinutes: 3, eraLength: 'standard' } });
+    expect(TABLE_NAMES).toContain(ada.table!.name);
+    expect(ada.table).toMatchObject({ ranked: true, options: { timerMinutes: 3, eraLength: 'standard' } });
     expect(ada.table!.seats).toHaveLength(3);
     expect(ada.table!.seats.every((s) => s.kind === 'human')).toBe(true);
     di.send({ t: 'join', rid: 30, code: ada.table!.code });
@@ -262,7 +267,7 @@ describe('the hall', () => {
     /* the register knows it for what it is */
     di.send({ t: 'tables', rid: 31 });
     await di.until('the register', () => !!di.tables);
-    expect(di.tables![0]).toMatchObject({ name: 'Classée', ranked: true, status: 'playing', watchers: 3 });
+    expect(di.tables![0]).toMatchObject({ ranked: true, status: 'playing', watchers: 3 });
     /* a socket gone for good is dropped from the line after a while */
     di.send({ t: 'queue', mode: 'ranked', on: true });
     await di.until('the line', () => di.queue?.waiting === 1);

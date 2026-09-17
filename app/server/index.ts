@@ -517,7 +517,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     }
     switch (m.t) {
       case 'create': {
-        const table = hall.create(who, m.name, m.options, m.color);
+        const table = hall.create(who, m.options, m.color);
         c.watching.add(table.code);
         send(c, { t: 'seated', rid: m.rid, table });
         return;

@@ -5,6 +5,7 @@ import { loadIdentity, rememberName } from './identity';
 import { onlineWire } from './net';
 import { RemoteLobbyClient } from './remote';
 import { MAX_SEATS, freeColor, randomId } from './table';
+import { pickTableName } from './tableNames';
 import type { Identity, LobbyError, Table, TableSeat } from './table';
 
 /* ------------------------------------------------------------------ */
@@ -23,7 +24,7 @@ export type Awaitable<T> = T | Promise<T>;
 export interface LobbyClient {
   readonly me: Identity;
   setName(name: string): void;
-  create(tableName: string, options: SetupOptions, color?: PlayerColor): Awaitable<Table>;
+  create(options: SetupOptions, color?: PlayerColor): Awaitable<Table>;
   join(code: string, color?: PlayerColor): Awaitable<Table>;
   leave(code: string): void;
   /** rewrite a table (seat edits, rules, start) — the callback gets the latest copy */
@@ -90,12 +91,12 @@ class LocalLobbyClient implements LobbyClient {
     return { id: this.me.id, name: this.me.name, color: freeColor(table ?? { seats: [] }, color), kind: 'human', ready: false, joinedAt: Date.now() };
   }
 
-  create(tableName: string, options: SetupOptions, color?: PlayerColor): Table {
+  create(options: SetupOptions, color?: PlayerColor): Table {
     const tables = readTables();
     let code = rid(4);
     while (tables[code]) code = rid(4);
     const now = Date.now();
-    const table: Table = { code, name: tableName, hostId: this.me.id, seats: [this.seatFor(color)], options: { ...DEFAULT_OPTIONS, ...options }, status: 'open', createdAt: now, updatedAt: now };
+    const table: Table = { code, name: pickTableName(Object.values(tables).map((tb) => tb.name)), hostId: this.me.id, seats: [this.seatFor(color)], options: { ...DEFAULT_OPTIONS, ...options }, status: 'open', createdAt: now, updatedAt: now };
     tables[code] = table;
     this.write(tables, code);
     return table;

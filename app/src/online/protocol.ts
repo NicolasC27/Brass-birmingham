@@ -83,7 +83,7 @@ export type ClientMessage =
   | { t: 'invite'; rid: number; code: string; name: string }
   /** answer an invitation — accepting takes the chair */
   | { t: 'answer'; rid: number; id: string; accept: boolean }
-  | { t: 'create'; rid: number; name: string; options: SetupOptions; color?: PlayerColor }
+  | { t: 'create'; rid: number; options: SetupOptions; color?: PlayerColor }
   | { t: 'join'; rid: number; code: string; color?: PlayerColor }
   /** follow a table without taking a seat (a link, a reconnection) */
   | { t: 'watch'; code: string }

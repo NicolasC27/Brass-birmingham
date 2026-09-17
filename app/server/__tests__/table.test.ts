@@ -63,7 +63,7 @@ describe('a table over the wire', () => {
     await guest.open(server.port);
     await host.signUp();
     await guest.signUp();
-    host.send({ t: 'create', rid: 10, name: 'The Works', options: OPTIONS });
+    host.send({ t: 'create', rid: 10, options: OPTIONS });
     await host.until('the table', () => !!host.table);
     const code = host.table!.code;
     guest.send({ t: 'join', rid: 11, code });
@@ -280,7 +280,7 @@ describe('a table over the wire', () => {
 
     /* and opens on the same tables, the game exactly where it stood */
     server = await serve({ port: 0, mailer: post, pace: { bot: 60000, ceremony: 60000 }, sweepEvery: 0, file });
-    expect(server.hall.table(code)?.name).toBe('The Works');
+    expect(server.hall.table(code)?.name).toBe(host.table!.name);
     expect(serialize(server.hall.game(code)!.state)).toBe(before);
 
     const back = new Guest('Ada');
@@ -323,11 +323,11 @@ describe('a table over the wire', () => {
     /* an account whose letter is unanswered is signed in, but the tables are shut */
     await host.signUp(false);
     expect(host.me?.verified).toBe(false);
-    host.send({ t: 'create', rid: 10, name: 'The Works', options: OPTIONS });
+    host.send({ t: 'create', rid: 10, options: OPTIONS });
     await host.until('the refusal', () => host.rejected.includes('verify-first'));
     host.send({ t: 'verify', rid: 11, token: tokenIn(letters.get(host.email), 'verify') });
     await host.until('the address to be verified', () => host.me?.verified === true);
-    host.send({ t: 'create', rid: 12, name: 'The Works', options: OPTIONS });
+    host.send({ t: 'create', rid: 12, options: OPTIONS });
     await host.until('the table', () => !!host.table);
     const code = host.table!.code;
 
@@ -338,7 +338,7 @@ describe('a table over the wire', () => {
     expect(guest.desk!.invitations).toEqual([]);
     host.send({ t: 'invite', rid: 13, code, name: 'bob' });
     await guest.until('the invitation', () => (guest.desk?.invitations.length ?? 0) === 1);
-    expect(guest.desk!.invitations[0]).toMatchObject({ code, tableName: 'The Works', from: { id: host.id, name: 'Ada' } });
+    expect(guest.desk!.invitations[0]).toMatchObject({ code, tableName: host.table!.name, from: { id: host.id, name: 'Ada' } });
     host.send({ t: 'invite', rid: 14, code, name: 'bob' });
     await host.until('the second letter to be refused', () => host.rejected.includes('already-invited'));
     host.send({ t: 'invite', rid: 15, code, name: 'nobody' });
@@ -493,7 +493,7 @@ describe('a table over the wire', () => {
     const stranger = new Guest('Nobody');
     guests.push(stranger);
     await stranger.open(server.port);
-    stranger.send({ t: 'create', rid: 1, name: 'A table', options: OPTIONS });
+    stranger.send({ t: 'create', rid: 1, options: OPTIONS });
     await stranger.until('the door to be shut', () => stranger.rejected.length > 0);
     expect(stranger.rejected[0]).toBe('sign-in-first');
     expect(server.hall.codes()).toEqual([]);

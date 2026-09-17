@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Pencil, Play, Search, Send, X } from 'lucide-react';
+import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Play, Search, Send, X } from 'lucide-react';
 import HouseRules from '@/components/setup/HouseRules';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
@@ -393,7 +393,6 @@ export default function Lobby() {
   }, [stranger, code, navigate]);
 
   const [toast, setToast] = useState<ToastData | null>(null);
-  const [renaming, setRenaming] = useState(false);
   const [openSeat, setOpenSeat] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
 
@@ -536,32 +535,7 @@ export default function Lobby() {
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.06 }}>
-              {iAmHost && renaming ? (
-                <input
-                  autoFocus
-                  defaultValue={table.name}
-                  maxLength={28}
-                  onBlur={(e) => {
-                    const name = e.target.value.trim();
-                    if (name) edit((tb) => ({ ...tb, name }));
-                    setRenaming(false);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                    if (e.key === 'Escape') setRenaming(false);
-                  }}
-                  className="mt-2 w-full max-w-xl border-0 border-b-2 border-brass-500 bg-transparent px-0 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100 focus:outline-none"
-                />
-              ) : (
-                <h1
-                  className={cn('group/title mt-2 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100', iAmHost && 'cursor-text hover:text-brass-300')}
-                  title={iAmHost ? t('platform.lobby.rename') : undefined}
-                  onClick={() => iAmHost && setRenaming(true)}
-                >
-                  {table.name}
-                  {iAmHost && <Pencil size={14} className="mb-4 ml-2 inline text-brass-300 opacity-0 transition-opacity duration-150 group-hover/title:opacity-100" aria-hidden />}
-                </h1>
-              )}
+              <h1 className="mt-2 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100">{table.name}</h1>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.12 }} className="mt-3 flex flex-wrap items-center gap-1.5">
               {optionChips.map((chip) => (

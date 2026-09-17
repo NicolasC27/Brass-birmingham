@@ -27,7 +27,6 @@ function LocalOffice() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const [name, setName] = useState(lobby.me.name);
-  const [tableName, setTableName] = useState('');
   const [code, setCode] = useState(normalizeCode(params.get('table') ?? ''));
   const [error, setError] = useState<string | null>(null);
   const named = name.trim().length > 0;
@@ -37,7 +36,7 @@ function LocalOffice() {
     if (!named) return;
     commitName();
     try {
-      const table = await lobby.create(tableName.trim() || t('site.desk.defaultName', { name: name.trim() }), DEFAULT_OPTIONS);
+      const table = await lobby.create(DEFAULT_OPTIONS);
       navigate(`/online/${table.code}`);
     } catch (e) {
       setError(lobbyErrorText(t, e, t('platform.play.errorGeneric')));
@@ -80,20 +79,6 @@ function LocalOffice() {
           <h3 className="title-card">{t('site.desk.open')}</h3>
           <p className="mt-1 font-ui text-[13px] leading-relaxed text-paper-300">{t('site.desk.openCopy')}</p>
           <div className="mt-4 flex flex-wrap items-end gap-3">
-            <div className="min-w-[220px] flex-1">
-              <label htmlFor="online-table" className="micro-label text-iron-400">
-                {t('site.desk.tableName')}
-              </label>
-              <input
-                id="online-table"
-                value={tableName}
-                onChange={(e) => setTableName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void create()}
-                maxLength={28}
-                placeholder={t('site.desk.tablePlaceholder')}
-                className={`${inputClass} mt-2`}
-              />
-            </div>
             <Button variant="primary" disabled={!named} icon={<ArrowRight size={16} aria-hidden />} onClick={() => void create()}>
               {t('site.desk.openCta')}
             </Button>

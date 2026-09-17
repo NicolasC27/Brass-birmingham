@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { BookOpen, Bot, MonitorSmartphone, Play, Save, Users, X } from "lucide-react";
+import { pickTableName } from "@/online/tableNames";
 import { useT } from "@/i18n";
-import { useSession } from "@/online/session";
 import SeatRow from "@/components/setup/SeatRow";
 import HouseRules from "@/components/setup/HouseRules";
 import ShutterWipe from "@/components/setup/ShutterWipe";
@@ -51,7 +51,6 @@ function Divider() {
 export default function Setup() {
   const t = useT();
   const navigate = useNavigate();
-  const session = useSession();
   const [params] = useSearchParams();
   const urlMode: LocalMode = params.get("mode") === "hotseat" ? "hotseat" : "solo";
 
@@ -63,23 +62,12 @@ export default function Setup() {
   const [options, setOptions] = useState<SetupOptions>(() => {
     return loadStoredSetup()?.options ?? DEFAULT_OPTIONS;
   });
-  const [tableName, setTableName] = useState("");
+  /* the table draws its name from the club register, like every table */
+  const [tableName] = useState(() => pickTableName([]));
   const [starting, setStarting] = useState(false);
 
   const seated = useMemo(() => seats.filter((s) => s.type !== "closed"), [seats]);
   const canStart = seated.length >= 2;
-
-  const defaultName = t("platform.setup.identity.defaultName", {
-    name: session?.name || seats[0].name || t("setup.defaults.playerOne"),
-  });
-  const displayName = tableName.trim() || defaultName;
-
-  /* Preview mirrors the name as typed, debounced 150ms (create.md §B). */
-  const [previewName, setPreviewName] = useState(displayName);
-  useEffect(() => {
-    const id = window.setTimeout(() => setPreviewName(displayName), 150);
-    return () => window.clearTimeout(id);
-  }, [displayName]);
 
   const patchSeat = (index: number, patch: Partial<Seat>) =>
     setSeats((prev) => prev.map((s, i) => (i === index ? { ...s, ...patch } : s)));
@@ -201,8 +189,6 @@ export default function Setup() {
     return chips;
   }, [options, t]);
 
-  const nameLen = tableName.length;
-
   return (
     <div className="mx-auto max-w-[1240px] px-4 pt-10 pb-8 sm:px-8">
       {/* En-tête (create.md §Structure) */}
@@ -224,28 +210,9 @@ export default function Setup() {
             {/* A1. Identité de la table */}
             <section aria-label={t("platform.setup.identity.heading")}>
               <SheetHeading>{t("platform.setup.identity.heading")}</SheetHeading>
-              <label htmlFor="table-name" className="mt-4 block font-ui text-[13px] font-medium text-paper-300">
-                {t("platform.setup.identity.nameLabel")}
-              </label>
-              <div className="relative mt-1.5">
-                <input
-                  id="table-name"
-                  value={tableName}
-                  onChange={(e) => setTableName(e.target.value)}
-                  placeholder={defaultName}
-                  maxLength={24}
-                  className="h-12 w-full rounded-lg border border-brass-hairline bg-enamel-800 px-4 pr-14 font-ui text-[15px] font-medium text-paper-100 placeholder:text-iron-600"
-                />
-                <span
-                  aria-hidden
-                  className={cn(
-                    "data-text absolute right-4 top-1/2 -translate-y-1/2 text-[11px]",
-                    nameLen >= 22 ? "text-rust-400" : "text-iron-400",
-                  )}
-                >
-                  {nameLen}/24
-                </span>
-              </div>
+              <p className="mt-4 font-ui text-[13px] font-medium text-paper-300">{t("platform.setup.identity.nameLabel")}</p>
+              <p className="h2-section mt-1 truncate">{tableName}</p>
+              <p className="mt-1 font-ui text-[12px] text-iron-400">{t("platform.setup.identity.drawn")}</p>
 
               {/* Visibilité : cette console crée des tables locales — présentation honnête. */}
               <div className="mt-4 flex items-center gap-3 rounded-lg border border-brass-hairline bg-enamel-800 p-4">
@@ -345,7 +312,7 @@ export default function Setup() {
             <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-60" />
             <div className="relative">
               <p className="micro-label text-iron-400">{t("platform.setup.preview.label")}</p>
-              <p className="h2-section mt-2 truncate">{previewName}</p>
+              <p className="h2-section mt-2 truncate">{tableName}</p>
 
               {/* Rangée de jetons dans leur état courant */}
               <div className="mt-4 flex flex-wrap items-center gap-3">

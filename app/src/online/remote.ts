@@ -40,8 +40,8 @@ export class RemoteLobbyClient implements LobbyClient {
     /* nothing to remember: the office knows who you are */
   }
 
-  async create(tableName: string, options: SetupOptions, color?: PlayerColor): Promise<Table> {
-    return seated(await this.wire.ask((rid) => ({ t: 'create', rid, name: tableName, options, color })));
+  async create(options: SetupOptions, color?: PlayerColor): Promise<Table> {
+    return seated(await this.wire.ask((rid) => ({ t: 'create', rid, options, color })));
   }
 
   async join(code: string, color?: PlayerColor): Promise<Table> {
