@@ -149,3 +149,30 @@ export function ribbonLabelScale(k: number, fit: number, fontWorld: number, floo
   if (s <= 0 || fontWorld <= 0) return labelScale(k);
   return Math.min(RIBBON_MAX_SCALE, Math.max(labelScale(k), floorPx / (fontWorld * s)));
 }
+
+/* ---------------- HUD hung from a point of the map ---------------- */
+
+export interface MapAnchor {
+  /** the point of the map, in world units */
+  wx: number;
+  wy: number;
+  /** offset from that point, in screen pixels */
+  px?: number;
+  py?: number;
+  /** keep this many pixels from the left and right edges of the frame */
+  clampX?: number;
+}
+
+export interface AnchorRegistry {
+  /** hang an element from the map; the element is placed at once, and
+   *  kept in place by the ticker until the returned function is called */
+  register(el: HTMLElement, at: MapAnchor): () => void;
+}
+
+/** the element's place for this view of the map */
+export function placeAnchor(el: HTMLElement, at: MapAnchor, v: View, w: number, h: number): void {
+  const [sx, sy] = worldToScreen(at.wx, at.wy, v, w, h);
+  const x = at.clampX ? Math.max(at.clampX, Math.min(w - at.clampX, sx)) : sx;
+  el.style.left = `${x + (at.px ?? 0)}px`;
+  el.style.top = `${sy + (at.py ?? 0)}px`;
+}

@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import type { MutableRefObject } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pin, PinOff, X, ZoomIn } from 'lucide-react';
 import { useGame } from '@/game/store';
@@ -7,6 +6,7 @@ import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS } from '@/game
 import { tileKey } from '@/game/engine';
 import type { GameState, Town } from '@/game/types';
 import { useT } from '@/i18n';
+import type { AnchorRegistry } from './boardView';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -115,7 +115,7 @@ export default function TownInspector({
   frameH,
   onClose,
   onZoomHere,
-  followRef,
+  anchors,
 }: {
   town: Town;
   game: GameState;
@@ -126,9 +126,9 @@ export default function TownInspector({
   frameH: number;
   onClose: () => void;
   onZoomHere: () => void;
-  /** the board's ticker moves the card every frame through this, between
-   *  the camera's commits: the town, the card and the map stay glued */
-  followRef?: MutableRefObject<{ el: HTMLDivElement; dx: number; below: boolean } | null>;
+  /** the card hangs from the town: the board's ticker moves it in the
+   *  frame it moves the map, so the two stay glued */
+  anchors: AnchorRegistry;
 }) {
   const t = useT();
   const pinned = useGame((s) => s.pins[town.id] !== undefined);
@@ -145,25 +145,17 @@ export default function TownInspector({
     const left = Math.min(Math.max(x, W / 2 + 8), Math.max(W / 2 + 8, frameW - W / 2 - 8));
     return { below: y + 34 + EST_H <= frameH || y - 34 - EST_H < 0, dx: left - x };
   });
-  const left = x + dx;
   const box = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!followRef) return;
+  useLayoutEffect(() => {
     const el = box.current;
-    if (el) followRef.current = { el, dx, below };
-    return () => {
-      followRef.current = null;
-    };
-  }, [followRef, dx, below]);
+    if (!el) return;
+    return anchors.register(el, { wx: town.x, wy: town.y, px: dx, py: below ? 34 : -30 });
+  }, [anchors, town.x, town.y, dx, below]);
   return (
     <div
       ref={box}
-      className="absolute z-30"
-      style={
-        below
-          ? { width: W, left, top: y + 34, transform: 'translateX(-50%)' }
-          : { width: W, left, top: y - 30, transform: 'translate(-50%, -100%)' }
-      }
+      className={cn('absolute z-30', below ? '-translate-x-1/2' : '-translate-x-1/2 -translate-y-full')}
+      style={{ width: W }}
       onPointerDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
     >

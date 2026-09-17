@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Application, Assets, ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
@@ -10,12 +10,13 @@ import { lastActionOf, useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, screenToWorld, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
-import type { View } from '@/components/game/boardView';
+import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, placeAnchor, ribbonLabelScale, screenToWorld, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
+import type { AnchorRegistry, MapAnchor, View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
 import Minimap from '@/components/game/Minimap';
 import TownInspector from '@/components/game/TownInspector';
+import Anchored from '@/components/game/Anchored';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
 import { buildBoardScene, drawOwnerMedallion, industryFaceUrl, loadBoardAssets, tileFaceUrl } from './paint';
@@ -174,11 +175,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => houseHover(null);
   }, [hoverMerchant]);
   const [inspect, setInspect] = useState<string | null>(null);
-  /* the open inspector's box and the minimap's frame, moved by the ticker
-     every frame between the camera's commits */
-  const inspectFollow = useRef<{ el: HTMLDivElement; dx: number; below: boolean } | null>(null);
-  const inspectRef = useRef<string | null>(null);
-  inspectRef.current = inspect;
+  /* the HUD hung from the map (inspector, chooser, callout) and the
+     minimap's frame are moved by the ticker, in the frame the map moves */
+  const anchorMap = useRef(new Map<HTMLElement, MapAnchor>());
   const mmFrameRef = useRef<HTMLDivElement>(null);
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
@@ -206,6 +205,20 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   }, [focus?.seq]);
   const ambianceRef = useRef<Ambiance | null>(null);
   const cameraRef = useRef<Camera | null>(null);
+  const anchors = useMemo<AnchorRegistry>(
+    () => ({
+      register: (el, at) => {
+        anchorMap.current.set(el, at);
+        const cam = cameraRef.current;
+        const box = host.current;
+        if (cam && box) placeAnchor(el, at, cam.view, box.clientWidth, box.clientHeight);
+        return () => {
+          anchorMap.current.delete(el);
+        };
+      },
+    }),
+    [],
+  );
   const overlayRef = useRef<Container | null>(null);
   const fxLayerRef = useRef<Container | null>(null);
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
@@ -512,18 +525,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         cam.tick(t.deltaMS);
         const { w, h } = { w: a.screen.width, h: a.screen.height };
-        /* the town inspector and the minimap's frame ride the map every
+        /* whatever hangs from the map and the minimap's frame ride it every
            frame the camera moves — and only then: a style written every
            frame costs the page a layout each time */
         const moving = cam.isMoving() || pressed.size > 0 || wasMoving;
         wasMoving = cam.isMoving();
-        const fol = inspectFollow.current;
-        const insp = inspectRef.current ? TOWN_BY_ID[inspectRef.current] : undefined;
-        if (moving && fol && insp) {
-          const [sx, sy] = worldToScreen(insp.x, insp.y, cam.view, w, h);
-          fol.el.style.left = `${sx + fol.dx}px`;
-          fol.el.style.top = `${fol.below ? sy + 34 : sy - 30}px`;
-        }
+        if (moving) for (const [el, at] of anchorMap.current) placeAnchor(el, at, cam.view, w, h);
         /* the minimap's frame follows the camera every frame too */
         const frame = mmFrameRef.current;
         if (moving && frame && frame.parentElement) {
@@ -1584,11 +1591,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       if (allows.length < 2) return null;
       const key = tileKey(buildPick.town, buildPick.slot);
       const pos = townChrome(town).slots[buildPick.slot];
-      const [x, y] = worldToScreen(pos.x, pos.y, view, size.w, size.h);
       return {
         key,
-        x,
-        y: y + TILE_R * fitScale(size.w, size.h) * view.k + 12,
+        wx: pos.x,
+        wy: pos.y + TILE_R,
         options: allows.map((industry) => ({ industry, target: targets.find((tg) => tileKey(tg.town, tg.slot) === key && tg.industry === industry), picked: buildPick.industry === industry })),
       };
     }
@@ -1605,10 +1611,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     }
     if (!at) at = regionPos(shake.key, gameRef.current?.era ?? 'canal');
     if (!at) return null;
-    const [sx, sy] = worldToScreen(at[0], at[1], view, size.w, size.h);
+    const sy = worldToScreen(at[0], at[1], view, size.w, size.h)[1];
     /* keep the sentence on screen: flip below when there is no room above */
     const up = sy > 70;
-    return { x: Math.max(120, Math.min(size.w - 120, sx)), y: up ? sy - 10 : sy + 2 * TILE_HALF + 10, up };
+    return { wx: at[0], wy: at[1], py: up ? -10 : 2 * TILE_HALF + 10, up };
   })();
   const inspectTown = idle && inspect ? TOWN_BY_ID[inspect] : undefined;
   const inspectPos = inspectTown ? worldToScreen(inspectTown.x, inspectTown.y, view, size.w, size.h) : null;
@@ -1736,7 +1742,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             frameH={size.h}
             onClose={() => setInspect(null)}
             onZoomHere={() => cameraRef.current?.flyTo(inspectTown.x, inspectTown.y, 1.8)}
-            followRef={inspectFollow}
+            anchors={anchors}
           />
         )}
       </AnimatePresence>
@@ -1751,16 +1757,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           click away, or says why it cannot be (Board chooser) */}
       <AnimatePresence>
         {chooser && (
+          <Anchored key={chooser.key} anchors={anchors} at={{ wx: chooser.wx, wy: chooser.wy, py: 12 }} className="z-30 -translate-x-1/2" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
           <motion.div
-            key={chooser.key}
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="plaque absolute z-30 flex flex-col items-center gap-1.5 rounded-lg px-2.5 py-2"
-            style={{ left: chooser.x, top: chooser.y, transform: 'translate(-50%, 0)' }}
-            onPointerDown={(e) => e.stopPropagation()}
-            onClick={(e) => e.stopPropagation()}
+            className="plaque flex flex-col items-center gap-1.5 rounded-lg px-2.5 py-2"
             role="group"
             aria-label={t('board.chooser.which')}
           >
@@ -1784,6 +1787,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
               ))}
             </span>
           </motion.div>
+          </Anchored>
         )}
       </AnimatePresence>
 
@@ -1798,14 +1802,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* why the slot or link is refused — one sentence, right next to it */}
       <AnimatePresence>
         {shake && calloutPos && (
+          <Anchored key={shake.at} anchors={anchors} at={{ wx: calloutPos.wx, wy: calloutPos.wy, py: calloutPos.py, clampX: 120 }} className={cn('pointer-events-none z-30', calloutPos.up ? '-translate-x-1/2 -translate-y-full' : '-translate-x-1/2')}>
           <motion.div
-            key={shake.at}
             initial={{ opacity: 0, y: calloutPos.up ? 6 : -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="pointer-events-none absolute z-30 max-w-[240px] rounded-md border border-rust-500/80 bg-coal-900/95 px-2.5 py-1.5 text-center font-sans text-[11.5px] leading-snug text-cream-100 shadow-e3"
-            style={{ left: calloutPos.x, top: calloutPos.y, transform: calloutPos.up ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
+            className="relative max-w-[240px] rounded-md border border-rust-500/80 bg-coal-900/95 px-2.5 py-1.5 text-center font-sans text-[11.5px] leading-snug text-cream-100 shadow-e3"
             role="alert"
           >
             {reasonText(shake.reason)}
@@ -1815,6 +1818,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
               style={calloutPos.up ? { bottom: -5, borderRight: '1px solid', borderBottom: '1px solid' } : { top: -5, borderLeft: '1px solid', borderTop: '1px solid' }}
             />
           </motion.div>
+          </Anchored>
         )}
       </AnimatePresence>
     </div>
