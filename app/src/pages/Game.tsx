@@ -143,7 +143,10 @@ export default function Game() {
 
   const [passTo, setPassTo] = useState<string | null>(null);
   const [skipAnim, setSkipAnim] = useState(false);
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  /* the candle of a home turn: when it goes out (one moment per turn, not a tick a second) */
+  const [candleEnd, setCandleEnd] = useState<number | null>(null);
+  const onlineCandle = useGame((s) => s.candle);
+  const frozen = useGame((s) => s.mood.frozen);
   const [ledgerOpen, setLedgerOpen] = useState(false);
   /* the ledger index the reader has looked up to (closing the drawer
      moves it); their own last move counts as read too */
@@ -199,40 +202,36 @@ export default function Game() {
 
   /* --------------------------- timer ---------------------------- */
   useEffect(() => {
-    if (!game || game.phase !== 'action') {
-      setSecondsLeft(null);
-      return;
-    }
     /* online the candle belongs to the table: it burns for whoever is to
        act, it keeps burning while this browser is away, and the table is
        the one that puts the turn down when it goes out */
-    if (seat !== null) {
-      const tick = () => {
-        const ms = useGame.getState().msLeft();
-        setSecondsLeft(ms === null ? null : Math.ceil(ms / 1000));
-      };
-      tick();
-      const iv = window.setInterval(tick, 500);
-      return () => window.clearInterval(iv);
+    if (!game || game.phase !== 'action' || seat !== null) {
+      setCandleEnd(null);
+      return;
     }
     const minutes = candleMinutes(game, game.current);
     if (!minutes || !isHumanTurn) {
-      setSecondsLeft(null);
+      setCandleEnd(null);
       return;
     }
-    setSecondsLeft(minutes * 60);
-    const iv = window.setInterval(() => setSecondsLeft((s) => (s === null ? null : Math.max(0, s - 1))), 1000);
-    return () => window.clearInterval(iv);
+    const end = Date.now() + minutes * 60_000;
+    setCandleEnd(end);
+    /* the candle out: the turn is put down, once */
+    const out = window.setTimeout(() => {
+      const st = useGame.getState();
+      if (!st.game || st.game.phase !== 'action' || !st.myTurn()) return;
+      cancel();
+      pass(t('game.page.candleOut', { name: st.game.players[st.game.current].name }));
+    }, minutes * 60_000);
+    return () => window.clearTimeout(out);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [game?.current, game?.round, game?.timerMinutes, game?.phase, isHumanTurn, seat]);
-
-  useEffect(() => {
-    if (secondsLeft === 0 && isHumanTurn && seat === null && game) {
-      cancel();
-      pass(t('game.page.candleOut', { name: game.players[game.current].name }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [secondsLeft]);
+  /* what the banner burns: at home the turn's own end; online the table's
+     candle as the last frame anchored it, held still while a pause holds */
+  const candle = useMemo<{ end: number } | { left: number } | null>(() => {
+    if (seat !== null) return onlineCandle ? (frozen ? { left: onlineCandle.msLeft } : { end: onlineCandle.at + onlineCandle.msLeft }) : null;
+    return candleEnd !== null ? { end: candleEnd } : null;
+  }, [seat, onlineCandle, frozen, candleEnd]);
 
   /* ------------------------- final write ------------------------ */
   useEffect(() => {
@@ -479,7 +478,7 @@ export default function Game() {
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
       {/* the orders shown on the board: the whole HUD steps aside, the ribbon alone stays */}
       {!surveying && <EdgeTracks />}
-      {!surveying && <GameTopBar secondsLeft={secondsLeft} marketOpen={marketOpen} />}
+      {!surveying && <GameTopBar candle={candle} marketOpen={marketOpen} />}
       {!surveying && <PlayerRail
         tools={
           /* the tools under the players: the bots' pace while they play,

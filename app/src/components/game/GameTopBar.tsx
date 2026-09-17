@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
@@ -62,7 +62,68 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
   return band;
 }
 
-export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: number | null; marketOpen: boolean }) {
+/** the candle: a bar along the banner's bottom edge that burns down by
+ *  itself (one transform transition to the end, not a step a second), the
+ *  figures for the last twenty seconds only. Nothing above it re-renders
+ *  for the time passing. */
+export type CandleProp = { end: number } | { left: number } | null;
+function Candle({ candle, total }: { candle: CandleProp; total: number }) {
+  const t = useT();
+  const bar = useRef<HTMLSpanElement>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const end = candle && 'end' in candle ? candle.end : null;
+  const still = candle && 'left' in candle ? candle.left : null;
+  /* the bar: set where it stands, then let it run to nothing over what is left */
+  useEffect(() => {
+    const el = bar.current;
+    if (!el || total <= 0) return;
+    const left = end !== null ? Math.max(0, end - Date.now()) : (still ?? 0);
+    const frac = Math.max(0, Math.min(1, left / (total * 1000)));
+    el.style.transition = 'none';
+    el.style.transform = `scaleX(${frac})`;
+    if (end === null) return;
+    /* a frame later, one linear run down to the end */
+    const raf = requestAnimationFrame(() => {
+      el.getBoundingClientRect();
+      el.style.transition = `transform ${left}ms linear`;
+      el.style.transform = 'scaleX(0)';
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [end, still, total]);
+  /* the figures: a clock that only starts for the last twenty seconds */
+  useEffect(() => {
+    if (end === null) return;
+    let iv = 0;
+    const start = window.setTimeout(() => {
+      setNow(Date.now());
+      iv = window.setInterval(() => setNow(Date.now()), 250);
+    }, Math.max(0, end - Date.now() - 20_500));
+    return () => {
+      window.clearTimeout(start);
+      if (iv) window.clearInterval(iv);
+    };
+  }, [end]);
+  if (!candle || total <= 0) return null;
+  const leftMs = end !== null ? Math.max(0, end - now) : (still ?? 0);
+  const seconds = Math.ceil(leftMs / 1000);
+  const low = end !== null && leftMs < 20_000;
+  return (
+    <>
+      {low && (
+        <span className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center border-l border-brass-700/40 px-3">
+          <span className="animate-pulse rounded-sm border border-rust-500 px-2 py-1 font-mono text-xs font-semibold text-rust-500 brightness-150" aria-label={t('game.topbar.secondsLeft', { seconds })}>
+            {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
+          </span>
+        </span>
+      )}
+      <span className="absolute inset-x-0 bottom-0 h-[3px] bg-coal-950" aria-label={t('game.topbar.secondsLeft', { seconds })}>
+        <span ref={bar} className={cn('block h-full origin-left rounded-r-full', low ? 'animate-pulse bg-rust-500' : 'bg-brass-400')} style={{ transform: 'scaleX(1)' }} />
+      </span>
+    </>
+  );
+}
+
+export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: boolean }) {
   const t = useT();
   const game = useGame((s) => s.game);
   const band = useBand(marketOpen, game?.players.length ?? 0);
@@ -161,8 +222,6 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
 
   /* the candle: a bar along the bottom edge, the figure only at the end */
   const candleTotal = (candleMinutes(game, me) ?? 0) * 60;
-  const candleFrac = secondsLeft !== null && candleTotal > 0 ? Math.max(0, Math.min(1, secondsLeft / candleTotal)) : null;
-  const candleLow = secondsLeft !== null && secondsLeft < 20;
 
   const rowH = mine ? 52 : 36;
   /* the exchange's tray hangs at the right edge, 320px wide: the banner,
@@ -238,14 +297,6 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
           </div>
 
           <span className="flex-1" />
-          {/* the last seconds of the candle, in figures */}
-          {secondsLeft !== null && candleLow && (
-            <span className="relative flex items-center border-l border-brass-700/40 px-3">
-              <span className="animate-pulse rounded-sm border border-rust-500 px-2 py-1 font-mono text-xs font-semibold text-rust-500 brightness-150" aria-label={t('game.topbar.secondsLeft', { seconds: secondsLeft })}>
-                {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, '0')}
-              </span>
-            </span>
-          )}
         </motion.div>
 
         {/* the note: the action being prepared, and the button that settles it —
@@ -287,12 +338,8 @@ export default function GameTopBar({ secondsLeft, marketOpen }: { secondsLeft: n
             {aidNote && <p className="mt-1 truncate font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
           </div>
         )}
-        {/* the candle burns along the bottom edge */}
-        {candleFrac !== null && (
-          <span className="absolute inset-x-0 bottom-0 h-[3px] bg-coal-950" aria-label={t('game.topbar.secondsLeft', { seconds: secondsLeft ?? 0 })}>
-            <span className={cn('block h-full rounded-r-full transition-[width] duration-1000 ease-linear', candleLow ? 'animate-pulse bg-rust-500' : 'bg-brass-400')} style={{ width: `${candleFrac * 100}%` }} />
-          </span>
-        )}
+        {/* the candle burns along the bottom edge, by itself */}
+        <Candle candle={candle} total={candleTotal} />
       </motion.div>
     </div>
   );
