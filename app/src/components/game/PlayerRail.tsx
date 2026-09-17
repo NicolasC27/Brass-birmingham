@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
@@ -211,9 +211,10 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
   );
 }
 
-/* PlayerRail — plain VERTICAL stack in play order (seat 0 = first to act,
- * top of the stack). Click = spotlight that player's possessions on the
- * map. No hover expansion: the strip is all there is. */
+/* PlayerRail — plain VERTICAL stack in play order: whoever acts first this
+ * round sits at the top, and the chips glide to their new places when the
+ * round turns. Click = spotlight that player's possessions on the map. No
+ * hover expansion: the strip is all there is. */
 export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   const t = useT();
   const game = useGame((s) => s.game);
@@ -234,9 +235,9 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
       style={narrow ? { left: insets.left, right: 12, top: narrowRailTop(insets) } : { left: insets.left, top: insets.top }}
       aria-label={t('game.rail.playersAria')}
     >
-      {game.players.map((p, i) => (
-        <div key={i} className="relative flex flex-col">
-          <RailChip p={p} index={i} active={i === game.current} nowRank={game.order.indexOf(i) + 1} nextRank={next.indexOf(i) + 1} compact={compact} onCard={() => setCardSeat((c) => (c === i ? null : i))} />
+      {game.order.map((i, pos) => (
+        <motion.div key={i} layout transition={{ type: 'spring', stiffness: 260, damping: 30 }} className="relative flex flex-col">
+          <RailChip p={game.players[i]} index={i} active={i === game.current} nowRank={pos + 1} nextRank={next.indexOf(i) + 1} compact={compact} onCard={() => setCardSeat((c) => (c === i ? null : i))} />
           <TelegramPlaque seat={i} compact={compact} />
           {/* the player's card, beside their chip */}
           <AnimatePresence>
@@ -246,7 +247,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
               </div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
       ))}
       {/* the focus view: one small way back, the rest of the tools away */}
       {focus && (
