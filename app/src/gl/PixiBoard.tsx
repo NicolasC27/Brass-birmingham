@@ -66,6 +66,12 @@ function surveyMoves(preview: NonNullable<Props['preview']>, game: GameState): {
 }
 
 /** world coords for anything a ledger entry can point at */
+/** a polyline, point after point, into a graphics */
+function trace(g: Graphics, pts: number[][]): void {
+  g.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+}
+
 /** how long another seat's move is shown the survey's way */
 export const GLIMPSE_MS = 3200;
 
@@ -363,6 +369,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         resolution: Math.min(2, window.devicePixelRatio || 1),
         autoDensity: true,
       });
+      /* the pointer is read by the page, not by the stage: every move would
+         otherwise walk the whole display tree and restyle the canvas cursor */
+      a.renderer.events.features.move = false;
+      a.renderer.events.features.globalMove = false;
+      a.renderer.events.features.click = false;
+      a.renderer.events.features.wheel = false;
+      a.stage.eventMode = 'none';
       if (destroyed) {
         a.destroy(true);
         return;
@@ -471,21 +484,52 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       let lastFxSeq = -1;
       const fxRings: { g: Graphics; t0: number }[] = [];
       const fxVehicles: { s: Sprite; pts: [number, number][]; t0: number }[] = [];
+      /* the arrow keys pan the map while held: so many pixels a second */
+      const pressed = new Set<string>();
+      let wasMoving = true;
+      const arrows = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
+      const typing = (ev: KeyboardEvent) => {
+        const tag = (ev.target as HTMLElement | null)?.tagName;
+        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (ev.target as HTMLElement | null)?.isContentEditable === true;
+      };
+      const onKeyDown = (ev: KeyboardEvent) => {
+        if (!arrows.has(ev.key) || typing(ev) || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+        ev.preventDefault();
+        pressed.add(ev.key);
+      };
+      const onKeyUp = (ev: KeyboardEvent) => pressed.delete(ev.key);
+      const onBlur = () => pressed.clear();
+      window.addEventListener('keydown', onKeyDown);
+      window.addEventListener('keyup', onKeyUp);
+      window.addEventListener('blur', onBlur);
+      cleanups.push(() => {
+        window.removeEventListener('keydown', onKeyDown);
+        window.removeEventListener('keyup', onKeyUp);
+        window.removeEventListener('blur', onBlur);
+      });
       a.ticker.add((t) => {
         clock += t.deltaMS / 1000;
+        if (pressed.size) {
+          const step = (900 * t.deltaMS) / 1000;
+          cam.nudge((pressed.has('ArrowLeft') ? step : 0) - (pressed.has('ArrowRight') ? step : 0), (pressed.has('ArrowUp') ? step : 0) - (pressed.has('ArrowDown') ? step : 0));
+        }
         cam.tick(t.deltaMS);
         const { w, h } = { w: a.screen.width, h: a.screen.height };
-        /* the town inspector rides the map every frame, not only on commits */
+        /* the town inspector and the minimap's frame ride the map every
+           frame the camera moves — and only then: a style written every
+           frame costs the page a layout each time */
+        const moving = cam.isMoving() || pressed.size > 0 || wasMoving;
+        wasMoving = cam.isMoving();
         const fol = inspectFollow.current;
         const insp = inspectRef.current ? TOWN_BY_ID[inspectRef.current] : undefined;
-        if (fol && insp) {
+        if (moving && fol && insp) {
           const [sx, sy] = worldToScreen(insp.x, insp.y, cam.view, w, h);
           fol.el.style.left = `${sx + fol.dx}px`;
           fol.el.style.top = `${fol.below ? sy + 34 : sy - 30}px`;
         }
         /* the minimap's frame follows the camera every frame too */
         const frame = mmFrameRef.current;
-        if (frame && frame.parentElement) {
+        if (moving && frame && frame.parentElement) {
           const mw = frame.parentElement.clientWidth;
           const mh = frame.parentElement.clientHeight;
           const [x0, y0] = screenToWorld(0, 0, cam.view, w, h);
@@ -798,6 +842,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         return eraOk && !g.links[def.id] && propsRef.current.linkTargetsList.some((x) => x.link.id === def.id);
       };
 
+      /* the cursor is a style of the canvas: set only when it changes */
+      let cursorNow = '';
+      const setCursor = (c: string) => {
+        if (c === cursorNow) return;
+        cursorNow = c;
+        el.style.cursor = c;
+      };
       const onHoverMove = (e: PointerEvent) => {
         if (e.buttons !== 0) return; // camera drag owns the pointer
         const [wx, wy] = toWorld(e.clientX, e.clientY);
@@ -806,7 +857,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         if (m.isBuilding || m.isSelling) {
           const key = slot ? tileKey(slot.town.id, slot.si) : null;
           if (st().hoverKey !== key) st().setHover(key);
-          el.style.cursor = slot ? 'pointer' : 'grab';
+          setCursor(slot ? 'pointer' : 'grab');
           return;
         }
         if (m.isNetworking) {
@@ -814,13 +865,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const ok = def && linkClickable(def);
           const id = ok ? def.id : null;
           if (st().hoverKey !== id) st().setHover(id);
-          el.style.cursor = ok ? 'pointer' : 'grab';
+          setCursor(ok ? 'pointer' : 'grab');
           return;
         }
         /* picking a condition's place: a crosshair over towns and slots */
         if (st().unlessPick !== null) {
           const on = !!slotAt(wx, wy) || !!townAt(wx, wy);
-          el.style.cursor = on ? 'crosshair' : 'grab';
+          setCursor(on ? 'crosshair' : 'grab');
           return;
         }
         /* idle browsing: merchant plates, then towns, then links */
@@ -829,24 +880,39 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         if (merch) {
           hoverRef.current.setHoverTown(null);
           hoverRef.current.setHoverLink(null);
-          el.style.cursor = 'help';
+          setCursor('help');
           return;
         }
         const town = townAt(wx, wy);
         hoverRef.current.setHoverTown(town?.id ?? null);
         if (town) {
           hoverRef.current.setHoverLink(null);
-          el.style.cursor = 'pointer';
+          setCursor('pointer');
         } else {
           /* a built link is done with hovering; a route hidden with C is
              not there to be hovered either */
           const def = linkAt(wx, wy);
           const shown = def && !gameRef.current?.links[def.id] && !getBoardOptions().hideUnbuilt;
           hoverRef.current.setHoverLink(shown ? def.id : null);
-          el.style.cursor = shown ? 'help' : 'grab';
+          setCursor(shown ? 'help' : 'grab');
         }
       };
-      el.addEventListener('pointermove', onHoverMove);
+      /* one look per frame, whatever the mouse's rate */
+      let hoverEvt: PointerEvent | null = null;
+      let hoverRaf = 0;
+      const onHoverQueued = (e: PointerEvent) => {
+        hoverEvt = e;
+        if (hoverRaf) return;
+        hoverRaf = requestAnimationFrame(() => {
+          hoverRaf = 0;
+          if (hoverEvt) onHoverMove(hoverEvt);
+        });
+      };
+      el.addEventListener('pointermove', onHoverQueued);
+      cleanups.push(() => {
+        el.removeEventListener('pointermove', onHoverQueued);
+        if (hoverRaf) cancelAnimationFrame(hoverRaf);
+      });
       /* right-click: "look here" — a town, a house or a route pointed at
          for everyone at the table (board option: telegrams) */
       const onMark = (e: MouseEvent) => {
@@ -858,7 +924,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       };
       el.addEventListener('contextmenu', onMark);
       cleanups.push(() => el.removeEventListener('contextmenu', onMark));
-      cleanups.push(() => el.removeEventListener('pointermove', onHoverMove));
 
       /* overlay UI (zoom/option buttons, inspector…) must NOT start a board
          pan or be read as a board click — the pointer capture would swallow
@@ -1038,10 +1103,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     const pulse = (g: Graphics, base = 1) => {
       overlay.addChild(g);
       pulsesRef.current.push({ g, base });
-    };
-    const trace = (g: Graphics, pts: number[][]) => {
-      g.moveTo(pts[0][0], pts[0][1]);
-      for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
     };
     /* dark £-plaque centred at (cx, cy) — same chrome as the SVG tags */
     const priceTag = (cx: number, cy: number, w: number, h: number, label: string) => {
@@ -1288,24 +1349,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
       }
     }
-    /* browsing: the route under the pointer lights up in brass — the one
-       hover effect kept on the board, on links only (not when the pointer
-       is on a town at its end: the town owns that hover) */
-    if (idle && !hoverKey && hoverLink) {
-      const def = LINKS.find((l) => l.id === hoverLink);
-      const adjacent = def && hoverTown !== null && (def.a === hoverTown || def.b === hoverTown);
-      const hidden = def && (hideUnbuilt || !!game.links[def.id]);
-      if (def && !adjacent && !hidden) {
-        const pts = routeFor(def, game.era).pts;
-        const g = new Graphics();
-        trace(g, pts);
-        g.stroke({ width: 10, color: 0xddbe7e, alpha: 0.22, cap: 'round', join: 'round' });
-        trace(g, pts);
-        g.stroke({ width: 3.6, color: 0xddbe7e, alpha: 0.92, cap: 'round', join: 'round' });
-        g.eventMode = 'none';
-        overlay.addChild(g);
-      }
-    }
 
     /* the orders for my turn, in colour on the sepia table: every tile still
        to flip keeps its face, each prepared move is painted where it lands
@@ -1470,7 +1513,31 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => {
       alive = false;
     };
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hoverTown, hoverLink, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt]);
+
+  /* browsing: the route under the pointer lights up in brass — the one
+     hover effect kept on the board, on links only (not when the pointer is
+     on a town at its end: the town owns that hover). Its own layer: a
+     hover must never rebuild the overlay above */
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const layer = scene.hoverLayer;
+    for (const c of layer.removeChildren()) c.destroy();
+    if (!(idle && !hoverKey && hoverLink)) return;
+    const def = LINKS.find((l) => l.id === hoverLink);
+    const adjacent = def && hoverTown !== null && (def.a === hoverTown || def.b === hoverTown);
+    const hidden = def && (hideUnbuilt || !!game.links[def.id]);
+    if (!def || adjacent || hidden) return;
+    const pts = routeFor(def, game.era).pts;
+    const g = new Graphics();
+    trace(g, pts);
+    g.stroke({ width: 10, color: 0xddbe7e, alpha: 0.22, cap: 'round', join: 'round' });
+    trace(g, pts);
+    g.stroke({ width: 3.6, color: 0xddbe7e, alpha: 0.92, cap: 'round', join: 'round' });
+    g.eventMode = 'none';
+    layer.addChild(g);
+  }, [idle, hoverKey, hoverLink, hoverTown, hideUnbuilt, game.era, game.links]);
   /* a tap when a mark lands (board option: sounds) */
   const lastPing = pings.length ? pings[pings.length - 1].id : 0;
   useEffect(() => {

@@ -167,6 +167,9 @@ export interface BoardScene {
   bgCanal: Sprite;
   bgRail: Sprite;
   overlay: Container; // planning highlights, ghost lines, FX — above towns
+  /** the one hover effect (a route lit under the pointer): its own layer,
+   *  so a hover never rebuilds the overlay */
+  hoverLayer: Container;
   linkGfx: Map<string, Graphics>;
   linkHit: Map<string, Graphics>;
   towns: Map<string, TownView>;
@@ -675,7 +678,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   const townsLayer = new Container();
   const ribbonsLayer = new Container();
   const overlay = new Container();
-  world.addChild(bgCanal, bgRail, linksLayer, merchantsLayer, townsLayer, hitLayer, ribbonsLayer, overlay);
+  const hoverLayer = new Container();
+  hoverLayer.eventMode = 'none';
+  world.addChild(bgCanal, bgRail, linksLayer, merchantsLayer, townsLayer, hitLayer, ribbonsLayer, overlay, hoverLayer);
   bgRail.alpha = 0;
 
   /* ------------------------------ links ------------------------------ */
@@ -1401,6 +1406,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     bgCanal,
     bgRail,
     overlay,
+    hoverLayer,
     linkGfx,
     linkHit,
     towns,

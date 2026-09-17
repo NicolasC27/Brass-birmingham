@@ -146,6 +146,15 @@ export class Camera {
     this.target = centeredOn(wx, wy, Math.max(this.target.k, k, kToCentre(wx, wy, w, h)), w, h);
   }
 
+  /** the map pushed by so many screen pixels (the arrow keys) */
+  nudge(dx: number, dy: number): void {
+    if (!dx && !dy) return;
+    this.lastManual = Date.now();
+    this.gliding = false;
+    const { w, h } = this.getSize();
+    this.target = clampPan({ k: this.target.k, x: this.target.x + dx, y: this.target.y + dy }, w, h);
+  }
+
   /** instant jump (minimap drag) */
   centerOn(wx: number, wy: number): void {
     const { w, h } = this.getSize();
