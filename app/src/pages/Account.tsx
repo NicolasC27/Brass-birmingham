@@ -1,28 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { motion } from 'framer-motion';
 import { CheckCircle2, MailWarning } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
+import Button from '@/components/platform/Button';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import { forgotPassword, resetPassword, signIn, signUp, useSession, useStranger, verifyEmail } from '@/online/session';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* The register — sign it, or open a line in it. The two letters the   */
-/* office sends (verify an address, choose a password again) land on   */
-/* this page too, by their links. An invitation followed while signed  */
-/* out waits in the query string and is honoured once the book is      */
-/* signed.                                                             */
+/* Le registre « Club Industriel » — signin / signup / forgot, plus    */
+/* les deux lettres du bureau (verify / reset) qui atterrissent ici    */
+/* par leurs liens (/account/verify/:token, /account/reset/:token —    */
+/* routes générées par le serveur, préservées). Une invitation         */
+/* suivie hors connexion (?table=CODE) attend dans la query string et  */
+/* est honorée une fois le registre signé. Logique inchangée, seule   */
+/* la présentation passe à la DA plateforme.                           */
 /* ------------------------------------------------------------------ */
 
 type Mode = 'in' | 'up' | 'forgot';
-
-const tabClass = (active: boolean) =>
-  cn(
-    'flex-1 border-b-2 px-2 pb-2 pt-1 font-sans text-[11px] font-bold uppercase tracking-[0.16em] transition-colors',
-    active ? 'border-brass-400 text-brass-400' : 'border-transparent text-cream-100/45 hover:text-cream-100/80',
-  );
 
 export default function Account() {
   const t = useT();
@@ -51,7 +48,7 @@ export default function Account() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
-  const [verdict, setVerdict] = useState<'pending' | 'ok' | 'bad' | 'offline'>('pending');
+  const [verdict, setVerdict] = useState<'pending' | 'ok' | 'bad'>('pending');
 
   /* the letter's link: answered once, on arrival */
   useEffect(() => {
@@ -59,7 +56,7 @@ export default function Account() {
     let alive = true;
     verifyEmail(token)
       .then(() => alive && setVerdict('ok'))
-      .catch((e: Error) => alive && setVerdict(e.message === 'offline' ? 'offline' : 'bad'));
+      .catch(() => alive && setVerdict('bad'));
     return () => {
       alive = false;
     };
@@ -74,7 +71,7 @@ export default function Account() {
         .catch((e: Error) => setError(t(`site.desk.error.${e.message}`)));
       return;
     }
-    navigate('/play', { replace: true });
+    navigate('/desk', { replace: true });
   }, [session, invited, verifying, resetting, navigate, t]);
 
   const fail = (e: unknown) => setError(t(`site.account.error.${(e as Error).message}`));
@@ -83,7 +80,7 @@ export default function Account() {
     if (busy) return;
     setError(null);
     if (mode === 'up' && password !== again) {
-      setError(t('site.account.mismatch'));
+      setError(t('platform.account.mismatch'));
       return;
     }
     setBusy(true);
@@ -104,13 +101,13 @@ export default function Account() {
   const reset = async () => {
     if (busy) return;
     if (password !== again) {
-      setError(t('site.account.mismatch'));
+      setError(t('platform.account.mismatch'));
       return;
     }
     setBusy(true);
     try {
       await resetPassword(token, password);
-      navigate('/play', { replace: true });
+      navigate('/desk', { replace: true });
     } catch (e) {
       fail(e);
     } finally {
@@ -120,10 +117,10 @@ export default function Account() {
 
   if (!isOnline) {
     return (
-      <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={t('site.account.lineDownTitle')} lede={t('site.account.lineDownLede')}>
-        <Link to="/online" className="btn-ledger">
-          {t('site.account.localCta')}
-        </Link>
+      <PageShell width="narrow" back={{ to: '/', label: t('platform.account.back') }} eyebrow={t('platform.account.eyebrow')} title={t('platform.account.offlineTitle')} lede={t('platform.account.offlineLede')}>
+        <Button variant="primary" to="/online">
+          {t('platform.account.localCta')}
+        </Button>
       </PageShell>
     );
   }
@@ -131,14 +128,20 @@ export default function Account() {
   if (verifying) {
     const ok = verdict === 'ok';
     return (
-      <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={verdict === 'pending' ? t('site.account.verifying') : ok ? t('site.account.verifiedTitle') : verdict === 'offline' ? t('site.account.lineDownTitle') : t('site.account.badLinkTitle')} lede={verdict === 'pending' ? undefined : ok ? t('site.account.verifiedLede') : verdict === 'offline' ? t('site.account.lineDownLede') : t('site.account.badLinkLede')}>
+      <PageShell
+        width="narrow"
+        back={{ to: '/', label: t('platform.account.back') }}
+        eyebrow={t('platform.account.eyebrow')}
+        title={verdict === 'pending' ? t('platform.account.verifying') : ok ? t('platform.account.verifiedTitle') : t('platform.account.badLinkTitle')}
+        lede={verdict === 'pending' ? undefined : ok ? t('platform.account.verifiedLede') : t('platform.account.badLinkLede')}
+      >
         {verdict !== 'pending' && (
-          <div className="flex items-center gap-4">
-            {ok ? <CheckCircle2 className="h-8 w-8 text-bottle-600 brightness-150" /> : <MailWarning className="h-8 w-8 text-rust-500 brightness-150" />}
-            <Link to="/play" className="btn-strike">
-              {t('site.account.verifiedCta')}
-            </Link>
-          </div>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="flex items-center gap-4">
+            {ok ? <CheckCircle2 className="h-8 w-8 text-bottle-400" aria-hidden /> : <MailWarning className="h-8 w-8 text-rust-400" aria-hidden />}
+            <Button variant="primary" to="/desk">
+              {t('platform.account.verifiedCta')}
+            </Button>
+          </motion.div>
         )}
       </PageShell>
     );
@@ -146,19 +149,19 @@ export default function Account() {
 
   if (resetting) {
     return (
-      <PageShell width="narrow" back={{ to: '/account', label: t('site.account.backToSignIn') }} eyebrow={t('site.account.eyebrow')} title={t('site.account.resetTitle')} lede={t('site.account.resetLede')}>
+      <PageShell width="narrow" back={{ to: '/account', label: t('platform.account.backToSignIn') }} eyebrow={t('platform.account.eyebrow')} title={t('platform.account.resetTitle')} lede={t('platform.account.resetLede')}>
         <Panel>
           <div className="grid gap-4">
-            <Field id="reset-password" label={t('site.account.password')} hint={t('site.account.passwordHint')}>
+            <Field id="reset-password" label={t('platform.account.password')} hint={t('platform.account.passwordHint')}>
               <input id="reset-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" className={inputClass} />
             </Field>
-            <Field id="reset-again" label={t('site.account.passwordAgain')}>
+            <Field id="reset-again" label={t('platform.account.passwordAgain')}>
               <input id="reset-again" type="password" value={again} onChange={(e) => setAgain(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && reset()} autoComplete="new-password" className={inputClass} />
             </Field>
             <Refusal text={error} />
-            <button type="button" onClick={reset} disabled={busy || password.length < 8} className="btn-strike self-start disabled:cursor-not-allowed disabled:opacity-40">
-              {t('site.account.resetCta')}
-            </button>
+            <Button variant="primary" className="self-start justify-self-start" onClick={reset} disabled={busy || password.length < 8}>
+              {t('platform.account.resetCta')}
+            </Button>
           </div>
         </Panel>
       </PageShell>
@@ -169,75 +172,83 @@ export default function Account() {
   const waiting = !stranger && !session;
 
   return (
-    <PageShell width="narrow" back={{ to: '/', label: t('site.account.back') }} eyebrow={t('site.account.eyebrow')} title={mode === 'up' ? t('site.account.titleUp') : mode === 'forgot' ? t('site.account.forgotTitle') : t('site.account.titleIn')} lede={mode === 'forgot' ? t('site.account.forgotLede') : t('site.account.lede')}>
-      <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: 'easeOut' }}>
+    <PageShell
+      width="narrow"
+      back={{ to: '/', label: t('platform.account.back') }}
+      eyebrow={t('platform.account.eyebrow')}
+      title={mode === 'up' ? t('platform.account.titleUp') : mode === 'forgot' ? t('platform.account.forgotTitle') : t('platform.account.titleIn')}
+      lede={mode === 'forgot' ? t('platform.account.forgotLede') : t('platform.account.lede')}
+    >
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
         <Panel>
           {mode !== 'forgot' && (
-            <div className="mb-5 flex gap-2">
-              <button type="button" className={tabClass(mode === 'in')} onClick={() => setMode('in')}>
-                {t('site.account.tabIn')}
-              </button>
-              <button type="button" className={tabClass(mode === 'up')} onClick={() => setMode('up')}>
-                {t('site.account.tabUp')}
-              </button>
+            <div role="tablist" className="mb-5 flex gap-1 border-b border-[rgb(var(--paper-100)/.07)]">
+              {(['in', 'up'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === m}
+                  className={cn('relative flex-1 px-2 pb-2.5 pt-1 font-ui text-[13px] font-semibold transition-colors duration-150', mode === m ? 'text-paper-100' : 'text-iron-400 hover:text-paper-100')}
+                  onClick={() => setMode(m)}
+                >
+                  {m === 'in' ? t('platform.account.tabIn') : t('platform.account.tabUp')}
+                  {mode === m && <motion.span layoutId="account-tab-filet" className="absolute inset-x-2 -bottom-px h-0.5 bg-brass-500" transition={{ type: 'spring', stiffness: 260, damping: 24 }} />}
+                </button>
+              ))}
             </div>
           )}
 
           {mode === 'forgot' ? (
             sent ? (
               <div>
-                <p className="font-serif text-[15px] leading-relaxed text-cream-100/80">{t('site.account.forgotSent')}</p>
-                <button type="button" onClick={() => setMode('in')} className="mt-4 font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-brass-400 hover:underline">
-                  {t('site.account.backToSignIn')}
+                <p className="font-ui text-[14px] leading-relaxed text-paper-300">{t('platform.account.forgotSent')}</p>
+                <button type="button" onClick={() => setMode('in')} className="micro-label mt-4 text-brass-300 transition-colors duration-150 hover:text-brass-500">
+                  {t('platform.account.backToSignIn')}
                 </button>
               </div>
             ) : (
               <div className="grid gap-4">
-                <Field id="forgot-email" label={t('site.account.email')}>
+                <Field id="forgot-email" label={t('platform.account.email')}>
                   <input id="forgot-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} autoComplete="email" className={inputClass} />
                 </Field>
                 <Refusal text={error} />
-                <div className="flex items-center gap-4">
-                  <button type="button" onClick={submit} disabled={busy || !email.includes('@')} className="btn-strike disabled:cursor-not-allowed disabled:opacity-40">
-                    {t('site.account.forgotCta')}
-                  </button>
-                  <button type="button" onClick={() => setMode('in')} className="font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-cream-100/50 hover:text-brass-400">
-                    {t('site.account.backToSignIn')}
+                <div className="flex flex-wrap items-center gap-4">
+                  <Button variant="primary" onClick={submit} disabled={busy || !email.includes('@')}>
+                    {t('platform.account.forgotCta')}
+                  </Button>
+                  <button type="button" onClick={() => setMode('in')} className="micro-label text-iron-400 transition-colors duration-150 hover:text-brass-300">
+                    {t('platform.account.backToSignIn')}
                   </button>
                 </div>
               </div>
             )
           ) : (
             <div className="grid gap-4">
-              <Field id="acc-name" label={mode === 'in' ? t('site.account.nameOrEmail') : t('site.account.name')} hint={mode === 'up' ? t('site.account.nameHint') : undefined}>
-                <input id="acc-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={mode === 'up' ? 20 : 120} placeholder={t('site.account.namePlaceholder')} autoComplete="username" disabled={waiting} className={inputClass} />
+              <Field id="acc-name" label={mode === 'in' ? t('platform.account.nameOrEmail') : t('platform.account.name')} hint={mode === 'up' ? t('platform.account.nameHint') : undefined}>
+                <input id="acc-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={mode === 'up' ? 20 : 120} placeholder={t('platform.account.namePlaceholder')} autoComplete="username" disabled={waiting} className={inputClass} />
               </Field>
               {mode === 'up' && (
-                <Field id="acc-email" label={t('site.account.email')} hint={t('site.account.emailHint')}>
+                <Field id="acc-email" label={t('platform.account.email')} hint={t('platform.account.emailHint')}>
                   <input id="acc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={120} autoComplete="email" className={inputClass} />
                 </Field>
               )}
-              <Field id="acc-password" label={t('site.account.password')} hint={mode === 'up' ? t('site.account.passwordHint') : undefined}>
+              <Field id="acc-password" label={t('platform.account.password')} hint={mode === 'up' ? t('platform.account.passwordHint') : undefined}>
                 <input id="acc-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && mode === 'in' && submit()} maxLength={72} autoComplete={mode === 'in' ? 'current-password' : 'new-password'} disabled={waiting} className={inputClass} />
               </Field>
               {mode === 'up' && (
-                <Field id="acc-again" label={t('site.account.passwordAgain')}>
+                <Field id="acc-again" label={t('platform.account.passwordAgain')}>
                   <input id="acc-again" type="password" value={again} onChange={(e) => setAgain(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} maxLength={72} autoComplete="new-password" className={inputClass} />
                 </Field>
               )}
               <Refusal text={error} />
               <div className="flex flex-wrap items-center gap-4">
-                <button
-                  type="button"
-                  onClick={submit}
-                  disabled={busy || waiting || !name.trim() || password.length < 8 || (mode === 'up' && !email.includes('@'))}
-                  className="btn-strike disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {mode === 'in' ? t('site.account.signIn') : t('site.account.signUp')}
-                </button>
+                <Button variant="primary" onClick={submit} disabled={busy || waiting || !name.trim() || password.length < 8 || (mode === 'up' && !email.includes('@'))}>
+                  {mode === 'in' ? t('platform.account.signIn') : t('platform.account.signUp')}
+                </Button>
                 {mode === 'in' && (
-                  <button type="button" onClick={() => setMode('forgot')} className="font-sans text-[11px] font-bold uppercase tracking-[0.14em] text-cream-100/50 hover:text-brass-400">
-                    {t('site.account.forgot')}
+                  <button type="button" onClick={() => setMode('forgot')} className="micro-label text-iron-400 transition-colors duration-150 hover:text-brass-300">
+                    {t('platform.account.forgot')}
                   </button>
                 )}
               </div>

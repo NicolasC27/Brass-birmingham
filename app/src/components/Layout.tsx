@@ -1,28 +1,30 @@
 import { Outlet, useLocation } from "react-router";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import PlatformShell from "@/components/platform/PlatformShell";
 
 /**
  * App shell — nested-route (Outlet) pattern, matched by App.tsx.
  *
- * The Navbar is a fixed overlay nav (design.md §6.1 / home.md), so Layout owns
- * the offset: the content slot carries `pt-14` (56px nav height) so every page
- * starts below the bar. Full-bleed hero sections opt out inside the page
- * (e.g. `-mt-14` + own top padding), never by removing this offset.
- *
- * Footer appears on Home and Rules only (design.md §6.11).
+ * Two variants (refonte « Club Industriel », design.md §6) :
+ * - `/game` and `/game/:code` keep the LEGACY shell, strictly unchanged —
+ *   fixed overlay Navbar, `pt-14` offset, no platform component mounted.
+ * - every other route (including `/results` and `/replay`) renders the new
+ *   PlatformShell (TopBar + StatusStrip + compact footer + mobile tab bar).
  */
 export default function Layout() {
   const { pathname } = useLocation();
-  const showFooter = pathname === "/" || pathname === "/rules";
+  const isGame = pathname === "/game" || pathname.startsWith("/game/");
 
-  return (
-    <div className="flex min-h-[100dvh] flex-col bg-coal-900">
-      <Navbar />
-      <main className="flex-1 pt-14">
-        <Outlet />
-      </main>
-      {showFooter && <Footer />}
-    </div>
-  );
+  if (isGame) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col bg-coal-900">
+        <Navbar />
+        <main className="flex-1 pt-14">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
+  return <PlatformShell />;
 }

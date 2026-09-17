@@ -1,0 +1,51 @@
+import { cn } from '@/lib/utils';
+import { useT } from '@/i18n';
+
+/* ------------------------------------------------------------------ */
+/* RankBadge (design.md §7.5) — emblème SVG (§12) + nom de rang + LP.  */
+/* Tiers : bronze, fer, acier, laiton, or, maître. Non placé :         */
+/* emblème « ? » + PLACEMENTS n/10.                                    */
+/* ------------------------------------------------------------------ */
+
+export type RankTier = 'bronze' | 'fer' | 'acier' | 'laiton' | 'or' | 'maitre';
+
+export interface RankBadgeProps {
+  tier: RankTier | 'placement';
+  /** division romaine optionnelle (II, I…) */
+  division?: string;
+  lp?: number;
+  /** joueurs en placement : victoires / 10 */
+  placementDone?: number;
+  /** emblème 20–40px */
+  size?: number;
+  /** cache le texte (pastille seule) */
+  compact?: boolean;
+  className?: string;
+}
+
+export default function RankBadge({ tier, division, lp, placementDone, size = 32, compact = false, className }: RankBadgeProps) {
+  const t = useT();
+  const emblem = tier === 'placement' ? '/rank-placement.svg' : `/rank-${tier}.svg`;
+  const name = tier === 'placement' ? null : t(`platform.rank.${tier}`);
+
+  return (
+    <span className={cn('inline-flex items-center gap-2', className)}>
+      <img src={emblem} alt="" width={size} height={size} style={{ width: size, height: size }} />
+      {!compact && (
+        <span className="flex flex-col leading-tight">
+          {tier === 'placement' ? (
+            <span className="micro-label text-iron-400">{t('platform.rank.placement', { done: placementDone ?? 0, total: 10 })}</span>
+          ) : (
+            <>
+              <span className="font-ui text-[13px] font-semibold text-paper-100">
+                {name}
+                {division ? ` ${division}` : ''}
+              </span>
+              {lp !== undefined && <span className="data-text text-[12px] text-iron-400">{t('platform.rank.lp', { lp })}</span>}
+            </>
+          )}
+        </span>
+      )}
+    </span>
+  );
+}

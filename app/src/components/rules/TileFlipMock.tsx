@@ -50,7 +50,7 @@ export default function TileFlipMock() {
           </div>
         </div>
       </div>
-      <p className="font-sans text-[11px] italic text-ink-900/60">
+      <p className="font-ui text-[11px] text-iron-400">
         {t("rules.selling.flip.caption")}
       </p>
     </div>

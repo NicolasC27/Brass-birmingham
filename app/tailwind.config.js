@@ -13,16 +13,30 @@ module.exports = {
           700: "#2C251D",
         },
         brass: {
+          // platform "Club Industriel" additions (design.md §2.2) — additive:
+          // 400/500/700 below keep their legacy values (game shell depends on them);
+          // the platform's "laiton principal" (#C9A24B) maps to brass-500 (#C9A45C).
+          // 300 + hairlines are platform-only and theme-driven (CSS vars scoped
+          // to .platform-root in index.css; fallbacks = dark theme values).
+          300: "rgb(var(--brass-300, 231 201 126) / <alpha-value>)",
           400: "#DDBE7E",
           500: "#C9A45C",
+          600: "#8F6B23",
           700: "#8A6B33",
+          hairline: "var(--brass-hairline, rgba(201,162,75,.14))",
+          "hairline-strong": "var(--brass-hairline-strong, rgba(201,162,75,.32))",
         },
         copper: {
           500: "#A6562B",
           700: "#7C3E1F",
         },
         bottle: {
+          // platform additions (design.md §2.3): 400/500/700 (theme-driven);
+          // 600/800 legacy, untouched
+          400: "rgb(var(--bottle-400, 62 138 102) / <alpha-value>)",
+          500: "rgb(var(--bottle-500, 46 107 79) / <alpha-value>)",
           600: "#2E5540",
+          700: "rgb(var(--bottle-700, 30 77 59) / <alpha-value>)",
           800: "#1E3A2A",
         },
         cream: {
@@ -30,7 +44,38 @@ module.exports = {
           300: "#E3D4B4",
         },
         rust: {
+          // platform additions (design.md §2.3): 400/600/700 (theme-driven);
+          // 500 legacy (#8E3B2F, game), untouched.
+          // design's "accent classé" #C05B3C lands on 600 so legacy rust-500 stays put.
+          400: "rgb(var(--rust-400, 208 112 78) / <alpha-value>)",
           500: "#8E3B2F",
+          600: "rgb(var(--rust-600, 192 91 60) / <alpha-value>)",
+          700: "rgb(var(--rust-700, 143 63 39) / <alpha-value>)",
+        },
+        // platform "Club Industriel" tokens (design.md §2) — new names, no conflicts.
+        // All theme-driven: channel triplets live in CSS vars scoped to
+        // .platform-root (index.css); fallbacks below = exact dark values.
+        lacquer: {
+          950: "rgb(var(--lacquer-950, 10 14 12) / <alpha-value>)",
+          900: "rgb(var(--lacquer-900, 14 19 16) / <alpha-value>)",
+        },
+        enamel: {
+          850: "rgb(var(--enamel-850, 19 25 21) / <alpha-value>)",
+          800: "rgb(var(--enamel-800, 24 32 27) / <alpha-value>)",
+          700: "rgb(var(--enamel-700, 32 42 36) / <alpha-value>)",
+          line: "rgb(var(--enamel-line, 38 49 42) / <alpha-value>)",
+        },
+        signal: {
+          400: "rgb(var(--signal-400, 240 169 46) / <alpha-value>)",
+          glow: "var(--signal-glow, rgba(240,169,46,.35))",
+        },
+        paper: {
+          100: "rgb(var(--paper-100, 237 230 214) / <alpha-value>)",
+          300: "rgb(var(--paper-300, 200 191 172) / <alpha-value>)",
+        },
+        iron: {
+          400: "rgb(var(--iron-400, 139 148 140) / <alpha-value>)",
+          600: "rgb(var(--iron-600, 90 99 92) / <alpha-value>)",
         },
         ink: {
           900: "#241D14",
@@ -88,6 +133,10 @@ module.exports = {
       },
       fontFamily: {
         display: ['"Playfair Display"', 'Georgia', 'serif'],
+        // platform families (design.md §3) — additive; legacy `display`/`sans` untouched
+        // (the game shell still speaks Playfair/Archivo).
+        fraunces: ['Fraunces', '"Playfair Display"', 'Georgia', 'serif'],
+        ui: ['Inter', 'Archivo', 'system-ui', 'sans-serif'],
         fell: ['"IM Fell English SC"', 'Georgia', 'serif'],
         sans: ['Archivo', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
@@ -161,6 +210,29 @@ module.exports = {
           "0%,100%": { transform: "translate(4%, -2%) scale(1.05)" },
           "50%": { transform: "translate(-5%, 3%) scale(0.97)" },
         },
+        /* --- platform motion (design.md §5) --- */
+        "pulse-signal": {
+          "0%,100%": { opacity: "0.45" },
+          "50%": { opacity: "1" },
+        },
+        "presence-dot": {
+          // platform-only animation: var() resolves per-element (theme-aware)
+          "0%,100%": { transform: "scale(1)", boxShadow: "0 0 0 0 var(--signal-glow, rgba(240,169,46,.35))" },
+          "50%": { transform: "scale(1.35)", boxShadow: "0 0 10px 2px var(--signal-glow, rgba(240,169,46,.35))" },
+        },
+        ticker: {
+          from: { transform: "translateY(0)" },
+          to: { transform: "translateY(-50%)" },
+        },
+        shimmer: {
+          from: { backgroundPosition: "200% 0" },
+          to: { backgroundPosition: "-200% 0" },
+        },
+        forge: {
+          "0%": { transform: "translateX(-110%)" },
+          "50%": { transform: "translateX(10%)" },
+          "100%": { transform: "translateX(110%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -173,6 +245,12 @@ module.exports = {
         "trace-link": "trace-link 3.6s ease-in-out infinite",
         "smoke-drift-a": "smoke-drift-a 20s ease-in-out infinite alternate",
         "smoke-drift-b": "smoke-drift-b 20s ease-in-out infinite alternate",
+        /* --- platform motion (design.md §5) --- */
+        "pulse-signal": "pulse-signal 2s ease-in-out infinite",
+        "presence-dot": "presence-dot 1.6s ease-in-out infinite",
+        ticker: "ticker 24s linear infinite",
+        shimmer: "shimmer 1.6s linear infinite",
+        forge: "forge 1.8s ease-in-out infinite",
       },
     },
   },

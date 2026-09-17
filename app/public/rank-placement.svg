@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" opacity="0.85">
+  <polygon points="64.00,8.00 112.50,36.00 112.50,92.00 64.00,120.00 15.50,92.00 15.50,36.00" fill="#7A8288" fill-opacity="0.16" stroke="#7A8288" stroke-width="3" stroke-dasharray="5 4"/>
+  <polygon points="64.00,17.00 104.70,40.50 104.70,87.50 64.00,111.00 23.30,87.50 23.30,40.50" fill="none" stroke="#7A8288" stroke-width="1.2" opacity="0.35" stroke-dasharray="5 4"/>
+  <text x="64" y="76" text-anchor="middle" font-family="'IBM Plex Mono', ui-monospace, monospace" font-size="40" font-weight="500" fill="#7A8288">?</text>
+</svg>

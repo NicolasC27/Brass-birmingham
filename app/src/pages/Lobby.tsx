@@ -1,216 +1,327 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Check, Cog, Copy, Crown, LogOut, Plus, Send, X } from 'lucide-react';
+import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Pencil, Play, Search, Send, X } from 'lucide-react';
 import HouseRules from '@/components/setup/HouseRules';
-import PlayerToken from '@/components/setup/PlayerToken';
 import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { invite, useDesk, useLine, useStranger } from '@/online/session';
-import { deskErrorKey } from '@/online/errors';
-import VerifyBanner from '@/components/site/VerifyBanner';
+import { invite, useDesk, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
+import Button from '@/components/platform/Button';
+import SeatToken from '@/components/platform/SeatToken';
+import Toast from '@/components/platform/Toast';
+import type { ToastData } from '@/components/platform/Toast';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* Lobby — the room behind a table code. Place cards on parchment for  */
-/* every seat (host seal, "ready" ink stamp, a clockwork badge for the */
-/* bots, dashed empty chairs), the house rules the host sets, a brass  */
-/* plaque with the code to pass around, and the bell to start. Guests  */
-/* pick their colour and stamp themselves ready.                       */
+/* Salon d'attente « Club Industriel » (lobby.md) — refonte de        */
+/* présentation UNIQUEMENT. Chaque contrat de l'ancienne salle tient  */
+/* toujours : sièges et couleurs (freeColor), bots (BOT_NAMES,        */
+/* difficultés), ready, hôte, chandelle par siège, code copiable,     */
+/* invitations d'amis, et le démarrage — status 'starting' → chaque   */
+/* client écrit brassworks.setup.v1, supprime brassworks.resume.v1 et */
+/* navigue. Les mutations ne passent que par lobby.update.            */
 /* ------------------------------------------------------------------ */
 
 const BOT_NAMES = ['Ada', 'Bob', 'Cy', 'Di', 'Eli', 'Fay'];
 
-function PlaceCard({
-  seat,
-  table,
-  isMe,
-  isHostSeat,
-  iAmHost,
-  onColor,
-  onReady,
-  onRemove,
-  onDifficulty,
-  onMinutes,
-}: {
-  seat: TableSeat;
-  table: Table;
-  isMe: boolean;
-  isHostSeat: boolean;
-  iAmHost: boolean;
-  onColor: (c: PlayerColor) => void;
-  onReady: () => void;
-  onRemove: () => void;
-  onDifficulty: (d: BotDifficulty) => void;
-  onMinutes: (m: number | null | undefined) => void;
-}) {
+const seatSpring = { type: 'spring', stiffness: 260, damping: 24 } as const;
+
+/* Ellipse desktop : haut, droite, bas, gauche (mobile : grille 2×2). */
+const ELLIPSE = [
+  'lg:left-1/2 lg:top-0 lg:-ml-[70px]',
+  'lg:right-0 lg:top-1/2 lg:-mt-[76px]',
+  'lg:left-1/2 lg:bottom-0 lg:-ml-[70px]',
+  'lg:left-0 lg:top-1/2 lg:-mt-[76px]',
+] as const;
+const POPOVER_ALIGN = ['left-1/2 -translate-x-1/2', 'right-0', 'left-1/2 -translate-x-1/2', 'left-0'] as const;
+
+/* ---------------- Médaillon central de readiness (§S2) --------------- */
+
+function ReadyMedallion({ ready, allReady }: { ready: number; allReady: boolean }) {
   const t = useT();
-  const bot = seat.kind === 'bot';
-  const taken = new Set(table.seats.filter((s) => s.id !== seat.id).map((s) => s.color));
-  const ready = bot || seat.ready;
+  const r = 52;
+  const circumference = 2 * Math.PI * r;
+  const portion = Math.min(1, ready / MAX_SEATS);
   return (
-    <motion.li
-      layout
-      initial={{ opacity: 0, y: 10, rotate: -1 }}
-      animate={{ opacity: 1, y: 0, rotate: 0 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={cn('paper relative overflow-hidden p-4 pl-5', isMe && 'ring-2 ring-brass-400/70')}
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="relative flex h-[120px] w-[120px] items-center justify-center"
+      role="img"
+      aria-label={t('platform.lobby.medallion')}
     >
-      <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 opacity-[0.35]" />
-      {/* the player's colour, a band down the left edge like the cards */}
-      <span aria-hidden className="absolute bottom-2 left-2 top-2 w-[3px] rounded-full" style={{ backgroundColor: PLAYER_COLORS.find((c) => c.id === seat.color)?.hex }} />
-      <div className="relative flex items-start gap-3">
-        <PlayerToken color={seat.color} size={40} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="truncate font-serif text-[20px] italic leading-tight text-ink-900">{seat.name || '…'}</span>
-            {isHostSeat && (
-              <span className="inline-flex items-center gap-1 rounded-sm border border-ink-900/50 px-1.5 py-[1px] font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-ink-900/80" title={t('online.room.host')}>
-                <Crown className="h-3 w-3" /> {t('online.room.host')}
-              </span>
-            )}
-            {isMe && <span className="rounded-sm bg-ink-900/85 px-1.5 py-[1px] font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-cream-100">{t('online.room.you')}</span>}
-            {bot && (
-              <span className="inline-flex items-center gap-1 rounded-sm border border-ink-900/40 px-1.5 py-[1px] font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-ink-900/70">
-                <Cog className="h-3 w-3" /> {t('online.room.bot')}
-              </span>
-            )}
-          </div>
-          {/* the colour swatches: yours to pick, the host's for a bot */}
-          {(isMe || (bot && iAmHost)) && (
-            <div className="mt-2 flex items-center gap-1.5">
-              {PLAYER_COLORS.map((c) => {
-                const mine = c.id === seat.color;
-                const busy = taken.has(c.id);
-                return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    disabled={busy}
-                    onClick={() => onColor(c.id)}
-                    aria-label={t(`setup.colors.${c.id}`)}
-                    aria-pressed={mine}
-                    className={cn('h-5 w-5 rounded-full border-2 transition-transform', mine ? 'scale-110 border-ink-900' : busy ? 'cursor-not-allowed border-transparent opacity-30' : 'border-transparent hover:scale-110')}
-                    style={{ backgroundColor: c.hex }}
-                  />
-                );
-              })}
-            </div>
-          )}
-          {bot && iAmHost && (
-            <div className="mt-2 flex gap-1">
-              {DIFFICULTIES.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  aria-pressed={seat.difficulty === d.id}
-                  onClick={() => onDifficulty(d.id)}
-                  className={cn('rounded-sm border px-1.5 py-[2px] font-sans text-[9px] font-bold uppercase tracking-[0.12em]', seat.difficulty === d.id ? 'border-ink-900 bg-ink-900 text-cream-100' : 'border-ink-900/30 text-ink-900/60 hover:border-ink-900/60')}
-                >
-                  {t(`setup.difficulty.${d.id}.label`)}
-                </button>
-              ))}
-            </div>
-          )}
-          {bot && !iAmHost && <p className="mt-1 font-sans text-[11px] text-ink-900/60">{t(`setup.difficulty.${seat.difficulty ?? 'industrialist'}.label`)}</p>}
-          {/* this seat's candle: the table's, none (a beginner takes their time), or its own minutes */}
-          {!bot && (
-            <div className="mt-2 flex flex-wrap items-center gap-1">
-              <span className="mr-1 font-sans text-[9px] font-semibold uppercase tracking-[0.14em] text-ink-900/50">{t('site.room.candle')}</span>
-              {iAmHost ? (
-                ([undefined, null, 3, 5, 10] as const).map((m) => {
-                  const on = seat.minutes === m;
-                  return (
-                    <button
-                      key={String(m)}
-                      type="button"
-                      aria-pressed={on}
-                      onClick={() => onMinutes(m)}
-                      className={cn('rounded-sm border px-1.5 py-[2px] font-sans text-[9px] font-bold uppercase tracking-[0.12em]', on ? 'border-ink-900 bg-ink-900 text-cream-100' : 'border-ink-900/30 text-ink-900/60 hover:border-ink-900/60')}
-                    >
-                      {m === undefined ? t('site.room.candleTable') : m === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: m })}
-                    </button>
-                  );
-                })
-              ) : (
-                <span className="font-sans text-[10px] text-ink-900/70">{seat.minutes === undefined ? t('site.room.candleTable') : seat.minutes === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: seat.minutes })}</span>
-              )}
-            </div>
-          )}
-        </div>
-        {/* remove: the host clears any seat but their own, a guest only leaves */}
-        {iAmHost && !isHostSeat && (
-          <button type="button" onClick={onRemove} aria-label={t('online.room.remove')} title={t('online.room.remove')} className="rounded-full p-1 text-ink-900/40 hover:bg-ink-900/10 hover:text-ink-900">
-            <X className="h-4 w-4" />
-          </button>
-        )}
+      {allReady && (
+        <motion.span
+          aria-hidden
+          className="absolute inset-0 rounded-full"
+          animate={{ boxShadow: ['0 0 0 0 rgba(62,138,102,0)', '0 0 22px 4px rgba(62,138,102,.45)', '0 0 0 0 rgba(62,138,102,0)'] }}
+          transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      )}
+      <div aria-hidden className="tex-ledger absolute inset-0 rounded-full opacity-40" />
+      <div aria-hidden className="absolute inset-0 rounded-full border-2 border-dashed border-brass-hairline-strong bg-enamel-800/60" />
+      <svg aria-hidden viewBox="0 0 120 120" className="absolute inset-0 h-full w-full -rotate-90">
+        <circle cx="60" cy="60" r={r} fill="none" stroke="var(--brass-hairline)" strokeWidth="3" />
+        <motion.circle
+          cx="60"
+          cy="60"
+          r={r}
+          fill="none"
+          stroke="#C9A24B"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          initial={false}
+          animate={{ strokeDashoffset: circumference * (1 - portion) }}
+          transition={{ type: 'spring', stiffness: 120, damping: 26 }}
+        />
+      </svg>
+      <div className="relative flex flex-col items-center gap-1">
+        <Factory size={32} className="text-brass-500" aria-hidden />
+        <span className="data-text tnums text-[12px] text-paper-300">{t('platform.lobby.readyCount', { ready, total: MAX_SEATS })}</span>
       </div>
-      {/* the ink stamp: READY, or the pale "waiting" — yours is a button */}
-      <div className="relative mt-3 flex items-center justify-between">
-        {isMe ? (
-          <button
-            type="button"
-            onClick={onReady}
-            aria-pressed={seat.ready}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-sm border-2 px-2.5 py-1 font-sans text-[11px] font-black uppercase tracking-[0.2em] transition-colors',
-              seat.ready ? 'rotate-[-2deg] border-bottle-600 text-bottle-600' : 'border-ink-900/30 text-ink-900/50 hover:border-ink-900/60 hover:text-ink-900/80',
-            )}
-          >
-            {seat.ready ? <Check className="h-3.5 w-3.5" /> : null}
-            {seat.ready ? t('online.room.ready') : t('online.room.imReady')}
-          </button>
-        ) : (
-          <span className={cn('inline-flex items-center gap-1.5 rounded-sm border-2 px-2.5 py-1 font-sans text-[11px] font-black uppercase tracking-[0.2em]', ready ? 'rotate-[-2deg] border-bottle-600 text-bottle-600' : 'border-ink-900/20 text-ink-900/35')}>
-            {ready && <Check className="h-3.5 w-3.5" />}
-            {ready ? t('online.room.ready') : t('online.room.waiting')}
-          </span>
-        )}
-      </div>
-    </motion.li>
+    </motion.div>
   );
 }
 
-/** an empty chair — the host may seat a mechanical player there */
-function EmptyChair({ iAmHost, onAddBot }: { iAmHost: boolean; onAddBot: () => void }) {
+/* ------------------------ Siège + plaque (§S2) ----------------------- */
+
+function SeatSlot({
+  slot,
+  table,
+  index,
+  isMe,
+  isHostSeat,
+  iAmHost,
+  popoverOpen,
+  onTogglePopover,
+  onColor,
+  onRemove,
+  onDifficulty,
+  onMinutes,
+  onAddBot,
+}: {
+  slot: TableSeat | null;
+  table: Table;
+  index: number;
+  isMe: boolean;
+  isHostSeat: boolean;
+  iAmHost: boolean;
+  popoverOpen: boolean;
+  onTogglePopover: () => void;
+  onColor: (c: PlayerColor) => void;
+  onRemove: () => void;
+  onDifficulty: (d: BotDifficulty) => void;
+  onMinutes: (m: number | null | undefined) => void;
+  onAddBot: () => void;
+}) {
   const t = useT();
+
+  /* the open chair: dashed token, the host may seat a mechanical player */
+  if (!slot) {
+    return (
+      <motion.li
+        initial={{ scale: 0.6, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ ...seatSpring, delay: index * 0.09 }}
+        className={cn('group relative flex w-[140px] flex-col items-center justify-self-center lg:absolute lg:justify-self-auto', ELLIPSE[index])}
+      >
+        <SeatToken seat={null} size={64} index={index} />
+        <div className="mt-2 flex h-[52px] flex-col items-center justify-start gap-1.5">
+          <span className="micro-label text-[10px] text-iron-600">{t('platform.lobby.emptySeat')}</span>
+          {iAmHost && (
+            <button
+              type="button"
+              onClick={onAddBot}
+              className="inline-flex items-center gap-1 rounded-full border border-bottle-500/70 bg-bottle-700/40 px-2.5 py-1 font-ui text-[10px] font-semibold uppercase tracking-[0.1em] text-bottle-400 transition-colors hover:border-bottle-400 hover:text-paper-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+            >
+              <Bot size={12} aria-hidden /> {t('platform.lobby.addBot')}
+            </button>
+          )}
+        </div>
+      </motion.li>
+    );
+  }
+
+  const bot = slot.kind === 'bot';
+  const ready = bot || slot.ready;
+  const taken = new Set(table.seats.filter((s) => s.id !== slot.id).map((s) => s.color));
+  /* who holds a pen over this seat: its occupant, and the host over bots,
+     removals and every candle */
+  const canColor = isMe || (bot && iAmHost);
+  const hasControls = !bot || iAmHost;
+  const subLine = bot
+    ? t('platform.lobby.botLine', { difficulty: t(`setup.difficulty.${slot.difficulty ?? 'industrialist'}.label`) })
+    : ready
+      ? t('platform.lobby.readyTag')
+      : t('platform.lobby.waiting');
+
   return (
-    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex min-h-[112px] flex-col items-center justify-center gap-2 rounded-[6px] border border-dashed border-brass-700/50 bg-coal-950/30 p-4 text-center">
-      <span className="font-fell text-[13px] uppercase tracking-[0.14em] text-cream-100/40">{t('online.room.emptySeat')}</span>
-      {iAmHost && (
-        <button type="button" onClick={onAddBot} className="inline-flex items-center gap-1.5 rounded-md border border-brass-700/60 px-3 py-1.5 font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-brass-400 transition-colors hover:border-brass-400">
-          <Plus className="h-3.5 w-3.5" /> {t('online.room.addBot')}
-        </button>
+    <motion.li
+      initial={{ scale: 0.6, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ opacity: 0, scale: 0.9 }}
+      transition={{ ...seatSpring, delay: index * 0.09 }}
+      className={cn('relative flex w-[140px] flex-col items-center justify-self-center lg:absolute lg:justify-self-auto', ELLIPSE[index])}
+    >
+      <button
+        type="button"
+        onClick={onTogglePopover}
+        aria-expanded={popoverOpen}
+        aria-haspopup={hasControls ? 'dialog' : undefined}
+        className={cn('relative rounded-full', isMe && !ready && 'shadow-[0_0_0_3px_var(--brass-hairline-strong)]')}
+      >
+        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe }} size={64} index={index} />
+      </button>
+      {/* la plaque : pseudo + sous-ligne d'état */}
+      <div className="mt-2 flex h-[52px] w-full flex-col items-center">
+        <span className="max-w-full truncate font-ui text-[14px] font-semibold text-paper-100">
+          {slot.name || '…'}
+          {isMe && <span className="micro-label ml-1.5 text-[9px] text-brass-300">{t('platform.seat.you')}</span>}
+        </span>
+        <span className={cn('data-text mt-0.5 text-[11px] uppercase', ready ? 'text-bottle-400' : 'text-iron-400')}>{subLine}</span>
+      </div>
+
+      {/* le pupitre du siège : couleur, tempo mécanique, chandelle, renvoi */}
+      {popoverOpen && hasControls && (
+        <>
+          <button type="button" aria-label={t('platform.action.close')} onClick={onTogglePopover} className="fixed inset-0 z-10 cursor-default" />
+          <div className={cn('absolute top-full z-20 mt-1 w-56 rounded-lg border border-brass-hairline bg-enamel-800 p-3 shadow-[0_8px_24px_var(--shadow-modal)]', POPOVER_ALIGN[index])}>
+            {canColor && (
+              <div className="flex items-center justify-center gap-2">
+                {PLAYER_COLORS.map((c) => {
+                  const mine = c.id === slot.color;
+                  const busy = taken.has(c.id);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      disabled={busy}
+                      onClick={() => onColor(c.id)}
+                      aria-label={t(`setup.colors.${c.id}`)}
+                      aria-pressed={mine}
+                      className={cn(
+                        'h-6 w-6 rounded-full border-2 transition-transform',
+                        mine ? 'scale-110 border-paper-100' : busy ? 'cursor-not-allowed border-transparent opacity-30' : 'border-transparent hover:scale-110',
+                      )}
+                      style={{ backgroundColor: c.hex }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+            {bot && iAmHost && (
+              <div className={cn('flex justify-center gap-1', canColor && 'mt-2.5')}>
+                {DIFFICULTIES.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    aria-pressed={slot.difficulty === d.id}
+                    onClick={() => onDifficulty(d.id)}
+                    className={cn(
+                      'rounded border px-1.5 py-[2px] font-ui text-[9px] font-semibold uppercase tracking-[0.1em]',
+                      slot.difficulty === d.id ? 'border-brass-500 bg-brass-500/15 text-brass-300' : 'border-enamel-line text-iron-400 hover:border-brass-hairline-strong hover:text-paper-300',
+                    )}
+                  >
+                    {t(`setup.difficulty.${d.id}.label`)}
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* this seat's candle: the table's, none, or its own minutes */}
+            {!bot && (
+              <div className={cn('flex flex-wrap items-center justify-center gap-1', (canColor || (bot && iAmHost)) && 'mt-2.5')}>
+                <span className="micro-label mr-1 text-[9px] text-iron-600">{t('site.room.candle')}</span>
+                {iAmHost ? (
+                  ([undefined, null, 3, 5, 10] as const).map((m) => {
+                    const on = slot.minutes === m;
+                    return (
+                      <button
+                        key={String(m)}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => onMinutes(m)}
+                        className={cn(
+                          'rounded border px-1.5 py-[2px] font-ui text-[9px] font-semibold uppercase tracking-[0.1em]',
+                          on ? 'border-brass-500 bg-brass-500/15 text-brass-300' : 'border-enamel-line text-iron-400 hover:border-brass-hairline-strong hover:text-paper-300',
+                        )}
+                      >
+                        {m === undefined ? t('site.room.candleTable') : m === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: m })}
+                      </button>
+                    );
+                  })
+                ) : (
+                  <span className="font-ui text-[11px] text-paper-300">
+                    {slot.minutes === undefined ? t('site.room.candleTable') : slot.minutes === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: slot.minutes })}
+                  </span>
+                )}
+              </div>
+            )}
+            {iAmHost && !isHostSeat && (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="mx-auto mt-2.5 flex items-center gap-1 rounded border border-[rgb(var(--rust-400)/.4)] px-2 py-1 font-ui text-[10px] font-semibold uppercase tracking-[0.1em] text-rust-400 transition-colors hover:border-rust-400"
+              >
+                <X size={12} aria-hidden /> {t('online.room.remove')}
+              </button>
+            )}
+          </div>
+        </>
       )}
     </motion.li>
   );
 }
 
-/** a letter to a player by name — their desk gets it at once */
-function InviteBox({ code, seated }: { code: string; seated: string[] }) {
+/* --------------------- Invitations d'amis (§S3b) --------------------- */
+
+function InvitePanel({ code, seated }: { code: string; seated: string[] }) {
   const t = useT();
   const desk = useDesk();
   const [name, setName] = useState('');
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+  const [invited, setInvited] = useState<Record<string, number>>({});
+  const timers = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => Object.values(pending).forEach((id) => window.clearTimeout(id));
+  }, []);
+
+  /* a letter to a player by name — their desk gets it at once */
   const send = async (who = name) => {
     if (!who.trim()) return;
     try {
       await invite(code, who);
       setNote({ ok: true, text: t('site.room.invited', { name: who.trim() }) });
       setName('');
+      setInvited((m) => ({ ...m, [who.trim().toLowerCase()]: Date.now() }));
+      window.clearTimeout(timers.current[who.trim().toLowerCase()]);
+      timers.current[who.trim().toLowerCase()] = window.setTimeout(() => {
+        setInvited((m) => {
+          const next = { ...m };
+          delete next[who.trim().toLowerCase()];
+          return next;
+        });
+      }, 10_000);
     } catch (e) {
-      setNote({ ok: false, text: t(deskErrorKey(e)) });
+      setNote({ ok: false, text: t(`site.desk.error.${(e as Error).message}`) });
     }
   };
-  const friends = (desk?.friends ?? []).filter((f) => f.status === 'friends' && !seated.includes(f.account.id));
+
+  const filter = name.trim().toLowerCase();
+  const friends = (desk?.friends ?? []).filter((f) => f.status === 'friends' && !seated.includes(f.account.id) && (!filter || f.account.name.toLowerCase().includes(filter)));
+
   return (
-    <div className="relative mt-4 rounded-md border border-brass-700/50 bg-coal-950/50 px-4 py-3">
-      <p className="font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-400/80">{t('site.room.invite')}</p>
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+    <section aria-label={t('platform.lobby.inviteTitle')}>
+      <p className="micro-label text-brass-300/80">{t('platform.lobby.inviteTitle')}</p>
+      <div className="relative mt-2.5">
+        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-iron-600" aria-hidden />
         <input
           value={name}
           onChange={(e) => {
@@ -219,29 +330,52 @@ function InviteBox({ code, seated }: { code: string; seated: string[] }) {
           }}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           maxLength={20}
-          placeholder={t('site.room.invitePlaceholder')}
-          className="w-[14rem] rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-1.5 font-sans text-[13px] text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
+          placeholder={t('platform.lobby.inviteSearch')}
+          className="h-10 w-full rounded-lg border border-brass-hairline bg-lacquer-950 pl-9 pr-3 font-ui text-[13px] text-paper-100 placeholder:text-iron-600 focus:border-brass-500 focus:outline-none"
         />
-        <button type="button" onClick={() => send()} disabled={!name.trim()} className="btn-ledger !min-h-[34px] !px-3.5 !py-1 !text-[10.5px] disabled:cursor-not-allowed disabled:opacity-40">
-          <Send className="h-3.5 w-3.5" /> {t('site.room.inviteCta')}
-        </button>
-        <span className="font-sans text-[11px] text-cream-100/45">{t('site.room.inviteHint')}</span>
       </div>
-      {friends.length > 0 && (
-        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          <span className="font-sans text-[9.5px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">{t('site.friends.chips')}</span>
-          {friends.map((f) => (
-            <button key={f.id} type="button" onClick={() => send(f.account.name)} className="inline-flex items-center gap-1.5 rounded-full border border-brass-700/50 py-0.5 pl-2 pr-2.5 font-sans text-[11px] font-semibold text-cream-100/85 transition-colors hover:border-brass-400 hover:text-brass-400">
-              <span className={cn('h-1.5 w-1.5 rounded-full', f.online ? 'bg-bottle-600' : 'bg-cream-100/25')} />
-              {f.account.name}
-            </button>
-          ))}
+      <div className="mt-2 flex flex-col gap-1">
+        <AnimatePresence initial={false}>
+          {friends.map((f, i) => {
+            const sent = invited[f.account.name.toLowerCase()] !== undefined;
+            return (
+              <motion.div
+                key={f.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2, ease: 'easeOut', delay: i * 0.03 }}
+                className="flex min-h-[36px] items-center gap-2.5 rounded-lg px-2 py-1 hover:bg-enamel-700"
+              >
+                <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', f.online ? 'bg-bottle-400' : 'bg-iron-600')} aria-hidden />
+                <span className="min-w-0 flex-1 truncate font-ui text-[13px] font-medium text-paper-100">{f.account.name}</span>
+                {sent ? (
+                  <span className="inline-flex items-center gap-1 font-ui text-[11px] font-semibold uppercase tracking-[0.08em] text-bottle-400">
+                    <Check size={13} aria-hidden /> {t('platform.lobby.invitedTag')}
+                  </span>
+                ) : (
+                  <Button variant="icon" className="!h-8 !w-8 border-0" aria-label={`${t('platform.lobby.inviteSend')} ${f.account.name}`} onClick={() => send(f.account.name)} icon={<Send size={14} aria-hidden />} />
+                )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+        {friends.length === 0 && <p className="px-2 py-1 font-ui text-[12px] text-iron-400">{t('platform.lobby.noFriends')}</p>}
+      </div>
+      {filter && (
+        <div className="mt-1.5 flex items-center justify-between gap-2">
+          <span className="truncate font-ui text-[12px] text-iron-400">{name.trim()}</span>
+          <Button variant="ghost" className="!h-8 shrink-0 !px-3 !text-[12px]" disabled={!name.trim()} onClick={() => send()} icon={<Send size={13} aria-hidden />}>
+            {t('platform.lobby.inviteSend')}
+          </Button>
         </div>
       )}
-      {note && <p className={cn('mt-2 font-sans text-[12px]', note.ok ? 'text-bottle-600 brightness-150' : 'text-rust-500 brightness-150')}>{note.text}</p>}
-    </div>
+      {note && <p className={cn('mt-2 font-ui text-[12px]', note.ok ? 'text-bottle-400' : 'text-rust-400')}>{note.text}</p>}
+    </section>
   );
 }
+
+/* ----------------------------- Le salon ------------------------------ */
 
 export default function Lobby() {
   const t = useT();
@@ -257,11 +391,11 @@ export default function Lobby() {
   useEffect(() => {
     if (isOnline && stranger) navigate(`/online?table=${code}`, { replace: true });
   }, [stranger, code, navigate]);
-  const [copied, setCopied] = useState(false);
+
+  const [toast, setToast] = useState<ToastData | null>(null);
   const [renaming, setRenaming] = useState(false);
-  /* what the room refused, said under the chair */
-  const [refusal, setRefusal] = useState<string | null>(null);
-  const line = useLine();
+  const [openSeat, setOpenSeat] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<number | null>(null);
 
   /* the table has been rung: everyone at it sits down to the game */
   useEffect(() => {
@@ -276,15 +410,56 @@ export default function Lobby() {
     navigate(isOnline ? `/game/${table.code}` : '/game');
   }, [table, navigate]);
 
+  /* arrivals, departures and the crown passing — read aloud as toasts,
+     heard straight from the lobby's own subscription */
+  useEffect(() => {
+    let prev = lobby.get(code);
+    return lobby.subscribe(code, () => {
+      const next = lobby.get(code);
+      if (!next || next === prev) {
+        prev = next;
+        return;
+      }
+      const old = new Map((prev?.seats ?? []).map((s) => [s.id, s]));
+      for (const s of next.seats) {
+        if (!old.has(s.id) && s.kind === 'human') setToast({ id: Date.now(), message: t('platform.lobby.toastJoined', { name: s.name }), kind: 'info' });
+      }
+      for (const [id, s] of old) {
+        if (!next.seats.some((n) => n.id === id)) setToast({ id: Date.now() + 1, message: t('platform.lobby.toastLeft', { name: s.name }), kind: 'info' });
+      }
+      if (prev && prev.hostId !== next.hostId) {
+        const host = next.seats.find((s) => s.id === next.hostId);
+        if (host && host.id !== me.id) setToast({ id: Date.now() + 2, message: t('platform.lobby.toastNewHost', { name: host.name }), kind: 'info' });
+      }
+      prev = next;
+    });
+  }, [code, t, me.id]);
+
+  /* the launch countdown (§S3c): the console winds up, then the bell rings */
+  useEffect(() => {
+    if (countdown === null || !table) return;
+    const id = window.setTimeout(() => {
+      if (!canStart(table)) {
+        setCountdown(null);
+        return;
+      }
+      if (countdown <= 1) {
+        setCountdown(null);
+        if (table.hostId === me.id) lobby.update(code, (tb) => ({ ...tb, status: 'starting' }));
+      } else {
+        setCountdown(countdown - 1);
+      }
+    }, 1000);
+    return () => window.clearTimeout(id);
+  }, [countdown, table, code, me.id]);
+
   if (!table) {
-    /* still being asked for: a moment; the line down: say so, not "gone" */
-    const waiting = isOnline && !lobby.known(code);
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="font-fell text-2xl text-cream-100/85">{t(waiting ? (line === 'offline' ? 'online.room.lineDown' : 'online.room.looking') : 'online.room.notFound')}</p>
-        <Link to="/online" className="btn-ledger">
+      <div className="flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-5 px-6 text-center">
+        <p className="display-page">{t('online.room.notFound')}</p>
+        <Button variant="ghost" to="/online">
           {t('online.room.back')}
-        </Link>
+        </Button>
       </div>
     );
   }
@@ -292,16 +467,20 @@ export default function Lobby() {
   const mySeat = table.seats.find((s) => s.id === me.id);
   const iAmHost = table.hostId === me.id;
   const seated = table.seats.length;
-  const empty = Math.max(0, MAX_SEATS - seated);
   const startable = canStart(table);
   const humansWaiting = table.seats.filter((s) => s.kind === 'human' && !s.ready).length;
+  const readyCount = table.seats.filter((s) => s.kind === 'bot' || s.ready).length;
+  const counting = countdown !== null && startable;
+
+  /* the host leads the procession around the medallion */
+  const ordered = [...table.seats].sort((a, b) => Number(b.id === table.hostId) - Number(a.id === table.hostId));
+  const slots: (TableSeat | null)[] = [...ordered, ...Array.from({ length: Math.max(0, MAX_SEATS - seated) }, () => null)];
 
   const edit = (patch: (tb: Table) => Table) => lobby.update(code, patch);
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(`${location.origin}/online/${code}`);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 1600);
+      setToast({ id: Date.now(), message: t('platform.toast.copied'), kind: 'success' });
     } catch {
       /* clipboard blocked: the code is on screen anyway */
     }
@@ -311,11 +490,10 @@ export default function Lobby() {
       navigate('/online');
       return;
     }
-    setRefusal(null);
     try {
       await lobby.join(code);
-    } catch (e) {
-      setRefusal(t(deskErrorKey(e)));
+    } catch {
+      /* full or started: the room says so */
     }
   };
   const addBot = () =>
@@ -327,91 +505,121 @@ export default function Lobby() {
     });
   const leave = () => {
     lobby.leave(code);
-    navigate(isOnline ? '/play' : '/online');
+    navigate(isOnline ? '/desk' : '/online');
   };
-  const start = () => startable && iAmHost && edit((tb) => ({ ...tb, status: 'starting' }));
+  const toggleReady = () => mySeat && edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === mySeat.id ? { ...s, ready: !s.ready } : s)) }));
+  const beginCountdown = () => {
+    if (startable && iAmHost) setCountdown(3);
+  };
+
+  const optionChips = [
+    table.options.eraLength === 'short' ? t('setup.houseRules.eraLength.canalOnly') : t('setup.houseRules.eraLength.full'),
+    t(`setup.houseRules.marketTemper.${table.options.marketTemper}`),
+    table.options.timerMinutes === null ? t('setup.houseRules.timer.off') : t('setup.houseRules.timer.min', { n: table.options.timerMinutes }),
+    ...(table.options.assist ? [t('setup.houseRules.assist.on')] : []),
+  ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 50% 30%, transparent 40%, rgba(16,13,11,0.75) 100%)' }} />
-      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.05]" />
-      <div className="relative mx-auto max-w-[1180px] px-6 py-10 lg:py-14">
-        {isOnline && <VerifyBanner />}
-        <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
+    <div className="relative min-h-[calc(100vh-88px)]">
+      <div className="mx-auto max-w-[1240px] px-6 pb-24 pt-8 lg:px-8">
+        {/* -------------------- En-tête du salon (§S1) -------------------- */}
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <Link to={isOnline ? '/play' : '/online'} className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
-            </Link>
-            <p className="eyebrow">{t('online.room.eyebrow')}</p>
-            {iAmHost && renaming ? (
-              <input
-                autoFocus
-                defaultValue={table.name}
-                maxLength={28}
-                onBlur={(e) => {
-                  const name = e.target.value.trim();
-                  if (name) edit((tb) => ({ ...tb, name }));
-                  setRenaming(false);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
-                  if (e.key === 'Escape') setRenaming(false);
-                }}
-                className="mt-2 w-full max-w-xl border-0 border-b-2 border-brass-400 bg-transparent px-0 font-display text-[44px] font-black leading-none tracking-[-0.01em] text-cream-100 focus:outline-none"
-              />
-            ) : (
-              <h1
-                className={cn('mt-2 font-display text-[44px] font-black leading-none tracking-[-0.01em] text-cream-100', iAmHost && 'cursor-text hover:text-brass-400')}
-                title={iAmHost ? t('online.room.rename') : undefined}
-                onClick={() => iAmHost && setRenaming(true)}
-              >
-                {table.name}
-              </h1>
-            )}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
+              <Link to={isOnline ? '/desk' : '/online'} className="mb-3 inline-flex items-center gap-1.5 font-ui text-[12px] font-semibold uppercase tracking-[0.12em] text-iron-400 transition-colors hover:text-brass-300">
+                <ArrowLeft size={14} aria-hidden />
+                {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
+              </Link>
+              <div className="flex items-center gap-3">
+                <p className="micro-label text-brass-300">{t('platform.lobby.eyebrow')}</p>
+                <span className="rounded-full bg-bottle-700 px-2.5 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-[0.12em] text-paper-100">{t('platform.state.open')}</span>
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.06 }}>
+              {iAmHost && renaming ? (
+                <input
+                  autoFocus
+                  defaultValue={table.name}
+                  maxLength={28}
+                  onBlur={(e) => {
+                    const name = e.target.value.trim();
+                    if (name) edit((tb) => ({ ...tb, name }));
+                    setRenaming(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                    if (e.key === 'Escape') setRenaming(false);
+                  }}
+                  className="mt-2 w-full max-w-xl border-0 border-b-2 border-brass-500 bg-transparent px-0 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100 focus:outline-none"
+                />
+              ) : (
+                <h1
+                  className={cn('group/title mt-2 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100', iAmHost && 'cursor-text hover:text-brass-300')}
+                  title={iAmHost ? t('platform.lobby.rename') : undefined}
+                  onClick={() => iAmHost && setRenaming(true)}
+                >
+                  {table.name}
+                  {iAmHost && <Pencil size={14} className="mb-4 ml-2 inline text-brass-300 opacity-0 transition-opacity duration-150 group-hover/title:opacity-100" aria-hidden />}
+                </h1>
+              )}
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.12 }} className="mt-3 flex flex-wrap items-center gap-1.5">
+              {optionChips.map((chip) => (
+                <span key={chip} className="rounded border border-brass-hairline bg-enamel-800 px-2 py-0.5 font-ui text-[11px] font-medium text-paper-300">
+                  {chip}
+                </span>
+              ))}
+            </motion.div>
           </div>
-          {/* the brass plaque with the code */}
-          <div className="plaque plaque-rivets flex items-center gap-5 px-5 py-3">
-            <div>
-              <p className="font-sans text-[9px] font-semibold uppercase tracking-[0.2em] text-brass-400/80">{t('online.room.code')}</p>
-              <p className="engraved-brass font-mono text-[34px] font-bold leading-none tracking-[0.35em]">{table.code}</p>
-            </div>
-            <button type="button" onClick={copy} className="inline-flex items-center gap-1.5 rounded-md border border-brass-700/60 px-3 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-brass-400 transition-colors hover:border-brass-400">
-              <Copy className="h-3.5 w-3.5" /> {copied ? t('online.room.copied') : t('online.room.copy')}
-            </button>
-          </div>
+          {mySeat && (
+            <Button variant="danger-ghost" className="shrink-0" onClick={leave} icon={<LogOut size={16} aria-hidden />}>
+              {t('platform.lobby.leave')}
+            </Button>
+          )}
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[640px_1fr]">
-          {/* the seats */}
-          <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="plate relative p-6" aria-label={t('online.room.seats')}>
-            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[8px] opacity-[0.05]" />
-            <header className="relative flex items-baseline justify-between">
-              <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">{t('online.room.seats')}</h2>
-              <span className="font-mono text-[11px] text-cream-100/50">
-                {seated} / {MAX_SEATS}
-              </span>
-            </header>
-            <div className="divider-brass mt-3 !mx-0" />
-            <ul className="relative mt-4 grid gap-3 sm:grid-cols-2">
-              <AnimatePresence mode="popLayout">
-                {table.seats.map((seat) => (
-                  <PlaceCard
-                    key={seat.id}
-                    seat={seat}
+        {/* code de salle en tête sur mobile */}
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-brass-hairline bg-lacquer-950 px-4 py-3 lg:hidden">
+          <span className="room-code text-paper-100">{table.code}</span>
+          <Button variant="ghost" className="!h-9 !px-3 !text-[12px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
+            {t('platform.lobby.copy')}
+          </Button>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-12">
+          {/* ---------------------- La table (§S2) ----------------------- */}
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.26, ease: 'easeOut' }}
+            className="rounded-xl border border-brass-hairline bg-enamel-850 p-6 lg:col-span-8 lg:p-8"
+            aria-label={t('online.room.seats')}
+          >
+            <ul className="grid grid-cols-2 gap-x-2 gap-y-6 lg:relative lg:block lg:h-[460px]">
+              <li className="col-span-2 flex justify-center lg:absolute lg:left-1/2 lg:top-1/2 lg:-ml-[60px] lg:-mt-[60px] lg:block">
+                <ReadyMedallion ready={readyCount} allReady={startable} />
+              </li>
+              <AnimatePresence>
+                {slots.map((slot, i) => (
+                  <SeatSlot
+                    key={slot?.id ?? `empty-${i}`}
+                    slot={slot}
                     table={table}
-                    isMe={seat.id === me.id}
-                    isHostSeat={seat.id === table.hostId}
+                    index={i}
+                    isMe={slot?.id === me.id}
+                    isHostSeat={slot?.id === table.hostId}
                     iAmHost={iAmHost}
-                    onColor={(color) => edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === seat.id ? { ...s, color } : s)) }))}
-                    onReady={() => edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === seat.id ? { ...s, ready: !s.ready } : s)) }))}
-                    onRemove={() => edit((tb) => ({ ...tb, seats: tb.seats.filter((s) => s.id !== seat.id) }))}
-                    onDifficulty={(difficulty) => edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === seat.id ? { ...s, difficulty } : s)) }))}
+                    popoverOpen={openSeat === (slot?.id ?? `empty-${i}`)}
+                    onTogglePopover={() => setOpenSeat((cur) => (cur === (slot?.id ?? `empty-${i}`) ? null : (slot?.id ?? `empty-${i}`)))}
+                    onColor={(color) => slot && edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === slot.id ? { ...s, color } : s)) }))}
+                    onRemove={() => slot && edit((tb) => ({ ...tb, seats: tb.seats.filter((s) => s.id !== slot.id) }))}
+                    onDifficulty={(difficulty) => slot && edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === slot.id ? { ...s, difficulty } : s)) }))}
                     onMinutes={(minutes) =>
+                      slot &&
                       edit((tb) => ({
                         ...tb,
                         seats: tb.seats.map((s) => {
-                          if (s.id !== seat.id) return s;
+                          if (s.id !== slot.id) return s;
                           const next = { ...s };
                           if (minutes === undefined) delete next.minutes;
                           else next.minutes = minutes;
@@ -419,76 +627,123 @@ export default function Lobby() {
                         }),
                       }))
                     }
+                    onAddBot={addBot}
                   />
-                ))}
-                {Array.from({ length: empty }, (_, i) => (
-                  <EmptyChair key={`empty-${i}`} iAmHost={iAmHost} onAddBot={addBot} />
                 ))}
               </AnimatePresence>
             </ul>
-            {!mySeat && (
-              <div className="relative mt-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-brass-700/50 bg-coal-950/50 px-4 py-3">
-                <span className="font-sans text-[12.5px] text-cream-100/75">{table.seats.length >= MAX_SEATS ? t('online.entry.join.error.full') : t('online.room.notSeated')}</span>
-                {table.seats.length < MAX_SEATS && (
-                  <button type="button" onClick={sitDown} className="btn-ledger !h-10 !px-4">
-                    {t('online.room.sitDown')}
-                  </button>
-                )}
-                {refusal && <p role="alert" className="basis-full font-sans text-[12px] text-rust-500 brightness-150">{refusal}</p>}
-              </div>
-            )}
-            {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && <InviteBox code={code} seated={table.seats.map((s) => s.id)} />}
-            <p className="relative mt-4 font-sans text-[12px] leading-relaxed text-cream-100/50">{t('online.room.shareHint')}</p>
           </motion.section>
 
-          {/* the house rules: the host's pen, everyone's eyes */}
-          <div className="relative">
-            <HouseRules options={table.options} onChange={(patch) => iAmHost && edit((tb) => ({ ...tb, options: { ...tb.options, ...patch } }))} />
-            {!iAmHost && (
-              <div className="pointer-events-none absolute inset-0 rounded-[8px]" aria-hidden>
-                <span className="absolute right-4 top-4 rounded-sm border border-brass-700/60 bg-coal-950/85 px-2 py-1 font-sans text-[9px] font-bold uppercase tracking-[0.16em] text-brass-400/80">{t('online.room.hostSets')}</span>
-              </div>
-            )}
-          </div>
-        </div>
+          {/* ------------------- Console latérale (§S3) ------------------- */}
+          <motion.aside
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.26, ease: 'easeOut', delay: 0.05 }}
+            className="lg:col-span-4"
+          >
+            <div className="flex flex-col gap-6 lg:sticky lg:top-[88px]">
+              <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+                {/* 3a — code de salle */}
+                <section className="max-lg:hidden">
+                  <p className="micro-label text-brass-300/80">{t('platform.lobby.codeLabel')}</p>
+                  <div className="mt-2.5 flex h-14 items-center justify-center rounded-lg border border-brass-hairline bg-lacquer-950">
+                    <span className="room-code text-paper-100">{table.code}</span>
+                  </div>
+                  <Button variant="ghost" className="mt-2.5 !h-9 w-full !text-[13px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
+                    {t('platform.lobby.copy')}
+                  </Button>
+                  <p className="mt-2 font-ui text-[12px] text-iron-400">{t('platform.lobby.shareHint')}</p>
+                </section>
 
-        {/* the bell */}
-        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.4, ease: 'easeOut' }} className="plaque plaque-rivets sticky bottom-4 mt-8 flex min-h-[88px] flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <AnimatePresence mode="popLayout">
-              {table.seats.map((s) => (
-                <motion.span
-                  layout
-                  key={s.id}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 26 }}
-                  className={cn('inline-flex items-center gap-2 rounded-full border py-1 pl-1.5 pr-3', s.kind === 'bot' || s.ready ? 'border-bottle-600/70 bg-coal-900/85' : 'border-ink-900/40 bg-coal-900/60')}
-                >
-                  <PlayerToken color={s.color} size={18} />
-                  <span className="font-sans text-[12px] font-semibold text-cream-100">{s.name}</span>
-                  {(s.kind === 'bot' || s.ready) && <Check className="h-3 w-3 text-bottle-600 brightness-150" />}
-                </motion.span>
-              ))}
-            </AnimatePresence>
-          </div>
-          <div className="flex items-center gap-3">
-            {mySeat && (
-              <button type="button" onClick={leave} className="inline-flex items-center gap-1.5 rounded-md border border-brass-700/60 px-3 py-2 font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-cream-100/70 transition-colors hover:border-rust-500 hover:text-rust-500">
-                <LogOut className="h-3.5 w-3.5" /> {t('online.room.leave')}
-              </button>
-            )}
-            {iAmHost ? (
-              <button type="button" onClick={start} disabled={!startable} className="btn-strike !h-14 !rounded-lg !px-8 !font-display !text-xl !font-bold normal-case !tracking-normal disabled:cursor-not-allowed disabled:saturate-50 disabled:opacity-70" title={startable ? undefined : t('online.room.startHint', { n: humansWaiting, min: 2 })}>
-                {t('online.room.start')}
-              </button>
-            ) : (
-              <span className="font-fell text-[13px] italic text-cream-100/70">{t('online.room.waitingHost')}</span>
-            )}
-          </div>
-        </motion.div>
+                {/* 3b — invitations */}
+                {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && (
+                  <div className="border-enamel-line max-lg:border-0 lg:mt-5 lg:border-t lg:pt-5">
+                    <InvitePanel code={code} seated={table.seats.map((s) => s.id)} />
+                  </div>
+                )}
+
+                {/* 3c — actions */}
+                <div className="border-t border-enamel-line pt-5 max-lg:mt-5 lg:mt-5">
+                  {!mySeat && (
+                    <div className="flex flex-col gap-2.5">
+                      <p className="font-ui text-[13px] text-paper-300">{table.seats.length >= MAX_SEATS ? t('online.entry.join.error.full') : t('online.room.notSeated')}</p>
+                      {table.seats.length < MAX_SEATS && (
+                        <Button variant="primary" className="!h-12 w-full" onClick={sitDown}>
+                          {t('online.room.sitDown')}
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  {mySeat && counting && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="halo-signal flex flex-col items-center gap-1 rounded-lg border border-[rgb(var(--signal-400)/.5)] bg-enamel-800 px-4 py-5"
+                    >
+                      <p className="title-card !text-[20px]">{t('platform.lobby.countdownTitle')}</p>
+                      <AnimatePresence mode="popLayout">
+                        <motion.span
+                          key={countdown}
+                          initial={{ scale: 1.15, opacity: 0.6 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.25, ease: 'easeOut' }}
+                          className="tnums font-fraunces text-[48px] font-semibold leading-none text-signal-400"
+                        >
+                          {countdown}
+                        </motion.span>
+                      </AnimatePresence>
+                    </motion.div>
+                  )}
+                  {mySeat && !counting && (
+                    <div className="flex flex-col gap-2.5">
+                      {iAmHost ? (
+                        <>
+                          <Button
+                            variant="primary"
+                            className={cn('!h-12 w-full !text-[15px]', startable && 'animate-pulse-signal')}
+                            onClick={beginCountdown}
+                            disabled={!startable}
+                            icon={<Play size={16} aria-hidden />}
+                            title={startable ? undefined : t('online.room.startHint', { n: humansWaiting, min: 2 })}
+                          >
+                            {t('platform.lobby.start')}
+                          </Button>
+                          {!startable && <p className="text-center font-ui text-[12px] text-iron-400">{t('online.room.startHint', { n: humansWaiting, min: 2 })}</p>}
+                        </>
+                      ) : (
+                        <>
+                          {mySeat.ready ? (
+                            <Button variant="ghost" className="!h-12 w-full border-bottle-500/70 !text-bottle-400 hover:!border-bottle-400" onClick={toggleReady} icon={<Check size={16} aria-hidden />}>
+                              {t('platform.lobby.unready')}
+                            </Button>
+                          ) : (
+                            <Button variant="primary" className="!h-12 w-full !text-[15px]" onClick={toggleReady}>
+                              {t('platform.lobby.ready')}
+                            </Button>
+                          )}
+                          <p className="text-center font-ui text-[12px] text-iron-400">{t('online.room.waitingHost')}</p>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* les règles de la maison : la plume de l'hôte, les yeux de tous */}
+              <div className="relative">
+                <HouseRules options={table.options} onChange={(patch) => iAmHost && edit((tb) => ({ ...tb, options: { ...tb.options, ...patch } }))} />
+                {!iAmHost && (
+                  <div className="pointer-events-none absolute inset-0 rounded-[8px]" aria-hidden>
+                    <span className="absolute right-4 top-4 rounded border border-brass-hairline bg-enamel-800 px-2 py-1 font-ui text-[9px] font-semibold uppercase tracking-[0.14em] text-brass-300/80">{t('online.room.hostSets')}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.aside>
+        </div>
       </div>
+      <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   );
 }

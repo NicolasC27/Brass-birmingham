@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { MailWarning } from 'lucide-react';
+import Button from '@/components/platform/Button';
 import { resendLetter, useSession } from '@/online/session';
 import { useT } from '@/i18n';
 import { Refusal, inputClass } from './PageShell';
 
 /* An address that has not answered its letter: the tables are shut until
-   it does. The letter can leave again, or go to another address. */
+   it does. The letter can leave again, or go to another address.
+   Restyled « Club Industriel » — enamel panel, brass mark, same contract. */
 
 export default function VerifyBanner() {
   const t = useT();
@@ -28,30 +30,30 @@ export default function VerifyBanner() {
   };
 
   return (
-    <div role="status" className="relative mb-6 overflow-hidden rounded-md border border-brass-500/60 bg-coal-950/70 p-4">
-      <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 opacity-[0.06]" />
+    <div role="status" className="relative mb-6 overflow-hidden rounded-xl border border-brass-hairline-strong bg-enamel-800 p-4">
+      <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative flex flex-wrap items-start gap-4">
-        <MailWarning className="mt-0.5 h-5 w-5 shrink-0 text-brass-400" />
+        <MailWarning className="mt-0.5 h-5 w-5 shrink-0 text-brass-300" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="font-serif text-[15px] leading-snug text-cream-100/90">{session.email ? t('site.verify.banner', { email: session.email }) : t('site.verify.bannerNoEmail')}</p>
-          {sent && <p className="mt-1 font-sans text-[12px] text-bottle-600 brightness-150">{t('site.verify.sent')}</p>}
+          <p className="font-ui text-[14px] leading-snug text-paper-100">{session.email ? t('site.verify.banner', { email: session.email }) : t('site.verify.bannerNoEmail')}</p>
+          {sent && <p className="mt-1 font-ui text-[12px] font-semibold text-bottle-400">{t('site.verify.sent')}</p>}
           {changing ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('site.verify.newEmail')} autoComplete="email" className={inputClass + ' max-w-xs'} />
-              <button type="button" onClick={() => send(email)} disabled={!email.includes('@')} className="btn-strike !min-h-[36px] !px-4 !py-1.5 !text-[11px] disabled:opacity-40">
+              <Button variant="primary" className="!h-9 text-[13px]" onClick={() => send(email)} disabled={!email.includes('@')}>
                 {t('site.verify.save')}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {session.email && (
-                <button type="button" onClick={() => send()} className="btn-strike !min-h-[36px] !px-4 !py-1.5 !text-[11px]">
+                <Button variant="primary" className="!h-9 text-[13px]" onClick={() => send()}>
                   {t('site.verify.resend')}
-                </button>
+                </Button>
               )}
-              <button type="button" onClick={() => setChanging(true)} className="btn-ledger !min-h-[36px] !px-4 !py-1.5 !text-[11px]">
+              <Button variant="ghost" className="!h-9 text-[13px]" onClick={() => setChanging(true)}>
                 {t('site.verify.change')}
-              </button>
+              </Button>
             </div>
           )}
           <Refusal text={error} />

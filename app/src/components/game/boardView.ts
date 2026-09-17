@@ -29,10 +29,19 @@ export const GLIMPSE_MS = 3200;
 
 export const clampK = (k: number): number => Math.min(MAX_K, Math.max(MIN_K, k));
 
-/** scale that fits the whole world inside a cw×ch container */
+/* the hand dock overlays the bottom of the screen; the fit reserves
+   FIT_PAD_BOTTOM px of container height so the ×2.3 prestige signs of the
+   southern merchants (Gloucester, Oxford) stay clear of it. Only the fit
+   SCALE shrinks (~8% at 1920×1080) — the world centre stays at the
+   container centre, so worldToScreen/screenToWorld remain exact inverses
+   and hit-testing, pan clamps and zoom math are untouched. */
+export const FIT_PAD_BOTTOM = 88;
+
+/** scale that fits the whole world inside a cw×ch container, minus the
+ *  bottom strip reserved for the hand dock (FIT_PAD_BOTTOM) */
 export function fitScale(cw: number, ch: number): number {
   if (cw <= 0 || ch <= 0) return 1;
-  return Math.min(cw / WORLD_W, ch / WORLD_H);
+  return Math.min(cw / WORLD_W, Math.max(ch - FIT_PAD_BOTTOM, ch / 2) / WORLD_H);
 }
 
 /** clamp pan so at least `margin` px of the map stays reachable on each axis */

@@ -25,10 +25,10 @@ function RuleRow({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15 + index * 0.06, duration: 0.35, ease: "easeOut" }}
-      className="flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-coal-700/70 py-3 last:border-b-0"
+      className="flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[rgb(var(--paper-100)/.07)] py-3 last:border-b-0"
     >
       <Tip label={hint} side="top">
-        <span className="cursor-help font-sans text-sm font-medium text-cream-100/85">
+        <span className="cursor-help font-ui text-sm font-medium text-paper-300">
           {label}
         </span>
       </Tip>
@@ -38,8 +38,11 @@ function RuleRow({
 }
 
 /**
- * House Rules panel (setup.md §Panel 2): era length, market temper, timer and
- * the read-only fidelity chip linking to the Rules Codex approximations.
+ * House Rules panel (create.md §A4): era length, market temper, timer, the
+ * beginner-assistance switch and the read-only fidelity chip linking to the
+ * Rules Codex approximations. PROPS/API FIGÉES — aussi consommé par Lobby ;
+ * restyle « Club Industriel » uniquement (enamel-850, filets hairline,
+ * interrupteur laiton).
  */
 export default function HouseRules({
   options,
@@ -50,19 +53,16 @@ export default function HouseRules({
 }) {
   const t = useT();
   return (
-    <section aria-label={t("setup.houseRules.ariaLabel")} className="plate relative p-6">
-      <div
-        aria-hidden
-        className="tex-paper pointer-events-none absolute inset-0 rounded-[8px] opacity-[0.05]"
-      />
-      <header className="relative">
-        <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">
-          {t("setup.houseRules.heading")}
-        </h2>
-        <div className="divider-brass mt-3 !mx-0" />
+    <section
+      aria-label={t("setup.houseRules.ariaLabel")}
+      className="relative rounded-xl border border-brass-hairline bg-enamel-850 p-6"
+    >
+      <header>
+        <h2 className="title-card">{t("setup.houseRules.heading")}</h2>
+        <div aria-hidden className="mt-3 border-t border-[rgb(var(--paper-100)/.07)]" />
       </header>
 
-      <div className="relative mt-2">
+      <div className="mt-2">
         <RuleRow
           index={0}
           label={t("setup.houseRules.eraLength.label")}
@@ -96,7 +96,7 @@ export default function HouseRules({
               ]}
             />
             {options.marketTemper === "volatile" && (
-              <span className="absolute -top-2 right-0 rounded-sm bg-rust-500 px-1.5 py-px font-sans text-[9px] font-semibold uppercase tracking-[0.14em] text-cream-100">
+              <span className="absolute -top-2 right-0 rounded-sm bg-rust-700 px-1.5 py-px font-ui text-[9px] font-semibold uppercase tracking-[0.14em] text-paper-100">
                 {t("setup.houseRules.marketTemper.beta")}
               </span>
             )}
@@ -124,18 +124,40 @@ export default function HouseRules({
           label={t("setup.houseRules.assist.label")}
           hint={t("setup.houseRules.assist.hint")}
         >
+          {/* Interrupteur laiton (create.md §A4) : piste enamel, curseur dégradé */}
           <button
             type="button"
             role="switch"
             aria-checked={!!options.assist}
             onClick={() => onChange({ assist: !options.assist })}
-            className={cn(
-              "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 font-sans text-[11px] font-bold uppercase tracking-[0.12em] transition-colors",
-              options.assist ? "border-brass-400 bg-brass-500/20 text-brass-400" : "border-brass-700/60 text-cream-100/60 hover:text-cream-100/90",
-            )}
+            className="inline-flex items-center gap-2.5"
           >
-            <span className={cn("h-2 w-2 rounded-full", options.assist ? "bg-brass-400" : "bg-cream-100/30")} />
-            {options.assist ? t("setup.houseRules.assist.on") : t("setup.houseRules.assist.off")}
+            <span
+              aria-hidden
+              className={cn(
+                "relative h-6 w-11 rounded-full transition-colors duration-[180ms]",
+                options.assist ? "bg-bottle-500" : "bg-enamel-700",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-5 w-5 rounded-full transition-transform duration-[180ms]",
+                  options.assist ? "translate-x-[22px]" : "translate-x-0.5",
+                )}
+                style={{
+                  background: "linear-gradient(180deg, #E7C97E 0%, #C9A24B 48%, #8F6B23 100%)",
+                  boxShadow: "0 1px 3px rgba(0,0,0,.5)",
+                }}
+              />
+            </span>
+            <span
+              className={cn(
+                "font-ui text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors",
+                options.assist ? "text-brass-300" : "text-iron-400",
+              )}
+            >
+              {options.assist ? t("setup.houseRules.assist.on") : t("setup.houseRules.assist.off")}
+            </span>
           </button>
         </RuleRow>
 
@@ -146,21 +168,21 @@ export default function HouseRules({
           transition={{ delay: 0.15 + 4 * 0.06, duration: 0.35, ease: "easeOut" }}
           className="flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3"
         >
-          <span className="font-sans text-sm font-medium text-cream-100/85">
+          <span className="font-ui text-sm font-medium text-paper-300">
             {t("setup.houseRules.fidelity.label")}
           </span>
           <div className="flex items-center gap-3">
             <motion.span
               animate={{ opacity: [0.85, 1, 0.85] }}
               transition={{ duration: 5, repeat: 1, ease: "easeInOut" }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-bottle-600/80 bg-bottle-800/60 px-2.5 py-1 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-cream-100/90"
+              className="inline-flex items-center gap-1.5 rounded-full border border-bottle-500/60 bg-bottle-700/40 px-2.5 py-1 font-ui text-[11px] font-semibold uppercase tracking-[0.1em] text-paper-100"
             >
-              <BadgeCheck className="h-3.5 w-3.5 text-brass-400" />
+              <BadgeCheck className="h-3.5 w-3.5 text-bottle-400" />
               {t("setup.houseRules.fidelity.faithful")}
             </motion.span>
             <Link
               to="/rules#approximations"
-              className="inline-flex items-center gap-1 font-sans text-[12px] font-semibold text-brass-500 underline decoration-brass-700/60 underline-offset-4 transition-colors hover:text-brass-400"
+              className="inline-flex items-center gap-1 font-ui text-[12px] font-semibold text-brass-300 underline decoration-brass-hairline-strong underline-offset-4 transition-colors hover:text-brass-400"
             >
               {t("setup.houseRules.fidelity.seeApproximations")}
               <ArrowUpRight className="h-3.5 w-3.5" />

@@ -29,16 +29,16 @@ function IndustryTable({ industry }: { industry: Industry }) {
   return (
     <div className="rules-table-fade overflow-x-auto">
       <table className="w-full min-w-[640px] border-collapse text-left">
-        <caption className="pb-3 text-left font-sans text-[13px] leading-relaxed text-ink-900/70">
+        <caption className="pb-3 text-left font-ui text-[13px] leading-relaxed text-paper-300">
           {industry.blurb}
         </caption>
         <thead>
-          <tr className="border-b-2 border-brass-700/60">
+          <tr className="border-b-2 border-brass-hairline-strong">
             {headers.map((h) => (
               <th
                 key={h}
                 scope="col"
-                className="px-2 pb-2 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-700"
+                className="micro-label px-2 pb-2 text-brass-500"
               >
                 {h}
               </th>
@@ -49,20 +49,20 @@ function IndustryTable({ industry }: { industry: Industry }) {
           {industry.levels.map((lv) => (
             <tr
               key={lv.level}
-              className="rules-ind-row border-b border-brass-700/25 transition-colors last:border-b-0 hover:bg-brass-500/[0.08]"
+              className="rules-ind-row border-b border-[rgb(var(--paper-100)/.08)] transition-colors last:border-b-0 hover:bg-brass-500/[0.06]"
             >
               <td className="px-2 py-3">
                 <TileMock icon={industry.icon} level={lv.level} income={lv.income} vp={lv.vp} />
               </td>
-              <td className="px-2 py-3 font-mono text-[13px] font-semibold text-ink-900">{lv.level}</td>
-              <td className="px-2 py-3 font-mono text-[13px] text-ink-900">£{lv.cost}</td>
-              <td className="px-2 py-3 font-mono text-[12.5px] text-ink-900/85">{resourceText(t, lv.coal, lv.iron)}</td>
-              <td className="px-2 py-3 font-mono text-[12.5px] text-ink-900/85">
+              <td className="tnums px-2 py-3 font-mono text-[13px] font-semibold text-paper-100">{lv.level}</td>
+              <td className="tnums px-2 py-3 font-mono text-[13px] text-paper-100">£{lv.cost}</td>
+              <td className="tnums px-2 py-3 font-mono text-[12.5px] text-paper-300">{resourceText(t, lv.coal, lv.iron)}</td>
+              <td className="tnums px-2 py-3 font-mono text-[12.5px] text-paper-300">
                 {lv.beer > 0 ? t("rules.industries.beer.count", { n: lv.beer }) : t("rules.industries.beer.onEmpty")}
               </td>
-              <td className="px-2 py-3 font-mono text-[13px] font-semibold text-bottle-800">+{lv.income}</td>
-              <td className="px-2 py-3 font-mono text-[13px] font-semibold text-copper-700">{lv.vp}</td>
-              <td className="px-2 py-3 font-sans text-[12px] leading-snug text-ink-900/70">{lv.note}</td>
+              <td className="tnums px-2 py-3 font-mono text-[13px] font-semibold text-bottle-400">+{lv.income}</td>
+              <td className="tnums px-2 py-3 font-mono text-[13px] font-semibold text-brass-300">{lv.vp}</td>
+              <td className="px-2 py-3 font-ui text-[12px] leading-snug text-paper-300/80">{lv.note}</td>
             </tr>
           ))}
         </tbody>
@@ -74,14 +74,14 @@ function IndustryTable({ industry }: { industry: Industry }) {
 /**
  * §IV — The Industries. One brass pill tab per industry; tables render from
  * rulesData.ts (the same file the game reads). Row stagger on tab switch is
- * applied by the page GSAP pass (.rules-ind-row within the active panel).
+ * pure CSS (.rules-ind-row within the active panel, see RulesStyle).
  */
 export default function IndustryTabs() {
   const t = useT();
   const industries = getIndustries();
   return (
     <div>
-      <p className="mb-3 flex items-center gap-2 rounded border border-copper-500/50 bg-copper-500/[0.08] px-3 py-2 font-sans text-[11.5px] leading-snug text-copper-700">
+      <p className="mb-3 flex items-center gap-2 rounded border-l-[3px] border-rust-600/70 bg-lacquer-950 px-3 py-2 font-ui text-[11.5px] leading-snug text-paper-300">
         <span className="font-semibold uppercase tracking-[0.14em]">{t("rules.industries.tuningTag")}</span>
         <span>
           {t("rules.industries.tuningNote")}
@@ -93,7 +93,7 @@ export default function IndustryTabs() {
             <TabsTrigger
               key={ind.id}
               value={ind.id}
-              className="sheen group relative h-10 flex-none gap-2 overflow-hidden rounded-full border border-brass-700/70 bg-transparent px-4 font-fell text-[13px] uppercase tracking-[0.08em] text-ink-900/70 transition-all data-[state=active]:border-brass-700 data-[state=active]:bg-gradient-to-br data-[state=active]:from-brass-400 data-[state=active]:via-brass-500 data-[state=active]:to-brass-700 data-[state=active]:text-ink-900 data-[state=active]:shadow-e2"
+              className="group relative flex h-10 flex-none items-center gap-2 rounded-full border border-brass-hairline bg-transparent px-4 font-ui text-[13px] font-semibold text-paper-300 transition-[background-color,border-color,color] duration-150 hover:border-brass-hairline-strong hover:text-paper-100 data-[state=active]:border-brass-500 data-[state=active]:bg-gradient-to-b data-[state=active]:from-brass-300 data-[state=active]:via-brass-500 data-[state=active]:to-brass-600 data-[state=active]:text-ink-900"
             >
               <RulesIcon icon={ind.icon} className="h-4 w-4" />
               {ind.name}

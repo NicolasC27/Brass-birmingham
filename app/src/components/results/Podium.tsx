@@ -7,7 +7,7 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import PlayerToken from "@/components/setup/PlayerToken";
-import { colorDef, type PlayerColor } from "@/components/setup/constants";
+import type { PlayerColor } from "@/components/setup/constants";
 import { useT } from "@/i18n";
 import { cn } from "@/lib/utils";
 
@@ -239,9 +239,4 @@ export default function Podium({
       })}
     </div>
   );
-}
-
-/** Exported helper so the ceremony header can reuse the color label. */
-export function entryColorLabel(color: PlayerColor) {
-  return colorDef(color).label;
 }

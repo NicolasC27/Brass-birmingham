@@ -1,5 +1,5 @@
 /**
- * RulesCodex scoped CSS — keyframes and paper-sheet flourishes that are
+ * Rules « registre du club » scoped CSS — keyframes and flourishes that are
  * unique to /rules (index.css is shared and owned elsewhere).
  * All selectors carry the `rules-` prefix. Infinite loops here are CSS-only,
  * cheap, and flattened to a 0.15s single pass by the global
@@ -90,19 +90,6 @@ const RULES_CSS = `
 }
 .rules-ember-rim { animation: rules-ember 2.2s ease-in-out infinite; }
 
-/* Paper-sheet corner flourishes (engraved brass L-brackets). */
-.rules-corner {
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 0 solid rgba(138,107,51,.75);
-  pointer-events: none;
-}
-.rules-corner-tl { top: 10px; left: 10px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 3px; }
-.rules-corner-tr { top: 10px; right: 10px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 3px; }
-.rules-corner-bl { bottom: 10px; left: 10px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 3px; }
-.rules-corner-br { bottom: 10px; right: 10px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 3px; }
-
 /* Brass-edge fade signalling horizontal overflow of tables on mobile. */
 .rules-table-fade {
   mask-image: linear-gradient(90deg, #000 0%, #000 calc(100% - 40px), transparent 100%);
@@ -110,6 +97,68 @@ const RULES_CSS = `
 }
 @media (min-width: 1024px) {
   .rules-table-fade { mask-image: none; -webkit-mask-image: none; }
+}
+
+/* ------------------------------------------------------------------ */
+/* Registre du club (design/rules.md)                                   */
+/* ------------------------------------------------------------------ */
+
+/* Rivet bullets — small brass diamond, 20px indent (rules.md §3). Only
+ * top-level lists of a chapter body; nested component lists (accordion,
+ * approximations ledger) keep their own markers. */
+.rules-body > ul {
+  list-style: none;
+  padding-left: 20px;
+}
+.rules-body > ul > li {
+  position: relative;
+}
+.rules-body > ul > li::before {
+  content: "";
+  position: absolute;
+  left: -14px;
+  top: 0.62em;
+  width: 4px;
+  height: 4px;
+  background: #C9A24B;
+  transform: rotate(45deg);
+}
+
+/* Search hit — brass wash on the matched paragraph, fading over 1.6s. */
+@keyframes rules-hit-fade {
+  0%   { background-color: rgba(201,162,75,.16); }
+  30%  { background-color: rgba(201,162,75,.08); }
+  100% { background-color: transparent; }
+}
+.rules-hit {
+  border-radius: 4px;
+  animation: rules-hit-fade 1.6s ease-out forwards;
+}
+
+/* Impression (rules.md §3) — fond blanc, texte noir, sans rail ni chrome. */
+@media print {
+  body { background: #fff !important; }
+  /* shell chrome (TopBar, StatusStrip, footer, tab bar, texture) */
+  .platform-root > *:not(main) { display: none !important; }
+  /* rail, mobile summary button, header tools, footer CTA */
+  .rules-print-hide { display: none !important; }
+  .rules-ledger {
+    background: #fff !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+  .rules-ledger .tex-ledger { display: none !important; }
+  .rules-ledger *,
+  .rules-ledger *::before,
+  .rules-ledger *::after {
+    color: #1A1408 !important;
+    background-color: transparent !important;
+    border-color: #B9B2A2 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    animation: none !important;
+  }
 }
 `;
 

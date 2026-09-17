@@ -1,12 +1,7 @@
-import { memo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useGSAP } from "@gsap/react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n";
-
-gsap.registerPlugin(ScrollTrigger);
 
 type Mode = "mine" | "market" | "none";
 
@@ -176,25 +171,34 @@ export default function SupplyDiagram() {
     { id: "none", label: t("rules.supply.modes.none.label"), hint: t("rules.supply.modes.none.hint") },
   ];
 
-  useGSAP(
-    () => {
-      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (reduced) return;
-      ScrollTrigger.create({
-        trigger: root.current,
-        start: "top 75%",
-        onEnter: () => setReplay((k) => k + 1),
-        onEnterBack: () => setReplay((k) => k + 1),
-      });
-    },
-    { scope: root },
-  );
+  /* Replay the ghost-line choreography each time the plate re-enters the
+   * viewport (IntersectionObserver — no GSAP on the platform). */
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let first = true;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          // skip the very first mount pass — the layer is already fresh
+          if (first) first = false;
+          else setReplay((k) => k + 1);
+        }
+      },
+      { rootMargin: "0px 0px -25% 0px", threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <div ref={root}>
-      {/* Engraved plate inset into the paper */}
-      <div className="relative overflow-hidden rounded-lg border border-brass-700/60 bg-coal-800 shadow-e2">
-        <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.1]" />
+      {/* Engraved plate inset into the ledger — deliberately stays dark in
+          both themes (self-contained artwork; #0A0E0C = lacquer-950 dark) */}
+      <div className="relative overflow-hidden rounded-lg border border-brass-hairline bg-[#0A0E0C]">
+        <div aria-hidden className="tex-lacquer pointer-events-none absolute inset-0 opacity-40" />
         <svg
           viewBox="0 0 720 320"
           role="img"
@@ -278,7 +282,7 @@ export default function SupplyDiagram() {
         </svg>
       </div>
 
-      {/* Scenario controls — ≥48px targets, brass on paper */}
+      {/* Scenario controls — ≥48px targets, brass on enamel */}
       <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={t("rules.supply.groupAria")}>
         {modes.map((m) => (
           <button
@@ -287,17 +291,17 @@ export default function SupplyDiagram() {
             aria-pressed={mode === m.id}
             onClick={() => setMode(m.id)}
             className={cn(
-              "min-h-[48px] flex-1 basis-40 rounded-md border px-4 py-2 font-sans text-[13px] font-semibold uppercase tracking-[0.08em] transition-all",
+              "min-h-[48px] flex-1 basis-40 rounded-lg border px-4 py-2 font-ui text-[13px] font-semibold uppercase tracking-[0.08em] transition-[background-color,border-color,color] duration-150",
               mode === m.id
-                ? "border-brass-700 bg-gradient-to-br from-brass-400 via-brass-500 to-brass-700 text-ink-900 shadow-e2"
-                : "border-brass-700/60 bg-transparent text-ink-900/75 hover:bg-brass-500/15 hover:text-ink-900",
+                ? "border-brass-500 bg-gradient-to-b from-brass-300 via-brass-500 to-brass-600 text-ink-900"
+                : "border-brass-hairline bg-transparent text-paper-300 hover:border-brass-hairline-strong hover:bg-enamel-800 hover:text-paper-100",
             )}
           >
             {m.label}
           </button>
         ))}
       </div>
-      <p aria-live="polite" className="mt-3 min-h-[44px] rounded border-l-2 border-brass-700/70 bg-brass-500/[0.07] px-3 py-2 text-[13px] leading-relaxed text-ink-900/85">
+      <p aria-live="polite" className="mt-3 min-h-[44px] rounded border-l-[3px] border-brass-500/70 bg-lacquer-950 px-3 py-2 font-ui text-[13px] leading-relaxed text-paper-300">
         {modes.find((m) => m.id === mode)?.hint}
       </p>
     </div>

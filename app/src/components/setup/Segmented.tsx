@@ -31,7 +31,7 @@ export default function Segmented<T extends string>({
       role="radiogroup"
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-full border border-brass-700/60 bg-coal-900 p-1 shadow-inner",
+        "inline-flex items-center gap-0.5 rounded-full border border-brass-hairline bg-enamel-850 p-1",
         className,
       )}
     >
@@ -46,8 +46,8 @@ export default function Segmented<T extends string>({
             disabled={o.disabled}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative rounded-full px-3 py-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors duration-150",
-              active ? "text-ink-900" : "text-cream-100/60 hover:text-brass-400",
+              "relative rounded-full px-3 py-1.5 font-ui text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors duration-150",
+              active ? "text-[rgb(var(--ink-on-brass))]" : "text-iron-400 hover:text-paper-100",
               o.disabled && "cursor-not-allowed opacity-40",
             )}
           >
@@ -55,12 +55,12 @@ export default function Segmented<T extends string>({
               <motion.span
                 layoutId={id}
                 transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                className="absolute inset-0 rounded-full border border-brass-700"
+                className="absolute inset-0 rounded-full border border-brass-600"
                 style={{
                   background:
-                    "linear-gradient(160deg, var(--brass-400), var(--brass-500) 45%, var(--brass-700))",
+                    "linear-gradient(180deg, #E7C97E 0%, #C9A24B 48%, #8F6B23 100%)",
                   boxShadow:
-                    "inset 0 1px 0 rgba(242,234,214,0.5), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.4)",
+                    "inset 0 1px 0 rgba(237,230,214,0.45), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.4)",
                 }}
               />
             )}

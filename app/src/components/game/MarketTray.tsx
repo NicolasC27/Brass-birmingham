@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { MARKET_MAX, marketBuyPrice } from '@/game/data';
+import { MARKET_MAX, marketBuyPrice, marketSellPrice } from '@/game/data';
 import type { Resource } from '@/game/types';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
@@ -54,6 +54,12 @@ function QuotationRow({
 }) {
   const max = MARKET_MAX[resource];
   const buyPrice = marketBuyPrice(resource, count);
+  /* sell-in quotation: what a fresh connected mine/works earns per cube it
+     sells into the tray — the quiet secondary figure next to the hero buy */
+  const sellPrice = marketSellPrice(resource, count);
+  /* after the planned consumption: stock and the buy price it would leave */
+  const afterCount = Math.max(0, count - consumePreview);
+  const afterPrice = marketBuyPrice(resource, count - consumePreview);
   /* TWO physical spaces per price — £6 coal shows two sockets, and you can
      see at a glance whether 0, 1 or 2 cubes remain at that price */
   const prices = Array.from({ length: max / 2 }, (_, i) => i + 1);
@@ -88,8 +94,19 @@ function QuotationRow({
           <span className="font-mono text-[10px] text-cream-100/45" style={{ textShadow: '0 1px 1px rgba(0,0,0,.8)' }}>
             {t('game.market.inMarket', { count, max })}
           </span>
+          <span className="font-mono text-[9px] text-cream-100/40" title={t('game.market.sellInTip')}>
+            {t('game.market.sellIn', { price: sellPrice })}
+          </span>
         </span>
       </div>
+
+      {/* forecast line: what the planned draw leaves behind — stock and the
+          buy price it would move to (mirrors the pulsing sockets below) */}
+      {consumePreview > 0 && (
+        <p aria-live="polite" className="px-0.5 font-mono text-[9.5px] leading-tight text-brass-400" style={{ textShadow: '0 1px 1px rgba(0,0,0,.8)' }}>
+          {t('game.market.afterPlan', { count: afterCount, price: afterPrice })}
+        </p>
+      )}
 
       {/* the board: one column per price, TWO stacked sockets each; brass
           rivets pin the quotation board like a wall instrument */}
@@ -194,6 +211,14 @@ function QuotationRow({
   );
 }
 
+/** full cost of drawing `n` cubes of one resource: each cube pays the
+ *  price of the socket it leaves, dearer as the tray empties */
+function drawCost(resource: Resource, have: number, n: number): number {
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += marketBuyPrice(resource, have - i);
+  return sum;
+}
+
 export default function MarketTray({ consumePreview }: { consumePreview?: Partial<Record<Resource, number>> }) {
   const t = useT();
   const game = useGame((s) => s.game);
@@ -201,6 +226,9 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
   if (!game) return null;
   const { coal, iron } = game.market;
   const temper = game.marketTemper;
+  const coalDraw = consumePreview?.coal ?? 0;
+  const ironDraw = consumePreview?.iron ?? 0;
+  const drawTotal = drawCost('coal', coal, coalDraw) + drawCost('iron', iron, ironDraw);
 
   return (
     <section
@@ -241,6 +269,16 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
       </div>
 
       <footer className="relative mt-2 border-t border-brass-700/40 pt-2">
+        {/* the planned draw itemised: cubes per resource, total market cost —
+            the same money the banner's cost chip counts, read from the tray */}
+        {drawTotal > 0 && (
+          <p className="mb-1.5 flex items-center gap-1.5 rounded-sm border border-brass-500/40 bg-brass-500/10 px-1.5 py-1 font-mono text-[10px] text-cream-100/85">
+            <span className="shrink-0 font-sans text-[8.5px] font-bold uppercase tracking-[0.12em] text-brass-400">{t('game.market.drawLead')}</span>
+            {coalDraw > 0 && <span>{t('game.log.coalN', { n: coalDraw })}</span>}
+            {ironDraw > 0 && <span>{t('game.log.ironN', { n: ironDraw })}</span>}
+            <span className="ml-auto shrink-0 font-semibold text-brass-400">£{drawTotal}</span>
+          </p>
+        )}
         {/* demand track — fixed 5-notch scale, tinted per resource */}
         <p className="flex items-center gap-2 font-mono text-[10px] text-cream-100/60" style={{ textShadow: '0 1px 1px rgba(0,0,0,.8)' }}>
           <span>{t('game.market.demandLabel')}</span>

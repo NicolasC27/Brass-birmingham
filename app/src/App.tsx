@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route } from "react-router";
 import HallShell from "@/components/hall/HallShell";
 import Play from "@/pages/hall/Play";
 import Tables from "@/pages/hall/Tables";
@@ -17,6 +17,7 @@ import Lobby from "@/pages/Lobby";
 import Account from "@/pages/Account";
 import Desk from "@/pages/Desk";
 import Profile from "@/pages/Profile";
+import Comptoir from "@/pages/Comptoir";
 
 export default function App() {
   return (
@@ -42,9 +43,10 @@ export default function App() {
         <Route path="account" element={<Account />} />
         <Route path="account/verify/:token" element={<Account />} />
         <Route path="account/reset/:token" element={<Account />} />
-        <Route path="desk" element={<Navigate to="/play" replace />} />
+        <Route path="desk" element={<Desk />} />
         <Route path="office" element={<Desk />} />
         <Route path="profile" element={<Profile />} />
+        <Route path="comptoir" element={<Comptoir />} />
       </Route>
     </Routes>
   );

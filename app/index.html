@@ -3,7 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/logo-mark.svg" />
+    <script>
+      /* Anti-FOUC theme bootstrap (platform « registre de jour »). Poses
+         data-theme on <html> before first paint; every themed variable is
+         scoped to .platform-root, so /game and legacy overlays are inert.
+         Must mirror the resolution logic of src/platform/theme.ts. */
+      (function () {
+        var t = 'dark';
+        try {
+          var saved = localStorage.getItem('brassworks.theme.v1');
+          if (saved === 'dark' || saved === 'light') t = saved;
+          else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
+        } catch (e) {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
+        }
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/logo-brassworks.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

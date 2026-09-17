@@ -6,12 +6,14 @@ const STEPS: { anchor: string; tip: string }[] = [
   { anchor: 'bottom-center', tip: 'game.coach.tipHand' },
   { anchor: 'right-top', tip: 'game.coach.tipExchange' },
   { anchor: 'right-bottom', tip: 'game.coach.tipLedger' },
-  { anchor: 'bottom-center-up', tip: 'game.coach.tipConfirm' },
+  { anchor: 'top-center', tip: 'game.coach.tipConfirm' },
   { anchor: 'left', tip: 'game.coach.tipRail' },
 ];
 
 function anchorClass(a: string): string {
   switch (a) {
+    case 'top-center':
+      return 'left-1/2 top-24 -translate-x-1/2 items-center';
     case 'right-top':
       return 'right-4 top-20 items-end';
     case 'right-bottom':

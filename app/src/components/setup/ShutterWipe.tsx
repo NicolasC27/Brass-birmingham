@@ -43,8 +43,8 @@ export default function ShutterWipe({
         }
       `}</style>
 
-      <div className="shutter-panel-top absolute inset-x-0 top-0 h-1/2 border-b border-brass-700/70 bg-coal-800">
-        <div className="tex-coal absolute inset-0 opacity-[0.08]" />
+      <div className="shutter-panel-top absolute inset-x-0 top-0 h-1/2 border-b border-brass-600/60 bg-lacquer-900">
+        <div className="tex-lacquer absolute inset-0 opacity-60" />
         <div className="absolute inset-x-0 bottom-2 flex justify-center gap-6">
           {rivets.map((_, i) => (
             <span
@@ -52,14 +52,14 @@ export default function ShutterWipe({
               className="h-1.5 w-1.5 rounded-full"
               style={{
                 background:
-                  "radial-gradient(circle at 35% 30%, var(--brass-400), var(--brass-700))",
+                  "radial-gradient(circle at 35% 30%, #E7C97E, #8F6B23)",
               }}
             />
           ))}
         </div>
       </div>
-      <div className="shutter-panel-bottom absolute inset-x-0 bottom-0 h-1/2 border-t border-brass-700/70 bg-coal-800">
-        <div className="tex-coal absolute inset-0 opacity-[0.08]" />
+      <div className="shutter-panel-bottom absolute inset-x-0 bottom-0 h-1/2 border-t border-brass-600/60 bg-lacquer-900">
+        <div className="tex-lacquer absolute inset-0 opacity-60" />
         <div className="absolute inset-x-0 top-2 flex justify-center gap-6">
           {rivets.map((_, i) => (
             <span
@@ -67,7 +67,7 @@ export default function ShutterWipe({
               className="h-1.5 w-1.5 rounded-full"
               style={{
                 background:
-                  "radial-gradient(circle at 35% 30%, var(--brass-400), var(--brass-700))",
+                  "radial-gradient(circle at 35% 30%, #E7C97E, #8F6B23)",
               }}
             />
           ))}

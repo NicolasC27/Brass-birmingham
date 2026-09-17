@@ -3,9 +3,11 @@ import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* One frame for every page of the house that is not the board: the   */
-/* soot vignette, a back link, an eyebrow, a title set in Playfair and */
-/* a lede set in Spectral. Pages fill the slot; nothing else differs.  */
+/* PageShell « Club Industriel » (design.md §2–§4) — the shared frame  */
+/* of the account pages: a back link, a micro-label eyebrow, a         */
+/* Fraunces page title and an Inter lede, on the lacquer floor. Pages  */
+/* fill the slot with `Panel` consoles; the API (Panel / Field /       */
+/* inputClass / Refusal) is stable — other pages build on it.          */
 /* ------------------------------------------------------------------ */
 
 export default function PageShell({
@@ -27,42 +29,38 @@ export default function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-[calc(100dvh-3.5rem)] overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(120% 90% at 50% 30%, transparent 40%, rgba(16,13,11,0.75) 100%)' }} />
-      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.05]" />
-      <div className={cn('relative mx-auto px-6 py-10 lg:py-14', width === 'wide' ? 'max-w-[1180px]' : 'max-w-[720px]')}>
-        <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
-          <div className="min-w-0">
-            {back && (
-              <Link to={back.to} className="mb-4 inline-flex items-center gap-1.5 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-cream-100/55 transition-colors hover:text-brass-400">
-                <ArrowLeft className="h-3.5 w-3.5" />
-                {back.label}
-              </Link>
-            )}
-            {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-            <h1 className="mt-2 font-display text-[40px] font-black leading-[1.05] tracking-[-0.01em] text-cream-100 lg:text-[46px]">{title}</h1>
-            {lede && <p className="mt-3 max-w-2xl font-serif text-[16px] leading-relaxed text-cream-100/70">{lede}</p>}
-          </div>
-          {aside}
-        </header>
-        {children}
-      </div>
+    <div className={cn('mx-auto px-4 pb-24 pt-10 sm:px-8', width === 'wide' ? 'max-w-[1240px]' : 'max-w-[640px]')}>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
+        <div className="min-w-0">
+          {back && (
+            <Link to={back.to} className="micro-label mb-4 inline-flex items-center gap-1.5 text-iron-400 transition-colors duration-150 hover:text-brass-300">
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
+              {back.label}
+            </Link>
+          )}
+          {eyebrow && <p className="micro-label text-brass-300">{eyebrow}</p>}
+          <h1 className="display-page mt-2">{title}</h1>
+          {lede && <p className="mt-3 max-w-2xl font-ui text-[15px] leading-relaxed text-paper-300">{lede}</p>}
+        </div>
+        {aside}
+      </header>
+      {children}
     </div>
   );
 }
 
-/** a dark panel with a title rule — the plate the pages are built from */
+/** an enamel console with a title rule — the panel the pages are built from */
 export function Panel({ title, meta, children, className, tone = 'plate' }: { title?: React.ReactNode; meta?: React.ReactNode; children: React.ReactNode; className?: string; tone?: 'plate' | 'paper' }) {
   return (
-    <section className={cn(tone === 'plate' ? 'plate' : 'paper', 'relative p-5 lg:p-6', className)}>
-      <div aria-hidden className={cn('tex-paper pointer-events-none absolute inset-0 rounded-[8px]', tone === 'plate' ? 'opacity-[0.05]' : 'opacity-[0.35]')} />
+    <section className={cn('relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-5 lg:p-6', className)}>
+      {tone === 'paper' && <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />}
       {title && (
         <header className="relative mb-4">
           <div className="flex items-baseline justify-between gap-4">
-            <h2 className={cn('font-fell text-[17px] uppercase tracking-[0.06em]', tone === 'plate' ? 'text-cream-100' : 'text-ink-900')}>{title}</h2>
-            {meta && <span className={cn('font-mono text-[11px]', tone === 'plate' ? 'text-cream-100/50' : 'text-ink-900/60')}>{meta}</span>}
+            <h2 className="title-card">{title}</h2>
+            {meta && <span className="data-text text-[12px] tabular-nums text-iron-400">{meta}</span>}
           </div>
-          <div className="divider-brass mt-3 !mx-0" />
+          <div className="mt-3 h-px bg-brass-hairline" />
         </header>
       )}
       <div className="relative">{children}</div>
@@ -70,26 +68,27 @@ export function Panel({ title, meta, children, className, tone = 'plate' }: { ti
   );
 }
 
-/** a labelled field, the same on every page of the house */
+/** a labelled field, the same on every page of the club */
 export function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="block font-sans text-[10px] font-semibold uppercase tracking-[0.18em] text-brass-400/80">
+      <label htmlFor={id} className="micro-label block text-brass-300/90">
         {label}
       </label>
       <div className="mt-1.5">{children}</div>
-      {hint && <p className="mt-1.5 font-sans text-[11.5px] leading-snug text-cream-100/50">{hint}</p>}
+      {hint && <p className="mt-1.5 font-ui text-[12px] leading-snug text-iron-400">{hint}</p>}
     </div>
   );
 }
 
-export const inputClass = 'w-full rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-2 font-sans text-[14px] text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none disabled:opacity-50';
+export const inputClass =
+  'w-full rounded-lg border border-brass-hairline bg-lacquer-950/70 px-3 py-2 font-ui text-[14px] text-paper-100 transition-colors duration-150 placeholder:text-iron-600 focus:border-brass-500 focus:outline-none disabled:opacity-50';
 
 /** the office's own words for a refusal */
 export function Refusal({ text }: { text: string | null }) {
   if (!text) return null;
   return (
-    <p role="alert" className="mt-3 rounded-md border border-rust-500/60 bg-rust-500/10 px-3 py-2 font-sans text-[12.5px] text-rust-500 brightness-150">
+    <p role="alert" className="mt-3 rounded-lg border border-rust-400/50 bg-rust-600/10 px-3 py-2 font-ui text-[13px] text-rust-400">
       {text}
     </p>
   );
