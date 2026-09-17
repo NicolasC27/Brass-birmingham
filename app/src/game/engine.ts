@@ -890,7 +890,9 @@ export function planIronFrom(s: GameState, from: string | null | undefined, rese
       return plan;
     }
   }
-  if (from === 'market') {
+  /* the market only once no works on the board has a cube left to give */
+  const onBoard = ironSources(s).some((src) => src.cubes - (reserved.get(src.key) ?? 0) > 0);
+  if (from === 'market' && !onBoard) {
     const plan = emptyPlan();
     const count = s.market.iron - (reserved.get('market:iron') ?? 0);
     const price = marketBuyPrice('iron', count);

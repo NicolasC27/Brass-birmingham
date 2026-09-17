@@ -657,7 +657,8 @@ export default function HandDock() {
                                 {t('game.hand.devIronWorks', { owner: game.players[src.owner].name, town: TOWN_BY_ID[src.town]?.name ?? src.town, cubes: src.cubes })}
                               </option>
                             ))}
-                            <option value="market">{t('game.hand.devIronMarket', { cost: marketCost })}</option>
+                            {/* the exchange only once the board has no cube left for this one */}
+                            {sources.reduce((a, src) => a + src.cubes, 0) <= k && <option value="market">{t('game.hand.devIronMarket', { cost: marketCost })}</option>}
                           </select>
                         </label>
                       );
