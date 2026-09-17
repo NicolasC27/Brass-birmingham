@@ -1,64 +1,35 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Timer } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
-import { isOnline, lobby } from '@/online/lobby';
-import { useLine, useSession } from '@/online/session';
-import { DEFAULT_OPTIONS } from '@/components/setup/constants';
+import { isOnline } from '@/online/lobby';
+import { clearDealt, setQueue, useDealt, useDesk, useLine, useSession } from '@/online/session';
+import { rankOf } from '@/platform/rank';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
-import ModeCard from '@/components/platform/ModeCard';
+import ModeCard, { type TableMode } from '@/components/platform/ModeCard';
 import QueuePanel from '@/components/platform/QueuePanel';
-import { readPresence } from '@/components/platform/presence';
-import { demoRating, type TableMode } from '@/components/platform/mockData';
-import { lobbyErrorText, type Notify } from './notify';
+import { usePresence } from '@/components/platform/presence';
+import type { Notify } from './notify';
 
 /* ------------------------------------------------------------------ */
 /* Section 1 (play.md) — console de matchmaking : choix de mode 2-up   */
-/* (ancres #file-normale / #file-classee), préférences persistées,     */
-/* QueuePanel (repos / actif / adversaire trouvé).                     */
+/* (ancres #file-normale / #file-classee) et QueuePanel.               */
 /*                                                                     */
-/* Honnêteté produit (design.md §10) : le backend n'a AUCUN contrat    */
-/* de matchmaking. La file est une simulation côté client, badgée      */
-/* SAISON 1 · CLASSEMENT BÊTA en classé ; l'estimation classée reste   */
-/* une plage fixe 2–4 min, jamais un faux chiffre précis. L'événement  */
-/* « adversaire trouvé » (prévu par play.md) est simulé par un minuteur*/
-/* local et débouche sur une vraie table créée via le flux existant.   */
+/* Les files sont celles de l'office (src/online/session.ts) : entrer  */
+/* dans un mode l'y inscrit, le bureau dit qui attend et depuis quand, */
+/* et quand assez de monde est là l'office donne une table et nous y   */
+/* mène (useDealt). Rien n'est simulé ; l'estimation reste honnête     */
+/* (design.md §10) : « ~1 min » en normal, la plage 2–4 min en classé. */
+/* Le classé demande une adresse vérifiée.                             */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
 
-/* --------------------- préférences de file (chips) --------------------- */
-
-const PREFS_KEY = 'brassworks.play.prefs.v1';
-
-interface PlayPrefs {
-  players: 2 | 3 | 4;
-  allowBots: boolean;
-}
-
-function readPrefs(): PlayPrefs {
-  try {
-    const raw = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Partial<PlayPrefs>;
-    return {
-      players: raw.players === 2 || raw.players === 3 || raw.players === 4 ? raw.players : 4,
-      allowBots: raw.allowBots !== false,
-    };
-  } catch {
-    return { players: 4, allowBots: true };
-  }
-}
-
-function chipClass(active: boolean): string {
-  return cn(
-    'h-8 rounded-full border px-3.5 font-ui text-[12px] font-semibold transition-colors duration-150',
-    active
-      ? 'border-brass-400 bg-enamel-800 text-brass-300'
-      : 'border-[rgb(var(--paper-100)/.14)] text-paper-300 hover:border-[rgb(var(--paper-100)/.3)] hover:text-paper-100',
-  );
-}
+/** the office's name for a mode: the site's « normal » is the quick queue */
+const officeMode = (mode: TableMode): 'quick' | 'ranked' => (mode === 'ranked' ? 'ranked' : 'quick');
+const siteMode = (mode: 'quick' | 'ranked'): TableMode => (mode === 'ranked' ? 'ranked' : 'normal');
 
 /* -------------------------------- composant -------------------------------- */
 
@@ -66,92 +37,65 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
   const t = useT();
   const navigate = useNavigate();
   const session = useSession();
+  const desk = useDesk();
   const line = useLine();
-  const presence = readPresence();
+  const presence = usePresence();
   /* serveur configuré mais injoignable : files fermées (design.md §10) */
   const serverUp = isOnline && line === 'online';
+  const verified = session?.verified ?? false;
 
-  const [prefs, setPrefs] = useState<PlayPrefs>(readPrefs);
-  const [queue, setQueue] = useState<TableMode | null>(null);
-  const [found, setFound] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const queue = desk?.queue ?? null;
+  const queueMode: TableMode | null = queue ? siteMode(queue.mode) : null;
   const [pendingSwitch, setPendingSwitch] = useState<TableMode | null>(null);
-  const [entering, setEntering] = useState(false);
 
+  /* the office dealt a table from the queue: straight to it, it is already started */
+  const dealt = useDealt();
   useEffect(() => {
-    try {
-      localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-    } catch {
-      /* non-fatal */
-    }
-  }, [prefs]);
+    if (!dealt) return;
+    clearDealt();
+    navigate(`/game/${dealt}`);
+  }, [dealt, navigate]);
 
-  /* « Adversaire trouvé » — simulation locale (voir en-tête), jamais un backend */
-  useEffect(() => {
-    if (!queue || found) return;
-    const delay = 12000 + Math.random() * 18000;
-    const id = window.setTimeout(() => setFound(true), delay);
-    return () => window.clearTimeout(id);
-  }, [queue, found]);
+  const estimateFor = (mode: TableMode) => (mode === 'ranked' ? t('platform.queue.estimateRange', { min: 2, max: 4 }) : t('platform.queue.estimate', { minutes: 1 }));
 
-  const enter = useCallback(async () => {
-    if (entering) return;
+  const select = (mode: TableMode) => {
+    if (!serverUp) return;
     if (!session) {
       navigate('/account');
       return;
     }
-    setEntering(true);
-    try {
-      const table = await lobby.create(t('site.desk.defaultName', { name: session.name }), DEFAULT_OPTIONS);
-      navigate(`/online/${table.code}`);
-    } catch (e) {
-      onToast({ message: lobbyErrorText(t, e, t('platform.play.errorGeneric')), kind: 'error' });
-      setEntering(false);
-      setFound(false);
-      setQueue(null);
+    if (mode === 'ranked' && !verified) {
+      onToast({ message: t('platform.play.verifyFirst'), kind: 'info' });
+      return;
     }
-  }, [entering, session, navigate, t, onToast]);
-
-  /* compte à rebours 5 s, puis entrée auto dans le salon (play.md §1) */
-  useEffect(() => {
-    if (!found) return;
-    let ticks = 0;
-    const id = window.setInterval(() => {
-      ticks += 1;
-      setCountdown(Math.max(0, 5 - ticks));
-      if (ticks >= 5) {
-        window.clearInterval(id);
-        void enter();
-      }
-    }, 1000);
-    return () => window.clearInterval(id);
-  }, [found, enter]);
-
-  const startQueue = (mode: TableMode) => {
-    setFound(false);
-    setCountdown(5);
-    setQueue(mode);
-  };
-
-  const select = (mode: TableMode) => {
-    if (!serverUp) return;
-    if (queue === mode) return;
-    if (queue) {
+    if (queueMode === mode) return;
+    if (queueMode) {
       setPendingSwitch(mode);
       return;
     }
-    startQueue(mode);
+    setQueue(officeMode(mode), true);
   };
 
   const cancel = () => {
-    setFound(false);
-    setQueue(null);
+    if (!queueMode) return;
+    setQueue(officeMode(queueMode), false);
     onToast({ message: t('platform.play.searchCancelled'), kind: 'info' });
   };
+
+  const confirmSwitch = () => {
+    if (pendingSwitch && queueMode) {
+      setQueue(officeMode(queueMode), false);
+      setQueue(officeMode(pendingSwitch), true);
+    }
+    setPendingSwitch(null);
+  };
+
+  const rank = session ? rankOf(desk?.rating) : null;
 
   const modeCard = (mode: TableMode, i: number) => {
     const ranked = mode === 'ranked';
     const snap = ranked ? presence.rankedQueue : presence.normalQueue;
+    const lockedRanked = ranked && !!session && !verified;
     return (
       <motion.div
         id={ranked ? 'file-classee' : 'file-normale'}
@@ -160,14 +104,15 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.26, ease, delay: 0.08 + i * 0.08 }}
       >
-        <motion.div animate={{ scale: queue === mode ? 1.01 : 1 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
+        <motion.div animate={{ scale: queueMode === mode ? 1.01 : 1 }} transition={{ type: 'spring', stiffness: 300, damping: 22 }}>
           <ModeCard
             mode={mode}
-            active={queue === mode}
-            disabled={!serverUp}
+            active={queueMode === mode}
+            disabled={!serverUp || lockedRanked}
+            disabledReason={serverUp && lockedRanked ? t('platform.play.verifyFirst') : undefined}
             queueCount={snap.count}
-            estimateMin={snap.estimateMin}
-            rank={ranked ? { tier: demoRating.tier, division: demoRating.division } : undefined}
+            estimate={estimateFor(mode)}
+            rank={ranked && rank ? { tier: rank.tier, division: rank.division } : undefined}
             onSelect={select}
             className="h-[200px] items-start pt-6"
           />
@@ -175,6 +120,8 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
       </motion.div>
     );
   };
+
+  const idleTitle = serverUp ? t('platform.play.idleTitle') : line === 'connecting' ? t('platform.play.idleConnecting') : t('platform.play.idleOffline');
 
   return (
     <section className="pt-10" aria-label={t('platform.play.title')}>
@@ -194,38 +141,14 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
             {modeCard('normal', 0)}
             {modeCard('ranked', 1)}
           </div>
-
-          {/* Préférences de file — chips persistées en local */}
-          <motion.div
+          <motion.p
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.22, ease, delay: 0.24 }}
-            className="mt-4 flex flex-wrap items-center gap-2"
+            className="mt-4 font-ui text-[13px] text-iron-400"
           >
-            {([2, 3, 4] as const).map((n) => (
-              <button
-                key={n}
-                type="button"
-                aria-pressed={prefs.players === n}
-                onClick={() => setPrefs((p) => ({ ...p, players: n }))}
-                className={chipClass(prefs.players === n)}
-              >
-                {t('platform.play.prefs.players', { count: n })}
-              </button>
-            ))}
-            <span aria-hidden className="hidden h-4 w-px bg-[rgb(var(--paper-100)/.12)] min-[760px]:block" />
-            <span className={cn(chipClass(false), 'cursor-default hover:border-[rgb(var(--paper-100)/.14)] hover:text-paper-300')}>
-              {t('platform.play.prefs.region', { region: presence.region })}
-            </span>
-            <button
-              type="button"
-              aria-pressed={prefs.allowBots}
-              onClick={() => setPrefs((p) => ({ ...p, allowBots: !p.allowBots }))}
-              className={chipClass(prefs.allowBots)}
-            >
-              {t('platform.play.prefs.bots')}
-            </button>
-          </motion.div>
+            {t('platform.play.officeNote')}
+          </motion.p>
         </div>
 
         {/* QueuePanel — colonnes 9–12 */}
@@ -235,29 +158,15 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
           transition={{ duration: 0.22, ease, delay: 0.16 }}
           className="min-[1100px]:col-span-4"
         >
-          {queue ? (
+          {queue && queueMode ? (
             <div>
-              <QueuePanel
-                mode={queue}
-                estimateMin={queue === 'normal' ? presence.normalQueue.estimateMin : undefined}
-                estimateRange={[2, 4]}
-                playersWaiting={(queue === 'normal' ? presence.normalQueue : presence.rankedQueue).count}
-                found={found}
-                countdownSec={countdown}
-                onCancel={cancel}
-                onEnter={() => void enter()}
-              />
-              {queue === 'ranked' && (
-                <p className="micro-label mt-2 text-center text-[10px] text-iron-600">{t('platform.rank.beta')}</p>
-              )}
+              <QueuePanel mode={queueMode} since={queue.since} waiting={queue.waiting} estimate={estimateFor(queueMode)} onCancel={cancel} />
             </div>
           ) : (
             <div className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[rgb(var(--paper-100)/.14)] px-6 text-center">
               <Timer size={24} aria-hidden className="text-iron-400" />
-              <p className="font-ui text-[14px] font-semibold text-paper-100">
-                {serverUp ? t('platform.play.idleTitle') : t('platform.play.idleOffline')}
-              </p>
-              <p className="font-ui text-[13px] text-iron-400">{t('platform.play.idleHint')}</p>
+              <p className="font-ui text-[14px] font-semibold text-paper-100">{idleTitle}</p>
+              <p className="font-ui text-[13px] text-iron-400">{serverUp ? (session ? t('platform.play.idleHint') : t('platform.play.idleSignIn')) : t('platform.play.idleRetrying')}</p>
             </div>
           )}
         </motion.div>
@@ -265,20 +174,12 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
 
       {/* Basculer de file pendant une recherche → confirmation (play.md §1) */}
       <Modal open={pendingSwitch !== null} onClose={() => setPendingSwitch(null)} title={t('platform.play.switchTitle')}>
-        <p className="font-ui text-[14px] text-paper-300">
-          {t('platform.play.switchCopy', { mode: t(`platform.mode.${queue ?? 'normal'}`) })}
-        </p>
+        <p className="font-ui text-[14px] text-paper-300">{t('platform.play.switchCopy', { mode: t(`platform.mode.${queueMode ?? 'normal'}`) })}</p>
         <div className="mt-6 flex justify-end gap-3">
           <Button variant="ghost" onClick={() => setPendingSwitch(null)}>
             {t('platform.play.switchStay')}
           </Button>
-          <Button
-            variant="primary"
-            onClick={() => {
-              if (pendingSwitch) startQueue(pendingSwitch);
-              setPendingSwitch(null);
-            }}
-          >
+          <Button variant="primary" onClick={confirmSwitch}>
             {t('platform.play.switchConfirm')}
           </Button>
         </div>

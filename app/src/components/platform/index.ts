@@ -30,5 +30,5 @@ export type { ToastData } from './Toast';
 export { default as PlatformShell } from './PlatformShell';
 export { default as MemberAvatar, FrameRing } from './MemberAvatar';
 export type { MemberAvatarProps } from './MemberAvatar';
-export { readPresence } from './presence';
+export { usePresence } from './presence';
 export type { PresenceSnapshot, QueueSnapshot } from './presence';

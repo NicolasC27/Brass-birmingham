@@ -1,16 +1,11 @@
+import { useMemo } from 'react';
 import { isOnline } from '@/online/lobby';
+import { useDesk, useLine, useTables } from '@/online/session';
 
 /* ------------------------------------------------------------------ */
-/* Presence & queues — CLIENT-SIDE MOCK, clearly documented.           */
-/*                                                                     */
-/* The server has no presence / queue-length endpoint yet, so these    */
-/* values are plausible demo figures used to dress the StatusStrip,    */
-/* the ModeCards and the table board. This module is the single        */
-/* extension point: when a real endpoint lands, replace readPresence() */
-/* internals — the consumers keep the same snapshot shape.             */
-/*                                                                     */
-/* Product honesty (design.md §10): when the wire is down, we never    */
-/* show fake live figures — the strip switches to "Mode local".        */
+/* Presence & queues — what the office says: signed-in players, the   */
+/* people waiting in each queue, the tables in play. When the wire is  */
+/* down nothing is made up: the strip says "local mode".               */
 /* ------------------------------------------------------------------ */
 
 export interface QueueSnapshot {
@@ -24,31 +19,30 @@ export interface PresenceSnapshot {
   /** false → the strip shows "Mode local" and every figure is hidden */
   online: boolean;
   playersOnline: number;
+  playing: number;
   normalQueue: QueueSnapshot;
   rankedQueue: QueueSnapshot;
-  region: string;
-  latencyMs: number;
 }
 
-const DEMO: Omit<PresenceSnapshot, 'online'> = {
-  playersOnline: 128,
-  normalQueue: { count: 6, estimateMin: 1 },
-  rankedQueue: { count: 3, estimateMin: 3 },
-  region: 'EU',
-  latencyMs: 24,
-};
+const LOCAL: PresenceSnapshot = { online: false, playersOnline: 0, playing: 0, normalQueue: { count: 0, estimateMin: 0 }, rankedQueue: { count: 0, estimateMin: 0 } };
 
-const LOCAL: PresenceSnapshot = {
-  online: false,
-  playersOnline: 0,
-  normalQueue: { count: 0, estimateMin: 0 },
-  rankedQueue: { count: 0, estimateMin: 0 },
-  region: '—',
-  latencyMs: 0,
-};
-
-/** current presence snapshot (mock — see header) */
-export function readPresence(): PresenceSnapshot {
-  if (!isOnline) return LOCAL;
-  return { online: true, ...DEMO };
+/** the house as the desk last said it (the office counts the queues together) */
+export function usePresence(): PresenceSnapshot {
+  const desk = useDesk();
+  const line = useLine();
+  const tables = useTables();
+  return useMemo(() => {
+    /* the line is what says the office is there; a visitor without a desk sees the house at zero, not "local mode" */
+    if (!isOnline || line !== 'online') return LOCAL;
+    const hall = desk?.hall ?? { online: 0, playing: 0, queued: 0 };
+    const ranked = desk?.queue?.mode === 'ranked' ? desk.queue.waiting : 0;
+    const normal = desk?.queue?.mode === 'quick' ? desk.queue.waiting : Math.max(0, hall.queued - ranked);
+    return {
+      online: true,
+      playersOnline: hall.online,
+      playing: tables ? tables.filter((x) => x.status === 'playing').length : hall.playing,
+      normalQueue: { count: normal, estimateMin: 1 },
+      rankedQueue: { count: ranked, estimateMin: 3 },
+    };
+  }, [desk, line, tables]);
 }

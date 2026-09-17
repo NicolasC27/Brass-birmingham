@@ -3,12 +3,12 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
 import { setLang, useLang, useT } from '@/i18n';
 import { useDesk, useSession } from '@/online/session';
+import { rankOf } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
 import { toggleTheme, useTheme } from '@/platform/theme';
 import Button from './Button';
 import RankBadge from './RankBadge';
-import { readPresence } from './presence';
-import { demoRating } from './mockData';
+import { usePresence } from './presence';
 
 /* ------------------------------------------------------------------ */
 /* PlatformShell — variante « platform » du shell (design.md §6.2).    */
@@ -19,7 +19,7 @@ import { demoRating } from './mockData';
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'relative font-ui text-[13px] font-semibold pb-1 transition-colors duration-150',
+    'relative whitespace-nowrap font-ui text-[13px] font-semibold pb-1 transition-colors duration-150',
     isActive
       ? 'text-paper-100 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:bg-brass-500'
       : 'text-iron-400 hover:text-paper-100',
@@ -30,7 +30,10 @@ const navLink = ({ isActive }: { isActive: boolean }) =>
 function PlayerToken() {
   const t = useT();
   const session = useSession();
+  const desk = useDesk();
   const wallet = useWallet();
+  /* the badge reads the office's cote: placements until the five are played */
+  const rank = rankOf(desk?.rating);
 
   if (!session) {
     return (
@@ -46,23 +49,27 @@ function PlayerToken() {
     >
       <img src={`/${wallet.equipped.avatar}.svg`} alt="" className="h-7 w-7 rounded-full" />
       <span className="max-w-[110px] truncate font-ui text-[13px] font-medium text-paper-100">{session.name}</span>
-      <RankBadge tier={demoRating.tier} division={demoRating.division} size={16} compact />
+      <RankBadge tier={rank.tier} division={rank.division} size={16} compact />
     </Link>
   );
 }
 
-/* puce bourse (comptoir) — solde mono tabulaire, réactive (subscribe), → /comptoir */
+/* puce bourse (comptoir) — les guinées de la bourse tenue par l'office, → /comptoir.
+   Sans compte il n'y a pas de bourse : la puce ne s'affiche pas. */
 function WalletChip() {
   const t = useT();
-  const wallet = useWallet();
+  const session = useSession();
+  const desk = useDesk();
+  if (!session || !desk) return null;
+  const guineas = desk.purse.guineas;
   return (
     <Link
       to="/comptoir"
-      aria-label={t('platform.comptoir.walletAria', { count: wallet.balance })}
-      className="flex h-9 items-center gap-1.5 rounded-full border border-brass-hairline bg-enamel-850 px-3 transition-colors duration-150 hover:border-brass-hairline-strong"
+      aria-label={t('platform.comptoir.walletAria', { count: guineas })}
+      className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-brass-hairline bg-enamel-850 px-3 transition-colors duration-150 hover:border-brass-hairline-strong"
     >
       <Coins size={15} aria-hidden className="text-brass-300" />
-      <span className="data-text tnums text-[13px] text-paper-100">{wallet.balance}</span>
+      <span className="data-text tnums text-[13px] text-paper-100">{guineas}</span>
     </Link>
   );
 }
@@ -110,13 +117,15 @@ function TopBar() {
   const t = useT();
   return (
     <header className="sticky top-0 z-50 h-14 border-b border-brass-hairline bg-[rgb(var(--lacquer-950)/.85)] backdrop-blur-[12px]">
-      <div className="mx-auto flex h-full max-w-[1240px] items-center justify-between gap-4 px-4 sm:px-8">
+      <div className="mx-auto flex h-full max-w-[1240px] items-center gap-4 px-4 sm:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Brassworks">
           <img src="/logo-brassworks.svg" alt="" className="h-6 w-6" />
           <span className="font-fraunces text-[15px] font-semibold uppercase tracking-[0.08em] text-paper-100">Brassworks</span>
         </Link>
 
-        <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 min-[900px]:flex">
+        {/* in the flow between the wordmark and the chips, centred in what is left:
+            it can never slide under the chips, whatever the viewport */}
+        <nav aria-label="Primary" className="hidden min-w-0 flex-1 items-center justify-center gap-5 min-[900px]:flex min-[1200px]:gap-7">
           <NavLink to="/online" className={navLink}>
             {t('platform.nav.play')}
           </NavLink>
@@ -126,6 +135,9 @@ function TopBar() {
           <NavLink to="/online#tables" className={() => navLink({ isActive: false })}>
             {t('platform.nav.tables')}
           </NavLink>
+          <NavLink to="/classement" className={navLink}>
+            {t('platform.nav.ranking')}
+          </NavLink>
           <NavLink to="/desk" className={navLink}>
             {t('platform.nav.desk')}
           </NavLink>
@@ -134,13 +146,13 @@ function TopBar() {
           </NavLink>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-3">
           <WalletChip />
           <InvitationBell />
           <ThemeToggle />
           <span aria-hidden className="hidden h-6 w-px bg-[rgb(var(--paper-100)/.12)] min-[900px]:block" />
           <PlayerToken />
-          <Button variant="primary" className="!h-9 hidden min-[900px]:inline-flex" to="/setup" icon={<Plus size={16} aria-hidden />}>
+          <Button variant="primary" className="!h-9 hidden min-[1100px]:inline-flex" to="/setup" icon={<Plus size={16} aria-hidden />}>
             {t('platform.nav.createTable')}
           </Button>
         </div>
@@ -153,7 +165,7 @@ function TopBar() {
 
 function StatusStrip() {
   const t = useT();
-  const p = readPresence();
+  const p = usePresence();
 
   return (
     <div className="hidden h-8 border-b border-[rgb(var(--paper-100)/.06)] bg-lacquer-950 min-[900px]:block">
@@ -170,15 +182,17 @@ function StatusStrip() {
               <span className="tnums">{t('platform.status.playersOnline', { count: p.playersOnline })}</span>
             </Link>
             <span aria-hidden>·</span>
+            <Link to="/online#tables" className="transition-colors hover:text-paper-100 tnums">
+              {t('platform.status.playing', { count: p.playing })}
+            </Link>
+            <span aria-hidden>·</span>
             <Link to="/online#file-normale" className="transition-colors hover:text-paper-100 tnums">
               {t('platform.status.normalQueue', { count: p.normalQueue.count, minutes: p.normalQueue.estimateMin })}
             </Link>
             <span aria-hidden>·</span>
             <Link to="/online#file-classee" className="transition-colors hover:text-paper-100 tnums">
-              {t('platform.status.rankedQueue', { count: p.rankedQueue.count, minutes: p.rankedQueue.estimateMin })}
+              {t('platform.status.rankedQueue', { count: p.rankedQueue.count })}
             </Link>
-            <span aria-hidden>·</span>
-            <span className="tnums">{t('platform.status.latency', { region: p.region, ms: p.latencyMs })}</span>
           </>
         )}
       </div>

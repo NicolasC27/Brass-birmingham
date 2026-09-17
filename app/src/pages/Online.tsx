@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router';
+import { WifiOff } from 'lucide-react';
+import { useT } from '@/i18n';
 import { isOnline, normalizeCode } from '@/online/lobby';
-import { useSession, useStranger } from '@/online/session';
+import { useLine, useSession, useStranger } from '@/online/session';
 import Toast, { type ToastData } from '@/components/platform/Toast';
 import Matchmaking from '@/components/online/Matchmaking';
 import CodeJoin from '@/components/online/CodeJoin';
@@ -14,13 +16,28 @@ import LocalFallback from '@/components/online/LocalFallback';
 /*   2. bandeau « rejoindre avec un code »,                            */
 /*   3. tables publiques (#tables),                                    */
 /*   4. repli local quand aucun serveur n'est configuré.               */
+/* Un serveur configuré mais dont la ligne n'est pas ouverte           */
+/* (useLine() !== 'online') garde le hub, sous un bandeau « hors       */
+/* ligne » : le fil se rétablit seul, les files rouvrent alors.        */
 /* Chaîne d'invitation préservée de bout en bout :                     */
 /* `/online?table=CODE` → `/account?table=CODE`.                       */
 /* ------------------------------------------------------------------ */
 
+/* the line to the office is not open: say so, once, above the hub */
+function LineNotice({ line }: { line: 'offline' | 'connecting' }) {
+  const t = useT();
+  return (
+    <div role="status" className="mt-6 flex items-center gap-3 rounded-xl border border-rust-600/60 bg-enamel-850 px-4 py-3 font-ui text-[13px] text-paper-300">
+      <WifiOff size={16} aria-hidden className="shrink-0 text-rust-400" />
+      <span>{t(line === 'connecting' ? 'platform.play.lineConnecting' : 'platform.play.lineDown')}</span>
+    </div>
+  );
+}
+
 export default function Online() {
   const session = useSession();
   const stranger = useStranger();
+  const line = useLine();
   const [params] = useSearchParams();
   const { hash } = useLocation();
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -48,6 +65,7 @@ export default function Online() {
     <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
       {isOnline ? (
         <>
+          {line !== 'online' && <LineNotice line={line} />}
           <Matchmaking onToast={notify} />
           <CodeJoin />
           <PublicTables onToast={notify} />

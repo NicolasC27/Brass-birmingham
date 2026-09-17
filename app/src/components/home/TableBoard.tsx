@@ -1,68 +1,117 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { CircleDashed, RefreshCw, Swords, Users } from 'lucide-react';
+import { CircleDashed, Loader2, RefreshCw, Swords, Unplug, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
+import { onlineWire } from '@/online/net';
+import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
+import { toCards, type CardTable } from '@/platform/tables';
 import Button from '@/components/platform/Button';
 import Tabs from '@/components/platform/Tabs';
 import TableCard from '@/components/platform/TableCard';
 import EmptyState from '@/components/platform/EmptyState';
-import { demoQueue, demoTables, type DemoTable } from '@/components/platform/mockData';
 
 /* ------------------------------------------------------------------ */
 /* Tableau des tables — le signe distinctif (home.md §S2).             */
 /* 3 colonnes d'état (file / ouvertes / en cours), 2 colonnes          */
 /* 760–1100px, onglets <760px. Chaque colonne défile (max-h 420px).    */
-/* Données : mockData (démo, voir en-tête de mockData.ts).             */
+/* Données : le registre de l'office (useTables) et mon bureau         */
+/* (useDesk). L'office ne dit pas qui attend en file : la colonne file */
+/* ne montre que ma propre attente, ou l'invitation à en prendre une.  */
 /* ------------------------------------------------------------------ */
 
-/** temps d'attente des joueurs en file, croissant en direct */
-function useWaitingTimes() {
-  const [tick, setTick] = useState(0);
+/** the clock, ticking every second while something is timed */
+function useNow(on: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-  return demoQueue.map((q) => ({ ...q, waitedSec: q.waitedSec + tick }));
+    if (!on) return;
+    const iv = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(iv);
+  }, [on]);
+  return now;
 }
+
+const mmss = (ms: number) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+};
 
 function QueueColumn() {
   const t = useT();
-  const waiting = useWaitingTimes();
-  if (waiting.length === 0) {
-    return <EmptyState mini icon={<CircleDashed aria-hidden />} title={t('platform.empty.queue')} />;
+  const session = useSession();
+  const desk = useDesk();
+  const queue = desk?.queue ?? null;
+  const now = useNow(queue !== null);
+
+  if (!session) {
+    return (
+      <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+        <CircleDashed className="h-5 w-5 text-iron-600" aria-hidden />
+        <p className="font-ui text-[13px] text-iron-400">{t('platform.home.board.queue.signIn')}</p>
+        <Button variant="ghost" className="!h-8 px-3 text-[12px]" to="/account">
+          {t('platform.action.signIn')}
+        </Button>
+      </div>
+    );
   }
+  if (!queue) {
+    return (
+      <div className="flex flex-col items-center gap-3 px-4 py-8 text-center">
+        <CircleDashed className="h-5 w-5 text-iron-600" aria-hidden />
+        <p className="font-ui text-[13px] text-iron-400">{t('platform.home.board.queue.none')}</p>
+        {desk && desk.hall.queued > 0 && (
+          <p className="data-text text-[11px] text-iron-600 tnums">{t('platform.home.board.queue.house', { count: desk.hall.queued })}</p>
+        )}
+        <Button variant="ghost" className="!h-8 px-3 text-[12px]" to="/online">
+          {t('platform.home.board.queue.enter')}
+        </Button>
+      </div>
+    );
+  }
+  const mode = queue.mode === 'ranked' ? 'ranked' : 'normal';
   return (
-    <ul className="flex flex-col gap-1 p-2">
-      {waiting.map((q) => (
-        <motion.li
-          key={q.id}
-          layout
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          className="flex items-center justify-between gap-2 rounded-lg px-2 py-2 transition-colors duration-150 hover:bg-enamel-800"
-        >
-          <span className="flex items-center gap-2 font-ui text-[13px] text-paper-300">
-            <span
-              className={cn('h-1.5 w-1.5 rounded-full', q.mode === 'ranked' ? 'bg-rust-600' : 'bg-bottle-500')}
-              aria-hidden
-            />
-            {q.masked}
+    <div className="p-2">
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: 'easeOut' }}
+        role="status"
+        className="rounded-lg border border-brass-hairline bg-enamel-800 px-3 py-3"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2 font-ui text-[13px] font-semibold text-paper-100">
+            <span className={cn('h-1.5 w-1.5 animate-pulse-signal rounded-full', mode === 'ranked' ? 'bg-rust-600' : 'bg-bottle-500')} aria-hidden />
+            {t('platform.home.board.queue.mine', { mode: t(`platform.mode.${mode}`) })}
           </span>
-          <span className="data-text text-[11px] text-iron-400 tnums">
-            {String(Math.floor(q.waitedSec / 60)).padStart(2, '0')}:{String(q.waitedSec % 60).padStart(2, '0')}
-          </span>
-        </motion.li>
-      ))}
-    </ul>
+          <span className="data-text text-[12px] text-brass-300 tnums">{mmss(now - queue.since)}</span>
+        </div>
+        <p className="mt-1.5 font-ui text-[12px] text-iron-400 tnums">
+          {queue.waiting <= 1 ? t('platform.home.board.queue.alone') : t('platform.home.board.queue.others', { count: queue.waiting - 1 })}
+        </p>
+        <Button variant="ghost" className="mt-2 !h-8 px-3 text-[12px]" to="/online">
+          {t('platform.home.board.queue.see')}
+        </Button>
+      </motion.div>
+    </div>
   );
 }
 
-function TableColumn({ tables, live }: { tables: DemoTable[]; live?: boolean }) {
+function TableColumn({ tables, live, waiting }: { tables: CardTable[]; live?: boolean; waiting: boolean }) {
   const t = useT();
   const navigate = useNavigate();
+  const stranger = useStranger();
+  const line = useLine();
+  if (stranger) {
+    return <EmptyState mini icon={live ? <Swords aria-hidden /> : <Users aria-hidden />} title={t('platform.home.board.signIn')} />;
+  }
+  if (waiting && line !== 'online') {
+    return <EmptyState mini icon={<Unplug aria-hidden />} title={t('platform.serverOffline')} />;
+  }
+  if (waiting) {
+    return <EmptyState mini icon={<Loader2 className="animate-spin" aria-hidden />} title={t('platform.home.board.loading')} />;
+  }
   if (tables.length === 0) {
     return <EmptyState mini icon={live ? <Swords aria-hidden /> : <Users aria-hidden />} title={live ? t('platform.empty.live') : t('platform.empty.tables')} />;
   }
@@ -70,11 +119,12 @@ function TableColumn({ tables, live }: { tables: DemoTable[]; live?: boolean }) 
     <div className="flex flex-col gap-2 p-2">
       {tables.map((table, i) => (
         <TableCard
-          key={table.id}
+          key={table.code}
           table={table}
           pulse={i < 3 /* budget pulses : 3 max / viewport (§5) */}
           onJoin={(tb) => navigate(`/online/${tb.code}`)}
-          onResume={(tb) => navigate(`/game/${tb.code}`)}
+          onResume={(tb) => navigate(tb.state === 'live' ? `/game/${tb.code}` : `/online/${tb.code}`)}
+          onWatch={(tb) => navigate(`/game/${tb.code}`)}
         />
       ))}
     </div>
@@ -83,16 +133,29 @@ function TableColumn({ tables, live }: { tables: DemoTable[]; live?: boolean }) 
 
 export default function TableBoard() {
   const t = useT();
+  const session = useSession();
+  const desk = useDesk();
+  const tables = useTables();
   const [tab, setTab] = useState('open');
   const [spin, setSpin] = useState(0);
 
-  const open = useMemo(() => demoTables.filter((tb) => tb.state === 'open'), []);
-  const live = useMemo(() => demoTables.filter((tb) => tb.state !== 'open'), []);
+  const cards = useMemo(() => toCards(tables ?? [], desk?.tables, session?.name), [tables, desk?.tables, session?.name]);
+  const open = useMemo(() => cards.filter((tb) => tb.state !== 'live'), [cards]);
+  const live = useMemo(() => cards.filter((tb) => tb.state === 'live'), [cards]);
+  const stranger = useStranger();
+  const waiting = tables === null && !stranger;
+
+  const refresh = () => {
+    setSpin((n) => n + 1);
+    const w = onlineWire();
+    w?.askTables();
+    w?.askDesk();
+  };
 
   const columns = [
-    { id: 'queue', label: t('platform.state.queue'), body: <QueueColumn />, count: demoQueue.length },
-    { id: 'open', label: t('platform.state.openTables'), body: <TableColumn tables={open} />, count: open.length },
-    { id: 'live', label: t('platform.state.live'), body: <TableColumn tables={live} live />, count: live.length },
+    { id: 'queue', label: t('platform.state.queue'), body: <QueueColumn />, count: desk?.hall.queued ?? 0 },
+    { id: 'open', label: t('platform.state.openTables'), body: <TableColumn tables={open} waiting={waiting} />, count: open.length },
+    { id: 'live', label: t('platform.state.live'), body: <TableColumn tables={live} live waiting={waiting} />, count: live.length },
   ];
 
   return (
@@ -106,18 +169,18 @@ export default function TableBoard() {
       {/* header interne 44px */}
       <div className="flex h-11 items-center justify-between gap-3 border-b border-brass-hairline px-4">
         <span className="micro-label flex items-center gap-2 text-brass-300">
-          <span className="animate-presence-dot h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
+          <span className={cn('h-1.5 w-1.5 rounded-full', tables ? 'animate-presence-dot bg-signal-400' : 'bg-iron-600')} aria-hidden />
           {t('platform.home.board.title')}
         </span>
         <span className="flex items-center gap-3">
           <span className="data-text text-[11px] text-iron-400 tnums">
-            {t('platform.home.board.counts', { open: open.length, live: live.length })}
+            {waiting ? t('platform.home.board.loading') : stranger ? '' : t('platform.home.board.counts', { open: open.length, live: live.length })}
           </span>
           <Button
             variant="icon"
             className="!h-7 !w-7"
             aria-label={t('platform.home.board.refresh')}
-            onClick={() => setSpin((n) => n + 1)}
+            onClick={refresh}
             icon={
               <motion.span animate={{ rotate: spin * 360 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="flex">
                 <RefreshCw size={14} aria-hidden />

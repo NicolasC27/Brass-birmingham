@@ -2,21 +2,22 @@ import { motion } from 'framer-motion';
 import { Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
+import type { CardTable, TableMode, TableState } from '@/platform/tables';
 import SeatToken from './SeatToken';
 import Button from './Button';
-import type { DemoTable } from './mockData';
 
 /* ------------------------------------------------------------------ */
 /* TableCard (design.md §7.2) — panneau enamel-850, hairline laiton,   */
-/* radius 12px : nom + ribbon d'état, rangée de SeatToken, badges      */
-/* mode/visibilité/région + CTA selon état.                            */
+/* radius 12px : nom + ribbon d'état, rangée de SeatToken, badge mode  */
+/* + ligne de registre (hôte, ère · tour, présents) + CTA selon état.  */
+/* Les données viennent du registre de l'office (platform/tables.ts).  */
 /* ------------------------------------------------------------------ */
 
 const spring = { type: 'spring', stiffness: 260, damping: 24 } as const;
 
-function StateRibbon({ state, pulse }: { state: DemoTable['state']; pulse: boolean }) {
+function StateRibbon({ state, pulse }: { state: TableState; pulse: boolean }) {
   const t = useT();
-  const styles: Record<DemoTable['state'], string> = {
+  const styles: Record<TableState, string> = {
     open: 'bg-bottle-700/60 text-bottle-400',
     live: 'bg-[rgb(var(--signal-400)/.12)] text-signal-400',
     full: 'bg-enamel-700 text-iron-400',
@@ -31,56 +32,71 @@ function StateRibbon({ state, pulse }: { state: DemoTable['state']; pulse: boole
   );
 }
 
-function ModeBadge({ mode, visibility }: { mode: DemoTable['mode']; visibility: DemoTable['visibility'] }) {
+function ModeBadge({ mode }: { mode: TableMode }) {
   const t = useT();
   return (
-    <>
-      <span
-        className={cn(
-          'micro-label rounded px-1.5 py-0.5',
-          mode === 'ranked' ? 'bg-rust-700/50 text-rust-400' : 'bg-bottle-700/60 text-bottle-400',
-        )}
-      >
-        {t(`platform.mode.${mode}`)}
-      </span>
-      <span className="micro-label rounded bg-enamel-700 px-1.5 py-0.5 text-iron-400">{t(`platform.mode.${visibility}`)}</span>
-    </>
+    <span
+      className={cn(
+        'micro-label rounded px-1.5 py-0.5',
+        mode === 'ranked' ? 'bg-rust-700/50 text-rust-400' : 'bg-bottle-700/60 text-bottle-400',
+      )}
+    >
+      {t(`platform.mode.${mode}`)}
+    </span>
   );
 }
 
 export interface TableCardProps {
-  table: DemoTable;
+  table: CardTable;
   /** désactive le pulse du ribbon EN COURS (max 3 pulses / viewport, home.md §S2) */
   pulse?: boolean;
-  /** CTA « Reprendre » (ma table en cours) */
-  mine?: boolean;
-  onJoin?: (table: DemoTable) => void;
-  onResume?: (table: DemoTable) => void;
-  onWatch?: (table: DemoTable) => void;
+  onJoin?: (table: CardTable) => void;
+  /** ma table : retour au salon (ouverte) ou à la partie (en cours) */
+  onResume?: (table: CardTable) => void;
+  onWatch?: (table: CardTable) => void;
   className?: string;
 }
 
-export default function TableCard({ table, pulse = true, mine = false, onJoin, onResume, onWatch, className }: TableCardProps) {
+export default function TableCard({ table, pulse = true, onJoin, onResume, onWatch, className }: TableCardProps) {
   const t = useT();
   const filled = table.seats.filter(Boolean).length;
+  const btn = '!h-8 px-3 text-[13px]';
 
-  const cta = mine ? (
-    <Button variant="live" className="!h-8 px-3 text-[13px]" onClick={() => onResume?.(table)}>
-      {t('platform.action.resume')}
+  const cta = table.mine ? (
+    <Button variant={table.state === 'live' ? 'live' : 'primary'} className={btn} onClick={() => onResume?.(table)}>
+      {table.state === 'live' ? (table.myTurn ? t('platform.play.tables.yourTurn') : t('platform.action.resume')) : t('platform.action.enterLobby')}
     </Button>
   ) : table.state === 'open' ? (
-    <Button variant="primary" className="!h-8 px-3 text-[13px]" onClick={() => onJoin?.(table)}>
-      {t('platform.action.join')}
-    </Button>
-  ) : table.state === 'live' && onWatch ? (
-    <Button variant="ghost" className="!h-8 px-3 text-[13px]" icon={<Eye size={16} aria-hidden />} onClick={() => onWatch(table)}>
-      {t('platform.action.watch')}
-    </Button>
+    table.mode === 'ranked' ? (
+      <Button variant="ghost" className={btn} disabled title={t('platform.play.tables.viaQueueHint')}>
+        {t('platform.play.tables.viaQueue')}
+      </Button>
+    ) : (
+      <Button variant="primary" className={btn} onClick={() => onJoin?.(table)}>
+        {t('platform.action.join')}
+      </Button>
+    )
+  ) : table.state === 'live' ? (
+    onWatch ? (
+      <Button variant="ghost" className={btn} icon={<Eye size={16} aria-hidden />} onClick={() => onWatch(table)}>
+        {t('platform.action.watch')}
+      </Button>
+    ) : null
   ) : (
-    <Button variant="ghost" className="!h-8 px-3 text-[13px]" disabled>
+    <Button variant="ghost" className={btn} disabled>
       {t('platform.action.full')}
     </Button>
   );
+
+  /* la ligne de registre : l'hôte quand la table attend, l'ère et le tour quand elle joue */
+  const line =
+    table.state === 'live'
+      ? [
+          table.era ? t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal') : null,
+          table.round !== undefined ? (table.rounds ? t('platform.play.tables.roundOf', { round: table.round, total: table.rounds }) : t('platform.state.turn', { round: table.round })) : null,
+          table.toAct ? t('platform.play.tables.toAct', { name: table.toAct.name }) : null,
+        ]
+      : [t('platform.play.tables.host', { name: table.hostName })];
 
   return (
     <motion.article
@@ -92,6 +108,7 @@ export default function TableCard({ table, pulse = true, mine = false, onJoin, o
       className={cn(
         'rounded-xl border border-brass-hairline bg-enamel-850 p-4 transition-colors duration-150 ease-out',
         'hover:border-brass-hairline-strong hover:bg-enamel-800',
+        table.myTurn && 'border-[rgb(var(--signal-400)/.5)]',
         className,
       )}
       aria-label={table.name}
@@ -111,12 +128,15 @@ export default function TableCard({ table, pulse = true, mine = false, onJoin, o
       </div>
 
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[rgb(var(--paper-100)/.07)] pt-3">
-        <div className="flex items-center gap-1.5">
-          <ModeBadge mode={table.mode} visibility={table.visibility} />
-          <span className="data-text ml-1 text-[11px] text-iron-600">
-            {table.region} · {table.latencyMs} ms
-            {table.state !== 'open' && table.round !== undefined ? ` · ${t('platform.state.turn', { round: table.round })}` : ''}
-          </span>
+        <div className="flex min-w-0 items-center gap-1.5">
+          <ModeBadge mode={table.mode} />
+          <span className="data-text ml-1 truncate text-[11px] text-iron-600 tnums">{line.filter(Boolean).join(' · ')}</span>
+          {table.state === 'live' && table.watchers > 0 && (
+            <span className="data-text flex shrink-0 items-center gap-1 text-[11px] text-iron-600 tnums" title={t('platform.play.tables.watchers', { count: table.watchers })}>
+              <Eye size={12} aria-hidden />
+              {table.watchers}
+            </span>
+          )}
         </div>
         {cta}
       </div>

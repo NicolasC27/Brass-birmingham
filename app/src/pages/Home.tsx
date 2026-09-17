@@ -13,8 +13,8 @@ import ModeCard from '@/components/platform/ModeCard';
 import RankBadge from '@/components/platform/RankBadge';
 import TableBoard from '@/components/home/TableBoard';
 import ClubActivity from '@/components/home/ClubActivity';
-import { readPresence } from '@/components/platform/presence';
-import { demoRating } from '@/components/platform/mockData';
+import { usePresence } from '@/components/platform/presence';
+import { PLACEMENTS, rankOf } from '@/platform/rank';
 
 /* ------------------------------------------------------------------ */
 /* Accueil « hall du club » (home.md) — tableau de bord plateforme :   */
@@ -71,8 +71,11 @@ function QueueRankStrip() {
   const t = useT();
   const navigate = useNavigate();
   const session = useSession();
-  const presence = readPresence();
+  const desk = useDesk();
+  const presence = usePresence();
   const offline = !presence.online;
+  const rank = rankOf(desk?.rating);
+  const badge = rank.tier === 'placement' ? undefined : { tier: rank.tier, division: rank.division };
 
   const reveal = (i: number) => ({
     initial: { opacity: 0, y: 12 },
@@ -100,22 +103,28 @@ function QueueRankStrip() {
           disabled={offline}
           queueCount={presence.rankedQueue.count}
           estimateMin={presence.rankedQueue.estimateMin}
-          rank={{ tier: demoRating.tier, division: demoRating.division }}
+          rank={badge}
           onSelect={() => navigate('/online')}
         />
       </motion.div>
       <motion.div {...reveal(2)}>
         {session ? (
           <div className="flex h-[88px] items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-850 p-4">
-            <RankBadge tier={demoRating.tier} division={demoRating.division} size={32} compact />
+            <RankBadge tier={rank.tier} division={rank.division} size={32} compact />
             <div className="min-w-0 flex-1">
-              <p className="font-ui text-[14px] font-semibold text-paper-100">
-                {t('platform.home.rating.value', { tier: t(`platform.rank.${demoRating.tier}`), division: demoRating.division, lp: demoRating.lp })}
+              <p className="truncate font-ui text-[14px] font-semibold text-paper-100">
+                {rank.tier === 'placement'
+                  ? rank.rating === null
+                    ? t('platform.home.rating.none')
+                    : t('platform.home.rating.placement', { done: rank.placementDone ?? 0, total: PLACEMENTS })
+                  : rank.division
+                    ? t('platform.home.rating.value', { tier: t(`platform.rank.${rank.tier}`), division: rank.division, lp: rank.lp ?? 0 })
+                    : t('platform.home.rating.valueTop', { tier: t(`platform.rank.${rank.tier}`), lp: rank.lp ?? 0 })}
               </p>
               <div className="mt-2 h-1 overflow-hidden rounded-full bg-enamel-700">
                 <motion.div
                   initial={{ width: 0 }}
-                  whileInView={{ width: `${demoRating.progress}%` }}
+                  whileInView={{ width: `${rank.progress}%` }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.6, ease }}
                   className="h-full rounded-full bg-gradient-to-r from-brass-300 via-brass-500 to-brass-600"
