@@ -163,6 +163,8 @@ export default function PreparedPanel() {
   const surveySeat = useGame((s) => s.surveySeat);
   const setSurveySeat = useGame((s) => s.setSurveySeat);
   const cycleSurveySeat = useGame((s) => s.cycleSurveySeat);
+  const surveyEmpires = useGame((s) => s.surveyEmpires);
+  const toggleSurveyEmpire = useGame((s) => s.toggleSurveyEmpire);
   const beginUnlessPick = useGame((s) => s.beginUnlessPick);
   /* the sheet unfolds under the pointer, while a move is prepared, a
      condition edited or a place picked; otherwise a strip says the orders */
@@ -197,6 +199,15 @@ export default function PreparedPanel() {
           <span aria-hidden className="h-4 w-px bg-brass-700/60" />
           <span className="font-fell text-[13px] text-cream-100/90">{action ? describeAction(action) : t('game.prepared.noMoveYet')}</span>
           <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+          <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+          <span className="flex items-center gap-1" role="group" aria-label={t('game.prepared.othersLinks')}>
+            <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-cream-100/55">{t('game.prepared.othersLinks')}</span>
+            {game.players.map((pl, idx) => idx === surveySeat ? null : (
+              <button key={idx} type="button" aria-pressed={surveyEmpires.includes(idx)} title={pl.name} onClick={() => toggleSurveyEmpire(idx)} className={cn('rounded-full transition-opacity', surveyEmpires.includes(idx) ? 'opacity-100 ring-2 ring-brass-400' : 'opacity-40 hover:opacity-80')}>
+                <PortraitMedallion p={pl} index={idx} active={false} size={20} />
+              </button>
+            ))}
+          </span>
           <button type="button" onClick={cycleSurveySeat} className="btn-ledger shrink-0 !min-h-[24px] !px-2 !py-0.5 text-[10.5px]">
             {t('game.prepared.nextPlayer')} <kbd className="ml-1 font-mono text-[9px] opacity-60">{keyLabel(keys.lastMove)}</kbd>
           </button>
@@ -235,6 +246,14 @@ export default function PreparedPanel() {
           </span>
         ))}
         <span aria-hidden className="h-4 w-px bg-brass-700/60" />
+        <span className="flex items-center gap-1" role="group" aria-label={t('game.prepared.othersLinks')}>
+          <span className="font-sans text-[10px] uppercase tracking-[0.12em] text-cream-100/55">{t('game.prepared.othersLinks')}</span>
+          {game.players.map((pl, idx) => idx === me ? null : (
+            <button key={idx} type="button" aria-pressed={surveyEmpires.includes(idx)} title={pl.name} onClick={() => toggleSurveyEmpire(idx)} className={cn('rounded-full transition-opacity', surveyEmpires.includes(idx) ? 'opacity-100 ring-2 ring-brass-400' : 'opacity-40 hover:opacity-80')}>
+              <PortraitMedallion p={pl} index={idx} active={false} size={20} />
+            </button>
+          ))}
+        </span>
         <span className="hidden font-sans text-[10px] text-cream-100/55 2xl:inline">{t('game.prepared.legend')}</span>
         <button type="button" onClick={() => setPreviewQueue(false)} className="btn-ledger shrink-0 !min-h-[24px] !px-2 !py-0.5 text-[10.5px]">
           {t('game.prepared.visualising')}

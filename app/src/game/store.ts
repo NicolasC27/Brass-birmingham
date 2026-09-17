@@ -106,6 +106,14 @@ interface GameStore {
   setPreviewQueue: (on: boolean) => void;
   /** the survey of another seat: their empire and their last move */
   surveySeat: number | null;
+  /** the other seats whose links a survey also paints */
+  surveyEmpires: number[];
+  toggleSurveyEmpire: (seat: number) => void;
+  /** another seat just played: their move shown the survey's way for a moment */
+  glimpse: { seat: number; at: number } | null;
+  setGlimpse: (g: { seat: number; at: number } | null) => void;
+  /** each seat's line to the office, in ms (null: a machine, or nobody there) */
+  latency: (number | null)[];
   /** the next seat but mine (or none after the last) */
   cycleSurveySeat: () => void;
   setSurveySeat: (seat: number | null) => void;
@@ -293,6 +301,9 @@ const clearSelection = {
    glasses raised, the pinned towns, the move prepared for my turn. Reset
    only when a new table is sat at. */
 const freshTable = {
+  surveyEmpires: [] as number[],
+  glimpse: null as { seat: number; at: number } | null,
+  latency: [] as (number | null)[],
   telegrams: [] as Telegram[],
   mutedSeats: [] as number[],
   telegramSentAt: 0,
@@ -732,6 +743,8 @@ export const useGame = create<GameStore>((set, get) => ({
   setMarketFocus: (on) => set({ marketFocus: on }),
   setLedgerFilter: (f) => set({ ledgerFilter: f }),
   flyToRegion: (key) => set({ flyTo: { key, at: Date.now() } }),
+  toggleSurveyEmpire: (seat) => set((st) => ({ surveyEmpires: st.surveyEmpires.includes(seat) ? st.surveyEmpires.filter((x) => x !== seat) : [...st.surveyEmpires, seat] })),
+  setGlimpse: (glimpse) => set({ glimpse }),
   toggleFollowBots: () => set((s) => ({ followBots: !s.followBots })),
   setSpotlight: (i) => set({ spotlight: i }),
   setNetPeek: (i) => set({ netPeek: i }),
@@ -1200,6 +1213,7 @@ function listen(code: string, wire: Wire): void {
     if (m.t === 'telegram' && m.code === code) useGame.getState().receiveTelegram(m.from, m.key);
     if (m.t === 'mark' && m.code === code) useGame.getState().receivePing(m.from, m.key);
     if (m.t === 'warned' && m.code === code) useGame.setState({ markStrikes: m.muted ? 2 : 1, markWarning: m.muted ? 'muted' : 'warned' });
+    if (m.t === 'pulse' && m.code === code) useGame.setState({ latency: m.latency });
   });
   const onLine = wire.onStatus(() => useGame.setState({ line: wire.status }));
   wire.watch(code);

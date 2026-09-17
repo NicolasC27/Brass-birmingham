@@ -1,4 +1,4 @@
-import { WORLD_H, WORLD_W, centeredOn, clampK, clampPan, fitScale, zoomAt } from '@/components/game/boardView';
+import { WORLD_H, WORLD_W, centeredOn, clampK, clampPan, fitScale, kToCentre, zoomAt } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
 
 /* ------------------------------------------------------------------ */
@@ -142,7 +142,8 @@ export class Camera {
 
   flyTo(wx: number, wy: number, k = 1.6): void {
     const { w, h } = this.getSize();
-    this.target = centeredOn(wx, wy, Math.max(this.target.k, k), w, h);
+    /* a point near the edge cannot sit in the middle at a wide view: come closer */
+    this.target = centeredOn(wx, wy, Math.max(this.target.k, k, kToCentre(wx, wy, w, h)), w, h);
   }
 
   /** instant jump (minimap drag) */

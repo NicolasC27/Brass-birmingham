@@ -644,7 +644,11 @@ export default function HandDock() {
                           <span className="text-ink-900/45">←</span>
                           <select
                             value={developIron[k] ?? ''}
-                            onChange={(e) => setDevelopIron(k, e.target.value || null)}
+                            onChange={(e) => {
+                              setDevelopIron(k, e.target.value || null);
+                              /* the works picked: the camera glides to it */
+                              if (e.target.value && e.target.value !== 'market') flyToRegion(e.target.value.split(':')[0]);
+                            }}
                             className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
                           >
                             <option value="">{t('game.hand.devIronAuto')}</option>

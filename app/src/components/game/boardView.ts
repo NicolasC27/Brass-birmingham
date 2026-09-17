@@ -75,6 +75,17 @@ export function zoomAt(v: View, sx: number, sy: number, factor: number, cw: numb
   );
 }
 
+/** the least zoom at which world point (wx,wy) can sit in the middle of the
+ *  screen: nearer the edge, the pan clamp holds the map back unless the
+ *  camera is close enough that the bleed covers the rest of the screen */
+export function kToCentre(wx: number, wy: number, cw: number, ch: number): number {
+  const fit = fitScale(cw, ch);
+  if (fit <= 0) return 1;
+  const roomX = Math.max(1, (WORLD_W / 2 + BLEED_X - Math.abs(wx - WORLD_W / 2)) * fit);
+  const roomY = Math.max(1, (WORLD_H / 2 + BLEED_Y - Math.abs(wy - WORLD_H / 2)) * fit);
+  return clampK(Math.max(cw / 2 / roomX, ch / 2 / roomY) * 1.03);
+}
+
 /** view that centres world point (wx,wy) at zoom k */
 export function centeredOn(wx: number, wy: number, k: number, cw: number, ch: number): View {
   const k2 = clampK(k);

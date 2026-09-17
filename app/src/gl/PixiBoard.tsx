@@ -53,7 +53,7 @@ interface Props {
   /** fly the camera here whenever `seq` changes (replay follows the action) */
   focus?: { at: [number, number]; seq: number } | null;
   /** the orders for my turn shown in colour over a sepia table */
-  preview?: { kind: 'orders'; queued: Prepared[]; actor: number } | { kind: 'player'; seat: number } | null;
+  preview?: ({ kind: 'orders'; queued: Prepared[]; actor: number } | { kind: 'player'; seat: number; transient?: boolean; at?: number }) & { empires?: number[] } | null;
 }
 
 /** the moves a survey paints: the orders, numbered, or a seat's last move
@@ -66,6 +66,9 @@ function surveyMoves(preview: NonNullable<Props['preview']>, game: GameState): {
 }
 
 /** world coords for anything a ledger entry can point at */
+/** how long another seat's move is shown the survey's way */
+export const GLIMPSE_MS = 3200;
+
 function regionPos(key: string, era: Era): [number, number] | null {
   const town = TOWN_BY_ID[key];
   if (town) return [town.x, town.y];
@@ -298,7 +301,23 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         else cameraRef.current?.fit();
       } else cameraRef.current?.fit();
     }
+    /* a glimpse fades out over its last second: the filter's blend and the
+       overlay's alpha both go to nothing, then the page lets it go */
+    let raf = 0;
+    if (preview?.kind === 'player' && preview.transient && sepia) {
+      const born = preview.at ?? Date.now();
+      const tick = () => {
+        const left = GLIMPSE_MS - (Date.now() - born);
+        const a = Math.max(0, Math.min(1, left / 1000));
+        sepia.alpha = a;
+        scene.overlay.alpha = a;
+        if (left > 0) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }
     return () => {
+      if (raf) cancelAnimationFrame(raf);
+      scene.overlay.alpha = 1;
       for (const child of scene.world.children) child.filters = null;
       sepia?.destroy();
     };
@@ -651,8 +670,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const e = s.game.ledger[s.game.ledger.length - 1];
           const other = e?.player !== undefined && (s.game.players[e.player]?.isBot || (s.seat !== null && e.player !== s.seat));
           if (e?.region && other && Date.now() - cam.lastManual > 4000) {
-            const pos = regionPos(e.region, s.game.era);
-            if (pos) cam.flyTo(pos[0], pos[1], Math.max(cam.target.k, 1.4));
+            /* shown the survey's way for a moment: the table dims, the move
+               stands in colour, the camera comes to it (see the preview effect) */
+            const seat = e.player as number;
+            queueMicrotask(() => useGame.getState().setGlimpse({ seat, at: Date.now() }));
           }
         } else if (s.game) {
           lastLedgerSeq = s.game.ledgerSeq;
@@ -1118,6 +1139,29 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const gx = gx0;
       const gy = gy0;
       const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : 0xe07020);
+      /* a development draws its iron from works with nowhere to run to: the
+         picks are numbered, and a dashed thread ties them when there are two */
+      if (ghost.noTarget && ghost.tileSources.length > 1) {
+        const thread = new Graphics();
+        const pts = ghost.tileSources.map((src) => displayPosFor(src.x, src.y));
+        dashPath(thread, pts, 10, 8);
+        thread.stroke({ width: 5, color: CASING, alpha: 0.8, cap: 'round' });
+        dashPath(thread, pts, 10, 8);
+        thread.stroke({ width: 2, color: 0xe07020, cap: 'round' });
+        thread.eventMode = 'none';
+        overlay.addChild(thread);
+      }
+      ghost.tileSources.forEach((src, order) => {
+        if (!ghost.noTarget) return;
+        const [sx, sy] = displayPosFor(src.x, src.y);
+        const n = new Graphics().circle(sx - TILE_R - 2, sy - TILE_R - 2, 9).fill(0xe07020).stroke({ width: 1.5, color: CASING });
+        const nt = new Text({ text: String(order + 1), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: '700', fill: 0x171310 } });
+        nt.anchor.set(0.5);
+        nt.position.set(sx - TILE_R - 2, sy - TILE_R - 2);
+        n.eventMode = 'none';
+        nt.eventMode = 'none';
+        overlay.addChild(n, nt);
+      });
       for (const src of ghost.tileSources) {
         const [sx, sy] = displayPosFor(src.x, src.y);
         const [gx, gy] = src.to ? displayPosFor(src.to[0], src.to[1]) : [gx0, gy0];
@@ -1354,6 +1398,23 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           if (sp) {
             const [x, y] = displayPosFor(sp.x, sp.y);
             glow(x, y, TILE_HALF);
+          }
+        }
+        /* the other seats the reader asked to see: their links, thinner, in their colour */
+        for (const seat of preview.empires ?? []) {
+          if (seat === who) continue;
+          for (const [id, l] of Object.entries(game.links)) {
+            if (l.owner !== seat) continue;
+            const def = LINKS.find((x) => x.id === id);
+            if (!def) continue;
+            const pts = routeFor(def, l.era).pts;
+            const g = new Graphics();
+            trace(g, pts);
+            g.stroke({ width: 8, color: 0x0c0a08, alpha: 0.45, cap: 'round', join: 'round' });
+            trace(g, pts);
+            g.stroke({ width: 3.5, color: colorOf(seat), cap: 'round', join: 'round' });
+            g.eventMode = 'none';
+            overlay.addChild(g);
           }
         }
       }

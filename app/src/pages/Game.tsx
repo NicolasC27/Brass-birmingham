@@ -44,6 +44,7 @@ import { cn } from '@/lib/utils';
 
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
+import { GLIMPSE_MS } from '@/gl/PixiBoard';
 
 /** the tools under the player rail: one plaque each, icon only */
 const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brass-400 opacity-90 transition-opacity hover:opacity-100';
@@ -69,6 +70,9 @@ export default function Game() {
   const previewQueue = useGame((s) => s.previewQueue);
   const setPreviewQueue = useGame((s) => s.setPreviewQueue);
   const surveySeat = useGame((s) => s.surveySeat);
+  const surveyEmpires = useGame((s) => s.surveyEmpires);
+  const glimpse = useGame((s) => s.glimpse);
+  const setGlimpse = useGame((s) => s.setGlimpse);
   const setSurveySeat = useGame((s) => s.setSurveySeat);
   const cycleSurveySeat = useGame((s) => s.cycleSurveySeat);
   const surveying = previewQueue || surveySeat !== null;
@@ -91,7 +95,16 @@ export default function Game() {
   const mySeat = useGame((s) => s.mySeat());
   /* the survey shown on the board: one object per survey, not one per render
      (the board rebuilds its overlay and its filter whenever it changes) */
-  const preview = useMemo<ComponentProps<typeof PixiBoard>['preview']>(() => (surveySeat !== null ? { kind: 'player', seat: surveySeat } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat } : null), [surveySeat, previewQueue, queued, mySeat]);
+  const preview = useMemo<ComponentProps<typeof PixiBoard>['preview']>(
+    () => (surveySeat !== null ? { kind: 'player', seat: surveySeat, empires: surveyEmpires } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat, empires: surveyEmpires } : glimpse ? { kind: 'player', seat: glimpse.seat, transient: true, at: glimpse.at } : null),
+    [surveySeat, surveyEmpires, previewQueue, queued, mySeat, glimpse],
+  );
+  /* a glimpse of another seat's move lasts a few seconds, then the table is itself again */
+  useEffect(() => {
+    if (!glimpse) return;
+    const id = window.setTimeout(() => setGlimpse(null), GLIMPSE_MS);
+    return () => window.clearTimeout(id);
+  }, [glimpse, setGlimpse]);
   const spectating = useGame((s) => s.spectating());
   const init = useGame((s) => s.init);
   const reset = useGame((s) => s.reset);

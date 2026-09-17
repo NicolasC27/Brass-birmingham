@@ -299,6 +299,7 @@ const fr: typeof engame = {
     shrink: 'Réduire le tapis',
   },
   rail: {
+    latency: 'Ligne : {ms} ms',
     playersAria: 'Joueurs',
     focusExit: 'Quitter la vue épurée',
     spotReleaseEsc: 'Projecteur activé — cliquer pour relâcher (Échap fonctionne aussi)',
@@ -601,6 +602,7 @@ const fr: typeof engame = {
     short: 'Ordres',
     survey: 'Relevé des ordres',
     surveyEmpire: 'Relevé de mon empire',
+    othersLinks: 'Liaisons des autres',
     lastMoveOf: 'Dernier coup de {name}',
     noMoveYet: 'n’a pas encore joué',
     nextPlayer: 'joueur suivant',

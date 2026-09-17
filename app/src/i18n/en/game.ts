@@ -297,6 +297,7 @@ const game = {
     shrink: 'Shrink the mat',
   },
   rail: {
+    latency: 'Line: {ms} ms',
     playersAria: 'Players',
     focusExit: 'Leave the focus view',
     spotReleaseEsc: 'Spotlight on — click to release (Esc works too)',
@@ -599,6 +600,7 @@ const game = {
     short: 'Orders',
     survey: 'Survey of the orders',
     surveyEmpire: 'Survey of my empire',
+    othersLinks: 'Others’ links',
     lastMoveOf: '{name}’s last move',
     noMoveYet: 'has not played yet',
     nextPlayer: 'next player',
