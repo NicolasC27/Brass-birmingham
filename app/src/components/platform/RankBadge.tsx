@@ -1,10 +1,11 @@
+import { PLACEMENTS } from '@/platform/rank';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
 /* RankBadge (design.md §7.5) — emblème SVG (§12) + nom de rang + LP.  */
 /* Tiers : bronze, fer, acier, laiton, or, maître. Non placé :         */
-/* emblème « ? » + PLACEMENTS n/10.                                    */
+/* emblème « ? » + PLACEMENTS n/5 (les cinq du bureau).                 */
 /* ------------------------------------------------------------------ */
 
 export type RankTier = 'bronze' | 'fer' | 'acier' | 'laiton' | 'or' | 'maitre';
@@ -34,7 +35,7 @@ export default function RankBadge({ tier, division, lp, placementDone, size = 32
       {!compact && (
         <span className="flex flex-col leading-tight">
           {tier === 'placement' ? (
-            <span className="micro-label text-iron-400">{t('platform.rank.placement', { done: placementDone ?? 0, total: 10 })}</span>
+            <span className="micro-label text-iron-400">{t('platform.rank.placement', { done: placementDone ?? 0, total: PLACEMENTS })}</span>
           ) : (
             <>
               <span className="font-ui text-[13px] font-semibold text-paper-100">

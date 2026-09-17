@@ -8,11 +8,14 @@ import Button from '@/components/platform/Button';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import RankBadge, { type RankTier } from '@/components/platform/RankBadge';
 import StatTile from '@/components/platform/StatTile';
-import { demoRating } from '@/components/platform/mockData';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLAYER_COLORS } from '@/components/setup/constants';
 import type { PlayerColor } from '@/components/setup/constants';
+import { INDUSTRIES, TOWN_BY_ID } from '@/game/data';
+import type { IndustryType } from '@/game/types';
 import { isOnline } from '@/online/lobby';
+import type { Rating, Stats } from '@/online/table';
+import { PLACEMENTS, rankOf } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
 import { changePassword, signOut, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
 import { HistoryLedger } from '@/pages/Desk';
@@ -21,14 +24,17 @@ import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* Carte de membre & réglages (profile.md) — l'en-tête registre       */
-/* (avatar, pseudo, rang honnête « SAISON 1 · BÊTA »), les             */
-/* statistiques publiques, l'échelle des rangs, l'historique, puis     */
-/* les réglages : identité (devise, couleur) et compte & sécurité      */
-/* (mot de passe via session.ts, déconnexion). Contrats inchangés.     */
+/* (avatar, pseudo, la cote de l'exercice lue par rankOf), les         */
+/* statistiques publiques, l'échelle des rangs, la fiche (la cote sur  */
+/* l'exercice, la manière de jouer, les industries, le face à face),   */
+/* l'historique, puis les réglages : identité (devise, couleur) et     */
+/* compte & sécurité (mot de passe via session.ts, déconnexion).       */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
-const TIERS: RankTier[] = ['bronze', 'fer', 'acier', 'laiton', 'or', 'maitre'];
+/** les cinq rangs de l'office, du bas vers le haut, dans les métaux du badge */
+const TIERS: RankTier[] = ['bronze', 'fer', 'acier', 'laiton', 'or'];
+const locale = (lang: string) => (lang === 'fr' ? 'fr-FR' : 'en-GB');
 
 /* --------------------------- En-tête de membre --------------------------- */
 
@@ -36,9 +42,12 @@ function MemberCard() {
   const t = useT();
   const lang = useLang();
   const session = useSession();
+  const desk = useDesk();
   const wallet = useWallet();
   if (!session) return null;
-  const since = new Date(session.createdAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const since = new Date(session.createdAt).toLocaleDateString(locale(lang), { day: 'numeric', month: 'long', year: 'numeric' });
+  const rank = rankOf(desk?.rating);
+  const season = desk?.season.name ?? '';
 
   return (
     <motion.section
@@ -63,13 +72,25 @@ function MemberCard() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.26, ease, delay: 0.1 }} className="flex shrink-0 items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-800 px-5 py-4">
-          <RankBadge tier={demoRating.tier} division={demoRating.division} size={48} compact />
+          <RankBadge tier={rank.tier} division={rank.division} size={48} compact />
           <div>
-            <p className="font-fraunces text-[24px] font-semibold leading-none text-paper-100">
-              {t(`platform.rank.${demoRating.tier}`)} {demoRating.division}
-            </p>
-            <p className="data-text mt-1.5 text-[12px] tabular-nums text-iron-400">{t('platform.profile.season', { lp: demoRating.lp })}</p>
-            <p className="micro-label mt-1.5 text-rust-400">{t('platform.profile.beta')}</p>
+            {rank.tier === 'placement' ? (
+              <>
+                <p className="font-fraunces text-[24px] font-semibold leading-none text-paper-100 tnums">{rank.rating !== null ? rank.rating.toLocaleString(locale(lang)) : '—'}</p>
+                <p className="data-text mt-1.5 text-[12px] tabular-nums text-iron-400">
+                  {rank.rating !== null ? t('platform.profile.placements', { done: rank.placementDone ?? 0, total: PLACEMENTS, season }) : t('platform.profile.unranked', { season })}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-fraunces text-[24px] font-semibold leading-none text-paper-100">
+                  {t(`platform.rank.${rank.tier}`)}
+                  {rank.division ? ` ${rank.division}` : ''}
+                </p>
+                <p className="data-text mt-1.5 text-[12px] tabular-nums text-iron-400">{t('platform.profile.season', { lp: rank.lp ?? 0, season })}</p>
+                <p className="micro-label mt-1.5 text-brass-300">{t('platform.profile.cote', { rating: (rank.rating ?? 0).toLocaleString(locale(lang)) })}</p>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
@@ -81,9 +102,11 @@ function MemberCard() {
 
 function StatsAndRanks() {
   const t = useT();
+  const lang = useLang();
   const desk = useDesk();
   const wallet = useWallet();
   const stats = desk?.stats;
+  const rank = rankOf(desk?.rating);
   const rate = stats && stats.played ? `${Math.round((stats.won / stats.played) * 100)} %` : '—';
   const tiles: { value: string | number; label: string }[] = [
     { value: stats?.played ?? 0, label: t('platform.profile.stats.played') },
@@ -91,6 +114,7 @@ function StatsAndRanks() {
     { value: rate, label: t('platform.profile.stats.rate') },
     { value: stats?.averageVp ?? 0, label: t('platform.profile.stats.average') },
     { value: stats?.bestVp ?? 0, label: t('platform.profile.stats.best') },
+    { value: stats?.averagePlace ? stats.averagePlace : '—', label: t('platform.profile.stats.place') },
   ];
 
   return (
@@ -101,11 +125,14 @@ function StatsAndRanks() {
             <StatTile value={tile.value} label={tile.label} className="h-full" />
           </motion.div>
         ))}
-        {/* la cote affiche partout sa mention honnête (design.md §10) */}
+        {/* tuile cote — le badge de l'exercice et le chiffre */}
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
           <div className="flex h-full items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-4">
-            <RankBadge tier={demoRating.tier} division={demoRating.division} lp={demoRating.lp} size={32} />
-            <span className="micro-label ml-auto rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.profile.beta')}</span>
+            <RankBadge tier={rank.tier} division={rank.division} lp={rank.lp} placementDone={rank.placementDone ?? undefined} size={32} />
+            <span className="ml-auto text-right">
+              <span className="tnums block font-fraunces text-[24px] font-semibold leading-none text-paper-100">{rank.rating !== null ? rank.rating.toLocaleString(locale(lang)) : '—'}</span>
+              <span className="micro-label mt-1 block text-iron-400">{t('platform.desk.rating.cote')}</span>
+            </span>
           </div>
         </motion.div>
         {/* tuile bourse → Comptoir */}
@@ -134,8 +161,8 @@ function StatsAndRanks() {
         <h2 className="title-card">{t('platform.profile.ranksTitle')}</h2>
         <div className="mb-4 mt-3 h-px bg-brass-hairline" />
         <ul className="grid gap-1.5">
-          {TIERS.map((tier, i) => {
-            const current = tier === demoRating.tier;
+          {[...TIERS].reverse().map((tier, i) => {
+            const current = tier === rank.tier;
             return (
               <motion.li
                 key={tier}
@@ -147,7 +174,8 @@ function StatsAndRanks() {
               >
                 <img src={`/rank-${tier}.svg`} alt="" width={24} height={24} className="h-6 w-6" />
                 <span className={cn('font-ui text-[13px] font-semibold', current ? 'text-paper-100' : 'text-iron-400')}>{t(`platform.rank.${tier}`)}</span>
-                {current && <span className="micro-label ml-auto text-brass-300">{t('platform.profile.season', { lp: demoRating.lp })}</span>}
+                <span className="data-text ml-auto text-[12px] tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
+                {current && rank.lp !== undefined && <span className="micro-label text-brass-300">{t('platform.rank.lp', { lp: rank.lp })}</span>}
               </motion.li>
             );
           })}
@@ -155,6 +183,182 @@ function StatsAndRanks() {
         <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12px] leading-snug text-iron-400">{t('platform.profile.ranksFoot')}</p>
       </motion.aside>
     </div>
+  );
+}
+
+/* ------------------------------- La fiche ------------------------------- */
+
+/** La cote sur l'exercice : la ligne, la zone sous elle, trois repères. */
+function TrendChart({ values }: { values: number[] }) {
+  const t = useT();
+  if (values.length < 2) return <p className="py-8 text-center font-ui text-[13px] text-iron-400">{t('platform.profile.trend.none')}</p>;
+  const lo = Math.min(...values, 1200) - 40;
+  const hi = Math.max(...values, 1200) + 40;
+  const x = (i: number) => 44 + (i / (values.length - 1)) * 548;
+  const y = (v: number) => 136 - ((v - lo) / (hi - lo)) * 116;
+  const ticks = Array.from(new Set([lo + 40, (lo + hi) / 2, hi - 40].map((v) => Math.round(v / 50) * 50)));
+  const pts = values.map((v, i) => `${x(i)},${y(v)}`);
+  const last = values.length - 1;
+  return (
+    <svg viewBox="0 0 600 160" role="img" aria-label={`${values[0]} → ${values[last]}`} className="mt-1 h-auto w-full">
+      {ticks.map((v) => (
+        <g key={v}>
+          <line x1={44} x2={600} y1={y(v)} y2={y(v)} strokeWidth={1} className="stroke-current text-paper-100 opacity-10" />
+          <text x={0} y={y(v) + 4} fontSize={11} className="fill-current font-mono text-iron-400">
+            {v}
+          </text>
+        </g>
+      ))}
+      <path d={`M${pts.join(' L')} L${x(last)} 156 L44 156 Z`} className="fill-current text-brass-300 opacity-10" />
+      <polyline points={pts.join(' ')} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" className="fill-none stroke-current text-brass-300" />
+      <circle cx={x(last)} cy={y(values[last])} r={4} className="fill-current text-brass-300" />
+    </svg>
+  );
+}
+
+function TrendPanel({ rating }: { rating: Rating | null }) {
+  const t = useT();
+  const lang = useLang();
+  const prev = rating && rating.trend.length > 1 ? rating.trend[rating.trend.length - 2] : null;
+  const delta = rating && prev !== null ? rating.rating - prev : 0;
+  const meta = rating ? (
+    <>
+      {t('platform.profile.cote', { rating: rating.rating.toLocaleString(locale(lang)) })}
+      {delta !== 0 && (
+        <span className={cn('ml-2', delta > 0 ? 'text-bottle-400' : 'text-rust-400')}>
+          {delta > 0 ? `+${delta}` : delta} · {t('platform.profile.trend.lastGame')}
+        </span>
+      )}
+    </>
+  ) : undefined;
+  return (
+    <Panel title={t('platform.profile.trend.title')} meta={meta}>
+      <TrendChart values={rating?.trend ?? []} />
+    </Panel>
+  );
+}
+
+/** ce que je fais à une table, en moyenne : les sommes divisées par les parties comptées */
+function perGame(stats: Stats, lang: string) {
+  const n = Math.max(1, stats.tallied || stats.played);
+  return (v: number) => (Math.round((v / n) * 10) / 10).toLocaleString(locale(lang));
+}
+
+function MannerPanel({ stats }: { stats: Stats }) {
+  const t = useT();
+  const lang = useLang();
+  const tally = stats.tally;
+  const per = perGame(stats, lang);
+  const figures: { key: string; value: number }[] = tally
+    ? [
+        { key: 'built', value: tally.built },
+        { key: 'links', value: tally.links },
+        { key: 'sold', value: tally.sold },
+        { key: 'developed', value: tally.developed },
+        { key: 'loans', value: tally.loans },
+        { key: 'flipped', value: tally.flipped },
+      ]
+    : [];
+  return (
+    <Panel title={t('platform.profile.manner.title')} meta={tally ? t('platform.profile.manner.perGame', { n: stats.tallied || stats.played }) : undefined}>
+      {tally ? (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
+          {figures.map((f) => (
+            <div key={f.key}>
+              <span className="tnums block font-fraunces text-[24px] font-semibold leading-none text-paper-100">{per(f.value)}</span>
+              <span className="micro-label mt-1.5 block text-iron-400">{t(`platform.profile.manner.${f.key}`)}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="py-6 text-center font-ui text-[13px] text-iron-400">{t('platform.profile.manner.none')}</p>
+      )}
+    </Panel>
+  );
+}
+
+function IndustriesPanel({ stats }: { stats: Stats }) {
+  const t = useT();
+  const lang = useLang();
+  const tally = stats.tally;
+  if (!tally) return null;
+  const per = perGame(stats, lang);
+  const inds = (Object.keys(INDUSTRIES) as IndustryType[]).map((k) => [k, tally.industries[k] ?? 0] as const);
+  const most = Math.max(1, ...inds.map(([, v]) => v));
+  const towns = Object.entries(tally.towns)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  return (
+    <Panel title={t('platform.profile.industries.title')} meta={t('platform.profile.industries.perGame')}>
+      <ul className="grid gap-2.5">
+        {inds.map(([k, v]) => (
+          <li key={k} className="grid grid-cols-[minmax(0,7.5rem)_1fr_2.75rem] items-center gap-3">
+            <span className="truncate font-ui text-[12.5px] text-paper-300">{t(`game.settings.industry.${k}`)}</span>
+            <span className="h-1.5 overflow-hidden rounded-full bg-enamel-700">
+              <motion.span initial={{ width: 0 }} whileInView={{ width: `${Math.round((v / most) * 100)}%` }} viewport={{ once: true }} transition={{ duration: 0.45, ease }} className="block h-full rounded-full bg-brass-500" />
+            </span>
+            <span className="data-text text-right text-[12px] tabular-nums text-paper-100">{per(v)}</span>
+          </li>
+        ))}
+      </ul>
+      {towns.length > 0 && (
+        <>
+          <p className="micro-label mt-5 text-iron-400">{t('platform.profile.industries.towns')}</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {towns.map(([id, v]) => (
+              <li key={id} className="rounded-full border border-brass-hairline bg-enamel-800 px-2.5 py-1 font-ui text-[12px] font-semibold text-paper-100">
+                {TOWN_BY_ID[id]?.name ?? id} <span className="data-text text-[11px] font-normal text-iron-400">×{v}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Panel>
+  );
+}
+
+function RivalsPanel({ stats }: { stats: Stats }) {
+  const t = useT();
+  return (
+    <Panel title={t('platform.profile.rivals.title')}>
+      {stats.rivals.length === 0 ? (
+        <p className="py-6 text-center font-ui text-[13px] text-iron-400">{t('platform.profile.rivals.none')}</p>
+      ) : (
+        <ul className="grid gap-1.5">
+          {stats.rivals.slice(0, 8).map((r) => (
+            <li key={r.id} className="flex items-center gap-3 rounded-lg border border-brass-hairline bg-enamel-800 px-3 py-2">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700 font-ui text-[12px] font-semibold text-paper-100" aria-hidden>
+                {r.name.charAt(0).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-ui text-[13px] font-semibold text-paper-100">{r.name}</span>
+                <span className="data-text text-[11px] text-iron-400">{r.played === 1 ? t('platform.profile.rivals.games.one') : t('platform.profile.rivals.games.many', { n: r.played })}</span>
+              </span>
+              <span className={cn('data-text text-[14px] font-semibold tabular-nums', r.won > r.lost ? 'text-bottle-400' : r.won < r.lost ? 'text-rust-400' : 'text-paper-300')}>
+                {r.won} – {r.lost}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+}
+
+function RecordSection() {
+  const desk = useDesk();
+  const stats = desk?.stats ?? null;
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.1, once: true }} transition={{ duration: 0.24, ease }} className="mt-6 grid gap-6 min-[1100px]:grid-cols-12">
+      <div className="grid content-start gap-6 min-[1100px]:col-span-7">
+        <TrendPanel rating={desk?.rating ?? null} />
+        {stats && <MannerPanel stats={stats} />}
+      </div>
+      <div className="grid content-start gap-6 min-[1100px]:col-span-5">
+        {stats && <IndustriesPanel stats={stats} />}
+        {stats && <RivalsPanel stats={stats} />}
+      </div>
+    </motion.div>
   );
 }
 
@@ -324,6 +528,7 @@ export default function Profile() {
         <VerifyBanner />
       </div>
       <StatsAndRanks />
+      <RecordSection />
 
       <section className="mt-6">
         <h2 className="h2-section mb-4">{t('platform.profile.historyTitle')}</h2>

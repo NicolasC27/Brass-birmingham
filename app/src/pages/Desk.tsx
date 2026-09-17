@@ -12,13 +12,14 @@ import EmptyState from '@/components/platform/EmptyState';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import Modal from '@/components/platform/Modal';
 import Toast, { type ToastData } from '@/components/platform/Toast';
-import { demoRating } from '@/components/platform/mockData';
+import type { RankTier } from '@/components/platform/RankBadge';
 import PlayerToken from '@/components/setup/PlayerToken';
+import { PLACEMENTS, rankOf, type RankView } from '@/platform/rank';
 import { collectRewards, useWallet } from '@/platform/wallet';
 import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
-import type { Friend, Invitation, PastGame, TableSummary } from '@/online/table';
+import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
 import { useLang, useT, tr } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -52,6 +53,44 @@ function useAgo() {
   };
 }
 
+/** jours pleins avant une échéance (la clôture de l'exercice) */
+const daysUntil = (at: number): number => Math.max(0, Math.ceil((at - Date.now()) / 86_400_000));
+
+/** une cote en chiffres tabulaires, à la française ou à l'anglaise */
+const cote = (n: number, lang: string): string => n.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB');
+
+const METALS: RankTier[] = ['bronze', 'fer', 'acier', 'laiton', 'or'];
+
+/** la marche suivante de l'échelle : l'autre division, ou le rang au-dessus */
+function nextOf(rank: RankView): { tier: RankTier; division: string } | null {
+  if (rank.tier === 'placement' || rank.tier === 'or' || rank.tier === 'maitre') return null;
+  if (rank.division === 'II') return { tier: rank.tier, division: 'I' };
+  return { tier: METALS[METALS.indexOf(rank.tier) + 1], division: 'II' };
+}
+
+/** La tendance d'une cote en une ligne — le bureau et le classement s'en servent. */
+export function Sparkline({ values, width = 72, height = 20, className }: { values: number[]; width?: number; height?: number; className?: string }) {
+  if (values.length < 2) return <span className={cn('data-text text-[11px] text-iron-600', className)}>—</span>;
+  const min = Math.min(...values);
+  const span = Math.max(1, Math.max(...values) - min);
+  const pts = values.map((v, i) => `${1 + (i / (values.length - 1)) * (width - 2)},${height - 1 - ((v - min) / span) * (height - 2)}`);
+  const [lx, ly] = pts[pts.length - 1].split(',');
+  const delta = values[values.length - 1] - values[0];
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+      aria-label={`${values[0]} → ${values[values.length - 1]}`}
+      className={cn('shrink-0 overflow-visible', delta > 0 ? 'text-bottle-400' : delta < 0 ? 'text-rust-400' : 'text-iron-400', className)}
+    >
+      <polyline points={pts.join(' ')} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={lx} cy={ly} r={2} fill="currentColor" />
+    </svg>
+  );
+}
+
 /* ------------------------- En-tête « carte de membre » ------------------------- */
 
 function MemberHeader() {
@@ -62,6 +101,7 @@ function MemberHeader() {
   const wallet = useWallet();
   if (!session) return null;
   const stats = desk?.stats;
+  const rank = rankOf(desk?.rating);
   const since = new Date(session.createdAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric' });
   const rate = stats && stats.played ? `${Math.round((stats.won / stats.played) * 100)} %` : '—';
 
@@ -89,8 +129,8 @@ function MemberHeader() {
           {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
           <p className="micro-label mt-1 text-iron-400">{t('platform.desk.memberSince', { date: since })}</p>
           <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <RankBadge tier={demoRating.tier} division={demoRating.division} lp={demoRating.lp} size={24} />
-            <span className="micro-label rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.desk.seasonBeta')}</span>
+            <RankBadge tier={rank.tier} division={rank.division} lp={rank.lp} placementDone={rank.placementDone ?? undefined} size={24} />
+            {desk && <span className="micro-label rounded bg-enamel-700 px-1.5 py-0.5 text-iron-400">{t('platform.desk.season', { season: desk.season.name, days: daysUntil(desk.season.endsAt) })}</span>}
           </p>
         </motion.div>
 
@@ -738,6 +778,86 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
 
 /* --------------------------- Panneau E — Statistiques --------------------------- */
 
+/** La carte de cote : le chiffre, le rang et sa division, les placements, la saison. */
+function RatingCard({ rating, season }: { rating: Rating | null; season: Season | null }) {
+  const t = useT();
+  const lang = useLang();
+  const rank = rankOf(rating);
+  const head = (
+    <>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h3 className="title-card">{t('platform.desk.rating.title')}</h3>
+        {season && <span className="data-text text-[12px] tabular-nums text-iron-400">{t('platform.desk.rating.season', { season: season.name, days: daysUntil(season.endsAt) })}</span>}
+      </div>
+      <div className="mt-3 h-px bg-brass-hairline" />
+    </>
+  );
+
+  if (!rating) {
+    return (
+      <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+        {head}
+        <p className="py-8 text-center font-ui text-[13px] text-iron-400">{t('platform.desk.rating.empty')}</p>
+      </div>
+    );
+  }
+
+  const prev = rating.trend.length > 1 ? rating.trend[rating.trend.length - 2] : null;
+  const delta = prev === null ? 0 : rating.rating - prev;
+  const next = nextOf(rank);
+  const placing = rank.placementDone !== null;
+
+  return (
+    <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+      {head}
+      <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-5">
+        <div>
+          <p className="micro-label text-iron-400">{t('platform.desk.rating.cote')}</p>
+          <p className="mt-1 flex items-baseline gap-2">
+            <span className="font-fraunces text-[40px] font-semibold leading-none text-paper-100 tnums">{cote(rating.rating, lang)}</span>
+            {delta !== 0 && (
+              <span className={cn('data-text text-[13px]', delta > 0 ? 'text-bottle-400' : 'text-rust-400')}>
+                {delta > 0 ? `+${delta}` : delta} <span className="text-iron-600">· {t('platform.desk.rating.lastGame')}</span>
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <RankBadge tier={rank.tier} division={rank.division} size={48} compact />
+          <div>
+            {placing ? (
+              <p className="micro-label text-brass-300">{t('platform.rank.placement', { done: rank.placementDone ?? 0, total: PLACEMENTS })}</p>
+            ) : (
+              <p className="font-fraunces text-[22px] font-semibold leading-none text-paper-100">
+                {t(`platform.rank.${rank.tier}`)}
+                {rank.division ? ` ${rank.division}` : ''}
+              </p>
+            )}
+            <p className="data-text mt-1.5 text-[12px] text-iron-400">
+              {placing ? t('platform.desk.rating.placements', { done: rank.placementDone ?? 0, total: PLACEMENTS }) : t('platform.desk.rating.firm', { won: rating.won, games: rating.games })}
+            </p>
+          </div>
+        </div>
+        <div className="ml-auto" title={t('platform.desk.rating.trend')}>
+          <Sparkline values={rating.trend} width={120} height={32} />
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="micro-label text-iron-400">
+            {placing ? t('platform.rank.placement', { done: rank.placementDone ?? 0, total: PLACEMENTS }) : next ? t('platform.desk.rating.toNext', { tier: t(`platform.rank.${next.tier}`), division: next.division }) : t('platform.desk.rating.top')}
+          </span>
+          {rank.lp !== undefined && <span className="data-text text-[12px] tabular-nums text-iron-400">{t('platform.rank.lp', { lp: rank.lp })}</span>}
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-enamel-700">
+          <motion.div initial={{ width: 0 }} animate={{ width: `${rank.progress}%` }} transition={{ duration: 0.5, ease }} className="h-full rounded-full bg-brass-500" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatsPanel() {
   const t = useT();
   const desk = useDesk();
@@ -749,6 +869,7 @@ function StatsPanel() {
     { value: rate, label: t('platform.desk.stats.rate') },
     { value: stats?.averageVp ?? 0, label: t('platform.desk.stats.average') },
     { value: stats?.bestVp ?? 0, label: t('platform.desk.stats.best') },
+    { value: stats?.averagePlace ? stats.averagePlace : '—', label: t('platform.desk.stats.place') },
   ];
 
   return (
@@ -759,23 +880,11 @@ function StatsPanel() {
             <StatTile value={tile.value} label={tile.label} className="h-full" />
           </motion.div>
         ))}
-        {/* tuile cote — mention honnête BÊTA (design.md §10) */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
-          <div className="flex h-full items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-4">
-            <RankBadge tier={demoRating.tier} division={demoRating.division} lp={demoRating.lp} size={32} />
-            <span className="micro-label ml-auto rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.desk.rating.beta')}</span>
-          </div>
-        </motion.div>
       </div>
 
-      <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <h3 className="title-card">{t('platform.desk.rating.title')}</h3>
-          <span className="micro-label rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.desk.rating.beta')}</span>
-        </div>
-        <div className="mt-3 h-px bg-brass-hairline" />
-        <p className="py-8 text-center font-ui text-[13px] text-iron-400">{t('platform.desk.rating.empty')}</p>
-      </div>
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
+        <RatingCard rating={desk?.rating ?? null} season={desk?.season ?? null} />
+      </motion.div>
     </div>
   );
 }
