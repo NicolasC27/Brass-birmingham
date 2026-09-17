@@ -41,15 +41,19 @@ export default function Notices() {
   const [notes, setNotes] = useState<Note[]>([]);
   /* the banner's lower edge: the sales' notices hang right under it */
   const [under, setUnder] = useState<number | null>(null);
+  const shown = notes.length > 0;
   useEffect(() => {
-    const bar = document.querySelector('[data-topbar]');
-    if (!bar) return;
-    const measure = () => setUnder(Math.round(bar.getBoundingClientRect().bottom));
+    /* the banner is remounted when the turn changes hands: it is looked up
+       each time, and followed while a notice hangs under it */
+    const measure = () => {
+      const bar = document.querySelector('[data-topbar]');
+      if (bar) setUnder(Math.round(bar.getBoundingClientRect().bottom));
+    };
     measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(bar);
-    return () => ro.disconnect();
-  }, []);
+    if (!shown) return;
+    const iv = window.setInterval(measure, 400);
+    return () => window.clearInterval(iv);
+  }, [shown]);
   const [seen, setSeen] = useState<number | null>(null);
   const [floats, setFloats] = useState<{ id: number; n: number }[]>([]);
   const [incomeSeen, setIncomeSeen] = useState<number | null>(null);
