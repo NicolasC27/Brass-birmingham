@@ -20,8 +20,7 @@
         "center": true,
         "resizable": true,
         "fullscreen": false,
-        "zoomHotkeysEnabled": true,
-        "backgroundColor": "#ede6d6"
+                "backgroundColor": "#ede6d6"
       }
     ],
     "security": {
