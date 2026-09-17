@@ -359,16 +359,23 @@ function engravedPair(key: string, t: Texture, mono = false): Texture {
   return e;
 }
 
+/* WebKit (the Linux and macOS desktop shells, Safari) hands a texture
+   decoded in a worker over as a black bitmap once it is large: the map
+   paintings came up as night. Decoding stays on the main thread there. */
+const WEBKIT = typeof navigator !== 'undefined' && /AppleWebKit/.test(navigator.userAgent) && !/Chrome|Chromium|Edg\//.test(navigator.userAgent);
+
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
+  Assets.setPreferences({ preferWorkers: !WEBKIT });
   const urls = ['/beer-barrel.png', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
   const loaded = await Assets.load(urls);
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
   /* a house may come alive: a short looping film of its quay served beside
      the still (smoke drifting, lamps flickering). The still stands in when
-     no film is served, or when the reader has asked for less motion. */
-  const stillOnly = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+     no film is served, when the reader has asked for less motion, or
+     under WebKit, whose video textures come up as static. */
+  const stillOnly = WEBKIT || (typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   await Promise.all(
     MERCHANTS.map(async (m) => {
       const name = m.id.replace(/^m-/, '');
