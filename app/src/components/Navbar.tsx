@@ -62,7 +62,7 @@ function AccountMenu() {
       </button>
       {open && (
         <div role="menu" className="plate absolute right-0 top-[calc(100%+6px)] z-[60] w-52 overflow-hidden py-1">
-          <Link role="menuitem" to="/play" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3.5 py-2 font-sans text-[12px] text-cream-100/85 hover:bg-coal-800 hover:text-brass-400">
+          <Link role="menuitem" to="/desk" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3.5 py-2 font-sans text-[12px] text-cream-100/85 hover:bg-coal-800 hover:text-brass-400">
             <ScrollText className="h-4 w-4" /> {t('site.nav.desk')}
           </Link>
           <Link role="menuitem" to="/profile" onClick={() => setOpen(false)} className="flex items-center gap-2.5 px-3.5 py-2 font-sans text-[12px] text-cream-100/85 hover:bg-coal-800 hover:text-brass-400">
@@ -111,7 +111,7 @@ export default function Navbar() {
         </Link>
 
         <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 md:flex">
-          <NavLink to={isOnline ? '/play' : '/online'} className={link}>
+          <NavLink to={isOnline ? '/online' : '/online'} className={link}>
             {t('site.nav.desk')}
           </NavLink>
           {!isOnline && (

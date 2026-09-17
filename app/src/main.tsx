@@ -10,8 +10,6 @@ import '@fontsource/inter/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import './index.css'
-import './site.css'
-import './site/theme'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

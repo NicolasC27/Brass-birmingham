@@ -34,7 +34,7 @@ export default function SpectatorStrip() {
             {t('game.page.spectatingKeys', { last: keyLabel(keys.lastMove), survey: keyLabel(keys.survey) })}
           </span>
         )}
-        <Link to="/play" className="btn-ledger !min-h-[28px] !px-2.5 !py-0.5 !text-[10px]">
+        <Link to="/online" className="btn-ledger !min-h-[28px] !px-2.5 !py-0.5 !text-[10px]">
           {t('game.page.spectatingLeave')}
         </Link>
       </div>

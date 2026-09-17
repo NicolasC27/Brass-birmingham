@@ -8,7 +8,6 @@ import results from './en/results';
 import online from './en/online';
 import site from './en/site';
 import platform from './en/platform';
-import hall from './en/hall';
 
-export const en = { common, home, setup, game, board, rules, results, online, site, platform, hall };
+export const en = { common, home, setup, game, board, rules, results, online, site, platform };
 export type Dict = typeof en;
