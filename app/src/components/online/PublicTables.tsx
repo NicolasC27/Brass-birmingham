@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Loader2, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useT } from '@/i18n';
+import { useLang, useT } from '@/i18n';
 import { lobby } from '@/online/lobby';
 import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
 import { toCards, type CardTable } from '@/platform/tables';
@@ -49,7 +49,8 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   const [visible, setVisible] = useState(PAGE);
   const [joining, setJoining] = useState<string | null>(null);
 
-  const cards = useMemo(() => toCards(tables ?? [], desk?.tables, session?.name), [tables, desk?.tables, session?.name]);
+  const lang = useLang();
+  const cards = useMemo(() => toCards(tables ?? [], desk?.tables, session?.name, lang), [tables, desk?.tables, session?.name, lang]);
   const filtered = useMemo(() => cards.filter((tb) => matches(tb, filter)), [cards, filter]);
 
   const openCount = cards.filter((tb) => tb.state === 'open').length;

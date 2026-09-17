@@ -12,7 +12,8 @@ import Button from '@/components/platform/Button';
 import SeatToken from '@/components/platform/SeatToken';
 import Toast from '@/components/platform/Toast';
 import type { ToastData } from '@/components/platform/Toast';
-import { useT } from '@/i18n';
+import { useLang, useT } from '@/i18n';
+import { tableTitle } from '@/online/tableNames';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -379,6 +380,7 @@ function InvitePanel({ code, seated }: { code: string; seated: string[] }) {
 
 export default function Lobby() {
   const t = useT();
+  const lang = useLang();
   const navigate = useNavigate();
   const { code = '' } = useParams();
   const stranger = useStranger();
@@ -535,7 +537,7 @@ export default function Lobby() {
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.06 }}>
-              <h1 className="mt-2 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100">{table.name}</h1>
+              <h1 className="mt-2 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100">{tableTitle(table.name, lang)}</h1>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.12 }} className="mt-3 flex flex-wrap items-center gap-1.5">
               {optionChips.map((chip) => (

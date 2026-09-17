@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { BookOpen, Bot, MonitorSmartphone, Play, Save, Users, X } from "lucide-react";
-import { pickTableName } from "@/online/tableNames";
-import { useT } from "@/i18n";
+import { pickTableName, tableTitle } from "@/online/tableNames";
+import { useLang, useT } from "@/i18n";
 import SeatRow from "@/components/setup/SeatRow";
 import HouseRules from "@/components/setup/HouseRules";
 import ShutterWipe from "@/components/setup/ShutterWipe";
@@ -50,6 +50,7 @@ function Divider() {
 
 export default function Setup() {
   const t = useT();
+  const lang = useLang();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const urlMode: LocalMode = params.get("mode") === "hotseat" ? "hotseat" : "solo";
@@ -211,7 +212,7 @@ export default function Setup() {
             <section aria-label={t("platform.setup.identity.heading")}>
               <SheetHeading>{t("platform.setup.identity.heading")}</SheetHeading>
               <p className="mt-4 font-ui text-[13px] font-medium text-paper-300">{t("platform.setup.identity.nameLabel")}</p>
-              <p className="h2-section mt-1 truncate">{tableName}</p>
+              <p className="h2-section mt-1 truncate">{tableTitle(tableName, lang)}</p>
               <p className="mt-1 font-ui text-[12px] text-iron-400">{t("platform.setup.identity.drawn")}</p>
 
               {/* Visibilité : cette console crée des tables locales — présentation honnête. */}
@@ -312,7 +313,7 @@ export default function Setup() {
             <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-60" />
             <div className="relative">
               <p className="micro-label text-iron-400">{t("platform.setup.preview.label")}</p>
-              <p className="h2-section mt-2 truncate">{tableName}</p>
+              <p className="h2-section mt-2 truncate">{tableTitle(tableName, lang)}</p>
 
               {/* Rangée de jetons dans leur état courant */}
               <div className="mt-4 flex flex-wrap items-center gap-3">

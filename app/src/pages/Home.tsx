@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { BookOpen, Briefcase, ChevronRight, Hash, Play, Plus, RotateCcw, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useT } from '@/i18n';
+import { useLang, useT } from '@/i18n';
+import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
 import { readResume } from '@/game/quickplay';
 import Button from '@/components/platform/Button';
@@ -29,6 +30,7 @@ const ease = 'easeOut' as const;
 
 function ResumeBanner() {
   const t = useT();
+  const lang = useLang();
   const desk = useDesk();
   const local = readResume();
 
@@ -36,7 +38,7 @@ function ResumeBanner() {
   if (!table && !local) return null;
 
   const text = table
-    ? t('platform.home.resumeBanner', { name: table.name })
+    ? t('platform.home.resumeBanner', { name: tableTitle(table.name, lang) })
     : t('platform.home.resumeBanner', { name: t('platform.action.localGame') });
   const meta = table
     ? t('platform.home.resumeMeta', { round: table.round ?? 1, opponents: table.seats.length - 1 })

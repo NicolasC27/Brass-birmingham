@@ -21,6 +21,7 @@ import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
 import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
 import { useLang, useT, tr } from '@/i18n';
+import { tableTitle } from '@/online/tableNames';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -276,6 +277,7 @@ function TableRibbon({ table, pulse }: { table: TableSummary; pulse: boolean }) 
 
 function TableRow({ table, me, pulse, onLeave }: { table: TableSummary; me: string; pulse: boolean; onLeave: (table: TableSummary) => void }) {
   const t = useT();
+  const lang = useLang();
   const ago = useAgo();
   const [menu, setMenu] = useState(false);
   const toAct = table.current !== undefined ? table.seats[table.current] : null;
@@ -301,7 +303,7 @@ function TableRow({ table, me, pulse, onLeave }: { table: TableSummary; me: stri
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
         <div className="min-w-0 flex-1 basis-56">
           <div className="flex items-center gap-2">
-            <h3 className="title-card truncate">{table.name}</h3>
+            <h3 className="title-card truncate">{tableTitle(table.name, lang)}</h3>
             <TableRibbon table={table} pulse={pulse} />
           </div>
           <p className="data-text mt-1.5 text-[11px] text-iron-400">
@@ -354,6 +356,7 @@ function TableRow({ table, me, pulse, onLeave }: { table: TableSummary; me: stri
 
 function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
   const t = useT();
+  const lang = useLang();
   const [leaving, setLeaving] = useState<TableSummary | null>(null);
   const rank = (x: TableSummary) => (x.myTurn ? 0 : x.status === 'playing' ? 1 : x.status === 'open' ? 2 : 3);
   const sorted = [...tables].sort((a, b) => rank(a) - rank(b));
@@ -369,7 +372,7 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
           <TableRow key={x.code} table={x} me={me} pulse={i < 3} onLeave={setLeaving} />
         ))}
       </ul>
-      <Modal open={leaving !== null} onClose={() => setLeaving(null)} title={leaving ? t('platform.desk.tables.leaveTitle', { name: leaving.name }) : undefined}>
+      <Modal open={leaving !== null} onClose={() => setLeaving(null)} title={leaving ? t('platform.desk.tables.leaveTitle', { name: tableTitle(leaving.name, lang) }) : undefined}>
         <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.desk.tables.leaveCopy')}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Button
@@ -395,6 +398,7 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
 
 function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invitation[]; sent: Invitation[]; onAnswer: (id: string, accept: boolean) => void }) {
   const t = useT();
+  const lang = useLang();
   const ago = useAgo();
   const [showSent, setShowSent] = useState(false);
 
@@ -428,7 +432,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="micro-label text-signal-400">{t('platform.nav.invitations')}</p>
-                  <p className="mt-0.5 truncate font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.invitations.invitedBy', { from: i.from.name, table: i.tableName })}</p>
+                  <p className="mt-0.5 truncate font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.invitations.invitedBy', { from: i.from.name, table: tableTitle(i.tableName, lang) })}</p>
                   <p className="data-text mt-0.5 text-[11px] text-iron-400">{ago(i.createdAt)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -457,7 +461,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
               {sent.map((i) => (
                 <li key={i.id} className="flex items-center gap-2 font-ui text-[13px] text-paper-300">
                   <Send size={12} aria-hidden className="shrink-0 text-brass-300/70" />
-                  <span className="truncate">{t('platform.desk.invitations.sentTo', { to: i.to.name, table: i.tableName })}</span>
+                  <span className="truncate">{t('platform.desk.invitations.sentTo', { to: i.to.name, table: tableTitle(i.tableName, lang) })}</span>
                   <span className="micro-label ml-auto shrink-0 rounded bg-enamel-700 px-1.5 py-0.5 text-iron-400">{t('platform.desk.invitations.pending')}</span>
                 </li>
               ))}
@@ -675,7 +679,7 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
         </span>
       </td>
       <td className="py-2.5 pr-3">
-        <span className="font-ui text-[13px] font-semibold text-paper-100">{game.name}</span>
+        <span className="font-ui text-[13px] font-semibold text-paper-100">{tableTitle(game.name, lang)}</span>
         <span className="data-text ml-2 text-[10px] uppercase tracking-[0.2em] text-iron-600">{game.code}</span>
       </td>
       <td className="py-2.5 pr-3">

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { CircleDashed, Loader2, RefreshCw, Swords, Unplug, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useT } from '@/i18n';
+import { useLang, useT } from '@/i18n';
 import { onlineWire } from '@/online/net';
 import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
 import { toCards, type CardTable } from '@/platform/tables';
@@ -139,7 +139,8 @@ export default function TableBoard() {
   const [tab, setTab] = useState('open');
   const [spin, setSpin] = useState(0);
 
-  const cards = useMemo(() => toCards(tables ?? [], desk?.tables, session?.name), [tables, desk?.tables, session?.name]);
+  const lang = useLang();
+  const cards = useMemo(() => toCards(tables ?? [], desk?.tables, session?.name, lang), [tables, desk?.tables, session?.name, lang]);
   const open = useMemo(() => cards.filter((tb) => tb.state !== 'live'), [cards]);
   const live = useMemo(() => cards.filter((tb) => tb.state === 'live'), [cards]);
   const stranger = useStranger();

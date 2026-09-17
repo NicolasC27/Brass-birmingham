@@ -2,6 +2,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import { eraRounds } from '@/game/data';
 import type { Era } from '@/game/types';
 import { MAX_SEATS, type PublicTable, type TableSummary } from '@/online/table';
+import { tableTitle } from '@/online/tableNames';
 
 /* ------------------------------------------------------------------ */
 /* The office's register of tables, in the shape the club's cards      */
@@ -46,7 +47,7 @@ export interface CardTable {
   updatedAt: number;
 }
 
-export function toCard(x: PublicTable, mine?: TableSummary, myName?: string): CardTable {
+export function toCard(x: PublicTable, mine?: TableSummary, myName?: string, lang = 'en'): CardTable {
   const seats: (CardSeat | null)[] = x.seats.map((s) => ({
     name: s.name,
     color: s.color,
@@ -60,7 +61,7 @@ export function toCard(x: PublicTable, mine?: TableSummary, myName?: string): Ca
   const toAct = playing && x.current !== undefined ? (seats[x.current] ?? undefined) : undefined;
   return {
     code: x.code,
-    name: x.name,
+    name: tableTitle(x.name, lang),
     mode: x.ranked ? 'ranked' : 'normal',
     hostName: x.hostName,
     seats,
@@ -77,9 +78,9 @@ export function toCard(x: PublicTable, mine?: TableSummary, myName?: string): Ca
 }
 
 /** the register as cards, my tables first, then the freshest */
-export function toCards(tables: PublicTable[], mine: TableSummary[] = [], myName?: string): CardTable[] {
+export function toCards(tables: PublicTable[], mine: TableSummary[] = [], myName?: string, lang = 'en'): CardTable[] {
   const byCode = new Map(mine.map((x) => [x.code, x]));
   return tables
-    .map((x) => toCard(x, byCode.get(x.code), myName))
+    .map((x) => toCard(x, byCode.get(x.code), myName, lang))
     .sort((a, b) => Number(b.mine) - Number(a.mine) || b.updatedAt - a.updatedAt);
 }

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { useT } from '@/i18n';
+import { useLang, useT } from '@/i18n';
+import { tableTitle } from '@/online/tableNames';
 import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
 import type { PastGame, PublicTable } from '@/online/table';
 import ActivityFeedItem from '@/components/platform/ActivityFeedItem';
@@ -51,12 +52,13 @@ function Empty({ copy, cta }: { copy: string; cta?: { label: string; to: string 
 
 function GameItem({ game, me }: { game: PastGame; me: string }) {
   const navigate = useNavigate();
+  const lang = useLang();
   const winner = game.players[game.winner];
   const won = winner?.id === me;
   return (
     <ActivityFeedItem
       kind={won ? 'gameWon' : 'gameOver'}
-      vars={{ table: game.name, name: winner?.name ?? '—', vp: winner?.vp ?? 0 }}
+      vars={{ table: tableTitle(game.name, lang), name: winner?.name ?? '—', vp: winner?.vp ?? 0 }}
       at={game.finishedAt}
       onClick={() => navigate('/desk#historique')}
     />
@@ -89,11 +91,12 @@ function MyGames() {
 
 function LiveItem({ table }: { table: PublicTable }) {
   const navigate = useNavigate();
+  const lang = useLang();
   const cur = table.current !== undefined ? table.seats[table.current] : undefined;
   return (
     <ActivityFeedItem
       kind="tableLive"
-      vars={{ table: table.name, round: table.round ?? 1, name: cur?.name ?? '—' }}
+      vars={{ table: tableTitle(table.name, lang), round: table.round ?? 1, name: cur?.name ?? '—' }}
       at={table.updatedAt}
       onClick={() => navigate(`/game/${table.code}`)}
     />
