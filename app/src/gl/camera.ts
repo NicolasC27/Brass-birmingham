@@ -33,7 +33,11 @@ export class Camera {
   tick(deltaMS: number): void {
     const { w, h } = this.getSize();
     if (w === 0) return;
-    const f = 1 - Math.exp(-deltaMS / 90); // ~90ms time constant — weighty but snappy
+    /* the chase: ~90 ms for a pan, weighty but snappy; ~170 ms while the
+       scale is moving, so a wheel notch swells rather than steps (the
+       anchor under the pointer holds: k, x and y share the one factor) */
+    const zooming = Math.abs(this.target.k - this.view.k) > 0.003;
+    const f = 1 - Math.exp(-deltaMS / (zooming ? 170 : 90));
     if (this.gliding) {
       this.target.x += this.vel.x * (deltaMS / 1000);
       this.target.y += this.vel.y * (deltaMS / 1000);
@@ -74,7 +78,7 @@ export class Camera {
     this.lastManual = Date.now();
     this.gliding = false;
     const { w, h } = this.getSize();
-    const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0022));
+    const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.04 : 0.0017));
     this.target = zoomAt(this.target, e.clientX - rect.left, e.clientY - rect.top, factor, w, h);
   }
 
