@@ -158,7 +158,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const store = new Store(options.file ?? 'brassworks.db');
   const hall = new Hall(store, options.pace ?? DEFAULT_PACE, { now: options.clock, waits: options.waits });
   const post = options.mailer ?? mailerFromEnv();
-  const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:5173');
+  const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000');
   const feedbackTo = (options.feedbackTo ?? process.env.FEEDBACK_TO ?? '').trim();
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
