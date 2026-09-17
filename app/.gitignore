@@ -11,3 +11,7 @@ server/dist/
 *.db-wal
 *.db-shm
 
+
+# the desktop shell's build tree and generated schemas
+src-tauri/target/
+src-tauri/gen/

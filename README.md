@@ -52,12 +52,25 @@ Over a wire that is not `wss://`, a password crosses in clear: put the server be
 
 `npm test` plays a full four-handed game through a real socket, restarts the server mid-game, and lets a candle burn out.
 
+### The desktop app
+
+The same app ships as a native window through [Tauri](https://tauri.app): the web bundle inside the system's webview, a 40 MB binary, no browser chrome. It needs the Rust toolchain and, on Linux, `webkit2gtk-4.1`.
+
+```bash
+cd app
+npm run desktop                      # a dev window over the Vite server
+npm run desktop:build                # src-tauri/target/release/bundle/
+```
+
+The build bakes `VITE_ONLINE_URL` from `.env.local` in, so set it to the office the desktop app should talk to before building. Each platform builds its own package: `.deb` and AppImage on Linux (`APPIMAGE_EXTRACT_AND_RUN=1` when FUSE is missing), `.msi` and `.exe` on Windows, `.dmg` on macOS.
+
 ## Project layout
 
 ```
 app/src/game/        pure rules engine (engine.ts), data tables (data.ts), bots (bot.ts), zustand store
 app/src/online/      tables and seats, the wire protocol, the session, the lobby clients
 app/server/          the table server: the register, the hall of tables, a table in play, the switchboard
+app/src-tauri/       the desktop shell: window, icons, packaging
 app/src/gl/          WebGL board: scene painting (paint.ts), camera, ambiance (traffic, smoke, mist)
 app/src/components/  HUD (tracks, hand dock, player rail, merchants on the minimap), rules codex, setup, results
 app/src/i18n/        French and English dictionaries

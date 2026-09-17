@@ -11,7 +11,9 @@
     "server:dev": "node server/build.mjs --watch & node --watch server/dist/brassworks-server.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "desktop": "tauri dev",
+    "desktop:build": "tauri build"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.3.0",
@@ -70,6 +72,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
