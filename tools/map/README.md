@@ -30,3 +30,22 @@ line per link that hugs valleys and contours, keeps clear of third towns and
 of the other lines. It writes `app/src/components/game/railRoutes.ts`, which
 the board uses for every rail link in the Rail Era, and `geo.ts` exports the
 same tracing (`railPts`) for the compositor to engrave.
+
+## Canal era, painted
+
+The canal-era background followed the same road: a Midjourney painting of
+the Midlands countryside before industry — hedgerow fields, oak copses,
+threads of water, no towns, no mist — composed by
+`tools/assets/map/compose-canal.sh <painting> <geo.json> [stem]`: the
+painting brought up to the world's size, the bleed mirrored from its edges,
+a grade that caps the bleached clearings so the tiles stay the brightest
+thing on the table, then the real geometry engraved as in `bg-compose.mjs`
+(canal beds with a towpath, the future rail lines as cart roads, village
+grounds, merchant basins) and mist in the far edges. It replaces the
+composed terrain of step 4 as `map-era-canal.webp`; the source is
+`tools/assets/map/map-era-canal-midjourney.jpg`.
+
+The prompt that worked asked for the countryside alone. Every attempt that
+named villages or mist got sprawling golden towns and cumulus clouds
+instead; the compositor draws both from the geometry, so the painting
+should carry neither.
