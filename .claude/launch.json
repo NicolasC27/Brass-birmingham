@@ -1,8 +1,52 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "brass-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--prefix", "app", "--", "--port", "3000", "--strictPort"], "port": 3000 },
-    { "name": "brass-web", "url": "http://localhost:3000" },
-    { "name": "brass-server", "runtimeExecutable": "env", "runtimeArgs": ["DEV_LETTERS=1", "npm", "run", "server", "--prefix", "app"], "port": 8787 }
+    {
+      "name": "brass-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "app",
+        "--",
+        "--port",
+        "3000",
+        "--strictPort"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "brass-web",
+      "url": "http://localhost:3000"
+    },
+    {
+      "name": "brass-server",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DEV_LETTERS=1",
+        "npm",
+        "run",
+        "server",
+        "--prefix",
+        "app"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "brass-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "--prefix",
+        "app",
+        "--",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
+    }
   ]
 }
