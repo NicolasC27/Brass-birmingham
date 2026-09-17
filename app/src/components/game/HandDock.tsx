@@ -9,7 +9,7 @@ import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
-import { industryFaceUrl } from '@/gl/paint';
+import { industryFaceUrl } from '@/gl/faces';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
 import { minimapWidth, useBoardOptions } from './boardOptions';

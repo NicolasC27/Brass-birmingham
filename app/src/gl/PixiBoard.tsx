@@ -10,7 +10,7 @@ import { lastActionOf, useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, screenToWorld, worldToScreen, BLEED_X, BLEED_Y } from '@/components/game/boardView';
+import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, ribbonLabelScale, screenToWorld, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -71,9 +71,6 @@ function trace(g: Graphics, pts: number[][]): void {
   g.moveTo(pts[0][0], pts[0][1]);
   for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
 }
-
-/** how long another seat's move is shown the survey's way */
-export const GLIMPSE_MS = 3200;
 
 function regionPos(key: string, era: Era): [number, number] | null {
   const town = TOWN_BY_ID[key];

@@ -11,8 +11,8 @@ import { sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOption
 import { useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
-import { tileFaceUrl } from '@/gl/paint';
-import type { TileArt } from '@/gl/paint';
+import { tileFaceUrl } from '@/gl/faces';
+import type { TileArt } from '@/gl/faces';
 import { keyLabel, useKeybindings } from './keybindings';
 import { ShapeChip } from './TownInspector';
 

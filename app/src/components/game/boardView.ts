@@ -24,6 +24,9 @@ export interface View {
 
 export const FIT_VIEW: View = { k: 1, x: 0, y: 0 };
 
+/** how long another seat's move is shown the survey's way (ms) */
+export const GLIMPSE_MS = 3200;
+
 export const clampK = (k: number): number => Math.min(MAX_K, Math.max(MIN_K, k));
 
 /** scale that fits the whole world inside a cw×ch container */

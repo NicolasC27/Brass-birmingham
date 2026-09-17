@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { ChipStyle, SlotArt, StockStyle, TileArt } from '@/gl/paint';
+import type { ChipStyle, SlotArt, StockStyle, TileArt } from '@/gl/faces';
 import type { TrafficLevel } from '@/gl/ambiance';
 import type { IndustryType } from '@/game/types';
 

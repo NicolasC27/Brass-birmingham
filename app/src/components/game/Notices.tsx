@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { ledgerParts } from '@/game/ledgerText';
 import { useGame } from '@/game/store';
-import { tileFaceUrl } from '@/gl/paint';
+import { tileFaceUrl } from '@/gl/faces';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useBoardOptions } from './boardOptions';

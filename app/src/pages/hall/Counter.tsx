@@ -5,7 +5,7 @@ import { deskErrorKey } from '@/online/errors';
 import { buyItem, useDesk, useSession } from '@/online/session';
 import { setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import type { RailPainting } from '@/components/game/boardOptions';
-import type { SlotArt } from '@/gl/paint';
+import type { SlotArt } from '@/gl/faces';
 import { useT } from '@/i18n';
 
 /* ------------------------------------------------------------------ */

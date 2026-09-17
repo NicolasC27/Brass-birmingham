@@ -35,6 +35,7 @@ import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTarget
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame } from '@/game/store';
+import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
 import { useStranger } from '@/online/session';
 import { FINAL_KEY } from '@/game/types';
@@ -44,7 +45,6 @@ import { cn } from '@/lib/utils';
 
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
-import { GLIMPSE_MS } from '@/gl/PixiBoard';
 
 /** the pause between two moves of a machine while the reader follows them */
 const FOLLOW_PACE_MS = 4000;
