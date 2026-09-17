@@ -39,6 +39,17 @@ export default function Notices() {
   const pins = useGame((s) => s.pins);
   const insets = useHudInsets();
   const [notes, setNotes] = useState<Note[]>([]);
+  /* the banner's lower edge: the sales' notices hang right under it */
+  const [under, setUnder] = useState<number | null>(null);
+  useEffect(() => {
+    const bar = document.querySelector('[data-topbar]');
+    if (!bar) return;
+    const measure = () => setUnder(Math.round(bar.getBoundingClientRect().bottom));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(bar);
+    return () => ro.disconnect();
+  }, []);
   const [seen, setSeen] = useState<number | null>(null);
   const [floats, setFloats] = useState<{ id: number; n: number }[]>([]);
   const [incomeSeen, setIncomeSeen] = useState<number | null>(null);
@@ -80,7 +91,8 @@ export default function Notices() {
       }
       if (!items.length) return;
       setNotes((n) => [...n, ...items]);
-      for (const it of items) window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== it.id)), SHOWN_MS);
+      /* a tile flipped stays on the board until the reader closes it; the rest fades */
+      for (const it of items) if (it.kind !== 'flip') window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== it.id)), SHOWN_MS);
     }, 0);
     return () => window.clearTimeout(add);
   }, [ledger, players, seen, me, t, pins]);
@@ -140,12 +152,12 @@ export default function Notices() {
   return (
     <>
       {/* the reader's own, under the banner */}
-      <div className="pointer-events-none fixed left-1/2 z-[82] flex w-[min(520px,60vw)] -translate-x-1/2 flex-col items-center gap-2" style={{ top: insets.top + 118 }} aria-live="polite">
-        <AnimatePresence>{notes.filter((n) => n.side === 'mine').map(card)}</AnimatePresence>
+      <div className="pointer-events-none fixed left-1/2 z-[82] flex w-[min(520px,60vw)] -translate-x-1/2 flex-col items-center gap-2" style={{ top: (under ?? insets.top + 108) + 10 }} aria-live="polite">
+        <AnimatePresence>{notes.filter((n) => n.kind === 'flip' || n.side === 'mine').map(card)}</AnimatePresence>
       </div>
       {/* the others', at the top right under the exchange */}
       <div className="pointer-events-none fixed right-3 z-[82] flex w-[min(340px,40vw)] flex-col items-stretch gap-2" style={{ top: insets.top + 52 }} aria-live="polite">
-        <AnimatePresence>{notes.filter((n) => n.side === 'others').map(card)}</AnimatePresence>
+        <AnimatePresence>{notes.filter((n) => n.kind !== 'flip' && n.side === 'others').map(card)}</AnimatePresence>
       </div>
       {/* income rising: the figure floats up the middle of the board */}
       <div className="pointer-events-none fixed left-1/2 top-[44%] z-[82] -translate-x-1/2">
