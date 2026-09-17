@@ -21,6 +21,10 @@ export class Camera {
 
   private vel = { x: 0, y: 0 };
   private gliding = false;
+  /** a flight: from one view to another over a fixed time, eased both ends
+   *  (the scale runs in log space so the zoom feels even) — for the fly-to
+   *  and the fit; the wheel and the hand keep the chase */
+  private fly: { from: View; to: View; t0: number; ms: number } | null = null;
   private drag: { sx: number; sy: number; lx: number; ly: number; lt: number; moved: boolean } | null = null;
   private lastCommit = 0;
   private readonly getSize: () => { w: number; h: number };
@@ -36,6 +40,19 @@ export class Camera {
     /* the chase: ~90 ms for a pan, weighty but snappy; ~170 ms while the
        scale is moving, so a wheel notch swells rather than steps (the
        anchor under the pointer holds: k, x and y share the one factor) */
+    if (this.fly) {
+      const t = Math.min(1, (performance.now() - this.fly.t0) / this.fly.ms);
+      const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const { from, to } = this.fly;
+      this.view = { k: Math.exp(Math.log(from.k) + (Math.log(to.k) - Math.log(from.k)) * e), x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e };
+      this.target = { ...to };
+      if (t >= 1) {
+        this.fly = null;
+        this.view = { ...to };
+      }
+      this.commitTick();
+      return;
+    }
     const zooming = Math.abs(this.target.k - this.view.k) > 0.003;
     const f = 1 - Math.exp(-deltaMS / (zooming ? 170 : 90));
     if (this.gliding) {
@@ -50,6 +67,11 @@ export class Camera {
     this.view.k += (this.target.k - this.view.k) * f;
     this.view.x += (this.target.x - this.view.x) * f;
     this.view.y += (this.target.y - this.view.y) * f;
+    this.commitTick();
+  }
+
+  /** the throttled word to the page, and a last one when the camera settles */
+  private commitTick(): void {
     const now = performance.now();
     if (this.isMoving()) {
       if (now - this.lastCommit > 120) {
@@ -62,8 +84,23 @@ export class Camera {
     }
   }
 
+  /** the hand takes the camera: whatever flight was on is over, from here */
+  private interrupt(): void {
+    if (!this.fly) return;
+    this.fly = null;
+    this.target = { ...this.view };
+  }
+
+  /** a flight to a view, so many milliseconds long */
+  private glide(to: View, ms: number): void {
+    this.gliding = false;
+    this.fly = { from: { ...this.view }, to, t0: performance.now(), ms };
+    this.target = { ...to };
+  }
+
   isMoving(): boolean {
     return (
+      this.fly !== null ||
       Math.abs(this.target.k - this.view.k) > 0.0008 ||
       Math.abs(this.target.x - this.view.x) + Math.abs(this.target.y - this.view.y) > 0.5 ||
       this.gliding ||
@@ -77,6 +114,7 @@ export class Camera {
     e.preventDefault();
     this.lastManual = Date.now();
     this.gliding = false;
+    this.interrupt();
     const { w, h } = this.getSize();
     const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.04 : 0.0017));
     this.target = zoomAt(this.target, e.clientX - rect.left, e.clientY - rect.top, factor, w, h);
@@ -85,6 +123,7 @@ export class Camera {
   pointerDown(e: PointerEvent): void {
     this.lastManual = Date.now();
     this.gliding = false;
+    this.interrupt();
     this.drag = { sx: e.clientX, sy: e.clientY, lx: e.clientX, ly: e.clientY, lt: performance.now(), moved: false };
   }
 
@@ -119,6 +158,7 @@ export class Camera {
   /** screen-px point → zoom in/out around it */
   dblclick(sx: number, sy: number, out: boolean): void {
     this.lastManual = Date.now();
+    this.interrupt();
     const { w, h } = this.getSize();
     this.target = zoomAt(this.target, sx, sy, out ? 1 / 1.6 : 1.6, w, h);
   }
@@ -126,12 +166,13 @@ export class Camera {
   /* --------------------------- commands ---------------------------- */
 
   zoomStep(factor: number): void {
+    this.interrupt();
     const { w, h } = this.getSize();
     this.target = zoomAt(this.target, w / 2, h / 2, factor, w, h);
   }
 
   fit(): void {
-    this.target = { k: 1, x: 0, y: 0 };
+    this.glide({ k: 1, x: 0, y: 0 }, 600);
   }
 
   /** back to k=1 keeping the current world centre on screen */
@@ -141,13 +182,17 @@ export class Camera {
     if (s === 0) return;
     const cx = WORLD_W / 2 - this.view.x / s;
     const cy = WORLD_H / 2 - this.view.y / s;
-    this.target = centeredOn(cx, cy, 1, w, h);
+    this.glide(centeredOn(cx, cy, 1, w, h), 500);
   }
 
   flyTo(wx: number, wy: number, k = 1.6): void {
     const { w, h } = this.getSize();
     /* a point near the edge cannot sit in the middle at a wide view: come closer */
-    this.target = centeredOn(wx, wy, Math.max(this.target.k, k, kToCentre(wx, wy, w, h)), w, h);
+    const to = centeredOn(wx, wy, Math.max(this.target.k, k, kToCentre(wx, wy, w, h)), w, h);
+    /* a long way takes a little longer, never more than a second */
+    const s = fitScale(w, h) * this.view.k;
+    const dist = Math.hypot((to.x - this.view.x) / Math.max(s, 0.001), (to.y - this.view.y) / Math.max(s, 0.001));
+    this.glide(to, Math.min(1000, 450 + dist * 0.12));
   }
 
   /** the map pushed by so many screen pixels (the arrow keys) */
@@ -155,6 +200,7 @@ export class Camera {
     if (!dx && !dy) return;
     this.lastManual = Date.now();
     this.gliding = false;
+    this.interrupt();
     const { w, h } = this.getSize();
     this.target = clampPan({ k: this.target.k, x: this.target.x + dx, y: this.target.y + dy }, w, h);
   }
@@ -163,6 +209,7 @@ export class Camera {
   centerOn(wx: number, wy: number): void {
     const { w, h } = this.getSize();
     this.gliding = false;
+    this.fly = null;
     this.target = centeredOn(wx, wy, this.view.k, w, h);
     this.view = { ...this.target };
   }
