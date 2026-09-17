@@ -5,7 +5,7 @@
 /* the same on both sides of the wire.                                 */
 /* ------------------------------------------------------------------ */
 
-export type CounterKind = 'sign' | 'painting' | 'portrait' | 'tiles';
+export type CounterKind = 'sign' | 'painting' | 'portrait' | 'tiles' | 'avatar' | 'frame' | 'title';
 
 export interface CounterItem {
   id: string;
@@ -29,6 +29,24 @@ export const COUNTER: CounterItem[] = [
   { id: 'portrait-4', kind: 'portrait', price: 80 },
   { id: 'tiles-engraved', kind: 'tiles', price: 0 },
   { id: 'tiles-mono', kind: 'tiles', price: 60 },
+  /* the member's card: an engraved avatar, a frame around it, a title under the name */
+  { id: 'avatar-iron', kind: 'avatar', price: 0 },
+  { id: 'avatar-brass', kind: 'avatar', price: 40 },
+  { id: 'avatar-copper', kind: 'avatar', price: 40 },
+  { id: 'avatar-enamel', kind: 'avatar', price: 90 },
+  { id: 'avatar-gold', kind: 'avatar', price: 160 },
+  { id: 'frame-none', kind: 'frame', price: 0 },
+  { id: 'frame-fillet', kind: 'frame', price: 50 },
+  { id: 'frame-rivets', kind: 'frame', price: 90 },
+  { id: 'frame-gear', kind: 'frame', price: 150 },
+  { id: 'frame-laurel', kind: 'frame', price: 220 },
+  { id: 'title-none', kind: 'title', price: 0 },
+  { id: 'title-founder', kind: 'title', price: 30 },
+  { id: 'title-accountant', kind: 'title', price: 60 },
+  { id: 'title-forgemaster', kind: 'title', price: 90 },
+  { id: 'title-canalbaron', kind: 'title', price: 90 },
+  { id: 'title-railmagnate', kind: 'title', price: 130 },
+  { id: 'title-legend', kind: 'title', price: 260 },
 ];
 
 export const COUNTER_BY_ID: Record<string, CounterItem> = Object.fromEntries(COUNTER.map((i) => [i.id, i]));

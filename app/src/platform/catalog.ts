@@ -1,10 +1,13 @@
+import { COUNTER, FREE_ITEMS, type CounterKind } from '@/online/counter';
+
 /* ------------------------------------------------------------------ */
-/* Le Comptoir — catalogue cosmétique (comptoir.md §Catalogue).        */
-/* Aucun effet de jeu : signes de prestige uniquement. Les noms        */
-/* affichés vivent dans i18n (platform.comptoir.items.{id}).           */
+/* Le Comptoir — catalogue cosmétique, dérivé de la liste partagée     */
+/* avec le bureau (online/counter.ts) : mêmes ids, mêmes prix des deux */
+/* côtés du fil. Aucun effet de jeu : signes de prestige uniquement.   */
+/* Les noms affichés vivent dans i18n (platform.comptoir.items.{id}).  */
 /* ------------------------------------------------------------------ */
 
-export type Category = 'avatar' | 'frame' | 'title';
+export type Category = CounterKind;
 export type Rarity = 'common' | 'rare' | 'prestige';
 
 export interface ShopItem {
@@ -14,37 +17,37 @@ export interface ShopItem {
   rarity: Rarity;
 }
 
-export const CATALOG: ShopItem[] = [
-  /* Avatars gravés — variantes du meeple avatar-default.svg */
-  { id: 'avatar-iron', category: 'avatar', price: 0, rarity: 'common' },
-  { id: 'avatar-brass', category: 'avatar', price: 40, rarity: 'common' },
-  { id: 'avatar-copper', category: 'avatar', price: 40, rarity: 'common' },
-  { id: 'avatar-enamel', category: 'avatar', price: 90, rarity: 'rare' },
-  { id: 'avatar-gold', category: 'avatar', price: 160, rarity: 'prestige' },
-  /* Cadres de carte de membre — anneaux SVG en code */
-  { id: 'frame-none', category: 'frame', price: 0, rarity: 'common' },
-  { id: 'frame-fillet', category: 'frame', price: 50, rarity: 'common' },
-  { id: 'frame-rivets', category: 'frame', price: 90, rarity: 'rare' },
-  { id: 'frame-gear', category: 'frame', price: 150, rarity: 'rare' },
-  { id: 'frame-laurel', category: 'frame', price: 220, rarity: 'prestige' },
-  /* Titres honorifiques — micro-label sous le pseudo */
-  { id: 'title-none', category: 'title', price: 0, rarity: 'common' },
-  { id: 'title-founder', category: 'title', price: 30, rarity: 'common' },
-  { id: 'title-accountant', category: 'title', price: 60, rarity: 'rare' },
-  { id: 'title-forgemaster', category: 'title', price: 90, rarity: 'rare' },
-  { id: 'title-canalbaron', category: 'title', price: 90, rarity: 'rare' },
-  { id: 'title-railmagnate', category: 'title', price: 130, rarity: 'prestige' },
-  { id: 'title-legend', category: 'title', price: 260, rarity: 'prestige' },
-];
+export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'painting', 'portrait', 'tiles'];
+
+/* les raretés annoncées à l'ouverture du comptoir, gardées telles quelles */
+const RARITY_OVERRIDE: Record<string, Rarity> = {
+  'frame-gear': 'rare',
+  'title-railmagnate': 'prestige',
+};
+
+function rarityFor(id: string, price: number): Rarity {
+  const fixed = RARITY_OVERRIDE[id];
+  if (fixed) return fixed;
+  if (price >= 150) return 'prestige';
+  if (price >= 60) return 'rare';
+  return 'common';
+}
+
+export const CATALOG: ShopItem[] = COUNTER.map((i) => ({ id: i.id, category: i.kind, price: i.price, rarity: rarityFor(i.id, i.price) }));
 
 export const ITEM_BY_ID: ReadonlyMap<string, ShopItem> = new Map(CATALOG.map((i) => [i.id, i]));
 
-export const DEFAULT_OWNED: string[] = ['avatar-iron', 'frame-none', 'title-none'];
+/** ce que tout le monde possède sans payer — la même liste que le bureau */
+export const DEFAULT_OWNED: string[] = FREE_ITEMS;
 
 export const DEFAULT_EQUIPPED: Record<Category, string> = {
   avatar: 'avatar-iron',
   frame: 'frame-none',
   title: 'title-none',
+  sign: 'sign-shrewsbury',
+  painting: 'painting-rail-2',
+  portrait: 'portrait-1',
+  tiles: 'tiles-engraved',
 };
 
 /** L'objet existe, et appartient bien à la catégorie annoncée. */

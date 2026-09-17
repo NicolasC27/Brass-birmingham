@@ -1,23 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BadgeCheck, Check, Coins } from 'lucide-react';
 import Button from '@/components/platform/Button';
-import EmptyState from '@/components/platform/EmptyState';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import Modal from '@/components/platform/Modal';
 import Tabs from '@/components/platform/Tabs';
 import Toast, { type ToastData } from '@/components/platform/Toast';
-import { CATALOG, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
-import { buy, collectRewards, equip, isDailyAvailable, useWallet, type Wallet } from '@/platform/wallet';
+import { setBoardOption, useBoardOptions, type BoardOptions, type RailPainting } from '@/components/game/boardOptions';
+import type { SlotArt } from '@/gl/faces';
+import { CATALOG, CATEGORIES, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
+import { equip, useWallet, type Wallet } from '@/platform/wallet';
+import { GUINEAS } from '@/online/counter';
+import { deskErrorKey } from '@/online/errors';
 import { loadIdentity } from '@/online/identity';
-import { useSession } from '@/online/session';
-import { useLang, useT, tr } from '@/i18n';
+import { buyItem, useSession } from '@/online/session';
+import { useT, tr } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* /comptoir — la boutique du club (comptoir.md). Jetons de laiton    */
-/* gagnés aux tables contre avatars gravés, cadres et titres.          */
-/* Cosmétique uniquement : zéro impact sur le jeu.                     */
+/* /comptoir — la boutique du club. Les guinées se gagnent aux tables  */
+/* et le bureau tient la bourse (desk.purse) : ici on lit, on demande  */
+/* un achat, et on garde pour soi ce qu'on porte. Cosmétique           */
+/* uniquement : zéro impact sur le jeu.                                */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
@@ -28,16 +32,55 @@ const RARITY_STYLE: Record<Rarity, string> = {
   prestige: 'text-signal-400',
 };
 
+/** les objets en image, comme au comptoir du hall */
+const PIC: Record<string, string> = {
+  'sign-shrewsbury': '/merchant-house-shrewsbury.webp',
+  'sign-oxford': '/merchant-house-oxford.webp',
+  'sign-gloucester': '/merchant-house-gloucester.webp',
+  'sign-nottingham': '/merchant-house-nottingham.webp',
+  'sign-warrington': '/merchant-house-warrington.webp',
+  'painting-rail-1': '/map-era-rail.webp',
+  'painting-rail-2': '/map-era-rail-2.webp',
+  'painting-rail-3': '/map-era-rail-3.webp',
+  'portrait-1': '/portrait-1.webp',
+  'portrait-2': '/portrait-2.webp',
+  'portrait-3': '/portrait-3.webp',
+  'portrait-4': '/portrait-4.webp',
+  'tiles-engraved': '/tile-coal-cut.png',
+  'tiles-mono': '/tile-coal-cut.png',
+};
+
+/** les catégories dont le choix équipé est une préférence locale (carte de membre) */
+const LOCAL_WEAR: ReadonlySet<Category> = new Set<Category>(['avatar', 'frame', 'title']);
+/** celles qui s'affichent avec une description sous le nom */
+const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'painting', 'portrait', 'tiles']);
+
+type BoardWear = { key: 'railPainting'; value: RailPainting } | { key: 'slotArt'; value: SlotArt };
+
+/** ce que porter un objet change sur le plateau, quand ça change quelque chose */
+function boardWear(item: ShopItem): BoardWear | null {
+  if (item.category === 'painting') return { key: 'railPainting', value: item.id.slice(-1) as RailPainting };
+  if (item.id === 'tiles-mono') return { key: 'slotArt', value: 'mono' };
+  if (item.id === 'tiles-engraved') return { key: 'slotArt', value: 'engraved' };
+  return null;
+}
+
+function isEquipped(item: ShopItem, wallet: Wallet, opts: BoardOptions): boolean {
+  const w = boardWear(item);
+  if (w) return opts[w.key] === w.value;
+  if (LOCAL_WEAR.has(item.category)) return wallet.equipped[item.category] === item.id;
+  return false;
+}
+
 function itemName(id: string): string {
   return tr(`platform.comptoir.items.${id}`);
 }
 
 /* ------------------------------ En-tête ------------------------------ */
 
-function Header({ wallet }: { wallet: Wallet }) {
+function Header({ wallet, signedIn }: { wallet: Wallet; signedIn: boolean }) {
   const t = useT();
   const reduced = useReducedMotion();
-  const daily = isDailyAvailable(wallet);
 
   return (
     <header>
@@ -61,23 +104,16 @@ function Header({ wallet }: { wallet: Wallet }) {
               {wallet.balance}
             </motion.span>
           </div>
-          <p className="data-text text-[11px] text-iron-400">{t('platform.comptoir.lifetime', { count: wallet.lifetime })}</p>
-          <span
-            className={cn(
-              'micro-label flex items-center gap-1.5 rounded-full border px-2.5 py-1',
-              daily ? 'border-bottle-500/60 bg-bottle-700/40 text-bottle-400' : 'border-[rgb(var(--paper-100)/.12)] text-iron-400',
-            )}
-          >
-            {daily ? <Coins size={11} aria-hidden /> : <Check size={11} aria-hidden />}
-            {t('platform.comptoir.daily.label')} · {t(daily ? 'platform.comptoir.daily.available' : 'platform.comptoir.daily.claimed')}
-          </span>
+          <p className="data-text text-[11px] text-iron-400">{t('platform.comptoir.hint', { sitting: GUINEAS.sitting, win: GUINEAS.win })}</p>
         </motion.div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <span className="micro-label rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.comptoir.localBadge')}</span>
-        <span className="font-ui text-[12px] text-iron-400">{t('platform.comptoir.localNote')}</span>
-      </div>
+      {!signedIn && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="micro-label rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.comptoir.signedOutBadge')}</span>
+          <span className="font-ui text-[12px] text-iron-400">{t('platform.comptoir.signedOutNote')}</span>
+        </div>
+      )}
     </header>
   );
 }
@@ -91,12 +127,27 @@ function ItemVisual({ item, equippedAvatar }: { item: ShopItem; equippedAvatar: 
   if (item.category === 'frame') {
     return <MemberAvatar avatar={equippedAvatar} frame={item.id} size={96} />;
   }
-  /* titre honorifique : plaque gravée */
-  return (
-    <span className="flex h-24 w-full items-center justify-center">
-      <span className="rounded-lg border border-brass-hairline-strong bg-enamel-800 px-4 py-2 text-center">
-        <span className="micro-label text-brass-300">{itemName(item.id)}</span>
+  if (item.category === 'title') {
+    /* titre honorifique : plaque gravée */
+    return (
+      <span className="flex h-24 w-full items-center justify-center">
+        <span className="rounded-lg border border-brass-hairline-strong bg-enamel-800 px-4 py-2 text-center">
+          <span className="micro-label text-brass-300">{itemName(item.id)}</span>
+        </span>
       </span>
+    );
+  }
+  /* enseigne, peinture, portrait, tuiles : l'image du hall */
+  const tiles = item.category === 'tiles';
+  return (
+    <span className={cn('block w-full overflow-hidden rounded-lg border border-brass-hairline bg-enamel-900', tiles ? 'flex h-32 items-center justify-center' : 'aspect-[4/3]')}>
+      <img
+        src={PIC[item.id]}
+        alt=""
+        loading="lazy"
+        className={cn(tiles ? 'h-24 w-24 object-contain' : 'h-full w-full object-cover')}
+        style={item.id === 'tiles-mono' ? { filter: 'grayscale(1) contrast(1.2)' } : undefined}
+      />
     </span>
   );
 }
@@ -105,19 +156,25 @@ function ShopItemCard({
   item,
   index,
   wallet,
+  opts,
+  canBuy,
   onBuy,
   onEquip,
 }: {
   item: ShopItem;
   index: number;
   wallet: Wallet;
+  opts: BoardOptions;
+  canBuy: boolean;
   onBuy: (item: ShopItem) => void;
   onEquip: (item: ShopItem) => void;
 }) {
   const t = useT();
-  const owned = wallet.owned.includes(item.id);
-  const equipped = wallet.equipped[item.category] === item.id;
+  const owned = item.price === 0 || wallet.owned.includes(item.id);
+  const wearable = boardWear(item) !== null || LOCAL_WEAR.has(item.category);
+  const equipped = wearable && isEquipped(item, wallet, opts);
   const affordable = wallet.balance >= item.price;
+  const short = !owned && !affordable;
   const name = t(`platform.comptoir.items.${item.id}`);
 
   return (
@@ -132,10 +189,11 @@ function ShopItemCard({
       <div className="text-center">
         <h3 className="title-card">{name}</h3>
         <p className={cn('micro-label mt-1', RARITY_STYLE[item.rarity])}>{t(`platform.comptoir.rarity.${item.rarity}`)}</p>
+        {WITH_BLURB.has(item.category) && <p className="mt-2 font-ui text-[12px] leading-relaxed text-paper-300">{t(`platform.comptoir.blurbs.${item.id}`)}</p>}
       </div>
 
-      <p className={cn('data-text flex items-center gap-1.5 text-[13px]', !owned && !affordable && item.price > 0 ? 'text-rust-400' : 'text-paper-100')}>
-        <Coins size={14} aria-hidden className={!owned && !affordable && item.price > 0 ? 'text-rust-400' : 'text-brass-300'} />
+      <p className={cn('data-text mt-auto flex items-center gap-1.5 text-[13px]', short ? 'text-rust-400' : 'text-paper-100')}>
+        <Coins size={14} aria-hidden className={short ? 'text-rust-400' : 'text-brass-300'} />
         {item.price === 0 ? t('platform.comptoir.free') : item.price}
       </p>
 
@@ -145,11 +203,23 @@ function ShopItemCard({
           {t('platform.comptoir.equipped')}
         </span>
       ) : owned ? (
-        <Button variant="ghost" onClick={() => onEquip(item)}>
-          {t('platform.comptoir.equip')}
-        </Button>
+        wearable ? (
+          <Button variant="ghost" onClick={() => onEquip(item)}>
+            {t('platform.comptoir.equip')}
+          </Button>
+        ) : (
+          <span className="inline-flex h-10 items-center gap-2 rounded-lg border border-brass-hairline px-4 font-ui text-[14px] font-semibold text-paper-300">
+            <BadgeCheck size={16} aria-hidden className="text-brass-300" />
+            {t('platform.comptoir.owned')}
+          </span>
+        )
       ) : (
-        <Button variant="primary" disabled={!affordable} title={!affordable ? t('platform.comptoir.insufficient') : undefined} onClick={() => onBuy(item)}>
+        <Button
+          variant="primary"
+          disabled={!canBuy || !affordable}
+          title={!canBuy ? t('platform.comptoir.signedOutNote') : !affordable ? t('platform.comptoir.insufficient') : undefined}
+          onClick={() => onBuy(item)}
+        >
           {t('platform.comptoir.buy')}
         </Button>
       )}
@@ -164,6 +234,7 @@ function MemberPreview({ wallet }: { wallet: Wallet }) {
   const session = useSession();
   const name = session?.name || loadIdentity().name || t('platform.comptoir.preview.guest');
   const title = wallet.equipped.title;
+  const ownedCount = CATALOG.filter((i) => i.price === 0 || wallet.owned.includes(i.id)).length;
 
   return (
     <motion.aside
@@ -192,8 +263,11 @@ function MemberPreview({ wallet }: { wallet: Wallet }) {
             <p className="micro-label mt-1.5 text-iron-400">{t('platform.comptoir.preview.balance')}</p>
           </div>
           <div>
-            <p className="tnums font-fraunces text-[24px] font-semibold leading-none text-paper-100">{wallet.lifetime}</p>
-            <p className="micro-label mt-1.5 text-iron-400">{t('platform.comptoir.preview.lifetime')}</p>
+            <p className="tnums font-fraunces text-[24px] font-semibold leading-none text-paper-100">
+              {ownedCount}
+              <span className="text-[14px] text-iron-400"> / {CATALOG.length}</span>
+            </p>
+            <p className="micro-label mt-1.5 text-iron-400">{t('platform.comptoir.preview.owned')}</p>
           </div>
         </div>
       </div>
@@ -201,38 +275,31 @@ function MemberPreview({ wallet }: { wallet: Wallet }) {
   );
 }
 
-/* ------------------------- Historique de la bourse ------------------------- */
+/* ------------------------- Ce que paient les tables ------------------------- */
 
-function WalletLedger({ wallet }: { wallet: Wallet }) {
+function Earnings() {
   const t = useT();
-  const lang = useLang();
-  const entries = [...wallet.ledger].reverse().slice(0, 10);
+  const rows: { label: string; value: string }[] = [
+    { label: t('platform.comptoir.earn.sitting'), value: `+${GUINEAS.sitting}` },
+    { label: t('platform.comptoir.earn.win'), value: `+${GUINEAS.win}` },
+    { label: t('platform.comptoir.earn.ranked'), value: `×${GUINEAS.rankedTimes}` },
+  ];
 
   return (
-    <section aria-label={t('platform.comptoir.ledger.title')} className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+    <section aria-label={t('platform.comptoir.earn.title')} className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-5">
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative">
-        <h2 className="title-card">{t('platform.comptoir.ledger.title')}</h2>
+        <h2 className="title-card">{t('platform.comptoir.earn.title')}</h2>
         <div className="mb-3 mt-3 h-px bg-brass-hairline" />
-        {entries.length === 0 ? (
-          <EmptyState mini icon={<Coins size={20} aria-hidden />} title={t('platform.comptoir.ledger.empty')} className="!py-6" />
-        ) : (
-          <ul className="grid gap-2">
-            {entries.map((e, i) => {
-              const when = new Date(e.at);
-              const stamp = `${when.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' })} · ${when.toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' })}`;
-              return (
-                <li key={`${e.at}-${i}`} className="flex items-baseline gap-3">
-                  <span className={cn('data-text w-14 shrink-0 text-right text-[13px] font-medium', e.delta >= 0 ? 'text-bottle-400' : 'text-rust-400')}>
-                    {e.delta >= 0 ? `+${e.delta}` : e.delta}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-ui text-[13px] text-paper-300">{e.reason}</span>
-                  <span className="data-text shrink-0 text-[11px] text-iron-600">{stamp}</span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <ul className="grid gap-2">
+          {rows.map((r) => (
+            <li key={r.label} className="flex items-baseline gap-3">
+              <span className="data-text w-14 shrink-0 text-right text-[13px] font-medium text-bottle-400">{r.value}</span>
+              <span className="min-w-0 flex-1 font-ui text-[13px] text-paper-300">{r.label}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 font-ui text-[12px] text-iron-400">{t('platform.comptoir.earn.note')}</p>
       </div>
     </section>
   );
@@ -243,30 +310,46 @@ function WalletLedger({ wallet }: { wallet: Wallet }) {
 export default function Comptoir() {
   const t = useT();
   const wallet = useWallet();
+  const session = useSession();
+  const opts = useBoardOptions();
   const [tab, setTab] = useState<Category>('avatar');
   const [buying, setBuying] = useState<ShopItem | null>(null);
+  const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
 
   const showToast = (message: string, kind: ToastData['kind'] = 'success') => setToast({ id: Date.now(), message, kind });
 
-  /* Encaissement au montage — idempotent (processed), toast du gain. */
-  useEffect(() => {
-    const id = window.setTimeout(() => {
-      const gain = collectRewards();
-      if (gain) showToast(tr('platform.comptoir.toastCollected', { count: gain.delta }));
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, []);
-
-  const confirmBuy = () => {
-    if (!buying) return;
-    const name = itemName(buying.id);
-    if (buy(buying.id, name)) showToast(tr('platform.comptoir.toastBought', { name }));
-    else showToast(tr('platform.comptoir.toastFailed'), 'error');
-    setBuying(null);
+  const confirmBuy = async () => {
+    if (!buying || busy) return;
+    const item = buying;
+    const name = itemName(item.id);
+    if (wallet.balance < item.price) {
+      showToast(t('platform.comptoir.insufficient'), 'error');
+      setBuying(null);
+      return;
+    }
+    setBusy(true);
+    try {
+      await buyItem(item.id);
+      showToast(tr('platform.comptoir.toastBought', { name }));
+    } catch (e) {
+      /* le bureau a refusé : bourse trop courte, objet déjà acquis, adresse à vérifier… */
+      showToast(t(deskErrorKey(e)), 'error');
+    } finally {
+      setBusy(false);
+      setBuying(null);
+    }
   };
 
   const doEquip = (item: ShopItem) => {
+    const w = boardWear(item);
+    if (w) {
+      /* peinture ou tuiles : c'est le plateau qui les porte */
+      if (w.key === 'railPainting') setBoardOption('railPainting', w.value);
+      else setBoardOption('slotArt', w.value);
+      showToast(tr('platform.comptoir.toastEquipped', { name: itemName(item.id) }), 'info');
+      return;
+    }
     if (equip(item.id)) showToast(tr('platform.comptoir.toastEquipped', { name: itemName(item.id) }), 'info');
   };
 
@@ -274,7 +357,7 @@ export default function Comptoir() {
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
-      <Header wallet={wallet} />
+      <Header wallet={wallet} signedIn={session !== null} />
 
       {/* bandeau gravure (1536×640), masque dégradé vers la laque */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3, ease }} className="relative mt-6 overflow-hidden rounded-xl border border-brass-hairline">
@@ -284,31 +367,22 @@ export default function Comptoir() {
 
       <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12">
         <div className="min-w-0 min-[1100px]:col-span-8">
-          <Tabs
-            groupId="comptoir"
-            active={tab}
-            onChange={(id) => setTab(id as Category)}
-            tabs={[
-              { id: 'avatar', label: t('platform.comptoir.tabs.avatar') },
-              { id: 'frame', label: t('platform.comptoir.tabs.frame') },
-              { id: 'title', label: t('platform.comptoir.tabs.title') },
-            ]}
-          />
+          <Tabs groupId="comptoir" active={tab} onChange={(id) => setTab(id as Category)} tabs={CATEGORIES.map((c) => ({ id: c, label: t(`platform.comptoir.tabs.${c}`) }))} />
           <div key={tab} className="mt-6 grid gap-4 min-[640px]:grid-cols-2 min-[1100px]:grid-cols-3">
             {items.map((item, i) => (
-              <ShopItemCard key={item.id} item={item} index={i} wallet={wallet} onBuy={setBuying} onEquip={doEquip} />
+              <ShopItemCard key={item.id} item={item} index={i} wallet={wallet} opts={opts} canBuy={session !== null} onBuy={setBuying} onEquip={doEquip} />
             ))}
           </div>
         </div>
 
         <div className="grid content-start gap-6 min-[1100px]:col-span-4">
           <MemberPreview wallet={wallet} />
-          <WalletLedger wallet={wallet} />
+          <Earnings />
         </div>
       </div>
 
       {/* confirmation d'achat : solde avant / après */}
-      <Modal open={buying !== null} onClose={() => setBuying(null)} title={buying ? t('platform.comptoir.buyTitle', { name: t(`platform.comptoir.items.${buying.id}`) }) : undefined}>
+      <Modal open={buying !== null} onClose={() => !busy && setBuying(null)} title={buying ? t('platform.comptoir.buyTitle', { name: t(`platform.comptoir.items.${buying.id}`) }) : undefined}>
         {buying && (
           <>
             <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.comptoir.buyCopy')}</p>
@@ -327,10 +401,10 @@ export default function Comptoir() {
               </div>
             </dl>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Button variant="primary" icon={<Coins size={16} aria-hidden />} onClick={confirmBuy}>
+              <Button variant="primary" icon={<Coins size={16} aria-hidden />} disabled={busy} onClick={() => void confirmBuy()}>
                 {t('platform.comptoir.confirm')}
               </Button>
-              <Button variant="ghost" onClick={() => setBuying(null)}>
+              <Button variant="ghost" disabled={busy} onClick={() => setBuying(null)}>
                 {t('platform.comptoir.cancel')}
               </Button>
             </div>
