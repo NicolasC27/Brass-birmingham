@@ -1049,9 +1049,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       el.addEventListener('dblclick', onDbl);
       cleanups.push(() => el.removeEventListener('dblclick', onDbl));
 
-      /* keyboard: + / − / 0, ←/→ town tour */
-      let tourIdx = -1;
-      const TOUR = [...TOWNS].sort((ta, tb) => ta.x - tb.x || ta.y - tb.y);
+      /* keyboard: + / − / 0 (the arrows pan the map, see the ticker) */
       const onKey = (e: KeyboardEvent) => {
         const t = e.target as HTMLElement | null;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
@@ -1060,11 +1058,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         else if (isKey(e, 'fit')) cam.fit();
         else if (isKey(e, 'links')) setBoardOption('hideUnbuilt', !getBoardOptions().hideUnbuilt);
         else if (isKey(e, 'fullscreen')) fsRef.current();
-        else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-          tourIdx = (tourIdx + (e.key === 'ArrowRight' ? 1 : -1) + TOUR.length) % TOUR.length;
-          const town = TOUR[tourIdx];
-          cam.flyTo(town.x, town.y, Math.max(cam.target.k, 1.5));
-        } else return;
+        else return;
         e.preventDefault();
       };
       if (keyboardRef.current) {
