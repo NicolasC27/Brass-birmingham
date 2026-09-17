@@ -46,6 +46,9 @@ import { cn } from '@/lib/utils';
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 import { GLIMPSE_MS } from '@/gl/PixiBoard';
 
+/** the pause between two moves of a machine while the reader follows them */
+const FOLLOW_PACE_MS = 4000;
+
 /** the tools under the player rail: one plaque each, icon only */
 const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brass-400 opacity-90 transition-opacity hover:opacity-100';
 
@@ -189,7 +192,8 @@ export default function Game() {
     if (!game || seat !== null || game.phase !== 'action' || ceremony || passTo || botHold) return;
     const p = game.players[game.current];
     if (!p.isBot) return;
-    const t = window.setTimeout(() => runBot(), skipAnim ? 180 : 1350);
+    /* followed, a machine leaves the reader the time to see its move */
+    const t = window.setTimeout(() => runBot(), skipAnim ? 180 : useGame.getState().followBots ? FOLLOW_PACE_MS : 1350);
     return () => window.clearTimeout(t);
   }, [game, seat, ceremony, passTo, skipAnim, runBot, botHold]);
 

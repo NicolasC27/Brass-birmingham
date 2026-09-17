@@ -33,7 +33,9 @@ export interface Pace {
   minute?: number;
 }
 
-export const DEFAULT_PACE: Pace = { bot: 1200, ceremony: 7000 };
+/* a machine's move every four seconds: time enough for the table to be
+   shown the move before the next */
+export const DEFAULT_PACE: Pace = { bot: 4000, ceremony: 7000 };
 const MINUTE = 60_000;
 /** a personal break: five minutes, three times a game */
 export const BREAK_MS = 5 * MINUTE;
