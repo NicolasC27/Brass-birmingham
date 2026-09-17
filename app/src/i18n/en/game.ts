@@ -653,6 +653,7 @@ const game = {
     verbPass: 'PASS',
     eraCanal: 'CANAL',
     eraRail: 'RAIL',
+    eraTip: 'One register per era: the other stays to be read',
     gridAria: 'Every player, every round',
     roundCount: '{n} moves',
     spentTip: 'spent £{n}',

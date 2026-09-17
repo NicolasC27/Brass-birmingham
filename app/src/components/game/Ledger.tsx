@@ -64,17 +64,17 @@ const VERB_HEX: Record<LedgerEntry['verb'], string> = {
  *  reads: one cell per player and round, split by the round's actions and
  *  coloured by what each was. Hover says the moves; a click opens the round. */
 function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
-  if (rounds.length < 2) return null;
+  if (rounds.length < 1) return null;
   /* what a player's round cost the purse, from the entries' own figures */
   const spentIn = (r: (typeof rounds)[number], pi: number) => r.items.filter((e) => e.player === pi).reduce((a, e) => a + Number(e.vars?.spent ?? 0), 0);
   const railStart = rounds.findIndex((r) => r.era === 'rail');
   return (
     <div className="mb-2 overflow-x-auto" aria-label={t('game.ledger.gridAria')}>
-      <table className="border-separate border-spacing-[2px]">
+      <table className="border-separate border-spacing-[3px]">
         <tbody>
           {players.map((p, pi) => (
             <tr key={pi}>
-              <th scope="row" className="pr-1.5 text-left font-sans text-[9px] font-bold" style={{ color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }}>
+              <th scope="row" className="pr-2 text-left font-sans text-[11px] font-bold" style={{ color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }}>
                 {p.name.slice(0, 8)}
               </th>
               {rounds.map((r, ri) => {
@@ -89,12 +89,12 @@ function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: str
                       title={title}
                       aria-label={title}
                       aria-pressed={picked?.key === r.key && picked.player === pi}
-                      className={cn('flex h-[13px] w-[13px] overflow-hidden rounded-[2px] ring-1 ring-black/40 transition-transform hover:scale-125', r.era === 'rail' && 'ring-copper-500/50', picked?.key === r.key && picked.player === pi && 'scale-125 !ring-2 !ring-brass-400 shadow-[0_0_10px_rgba(221,190,126,.8)]')}
+                      className={cn('flex h-[20px] w-[20px] overflow-hidden rounded-[3px] ring-1 ring-black/40 transition-transform hover:scale-110', r.era === 'rail' && 'ring-copper-500/50', picked?.key === r.key && picked.player === pi && 'scale-110 !ring-2 !ring-brass-400 shadow-[0_0_10px_rgba(221,190,126,.8)]')}
                     >
                       {moves.length ? moves.slice(0, 2).map((e) => <span key={e.id} className="h-full flex-1" style={{ background: VERB_HEX[e.verb] }} />) : <span className="h-full flex-1" style={{ background: '#2a231c' }} />}
                     </button>
                     {/* what the round cost: the figure under the cell, a loan's gain in green */}
-                    <span className={cn('block w-[13px] text-center font-mono text-[7.5px] leading-[9px]', spent < 0 ? 'text-bottle-600 brightness-150' : spent >= 10 ? 'text-brass-400' : 'text-cream-100/45')} aria-hidden>
+                    <span className={cn('block w-[20px] text-center font-mono text-[9.5px] leading-[12px]', spent < 0 ? 'text-bottle-600 brightness-150' : spent >= 10 ? 'text-brass-400' : 'text-cream-100/45')} aria-hidden>
                       {spent === 0 ? '·' : spent < 0 ? `+${-spent}` : spent}
                     </span>
                   </td>
@@ -132,6 +132,8 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
   const listRef = useRef<HTMLOListElement>(null);
   const [flash, setFlash] = useState<number | null>(null);
   /* rounds the reader folded or unfolded by hand; the rest follow the rule above */
+  /* the era whose register is read; null: the one being played */
+  const [eraPick, setEraPick] = useState<LedgerEntry['era'] | null>(null);
   const [folded, setFolded] = useState<Record<string, boolean>>({});
   /* the cell of the grid the reader clicked: that player's moves of that round wear a halo */
   const [picked, setPicked] = useState<{ key: string; player: number } | null>(null);
@@ -157,6 +159,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
      click — and any round holding something new opens by itself */
   const rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[] = [];
   for (const e of visible) {
+    if (e.era !== (eraPick ?? game.era)) continue;
     const key = `${e.era}:${e.round}`;
     const last = rounds[rounds.length - 1];
     if (last && last.key === key) last.items.push(e);
@@ -169,8 +172,11 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
   const myHand = me >= 0 ? game.players[me].hand : [];
   const hitsMe = (e: LedgerEntry): boolean =>
     e.verb === 'build' && e.player !== undefined && e.player !== me && myHand.some((c) => (c.kind === 'location' && c.town === e.region) || (c.kind === 'industry' && (c.industry === e.vars?.industry || c.industry2 === e.vars?.industry)));
+  /* one register per era: the one being played is open, the other stays to be read */
+  const eraShown = eraPick ?? game.era;
   const allRounds: typeof rounds = [];
   for (const e of game.ledger) {
+    if (e.era !== eraShown) continue;
     const key = `${e.era}:${e.round}`;
     const last = allRounds[allRounds.length - 1];
     if (last && last.key === key) last.items.push(e);
@@ -193,6 +199,15 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
             >
               {t('game.ledger.replay')}
             </Link>
+            {game.era === 'rail' && (
+              <span className="flex items-center gap-0.5" role="group" aria-label={t('game.ledger.eraTip')} title={t('game.ledger.eraTip')}>
+                {(['canal', 'rail'] as const).map((era) => (
+                  <button key={era} type="button" aria-pressed={eraShown === era} onClick={() => setEraPick(era === game.era ? null : era)} className={cn('rounded-sm border px-1.5 py-0.5 font-sans text-[9px] font-semibold uppercase tracking-wider transition-colors', eraShown === era ? 'border-brass-500 bg-brass-500/15 text-brass-400' : 'border-brass-700/40 text-cream-100/55 hover:text-cream-100/85')}>
+                    {t(era === 'canal' ? 'game.ledger.eraCanal' : 'game.ledger.eraRail')}
+                  </button>
+                ))}
+              </span>
+            )}
             <span className="font-mono text-[9px] text-cream-100/35" title={t('game.ledger.hashTitle')}>
               #{game.ledgerSeq.toString(36)}
             </span>

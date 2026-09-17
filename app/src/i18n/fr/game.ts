@@ -656,6 +656,7 @@ const fr: typeof engame = {
     eraCanal: 'CANAL',
     eraRail: 'RAIL',
     gridAria: 'Chaque joueur, chaque manche',
+    eraTip: 'Un registre par ère : l’autre reste à relire',
     roundCount: '{n} coups',
     spentTip: 'dépensé £{n}',
     hitsMe: 'Vous tenez une carte pour cette ville ou cette industrie',
