@@ -619,7 +619,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
      the medallion, the bonus engraved. Everything that changes (tiles,
      barrels, claimed, closed) is redrawn in drawMerchants.               */
   const SIGN_W = 236; // every sign the same width; its height follows the picture
-  const MT = 40; // merchant tile size
+  const MT = 46; // merchant tile size
   const MT_GAP = 10;
   const merchantBeer = new Map<string, Container>();
   const merchantDyn = new Map<string, { plate: Container; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; tileTop: number }>();
@@ -649,10 +649,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     plate.addChild(shadow, sign);
 
     /* tile shelves (static): a faint recess where each merchant tile sits,
-       low and left on the painting */
+       low and left on the board, over the wharf's water */
     const slotX: number[] = [];
     const x0 = -W / 2 + W * 0.09 + MT / 2;
-    const tileTop = -H * 0.14;
+    const tileTop = -H * 0.06;
     const shelf = new Graphics();
     shelf.eventMode = 'none';
     for (let i = 0; i < m.slots; i++) {
@@ -1258,9 +1258,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         card(x);
         if (tile === 'all') {
           /* ANY: the three trades share the card — cotton on top, goods and pottery below */
-          painting('cotton', x, cy - 9, 16);
-          painting('manufacturer', x - 9, cy + 8, 16);
-          painting('pottery', x + 9, cy + 8, 16);
+          painting('cotton', x, cy - 10, 20);
+          painting('manufacturer', x - 10, cy + 9, 20);
+          painting('pottery', x + 10, cy + 9, 20);
         } else {
           painting(tile, x, cy, MT - 6);
         }
