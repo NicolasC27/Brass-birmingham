@@ -237,6 +237,8 @@ export default function HandDock() {
   const sellPicks = useGame((s) => s.sellPicks);
   const developPick = useGame((s) => s.developPick);
   const developIron = useGame((s) => s.developIron);
+  const buildIron = useGame((s) => s.buildIron);
+  const setBuildIron = useGame((s) => s.setBuildIron);
   const addDevelop = useGame((s) => s.addDevelop);
   const dropDevelop = useGame((s) => s.dropDevelop);
   const setDevelopIron = useGame((s) => s.setDevelopIron);
@@ -577,6 +579,48 @@ export default function HandDock() {
             })}
           </div>
 
+          {/* the iron of a build: the rules let it come from any works on the
+              board, so the reader names one — their own, to empty and flip it */}
+          <AnimatePresence>
+            {verb === 'build' && canPlan && buildPick?.valid && INDUSTRIES[buildPick.industry][buildPick.level - 1]?.iron === 1 && (
+              <motion.div
+                key="build-iron"
+                initial={{ opacity: 0, x: -14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="paper flex shrink-0 flex-col gap-1.5 self-center rounded-md px-3 py-2"
+              >
+                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.hand.buildIron')}</span>
+                {(() => {
+                  const sources = ironSources(planGame);
+                  return (
+                    <label className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80" title={t('game.topbar.ironTip')}>
+                      <img src={INDUSTRY_ICON.iron} alt="" className="h-3.5 w-3.5" />
+                      <span className="text-ink-900/45">←</span>
+                      <select
+                        value={buildIron ?? ''}
+                        onChange={(e) => {
+                          setBuildIron(e.target.value || null);
+                          if (e.target.value && e.target.value !== 'market') flyToRegion(e.target.value.split(':')[0]);
+                        }}
+                        aria-label={t('game.topbar.ironTip')}
+                        className="max-w-[200px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                      >
+                        <option value="">{t('game.hand.devIronAuto')}</option>
+                        {sources.map((src) => (
+                          <option key={src.key} value={src.key}>
+                            {t('game.hand.devIronWorks', { owner: planGame.players[src.owner].name, town: TOWN_BY_ID[src.town]?.name ?? src.town, cubes: src.cubes })}
+                          </option>
+                        ))}
+                        {sources.length === 0 && <option value="market">{t('game.hand.devIronMarket', { cost: marketBuyPrice('iron', planGame.market.iron) })}</option>}
+                      </select>
+                    </label>
+                  );
+                })()}
+                <span className="font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.hand.buildIronHint')}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* develop drawer strip */}
           <AnimatePresence>
             {verb === 'develop' && canPlan && (

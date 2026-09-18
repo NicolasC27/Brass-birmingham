@@ -394,6 +394,8 @@ const game = {
     deckAlt: 'Deck',
     deckLabel: 'deck',
     eraTurns: 'The era turns…',
+    buildIron: 'Iron:',
+    buildIronHint: 'Any works on the board; your own to empty it',
     retire: 'Retire:',
     devOption: '{name} L{level} · iron £{cost}',
     devNext: 'then L{level}',

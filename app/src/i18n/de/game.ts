@@ -396,6 +396,8 @@ const game: typeof engame = {
     deckAlt: 'Nachziehstapel',
     deckLabel: 'Stapel',
     eraTurns: 'Die Zeit wendet sich…',
+    buildIron: 'Eisen:',
+    buildIronHint: 'Jede Hütte auf dem Plan; deine eigene, um sie zu leeren',
     retire: 'Entfernen:',
     devOption: '{name} Stufe {level} · Eisen £{cost}',
     devNext: 'dann Stufe {level}',

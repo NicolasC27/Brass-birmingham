@@ -396,6 +396,8 @@ const fr: typeof engame = {
     deckAlt: 'Pioche',
     deckLabel: 'pioche',
     eraTurns: 'L’ère tourne…',
+    buildIron: 'Fer :',
+    buildIronHint: 'Toute forge du plateau ; la vôtre pour la vider',
     retire: 'Retirez :',
     devOption: '{name} N{level} · fer £{cost}',
     devNext: 'puis N{level}',

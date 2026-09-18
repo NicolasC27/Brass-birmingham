@@ -396,6 +396,8 @@ const game: typeof engame = {
     deckAlt: 'Mazo',
     deckLabel: 'mazo',
     eraTurns: 'La era cambia…',
+    buildIron: 'Hierro:',
+    buildIronHint: 'Cualquier fundición del tablero; la tuya para vaciarla',
     retire: 'Retira:',
     devOption: '{name} N{level} · hierro £{cost}',
     devNext: 'luego N{level}',
