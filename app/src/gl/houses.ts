@@ -5,7 +5,7 @@
    every sign is composed a little differently. */
 export const HOUSES: Record<string, { aspect: number; medal: [x: number, y: number, r: number] }> = {
   shrewsbury: { aspect: 2.5, medal: [0.866, 0.468, 0.09] },
-  warrington: { aspect: 2.924, medal: [0.865, 0.53, 0.08] },
+  warrington: { aspect: 2.5, medal: [0.866, 0.468, 0.09] },
   nottingham: { aspect: 2.525, medal: [0.845, 0.49, 0.1] },
   oxford: { aspect: 2.41, medal: [0.805, 0.5, 0.1] },
   gloucester: { aspect: 2.475, medal: [0.845, 0.44, 0.105] },

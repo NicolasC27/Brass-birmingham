@@ -6,17 +6,20 @@
 # bonus (houses.ts: 0.866, 0.468, r 0.09 of the width); a sepia band at the
 # top for the brass nameplate the board screws on. 1280×512, aspect 2.5.
 # Usage, from the repository root:
-#   tools/assets/merchants/build-woodcut-sign.sh <id>     (id: shrewsbury, warrington…)
+#   [CROP=WxH+X+Y] tools/assets/merchants/build-woodcut-sign.sh <id>   (id: shrewsbury, warrington…)
 # reads tools/assets/merchants/wharf-<id>-midjourney.jpg, writes
 # app/public/merchant-house-<id>.webp.
 set -euo pipefail
 ID=$1 SRC=tools/assets/merchants/wharf-$1-midjourney.jpg OUT=app/public/merchant-house-$1.webp
 T=${WORK:-$(mktemp -d)}; mkdir -p "$T"
 W=1280 H=512 INK='#3C2E20' CREAM='#EDE4CF' PARCH='#DCCFAA'
-# the ink, cleaned: specks filled and cleared, outlines rounded, cut crisp
-magick "$SRC" -colorspace gray -negate -level 28%,72% "$T/mask.png"
-geo=$(magick "$T/mask.png" -threshold 45% -format '%@' info:)
-magick "$T/mask.png" -crop "$geo" +repage -statistic Median 7 -morphology Close Disk:5 -morphology Open Disk:3 -blur 0x3 -threshold 50% -blur 0x1.2 \
+# the ink, cleaned lightly: specks filled and cleared, cut crisp — a sign is
+# three times a tile on screen, its thin white lines (a boat's gunwale, a
+# crane's lattice) must survive
+# CROP=<WxH+X+Y> cuts inside a border the stamp came with (Warrington)
+magick "$SRC" ${CROP:+-crop "$CROP" +repage} -colorspace gray -negate -level 28%,72% "$T/mask.png"
+geo=$(magick "$T/mask.png" -morphology Open Disk:3 -threshold 45% -format '%@' info:)
+magick "$T/mask.png" -crop "$geo" +repage -statistic Median 3 -morphology Close Disk:2 -morphology Open Disk:2 -threshold 50% -blur 0x1 \
   -resize 840x360 -background black -gravity center -extent 840x360 "$T/fit.png"
 magick -size 840x360 xc:"$INK" "$T/fit.png" -alpha off -compose CopyOpacity -composite "$T/ink.png"
 # the board: sepia frame, cream field, a double rule; the nameplate band; the medallion
