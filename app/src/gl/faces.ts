@@ -46,7 +46,7 @@ const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v
  *  the hand of the engraved map, black ink on a cream label; an owner's
  *  card carries the same drawing on the colour. Its dual slots are printed
  *  as one label, the two drawings side by side (tools/assets/tiles-woodcut). */
-const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', front: { scale: 64 }, pair: (a, b) => `/tile-combo-${pairFile(a, b)}.png` });
+const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', front: { scale: 64 }, ext: 'webp', pair: (a, b) => `/tile-combo-${pairFile(a, b)}.webp` });
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
