@@ -27,8 +27,11 @@ interface Note {
   industry?: string;
   title: string;
   detail: string;
+  /** a flip, once read in the middle, waits under the players on the left */
+  docked?: boolean;
 }
 const SHOWN_MS = 12000;
+const DOCK_MS = 5000;
 const FLOAT_MS = 2200;
 
 export default function Notices() {
@@ -54,6 +57,22 @@ export default function Notices() {
     const iv = window.setInterval(measure, 400);
     return () => window.clearInterval(iv);
   }, [shown]);
+  /* the player rail's foot: the flips settle under it once read */
+  const [rail, setRail] = useState<{ left: number; top: number } | null>(null);
+  const docked = notes.some((n) => n.kind === 'flip' && n.docked);
+  useEffect(() => {
+    const measure = () => {
+      const el = document.querySelector('[data-player-rail]');
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setRail({ left: Math.round(r.left), top: Math.round(r.bottom) });
+      }
+    };
+    measure();
+    if (!docked) return;
+    const iv = window.setInterval(measure, 400);
+    return () => window.clearInterval(iv);
+  }, [docked]);
   const [seen, setSeen] = useState<number | null>(null);
   const [floats, setFloats] = useState<{ id: number; n: number }[]>([]);
   const [incomeSeen, setIncomeSeen] = useState<number | null>(null);
@@ -97,8 +116,12 @@ export default function Notices() {
       }
       if (!items.length) return;
       setNotes((n) => [...n, ...items]);
-      /* a tile flipped stays on the board until the reader closes it; the rest fades */
-      for (const it of items) if (it.kind !== 'flip') window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== it.id)), SHOWN_MS);
+      /* a tile flipped is read in the middle for a moment, then settles under
+         the players until the reader closes it; the rest fades */
+      for (const it of items) {
+        if (it.kind === 'flip') window.setTimeout(() => setNotes((n) => n.map((x) => (x.id === it.id ? { ...x, docked: true } : x))), DOCK_MS);
+        else window.setTimeout(() => setNotes((n) => n.filter((x) => x.id !== it.id)), SHOWN_MS);
+      }
     }, 0);
     return () => window.clearTimeout(add);
   }, [ledger, players, seen, me, t, pins]);
@@ -131,6 +154,7 @@ export default function Notices() {
       <motion.div
         key={f.id}
         layout
+        layoutId={f.id}
         initial={{ opacity: 0, y: -14, scale: 0.96 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98 }}
@@ -159,7 +183,11 @@ export default function Notices() {
     <>
       {/* the reader's own, under the banner */}
       <div className="pointer-events-none fixed left-1/2 z-[82] flex w-[min(520px,60vw)] -translate-x-1/2 flex-col items-center gap-2" style={{ top: (under ?? insets.top + 108) + 10 }} aria-live="polite">
-        <AnimatePresence>{notes.filter((n) => n.kind === 'flip' || n.side === 'mine').map(card)}</AnimatePresence>
+        <AnimatePresence>{notes.filter((n) => (n.kind === 'flip' ? !n.docked : n.side === 'mine')).map(card)}</AnimatePresence>
+      </div>
+      {/* the flips already read, settled under the players and their tools */}
+      <div className="pointer-events-none fixed z-[63] flex w-[min(320px,30vw)] flex-col items-stretch gap-2" style={{ left: rail?.left ?? insets.left, top: (rail?.top ?? insets.top + 320) + 10 }} aria-live="off">
+        <AnimatePresence>{notes.filter((n) => n.kind === 'flip' && n.docked).map(card)}</AnimatePresence>
       </div>
       {/* the others', at the top right under the exchange */}
       <div className="pointer-events-none fixed right-3 z-[82] flex w-[min(340px,40vw)] flex-col items-stretch gap-2" style={{ top: insets.top + 52 }} aria-live="polite">
