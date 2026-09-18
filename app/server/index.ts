@@ -190,6 +190,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const isMod = (a: { name: string }): boolean => moderators.has(foldName(a.name));
   const translator = options.translator === undefined ? claudeTranslator() : options.translator;
   const translateBudget = options.translateBudget ?? Number(process.env.TRANSLATE_BUDGET_USD ?? 10);
+  if (options.translator === undefined) console.log(translator ? `interpreter: ${translator.model}, up to $${translateBudget}` : 'interpreter: none (no ANTHROPIC_API_KEY)');
   /** the interpreter works while the house has a key and the budget is not spent */
   const interpreting = (): boolean => !!translator && store.forumRenderingSpend() < translateBudget;
   /** renderings under way, so a page asking twice does not pay twice */

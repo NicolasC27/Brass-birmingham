@@ -3,12 +3,14 @@ import { serve } from './index';
 
 /* The server as a process: PORT, HOST and BLACKRAIL_DB from the
    environment, and the keys the house keeps in `.env.local` beside the
-   app (ANTHROPIC_API_KEY, RESEND_API_KEY…) — read here so one ignored
-   file holds every secret, the shell's own values winning. SQLite ships
+   app or at the repository's root (ANTHROPIC_API_KEY, RESEND_API_KEY…) —
+   read here so an ignored file holds every secret, the shell's own
+   values winning. SQLite ships
    with Node but still announces itself as experimental on every start;
    that one line is not news. */
 
-for (const file of ['.env.local', '.env']) {
+/* beside the app, and at the repository's root where the tools keep theirs */
+for (const file of ['.env.local', '.env', '../.env.local', '../.env']) {
   let text = '';
   try {
     text = readFileSync(file, 'utf8');
