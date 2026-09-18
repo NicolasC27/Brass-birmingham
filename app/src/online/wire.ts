@@ -1,7 +1,7 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
 import type { Desk, Me, Leaderboard, PublicTable } from './table';
-import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
+import type { BoardKey, BoardSummary, Lang, ModAction, Post, Rendered, Report, ReportReason, ThreadRow, ThreadView, TranslationSpend } from '@/forum/types';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -134,18 +134,23 @@ export class Wire {
     if (m.t !== 'forum.thread') throw new Error('forum-not-found');
     return m.view;
   }
-  async forumOpen(board: BoardKey, title: string, body: string): Promise<string> {
-    const m = await this.ask((rid) => ({ t: 'forum.open', rid, board, title, body }));
+  async forumOpen(board: BoardKey, title: string, body: string, lang: Lang): Promise<string> {
+    const m = await this.ask((rid) => ({ t: 'forum.open', rid, board, title, body, lang }));
     if (m.t !== 'forum.opened') throw new Error('refused');
     return m.id;
   }
-  async forumReply(id: string, body: string): Promise<{ post: Post; page: number }> {
-    const m = await this.ask((rid) => ({ t: 'forum.reply', rid, id, body }));
+  async forumReply(id: string, body: string, lang: Lang): Promise<{ post: Post; page: number }> {
+    const m = await this.ask((rid) => ({ t: 'forum.reply', rid, id, body, lang }));
     if (m.t !== 'forum.posted') throw new Error('refused');
     return { post: m.post, page: m.page };
   }
-  async forumEdit(post: string, body: string): Promise<void> {
-    await this.ask((rid) => ({ t: 'forum.edit', rid, post, body }));
+  async forumEdit(post: string, body: string, lang: Lang): Promise<void> {
+    await this.ask((rid) => ({ t: 'forum.edit', rid, post, body, lang }));
+  }
+  async forumTranslate(id: string, page: number, lang: Lang): Promise<Rendered> {
+    const m = await this.ask((rid) => ({ t: 'forum.translate', rid, id, page, lang }));
+    if (m.t !== 'forum.translated') throw new Error('forum-not-found');
+    return m.rendered;
   }
   async forumReport(post: string, reason: ReportReason, text: string): Promise<void> {
     await this.ask((rid) => ({ t: 'forum.report', rid, post, reason, text }));
@@ -153,9 +158,9 @@ export class Wire {
   async forumMod(action: ModAction, id: string): Promise<void> {
     await this.ask((rid) => ({ t: 'forum.mod', rid, action, id }));
   }
-  async forumReports(): Promise<Report[]> {
+  async forumReports(): Promise<{ reports: Report[]; translation: TranslationSpend }> {
     const m = await this.ask((rid) => ({ t: 'forum.reports', rid }));
-    return m.t === 'forum.reports' ? m.reports : [];
+    return m.t === 'forum.reports' ? { reports: m.reports, translation: m.translation } : { reports: [], translation: { spent: 0, budget: 0, on: false } };
   }
   forumSeen(id: string): void {
     this.send({ t: 'forum.seen', id });

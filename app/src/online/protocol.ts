@@ -1,5 +1,5 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
-import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
+import type { BoardKey, BoardSummary, Lang, ModAction, Post, Rendered, Report, ReportReason, ThreadRow, ThreadView, TranslationSpend } from '@/forum/types';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, PublicTable, QueueState, Table } from './table';
@@ -115,13 +115,15 @@ export type ClientMessage =
   | { t: 'forum.boards'; rid: number }
   | { t: 'forum.threads'; rid: number; board: BoardKey; page: number }
   | { t: 'forum.thread'; rid: number; id: string; page: number }
-  | { t: 'forum.open'; rid: number; board: BoardKey; title: string; body: string }
-  | { t: 'forum.reply'; rid: number; id: string; body: string }
-  | { t: 'forum.edit'; rid: number; post: string; body: string }
+  | { t: 'forum.open'; rid: number; board: BoardKey; title: string; body: string; lang: Lang }
+  | { t: 'forum.reply'; rid: number; id: string; body: string; lang: Lang }
+  | { t: 'forum.edit'; rid: number; post: string; body: string; lang: Lang }
   | { t: 'forum.report'; rid: number; post: string; reason: ReportReason; text: string }
   | { t: 'forum.mod'; rid: number; action: ModAction; id: string }
   | { t: 'forum.reports'; rid: number }
   | { t: 'forum.seen'; id: string }
+  /** a thread's page in the reader's tongue: what is rendered already, the rest to follow */
+  | { t: 'forum.translate'; rid: number; id: string; page: number; lang: Lang }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -159,7 +161,8 @@ export type ServerMessage =
   | { t: 'forum.thread'; rid: number; view: ThreadView }
   | { t: 'forum.opened'; rid: number; id: string }
   | { t: 'forum.posted'; rid: number; post: Post; page: number }
-  | { t: 'forum.reports'; rid: number; reports: Report[] }
+  | { t: 'forum.reports'; rid: number; reports: Report[]; translation: TranslationSpend }
+  | { t: 'forum.translated'; rid: number; id: string; page: number; lang: Lang; rendered: Rendered }
   /** something moved on the forum: a board, and the thread when it is one */
   | { t: 'forum'; board: BoardKey; thread: string | null }
   | { t: 'pong' };

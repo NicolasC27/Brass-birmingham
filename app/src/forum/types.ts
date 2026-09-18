@@ -8,6 +8,10 @@
 /* ------------------------------------------------------------------ */
 
 export const BOARDS = ['annonces', 'strategie', 'tables', 'regles', 'atelier'] as const;
+/** the club's tongues: what a post is written in, what a reader reads in */
+export const LANGS = ['en', 'fr', 'de', 'es'] as const;
+export type Lang = (typeof LANGS)[number];
+export const isLang = (s: unknown): s is Lang => typeof s === 'string' && (LANGS as readonly string[]).includes(s);
 export type BoardKey = (typeof BOARDS)[number];
 export const isBoard = (s: unknown): s is BoardKey => typeof s === 'string' && (BOARDS as readonly string[]).includes(s);
 /** the boards only a moderator may open a thread on */
@@ -45,6 +49,8 @@ export interface ThreadRow {
   id: string;
   board: BoardKey;
   title: string;
+  /** the tongue the title was written in */
+  lang: Lang;
   by: Author;
   createdAt: number;
   lastAt: number;
@@ -62,6 +68,8 @@ export interface Post {
   by: Author;
   /** empty when the post is hidden and the reader is no moderator */
   body: string;
+  /** the tongue it was written in */
+  lang: Lang;
   createdAt: number;
   editedAt: number | null;
   hidden: boolean;
@@ -74,6 +82,21 @@ export interface ThreadView {
   page: number;
   pages: number;
   posts: Post[];
+}
+
+/** a thread's page as the interpreter renders it: the title, and the posts by id */
+export interface Rendered {
+  title: string | null;
+  posts: Record<string, string>;
+  /** renderings still being made: the page will be told again when they are */
+  pending: number;
+  /** the interpreter is at work at all (a key, and budget left) */
+  on: boolean;
+}
+export interface TranslationSpend {
+  spent: number;
+  budget: number;
+  on: boolean;
 }
 
 export type ReportReason = 'insult' | 'spam' | 'offtopic' | 'other';

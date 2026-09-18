@@ -7,14 +7,14 @@ import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/
 import Button from '@/components/platform/Button';
 import EmptyState from '@/components/platform/EmptyState';
 import { isOnline } from '@/online/lobby';
-import { forumBoards, forumEdit, forumMod, forumOpen, forumReply, forumReport, forumReports, forumSeen, forumThread, forumThreads, useForumTick, useSession, useStranger } from '@/online/session';
+import { forumBoards, forumEdit, forumMod, forumOpen, forumReply, forumReport, forumReports, forumSeen, forumThread, forumThreads, forumTranslate, useForumTick, useSession, useStranger } from '@/online/session';
 import type { Me } from '@/online/table';
 import { BODY_MAX, EDIT_MS, MODS_OPEN, REPORT_MAX, REPORT_REASONS, TITLE_MAX, isBoard } from '@/forum/types';
-import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow } from '@/forum/types';
+import type { BoardKey, BoardSummary, ModAction, Post, Rendered, Report, ReportReason, ThreadRow, TranslationSpend } from '@/forum/types';
 import { parse, quoted } from '@/forum/markup';
 import type { Inline } from '@/forum/markup';
 import { offends } from '@/forum/words';
-import { useT } from '@/i18n';
+import { useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -273,7 +273,7 @@ export default function Forum() {
   const tick = useForumTick();
   const mod = !!gate.session?.moderator;
   const boards = useAsked(() => (gate.session ? forumBoards() : Promise.resolve<BoardSummary[]>([])), [gate.session?.id, tick]);
-  const queue = useAsked(() => (mod ? forumReports() : Promise.resolve<Report[]>([])), [mod, tick]);
+  const queue = useAsked(() => (mod ? forumReports().then((r) => r.reports) : Promise.resolve<Report[]>([])), [mod, tick]);
   if (!gate.session) return gate.block;
   return (
     <PageShell
@@ -328,6 +328,7 @@ export default function Forum() {
 
 export function ForumBoard() {
   const t = useT();
+  const lang = useLang();
   const gate = useGate();
   const navigate = useNavigate();
   const params = useParams();
@@ -354,7 +355,7 @@ export function ForumBoard() {
     setBusy(true);
     setRefusal(null);
     try {
-      const id = await forumOpen(board, title.trim(), body.trim());
+      const id = await forumOpen(board, title.trim(), body.trim(), lang);
       setTitle('');
       setBody('');
       setOpening(false);
@@ -432,6 +433,8 @@ function PostCard({
   me,
   mod,
   locked,
+  rendering,
+  pending,
   onQuote,
   onChanged,
 }: {
@@ -439,11 +442,18 @@ function PostCard({
   me: Me;
   mod: boolean;
   locked: boolean;
+  /** the post in the reader's tongue, when the interpreter has rendered it */
+  rendering: string | null;
+  /** the interpreter is at it */
+  pending: boolean;
   onQuote: (p: Post) => void;
   onChanged: () => void;
 }) {
   const t = useT();
+  const lang = useLang();
   const mine = post.by.id === me.id;
+  const foreign = post.lang !== lang;
+  const [original, setOriginal] = useState(false);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(post.body);
   const [reporting, setReporting] = useState(false);
@@ -472,7 +482,7 @@ function PostCard({
       return;
     }
     void act(async () => {
-      await forumEdit(post.id, draft.trim());
+      await forumEdit(post.id, draft.trim(), lang);
       setEditing(false);
     });
   };
@@ -516,7 +526,21 @@ function PostCard({
             </div>
           </div>
         ) : (
-          <Body text={post.body} />
+          <>
+            <Body text={rendering && !original ? rendering : post.body} />
+            {foreign && (
+              <p className="mt-1 flex flex-wrap items-center gap-2 font-ui text-[11.5px] text-iron-400">
+                <span>{t(rendering && !original ? `platform.forum.translatedFrom.${post.lang}` : `platform.forum.writtenIn.${post.lang}`)}</span>
+                {rendering ? (
+                  <button type="button" onClick={() => setOriginal((o) => !o)} className="text-brass-300 underline decoration-brass-500/50 underline-offset-2 hover:text-brass-200">
+                    {t(original ? 'platform.forum.showTranslation' : 'platform.forum.showOriginal')}
+                  </button>
+                ) : (
+                  pending && <span className="italic">{t('platform.forum.translating')}</span>
+                )}
+              </p>
+            )}
+          </>
         )}
       </div>
       {!editing && (
@@ -579,6 +603,7 @@ function PostCard({
 
 export function ForumThread() {
   const t = useT();
+  const lang = useLang();
   const gate = useGate();
   const params = useParams();
   const [search, setSearch] = useSearchParams();
@@ -594,6 +619,9 @@ export function ForumThread() {
   useEffect(() => {
     if (view.data) forumSeen(view.data.thread.id);
   }, [view.data]);
+  /* the page in the reader's tongue: what the interpreter has, the rest follows on the next tick */
+  const foreign = !!view.data && (view.data.thread.lang !== lang || view.data.posts.some((p) => p.lang !== lang && !p.hidden));
+  const rendered = useAsked(() => (foreign && view.data ? forumTranslate(view.data.thread.id, view.data.page, lang) : Promise.resolve<Rendered | null>(null)), [foreign, view.data, lang]);
   if (!gate.session) return gate.block;
   const me = gate.session;
   const mod = !!me.moderator;
@@ -608,7 +636,7 @@ export function ForumThread() {
     setBusy(true);
     setRefusal(null);
     try {
-      const r = await forumReply(th.id, body.trim());
+      const r = await forumReply(th.id, body.trim(), lang);
       setBody('');
       if (r.page !== view.data?.page) setSearch({ p: String(r.page) });
       else view.reload();
@@ -633,10 +661,11 @@ export function ForumThread() {
     <PageShell
       back={{ to: th ? `/forum/${th.board}` : '/forum', label: th ? t(`platform.forum.boards.${th.board}.name`) : t('platform.forum.backForum') }}
       eyebrow={th ? t(`platform.forum.boards.${th.board}.name`).toUpperCase() : t('platform.forum.eyebrow')}
-      title={th?.title ?? t('platform.forum.title')}
+      title={rendered.data?.title ?? th?.title ?? t('platform.forum.title')}
       lede={
         th ? (
           <span className="flex flex-wrap items-center gap-2">
+            {rendered.data?.title && <span className="block w-full text-iron-400">{t('platform.forum.originalTitle', { title: th.title })}</span>}
             <span>
               {t('platform.forum.by', { name: th.by.name })} · {t('platform.forum.opened', { when: since(th.createdAt, t) })} · {th.replies ? t(th.replies === 1 ? 'platform.forum.replyOne' : 'platform.forum.replies', { count: th.replies }) : t('platform.forum.noReplies')}
             </span>
@@ -665,7 +694,7 @@ export function ForumThread() {
           <Pages page={view.data.page} pages={view.data.pages} onPage={(p) => setSearch({ p: String(p) })} />
           <div className="flex flex-col gap-3">
             {view.data.posts.map((p) => (
-              <PostCard key={p.id} post={p} me={me} mod={mod} locked={!!th?.locked && !mod} onQuote={(q) => setBody((b) => b + (b && !b.endsWith('\n') ? '\n\n' : '') + quoted(q.by.name, q.body))} onChanged={view.reload} />
+              <PostCard key={p.id} post={p} me={me} mod={mod} locked={!!th?.locked && !mod} rendering={rendered.data?.posts[p.id] ?? null} pending={!!rendered.data && rendered.data.pending > 0} onQuote={(q) => setBody((b) => b + (b && !b.endsWith('\n') ? '\n\n' : '') + quoted(q.by.name, q.body))} onChanged={view.reload} />
             ))}
           </div>
           <Pages page={view.data.page} pages={view.data.pages} onPage={(p) => setSearch({ p: String(p) })} />
@@ -690,6 +719,7 @@ export function ForumModeration() {
   const tick = useForumTick();
   const mod = !!gate.session?.moderator;
   const queue = useAsked(() => (mod ? forumReports() : Promise.reject(new Error('forum-not-mod'))), [mod, tick]);
+  const spend: TranslationSpend | undefined = queue.data?.translation;
   const [busy, setBusy] = useState<string | null>(null);
   if (!gate.session) return gate.block;
   const act = async (id: string, work: () => Promise<void>) => {
@@ -702,11 +732,12 @@ export function ForumModeration() {
     }
   };
   return (
-    <PageShell back={{ to: '/forum', label: t('platform.forum.backForum') }} eyebrow={t('platform.forum.mod.eyebrow')} title={t('platform.forum.mod.title')} lede={t('platform.forum.mod.lede')} aside={queue.data ? <Mark tone="brass">{t('platform.forum.mod.queue', { count: queue.data.length })}</Mark> : undefined}>
+    <PageShell back={{ to: '/forum', label: t('platform.forum.backForum') }} eyebrow={t('platform.forum.mod.eyebrow')} title={t('platform.forum.mod.title')} lede={t('platform.forum.mod.lede')} aside={queue.data ? <Mark tone="brass">{t('platform.forum.mod.queue', { count: queue.data.reports.length })}</Mark> : undefined}>
       <Refusal text={queue.error} />
-      {queue.data && queue.data.length === 0 && <EmptyState title={t('platform.forum.mod.queueEmpty')} icon={<ShieldCheck />} mini />}
+      {spend && <p className="mb-4 font-ui text-[12.5px] text-iron-400">{spend.on ? t('platform.forum.mod.spend', { spent: spend.spent.toFixed(2), budget: spend.budget.toFixed(0) }) : t('platform.forum.mod.spendOff')}</p>}
+      {queue.data && queue.data.reports.length === 0 && <EmptyState title={t('platform.forum.mod.queueEmpty')} icon={<ShieldCheck />} mini />}
       <div className="flex flex-col gap-3">
-        {queue.data?.map((r) => (
+        {queue.data?.reports.map((r) => (
           <article key={r.id} className="rounded-xl border border-brass-hairline bg-enamel-850 p-4 lg:p-5">
             <header className="flex flex-wrap items-center gap-2">
               <Mark tone="brass">{t(`platform.forum.reportReason.${r.reason}`)}</Mark>

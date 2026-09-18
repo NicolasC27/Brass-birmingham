@@ -18,8 +18,10 @@ import type { Waits } from './queue';
 import { letters, mailerFromEnv } from './mail';
 import type { Mailer } from './mail';
 import { Store } from './store';
-import { BODY_MAX, BODY_MIN, MODS_OPEN, POSTS_PER_HOUR, POST_COOLDOWN_MS, REPORT_MAX, THREAD_COOLDOWN_MS, TITLE_MAX, TITLE_MIN, isBoard, isModAction, isReason } from '@/forum/types';
-import type { BoardKey, ForumError } from '@/forum/types';
+import { BODY_MAX, BODY_MIN, MODS_OPEN, POSTS_PER_HOUR, POST_COOLDOWN_MS, REPORT_MAX, THREAD_COOLDOWN_MS, TITLE_MAX, TITLE_MIN, isBoard, isLang, isModAction, isReason } from '@/forum/types';
+import { claudeTranslator, costOf } from './translate';
+import type { Translator } from './translate';
+import type { BoardKey, ForumError, Lang } from '@/forum/types';
 import { offends } from '@/forum/words';
 import type { Account } from './store';
 
@@ -139,6 +141,10 @@ export interface ServeOptions {
   feedbackFile?: string | null;
   /** the members who keep the forum, by name (BLACKRAIL_MODERATORS, comma-separated) */
   moderators?: string[];
+  /** the forum's interpreter (Claude with ANTHROPIC_API_KEY by default; null for none) */
+  translator?: Translator | null;
+  /** dollars the interpreter may spend, all time (TRANSLATE_BUDGET_USD, 10 by default) */
+  translateBudget?: number;
   /** the clock the queues wait by, and how long they wait — for the tests */
   clock?: () => number;
   waits?: Partial<Waits>;
@@ -182,6 +188,39 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const clients = new Set<Client>();
   const moderators = new Set((options.moderators ?? (process.env.BLACKRAIL_MODERATORS ?? '').split(',')).map(foldName).filter(Boolean));
   const isMod = (a: { name: string }): boolean => moderators.has(foldName(a.name));
+  const translator = options.translator === undefined ? claudeTranslator() : options.translator;
+  const translateBudget = options.translateBudget ?? Number(process.env.TRANSLATE_BUDGET_USD ?? 10);
+  /** the interpreter works while the house has a key and the budget is not spent */
+  const interpreting = (): boolean => !!translator && store.forumRenderingSpend() < translateBudget;
+  /** renderings under way, so a page asking twice does not pay twice */
+  const rendering = new Set<string>();
+  /** render what a page lacks, in the background; the thread's readers are told when it is done */
+  const renderLater = (board: BoardKey, thread: string, jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[]) => {
+    const t = translator;
+    if (!t) return;
+    const mine = jobs.filter((j) => !rendering.has(`${j.subject}:${j.id}:${j.to}`));
+    for (const j of mine) rendering.add(`${j.subject}:${j.id}:${j.to}`);
+    if (!mine.length) return;
+    void (async () => {
+      /* four at a time: a long thread on first reading is not a storm */
+      const queue = [...mine];
+      const worker = async () => {
+        for (let j = queue.shift(); j; j = queue.shift()) {
+          try {
+            if (!interpreting()) break;
+            const r = await t.translate(j.text, j.from, j.to);
+            store.forumKeepRendering(j.subject, j.id, j.to, r.text, t.model, r.tokensIn, r.tokensOut, costOf(t.model, r.tokensIn, r.tokensOut));
+          } catch (e) {
+            console.error(`interpreter: ${j.subject} ${j.id} to ${j.to}: ${e instanceof Error ? e.message : e}`);
+          } finally {
+            rendering.delete(`${j.subject}:${j.id}:${j.to}`);
+          }
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
+      tellForum(board, thread);
+    })();
+  };
   const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt, moderator: isMod(a) });
   /** something moved on the forum: every signed-in socket hears it, the pages that show it ask again */
   const tellForum = (board: BoardKey, thread: string | null) => {
@@ -568,7 +607,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-board' });
           return;
         }
-        const id = store.forumOpen(who.id, m.board, title, body);
+        const id = store.forumOpen(who.id, m.board, title, body, isLang(m.lang) ? m.lang : 'en');
         console.log(`forum: ${who.name} opens "${title}" on ${m.board}`);
         send(c, { t: 'forum.opened', rid: m.rid, id });
         tellForum(m.board, id);
@@ -591,7 +630,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         /* a moderator may still answer on a locked thread: the lock is lifted for the reply alone */
         if (where.locked) store.forumMod(who.id, 'unlock', String(m.id));
-        const r = store.forumReply(who.id, String(m.id), body);
+        const r = store.forumReply(who.id, String(m.id), body, isLang(m.lang) ? m.lang : 'en');
         if (where.locked) store.forumMod(who.id, 'lock', String(m.id));
         if (typeof r === 'string') {
           send(c, { t: 'refused', rid: m.rid, error: r });
@@ -609,7 +648,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-not-found' });
           return;
         }
-        const r = store.forumEdit(who.id, String(m.post), body, isMod(who));
+        const r = store.forumEdit(who.id, String(m.post), body, isMod(who), isLang(m.lang) ? m.lang : undefined);
         if (r) send(c, { t: 'refused', rid: m.rid, error: r });
         else {
           send(c, { t: 'done', rid: m.rid });
@@ -663,7 +702,32 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'forum-not-mod' });
           return;
         }
-        send(c, { t: 'forum.reports', rid: m.rid, reports: store.forumReports() });
+        send(c, { t: 'forum.reports', rid: m.rid, reports: store.forumReports(), translation: { spent: store.forumRenderingSpend(), budget: translateBudget, on: !!translator } });
+        return;
+      }
+      case 'forum.translate': {
+        const view = store.forumThread(String(m.id), Number(m.page) || 0, who.id, isMod(who));
+        if (!view || !isLang(m.lang)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'forum-not-found' });
+          return;
+        }
+        const to = m.lang;
+        const jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[] = [];
+        let title: string | null = null;
+        if (view.thread.lang !== to) {
+          title = store.forumRendering('thread', view.thread.id, to);
+          if (title === null) jobs.push({ subject: 'thread', id: view.thread.id, text: view.thread.title, from: view.thread.lang, to });
+        }
+        const posts: Record<string, string> = {};
+        for (const p of view.posts) {
+          if (p.lang === to || p.hidden || !p.body) continue;
+          const kept = store.forumRendering('post', p.id, to);
+          if (kept !== null) posts[p.id] = kept;
+          else jobs.push({ subject: 'post', id: p.id, text: p.body, from: p.lang, to });
+        }
+        const on = interpreting();
+        send(c, { t: 'forum.translated', rid: m.rid, id: view.thread.id, page: view.page, lang: to, rendered: { title, posts, pending: on ? jobs.length : 0, on } });
+        if (on && jobs.length) renderLater(view.thread.board, view.thread.id, jobs);
         return;
       }
       case 'forum.seen':

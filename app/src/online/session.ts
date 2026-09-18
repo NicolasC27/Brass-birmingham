@@ -3,7 +3,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
 import type { Desk, Leaderboard, Me, PublicTable } from './table';
-import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
+import type { BoardKey, BoardSummary, Lang, ModAction, Post, Rendered, Report, ReportReason, ThreadRow, ThreadView, TranslationSpend } from '@/forum/types';
 
 /* ------------------------------------------------------------------ */
 /* The visitors' book.                                                 */
@@ -180,10 +180,11 @@ export function useForumTick(board?: BoardKey, thread?: string): number {
 export const forumBoards = (): Promise<BoardSummary[]> => wire().forumBoards();
 export const forumThreads = (board: BoardKey, page: number): Promise<{ page: number; pages: number; threads: ThreadRow[] }> => wire().forumThreads(board, page);
 export const forumThread = (id: string, page: number): Promise<ThreadView> => wire().forumThread(id, page);
-export const forumOpen = (board: BoardKey, title: string, body: string): Promise<string> => wire().forumOpen(board, title, body);
-export const forumReply = (id: string, body: string): Promise<{ post: Post; page: number }> => wire().forumReply(id, body);
-export const forumEdit = (post: string, body: string): Promise<void> => wire().forumEdit(post, body);
+export const forumOpen = (board: BoardKey, title: string, body: string, lang: Lang): Promise<string> => wire().forumOpen(board, title, body, lang);
+export const forumReply = (id: string, body: string, lang: Lang): Promise<{ post: Post; page: number }> => wire().forumReply(id, body, lang);
+export const forumEdit = (post: string, body: string, lang: Lang): Promise<void> => wire().forumEdit(post, body, lang);
 export const forumReport = (post: string, reason: ReportReason, text: string): Promise<void> => wire().forumReport(post, reason, text);
 export const forumMod = (action: ModAction, id: string): Promise<void> => wire().forumMod(action, id);
-export const forumReports = (): Promise<Report[]> => wire().forumReports();
+export const forumReports = (): Promise<{ reports: Report[]; translation: TranslationSpend }> => wire().forumReports();
+export const forumTranslate = (id: string, page: number, lang: Lang): Promise<Rendered> => wire().forumTranslate(id, page, lang);
 export const forumSeen = (id: string): void => onlineWire()?.forumSeen(id);

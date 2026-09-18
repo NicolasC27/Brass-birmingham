@@ -7,7 +7,7 @@ import type { GameState, SetupPayload } from '@/game/types';
 import type { Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { BOARDS, POSTS_PER_PAGE, THREADS_PER_PAGE, EDIT_MS } from '@/forum/types';
-import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
+import type { BoardKey, BoardSummary, Lang, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
 import { fresh, ratingOf, seasonAt, settle } from './rating';
@@ -178,7 +178,8 @@ create table if not exists forum_threads (
   pinned    integer not null default 0,
   locked    integer not null default 0,
   hiddenAt  integer,
-  hiddenBy  text
+  hiddenBy  text,
+  lang      text not null default 'en'
 );
 create index if not exists forum_threads_board on forum_threads (board, pinned, lastAt);
 create table if not exists forum_posts (
@@ -189,9 +190,22 @@ create table if not exists forum_posts (
   createdAt integer not null,
   editedAt  integer,
   hiddenAt  integer,
-  hiddenBy  text
+  hiddenBy  text,
+  lang      text not null default 'en'
 );
 create index if not exists forum_posts_thread on forum_posts (threadId, createdAt);
+create table if not exists forum_translations (
+  subject   text not null,
+  id        text not null,
+  lang      text not null,
+  text      text not null,
+  model     text not null,
+  tokensIn  integer not null,
+  tokensOut integer not null,
+  cost      real not null,
+  createdAt integer not null,
+  primary key (subject, id, lang)
+);
 create table if not exists forum_reports (
   id         text primary key,
   postId     text not null references forum_posts(id) on delete cascade,
@@ -213,6 +227,8 @@ create table if not exists forum_seen (
 
 /** columns added since the first register: an old file learns them on opening */
 const GROWTH: [table: string, column: string, ddl: string][] = [
+  ['forum_threads', 'lang', "text not null default 'en'"],
+  ['forum_posts', 'lang', "text not null default 'en'"],
   ['accounts', 'email', 'text'],
   ['accounts', 'emailFolded', 'text'],
   ['accounts', 'verifiedAt', 'integer'],
@@ -860,6 +876,7 @@ export class Store {
       id: r.id,
       board: r.board as BoardKey,
       title: r.title,
+      lang: r.lang as Lang,
       by: { id: r.accountId, name: r.byName },
       createdAt: r.createdAt,
       lastAt: r.lastAt,
@@ -874,7 +891,7 @@ export class Store {
 
   private postRow(r: PostRecord, mod: boolean): Post {
     const hidden = r.hiddenAt !== null;
-    return { id: r.id, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: hidden && !mod ? '' : r.body, createdAt: r.createdAt, editedAt: r.editedAt, hidden, reports: mod ? r.reports : 0 };
+    return { id: r.id, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: hidden && !mod ? '' : r.body, lang: r.lang as Lang, createdAt: r.createdAt, editedAt: r.editedAt, hidden, reports: mod ? r.reports : 0 };
   }
 
   /** the five boards, with what a member has not read yet on each */
@@ -924,17 +941,17 @@ export class Store {
   }
 
   /** a new thread with its first post */
-  forumOpen(accountId: string, board: BoardKey, title: string, body: string): string {
+  forumOpen(accountId: string, board: BoardKey, title: string, body: string, lang: Lang = 'en'): string {
     const now = Date.now();
     const id = 't-' + randomBytes(6).toString('hex');
-    this.db.prepare('insert into forum_threads (id, board, accountId, title, createdAt, lastAt, lastBy) values (?, ?, ?, ?, ?, ?, ?)').run(id, board, accountId, title, now, now, accountId);
-    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt) values (?, ?, ?, ?, ?)').run('p-' + randomBytes(6).toString('hex'), id, accountId, body, now);
+    this.db.prepare('insert into forum_threads (id, board, accountId, title, createdAt, lastAt, lastBy, lang) values (?, ?, ?, ?, ?, ?, ?, ?)').run(id, board, accountId, title, now, now, accountId, lang);
+    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt, lang) values (?, ?, ?, ?, ?, ?)').run('p-' + randomBytes(6).toString('hex'), id, accountId, body, now, lang);
     this.forumSeen(accountId, id, now);
     return id;
   }
 
   /** a reply: the post, and the page it lands on */
-  forumReply(accountId: string, threadId: string, body: string): { post: Post; page: number } | 'forum-not-found' | 'forum-locked' {
+  forumReply(accountId: string, threadId: string, body: string, lang: Lang = 'en'): { post: Post; page: number } | 'forum-not-found' | 'forum-locked' {
     const where = this.forumWhere(threadId);
     if (!where || where.hidden) return 'forum-not-found';
     if (where.locked) return 'forum-locked';
@@ -942,23 +959,25 @@ export class Store {
     const last = (this.db.prepare('select lastAt from forum_threads where id = ?').get(threadId) as { lastAt: number }).lastAt;
     const now = Math.max(Date.now(), last + 1);
     const id = 'p-' + randomBytes(6).toString('hex');
-    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt) values (?, ?, ?, ?, ?)').run(id, threadId, accountId, body, now);
+    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt, lang) values (?, ?, ?, ?, ?, ?)').run(id, threadId, accountId, body, now, lang);
     this.db.prepare('update forum_threads set replies = replies + 1, lastAt = ?, lastBy = ? where id = ?').run(now, accountId, threadId);
     this.forumSeen(accountId, threadId, now);
     const total = (this.db.prepare('select count(*) as n from forum_posts where threadId = ?').get(threadId) as { n: number }).n;
     const name = (this.db.prepare('select name from accounts where id = ?').get(accountId) as { name: string }).name;
-    return { post: { id, threadId, by: { id: accountId, name }, body, createdAt: now, editedAt: null, hidden: false, reports: 0 }, page: Math.max(1, Math.ceil(total / POSTS_PER_PAGE)) };
+    return { post: { id, threadId, by: { id: accountId, name }, body, lang, createdAt: now, editedAt: null, hidden: false, reports: 0 }, page: Math.max(1, Math.ceil(total / POSTS_PER_PAGE)) };
   }
 
   /** a correction: the author's for a quarter of an hour, a moderator's at any time */
-  forumEdit(accountId: string, postId: string, body: string, mod: boolean): 'forum-not-found' | 'forum-not-yours' | 'forum-edit-window' | null {
+  forumEdit(accountId: string, postId: string, body: string, mod: boolean, lang?: Lang): 'forum-not-found' | 'forum-not-yours' | 'forum-edit-window' | null {
     const post = this.forumPostWhere(postId);
     if (!post) return 'forum-not-found';
     if (!mod) {
       if (post.accountId !== accountId) return 'forum-not-yours';
       if (Date.now() - post.createdAt > EDIT_MS) return 'forum-edit-window';
     }
-    this.db.prepare('update forum_posts set body = ?, editedAt = ? where id = ?').run(body, Date.now(), postId);
+    this.db.prepare('update forum_posts set body = ?, editedAt = ?, lang = coalesce(?, lang) where id = ?').run(body, Date.now(), lang ?? null, postId);
+    /* the renderings said something else: made again when next read */
+    this.db.prepare("delete from forum_translations where subject = 'post' and id = ?").run(postId);
     return null;
   }
 
@@ -1003,7 +1022,7 @@ export class Store {
     const rows = this.db
       .prepare(
         `select r.id, r.reason, r.text, r.createdAt, r.accountId as reporterId, b.name as reporterName,
-                p.id as postId, p.threadId, p.accountId, a.name as byName, p.body, p.createdAt as postAt, p.editedAt, p.hiddenAt,
+                p.id as postId, p.threadId, p.accountId, a.name as byName, p.body, p.lang as postLang, p.createdAt as postAt, p.editedAt, p.hiddenAt,
                 t.title, t.board,
                 (select count(*) from forum_reports x where x.postId = p.id and x.resolvedAt is null) as reports
          from forum_reports r join forum_posts p on p.id = r.postId join forum_threads t on t.id = p.threadId
@@ -1013,7 +1032,7 @@ export class Store {
       .all() as unknown as ReportRecord[];
     return rows.map((r) => ({
       id: r.id,
-      post: { id: r.postId, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: r.body, createdAt: r.postAt, editedAt: r.editedAt, hidden: r.hiddenAt !== null, reports: r.reports },
+      post: { id: r.postId, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: r.body, lang: r.postLang as Lang, createdAt: r.postAt, editedAt: r.editedAt, hidden: r.hiddenAt !== null, reports: r.reports },
       thread: { id: r.threadId, title: r.title, board: r.board as BoardKey },
       by: { id: r.reporterId, name: r.reporterName },
       reason: r.reason as ReportReason,
@@ -1023,6 +1042,21 @@ export class Store {
   }
   forumOpenReports(): number {
     return (this.db.prepare('select count(*) as n from forum_reports where resolvedAt is null').get() as { n: number }).n;
+  }
+
+  /* ---- the interpreter's renderings: one per post and tongue, and what they cost ---- */
+  forumRendering(subject: 'post' | 'thread', id: string, lang: Lang): string | null {
+    const r = this.db.prepare('select text from forum_translations where subject = ? and id = ? and lang = ?').get(subject, id, lang) as { text: string } | undefined;
+    return r ? r.text : null;
+  }
+  forumKeepRendering(subject: 'post' | 'thread', id: string, lang: Lang, text: string, model: string, tokensIn: number, tokensOut: number, cost: number): void {
+    this.db
+      .prepare('insert into forum_translations (subject, id, lang, text, model, tokensIn, tokensOut, cost, createdAt) values (?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict (subject, id, lang) do update set text = excluded.text, model = excluded.model, tokensIn = excluded.tokensIn, tokensOut = excluded.tokensOut, cost = excluded.cost, createdAt = excluded.createdAt')
+      .run(subject, id, lang, text, model, tokensIn, tokensOut, cost, Date.now());
+  }
+  /** dollars spent on renderings, all time */
+  forumRenderingSpend(): number {
+    return (this.db.prepare('select coalesce(sum(cost), 0) as d from forum_translations').get() as { d: number }).d;
   }
 
   /** the member read the thread up to now */
@@ -1051,6 +1085,7 @@ interface ThreadRecord {
   pinned: number;
   locked: number;
   hiddenAt: number | null;
+  lang: string;
   byName: string;
   lastName: string;
   seenAt: number | null;
@@ -1063,6 +1098,7 @@ interface PostRecord {
   createdAt: number;
   editedAt: number | null;
   hiddenAt: number | null;
+  lang: string;
   byName: string;
   reports: number;
 }
@@ -1078,6 +1114,7 @@ interface ReportRecord {
   accountId: string;
   byName: string;
   body: string;
+  postLang: string;
   postAt: number;
   editedAt: number | null;
   hiddenAt: number | null;
