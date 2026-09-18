@@ -15,10 +15,10 @@ export interface Form {
   games: number;
 }
 
-export const FRESH_FORM: Form = { level: 0.25, games: 0 };
-const FLOOR = 0.1;
-const WIN = 0.1;
-const LOSS = 0.06;
+export const FRESH_FORM: Form = { level: 0.5, games: 0 };
+const FLOOR = 0.3;
+const WIN = 0.08;
+const LOSS = 0.05;
 
 export function readForm(): Form {
   try {

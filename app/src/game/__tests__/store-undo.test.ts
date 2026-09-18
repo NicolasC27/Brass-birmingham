@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { botAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { newGame, serialize } from '../engine';
@@ -11,6 +11,10 @@ import type { SetupPayload } from '../types';
 /* moments the human undoes — the game must land exactly on the state  */
 /* recorded before that action, with no replay failure, all game long. */
 /* ------------------------------------------------------------------ */
+
+/* the machines think at the bottom of the dial here: this is a test of
+   the undo, not of their play, and a searching bot outlasts the clock */
+vi.mock('../form', () => ({ readForm: () => ({ level: 0, games: 0 }), recordForm: () => ({ level: 0, games: 0 }) }));
 
 const table: SetupPayload = {
   players: [

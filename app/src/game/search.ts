@@ -34,7 +34,7 @@ import { applyAction, botAction, fallbackAction } from './actions';
 import type { GameAction } from './actions';
 import { chooseBotMove } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
-import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
+import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { Card, GameState, IndustryType } from './types';
 
@@ -62,6 +62,13 @@ export interface SearchResult {
 const DEFAULT_BUDGET_MS = 300;
 const MAX_BEAM = 8;
 const MIN_BEAM = 2;
+/** with this much time every first is followed by every second */
+const EXHAUSTIVE_MS = 1000;
+/** otherwise the firsts within this much of the best are followed, up to a cap */
+const BEAM_SLACK = 6;
+const BEAM_CAP = 14;
+/** how many of the best turns are looked ahead from */
+const LOOKAHEAD_TURNS_KEPT = 4;
 /** turns played on when looking ahead, and hands drawn for each */
 const LOOKAHEAD_TURNS = 6;
 const LOOKAHEAD_DEALS = 2;
@@ -69,6 +76,8 @@ const LOOKAHEAD_DEALS = 2;
 const LOOKAHEAD_WEIGHT = 0.7;
 /** below this budget there is no room to look ahead at all */
 const MIN_LOOKAHEAD_MS = 250;
+/** the machine never plays below this, whatever the table calls for */
+export const FLOOR_STRENGTH = 0.3;
 
 /* rounds per era, as the engine deals them (brass/game-data.md) */
 const ROUNDS: Record<2 | 3 | 4, number> = { 2: 10, 3: 9, 4: 8 };
@@ -136,13 +145,23 @@ export function legalActions(s: GameState, i: number): GameAction[] {
     }
   }
 
-  /* developments: each industry once, and twice where the mat allows */
+  /* developments: each industry once, and twice where the mat allows —
+     with the engine's iron, and with a cube from one's own works, which
+     walks that works toward its flip */
+  const ownWorks = ironSources(s).filter((w) => w.owner === i);
   for (const d of developOptions(s, i)) {
     if (!d.valid) continue;
     out.push({ kind: 'develop', card: spare.id, industries: [d.industry] });
+    for (const w of ownWorks) out.push({ kind: 'develop', card: spare.id, industries: [d.industry], ironFrom: [w.key] });
     /* the second tile wants a second iron, whose price only the engine knows */
+    if (!developTwice(s, i, d.industry)) continue;
     const twice: GameAction = { kind: 'develop', card: spare.id, industries: [d.industry, d.industry] };
-    if (developTwice(s, i, d.industry) && applyAction(s, i, twice).state) out.push(twice);
+    if (applyAction(s, i, twice).state) out.push(twice);
+    for (const w of ownWorks) {
+      if (w.cubes < 2) continue;
+      const own: GameAction = { kind: 'develop', card: spare.id, industries: [d.industry, d.industry], ironFrom: [w.key, w.key] };
+      if (applyAction(s, i, own).state) out.push(own);
+    }
   }
 
   if (canLoan(s, i).ok) out.push({ kind: 'loan', card: spare.id });
@@ -172,6 +191,9 @@ function served(s: GameState, town: string, industry: IndustryType): boolean {
   return MERCHANTS.some((m) => merchantOpen(s, m.id) && reach.has(m.id) && merchantDemand(s, m.id).includes(industry));
 }
 
+/** does any merchant lie on the network `town` belongs to? */
+const merchantLinked = (s: GameState, town: string): boolean => [...reachable(s, town, s.era, null)].some((n) => !!MERCHANT_BY_ID[n]);
+
 /** the same, one unbuilt link away */
 function nearlyServed(s: GameState, town: string, industry: IndustryType): boolean {
   const reach = reachable(s, town, s.era, null);
@@ -187,8 +209,18 @@ function nearlyServed(s: GameState, town: string, industry: IndustryType): boole
 function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, frac: number, paydays: number, own: boolean): number {
   const p = s.players[j];
   let v = p.vp + proj[j].links + proj[j].tiles;
+  /* cash and the cash to come, worth less as the game runs out */
+  const rate = 0.05 + 0.4 * frac;
+  const level = incomeLevel(p.income);
   /* a flipped tile of the Canal Era that survives the sweep scores twice */
   const again = s.era === 'canal' && s.eraLength === 'standard';
+  /* beer somewhere on the table: a brewery with barrels, or a merchant's */
+  const beerAround = Object.values(s.tiles).some((x) => x.industry === 'brewery' && !x.flipped && x.cubes > 0) || Object.values(s.merchantBeer).some((b) => b > 0);
+  /* what one's own beer may serve: the goods one holds unsold; a second
+     brewery with barrels waits on the same sales as the first */
+  const goodsTile = (x: { industry: IndustryType; level: number; flipped: boolean }) => !x.flipped && INDUSTRIES[x.industry][x.level - 1].beerToSell > 0;
+  const ownGoods = Object.values(s.tiles).filter((x) => x.owner === j && goodsTile(x)).length;
+  const ownBreweries = Object.values(s.tiles).filter((x) => x.owner === j && x.industry === 'brewery' && !x.flipped && x.cubes > 0).length;
   for (const [key, t] of Object.entries(s.tiles)) {
     if (t.owner !== j) continue;
     const lv = INDUSTRIES[t.industry][t.level - 1];
@@ -198,23 +230,33 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
       continue;
     }
     const town = key.split(':')[0];
+    /* what the flip is worth: the points, and the income it moves the
+       marker to, paid every payday still to come */
+    const gain = lv.vp * (1 + twice) + (incomeLevel(p.income + lv.incomeDelta) - level) * paydays * rate * 0.8;
     let chance: number;
-    if (lv.beerToSell > 0) chance = served(s, town, t.industry) ? 0.7 : nearlyServed(s, town, t.industry) ? 0.35 : 0.1;
-    else if (t.industry === 'brewery') chance = 0.6;
-    else chance = 0.35 + 0.6 * (1 - t.cubes / Math.max(1, lv.cubes));
+    if (lv.beerToSell > 0) chance = served(s, town, t.industry) ? (beerAround ? 0.7 : 0.4) : nearlyServed(s, town, t.industry) ? 0.35 : 0.1;
+    else if (t.industry === 'brewery') {
+      /* barrels go with sales: one's own goods anywhere, anyone's goods on this network */
+      const reach = reachable(s, town, s.era, null);
+      const near = Object.entries(s.tiles).filter(([k, x]) => x.owner !== j && goodsTile(x) && reach.has(k.split(':')[0])).length;
+      chance = Math.min(0.75, 0.15 + 0.2 * Math.min(2, ownGoods) + 0.1 * Math.min(3, near)) * (ownBreweries > 1 ? 0.6 : 1);
+    }
+    /* iron ships anywhere and one may drain one's own works by developing */
+    else if (t.industry === 'iron') chance = 0.55 + 0.45 * (1 - t.cubes / Math.max(1, lv.cubes));
+    /* coal only travels along links: a mine on the way to a merchant empties faster */
+    else chance = 0.3 + 0.6 * (1 - t.cubes / Math.max(1, lv.cubes)) + (merchantLinked(s, town) ? 0.1 : 0);
     /* the fewer rounds left, the less likely the flip */
     chance *= Math.min(1, 0.3 + frac);
-    v += lv.vp * (1 + twice) * chance;
+    v += gain * chance;
     /* an unflipped tile still lends its link icons */
     v += lv.links * 0.3;
   }
-  /* cash and the cash to come, worth less as the game runs out */
-  const rate = 0.05 + 0.4 * frac;
-  const level = incomeLevel(p.income);
   const stream = INCOME_PAYOUT[p.income] * paydays;
   v += (p.money + stream) * rate;
   /* a negative income is a threat to the tiles themselves */
   if (level < 0) v -= (-level) * 1.5;
+  /* once the deck is out, every card in hand is one more action */
+  if (s.deck.length === 0) v += p.hand.length * 2;
   if (!own) return v;
   /* room to move: the towns one may build in, and a market for goods */
   const towns = networkTowns(s, j);
@@ -346,8 +388,15 @@ function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number
   return { score: evaluate(cur, i), nodes };
 }
 
+/** the table without its paperwork: the ledger, the history and the log
+ *  are not read by the search and only make every copy dearer */
+function bare(s: GameState): GameState {
+  return { ...s, ledger: [], history: [], actions: [] };
+}
+
 /** the best turn from here: the first action, chosen with the second in mind */
-export function searchTurn(s: GameState, i: number, o: SearchOptions = {}): SearchResult | null {
+export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): SearchResult | null {
+  const s = bare(full);
   const strength = clamp01(o.strength ?? 1);
   const dial = knobs(strength);
   const budget = Math.min(o.budgetMs ?? DEFAULT_BUDGET_MS, dial.budgetMs);
@@ -369,10 +418,14 @@ export function searchTurn(s: GameState, i: number, o: SearchOptions = {}): Sear
   /* the turn ends with this action, or the machine does not look further */
   if (s.actionsLeft <= 1 || !dial.second) return done(firsts[0]);
 
-  /* how many firsts the budget lets us follow */
+  /* which firsts are followed by their seconds: every one when there is
+     time to try everything; otherwise those within reach of the best, as
+     many as the dial and the budget allow */
   const elapsed = now() - start;
   const perNode = Math.max(0.05, elapsed / nodes);
-  const beam = Math.max(MIN_BEAM, Math.min(dial.beam, o.beam ?? Math.floor((budget - elapsed) / (perNode * Math.max(1, firsts.length)))));
+  const affordable = Math.floor((budget - elapsed) / (perNode * Math.max(1, firsts.length)));
+  const within = firsts.filter((f) => f.score >= firsts[0].score - BEAM_SLACK).length;
+  const beam = o.beam ?? (budget >= EXHAUSTIVE_MS ? firsts.length : Math.max(MIN_BEAM, Math.min(dial.beam === MAX_BEAM ? BEAM_CAP : dial.beam, within, affordable)));
 
   /* every turn worth playing: each first of the beam with its best second */
   const turns: Turn[] = [];
@@ -398,7 +451,7 @@ export function searchTurn(s: GameState, i: number, o: SearchOptions = {}): Sear
 
   /* the best turns are played on: the rivals answer, and at N+2 so do we */
   let best: Turn | null = null;
-  for (const [k, turn] of turns.entries()) {
+  for (const [k, turn] of turns.slice(0, LOOKAHEAD_TURNS_KEPT).entries()) {
     if (k > 0 && now() - start > budget) break;
     let sum = 0;
     for (let d = 0; d < LOOKAHEAD_DEALS; d++) {
@@ -419,13 +472,15 @@ export function searchTurn(s: GameState, i: number, o: SearchOptions = {}): Sear
  *  ahead, and how much blur */
 export function knobs(strength: number): { budgetMs: number; beam: number; second: boolean; depth: 0 | 1 | 2; noise: number } {
   const s = clamp01(strength);
-  const depth = s >= 0.95 ? 2 : s >= 0.8 ? 1 : 0;
+  const depth = s >= 0.9 ? 2 : s >= 0.75 ? 1 : 0;
   return {
-    budgetMs: depth === 2 ? 700 : depth === 1 ? 450 : Math.round(60 + 240 * s),
-    beam: Math.round(MIN_BEAM + (MAX_BEAM - MIN_BEAM) * s),
-    second: s >= 0.6,
+    budgetMs: depth === 2 ? 1500 : depth === 1 ? 600 : Math.round(80 + 220 * s),
+    beam: Math.round(MIN_BEAM + 1 + (MAX_BEAM - MIN_BEAM - 1) * s),
+    second: s >= 0.35,
     depth,
-    noise: 16 * Math.pow(1 - s, 1.2),
+    /* a little blur at the bottom of the dial: enough to vary the play,
+       never enough to pass up a good turn for a bad one */
+    noise: 6 * (1 - s) * (1 - s),
   };
 }
 
@@ -447,7 +502,8 @@ export function adaptiveStrength(s: GameState, i: number, base: number): number 
   if (lead > 25) level -= 0.35;
   else if (lead > 12) level -= 0.2;
   else if (lead < -12) level += 0.15;
-  return clamp01(level);
+  /* eased, never foolish */
+  return Math.max(FLOOR_STRENGTH, clamp01(level));
 }
 
 /* ============================= dispatch ============================= */
