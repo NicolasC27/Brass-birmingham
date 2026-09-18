@@ -143,7 +143,7 @@ const game = {
     variant: { v3: 'Tiles v3', crate: 'Goods crate', parcels: 'Original crate', manufactory: 'Manufactory', wagon: 'Mine tub', cart: 'Original cart', colliery: 'Colliery', barrel: 'Barrel', mug: 'Barrel and mug', brewhouse: 'Brewhouse', mill: 'Cotton mill', foundry: 'Foundry', kiln: 'Bottle kiln' },
     slotArt: 'Empty slots',
     slotArtHint: 'Engraved, only built works carry colour.',
-    slot: { engraved: 'Sepia engraving', mono: 'Black-and-white engraving', painted: 'Colour painting' },
+    slot: { ink: 'Ink on the sheet', engraved: 'Sepia engraving', mono: 'Black-and-white engraving', painted: 'Colour painting' },
     chipStyle: 'Income and VP',
     chipStyleHint: 'One quiet band along the bottom, or two boxed chips.',
     chip: { band: 'Single band', chips: 'Two chips' },

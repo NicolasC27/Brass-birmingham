@@ -147,7 +147,7 @@ let state: BoardOptions = {
   stockStyle: read('stockStyle', 'corner'),
   tileArt: read('tileArt', {}),
   matOrder: read('matOrder', [...MAT_ORDER_DEFAULT]),
-  slotArt: read('slotArt', 'engraved'),
+  slotArt: read('slotArt', 'ink'),
   colorBlind: read('colorBlind', false),
   sealTiles: read('sealTiles', true),
   sealLinks: read('sealLinks', true),

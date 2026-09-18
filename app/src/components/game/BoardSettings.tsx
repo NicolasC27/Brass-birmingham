@@ -51,12 +51,20 @@ function VariantPreview({ industry, variant, active }: { industry: IndustryType;
 /** the cotton mill painting: full colour, or the engraved sepia print */
 function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
   return (
-    <span aria-hidden className={cn(CARD, 'bg-[#12100C]', active ? 'border-brass-400' : 'border-brass-700/50')}>
+    <span aria-hidden className={cn(CARD, art === 'ink' ? 'bg-[#E4D7B5]' : 'bg-[#12100C]', active ? 'border-brass-400' : 'border-brass-700/50')}>
       <span
         className="absolute inset-1 bg-contain bg-center bg-no-repeat"
         style={{
           backgroundImage: 'url(/tile-cotton-cut.png)',
-          filter: art === 'engraved' ? 'grayscale(1) sepia(0.55) brightness(0.72) contrast(0.95)' : art === 'mono' ? 'grayscale(1) brightness(1.05) contrast(1.35)' : undefined,
+          filter:
+            art === 'ink'
+              ? 'grayscale(1) sepia(0.7) contrast(1.6) brightness(0.55)'
+              : art === 'engraved'
+                ? 'grayscale(1) sepia(0.55) brightness(0.72) contrast(0.95)'
+                : art === 'mono'
+                  ? 'grayscale(1) brightness(1.05) contrast(1.35)'
+                  : undefined,
+          mixBlendMode: art === 'ink' ? 'multiply' : undefined,
           opacity: art === 'painted' ? 1 : 0.9,
         }}
       />
@@ -450,7 +458,7 @@ export default function BoardSettings() {
                       hint={t('game.settings.slotArtHint')}
                       value={opts.slotArt}
                       onChange={(v) => setBoardOption('slotArt', v)}
-                      options={(['engraved', 'mono', 'painted'] as SlotArt[]).map((id) => ({
+                      options={(['ink', 'engraved', 'mono', 'painted'] as SlotArt[]).map((id) => ({
                         id,
                         label: t(`game.settings.slot.${id}`),
                         preview: (active) => <SlotPreview art={id} active={active} />,
