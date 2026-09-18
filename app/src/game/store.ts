@@ -941,9 +941,10 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!g || g.phase !== 'action' || st.code) return null;
     const p = g.players[g.current];
     if (!p.isBot) return null;
-    /* a browser thinks on the thread that paints, so a machine keeps it short;
-       it plays at the form the house holds for this player */
-    const wanted = chooseBotAction(g, g.current, { budgetMs: 200, strength: readForm().level });
+    /* a browser thinks on the thread that paints, so a machine keeps it short
+       — an expert a little less so; it plays at the form the house holds */
+    const strength = readForm().level;
+    const wanted = chooseBotAction(g, g.current, { budgetMs: strength >= 0.8 ? 400 : 200, strength });
     // nothing playable (or a move the engine refuses): scout if allowed, else pass
     if (!(wanted && get().dispatch(wanted))) get().dispatch(fallbackAction(g, g.current));
     return wanted;

@@ -18,14 +18,21 @@
 /* online, the form at home — and eases when the machine runs away      */
 /* with the game.                                                       */
 /*                                                                      */
+/* At the top of the dial the machine looks past its own turn: the best */
+/* turns found are played on, the rivals answering as the heuristic     */
+/* would with hands drawn at random from the cards nobody has seen, its */
+/* own next turn taken greedily, the rivals answering once more — and   */
+/* the table is judged there, one or two rounds ahead (N+1, N+2).       */
+/*                                                                      */
 /* The search only ever reads its own hand and what lies face up on the */
-/* table: no deck, no rival's cards. It is bounded by a time budget so   */
+/* table: the deck and the rivals' cards it does not know are drawn     */
+/* afresh before every look ahead. It is bounded by a time budget so    */
 /* the server never stalls for a machine's turn; when the budget runs   */
 /* out it plays the best turn found so far, and when anything goes      */
 /* wrong the heuristic bot takes over.                                  */
 /* ------------------------------------------------------------------ */
 
-import { applyAction, botAction } from './actions';
+import { applyAction, botAction, fallbackAction } from './actions';
 import type { GameAction } from './actions';
 import { chooseBotMove } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
@@ -40,6 +47,8 @@ export interface SearchOptions {
   beam?: number;
   /** how well the machine plays, 0 (a beginner) to 1 (its best) */
   strength?: number;
+  /** rounds looked past this turn (0, 1 or 2); the strength sets it when absent */
+  depth?: 0 | 1 | 2;
 }
 
 export interface SearchResult {
@@ -73,6 +82,13 @@ export const META: Record<BotPersona, Meta> = {
 const DEFAULT_BUDGET_MS = 300;
 const MAX_BEAM = 8;
 const MIN_BEAM = 2;
+/** turns played on when looking ahead, and hands drawn for each */
+const LOOKAHEAD_TURNS = 6;
+const LOOKAHEAD_DEALS = 2;
+/** what the look ahead weighs against the table as it stands after the turn */
+const LOOKAHEAD_WEIGHT = 0.7;
+/** below this budget there is no room to look ahead at all */
+const MIN_LOOKAHEAD_MS = 250;
 
 /* rounds per era, as the engine deals them (brass/game-data.md) */
 const ROUNDS: Record<2 | 3 | 4, number> = { 2: 10, 3: 9, 4: 8 };
@@ -257,18 +273,99 @@ interface Candidate {
   score: number;
 }
 
-/** a die cast from the position itself: the same table, the same blur */
-function noiseFrom(s: GameState, i: number): () => number {
+/** a whole turn played out: the first action, the table after the second, its reading */
+interface Turn {
+  first: GameAction;
+  after: GameState;
+  score: number;
+}
+
+/** a die cast from the position itself: the same table, the same throws */
+function diceFrom(s: GameState, i: number): () => number {
   let x = (s.seed ^ ((s.ledgerSeq + 1) * 2654435761) ^ (i * 40503)) >>> 0;
-  const next = () => {
+  return () => {
     x ^= x << 13;
     x ^= x >>> 17;
     x ^= x << 5;
     x >>>= 0;
     return x / 4294967296;
   };
-  /* a rough bell: the mean of three throws, centred */
-  return () => next() + next() + next() - 1.5;
+}
+
+/** a rough bell from the dice: the sum of three throws, centred */
+const bell = (dice: () => number) => () => dice() + dice() + dice() - 1.5;
+
+/* ---------------------------- look ahead ---------------------------- */
+
+/** the same table with every card nobody has seen — the deck and the
+ *  rivals' hands — dealt afresh: what the machine may fairly assume */
+export function determinize(s: GameState, i: number, rand: () => number): GameState {
+  const c = structuredClone(s);
+  const pool: Card[] = [...c.deck];
+  for (const [j, p] of c.players.entries()) if (j !== i) pool.push(...p.hand);
+  for (let k = pool.length - 1; k > 0; k--) {
+    const r = Math.floor(rand() * (k + 1));
+    [pool[k], pool[r]] = [pool[r], pool[k]];
+  }
+  for (const [j, p] of c.players.entries()) if (j !== i) p.hand = pool.splice(0, p.hand.length);
+  c.deck = pool;
+  return c;
+}
+
+/** one move of the model of a rival: the heuristic at its sharpest */
+function rivalMove(s: GameState, seat: number): GameState | null {
+  const a = botAction(chooseBotMove(s, seat, BOT_SKILL.magnate)) ?? fallbackAction(s, seat);
+  return applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state;
+}
+
+/** the rivals play on until seat `i` is to act again, the game ends, or
+ *  the turns run out; the canal ceremony closes itself on the way */
+function rivalsUntilMyTurn(s: GameState, i: number, turns: number): GameState {
+  let cur = s;
+  for (let n = 0; n < turns; n++) {
+    if (cur.phase === 'scoring-canal') {
+      cur = applyAction(cur, cur.current, { kind: 'begin-rail' }).state ?? cur;
+      continue;
+    }
+    if (cur.phase !== 'action' || cur.current === i) break;
+    const next = rivalMove(cur, cur.current);
+    if (!next) break;
+    cur = next;
+  }
+  return cur;
+}
+
+/** seat `i`'s own next turn, taken greedily on the static reading */
+function greedyTurn(s: GameState, i: number): { state: GameState; nodes: number } {
+  let cur = s;
+  let nodes = 0;
+  for (let k = 0; k < 2 && cur.phase === 'action' && cur.current === i; k++) {
+    let best: Candidate | null = null;
+    for (const action of legalActions(cur, i)) {
+      const r = applyAction(cur, i, action);
+      if (!r.state) continue;
+      nodes += 1;
+      const score = evaluate(r.state, i);
+      if (!best || score > best.score) best = { action, state: r.state, score };
+    }
+    if (!best) break;
+    cur = best.state;
+  }
+  return { state: cur, nodes };
+}
+
+/** the table `depth` rounds on from the end of our turn, as one deal of
+ *  the unseen cards has it */
+function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number): { score: number; nodes: number } {
+  let cur = determinize(after, i, rand);
+  let nodes = 0;
+  cur = rivalsUntilMyTurn(cur, i, LOOKAHEAD_TURNS);
+  if (depth === 2 && cur.phase === 'action' && cur.current === i) {
+    const mine = greedyTurn(cur, i);
+    nodes += mine.nodes;
+    cur = rivalsUntilMyTurn(mine.state, i, LOOKAHEAD_TURNS);
+  }
+  return { score: evaluate(cur, i), nodes };
 }
 
 /** the best turn from here: the first action, chosen with the second in mind */
@@ -276,7 +373,9 @@ export function searchTurn(s: GameState, i: number, o: SearchOptions = {}): Sear
   const strength = clamp01(o.strength ?? 1);
   const dial = knobs(strength);
   const budget = Math.min(o.budgetMs ?? DEFAULT_BUDGET_MS, dial.budgetMs);
-  const blur = noiseFrom(s, i);
+  const depth = o.depth ?? dial.depth;
+  const dice = diceFrom(s, i);
+  const blur = bell(dice);
   const start = now();
   let nodes = 0;
   const firsts: Candidate[] = [];
@@ -297,36 +396,57 @@ export function searchTurn(s: GameState, i: number, o: SearchOptions = {}): Sear
   const perNode = Math.max(0.05, elapsed / nodes);
   const beam = Math.max(MIN_BEAM, Math.min(dial.beam, o.beam ?? Math.floor((budget - elapsed) / (perNode * Math.max(1, firsts.length)))));
 
-  let best: Candidate | null = null;
+  /* every turn worth playing: each first of the beam with its best second */
+  const turns: Turn[] = [];
   for (const [k, first] of firsts.slice(0, beam).entries()) {
     /* the budget is spent: the rest of the beam goes unread */
     if (k > 0 && now() - start > budget) break;
-    let total = first.score;
+    let turn: Turn = { first: first.action, after: first.state, score: first.score };
     const s1 = first.state;
     if (s1.phase === 'action' && s1.current === i) {
-      let bestSecond = -Infinity;
       for (const action of legalActions(s1, i)) {
         const r = applyAction(s1, i, action);
         if (!r.state) continue;
         nodes += 1;
-        bestSecond = Math.max(bestSecond, evaluate(r.state, i) + dial.noise * blur());
+        const score = evaluate(r.state, i) + dial.noise * blur();
+        if (score > turn.score) turn = { first: first.action, after: r.state, score };
       }
-      if (bestSecond > -Infinity) total = bestSecond;
     }
-    if (!best || total > best.score) best = { action: first.action, state: s1, score: total };
+    turns.push(turn);
   }
-  return done(best ?? firsts[0]);
+  turns.sort((a, b) => b.score - a.score);
+  /* nothing to look ahead for, or no time to: the turn as it reads now */
+  if (depth === 0 || turns.length < 2 || budget < MIN_LOOKAHEAD_MS) return done({ action: turns[0].first, state: turns[0].after, score: turns[0].score });
+
+  /* the best turns are played on: the rivals answer, and at N+2 so do we */
+  let best: Turn | null = null;
+  for (const [k, turn] of turns.entries()) {
+    if (k > 0 && now() - start > budget) break;
+    let sum = 0;
+    for (let d = 0; d < LOOKAHEAD_DEALS; d++) {
+      const look = lookAhead(turn.after, i, depth, dice);
+      nodes += look.nodes;
+      sum += look.score;
+    }
+    const score = (1 - LOOKAHEAD_WEIGHT) * turn.score + LOOKAHEAD_WEIGHT * (sum / LOOKAHEAD_DEALS);
+    if (!best || score > best.score) best = { ...turn, score };
+  }
+  const chosen = best ?? turns[0];
+  return done({ action: chosen.first, state: chosen.after, score: chosen.score });
 }
 
 /* ============================= strength ============================= */
 
-/** what a strength buys: time, breadth, a second look, and how much blur */
-export function knobs(strength: number): { budgetMs: number; beam: number; second: boolean; noise: number } {
+/** what a strength buys: time, breadth, a second look, rounds looked
+ *  ahead, and how much blur */
+export function knobs(strength: number): { budgetMs: number; beam: number; second: boolean; depth: 0 | 1 | 2; noise: number } {
   const s = clamp01(strength);
+  const depth = s >= 0.95 ? 2 : s >= 0.8 ? 1 : 0;
   return {
-    budgetMs: Math.round(60 + 240 * s),
+    budgetMs: depth === 2 ? 700 : depth === 1 ? 450 : Math.round(60 + 240 * s),
     beam: Math.round(MIN_BEAM + (MAX_BEAM - MIN_BEAM) * s),
     second: s >= 0.6,
+    depth,
     noise: 16 * Math.pow(1 - s, 1.2),
   };
 }
