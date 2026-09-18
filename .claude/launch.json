@@ -1,10 +1,100 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "brass-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--prefix", "app", "--", "--port", "3000", "--strictPort"], "port": 3000 },
-    { "name": "brass-web", "url": "http://localhost:3000" },
-    { "name": "brass-server", "runtimeExecutable": "env", "runtimeArgs": ["DEV_LETTERS=1", "npm", "run", "server", "--prefix", "app"], "port": 8787 },
-    { "name": "brass-prod", "runtimeExecutable": "npm", "runtimeArgs": ["run", "preview", "--prefix", "app", "--", "--port", "4173", "--strictPort"], "port": 4173 },
-    { "name": "brass-design", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--prefix", "/tmp/claude-1000/-home-nicolas-Documents-Kimi-Agent-BRASS/20a87a28-27cb-47a9-a1d9-8446a65bfcfc/scratchpad/design/app", "--", "--port", "4174", "--strictPort"], "port": 4174 }
+    {
+      "name": "brass-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "app",
+        "--",
+        "--port",
+        "3000",
+        "--strictPort"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "brass-web",
+      "url": "http://localhost:3000"
+    },
+    {
+      "name": "brass-server",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "DEV_LETTERS=1",
+        "npm",
+        "run",
+        "server",
+        "--prefix",
+        "app"
+      ],
+      "port": 8787
+    },
+    {
+      "name": "brass-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "--prefix",
+        "app",
+        "--",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "brass-design",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "/tmp/claude-1000/-home-nicolas-Documents-Kimi-Agent-BRASS/20a87a28-27cb-47a9-a1d9-8446a65bfcfc/scratchpad/design/app",
+        "--",
+        "--port",
+        "4174",
+        "--strictPort"
+      ],
+      "port": 4174
+    },
+    {
+      "name": "brass-forum-server",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "PORT=8790",
+        "DEV_LETTERS=1",
+        "BRASSWORKS_DB=:memory:",
+        "BRASSWORKS_MODERATORS=Ada",
+        "npm",
+        "run",
+        "server",
+        "--prefix",
+        "app"
+      ],
+      "port": 8790
+    },
+    {
+      "name": "brass-forum-web",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "VITE_ONLINE_URL=ws://localhost:8790",
+        "npm",
+        "run",
+        "dev",
+        "--prefix",
+        "app",
+        "--",
+        "--port",
+        "3010",
+        "--strictPort"
+      ],
+      "port": 3010
+    }
   ]
 }
