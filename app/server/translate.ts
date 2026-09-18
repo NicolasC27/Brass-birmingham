@@ -22,7 +22,10 @@ export interface Translator {
   translate(text: string, from: Lang, to: Lang): Promise<Rendering>;
 }
 
-export const DEFAULT_MODEL = 'claude-opus-5';
+/** the smallest model that renders well: a translation is not a puzzle */
+export const DEFAULT_MODEL = 'claude-haiku-4-5';
+/** the models that take an effort setting (the 5 generation); Haiku takes none */
+const EFFORT_MODELS = /^claude-(opus|sonnet)-5/;
 /** dollars per million tokens, in and out */
 export const PRICES: Record<string, { in: number; out: number }> = {
   'claude-opus-5': { in: 5, out: 25 },
@@ -89,9 +92,9 @@ export function claudeTranslator(model = process.env.TRANSLATE_MODEL || DEFAULT_
         model,
         max_tokens: 4000,
         system: system(from, to),
-        /* a rendering is not a puzzle: little thinking, all of it on the words */
-        output_config: { effort: 'low' },
         messages: [{ role: 'user', content: text }],
+        /* on the bigger models, little thinking: all of it on the words */
+        ...(EFFORT_MODELS.test(model) ? { output_config: { effort: 'low' as const } } : {}),
       });
       if (response.stop_reason === 'refusal') throw new Error('refused');
       const out = response.content
