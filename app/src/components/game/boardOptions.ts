@@ -22,10 +22,12 @@ export const sanitizeMatOrder = (o: unknown): IndustryType[] => {
 export const MAT_STYLES: MatStyle[] = ['cards', 'compact', 'chips'];
 /** where the income track runs: along the bottom edge or down the left edge */
 export type IncomeSide = 'bottom' | 'left';
-/** the era paintings under the board: the original terrain with etched
- *  waterways, or the fully painted countryside with its canals and rails */
-export type MapStyle = 'etched' | 'painted';
+/** the ground under the board: a period engraved map drawn from the geometry
+ *  (the default), the painted terrain with etched waterways and its rail-era
+ *  paintings, or the fully painted countryside with its canals and rails */
+export type MapStyle = 'engraved' | 'etched' | 'painted';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
+  engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
   painted: { canal: '/map-painted-canal.webp', rail: '/map-painted-rail.webp' },
 };
@@ -154,7 +156,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  mapStyle: read('mapStyle', 'etched'),
+  mapStyle: read('mapStyle', 'engraved'),
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),

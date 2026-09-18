@@ -344,9 +344,12 @@ export default function Comptoir() {
   const doEquip = (item: ShopItem) => {
     const w = boardWear(item);
     if (w) {
-      /* peinture ou tuiles : c'est le plateau qui les porte */
-      if (w.key === 'railPainting') setBoardOption('railPainting', w.value);
-      else setBoardOption('slotArt', w.value);
+      /* peinture ou tuiles : c'est le plateau qui les porte ; une peinture
+         ne se voit que sur le terrain gravé, on y bascule avec elle */
+      if (w.key === 'railPainting') {
+        setBoardOption('railPainting', w.value);
+        setBoardOption('mapStyle', 'etched');
+      } else setBoardOption('slotArt', w.value);
       showToast(tr('platform.comptoir.toastEquipped', { name: itemName(item.id) }), 'info');
       return;
     }
