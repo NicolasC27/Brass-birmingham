@@ -72,6 +72,8 @@ interface GameStore {
   developIron: (string | null)[];
   /** the iron works a build draws from (its key), 'market', or null for the engine's nearest */
   buildIron: string | null;
+  /** the brewery a double rail drinks from (its key), or null for the engine's choice */
+  linkBeer: string | null;
   scoutPick: string[];
   hoverKey: string | null;
   shake: Shake | null;
@@ -197,6 +199,7 @@ interface GameStore {
   dropDevelop: (ind: IndustryType) => void;
   setDevelopIron: (k: number, from: string | null) => void;
   setBuildIron: (from: string | null) => void;
+  setLinkBeer: (from: string | null) => void;
   toggleScout: (cardId: string) => void;
   setHover: (key: string | null) => void;
   reject: (key: string, reason: string) => void;
@@ -304,6 +307,7 @@ const clearSelection = {
   developPick: [] as IndustryType[],
   developIron: [] as (string | null)[],
   buildIron: null as string | null,
+  linkBeer: null as string | null,
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
@@ -481,10 +485,10 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     if (st.selectedCardId === id) {
-      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null });
+      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null });
       return;
     }
-    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, shake: null });
+    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, shake: null });
   },
 
   setVerb: (v) => {
@@ -498,11 +502,12 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ ...clearSelection, verb: 'scout' });
       return;
     }
-    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, shake: null });
+    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, shake: null });
   },
 
   pickBuild: (t) => set((st) => ({ buildPick: t, shake: null, buildIron: t && st.buildPick && tileKey(t.town, t.slot) === tileKey(st.buildPick.town, st.buildPick.slot) ? st.buildIron : null })),
   setBuildIron: (from) => set({ buildIron: from }),
+  setLinkBeer: (from) => set({ linkBeer: from }),
   pickLink: (t) => {
     const st = get();
     if (!st.linkPick) {
@@ -512,14 +517,14 @@ export const useGame = create<GameStore>((set, get) => ({
     if (st.linkPick && t && st.game?.era === 'rail') {
       const first = st.linkPick.link;
       if (t.link.id === first.id) {
-        set({ linkPick: null, secondLinkPick: null });
+        set({ linkPick: null, secondLinkPick: null, linkBeer: null });
         return;
       }
       const touches = [first.a, first.b].includes(t.link.a) || [first.a, first.b].includes(t.link.b);
       if (touches) {
-        set({ secondLinkPick: t });
+        set({ secondLinkPick: t, linkBeer: null });
       } else {
-        set({ linkPick: t, secondLinkPick: null });
+        set({ linkPick: t, secondLinkPick: null, linkBeer: null });
       }
     } else {
       set({ linkPick: t });
@@ -785,7 +790,7 @@ export const useGame = create<GameStore>((set, get) => ({
         if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry, ...(st.buildIron ? { ironFrom: st.buildIron } : {}) };
         break;
       case 'network':
-        if (card && st.linkPick?.valid) action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id };
+        if (card && st.linkPick?.valid) action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id, ...(st.secondLinkPick && st.linkBeer ? { beerFrom: st.linkBeer } : {}) };
         break;
       case 'develop':
         if (card && st.developPick.length > 0) action = { kind: 'develop', card: card.id, industries: st.developPick, ironFrom: st.developIron };
@@ -1019,7 +1024,7 @@ export function developPlans(game: GameState, ironFrom: (string | null)[]): Supp
 }
 
 export function confirmCost(
-  st: { verb: Verb | null; buildPick: BuildTarget | null; buildIron?: string | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[]; developIron: (string | null)[] },
+  st: { verb: Verb | null; buildPick: BuildTarget | null; buildIron?: string | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; linkBeer?: string | null; developPick: IndustryType[]; developIron: (string | null)[] },
   game: GameState,
   actor: number = game.current,
 ): { total: number; after: number } | null {
@@ -1032,7 +1037,7 @@ export function confirmCost(
       break;
     case 'network':
       if (!st.linkPick) return null;
-      total = st.secondLinkPick ? doubleLinkPlan(game, game.current, st.linkPick, st.secondLinkPick.link).total : st.linkPick.total;
+      total = st.secondLinkPick ? doubleLinkPlan(game, actor, st.linkPick, st.secondLinkPick.link, st.linkBeer).total : st.linkPick.total;
       break;
     case 'develop': {
       if (!st.developPick.length) return null;
@@ -1093,7 +1098,9 @@ export function confirmSummary(st: {
       const name = (id: string) => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
       if (st.secondLinkPick) {
         const s2 = st.secondLinkPick;
-        return tr('game.confirm.double', { a: name(t.link.a), b: name(t.link.b), a2: name(s2.link.a), b2: name(s2.link.b), price: s2.total });
+        const g0 = useGame.getState().planGame();
+        const price = g0 ? doubleLinkPlan(g0, useGame.getState().planActor(), t, s2.link).total : s2.total;
+        return tr('game.confirm.double', { a: name(t.link.a), b: name(t.link.b), a2: name(s2.link.a), b2: name(s2.link.b), price });
       }
       return tr('game.confirm.network', { a: name(t.link.a), b: name(t.link.b), price: t.total });
     }

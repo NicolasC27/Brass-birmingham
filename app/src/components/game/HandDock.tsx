@@ -4,7 +4,7 @@ import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scal
 import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
-import { buildTargets, ironSources } from '@/game/engine';
+import { beerSources, buildTargets, ironSources } from '@/game/engine';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { reasonText, tr, useT } from '@/i18n';
@@ -239,6 +239,8 @@ export default function HandDock() {
   const developIron = useGame((s) => s.developIron);
   const buildIron = useGame((s) => s.buildIron);
   const setBuildIron = useGame((s) => s.setBuildIron);
+  const linkBeer = useGame((s) => s.linkBeer);
+  const setLinkBeer = useGame((s) => s.setLinkBeer);
   const addDevelop = useGame((s) => s.addDevelop);
   const dropDevelop = useGame((s) => s.dropDevelop);
   const setDevelopIron = useGame((s) => s.setDevelopIron);
@@ -618,6 +620,47 @@ export default function HandDock() {
                   );
                 })()}
                 <span className="font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.hand.buildIronHint')}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* the beer of a double rail: the player's breweries anywhere, or
+              another's the second link connects to — the reader names one */}
+          <AnimatePresence>
+            {verb === 'network' && canPlan && linkPick && secondLinkPick && actor >= 0 && (
+              <motion.div
+                key="link-beer"
+                initial={{ opacity: 0, x: -14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="paper flex shrink-0 flex-col gap-1.5 self-center rounded-md px-3 py-2"
+              >
+                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.hand.linkBeer')}</span>
+                {(() => {
+                  const sources = beerSources(planGame, actor, linkPick.link, secondLinkPick.link);
+                  return (
+                    <label className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80" title={t('game.hand.linkBeerHint')}>
+                      <img src={INDUSTRY_ICON.brewery} alt="" className="h-3.5 w-3.5" />
+                      <span className="text-ink-900/45">←</span>
+                      <select
+                        value={linkBeer ?? ''}
+                        onChange={(e) => {
+                          setLinkBeer(e.target.value || null);
+                          if (e.target.value) flyToRegion(e.target.value.split(':')[0]);
+                        }}
+                        aria-label={t('game.hand.linkBeer')}
+                        className="max-w-[200px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                      >
+                        <option value="">{t('game.hand.beerAuto')}</option>
+                        {sources.map((src) => (
+                          <option key={src.key} value={src.key}>
+                            {t('game.hand.devIronWorks', { owner: planGame.players[src.owner].name, town: TOWN_BY_ID[src.town]?.name ?? src.town, cubes: src.cubes })}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  );
+                })()}
+                <span className="font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.hand.linkBeerHint')}</span>
               </motion.div>
             )}
           </AnimatePresence>

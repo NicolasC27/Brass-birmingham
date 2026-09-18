@@ -1266,7 +1266,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const [gx0, gy0] = displayPosFor(ghost.at[0], ghost.at[1]);
       const gx = gx0;
       const gy = gy0;
-      const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : 0xe07020);
+      const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : resource === 'beer' ? 0xd9a441 : 0xe07020);
       /* a development draws its iron from works with nowhere to run to: the
          picks are numbered, and a dashed thread ties them when there are two */
       if (ghost.noTarget && ghost.tileSources.length > 1) {

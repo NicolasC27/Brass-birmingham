@@ -33,7 +33,7 @@ import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
 import { routeFor } from '@/components/game/routePaths';
-import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withIron } from '@/game/engine';
+import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withIron } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { listLocalGames, openLocalGame } from '@/game/local';
@@ -135,6 +135,7 @@ export default function Game() {
   const developPick = useGame((s) => s.developPick);
   const developIron = useGame((s) => s.developIron);
   const buildIron = useGame((s) => s.buildIron);
+  const linkBeer = useGame((s) => s.linkBeer);
   const scoutPick = useGame((s) => s.scoutPick);
   const hoverKey = useGame((s) => s.hoverKey);
   const reject = useGame((s) => s.reject);
@@ -406,6 +407,21 @@ export default function Game() {
     if (verb === 'network') {
       const id = linkPick?.link.id ?? hoverKey;
       const t = id ? linkTargetsList.find((x) => x.link.id === id && x.valid) : null;
+      if (t && secondLinkPick && linkPick && planActor >= 0) {
+        /* a double rail: each link's coal to its own middle, and the beer
+           the pair drinks to the second's */
+        const dbl = doubleLinkPlan(planGame, planActor, linkPick, secondLinkPick.link, linkBeer);
+        const mid1 = routeFor(linkPick.link, planGame.era).mid;
+        const mid2 = routeFor(secondLinkPick.link, planGame.era).mid;
+        const g = ghostFromPlan(mid2, dbl.coal2);
+        for (const b of dbl.beer) {
+          if (b.kind !== 'brewery') continue;
+          const [x, y] = slotXY(b.town!, b.slot!);
+          g.tileSources.push({ x, y, resource: 'beer', amount: 1, to: mid2 });
+        }
+        g.tileSources.push(...ghostFromPlan(mid1, linkPick.coalPlan).tileSources.map((src) => ({ ...src, to: mid1 })));
+        return g;
+      }
       if (t && t.coalPlan.sources.length) {
         /* the coal line lands mid-route, on the route of this era: a rail
            does not follow the canal's winding path */
@@ -433,7 +449,7 @@ export default function Game() {
       }
     }
     return null;
-  }, [planGame, verb, buildPick, buildIron, linkPick, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [planGame, planActor, verb, buildPick, buildIron, linkPick, secondLinkPick, linkBeer, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};

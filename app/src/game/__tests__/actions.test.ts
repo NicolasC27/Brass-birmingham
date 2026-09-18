@@ -3,7 +3,7 @@ import { applyAction, botAction, fallbackAction, humanActionIndices, replay, set
 import type { GameAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { INDUSTRIES } from '../data';
-import { buildTargets, newGame, serialize, withIron } from '../engine';
+import { beerSources, buildTargets, doubleLinkPlan, linkTargets, newGame, serialize, withIron } from '../engine';
 import type { GameState, SetupPayload } from '../types';
 
 /* ------------------------------------------------------------------ */
@@ -280,5 +280,41 @@ describe('the iron of a build', () => {
     expect(r.state).not.toBeNull();
     expect(r.state!.tiles['coalbrookdale:0'].cubes).toBe(3);
     expect(r.state!.tiles['dudley:0'].cubes).toBe(4);
+  });
+});
+
+describe('the beer of a double rail', () => {
+  it('comes from the brewery the player names among those the rules allow', () => {
+    const s = newGame(setup(4), 42);
+    s.era = 'rail';
+    const me = s.current;
+    const other = (me + 1) % 4;
+    /* a foothold in Birmingham, coal on the board, and three breweries: two of mine, one of theirs far away */
+    s.tiles['birmingham:0'] = { owner: me, industry: 'cotton', level: 1, flipped: false, cubes: 0 };
+    s.tiles['birmingham:1'] = { owner: other, industry: 'coal', level: 2, flipped: false, cubes: 6 };
+    s.tiles['stone:0'] = { owner: me, industry: 'brewery', level: 1, flipped: false, cubes: 2 };
+    s.tiles['derby:0'] = { owner: me, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    s.players[me].hand = [{ id: 'wild-1', kind: 'wild-location' }];
+    s.players[me].money = 60;
+    const all = linkTargets(s, me);
+    const first = all.find((t) => t.valid && [t.link.a, t.link.b].includes('birmingham'))!;
+    const far = first.link.a === 'birmingham' ? first.link.b : first.link.a;
+    /* the second link touches the first: it joins the network only once the first is laid */
+    const second = all.find((t) => t.link.id !== first.link.id && [t.link.a, t.link.b].includes(far))!;
+    expect(first && second).toBeTruthy();
+    const plan = doubleLinkPlan(s, me, first, second.link);
+    expect(plan.valid).toBe(true);
+    expect(plan.beer).toHaveLength(1);
+    /* the breweries offered: mine anywhere, sorted mine first */
+    expect(beerSources(s, me, first.link, second.link).map((b) => b.key).sort()).toEqual(['derby:0', 'stone:0']);
+    /* named, the plan drinks there; a name outside the list is ignored */
+    expect(doubleLinkPlan(s, me, first, second.link, 'derby:0').beer[0]).toMatchObject({ kind: 'brewery', town: 'derby' });
+    expect(doubleLinkPlan(s, me, first, second.link, 'nowhere:0').beer).toEqual(plan.beer);
+    /* played, the named brewery loses its last barrel and flips */
+    const r = applyAction(s, me, { kind: 'network', card: 'wild-1', link: first.link.id, second: second.link.id, beerFrom: 'derby:0' });
+    expect(r.state).not.toBeNull();
+    expect(r.state!.tiles['derby:0']).toMatchObject({ cubes: 0, flipped: true });
+    expect(r.state!.tiles['stone:0'].cubes).toBe(2);
+    expect(r.state!.links[second.link.id]).toMatchObject({ owner: me });
   });
 });

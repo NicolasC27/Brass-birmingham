@@ -556,12 +556,26 @@ export interface DoubleLinkPlan {
 }
 
 /** the rail-era double: second link touching the first, £15 total + 1 coal each + 1 beer from a brewery */
-export function doubleLinkPlan(s: GameState, playerIdx: number, first: LinkTarget, second: LinkDef): DoubleLinkPlan {
+/** the breweries a double rail may drink from: the player's own anywhere,
+ *  another's when the second link, once laid, connects to it */
+export function beerSources(s: GameState, playerIdx: number, first: LinkDef, second: LinkDef): { key: string; town: string; slot: number; owner: number; cubes: number; own: boolean }[] {
+  const reach = reachable(s, second.a, s.era, null, [first, second]);
+  return Object.entries(s.tiles)
+    .filter(([, t]) => t.industry === 'brewery' && !t.flipped && t.cubes > 0)
+    .map(([key, t]) => ({ key, town: key.split(':')[0], slot: Number(key.split(':')[1]), owner: t.owner, cubes: t.cubes, own: t.owner === playerIdx }))
+    .filter((b) => b.own || reach.has(b.town))
+    .sort((a, b) => Number(b.own) - Number(a.own) || a.town.localeCompare(b.town));
+}
+
+export function doubleLinkPlan(s: GameState, playerIdx: number, first: LinkTarget, second: LinkDef, beerFrom?: string | null): DoubleLinkPlan {
   const p = s.players[playerIdx];
   const reserved = new Map<string, number>();
   reserveFrom(first.coalPlan, reserved);
   const coal2 = planSupply(s, second.a, 'coal', COSTS.railCoal, [first.link, second], reserved);
-  const beer = planBeer(s, playerIdx, second.a, null, COSTS.doubleRailBeer, [first.link, second]);
+  let beer = planBeer(s, playerIdx, second.a, null, COSTS.doubleRailBeer, [first.link, second]);
+  /* the brewery the player named, when it is one the rules allow */
+  const named = beerFrom ? beerSources(s, playerIdx, first.link, second).find((b) => b.key === beerFrom) : undefined;
+  if (named) beer = { sources: [{ kind: 'brewery', town: named.town, slot: named.slot }], shortage: 0 };
   const total = COSTS.doubleRail + first.coalPlan.totalCost + coal2.totalCost;
   const out: DoubleLinkPlan = { coal2, beer: beer.sources, total, valid: true };
   if (s.era !== 'rail') { out.valid = false; out.reason = 'Double links are a Rail Era option'; }
@@ -814,13 +828,13 @@ export function applyBuild(s: GameState, playerIdx: number, card: Card, target: 
   return true;
 }
 
-export function applyNetwork(s: GameState, playerIdx: number, card: Card, target: LinkTarget, second?: LinkTarget): boolean {
+export function applyNetwork(s: GameState, playerIdx: number, card: Card, target: LinkTarget, second?: LinkTarget, beerFrom?: string | null): boolean {
   const p = s.players[playerIdx];
   if (!target.valid) return false;
   const name = (id: string) => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
   let extra = '';
   if (second) {
-    const dbl = doubleLinkPlan(s, playerIdx, target, second.link);
+    const dbl = doubleLinkPlan(s, playerIdx, target, second.link, beerFrom);
     if (!dbl.valid) return false;
     paySupply(s, p, target.coalPlan);
     s.links[target.link.id] = { owner: playerIdx, era: s.era };

@@ -18,7 +18,7 @@ import type { GameState, IndustryType, SetupPayload } from './types';
 
 export type GameAction =
   | { kind: 'build'; card: string; town: string; slot: number; industry: IndustryType; /** the iron works to draw from (its key) or 'market'; nothing for the engine's nearest */ ironFrom?: string | null }
-  | { kind: 'network'; card: string; link: string; second?: string }
+  | { kind: 'network'; card: string; link: string; second?: string; /** for a double rail, the brewery to drink from (its key); nothing for the engine's choice */ beerFrom?: string | null }
   | { kind: 'develop'; card: string; industries: IndustryType[]; /** per industry, the iron works to draw from (its key), 'market', or nothing for the engine's choice */ ironFrom?: (string | null)[] }
   | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string }[] }
   | { kind: 'loan'; card?: string }
@@ -95,7 +95,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       if (!first.valid) return fail(first.reason ?? 'Cannot lay that link');
       const second = action.second ? list.find((t) => t.link.id === action.second) : undefined;
       if (action.second && !second) return fail('No such second link');
-      ok = applyNetwork(mut, playerIdx, card, first, second);
+      ok = applyNetwork(mut, playerIdx, card, first, second, action.beerFrom);
       break;
     }
     case 'develop': {
