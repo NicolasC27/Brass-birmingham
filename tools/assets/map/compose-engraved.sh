@@ -2,7 +2,7 @@
 # The board grounds as a period engraved map (ImageMagick 7): a laid cream
 # sheet with the plate mark at the world's edge, the real geometry engraved
 # in sepia ink — canal beds with a towpath, the future rails as survey
-# lines, an engraved hamlet under each town, merchant basins — form lines and woods on the free
+# lines, merchant basins — form lines and woods on the free
 # land only. The Rail Era is the same sheet yellowed and sooted, rails as
 # black-and-white ladders. Writes app/public/map-engraved-{canal,rail}.webp.
 # Usage, from the repository root:
@@ -41,14 +41,6 @@ magick -size ${FW}x${FH} xc:none -fill none \
 magick -size ${FW}x${FH} xc:none -fill none \
   -stroke "$INK,0.55)" -strokewidth 1.4 -draw "stroke-dasharray 9 6 $(D road.txt)" \
   "$T/roads.png"
-# the hamlets under the towns (ink vignettes, 360 px wide, a touch lighter than the map's ink)
-VIG=""
-while read -r k cx cy; do
-  magick "tools/assets/map/vignettes/town-$k.png" -resize 360x -channel A -evaluate multiply 0.8 +channel "$T/vig-$k.png"
-  w=$(magick identify -format %w "$T/vig-$k.png"); h=$(magick identify -format %h "$T/vig-$k.png")
-  VIG="$VIG $T/vig-$k.png -geometry +$((cx - w / 2))+$((cy - h / 2)) -composite"
-done < "$T/vignettes.txt"
-magick -size ${FW}x${FH} xc:none $VIG "$T/towns.png"
 # merchant basins
 magick -size ${FW}x${FH} xc:none -fill 'rgba(122,150,140,0.40)' -stroke none -draw "$(D basin-inner.txt)" \
   -fill none -stroke "$INK,0.55)" -strokewidth 0.9 -draw "$(D basin-hatch.txt)" \
@@ -58,7 +50,7 @@ magick -size ${FW}x${FH} xc:none -fill 'rgba(122,150,140,0.40)' -stroke none -dr
 # 4. canal era
 magick "$T/sheet.png" "$T/hills.png" -compose over -composite "$T/woods.png" -compose over -composite \
   "$T/roads.png" -compose over -composite "$T/canals.png" -compose over -composite \
-  "$T/towns.png" -compose over -composite "$T/basins.png" -compose over -composite "$T/canal.png"
+  "$T/basins.png" -compose over -composite "$T/canal.png"
 
 # 5. rail era: the same sheet yellowed and sooted, rails in black ink, smoke over the towns
 magick -size ${FW}x${FH} xc:none -fill none \

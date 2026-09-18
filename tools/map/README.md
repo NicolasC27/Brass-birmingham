@@ -58,13 +58,17 @@ The board's default ground is no painting at all: a period engraved map,
 drawn from the geometry by `tools/assets/map/compose-engraved.sh <geo.json>`
 (the draw lists come from `tools/map/engrave.py`). A laid cream sheet with
 the plate mark at the world's edge; in sepia ink, canal beds with a towpath,
-the future rails as dashed survey lines, merchant basins, and under each
-town one of three ink hamlets drawn by Midjourney (sources next to the
-script, the extracted ink in `tools/assets/map/vignettes`), the church and
-the roofs showing between the cards;
-form lines and small engraved trees on the free land only, kept clear of
+the future rails as dashed survey lines, merchant basins, the ground bare
+under the towns; form lines and small engraved trees on the free land only, kept clear of
 every town and link so nothing fights the live tiles. The Rail Era is the
 same sheet yellowed and sooted, the rails as black-and-white ladders.
 It writes `map-engraved-canal.webp` and `map-engraved-rail.webp`, and it is
 deterministic: same geometry, same seeds, same sheet. The paintings above
 stay as the "etched" and "painted" board settings.
+
+Under each town the board lays its own village, below the cards: the
+painting `town-village.webp` on the etched and painted grounds, and on the
+engraved map one of three ink hamlets drawn by Midjourney in the same hand
+(`town-hamlet-0..2.webp`, square, bottom-aligned; sources
+`tools/assets/map/vignette-*-midjourney.jpg`), the church and the roofs
+showing between the cards.
