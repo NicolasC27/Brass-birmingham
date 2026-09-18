@@ -31,6 +31,7 @@ import MarketPill from '@/components/game/MarketPill';
 import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
+import { routeFor } from '@/components/game/routePaths';
 import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
@@ -396,8 +397,9 @@ export default function Game() {
       const id = linkPick?.link.id ?? hoverKey;
       const t = id ? linkTargetsList.find((x) => x.link.id === id && x.valid) : null;
       if (t && t.coalPlan.sources.length) {
-        const mid = t.link.path ? t.link.path[Math.floor(t.link.path.length / 2)] : [800, 550] as [number, number];
-        return ghostFromPlan(mid, t.coalPlan);
+        /* the coal line lands mid-route, on the route of this era: a rail
+           does not follow the canal's winding path */
+        return ghostFromPlan(routeFor(t.link, planGame.era).mid, t.coalPlan);
       }
     }
     if (verb === 'develop' && developPick.length) {
