@@ -58,14 +58,14 @@ export default function Notices() {
     return () => window.clearInterval(iv);
   }, [shown]);
   /* the player rail's foot: the flips settle under it once read */
-  const [rail, setRail] = useState<{ left: number; top: number } | null>(null);
+  const [rail, setRail] = useState<{ left: number; top: number; width: number } | null>(null);
   const docked = notes.some((n) => n.kind === 'flip' && n.docked);
   useEffect(() => {
     const measure = () => {
       const el = document.querySelector('[data-player-rail]');
       if (el) {
         const r = el.getBoundingClientRect();
-        setRail({ left: Math.round(r.left), top: Math.round(r.bottom) });
+        setRail({ left: Math.round(r.left), top: Math.round(r.bottom), width: Math.round(r.width) });
       }
     };
     measure();
@@ -186,7 +186,7 @@ export default function Notices() {
         <AnimatePresence>{notes.filter((n) => (n.kind === 'flip' ? !n.docked : n.side === 'mine')).map(card)}</AnimatePresence>
       </div>
       {/* the flips already read, settled under the players and their tools */}
-      <div className="pointer-events-none fixed z-[63] flex w-[min(320px,30vw)] flex-col items-stretch gap-2" style={{ left: rail?.left ?? insets.left, top: (rail?.top ?? insets.top + 320) + 10 }} aria-live="off">
+      <div className="pointer-events-none fixed z-[63] flex flex-col items-stretch gap-2" style={{ left: rail?.left ?? insets.left, top: (rail?.top ?? insets.top + 320) + 10, width: rail?.width ?? 300 }} aria-live="off">
         <AnimatePresence>{notes.filter((n) => n.kind === 'flip' && n.docked).map(card)}</AnimatePresence>
       </div>
       {/* the others', at the top right under the exchange */}
