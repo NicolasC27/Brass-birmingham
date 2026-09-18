@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
+import { isExpert } from '@/game/search';
 import { useGame } from '@/game/store';
 import type { GameState } from '@/game/types';
 import { titlesFor } from '@/components/results/titles';
@@ -70,7 +71,7 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
         <div className="min-w-0">
           <p className="truncate font-fell text-[16px] tracking-wide" style={{ color: color.hex }}>{p.name}</p>
           <p className="font-mono text-[10px] uppercase tracking-wider text-cream-100/50">
-            {p.isBot ? t('setup.persona.short') : mine ? t('game.card.you') : t('game.card.player')}
+            {p.isBot ? t(isExpert(game, seat) ? 'setup.persona.expertShort' : 'setup.persona.short') : mine ? t('game.card.you') : t('game.card.player')}
             {title && <span className="ml-1.5 rounded-sm border border-brass-700/60 px-1 font-fell normal-case tracking-wide text-brass-400">{t(`results.titles.${title}`)}</span>}
           </p>
         </div>

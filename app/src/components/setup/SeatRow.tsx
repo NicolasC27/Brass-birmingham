@@ -14,6 +14,7 @@ import {
   type SeatType,
 } from "./constants";
 import { cn } from "@/lib/utils";
+import { EXPERT } from "@/game/search";
 
 /**
  * One seating slot (create.md §A3): color token, name field, type toggle,
@@ -181,7 +182,7 @@ export default function SeatRow({
                 const active = seat.persona === d.id;
                 const hex = colorDef(d.color).hex;
                 return (
-                  <Tip key={d.id} label={t("setup.persona.adaptive")}>
+                  <Tip key={d.id} label={t(d.id === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}>
                     <button
                       type="button"
                       role="radio"
@@ -201,7 +202,7 @@ export default function SeatRow({
                   </Tip>
                 );
               })}
-              <span className="font-ui text-[11px] text-iron-400">{t("setup.persona.adaptive")}</span>
+              <span className="font-ui text-[11px] text-iron-400">{t(seat.persona === EXPERT ? "setup.persona.expertShort" : "setup.persona.adaptive")}</span>
               <Tip label={t("setup.seat.engineTip")}>
                 <span className="inline-flex cursor-help items-center gap-1 rounded border border-rust-700 px-1.5 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-[0.14em] text-rust-400">
                   {t("setup.seat.beta")}

@@ -440,7 +440,7 @@ const es: typeof enrules = {
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " y ",
-    botsBody5: ". Ninguno está atado a un oficio — cada uno juega lo que pide la mesa, piensa todo su turno antes de elegir y, a plena fuerza, mira una o dos rondas más allá. Su fuerza sigue la tuya: la cota en línea, tus resultados en casa.",
+    botsBody5: ". Ninguno está atado a un oficio — cada uno juega lo que pide la mesa, piensa todo su turno antes de elegir y, a plena fuerza, mira una o dos rondas más allá. Su fuerza sigue la tuya: la cota en línea, tus resultados en casa. Mr Watt es la excepción: el experto juega a fondo, sea quien sea el rival.",
   },
   approximations: {
     supplyCore: {

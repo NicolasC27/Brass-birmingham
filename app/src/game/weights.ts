@@ -1,0 +1,78 @@
+/* ------------------------------------------------------------------ */
+/* The weights of the machines' reading of the board.                  */
+/*                                                                     */
+/* Every number the evaluation in search.ts leans on lives here, so    */
+/* that the machines can train: tools/bots/train.ts plays them against */
+/* themselves, keeps whatever reads the board better, and writes the   */
+/* winner back into TRAINED. Edit DEFAULTS by hand; TRAINED belongs to */
+/* the trainer.                                                        */
+/* ------------------------------------------------------------------ */
+
+export interface Weights {
+  /** what a pound is worth in points at the end, and per fraction of game left */
+  cashFloor: number;
+  cashSlope: number;
+  /** the income a flip moves the marker to, per payday left */
+  incomeOnFlip: number;
+  /** the chance a goods tile flips: a buyer connected (with beer around, without), one link away, none */
+  goodsServed: number;
+  goodsNoBeer: number;
+  goodsNearly: number;
+  goodsFar: number;
+  /** a brewery's chance: base, per own goods tile, per rival goods tile on its network, and the second brewery's share */
+  breweryBase: number;
+  breweryOwnGoods: number;
+  breweryNear: number;
+  brewerySecond: number;
+  /** a works' chance: base and what draining adds; a mine's: base, draining, a merchant on its network */
+  ironBase: number;
+  ironDrain: number;
+  coalBase: number;
+  coalDrain: number;
+  coalMerchant: number;
+  /** flips grow unlikely as the game runs out: chance × min(1, floor + fraction left) */
+  chanceFloor: number;
+  /** an unflipped tile's link icons */
+  linkIcons: number;
+  /** the threat of a negative income, per level below zero */
+  negIncome: number;
+  /** a card in hand once the deck is out */
+  handAtEnd: number;
+  /** room to move: per town of one's network, and the want of a market */
+  towns: number;
+  noMarket: number;
+  /** the next tile of each industry on the mat */
+  stack: number;
+  /** how much the strongest rival's worth counts against one's own */
+  rival: number;
+}
+
+export const DEFAULTS: Weights = {
+  cashFloor: 0.05,
+  cashSlope: 0.4,
+  incomeOnFlip: 0.8,
+  goodsServed: 0.7,
+  goodsNoBeer: 0.4,
+  goodsNearly: 0.35,
+  goodsFar: 0.1,
+  breweryBase: 0.15,
+  breweryOwnGoods: 0.2,
+  breweryNear: 0.1,
+  brewerySecond: 0.6,
+  ironBase: 0.55,
+  ironDrain: 0.45,
+  coalBase: 0.3,
+  coalDrain: 0.6,
+  coalMerchant: 0.1,
+  chanceFloor: 0.3,
+  linkIcons: 0.3,
+  negIncome: 1.5,
+  handAtEnd: 2,
+  towns: 0.6,
+  noMarket: 4,
+  stack: 0.08,
+  rival: 1,
+};
+
+/* written by tools/bots/train.ts — the reading that won the last training */
+export const TRAINED: Weights = { ...DEFAULTS };

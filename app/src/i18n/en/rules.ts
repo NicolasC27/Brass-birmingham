@@ -438,7 +438,7 @@ const rules = {
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " and ",
-    botsBody5: ". None is tied to a trade — each plays whatever the table calls for, thinking its whole turn out before choosing and, at full strength, looking a round or two ahead. Their strength follows yours: the cote online, your results at home.",
+    botsBody5: ". None is tied to a trade — each plays whatever the table calls for, thinking its whole turn out before choosing and, at full strength, looking a round or two ahead. Their strength follows yours: the cote online, your results at home. Mr Watt is the exception: the expert plays flat out, whoever he faces.",
   },
   approximations: {
     supplyCore: {

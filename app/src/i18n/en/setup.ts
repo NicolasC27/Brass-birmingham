@@ -90,6 +90,9 @@ export default {
       label: "Miss Arkwright",
     },
     short: "Plays to your level",
+    expert:
+      "The expert — plays flat out and never eases, whoever sits across the table.",
+    expertShort: "Plays flat out",
     adaptive:
       "Plays to your level — sharper as you win, gentler as you lose, never running away with a game.",
   },

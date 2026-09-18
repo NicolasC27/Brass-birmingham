@@ -36,7 +36,9 @@ import { chooseBotMove } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
 import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
-import type { Card, GameState, IndustryType } from './types';
+import type { BotPersona, Card, GameState, IndustryType } from './types';
+import { TRAINED } from './weights';
+import type { Weights } from './weights';
 
 export interface SearchOptions {
   /** how long the search may take, in ms */
@@ -76,8 +78,19 @@ const LOOKAHEAD_DEALS = 2;
 const LOOKAHEAD_WEIGHT = 0.7;
 /** below this budget there is no room to look ahead at all */
 const MIN_LOOKAHEAD_MS = 250;
+/** Mr Watt is the expert: full strength, no easing, whoever he faces */
+export const EXPERT: BotPersona = 'watt';
+export const isExpert = (s: GameState, i: number): boolean => s.players[i].persona === EXPERT;
+
 /** the machine never plays below this, whatever the table calls for */
 export const FLOOR_STRENGTH = 0.3;
+
+/** the reading in force: the trained one, unless a trainer sets another */
+let weights: Weights = TRAINED;
+export function setWeights(w: Weights): void {
+  weights = w;
+}
+export const currentWeights = (): Weights => weights;
 
 /* rounds per era, as the engine deals them (brass/game-data.md) */
 const ROUNDS: Record<2 | 3 | 4, number> = { 2: 10, 3: 9, 4: 8 };
@@ -206,11 +219,11 @@ function nearlyServed(s: GameState, town: string, industry: IndustryType): boole
 
 /** what a seat is worth, in points, as the table stands; one's own seat
  *  (`own`) also counts the room it has to move */
-function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, frac: number, paydays: number, own: boolean): number {
+function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, frac: number, paydays: number, own: boolean, w: Weights): number {
   const p = s.players[j];
   let v = p.vp + proj[j].links + proj[j].tiles;
   /* cash and the cash to come, worth less as the game runs out */
-  const rate = 0.05 + 0.4 * frac;
+  const rate = w.cashFloor + w.cashSlope * frac;
   const level = incomeLevel(p.income);
   /* a flipped tile of the Canal Era that survives the sweep scores twice */
   const again = s.era === 'canal' && s.eraLength === 'standard';
@@ -232,57 +245,57 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
     const town = key.split(':')[0];
     /* what the flip is worth: the points, and the income it moves the
        marker to, paid every payday still to come */
-    const gain = lv.vp * (1 + twice) + (incomeLevel(p.income + lv.incomeDelta) - level) * paydays * rate * 0.8;
+    const gain = lv.vp * (1 + twice) + (incomeLevel(p.income + lv.incomeDelta) - level) * paydays * rate * w.incomeOnFlip;
     let chance: number;
-    if (lv.beerToSell > 0) chance = served(s, town, t.industry) ? (beerAround ? 0.7 : 0.4) : nearlyServed(s, town, t.industry) ? 0.35 : 0.1;
+    if (lv.beerToSell > 0) chance = served(s, town, t.industry) ? (beerAround ? w.goodsServed : w.goodsNoBeer) : nearlyServed(s, town, t.industry) ? w.goodsNearly : w.goodsFar;
     else if (t.industry === 'brewery') {
       /* barrels go with sales: one's own goods anywhere, anyone's goods on this network */
       const reach = reachable(s, town, s.era, null);
       const near = Object.entries(s.tiles).filter(([k, x]) => x.owner !== j && goodsTile(x) && reach.has(k.split(':')[0])).length;
-      chance = Math.min(0.75, 0.15 + 0.2 * Math.min(2, ownGoods) + 0.1 * Math.min(3, near)) * (ownBreweries > 1 ? 0.6 : 1);
+      chance = Math.min(0.75, w.breweryBase + w.breweryOwnGoods * Math.min(2, ownGoods) + w.breweryNear * Math.min(3, near)) * (ownBreweries > 1 ? w.brewerySecond : 1);
     }
     /* iron ships anywhere and one may drain one's own works by developing */
-    else if (t.industry === 'iron') chance = 0.55 + 0.45 * (1 - t.cubes / Math.max(1, lv.cubes));
+    else if (t.industry === 'iron') chance = w.ironBase + w.ironDrain * (1 - t.cubes / Math.max(1, lv.cubes));
     /* coal only travels along links: a mine on the way to a merchant empties faster */
-    else chance = 0.3 + 0.6 * (1 - t.cubes / Math.max(1, lv.cubes)) + (merchantLinked(s, town) ? 0.1 : 0);
+    else chance = w.coalBase + w.coalDrain * (1 - t.cubes / Math.max(1, lv.cubes)) + (merchantLinked(s, town) ? w.coalMerchant : 0);
     /* the fewer rounds left, the less likely the flip */
-    chance *= Math.min(1, 0.3 + frac);
-    v += gain * chance;
+    chance *= Math.min(1, w.chanceFloor + frac);
+    v += gain * Math.min(1, chance);
     /* an unflipped tile still lends its link icons */
-    v += lv.links * 0.3;
+    v += lv.links * w.linkIcons;
   }
   const stream = INCOME_PAYOUT[p.income] * paydays;
   v += (p.money + stream) * rate;
   /* a negative income is a threat to the tiles themselves */
-  if (level < 0) v -= (-level) * 1.5;
+  if (level < 0) v -= (-level) * w.negIncome;
   /* once the deck is out, every card in hand is one more action */
-  if (s.deck.length === 0) v += p.hand.length * 2;
+  if (s.deck.length === 0) v += p.hand.length * w.handAtEnd;
   if (!own) return v;
   /* room to move: the towns one may build in, and a market for goods */
   const towns = networkTowns(s, j);
-  v += towns.size * 0.6 * frac;
+  v += towns.size * w.towns * frac;
   const market = [...towns].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
-  if (!market) v -= 4 * frac;
+  if (!market) v -= w.noMarket * frac;
   /* the next tile of each industry: the higher, the better the builds ahead */
   for (const ind of Object.keys(p.stacks) as IndustryType[]) {
     const next = p.stacks[ind][0];
-    if (next) v += INDUSTRIES[ind][next - 1].vp * 0.08 * frac;
+    if (next) v += INDUSTRIES[ind][next - 1].vp * w.stack * frac;
   }
   return v;
 }
 
 /** the table as seen from seat `i`: our worth less the strongest rival's */
-export function evaluate(s: GameState, i: number): number {
+export function evaluate(s: GameState, i: number, w: Weights = weights): number {
   const proj = projectEraScores(s);
   const paydays = paydaysLeft(s);
   const frac = paydays / roundsTotal(s);
-  const mine = worth(s, i, proj, frac, paydays, true);
+  const mine = worth(s, i, proj, frac, paydays, true, w);
   let rival = -Infinity;
   for (let j = 0; j < s.players.length; j++) {
     if (j === i) continue;
-    rival = Math.max(rival, worth(s, j, proj, frac, paydays, false));
+    rival = Math.max(rival, worth(s, j, proj, frac, paydays, false, w));
   }
-  return rival === -Infinity ? mine : mine - rival;
+  return rival === -Infinity ? mine : mine - rival * w.rival;
 }
 
 /* ============================== search ============================== */
@@ -512,7 +525,8 @@ export function adaptiveStrength(s: GameState, i: number, base: number): number 
  *  for; the heuristic stands in when the search finds nothing or fails
  *  (null = nothing playable at all) */
 export function chooseBotAction(s: GameState, i: number, o: SearchOptions = {}): GameAction | null {
-  const strength = adaptiveStrength(s, i, o.strength ?? 1);
+  /* the expert plays flat out, whoever sits across the table */
+  const strength = isExpert(s, i) ? 1 : adaptiveStrength(s, i, o.strength ?? 1);
   try {
     const r = searchTurn(s, i, { ...o, strength });
     if (r) return r.action;

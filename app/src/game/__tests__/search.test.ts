@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { newGame } from '../engine';
-import { adaptiveStrength, chooseBotAction, determinize, evaluate, knobs, legalActions, searchTurn } from '../search';
+import { adaptiveStrength, chooseBotAction, currentWeights, determinize, evaluate, isExpert, knobs, legalActions, searchTurn, setWeights } from '../search';
+import { DEFAULTS, TRAINED } from '../weights';
 import type { GameState, SetupPayload } from '../types';
 
 const setup = (): SetupPayload => ({
@@ -95,6 +96,30 @@ describe('the machines', () => {
     expect(r).not.toBeNull();
     expect(applyAction(s, 0, r!.action).state).not.toBeNull();
     expect(r!.ms).toBeLessThan(900);
+  });
+
+  it('reads the board with the trained weights, and with any it is handed', () => {
+    const s = newGame(setup(), 17);
+    expect(currentWeights()).toBe(TRAINED);
+    const before = evaluate(s, 0);
+    setWeights({ ...DEFAULTS, cashSlope: DEFAULTS.cashSlope * 10 });
+    expect(evaluate(s, 0)).not.toBe(before);
+    setWeights(TRAINED);
+    expect(evaluate(s, 0)).toBe(before);
+  });
+
+  it('knows Mr Watt as the expert, who never eases', () => {
+    /* a deal where Mr Watt, seat 0, opens */
+    let s = newGame(setup(), 18);
+    for (let seed = 19; s.current !== 0; seed++) s = newGame(setup(), seed);
+    expect(s.players.map((_, i) => isExpert(s, i))).toEqual([true, false, false]);
+    const humans = structuredClone(s);
+    humans.players[1].isBot = false;
+    humans.players[0].vp = 60;
+    /* another character would ease here; the expert's action is the full-strength one */
+    expect(adaptiveStrength(humans, 0, 0.3)).toBeLessThan(0.5);
+    const flatOut = searchTurn(humans, 0, { strength: 1, depth: 0 })!.action;
+    expect(chooseBotAction(humans, 0, { strength: 0.3, depth: 0 })).toEqual(flatOut);
   });
 
   it('eases when it runs away from the humans, and never at a table of machines', () => {

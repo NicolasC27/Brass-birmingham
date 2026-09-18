@@ -440,7 +440,7 @@ const de: typeof enrules = {
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " und ",
-    botsBody5: ". Keiner ist an ein Handwerk gebunden — jeder spielt, was der Tisch verlangt, denkt seinen ganzen Zug durch, bevor er wählt, und blickt bei voller Stärke ein oder zwei Runden voraus. Ihre Stärke folgt deiner: der Cote online, deinen Ergebnissen zu Hause.",
+    botsBody5: ". Keiner ist an ein Handwerk gebunden — jeder spielt, was der Tisch verlangt, denkt seinen ganzen Zug durch, bevor er wählt, und blickt bei voller Stärke ein oder zwei Runden voraus. Ihre Stärke folgt deiner: der Cote online, deinen Ergebnissen zu Hause. Mr Watt ist die Ausnahme: der Experte spielt mit voller Kraft, wer auch immer gegenübersitzt.",
   },
   approximations: {
     supplyCore: {

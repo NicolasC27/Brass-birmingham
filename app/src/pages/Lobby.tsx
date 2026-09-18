@@ -5,6 +5,7 @@ import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Play, Search, Send, X } f
 import HouseRules from '@/components/setup/HouseRules';
 import { PERSONAS, PLAYER_COLORS, SETUP_STORAGE_KEY, recastSeat } from '@/components/setup/constants';
 import { freePersona, personaName } from '@/game/data';
+import { EXPERT } from '@/game/search';
 import type { BotPersona, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
 import { invite, useDesk, useStranger } from '@/online/session';
@@ -157,7 +158,7 @@ function SeatSlot({
   const canColor = isMe || (bot && iAmHost);
   const hasControls = !bot || iAmHost;
   const subLine = bot
-    ? t('platform.lobby.botLine', { difficulty: t('setup.persona.short') })
+    ? t('platform.lobby.botLine', { difficulty: t(slot.persona === EXPERT ? 'setup.persona.expertShort' : 'setup.persona.short') })
     : ready
       ? t('platform.lobby.readyTag')
       : t('platform.lobby.waiting');

@@ -7,7 +7,7 @@
 import { create } from 'zustand';
 import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
-import { chooseBotAction } from './search';
+import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
 import { tr } from '@/i18n';
 import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
@@ -944,7 +944,8 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a browser thinks on the thread that paints, so a machine keeps it short
        — an expert a little less so; it plays at the form the house holds */
     const strength = readForm().level;
-    const wanted = chooseBotAction(g, g.current, { budgetMs: strength >= 0.8 ? 400 : 200, strength });
+    const expert = isExpert(g, g.current);
+    const wanted = chooseBotAction(g, g.current, { budgetMs: expert ? 1200 : strength >= 0.8 ? 400 : 200, strength });
     // nothing playable (or a move the engine refuses): scout if allowed, else pass
     if (!(wanted && get().dispatch(wanted))) get().dispatch(fallbackAction(g, g.current));
     return wanted;

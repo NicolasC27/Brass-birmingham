@@ -440,7 +440,7 @@ const fr: typeof enrules = {
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " et ",
-    botsBody5: ". Aucun n'est attaché à un métier — chacun joue ce que la table demande, réfléchit tout son tour avant de choisir et, à pleine force, regarde un ou deux tours plus loin. Leur force suit la vôtre : la cote en ligne, vos résultats à la maison.",
+    botsBody5: ". Aucun n'est attaché à un métier — chacun joue ce que la table demande, réfléchit tout son tour avant de choisir et, à pleine force, regarde un ou deux tours plus loin. Leur force suit la vôtre : la cote en ligne, vos résultats à la maison. Mr Watt fait exception : l'expert joue à fond, qui que soit en face.",
   },
   approximations: {
     supplyCore: {

@@ -92,6 +92,9 @@ const de: typeof ensetup = {
       label: "Miss Arkwright",
     },
     short: "Spielt auf deinem Niveau",
+    expert:
+      "Der Experte — spielt mit voller Kraft und lässt nie nach, wer auch immer gegenübersitzt.",
+    expertShort: "Spielt mit voller Kraft",
     adaptive:
       "Spielt auf deinem Niveau — schärfer, wenn du gewinnst, sanfter, wenn du verlierst, nie so, dass eine Partie davonläuft.",
   },

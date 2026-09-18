@@ -92,6 +92,9 @@ const fr: typeof ensetup = {
       label: "Miss Arkwright",
     },
     short: "Joue à votre niveau",
+    expert:
+      "L'expert — joue à fond et ne se relâche jamais, qui que soit en face.",
+    expertShort: "Joue à fond",
     adaptive:
       "Joue à votre niveau — plus affûté quand vous gagnez, plus doux quand vous perdez, jamais au point de s'envoler.",
   },
