@@ -21,8 +21,9 @@ for ind in $INDS; do
   magick "$SRC/$ind-midjourney.jpg" -resize 2048x2048\> -colorspace gray -negate -level 28%,72% "$T/$ind-mask.png"
   geo=$(magick "$T/$ind-mask.png" -threshold 45% -format '%@' info:)
   # the stamp's grain — ink specks in the blacks, paper specks around —
-  # filled and cleared, the edges crisp: flat ink for a hundred-pixel face
-  magick "$T/$ind-mask.png" -crop "$geo" +repage -statistic Median 5 -morphology Close Disk:4 -morphology Open Disk:2 -threshold 50% -blur 0x1 "$T/$ind-trim.png"
+  # filled and cleared, the outlines rounded and cut crisp: flat, smooth ink
+  # for a hundred-pixel face
+  magick "$T/$ind-mask.png" -crop "$geo" +repage -statistic Median 7 -morphology Close Disk:5 -morphology Open Disk:3 -blur 0x3 -threshold 50% -blur 0x1.2 "$T/$ind-trim.png"
 done
 # fit <mask> into a <size> box, centred on an NxN transparent canvas at +x+y, as ink
 ink() { # ink <ind> <size> <out> [x y]
