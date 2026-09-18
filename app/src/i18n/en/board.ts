@@ -57,6 +57,7 @@ const board = {
     flipsByEmptying: 'This works flips by emptying, not by sale',
   },
   refusal: {
+    label: 'Refused',
     cardTown: 'This card builds in {town} only',
     cardIndustry: 'This card builds {list} only',
     noTiles: 'No {industry} tile left on your mat',

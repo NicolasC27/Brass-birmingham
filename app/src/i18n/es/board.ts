@@ -59,6 +59,7 @@ const es: typeof enboard = {
     flipsByEmptying: 'Este edificio se voltea al vaciarse, no con una venta',
   },
   refusal: {
+    label: 'Rechazado',
     cardTown: 'Esta carta solo construye en {town}',
     cardIndustry: 'Esta carta solo construye una {list}',
     noTiles: 'No queda ninguna loseta de {industry} en tu tapete',

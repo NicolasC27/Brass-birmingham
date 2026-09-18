@@ -59,6 +59,7 @@ const fr: typeof enboard = {
     flipsByEmptying: 'Cet établissement se retourne en se vidant, pas par une vente',
   },
   refusal: {
+    label: 'Refusé',
     cardTown: 'Cette carte ne construit qu’à {town}',
     cardIndustry: 'Cette carte ne construit qu’une {list}',
     noTiles: 'Plus de tuile {industry} sur votre tapis',

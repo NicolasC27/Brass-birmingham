@@ -34,6 +34,31 @@ const TILE_R = TILE_HALF;
 const BUILDABLE = 0x7fe08f;
 const BUILDABLE_PICK = 0xc4ffcc;
 
+/* a refusal, as a small ledger note: a rust seal, the word in small caps,
+   the sentence in the book's hand; a notch points at the place refused */
+function RefusalNote({ text, notch, wide }: { text: string; notch?: 'up' | 'down'; wide?: boolean }) {
+  return (
+    <div className={cn('relative flex items-start gap-2 rounded-md border border-brass-700/50 bg-coal-900/[.97] py-1.5 pl-2 pr-3 text-left shadow-e3', wide ? 'max-w-[440px]' : 'max-w-[300px]')} role="alert">
+      <span aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-md opacity-[0.06]" />
+      <span aria-hidden className="absolute inset-x-3 top-0 h-px bg-gradient-to-r from-transparent via-rust-500/90 to-transparent" />
+      <span aria-hidden className="relative mt-[5px] flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full bg-rust-500 shadow-[0_0_0_1px_rgba(0,0,0,.7),inset_0_1px_1px_rgba(255,255,255,.28),0_0_8px_rgba(196,74,42,.5)]">
+        <span className="h-1.5 w-1.5 rounded-full bg-rust-700/80" />
+      </span>
+      <span className="relative flex min-w-0 flex-col leading-tight">
+        <span className="font-sans text-[8px] font-bold uppercase tracking-[0.2em] text-rust-500 brightness-150">{tr('board.refusal.label')}</span>
+        <span className="font-fell text-[13px] leading-snug text-cream-100">{text}</span>
+      </span>
+      {notch && (
+        <span
+          aria-hidden
+          className="absolute left-1/2 h-2.5 w-2.5 -translate-x-1/2 rotate-45 border-brass-700/50 bg-coal-900"
+          style={notch === 'up' ? { bottom: -6, borderRight: '1px solid', borderBottom: '1px solid' } : { top: -6, borderLeft: '1px solid', borderTop: '1px solid' }}
+        />
+      )}
+    </div>
+  );
+}
+
 function linkMidWorld(def: (typeof LINKS)[number], era: Era): [number, number] {
   /* most links have no explicit path — routeFor computes the winding route */
   return routeFor(def, era).mid;
@@ -1838,8 +1863,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* a refusal with no place on the map (the table said no): a line at the top */}
       <AnimatePresence>
         {shake && !shake.key && calloutAt === shake.at && (
-          <motion.div key={`banner-${shake.at}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} role="alert" className="pointer-events-none absolute left-1/2 top-16 z-30 max-w-[420px] -translate-x-1/2 rounded-md border border-rust-500/80 bg-coal-900/95 px-3 py-1.5 text-center font-sans text-[12px] leading-snug text-cream-100 shadow-e3">
-            {reasonText(shake.reason)}
+          <motion.div key={`banner-${shake.at}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="pointer-events-none absolute left-1/2 top-16 z-30 -translate-x-1/2">
+            <RefusalNote text={reasonText(shake.reason)} wide />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1847,20 +1872,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       <AnimatePresence>
         {shake && calloutPos && (
           <Anchored key={shake.at} anchors={anchors} at={{ wx: calloutPos.wx, wy: calloutPos.wy, py: calloutPos.py, clampX: 120 }} className={cn('pointer-events-none z-30', calloutPos.up ? '-translate-x-1/2 -translate-y-full' : '-translate-x-1/2')}>
-          <motion.div
-            initial={{ opacity: 0, y: calloutPos.up ? 6 : -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="relative max-w-[240px] rounded-md border border-rust-500/80 bg-coal-900/95 px-2.5 py-1.5 text-center font-sans text-[11.5px] leading-snug text-cream-100 shadow-e3"
-            role="alert"
-          >
-            {reasonText(shake.reason)}
-            <span
-              aria-hidden
-              className="absolute left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-rust-500/80 bg-coal-900/95"
-              style={calloutPos.up ? { bottom: -5, borderRight: '1px solid', borderBottom: '1px solid' } : { top: -5, borderLeft: '1px solid', borderTop: '1px solid' }}
-            />
+          <motion.div initial={{ opacity: 0, y: calloutPos.up ? 6 : -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }}>
+            <RefusalNote text={reasonText(shake.reason)} notch={calloutPos.up ? 'up' : 'down'} />
           </motion.div>
           </Anchored>
         )}

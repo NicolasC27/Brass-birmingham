@@ -59,6 +59,7 @@ const de: typeof enboard = {
     flipsByEmptying: 'Dieses Werk wird durch Leeren umgedreht, nicht durch Verkauf',
   },
   refusal: {
+    label: 'Abgelehnt',
     cardTown: 'Diese Karte baut nur in {town}',
     cardIndustry: 'Diese Karte baut nur: {list}',
     noTiles: 'Kein {industry}-Plättchen mehr auf deinem Tableau',
