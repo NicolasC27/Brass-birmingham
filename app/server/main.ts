@@ -1,8 +1,26 @@
+import { readFileSync } from 'node:fs';
 import { serve } from './index';
 
 /* The server as a process: PORT, HOST and BLACKRAIL_DB from the
-   environment, nothing else. SQLite ships with Node but still announces
-   itself as experimental on every start; that one line is not news. */
+   environment, and the keys the house keeps in `.env.local` beside the
+   app (ANTHROPIC_API_KEY, RESEND_API_KEY…) — read here so one ignored
+   file holds every secret, the shell's own values winning. SQLite ships
+   with Node but still announces itself as experimental on every start;
+   that one line is not news. */
+
+for (const file of ['.env.local', '.env']) {
+  let text = '';
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch {
+    continue;
+  }
+  for (const line of text.split('\n')) {
+    const m = /^\s*(?:export\s+)?([A-Z][A-Z0-9_]*)\s*=\s*(.*?)\s*$/.exec(line);
+    if (!m || process.env[m[1]] !== undefined) continue;
+    process.env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+}
 
 const quiet = process.listeners('warning');
 process.removeAllListeners('warning');
