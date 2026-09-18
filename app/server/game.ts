@@ -1,6 +1,6 @@
-import { applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, replay, undoLastHuman } from '@/game/actions';
+import { applyAction, canUndoNow, fallbackAction, humanActionIndices, replay, undoLastHuman } from '@/game/actions';
 import type { GameAction, UndoMark } from '@/game/actions';
-import { chooseBotMove } from '@/game/bot';
+import { chooseBotAction } from '@/game/search';
 import { candleMinutes, newGame } from '@/game/engine';
 import { tallyGame } from '@/game/tally';
 import type { Tally } from '@/game/tally';
@@ -407,7 +407,7 @@ export class TableGame {
     if (s.phase !== 'action' || !s.players[s.current].isBot) return;
     const seat = s.current;
     try {
-      const wanted = botAction(chooseBotMove(s, seat));
+      const wanted = chooseBotAction(s, seat);
       /* nothing playable, or a move the engine turns down: scout, else pass */
       if (!wanted || this.commit(seat, wanted) !== null) this.commit(seat, fallbackAction(s, seat));
     } catch (e) {

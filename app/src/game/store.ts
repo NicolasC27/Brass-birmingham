@@ -7,12 +7,11 @@
 import { create } from 'zustand';
 import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
-import { chooseBotMove } from './bot';
+import { chooseBotAction } from './search';
 import { tr } from '@/i18n';
-import { actorOf, applyAction, botAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
+import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
-import type { BotMove } from './bot';
 import { INDUSTRIES, INDUSTRY_LABEL, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { onlineWire } from '@/online/net';
 import { DIALECT, PING_SHOWER, PING_SHOWN_MS, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
@@ -216,7 +215,7 @@ interface GameStore {
   setCoachStep: (n: number) => void;
   endCeremony: () => void;
   closeGameOver: () => void;
-  runBot: () => BotMove | null;
+  runBot: () => GameAction | null;
   takeLoan: () => void;
   pass: (reason?: string) => void;
   /** a pause of the whole table — proposed, agreed, refused, lifted */
@@ -931,11 +930,11 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!g || g.phase !== 'action' || st.code) return null;
     const p = g.players[g.current];
     if (!p.isBot) return null;
-    const move = chooseBotMove(g, g.current);
-    const wanted = botAction(move);
+    /* a browser thinks on the thread that paints: the magnate keeps it short */
+    const wanted = chooseBotAction(g, g.current, { budgetMs: 200 });
     // nothing playable (or a move the engine refuses): scout if allowed, else pass
     if (!(wanted && get().dispatch(wanted))) get().dispatch(fallbackAction(g, g.current));
-    return move;
+    return wanted;
   },
 
   /* --------------------------- derived -------------------------- */
