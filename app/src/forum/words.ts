@@ -27,7 +27,8 @@ const squeeze = (s: string): string => s.replace(/(.)\1+/g, '$1');
 
 /* the words themselves: insults and slurs aimed at a person, and what is
    said to hurt — not the swearing a game table hears every evening.
-   Single words and short phrases; French and English, the club's tongues. */
+   Single words and short phrases in the club's four tongues: French,
+   English, German and Spanish. */
 const WORDS = [
   // français
   'connard',
@@ -109,6 +110,48 @@ const WORDS = [
   'wog',
   'coon',
   'kys',
+  // deutsch
+  'arschloch',
+  'wichser',
+  'hurensohn',
+  'fotze',
+  'schlampe',
+  'missgeburt',
+  'schwuchtel',
+  'kanake',
+  'kanacke',
+  'neger',
+  'spast',
+  'spasti',
+  'mongo',
+  'drecksau',
+  'scheisskerl',
+  'nutte',
+  'pisser',
+  'vollpfosten',
+  // español
+  'gilipollas',
+  'cabron',
+  'cabrona',
+  'puta',
+  'puto',
+  'maricon',
+  'marica',
+  'pendejo',
+  'pendeja',
+  'subnormal',
+  'retrasado',
+  'retrasada',
+  'mongolico',
+  'sudaca',
+  'negrata',
+  'chupapollas',
+  'zorra',
+  'capullo',
+  'malparido',
+  'malparida',
+  'cabrones',
+  'putas',
 ];
 const PHRASES = [
   'nique ta mere',
@@ -126,6 +169,16 @@ const PHRASES = [
   'suck my dick',
   'kill yourself',
   'go die',
+  'fick dich',
+  'halt die fresse',
+  'halts maul',
+  'halt dein maul',
+  'verpiss dich',
+  'hijo de puta',
+  'hija de puta',
+  'vete a la mierda',
+  'que te den',
+  'me cago en tu',
 ];
 
 const LIST = new Set(WORDS.map(squeeze));

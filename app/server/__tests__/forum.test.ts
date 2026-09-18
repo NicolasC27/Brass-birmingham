@@ -16,11 +16,18 @@ describe('the doorman', () => {
     expect(offends('c.o.n.n.a.r.d va')).toBe('conard');
     expect(offends('nique ta mère')).toBe('nique');
     expect(offends('what a f u c k i n g move')).toBe('fucking');
+    expect(offends('Du Hurensohn, halt die Fresse')).toBe('hurensohn');
+    expect(offends('so ein Ar$chloch')).toBe('arschloch');
+    expect(offends('eres un gilipollas')).toBe('gilipolas');
+    expect(offends('Cabrón, hijo de puta')).toBe('cabron');
+    expect(offends('vete a la mierda')).toBe('vete a la mierda');
   });
   it('lets ordinary words in, even the ones with a bad word inside', () => {
     expect(offends('Un assassinat à Scunthorpe, classe.')).toBeNull();
     expect(offends('La brasserie de Burton vend 3 cubes à £5.')).toBeNull();
     expect(offends('Coal at Coalbrookdale, then Derby: 12 VP')).toBeNull();
+    expect(offends('Die Kanalzeit endet, Stufe 2 Töpferei')).toBeNull();
+    expect(offends('La cerveza de Burton, dos barriles y punto')).toBeNull();
     expect(offends('')).toBeNull();
   });
 });
@@ -51,7 +58,7 @@ describe('the markup', () => {
 describe('the forum in the register', () => {
   const dirs: string[] = [];
   const open = () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'brassworks-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'blackrail-'));
     dirs.push(dir);
     const store = new Store(path.join(dir, 'test.db'));
     const ada = store.signUp('Ada', 'ada@example.test', 'countess-of-lovelace');
