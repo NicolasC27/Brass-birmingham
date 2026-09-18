@@ -33,7 +33,7 @@ import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
 import { routeFor } from '@/components/game/routePaths';
-import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
+import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withIron } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { listLocalGames, openLocalGame } from '@/game/local';
@@ -134,6 +134,7 @@ export default function Game() {
   const secondLinkPick = useGame((s) => s.secondLinkPick);
   const developPick = useGame((s) => s.developPick);
   const developIron = useGame((s) => s.developIron);
+  const buildIron = useGame((s) => s.buildIron);
   const scoutPick = useGame((s) => s.scoutPick);
   const hoverKey = useGame((s) => s.hoverKey);
   const reject = useGame((s) => s.reject);
@@ -398,7 +399,7 @@ export default function Game() {
         const sale = marketSaleOnBuild(planGame, t.town, t.industry, t.level);
         return sale.sold ? { ...g, sale: { resource: t.industry, amount: sale.sold, gain: sale.earned } } : g;
       };
-      if (buildPick?.valid) return withSale(buildPick);
+      if (buildPick?.valid) return withSale(withIron(planGame, planActor, buildPick, buildIron));
       const t = hoverKey ? targets.find((x) => tileKey(x.town, x.slot) === hoverKey && x.valid) : null;
       if (t) return withSale(t);
     }
@@ -432,7 +433,7 @@ export default function Game() {
       }
     }
     return null;
-  }, [planGame, verb, buildPick, linkPick, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [planGame, verb, buildPick, buildIron, linkPick, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};

@@ -3,7 +3,7 @@ import { applyAction, botAction, fallbackAction, humanActionIndices, replay, set
 import type { GameAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { INDUSTRIES } from '../data';
-import { newGame, serialize } from '../engine';
+import { buildTargets, newGame, serialize, withIron } from '../engine';
 import type { GameState, SetupPayload } from '../types';
 
 /* ------------------------------------------------------------------ */
@@ -254,5 +254,31 @@ describe('developing', () => {
     expect(r.state).not.toBeNull();
     expect(r.state!.tiles['coalbrookdale:1'].cubes).toBe(1);
     expect(r.state!.players[me].money).toBe(s.players[me].money);
+  });
+});
+
+describe('the iron of a build', () => {
+  it('comes from the works the player names, and from the nearest otherwise', () => {
+    const s = newGame(setup(4), 42);
+    const me = s.current;
+    /* two iron works on the board, one of them mine; a brewery takes one iron */
+    s.tiles['coalbrookdale:0'] = { owner: me, industry: 'iron', level: 1, flipped: false, cubes: 4 };
+    s.tiles['dudley:0'] = { owner: (me + 1) % 4, industry: 'iron', level: 1, flipped: false, cubes: 4 };
+    s.players[me].hand = [{ id: 'wild-1', kind: 'wild-location' }];
+    s.players[me].money = 30;
+    const t = buildTargets(s, me, s.players[me].hand[0]).find((x) => x.valid && x.industry === 'brewery')!;
+    expect(t).toBeDefined();
+    const mine = withIron(s, me, t, 'coalbrookdale:0');
+    expect(mine.ironPlan.sources[0]).toMatchObject({ kind: 'tile', town: 'coalbrookdale', amount: 1 });
+    expect(mine.total).toBe(t.total);
+    /* the market is not a choice while a works holds iron */
+    expect(withIron(s, me, t, 'market').ironPlan.sources[0].kind).toBe('tile');
+    /* a dry or unknown works leaves the engine's nearest */
+    expect(withIron(s, me, t, 'no:such').ironPlan).toEqual(t.ironPlan);
+    /* played, the build takes its cube from the named works */
+    const r = applyAction(s, me, { kind: 'build', card: 'wild-1', town: t.town, slot: t.slot, industry: 'brewery', ironFrom: 'coalbrookdale:0' });
+    expect(r.state).not.toBeNull();
+    expect(r.state!.tiles['coalbrookdale:0'].cubes).toBe(3);
+    expect(r.state!.tiles['dudley:0'].cubes).toBe(4);
   });
 });

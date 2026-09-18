@@ -1,5 +1,5 @@
 import { cloneState } from './clone';
-import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets } from './engine';
+import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets, withIron } from './engine';
 import type { BotMove } from './bot';
 import type { GameState, IndustryType, SetupPayload } from './types';
 
@@ -17,7 +17,7 @@ import type { GameState, IndustryType, SetupPayload } from './types';
 /* ------------------------------------------------------------------ */
 
 export type GameAction =
-  | { kind: 'build'; card: string; town: string; slot: number; industry: IndustryType }
+  | { kind: 'build'; card: string; town: string; slot: number; industry: IndustryType; /** the iron works to draw from (its key) or 'market'; nothing for the engine's nearest */ ironFrom?: string | null }
   | { kind: 'network'; card: string; link: string; second?: string }
   | { kind: 'develop'; card: string; industries: IndustryType[]; /** per industry, the iron works to draw from (its key), 'market', or nothing for the engine's choice */ ironFrom?: (string | null)[] }
   | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string }[] }
@@ -81,7 +81,9 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       const target = buildTargets(mut, playerIdx, card).find((t) => t.town === action.town && t.slot === action.slot && t.industry === action.industry);
       if (!target) return fail('No such slot for this card');
       if (!target.valid) return fail(target.reason ?? 'Cannot build there');
-      ok = applyBuild(mut, playerIdx, card, target);
+      const chosen = withIron(mut, playerIdx, target, action.ironFrom);
+      if (!chosen.valid) return fail(chosen.reason ?? 'Cannot build there');
+      ok = applyBuild(mut, playerIdx, card, chosen);
       break;
     }
     case 'network': {

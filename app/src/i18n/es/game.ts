@@ -39,6 +39,7 @@ const game: typeof engame = {
     candleOut: 'La vela de {name} se ha consumido.',
   },
   topbar: {
+    ironTip: 'De dónde viene el hierro: cualquier fundición del tablero, la tuya para vaciarla',
     eraCanal: 'Era del canal',
     eraRail: 'Era del ferrocarril',
     eraRoundTitle: '{era} — ronda {round} de {total}',

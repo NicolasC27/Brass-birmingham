@@ -2,7 +2,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrainFront, Waves } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
-import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
+import { buildTargets, candleMinutes, developOptions, eraRounds, ironSources, linkTargets, sellTargets } from '@/game/engine';
+import { INDUSTRIES, INDUSTRY_ICON, marketBuyPrice } from '@/game/data';
 import { ledgerParts } from '@/game/ledgerText';
 import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard } from '@/game/store';
 import type { Verb } from '@/game/types';
@@ -143,6 +144,8 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
   const sellPicks = useGame((s) => s.sellPicks);
   const developPick = useGame((s) => s.developPick);
   const developIron = useGame((s) => s.developIron);
+  const buildIron = useGame((s) => s.buildIron);
+  const setBuildIron = useGame((s) => s.setBuildIron);
   const scoutPick = useGame((s) => s.scoutPick);
   const setVerb = useGame((s) => s.setVerb);
   const confirm = useGame((s) => s.confirm);
@@ -166,7 +169,10 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
   const summaryFull = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId }) : null;
   /* the verb chip already says it: the summary starts after the verb */
   const summary = summaryFull && verb && summaryFull.startsWith(`${t(VERB_LABEL[verb])} · `) ? summaryFull.slice(t(VERB_LABEL[verb]).length + 3) : summaryFull;
-  const cost = summary ? confirmCost({ verb, buildPick, linkPick, secondLinkPick, developPick, developIron }, game, me) : null;
+  const cost = summary ? confirmCost({ verb, buildPick, buildIron, linkPick, secondLinkPick, developPick, developIron }, game, me) : null;
+  /* a build that takes iron: the rules let it come from any works, so the
+     reader may name one — their own, to empty and flip it */
+  const ironChoice = mine && verb === 'build' && buildPick?.valid && INDUSTRIES[buildPick.industry][buildPick.level - 1]?.iron === 1 ? ironSources(planGame ?? game) : null;
   /* what the banner asks of the reader, in one line */
   const stage = !mine ? 'theirs' : summary ? 'ready' : verb ? 'target' : card ? 'verb' : 'card';
 
@@ -312,6 +318,25 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
 
           {mine && (
             <div className="flex shrink-0 items-center gap-1.5 pr-1.5">
+              {ironChoice && (
+                <label className="flex items-center gap-1 whitespace-nowrap font-sans text-[10px] text-cream-100/70" title={t('game.topbar.ironTip')}>
+                  <img src={INDUSTRY_ICON.iron} alt="" className="h-3.5 w-3.5" />
+                  <select
+                    value={buildIron ?? ''}
+                    onChange={(e) => setBuildIron(e.target.value || null)}
+                    aria-label={t('game.topbar.ironTip')}
+                    className="max-w-[170px] rounded-sm border border-brass-700/60 bg-coal-800 px-1 py-0.5 font-sans text-[10px] text-cream-100"
+                  >
+                    <option value="">{t('game.hand.devIronAuto')}</option>
+                    {ironChoice.map((src) => (
+                      <option key={src.key} value={src.key}>
+                        {t('game.hand.devIronWorks', { owner: game.players[src.owner].name, town: TOWN_BY_ID[src.town]?.name ?? src.town, cubes: src.cubes })}
+                      </option>
+                    ))}
+                    {ironChoice.length === 0 && <option value="market">{t('game.hand.devIronMarket', { cost: marketBuyPrice('iron', game.market.iron) })}</option>}
+                  </select>
+                </label>
+              )}
               {cost && (
                 <motion.span
                   key={`${cost.total}:${cost.after}`}

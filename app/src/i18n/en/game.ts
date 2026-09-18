@@ -37,6 +37,7 @@ const game = {
     candleOut: "{name}'s candle burned out.",
   },
   topbar: {
+    ironTip: 'Where the iron comes from: any works on the board, your own to empty it',
     eraCanal: 'Canal Era',
     eraRail: 'Rail Era',
     eraRoundTitle: '{era} — Round {round} of {total}',

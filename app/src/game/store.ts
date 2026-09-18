@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, tileKey } from './engine';
+import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, tileKey, withIron } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
@@ -70,6 +70,8 @@ interface GameStore {
   developPick: IndustryType[];
   /** per pick, the iron works chosen (its key), 'market', or null for the engine's choice */
   developIron: (string | null)[];
+  /** the iron works a build draws from (its key), 'market', or null for the engine's nearest */
+  buildIron: string | null;
   scoutPick: string[];
   hoverKey: string | null;
   shake: Shake | null;
@@ -194,6 +196,7 @@ interface GameStore {
   addDevelop: (ind: IndustryType) => void;
   dropDevelop: (ind: IndustryType) => void;
   setDevelopIron: (k: number, from: string | null) => void;
+  setBuildIron: (from: string | null) => void;
   toggleScout: (cardId: string) => void;
   setHover: (key: string | null) => void;
   reject: (key: string, reason: string) => void;
@@ -300,6 +303,7 @@ const clearSelection = {
   sellPicks: [] as SellTarget[],
   developPick: [] as IndustryType[],
   developIron: [] as (string | null)[],
+  buildIron: null as string | null,
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
@@ -477,10 +481,10 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     if (st.selectedCardId === id) {
-      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [] });
+      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null });
       return;
     }
-    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], shake: null });
+    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, shake: null });
   },
 
   setVerb: (v) => {
@@ -494,10 +498,11 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ ...clearSelection, verb: 'scout' });
       return;
     }
-    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], shake: null });
+    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, shake: null });
   },
 
-  pickBuild: (t) => set({ buildPick: t, shake: null }),
+  pickBuild: (t) => set((st) => ({ buildPick: t, shake: null, buildIron: t && st.buildPick && tileKey(t.town, t.slot) === tileKey(st.buildPick.town, st.buildPick.slot) ? st.buildIron : null })),
+  setBuildIron: (from) => set({ buildIron: from }),
   pickLink: (t) => {
     const st = get();
     if (!st.linkPick) {
@@ -777,7 +782,7 @@ export const useGame = create<GameStore>((set, get) => ({
     let action: GameAction | null = null;
     switch (st.verb) {
       case 'build':
-        if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry };
+        if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry, ...(st.buildIron ? { ironFrom: st.buildIron } : {}) };
         break;
       case 'network':
         if (card && st.linkPick?.valid) action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id };
@@ -1014,7 +1019,7 @@ export function developPlans(game: GameState, ironFrom: (string | null)[]): Supp
 }
 
 export function confirmCost(
-  st: { verb: Verb | null; buildPick: BuildTarget | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[]; developIron: (string | null)[] },
+  st: { verb: Verb | null; buildPick: BuildTarget | null; buildIron?: string | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; developPick: IndustryType[]; developIron: (string | null)[] },
   game: GameState,
   actor: number = game.current,
 ): { total: number; after: number } | null {
@@ -1023,7 +1028,7 @@ export function confirmCost(
   switch (st.verb) {
     case 'build':
       if (!st.buildPick) return null;
-      total = st.buildPick.total;
+      total = withIron(game, actor, st.buildPick, st.buildIron).total;
       break;
     case 'network':
       if (!st.linkPick) return null;

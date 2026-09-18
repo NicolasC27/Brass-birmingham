@@ -39,6 +39,7 @@ const fr: typeof engame = {
     candleOut: 'La bougie de {name} a brûlé jusqu’au bout.',
   },
   topbar: {
+    ironTip: 'D’où vient le fer : n’importe quelle forge du plateau, la vôtre pour la vider',
     eraCanal: 'Ère canal',
     eraRail: 'Ère rail',
     eraRoundTitle: '{era} — manche {round} sur {total}',

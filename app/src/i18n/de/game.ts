@@ -39,6 +39,7 @@ const game: typeof engame = {
     candleOut: 'Die Kerze von {name} ist heruntergebrannt.',
   },
   topbar: {
+    ironTip: 'Woher das Eisen kommt: jede Hütte auf dem Plan, deine eigene, um sie zu leeren',
     eraCanal: 'Kanalzeit',
     eraRail: 'Eisenbahnzeit',
     eraRoundTitle: '{era} — Runde {round} von {total}',

@@ -890,6 +890,23 @@ export function planIronFrom(s: GameState, from: string | null | undefined, rese
   return planSupply(s, 'birmingham', 'iron', 1, [], reserved);
 }
 
+/** the build target with its iron drawn from the works the reader named
+ *  (or the market, once the board is dry): the rules let iron come from
+ *  any works, so the choice is the player's — an empty name, a dry works
+ *  or a target that takes no iron leave the engine's nearest choice */
+export function withIron(s: GameState, playerIdx: number, t: BuildTarget, from: string | null | undefined): BuildTarget {
+  if (!from || !t.valid) return t;
+  const lv = INDUSTRIES[t.industry][t.level - 1];
+  if (lv?.iron !== 1) return t;
+  const reserved = new Map<string, number>();
+  reserveFrom(t.coalPlan, reserved);
+  const ironPlan = planIronFrom(s, from, reserved);
+  if (ironPlan.shortage > 0) return t;
+  const total = t.cost + t.coalPlan.totalCost + ironPlan.totalCost;
+  const money = s.players[playerIdx].money;
+  return { ...t, ironPlan, total, valid: total <= money, ...(total > money ? { reason: `Needs £${total} — you hold £${money}` } : {}) };
+}
+
 /** the tile a second development of the same industry would take: the
  *  one under the top of the stack, if it may be developed */
 export function developTwice(s: GameState, playerIdx: number, ind: IndustryType): boolean {
