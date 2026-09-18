@@ -584,13 +584,14 @@ export default function HandDock() {
                 initial={{ opacity: 0, x: -14 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -14 }}
-                className="paper flex items-center gap-2 self-center rounded-md px-3 py-2"
+                className="paper flex max-h-[164px] shrink-0 items-center gap-2 self-center rounded-md px-3 py-2"
               >
                 <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.hand.retire')}</span>
                 {/* one tile per industry, painted as on the board: the one on
                     top of the stack, its level stamped, the one beneath named
-                    under it, and how many of them this action retires */}
-                <div className="flex flex-wrap items-start gap-2">
+                    under it, and how many of them this action retires — six
+                    tiles on two rows of three, whatever room the fan leaves */}
+                <div className="grid grid-cols-3 gap-x-2 gap-y-1">
                   {devOptions.map((d) => {
                     const count = developPick.filter((x) => x === d.industry).length;
                     const stack = game.players[game.current].stacks[d.industry];
@@ -606,7 +607,7 @@ export default function HandDock() {
                           onClick={() => addDevelop(d.industry)}
                           aria-label={`${INDUSTRY_LABEL[d.industry]} L${d.level} — ${t('game.hand.devMore')}`}
                           className={cn(
-                            'relative h-[52px] w-[52px] overflow-hidden rounded-md border-2 shadow-[0_2px_4px_rgba(0,0,0,.35)] transition-transform',
+                            'relative h-[44px] w-[44px] overflow-hidden rounded-md border-2 shadow-[0_2px_4px_rgba(0,0,0,.35)] transition-transform',
                             count ? 'border-rust-500 ring-2 ring-rust-500/40' : d.valid ? 'border-brass-700/70 hover:-translate-y-0.5 hover:border-brass-500' : 'border-brass-700/30',
                             !usable && 'opacity-40 grayscale-[.6]',
                             !canAdd && 'cursor-not-allowed',
@@ -630,7 +631,7 @@ export default function HandDock() {
                 {/* the iron each retirement takes: any works on the board that
                     holds some, whoever's, or the market */}
                 {developPick.length > 0 && (
-                  <div className="flex flex-col gap-1 border-l border-brass-700/40 pl-2">
+                  <div className="flex max-h-[148px] flex-col gap-1 overflow-y-auto border-l border-brass-700/40 pl-2">
                     {developPick.map((ind, k) => {
                       const depth = developPick.slice(0, k).filter((x) => x === ind).length;
                       const level = game.players[game.current].stacks[ind][depth];
@@ -724,7 +725,7 @@ export default function HandDock() {
           </div>
 
           {/* right status / hints */}
-          <div className={cn('hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3', (shown?.hand.length ?? 0) < 7 && 'xl:flex')}>
+          <div className={cn('hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3', (shown?.hand.length ?? 0) < 7 && verb !== 'develop' && 'xl:flex')}>
             {game.round === 1 && game.era === 'canal' ? (
               <p className="paper px-2 py-1.5 font-fell text-[11px] italic leading-snug text-ink-900/85">
                 {t('game.hand.firstRound')}
