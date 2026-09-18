@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { offends } from '@/forum/words';
 import { excerpt, inline, parse } from '@/forum/markup';
 import { Store } from '../store';
+import { answered } from '../translate';
 
 /* The club's forum: threads and posts in the register, the doorman at
    the door, and the little markup a post may carry. */
@@ -29,6 +30,15 @@ describe('the doorman', () => {
     expect(offends('Die Kanalzeit endet, Stufe 2 Töpferei')).toBeNull();
     expect(offends('La cerveza de Burton, dos barriles y punto')).toBeNull();
     expect(offends('')).toBeNull();
+  });
+});
+
+describe('the interpreter\'s guard', () => {
+  it('throws away an answer given instead of a rendering', () => {
+    expect(answered('Question comment faire', 'I need more context to help you. Your message "Question comment faire" (Question how to do) is incomplete. Could you provide the full question?')).toBe(true);
+    expect(answered('Question comment faire', 'Question: how to do it')).toBe(false);
+    expect(answered('Le contexte de la partie compte.', 'The context of the game matters.')).toBe(false);
+    expect(answered('Coal first, always.', 'Le charbon d’abord, toujours.')).toBe(false);
   });
 });
 
