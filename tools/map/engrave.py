@@ -98,17 +98,21 @@ open(f'{out}/rail.txt', 'w').write('\n'.join(poly(l.get('railPts') or l['pts']) 
 
 # under the towns the sheet stays bare: the board lays its own hamlet
 # there (town-hamlet-*.webp), the church and the roofs showing between
-# the cards. Soot and smoke for the Rail Era.
-soot, smoke = [], []
+# the cards. The Rail Era's dirt: a soot haze over the big towns, coal
+# dust speckled around them.
+soot, dust = [], []
 for t in g['towns']:
     cx, cy = X(t['x']), Y(t['y'])
     if t['farm']: continue
-    soot.append(f'circle {cx},{cy} {cx + 210},{cy}')
-    for _ in range(3):
-        a = rng.random() * math.tau; d = 60 + rng.random() * 140
-        smoke.append(f'ellipse {cx + math.cos(a) * d:.1f},{cy + math.sin(a) * d:.1f} {50 + rng.random()*60:.0f},{18 + rng.random()*20:.0f} 0,360')
+    big = len(t['slots']) >= 3
+    soot.append(f'circle {cx},{cy} {cx + (260 if big else 130)},{cy}')
+    for _ in range(420 if big else 90):
+        a = rng.random() * math.tau; d = 60 + (rng.random() ** 0.6) * (360 if big else 200)
+        px, py = cx + math.cos(a) * d, cy + math.sin(a) * d
+        r = 0.6 + rng.random() * 0.9
+        dust.append(f'circle {px:.1f},{py:.1f} {px + r:.1f},{py:.1f}')
 open(f'{out}/soot.txt', 'w').write('\n'.join(soot))
-open(f'{out}/smoke.txt', 'w').write('\n'.join(smoke))
+open(f'{out}/dust.txt', 'w').write('\n'.join(dust))
 # merchant basins: a stone ring, water hatched inside
 open(f'{out}/basin-outer.txt', 'w').write('\n'.join(f'circle {x},{y} {x + 76},{y}' for x, y in merch))
 open(f'{out}/basin-inner.txt', 'w').write('\n'.join(f'circle {x},{y} {x + 64},{y}' for x, y in merch))

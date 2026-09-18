@@ -52,18 +52,26 @@ magick "$T/sheet.png" "$T/hills.png" -compose over -composite "$T/woods.png" -co
   "$T/roads.png" -compose over -composite "$T/canals.png" -compose over -composite \
   "$T/basins.png" -compose over -composite "$T/canal.png"
 
-# 5. rail era: the same sheet yellowed and sooted, rails in black ink, smoke over the towns
+# 5. rail era: the same sheet, older and dirtier — foxed, smoke-darkened at
+#    the edges, a soot haze and coal dust over the big towns; the canals
+#    fade to second rank, the survey lines become rails
 magick -size ${FW}x${FH} xc:none -fill none \
-  -stroke 'rgba(30,24,18,0.85)' -strokewidth 5.6 -draw "stroke-dasharray 1.3 5.7 $(D rail.txt)" \
-  -stroke 'rgba(30,24,18,0.92)' -strokewidth 3.8 -draw "$(D rail.txt)" \
-  -stroke 'rgba(200,188,156,0.95)' -strokewidth 1.8 -draw "$(D rail.txt)" \
+  -stroke 'rgba(30,24,18,0.80)' -strokewidth 7 -draw "stroke-dasharray 1.4 5.6 $(D rail.txt)" \
+  -stroke 'rgba(30,24,18,0.92)' -strokewidth 4.6 -draw "$(D rail.txt)" \
+  -stroke 'rgba(200,188,156,0.95)' -strokewidth 2 -draw "$(D rail.txt)" \
   "$T/rails.png"
-magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(40,32,26,0.20)' -draw "$(D soot.txt)" -channel RGBA -blur 0x110 +channel "$T/soot.png"
-magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(70,66,60,0.22)' -draw "$(D smoke.txt)" -channel RGBA -blur 0x40 +channel "$T/smoke.png"
-magick "$T/canal.png" -fill '#C8B283' -colorize 22 -modulate 90,88 \
+magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(40,32,26,0.16)' -draw "$(D soot.txt)" -channel RGBA -blur 0x100 +channel "$T/soot.png"
+magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(36,28,20,0.32)' -draw "$(D dust.txt)" "$T/dust.png"
+#    the old sheet: a touch of ochre, faint foxing, the edges smoke-darkened
+magick -size $((FW/8))x$((FH/8)) plasma:fractal -resize 800% -blur 0x12 -colorspace gray -auto-level -level 60%,100% +level 91%,100% "$T/foxing.png"
+magick -size ${FW}x${FH} radial-gradient:white-'rgb(196,186,166)' -blur 0x60 "$T/edge.png"
+magick "$T/sheet.png" -fill '#C8AC74' -colorize 14 -modulate 97,94 "$T/foxing.png" -compose multiply -composite "$T/edge.png" -compose multiply -composite "$T/sheet-rail.png"
+magick "$T/sheet-rail.png" "$T/hills.png" -compose over -composite "$T/woods.png" -compose over -composite \
+  \( "$T/canals.png" -channel A -evaluate multiply 0.55 +channel \) -compose over -composite \
+  "$T/basins.png" -compose over -composite \
   "$T/soot.png" -compose multiply -composite \
   "$T/rails.png" -compose over -composite \
-  "$T/smoke.png" -compose over -composite "$T/rail.png"
+  "$T/dust.png" -compose over -composite "$T/rail.png"
 magick "$T/canal.png" -quality 85 app/public/map-engraved-canal.webp
 magick "$T/rail.png" -quality 85 app/public/map-engraved-rail.webp
 echo "map-engraved-canal.webp $(du -h app/public/map-engraved-canal.webp | cut -f1), map-engraved-rail.webp $(du -h app/public/map-engraved-rail.webp | cut -f1)"
