@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { TrainFront, Waves } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
@@ -13,12 +14,11 @@ import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
 
 /**
- * The turn banner, top centre: who plays, what they are doing, what it
- * costs, and the one button that settles it. Read left to right — the era
- * and the round, the player and their action pips, then (on the reader's
- * own turn) the action being prepared with Confirm and Cancel on a second
- * row. On someone else's turn the banner folds to one line and says what
- * they last did. The candle burns as a bar along the bottom edge.
+ * The turn strip, top centre, one line of 36px: the era and the round,
+ * who plays and what is being done, and on the reader's own turn the
+ * price and the button that settles it. The sentence gives way before
+ * anything else grows. On someone else's turn it says what they last
+ * did. The candle burns as a bar along the bottom edge.
  * Always fully opaque — game status must never look faded.
  */
 const VERB_LABEL: Record<Verb, string> = {
@@ -253,108 +253,94 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
   /* a turn spends cards: the actions as card stubs, played, in hand, to come */
   const stubs = Array.from({ length: maxActions }, (_, i) => (i < done ? 'played' : i === done ? 'current' : 'next') as 'played' | 'current' | 'next');
   const theirs = !mine;
+  const EraIcon = game.era === 'canal' ? Waves : TrainFront;
   return (
     <div className="pointer-events-none fixed z-[64] flex justify-center" style={{ left: band.left, right: band.right, top: insets.top }}>
       <motion.div
         data-topbar
         key={mine ? 'mine' : 'theirs'}
-        initial={{ scale: 0.97, opacity: 0.4 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 24 }}
-        className={cn('pointer-events-auto relative plaque flex flex-col overflow-hidden rounded-lg', mine ? 'w-full' : 'max-w-full')}
+        initial={{ y: -6, opacity: 0.4 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+        className={cn('pointer-events-auto relative plaque flex flex-col overflow-hidden rounded-md', mine ? 'w-full' : 'max-w-full')}
         style={mine ? { maxWidth: maxW } : undefined}
       >
-        <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-lg opacity-[0.05]" />
-        {/* the first row: the era, the player, the sentence — a slim ribbon
-            while another seat plays, the full plate on the reader's turn */}
-        <div className={cn('flex items-stretch', theirs ? 'h-[28px]' : 'h-[40px]')}>
+        {/* one strip, 36px: the era and the round, who plays and what is
+            being done, and on the reader's turn the price and the button.
+            Nothing grows; the sentence gives way. */}
+        <div className="flex h-9 items-stretch">
           <Tooltip
             side="bottom"
             title={t('game.topbar.eraRoundTitle', { era: game.era === 'canal' ? t('game.topbar.eraCanal') : t('game.topbar.eraRail'), round: game.round, total })}
             content={game.era === 'canal' ? t('game.topbar.canalTip') : t('game.topbar.railTip')}
           >
-            <span className={cn('plaque-brass relative m-1 flex items-center justify-center whitespace-nowrap rounded-md leading-none', theirs ? 'gap-1.5 px-2' : 'flex-col px-3')}>
-              <span
-                className={cn('font-fell tracking-[0.18em]', theirs ? 'text-[10px]' : 'text-[12px]', game.era === 'canal' ? 'text-cream-100' : 'text-copper-500 brightness-150')}
-                style={{ textShadow: '0 1px 0 rgba(0,0,0,.8), 0 0 8px rgba(201,164,92,.25)' }}
-              >
-                {game.era === 'canal' ? t('game.topbar.badgeCanal') : t('game.topbar.badgeRail')}
+            <span className="relative flex h-full items-center gap-1.5 whitespace-nowrap border-r border-brass-700/40 pl-3 pr-2.5">
+              <EraIcon className={cn('h-3 w-3', game.era === 'canal' ? 'text-cream-100/70' : 'text-copper-500 brightness-150')} aria-hidden />
+              <span className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-cream-100/80">{game.era === 'canal' ? t('game.topbar.badgeCanal') : t('game.topbar.badgeRail')}</span>
+              <span className="font-mono text-[11px] text-brass-400">
+                {game.round}<span className="text-cream-100/35">/{total}</span>
               </span>
-              <span className={cn('font-fell tracking-[0.14em] text-brass-400', theirs ? 'text-[10px]' : 'mt-1 text-[11px]')}>{theirs ? `${game.round}/${total}` : t('game.topbar.roundShort', { round: game.round, total })}</span>
-              {mine && (
-                <span className="mt-1 block h-[3px] w-full overflow-hidden rounded-full bg-coal-950">
-                  <motion.span className="block h-full rounded-full bg-brass-400" animate={{ width: `${roundFrac * 100}%` }} transition={{ duration: 0.5 }} />
-                </span>
-              )}
+              {/* the era's progress, a hairline under the plaque */}
+              <span className="absolute inset-x-0 bottom-0 h-px bg-brass-700/40">
+                <motion.span className="block h-full bg-brass-400/80" animate={{ width: `${roundFrac * 100}%` }} transition={{ duration: 0.5 }} />
+              </span>
             </span>
           </Tooltip>
-          <div className="relative flex min-w-0 flex-1 items-center gap-2.5 px-3">
-            <PortraitMedallion p={p} index={me} active={mine} size={theirs ? 20 : 32} />
-            <div className={cn('flex min-w-0 flex-1 leading-tight', theirs ? 'items-center gap-2' : 'flex-col justify-center gap-[3px]')}>
-              {mine && (
-                <motion.span key={`${me}:${mine}`} initial={{ x: -10, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ type: 'spring', stiffness: 320, damping: 24 }} className="flex shrink-0 items-center gap-2 font-sans text-[11px] font-semibold uppercase tracking-[0.14em]" style={{ color }}>
-                  <span className="truncate">{t('game.topbar.yours')}</span>
-                  <span className="flex items-center gap-1" aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
-                    {stubs.map((st, i) => (
-                      <motion.span
-                        key={i}
-                        title={t(`game.topbar.stub.${st}`)}
-                        animate={st === 'current' ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                        transition={{ duration: 0.6 }}
-                        className={cn('block h-[16px] w-[12px] overflow-hidden rounded-[2px] border', st === 'played' ? 'border-brass-400 bg-brass-400' : st === 'current' ? 'border-brass-400 shadow-[0_0_6px_rgba(221,190,126,.8)]' : 'border-brass-700/60')}
-                      >
-                        {st !== 'played' && <img src="/card-back.webp" alt="" className={cn('h-full w-full object-cover', st === 'next' && 'opacity-40')} />}
-                      </motion.span>
-                    ))}
-                  </span>
+
+          <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
+            <PortraitMedallion p={p} index={me} active={mine} size={22} />
+            {mine && (
+              <span className="flex shrink-0 items-center gap-[3px]" aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
+                {stubs.map((st, i) => (
+                  <motion.span
+                    key={i}
+                    title={t(`game.topbar.stub.${st}`)}
+                    animate={st === 'current' ? { scale: [1, 1.15, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.6 }}
+                    className={cn('block h-[14px] w-[10px] overflow-hidden rounded-[2px] border', st === 'played' ? 'border-brass-400 bg-brass-400' : st === 'current' ? 'border-brass-400 shadow-[0_0_6px_rgba(221,190,126,.8)]' : 'border-brass-700/60')}
+                  >
+                    {st !== 'played' && <img src="/card-back.webp" alt="" className={cn('h-full w-full object-cover', st === 'next' && 'opacity-40')} />}
+                  </motion.span>
+                ))}
+              </span>
+            )}
+            {mine && verb && <span className="shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-brass-400">{t(VERB_LABEL[verb])}</span>}
+            <span className={cn('min-w-0 flex-1 truncate font-fell text-[13px] leading-none', theirs && 'text-cream-100/85')} title={summaryFull ?? undefined}>
+              {mine && summary ? <span className="text-cream-100/90">{summary}</span> : sentence}
+            </span>
+          </div>
+
+          {mine && (
+            <div className="flex shrink-0 items-center gap-1.5 pr-1.5">
+              {cost && (
+                <motion.span
+                  key={`${cost.total}:${cost.after}`}
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                  className={cn('flex items-center gap-1 whitespace-nowrap font-mono text-[11px]', cost.after < 0 ? 'text-rust-500 brightness-150' : 'text-cream-100/90')}
+                  title={t('game.hand.costTip')}
+                >
+                  <span className="font-semibold">{t('game.hand.total', { n: cost.total })}</span>
+                  <span className="text-cream-100/35">·</span>
+                  <span className={cost.after < 0 ? '' : 'text-cream-100/60'}>{t('game.hand.left', { n: cost.after })}</span>
                 </motion.span>
               )}
-              <span className={cn('truncate font-fell', theirs ? 'text-[12.5px] text-cream-100/85' : 'text-[13.5px]')}>{sentence}</span>
-            </div>
-          </div>
-        </div>
-        {/* the second row, on the reader's turn only, always there: the note
-            of the action being prepared, its price, and the two buttons in
-            the same place whatever the step */}
-        {mine && (
-          <div className="relative flex h-[34px] min-w-0 items-center gap-2.5 border-t border-brass-700/40 px-3">
-            {verb ? (
-              <span className="shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-brass-400">{t(VERB_LABEL[verb])}</span>
-            ) : (
-              <span className="shrink-0 rounded-sm border border-brass-700/30 px-1.5 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-cream-100/30">{t('game.topbar.noteEmpty')}</span>
-            )}
-            <span className={cn('line-clamp-1 min-w-0 flex-1 font-fell text-[13px] leading-snug', summary ? 'text-cream-100/90' : 'text-cream-100/35 italic')} title={summaryFull ?? undefined}>
-              {summary ?? (card ? cardLabel(card) : t('game.topbar.noteWaits'))}
-            </span>
-            {/* the price, on a brass tag: what it costs, what is left; red when the purse falls short */}
-            {cost && (
-              <motion.span
-                key={`${cost.total}:${cost.after}`}
-                initial={{ scale: 0.9 }}
-                animate={{ scale: 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                className={cn('plaque-brass flex shrink-0 items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px]', cost.after < 0 ? '!text-rust-500 brightness-150 ring-1 ring-rust-500/70' : 'text-cream-100')}
-                title={t('game.hand.costTip')}
-              >
-                <span className="font-semibold">{t('game.hand.total', { n: cost.total })}</span>
-                <span className="text-cream-100/40">·</span>
-                <span className={cost.after < 0 ? '' : 'text-cream-100/75'}>{t('game.hand.left', { n: cost.after })}</span>
-              </motion.span>
-            )}
-            {stage === 'verb' && (
-              <button type="button" onClick={() => setVerb('pass')} className="btn-ledger !min-h-[30px] !px-3 !py-1 text-xs" title={t('game.topbar.passTip')}>
-                {t('game.topbar.pass')}
+              {stage === 'verb' && (
+                <button type="button" onClick={() => setVerb('pass')} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]" title={t('game.topbar.passTip')}>
+                  {t('game.topbar.pass')}
+                </button>
+              )}
+              <button type="button" onClick={cancel} disabled={stage === 'card' && !preparing} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-30" title={`${t('game.topbar.cancel')} — Esc`}>
+                {t('game.topbar.cancel')}
               </button>
-            )}
-            <button type="button" onClick={cancel} disabled={stage === 'card' && !preparing} className="btn-ledger !min-h-[30px] !px-3 !py-1 text-xs disabled:cursor-not-allowed disabled:opacity-35">
-              {t('game.topbar.cancel')} <kbd className="ml-1 font-mono text-[9px] opacity-60">Esc</kbd>
-            </button>
-            <button type="button" onClick={confirm} disabled={stage !== 'ready'} className="btn-strike !min-h-[30px] !px-4 !py-1 text-xs disabled:cursor-not-allowed disabled:opacity-35">
-              {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} <kbd className="ml-1 font-mono text-[9px] opacity-60">↵</kbd>
-            </button>
-          </div>
-        )}
-        {aidNote && <p className="truncate border-t border-brass-700/30 px-3 py-1 font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
+              <button type="button" onClick={confirm} disabled={stage !== 'ready'} className="btn-strike !min-h-[26px] !px-3 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-30" title={`${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵`}>
+                {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} <kbd className="ml-1 font-mono text-[9px] opacity-60">↵</kbd>
+              </button>
+            </div>
+          )}
+        </div>
+        {aidNote && <p className="truncate border-t border-brass-700/30 px-3 py-0.5 font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
         {/* the candle burns along the bottom edge, by itself */}
         <Candle candle={candle} total={candleTotal} />
       </motion.div>
