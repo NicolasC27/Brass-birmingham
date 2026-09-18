@@ -8,6 +8,18 @@ du plateau adopte un langage « console d'ingénieur » — hairlines, labels en
 capitales espacées, chiffres tabulaires — pour que la densité d'information reste
 instantanément lisible.
 
+## Le plateau : une carte gravée, pas une peinture
+La surface du plateau est une carte de comté de la fin du XVIIIe, gravure sur cuivre,
+encre sépia sur papier vergé crème. Canaux en deux traits avec un lavis vert-de-gris,
+futurs rails en tirets d'arpenteur, bourgs en amas de petits blocs, bassins marchands
+en anneau de pierre ; lignes de forme et petits arbres gravés seulement là où il n'y a
+ni ville ni lien. L'ère rail est la même feuille jaunie et salie de suie, les rails en
+échelle noir et blanc. Presque tout est vide et calme : l'œil va aux tuiles, qui sont
+la chose la plus riche sur la table. Les peintures vues d'avion (Midjourney) sont
+abandonnées comme fond par défaut : trop de détail sous les tuiles, fatigue visuelle.
+La carte est dessinée depuis la géométrie (`tools/assets/map/compose-engraved.sh`),
+donc reproductible.
+
 ## Palette (dérivée des références, température chaude constante)
 - Fond table / feutre : `#191715` (charbon), panneaux `#2A2520` (olive-charbon)
 - Vert bouteille : `#2F3D29`, `#384732` (zones de plateau, tuiles ère rail)

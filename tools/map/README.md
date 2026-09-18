@@ -49,3 +49,17 @@ The prompt that worked asked for the countryside alone. Every attempt that
 named villages or mist got sprawling golden towns and cumulus clouds
 instead; the compositor draws both from the geometry, so the painting
 should carry neither.
+
+## The engraved map
+
+The board's default ground is no painting at all: a period engraved map,
+drawn from the geometry by `tools/assets/map/compose-engraved.sh <geo.json>`
+(the draw lists come from `tools/map/engrave.py`). A laid cream sheet with
+the plate mark at the world's edge; in sepia ink, canal beds with a towpath,
+the future rails as dashed survey lines, village blocks, merchant basins;
+form lines and small engraved trees on the free land only, kept clear of
+every town and link so nothing fights the live tiles. The Rail Era is the
+same sheet yellowed and sooted, the rails as black-and-white ladders.
+It writes `map-engraved-canal.webp` and `map-engraved-rail.webp`, and it is
+deterministic: same geometry, same seeds, same sheet. The paintings above
+stay as the "etched" and "painted" board settings.
