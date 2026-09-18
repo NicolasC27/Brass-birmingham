@@ -462,7 +462,7 @@ const fr: typeof engame = {
       scout: 'prend les deux jokers',
       pass: 'passe',
       passCard: 'passe et défausse une carte',
-      flip: '{industry} N{level}',
+      flip: '{industry} niv. {level}',
       sellOff: '{industry} N{level} cédée',
       short: 'manque {amount} £ — perd {amount} PV',
     },
@@ -636,7 +636,9 @@ const fr: typeof engame = {
     dismiss: 'Fermer',
   },
   flip: {
-    title: '{name} · {what} se retourne',
+    title: '{what} se retourne',
+    detail: '{name} · {why} · revenu +{income}',
+    why: { empties: 'vidée', barrel: 'dernier baril versé', market: 'vente au marché', merchant: 'vente à {merchant}' },
   },
   ledger: {
     aria: 'Le Registre',

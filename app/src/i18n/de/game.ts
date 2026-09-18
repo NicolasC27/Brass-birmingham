@@ -636,7 +636,9 @@ const game: typeof engame = {
     dismiss: 'Schließen',
   },
   flip: {
-    title: '{name} · {what} dreht sich um',
+    title: '{what} dreht sich um',
+    detail: '{name} · {why} · Einkommen +{income}',
+    why: { empties: 'geleert', barrel: 'letztes Fass ausgeschenkt', market: 'alles an den Markt verkauft', merchant: 'an {merchant} verkauft' },
   },
   ledger: {
     aria: 'Das Register',

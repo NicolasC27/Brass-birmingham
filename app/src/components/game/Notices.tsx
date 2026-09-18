@@ -77,8 +77,10 @@ export default function Notices() {
       const items: Note[] = [];
       for (const e of fresh) {
         if (e.key === 'flip') {
-          const { head, detail } = ledgerParts(e, t);
-          items.push({ id: `f${e.id}`, side: e.player === me ? 'mine' : 'others', kind: 'flip', owner: e.player!, industry: String(e.vars?.industry ?? ''), title: t('game.flip.title', { name: players[e.player!].name, what: head }), detail });
+          /* the works in the title, the owner and the reason under it */
+          const { head } = ledgerParts(e, t);
+          const why = t(`game.flip.why.${String(e.vars?.why ?? 'empties')}`, { merchant: String(e.vars?.merchant ?? '') });
+          items.push({ id: `f${e.id}`, side: e.player === me ? 'mine' : 'others', kind: 'flip', owner: e.player!, industry: String(e.vars?.industry ?? ''), title: t('game.flip.title', { what: head }), detail: t('game.flip.detail', { name: players[e.player!].name, why, income: Number(e.vars?.income ?? 0) }) });
         }
         /* a pinned town: whatever another player does there is reported */
         if (e.player !== me && e.region && pins[e.region] !== undefined && (e.key === 'build' || e.key === 'sell' || e.key === 'network' || e.key === 'flip')) {
@@ -133,19 +135,19 @@ export default function Notices() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: -8, scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
-        className="plaque pointer-events-auto relative flex items-center gap-3 rounded-lg py-2 pl-2 pr-8"
-        style={{ boxShadow: `0 0 0 1px ${accent}66, 0 0 22px ${accent}44, 0 10px 28px rgba(0,0,0,.45)` }}
+        className="plaque pointer-events-auto relative flex items-center gap-3 rounded-lg border border-cream-100/15 py-2 pl-2 pr-8"
+        style={{ boxShadow: '0 3px 8px rgba(0,0,0,.35), 0 12px 28px rgba(0,0,0,.35)' }}
         role="status"
       >
-        <span aria-hidden className="absolute inset-y-0 left-0 w-[4px] rounded-l-lg" style={{ background: accent }} />
+        <span aria-hidden className="absolute inset-y-0 left-0 w-[3px] rounded-l-lg" style={{ background: accent }} />
         {f.industry && (
           <span className="ml-1 h-11 w-11 shrink-0 overflow-hidden rounded-md" style={{ boxShadow: `0 0 0 1.5px ${color}` }}>
             <img src={tileFaceUrl(f.industry as never, tileArt, game.players[f.owner]?.color ?? 'brass')} alt="" className="h-full w-full object-cover" />
           </span>
         )}
         <span className="flex min-w-0 flex-col leading-tight">
-          <span className={cn('font-fell text-[14px] tracking-wide', f.kind === 'beer' ? 'text-rust-500 brightness-150' : 'text-cream-100')}>{f.title}</span>
-          <span className="font-mono text-[10.5px] text-bottle-600 brightness-150">{f.detail}</span>
+          <span className={cn('font-fell text-[14.5px] tracking-wide', f.kind === 'beer' ? 'text-rust-500 brightness-150' : 'text-cream-100')}>{f.title}</span>
+          <span className="font-sans text-[11px] tracking-wide text-cream-100/70">{f.detail}</span>
         </span>
         <button type="button" onClick={() => dismiss(f.id)} aria-label={t('game.notice.dismiss')} className="absolute right-1.5 top-1.5 rounded-full p-0.5 text-cream-100/50 hover:text-brass-400">
           <X className="h-3.5 w-3.5" />

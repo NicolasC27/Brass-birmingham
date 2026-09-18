@@ -634,7 +634,9 @@ const game = {
     dismiss: 'Dismiss',
   },
   flip: {
-    title: '{name} · {what} flips',
+    title: '{what} flips',
+    detail: '{name} · {why} · income +{income}',
+    why: { empties: 'emptied', barrel: 'last barrel poured', market: 'sold out to the market', merchant: 'sold to {merchant}' },
   },
   ledger: {
     aria: 'The Ledger',

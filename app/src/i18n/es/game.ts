@@ -462,7 +462,7 @@ const game: typeof engame = {
       scout: 'toma los dos comodines',
       pass: 'pasa',
       passCard: 'pasa y descarta una carta',
-      flip: '{industry} N{level}',
+      flip: '{industry} niv. {level}',
       sellOff: '{industry} N{level} liquidada',
       short: 'faltan {amount} £ — pierde {amount} PV',
     },
@@ -636,7 +636,9 @@ const game: typeof engame = {
     dismiss: 'Cerrar',
   },
   flip: {
-    title: '{name} · {what} se voltea',
+    title: '{what} se voltea',
+    detail: '{name} · {why} · ingresos +{income}',
+    why: { empties: 'vaciado', barrel: 'último barril servido', market: 'todo vendido al mercado', merchant: 'vendido a {merchant}' },
   },
   ledger: {
     aria: 'El Registro',
