@@ -310,6 +310,15 @@ describe('the beer of a double rail', () => {
     /* named, the plan drinks there; a name outside the list is ignored */
     expect(doubleLinkPlan(s, me, first, second.link, 'derby:0').beer[0]).toMatchObject({ kind: 'brewery', town: 'derby' });
     expect(doubleLinkPlan(s, me, first, second.link, 'nowhere:0').beer).toEqual(plan.beer);
+    /* the second need not touch the first: Stone is mine through its brewery, so Stoke–Stone will do
+       (with coal of its own to hand: Stone and Birmingham are not linked); Stoke–Leek touches nothing */
+    s.tiles['stone:1'] = { owner: other, industry: 'coal', level: 1, flipped: false, cubes: 3 };
+    const viaStone = all.find((t) => t.link.id === 'stoke--stone')!;
+    expect(doubleLinkPlan(s, me, first, viaStone.link)).toMatchObject({ valid: true });
+    delete s.tiles['stone:1'];
+    const nowhere = all.find((t) => t.link.id === 'stoke--leek')!;
+    expect(doubleLinkPlan(s, me, first, nowhere.link)).toMatchObject({ valid: false, reason: 'The second link must touch your network' });
+    expect(applyAction(s, me, { kind: 'network', card: 'wild-1', link: first.link.id, second: 'stoke--leek' }).state).toBeNull();
     /* played, the named brewery loses its last barrel and flips */
     const r = applyAction(s, me, { kind: 'network', card: 'wild-1', link: first.link.id, second: second.link.id, beerFrom: 'derby:0' });
     expect(r.state).not.toBeNull();

@@ -520,7 +520,9 @@ export const useGame = create<GameStore>((set, get) => ({
         set({ linkPick: null, secondLinkPick: null, linkBeer: null });
         return;
       }
-      const touches = [first.a, first.b].includes(t.link.a) || [first.a, first.b].includes(t.link.b);
+      /* the second rail: one the network already reaches, or one the first
+         link brings within reach — the two need not touch each other */
+      const touches = t.valid || [first.a, first.b].includes(t.link.a) || [first.a, first.b].includes(t.link.b);
       if (touches) {
         set({ secondLinkPick: t, linkBeer: null });
       } else {

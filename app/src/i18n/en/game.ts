@@ -520,6 +520,7 @@ const game = {
     'Can only overbuild with a higher level': 'Can only overbuild with a higher level',
     'Canal Era: one tile per location': 'Canal Era: one tile per location',
     'No iron available anywhere': 'No iron available anywhere',
+    'The second link must touch your network': 'The second link must touch your network',
     'Link must touch your network': 'Link must touch your network',
     'Double links are a Rail Era option': 'Double links are a Rail Era option',
     'No connected coal for the second link': 'No connected coal for the second link',

@@ -522,6 +522,7 @@ const game: typeof engame = {
     'Can only overbuild with a higher level': 'Solo se sobreconstruye con un nivel superior',
     'Canal Era: one tile per location': 'Era del canal: una loseta por lugar',
     'No iron available anywhere': 'No hay hierro disponible en ninguna parte',
+    'The second link must touch your network': 'El segundo enlace debe tocar tu red',
     'Link must touch your network': 'La conexión debe tocar tu red',
     'Double links are a Rail Era option': 'La conexión doble es una opción de la era del ferrocarril',
     'No connected coal for the second link': 'Sin carbón conectado para la segunda conexión',

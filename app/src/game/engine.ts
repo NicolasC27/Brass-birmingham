@@ -555,7 +555,7 @@ export interface DoubleLinkPlan {
   reason?: string;
 }
 
-/** the rail-era double: second link touching the first, £15 total + 1 coal each + 1 beer from a brewery */
+/** the rail-era double: a second link touching the network once the first is laid, £15 total + 1 coal each + 1 beer from a brewery */
 /** the breweries a double rail may drink from: the player's own anywhere,
  *  another's when the second link, once laid, connects to it */
 export function beerSources(s: GameState, playerIdx: number, first: LinkDef, second: LinkDef): { key: string; town: string; slot: number; owner: number; cubes: number; own: boolean }[] {
@@ -576,9 +576,17 @@ export function doubleLinkPlan(s: GameState, playerIdx: number, first: LinkTarge
   /* the brewery the player named, when it is one the rules allow */
   const named = beerFrom ? beerSources(s, playerIdx, first.link, second).find((b) => b.key === beerFrom) : undefined;
   if (named) beer = { sources: [{ kind: 'brewery', town: named.town, slot: named.slot }], shortage: 0 };
+  /* the second link must be a free rail of this era, touching the network
+     as it stands once the first is laid — the first's own ends count, but
+     the two need not touch each other */
+  const nt = networkTowns(s, playerIdx);
+  const ends = new Set([first.link.a, first.link.b, ...(first.link.alsoConnects ? [first.link.alsoConnects] : [])]);
+  const touches = (id: string) => nt.has(id) || ends.has(id);
+  const placeable = second.id !== first.link.id && eraOk(second, s.era) && !s.links[second.id] && (touches(second.a) || touches(second.b) || (!!second.alsoConnects && touches(second.alsoConnects)));
   const total = COSTS.doubleRail + first.coalPlan.totalCost + coal2.totalCost;
   const out: DoubleLinkPlan = { coal2, beer: beer.sources, total, valid: true };
   if (s.era !== 'rail') { out.valid = false; out.reason = 'Double links are a Rail Era option'; }
+  else if (!placeable) { out.valid = false; out.reason = 'The second link must touch your network'; }
   else if (coal2.shortage > 0) { out.valid = false; out.reason = 'No connected coal for the second link'; }
   else if (beer.shortage > 0) { out.valid = false; out.reason = 'Needs 1 beer from a brewery (yours anywhere, or one connected to the second link)'; }
   else if (total > p.money) { out.valid = false; out.reason = `Needs £${total} — you hold £${p.money}`; }
