@@ -17,8 +17,8 @@ INK='rgba(74,58,40'
 
 # 1. the sheet: laid paper, a soft mottle, foxing, the plate mark at the world's edge
 magick -size ${FW}x${FH} xc:'#E4D7B5' \
-  \( -size ${FW}x${FH} plasma:fractal -blur 0x0.6 -colorspace gray -auto-level +level 88%,100% \) -compose multiply -composite \
-  \( -size $((FW/8))x$((FH/8)) plasma:fractal -resize 800% -blur 0x40 -colorspace gray -auto-level +level 93%,100% \) -compose multiply -composite \
+  \( -seed 11 -size ${FW}x${FH} plasma:fractal -blur 0x0.6 -colorspace gray -auto-level +level 88%,100% \) -compose multiply -composite \
+  \( -seed 12 -size $((FW/8))x$((FH/8)) plasma:fractal -resize 800% -blur 0x40 -colorspace gray -auto-level +level 93%,100% \) -compose multiply -composite \
   "$T/paper.png"
 # the margin beyond the board a shade darker, like the mount, and the plate mark
 magick -size ${WW}x${WH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x2 "$T/plate.png"
@@ -54,7 +54,7 @@ magick "$T/sheet.png" "$T/hills.png" -compose over -composite "$T/woods.png" -co
 
 # 5. rail era: the same sheet, older and dirtier — foxed, smoke-darkened at
 #    the edges, a soot haze and coal dust over the big towns; the canals
-#    fade to second rank, the survey lines become rails
+#    are gone from the sheet, the survey lines have become rails
 magick -size ${FW}x${FH} xc:none -fill none \
   -stroke 'rgba(30,24,18,0.80)' -strokewidth 7 -draw "stroke-dasharray 1.4 5.6 $(D rail.txt)" \
   -stroke 'rgba(30,24,18,0.92)' -strokewidth 4.6 -draw "$(D rail.txt)" \
@@ -63,11 +63,10 @@ magick -size ${FW}x${FH} xc:none -fill none \
 magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(40,32,26,0.16)' -draw "$(D soot.txt)" -channel RGBA -blur 0x100 +channel "$T/soot.png"
 magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(36,28,20,0.32)' -draw "$(D dust.txt)" "$T/dust.png"
 #    the old sheet: a touch of ochre, faint foxing, the edges smoke-darkened
-magick -size $((FW/8))x$((FH/8)) plasma:fractal -resize 800% -blur 0x12 -colorspace gray -auto-level -level 60%,100% +level 91%,100% "$T/foxing.png"
+magick -seed 13 -size $((FW/8))x$((FH/8)) plasma:fractal -resize 800% -blur 0x12 -colorspace gray -auto-level -level 60%,100% +level 91%,100% "$T/foxing.png"
 magick -size ${FW}x${FH} radial-gradient:white-'rgb(196,186,166)' -blur 0x60 "$T/edge.png"
 magick "$T/sheet.png" -fill '#C8AC74' -colorize 14 -modulate 97,94 "$T/foxing.png" -compose multiply -composite "$T/edge.png" -compose multiply -composite "$T/sheet-rail.png"
 magick "$T/sheet-rail.png" "$T/hills.png" -compose over -composite "$T/woods.png" -compose over -composite \
-  \( "$T/canals.png" -channel A -evaluate multiply 0.55 +channel \) -compose over -composite \
   "$T/basins.png" -compose over -composite \
   "$T/soot.png" -compose multiply -composite \
   "$T/rails.png" -compose over -composite \
