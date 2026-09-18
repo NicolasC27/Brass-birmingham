@@ -26,6 +26,8 @@ export class Camera {
    *  and the fit; the wheel and the hand keep the chase */
   private fly: { from: View; to: View; t0: number; ms: number } | null = null;
   private drag: { sx: number; sy: number; lx: number; ly: number; lt: number; moved: boolean } | null = null;
+  /** two fingers on the glass: their last spread and midpoint, in frame pixels */
+  private pinch: { d: number; mx: number; my: number } | null = null;
   private lastCommit = 0;
   private readonly getSize: () => { w: number; h: number };
 
@@ -153,6 +155,38 @@ export class Camera {
       this.gliding = true;
     }
     this.drag = null;
+  }
+
+  /* ----------------------------- touch ----------------------------- */
+
+  /** two fingers land: the hand's drag is over, the spread is the measure */
+  pinchStart(a: { x: number; y: number }, b: { x: number; y: number }): void {
+    this.lastManual = Date.now();
+    this.gliding = false;
+    this.interrupt();
+    this.drag = null;
+    this.pinch = { d: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+  }
+
+  /** the fingers move: zoom about their midpoint by the change of spread, and follow the midpoint */
+  pinchMove(a: { x: number; y: number }, b: { x: number; y: number }): void {
+    if (!this.pinch) return;
+    const { w, h } = this.getSize();
+    const d = Math.max(1, Math.hypot(b.x - a.x, b.y - a.y));
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    const zoomed = zoomAt(this.view, mx, my, d / this.pinch.d, w, h);
+    this.view = clampView({ k: zoomed.k, x: zoomed.x + (mx - this.pinch.mx), y: zoomed.y + (my - this.pinch.my) }, w, h);
+    this.target = { ...this.view };
+    this.pinch = { d, mx, my };
+  }
+
+  pinching(): boolean {
+    return this.pinch !== null;
+  }
+
+  pinchEnd(): void {
+    this.pinch = null;
   }
 
   /** screen-px point → zoom in/out around it */

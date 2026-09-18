@@ -1008,17 +1008,49 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       el.addEventListener('wheel', onWheel, { passive: false });
       cleanups.push(() => el.removeEventListener('wheel', onWheel));
 
+      /* the fingers on the glass, by pointer id: one drags, two pinch */
+      const fingers = new Map<number, { x: number; y: number }>();
+      const pair = (): [{ x: number; y: number }, { x: number; y: number }] | null => {
+        if (fingers.size !== 2) return null;
+        const [a, b] = fingers.values();
+        return [a, b];
+      };
+      const local = (e: PointerEvent) => {
+        const r = el.getBoundingClientRect();
+        return { x: e.clientX - r.left, y: e.clientY - r.top };
+      };
       const onDown = (e: PointerEvent) => {
         if (fromOverlay(e)) return; // let overlay buttons receive their click
-        cam.pointerDown(e);
-        suppressClick.current = false;
+        if (e.pointerType === 'touch') fingers.set(e.pointerId, local(e));
+        const two = pair();
+        if (two) {
+          cam.pinchStart(two[0], two[1]);
+          suppressClick.current = true;
+        } else {
+          cam.pointerDown(e);
+          suppressClick.current = false;
+        }
         el.setPointerCapture(e.pointerId);
       };
       const onMove = (e: PointerEvent) => {
-        if (cam.pointerMove(e)) suppressClick.current = true;
+        if (fingers.has(e.pointerId)) fingers.set(e.pointerId, local(e));
+        const two = pair();
+        if (two && cam.pinching()) {
+          cam.pinchMove(two[0], two[1]);
+          suppressClick.current = true;
+        } else if (cam.pointerMove(e)) suppressClick.current = true;
       };
       const onUp = (e: PointerEvent) => {
-        cam.pointerUp();
+        fingers.delete(e.pointerId);
+        if (cam.pinching()) {
+          cam.pinchEnd();
+          /* one finger stays: it drags on from where it is, without a click */
+          const [rest] = fingers.values();
+          if (rest) {
+            const r = el.getBoundingClientRect();
+            cam.pointerDown({ clientX: rest.x + r.left, clientY: rest.y + r.top } as PointerEvent);
+          }
+        } else cam.pointerUp();
         try {
           el.releasePointerCapture(e.pointerId);
         } catch {
