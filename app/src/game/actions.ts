@@ -20,7 +20,7 @@ export type GameAction =
   | { kind: 'build'; card: string; town: string; slot: number; industry: IndustryType; /** the iron works to draw from (its key) or 'market'; nothing for the engine's nearest */ ironFrom?: string | null }
   | { kind: 'network'; card: string; link: string; second?: string; /** for a double rail, the brewery to drink from (its key); nothing for the engine's choice */ beerFrom?: string | null }
   | { kind: 'develop'; card: string; industries: IndustryType[]; /** per industry, the iron works to draw from (its key), 'market', or nothing for the engine's choice */ ironFrom?: (string | null)[] }
-  | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string }[] }
+  | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string; /** per beer needed, the merchant's barrel ('merchant') or a brewery (its key); nothing for the engine's choice */ beerFrom?: (string | null)[] }[] }
   | { kind: 'loan'; card?: string }
   | { kind: 'scout'; cards: string[] }
   | { kind: 'pass'; card?: string; reason?: string }
@@ -110,7 +110,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       const list = sellTargets(mut, playerIdx);
       const picks = action.sales.map((x) => list.find((t) => t.town === x.town && t.slot === x.slot && t.merchant === x.merchant && t.valid));
       if (picks.some((t) => !t)) return fail('A sale is not possible');
-      ok = applySell(mut, playerIdx, card, picks as NonNullable<(typeof picks)[number]>[]);
+      ok = applySell(mut, playerIdx, card, picks as NonNullable<(typeof picks)[number]>[], action.sales.map((x) => x.beerFrom ?? []));
       break;
     }
     case 'loan':

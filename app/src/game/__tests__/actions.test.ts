@@ -3,7 +3,7 @@ import { applyAction, botAction, fallbackAction, humanActionIndices, replay, set
 import type { GameAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { INDUSTRIES } from '../data';
-import { beerSources, buildTargets, doubleLinkPlan, linkTargets, newGame, serialize, withIron } from '../engine';
+import { beerSources, buildTargets, doubleLinkPlan, linkTargets, newGame, saleBeerSources, sellTargets, serialize, withIron } from '../engine';
 import type { GameState, SetupPayload } from '../types';
 
 /* ------------------------------------------------------------------ */
@@ -325,5 +325,38 @@ describe('the beer of a double rail', () => {
     expect(r.state!.tiles['derby:0']).toMatchObject({ cubes: 0, flipped: true });
     expect(r.state!.tiles['stone:0'].cubes).toBe(2);
     expect(r.state!.links[second.link.id]).toMatchObject({ owner: me });
+  });
+});
+
+describe('the merchant and the beer of a sale', () => {
+  it('sells where the player says and drinks what they name, the merchant barrel by default', () => {
+    const s = newGame(setup(4), 42);
+    const me = s.current;
+    /* a cotton mill in Redditch, canals to Oxford and Gloucester, both taking cotton, a barrel each; a brewery of mine far away */
+    s.tiles['redditch:0'] = { owner: me, industry: 'cotton', level: 1, flipped: false, cubes: 0 };
+    s.links['redditch--m-oxford'] = { owner: me, era: 'canal' };
+    s.links['redditch--m-gloucester'] = { owner: me, era: 'canal' };
+    s.merchantTiles['m-oxford'] = ['cotton'];
+    s.merchantTiles['m-gloucester'] = ['all'];
+    s.merchantBeer['m-oxford'] = 1;
+    s.merchantBeer['m-gloucester'] = 1;
+    s.tiles['stone:0'] = { owner: me, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    s.players[me].hand = [{ id: 'any-1', kind: 'wild-location' }];
+    const offers = sellTargets(s, me).filter((t) => t.valid && t.town === 'redditch');
+    expect(offers.map((t) => t.merchant).sort()).toEqual(['m-gloucester', 'm-oxford']);
+    /* what the sale may drink: the merchant's barrel first, then my brewery */
+    expect(saleBeerSources(s, me, 'redditch', 'm-gloucester').map((b) => b.key)).toEqual(['merchant', 'stone:0']);
+    /* Gloucester, on my own beer: the barrel and its bonus stay for another day */
+    const kept = applyAction(s, me, { kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-gloucester', beerFrom: ['stone:0'] }] });
+    expect(kept.state).not.toBeNull();
+    expect(kept.state!.tiles['redditch:0'].flipped).toBe(true);
+    expect(kept.state!.tiles['stone:0']).toMatchObject({ cubes: 0, flipped: true });
+    expect(kept.state!.merchantBeer['m-gloucester']).toBe(1);
+    expect(kept.state!.merchantBonusTaken['m-gloucester']).toBeFalsy();
+    /* nothing named: the barrel is drunk and the bonus taken */
+    const bonus = applyAction(s, me, { kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] });
+    expect(bonus.state!.merchantBeer['m-oxford']).toBe(0);
+    expect(bonus.state!.merchantBonusTaken['m-oxford']).toBe(true);
+    expect(bonus.state!.tiles['stone:0'].cubes).toBe(1);
   });
 });

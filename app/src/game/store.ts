@@ -74,6 +74,8 @@ interface GameStore {
   buildIron: string | null;
   /** the brewery a double rail drinks from (its key), or null for the engine's choice */
   linkBeer: string | null;
+  /** per picked sale (by tile key), the beer named for each barrel it needs */
+  sellBeer: Record<string, (string | null)[]>;
   scoutPick: string[];
   hoverKey: string | null;
   shake: Shake | null;
@@ -200,6 +202,9 @@ interface GameStore {
   setDevelopIron: (k: number, from: string | null) => void;
   setBuildIron: (from: string | null) => void;
   setLinkBeer: (from: string | null) => void;
+  /** sell the picked tile to another merchant that takes it */
+  setSellMerchant: (key: string, merchant: string) => void;
+  setSellBeer: (key: string, k: number, from: string | null) => void;
   toggleScout: (cardId: string) => void;
   setHover: (key: string | null) => void;
   reject: (key: string, reason: string) => void;
@@ -308,6 +313,7 @@ const clearSelection = {
   developIron: [] as (string | null)[],
   buildIron: null as string | null,
   linkBeer: null as string | null,
+  sellBeer: {} as Record<string, (string | null)[]>,
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
@@ -485,10 +491,10 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     if (st.selectedCardId === id) {
-      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null });
+      set({ selectedCardId: null, verb: null, buildPick: null, linkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, sellBeer: {} });
       return;
     }
-    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, shake: null });
+    set({ selectedCardId: id, verb: null, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, sellBeer: {}, shake: null });
   },
 
   setVerb: (v) => {
@@ -502,7 +508,7 @@ export const useGame = create<GameStore>((set, get) => ({
       set({ ...clearSelection, verb: 'scout' });
       return;
     }
-    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, shake: null });
+    set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, sellBeer: {}, shake: null });
   },
 
   pickBuild: (t) => set((st) => ({ buildPick: t, shake: null, buildIron: t && st.buildPick && tileKey(t.town, t.slot) === tileKey(st.buildPick.town, st.buildPick.slot) ? st.buildIron : null })),
@@ -542,7 +548,27 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     const same = (x: SellTarget) => x.town === t.town && x.slot === t.slot;
     const next = cur.some(same) ? cur.filter((x) => !same(x)) : [...cur, t];
-    set({ sellPick: next[next.length - 1] ?? null, sellPicks: next, shake: null });
+    const sellBeer = { ...get().sellBeer };
+    if (cur.some(same)) delete sellBeer[tileKey(t.town, t.slot)];
+    set({ sellPick: next[next.length - 1] ?? null, sellPicks: next, sellBeer, shake: null });
+  },
+  setSellMerchant: (key, merchant) => {
+    const st = get();
+    const g = st.planGame();
+    const actor = st.planActor();
+    if (!g || actor < 0) return;
+    const t = sellTargets(g, actor).find((x) => tileKey(x.town, x.slot) === key && x.merchant === merchant && x.valid);
+    if (!t) return;
+    const sellPicks = st.sellPicks.map((x) => (tileKey(x.town, x.slot) === key ? t : x));
+    /* another merchant: its barrel is not the one named before */
+    const sellBeer = { ...st.sellBeer };
+    delete sellBeer[key];
+    set({ sellPicks, sellPick: st.sellPick && tileKey(st.sellPick.town, st.sellPick.slot) === key ? t : st.sellPick, sellBeer });
+  },
+  setSellBeer: (key, k, from) => {
+    const cur = [...(get().sellBeer[key] ?? [])];
+    cur[k] = from;
+    set({ sellBeer: { ...get().sellBeer, [key]: cur } });
   },
 
   toggleDevelop: (ind) => {
@@ -798,7 +824,7 @@ export const useGame = create<GameStore>((set, get) => ({
         if (card && st.developPick.length > 0) action = { kind: 'develop', card: card.id, industries: st.developPick, ironFrom: st.developIron };
         break;
       case 'sell':
-        if (card && st.sellPicks.some((x) => x.valid)) action = { kind: 'sell', card: card.id, sales: st.sellPicks.filter((x) => x.valid).map((x) => ({ town: x.town, slot: x.slot, merchant: x.merchant })) };
+        if (card && st.sellPicks.some((x) => x.valid)) action = { kind: 'sell', card: card.id, sales: st.sellPicks.filter((x) => x.valid).map((x) => { const beer = st.sellBeer[tileKey(x.town, x.slot)]; return { town: x.town, slot: x.slot, merchant: x.merchant, ...(beer?.some(Boolean) ? { beerFrom: beer } : {}) }; }) };
         break;
       case 'scout':
         if (st.scoutPick.length === 3) action = { kind: 'scout', cards: st.scoutPick };

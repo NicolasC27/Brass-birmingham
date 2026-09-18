@@ -4,7 +4,8 @@ import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scal
 import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
-import { beerSources, buildTargets, ironSources } from '@/game/engine';
+import { beerSources, buildTargets, ironSources, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
+import { MERCHANT_BY_ID } from '@/game/data';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
 import { reasonText, tr, useT } from '@/i18n';
@@ -241,6 +242,9 @@ export default function HandDock() {
   const setBuildIron = useGame((s) => s.setBuildIron);
   const linkBeer = useGame((s) => s.linkBeer);
   const setLinkBeer = useGame((s) => s.setLinkBeer);
+  const sellBeer = useGame((s) => s.sellBeer);
+  const setSellBeer = useGame((s) => s.setSellBeer);
+  const setSellMerchant = useGame((s) => s.setSellMerchant);
   const addDevelop = useGame((s) => s.addDevelop);
   const dropDevelop = useGame((s) => s.dropDevelop);
   const setDevelopIron = useGame((s) => s.setDevelopIron);
@@ -661,6 +665,77 @@ export default function HandDock() {
                   );
                 })()}
                 <span className="font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.hand.linkBeerHint')}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* the sales: each picked tile goes to a merchant the reader names
+              among those that take it and are connected, and drinks the beer
+              they name — the merchant's barrel brings its bonus */}
+          <AnimatePresence>
+            {verb === 'sell' && canPlan && sellPicks.length > 0 && actor >= 0 && (
+              <motion.div
+                key="sell-choices"
+                initial={{ opacity: 0, x: -14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="paper flex max-h-[164px] shrink-0 flex-col gap-1.5 self-center overflow-y-auto rounded-md px-3 py-2"
+              >
+                {(() => {
+                  const all = sellTargets(planGame, actor);
+                  return sellPicks.map((pick) => {
+                    const key = tileKey(pick.town, pick.slot);
+                    const buyers = all.filter((x) => tileKey(x.town, x.slot) === key && x.valid);
+                    const need = INDUSTRIES[pick.tile.industry][pick.tile.level - 1].beerToSell;
+                    const sources = saleBeerSources(planGame, actor, pick.town, pick.merchant);
+                    const named = sellBeer[key] ?? [];
+                    return (
+                      <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[10px] text-ink-900/80">
+                        <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">
+                          {tr(`game.log.industry.${pick.tile.industry}`)} L{pick.tile.level} · {TOWN_BY_ID[pick.town]?.name ?? pick.town}
+                        </span>
+                        <span className="text-ink-900/45">→</span>
+                        <select
+                          value={pick.merchant}
+                          onChange={(e) => setSellMerchant(key, e.target.value)}
+                          aria-label={t('game.hand.sellTo')}
+                          title={t('game.hand.sellTo')}
+                          className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                        >
+                          {buyers.map((b) => (
+                            <option key={b.merchant} value={b.merchant}>
+                              {MERCHANT_BY_ID[b.merchant].name} · {t('board.merchant.bonusIs', { bonus: MERCHANT_BY_ID[b.merchant].bonusLabel })}
+                            </option>
+                          ))}
+                        </select>
+                        {Array.from({ length: need }, (_, k) => (
+                          <label key={k} className="flex items-center gap-1" title={t('game.hand.sellBeerHint')}>
+                            <img src={INDUSTRY_ICON.brewery} alt="" className="h-3.5 w-3.5" />
+                            <select
+                              value={named[k] ?? ''}
+                              onChange={(e) => setSellBeer(key, k, e.target.value || null)}
+                              aria-label={t('game.hand.linkBeer')}
+                              className="max-w-[190px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                            >
+                              <option value="">{t('game.hand.beerDefault')}</option>
+                              {sources.map((src) =>
+                                src.kind === 'merchant' ? (
+                                  <option key="merchant" value="merchant">
+                                    {t('game.hand.beerMerchant', { name: MERCHANT_BY_ID[pick.merchant].name })}
+                                  </option>
+                                ) : (
+                                  <option key={src.key} value={src.key}>
+                                    {t('game.hand.devIronWorks', { owner: planGame.players[src.owner!].name, town: TOWN_BY_ID[src.town!]?.name ?? src.town, cubes: src.cubes })}
+                                  </option>
+                                ),
+                              )}
+                            </select>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  });
+                })()}
+                <span className="font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.hand.sellBeerHint')}</span>
               </motion.div>
             )}
           </AnimatePresence>

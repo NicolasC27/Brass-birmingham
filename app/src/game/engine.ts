@@ -967,7 +967,44 @@ export function applyDevelop(s: GameState, playerIdx: number, card: Card, indust
 }
 
 /** sell one tile (beer plan recomputed against the live state) */
-function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
+/** the beer a sale at `town` through `merchantId` may drink: the merchant's own
+ *  barrel (its bonus with it), the player's breweries anywhere, another's
+ *  the tile is connected to */
+export function saleBeerSources(s: GameState, playerIdx: number, town: string, merchantId: string): { key: string; kind: 'merchant' | 'brewery'; town?: string; slot?: number; owner?: number; cubes: number }[] {
+  const out: ReturnType<typeof saleBeerSources> = [];
+  const barrel = s.merchantBeer[merchantId] ?? 0;
+  if (barrel > 0) out.push({ key: 'merchant', kind: 'merchant', cubes: barrel });
+  const reach = reachable(s, town, s.era, null);
+  for (const [key, t] of Object.entries(s.tiles)) {
+    if (t.industry !== 'brewery' || t.flipped || t.cubes <= 0) continue;
+    const at = key.split(':')[0];
+    if (t.owner !== playerIdx && !reach.has(at)) continue;
+    out.push({ key, kind: 'brewery', town: at, slot: Number(key.split(':')[1]), owner: t.owner, cubes: t.cubes });
+  }
+  return out.sort((a, b) => Number(b.kind === 'merchant') - Number(a.kind === 'merchant') || Number(b.owner === playerIdx) - Number(a.owner === playerIdx));
+}
+
+/** the beer plan of a sale with the sources the player named, each checked
+ *  against what the rules allow; whatever is left unnamed the engine fills */
+export function planSaleBeer(s: GameState, playerIdx: number, town: string, merchantId: string, needed: number, beerFrom: (string | null)[] = []): { sources: BeerSource[]; shortage: number } {
+  const allowed = new Map(saleBeerSources(s, playerIdx, town, merchantId).map((b) => [b.key, b]));
+  const reserved = new Map<string, number>();
+  const sources: BeerSource[] = [];
+  for (let k = 0; k < needed; k++) {
+    const name = beerFrom[k];
+    const b = name ? allowed.get(name) : undefined;
+    if (!b) continue;
+    const tag = b.kind === 'merchant' ? `beer:${merchantId}` : b.key;
+    if (b.cubes - (reserved.get(tag) ?? 0) <= 0) continue;
+    reserved.set(tag, (reserved.get(tag) ?? 0) + 1);
+    sources.push(b.kind === 'merchant' ? { kind: 'merchant', merchant: merchantId } : { kind: 'brewery', town: b.town, slot: b.slot });
+  }
+  if (sources.length >= needed) return { sources, shortage: 0 };
+  const rest = planBeer(s, playerIdx, town, merchantId, needed - sources.length, [], reserved);
+  return { sources: [...sources, ...rest.sources], shortage: rest.shortage };
+}
+
+function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (string | null)[] = []): boolean {
   const p = s.players[playerIdx];
   const key = tileKey(target.town, target.slot);
   const tile = s.tiles[key];
@@ -975,7 +1012,7 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
   const lv = INDUSTRIES[tile.industry][tile.level - 1];
   if (!merchantOpen(s, target.merchant) || !merchantDemand(s, target.merchant).includes(tile.industry)) return false;
   if (!reachable(s, target.town, s.era, null).has(target.merchant)) return false;
-  const beer = planBeer(s, playerIdx, target.town, target.merchant, lv.beerToSell);
+  const beer = planSaleBeer(s, playerIdx, target.town, target.merchant, lv.beerToSell, named);
   if (beer.shortage > 0) return false;
   const vpBefore = p.vp;
   const moneyBefore = p.money;
@@ -1010,10 +1047,12 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget): boolean {
 }
 
 /** Sell: one card, any number of tiles (each with its own beer) */
-export function applySell(s: GameState, playerIdx: number, card: Card, targets: SellTarget | SellTarget[]): boolean {
+export function applySell(s: GameState, playerIdx: number, card: Card, targets: SellTarget | SellTarget[], beerFrom: (string | null)[][] = []): boolean {
   const list = Array.isArray(targets) ? targets : [targets];
   let sold = 0;
-  for (const t of list) if (sellOne(s, playerIdx, t)) sold += 1;
+  list.forEach((t, i) => {
+    if (sellOne(s, playerIdx, t, beerFrom[i] ?? [])) sold += 1;
+  });
   if (!sold) return false;
   discardCard(s, s.players[playerIdx], card.id);
   return true;
