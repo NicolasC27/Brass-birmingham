@@ -267,7 +267,7 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
         <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-lg opacity-[0.05]" />
         {/* the first row: the era, the player, the sentence — a slim ribbon
             while another seat plays, the full plate on the reader's turn */}
-        <div className={cn('flex items-stretch', theirs ? 'h-[30px]' : 'h-[48px]')}>
+        <div className={cn('flex items-stretch', theirs ? 'h-[28px]' : 'h-[40px]')}>
           <Tooltip
             side="bottom"
             title={t('game.topbar.eraRoundTitle', { era: game.era === 'canal' ? t('game.topbar.eraCanal') : t('game.topbar.eraRail'), round: game.round, total })}
@@ -317,7 +317,7 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
             of the action being prepared, its price, and the two buttons in
             the same place whatever the step */}
         {mine && (
-          <div className="relative flex h-[42px] min-w-0 items-center gap-2.5 border-t border-brass-700/40 px-3">
+          <div className="relative flex h-[34px] min-w-0 items-center gap-2.5 border-t border-brass-700/40 px-3">
             {verb ? (
               <span className="shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-brass-400">{t(VERB_LABEL[verb])}</span>
             ) : (
