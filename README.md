@@ -73,7 +73,7 @@ app/server/          the table server: the register, the hall of tables, a table
 app/src-tauri/       the desktop shell: window, icons, packaging
 app/src/gl/          WebGL board: scene painting (paint.ts), camera, ambiance (traffic, smoke, mist)
 app/src/components/  HUD (tracks, hand dock, player rail, merchants on the minimap), rules codex, setup, results
-app/src/i18n/        French and English dictionaries
+app/src/i18n/        French, English, Spanish and German dictionaries
 app/public/          map paintings, tile art, icons
 brass/               rules dossier compiled from the rulebook, art direction, layout guide for map art
 research/            board geometry research

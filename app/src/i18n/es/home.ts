@@ -1,0 +1,98 @@
+import enHome from '../en/home';
+
+const es: typeof enHome = {
+  hero: {
+    ariaTitle: 'Pantalla de título de Brassworks',
+    wordmark: 'Brassworks',
+    dioramaAlt: 'Panorama grabado de un valle industrial de los Midlands al anochecer',
+    surveyAlt: 'El mapa pintado de los Midlands con una partida en marcha: canales trazados, fábricas colocadas, ventas cerradas',
+    eyebrow: 'Un juego industrial de los Midlands · 1770–1870',
+    tagline: 'Canales, carbón y hierro. Construye el imperio que construyó el mundo.',
+    quick: 'Jugar ahora',
+    desk: 'A mi oficina, {name}',
+    online: 'Inicia sesión y juega',
+    onlineNote: 'Abre una mesa, invita a tus amigos por su nombre, toca la campana. Tus partidas te esperan en la oficina.',
+    practice: 'Entrenar contra la máquina',
+    tutorial: '¿Nuevo aquí? Una primera partida guiada',
+    enterDesk: 'Intro para ir a la oficina',
+    quickNote: 'Tú contra {a} y {b}, dos rivales mecánicos. La mesa ya está puesta.',
+    quickNew: 'Empezar una partida rápida nueva',
+    resume: 'Continuar — {era}, ronda {round}',
+    eraCanal: 'Era del canal',
+    eraRail: 'Era del ferrocarril',
+    ctaSetup: 'Poner la mesa',
+    ctaOnline: 'Jugar en línea',
+    ctaRules: 'Las reglas',
+    enterPlay: 'Intro para jugar',
+    enterResume: 'Intro para continuar',
+    facts: {
+      players: '2–4 jugadores',
+      time: '45–90 minutos',
+      solo: 'Solo o en la misma pantalla',
+      online: 'Salas en línea',
+    },
+  },
+  triptych: {
+    aria: 'Contenido de la caja',
+    eyebrow: 'En la caja',
+    title: 'Lo que mueve el juego',
+    allRules: 'Leer las reglas →',
+    learnMore: 'Saber más →',
+    market: {
+      coal: 'Carbón',
+      iron: 'Hierro',
+      buy: 'Compra £3',
+    },
+    eras: {
+      canalAlt: 'Friso grabado de la era del canal: esclusas, barcazas y caminos de sirga',
+      railAlt: 'Friso grabado de la era del ferrocarril: locomotora, trinchera y postes de telégrafo',
+      canal: 'Era del canal',
+      rail: 'Era del ferrocarril',
+    },
+    map: {
+      aria: 'Fragmento de mapa: tres ciudades, un enlace de canal que se traza solo y una línea de suministro punteada hacia el mercado',
+      market: 'MERCADO',
+    },
+    rows: {
+      market: {
+        eyebrow: 'El mercado vivo',
+        title: 'Precios que respiran',
+        body: 'Cada cubo comprado desplaza el precio del carbón y del hierro para toda la mesa. Compra barato mientras las bandejas estén llenas.',
+      },
+      eras: {
+        eyebrow: 'Dos eras de industria',
+        title: 'De la sirga a la estación',
+        body: 'A mitad de partida, los canales ceden el paso al ferrocarril, y las fortunas se cuentan al final de cada era.',
+      },
+      supply: {
+        eyebrow: 'El suministro es estrategia',
+        title: 'El carbón debe llegar a la fábrica',
+        body: 'El carbón viaja por tu propia red, o sale caro en el mercado. Unas líneas fantasma muestran de dónde viene cada cubo.',
+      },
+    },
+  },
+  how: {
+    aria: 'Cómo se juega',
+    eyebrow: 'Cómo se juega',
+    title: 'Un turno, una carta, una acción',
+    rules: 'Leer las reglas →',
+    step: 'Paso {n}',
+    card: { title: 'Juega una carta', body: 'Una carta de lugar o de industria abre la acción: construir, red, desarrollar, vender, préstamo o explorar. Dos acciones por turno.' },
+    build: { title: 'Construye, conecta', body: 'Coloca tus fábricas en las ciudades, traza canales y luego vías férreas entre ellas. El carbón y el hierro viajan por tu red, o salen caros en el mercado.' },
+    sell: { title: 'Vende, puntúa', body: 'Una fábrica vendida se voltea: da puntos y sube tus ingresos. Dos eras, dos recuentos, y quien más puntos tenga gana.' },
+  },
+  footer: {
+    tagline: 'Canales, carbón y hierro. Construye el imperio que construyó el mundo.',
+    navAria: 'Pie de página',
+    gameEyebrow: 'El juego',
+    setTable: 'Pon la mesa',
+    board: 'El tablero',
+    rulesCodex: 'Códice de reglas',
+    bilan: 'El Balance',
+    colophonEyebrow: 'Colofón',
+    colophon1: 'Un prototipo homenaje hecho por aficionados — sin afiliación con Roxley Games.',
+    colophon2: 'Un prototipo homenaje inspirado en Brass: Birmingham — todas las ilustraciones son originales.',
+  },
+};
+
+export default es;

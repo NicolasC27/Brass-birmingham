@@ -1,7 +1,7 @@
 import { Bell, Briefcase, Coins, LayoutGrid, Moon, Play, Plus, Sun, User } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
-import { setLang, useLang, useT } from '@/i18n';
+import { LANGS, setLang, useLang, useT } from '@/i18n';
 import { useDesk, useSession } from '@/online/session';
 import { rankOf } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
@@ -217,7 +217,7 @@ function CompactFooter() {
         </Link>
         <span className="flex-1" />
         <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-1">
-          {(['fr', 'en'] as const).map((l) => (
+          {LANGS.map((l) => (
             <button
               key={l}
               type="button"

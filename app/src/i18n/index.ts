@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react';
 import { en } from './en';
 import { fr } from './fr';
+import { es } from './es';
+import { de } from './de';
 
 /* ------------------------------------------------------------------ */
 /* i18n — tiny dependency-free FR/EN store.                            */
@@ -11,7 +13,12 @@ import { fr } from './fr';
 /* the browser language (French first).                                */
 /* ------------------------------------------------------------------ */
 
-export type Lang = 'en' | 'fr';
+export const LANGS = ['fr', 'en', 'es', 'de'] as const;
+export type Lang = (typeof LANGS)[number];
+
+/** the BCP 47 tag for dates and figures in that language */
+export const localeOf = (l: string): string => (l === 'fr' ? 'fr-FR' : l === 'es' ? 'es-ES' : l === 'de' ? 'de-DE' : 'en-GB');
+import type { Dict } from './en';
 export type { Dict } from './en';
 
 const KEY = 'brassworks.lang';
@@ -19,11 +26,12 @@ const KEY = 'brassworks.lang';
 let lang: Lang = (() => {
   try {
     const saved = localStorage.getItem(KEY);
-    if (saved === 'en' || saved === 'fr') return saved;
+    if ((LANGS as readonly string[]).includes(saved ?? '')) return saved as Lang;
   } catch {
     /* private mode */
   }
-  return typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('fr') ? 'fr' : 'en';
+  const spoken = typeof navigator !== 'undefined' ? navigator.language.toLowerCase().slice(0, 2) : 'en';
+  return (LANGS as readonly string[]).includes(spoken) ? (spoken as Lang) : 'en';
 })();
 
 const listeners = new Set<() => void>();
@@ -60,6 +68,9 @@ export function useLang(): Lang {
 
 type AnyDict = Record<string, unknown>;
 
+const DICTS: Record<Lang, Dict> = { en, fr, es, de };
+const dictOf = (l: Lang): AnyDict => DICTS[l] as unknown as AnyDict;
+
 function lookup(dict: AnyDict, key: string): string | undefined {
   const v = key.split('.').reduce<unknown>((o, k) => (o as AnyDict | undefined)?.[k], dict);
   return typeof v === 'string' ? v : undefined;
@@ -75,7 +86,7 @@ function fmt(s: string, vars?: Record<string, string | number>): string {
 /** an engine refusal in the reader's language — the English sentence is the key, and stands when unknown */
 export function reasonText(text: string | null | undefined): string {
   if (!text) return '';
-  const dict = (lang === 'fr' ? fr : en) as AnyDict;
+  const dict = dictOf(lang);
   const said = (dict.game as AnyDict | undefined)?.reasons as Record<string, string> | undefined;
   if (said?.[text]) return said[text];
   /* the few refusals that carry a number: match on the words around it */
@@ -86,13 +97,13 @@ export function reasonText(text: string | null | undefined): string {
 
 /** translate outside React (current language, English fallback) */
 export function tr(key: string, vars?: Record<string, string | number>): string {
-  const dict = (lang === 'fr' ? fr : en) as AnyDict;
+  const dict = dictOf(lang);
   return fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars);
 }
 
 /** React hook: t('game.topbar.toAct', { name }) re-renders on language change */
 export function useT(): (key: string, vars?: Record<string, string | number>) => string {
   const l = useLang();
-  const dict = (l === 'fr' ? fr : en) as AnyDict;
+  const dict = dictOf(l);
   return (key, vars) => fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars);
 }

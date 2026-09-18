@@ -6,7 +6,7 @@ import { isOnline } from '@/online/lobby';
 import { signOut, useLine, useSession } from '@/online/session';
 import { FeedbackButton } from '@/components/site/Feedback';
 import { cn } from '@/lib/utils';
-import { useLang, useT, setLang } from '@/i18n';
+import { LANGS, useLang, useT, setLang } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
 /* The top bar: the wordmark, three doors, the language, and who you   */
@@ -126,7 +126,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-3">
           <div role="group" aria-label={t('common.chrome.language')} className="flex items-center overflow-hidden rounded-md border border-brass-700/60">
-            {(['fr', 'en'] as const).map((l) => (
+            {LANGS.map((l) => (
               <button
                 key={l}
                 type="button"

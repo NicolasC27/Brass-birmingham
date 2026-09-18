@@ -1,6 +1,6 @@
 import { Flag, Swords, Trophy, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useLang, useT } from '@/i18n';
+import { useLang, useT, localeOf } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
 /* ActivityFeedItem (design.md §7.8) — icône 16px + phrase 13px +      */
@@ -25,7 +25,7 @@ function ago(t: ReturnType<typeof useT>, lang: string, at: number, now = Date.no
   if (hours < 24) return t('platform.time.hoursAgo', { count: hours });
   const days = Math.floor(hours / 24);
   if (days < 7) return t('platform.time.daysAgo', { count: days });
-  return new Date(at).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' });
+  return new Date(at).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' });
 }
 
 export interface ActivityFeedItemProps {

@@ -19,7 +19,7 @@ import { PLACEMENTS, rankOf } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
 import { changePassword, signOut, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
 import { HistoryLedger } from '@/pages/Desk';
-import { useLang, useT } from '@/i18n';
+import { localeOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -34,7 +34,7 @@ import { cn } from '@/lib/utils';
 const ease = 'easeOut' as const;
 /** les cinq rangs de l'office, du bas vers le haut, dans les métaux du badge */
 const TIERS: RankTier[] = ['bronze', 'fer', 'acier', 'laiton', 'or'];
-const locale = (lang: string) => (lang === 'fr' ? 'fr-FR' : 'en-GB');
+const locale = localeOf;
 
 /* --------------------------- En-tête de membre --------------------------- */
 

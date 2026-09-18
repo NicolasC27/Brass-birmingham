@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { setLang, useLang, useT } from '@/i18n';
+import { setLang, useLang, useT, LANGS } from '@/i18n';
+import type { Lang } from '@/i18n';
 import { RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
 import { narrowRailTop, useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
@@ -548,7 +549,7 @@ export default function BoardSettings() {
                 {section === 'interface' && (
                   <>
                     <OptionRow label={t('game.settings.language')}>
-                      <Segmented<'fr' | 'en'> value={lang} onChange={setLang} options={[{ id: 'fr', label: 'fr' }, { id: 'en', label: 'en' }]} />
+                      <Segmented<Lang> value={lang} onChange={setLang} options={LANGS.map((id) => ({ id, label: id }))} />
                     </OptionRow>
                     <OptionRow label={t('game.settings.minimapSize')}>
                       <Segmented<MinimapSize>

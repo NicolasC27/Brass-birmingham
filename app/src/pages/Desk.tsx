@@ -20,7 +20,7 @@ import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
 import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
-import { useLang, useT, tr } from '@/i18n';
+import { localeOf, useLang, useT, tr } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { cn } from '@/lib/utils';
 
@@ -58,7 +58,7 @@ function useAgo() {
 const daysUntil = (at: number): number => Math.max(0, Math.ceil((at - Date.now()) / 86_400_000));
 
 /** une cote en chiffres tabulaires, à la française ou à l'anglaise */
-const cote = (n: number, lang: string): string => n.toLocaleString(lang === 'fr' ? 'fr-FR' : 'en-GB');
+const cote = (n: number, lang: string): string => n.toLocaleString(localeOf(lang));
 
 const METALS: RankTier[] = ['bronze', 'fer', 'acier', 'laiton', 'or'];
 
@@ -103,7 +103,7 @@ function MemberHeader() {
   if (!session) return null;
   const stats = desk?.stats;
   const rank = rankOf(desk?.rating);
-  const since = new Date(session.createdAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric' });
+  const since = new Date(session.createdAt).toLocaleDateString(localeOf(lang), { month: 'long', year: 'numeric' });
   const rate = stats && stats.played ? `${Math.round((stats.won / stats.played) * 100)} %` : '—';
 
   return (
@@ -663,8 +663,8 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
   const lang = useLang();
   const mine = game.players.findIndex((p) => p.id === me);
   const won = game.winner === mine;
-  const date = new Date(game.finishedAt).toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' });
-  const time = new Date(game.finishedAt).toLocaleTimeString(lang === 'fr' ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit' });
+  const date = new Date(game.finishedAt).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' });
+  const time = new Date(game.finishedAt).toLocaleTimeString(localeOf(lang), { hour: '2-digit', minute: '2-digit' });
   const pastille = game.abandoned
     ? { letter: 'A', label: t('platform.desk.history.abandonedGame'), cls: 'border-iron-600 text-iron-400' }
     : won

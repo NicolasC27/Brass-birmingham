@@ -12,7 +12,7 @@ import type { LeaderRow } from '@/online/table';
 import { rankOf, type RankView } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
 import { Sparkline } from '@/pages/Desk';
-import { useLang, useT } from '@/i18n';
+import { localeOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -26,7 +26,7 @@ const ease = 'easeOut' as const;
 /** les cinq rangs, du haut vers le bas, dans les métaux du badge */
 const TIERS: RankTier[] = ['or', 'laiton', 'acier', 'fer', 'bronze'];
 const daysUntil = (at: number): number => Math.max(0, Math.ceil((at - Date.now()) / 86_400_000));
-const locale = (lang: string) => (lang === 'fr' ? 'fr-FR' : 'en-GB');
+const locale = localeOf;
 
 type Ranked = LeaderRow & { rank: number };
 

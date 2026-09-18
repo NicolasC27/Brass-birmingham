@@ -1,0 +1,98 @@
+import enHome from '../en/home';
+
+const de: typeof enHome = {
+  hero: {
+    ariaTitle: 'Titelbild von Brassworks',
+    wordmark: 'Brassworks',
+    dioramaAlt: 'Gestochenes Panorama eines industriellen Tals der Midlands in der Abenddämmerung',
+    surveyAlt: 'Die gemalte Karte der Midlands mit einer laufenden Partie: Kanäle gezogen, Werke gesetzt, Verkäufe besiegelt',
+    eyebrow: 'Ein Industriespiel aus den Midlands · 1770–1870',
+    tagline: 'Kanäle, Kohle und Eisen. Baue das Imperium, das die Welt gebaut hat.',
+    quick: 'Jetzt spielen',
+    desk: 'Zu meinem Kontor, {name}',
+    online: 'Anmelden und spielen',
+    onlineNote: 'Eröffne einen Tisch, lade deine Freunde beim Namen ein, läute die Glocke. Deine Partien warten im Kontor auf dich.',
+    practice: 'Gegen die Maschine üben',
+    tutorial: 'Neu hier? Eine geführte erste Partie',
+    enterDesk: 'Eingabe für das Kontor',
+    quickNote: 'Du gegen {a} und {b}, zwei mechanische Rivalen. Der Tisch ist schon gedeckt.',
+    quickNew: 'Neue Schnellpartie starten',
+    resume: 'Fortsetzen — {era}, Runde {round}',
+    eraCanal: 'Kanalzeit',
+    eraRail: 'Eisenbahnzeit',
+    ctaSetup: 'Den Tisch decken',
+    ctaOnline: 'Online spielen',
+    ctaRules: 'Die Regeln',
+    enterPlay: 'Eingabe zum Spielen',
+    enterResume: 'Eingabe zum Fortsetzen',
+    facts: {
+      players: '2–4 Spieler',
+      time: '45–90 Minuten',
+      solo: 'Solo oder Hot-Seat',
+      online: 'Online-Salons',
+    },
+  },
+  triptych: {
+    aria: 'Inhalt der Schachtel',
+    eyebrow: 'In der Schachtel',
+    title: 'Was das Spiel antreibt',
+    allRules: 'Regeln lesen →',
+    learnMore: 'Mehr erfahren →',
+    market: {
+      coal: 'Kohle',
+      iron: 'Eisen',
+      buy: 'Kauf £3',
+    },
+    eras: {
+      canalAlt: 'Gestochener Fries der Kanalzeit: Schleusen, Narrowboats und Treidelpfade',
+      railAlt: 'Gestochener Fries der Eisenbahnzeit: Lokomotive, Einschnitt und Telegrafenmasten',
+      canal: 'Kanalzeit',
+      rail: 'Eisenbahnzeit',
+    },
+    map: {
+      aria: 'Kartenausschnitt: drei Städte, ein Kanal, der sich von selbst zieht, und eine gestrichelte Versorgungslinie zum Markt',
+      market: 'MARKT',
+    },
+    rows: {
+      market: {
+        eyebrow: 'Der lebendige Markt',
+        title: 'Preise, die atmen',
+        body: 'Jeder gekaufte Würfel verschiebt den Preis für Kohle und Eisen für den ganzen Tisch. Kauf günstig, solange die Lager voll sind.',
+      },
+      eras: {
+        eyebrow: 'Zwei Zeitalter der Industrie',
+        title: 'Vom Treidelpfad zum Bahnhof',
+        body: 'Zur Halbzeit weichen die Kanäle der Eisenbahn, und am Ende jedes Zeitalters werden die Vermögen gezählt.',
+      },
+      supply: {
+        eyebrow: 'Versorgung ist Strategie',
+        title: 'Die Kohle muss zum Werk',
+        body: 'Kohle reist über dein eigenes Netzwerk oder kostet teuer auf dem Markt. Geisterlinien zeigen, woher jeder Würfel kommt.',
+      },
+    },
+  },
+  how: {
+    aria: 'So wird gespielt',
+    eyebrow: 'So wird gespielt',
+    title: 'Ein Zug, eine Karte, eine Aktion',
+    rules: 'Regeln lesen →',
+    step: 'Schritt {n}',
+    card: { title: 'Spiel eine Karte', body: 'Eine Orts- oder Industriekarte eröffnet die Aktion: Bauen, Netzwerk, Entwickeln, Verkaufen, Kredit oder Erkunden. Zwei Aktionen pro Zug.' },
+    build: { title: 'Baue und verbinde', body: 'Setze deine Werke in die Städte, ziehe Kanäle und später Bahnstrecken dazwischen. Kohle und Eisen reisen über dein Netzwerk oder kosten teuer auf dem Markt.' },
+    sell: { title: 'Verkaufe und punkte', body: 'Ein verkauftes Werk wird umgedreht: Es bringt Punkte und hebt dein Einkommen. Zwei Zeitalter, zwei Abrechnungen, und wer die meisten Punkte hat, gewinnt.' },
+  },
+  footer: {
+    tagline: 'Kanäle, Kohle und Eisen. Baue das Imperium, das die Welt gebaut hat.',
+    navAria: 'Fußzeile',
+    gameEyebrow: 'Das Spiel',
+    setTable: 'Den Tisch decken',
+    board: 'Der Spielplan',
+    rulesCodex: 'Regelkodex',
+    bilan: 'Die Bilanz',
+    colophonEyebrow: 'Kolophon',
+    colophon1: 'Ein von Fans geschaffener Hommage-Prototyp — ohne Verbindung zu Roxley Games.',
+    colophon2: 'Ein Hommage-Prototyp, inspiriert von Brass: Birmingham — alle Illustrationen sind original.',
+  },
+};
+
+export default de;
