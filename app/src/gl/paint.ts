@@ -48,6 +48,7 @@ export interface SlotView {
   detailC: Container; // LOD text details: etched mark, income/VP chips
   badges: Container; // flipped rim/VP + resource cubes/barrels (always visible)
   deco: Container; // empty-slot chrome: frame lip, top glow
+  glow: Graphics; // the top glow alone, hidden over a printed label
   hit: Graphics;
   /** per-frame alphas recomputed in the ticker from these bases */
   artBase: number; // painting alpha at rest (1 shown / 0 flipped)
@@ -130,6 +131,7 @@ interface IndustryArt {
 const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
 const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pairs, `${a}-${b}`
 let tileSet: TileSet; // the set currently painted
+let tileArt: TileArt = {}; // the variant choices it was built from
 let barrelTex: Texture;
 /* one painting per merchant when /merchant-<id>.png exists (e.g. Gloucester
    docks); the shared barge otherwise */
@@ -802,7 +804,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       const detailC = new Container();
       detailC.eventMode = 'none';
       townsLayer.addChild(ring, frame, art, art2, artMask, deco, extras, detailC, badges, hit);
-      slots.push({ ring, frame, art, art2, artMask, extras, detailC, badges, deco, hit, artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
+      slots.push({ ring, frame, art, art2, artMask, extras, detailC, badges, deco, glow: topGlow, hit, artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
     }
     /* town colour code (physical Brass): the name banner itself takes the
        town's own colour — no dash, no underline */
@@ -1154,6 +1156,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         } else {
           const allows = town.slots[si].allows;
           deco.visible = true;
+          sv.glow.visible = !variantOf(allows[0], tileArt)?.label;
           /* NO ring on empty slots — a contour only appears once a player
              owns the tile, and then in THEIR colour (see built branch) */
           /* tile body: dark face, NO border on empty slots — the frame is
@@ -1360,6 +1363,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       const set = await buildTileSet(art);
       if (req !== styleReq) return; // a later switch won
       tileSet = set;
+      tileArt = art;
       if (lastGame) {
         drawTowns(lastGame);
         drawMerchants(lastGame);

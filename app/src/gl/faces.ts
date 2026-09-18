@@ -28,6 +28,9 @@ export interface TileVariant {
    *  for the slot taking either of two industries lives. Without it the
    *  board assembles the two cutouts (composePair). */
   pair?: (a: IndustryType, b: IndustryType) => string;
+  /** the face is an opaque printed label, not a cutout: the slot's warm
+   *  top glow, meant for a painting on a dark card, would streak it */
+  label?: boolean;
 }
 /** the front industry of a dual-slot painting: whole, or cropped to its
  *  tallest part (x, width in the 512 square), scaled; partners may be
@@ -46,7 +49,7 @@ const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v
  *  the hand of the engraved map, black ink on a cream label; an owner's
  *  card carries the same drawing on the colour. Its dual slots are printed
  *  as one label, the two drawings side by side (tools/assets/tiles-woodcut). */
-const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', front: { scale: 64 }, ext: 'webp', pair: (a, b) => `/tile-combo-${pairFile(a, b)}.webp` });
+const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', front: { scale: 64 }, ext: 'webp', label: true, pair: (a, b) => `/tile-combo-${pairFile(a, b)}.webp` });
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
