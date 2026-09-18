@@ -325,6 +325,37 @@ export default function Forum() {
   );
 }
 
+/* ============================== the designers' guide ============================== */
+
+/** the guide at the head of the design board: every piece's format, and how to offer one */
+function DesignGuide({ empty }: { empty: boolean }) {
+  const t = useT();
+  const [open, setOpen] = useState(empty);
+  const geo = `${typeof window !== 'undefined' ? window.location.origin : ''}/design/geo.json`;
+  const sections: { title: string; body: string }[] = [];
+  for (let i = 0; i < 20; i++) {
+    const title = t(`platform.forum.design.sections.${i}.title`);
+    if (title.endsWith(`.${i}.title`)) break;
+    sections.push({ title, body: t(`platform.forum.design.sections.${i}.body`, { geo }) });
+  }
+  return (
+    <Panel title={t('platform.forum.design.title')} className="mb-6" tone="paper" meta={<button type="button" onClick={() => setOpen((o) => !o)} className="micro-label text-brass-300 hover:text-brass-200">{open ? '−' : '+'} {t('platform.forum.design.toggle')}</button>}>
+      {open ? (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {sections.map((sec, i) => (
+            <section key={i} className={cn(i === 0 && 'lg:col-span-2')}>
+              <h3 className="font-fraunces text-[16px] font-semibold text-paper-100">{sec.title}</h3>
+              <Body text={sec.body} className="mt-1 text-[13.5px] text-paper-300" />
+            </section>
+          ))}
+        </div>
+      ) : (
+        <p className="font-ui text-[13px] text-paper-300">{sections[0]?.body.split('\n')[0]}</p>
+      )}
+    </Panel>
+  );
+}
+
 /* ============================== a board ============================== */
 
 export function ForumBoard() {
@@ -383,6 +414,7 @@ export function ForumBoard() {
     >
       {!gate.session.verified && <p className="mb-4 font-ui text-[13px] text-iron-400">{t('platform.forum.verifyFirst')}</p>}
       {MODS_OPEN.includes(board) && !mod && <p className="mb-4 font-ui text-[13px] text-iron-400">{t('platform.forum.annoncesOnly')}</p>}
+      {board === 'design' && <DesignGuide empty={!!list.data && list.data.threads.length === 0} />}
       {opening && (
         <Panel title={t('platform.forum.newThread')} className="mb-6">
           <Composer title={{ value: title, onChange: setTitle }} body={{ value: body, onChange: setBody }} onSubmit={submit} submitLabel={t('platform.forum.open')} onCancel={() => setOpening(false)} busy={busy} refusal={refusal} />

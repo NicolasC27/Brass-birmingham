@@ -1,13 +1,13 @@
 /* ------------------------------------------------------------------ */
 /* The club's forum — what the office and the pages agree on.          */
 /*                                                                     */
-/* Five boards, fixed; threads of posts, plain text with a little      */
+/* Six boards, fixed; threads of posts, plain text with a little      */
 /* markup and no pictures; reports the moderators read; what is kept   */
 /* as read per member. The limits are the same on both sides: the     */
 /* page refuses before asking, the office refuses whatever is asked.   */
 /* ------------------------------------------------------------------ */
 
-export const BOARDS = ['annonces', 'strategie', 'tables', 'regles', 'atelier'] as const;
+export const BOARDS = ['annonces', 'strategie', 'tables', 'regles', 'atelier', 'design'] as const;
 /** the club's tongues: what a post is written in, what a reader reads in */
 export const LANGS = ['en', 'fr', 'de', 'es'] as const;
 export type Lang = (typeof LANGS)[number];
