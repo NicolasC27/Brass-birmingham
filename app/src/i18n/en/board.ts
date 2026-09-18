@@ -56,6 +56,16 @@ const board = {
     cannotBuild: 'Cannot build here',
     flipsByEmptying: 'This works flips by emptying, not by sale',
   },
+  refusal: {
+    cardTown: 'This card builds in {town} only',
+    cardIndustry: 'This card builds {list} only',
+    noTiles: 'No {industry} tile left on your mat',
+    wrongEra: '{industry} level {level} is not built in the {era} era',
+    overbuildOnce: 'An opponent’s tile is overbuilt only once no {resource} is left anywhere',
+    plain: {
+      "Only mines and iron works may overbuild an opponent's tile": 'Only a coal mine or an iron works may overbuild an opponent’s tile',
+    },
+  },
   chooser: {
     which: 'Which works here?',
     unavailable: 'Not possible with this card',

@@ -58,6 +58,16 @@ const es: typeof enboard = {
     cannotBuild: 'No se puede construir aquí',
     flipsByEmptying: 'Este edificio se voltea al vaciarse, no con una venta',
   },
+  refusal: {
+    cardTown: 'Esta carta solo construye en {town}',
+    cardIndustry: 'Esta carta solo construye una {list}',
+    noTiles: 'No queda ninguna loseta de {industry} en tu tapete',
+    wrongEra: '{industry} nivel {level} no se construye en la era del {era}',
+    overbuildOnce: 'Solo se sobreconstruye la loseta de un rival cuando no queda {resource} en ningún sitio',
+    plain: {
+      "Only mines and iron works may overbuild an opponent's tile": 'Solo una mina de carbón o una fundición sobreconstruyen la loseta de un rival',
+    },
+  },
   chooser: {
     which: '¿Qué edificio aquí?',
     unavailable: 'No es posible con esta carta',

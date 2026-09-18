@@ -3,6 +3,7 @@ import { en } from './en';
 import { fr } from './fr';
 import { es } from './es';
 import { de } from './de';
+import { TOWN_BY_ID } from '@/game/data';
 
 /* ------------------------------------------------------------------ */
 /* i18n — tiny dependency-free FR/EN store.                            */
@@ -92,6 +93,19 @@ export function reasonText(text: string | null | undefined): string {
   /* the few refusals that carry a number: match on the words around it */
   const money = text.match(/^Needs £(\d+) — you hold £(\d+)$/);
   if (money && said?.needsMoney) return fmt(said.needsMoney, { need: money[1], have: money[2] });
+  /* the refusals that carry a name — a town, an industry, an era */
+  const board = dict.board as AnyDict | undefined;
+  const refusal = board?.refusal as (Record<string, string> & { plain?: Record<string, string> }) | undefined;
+  if (!refusal) return text;
+  if (refusal.plain?.[text]) return refusal.plain[text];
+  const industry = (id: string) => lookup(dict, `game.log.industry.${id}`) ?? lookup(en as AnyDict, `game.log.industry.${id}`) ?? id;
+  const era = (id: string) => lookup(dict, `board.era.${id}`) ?? id;
+  let m: RegExpMatchArray | null;
+  if ((m = text.match(/^This card builds in (\S+) only$/))) return fmt(refusal.cardTown, { town: TOWN_BY_ID[m[1]]?.name ?? m[1] });
+  if ((m = text.match(/^This card builds (.+) only$/))) return fmt(refusal.cardIndustry, { list: m[1].split(' or ').map(industry).join(' / ') });
+  if ((m = text.match(/^No (\w+) tiles left$/))) return fmt(refusal.noTiles, { industry: industry(m[1]) });
+  if ((m = text.match(/^(\w+) L(\d) cannot be built in the (\w+) era$/))) return fmt(refusal.wrongEra, { industry: industry(m[1]), level: m[2], era: era(m[3]) });
+  if ((m = text.match(/^Opponent's tile can only be overbuilt once no (\w+) is left anywhere$/))) return fmt(refusal.overbuildOnce, { resource: industry(m[1]) });
   return text;
 }
 

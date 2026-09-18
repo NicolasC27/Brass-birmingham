@@ -431,11 +431,11 @@ function cardAllows(s: GameState, playerIdx: number, card: Card, town: string, i
   const t = TOWN_BY_ID[town];
   switch (card.kind) {
     case 'location':
-      return card.town === town ? { ok: true } : { ok: false, reason: 'Wrong town for this card' };
+      return card.town === town ? { ok: true } : { ok: false, reason: `This card builds in ${card.town} only` };
     case 'wild-location':
       return t.farm ? { ok: false, reason: 'Farm breweries take industry cards only' } : { ok: true };
     case 'industry':
-      if (card.industry !== industry && card.industry2 !== industry) return { ok: false, reason: 'This card names another industry' };
+      if (card.industry !== industry && card.industry2 !== industry) return { ok: false, reason: `This card builds ${[card.industry, card.industry2].filter(Boolean).join(' or ')} only` };
       return townConnectedToPlayer(s, playerIdx, town) ? { ok: true } : { ok: false, reason: 'Not in your network' };
     default:
       return townConnectedToPlayer(s, playerIdx, town) ? { ok: true } : { ok: false, reason: 'Not in your network' };
@@ -463,10 +463,9 @@ export function buildTargets(s: GameState, playerIdx: number, card: Card): Build
 
     const allow = cardAllows(s, playerIdx, card, town, industry);
     if (!allow.ok) return fail(allow.reason!);
-    if (!level) return fail(`No ${INDUSTRY_LABEL[industry]} tiles left`);
+    if (!level) return fail(`No ${industry} tiles left`);
     const lv = INDUSTRIES[industry][level - 1];
-    if (!lv.eras.includes(s.era)) return fail(`${INDUSTRY_LABEL[industry]} L${level} cannot be built in the ${s.era} era`);
-    if (!TOWN_BY_ID[town].slots[slot].allows.includes(industry)) return fail(`${INDUSTRY_LABEL[industry]} cannot be built here`);
+    if (!lv.eras.includes(s.era)) return fail(`${industry} L${level} cannot be built in the ${s.era} era`);
 
     const key = tileKey(town, slot);
     const existing = s.tiles[key];
@@ -498,22 +497,10 @@ export function buildTargets(s: GameState, playerIdx: number, card: Card): Build
     out.push(t);
   };
 
-  const industriesOf = (card: Card): IndustryType[] =>
-    card.kind === 'industry' ? ([card.industry!, card.industry2].filter(Boolean) as IndustryType[]) : (Object.keys(INDUSTRIES) as IndustryType[]);
-
-  if (card.kind === 'location') {
-    const town = TOWN_BY_ID[card.town!];
-    town.slots.forEach((sp, i) => sp.allows.forEach((ind) => push(town.id, i, ind)));
-  } else if (card.kind === 'wild-location') {
-    for (const town of TOWNS) if (!town.farm) town.slots.forEach((sp, i) => sp.allows.forEach((ind) => push(town.id, i, ind)));
-  } else {
-    const inds = industriesOf(card);
-    for (const town of TOWNS) {
-      town.slots.forEach((sp, i) => {
-        for (const ind of inds) if (sp.allows.includes(ind)) push(town.id, i, ind);
-      });
-    }
-  }
+  /* every slot of the board, for each industry it takes: the card's own
+     places come out valid, every other place says why it is not — so a
+     click anywhere is answered with the reason, not a shrug */
+  for (const town of TOWNS) town.slots.forEach((sp, i) => sp.allows.forEach((ind) => push(town.id, i, ind)));
   // keep every valid option (multi-industry sockets cycle on click);
   // dedupe failure rows per slot+industry
   const seen = new Set<string>();

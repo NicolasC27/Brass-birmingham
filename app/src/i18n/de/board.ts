@@ -58,6 +58,16 @@ const de: typeof enboard = {
     cannotBuild: 'Hier kann nicht gebaut werden',
     flipsByEmptying: 'Dieses Werk wird durch Leeren umgedreht, nicht durch Verkauf',
   },
+  refusal: {
+    cardTown: 'Diese Karte baut nur in {town}',
+    cardIndustry: 'Diese Karte baut nur: {list}',
+    noTiles: 'Kein {industry}-Plättchen mehr auf deinem Tableau',
+    wrongEra: '{industry} Stufe {level} wird in der {era} nicht gebaut',
+    overbuildOnce: 'Das Plättchen eines Gegners wird nur überbaut, wenn nirgends mehr {resource} liegt',
+    plain: {
+      "Only mines and iron works may overbuild an opponent's tile": 'Nur eine Kohlemine oder Eisenhütte überbaut das Plättchen eines Gegners',
+    },
+  },
   chooser: {
     which: 'Welches Werk hier?',
     unavailable: 'Mit dieser Karte nicht möglich',

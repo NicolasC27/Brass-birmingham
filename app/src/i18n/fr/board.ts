@@ -58,6 +58,16 @@ const fr: typeof enboard = {
     cannotBuild: 'Impossible de construire ici',
     flipsByEmptying: 'Cet établissement se retourne en se vidant, pas par une vente',
   },
+  refusal: {
+    cardTown: 'Cette carte ne construit qu’à {town}',
+    cardIndustry: 'Cette carte ne construit qu’une {list}',
+    noTiles: 'Plus de tuile {industry} sur votre tapis',
+    wrongEra: '{industry} niveau {level} ne se construit pas à l’ère {era}',
+    overbuildOnce: 'On ne surconstruit la tuile d’un adversaire que s’il ne reste plus de {resource} nulle part',
+    plain: {
+      "Only mines and iron works may overbuild an opponent's tile": 'Seules une mine ou une forge surconstruisent la tuile d’un adversaire',
+    },
+  },
   chooser: {
     which: 'Quel ouvrage ici ?',
     unavailable: 'Pas possible avec cette carte',
