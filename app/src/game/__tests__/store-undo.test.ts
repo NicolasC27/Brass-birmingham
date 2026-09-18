@@ -16,7 +16,7 @@ const table: SetupPayload = {
   players: [
     { name: 'Nico', color: 'oxblood', type: 'human' },
     { name: 'Bob', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
-    { name: 'Cy', color: 'brass', type: 'bot', difficulty: 'magnate' },
+    { name: 'Cy', color: 'brass', type: 'bot', difficulty: 'foreman' },
   ],
   options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 };

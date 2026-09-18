@@ -1,7 +1,7 @@
 const home = {
   hero: {
-    ariaTitle: 'Brassworks title',
-    wordmark: 'Brassworks',
+    ariaTitle: 'Blackrail title',
+    wordmark: 'Blackrail',
     dioramaAlt: 'Engraved panorama of an industrial Midlands valley at dusk',
     surveyAlt: 'The painted map of the Midlands with a game in play: canals drawn, works laid, sales sealed',
     eyebrow: 'A Midlands Industrial Game · 1770–1870',

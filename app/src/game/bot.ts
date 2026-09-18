@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* BRASSWORKS — heuristic bots for the official economy. Not random:    */
+/* BLACKRAIL — heuristic bots for the official economy. Not random:    */
 /* they sell whenever beer allows, raise mines and works that pay cash  */
 /* into the markets, only build goods a connected merchant will buy,    */
 /* lay links toward merchants and coal, develop canal-only tiles away   */

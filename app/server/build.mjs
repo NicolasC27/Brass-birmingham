@@ -11,7 +11,7 @@ const watch = process.argv.includes('--watch');
 
 const options = {
   entryPoints: [path.join(here, 'main.ts')],
-  outfile: path.join(here, 'dist', 'brassworks-server.mjs'),
+  outfile: path.join(here, 'dist', 'blackrail-server.mjs'),
   bundle: true,
   platform: 'node',
   target: 'node22',

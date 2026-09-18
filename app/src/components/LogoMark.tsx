@@ -24,7 +24,7 @@ export default function LogoMark({
       height={size}
       fill="none"
       role="img"
-      aria-label="Brassworks emblem"
+      aria-label="Blackrail emblem"
       className={className}
     >
       <g

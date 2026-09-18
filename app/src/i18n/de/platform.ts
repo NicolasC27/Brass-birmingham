@@ -27,7 +27,7 @@ const platform: typeof enPlatform = {
     localMode: 'Lokaler Modus',
   },
   footer: {
-    copyright: '© Brassworks',
+    copyright: '© Blackrail',
     rules: 'Regeln',
     account: 'Konto',
     version: 'v1.0',
@@ -124,7 +124,7 @@ const platform: typeof enPlatform = {
   serverOffline: 'Server offline — lokaler Modus verfügbar',
   home: {
     eyebrow: 'HALLE DES CLUBS',
-    title: 'Brassworks',
+    title: 'Blackrail',
     tagline: 'Die Plattform zum Spiel. Finde einen Tisch, wirf die Maschine an.',
     resumeBanner: 'Tisch „{name}“ — du bist am Zug',
     resumeMeta: 'Runde {round} · {opponents} Gegner',
@@ -192,7 +192,7 @@ const platform: typeof enPlatform = {
   // --- rules ---
   rules: {
     eyebrow: 'OFFIZIELLES REGISTER',
-    title: 'Regeln von Brassworks',
+    title: 'Regeln von Blackrail',
     lede: 'Alles, was du wissen musst, bevor du an einem Tisch Platz nimmst.',
     searchPlaceholder: 'Regel suchen…',
     searchAria: 'In den Regeln suchen',

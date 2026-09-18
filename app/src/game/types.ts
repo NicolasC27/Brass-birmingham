@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* BRASSWORKS — core game types (game.md §13 data snapshot)            */
+/* BLACKRAIL — core game types (game.md §13 data snapshot)            */
 /* ------------------------------------------------------------------ */
 
 import type { GameAction } from './actions';

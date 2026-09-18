@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* BRASSWORKS — pure game engine. No React, no side effects beyond     */
+/* BLACKRAIL — pure game engine. No React, no side effects beyond     */
 /* the values it returns. Zustand store wraps these reducers.          */
 /*                                                                      */
 /* Rules follow the official Brass: Birmingham rulebook as compiled in  */

@@ -1,5 +1,5 @@
 {
-  "name": "brassworks",
+  "name": "blackrail",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:server": "node server/build.mjs",
-    "server": "node server/build.mjs && node server/dist/brassworks-server.mjs",
-    "server:dev": "node server/build.mjs --watch & node --watch server/dist/brassworks-server.mjs",
+    "server": "node server/build.mjs && node server/dist/blackrail-server.mjs",
+    "server:dev": "node server/build.mjs --watch & node --watch server/dist/blackrail-server.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",

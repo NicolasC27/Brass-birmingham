@@ -18,7 +18,7 @@ export default function Footer() {
           <div className="flex items-center gap-2.5">
             <img src="/logo-mark.svg" alt="" className="h-8 w-8" />
             <span className="engraved-brass font-display text-lg font-black tracking-wide text-brass-500">
-              BRASSWORKS
+              BLACKRAIL
             </span>
           </div>
           <p className="mt-3 max-w-xs font-fell text-sm text-cream-100/70">

@@ -35,7 +35,7 @@ const results = {
   },
   tiebreak: "tie-break: income £{hi} > £{lo}",
   share: {
-    text: "BRASSWORKS — Le Bilan : {summary}",
+    text: "BLACKRAIL — Le Bilan : {summary}",
     share: "Share the Ledger",
     copied: "Copied",
   },

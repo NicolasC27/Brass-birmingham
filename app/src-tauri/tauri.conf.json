@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Brassworks",
+  "productName": "Blackrail",
   "version": "0.1.0",
-  "identifier": "org.brassworks.desktop",
+  "identifier": "org.blackrail.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:3000",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Brassworks",
+        "title": "Blackrail",
         "width": 1440,
         "height": 900,
         "minWidth": 1024,
@@ -31,7 +31,7 @@
     "active": true,
     "targets": ["deb", "appimage"],
     "category": "Game",
-    "shortDescription": "Brassworks, a Midlands industrial board game",
+    "shortDescription": "Blackrail, a Midlands industrial board game",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

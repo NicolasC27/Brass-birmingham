@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* BRASSWORKS — game data: Midlands board, industries, decks, market.  */
+/* BLACKRAIL — game data: Midlands board, industries, decks, market.  */
 /* Values follow game.md §13 (approximate Brass: Birmingham table).    */
 /* Geography: AUTHENTIC Roxley board (research/board-data.md) —        */
 /* 20 towns + 2 farm breweries, 5 edge merchants, 39 era-tagged links, */

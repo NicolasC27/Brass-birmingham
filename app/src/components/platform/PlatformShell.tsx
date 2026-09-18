@@ -118,9 +118,9 @@ function TopBar() {
   return (
     <header className="sticky top-0 z-50 h-14 border-b border-brass-hairline bg-[rgb(var(--lacquer-950)/.85)] backdrop-blur-[12px]">
       <div className="mx-auto flex h-full max-w-[1240px] items-center gap-4 px-4 sm:px-8">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Brassworks">
-          <img src="/logo-brassworks.svg" alt="" className="h-6 w-6" />
-          <span className="font-fraunces text-[15px] font-semibold uppercase tracking-[0.08em] text-paper-100">Brassworks</span>
+        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Blackrail">
+          <img src="/logo-blackrail.svg" alt="" className="h-6 w-6" />
+          <span className="font-fraunces text-[15px] font-semibold uppercase tracking-[0.08em] text-paper-100">Blackrail</span>
         </Link>
 
         {/* in the flow between the wordmark and the chips, centred in what is left:

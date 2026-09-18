@@ -9,7 +9,7 @@ import Button from './Button';
 /* Plex Mono 22px, cellule active bordure brass-400 (legacy). Coller   */
 /* un code remplit tout ; complet → Rejoindre s'active ; erreur →      */
 /* secousse x ±6px, 3 cycles, 200ms + bordure rust.                    */
-/* NB : les codes réels de Brassworks font 4 caractères                */
+/* NB : les codes réels de Blackrail font 4 caractères                */
 /* (online/table.ts normalizeCode) — `length` reste réglable.          */
 /* ------------------------------------------------------------------ */
 

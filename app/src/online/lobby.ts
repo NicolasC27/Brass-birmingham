@@ -38,7 +38,7 @@ export interface LobbyClient {
 /* ----------------------------- local client ------------------------ */
 
 const TABLES_KEY = 'brassworks.lobby.tables.v1';
-const CHANNEL = 'brassworks-lobby';
+const CHANNEL = 'blackrail-lobby';
 
 /** a table code: four glyphs, drawn from the same alphabet as the ids */
 const rid = randomId;

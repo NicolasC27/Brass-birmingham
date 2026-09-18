@@ -31,7 +31,7 @@ describe('the hall', () => {
   let now = Date.now();
 
   const registerFile = () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'brassworks-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'blackrail-'));
     dirs.push(dir);
     return path.join(dir, 'house.db');
   };

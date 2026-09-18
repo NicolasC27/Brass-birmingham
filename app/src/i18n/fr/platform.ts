@@ -25,7 +25,7 @@ const platform = {
     localMode: 'Mode local',
   },
   footer: {
-    copyright: '© Brassworks',
+    copyright: '© Blackrail',
     rules: 'Règles',
     account: 'Compte',
     version: 'v1.0',
@@ -122,7 +122,7 @@ const platform = {
   serverOffline: 'Serveur hors ligne — mode local disponible',
   home: {
     eyebrow: 'HALL DU CLUB',
-    title: 'Brassworks',
+    title: 'Blackrail',
     tagline: 'La plateforme du jeu. Trouvez une table, lancez la machine.',
     resumeBanner: 'Table « {name} » — c’est votre tour',
     resumeMeta: 'tour {round} · {opponents} adversaires',
@@ -190,7 +190,7 @@ const platform = {
   // --- rules ---
   rules: {
     eyebrow: 'REGISTRE OFFICIEL',
-    title: 'Règles de Brassworks',
+    title: 'Règles de Blackrail',
     lede: "Tout ce qu'il faut savoir avant de prendre place à une table.",
     searchPlaceholder: 'Chercher une règle…',
     searchAria: 'Rechercher dans les règles',

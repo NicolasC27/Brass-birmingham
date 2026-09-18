@@ -40,7 +40,7 @@ describe('a table over the wire', () => {
 
   /** a register of its own, swept away with the test */
   const registerFile = () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'brassworks-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'blackrail-'));
     dirs.push(dir);
     return path.join(dir, 'house.db');
   };

@@ -137,7 +137,7 @@ export interface ServeOptions {
   /** the book ideas and bugs are written in (FEEDBACK_FILE; feedback.md
    *  next to the register by default, none for a house that forgets) */
   feedbackFile?: string | null;
-  /** the members who keep the forum, by name (BRASSWORKS_MODERATORS, comma-separated) */
+  /** the members who keep the forum, by name (BLACKRAIL_MODERATORS, comma-separated) */
   moderators?: string[];
   /** the clock the queues wait by, and how long they wait — for the tests */
   clock?: () => number;
@@ -180,7 +180,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
-  const moderators = new Set((options.moderators ?? (process.env.BRASSWORKS_MODERATORS ?? '').split(',')).map(foldName).filter(Boolean));
+  const moderators = new Set((options.moderators ?? (process.env.BLACKRAIL_MODERATORS ?? '').split(',')).map(foldName).filter(Boolean));
   const isMod = (a: { name: string }): boolean => moderators.has(foldName(a.name));
   const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt, moderator: isMod(a) });
   /** something moved on the forum: every signed-in socket hears it, the pages that show it ask again */
@@ -194,7 +194,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const dev = file === ':memory:' || process.env.DEV_LETTERS === '1';
   const feedbackToken = (process.env.FEEDBACK_TOKEN ?? '').trim();
   const http = createServer((req, res) => {
-    const url = new URL(req.url ?? '/', 'http://brassworks');
+    const url = new URL(req.url ?? '/', 'http://blackrail');
     const own = dev && loopback(req);
     /* the counter: with no real post, the letters can be read here */
     if (url.pathname === '/letters') {
@@ -222,7 +222,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       return;
     }
     res.writeHead(200, { 'content-type': 'text/plain' });
-    res.end('brassworks\n');
+    res.end('blackrail\n');
   });
   const wss = new WebSocketServer({ server: http, maxPayload: 64 * 1024 });
 
@@ -530,7 +530,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         /* the book and the post follow; neither holds the player up */
         const text = noteText({ ...note, name: who.name });
         if (feedbackFile) void appendFile(feedbackFile, text + '\n').catch((e) => console.error(`feedback book: ${e}`));
-        if (feedbackTo) void post.send({ to: feedbackTo, subject: `Brassworks — ${note.kind === 'bug' ? 'a bug' : 'an idea'} from ${who.name}`, text }).catch((e) => console.error(`feedback post: ${e}`));
+        if (feedbackTo) void post.send({ to: feedbackTo, subject: `Blackrail — ${note.kind === 'bug' ? 'a bug' : 'an idea'} from ${who.name}`, text }).catch((e) => console.error(`feedback post: ${e}`));
         return;
       }
       /* ------------------------------ the forum ------------------------------ */

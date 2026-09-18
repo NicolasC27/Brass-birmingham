@@ -22,7 +22,7 @@ const rules = {
     eyebrow: 'The Midlands Compendium',
     title: 'Of Trade & Manufacture',
     lede:
-      'Being a faithful account of the rules of Brassworks — canals, coal, iron, and the two great eras of industry.',
+      'Being a faithful account of the rules of Blackrail — canals, coal, iron, and the two great eras of industry.',
     wholeOfIt: 'The Whole of It',
   },
   rail: {

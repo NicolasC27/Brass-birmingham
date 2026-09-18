@@ -2,8 +2,8 @@ import enHome from '../en/home';
 
 const es: typeof enHome = {
   hero: {
-    ariaTitle: 'Pantalla de título de Brassworks',
-    wordmark: 'Brassworks',
+    ariaTitle: 'Pantalla de título de Blackrail',
+    wordmark: 'Blackrail',
     dioramaAlt: 'Panorama grabado de un valle industrial de los Midlands al anochecer',
     surveyAlt: 'El mapa pintado de los Midlands con una partida en marcha: canales trazados, fábricas colocadas, ventas cerradas',
     eyebrow: 'Un juego industrial de los Midlands · 1770–1870',

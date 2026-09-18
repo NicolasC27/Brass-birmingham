@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    /* BRASSWORKS material tokens (design.md §2) */
+    /* BLACKRAIL material tokens (design.md §2) */
     --coal-950: #100D0B;
     --coal-900: #171310;
     --coal-800: #211C17;
@@ -25,7 +25,7 @@
     --p-green: #3F7A55;
     --p-steel: #4E6E8E;
 
-    /* shadcn aliases mapped onto the dark brassworks palette */
+    /* shadcn aliases mapped onto the dark blackrail palette */
     --background: 30 18% 8%;
     --foreground: 40 44% 89%;
     --card: 28 20% 11%;

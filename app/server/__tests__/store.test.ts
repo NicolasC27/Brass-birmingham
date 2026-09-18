@@ -31,7 +31,7 @@ const TABLE: Table = {
 describe('the register', () => {
   const dirs: string[] = [];
   const open = () => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'brassworks-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'blackrail-'));
     dirs.push(dir);
     return { dir, store: new Store(path.join(dir, 'test.db')) };
   };

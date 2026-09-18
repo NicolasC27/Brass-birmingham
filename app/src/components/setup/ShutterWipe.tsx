@@ -3,7 +3,7 @@ import LogoMark from "@/components/LogoMark";
 
 /**
  * Iron-shutter ceremony wipe (setup.md §Start Bar): two riveted coal panels
- * slide from top and bottom to meet at the seam, where the brassworks mark
+ * slide from top and bottom to meet at the seam, where the blackrail mark
  * draws itself in. Reduced motion falls back to a single quick fade.
  */
 export default function ShutterWipe({

@@ -1,4 +1,4 @@
-# Brassworks — Brass: Birmingham in the browser
+# Blackrail — Brass: Birmingham in the browser
 
 A faithful, single-page implementation of the board game *Brass: Birmingham* (Roxley Games, 2018): two eras on the Midlands map, canals then rails, coal and iron markets, merchants, beer, loans, and the full end-of-era scoring. Play solo against heuristic bots or hot-seat around one screen.
 
@@ -38,13 +38,13 @@ echo 'VITE_ONLINE_URL=ws://localhost:8787' > .env.local
 npm run dev
 ```
 
-`PORT`, `HOST` and `BRASSWORKS_DB` (the register file, `brassworks.db` by default) configure the server.
+`PORT`, `HOST` and `BLACKRAIL_DB` (the register file, `brassworks.db` by default) configure the server.
 
 An account is opened with an e-mail address, and the tables open once the address has answered its letter. The post goes through [Resend](https://resend.com) when `RESEND_API_KEY` is set (`MAIL_FROM` is the sender, `APP_URL` the address the links point at — the app, not the server). Without a key the letters are printed on the server's console and kept at `http://localhost:8787/letters`, enough for a house on one machine: follow the link by hand.
 
 The suggestion box (the **Ideas** chip on every page) goes to the house: each idea or bug is kept in the register, written to `feedback.md` next to it (`FEEDBACK_FILE` moves the book) and readable at `http://localhost:8787/feedback`; with `FEEDBACK_TO` set it is posted to that address too. A build with no server sends it as a plain e-mail when `VITE_FEEDBACK_EMAIL` names one.
 
-The forum (**Forum** in the header) is the members' room: five boards, threads of plain text with a little markup and no pictures, reports, and what each member has read. Reading takes an account, writing an address that has answered its letter. A doorman (`app/src/forum/words.ts`) refuses insults and slurs however they are spelled; a member opens one thread every ten minutes and replies every twenty seconds at most. `BRASSWORKS_MODERATORS` names the moderators (account names, comma-separated): they hide posts, lock and pin threads, and answer the reports at `/forum/moderation`.
+The forum (**Forum** in the header) is the members' room: five boards, threads of plain text with a little markup and no pictures, reports, and what each member has read. Reading takes an account, writing an address that has answered its letter. A doorman (`app/src/forum/words.ts`) refuses insults and slurs however they are spelled; a member opens one thread every ten minutes and replies every twenty seconds at most. `BLACKRAIL_MODERATORS` names the moderators (account names, comma-separated): they hide posts, lock and pin threads, and answer the reports at `/forum/moderation`.
 
 Signed in, the desk (`/desk`) lists your tables with whose move it is first, the invitations waiting for you, your past games and what they add up to; the record (`/profile`) holds your address, a motto, a favourite colour and the password. A table is a four-letter code: open one, hand the code around or ask a player by name from the room, and the letter lands on their desk.
 

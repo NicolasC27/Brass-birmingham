@@ -24,7 +24,7 @@ const es: typeof enrules = {
     eyebrow: "El Compendio de los Midlands",
     title: "Del comercio y la manufactura",
     lede:
-      "Fiel relación de las reglas de Brassworks — canales, carbón, hierro y las dos grandes eras de la industria.",
+      "Fiel relación de las reglas de Blackrail — canales, carbón, hierro y las dos grandes eras de la industria.",
     wholeOfIt: "Todo entero",
   },
   rail: {

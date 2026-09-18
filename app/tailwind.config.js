@@ -5,7 +5,7 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // BRASSWORKS material palette (design.md §2)
+        // BLACKRAIL material palette (design.md §2)
         coal: {
           950: "#100D0B",
           900: "#171310",

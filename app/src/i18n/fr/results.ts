@@ -37,7 +37,7 @@ const fr: typeof enresults = {
   },
   tiebreak: "départage : revenu £{hi} > £{lo}",
   share: {
-    text: "BRASSWORKS — Le Bilan : {summary}",
+    text: "BLACKRAIL — Le Bilan : {summary}",
     share: "Partager le bilan",
     copied: "Copié",
   },

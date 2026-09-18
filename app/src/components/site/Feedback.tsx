@@ -56,7 +56,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
       setState('failed');
     }
   };
-  const mailUrl = `mailto:${MAIL_TO}?subject=${encodeURIComponent(`Brassworks — ${kind === 'bug' ? 'bug' : 'idea'}`)}&body=${encodeURIComponent(`${text}\n\n(page: ${pathname})`)}`;
+  const mailUrl = `mailto:${MAIL_TO}?subject=${encodeURIComponent(`Blackrail — ${kind === 'bug' ? 'bug' : 'idea'}`)}&body=${encodeURIComponent(`${text}\n\n(page: ${pathname})`)}`;
 
   return (
     <AnimatePresence>

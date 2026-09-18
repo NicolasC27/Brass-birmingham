@@ -37,7 +37,7 @@ const de: typeof enresults = {
   },
   tiebreak: "Gleichstand: Einkommen £{hi} > £{lo}",
   share: {
-    text: "BRASSWORKS — Die Bilanz: {summary}",
+    text: "BLACKRAIL — Die Bilanz: {summary}",
     share: "Bilanz teilen",
     copied: "Kopiert",
   },

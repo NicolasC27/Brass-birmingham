@@ -107,7 +107,7 @@ export default function Navbar() {
       <div className="relative mx-auto flex h-full max-w-[1440px] items-center justify-between px-6">
         <Link to="/" className="group flex items-center gap-2.5">
           <img src="/logo-mark.svg" alt="" className="h-7 w-7 transition-transform duration-500 group-hover:rotate-45" />
-          <span className="engraved-brass font-display text-lg font-black tracking-wide text-brass-500">BRASSWORKS</span>
+          <span className="engraved-brass font-display text-lg font-black tracking-wide text-brass-500">BLACKRAIL</span>
         </Link>
 
         <nav aria-label="Primary" className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 md:flex">

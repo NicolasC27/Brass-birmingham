@@ -37,7 +37,7 @@ const es: typeof enresults = {
   },
   tiebreak: "desempate: ingresos £{hi} > £{lo}",
   share: {
-    text: "BRASSWORKS — El Balance: {summary}",
+    text: "BLACKRAIL — El Balance: {summary}",
     share: "Compartir el balance",
     copied: "Copiado",
   },

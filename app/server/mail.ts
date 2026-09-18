@@ -33,34 +33,34 @@ export function letters(appUrl: string): Letters {
     appUrl: base,
     verify: (to, name, token) => ({
       to,
-      subject: 'Brassworks — your seat at the register',
+      subject: 'Blackrail — your seat at the register',
       text: [
         `${name},`,
         '',
-        'An account at the Brassworks register was opened with this address.',
+        'An account at the Blackrail register was opened with this address.',
         'Follow the link to prove it is yours; the tables open once it is.',
         '',
         `${base}/account/verify/${token}`,
         '',
         'If you did not open it, ignore this letter: the account stays shut.',
         '',
-        '— The Brassworks telegraph office',
+        '— The Blackrail telegraph office',
       ].join('\n'),
     }),
     reset: (to, name, token) => ({
       to,
-      subject: 'Brassworks — a new password',
+      subject: 'Blackrail — a new password',
       text: [
         `${name},`,
         '',
-        'Someone asked for a new password for your Brassworks account.',
+        'Someone asked for a new password for your Blackrail account.',
         'Follow the link within the hour to choose one:',
         '',
         `${base}/account/reset/${token}`,
         '',
         'If it was not you, ignore this letter: your password stands.',
         '',
-        '— The Brassworks telegraph office',
+        '— The Blackrail telegraph office',
       ].join('\n'),
     }),
   };
@@ -69,7 +69,7 @@ export function letters(appUrl: string): Letters {
 /** the post as the environment configures it */
 export function mailerFromEnv(env: NodeJS.ProcessEnv = process.env): Mailer {
   const key = env.RESEND_API_KEY?.trim();
-  const from = env.MAIL_FROM?.trim() || 'Brassworks <onboarding@resend.dev>';
+  const from = env.MAIL_FROM?.trim() || 'Blackrail <onboarding@resend.dev>';
   if (key) return resendMailer(key, from);
   return consoleMailer();
 }
