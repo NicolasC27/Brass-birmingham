@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Pin, PinOff, X, ZoomIn } from 'lucide-react';
+import { Pin, PinOff, X } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS } from '@/game/data';
 import { tileKey } from '@/game/engine';
@@ -114,7 +114,6 @@ export default function TownInspector({
   frameW,
   frameH,
   onClose,
-  onZoomHere,
   anchors,
 }: {
   town: Town;
@@ -125,7 +124,6 @@ export default function TownInspector({
   frameW: number;
   frameH: number;
   onClose: () => void;
-  onZoomHere: () => void;
   /** the card hangs from the town: the board's ticker moves it in the
    *  frame it moves the map, so the two stay glued */
   anchors: AnchorRegistry;
@@ -177,36 +175,28 @@ export default function TownInspector({
         <X className="h-3.5 w-3.5" />
       </button>
       <TownCardContent town={town} game={game} />
-      {/* a pinned town: a word from the reader, and the others' doings there reported */}
-      {pinned && (
+      {/* a word from the reader on this town — writing one pins the town,
+          so the others' doings there are reported; the small pin alone
+          watches a town without a word */}
+      <div className="mt-2.5 flex items-start gap-2 border-t border-brass-700/40 pt-2">
         <textarea
           value={note}
           onChange={(e) => setPinNote(town.id, e.target.value.slice(0, 140))}
           placeholder={t('board.inspector.notePlaceholder')}
           aria-label={t('board.inspector.note')}
           rows={2}
-          className="paper mt-2 w-full resize-none rounded-sm px-2 py-1 font-fell text-[12px] leading-snug text-ink-900 outline-none placeholder:text-ink-900/40 focus:ring-1 focus:ring-brass-400"
+          className="paper min-w-0 flex-1 resize-none rounded-sm px-2 py-1 font-fell text-[12px] leading-snug text-ink-900 outline-none placeholder:text-ink-900/40 focus:ring-1 focus:ring-brass-400"
           onKeyDown={(e) => e.stopPropagation()}
         />
-      )}
-      <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-brass-700/40 pt-2">
         <button
           type="button"
           onClick={() => pinTown(town.id, !pinned)}
           aria-pressed={pinned}
+          aria-label={t(pinned ? 'board.inspector.unpin' : 'board.inspector.pin')}
           title={t(pinned ? 'board.inspector.unpinTip' : 'board.inspector.pinTip')}
-          className={cn('btn-ledger flex !min-h-[30px] items-center gap-1.5 !px-3 !py-1 text-[11px]', pinned && '!border-brass-400 !text-brass-400')}
+          className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors', pinned ? 'border-brass-400 bg-brass-500/20 text-brass-400' : 'border-brass-700/50 text-cream-100/50 hover:border-brass-400 hover:text-brass-400')}
         >
           {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-          {t(pinned ? 'board.inspector.unpin' : 'board.inspector.pin')}
-        </button>
-        <button
-          type="button"
-          onClick={onZoomHere}
-          className="btn-ledger flex !min-h-[30px] items-center gap-1.5 !px-3 !py-1 text-[11px]"
-        >
-          <ZoomIn className="h-3.5 w-3.5" />
-          {t('board.inspector.zoomHere')}
         </button>
       </div>
       </motion.div>

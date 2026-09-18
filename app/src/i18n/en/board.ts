@@ -56,6 +56,13 @@ const board = {
     cannotBuild: 'Cannot build here',
     flipsByEmptying: 'This works flips by emptying, not by sale',
   },
+  notebook: {
+    open: 'Notebook',
+    title: 'Game notebook',
+    placeholder: 'Your own page: plans, things to remember, what a rival seems to be after…',
+    close: 'Close the notebook',
+    kept: 'Kept on this device, for this table',
+  },
   refusal: {
     label: 'Refused',
     cardTown: 'This card builds in {town} only',

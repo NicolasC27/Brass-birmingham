@@ -58,6 +58,13 @@ const fr: typeof enboard = {
     cannotBuild: 'Impossible de construire ici',
     flipsByEmptying: 'Cet établissement se retourne en se vidant, pas par une vente',
   },
+  notebook: {
+    open: 'Carnet',
+    title: 'Carnet de partie',
+    placeholder: 'Votre page : plans, choses à retenir, ce qu’un rival semble viser…',
+    close: 'Fermer le carnet',
+    kept: 'Gardé sur cet appareil, pour cette table',
+  },
   refusal: {
     label: 'Refusé',
     cardTown: 'Cette carte ne construit qu’à {town}',

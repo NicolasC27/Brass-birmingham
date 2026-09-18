@@ -58,6 +58,13 @@ const de: typeof enboard = {
     cannotBuild: 'Hier kann nicht gebaut werden',
     flipsByEmptying: 'Dieses Werk wird durch Leeren umgedreht, nicht durch Verkauf',
   },
+  notebook: {
+    open: 'Notizbuch',
+    title: 'Notizbuch der Partie',
+    placeholder: 'Deine Seite: Pläne, Merkzettel, was ein Rivale vorzuhaben scheint…',
+    close: 'Notizbuch schließen',
+    kept: 'Auf diesem Gerät gespeichert, für diesen Tisch',
+  },
   refusal: {
     label: 'Abgelehnt',
     cardTown: 'Diese Karte baut nur in {town}',

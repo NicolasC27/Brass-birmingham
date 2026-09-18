@@ -1810,7 +1810,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             frameW={size.w}
             frameH={size.h}
             onClose={() => setInspect(null)}
-            onZoomHere={() => cameraRef.current?.flyTo(inspectTown.x, inspectTown.y, 1.8)}
             anchors={anchors}
           />
         )}

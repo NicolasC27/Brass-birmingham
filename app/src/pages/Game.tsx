@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react';
+import NotebookButton from '@/components/game/Notebook';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -501,6 +502,7 @@ export default function Game() {
               </button>
             )}
             <TelegramButton className={TOOL} />
+            <NotebookButton className={TOOL} />
             <button
               type="button"
               onClick={() => {

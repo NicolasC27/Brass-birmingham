@@ -330,7 +330,7 @@ export const useGame = create<GameStore>((set, get) => ({
   mood: NO_MOOD,
   ...clearSelection,
   ...freshTable,
-  pins: readPins(),
+  pins: readPins(null),
   marketFocus: false,
   ledgerFilter: 'all',
   flyTo: null,
@@ -351,8 +351,8 @@ export const useGame = create<GameStore>((set, get) => ({
        can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
     if (code && wire) {
-      set({ ...clearSelection, ...freshTable, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1 });
-      writePins({});
+      /* the table's pins and notes come back with the table */
+      set({ ...clearSelection, ...freshTable, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1, pins: readPins(code) });
       listen(code, wire);
       return;
     }
@@ -409,6 +409,8 @@ export const useGame = create<GameStore>((set, get) => ({
       mood: NO_MOOD,
       tutorial,
       humanMarks,
+      /* a game resumed keeps its pins and notes; a new one starts clean */
+      pins: resumed ? readPins(null) : {},
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
       coachStep: coached || tutorial ? -1 : 0,
@@ -442,8 +444,8 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a rematch is a table's business, not a page's: online it does nothing */
     if (get().code) return;
     const game = newGame(readSetup());
-    set({ ...clearSelection, ...freshTable, game, humanMarks: [], ceremony: null, gameOverOpen: false });
-    writePins({});
+    set({ ...clearSelection, ...freshTable, game, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {} });
+    writePins(null, {});
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
     } catch {
@@ -671,12 +673,13 @@ export const useGame = create<GameStore>((set, get) => ({
     if (on) pins[town] = pins[town] ?? '';
     else delete pins[town];
     set({ pins });
-    writePins(pins);
+    writePins(get().code, pins);
   },
   setPinNote: (town, note) => {
+    /* a word on a town pins it; an emptied note leaves the pin standing */
     const pins = { ...get().pins, [town]: note };
     set({ pins });
-    writePins(pins);
+    writePins(get().code, pins);
   },
   sendToast: () => {
     const st = get();
@@ -1352,19 +1355,21 @@ export function describeAction(a: GameAction): string {
 /* ------------------------------ the pins ------------------------------ */
 
 const PINS_KEY = 'brassworks.pins.v1';
+/** each table keeps its own pins: the code online, the home table otherwise */
+const pinsKey = (code: string | null): string => (code ? `${PINS_KEY}:${code}` : PINS_KEY);
 /** the reader's pinned towns and notes, kept across reloads of the same table */
-function readPins(): Record<string, string> {
+function readPins(code: string | null): Record<string, string> {
   try {
-    const raw = localStorage.getItem(PINS_KEY);
+    const raw = localStorage.getItem(pinsKey(code));
     const v = raw ? (JSON.parse(raw) as unknown) : null;
     return v && typeof v === 'object' ? (v as Record<string, string>) : {};
   } catch {
     return {};
   }
 }
-function writePins(pins: Record<string, string>): void {
+function writePins(code: string | null, pins: Record<string, string>): void {
   try {
-    localStorage.setItem(PINS_KEY, JSON.stringify(pins));
+    localStorage.setItem(pinsKey(code), JSON.stringify(pins));
   } catch {
     /* non-fatal */
   }

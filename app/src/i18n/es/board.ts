@@ -58,6 +58,13 @@ const es: typeof enboard = {
     cannotBuild: 'No se puede construir aquí',
     flipsByEmptying: 'Este edificio se voltea al vaciarse, no con una venta',
   },
+  notebook: {
+    open: 'Cuaderno',
+    title: 'Cuaderno de la partida',
+    placeholder: 'Tu página: planes, cosas que recordar, lo que parece buscar un rival…',
+    close: 'Cerrar el cuaderno',
+    kept: 'Guardado en este dispositivo, para esta mesa',
+  },
   refusal: {
     label: 'Rechazado',
     cardTown: 'Esta carta solo construye en {town}',
