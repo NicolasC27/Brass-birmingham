@@ -31,8 +31,8 @@ import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
 /* the green of a place open to you: a slot or a link you may build on now */
-const BUILDABLE = 0x6fbf7f;
-const BUILDABLE_PICK = 0x9fe3a8;
+const BUILDABLE = 0x7fe08f;
+const BUILDABLE_PICK = 0xc4ffcc;
 
 function linkMidWorld(def: (typeof LINKS)[number], era: Era): [number, number] {
   /* most links have no explicit path — routeFor computes the winding route */
@@ -1163,8 +1163,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const picked = buildPick && tileKey(buildPick.town, buildPick.slot) === key;
         /* a place you may build on is lit green; the one picked, brighter */
         const g = new Graphics()
+          /* a soft green halo outside, a tint inside, a firm ring between */
+          .roundRect(pos.x - TILE_R - 5, pos.y - TILE_R - 5, TILE_R * 2 + 10, TILE_R * 2 + 10, 13)
+          .stroke({ width: 8, color: BUILDABLE, alpha: picked ? 0.35 : 0.22 })
           .roundRect(pos.x - TILE_R, pos.y - TILE_R, TILE_R * 2, TILE_R * 2, 9)
-          .stroke({ width: picked ? 4 : 2.5, color: picked ? BUILDABLE_PICK : BUILDABLE });
+          .fill({ color: BUILDABLE, alpha: picked ? 0.16 : 0.1 })
+          .stroke({ width: picked ? 5 : 4, color: picked ? BUILDABLE_PICK : BUILDABLE });
         g.eventMode = 'none';
         if (picked) {
           overlay.addChild(g);
@@ -1195,7 +1199,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const g = new Graphics();
         trace(g, pts);
         const picked = linkPick?.link.id === def.id || secondLinkPick?.link.id === def.id;
-        g.stroke({ width: picked ? 5 : 3, color: picked ? BUILDABLE_PICK : BUILDABLE, cap: 'round', join: 'round' });
+        g.stroke({ width: picked ? 14 : 12, color: BUILDABLE, alpha: picked ? 0.3 : 0.2, cap: 'round', join: 'round' });
+        trace(g, pts);
+        g.stroke({ width: picked ? 6 : 5, color: picked ? BUILDABLE_PICK : BUILDABLE, cap: 'round', join: 'round' });
         g.eventMode = 'none';
         if (picked) overlay.addChild(g);
         else pulse(g, 0.55);
