@@ -79,28 +79,17 @@ export default {
   persona: {
     boulton: {
       label: "Mr Boulton",
-      trade: "Network & forges",
-      tendency:
-        "Lays links early and often, raises iron works and sells the ore to everyone — his points come from the map.",
     },
     wedgwood: {
       label: "Mrs Wedgwood",
-      trade: "Pottery & merchants",
-      tendency:
-        "Builds toward the merchants, fires pottery and sells on schedule — her points come from the kilns.",
     },
     watt: {
       label: "Mr Watt",
-      trade: "Coal & development",
-      tendency:
-        "Digs mines, develops his mat and keeps cash in hand — his points come from the high tiles.",
     },
     arkwright: {
       label: "Miss Arkwright",
-      trade: "Cotton & breweries",
-      tendency:
-        "Spins cotton and brews the beer that sells it — her points come from a steady trade.",
     },
+    short: "Plays to your level",
     adaptive:
       "Plays to your level — sharper as you win, gentler as you lose, never running away with a game.",
   },

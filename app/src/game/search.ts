@@ -7,10 +7,8 @@
 /* likely they are, income and cash weighted by how much game is left,  */
 /* less the same reading for the strongest rival.                       */
 /*                                                                      */
-/* Each character reads the board with its own eyes — its meta: Mr      */
-/* Boulton prizes links and forges, Mrs Wedgwood pottery and the        */
-/* merchants, Mr Watt coal and a well-developed mat, Miss Arkwright     */
-/* cotton and beer. Same brain, different appetites.                    */
+/* The four characters share this brain and read the board alike: none  */
+/* is tied to a trade, each plays whatever the table calls for.         */
 /*                                                                      */
 /* How well it thinks is a dial, not a menu: the strength sets how many */
 /* turns it follows, how long it may take and how much noise blurs its  */
@@ -38,7 +36,7 @@ import { chooseBotMove } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
 import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
-import type { BotPersona, Card, GameState, IndustryType } from './types';
+import type { Card, GameState, IndustryType } from './types';
 
 export interface SearchOptions {
   /** how long the search may take, in ms */
@@ -60,24 +58,6 @@ export interface SearchResult {
   /** the time it took, in ms */
   ms: number;
 }
-
-/** what a character prizes: multipliers on the parts of its own reading */
-export interface Meta {
-  industry: Partial<Record<IndustryType, number>>;
-  links: number;
-  network: number;
-  cash: number;
-  develop: number;
-}
-
-const NEUTRAL: Meta = { industry: {}, links: 1, network: 1, cash: 1, develop: 1 };
-
-export const META: Record<BotPersona, Meta> = {
-  boulton: { industry: { iron: 1.3 }, links: 1.35, network: 1.5, cash: 1, develop: 1 },
-  wedgwood: { industry: { pottery: 1.4, manufacturer: 1.1 }, links: 0.9, network: 1, cash: 1.1, develop: 1 },
-  watt: { industry: { coal: 1.35 }, links: 1, network: 1, cash: 1.15, develop: 2 },
-  arkwright: { industry: { cotton: 1.3, brewery: 1.35 }, links: 0.9, network: 1.1, cash: 1, develop: 1 },
-};
 
 const DEFAULT_BUDGET_MS = 300;
 const MAX_BEAM = 8;
@@ -202,21 +182,19 @@ function nearlyServed(s: GameState, town: string, industry: IndustryType): boole
   });
 }
 
-/** what a seat is worth, in points, as the table stands — through `meta`'s
- *  eyes for one's own seat, plainly for a rival's */
-function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, frac: number, paydays: number, meta: Meta | null): number {
+/** what a seat is worth, in points, as the table stands; one's own seat
+ *  (`own`) also counts the room it has to move */
+function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, frac: number, paydays: number, own: boolean): number {
   const p = s.players[j];
-  const m = meta ?? NEUTRAL;
-  let v = p.vp + proj[j].links * m.links + proj[j].tiles;
+  let v = p.vp + proj[j].links + proj[j].tiles;
   /* a flipped tile of the Canal Era that survives the sweep scores twice */
   const again = s.era === 'canal' && s.eraLength === 'standard';
   for (const [key, t] of Object.entries(s.tiles)) {
     if (t.owner !== j) continue;
     const lv = INDUSTRIES[t.industry][t.level - 1];
-    const taste = m.industry[t.industry] ?? 1;
     const twice = again && lv.eras.includes('rail') ? 1 : 0;
     if (t.flipped) {
-      v += lv.vp * twice * taste;
+      v += lv.vp * twice;
       continue;
     }
     const town = key.split(':')[0];
@@ -226,41 +204,41 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
     else chance = 0.35 + 0.6 * (1 - t.cubes / Math.max(1, lv.cubes));
     /* the fewer rounds left, the less likely the flip */
     chance *= Math.min(1, 0.3 + frac);
-    v += lv.vp * (1 + twice) * chance * taste;
+    v += lv.vp * (1 + twice) * chance;
     /* an unflipped tile still lends its link icons */
-    v += lv.links * 0.3 * m.links;
+    v += lv.links * 0.3;
   }
   /* cash and the cash to come, worth less as the game runs out */
   const rate = 0.05 + 0.4 * frac;
   const level = incomeLevel(p.income);
   const stream = INCOME_PAYOUT[p.income] * paydays;
-  v += (p.money + stream) * rate * m.cash;
+  v += (p.money + stream) * rate;
   /* a negative income is a threat to the tiles themselves */
   if (level < 0) v -= (-level) * 1.5;
-  if (!meta) return v;
+  if (!own) return v;
   /* room to move: the towns one may build in, and a market for goods */
   const towns = networkTowns(s, j);
-  v += towns.size * 0.6 * frac * m.network;
+  v += towns.size * 0.6 * frac;
   const market = [...towns].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
   if (!market) v -= 4 * frac;
   /* the next tile of each industry: the higher, the better the builds ahead */
   for (const ind of Object.keys(p.stacks) as IndustryType[]) {
     const next = p.stacks[ind][0];
-    if (next) v += INDUSTRIES[ind][next - 1].vp * 0.08 * frac * m.develop;
+    if (next) v += INDUSTRIES[ind][next - 1].vp * 0.08 * frac;
   }
   return v;
 }
 
 /** the table as seen from seat `i`: our worth less the strongest rival's */
-export function evaluate(s: GameState, i: number, meta: Meta = META[s.players[i].persona] ?? NEUTRAL): number {
+export function evaluate(s: GameState, i: number): number {
   const proj = projectEraScores(s);
   const paydays = paydaysLeft(s);
   const frac = paydays / roundsTotal(s);
-  const mine = worth(s, i, proj, frac, paydays, meta);
+  const mine = worth(s, i, proj, frac, paydays, true);
   let rival = -Infinity;
   for (let j = 0; j < s.players.length; j++) {
     if (j === i) continue;
-    rival = Math.max(rival, worth(s, j, proj, frac, paydays, null));
+    rival = Math.max(rival, worth(s, j, proj, frac, paydays, false));
   }
   return rival === -Infinity ? mine : mine - rival;
 }

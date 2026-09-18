@@ -157,7 +157,7 @@ function SeatSlot({
   const canColor = isMe || (bot && iAmHost);
   const hasControls = !bot || iAmHost;
   const subLine = bot
-    ? t('platform.lobby.botLine', { difficulty: t(`setup.persona.${slot.persona ?? 'boulton'}.trade`) })
+    ? t('platform.lobby.botLine', { difficulty: t('setup.persona.short') })
     : ready
       ? t('platform.lobby.readyTag')
       : t('platform.lobby.waiting');
@@ -223,7 +223,7 @@ function SeatSlot({
                     key={d.id}
                     type="button"
                     aria-pressed={slot.persona === d.id}
-                    title={`${t(`setup.persona.${d.id}.trade`)} — ${t(`setup.persona.${d.id}.tendency`)}`}
+                    title={d.name}
                     onClick={() => onPersona(d.id)}
                     className={cn(
                       'rounded border px-1.5 py-[2px] font-ui text-[9px] font-semibold uppercase tracking-[0.1em]',

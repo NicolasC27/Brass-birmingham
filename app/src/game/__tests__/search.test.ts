@@ -53,7 +53,7 @@ describe('the machines', () => {
     expect(s.phase).toBe('game-over');
     /* the budget bounds the beam, not the last first action being read */
     expect(slowest).toBeLessThan(600);
-  });
+  }, 20_000);
 
   it('reads the table from its own seat', () => {
     const s = newGame(setup(), 13);

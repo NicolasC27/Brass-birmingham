@@ -436,11 +436,11 @@ const de: typeof enrules = {
       "Ein ehrliches Register, für alle sichtbar geführt: was diese Vorschau regeltreu spielt und was sie noch vereinfacht. Der Einrichtungsbildschirm verweist überall hierher, wo eine Treue-Marke erscheint.",
     botsRibbon: "Beta",
     botsTitle: "The Clockwork Club",
-    botsBody1: "Leere Stühle werden von mechanischen Spielern besetzt, jeder mit eigenem Handwerk: ",
-    botsBody2: " zeichnet die Karte, ",
-    botsBody3: " brennt die Öfen, ",
-    botsBody4: " gräbt die Kohle, ",
-    botsBody5: " spinnt die Baumwolle. Sie spielen ihren ganzen Zug durch, bevor sie wählen, und ihre Stärke folgt deiner — der Cote online, deinen Ergebnissen zu Hause.",
+    botsBody1: "Leere Stühle werden von mechanischen Spielern besetzt: ",
+    botsBody2: ", ",
+    botsBody3: ", ",
+    botsBody4: " und ",
+    botsBody5: ". Keiner ist an ein Handwerk gebunden — jeder spielt, was der Tisch verlangt, denkt seinen ganzen Zug durch, bevor er wählt, und blickt bei voller Stärke ein oder zwei Runden voraus. Ihre Stärke folgt deiner: der Cote online, deinen Ergebnissen zu Hause.",
   },
   approximations: {
     supplyCore: {

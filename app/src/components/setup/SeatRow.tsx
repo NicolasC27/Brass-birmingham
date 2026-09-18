@@ -181,7 +181,7 @@ export default function SeatRow({
                 const active = seat.persona === d.id;
                 const hex = colorDef(d.color).hex;
                 return (
-                  <Tip key={d.id} label={`${t(`setup.persona.${d.id}.trade`)} — ${t(`setup.persona.${d.id}.tendency`)}`}>
+                  <Tip key={d.id} label={t("setup.persona.adaptive")}>
                     <button
                       type="button"
                       role="radio"

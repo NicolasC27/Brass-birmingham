@@ -81,28 +81,17 @@ const fr: typeof ensetup = {
   persona: {
     boulton: {
       label: "Mr Boulton",
-      trade: "Réseau et forges",
-      tendency:
-        "Pose des liaisons tôt et souvent, dresse des forges et vend son fer à tout le monde — ses points viennent de la carte.",
     },
     wedgwood: {
       label: "Mrs Wedgwood",
-      trade: "Poteries et négociants",
-      tendency:
-        "Construit vers les négociants, cuit de la poterie et vend à l'heure — ses points viennent des fours.",
     },
     watt: {
       label: "Mr Watt",
-      trade: "Charbon et développement",
-      tendency:
-        "Creuse des mines, développe son plateau et garde du liquide — ses points viennent des tuiles hautes.",
     },
     arkwright: {
       label: "Miss Arkwright",
-      trade: "Coton et brasseries",
-      tendency:
-        "File le coton et brasse la bière qui le vend — ses points viennent d'un commerce régulier.",
     },
+    short: "Joue à votre niveau",
     adaptive:
       "Joue à votre niveau — plus affûté quand vous gagnez, plus doux quand vous perdez, jamais au point de s'envoler.",
   },

@@ -434,11 +434,11 @@ const rules = {
       'An honest ledger, kept in plain sight: what this preview plays true, and what it still simplifies. The Setup screen links here wherever a fidelity chip appears.',
     botsRibbon: "Beta",
     botsTitle: 'The Clockwork Club',
-    botsBody1: "Empty chairs are filled by mechanical players, each with a trade of their own: ",
-    botsBody2: " lays the map, ",
-    botsBody3: " fires the kilns, ",
-    botsBody4: " digs the coal, ",
-    botsBody5: " spins the cotton. They play their whole turn out before choosing, and their strength follows yours — the cote online, your results at home.",
+    botsBody1: "Empty chairs are filled by mechanical players: ",
+    botsBody2: ", ",
+    botsBody3: ", ",
+    botsBody4: " and ",
+    botsBody5: ". None is tied to a trade — each plays whatever the table calls for, thinking its whole turn out before choosing and, at full strength, looking a round or two ahead. Their strength follows yours: the cote online, your results at home.",
   },
   approximations: {
     supplyCore: {

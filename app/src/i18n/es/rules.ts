@@ -436,11 +436,11 @@ const es: typeof enrules = {
       "Un registro honesto, a la vista de todos: lo que esta versión previa juega fielmente, y lo que aún simplifica. La pantalla de preparación remite aquí allí donde aparece una pastilla de fidelidad.",
     botsRibbon: "Beta",
     botsTitle: "The Clockwork Club",
-    botsBody1: "Las sillas vacías las ocupan jugadores mecánicos, cada uno con su oficio: ",
-    botsBody2: " traza el mapa, ",
-    botsBody3: " cuece los hornos, ",
-    botsBody4: " cava el carbón, ",
-    botsBody5: " hila el algodón. Juegan todo su turno antes de elegir, y su fuerza sigue la tuya — la cota en línea, tus resultados en casa.",
+    botsBody1: "Las sillas vacías las ocupan jugadores mecánicos: ",
+    botsBody2: ", ",
+    botsBody3: ", ",
+    botsBody4: " y ",
+    botsBody5: ". Ninguno está atado a un oficio — cada uno juega lo que pide la mesa, piensa todo su turno antes de elegir y, a plena fuerza, mira una o dos rondas más allá. Su fuerza sigue la tuya: la cota en línea, tus resultados en casa.",
   },
   approximations: {
     supplyCore: {
