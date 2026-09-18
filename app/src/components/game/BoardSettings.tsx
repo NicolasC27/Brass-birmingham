@@ -3,10 +3,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT } from '@/i18n';
-import { MAT_ORDER_DEFAULT, MAT_STYLES, RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
+import { RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
 import { narrowRailTop, useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
-import type { IncomeSide, MapStyle, MatStyle, MinimapSize, RailPainting } from './boardOptions';
+import type { IncomeSide, MapStyle, MinimapSize, RailPainting } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
 import type { KeyAction } from './keybindings';
@@ -467,12 +467,6 @@ export default function BoardSettings() {
                         preview: (active) => <ChipPreview style={id} active={active} />,
                       }))}
                     />
-                    <OptionRow label={t('game.settings.bigChips')} hint={t('game.settings.bigChipsHint')}>
-                      <Switch on={opts.bigChips} onClick={() => setBoardOption('bigChips', !opts.bigChips)} label={t('game.settings.bigChips')} />
-                    </OptionRow>
-                    <OptionRow label={t('game.settings.cardGrain')} hint={t('game.settings.cardGrainHint')}>
-                      <Switch on={opts.cardGrain} onClick={() => setBoardOption('cardGrain', !opts.cardGrain)} label={t('game.settings.cardGrain')} />
-                    </OptionRow>
                     <ChoiceCards<StockStyle>
                       label={t('game.settings.stockBadge')}
                       hint={t('game.settings.stockBadgeHint')}
@@ -485,27 +479,6 @@ export default function BoardSettings() {
                         preview: (active) => <StockPreview style={id} active={active} />,
                       }))}
                     />
-                    <OptionRow label={t('game.settings.matStyle')} hint={t('game.settings.matStyleHint')}>
-                      <Segmented<MatStyle>
-                        value={opts.matStyle}
-                        onChange={(v) => setBoardOption('matStyle', v)}
-                        options={MAT_STYLES.map((id) => ({ id, label: t(`game.settings.matStyles.${id}`) }))}
-                      />
-                    </OptionRow>
-                    <OptionRow label={t('game.settings.matOrder')} hint={t('game.settings.matOrderHint')}>
-                      <button
-                        type="button"
-                        onClick={() => setBoardOption('matOrder', [...MAT_ORDER_DEFAULT])}
-                        className="rounded-md border border-brass-700/60 px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] text-cream-100/60 transition-colors hover:text-brass-400"
-                      >
-                        {t('game.settings.matOrderReset')}
-                      </button>
-                    </OptionRow>
-                    {opts.matStyle === 'cards' && (
-                      <OptionRow label={t('game.settings.matCount')} hint={t('game.settings.matCountHint')}>
-                        <Switch on={opts.matCount} onClick={() => setBoardOption('matCount', !opts.matCount)} label={t('game.settings.matCount')} />
-                      </OptionRow>
-                    )}
                   </>
                 )}
 
@@ -548,9 +521,6 @@ export default function BoardSettings() {
                     </OptionRow>
                     <OptionRow label={t('game.settings.sound')} hint={t('game.settings.soundHint')}>
                       <Switch on={opts.sound} onClick={() => setBoardOption('sound', !opts.sound)} label={t('game.settings.sound')} />
-                    </OptionRow>
-                    <OptionRow label={t('game.settings.showUnbuilt')} hint={t('game.settings.showUnbuiltHint')}>
-                      <Switch on={!opts.hideUnbuilt} onClick={() => setBoardOption('hideUnbuilt', !opts.hideUnbuilt)} label={t('game.settings.showUnbuilt')} />
                     </OptionRow>
                     <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
                       <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />

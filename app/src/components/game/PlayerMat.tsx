@@ -7,7 +7,7 @@ import { useGame } from '@/game/store';
 import type { IndustryLevel, IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
-import { sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAT_ORDER_DEFAULT, MAT_STYLES, sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
@@ -511,6 +511,45 @@ export default function PlayerMat() {
                     <h2 className="whitespace-nowrap font-fell text-[15px] tracking-wide text-brass-400">{t('game.mat.title', { name: p.name })}</h2>
                     {matPlayer === game.current && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
                     <span className="ml-auto max-w-[55%] text-right font-sans text-[8.5px] uppercase leading-tight tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint', { p: keyLabel(keys.mat), t: keyLabel(keys.matStyle), w: keyLabel(keys.matWide) })}</span>
+                  </div>
+                  {/* the mat's own dress, set where it is looked at: how the
+                      tiles read, whether the pile shows its count, and a way
+                      back to the printed order once it has been dragged about */}
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                    <span role="group" aria-label={t('game.settings.matStyle')} className="flex overflow-hidden rounded-md border border-brass-700/60">
+                      {MAT_STYLES.map((id) => (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-pressed={opts.matStyle === id}
+                          onClick={() => setBoardOption('matStyle', id)}
+                          className={cn('px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.1em] transition-colors', opts.matStyle === id ? 'bg-brass-500/20 text-brass-400' : 'text-cream-100/50 hover:text-cream-100/80')}
+                        >
+                          {t(`game.settings.matStyles.${id}`)}
+                        </button>
+                      ))}
+                    </span>
+                    {opts.matStyle === 'cards' && (
+                      <button
+                        type="button"
+                        aria-pressed={opts.matCount}
+                        title={t('game.settings.matCountHint')}
+                        onClick={() => setBoardOption('matCount', !opts.matCount)}
+                        className={cn('rounded-md border border-brass-700/60 px-2 py-0.5 font-mono text-[9.5px] font-bold transition-colors', opts.matCount ? 'bg-brass-500/20 text-brass-400' : 'text-cream-100/50 hover:text-cream-100/80')}
+                      >
+                        ×n
+                      </button>
+                    )}
+                    {order.some((ind, i) => ind !== MAT_ORDER_DEFAULT[i]) && (
+                      <button
+                        type="button"
+                        title={t('game.settings.matOrderHint')}
+                        onClick={() => setBoardOption('matOrder', [...MAT_ORDER_DEFAULT])}
+                        className="ml-auto rounded-md border border-brass-700/60 px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-[0.1em] text-cream-100/50 transition-colors hover:text-brass-400"
+                      >
+                        {t('game.settings.matOrderReset')}
+                      </button>
+                    )}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                     {stat(`£${p.money}`)}

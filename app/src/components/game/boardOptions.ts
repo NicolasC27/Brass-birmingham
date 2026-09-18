@@ -142,7 +142,7 @@ const read = <K extends keyof typeof KEYS>(k: K, fallback: BoardOptions[K]): Boa
 
 let state: BoardOptions = {
   hideUnbuilt: read('hideUnbuilt', false),
-  bigChips: read('bigChips', false),
+  bigChips: read('bigChips', true),
   greyFreeMerchants: read('greyFreeMerchants', false),
   stockStyle: read('stockStyle', 'corner'),
   tileArt: read('tileArt', {}),
