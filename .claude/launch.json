@@ -70,7 +70,7 @@
         "PORT=8790",
         "DEV_LETTERS=1",
         "BRASSWORKS_DB=:memory:",
-        "BRASSWORKS_MODERATORS=Ada",
+        "BLACKRAIL_MODERATORS=Ada",
         "npm",
         "run",
         "server",
