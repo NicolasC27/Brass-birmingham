@@ -41,9 +41,11 @@ painting brought up to the world's size, the bleed mirrored from its edges,
 a grade that caps the bleached clearings so the tiles stay the brightest
 thing on the table, then the real geometry engraved as in `bg-compose.mjs`
 (canal beds with a towpath, the future rail lines as cart roads, village
-grounds, merchant basins) and mist in the far edges. It replaces the
-composed terrain of step 4 as `map-era-canal.webp`; the source is
-`tools/assets/map/map-era-canal-midjourney.jpg`.
+grounds, merchant basins) and mist in the far edges. The source is
+`tools/assets/map/map-era-canal-midjourney.jpg`. It was tried as the
+etched canal ground and set aside: too much detail under the tiles. The
+"etched" setting keeps the composed terrain of step 4 as
+`map-era-canal.webp`.
 
 The prompt that worked asked for the countryside alone. Every attempt that
 named villages or mist got sprawling golden towns and cumulus clouds
