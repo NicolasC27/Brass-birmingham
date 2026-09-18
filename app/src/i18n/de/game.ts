@@ -142,7 +142,7 @@ const game: typeof engame = {
     tileArt: 'Zeichnung je Industrie',
     tileArtHint: 'Jede Industrie mit mehreren Zeichnungen wird hier gewählt.',
     industry: { coal: 'Kohlemine', iron: 'Eisenhütte', cotton: 'Baumwollspinnerei', manufacturer: 'Manufaktur', pottery: 'Töpferei', brewery: 'Brauerei' },
-    variant: { v3: 'Plättchen v3', crate: 'Warenkiste', parcels: 'Originalkiste', manufactory: 'Manufaktur', wagon: 'Lore', cart: 'Originalkarren', colliery: 'Fördergerüst', barrel: 'Fass', mug: 'Fass und Krug', brewhouse: 'Brauhaus', mill: 'Spinnerei', foundry: 'Gießerei', kiln: 'Flaschenofen' },
+    variant: { woodcut: 'Holzschnitt', v3: 'Plättchen v3', crate: 'Warenkiste', parcels: 'Originalkiste', manufactory: 'Manufaktur', wagon: 'Lore', cart: 'Originalkarren', colliery: 'Fördergerüst', barrel: 'Fass', mug: 'Fass und Krug', brewhouse: 'Brauhaus', mill: 'Spinnerei', foundry: 'Gießerei', kiln: 'Flaschenofen' },
     slotArt: 'Leere Bauplätze',
     slotArtHint: 'Graviert tragen nur gebaute Plättchen Farbe; Schwarz-Weiß ist am besten lesbar.',
     slot: { engraved: 'Sepia-Stich', mono: 'Schwarz-Weiß-Stich', painted: 'Farbige Malerei' },

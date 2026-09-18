@@ -142,7 +142,7 @@ const game: typeof engame = {
     tileArt: 'Dibujo por industria',
     tileArtHint: 'Cada industria con varios dibujos se elige aquí.',
     industry: { coal: 'Mina de carbón', iron: 'Fundición', cotton: 'Hilandería', manufacturer: 'Manufactura', pottery: 'Alfarería', brewery: 'Cervecería' },
-    variant: { v3: 'Losetas v3', crate: 'Caja de mercancías', parcels: 'Caja original', manufactory: 'Manufactura', wagon: 'Vagoneta', cart: 'Carro original', colliery: 'Castillete', barrel: 'Barril', mug: 'Barril y jarra', brewhouse: 'Cervecería', mill: 'Hilandería', foundry: 'Fundición', kiln: 'Horno botella' },
+    variant: { woodcut: 'Xilografía', v3: 'Losetas v3', crate: 'Caja de mercancías', parcels: 'Caja original', manufactory: 'Manufactura', wagon: 'Vagoneta', cart: 'Carro original', colliery: 'Castillete', barrel: 'Barril', mug: 'Barril y jarra', brewhouse: 'Cervecería', mill: 'Hilandería', foundry: 'Fundición', kiln: 'Horno botella' },
     slotArt: 'Casillas vacías',
     slotArtHint: 'Grabadas, solo las losetas colocadas van en color; el blanco y negro es el más legible.',
     slot: { engraved: 'Grabado sepia', mono: 'Grabado en blanco y negro', painted: 'Pintura en color' },

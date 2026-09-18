@@ -42,24 +42,32 @@ export interface FrontRecipe {
  *  shows through the card and the slot grid keeps its printed look.
  *  (The finished paintings live in /v3, these in /tiles-v3.) */
 const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v3', front, ext: 'webp', pair: (a, b) => `/tile-combo-${pairKey(a, b)}.webp` });
+/** The woodcut set, the default: six bold engravings drawn by Midjourney in
+ *  the hand of the engraved map, black ink on a cream label; an owner's
+ *  card carries the same drawing on the colour. Its dual slots are printed
+ *  as one label, the two drawings side by side (tools/assets/tiles-woodcut). */
+const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', front: { scale: 64 }, pair: (a, b) => `/tile-combo-${pairFile(a, b)}.png` });
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
+    woodcut(),
     subject({ scale: 64 }),
     { id: 'wagon', dir: '', front: { scale: 64 } },
     { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
     { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
-  iron: [subject({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
-  cotton: [subject({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
+  iron: [woodcut(), subject({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
+  cotton: [woodcut(), subject({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
   manufacturer: [
+    woodcut(),
     subject({ scale: 62 }),
     { id: 'crate', dir: '', front: { scale: 62 } },
     { id: 'parcels', dir: '/tiles-classic', front: { scale: 62 } },
     { id: 'manufactory', dir: '/tiles-works', front: { crop: [10, 300], scale: 84, partnerX: { cotton: 160, iron: 160, pottery: 160 } } },
   ],
-  pottery: [subject({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
+  pottery: [woodcut(), subject({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
   brewery: [
+    woodcut(),
     subject({ scale: 60 }),
     { id: 'barrel', dir: '', front: { scale: 60 } },
     { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },
