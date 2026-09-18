@@ -103,6 +103,49 @@ export interface PublicTable {
   /** sockets watching the table right now, the seated ones included */
   watchers: number;
   updatedAt: number;
+  /** a friend of the viewer sits here */
+  friend?: boolean;
+}
+
+/* ---- the register, a page at a time: a thousand tables are not read whole ---- */
+
+export const TABLE_FILTERS = ['all', 'seats', 'friends', 'ranked', 'rail', 'live'] as const;
+export type TableFilter = (typeof TABLE_FILTERS)[number];
+export type TableSort = 'filling' | 'fresh';
+export interface TableQuery {
+  filter?: TableFilter;
+  /** a code, a host or a table name */
+  q?: string;
+  sort?: TableSort;
+  offset?: number;
+  limit?: number;
+}
+export const TABLE_PAGE = 20;
+/** the query as the office reads it: the same on both ends, so a page can be matched to its asking */
+export function normalizeQuery(q: TableQuery = {}): Required<TableQuery> {
+  const limit = Math.min(50, Math.max(1, Math.floor(Number(q.limit) || TABLE_PAGE)));
+  return {
+    filter: (TABLE_FILTERS as readonly string[]).includes(q.filter ?? '') ? (q.filter as TableFilter) : 'all',
+    q: String(q.q ?? '').trim().toLowerCase().slice(0, 40),
+    sort: q.sort === 'fresh' ? 'fresh' : 'filling',
+    offset: Math.max(0, Math.floor(Number(q.offset) || 0)),
+    limit,
+  };
+}
+export interface TablesPage {
+  query: Required<TableQuery>;
+  /** the page asked for */
+  tables: PublicTable[];
+  /** how many the filter and the search leave in all */
+  total: number;
+  /** how many each filter would leave, under the same search */
+  counts: Record<TableFilter, number>;
+  /** the viewer's own tables, whatever the page */
+  mine: PublicTable[];
+  /** where the viewer's friends sit, three at most */
+  friends: PublicTable[];
+  /** the tables most watched right now, three at most */
+  live: PublicTable[];
 }
 
 /** the guild ranks, by cote */

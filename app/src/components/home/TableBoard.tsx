@@ -135,7 +135,8 @@ export default function TableBoard() {
   const t = useT();
   const session = useSession();
   const desk = useDesk();
-  const tables = useTables();
+  const page = useTables({ limit: 12 });
+  const tables = page?.tables ?? null;
   const [tab, setTab] = useState('open');
   const [spin, setSpin] = useState(0);
 
@@ -149,14 +150,14 @@ export default function TableBoard() {
   const refresh = () => {
     setSpin((n) => n + 1);
     const w = onlineWire();
-    w?.askTables();
+    w?.askTables({ limit: 12 });
     w?.askDesk();
   };
 
   const columns = [
     { id: 'queue', label: t('platform.state.queue'), body: <QueueColumn />, count: desk?.hall.queued ?? 0 },
-    { id: 'open', label: t('platform.state.openTables'), body: <TableColumn tables={open} waiting={waiting} />, count: open.length },
-    { id: 'live', label: t('platform.state.live'), body: <TableColumn tables={live} live waiting={waiting} />, count: live.length },
+    { id: 'open', label: t('platform.state.openTables'), body: <TableColumn tables={open} waiting={waiting} />, count: page ? page.counts.all - page.counts.live : open.length },
+    { id: 'live', label: t('platform.state.live'), body: <TableColumn tables={live} live waiting={waiting} />, count: page?.counts.live ?? live.length },
   ];
 
   return (

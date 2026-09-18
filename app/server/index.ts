@@ -10,7 +10,7 @@ import { decode, encode } from '@/online/protocol';
 import { PING_SHOWER, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, isTelegramKey } from '@/game/telegrams';
 import { LINKS, MERCHANT_BY_ID, TOWN_BY_ID } from '@/game/data';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
-import type { Me } from '@/online/table';
+import type { Me, TableQuery } from '@/online/table';
 import { normalizeCode } from '@/online/table';
 import { Hall, STALE_MS } from './hall';
 import { DEFAULT_PACE } from './game';
@@ -44,8 +44,9 @@ interface Client {
   token: string | null;
   /** the table codes this socket follows */
   watching: Set<string>;
-  /** when this socket last asked for the register of tables (0: never) */
+  /** when this socket last asked for the register of tables (0: never), and how it asked */
   askedTables: number;
+  tablesQuery: TableQuery | undefined;
   /** the last round trip measured on this socket, in ms */
   latency: number | null;
   pingAt: number;
@@ -338,7 +339,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       () => {
         c.tablesTimer = null;
         c.tablesAt = Date.now();
-        send(c, { t: 'tables', tables: hall.register() });
+        send(c, { t: 'tables', page: hall.page(c.me?.id ?? null, c.tablesQuery) });
       },
       Math.max(0, REGISTER_PUSH_MS - (Date.now() - c.tablesAt)),
     );
@@ -397,7 +398,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, ip: addressOf(req, trustProxy), me: null, token: null, watching: new Set(), askedTables: 0, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, ip: addressOf(req, trustProxy), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
@@ -599,11 +600,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         pushDesk(c, m.rid);
         return;
       case 'tables':
-        /* asked for once, the register keeps coming for a while */
+        /* asked for once, the register keeps coming for a while — the page asked for */
         c.askedTables = Date.now();
         c.tablesAt = c.askedTables;
-        send(c, { t: 'tables', rid: m.rid, tables: hall.register() });
+        c.tablesQuery = m.query && typeof m.query === 'object' ? m.query : undefined;
+        send(c, { t: 'tables', rid: m.rid, page: hall.page(who.id, c.tablesQuery) });
         return;
+      case 'seatme': {
+        const table = hall.seatMe(who, m.color);
+        c.watching.add(table.code);
+        send(c, { t: 'seated', rid: m.rid, table });
+        pushGame(c, table.code);
+        return;
+      }
       case 'leaderboard':
         send(c, { t: 'leaderboard', rid: m.rid, board: hall.leaderboard(who.id) });
         return;

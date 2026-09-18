@@ -1,7 +1,7 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, PublicTable, QueueState, Table } from './table';
+import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -107,7 +107,8 @@ export type ClientMessage =
   /** look here: a town, a house or a route pointed at */
   | { t: 'mark'; code: string; key: string }
   /** the register of tables being played, for the hall */
-  | { t: 'tables'; rid: number }
+  | { t: 'tables'; rid: number; query?: TableQuery }
+  | { t: 'seatme'; rid: number; color?: PlayerColor }
   | { t: 'leaderboard'; rid: number }
   /** stand in (or leave) the quick or the ranked queue */
   | { t: 'queue'; mode: 'quick' | 'ranked'; on: boolean }
@@ -143,7 +144,7 @@ export type ServerMessage =
   | { t: 'warned'; code: string; about: 'marks'; muted: boolean }
   /** every seat's line to the office, in ms (null for a machine or an empty chair), now and then */
   | { t: 'pulse'; code: string; latency: (number | null)[] }
-  | { t: 'tables'; rid?: number; tables: PublicTable[] }
+  | { t: 'tables'; rid?: number; page: TablesPage }
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }

@@ -4,7 +4,8 @@ import { freePersona, personaName, personaOf } from '@/game/data';
 import type { GameAction } from '@/game/actions';
 import type { SetupPayload } from '@/game/types';
 import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
-import type { Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableSeat, TableSummary, Tier } from '@/online/table';
+import type { Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableFilter, TableQuery, TableSeat, TableSummary, TablesPage, Tier } from '@/online/table';
+import { TABLE_FILTERS, normalizeQuery } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
 import { Queue } from './queue';
@@ -239,12 +240,16 @@ export class Hall {
   }
 
   /** the register of tables anyone may look at: in play first, then the newest */
-  register(): PublicTable[] {
+  register(viewerId: string | null = null): PublicTable[] {
     const out: PublicTable[] = [];
+    /* the viewer's friends, to mark the tables they sit at */
+    const friends = new Set(viewerId ? this.store.friendsOf(viewerId).filter((f) => f.status === 'friends').map((f) => f.account.id) : []);
     for (const room of this.rooms.values()) {
       const g = room.game;
       if (g?.over || (!g && this.ended.has(room.table.code))) continue;
+      const friend = friends.size > 0 && room.table.seats.some((s) => friends.has(s.id));
       out.push({
+        ...(friend ? { friend: true } : {}),
         code: room.table.code,
         name: room.table.name,
         hostName: room.table.seats.find((s) => s.id === room.table.hostId)?.name ?? '',
@@ -257,6 +262,63 @@ export class Hall {
       });
     }
     return out.sort((a, b) => Number(b.status === 'playing') - Number(a.status === 'playing') || b.updatedAt - a.updatedAt);
+  }
+
+  /** the register as one reader turns it: searched, filtered, sorted, a
+   *  page at a time — with the reader's own tables, their friends' and the
+   *  most watched ones beside, whatever the page */
+  page(viewerId: string | null, wanted: TableQuery = {}): TablesPage {
+    const query = normalizeQuery(wanted);
+    const all = this.register(viewerId);
+    const seatedHere = (t: PublicTable): boolean => !!viewerId && !!this.rooms.get(t.code)?.table.seats.some((s) => s.id === viewerId);
+    const needle = query.q;
+    const searched = needle ? all.filter((t) => t.code.toLowerCase().startsWith(needle) || t.hostName.toLowerCase().includes(needle) || t.name.toLowerCase().includes(needle)) : all;
+    const passes = (t: PublicTable, f: TableFilter): boolean => {
+      switch (f) {
+        case 'seats':
+          return t.status === 'open' && !t.ranked && t.seats.length < MAX_SEATS && !seatedHere(t);
+        case 'friends':
+          return !!t.friend;
+        case 'ranked':
+          return t.ranked;
+        case 'rail':
+          return t.status === 'playing' && t.era === 'rail';
+        case 'live':
+          return t.status === 'playing';
+        default:
+          return true;
+      }
+    };
+    const counts = Object.fromEntries(TABLE_FILTERS.map((f) => [f, searched.filter((t) => passes(t, f)).length])) as Record<TableFilter, number>;
+    const byWatched = (a: PublicTable, b: PublicTable) => b.watchers - a.watchers || (b.round ?? 0) - (a.round ?? 0) || b.updatedAt - a.updatedAt;
+    /* filling: the tables about to start first, the fullest of them ahead,
+       then the games by how young they are; fresh: the last touched first */
+    const byFilling = (a: PublicTable, b: PublicTable) => {
+      const oa = a.status === 'open' ? 0 : 1;
+      const ob = b.status === 'open' ? 0 : 1;
+      if (oa !== ob) return oa - ob;
+      if (oa === 0) return b.seats.length - a.seats.length || b.updatedAt - a.updatedAt;
+      return (a.round ?? 0) - (b.round ?? 0) || b.updatedAt - a.updatedAt;
+    };
+    const list = searched.filter((t) => passes(t, query.filter)).sort(query.filter === 'live' ? byWatched : query.sort === 'fresh' ? (a, b) => b.updatedAt - a.updatedAt : byFilling);
+    const offset = Math.min(query.offset, Math.max(0, list.length - 1));
+    return {
+      query: { ...query, offset },
+      tables: list.slice(offset, offset + query.limit),
+      total: list.length,
+      counts,
+      mine: all.filter(seatedHere),
+      friends: all.filter((t) => t.friend && !seatedHere(t)).sort(byWatched).slice(0, 3),
+      live: all.filter((t) => t.status === 'playing').sort(byWatched).slice(0, 3),
+    };
+  }
+
+  /** a chair for whoever cannot choose: the open table nearest to starting */
+  seatMe(me: Identity, color?: PlayerColor): Table {
+    const open = [...this.rooms.values()].filter((r) => !r.table.ranked && r.table.status === 'open' && !this.started(r) && r.table.seats.length < MAX_SEATS && !r.table.seats.some((s) => s.id === me.id));
+    open.sort((a, b) => b.table.seats.length - a.table.seats.length || a.table.createdAt - b.table.createdAt);
+    if (!open.length) throw new Error('not-found' satisfies LobbyError);
+    return this.join(open[0].table.code, me, color);
   }
 
   leaderboard(accountId: string): Leaderboard {

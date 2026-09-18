@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { decode, encode } from '@/online/protocol';
 import type { ClientMessage, GameView, ServerMessage } from '@/online/protocol';
-import type { Desk, Leaderboard, Me, PublicTable, QueueState, Table } from '@/online/table';
+import type { Desk, Leaderboard, Me, PublicTable, QueueState, Table, TablesPage } from '@/online/table';
 import type { Mail, Mailer } from '../mail';
 
 /* ------------------------------------------------------------------ */
@@ -35,6 +35,7 @@ export class Guest {
   /** the last word on the queue (undefined: never told) */
   queue: QueueState | null | undefined = undefined;
   tables: PublicTable[] | null = null;
+  page: TablesPage | null = null;
   board: Leaderboard | null = null;
   /** the rids answered with a plain `done` */
   done: number[] = [];
@@ -71,7 +72,10 @@ export class Guest {
       if (m.t === 'me') this.me = m.me;
       if (m.t === 'desk') this.desk = m.desk;
       if (m.t === 'queue') this.queue = m.state;
-      if (m.t === 'tables') this.tables = m.tables;
+      if (m.t === 'tables') {
+        this.tables = m.page.tables;
+        this.page = m.page;
+      }
       if (m.t === 'leaderboard') this.board = m.board;
       if (m.t === 'done') this.done.push(m.rid);
       if (m.t === 'session') {

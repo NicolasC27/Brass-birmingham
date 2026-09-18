@@ -2,7 +2,8 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
-import type { Desk, Leaderboard, Me, PublicTable } from './table';
+import type { Desk, Leaderboard, Me, TableQuery, TablesPage } from './table';
+import { normalizeQuery } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The visitors' book.                                                 */
@@ -60,10 +61,13 @@ export function useDesk(): Desk | null {
   return desk;
 }
 
-/** the register of tables in play: asked on first use, pushed for a while after */
-export function useTables(): PublicTable[] | null {
+/** one page of the register of tables: asked on first use and whenever the
+ *  query changes, pushed for a while after; null until the page asked for
+ *  is the page in hand */
+export function useTables(query: TableQuery = {}): TablesPage | null {
   const session = useSession();
-  const tables = useSyncExternalStore(
+  const key = JSON.stringify(normalizeQuery(query));
+  const page = useSyncExternalStore(
     (cb) => onlineWire()?.onHall(cb) ?? never(),
     () => onlineWire()?.tables ?? null,
     () => null,
@@ -71,12 +75,17 @@ export function useTables(): PublicTable[] | null {
   useEffect(() => {
     if (!session) return;
     const w = onlineWire();
-    w?.askTables();
+    const q = JSON.parse(key) as TableQuery;
+    w?.askTables(q);
     /* the office pushes the register for two minutes after an asking: ask again before it forgets */
-    const iv = window.setInterval(() => w?.askTables(), 60_000);
+    const iv = window.setInterval(() => w?.askTables(q), 60_000);
     return () => window.clearInterval(iv);
-  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  return tables;
+  }, [session?.id, key]); // eslint-disable-line react-hooks/exhaustive-deps
+  /* a page of another asking (the offset clamped by the office aside) is not this one */
+  if (!page) return null;
+  const mine = JSON.parse(key) as Required<TableQuery>;
+  const same = page.query.filter === mine.filter && page.query.q === mine.q && page.query.sort === mine.sort && page.query.limit === mine.limit && (page.query.offset === mine.offset || page.query.offset < mine.offset);
+  return same ? page : null;
 }
 
 /** the roll of honour of the season */

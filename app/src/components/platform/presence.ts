@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { isOnline } from '@/online/lobby';
-import { useDesk, useLine, useTables } from '@/online/session';
+import { useDesk, useLine } from '@/online/session';
 
 /* ------------------------------------------------------------------ */
 /* Presence & queues — what the office says: signed-in players, the   */
@@ -30,7 +30,6 @@ const LOCAL: PresenceSnapshot = { online: false, playersOnline: 0, playing: 0, n
 export function usePresence(): PresenceSnapshot {
   const desk = useDesk();
   const line = useLine();
-  const tables = useTables();
   return useMemo(() => {
     /* the line is what says the office is there; a visitor without a desk sees the house at zero, not "local mode" */
     if (!isOnline || line !== 'online') return LOCAL;
@@ -40,9 +39,9 @@ export function usePresence(): PresenceSnapshot {
     return {
       online: true,
       playersOnline: hall.online,
-      playing: tables ? tables.filter((x) => x.status === 'playing').length : hall.playing,
+      playing: hall.playing,
       normalQueue: { count: normal, estimateMin: 1 },
       rankedQueue: { count: ranked, estimateMin: 3 },
     };
-  }, [desk, line, tables]);
+  }, [desk, line]);
 }

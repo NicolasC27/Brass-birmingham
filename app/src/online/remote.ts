@@ -48,6 +48,10 @@ export class RemoteLobbyClient implements LobbyClient {
     return seated(await this.wire.ask((rid) => ({ t: 'join', rid, code, color })));
   }
 
+  async seatMe(color?: PlayerColor): Promise<Table> {
+    return seated(await this.wire.ask((rid) => ({ t: 'seatme', rid, color })));
+  }
+
   leave(code: string): void {
     this.wire.send({ t: 'leave', code });
     this.wire.unwatch(code);

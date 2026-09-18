@@ -192,6 +192,47 @@ describe('the hall', () => {
     expect(server!.store.historyFor(bob.id)[0]).toMatchObject({ code, abandoned: true });
   });
 
+  it('turns the register a page at a time, and seats whoever will not choose', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    const bob = await arrive('Bob');
+    const cy = await arrive('Cy');
+    const di = await arrive('Di');
+    const hall = server!.hall;
+    const a = hall.create({ id: ada.id, name: ada.name }, OPTIONS);
+    const b = hall.create({ id: bob.id, name: bob.name }, OPTIONS);
+    hall.join(b.code, { id: cy.id, name: cy.name });
+    const c = hall.create({ id: cy.id, name: cy.name }, OPTIONS);
+    hall.join(c.code, { id: ada.id, name: ada.name });
+    ring(c.code, [cy.id, ada.id]);
+    /* the fullest open table first, then the emptier, then the game */
+    const page = hall.page(bob.id, {});
+    expect(page.tables.map((t) => t.code)).toEqual([b.code, a.code, c.code]);
+    expect(page.total).toBe(3);
+    expect(page.counts).toMatchObject({ all: 3, live: 1, ranked: 0, friends: 0, rail: 0 });
+    /* a chair for Bob: the open tables he is not already at */
+    expect(page.counts.seats).toBe(1);
+    expect(page.mine.map((t) => t.code)).toEqual([b.code]);
+    expect(hall.page(ada.id, {}).mine.map((t) => t.code).sort()).toEqual([a.code, c.code].sort());
+    /* the search reads hosts, names and codes */
+    expect(hall.page(null, { q: 'ada' }).tables.map((t) => t.code)).toEqual([a.code]);
+    expect(hall.page(null, { q: c.code.toLowerCase() }).total).toBe(1);
+    /* the filters, and the page's edges */
+    expect(hall.page(null, { filter: 'live' }).tables.map((t) => t.code)).toEqual([c.code]);
+    const last = hall.page(null, { limit: 2, offset: 2 });
+    expect(last.tables).toHaveLength(1);
+    expect(last.query).toMatchObject({ offset: 2, limit: 2, filter: 'all', sort: 'filling' });
+    expect(hall.page(null, { offset: 99 }).query.offset).toBe(2);
+    expect(hall.page(null, { sort: 'fresh' }).tables[0].code).toBe(c.code);
+    /* the most watched games stand beside every page */
+    expect(hall.page(null, { filter: 'ranked' }).live.map((t) => t.code)).toEqual([c.code]);
+    /* Di will not choose: the open table nearest to starting takes her */
+    expect(hall.seatMe({ id: di.id, name: di.name }).code).toBe(b.code);
+    expect(hall.table(b.code)!.seats).toHaveLength(3);
+    /* Cy sits at b already and hosts c: the chair left for him is at a */
+    expect(hall.seatMe({ id: cy.id, name: cy.name }).code).toBe(a.code);
+  });
+
   it('orders the season\'s board by cote and finds my place on it', async () => {
     await open();
     const ada = await arrive('Ada');
@@ -248,10 +289,11 @@ describe('the hall', () => {
     /* having asked, the passer is told of the next table without asking again */
     ada.send({ t: 'create', rid: 12, options: OPTIONS });
     await passer.until('the register again', () => (passer.tables?.length ?? 0) === 2, 4000);
-    expect(passer.tables!.map((t) => t.status)).toEqual(['playing', 'open']);
-    expect(passer.tables![1]).toMatchObject({ hostName: 'Ada', watchers: 1 });
-    expect(TABLE_NAMES).toContain(passer.tables![1].name);
-    expect(passer.tables![1].name).not.toBe(passer.tables![0].name);
+    /* the register lists the tables about to start first, then the games */
+    expect(passer.tables!.map((t) => t.status)).toEqual(['open', 'playing']);
+    expect(passer.tables![0]).toMatchObject({ hostName: 'Ada', watchers: 1 });
+    expect(TABLE_NAMES).toContain(passer.tables![0].name);
+    expect(passer.tables![0].name).not.toBe(passer.tables![1].name);
     ada.send({ t: 'desk', rid: 13 });
     await ada.until('the desk', () => ada.desk?.hall.playing === 1);
   }, 30000);

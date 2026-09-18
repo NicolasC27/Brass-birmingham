@@ -26,6 +26,8 @@ export interface LobbyClient {
   setName(name: string): void;
   create(options: SetupOptions, color?: PlayerColor): Awaitable<Table>;
   join(code: string, color?: PlayerColor): Awaitable<Table>;
+  /** a chair at the open table nearest to starting — not-found when none is open */
+  seatMe(color?: PlayerColor): Awaitable<Table>;
   leave(code: string): void;
   /** rewrite a table (seat edits, rules, start) — the callback gets the latest copy */
   update(code: string, patch: (t: Table) => Table): Table | null;
@@ -113,6 +115,14 @@ class LocalLobbyClient implements LobbyClient {
     table.updatedAt = Date.now();
     this.write(tables, code);
     return table;
+  }
+
+  seatMe(color?: PlayerColor): Table {
+    const open = Object.values(readTables())
+      .filter((t) => t.status === 'open' && t.seats.length < MAX_SEATS && !t.seats.some((s) => s.id === this.me.id))
+      .sort((a, b) => b.seats.length - a.seats.length || a.createdAt - b.createdAt);
+    if (!open.length) throw new Error('not-found' satisfies LobbyError);
+    return this.join(open[0].code, color);
   }
 
   leave(code: string): void {

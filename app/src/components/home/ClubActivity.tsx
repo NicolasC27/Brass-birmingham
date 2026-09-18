@@ -107,8 +107,9 @@ function LiveTables() {
   const t = useT();
   const stranger = useStranger();
   const line = useLine();
-  const tables = useTables();
-  const live = (tables ?? []).filter((x) => x.status === 'playing').sort((a, b) => b.updatedAt - a.updatedAt);
+  /* the office names the most watched tables beside any page: one line asked, three tables back */
+  const tables = useTables({ limit: 1 });
+  const live = tables?.live ?? [];
 
   return (
     <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-2" aria-label={t('platform.home.activity.liveTitle')}>

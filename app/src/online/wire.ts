@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { Desk, Me, Leaderboard, PublicTable } from './table';
+import type { Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -33,8 +33,8 @@ export class Wire {
   /** the desk as the server last sent it (null until asked) */
   desk: Desk | null = null;
   private desks = new Set<() => void>();
-  /** the register of tables in play, the roll of honour: asked for, then pushed */
-  tables: PublicTable[] | null = null;
+  /** the register of tables in play, a page at a time, the roll of honour: asked for, then pushed */
+  tables: TablesPage | null = null;
   board: Leaderboard | null = null;
   /** the table the office just dealt me from a queue, until the page takes me there */
   dealt: string | null = null;
@@ -105,8 +105,8 @@ export class Wire {
   }
 
   /** the register of tables: pushed again for a while after the asking */
-  askTables(): void {
-    void this.ask((rid) => ({ t: 'tables', rid })).catch(() => undefined);
+  askTables(query: TableQuery = {}): void {
+    void this.ask((rid) => ({ t: 'tables', rid, query })).catch(() => undefined);
   }
 
   askLeaderboard(): void {
@@ -290,7 +290,7 @@ export class Wire {
       for (const cb of this.desks) cb();
     }
     if (m.t === 'tables') {
-      this.tables = m.tables;
+      this.tables = m.page;
       for (const cb of this.halls) cb();
     }
     if (m.t === 'leaderboard') {
