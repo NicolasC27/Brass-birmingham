@@ -96,22 +96,19 @@ open(f'{out}/towpath.txt', 'w').write('\n'.join(poly(l['pts'], 8, 8) for l in g[
 open(f'{out}/road.txt', 'w').write('\n'.join(poly(l['pts']) for l in g['links'] if not l['canal']))
 open(f'{out}/rail.txt', 'w').write('\n'.join(poly(l.get('railPts') or l['pts']) for l in g['links'] if l['rail']))
 
-# village grounds: the county-map cluster of tiny black blocks, a hatched ring
-blocks, rings, soot, smoke = [], [], [], []
+# village grounds: a Midjourney-drawn hamlet under each town's tiles (the
+# three ink vignettes in tools/assets/map/vignettes, in turn), the church
+# and the roofs showing between the cards; soot and smoke for the Rail Era
+vign, soot, smoke = [], [], []
 for t in g['towns']:
-    cx, cy = X(t['x']), Y(t['y']); r = 40 if t['farm'] else 66
-    for _ in range(10 if t['farm'] else 34):
-        a = rng.random() * math.tau; d = math.sqrt(rng.random()) * r
-        w, h = 3 + rng.random() * 4, 2.4 + rng.random() * 2.6; rot = rng.random() * 180
-        blocks.append(f'push graphic-context translate {cx + math.cos(a) * d:.1f},{cy + math.sin(a) * d:.1f} rotate {rot:.1f} rectangle {-w/2:.1f},{-h/2:.1f} {w/2:.1f},{h/2:.1f} pop graphic-context')
-    rings.append(f'circle {cx},{cy} {cx + r + 14},{cy}')
-    if not t['farm']:
-        soot.append(f'circle {cx},{cy} {cx + 210},{cy}')
-        for _ in range(3):
-            a = rng.random() * math.tau; d = 60 + rng.random() * 140
-            smoke.append(f'ellipse {cx + math.cos(a) * d:.1f},{cy + math.sin(a) * d:.1f} {50 + rng.random()*60:.0f},{18 + rng.random()*20:.0f} 0,360')
-open(f'{out}/blocks.txt', 'w').write('\n'.join(blocks))
-open(f'{out}/rings.txt', 'w').write('\n'.join(rings))
+    cx, cy = X(t['x']), Y(t['y'])
+    if t['farm']: continue
+    vign.append(f'{len(vign) % 3} {cx} {cy - 30}')
+    soot.append(f'circle {cx},{cy} {cx + 210},{cy}')
+    for _ in range(3):
+        a = rng.random() * math.tau; d = 60 + rng.random() * 140
+        smoke.append(f'ellipse {cx + math.cos(a) * d:.1f},{cy + math.sin(a) * d:.1f} {50 + rng.random()*60:.0f},{18 + rng.random()*20:.0f} 0,360')
+open(f'{out}/vignettes.txt', 'w').write('\n'.join(vign))
 open(f'{out}/soot.txt', 'w').write('\n'.join(soot))
 open(f'{out}/smoke.txt', 'w').write('\n'.join(smoke))
 # merchant basins: a stone ring, water hatched inside

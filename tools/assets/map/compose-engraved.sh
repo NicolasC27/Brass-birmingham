@@ -2,7 +2,7 @@
 # The board grounds as a period engraved map (ImageMagick 7): a laid cream
 # sheet with the plate mark at the world's edge, the real geometry engraved
 # in sepia ink — canal beds with a towpath, the future rails as survey
-# lines, village blocks, merchant basins — form lines and woods on the free
+# lines, an engraved hamlet under each town, merchant basins — form lines and woods on the free
 # land only. The Rail Era is the same sheet yellowed and sooted, rails as
 # black-and-white ladders. Writes app/public/map-engraved-{canal,rail}.webp.
 # Usage, from the repository root:
@@ -41,9 +41,15 @@ magick -size ${FW}x${FH} xc:none -fill none \
 magick -size ${FW}x${FH} xc:none -fill none \
   -stroke "$INK,0.55)" -strokewidth 1.4 -draw "stroke-dasharray 9 6 $(D road.txt)" \
   "$T/roads.png"
-# village blocks, a hatched ring; merchant basins
-magick -size ${FW}x${FH} xc:none -stroke none -fill "$INK,0.75)" -draw "$(D blocks.txt)" \
-  -fill none -stroke "$INK,0.22)" -strokewidth 1 -draw "stroke-dasharray 1 4 $(D rings.txt)" "$T/towns.png"
+# the hamlets under the towns (ink vignettes, 360 px wide, a touch lighter than the map's ink)
+VIG=""
+while read -r k cx cy; do
+  magick "tools/assets/map/vignettes/town-$k.png" -resize 360x -channel A -evaluate multiply 0.8 +channel "$T/vig-$k.png"
+  w=$(magick identify -format %w "$T/vig-$k.png"); h=$(magick identify -format %h "$T/vig-$k.png")
+  VIG="$VIG $T/vig-$k.png -geometry +$((cx - w / 2))+$((cy - h / 2)) -composite"
+done < "$T/vignettes.txt"
+magick -size ${FW}x${FH} xc:none $VIG "$T/towns.png"
+# merchant basins
 magick -size ${FW}x${FH} xc:none -fill 'rgba(122,150,140,0.40)' -stroke none -draw "$(D basin-inner.txt)" \
   -fill none -stroke "$INK,0.55)" -strokewidth 0.9 -draw "$(D basin-hatch.txt)" \
   -stroke "$INK,0.9)" -strokewidth 2.2 -draw "$(D basin-outer.txt)" \
