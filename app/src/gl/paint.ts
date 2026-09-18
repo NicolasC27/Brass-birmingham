@@ -92,6 +92,8 @@ export interface BoardScene {
   setTileLook: (look: TileLook) => void;
   /** swap painting variants per industry (alternate files fetched on first use) */
   setTileArt: (art: TileArt) => Promise<void>;
+  /** the village under each town: the painting, or the ink hamlet of the engraved map */
+  setVillages: (style: 'painted' | 'engraved') => void;
 }
 
 /** every painting-derived texture for one tile style */
@@ -135,6 +137,8 @@ const houseArt = new Map<string, Texture>();
 /* dev only: the signs' textures at hand in the console (a film's clock) */
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __houseArt?: typeof houseArt }).__houseArt = houseArt;
 let villageTex: Texture;
+/* the engraved map lays an ink hamlet under each town instead (three, in turn) */
+let hamletTex: Texture[] = [];
 
 /** canonical key for a dual-industry slot painting */
 
@@ -367,7 +371,7 @@ const WEBKIT = typeof navigator !== 'undefined' && /AppleWebKit/.test(navigator.
 /** preload every texture the scene needs (incl. boat/train icons for traffic) */
 export async function loadBoardAssets(): Promise<void> {
   Assets.setPreferences({ preferWorkers: !WEBKIT });
-  const urls = ['/beer-barrel.png', '/town-village.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
+  const urls = ['/beer-barrel.png', '/town-village.webp', '/town-hamlet-0.webp', '/town-hamlet-1.webp', '/town-hamlet-2.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
   const loaded = await Assets.load(urls);
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
@@ -395,6 +399,7 @@ export async function loadBoardAssets(): Promise<void> {
     }),
   );
   villageTex = loaded['/town-village.webp'];
+  hamletTex = [loaded['/town-hamlet-0.webp'], loaded['/town-hamlet-1.webp'], loaded['/town-hamlet-2.webp']];
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -738,6 +743,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   /* ----------------------------- villages ---------------------------- */
   /* Painted village grounding each town cluster, BELOW the slot tiles   */
   /* (TownNode: deterministic mirror, 0.62 opacity — 0.55 for farms).    */
+  /* Under the engraved map the same box holds an ink hamlet instead.    */
+  const villages: { box: Container; sprite: Sprite; farm: boolean; hamlet: number; h: number }[] = [];
   for (const town of TOWNS) {
     const c = townChrome(town);
     const mirror = (town.x * 7 + town.y * 13) % 2 === 0;
@@ -753,6 +760,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     v.eventMode = 'none';
     vBox.addChild(v);
     townsLayer.addChild(vBox);
+    villages.push({ box: vBox, sprite: v, farm: !!town.farm, hamlet: (town.x * 3 + town.y * 5) % 3, h: c.villageH });
   }
 
   /* ----------------------------- towns ------------------------------- */
@@ -1365,6 +1373,20 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       if (linksToo) {
         drawLinks(lastGame);
         applySpotlight(lastGame);
+      }
+    },
+    setVillages(style) {
+      const engraved = style === 'engraved' && hamletTex.length === 3;
+      for (const v of villages) {
+        v.sprite.texture = engraved ? hamletTex[v.hamlet] : villageTex;
+        /* the painting fits the card block; the hamlet is drawn wider, its
+           church above the cards and its wharf below the ribbon, so the
+           town shows around them. Farms have no hamlet. */
+        const size = engraved ? v.h * 2.2 : v.h;
+        v.sprite.width = size;
+        v.sprite.height = size;
+        v.sprite.position.set(-size / 2, -size + (engraved ? v.h * 0.4 : 0));
+        v.box.alpha = engraved ? (v.farm ? 0 : 0.85) : v.farm ? 0.55 : 0.62;
       }
     },
   };

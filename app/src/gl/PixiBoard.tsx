@@ -259,6 +259,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const urls = mapUrls(mapStyle, railPainting);
       const [canal, rail] = await Promise.all([Assets.load(urls.canal), Assets.load(urls.rail)]);
       if (cancelled) return;
+      scene.setVillages(mapStyle === 'engraved' ? 'engraved' : 'painted');
       for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail]] as const) {
         sp.texture = tex;
         sp.width = WORLD_W + 2 * BLEED_X;
@@ -417,6 +418,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);
       scene.setStockStyle(bootOpts.stockStyle);
+      scene.setVillages(bootOpts.mapStyle === 'engraved' ? 'engraved' : 'painted');
       if (Object.keys(bootOpts.tileArt).length) void scene.setTileArt(bootOpts.tileArt);
       scene.setTileLook({ slotArt: bootOpts.slotArt, colorBlind: bootOpts.colorBlind, sealTiles: bootOpts.sealTiles, sealLinks: bootOpts.sealLinks, cardGrain: bootOpts.cardGrain, chipStyle: bootOpts.chipStyle });
       a.stage.addChild(scene.world);
