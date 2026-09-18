@@ -19,6 +19,10 @@ la chose la plus riche sur la table. Les peintures vues d'avion (Midjourney) son
 abandonnées comme fond par défaut : trop de détail sous les tuiles, fatigue visuelle.
 La carte est dessinée depuis la géométrie (`tools/assets/map/compose-engraved.sh`),
 donc reproductible.
+Les tuiles suivent: six gravures sur bois (Midjourney, `tools/assets/tiles-woodcut`),
+encre noire sur une étiquette crème pour les cases vides, la même gravure sur la couleur
+du joueur pour les tuiles bâties. Le trait est gras et le sujet remplit le carré, c'est
+ce qui les garde lisibles à la taille d'une case.
 
 ## Palette (dérivée des références, température chaude constante)
 - Fond table / feutre : `#191715` (charbon), panneaux `#2A2520` (olive-charbon)
