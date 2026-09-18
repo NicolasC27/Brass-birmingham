@@ -14,10 +14,10 @@ import type { GameState, SetupPayload } from '../types';
 /* ------------------------------------------------------------------ */
 
 const SEATS: SetupPayload['players'] = [
-  { name: 'Ada', color: 'oxblood', type: 'bot', difficulty: 'magnate' },
-  { name: 'Bob', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
-  { name: 'Cy', color: 'brass', type: 'bot', difficulty: 'foreman' },
-  { name: 'Di', color: 'steel', type: 'bot', difficulty: 'industrialist' },
+  { name: 'Ada', color: 'oxblood', type: 'bot', persona: 'watt' },
+  { name: 'Bob', color: 'verdigris', type: 'bot', persona: 'boulton' },
+  { name: 'Cy', color: 'brass', type: 'bot', persona: 'wedgwood' },
+  { name: 'Di', color: 'steel', type: 'bot', persona: 'boulton' },
 ];
 const setup = (n: number, eraLength: 'short' | 'standard' = 'standard'): SetupPayload => ({
   players: SEATS.slice(0, n),
@@ -27,7 +27,7 @@ const setup = (n: number, eraLength: 'short' | 'standard' = 'standard'): SetupPa
 const HUMANS: SetupPayload['players'] = [
   { name: 'Nico', color: 'brass', type: 'human' },
   { name: 'Eve', color: 'oxblood', type: 'human' },
-  { name: 'Cy', color: 'verdigris', type: 'bot', difficulty: 'foreman' },
+  { name: 'Cy', color: 'verdigris', type: 'bot', persona: 'wedgwood' },
 ];
 
 describe('abandoning the game', () => {

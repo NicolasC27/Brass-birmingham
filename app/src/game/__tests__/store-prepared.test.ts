@@ -10,7 +10,7 @@ const setup: SetupPayload = {
   players: [
     { name: 'Nico', color: 'brass', type: 'human' },
     { name: 'Eve', color: 'oxblood', type: 'human' },
-    { name: 'Cy', color: 'verdigris', type: 'bot', difficulty: 'foreman' },
+    { name: 'Cy', color: 'verdigris', type: 'bot', persona: 'wedgwood' },
   ],
   options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 };

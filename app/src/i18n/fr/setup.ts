@@ -67,7 +67,7 @@ const fr: typeof ensetup = {
     colorAria: "Couleur de la place {n}",
     colorStealTip: "{color} — prise à qui la détient.",
     beta: "Bêta",
-    engineTip: "Moteur heuristique — des approximations s'appliquent. Consultez le Codex des règles pour les simplifications actuelles.",
+    engineTip: "Les machines jouent tout leur tour avant de choisir. Des approximations s'appliquent — voir le Codex des règles.",
   },
   token: {
     ariaLabel: "Pion {color}",
@@ -78,22 +78,33 @@ const fr: typeof ensetup = {
     verdigris: "Vert-de-gris",
     steel: "Bleu acier",
   },
-  difficulty: {
-    foreman: {
-      label: "Contremaître",
+  persona: {
+    boulton: {
+      label: "Mr Boulton",
+      trade: "Réseau et forges",
       tendency:
-        "Fait tourner l'usine — construit régulièrement et vend quand il peut, mais lit parfois le marché de travers.",
+        "Pose des liaisons tôt et souvent, dresse des forges et vend son fer à tout le monde — ses points viennent de la carte.",
     },
-    industrialist: {
-      label: "Industriel",
+    wedgwood: {
+      label: "Mrs Wedgwood",
+      trade: "Poteries et négociants",
       tendency:
-        "Équilibré — se dispute le réseau et les parts de marché, en planifiant une ère à la fois.",
+        "Construit vers les négociants, cuit de la poterie et vend à l'heure — ses points viennent des fours.",
     },
-    magnate: {
-      label: "Magnat",
+    watt: {
+      label: "Mr Watt",
+      trade: "Charbon et développement",
       tendency:
-        "Affûté — dispute les négociants, vous prive de charbon et planifie les deux ères à l'avance.",
+        "Creuse des mines, développe son plateau et garde du liquide — ses points viennent des tuiles hautes.",
     },
+    arkwright: {
+      label: "Miss Arkwright",
+      trade: "Coton et brasseries",
+      tendency:
+        "File le coton et brasse la bière qui le vend — ses points viennent d'un commerce régulier.",
+    },
+    adaptive:
+      "Joue à votre niveau — plus affûté quand vous gagnez, plus doux quand vous perdez, jamais au point de s'envoler.",
   },
   defaults: {
     playerOne: "Joueur un",

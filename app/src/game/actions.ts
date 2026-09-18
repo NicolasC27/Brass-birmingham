@@ -204,7 +204,7 @@ export function undoLastHuman(s: GameState, marks: UndoMark[]): GameState | null
 /** the setup a state was created from (what replay needs besides the seed) */
 export function setupOf(s: GameState): SetupPayload {
   return {
-    players: s.players.map((p) => ({ name: p.name, color: p.color, type: p.isBot ? 'bot' : 'human', difficulty: p.difficulty })),
+    players: s.players.map((p) => ({ name: p.name, color: p.color, type: p.isBot ? 'bot' : 'human', ...(p.isBot ? { persona: p.persona } : {}) })),
     options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity },
   };
 }

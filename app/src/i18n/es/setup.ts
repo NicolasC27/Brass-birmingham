@@ -67,7 +67,7 @@ const es: typeof ensetup = {
     colorAria: "Color del asiento {n}",
     colorStealTip: "{color} — se le quita a quien lo tenga.",
     beta: "Beta",
-    engineTip: "Motor heurístico — se aplican aproximaciones. Consulta el Códice de reglas para ver las simplificaciones actuales.",
+    engineTip: "Las máquinas juegan todo su turno antes de elegir. Se aplican aproximaciones — ver el Códice de reglas.",
   },
   token: {
     ariaLabel: "Ficha {color}",
@@ -78,22 +78,33 @@ const es: typeof ensetup = {
     verdigris: "Verdín",
     steel: "Azul acero",
   },
-  difficulty: {
-    foreman: {
-      label: "Capataz",
+  persona: {
+    boulton: {
+      label: "Mr Boulton",
+      trade: "Red y forjas",
       tendency:
-        "Mantiene la fábrica en marcha — construye con regularidad y vende cuando puede, pero a veces lee mal el mercado.",
+        "Tiende enlaces pronto y a menudo, levanta forjas y vende su hierro a todos — sus puntos vienen del mapa.",
     },
-    industrialist: {
-      label: "Industrial",
+    wedgwood: {
+      label: "Mrs Wedgwood",
+      trade: "Cerámica y mercaderes",
       tendency:
-        "Equilibrado — compite por la red y la cuota de mercado, planificando una era a la vez.",
+        "Construye hacia los mercaderes, cuece cerámica y vende a su hora — sus puntos vienen de los hornos.",
     },
-    magnate: {
-      label: "Magnate",
+    watt: {
+      label: "Mr Watt",
+      trade: "Carbón y desarrollo",
       tendency:
-        "Afilado — disputa los mercaderes, te deja sin carbón y planifica las dos eras por adelantado.",
+        "Cava minas, desarrolla su tablero y guarda efectivo — sus puntos vienen de las losetas altas.",
     },
+    arkwright: {
+      label: "Miss Arkwright",
+      trade: "Algodón y cervecerías",
+      tendency:
+        "Hila algodón y elabora la cerveza que lo vende — sus puntos vienen de un comercio constante.",
+    },
+    adaptive:
+      "Juega a tu nivel — más afilado cuando ganas, más suave cuando pierdes, nunca hasta escaparse con la partida.",
   },
   defaults: {
     playerOne: "Jugador uno",

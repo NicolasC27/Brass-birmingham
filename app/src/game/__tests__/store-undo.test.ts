@@ -15,8 +15,8 @@ import type { SetupPayload } from '../types';
 const table: SetupPayload = {
   players: [
     { name: 'Nico', color: 'oxblood', type: 'human' },
-    { name: 'Bob', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
-    { name: 'Cy', color: 'brass', type: 'bot', difficulty: 'foreman' },
+    { name: 'Bob', color: 'verdigris', type: 'bot', persona: 'boulton' },
+    { name: 'Cy', color: 'brass', type: 'bot', persona: 'wedgwood' },
   ],
   options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 };

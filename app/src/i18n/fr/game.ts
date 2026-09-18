@@ -304,6 +304,7 @@ const fr: typeof engame = {
     shrink: 'Réduire le tapis',
   },
   rail: {
+    bot: "bot",
     latency: 'Ligne : {ms} ms',
     playersAria: 'Joueurs',
     focusExit: 'Quitter la vue épurée',

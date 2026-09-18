@@ -16,13 +16,13 @@ import {
   defaultSeats,
   loadStoredSetup,
   openSeat,
+  recastSeat,
   seatsFromStored,
   type PlayerColor,
   type Seat,
   type SetupOptions,
   DEFAULT_OPTIONS,
   type SeatType,
-  type BotDifficulty,
   type StoredSetup,
 } from "@/components/setup/constants";
 import { cn } from "@/lib/utils";
@@ -78,10 +78,7 @@ export default function Setup() {
       if (type === "closed") {
         return prev.map((s, i) => (i === index ? { ...s, type: "closed" } : s));
       }
-      const taken = prev
-        .filter((s, i) => i !== index && s.type !== "closed")
-        .map((s) => s.name);
-      return prev.map((s, i) => (i === index ? openSeat(s, type, taken) : s));
+      return prev.map((s, i) => (i === index ? openSeat(s, type, prev) : s));
     });
 
   /** Color stealing: the swatch is taken from whoever holds it (swap). */
@@ -111,7 +108,7 @@ export default function Setup() {
         name: names[i],
         color: s.color,
         type: s.type === "human" ? ("human" as const) : ("bot" as const),
-        ...(s.type === "bot" ? { difficulty: s.difficulty as BotDifficulty } : {}),
+        ...(s.type === "bot" ? { persona: s.persona } : {}),
       })),
       options: {
         eraLength: options.eraLength,
@@ -141,7 +138,7 @@ export default function Setup() {
           name: s.name,
           color: s.color,
           type: s.type === "human" ? ("human" as const) : ("bot" as const),
-          ...(s.type === "bot" ? { difficulty: s.difficulty as BotDifficulty } : {}),
+          ...(s.type === "bot" ? { persona: s.persona } : {}),
         })),
         options: {
           eraLength: options.eraLength,
@@ -285,7 +282,7 @@ export default function Setup() {
                     onTypeChange={(type) => handleTypeChange(i, type)}
                     onNameChange={(name) => patchSeat(i, { name })}
                     onColorChange={(c) => handleColorChange(i, c)}
-                    onDifficultyChange={(difficulty) => patchSeat(i, { difficulty })}
+                    onPersonaChange={(persona) => setSeats((cur) => cur.map((s, k) => (k === i ? recastSeat(s, persona) : s)))}
                   />
                 ))}
               </div>

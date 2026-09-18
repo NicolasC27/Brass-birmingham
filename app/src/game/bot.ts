@@ -22,7 +22,7 @@ import {
   townConnectedToPlayer,
 } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
-import type { Card, GameState, IndustryType, PlayerState } from './types';
+import type { Card, GameState, IndustryType } from './types';
 
 export interface BotMove {
   kind: 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
@@ -39,12 +39,11 @@ export interface BotMove {
 
 const GOODS: IndustryType[] = ['cotton', 'manufacturer', 'pottery'];
 
-function skillOf(p: PlayerState) {
-  return BOT_SKILL[p.difficulty] ?? BOT_SKILL.industrialist;
-}
+/** the temper the heuristic plays with */
+export type BotSkill = (typeof BOT_SKILL)[keyof typeof BOT_SKILL];
 
-function jitter(p: PlayerState, rand: () => number) {
-  return (rand() - 0.5) * 2 * skillOf(p).jitter;
+function jitter(sk: BotSkill, rand: () => number) {
+  return (rand() - 0.5) * 2 * sk.jitter;
 }
 
 /** crude PRNG per move so bots are deterministic-ish within a state */
@@ -125,9 +124,8 @@ function spareCard(s: GameState, i: number, hand: Card[]): Card | undefined {
   return best?.card;
 }
 
-function scoreBuild(s: GameState, i: number, t: BuildTarget, rand: () => number): number {
+function scoreBuild(s: GameState, i: number, t: BuildTarget, rand: () => number, sk: BotSkill): number {
   const p = s.players[i];
-  const sk = skillOf(p);
   const lv = INDUSTRIES[t.industry][t.level - 1];
   const goods = lv.beerToSell > 0;
   let v = 0;
@@ -180,12 +178,11 @@ function scoreBuild(s: GameState, i: number, t: BuildTarget, rand: () => number)
   if (p.money - t.total < reserve) v -= cash > 0 ? 3 : 9;
   v -= (t.coalPlan.totalCost + t.ironPlan.totalCost) * 0.3;
   if (townConnectedToPlayer(s, i, t.town)) v += 1.5 * sk.networkBias;
-  return v + jitter(p, rand);
+  return v + jitter(sk, rand);
 }
 
-function scoreLink(s: GameState, i: number, t: LinkTarget, rand: () => number): number {
+function scoreLink(s: GameState, i: number, t: LinkTarget, rand: () => number, sk: BotSkill): number {
   const p = s.players[i];
-  const sk = skillOf(p);
   const nt = networkTowns(s, i);
   const unsold = Object.entries(s.tiles).filter(([, x]) => x.owner === i && !x.flipped && INDUSTRIES[x.industry][x.level - 1].beerToSell > 0);
   let v = 0;
@@ -209,14 +206,13 @@ function scoreLink(s: GameState, i: number, t: LinkTarget, rand: () => number): 
   v -= t.total * 0.5;
   if (p.money - t.total < Math.max(0, -INCOME_PAYOUT[p.income])) v -= 5;
   if (nt.size === 0) v += 3;
-  return v + jitter(p, rand);
+  return v + jitter(sk, rand);
 }
 
 /** choose the bot's next action. Returns null only when a pass is all that's left. */
-export function chooseBotMove(s: GameState, i: number): BotMove | null {
+export function chooseBotMove(s: GameState, i: number, sk: BotSkill = BOT_SKILL.industrialist): BotMove | null {
   const p = s.players[i];
   const rand = moveRand(s);
-  const sk = skillOf(p);
   const lvl = incomeLevel(p.income);
   if (!p.hand.length) return null;
 
@@ -238,7 +234,7 @@ export function chooseBotMove(s: GameState, i: number): BotMove | null {
   if (!merchantAccess(s, i) && p.money >= 3) {
     const toMerchant = linkTargets(s, i).filter((t) => t.valid && [t.link.a, t.link.b].some((n) => merchantOpen(s, n)));
     if (toMerchant.length) {
-      const best = toMerchant.sort((a, b) => scoreLink(s, i, b, rand) - scoreLink(s, i, a, rand))[0];
+      const best = toMerchant.sort((a, b) => scoreLink(s, i, b, rand, sk) - scoreLink(s, i, a, rand, sk))[0];
       return { kind: 'network', card: spareCard(s, i, p.hand)!, link: best, note: `${p.name} opens a road to ${MERCHANT_BY_ID[merchantOpen(s, best.link.a) ? best.link.a : best.link.b].name}` };
     }
   }
@@ -258,7 +254,7 @@ export function chooseBotMove(s: GameState, i: number): BotMove | null {
   for (const card of p.hand) {
     for (const t of buildTargets(s, i, card)) {
       if (!t.valid) continue;
-      const v = scoreBuild(s, i, t, rand) - (isWild(card) ? 3 : 0);
+      const v = scoreBuild(s, i, t, rand, sk) - (isWild(card) ? 3 : 0);
       if (v === -Infinity) continue;
       if (!bestBuild || v > bestBuild.v) bestBuild = { card, t, v };
     }
@@ -268,7 +264,7 @@ export function chooseBotMove(s: GameState, i: number): BotMove | null {
   let bestLink: { t: LinkTarget; v: number } | null = null;
   for (const t of linkTargets(s, i)) {
     if (!t.valid) continue;
-    const v = scoreLink(s, i, t, rand);
+    const v = scoreLink(s, i, t, rand, sk);
     if (!bestLink || v > bestLink.v) bestLink = { t, v };
   }
 

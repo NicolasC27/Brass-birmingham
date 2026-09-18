@@ -434,13 +434,13 @@ const fr: typeof enrules = {
   approx: {
     intro:
       "Un registre honnête, tenu à la vue de tous : ce que cet aperçu joue fidèlement, et ce qu'il simplifie encore. L'écran de préparation renvoie ici partout où une pastille de fidélité apparaît.",
-    botsRibbon: "Heuristique",
+    botsRibbon: "Bêta",
     botsTitle: "The Clockwork Club",
-    botsBody1: "Les chaises vides sont occupées par des joueurs mécaniques. Le ",
-    botsBody2: " construit à bas prix et vend tard ; l'",
-    botsBody3: " développe, connecte et vend selon un rythme réglé ; le ",
-    botsBody4:
-      " emprunte hardiment et vous devance chez les négociants. Ils jouent à l'appétit et à l'habitude, non par recherche profonde — de dignes partenaires d'entraînement, pas encore des génies.",
+    botsBody1: "Les chaises vides sont occupées par des joueurs mécaniques, chacun avec son métier : ",
+    botsBody2: " trace la carte, ",
+    botsBody3: " cuit les fours, ",
+    botsBody4: " creuse le charbon, ",
+    botsBody5: " file le coton. Ils jouent tout leur tour avant de choisir, et leur force suit la vôtre — la cote en ligne, vos résultats à la maison.",
   },
   approximations: {
     supplyCore: {

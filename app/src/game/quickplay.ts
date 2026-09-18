@@ -1,4 +1,5 @@
-import { BOT_NAME_POOL, SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
+import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
+import { personaName } from '@/game/data';
 import type { StoredSetup } from '@/components/setup/constants';
 import { tr } from '@/i18n';
 import { deserialize } from './engine';
@@ -29,8 +30,8 @@ export function quickSetup(): StoredSetup {
   return {
     players: [
       { name: tr('setup.defaults.playerOne'), color: 'brass', type: 'human' },
-      { name: BOT_NAME_POOL[0], color: 'oxblood', type: 'bot', difficulty: 'industrialist' },
-      { name: BOT_NAME_POOL[1], color: 'verdigris', type: 'bot', difficulty: 'foreman' },
+      { name: personaName('wedgwood'), color: 'oxblood', type: 'bot', persona: 'wedgwood' },
+      { name: personaName('arkwright'), color: 'verdigris', type: 'bot', persona: 'arkwright' },
     ],
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
   };
@@ -45,7 +46,7 @@ export function tutorialSetup(): StoredSetup {
   return {
     players: [
       { name: tr('setup.defaults.playerOne'), color: 'brass', type: 'human' },
-      { name: BOT_NAME_POOL[0], color: 'oxblood', type: 'bot', difficulty: 'foreman' },
+      { name: personaName('wedgwood'), color: 'oxblood', type: 'bot', persona: 'wedgwood' },
     ],
     options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core', assist: true },
   };

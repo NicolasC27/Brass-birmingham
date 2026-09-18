@@ -65,7 +65,7 @@ export default {
     colorAria: "Seat {n} color",
     colorStealTip: "{color} — taken from whoever holds it.",
     beta: "Beta",
-    engineTip: "Heuristic engine — approximations apply. See the Rules Codex for the current simplifications.",
+    engineTip: "The machines play their whole turn out before choosing. Approximations apply — see the Rules Codex.",
   },
   token: {
     ariaLabel: "{color} counter",
@@ -76,22 +76,33 @@ export default {
     verdigris: "Verdigris",
     steel: "Steel Blue",
   },
-  difficulty: {
-    foreman: {
-      label: "Foreman",
+  persona: {
+    boulton: {
+      label: "Mr Boulton",
+      trade: "Network & forges",
       tendency:
-        "Keeps the works running — builds steadily and sells when it can, but misreads the market now and then.",
+        "Lays links early and often, raises iron works and sells the ore to everyone — his points come from the map.",
     },
-    industrialist: {
-      label: "Industrialist",
+    wedgwood: {
+      label: "Mrs Wedgwood",
+      trade: "Pottery & merchants",
       tendency:
-        "Balanced — competes for network and market share, planning one era at a time.",
+        "Builds toward the merchants, fires pottery and sells on schedule — her points come from the kilns.",
     },
-    magnate: {
-      label: "Magnate",
+    watt: {
+      label: "Mr Watt",
+      trade: "Coal & development",
       tendency:
-        "Sharp — contests the merchants, denies you coal, and plans both eras ahead.",
+        "Digs mines, develops his mat and keeps cash in hand — his points come from the high tiles.",
     },
+    arkwright: {
+      label: "Miss Arkwright",
+      trade: "Cotton & breweries",
+      tendency:
+        "Spins cotton and brews the beer that sells it — her points come from a steady trade.",
+    },
+    adaptive:
+      "Plays to your level — sharper as you win, gentler as you lose, never running away with a game.",
   },
   defaults: {
     playerOne: "Player One",

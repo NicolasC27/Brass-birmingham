@@ -70,7 +70,7 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
         <div className="min-w-0">
           <p className="truncate font-fell text-[16px] tracking-wide" style={{ color: color.hex }}>{p.name}</p>
           <p className="font-mono text-[10px] uppercase tracking-wider text-cream-100/50">
-            {p.isBot ? t(`setup.difficulty.${p.difficulty}.label`) : mine ? t('game.card.you') : t('game.card.player')}
+            {p.isBot ? t(`setup.persona.${p.persona}.trade`) : mine ? t('game.card.you') : t('game.card.player')}
             {title && <span className="ml-1.5 rounded-sm border border-brass-700/60 px-1 font-fell normal-case tracking-wide text-brass-400">{t(`results.titles.${title}`)}</span>}
           </p>
         </div>

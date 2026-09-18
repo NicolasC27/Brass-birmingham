@@ -20,6 +20,7 @@ import type {
   Resource,
   Town,
 } from './types';
+import type { BotPersona } from './types';
 
 /* ------------------------- industry tables ------------------------ */
 
@@ -503,7 +504,29 @@ export const BOT_FLAVOR = [
   'polishes the ledger…',
 ];
 
-/** rough valuation weights per bot difficulty (used by bot.ts) */
+/* ------------------------- the characters ------------------------- */
+
+/** the machines by name, each with a colour of its own to sit down in */
+export const PERSONAS: { id: BotPersona; name: string; color: string; initials: string }[] = [
+  { id: 'boulton', name: 'Mr Boulton', color: 'brass', initials: 'MB' },
+  { id: 'wedgwood', name: 'Mrs Wedgwood', color: 'oxblood', initials: 'JW' },
+  { id: 'arkwright', name: 'Miss Arkwright', color: 'verdigris', initials: 'RA' },
+  { id: 'watt', name: 'Mr Watt', color: 'steel', initials: 'JW' },
+];
+export const PERSONA_IDS: readonly BotPersona[] = PERSONAS.map((p) => p.id);
+export const personaOf = (v: unknown): BotPersona | null => (PERSONA_IDS.includes(v as BotPersona) ? (v as BotPersona) : null);
+export const personaName = (id: BotPersona): string => PERSONAS.find((p) => p.id === id)?.name ?? id;
+/** a seat's character: the one it names, else the one its colour suggests
+ *  (an old setup that only knew a difficulty) */
+export function personaFor(seat: { persona?: unknown; color?: string }): BotPersona {
+  return personaOf(seat.persona) ?? PERSONAS.find((p) => p.color === seat.color)?.id ?? 'boulton';
+}
+/** a character not yet at the table, in the order they were introduced */
+export function freePersona(taken: readonly (BotPersona | undefined)[]): BotPersona {
+  return PERSONA_IDS.find((id) => !taken.includes(id)) ?? 'boulton';
+}
+
+/** rough valuation weights of the heuristic bot, by temper (bot.ts) */
 export const BOT_SKILL = {
   foreman: { supplyPenalty: 2, networkBias: 1, sellUrgency: 0.6, jitter: 4 },
   industrialist: { supplyPenalty: 5, networkBias: 2, sellUrgency: 1, jitter: 2 },

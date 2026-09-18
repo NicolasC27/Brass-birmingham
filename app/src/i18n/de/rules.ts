@@ -434,13 +434,13 @@ const de: typeof enrules = {
   approx: {
     intro:
       "Ein ehrliches Register, für alle sichtbar geführt: was diese Vorschau regeltreu spielt und was sie noch vereinfacht. Der Einrichtungsbildschirm verweist überall hierher, wo eine Treue-Marke erscheint.",
-    botsRibbon: "Heuristik",
+    botsRibbon: "Beta",
     botsTitle: "The Clockwork Club",
-    botsBody1: "Leere Stühle werden von mechanischen Spielern besetzt. Der ",
-    botsBody2: " baut billig und verkauft spät; der ",
-    botsBody3: " entwickelt, verbindet und verkauft nach festem Takt; der ",
-    botsBody4:
-      " leiht kühn und kommt dir bei den Händlern zuvor. Sie spielen nach Appetit und Gewohnheit, nicht durch tiefe Suche — würdige Übungspartner, noch keine Genies.",
+    botsBody1: "Leere Stühle werden von mechanischen Spielern besetzt, jeder mit eigenem Handwerk: ",
+    botsBody2: " zeichnet die Karte, ",
+    botsBody3: " brennt die Öfen, ",
+    botsBody4: " gräbt die Kohle, ",
+    botsBody5: " spinnt die Baumwolle. Sie spielen ihren ganzen Zug durch, bevor sie wählen, und ihre Stärke folgt deiner — der Cote online, deinen Ergebnissen zu Hause.",
   },
   approximations: {
     supplyCore: {

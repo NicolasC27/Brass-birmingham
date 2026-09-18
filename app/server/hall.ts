@@ -1,9 +1,10 @@
 import { randomBytes, randomInt } from 'node:crypto';
-import type { BotDifficulty, PlayerColor, SetupOptions } from '@/components/setup/constants';
+import type { BotPersona, PlayerColor, SetupOptions } from '@/components/setup/constants';
+import { freePersona, personaName, personaOf } from '@/game/data';
 import type { GameAction } from '@/game/actions';
 import type { SetupPayload } from '@/game/types';
 import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
-import type { Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableSeat, TableSummary } from '@/online/table';
+import type { Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableSeat, TableSummary, Tier } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
 import { Queue } from './queue';
@@ -64,10 +65,11 @@ export interface HallOptions {
 const QUICK_TABLE = { options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 2, fidelity: 'core', assist: false } as SetupOptions };
 const RANKED_TABLE = { options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: 3, fidelity: 'core', assist: false } as SetupOptions };
 /** the machines that keep a lone quick player company */
-const COMPANY: { name: string; difficulty: BotDifficulty }[] = [
-  { name: 'Mr Boulton', difficulty: 'industrialist' },
-  { name: 'Mrs Wedgwood', difficulty: 'foreman' },
-];
+const COMPANY: BotPersona[] = ['boulton', 'wedgwood'];
+
+/** the machines' strength for each cote, and before a first ranked game */
+const STRENGTH_BY_TIER: Record<Tier, number> = { apprentice: 0.3, journeyman: 0.45, foreman: 0.6, industrialist: 0.8, magnate: 1 };
+const FRESH_STRENGTH = 0.35;
 
 /** a table nobody has touched for this long is swept away */
 export const STALE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -122,6 +124,19 @@ export class Hall {
         this.ended.add(g.code);
       }
     }
+  }
+
+  /** how well the machines play at a table: the strongest human's cote sets
+   *  it, a fresh account is met gently, a table of machines plays flat out */
+  private strengthFor(seatIds: string[]): number {
+    const season = seasonAt().id;
+    let best = -1;
+    for (const id of seatIds) {
+      if (id.startsWith('bot-')) continue;
+      const rating = this.store.ratingFor(id, season);
+      best = Math.max(best, rating ? STRENGTH_BY_TIER[rating.tier] : FRESH_STRENGTH);
+    }
+    return best < 0 ? 1 : best;
   }
 
   onChange(cb: Changed): () => void {
@@ -287,7 +302,7 @@ export class Hall {
     }
     if (!seats.length) return;
     for (const machine of COMPANY.slice(0, ranked ? 0 : m.machines)) {
-      seats.push({ id: 'bot-' + randomBytes(4).toString('hex'), name: machine.name, color: freeColor({ seats }), kind: 'bot', difficulty: machine.difficulty, ready: true, joinedAt: now });
+      seats.push({ id: 'bot-' + randomBytes(4).toString('hex'), name: personaName(machine), color: freeColor({ seats }), kind: 'bot', persona: machine, ready: true, joinedAt: now });
     }
     let code = mintCode();
     while (this.rooms.has(code)) code = mintCode();
@@ -501,6 +516,7 @@ export class Hall {
       actions,
       hostId: this.rooms.get(code)?.table.hostId,
       pace: this.pace,
+      strength: () => this.strengthFor(seatIds),
       emit: () => {
         this.touch(code);
         const over = game.over;
@@ -595,9 +611,7 @@ function minutesOf(v: unknown): number | null {
 /* the four chairs and the three bots, as the setup page knows them — spelt
    out here so the server has no page to import */
 const COLORS: readonly PlayerColor[] = ['brass', 'oxblood', 'verdigris', 'steel'];
-const DIFFICULTIES: readonly BotDifficulty[] = ['foreman', 'industrialist', 'magnate'];
 const colorOf = (v: unknown): PlayerColor | null => (COLORS.includes(v as PlayerColor) ? (v as PlayerColor) : null);
-const difficultyOf = (v: unknown): BotDifficulty | null => (DIFFICULTIES.includes(v as BotDifficulty) ? (v as BotDifficulty) : null);
 /** a bot's name as the host typed it, trimmed to what a chair can carry */
 const botName = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 20) : null);
 
@@ -615,14 +629,14 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
     if (!was) {
       const color = colorOf(w.color);
       const name = botName(w.name);
-      const difficulty = w.difficulty === undefined ? 'industrialist' : difficultyOf(w.difficulty);
+      const persona = w.persona === undefined ? freePersona(seats.map((s) => s.persona)) : personaOf(w.persona);
       /* no machine ever sits at a ranked table */
-      if (!host || w.kind !== 'bot' || !color || !name || !difficulty || cur.ranked) return null;
+      if (!host || w.kind !== 'bot' || !color || !name || !persona || cur.ranked) return null;
       /* the client's own bot id is kept when it is plainly a bot's (accounts
          are 'a-…'): a second edit sent before the echo then names the same
          machine, not a new one */
       const id = /^bot-[a-z0-9]{4,12}$/.test(w.id) ? w.id : 'bot-' + randomBytes(4).toString('hex');
-      seats.push({ id, name, color, kind: 'bot', difficulty, ...(w.minutes !== undefined ? { minutes: minutesOf(w.minutes) } : {}), ready: true, joinedAt: Date.now() });
+      seats.push({ id, name, color, kind: 'bot', persona, ...(w.minutes !== undefined ? { minutes: minutesOf(w.minutes) } : {}), ready: true, joinedAt: Date.now() });
       continue;
     }
     /* another human's chair is theirs: the host may clear it, never edit it —
@@ -637,10 +651,10 @@ function sane(cur: Table, wanted: Table, playerId: string): Table | null {
     }
     /* your own name at the table is your account's, not the client's word */
     const color = colorOf(w.color);
-    const difficulty = w.difficulty === undefined ? was.difficulty : difficultyOf(w.difficulty);
+    const persona = w.persona === undefined ? was.persona : personaOf(w.persona);
     const name = was.kind === 'bot' ? botName(w.name) : was.name;
-    if (!color || !name || difficulty === null) return null;
-    seats.push({ ...was, color, ...(difficulty !== undefined ? { difficulty } : {}), ready: was.kind === 'bot' ? true : !!w.ready, name, ...(host && w.minutes !== undefined ? { minutes: minutesOf(w.minutes) } : {}) });
+    if (!color || !name || persona === null) return null;
+    seats.push({ ...was, color, ...(persona !== undefined ? { persona } : {}), ready: was.kind === 'bot' ? true : !!w.ready, name, ...(host && w.minutes !== undefined ? { minutes: minutesOf(w.minutes) } : {}) });
   }
   if (!host && seats.length !== cur.seats.length) return null;
   if (seats.length < 1 || seats.length > MAX_SEATS) return null;

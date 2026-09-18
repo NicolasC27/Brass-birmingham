@@ -62,6 +62,8 @@ export interface TableGameOptions {
   pace?: Pace;
   /** the table's host: the one who may propose a rollback */
   hostId?: string;
+  /** how well the machines play, 0 to 1, asked before every machine's move */
+  strength?: () => number;
   /** the state moved on: hand every watcher their view again */
   emit: () => void;
   journal?: Journal;
@@ -76,6 +78,7 @@ export class TableGame {
   private readonly emit: () => void;
   private readonly pace: Pace;
   private readonly journal: Journal | null;
+  private readonly strength: (() => number) | null;
   /** the actions taken by humans — the undo marks, kept as the store does */
   private marks: UndoMark[] = [];
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -100,6 +103,7 @@ export class TableGame {
     this.emit = o.emit;
     this.pace = o.pace ?? DEFAULT_PACE;
     this.journal = o.journal ?? null;
+    this.strength = o.strength ?? null;
     this.seed = o.seed ?? Math.floor(Math.random() * 1e9);
     this.hostId = o.hostId ?? null;
     this.breaks = o.setup.players.map(() => 0);
@@ -407,7 +411,7 @@ export class TableGame {
     if (s.phase !== 'action' || !s.players[s.current].isBot) return;
     const seat = s.current;
     try {
-      const wanted = chooseBotAction(s, seat);
+      const wanted = chooseBotAction(s, seat, { strength: this.strength?.() ?? 1 });
       /* nothing playable, or a move the engine turns down: scout, else pass */
       if (!wanted || this.commit(seat, wanted) !== null) this.commit(seat, fallbackAction(s, seat));
     } catch (e) {

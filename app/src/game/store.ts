@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction } from './search';
+import { readForm, recordForm } from './form';
 import { tr } from '@/i18n';
 import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { UndoMark } from './actions';
@@ -235,6 +236,14 @@ interface GameStore {
 }
 
 const NO_MOOD = { pause: null, breaks: [] as number[], rollback: null, frozen: false, host: -1 };
+
+/** a local game against the machines is over: the player's form moves,
+ *  unless the table folded or no human sat at it */
+function noteForm(g: GameState): void {
+  if (g.abandoned || g.winner === undefined) return;
+  if (!g.players.some((p) => p.isBot) || !g.players.some((p) => !p.isBot)) return;
+  recordForm(!g.players[g.winner].isBot);
+}
 
 function readSetup(): SetupPayload {
   try {
@@ -825,6 +834,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const human = action.kind !== 'concede' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
+    if (mut.phase === 'game-over' && !get().code) noteForm(mut);
     if (human) botBanter(mut, g.current, action);
     return true;
   },
@@ -872,6 +882,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!r.state) return;
     set({ game: r.state, ceremony: null, gameOverOpen: r.state.phase === 'game-over' });
     get().save();
+    if (r.state.phase === 'game-over') noteForm(r.state);
   },
 
   closeGameOver: () => set({ gameOverOpen: false }),
@@ -930,8 +941,9 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!g || g.phase !== 'action' || st.code) return null;
     const p = g.players[g.current];
     if (!p.isBot) return null;
-    /* a browser thinks on the thread that paints: the magnate keeps it short */
-    const wanted = chooseBotAction(g, g.current, { budgetMs: 200 });
+    /* a browser thinks on the thread that paints, so a machine keeps it short;
+       it plays at the form the house holds for this player */
+    const wanted = chooseBotAction(g, g.current, { budgetMs: 200, strength: readForm().level });
     // nothing playable (or a move the engine refuses): scout if allowed, else pass
     if (!(wanted && get().dispatch(wanted))) get().dispatch(fallbackAction(g, g.current));
     return wanted;

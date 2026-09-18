@@ -158,7 +158,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
       <div className="flex min-w-0 flex-col items-start gap-[3px]">
         <span className="flex items-center gap-1.5">
           <span className={cn('max-w-[104px] truncate font-fell leading-tight tracking-wide', active ? 'text-cream-100' : 'text-cream-100/85', compact ? 'text-[12px]' : 'text-[13px]')}>{p.name}</span>
-          {p.isBot && <span className="font-mono text-[8px] uppercase text-brass-500/80">{p.difficulty.slice(0, 4)}</span>}
+          {p.isBot && <span className="font-mono text-[8px] uppercase text-brass-500/80">{t('game.rail.bot')}</span>}
           {online && !p.isBot && typeof latency[index] === 'number' && (
             <span className="font-mono text-[8.5px] tabular-nums" style={{ color: latency[index]! < 90 ? '#4EE38F' : latency[index]! < 220 ? '#DDBE7E' : '#FF5F4C' }} title={t('game.rail.latency', { ms: latency[index]! })}>
               {latency[index]} ms

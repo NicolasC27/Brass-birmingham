@@ -9,8 +9,8 @@ import type { GameState, SetupPayload } from '../types';
 
 const setup: SetupPayload = {
   players: [
-    { name: 'Ada', color: 'oxblood', type: 'bot', difficulty: 'magnate' },
-    { name: 'Bob', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
+    { name: 'Ada', color: 'oxblood', type: 'bot', persona: 'watt' },
+    { name: 'Bob', color: 'verdigris', type: 'bot', persona: 'boulton' },
   ],
   options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 };

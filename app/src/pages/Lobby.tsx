@@ -3,8 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Play, Search, Send, X } from 'lucide-react';
 import HouseRules from '@/components/setup/HouseRules';
-import { DIFFICULTIES, PLAYER_COLORS, SETUP_STORAGE_KEY } from '@/components/setup/constants';
-import type { BotDifficulty, PlayerColor } from '@/components/setup/constants';
+import { PERSONAS, PLAYER_COLORS, SETUP_STORAGE_KEY, recastSeat } from '@/components/setup/constants';
+import { freePersona, personaName } from '@/game/data';
+import type { BotPersona, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
 import { invite, useDesk, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
@@ -19,14 +20,13 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /* Salon d'attente « Club Industriel » (lobby.md) — refonte de        */
 /* présentation UNIQUEMENT. Chaque contrat de l'ancienne salle tient  */
-/* toujours : sièges et couleurs (freeColor), bots (BOT_NAMES,        */
+/* toujours : sièges et couleurs (freeColor), bots (the characters,        */
 /* difficultés), ready, hôte, chandelle par siège, code copiable,     */
 /* invitations d'amis, et le démarrage — status 'starting' → chaque   */
 /* client écrit brassworks.setup.v1, supprime brassworks.resume.v1 et */
 /* navigue. Les mutations ne passent que par lobby.update.            */
 /* ------------------------------------------------------------------ */
 
-const BOT_NAMES = ['Ada', 'Bob', 'Cy', 'Di', 'Eli', 'Fay'];
 
 const seatSpring = { type: 'spring', stiffness: 260, damping: 24 } as const;
 
@@ -102,7 +102,7 @@ function SeatSlot({
   onTogglePopover,
   onColor,
   onRemove,
-  onDifficulty,
+  onPersona,
   onMinutes,
   onAddBot,
 }: {
@@ -116,7 +116,7 @@ function SeatSlot({
   onTogglePopover: () => void;
   onColor: (c: PlayerColor) => void;
   onRemove: () => void;
-  onDifficulty: (d: BotDifficulty) => void;
+  onPersona: (p: BotPersona) => void;
   onMinutes: (m: number | null | undefined) => void;
   onAddBot: () => void;
 }) {
@@ -157,7 +157,7 @@ function SeatSlot({
   const canColor = isMe || (bot && iAmHost);
   const hasControls = !bot || iAmHost;
   const subLine = bot
-    ? t('platform.lobby.botLine', { difficulty: t(`setup.difficulty.${slot.difficulty ?? 'industrialist'}.label`) })
+    ? t('platform.lobby.botLine', { difficulty: t(`setup.persona.${slot.persona ?? 'boulton'}.trade`) })
     : ready
       ? t('platform.lobby.readyTag')
       : t('platform.lobby.waiting');
@@ -218,18 +218,19 @@ function SeatSlot({
             )}
             {bot && iAmHost && (
               <div className={cn('flex justify-center gap-1', canColor && 'mt-2.5')}>
-                {DIFFICULTIES.map((d) => (
+                {PERSONAS.map((d) => (
                   <button
                     key={d.id}
                     type="button"
-                    aria-pressed={slot.difficulty === d.id}
-                    onClick={() => onDifficulty(d.id)}
+                    aria-pressed={slot.persona === d.id}
+                    title={`${t(`setup.persona.${d.id}.trade`)} — ${t(`setup.persona.${d.id}.tendency`)}`}
+                    onClick={() => onPersona(d.id)}
                     className={cn(
                       'rounded border px-1.5 py-[2px] font-ui text-[9px] font-semibold uppercase tracking-[0.1em]',
-                      slot.difficulty === d.id ? 'border-brass-500 bg-brass-500/15 text-brass-300' : 'border-enamel-line text-iron-400 hover:border-brass-hairline-strong hover:text-paper-300',
+                      slot.persona === d.id ? 'border-brass-500 bg-brass-500/15 text-brass-300' : 'border-enamel-line text-iron-400 hover:border-brass-hairline-strong hover:text-paper-300',
                     )}
                   >
-                    {t(`setup.difficulty.${d.id}.label`)}
+                    {d.initials}
                   </button>
                 ))}
               </div>
@@ -500,9 +501,8 @@ export default function Lobby() {
   const addBot = () =>
     edit((tb) => {
       if (tb.seats.length >= MAX_SEATS) return tb;
-      const used = new Set(tb.seats.map((s) => s.name));
-      const name = BOT_NAMES.find((n) => !used.has(n)) ?? `Bot ${tb.seats.length + 1}`;
-      return { ...tb, seats: [...tb.seats, { id: 'bot-' + Math.random().toString(36).slice(2, 8), name, color: freeColor(tb), kind: 'bot', difficulty: 'industrialist', ready: true, joinedAt: Date.now() }] };
+      const persona = freePersona(tb.seats.map((s) => s.persona));
+      return { ...tb, seats: [...tb.seats, { id: 'bot-' + Math.random().toString(36).slice(2, 8), name: personaName(persona), color: freeColor(tb), kind: 'bot', persona, ready: true, joinedAt: Date.now() }] };
     });
   const leave = () => {
     lobby.leave(code);
@@ -589,7 +589,7 @@ export default function Lobby() {
                     onTogglePopover={() => setOpenSeat((cur) => (cur === (slot?.id ?? `empty-${i}`) ? null : (slot?.id ?? `empty-${i}`)))}
                     onColor={(color) => slot && edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === slot.id ? { ...s, color } : s)) }))}
                     onRemove={() => slot && edit((tb) => ({ ...tb, seats: tb.seats.filter((s) => s.id !== slot.id) }))}
-                    onDifficulty={(difficulty) => slot && edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === slot.id ? { ...s, difficulty } : s)) }))}
+                    onPersona={(persona) => slot && edit((tb) => ({ ...tb, seats: tb.seats.map((s) => (s.id === slot.id ? { ...s, ...recastSeat({ type: 'bot', name: s.name, color: s.color, persona: s.persona ?? persona }, persona) } : s)) }))}
                     onMinutes={(minutes) =>
                       slot &&
                       edit((tb) => ({

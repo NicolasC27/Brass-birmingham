@@ -518,12 +518,14 @@ export default function Rules() {
                   </h3>
                   <p className="mt-1 font-ui text-[13.5px] leading-relaxed text-paper-300">
                     {t("rules.approx.botsBody1")}
-                    <strong className="text-paper-100">{t("setup.difficulty.foreman.label")}</strong>
+                    <strong className="text-paper-100">{t("setup.persona.boulton.label")}</strong>
                     {t("rules.approx.botsBody2")}
-                    <strong className="text-paper-100">{t("setup.difficulty.industrialist.label")}</strong>
+                    <strong className="text-paper-100">{t("setup.persona.wedgwood.label")}</strong>
                     {t("rules.approx.botsBody3")}
-                    <strong className="text-paper-100">{t("setup.difficulty.magnate.label")}</strong>
+                    <strong className="text-paper-100">{t("setup.persona.watt.label")}</strong>
                     {t("rules.approx.botsBody4")}
+                    <strong className="text-paper-100">{t("setup.persona.arkwright.label")}</strong>
+                    {t("rules.approx.botsBody5")}
                   </p>
                 </div>
               </ChapterSection>

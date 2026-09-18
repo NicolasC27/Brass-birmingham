@@ -105,11 +105,14 @@ export interface LinkState {
   era: Era;
 }
 
+/** the four characters a machine can be — each with a trade of its own */
+export type BotPersona = 'boulton' | 'wedgwood' | 'watt' | 'arkwright';
+
 export interface PlayerState {
   name: string;
   color: string; // token id: brass | oxblood | verdigris | steel
   isBot: boolean;
-  difficulty: 'foreman' | 'industrialist' | 'magnate';
+  persona: BotPersona;
   /** this seat's own candle (null = none), when it differs from the table's */
   minutes?: number | null;
   money: number;
@@ -231,7 +234,9 @@ export interface SetupPayload {
     name: string;
     color: string;
     type: 'human' | 'bot';
-    difficulty?: 'foreman' | 'industrialist' | 'magnate';
+    persona?: BotPersona;
+    /** what a bot was before it had a character: kept so old logs replay */
+    difficulty?: string;
     minutes?: number | null;
   }[];
   options: {

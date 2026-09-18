@@ -302,6 +302,7 @@ const game = {
     shrink: 'Shrink the mat',
   },
   rail: {
+    bot: "bot",
     latency: 'Line: {ms} ms',
     playersAria: 'Players',
     focusExit: 'Leave the focus view',

@@ -231,10 +231,10 @@ describe('the hall', () => {
     server!.hall.matchQueues();
     await eli.until('the table', () => !!eli.view);
     expect(eli.queue).toBeNull();
-    expect(eli.table!.seats.map((s) => [s.name, s.kind, s.difficulty])).toEqual([
+    expect(eli.table!.seats.map((s) => [s.name, s.kind, s.persona])).toEqual([
       ['Eli', 'human', undefined],
-      ['Mr Boulton', 'bot', 'industrialist'],
-      ['Mrs Wedgwood', 'bot', 'foreman'],
+      ['Mr Boulton', 'bot', 'boulton'],
+      ['Mrs Wedgwood', 'bot', 'wedgwood'],
     ]);
     ada.send({ t: 'desk', rid: 2 });
     await ada.until('the desk', () => ada.desk?.hall.playing === 2);

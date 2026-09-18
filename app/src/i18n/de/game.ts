@@ -304,6 +304,7 @@ const game: typeof engame = {
     shrink: 'Tableau verkleinern',
   },
   rail: {
+    bot: "bot",
     latency: 'Leitung: {ms} ms',
     playersAria: 'Spieler',
     focusExit: 'Fokusansicht verlassen',

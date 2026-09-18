@@ -8,7 +8,6 @@
 /* ------------------------------------------------------------------ */
 
 import {
-  BOT_SKILL,
   COSTS,
   HAND_SIZE,
   INCOME_MAX,
@@ -39,6 +38,7 @@ import {
   rng,
   shuffle,
   startMarket,
+  personaFor,
 } from './data';
 import type {
   Card,
@@ -54,7 +54,7 @@ import type {
   TileState,
 } from './types';
 
-export const ENGINE_VERSION = 3;
+export const ENGINE_VERSION = 4;
 export { eraRounds };
 
 /* ============================ setup ================================ */
@@ -63,8 +63,8 @@ export function defaultSetup(): SetupPayload {
   return {
     players: [
       { name: 'You', color: 'brass', type: 'human' },
-      { name: 'The Baron', color: 'oxblood', type: 'bot', difficulty: 'industrialist' },
-      { name: 'Mrs. Salt', color: 'verdigris', type: 'bot', difficulty: 'foreman' },
+      { name: 'Mrs Wedgwood', color: 'oxblood', type: 'bot', persona: 'wedgwood' },
+      { name: 'Miss Arkwright', color: 'verdigris', type: 'bot', persona: 'arkwright' },
     ],
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
   };
@@ -85,7 +85,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     name: p.name,
     color: p.color,
     isBot: p.type === 'bot',
-    difficulty: p.difficulty ?? 'industrialist',
+    persona: personaFor(p),
     ...(p.minutes !== undefined ? { minutes: p.minutes } : {}),
     money: START_MONEY,
     income: START_INCOME_SPACE,
@@ -1297,12 +1297,6 @@ export function deserialize(raw: string): GameState | null {
   } catch {
     return null;
   }
-}
-
-/* ========================== bot helpers ============================ */
-
-export function botSkill(p: PlayerState) {
-  return BOT_SKILL[p.difficulty] ?? BOT_SKILL.industrialist;
 }
 
 export { PLAYER_COLORS };

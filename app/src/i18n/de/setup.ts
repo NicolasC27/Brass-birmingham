@@ -67,7 +67,7 @@ const de: typeof ensetup = {
     colorAria: "Farbe von Platz {n}",
     colorStealTip: "{color} — wird dem abgenommen, der sie hat.",
     beta: "Beta",
-    engineTip: "Heuristische Engine — Näherungen gelten. Siehe den Regelkodex für die aktuellen Vereinfachungen.",
+    engineTip: "Die Maschinen spielen ihren ganzen Zug durch, bevor sie wählen. Es gelten Näherungen — siehe den Regelkodex.",
   },
   token: {
     ariaLabel: "Spielstein {color}",
@@ -78,22 +78,33 @@ const de: typeof ensetup = {
     verdigris: "Grünspan",
     steel: "Stahlblau",
   },
-  difficulty: {
-    foreman: {
-      label: "Vorarbeiter",
+  persona: {
+    boulton: {
+      label: "Mr Boulton",
+      trade: "Netz und Hütten",
       tendency:
-        "Hält das Werk am Laufen — baut stetig und verkauft, wenn er kann, liest den Markt aber manchmal falsch.",
+        "Legt früh und oft Verbindungen, errichtet Eisenwerke und verkauft das Eisen an alle — seine Punkte kommen von der Karte.",
     },
-    industrialist: {
-      label: "Industrieller",
+    wedgwood: {
+      label: "Mrs Wedgwood",
+      trade: "Töpferei und Händler",
       tendency:
-        "Ausgewogen — kämpft um Netzwerk und Marktanteile und plant ein Zeitalter nach dem anderen.",
+        "Baut auf die Händler zu, brennt Töpferwaren und verkauft pünktlich — ihre Punkte kommen aus den Öfen.",
     },
-    magnate: {
-      label: "Magnat",
+    watt: {
+      label: "Mr Watt",
+      trade: "Kohle und Entwicklung",
       tendency:
-        "Scharf — streitet um die Händler, schneidet dich von der Kohle ab und plant beide Zeitalter im Voraus.",
+        "Gräbt Zechen, entwickelt sein Tableau und hält Bargeld bereit — seine Punkte kommen von den hohen Plättchen.",
     },
+    arkwright: {
+      label: "Miss Arkwright",
+      trade: "Baumwolle und Brauereien",
+      tendency:
+        "Spinnt Baumwolle und braut das Bier, das sie verkauft — ihre Punkte kommen aus stetigem Handel.",
+    },
+    adaptive:
+      "Spielt auf deinem Niveau — schärfer, wenn du gewinnst, sanfter, wenn du verlierst, nie so, dass eine Partie davonläuft.",
   },
   defaults: {
     playerOne: "Spieler eins",

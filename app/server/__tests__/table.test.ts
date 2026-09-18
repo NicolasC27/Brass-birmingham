@@ -87,8 +87,8 @@ describe('a table over the wire', () => {
         ...host.table!,
         seats: [
           ...host.table!.seats.map((s) => (s.id === host.id ? { ...s, ready: true } : s)),
-          { id: 'bot-cy', name: 'Cy', color: 'verdigris' as const, kind: 'bot' as const, difficulty: 'industrialist' as const, ready: true, joinedAt: Date.now() },
-          { id: 'bot-di', name: 'Di', color: 'steel' as const, kind: 'bot' as const, difficulty: 'foreman' as const, ready: true, joinedAt: Date.now() },
+          { id: 'bot-cy', name: 'Cy', color: 'verdigris' as const, kind: 'bot' as const, persona: 'boulton' as const, ready: true, joinedAt: Date.now() },
+          { id: 'bot-di', name: 'Di', color: 'steel' as const, kind: 'bot' as const, persona: 'wedgwood' as const, ready: true, joinedAt: Date.now() },
         ],
       },
     });
@@ -224,20 +224,20 @@ describe('a table over the wire', () => {
   it('seats a bot under the house\'s own id when the client\'s is not a bot\'s, and turns down a chair of no known colour', async () => {
     const { host, code } = await seatTwo({ bot: 60000, ceremony: 60000 });
     /* an id shaped like an account's: the house names the machine itself */
-    const bot = { id: 'a-0123456789abcdef', name: '  Cy  ', color: 'verdigris' as const, kind: 'bot' as const, difficulty: 'foreman' as const, ready: true, joinedAt: 0 };
+    const bot = { id: 'a-0123456789abcdef', name: '  Cy  ', color: 'verdigris' as const, kind: 'bot' as const, persona: 'wedgwood' as const, ready: true, joinedAt: 0 };
     host.send({ t: 'table', code, table: { ...host.table!, seats: [...host.table!.seats, bot] } });
     await host.until('the bot', () => host.table!.seats.length === 3);
     const seated = host.table!.seats[2];
     expect(seated.id).toMatch(/^bot-[0-9a-f]{8}$/);
-    expect(seated).toMatchObject({ name: 'Cy', color: 'verdigris', difficulty: 'foreman' });
+    expect(seated).toMatchObject({ name: 'Cy', color: 'verdigris', persona: 'wedgwood' });
     /* a colour off the palette, or a bot of no known temper: the table stands as it was */
     const before = host.trace.length;
     host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === host.id ? { ...s, color: 'plaid' as never } : s)) } });
     await host.until('the answer', () => host.trace.length > before);
     expect(host.table!.seats[0].color).toBe('brass');
-    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === seated.id ? { ...s, difficulty: 'genius' as never } : s)) } });
+    host.send({ t: 'table', code, table: { ...host.table!, seats: host.table!.seats.map((s) => (s.id === seated.id ? { ...s, persona: 'genius' as never } : s)) } });
     await host.until('the second answer', () => host.trace.length > before + 1);
-    expect(host.table!.seats[2].difficulty).toBe('foreman');
+    expect(host.table!.seats[2].persona).toBe('wedgwood');
   }, 30000);
 
   it('shows the door to a socket that talks too fast, and to the other tabs once the password changes', async () => {

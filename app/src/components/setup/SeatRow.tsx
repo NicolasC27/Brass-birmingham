@@ -5,25 +5,19 @@ import PlayerToken from "./PlayerToken";
 import Segmented from "./Segmented";
 import Tip from "./Tip";
 import {
-  DIFFICULTIES,
+  PERSONAS,
   PLAYER_COLORS,
-  type BotDifficulty,
+  colorDef,
+  type BotPersona,
   type PlayerColor,
   type Seat,
   type SeatType,
 } from "./constants";
 import { cn } from "@/lib/utils";
 
-/* Difficulty medallion rims — platform « Club Industriel » tokens. */
-const RIM_CLASS: Record<string, string> = {
-  copper: "border-copper-500 text-copper-500",
-  brass: "border-brass-600 text-brass-300",
-  glow: "border-brass-400 text-brass-300",
-};
-
 /**
  * One seating slot (create.md §A3): color token, name field, type toggle,
- * color swatches with stealing, bot difficulty medallions. Collapses to a
+ * color swatches with stealing, the characters a machine can be. Collapses to a
  * dashed "Empty chair" placeholder when closed. Restyled to the platform
  * palette (enamel panels, brass hairlines) — props and behavior unchanged.
  */
@@ -35,7 +29,7 @@ export default function SeatRow({
   onTypeChange,
   onNameChange,
   onColorChange,
-  onDifficultyChange,
+  onPersonaChange,
 }: {
   seat: Seat;
   index: number;
@@ -44,7 +38,7 @@ export default function SeatRow({
   onTypeChange: (type: SeatType) => void;
   onNameChange: (name: string) => void;
   onColorChange: (color: PlayerColor) => void;
-  onDifficultyChange: (difficulty: BotDifficulty) => void;
+  onPersonaChange: (persona: BotPersona) => void;
 }) {
   const t = useT();
   const TYPE_OPTIONS: { value: SeatType; label: string }[] = [
@@ -180,31 +174,34 @@ export default function SeatRow({
             })}
           </div>
 
-          {/* Bot difficulty medallions */}
+          {/* The characters a machine can be */}
           {seat.type === "bot" && (
             <div className="relative flex flex-wrap items-center gap-1.5 overflow-visible">
-              {DIFFICULTIES.map((d) => {
-                const active = seat.difficulty === d.id;
+              {PERSONAS.map((d) => {
+                const active = seat.persona === d.id;
+                const hex = colorDef(d.color).hex;
                 return (
-                  <Tip key={d.id} label={t(`setup.difficulty.${d.id}.tendency`)}>
+                  <Tip key={d.id} label={`${t(`setup.persona.${d.id}.trade`)} — ${t(`setup.persona.${d.id}.tendency`)}`}>
                     <button
                       type="button"
                       role="radio"
                       aria-checked={active}
-                      onClick={() => onDifficultyChange(d.id)}
+                      aria-label={d.name}
+                      onClick={() => onPersonaChange(d.id)}
+                      style={{ borderColor: hex, color: active ? hex : undefined }}
                       className={cn(
                         "rounded-full border-2 px-2.5 py-1 font-ui text-[12px] font-semibold tracking-wide transition-all duration-150",
-                        RIM_CLASS[d.rim],
                         active
                           ? "bg-enamel-850 shadow-[0_0_10px_var(--brass-hairline-strong)]"
-                          : "border-opacity-40 opacity-55 hover:opacity-100",
+                          : "border-opacity-40 text-iron-400 opacity-55 hover:opacity-100",
                       )}
                     >
-                      {t(`setup.difficulty.${d.id}.label`)}
+                      {d.name}
                     </button>
                   </Tip>
                 );
               })}
+              <span className="font-ui text-[11px] text-iron-400">{t("setup.persona.adaptive")}</span>
               <Tip label={t("setup.seat.engineTip")}>
                 <span className="inline-flex cursor-help items-center gap-1 rounded border border-rust-700 px-1.5 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-[0.14em] text-rust-400">
                   {t("setup.seat.beta")}

@@ -4,12 +4,15 @@
  */
 
 import { tr } from "@/i18n";
+import { PERSONAS as CHARACTERS, freePersona, personaFor, personaName } from "@/game/data";
+import type { BotPersona } from "@/game/types";
+
+export type { BotPersona };
 
 export const SETUP_STORAGE_KEY = "brassworks.setup.v1";
 
 export type PlayerColor = "brass" | "oxblood" | "verdigris" | "steel";
 export type SeatType = "human" | "bot" | "closed";
-export type BotDifficulty = "foreman" | "industrialist" | "magnate";
 export type EraLength = "short" | "standard";
 export type MarketTemper = "calm" | "standard" | "volatile";
 export type Fidelity = "core" | "approx";
@@ -18,7 +21,7 @@ export interface Seat {
   type: SeatType;
   name: string;
   color: PlayerColor;
-  difficulty: BotDifficulty;
+  persona: BotPersona;
 }
 
 export interface SetupOptions {
@@ -36,7 +39,9 @@ export interface StoredSetup {
     name: string;
     color: PlayerColor;
     type: "human" | "bot";
-    difficulty?: BotDifficulty;
+    persona?: BotPersona;
+    /** the one difficulty a bot used to have: read, never written */
+    difficulty?: string;
     /** this seat's candle: null for none, minutes otherwise; absent = the table's */
     minutes?: number | null;
   }[];
@@ -60,22 +65,13 @@ export function colorDef(color: PlayerColor) {
   return PLAYER_COLORS.find((c) => c.id === color) ?? PLAYER_COLORS[0];
 }
 
-/** Three tempers of clockwork; labels and tendency notes live in the i18n dict. */
-export const DIFFICULTIES: {
-  id: BotDifficulty;
-  rim: "copper" | "brass" | "glow";
-}[] = [
-  { id: "foreman", rim: "copper" },
-  { id: "industrialist", rim: "brass" },
-  { id: "magnate", rim: "glow" },
-];
+/** The four characters a machine can be; their trades and tendencies live in the i18n dict. */
+export const PERSONAS: { id: BotPersona; name: string; color: PlayerColor; initials: string }[] = CHARACTERS.map((p) => ({ ...p, color: p.color as PlayerColor }));
 
-export function difficultyLabel(id: BotDifficulty) {
-  return tr(`setup.difficulty.${id}.label`);
-}
+export { personaName };
 
-/** Evocative Victorian names drawn for clockwork rivals. */
-export const BOT_NAME_POOL = ["Ada", "Telford", "Boulton", "Watt", "Cossons"];
+/** is this the name a character sits down under? (then it follows the character) */
+export const isPersonaName = (name: string): boolean => CHARACTERS.some((p) => p.name === name.trim());
 
 export const DEFAULT_OPTIONS: SetupOptions = {
   eraLength: "standard",
@@ -87,37 +83,42 @@ export const DEFAULT_OPTIONS: SetupOptions = {
 
 const DEFAULT_SEAT_COLORS: PlayerColor[] = ["brass", "oxblood", "verdigris", "steel"];
 
-function pickBotName(taken: string[]): string {
-  const free = BOT_NAME_POOL.find((n) => !taken.includes(n));
-  return free ?? tr("setup.defaults.engine", { n: taken.length + 1 });
+/** a machine for a chair: the character its colour suggests when free, else the next one */
+function seatBot(seat: Seat, seats: Seat[]): Seat {
+  const taken = seats.filter((s) => s !== seat && s.type === "bot").map((s) => s.persona);
+  const suggested = personaFor({ color: seat.color });
+  const persona = taken.includes(suggested) ? freePersona(taken) : suggested;
+  return { ...seat, type: "bot", persona, name: personaName(persona) };
 }
 
 /** Build the four seat slots for a mode preset (setup.md §Panel 1). */
 export function defaultSeats(mode: "solo" | "hotseat"): Seat[] {
   const seats: Seat[] = [
-    { type: "human", name: tr("setup.defaults.playerOne"), color: "brass", difficulty: "industrialist" },
-    { type: "closed", name: "", color: "oxblood", difficulty: "industrialist" },
-    { type: "closed", name: "", color: "verdigris", difficulty: "industrialist" },
-    { type: "closed", name: "", color: "steel", difficulty: "industrialist" },
+    { type: "human", name: tr("setup.defaults.playerOne"), color: "brass", persona: "boulton" },
+    { type: "closed", name: "", color: "oxblood", persona: "wedgwood" },
+    { type: "closed", name: "", color: "verdigris", persona: "arkwright" },
+    { type: "closed", name: "", color: "steel", persona: "watt" },
   ];
   if (mode === "hotseat") {
     seats[1] = { ...seats[1], type: "human", name: tr("setup.defaults.playerTwo") };
   } else {
-    seats[1] = { ...seats[1], type: "bot", name: pickBotName([]) };
-    seats[2] = { ...seats[2], type: "bot", name: pickBotName([seats[1].name]) };
+    seats[1] = seatBot(seats[1], seats);
+    seats[2] = seatBot(seats[2], seats);
   }
   return seats;
 }
 
-export function openSeat(seat: Seat, type: "human" | "bot", takenNames: string[]): Seat {
+export function openSeat(seat: Seat, type: "human" | "bot", seats: Seat[]): Seat {
   if (type === "human") {
     return { ...seat, type, name: seat.name || tr("setup.defaults.player") };
   }
-  return {
-    ...seat,
-    type,
-    name: BOT_NAME_POOL.includes(seat.name) ? seat.name : pickBotName(takenNames),
-  };
+  return seatBot(seat, seats);
+}
+
+/** a bot takes on a character: its name follows unless the player named it */
+export function recastSeat(seat: Seat, persona: BotPersona): Seat {
+  const named = seat.name.trim() && !isPersonaName(seat.name);
+  return { ...seat, persona, name: named ? seat.name : personaName(persona) };
 }
 
 /** Read a previously stored setup; returns null when absent or malformed. */
@@ -136,7 +137,8 @@ export function loadStoredSetup(): StoredSetup | null {
     );
     if (!valid) return null;
     return {
-      players: data.players as StoredSetup["players"],
+      /* a setup from before the characters names none: the colour picks one */
+      players: (data.players as StoredSetup["players"]).map((p) => (p.type === "bot" ? { ...p, persona: personaFor(p) } : p)),
       options: { ...DEFAULT_OPTIONS, ...(data.options ?? {}) },
     };
   } catch {
@@ -150,13 +152,13 @@ export function seatsFromStored(stored: StoredSetup): Seat[] {
     type: p.type,
     name: p.name,
     color: (PLAYER_COLORS.some((c) => c.id === p.color) ? p.color : "brass") as PlayerColor,
-    difficulty: p.difficulty ?? "industrialist",
+    persona: personaFor(p),
   }));
   const used = new Set(seats.map((s) => s.color));
   while (seats.length < 4) {
     const free = DEFAULT_SEAT_COLORS.find((c) => !used.has(c)) ?? "steel";
     used.add(free);
-    seats.push({ type: "closed", name: "", color: free, difficulty: "industrialist" });
+    seats.push({ type: "closed", name: "", color: free, persona: personaFor({ color: free }) });
   }
   // Guarantee seat 1 is human (design contract).
   if (seats[0].type !== "human") {

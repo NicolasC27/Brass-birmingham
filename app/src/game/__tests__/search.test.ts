@@ -2,19 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { newGame } from '../engine';
-import { chooseBotAction, evaluate, legalActions, searchTurn } from '../search';
+import { adaptiveStrength, chooseBotAction, evaluate, knobs, legalActions, searchTurn } from '../search';
 import type { GameState, SetupPayload } from '../types';
 
-const setup = (difficulty: 'magnate' | 'industrialist' = 'magnate'): SetupPayload => ({
+const setup = (): SetupPayload => ({
   players: [
-    { name: 'Ada', color: 'oxblood', type: 'bot', difficulty },
-    { name: 'Bess', color: 'brass', type: 'bot', difficulty: 'industrialist' },
-    { name: 'Cy', color: 'verdigris', type: 'bot', difficulty: 'industrialist' },
+    { name: 'Mr Watt', color: 'oxblood', type: 'bot', persona: 'watt' },
+    { name: 'Mr Boulton', color: 'brass', type: 'bot', persona: 'boulton' },
+    { name: 'Miss Arkwright', color: 'verdigris', type: 'bot', persona: 'arkwright' },
   ],
   options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
 });
 
-/** a game played to the end, the magnate at seat 0 searching every turn */
+/** a game played to the end, every machine searching its turn */
 function playOut(seed: number, onTurn?: (s: GameState) => void): GameState {
   let s = newGame(setup(), seed);
   let guard = 0;
@@ -31,7 +31,7 @@ function playOut(seed: number, onTurn?: (s: GameState) => void): GameState {
   return s;
 }
 
-describe('the magnate', () => {
+describe('the machines', () => {
   it('only lists actions the engine accepts, and never touches the state', () => {
     let turn = 0;
     playOut(11, (s) => {
@@ -65,10 +65,27 @@ describe('the magnate', () => {
     expect(Math.abs(mine)).toBeLessThan(5);
   });
 
-  it('leaves the other difficulties to the heuristic', () => {
-    const s = newGame(setup('industrialist'), 14);
-    const heuristic = chooseBotMove(s, 0);
-    const chosen = chooseBotAction(s, 0);
-    expect(chosen?.kind).toBe(heuristic?.kind);
+  it('plays weaker on a shorter leash, and no worse than the heuristic at the bottom', () => {
+    expect(knobs(1)).toMatchObject({ second: true, noise: 0, beam: 8 });
+    expect(knobs(0).second).toBe(false);
+    expect(knobs(0).noise).toBeGreaterThan(knobs(0.5).noise);
+    expect(knobs(0).budgetMs).toBeLessThan(knobs(1).budgetMs);
+    const s = newGame(setup(), 14);
+    for (const strength of [0, 0.3, 0.6, 1]) expect(chooseBotAction(s, 0, { strength })).not.toBeNull();
+    expect(chooseBotMove(s, 0)).not.toBeNull();
+  });
+
+  it('eases when it runs away from the humans, and never at a table of machines', () => {
+    const s = newGame(setup(), 15);
+    expect(adaptiveStrength(s, 0, 0.8)).toBe(0.8);
+    const humans = structuredClone(s);
+    humans.players[1].isBot = false;
+    expect(adaptiveStrength(humans, 0, 0.8)).toBe(0.8);
+    humans.players[0].vp = 40;
+    expect(adaptiveStrength(humans, 0, 0.8)).toBeLessThan(0.6);
+    humans.players[1].vp = 80;
+    expect(adaptiveStrength(humans, 0, 0.8)).toBeGreaterThan(0.9);
+    humans.assist = true;
+    expect(adaptiveStrength(humans, 0, 0.8)).toBeLessThanOrEqual(0.65);
   });
 });

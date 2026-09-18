@@ -1,4 +1,5 @@
-import type { BotDifficulty, PlayerColor, SetupOptions, StoredSetup } from '@/components/setup/constants';
+import type { BotPersona, PlayerColor, SetupOptions, StoredSetup } from '@/components/setup/constants';
+import { personaFor } from '@/game/data';
 import type { Tally } from '@/game/tally';
 import type { Era } from '@/game/types';
 
@@ -15,7 +16,9 @@ export interface TableSeat {
   name: string;
   color: PlayerColor;
   kind: 'human' | 'bot';
-  difficulty?: BotDifficulty;
+  persona?: BotPersona;
+  /** what a bot was before the characters: read from old registers, never written */
+  difficulty?: string;
   /** this seat's candle: undefined = the table's timer, null = no candle, or minutes */
   minutes?: number | null;
   ready: boolean;
@@ -258,7 +261,7 @@ export function freeColor(table: Pick<Table, 'seats'>, wanted?: PlayerColor): Pl
 /** the game page's setup contract, from a table about to start */
 export function setupFromTable(table: Table): StoredSetup {
   return {
-    players: table.seats.map((s) => ({ name: s.name, color: s.color, type: s.kind, ...(s.kind === 'bot' ? { difficulty: s.difficulty ?? 'industrialist' } : {}), ...(s.minutes !== undefined ? { minutes: s.minutes } : {}) })),
+    players: table.seats.map((s) => ({ name: s.name, color: s.color, type: s.kind, ...(s.kind === 'bot' ? { persona: personaFor(s) } : {}), ...(s.minutes !== undefined ? { minutes: s.minutes } : {}) })),
     options: table.options,
   };
 }
