@@ -13,6 +13,7 @@ import Desk from "@/pages/Desk";
 import Profile from "@/pages/Profile";
 import Comptoir from "@/pages/Comptoir";
 import Classement from "@/pages/Classement";
+import Forum, { ForumBoard, ForumModeration, ForumThread } from "@/pages/Forum";
 
 export default function App() {
   return (
@@ -35,6 +36,10 @@ export default function App() {
         <Route path="profile" element={<Profile />} />
         <Route path="comptoir" element={<Comptoir />} />
         <Route path="classement" element={<Classement />} />
+        <Route path="forum" element={<Forum />} />
+        <Route path="forum/moderation" element={<ForumModeration />} />
+        <Route path="forum/t/:id" element={<ForumThread />} />
+        <Route path="forum/:board" element={<ForumBoard />} />
         {/* the hall's old addresses lead to the club's rooms */}
         <Route path="play" element={<Navigate to="/online" replace />} />
         <Route path="tables" element={<Navigate to="/online#tables" replace />} />

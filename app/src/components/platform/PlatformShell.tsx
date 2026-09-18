@@ -138,6 +138,9 @@ function TopBar() {
           <NavLink to="/classement" className={navLink}>
             {t('platform.nav.ranking')}
           </NavLink>
+          <NavLink to="/forum" className={navLink}>
+            {t('platform.nav.forum')}
+          </NavLink>
           <NavLink to="/desk" className={navLink}>
             {t('platform.nav.desk')}
           </NavLink>
