@@ -6,6 +6,8 @@ import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
+import { BOARDS, POSTS_PER_PAGE, THREADS_PER_PAGE, EDIT_MS } from '@/forum/types';
+import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
 import { fresh, ratingOf, seasonAt, settle } from './rating';
@@ -163,6 +165,49 @@ create table if not exists purses (
   accountId text primary key,
   guineas   integer not null,
   owned     text not null
+);
+create table if not exists forum_threads (
+  id        text primary key,
+  board     text not null,
+  accountId text not null references accounts(id) on delete cascade,
+  title     text not null,
+  createdAt integer not null,
+  lastAt    integer not null,
+  lastBy    text not null,
+  replies   integer not null default 0,
+  pinned    integer not null default 0,
+  locked    integer not null default 0,
+  hiddenAt  integer,
+  hiddenBy  text
+);
+create index if not exists forum_threads_board on forum_threads (board, pinned, lastAt);
+create table if not exists forum_posts (
+  id        text primary key,
+  threadId  text not null references forum_threads(id) on delete cascade,
+  accountId text not null references accounts(id) on delete cascade,
+  body      text not null,
+  createdAt integer not null,
+  editedAt  integer,
+  hiddenAt  integer,
+  hiddenBy  text
+);
+create index if not exists forum_posts_thread on forum_posts (threadId, createdAt);
+create table if not exists forum_reports (
+  id         text primary key,
+  postId     text not null references forum_posts(id) on delete cascade,
+  accountId  text not null references accounts(id) on delete cascade,
+  reason     text not null,
+  text       text not null,
+  createdAt  integer not null,
+  resolvedAt integer,
+  resolvedBy text,
+  unique (postId, accountId)
+);
+create table if not exists forum_seen (
+  accountId text not null references accounts(id) on delete cascade,
+  threadId  text not null references forum_threads(id) on delete cascade,
+  at        integer not null,
+  primary key (accountId, threadId)
 );
 `;
 
@@ -799,4 +844,245 @@ export class Store {
     this.db.prepare('insert into purses (accountId, guineas, owned) values (?, ?, ?) on conflict (accountId) do update set guineas = guineas - ?, owned = ?').run(accountId, -wanted.price, owned, wanted.price, owned);
     return null;
   }
+
+  /* ------------------------------ the forum ------------------------------ */
+  /* Threads and posts as the members wrote them; the moderators' marks on
+     them; what each member has read. Nothing is ever deleted: a hidden
+     post keeps its place and its text for the moderators, the members
+     see that something was taken down. */
+
+  private static THREAD = `select t.*, a.name as byName, l.name as lastName, s.at as seenAt
+    from forum_threads t join accounts a on a.id = t.accountId join accounts l on l.id = t.lastBy
+    left join forum_seen s on s.threadId = t.id and s.accountId = ?`;
+
+  private threadRow(r: ThreadRecord): ThreadRow {
+    return {
+      id: r.id,
+      board: r.board as BoardKey,
+      title: r.title,
+      by: { id: r.accountId, name: r.byName },
+      createdAt: r.createdAt,
+      lastAt: r.lastAt,
+      lastBy: r.lastName,
+      replies: r.replies,
+      pinned: r.pinned === 1,
+      locked: r.locked === 1,
+      hidden: r.hiddenAt !== null,
+      unread: r.seenAt === null || r.seenAt < r.lastAt,
+    };
+  }
+
+  private postRow(r: PostRecord, mod: boolean): Post {
+    const hidden = r.hiddenAt !== null;
+    return { id: r.id, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: hidden && !mod ? '' : r.body, createdAt: r.createdAt, editedAt: r.editedAt, hidden, reports: mod ? r.reports : 0 };
+  }
+
+  /** the five boards, with what a member has not read yet on each */
+  forumBoards(accountId: string): BoardSummary[] {
+    return BOARDS.map((key) => {
+      const counts = this.db.prepare('select count(*) as threads, coalesce(sum(replies), 0) + count(*) as posts from forum_threads where board = ? and hiddenAt is null').get(key) as { threads: number; posts: number };
+      const last = this.db.prepare('select t.id, t.title, t.lastAt, l.name from forum_threads t join accounts l on l.id = t.lastBy where t.board = ? and t.hiddenAt is null order by t.lastAt desc limit 1').get(key) as { id: string; title: string; lastAt: number; name: string } | undefined;
+      const unread = this.db.prepare('select count(*) as n from forum_threads t left join forum_seen s on s.threadId = t.id and s.accountId = ? where t.board = ? and t.hiddenAt is null and (s.at is null or s.at < t.lastAt)').get(accountId, key) as { n: number };
+      return { key, threads: counts.threads, posts: counts.posts, last: last ? { threadId: last.id, title: last.title, at: last.lastAt, by: last.name } : null, unread: unread.n };
+    });
+  }
+
+  /** a board's threads, the pinned ones first, then the freshest; hidden ones for moderators only */
+  forumThreads(board: BoardKey, page: number, accountId: string, mod: boolean): { page: number; pages: number; threads: ThreadRow[] } {
+    const hiddenToo = mod ? '' : ' and t.hiddenAt is null';
+    const total = (this.db.prepare(`select count(*) as n from forum_threads t where t.board = ?${hiddenToo}`).get(board) as { n: number }).n;
+    const pages = Math.max(1, Math.ceil(total / THREADS_PER_PAGE));
+    const at = Math.min(Math.max(1, page), pages);
+    const rows = this.db.prepare(`${Store.THREAD} where t.board = ?${hiddenToo} order by t.pinned desc, t.lastAt desc limit ? offset ?`).all(accountId, board, THREADS_PER_PAGE, (at - 1) * THREADS_PER_PAGE) as unknown as ThreadRecord[];
+    return { page: at, pages, threads: rows.map((r) => this.threadRow(r)) };
+  }
+
+  /** a thread and one page of its posts (page 0: the last one); null when it is not there for this reader */
+  forumThread(id: string, page: number, accountId: string, mod: boolean): ThreadView | null {
+    const r = this.db.prepare(`${Store.THREAD} where t.id = ?`).get(accountId, id) as unknown as ThreadRecord | undefined;
+    if (!r || (r.hiddenAt !== null && !mod)) return null;
+    const total = (this.db.prepare('select count(*) as n from forum_posts where threadId = ?').get(id) as { n: number }).n;
+    const pages = Math.max(1, Math.ceil(total / POSTS_PER_PAGE));
+    const at = page <= 0 ? pages : Math.min(page, pages);
+    const rows = this.db
+      .prepare(
+        `select p.*, a.name as byName, (select count(*) from forum_reports x where x.postId = p.id and x.resolvedAt is null) as reports
+         from forum_posts p join accounts a on a.id = p.accountId where p.threadId = ? order by p.createdAt limit ? offset ?`,
+      )
+      .all(id, POSTS_PER_PAGE, (at - 1) * POSTS_PER_PAGE) as unknown as PostRecord[];
+    return { thread: this.threadRow(r), page: at, pages, posts: rows.map((p) => this.postRow(p, mod)) };
+  }
+
+  /** the board a thread is on, or a post's thread and board */
+  forumWhere(threadId: string): { board: BoardKey; locked: boolean; hidden: boolean } | null {
+    const r = this.db.prepare('select board, locked, hiddenAt from forum_threads where id = ?').get(threadId) as { board: string; locked: number; hiddenAt: number | null } | undefined;
+    return r ? { board: r.board as BoardKey, locked: r.locked === 1, hidden: r.hiddenAt !== null } : null;
+  }
+  forumPostWhere(postId: string): { threadId: string; board: BoardKey; accountId: string; createdAt: number } | null {
+    const r = this.db.prepare('select p.threadId, p.accountId, p.createdAt, t.board from forum_posts p join forum_threads t on t.id = p.threadId where p.id = ?').get(postId) as { threadId: string; accountId: string; createdAt: number; board: string } | undefined;
+    return r ? { threadId: r.threadId, board: r.board as BoardKey, accountId: r.accountId, createdAt: r.createdAt } : null;
+  }
+
+  /** a new thread with its first post */
+  forumOpen(accountId: string, board: BoardKey, title: string, body: string): string {
+    const now = Date.now();
+    const id = 't-' + randomBytes(6).toString('hex');
+    this.db.prepare('insert into forum_threads (id, board, accountId, title, createdAt, lastAt, lastBy) values (?, ?, ?, ?, ?, ?, ?)').run(id, board, accountId, title, now, now, accountId);
+    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt) values (?, ?, ?, ?, ?)').run('p-' + randomBytes(6).toString('hex'), id, accountId, body, now);
+    this.forumSeen(accountId, id, now);
+    return id;
+  }
+
+  /** a reply: the post, and the page it lands on */
+  forumReply(accountId: string, threadId: string, body: string): { post: Post; page: number } | 'forum-not-found' | 'forum-locked' {
+    const where = this.forumWhere(threadId);
+    if (!where || where.hidden) return 'forum-not-found';
+    if (where.locked) return 'forum-locked';
+    /* strictly after the thread's last word, so a reply in the same tick still reads as new */
+    const last = (this.db.prepare('select lastAt from forum_threads where id = ?').get(threadId) as { lastAt: number }).lastAt;
+    const now = Math.max(Date.now(), last + 1);
+    const id = 'p-' + randomBytes(6).toString('hex');
+    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt) values (?, ?, ?, ?, ?)').run(id, threadId, accountId, body, now);
+    this.db.prepare('update forum_threads set replies = replies + 1, lastAt = ?, lastBy = ? where id = ?').run(now, accountId, threadId);
+    this.forumSeen(accountId, threadId, now);
+    const total = (this.db.prepare('select count(*) as n from forum_posts where threadId = ?').get(threadId) as { n: number }).n;
+    const name = (this.db.prepare('select name from accounts where id = ?').get(accountId) as { name: string }).name;
+    return { post: { id, threadId, by: { id: accountId, name }, body, createdAt: now, editedAt: null, hidden: false, reports: 0 }, page: Math.max(1, Math.ceil(total / POSTS_PER_PAGE)) };
+  }
+
+  /** a correction: the author's for a quarter of an hour, a moderator's at any time */
+  forumEdit(accountId: string, postId: string, body: string, mod: boolean): 'forum-not-found' | 'forum-not-yours' | 'forum-edit-window' | null {
+    const post = this.forumPostWhere(postId);
+    if (!post) return 'forum-not-found';
+    if (!mod) {
+      if (post.accountId !== accountId) return 'forum-not-yours';
+      if (Date.now() - post.createdAt > EDIT_MS) return 'forum-edit-window';
+    }
+    this.db.prepare('update forum_posts set body = ?, editedAt = ? where id = ?').run(body, Date.now(), postId);
+    return null;
+  }
+
+  /** a member points a post out to the moderators, once per post */
+  forumReport(accountId: string, postId: string, reason: ReportReason, text: string): 'forum-not-found' | 'forum-reported' | null {
+    if (!this.forumPostWhere(postId)) return 'forum-not-found';
+    const r = this.db.prepare('insert or ignore into forum_reports (id, postId, accountId, reason, text, createdAt) values (?, ?, ?, ?, ?, ?)').run('r-' + randomBytes(6).toString('hex'), postId, accountId, reason, text, Date.now());
+    return r.changes === 0 ? 'forum-reported' : null;
+  }
+
+  /** what a moderator does: hide or show a post, lock or pin a thread, close a report */
+  forumMod(accountId: string, action: ModAction, id: string): 'forum-not-found' | null {
+    const now = Date.now();
+    switch (action) {
+      case 'hide':
+      case 'unhide': {
+        if (!this.forumPostWhere(id)) return 'forum-not-found';
+        if (action === 'hide') {
+          this.db.prepare('update forum_posts set hiddenAt = ?, hiddenBy = ? where id = ?').run(now, accountId, id);
+          this.db.prepare('update forum_reports set resolvedAt = ?, resolvedBy = ? where postId = ? and resolvedAt is null').run(now, accountId, id);
+        } else this.db.prepare('update forum_posts set hiddenAt = null, hiddenBy = null where id = ?').run(id);
+        return null;
+      }
+      case 'lock':
+      case 'unlock':
+      case 'pin':
+      case 'unpin': {
+        if (!this.forumWhere(id)) return 'forum-not-found';
+        const col = action === 'lock' || action === 'unlock' ? 'locked' : 'pinned';
+        this.db.prepare(`update forum_threads set ${col} = ? where id = ?`).run(action === 'lock' || action === 'pin' ? 1 : 0, id);
+        return null;
+      }
+      case 'resolve': {
+        const r = this.db.prepare('update forum_reports set resolvedAt = ?, resolvedBy = ? where id = ? and resolvedAt is null').run(now, accountId, id);
+        return r.changes === 0 ? 'forum-not-found' : null;
+      }
+    }
+  }
+
+  /** the open reports, oldest first, each with its post and thread */
+  forumReports(): Report[] {
+    const rows = this.db
+      .prepare(
+        `select r.id, r.reason, r.text, r.createdAt, r.accountId as reporterId, b.name as reporterName,
+                p.id as postId, p.threadId, p.accountId, a.name as byName, p.body, p.createdAt as postAt, p.editedAt, p.hiddenAt,
+                t.title, t.board,
+                (select count(*) from forum_reports x where x.postId = p.id and x.resolvedAt is null) as reports
+         from forum_reports r join forum_posts p on p.id = r.postId join forum_threads t on t.id = p.threadId
+         join accounts a on a.id = p.accountId join accounts b on b.id = r.accountId
+         where r.resolvedAt is null order by r.createdAt`,
+      )
+      .all() as unknown as ReportRecord[];
+    return rows.map((r) => ({
+      id: r.id,
+      post: { id: r.postId, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: r.body, createdAt: r.postAt, editedAt: r.editedAt, hidden: r.hiddenAt !== null, reports: r.reports },
+      thread: { id: r.threadId, title: r.title, board: r.board as BoardKey },
+      by: { id: r.reporterId, name: r.reporterName },
+      reason: r.reason as ReportReason,
+      text: r.text,
+      createdAt: r.createdAt,
+    }));
+  }
+  forumOpenReports(): number {
+    return (this.db.prepare('select count(*) as n from forum_reports where resolvedAt is null').get() as { n: number }).n;
+  }
+
+  /** the member read the thread up to now */
+  forumSeen(accountId: string, threadId: string, at = Date.now()): void {
+    this.db.prepare('insert into forum_seen (accountId, threadId, at) values (?, ?, ?) on conflict (accountId, threadId) do update set at = excluded.at').run(accountId, threadId, at);
+  }
+
+  /** how fast this member writes: posts since `since`, and when the last thread and post were */
+  forumPace(accountId: string, since: number): { posts: number; lastPostAt: number; lastThreadAt: number } {
+    const posts = (this.db.prepare('select count(*) as n from forum_posts where accountId = ? and createdAt >= ?').get(accountId, since) as { n: number }).n;
+    const lastPostAt = (this.db.prepare('select coalesce(max(createdAt), 0) as at from forum_posts where accountId = ?').get(accountId) as { at: number }).at;
+    const lastThreadAt = (this.db.prepare('select coalesce(max(createdAt), 0) as at from forum_threads where accountId = ?').get(accountId) as { at: number }).at;
+    return { posts, lastPostAt, lastThreadAt };
+  }
 }
+
+interface ThreadRecord {
+  id: string;
+  board: string;
+  accountId: string;
+  title: string;
+  createdAt: number;
+  lastAt: number;
+  lastBy: string;
+  replies: number;
+  pinned: number;
+  locked: number;
+  hiddenAt: number | null;
+  byName: string;
+  lastName: string;
+  seenAt: number | null;
+}
+interface PostRecord {
+  id: string;
+  threadId: string;
+  accountId: string;
+  body: string;
+  createdAt: number;
+  editedAt: number | null;
+  hiddenAt: number | null;
+  byName: string;
+  reports: number;
+}
+interface ReportRecord {
+  id: string;
+  reason: string;
+  text: string;
+  createdAt: number;
+  reporterId: string;
+  reporterName: string;
+  postId: string;
+  threadId: string;
+  accountId: string;
+  byName: string;
+  body: string;
+  postAt: number;
+  editedAt: number | null;
+  hiddenAt: number | null;
+  title: string;
+  board: string;
+  reports: number;
+}
+

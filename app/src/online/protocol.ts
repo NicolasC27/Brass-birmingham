@@ -1,4 +1,5 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
+import type { BoardKey, BoardSummary, ModAction, Post, Report, ReportReason, ThreadRow, ThreadView } from '@/forum/types';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, PublicTable, QueueState, Table } from './table';
@@ -109,6 +110,18 @@ export type ClientMessage =
   | { t: 'queue'; mode: 'quick' | 'ranked'; on: boolean }
   /** buy an item at the counter with the guineas earned at the tables */
   | { t: 'buy'; rid: number; item: string }
+  /* the forum: the boards, a board's threads, a thread's posts; opening,
+     replying, correcting, reporting; what a moderator does; what was read */
+  | { t: 'forum.boards'; rid: number }
+  | { t: 'forum.threads'; rid: number; board: BoardKey; page: number }
+  | { t: 'forum.thread'; rid: number; id: string; page: number }
+  | { t: 'forum.open'; rid: number; board: BoardKey; title: string; body: string }
+  | { t: 'forum.reply'; rid: number; id: string; body: string }
+  | { t: 'forum.edit'; rid: number; post: string; body: string }
+  | { t: 'forum.report'; rid: number; post: string; reason: ReportReason; text: string }
+  | { t: 'forum.mod'; rid: number; action: ModAction; id: string }
+  | { t: 'forum.reports'; rid: number }
+  | { t: 'forum.seen'; id: string }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -141,6 +154,14 @@ export type ServerMessage =
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
+  | { t: 'forum.boards'; rid: number; boards: BoardSummary[] }
+  | { t: 'forum.threads'; rid: number; board: BoardKey; page: number; pages: number; threads: ThreadRow[] }
+  | { t: 'forum.thread'; rid: number; view: ThreadView }
+  | { t: 'forum.opened'; rid: number; id: string }
+  | { t: 'forum.posted'; rid: number; post: Post; page: number }
+  | { t: 'forum.reports'; rid: number; reports: Report[] }
+  /** something moved on the forum: a board, and the thread when it is one */
+  | { t: 'forum'; board: BoardKey; thread: string | null }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

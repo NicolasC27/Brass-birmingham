@@ -38,6 +38,8 @@ export class Guest {
   board: Leaderboard | null = null;
   /** the rids answered with a plain `done` */
   done: number[] = [];
+  /** every frame, in order, for what the fields above do not keep */
+  frames: ServerMessage[] = [];
   rejected: string[] = [];
   /** the server hung up (the code it gave) */
   closedWith: number | null = null;
@@ -63,6 +65,7 @@ export class Guest {
       const m = decode<ServerMessage>(String(raw));
       if (!m) return;
       this.trace.push(m.t);
+      this.frames.push(m);
       if (m.t === 'table') this.table = m.table;
       if (m.t === 'seated') this.table = m.table;
       if (m.t === 'me') this.me = m.me;
