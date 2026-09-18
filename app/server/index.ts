@@ -196,7 +196,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   /** renderings under way, so a page asking twice does not pay twice */
   const rendering = new Set<string>();
   /** render what a page lacks, in the background; the thread's readers are told when it is done */
-  const renderLater = (board: BoardKey, thread: string, jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[]) => {
+  const renderLater = (board: BoardKey, thread: string | null, jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[]) => {
     const t = translator;
     if (!t) return;
     const mine = jobs.filter((j) => !rendering.has(`${j.subject}:${j.id}:${j.to}`));
@@ -574,15 +574,31 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       /* ------------------------------ the forum ------------------------------ */
-      case 'forum.boards':
-        send(c, { t: 'forum.boards', rid: m.rid, boards: store.forumBoards(who.id) });
+      case 'forum.boards': {
+        const boards = store.forumBoards(who.id);
+        /* the last title of each board in the reader's tongue, when already rendered */
+        if (isLang(m.lang)) for (const b of boards) if (b.last) b.last.rendered = store.forumRendering('thread', b.last.threadId, m.lang, PROMPT_VERSION);
+        send(c, { t: 'forum.boards', rid: m.rid, boards });
         return;
+      }
       case 'forum.threads': {
         if (!isBoard(m.board)) {
           send(c, { t: 'refused', rid: m.rid, error: 'forum-board' });
           return;
         }
         const r = store.forumThreads(m.board, Number(m.page) || 1, who.id, isMod(who));
+        /* the titles in the reader's tongue: the rendered ones now, the rest rendered
+           behind and the board's readers told */
+        if (isLang(m.lang)) {
+          const to = m.lang;
+          const jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[] = [];
+          for (const th of r.threads) {
+            if (th.lang === to || th.hidden) continue;
+            th.rendered = store.forumRendering('thread', th.id, to, PROMPT_VERSION);
+            if (th.rendered === null) jobs.push({ subject: 'thread', id: th.id, text: th.title, from: th.lang, to });
+          }
+          if (jobs.length && interpreting()) renderLater(m.board, null, jobs);
+        }
         send(c, { t: 'forum.threads', rid: m.rid, board: m.board, page: r.page, pages: r.pages, threads: r.threads });
         return;
       }

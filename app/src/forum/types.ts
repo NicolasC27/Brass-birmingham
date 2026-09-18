@@ -40,7 +40,7 @@ export interface BoardSummary {
   key: BoardKey;
   threads: number;
   posts: number;
-  last: { threadId: string; title: string; at: number; by: string } | null;
+  last: { threadId: string; title: string; rendered?: string | null; at: number; by: string } | null;
   /** threads with something new since the member last read them */
   unread: number;
 }
@@ -51,6 +51,8 @@ export interface ThreadRow {
   title: string;
   /** the tongue the title was written in */
   lang: Lang;
+  /** the title in the reader's tongue, when the interpreter has rendered it */
+  rendered?: string | null;
   by: Author;
   createdAt: number;
   lastAt: number;

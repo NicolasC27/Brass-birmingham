@@ -269,10 +269,11 @@ const Mark = ({ children, tone = 'iron' }: { children: ReactNode; tone?: 'iron' 
 
 export default function Forum() {
   const t = useT();
+  const lang = useLang();
   const gate = useGate();
   const tick = useForumTick();
   const mod = !!gate.session?.moderator;
-  const boards = useAsked(() => (gate.session ? forumBoards() : Promise.resolve<BoardSummary[]>([])), [gate.session?.id, tick]);
+  const boards = useAsked(() => (gate.session ? forumBoards(lang) : Promise.resolve<BoardSummary[]>([])), [gate.session?.id, tick, lang]);
   const queue = useAsked(() => (mod ? forumReports().then((r) => r.reports) : Promise.resolve<Report[]>([])), [mod, tick]);
   if (!gate.session) return gate.block;
   return (
@@ -309,7 +310,7 @@ export default function Forum() {
                   </span>
                   {b.last ? (
                     <span className="max-w-[260px] truncate font-ui text-[12px] text-paper-300">
-                      {t('platform.forum.lastIn', { title: b.last.title })} <span className="text-iron-400">· {t('platform.forum.lastBy', { name: b.last.by, when: since(b.last.at, t) })}</span>
+                      {t('platform.forum.lastIn', { title: b.last.rendered ?? b.last.title })} <span className="text-iron-400">· {t('platform.forum.lastBy', { name: b.last.by, when: since(b.last.at, t) })}</span>
                     </span>
                   ) : (
                     <span className="font-ui text-[12px] text-iron-600">{t('platform.forum.empty')}</span>
@@ -336,7 +337,7 @@ export function ForumBoard() {
   const board: BoardKey | null = isBoard(params.board) ? params.board : null;
   const page = Math.max(1, Number(search.get('p')) || 1);
   const tick = useForumTick(board ?? undefined);
-  const list = useAsked(() => (gate.session && board ? forumThreads(board, page) : Promise.resolve({ page: 1, pages: 1, threads: [] as ThreadRow[] })), [gate.session?.id, board, page, tick]);
+  const list = useAsked(() => (gate.session && board ? forumThreads(board, page, lang) : Promise.resolve({ page: 1, pages: 1, threads: [] as ThreadRow[] })), [gate.session?.id, board, page, tick, lang]);
   const [opening, setOpening] = useState(false);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -403,7 +404,10 @@ export function ForumBoard() {
                       <span className="flex flex-wrap items-center gap-2">
                         {th.pinned && <Pin className="h-3.5 w-3.5 text-brass-400" aria-label={t('platform.forum.pinned')} />}
                         {th.locked && <Lock className="h-3.5 w-3.5 text-iron-400" aria-label={t('platform.forum.locked')} />}
-                        <span className={cn('truncate font-ui text-[14px] font-semibold', th.unread ? 'text-paper-100' : 'text-paper-300')}>{th.title}</span>
+                        <span className={cn('truncate font-ui text-[14px] font-semibold', th.unread ? 'text-paper-100' : 'text-paper-300')} title={th.rendered ? th.title : undefined}>
+                          {th.rendered ?? th.title}
+                        </span>
+                        {th.lang !== lang && <Mark>{t(th.rendered ? `platform.forum.translatedFrom.${th.lang}` : `platform.forum.writtenIn.${th.lang}`)}</Mark>}
                         {th.hidden && <Mark>{t('platform.forum.hiddenMod')}</Mark>}
                       </span>
                       <span className="mt-0.5 block font-ui text-[12px] text-iron-400">

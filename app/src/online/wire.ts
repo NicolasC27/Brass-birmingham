@@ -121,12 +121,12 @@ export class Wire {
     this.forums.add(cb);
     return () => this.forums.delete(cb);
   }
-  async forumBoards(): Promise<BoardSummary[]> {
-    const m = await this.ask((rid) => ({ t: 'forum.boards', rid }));
+  async forumBoards(lang: Lang): Promise<BoardSummary[]> {
+    const m = await this.ask((rid) => ({ t: 'forum.boards', rid, lang }));
     return m.t === 'forum.boards' ? m.boards : [];
   }
-  async forumThreads(board: BoardKey, page: number): Promise<{ page: number; pages: number; threads: ThreadRow[] }> {
-    const m = await this.ask((rid) => ({ t: 'forum.threads', rid, board, page }));
+  async forumThreads(board: BoardKey, page: number, lang: Lang): Promise<{ page: number; pages: number; threads: ThreadRow[] }> {
+    const m = await this.ask((rid) => ({ t: 'forum.threads', rid, board, page, lang }));
     return m.t === 'forum.threads' ? { page: m.page, pages: m.pages, threads: m.threads } : { page: 1, pages: 1, threads: [] };
   }
   async forumThread(id: string, page: number): Promise<ThreadView> {

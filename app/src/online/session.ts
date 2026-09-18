@@ -177,8 +177,8 @@ export function useForumTick(board?: BoardKey, thread?: string): number {
   }, [board, thread]);
   return tick;
 }
-export const forumBoards = (): Promise<BoardSummary[]> => wire().forumBoards();
-export const forumThreads = (board: BoardKey, page: number): Promise<{ page: number; pages: number; threads: ThreadRow[] }> => wire().forumThreads(board, page);
+export const forumBoards = (lang: Lang): Promise<BoardSummary[]> => wire().forumBoards(lang);
+export const forumThreads = (board: BoardKey, page: number, lang: Lang): Promise<{ page: number; pages: number; threads: ThreadRow[] }> => wire().forumThreads(board, page, lang);
 export const forumThread = (id: string, page: number): Promise<ThreadView> => wire().forumThread(id, page);
 export const forumOpen = (board: BoardKey, title: string, body: string, lang: Lang): Promise<string> => wire().forumOpen(board, title, body, lang);
 export const forumReply = (id: string, body: string, lang: Lang): Promise<{ post: Post; page: number }> => wire().forumReply(id, body, lang);

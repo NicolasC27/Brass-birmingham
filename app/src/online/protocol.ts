@@ -112,8 +112,8 @@ export type ClientMessage =
   | { t: 'buy'; rid: number; item: string }
   /* the forum: the boards, a board's threads, a thread's posts; opening,
      replying, correcting, reporting; what a moderator does; what was read */
-  | { t: 'forum.boards'; rid: number }
-  | { t: 'forum.threads'; rid: number; board: BoardKey; page: number }
+  | { t: 'forum.boards'; rid: number; lang?: Lang }
+  | { t: 'forum.threads'; rid: number; board: BoardKey; page: number; lang?: Lang }
   | { t: 'forum.thread'; rid: number; id: string; page: number }
   | { t: 'forum.open'; rid: number; board: BoardKey; title: string; body: string; lang: Lang }
   | { t: 'forum.reply'; rid: number; id: string; body: string; lang: Lang }

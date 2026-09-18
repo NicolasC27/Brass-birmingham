@@ -142,6 +142,11 @@ describe('the forum over the wire', () => {
     expect(Object.values(r?.posts ?? {})).toEqual(['[en] Elle coule encore ?']);
     expect(r?.pending).toBe(0);
     expect(calls).toHaveLength(2);
+    /* the board's list carries the title in Bob's tongue too, before he enters */
+    bob.send({ t: 'forum.threads', rid: 47, board: 'regles', page: 1, lang: 'en' });
+    const listed = await answer(bob, 47);
+    expect(listed.t === 'forum.threads' ? listed.threads[0].rendered : null).toBe('[en] La bière sur une brasserie retournée');
+    expect(listed.t === 'forum.threads' ? listed.threads[0].title : null).toBe('La bière sur une brasserie retournée');
     /* Ada reads French: her own words, no rendering asked */
     ada.send({ t: 'forum.translate', rid: 43, id, page: 0, lang: 'fr' });
     const own = await answer(ada, 43);
