@@ -88,6 +88,9 @@ export class TableGame {
   private frozen: number | null = null;
   /** the actions taken back this turn */
   private undos = 0;
+  /** when the seat to act was given the turn, and how much it has played of it */
+  private turnLitAt = Date.now();
+  private actedThisTurn = 0;
   private closed = false;
   /** the host id, for the rollback — the first human seat when unknown */
   readonly hostId: string | null;
@@ -262,6 +265,16 @@ export class TableGame {
   }
 
   /** play an action for a seat; null when it was accepted, else the reason */
+  /** ms since the seat to act was given the turn */
+  turnAge(): number {
+    return Date.now() - this.turnLitAt;
+  }
+
+  /** actions the seat to act has already played this turn */
+  turnActions(): number {
+    return this.actedThisTurn;
+  }
+
   act(playerId: string, action: GameAction): string | null {
     const seat = this.seatOf(playerId);
     if (seat < 0) return 'You are not seated at this table';
@@ -356,7 +369,11 @@ export class TableGame {
     const at = before.actions.length;
     if (marked && before.phase === 'action' && !before.players[before.current].isBot) this.marks.push({ at, by: before.current });
     this.state = r.state;
-    if (this.state.current !== before.current || this.state.phase !== before.phase) this.undos = 0;
+    if (this.state.current !== before.current || this.state.phase !== before.phase) {
+      this.undos = 0;
+      this.turnLitAt = Date.now();
+      this.actedThisTurn = 0;
+    } else if (marked) this.actedThisTurn += 1;
     this.journal?.append(at, action);
     this.emit();
     /* a vote must not re-light the candle — unless it just closed the game */

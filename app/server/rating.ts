@@ -50,13 +50,14 @@ const expected = (mine: number, theirs: number): number => 1 / (1 + 10 ** ((thei
 const clamp = (r: number): number => Math.min(CEILING, Math.max(FLOOR, Math.round(r)));
 
 /** the standings after a ranked game: `vp` per seat, `winner` the seat the
- *  game named — the cotes move on the points, the win goes on the record */
-export function settle(before: Standing[], vp: number[], winner: number): Standing[] {
+ *  game named — the cotes move on the points, the win goes on the record;
+ *  `weighs` says which pairs count (a pair met too often this season does not) */
+export function settle(before: Standing[], vp: number[], winner: number, weighs: (i: number, j: number) => boolean = () => true): Standing[] {
   return before.map((s, i) => {
     let taken = 0;
     let others = 0;
     for (let j = 0; j < before.length; j++) {
-      if (j === i) continue;
+      if (j === i || !weighs(i, j)) continue;
       const actual = vp[i] > vp[j] ? 1 : vp[i] === vp[j] ? 0.5 : 0;
       taken += actual - expected(s.rating, before[j].rating);
       others += 1;

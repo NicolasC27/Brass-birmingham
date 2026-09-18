@@ -247,6 +247,20 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       res.end(post.kept.length ? post.kept.map((m) => `To: ${m.to}\nSubject: ${m.subject}\n\n${m.text}\n\n${'─'.repeat(60)}\n`).join('\n') : 'No letter yet.\n');
       return;
     }
+    /* the watch's marks, as a page: who was noted, for what, where —
+       from this machine, or with the token FEEDBACK_TOKEN names */
+    if (url.pathname === '/flags') {
+      const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
+      if (!shown) {
+        res.writeHead(404, { 'content-type': 'text/plain' });
+        res.end('Not found\n');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      const flags = store.flags();
+      res.end(flags.length ? flags.map((f) => `${new Date(f.at).toISOString()}  ${f.kind.padEnd(10)} ${f.name ?? f.accountId}${f.code ? ` @${f.code}` : ''} — ${f.detail}`).join('\n') + '\n' : 'Nothing noted.\n');
+      return;
+    }
     /* the suggestion box, as a page: every idea and bug, newest first —
        from this machine, or with the token FEEDBACK_TOKEN names */
     if (url.pathname === '/feedback') {
@@ -275,6 +289,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     count: () => new Set([...clients].filter((c) => c.me).map((c) => c.me!.id)).size,
     has: (accountId) => socketsOf(accountId).length > 0,
     watchers: (code) => watchers(code).length,
+    address: (accountId) => socketsOf(accountId)[0]?.ip ?? null,
   });
 
   const pushTable = (c: Client, code: string) => send(c, { t: 'table', code, table: hall.table(code) });

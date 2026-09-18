@@ -12,6 +12,7 @@ import type { Match, Mode, Waits } from './queue';
 import { seasonAt } from './rating';
 import { pickTableName } from '@/online/tableNames';
 import type { Store } from './store';
+import { PaceWatch, sameHouse } from './watch';
 
 /* ------------------------------------------------------------------ */
 /* The hall — every table in the house.                                */
@@ -52,6 +53,8 @@ export interface Presence {
   has: (accountId: string) => boolean;
   /** sockets following this table */
   watchers: (code: string) => number;
+  /** the address this account's socket comes from, when one is open */
+  address?: (accountId: string) => string | null;
 }
 const NOBODY: Presence = { count: () => 0, has: () => true, watchers: () => 0 };
 
@@ -90,13 +93,16 @@ export class Hall {
   private dealtListeners = new Set<Dealt>();
   private readonly queues: Queue;
   private who: Presence = NOBODY;
+  /** the watch on the pace of every human seat */
+  private readonly watch = new PaceWatch();
   private readonly pace: Pace;
   private readonly store: Store;
 
   constructor(store: Store, pace: Pace = DEFAULT_PACE, o: HallOptions = {}) {
     this.store = store;
     this.pace = pace;
-    this.queues = new Queue({ now: o.now, waits: o.waits, present: (id) => this.who.has(id) });
+    /* the ranked line never seats two accounts from one address together */
+    this.queues = new Queue({ now: o.now, waits: o.waits, present: (id) => this.who.has(id), apart: (a, b) => sameHouse(this.who.address?.(a), this.who.address?.(b)) });
     this.reopen();
   }
 
@@ -531,6 +537,7 @@ export class Hall {
         drop: (idx: number) => this.store.dropMove(code, idx),
         finish: (state, tallies) => {
           this.store.finishGame(code, state, tallies, !!this.rooms.get(code)?.table.ranked);
+          this.watch.forget(code);
           /* the cote and the purse moved after the last frame went out: the desks again */
           for (const id of seatIds) if (!id.startsWith('bot-')) this.announceDesk(id);
         },
@@ -542,7 +549,15 @@ export class Hall {
   act(code: string, playerId: string, action: GameAction): string | null {
     const game = this.rooms.get(code)?.game;
     if (!game) return 'No game at this table';
-    return game.act(playerId, action);
+    /* the watch times the opening of each human turn: a run of openings
+       quicker than a board can be read is noted in the register */
+    const opening = game.turnActions() === 0 && game.state.phase === 'action' && game.seatOf(playerId) === game.state.current;
+    const age = game.turnAge();
+    const error = game.act(playerId, action);
+    if (!error && opening && action.kind !== 'concede' && this.watch.note(code, game.seatOf(playerId), age)) {
+      this.store.flag(playerId, 'pace', `turn opened in ${age} ms, the twelfth such in a row`, code);
+    }
+    return error;
   }
 
   undo(code: string, playerId: string): string | null {

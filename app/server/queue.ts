@@ -46,6 +46,8 @@ export interface QueueOptions {
   now?: () => number;
   /** does this account hold a socket right now? */
   present?: (id: string) => boolean;
+  /** two accounts that must not sit at the same ranked table */
+  apart?: (a: string, b: string) => boolean;
   waits?: Partial<Waits>;
 }
 
@@ -53,11 +55,13 @@ export class Queue {
   private lines: Record<Mode, Waiting[]> = { quick: [], ranked: [] };
   private readonly now: () => number;
   private readonly present: (id: string) => boolean;
+  private readonly apart: (a: string, b: string) => boolean;
   private readonly waits: Waits;
 
   constructor(o: QueueOptions = {}) {
     this.now = o.now ?? Date.now;
     this.present = o.present ?? (() => true);
+    this.apart = o.apart ?? (() => false);
     this.waits = { ...WAITS, ...o.waits };
   }
 
@@ -135,8 +139,26 @@ export class Queue {
     if (quick >= 2 && waited('quick') >= this.waits.quick) take('quick', quick);
     else if (quick === 1 && waited('quick') >= this.waits.quick) take('quick', 1, COMPANY);
 
-    while (this.lines.ranked.length >= 4) take('ranked', 4);
-    if (this.lines.ranked.length === 3 && waited('ranked') >= this.waits.ranked) take('ranked', 3);
+    /* the ranked line: a table is made of people who may sit together —
+       the first in line and the next three who are no kin of theirs */
+    const ranked = (n: number): string[] | null => {
+      const line = this.lines.ranked;
+      for (let head = 0; head < line.length; head++) {
+        const picked = [head];
+        for (let i = head + 1; i < line.length && picked.length < n; i++) if (picked.every((p) => !this.apart(line[p].id, line[i].id))) picked.push(i);
+        if (picked.length === n) {
+          const ids = picked.map((i) => line[i].id);
+          this.lines.ranked = line.filter((_, i) => !picked.includes(i));
+          return ids;
+        }
+      }
+      return null;
+    };
+    for (let ids = ranked(4); ids; ids = ranked(4)) out.push({ mode: 'ranked', ids, machines: 0 });
+    if (this.lines.ranked.length >= 3 && waited('ranked') >= this.waits.ranked) {
+      const ids = ranked(3);
+      if (ids) out.push({ mode: 'ranked', ids, machines: 0 });
+    }
     return out;
   }
 }

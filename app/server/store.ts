@@ -12,6 +12,14 @@ import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
 import { fresh, ratingOf, seasonAt, settle } from './rating';
 import type { Standing } from './rating';
+import { MEETINGS_CAP } from './watch';
+import type { Flag } from './watch';
+
+/** the first moment of a season id such as 2026-Q3 */
+function seasonStart(id: string): number {
+  const m = id.match(/^(\d{4})-Q([1-4])$/);
+  return m ? Date.UTC(Number(m[1]), (Number(m[2]) - 1) * 3, 1) : 0;
+}
 
 /* ------------------------------------------------------------------ */
 /* The register — everything the house must not forget.                */
@@ -160,6 +168,14 @@ create table if not exists ratings (
   trend     text not null,
   updatedAt integer not null,
   primary key (accountId, season)
+);
+create table if not exists flags (
+  id        text primary key,
+  accountId text not null,
+  kind      text not null,
+  detail    text not null,
+  code      text,
+  at        integer not null
 );
 create table if not exists purses (
   accountId text primary key,
@@ -715,10 +731,41 @@ export class Store {
     const humans = state.players.map((_, i) => i).filter((i) => !state.players[i].isBot && !!seatIds[i]);
     for (const i of humans) this.earn(seatIds[i], (GUINEAS.sitting + (i === winner ? GUINEAS.win : 0)) * times);
     if (!ranked || humans.length < 2) return;
-    const season = seasonAt().id;
-    const before = humans.map((i) => this.standing(seatIds[i], season) ?? fresh());
-    const after = settle(before, humans.map((i) => state.players[i].vp), humans.indexOf(winner));
-    humans.forEach((i, k) => this.saveStanding(seatIds[i], season, after[k]));
+    const season = seasonAt();
+    const before = humans.map((i) => this.standing(seatIds[i], season.id) ?? fresh());
+    /* two accounts that keep meeting stop weighing on each other: past the
+       cap their games move neither cote, and the pair is noted once */
+    const met = humans.map((i) => humans.map((j) => (i === j ? 0 : this.meetings(seatIds[i], seatIds[j], season.id, code))));
+    humans.forEach((i, a) => humans.forEach((j, b) => {
+      if (a < b && met[a][b] === MEETINGS_CAP) for (const id of [seatIds[i], seatIds[j]]) this.flag(id, 'meetings', `${MEETINGS_CAP} ranked games against ${id === seatIds[i] ? seatIds[j] : seatIds[i]} this season; the next move no cote`, code);
+    }));
+    const after = settle(before, humans.map((i) => state.players[i].vp), humans.indexOf(winner), (a, b) => met[a][b] < MEETINGS_CAP);
+    humans.forEach((i, k) => this.saveStanding(seatIds[i], season.id, after[k]));
+  }
+
+  /** ranked games this season, before `code`, where both accounts sat */
+  meetings(a: string, b: string, seasonId: string, code: string): number {
+    const from = seasonStart(seasonId);
+    const row = this.db
+      .prepare(
+        'select count(*) as n from games g join tables t on t.code = g.code where t.ranked = 1 and g.finishedAt is not null and g.finishedAt >= ? and g.code <> ? and exists (select 1 from game_players p where p.code = g.code and p.accountId = ?) and exists (select 1 from game_players p where p.code = g.code and p.accountId = ?)',
+      )
+      .get(from, code, a, b) as { n: number };
+    return row.n;
+  }
+
+  /* ------------------------------- the watch ------------------------------ */
+
+  /** a mark against an account: what the watch saw, where */
+  flag(accountId: string, kind: Flag['kind'], detail: string, code: string | null = null): Flag {
+    const f: Flag = { id: 'f-' + randomBytes(6).toString('hex'), accountId, kind, detail, code, at: Date.now() };
+    this.db.prepare('insert into flags (id, accountId, kind, detail, code, at) values (?, ?, ?, ?, ?, ?)').run(f.id, f.accountId, f.kind, f.detail, f.code, f.at);
+    return f;
+  }
+
+  /** every mark, newest first, with the account's name */
+  flags(): (Flag & { name: string })[] {
+    return this.db.prepare('select f.*, a.name from flags f left join accounts a on a.id = f.accountId order by f.at desc').all() as unknown as (Flag & { name: string })[];
   }
 
   games(): StoredGame[] {

@@ -56,6 +56,16 @@ Over a wire that is not `wss://`, a password crosses in clear: put the server be
 
 `npm test` plays a full four-handed game through a real socket, restarts the server mid-game, and lets a candle burn out.
 
+### The watch
+
+The server holds the whole truth and applies every move through the engine, so a client can neither play a card it does not hold nor see a hand that is not its own: a seat receives the deck and the other hands face down, the seed struck out, and a spectator sees no hand at all (`server/view.ts`, checked by a test). What is left is the human kind of cheating, and the house keeps a small watch on it (`server/watch.ts`):
+
+- the ranked line never seats two accounts whose sockets come from the same address at one table (a household plays quick games together, not ranked ones);
+- two accounts that keep meeting stop weighing on each other's cote after four ranked games in a season, and the pair is noted;
+- a human seat that opens twelve turns in a row in under a second and a half is noted.
+
+The marks are kept in the register and read at `http://localhost:8787/flags` from the server's own machine, or with the token `FEEDBACK_TOKEN` names. Nothing is banned by the machine: the house reads the page and decides.
+
 ### The desktop app
 
 The same app ships as a native window through [Tauri](https://tauri.app): the web bundle inside the system's webview, a 40 MB binary, no browser chrome. It needs the Rust toolchain and, on Linux, `webkit2gtk-4.1`.
