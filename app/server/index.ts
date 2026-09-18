@@ -19,7 +19,7 @@ import { letters, mailerFromEnv } from './mail';
 import type { Mailer } from './mail';
 import { Store } from './store';
 import { BODY_MAX, BODY_MIN, MODS_OPEN, POSTS_PER_HOUR, POST_COOLDOWN_MS, REPORT_MAX, THREAD_COOLDOWN_MS, TITLE_MAX, TITLE_MIN, isBoard, isLang, isModAction, isReason } from '@/forum/types';
-import { claudeTranslator, costOf } from './translate';
+import { PROMPT_VERSION, claudeTranslator, costOf } from './translate';
 import type { Translator } from './translate';
 import type { BoardKey, ForumError, Lang } from '@/forum/types';
 import { offends } from '@/forum/words';
@@ -210,7 +210,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           try {
             if (!interpreting()) break;
             const r = await t.translate(j.text, j.from, j.to);
-            store.forumKeepRendering(j.subject, j.id, j.to, r.text, t.model, r.tokensIn, r.tokensOut, costOf(t.model, r.tokensIn, r.tokensOut));
+            store.forumKeepRendering(j.subject, j.id, j.to, r.text, t.model, r.tokensIn, r.tokensOut, costOf(t.model, r.tokensIn, r.tokensOut), PROMPT_VERSION);
           } catch (e) {
             console.error(`interpreter: ${j.subject} ${j.id} to ${j.to}: ${e instanceof Error ? e.message : e}`);
           } finally {
@@ -716,13 +716,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[] = [];
         let title: string | null = null;
         if (view.thread.lang !== to) {
-          title = store.forumRendering('thread', view.thread.id, to);
+          title = store.forumRendering('thread', view.thread.id, to, PROMPT_VERSION);
           if (title === null) jobs.push({ subject: 'thread', id: view.thread.id, text: view.thread.title, from: view.thread.lang, to });
         }
         const posts: Record<string, string> = {};
         for (const p of view.posts) {
           if (p.lang === to || p.hidden || !p.body) continue;
-          const kept = store.forumRendering('post', p.id, to);
+          const kept = store.forumRendering('post', p.id, to, PROMPT_VERSION);
           if (kept !== null) posts[p.id] = kept;
           else jobs.push({ subject: 'post', id: p.id, text: p.body, from: p.lang, to });
         }

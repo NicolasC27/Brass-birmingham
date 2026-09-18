@@ -204,7 +204,12 @@ create table if not exists forum_translations (
   tokensOut integer not null,
   cost      real not null,
   createdAt integer not null,
+  prompt    integer not null default 1,
   primary key (subject, id, lang)
+);
+create table if not exists forum_spent (
+  at   integer not null,
+  cost real not null
 );
 create table if not exists forum_reports (
   id         text primary key,
@@ -229,6 +234,7 @@ create table if not exists forum_seen (
 const GROWTH: [table: string, column: string, ddl: string][] = [
   ['forum_threads', 'lang', "text not null default 'en'"],
   ['forum_posts', 'lang', "text not null default 'en'"],
+  ['forum_translations', 'prompt', 'integer not null default 1'],
   ['accounts', 'email', 'text'],
   ['accounts', 'emailFolded', 'text'],
   ['accounts', 'verifiedAt', 'integer'],
@@ -977,6 +983,7 @@ export class Store {
     }
     this.db.prepare('update forum_posts set body = ?, editedAt = ?, lang = coalesce(?, lang) where id = ?').run(body, Date.now(), lang ?? null, postId);
     /* the renderings said something else: made again when next read */
+    this.db.prepare("insert into forum_spent (at, cost) select createdAt, cost from forum_translations where subject = 'post' and id = ?").run(postId);
     this.db.prepare("delete from forum_translations where subject = 'post' and id = ?").run(postId);
     return null;
   }
@@ -1045,18 +1052,20 @@ export class Store {
   }
 
   /* ---- the interpreter's renderings: one per post and tongue, and what they cost ---- */
-  forumRendering(subject: 'post' | 'thread', id: string, lang: Lang): string | null {
-    const r = this.db.prepare('select text from forum_translations where subject = ? and id = ? and lang = ?').get(subject, id, lang) as { text: string } | undefined;
+  /** a rendering made under these instructions; an older one is made again */
+  forumRendering(subject: 'post' | 'thread', id: string, lang: Lang, prompt: number): string | null {
+    const r = this.db.prepare('select text from forum_translations where subject = ? and id = ? and lang = ? and prompt = ?').get(subject, id, lang, prompt) as { text: string } | undefined;
     return r ? r.text : null;
   }
-  forumKeepRendering(subject: 'post' | 'thread', id: string, lang: Lang, text: string, model: string, tokensIn: number, tokensOut: number, cost: number): void {
+  forumKeepRendering(subject: 'post' | 'thread', id: string, lang: Lang, text: string, model: string, tokensIn: number, tokensOut: number, cost: number, prompt: number): void {
+    this.db.prepare('insert into forum_spent (at, cost) select createdAt, cost from forum_translations where subject = ? and id = ? and lang = ?').run(subject, id, lang);
     this.db
-      .prepare('insert into forum_translations (subject, id, lang, text, model, tokensIn, tokensOut, cost, createdAt) values (?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict (subject, id, lang) do update set text = excluded.text, model = excluded.model, tokensIn = excluded.tokensIn, tokensOut = excluded.tokensOut, cost = excluded.cost, createdAt = excluded.createdAt')
-      .run(subject, id, lang, text, model, tokensIn, tokensOut, cost, Date.now());
+      .prepare('insert into forum_translations (subject, id, lang, text, model, tokensIn, tokensOut, cost, createdAt, prompt) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) on conflict (subject, id, lang) do update set text = excluded.text, model = excluded.model, tokensIn = excluded.tokensIn, tokensOut = excluded.tokensOut, cost = excluded.cost, createdAt = excluded.createdAt, prompt = excluded.prompt')
+      .run(subject, id, lang, text, model, tokensIn, tokensOut, cost, Date.now(), prompt);
   }
-  /** dollars spent on renderings, all time */
+  /** dollars spent on renderings, all time — every rendering paid, replaced ones included */
   forumRenderingSpend(): number {
-    return (this.db.prepare('select coalesce(sum(cost), 0) as d from forum_translations').get() as { d: number }).d;
+    return (this.db.prepare("select coalesce(sum(cost), 0) as d from forum_translations") .get() as { d: number }).d + (this.db.prepare("select coalesce(sum(cost), 0) as d from forum_spent").get() as { d: number }).d;
   }
 
   /** the member read the thread up to now */
