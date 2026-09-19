@@ -12,6 +12,8 @@ import { applyAction, fallbackAction } from '@/game/actions';
 import { newGame } from '@/game/engine';
 import { chooseBotAction, currentEvalMode, setEvalMode, setWeights } from '@/game/search';
 import type { EvalMode, SearchOptions } from '@/game/search';
+import { activeNet, unpack, setNet } from '@/game/net';
+import type { Net } from '@/game/net';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Weights } from '@/game/weights';
 
@@ -26,6 +28,9 @@ export interface MatchOptions {
   /** how each side reads the board; the mode in force when absent */
   subjectMode?: EvalMode;
   fieldMode?: EvalMode;
+  /** the packed network each side reads with; the one in force when absent, none when null */
+  subjectNet?: string | null;
+  fieldNet?: string | null;
 }
 
 export interface MatchResult {
@@ -43,7 +48,7 @@ const COLORS = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
 const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
 
 /** one game played out, `subject` reading with its own weights */
-export function playGame(seed: number, players: number, subject: number, subjectWeights: Weights, fieldWeights: Weights, search: SearchOptions, modes: [EvalMode, EvalMode] = [currentEvalMode(), currentEvalMode()]): GameState {
+export function playGame(seed: number, players: number, subject: number, subjectWeights: Weights, fieldWeights: Weights, search: SearchOptions, modes: [EvalMode, EvalMode] = [currentEvalMode(), currentEvalMode()], nets: [Net | null, Net | null] = [activeNet(), activeNet()]): GameState {
   const setup: SetupPayload = {
     players: Array.from({ length: players }, (_, k) => ({ name: `P${k}`, color: COLORS[k], type: 'bot', persona: PERSONAS[k] })),
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
@@ -57,6 +62,7 @@ export function playGame(seed: number, players: number, subject: number, subject
     }
     const seat = s.current;
     setWeights(seat === subject ? subjectWeights : fieldWeights);
+    setNet(seat === subject ? nets[0] : nets[1]);
     setEvalMode(seat === subject ? modes[0] : modes[1]);
     const a = chooseBotAction(s, seat, search) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
@@ -70,9 +76,11 @@ export function playMatch(o: MatchOptions): MatchResult {
   let canal = 0;
   let canalField = 0;
   let vp = 0;
+  const netOf = (text: string | null | undefined): Net | null => (text === undefined ? activeNet() : text ? unpack(text) : null);
+  const nets: [Net | null, Net | null] = [netOf(o.subjectNet), netOf(o.fieldNet)];
   for (let g = 0; g < o.games; g++) {
     const subject = g % o.players;
-    const s = playGame(o.seed + g, o.players, subject, o.subject, o.field, o.search, [o.subjectMode ?? currentEvalMode(), o.fieldMode ?? currentEvalMode()]);
+    const s = playGame(o.seed + g, o.players, subject, o.subject, o.field, o.search, [o.subjectMode ?? currentEvalMode(), o.fieldMode ?? currentEvalMode()], nets);
     const points = s.players.map((p) => p.vp);
     const others = points.filter((_, k) => k !== subject);
     if (s.winner === subject) wins += 1;

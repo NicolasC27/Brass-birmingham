@@ -242,3 +242,7 @@ export const activeNet = (): Net | null => active;
 export function loadNet(text: string | null): void {
   active = text ? unpack(text) : null;
 }
+/** an already unpacked network takes over (an arena seating two of them) */
+export function setNet(net: Net | null): void {
+  active = net;
+}

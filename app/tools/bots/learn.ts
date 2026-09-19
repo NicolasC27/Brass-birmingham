@@ -299,9 +299,8 @@ function fit(): Net {
   return { sizes, weights: keptW, biases: keptB, mean, scale, points: POINTS };
 }
 
-function writeNet(net: Net): void {
+function writeNet(net: Net): string {
   const packed = pack(net);
-  netText = packed;
   const lines = packed.match(/.{1,120}/g) ?? [];
   const body = lines.map((l) => `  '${l}',`).join('\n');
   writeFileSync(
@@ -309,18 +308,31 @@ function writeNet(net: Net): void {
     `/* written by tools/bots/learn.ts — the network the machines last learned; null until one has been */\nexport const NET_B64: string | null = [\n${body}\n].join('');\n`,
   );
   log(`fit: network written, ${net.sizes.join('×')}, ${Math.round(packed.length / 1024)} KB`);
+  return packed;
+}
+
+/** the packed network back into net-weights.ts as it was */
+function restoreNet(packed: string | null): void {
+  if (packed) {
+    const lines = packed.match(/.{1,120}/g) ?? [];
+    writeFileSync(NET_FILE, `/* written by tools/bots/learn.ts — the network the machines last learned; null until one has been */\nexport const NET_B64: string | null = [\n${lines.map((l) => `  '${l}',`).join('\n')}\n].join('');\n`);
+  } else writeFileSync(NET_FILE, `/* written by tools/bots/learn.ts — the network the machines last learned; null until one has been */\nexport const NET_B64: string | null = null;\n`);
 }
 
 /* =============================== check ============================= */
 
-/** the learned reading against the hand-written one, everyone at the same strength */
-async function check(tag: string): Promise<void> {
+/** the new reading against the one it would replace — the last network, or
+ *  the hand-written reading when there is none — everyone at the same
+ *  strength; the newcomer stays only if it wins more than its share */
+async function check(tag: string, fresh: string, previous: string | null): Promise<boolean> {
   const result = await new Promise<{ wins: number; games: number; diff: number; canal: number; canalField: number }>((ok, fail) => {
-    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { check: true, seed: 900000 + Number(tag) * 100, net: netText } });
+    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { check: true, seed: 900000 + Number(tag) * 100, net: fresh, previous } });
     worker.once('message', ok);
     worker.once('error', fail);
   });
-  log(`check ${tag}: the network wins ${result.wins}/${result.games} (par ${(result.games / 4).toFixed(0)}), ${result.diff.toFixed(1)} points on the best rival, canal ${result.canal.toFixed(1)} vs ${result.canalField.toFixed(1)}`);
+  const keep = result.wins / result.games >= 0.25 + 0.04 && result.diff >= 0;
+  log(`check ${tag}: the new network wins ${result.wins}/${result.games} (par ${(result.games / 4).toFixed(0)}) against ${previous ? 'the last one' : 'the hand-written reading'}, ${result.diff.toFixed(1)} points on the best rival, canal ${result.canal.toFixed(1)} vs ${result.canalField.toFixed(1)}${keep ? ' — kept' : ' — the last one stays'}`);
+  return keep;
 }
 
 /* =============================== main ============================== */
@@ -329,14 +341,15 @@ async function main(): Promise<void> {
   const mode = process.argv[2] ?? 'loop';
   const tag = (k: number) => String(Date.now() % 100000 + k);
   if (mode === 'play') await play(tag(0));
-  else if (mode === 'fit') writeNet(fit());
-  else if (mode === 'check') await check(tag(0));
+  else if (mode === 'fit') netText = writeNet(fit());
+  else if (mode === 'check') await check(tag(0), netText ?? '', null);
   else {
     for (let k = 1; k <= ITERATIONS; k++) {
       log(`--- iteration ${k} of ${ITERATIONS}`);
       await play(tag(k));
-      writeNet(fit());
-      await check(tag(k));
+      const fresh = writeNet(fit());
+      if (await check(tag(k), fresh, netText)) netText = fresh;
+      else restoreNet(netText);
     }
   }
   log('--- done');
@@ -345,9 +358,9 @@ async function main(): Promise<void> {
 if (isMainThread) {
   void main();
 } else if ((workerData as { check?: boolean }).check) {
-  const { seed, net } = workerData as { seed: number; net: string | null };
+  const { seed, net, previous } = workerData as { seed: number; net: string; previous: string | null };
   loadNet(net);
-  const r = playMatch({ games: CHECK_GAMES, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: 'hand' });
+  const r = playMatch({ games: CHECK_GAMES, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous });
   parentPort!.postMessage(r);
 } else {
   const { seeds, players, net } = workerData as { seeds: number[]; players: number; net: string | null };
