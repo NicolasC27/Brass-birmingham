@@ -168,4 +168,45 @@ describe('the forum over the wire', () => {
     expect(reports.t === 'forum.reports' ? reports.translation : null).toMatchObject({ budget: 0.016, on: true });
     expect(reports.t === 'forum.reports' ? reports.translation.spent : 0).toBeCloseTo(0.0165, 4);
   });
+
+  it("keeps a banned member from writing, and keeps what the interpreter declined off the wire", async () => {
+    const declined: Translator = {
+      model: 'claude-haiku-4-5',
+      async translate(text, _from, to) {
+        if (text.includes('DECLINE')) throw new Error('refused');
+        return { text: `[${to}] ${text}`, tokensIn: 100, tokensOut: 50 };
+      },
+    };
+    server = await serve({ port: 0, mailer: post, pace: { bot: 0, ceremony: 0 }, sweepEvery: 0, file: ':memory:', moderators: ['ada'], translator: declined, translateBudget: 1 });
+    const ada = await arrive('Ada');
+    const bob = await arrive('Bob');
+    bob.send({ t: 'forum.open', rid: 50, board: 'tables', title: 'A table on Friday', body: 'DECLINE this one', lang: 'en' });
+    const opened = await answer(bob, 50);
+    const id = opened.t === 'forum.opened' ? opened.id : '';
+    /* Ada reads in French: the interpreter declines the post; the moderators' queue shows it, and it is not sent again */
+    ada.send({ t: 'forum.translate', rid: 51, id, page: 0, lang: 'fr' });
+    await answer(ada, 51);
+    await ada.until('the moderators to be told', () => pushes(ada).some((f) => f.t === 'forum' && f.thread === null));
+    ada.send({ t: 'forum.reports', rid: 52 });
+    const queue = await answer(ada, 52);
+    expect(queue.t === 'forum.reports' ? queue.refused.length : 0).toBe(1);
+    ada.send({ t: 'forum.translate', rid: 53, id, page: 0, lang: 'fr' });
+    const again = await answer(ada, 53);
+    expect(again.t === 'forum.translated' ? again.rendered.pending : -1).toBe(0);
+    /* Bob is excluded: he may read, not write; readmitted, he writes again */
+    ada.send({ t: 'forum.mod', rid: 54, action: 'ban', id: bob.id });
+    expect((await answer(ada, 54)).t).toBe('done');
+    bob.send({ t: 'forum.reply', rid: 55, id, body: 'Still here?', lang: 'en' });
+    expect(await answer(bob, 55)).toMatchObject({ t: 'refused', error: 'forum-banned' });
+    bob.send({ t: 'forum.thread', rid: 56, id, page: 0 });
+    expect((await answer(bob, 56)).t).toBe('forum.thread');
+    ada.send({ t: 'forum.mod', rid: 57, action: 'unban', id: bob.id });
+    expect((await answer(ada, 57)).t).toBe('done');
+    /* the refusal lifted, the interpreter is asked again */
+    ada.send({ t: 'forum.mod', rid: 58, action: 'clear', id: (queue.t === 'forum.reports' ? queue.refused[0].post.id : '') });
+    expect((await answer(ada, 58)).t).toBe('done');
+    ada.send({ t: 'forum.translate', rid: 59, id, page: 0, lang: 'fr' });
+    const third = await answer(ada, 59);
+    expect(third.t === 'forum.translated' ? third.rendered.pending : -1).toBe(1);
+  });
 });

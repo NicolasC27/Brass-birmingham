@@ -69,7 +69,7 @@
       "runtimeArgs": [
         "PORT=8790",
         "DEV_LETTERS=1",
-        "BRASSWORKS_DB=:memory:",
+        "BLACKRAIL_DB=:memory:",
         "BLACKRAIL_MODERATORS=Ada",
         "npm",
         "run",
@@ -95,6 +95,21 @@
         "--strictPort"
       ],
       "port": 3010
+    },
+    {
+      "name": "brass-bots",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "app",
+        "--",
+        "--port",
+        "3021",
+        "--strictPort"
+      ],
+      "port": 3021
     }
   ]
 }

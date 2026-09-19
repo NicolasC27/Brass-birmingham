@@ -213,6 +213,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
             store.forumKeepRendering(j.subject, j.id, j.to, r.text, t.model, r.tokensIn, r.tokensOut, costOf(t.model, r.tokensIn, r.tokensOut), PROMPT_VERSION);
           } catch (e) {
             console.error(`interpreter: ${j.subject} ${j.id} to ${j.to}: ${e instanceof Error ? e.message : e}`);
+            /* the interpreter declined the text itself: the post is not sent again,
+               and the moderators' queue shows it */
+            if (j.subject === 'post' && e instanceof Error && e.message === 'refused') {
+              store.forumRefuse(j.id);
+              for (const k of clients) if (k.me && isMod(k.me)) send(k, { t: 'forum', board, thread: null });
+            }
           } finally {
             rendering.delete(`${j.subject}:${j.id}:${j.to}`);
           }
@@ -629,6 +635,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const pace = store.forumPace(who.id, Date.now() - 60 * 60 * 1000);
         const error: ForumError | null = !isBoard(m.board)
           ? 'forum-board'
+          : store.forumBanned(who.id)
+            ? 'forum-banned'
           : !who.verified
             ? 'forum-verified'
             : MODS_OPEN.includes(m.board) && !isMod(who)
@@ -651,6 +659,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const pace = store.forumPace(who.id, Date.now() - 60 * 60 * 1000);
         const error: ForumError | null = !where || where.hidden
           ? 'forum-not-found'
+          : store.forumBanned(who.id)
+            ? 'forum-banned'
           : !who.verified
             ? 'forum-verified'
             : where.locked && !isMod(who)
@@ -675,7 +685,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'forum.edit': {
         const body = tidy(m.body);
         const post = store.forumPostWhere(String(m.post));
-        const error = !post ? 'forum-not-found' : wording(body, BODY_MIN, BODY_MAX);
+        const error = !post ? 'forum-not-found' : store.forumBanned(who.id) && !isMod(who) ? 'forum-banned' : wording(body, BODY_MIN, BODY_MAX);
         if (error || !post) {
           send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-not-found' });
           return;
@@ -715,8 +725,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           return;
         }
         const id = String(m.id);
-        const post = m.action === 'hide' || m.action === 'unhide' ? store.forumPostWhere(id) : null;
-        const thread = post ? post.threadId : m.action === 'resolve' ? null : id;
+        const post = m.action === 'hide' || m.action === 'unhide' || m.action === 'clear' ? store.forumPostWhere(id) : null;
+        const thread = post ? post.threadId : m.action === 'resolve' || m.action === 'ban' || m.action === 'unban' ? null : id;
         const r = store.forumMod(who.id, m.action, id);
         if (r) {
           send(c, { t: 'refused', rid: m.rid, error: r });
@@ -734,7 +744,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'forum-not-mod' });
           return;
         }
-        send(c, { t: 'forum.reports', rid: m.rid, reports: store.forumReports(), translation: { spent: store.forumRenderingSpend(), budget: translateBudget, on: !!translator } });
+        send(c, { t: 'forum.reports', rid: m.rid, reports: store.forumReports(), refused: store.forumRefused(), translation: { spent: store.forumRenderingSpend(), budget: translateBudget, on: !!translator } });
         return;
       }
       case 'forum.translate': {
@@ -755,7 +765,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           if (p.lang === to || p.hidden || !p.body) continue;
           const kept = store.forumRendering('post', p.id, to, PROMPT_VERSION);
           if (kept !== null) posts[p.id] = kept;
-          else jobs.push({ subject: 'post', id: p.id, text: p.body, from: p.lang, to });
+          else {
+            /* nothing under report, and nothing the interpreter declined, goes out again */
+            const where = store.forumPostWhere(p.id);
+            if (where && !where.refused && !where.reported) jobs.push({ subject: 'post', id: p.id, text: p.body, from: p.lang, to });
+          }
         }
         const on = interpreting();
         send(c, { t: 'forum.translated', rid: m.rid, id: view.thread.id, page: view.page, lang: to, rendered: { title, posts, pending: on ? jobs.length : 0, on } });

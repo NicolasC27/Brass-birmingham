@@ -158,9 +158,9 @@ export class Wire {
   async forumMod(action: ModAction, id: string): Promise<void> {
     await this.ask((rid) => ({ t: 'forum.mod', rid, action, id }));
   }
-  async forumReports(): Promise<{ reports: Report[]; translation: TranslationSpend }> {
+  async forumReports(): Promise<{ reports: Report[]; refused: Report[]; translation: TranslationSpend }> {
     const m = await this.ask((rid) => ({ t: 'forum.reports', rid }));
-    return m.t === 'forum.reports' ? { reports: m.reports, translation: m.translation } : { reports: [], translation: { spent: 0, budget: 0, on: false } };
+    return m.t === 'forum.reports' ? { reports: m.reports, refused: m.refused, translation: m.translation } : { reports: [], refused: [], translation: { spent: 0, budget: 0, on: false } };
   }
   forumSeen(id: string): void {
     this.send({ t: 'forum.seen', id });

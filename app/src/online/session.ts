@@ -185,6 +185,6 @@ export const forumReply = (id: string, body: string, lang: Lang): Promise<{ post
 export const forumEdit = (post: string, body: string, lang: Lang): Promise<void> => wire().forumEdit(post, body, lang);
 export const forumReport = (post: string, reason: ReportReason, text: string): Promise<void> => wire().forumReport(post, reason, text);
 export const forumMod = (action: ModAction, id: string): Promise<void> => wire().forumMod(action, id);
-export const forumReports = (): Promise<{ reports: Report[]; translation: TranslationSpend }> => wire().forumReports();
+export const forumReports = (): Promise<{ reports: Report[]; refused: Report[]; translation: TranslationSpend }> => wire().forumReports();
 export const forumTranslate = (id: string, page: number, lang: Lang): Promise<Rendered> => wire().forumTranslate(id, page, lang);
 export const forumSeen = (id: string): void => onlineWire()?.forumSeen(id);

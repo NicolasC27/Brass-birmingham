@@ -207,9 +207,15 @@ create table if not exists forum_posts (
   editedAt  integer,
   hiddenAt  integer,
   hiddenBy  text,
-  lang      text not null default 'en'
+  lang      text not null default 'en',
+  refusedAt integer
 );
 create index if not exists forum_posts_thread on forum_posts (threadId, createdAt);
+create table if not exists forum_bans (
+  accountId text primary key references accounts(id) on delete cascade,
+  at        integer not null,
+  byId      text not null
+);
 create table if not exists forum_translations (
   subject   text not null,
   id        text not null,
@@ -251,6 +257,7 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['forum_threads', 'lang', "text not null default 'en'"],
   ['forum_posts', 'lang', "text not null default 'en'"],
   ['forum_translations', 'prompt', 'integer not null default 1'],
+  ['forum_posts', 'refusedAt', 'integer'],
   ['accounts', 'email', 'text'],
   ['accounts', 'emailFolded', 'text'],
   ['accounts', 'verifiedAt', 'integer'],
@@ -944,7 +951,12 @@ export class Store {
 
   private postRow(r: PostRecord, mod: boolean): Post {
     const hidden = r.hiddenAt !== null;
-    return { id: r.id, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: hidden && !mod ? '' : r.body, lang: r.lang as Lang, createdAt: r.createdAt, editedAt: r.editedAt, hidden, reports: mod ? r.reports : 0 };
+    const post: Post = { id: r.id, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: hidden && !mod ? '' : r.body, lang: r.lang as Lang, createdAt: r.createdAt, editedAt: r.editedAt, hidden, reports: mod ? r.reports : 0 };
+    if (mod) {
+      post.refused = r.refusedAt !== null;
+      post.banned = this.forumBanned(r.accountId);
+    }
+    return post;
   }
 
   /** the five boards, with what a member has not read yet on each */
@@ -988,9 +1000,39 @@ export class Store {
     const r = this.db.prepare('select board, locked, hiddenAt from forum_threads where id = ?').get(threadId) as { board: string; locked: number; hiddenAt: number | null } | undefined;
     return r ? { board: r.board as BoardKey, locked: r.locked === 1, hidden: r.hiddenAt !== null } : null;
   }
-  forumPostWhere(postId: string): { threadId: string; board: BoardKey; accountId: string; createdAt: number } | null {
-    const r = this.db.prepare('select p.threadId, p.accountId, p.createdAt, t.board from forum_posts p join forum_threads t on t.id = p.threadId where p.id = ?').get(postId) as { threadId: string; accountId: string; createdAt: number; board: string } | undefined;
-    return r ? { threadId: r.threadId, board: r.board as BoardKey, accountId: r.accountId, createdAt: r.createdAt } : null;
+  forumPostWhere(postId: string): { threadId: string; board: BoardKey; accountId: string; createdAt: number; refused: boolean; reported: boolean } | null {
+    const r = this.db
+      .prepare('select p.threadId, p.accountId, p.createdAt, p.refusedAt, t.board, (select count(*) from forum_reports x where x.postId = p.id and x.resolvedAt is null) as reports from forum_posts p join forum_threads t on t.id = p.threadId where p.id = ?')
+      .get(postId) as { threadId: string; accountId: string; createdAt: number; refusedAt: number | null; board: string; reports: number } | undefined;
+    return r ? { threadId: r.threadId, board: r.board as BoardKey, accountId: r.accountId, createdAt: r.createdAt, refused: r.refusedAt !== null, reported: r.reports > 0 } : null;
+  }
+
+  /* ---- the members kept from writing, and the posts the interpreter declined ---- */
+  forumBanned(accountId: string): boolean {
+    return !!this.db.prepare('select 1 from forum_bans where accountId = ?').get(accountId);
+  }
+  /** the interpreter would not render this post: it is not sent again until a moderator clears it */
+  forumRefuse(postId: string): void {
+    this.db.prepare('update forum_posts set refusedAt = ? where id = ? and refusedAt is null').run(Date.now(), postId);
+  }
+  /** the posts the interpreter declined, as the moderators' second queue */
+  forumRefused(): Report[] {
+    const rows = this.db
+      .prepare(
+        `select p.id as postId, p.threadId, p.accountId, a.name as byName, p.body, p.lang as postLang, p.createdAt as postAt, p.editedAt, p.hiddenAt, p.refusedAt, t.title, t.board
+         from forum_posts p join forum_threads t on t.id = p.threadId join accounts a on a.id = p.accountId
+         where p.refusedAt is not null and p.hiddenAt is null order by p.refusedAt`,
+      )
+      .all() as unknown as (ReportRecord & { refusedAt: number })[];
+    return rows.map((r) => ({
+      id: r.postId,
+      post: { id: r.postId, threadId: r.threadId, by: { id: r.accountId, name: r.byName }, body: r.body, lang: r.postLang as Lang, createdAt: r.postAt, editedAt: r.editedAt, hidden: false, reports: 0, refused: true, banned: this.forumBanned(r.accountId) },
+      thread: { id: r.threadId, title: r.title, board: r.board as BoardKey },
+      by: { id: '', name: '' },
+      reason: 'other',
+      text: '',
+      createdAt: r.refusedAt,
+    }));
   }
 
   /** a new thread with its first post */
@@ -1066,6 +1108,19 @@ export class Store {
       }
       case 'resolve': {
         const r = this.db.prepare('update forum_reports set resolvedAt = ?, resolvedBy = ? where id = ? and resolvedAt is null').run(now, accountId, id);
+        return r.changes === 0 ? 'forum-not-found' : null;
+      }
+      case 'ban': {
+        if (!this.db.prepare('select 1 from accounts where id = ?').get(id)) return 'forum-not-found';
+        this.db.prepare('insert or ignore into forum_bans (accountId, at, byId) values (?, ?, ?)').run(id, now, accountId);
+        return null;
+      }
+      case 'unban': {
+        const r = this.db.prepare('delete from forum_bans where accountId = ?').run(id);
+        return r.changes === 0 ? 'forum-not-found' : null;
+      }
+      case 'clear': {
+        const r = this.db.prepare('update forum_posts set refusedAt = null where id = ?').run(id);
         return r.changes === 0 ? 'forum-not-found' : null;
       }
     }
@@ -1154,6 +1209,7 @@ interface PostRecord {
   createdAt: number;
   editedAt: number | null;
   hiddenAt: number | null;
+  refusedAt: number | null;
   lang: string;
   byName: string;
   reports: number;

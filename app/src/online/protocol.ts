@@ -161,7 +161,7 @@ export type ServerMessage =
   | { t: 'forum.thread'; rid: number; view: ThreadView }
   | { t: 'forum.opened'; rid: number; id: string }
   | { t: 'forum.posted'; rid: number; post: Post; page: number }
-  | { t: 'forum.reports'; rid: number; reports: Report[]; translation: TranslationSpend }
+  | { t: 'forum.reports'; rid: number; reports: Report[]; refused: Report[]; translation: TranslationSpend }
   | { t: 'forum.translated'; rid: number; id: string; page: number; lang: Lang; rendered: Rendered }
   /** something moved on the forum: a board, and the thread when it is one */
   | { t: 'forum'; board: BoardKey; thread: string | null }

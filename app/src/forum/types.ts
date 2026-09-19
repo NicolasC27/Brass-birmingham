@@ -77,6 +77,10 @@ export interface Post {
   hidden: boolean;
   /** open reports on it — moderators only */
   reports: number;
+  /** the interpreter declined to render it: moderators are told, it is not sent again */
+  refused?: boolean;
+  /** the author may not write on the forum — moderators only */
+  banned?: boolean;
 }
 
 export interface ThreadView {
@@ -115,8 +119,11 @@ export interface Report {
   createdAt: number;
 }
 
-export type ModAction = 'hide' | 'unhide' | 'lock' | 'unlock' | 'pin' | 'unpin' | 'resolve';
-export const MOD_ACTIONS: readonly ModAction[] = ['hide', 'unhide', 'lock', 'unlock', 'pin', 'unpin', 'resolve'];
+/** hide/unhide a post, lock/unlock and pin/unpin a thread, resolve a report,
+ *  ban/unban a member from writing (id: the account), clear the interpreter's
+ *  refusal on a post so it may be rendered again */
+export type ModAction = 'hide' | 'unhide' | 'lock' | 'unlock' | 'pin' | 'unpin' | 'resolve' | 'ban' | 'unban' | 'clear';
+export const MOD_ACTIONS: readonly ModAction[] = ['hide', 'unhide', 'lock', 'unlock', 'pin', 'unpin', 'resolve', 'ban', 'unban', 'clear'];
 export const isModAction = (s: unknown): s is ModAction => typeof s === 'string' && (MOD_ACTIONS as readonly string[]).includes(s);
 
 /** why the office said no, in its own words */
@@ -133,4 +140,5 @@ export type ForumError =
   | 'forum-verified'
   | 'forum-mods-only'
   | 'forum-not-mod'
-  | 'forum-reported';
+  | 'forum-reported'
+  | 'forum-banned';

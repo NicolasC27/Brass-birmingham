@@ -41,7 +41,7 @@ function since(at: number, t: T): string {
 }
 
 /** the office's refusal in the reader's language */
-const KNOWN = new Set(['forum-too-short', 'forum-too-long', 'forum-cooldown', 'forum-locked', 'forum-not-yours', 'forum-edit-window', 'forum-board', 'forum-not-found', 'forum-verified', 'forum-mods-only', 'forum-not-mod', 'forum-reported']);
+const KNOWN = new Set(['forum-too-short', 'forum-too-long', 'forum-cooldown', 'forum-locked', 'forum-not-yours', 'forum-edit-window', 'forum-board', 'forum-not-found', 'forum-verified', 'forum-mods-only', 'forum-not-mod', 'forum-reported', 'forum-banned']);
 function explain(e: unknown, t: T): string {
   const code = e instanceof Error ? e.message : String(e);
   if (code === 'forum-words') return t('platform.forum.errors.forum-words-server');
@@ -218,6 +218,9 @@ function Composer({
         <Button type="submit" variant="primary" disabled={busy || left < 0 || !body.value.trim()}>
           {submitLabel}
         </Button>
+        <span className="font-ui text-[11.5px] text-iron-400">
+          <Link to="/forum" className="underline decoration-brass-500/40 underline-offset-2 hover:text-paper-100">{t('platform.forum.charter.accept')}</Link>
+        </span>
         {onCancel && (
           <Button variant="ghost" onClick={onCancel} disabled={busy}>
             {t('platform.forum.cancel')}
@@ -265,6 +268,35 @@ const Mark = ({ children, tone = 'iron' }: { children: ReactNode; tone?: 'iron' 
   <span className={cn('micro-label rounded px-1.5 py-0.5', tone === 'signal' ? 'bg-[rgb(var(--signal-400)/.14)] text-signal-400' : tone === 'brass' ? 'bg-[rgb(var(--brass-400)/.14)] text-brass-300' : 'bg-enamel-700 text-iron-400')}>{children}</span>
 );
 
+/* ============================== the charter ============================== */
+
+/** the club's charter, at the head of the forum: folded to its title once read */
+function Charter() {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const items: string[] = [];
+  for (let i = 0; i < 12; i++) {
+    const it = t(`platform.forum.charter.items.${i}`);
+    if (it.endsWith(`.items.${i}`)) break;
+    items.push(it);
+  }
+  return (
+    <Panel title={t('platform.forum.charter.title')} className="mb-6" tone="paper" meta={<button type="button" onClick={() => setOpen((o) => !o)} className="micro-label text-brass-300 hover:text-brass-200">{open ? '−' : '+'} {t('platform.forum.charter.toggle')}</button>}>
+      {open ? (
+        <ol className="flex list-decimal flex-col gap-2 pl-5">
+          {items.map((it, i) => (
+            <li key={i}>
+              <Body text={it} className="text-[13.5px] text-paper-300 [&_p]:my-0" />
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="font-ui text-[13px] text-paper-300">{items[0]}</p>
+      )}
+    </Panel>
+  );
+}
+
 /* ============================== the boards ============================== */
 
 export default function Forum() {
@@ -291,6 +323,7 @@ export default function Forum() {
       }
     >
       <Refusal text={boards.error} />
+      <Charter />
       <div className="flex flex-col gap-3">
         {boards.data === null && !boards.error && <p className="font-ui text-[13px] text-iron-400">{t('platform.forum.loading')}</p>}
         {boards.data?.map((b, i) => (
@@ -538,6 +571,8 @@ function PostCard({
             {mine && <Mark tone="signal">{t('platform.ranking.you')}</Mark>}
             {post.hidden && <Mark>{t('platform.forum.hiddenMod')}</Mark>}
             {mod && post.reports > 0 && <Mark tone="brass">{t('platform.forum.reportedCount', { count: post.reports })}</Mark>}
+            {mod && post.refused && <Mark tone="brass">{t('platform.forum.mod.refused')}</Mark>}
+            {mod && post.banned && <Mark>{t('platform.forum.mod.banned')}</Mark>}
           </span>
           <span className="block font-ui text-[12px] text-iron-400">
             {since(post.createdAt, t)}
@@ -598,9 +633,21 @@ function PostCard({
           )}
           {sent && <span className="font-ui text-[12px] text-iron-400">{t('platform.forum.reportSent')}</span>}
           {mod && (
-            <button type="button" onClick={() => void act(() => forumMod(post.hidden ? 'unhide' : 'hide', post.id))} disabled={busy} className="micro-label ml-auto inline-flex items-center gap-1 rounded px-2 py-1 text-brass-300 transition-colors hover:bg-enamel-700 hover:text-brass-200">
-              {post.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} {t(post.hidden ? 'platform.forum.mod.unhide' : 'platform.forum.mod.hide')}
-            </button>
+            <span className="ml-auto flex flex-wrap items-center gap-1">
+              {post.refused && (
+                <button type="button" onClick={() => void act(() => forumMod('clear', post.id))} disabled={busy} className="micro-label inline-flex items-center gap-1 rounded px-2 py-1 text-brass-300 transition-colors hover:bg-enamel-700 hover:text-brass-200">
+                  {t('platform.forum.mod.clear')}
+                </button>
+              )}
+              {!mine && (
+                <button type="button" onClick={() => void act(() => forumMod(post.banned ? 'unban' : 'ban', post.by.id))} disabled={busy} className="micro-label inline-flex items-center gap-1 rounded px-2 py-1 text-rust-400 transition-colors hover:bg-enamel-700">
+                  {t(post.banned ? 'platform.forum.mod.unban' : 'platform.forum.mod.ban')}
+                </button>
+              )}
+              <button type="button" onClick={() => void act(() => forumMod(post.hidden ? 'unhide' : 'hide', post.id))} disabled={busy} className="micro-label inline-flex items-center gap-1 rounded px-2 py-1 text-brass-300 transition-colors hover:bg-enamel-700 hover:text-brass-200">
+                {post.hidden ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />} {t(post.hidden ? 'platform.forum.mod.unhide' : 'platform.forum.mod.hide')}
+              </button>
+            </span>
           )}
         </footer>
       )}
@@ -771,7 +818,45 @@ export function ForumModeration() {
     <PageShell back={{ to: '/forum', label: t('platform.forum.backForum') }} eyebrow={t('platform.forum.mod.eyebrow')} title={t('platform.forum.mod.title')} lede={t('platform.forum.mod.lede')} aside={queue.data ? <Mark tone="brass">{t('platform.forum.mod.queue', { count: queue.data.reports.length })}</Mark> : undefined}>
       <Refusal text={queue.error} />
       {spend && <p className="mb-4 font-ui text-[12.5px] text-iron-400">{spend.on ? t('platform.forum.mod.spend', { spent: spend.spent.toFixed(2), budget: spend.budget.toFixed(0) }) : t('platform.forum.mod.spendOff')}</p>}
-      {queue.data && queue.data.reports.length === 0 && <EmptyState title={t('platform.forum.mod.queueEmpty')} icon={<ShieldCheck />} mini />}
+      {queue.data && queue.data.reports.length === 0 && queue.data.refused.length === 0 && <EmptyState title={t('platform.forum.mod.queueEmpty')} icon={<ShieldCheck />} mini />}
+      {queue.data && queue.data.refused.length > 0 && (
+        <section className="mb-6">
+          <h2 className="title-card">{t('platform.forum.mod.refusedTitle')}</h2>
+          <p className="mb-3 mt-1 font-ui text-[12.5px] text-iron-400">{t('platform.forum.mod.refusedLede')}</p>
+          <div className="flex flex-col gap-3">
+            {queue.data.refused.map((r) => (
+              <article key={r.id} className="rounded-xl border border-dashed border-brass-hairline bg-enamel-850 p-4 lg:p-5">
+                <header className="flex flex-wrap items-center gap-2">
+                  <Mark tone="brass">{t('platform.forum.mod.refused')}</Mark>
+                  <span className="font-ui text-[12px] text-iron-400">{since(r.createdAt, t)}</span>
+                  <Link to={`/forum/t/${r.thread.id}`} className="ml-auto font-ui text-[12px] text-brass-300 hover:text-brass-200">
+                    {t('platform.forum.mod.inThread', { title: r.thread.title })}
+                  </Link>
+                </header>
+                <div className="mt-3 rounded-lg border border-brass-hairline bg-lacquer-950/40 p-3">
+                  <span className="flex items-center gap-2">
+                    <Initial name={r.post.by.name} mine={false} />
+                    <span className="font-ui text-[13px] font-semibold text-paper-100">{r.post.by.name}</span>
+                    {r.post.banned && <Mark>{t('platform.forum.mod.banned')}</Mark>}
+                  </span>
+                  <Body text={r.post.body} className="mt-2" />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button variant="danger-ghost" className="h-8 px-3 text-[13px]" disabled={busy === r.id} onClick={() => void act(r.id, () => forumMod('hide', r.post.id))} icon={<EyeOff className="h-4 w-4" />}>
+                    {t('platform.forum.mod.hideResolve')}
+                  </Button>
+                  <Button variant="danger-ghost" className="h-8 px-3 text-[13px]" disabled={busy === r.id} onClick={() => void act(r.id, () => forumMod(r.post.banned ? 'unban' : 'ban', r.post.by.id))}>
+                    {t(r.post.banned ? 'platform.forum.mod.unban' : 'platform.forum.mod.ban')}
+                  </Button>
+                  <Button variant="ghost" className="h-8 px-3 text-[13px]" disabled={busy === r.id} onClick={() => void act(r.id, () => forumMod('clear', r.post.id))}>
+                    {t('platform.forum.mod.clear')}
+                  </Button>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="flex flex-col gap-3">
         {queue.data?.reports.map((r) => (
           <article key={r.id} className="rounded-xl border border-brass-hairline bg-enamel-850 p-4 lg:p-5">
