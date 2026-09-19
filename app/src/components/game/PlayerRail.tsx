@@ -131,6 +131,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
           setSpotlight(spotlighted ? null : index);
         }
       }}
+      data-lens={p.isBot ? 'rail-bot' : 'rail'}
       className={cn(
         'relative flex cursor-pointer items-center gap-2 plaque overflow-hidden rounded-md border py-1.5 pl-3 pr-2 transition-[border-color,box-shadow,background-color] duration-300',
         active ? '!border-brass-400/90' : 'opacity-90',

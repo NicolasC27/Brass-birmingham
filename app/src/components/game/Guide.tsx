@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
-import { aidOn, setBoardOption } from '@/components/game/boardOptions';
-import { MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
+import { aidOn, getBoardOptions, setBoardOption } from '@/components/game/boardOptions';
+import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
+import LessonLens from './LessonLens';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
@@ -382,6 +383,19 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean } | null>(null);
   const setBotHold = useGame((s) => s.setBotHold);
   const setGlimpse = useGame((s) => s.setGlimpse);
+  /* G folds the guide to a rail down the right edge, and back */
+  useEffect(() => {
+    if (!dock) return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.key.toLowerCase() !== 'g' || e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      setBoardOption('guideFolded', !getBoardOptions().guideFolded);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [dock]);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   /* the note can be dragged by its head, and folded to a strip; a new
      lesson unfolds it */
@@ -805,6 +819,36 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
     setFiled(toFile[toFile.length - 1].id);
   }
 
+  /* folded: a rail down the right edge — the lesson's number, how far the
+     guide has come, a dot when the machine or the table has something to
+     say; the lesson's lens still lights the board */
+  if (dock === GUIDE_RAIL) {
+    const n = Math.min(shownIndex + 1, STEPS.length);
+    const unread = !!bot || news.length > 0;
+    return (
+      <>
+        <LessonLens stepId={showSteps && !finished ? step?.id : null} active={showSteps} />
+        <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
+          <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold')} title={t('game.guide.rail.unfold')} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
+            <ChevronLeft className="h-4 w-4" />
+            {unread && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
+          </button>
+          <GraduationCap className="h-4 w-4 text-cream-100/60" aria-hidden />
+          {showSteps && (
+            <>
+              <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: STEPS.length })}>
+                {n}/{STEPS.length}
+              </span>
+              <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
+                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(n / STEPS.length) * 100}%` }} />
+              </span>
+            </>
+          )}
+        </aside>
+      </>
+    );
+  }
+
   return (
     <div
       ref={box}
@@ -815,6 +859,18 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
       )}
       style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
     >
+      <LessonLens stepId={showSteps && !finished ? step?.id : null} active={showSteps} />
+      {dock > 0 && (
+        <div className="flex shrink-0 items-center gap-2 pb-1">
+          <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
+          <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.guide.aria')}</span>
+          {showSteps && !finished && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>}
+          <span className="flex-1" />
+          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
       {/* what has already been said, kept so a reader can look back at it */}
       {dock && said.length > 0 && (
         <div aria-label={t('game.guide.thread.aria')} className="flex shrink-0 flex-col gap-2">

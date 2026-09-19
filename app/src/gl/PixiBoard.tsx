@@ -1138,8 +1138,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         cleanups.push(() => window.removeEventListener('keydown', onKey));
       }
 
-      /* container size for React overlays */
-      const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }));
+      /* container size for React overlays — and the canvas itself: Pixi's
+         resizeTo only listens to the window, not to the lane the guide
+         takes or gives back at the right edge */
+      const ro = new ResizeObserver(() => {
+        a.resize();
+        setSize({ w: el.clientWidth, h: el.clientHeight });
+      });
       ro.observe(el);
       setSize({ w: el.clientWidth, h: el.clientHeight });
       cleanups.push(() => ro.disconnect());

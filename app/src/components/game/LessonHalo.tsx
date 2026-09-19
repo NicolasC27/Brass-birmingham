@@ -15,10 +15,7 @@ export default function LessonHalo() {
   const hud = useGame((s) => s.lens?.hud ?? null);
   const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   useEffect(() => {
-    if (!hud) {
-      setBox(null);
-      return;
-    }
+    if (!hud) return;
     const measure = () => {
       const el = document.querySelector<HTMLElement>(`[data-lens="${hud}"]`);
       if (!el) {
@@ -32,10 +29,11 @@ export default function LessonHalo() {
       }
       setBox((prev) => (prev && Math.abs(prev.x - r.left) < 1 && Math.abs(prev.y - r.top) < 1 && Math.abs(prev.w - r.width) < 1 && Math.abs(prev.h - r.height) < 1 ? prev : { x: r.left, y: r.top, w: r.width, h: r.height }));
     };
-    measure();
+    const raf = requestAnimationFrame(measure);
     const iv = window.setInterval(measure, 300);
     window.addEventListener('resize', measure);
     return () => {
+      cancelAnimationFrame(raf);
       window.clearInterval(iv);
       window.removeEventListener('resize', measure);
     };
