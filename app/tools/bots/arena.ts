@@ -33,6 +33,8 @@ export interface MatchOptions {
   fieldNet?: string | null;
   /** the field's strength when it differs from the subject's */
   fieldStrength?: number;
+  /** stop at the canal scoring: wins and points are the Canal Era's */
+  canalOnly?: boolean;
 }
 
 export interface MatchResult {
@@ -50,7 +52,7 @@ const COLORS = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
 const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
 
 /** one game played out, `subject` reading with its own weights */
-export function playGame(seed: number, players: number, subject: number, subjectWeights: Weights, fieldWeights: Weights, search: SearchOptions, modes: [EvalMode, EvalMode] = [currentEvalMode(), currentEvalMode()], nets: [Brain | null, Brain | null] = [activeNet(), activeNet()], fieldSearch: SearchOptions = search): GameState {
+export function playGame(seed: number, players: number, subject: number, subjectWeights: Weights, fieldWeights: Weights, search: SearchOptions, modes: [EvalMode, EvalMode] = [currentEvalMode(), currentEvalMode()], nets: [Brain | null, Brain | null] = [activeNet(), activeNet()], fieldSearch: SearchOptions = search, canalOnly = false): GameState {
   const setup: SetupPayload = {
     players: Array.from({ length: players }, (_, k) => ({ name: `P${k}`, color: COLORS[k], type: 'bot', persona: PERSONAS[k] })),
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
@@ -59,6 +61,7 @@ export function playGame(seed: number, players: number, subject: number, subject
   let guard = 0;
   while (s.phase !== 'game-over' && guard++ < 5000) {
     if (s.phase === 'scoring-canal') {
+      if (canalOnly) break;
       s = applyAction(s, s.current, { kind: 'begin-rail' }).state!;
       continue;
     }
@@ -82,10 +85,11 @@ export function playMatch(o: MatchOptions): MatchResult {
   const nets: [Brain | null, Brain | null] = [netOf(o.subjectNet), netOf(o.fieldNet)];
   for (let g = 0; g < o.games; g++) {
     const subject = g % o.players;
-    const s = playGame(o.seed + g, o.players, subject, o.subject, o.field, o.search, [o.subjectMode ?? currentEvalMode(), o.fieldMode ?? currentEvalMode()], nets, o.fieldStrength === undefined ? o.search : { ...o.search, strength: o.fieldStrength });
-    const points = s.players.map((p) => p.vp);
+    const s = playGame(o.seed + g, o.players, subject, o.subject, o.field, o.search, [o.subjectMode ?? currentEvalMode(), o.fieldMode ?? currentEvalMode()], nets, o.fieldStrength === undefined ? o.search : { ...o.search, strength: o.fieldStrength }, !!o.canalOnly);
+    const points = o.canalOnly ? (s.canalScores ?? s.players.map(() => 0)) : s.players.map((p) => p.vp);
     const others = points.filter((_, k) => k !== subject);
-    if (s.winner === subject) wins += 1;
+    const winner = o.canalOnly ? points.indexOf(Math.max(...points)) : s.winner;
+    if (winner === subject) wins += 1;
     diff += points[subject] - Math.max(...others);
     vp += points[subject];
     const cs = s.canalScores ?? [];

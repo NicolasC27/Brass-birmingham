@@ -91,6 +91,7 @@ function style(seed: number): Weights {
   nudge('rival', 0.3, 1);
   nudge('incomeOnFlip', 0.4, 1.4);
   nudge('goodsServed', 0.5, 0.9);
+  nudge('developed', 0, 6);
   return w;
 }
 
@@ -103,15 +104,12 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
   };
   let s: GameState = newGame(setup, seed);
+  /* the Canal Era and nothing else: the game stops at its scoring */
   const canal: { x: Float32Array; seat: number }[] = [];
   const rail: { x: Float32Array; seat: number }[] = [];
   let guard = 0;
-  while (s.phase !== 'game-over' && guard++ < 5000) {
-    if (s.phase === 'scoring-canal') {
-      s = applyAction(s, s.current, { kind: 'begin-rail' }).state!;
-      continue;
-    }
-    for (let j = 0; j < players; j++) (s.era === 'canal' ? canal : rail).push({ x: features(s, j), seat: j });
+  while (s.phase === 'action' && guard++ < 5000) {
+    for (let j = 0; j < players; j++) canal.push({ x: features(s, j), seat: j });
     const seat = s.current;
     setWeights(styles[seat]);
     const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: 0 }) ?? fallbackAction(s, seat);
@@ -119,7 +117,7 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
   }
   const lead = (scores: number[], j: number) => scores[j] - Math.max(...scores.filter((_, k) => k !== j));
   const canalScores = s.canalScores ?? s.players.map(() => 0);
-  const finalScores = s.players.map((p) => p.vp);
+  const finalScores = canalScores;
   const out = new Float32Array((canal.length + rail.length) * ROW);
   let at = 0;
   for (const block of [canal, rail]) {
@@ -251,8 +249,14 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
   for (let r = 0; r < n; r++) for (let k = 0; k < FEATURES; k++) mean[k] += data[r * ROW + k] / n;
   for (let r = 0; r < n; r++) for (let k = 0; k < FEATURES; k++) scale[k] += ((data[r * ROW + k] - mean[k]) ** 2) / n;
   for (let k = 0; k < FEATURES; k++) scale[k] = Math.max(1e-3, Math.sqrt(scale[k]));
-  /* the last tenth of the positions is held out */
-  const cut = Math.floor(n * 0.9);
+  /* a tenth of the positions is held out, in slices spread over the whole
+     record so that every table and every style is in both parts */
+  const SLICE = 4000;
+  const heldOut = (r: number): boolean => Math.floor(r / SLICE) % 10 === 9;
+  const learn: number[] = [];
+  const held: number[] = [];
+  for (let r = 0; r < n; r++) (heldOut(r) ? held : learn).push(r);
+  const cut = learn.length;
   const sizes = [FEATURES, ...HIDDEN, 1];
   const W: Float32Array[] = [];
   const B: Float32Array[] = [];
@@ -293,18 +297,19 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
     }
     return acts[W.length][0];
   };
-  const rmse = (from: number, to: number): number => {
+  const rmse = (rows: number[]): number => {
     let se = 0;
-    for (let r = from; r < to; r++) {
+    for (const r of rows) {
       const d = forwardTo(r) - target(r);
       se += d * d;
     }
-    return Math.sqrt(se / Math.max(1, to - from)) * POINTS;
+    return Math.sqrt(se / Math.max(1, rows.length)) * POINTS;
   };
   let base = 0;
-  for (let r = cut; r < n; r++) base += (target(r) * POINTS) ** 2;
-  log(`fit (${TARGET}): ${n} positions, ${cut} to learn from, ${n - cut} held out; guessing zero misses by ${Math.sqrt(base / (n - cut)).toFixed(2)} points`);
-  const order = Array.from({ length: cut }, (_, k) => k);
+  for (const r of held) base += (target(r) * POINTS) ** 2;
+  log(`fit (${TARGET}): ${n} positions, ${cut} to learn from, ${held.length} held out; guessing zero misses by ${Math.sqrt(base / Math.max(1, held.length)).toFixed(2)} points`);
+  const order = [...learn];
+  const sample = learn.filter((_, k) => k % 5 === 0).slice(0, 20000);
   /* the network of the epoch that read the held-out positions best */
   let bestHeld = Infinity;
   let bestEpoch = 0;
@@ -355,14 +360,14 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
         adam(B[l], gB[l], mB[l], vB[l], false);
       }
     }
-    const held = rmse(cut, n);
-    if (held < bestHeld) {
-      bestHeld = held;
+    const heldNow = rmse(held);
+    if (heldNow < bestHeld) {
+      bestHeld = heldNow;
       bestEpoch = epoch;
       keptW = W.map((w) => Float32Array.from(w));
       keptB = B.map((b) => Float32Array.from(b));
     }
-    if (epoch === 1 || epoch % 5 === 0 || epoch === EPOCHS || epoch - bestEpoch >= PATIENCE) log(`fit: epoch ${epoch}, misses by ${rmse(0, Math.min(cut, 20000)).toFixed(2)} points learning, ${held.toFixed(2)} held out`);
+    if (epoch === 1 || epoch % 5 === 0 || epoch === EPOCHS || epoch - bestEpoch >= PATIENCE) log(`fit: epoch ${epoch}, misses by ${rmse(sample).toFixed(2)} points learning, ${heldNow.toFixed(2)} held out`);
     if (epoch - bestEpoch >= PATIENCE) {
       log(`fit: no better reading of the held-out positions for ${PATIENCE} epochs — keeping epoch ${bestEpoch} (${bestHeld.toFixed(2)})`);
       break;
@@ -429,7 +434,8 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
     canalField: slices.reduce((a, s) => a + s.canalField * s.games, 0) / games,
   };
   /* the Canal Era first: more points there, without losing the game for it */
-  const keep = result.canal > result.canalField + 1 && result.wins / result.games >= 0.25 && result.diff >= -2;
+  /* the Canal Era is the whole contest here: more points, and at least a share of the eras */
+  const keep = result.canal > result.canalField + 1 && result.wins / result.games >= 0.25;
   log(`check ${tag}: the new network wins ${result.wins}/${result.games} (par ${(result.games / 4).toFixed(0)}) against ${previous ? 'the last one' : 'the hand-written reading'}, ${result.diff.toFixed(1)} points on the best rival, canal ${result.canal.toFixed(1)} vs ${result.canalField.toFixed(1)}${keep ? ' — kept' : ' — the last one stays'}`);
   /* the yardsticks report on their own time: the next games need not wait */
   if (keep) void yardstick(tag, fresh);
@@ -446,7 +452,7 @@ async function yardstick(tag: string, net: string): Promise<void> {
         worker.once('message', ok);
         worker.once('error', fail);
       });
-      log(`yardstick ${tag}: the expert at ${players} against a weak table — ${r.canal.toFixed(1)} Canal Era points (rivals ${r.canalField.toFixed(1)}), ${r.vp.toFixed(0)} final, ${r.wins}/${r.games} wins`);
+      log(`yardstick ${tag}: the expert at ${players} against a weak table — ${r.canal.toFixed(1)} Canal Era points (rivals ${r.canalField.toFixed(1)}), ${r.wins}/${r.games} eras won`);
     }),
   );
 }
@@ -477,12 +483,12 @@ if (isMainThread) {
   const { players, seed, net } = workerData as { players: number; seed: number; net: string };
   loadNet(net);
   const weak: Weights = { ...TRAINED };
-  const r = playMatch({ games: 6, players, seed, subject: TRAINED, field: weak, search: { strength: 1 }, subjectMode: 'blend', fieldMode: 'hand', subjectNet: net, fieldNet: null, fieldStrength: 0.3 });
+  const r = playMatch({ games: 6, players, seed, subject: TRAINED, field: weak, search: { strength: 1 }, subjectMode: 'blend', fieldMode: 'hand', subjectNet: net, fieldNet: null, fieldStrength: 0.3, canalOnly: true });
   parentPort!.postMessage(r);
 } else if ((workerData as { check?: boolean }).check) {
   const { seed, net, previous, games } = workerData as { seed: number; net: string; previous: string | null; games: number };
   loadNet(net);
-  const r = playMatch({ games, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous });
+  const r = playMatch({ games, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous, canalOnly: true });
   parentPort!.postMessage(r);
 } else {
   const { seeds, net } = workerData as { seeds: number[]; net: string | null };

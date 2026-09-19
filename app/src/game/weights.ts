@@ -47,6 +47,8 @@ export interface Weights {
   rival: number;
   /** the classic opening: what each of two loans in the first three canal rounds is worth on its own */
   earlyLoan: number;
+  /** a mat developed in the Canal Era: per industry whose next tile is level 2 or above, which will survive the sweep and score twice */
+  developed: number;
 }
 
 export const DEFAULTS: Weights = {
@@ -75,6 +77,7 @@ export const DEFAULTS: Weights = {
   stack: 0.08,
   rival: 1,
   earlyLoan: 8,
+  developed: 0,
 };
 
 /* written by tools/bots/train.ts — the reading that won the last training */

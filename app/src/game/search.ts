@@ -285,6 +285,8 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
   v += towns.size * w.towns * frac;
   const market = [...towns].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
   if (!market) v -= w.noMarket * frac;
+  /* a mat developed early: the next tiles survive the sweep and score twice */
+  if (s.era === 'canal') for (const ind of Object.keys(p.stacks) as IndustryType[]) if ((p.stacks[ind][0] ?? 0) >= 2) v += w.developed * frac;
   /* the canal opening: two loans early buy the tiles that pay for themselves */
   if (s.era === 'canal' && s.round <= 3) v += w.earlyLoan * Math.min(2, p.loans);
   /* the next tile of each industry: the higher, the better the builds ahead */
@@ -307,8 +309,9 @@ export function evaluate(s: GameState, i: number, w: Weights = weights): number 
     rival = Math.max(rival, worth(s, j, proj, frac, paydays, false, w));
   }
   const hand = rival === -Infinity ? mine : mine - rival * w.rival;
+  /* the brain was taught the Canal Era and nothing else: the rails are read by hand */
   const net = activeNet();
-  if (evalMode === 'hand' || !net) return hand;
+  if (evalMode === 'hand' || !net || s.era !== 'canal') return hand;
   const learned = think(net, features(s, i));
   return evalMode === 'net' ? learned : hand + learned;
 }

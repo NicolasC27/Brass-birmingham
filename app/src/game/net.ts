@@ -20,7 +20,7 @@ import type { GameState, IndustryType } from './types';
 const INDUSTRY_ORDER: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 
 /** a seat's block of features */
-const SEAT_FEATURES = 38;
+const SEAT_FEATURES = 45;
 const GLOBAL_FEATURES = 7;
 /** own seat, the leading rival, the rivals on average, then the table */
 export const FEATURES = SEAT_FEATURES * 3 + GLOBAL_FEATURES;
@@ -117,6 +117,11 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
   /* goods that could sell right now: a buyer connected and beer somewhere for it */
   const beerAround = beer > 0 || Object.values(s.merchantBeer).some((b) => b > 0) || Object.values(s.tiles).some((x) => x.industry === 'brewery' && !x.flipped && x.cubes > 0);
   out[at + 37] = beerAround ? served / 3 : 0;
+  /* the level of the next tile of each industry, and the tiles on the board that will outlive the canals */
+  let lasting = 0;
+  for (const [k, ind] of INDUSTRY_ORDER.entries()) out[at + 38 + k] = (p.stacks[ind][0] ?? 0) / 4;
+  for (const t of Object.values(s.tiles)) if (t.owner === j && t.level >= 2) lasting += 1;
+  out[at + 44] = lasting / 6;
 }
 
 /** the table as seat `i` sees it, in numbers the network was trained on */
