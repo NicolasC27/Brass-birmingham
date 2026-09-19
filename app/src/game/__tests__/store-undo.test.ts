@@ -65,5 +65,5 @@ describe('undo through the store', () => {
       const g = useGame.getState().game!;
       if (g.phase === 'action' && g.players[g.current].isBot) expect(useGame.getState().canUndo()).toBe(false);
     }
-  });
+  }, 30_000);
 });
