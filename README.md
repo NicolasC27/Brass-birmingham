@@ -56,6 +56,14 @@ Over a wire that is not `wss://`, a password crosses in clear: put the server be
 
 `npm test` plays a full four-handed game through a real socket, restarts the server mid-game, and lets a candle burn out.
 
+### Privacy and security
+
+The register keeps as little as it can, and seals what it keeps. Passwords are scrypt hashes; session tokens and the links in the letters are hashed at rest, so a copy of `brassworks.db` opens no session and resets no password (an older register is sealed on first start). A password everybody tries, or one that carries the member's own name, is refused. After eight wrong passwords for a name from one address (forty from everywhere) the door waits a quarter of an hour. The socket is only opened to pages served from the app's own origin (`APP_URL`, plus any in `BLACKRAIL_ORIGINS`, comma-separated), this machine and the desktop app; behind a reverse proxy set `TRUST_PROXY=1` so the addresses come from `x-forwarded-for`.
+
+Members accept the club's charter and the privacy policy when they sign up, and the date is kept. What the law asks of a host is kept and no more: the address a post was written from, one year, then erased; the name and address of a closed account, five years apart from everything, then erased. Every member can take everything the register holds under their name as one file (**Download my data** on the profile) and close the account on their word (**Close my account**): what identifies them goes at once, their posts stay under a number so the threads still read.
+
+The legal notice and the privacy policy live at `/legal`, in the four languages, and name the house from the build's environment: `VITE_LEGAL_OPERATOR` (who publishes the site), `VITE_LEGAL_CONTACT` (the address requests and reports go to), `VITE_LEGAL_HOST` (the hosting company and its address). Put them in `.env.local` beside the app. The policy discloses the processors (Anthropic for the forum's renderings, Resend for the letters, Google Fonts for the type) and the members' rights; bump `POLICY_DATE` in `app/src/pages/Legal.tsx` when its text changes. Serve the app over HTTPS and the server over WSS, with the usual headers from the reverse proxy (`Strict-Transport-Security`, a `Content-Security-Policy` that allows `wss:` to the server and `fonts.googleapis.com` / `fonts.gstatic.com`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`); the server's own pages already carry them.
+
 ### The watch
 
 The server holds the whole truth and applies every move through the engine, so a client can neither play a card it does not hold nor see a hand that is not its own: a seat receives the deck and the other hands face down, the seed struck out, and a spectator sees no hand at all (`server/view.ts`, checked by a test). What is left is the human kind of cheating, and the house keeps a small watch on it (`server/watch.ts`):
