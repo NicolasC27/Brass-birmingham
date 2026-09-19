@@ -37,6 +37,7 @@ import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID,
 import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
+import { activeNet, features, forward } from './net';
 import { TRAINED } from './weights';
 import type { Weights } from './weights';
 
@@ -84,6 +85,14 @@ export const isExpert = (s: GameState, i: number): boolean => s.players[i].perso
 
 /** the machine never plays below this, whatever the table calls for */
 export const FLOOR_STRENGTH = 0.3;
+
+/** how the board is read: by hand, by the learned network, or both together */
+export type EvalMode = 'hand' | 'net' | 'blend';
+let evalMode: EvalMode = activeNet() ? 'blend' : 'hand';
+export function setEvalMode(mode: EvalMode): void {
+  evalMode = activeNet() ? mode : 'hand';
+}
+export const currentEvalMode = (): EvalMode => evalMode;
 
 /** the reading in force: the trained one, unless a trainer sets another */
 let weights: Weights = TRAINED;
@@ -295,7 +304,11 @@ export function evaluate(s: GameState, i: number, w: Weights = weights): number 
     if (j === i) continue;
     rival = Math.max(rival, worth(s, j, proj, frac, paydays, false, w));
   }
-  return rival === -Infinity ? mine : mine - rival * w.rival;
+  const hand = rival === -Infinity ? mine : mine - rival * w.rival;
+  const net = activeNet();
+  if (evalMode === 'hand' || !net) return hand;
+  const learned = forward(net, features(s, i));
+  return evalMode === 'net' ? learned : hand + learned;
 }
 
 /* ============================== search ============================== */

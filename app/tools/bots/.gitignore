@@ -1,2 +1,4 @@
 dist/
+data/
 training.log
+learning.log

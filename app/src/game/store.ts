@@ -945,7 +945,7 @@ export const useGame = create<GameStore>((set, get) => ({
        — an expert a little less so; it plays at the form the house holds */
     const strength = readForm().level;
     const expert = isExpert(g, g.current);
-    const wanted = chooseBotAction(g, g.current, { budgetMs: expert ? 1200 : strength >= 0.8 ? 400 : 200, strength });
+    const wanted = chooseBotAction(g, g.current, { budgetMs: expert ? 1500 : strength >= 0.8 ? 400 : 200, strength });
     // nothing playable (or a move the engine refuses): scout if allowed, else pass
     if (!(wanted && get().dispatch(wanted))) get().dispatch(fallbackAction(g, g.current));
     return wanted;

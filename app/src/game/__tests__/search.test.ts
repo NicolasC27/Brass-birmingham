@@ -136,3 +136,28 @@ describe('the machines', () => {
     expect(adaptiveStrength(humans, 0, 0.8)).toBeLessThanOrEqual(0.65);
   });
 });
+
+describe('the learned reading', () => {
+  it('draws the same numbers from the same table, and packs a net round trip', async () => {
+    const { FEATURES, features, forward, pack, unpack } = await import('../net');
+    const s = newGame(setup(), 21);
+    const x = features(s, 0);
+    expect(x.length).toBe(FEATURES);
+    expect([...x].every((v) => Number.isFinite(v) && v >= -1 && v <= 2)).toBe(true);
+    expect([...features(s, 0)]).toEqual([...x]);
+    const sizes = [FEATURES, 5, 1];
+    const net = {
+      sizes,
+      weights: [Float32Array.from({ length: FEATURES * 5 }, (_, k) => Math.sin(k)), Float32Array.from({ length: 5 }, (_, k) => 0.1 * k)],
+      biases: [new Float32Array(5), Float32Array.of(0.5)],
+      mean: new Float32Array(FEATURES),
+      scale: new Float32Array(FEATURES).fill(1),
+      points: 30,
+    };
+    const y = forward(net, x);
+    expect(Number.isFinite(y)).toBe(true);
+    const back = unpack(pack(net));
+    expect(back.sizes).toEqual(sizes);
+    expect(forward(back, x)).toBeCloseTo(y, 4);
+  });
+});
