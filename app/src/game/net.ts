@@ -12,7 +12,7 @@
 /* layers with tanh, its weights a base64 string in net-weights.ts.    */
 /* ------------------------------------------------------------------ */
 
-import { INDUSTRIES, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
+import { INDUSTRIES, LINKS, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
 import { merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable } from './engine';
 import { NET_B64 } from './net-weights';
 import type { GameState, IndustryType } from './types';
@@ -20,7 +20,7 @@ import type { GameState, IndustryType } from './types';
 const INDUSTRY_ORDER: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 
 /** a seat's block of features */
-const SEAT_FEATURES = 29;
+const SEAT_FEATURES = 38;
 const GLOBAL_FEATURES = 7;
 /** own seat, the leading rival, the rivals on average, then the table */
 export const FEATURES = SEAT_FEATURES * 3 + GLOBAL_FEATURES;
@@ -81,11 +81,42 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
   out[at + 26] = nearly / 3;
   out[at + 27] = links / 8;
   let stack = 0;
-  for (const ind of INDUSTRY_ORDER) {
+  for (const [k, ind] of INDUSTRY_ORDER.entries()) {
     const next = p.stacks[ind][0];
-    if (next) stack += INDUSTRIES[ind][next - 1].vp;
+    const vp = next ? INDUSTRIES[ind][next - 1].vp : 0;
+    stack += vp;
+    /* the next tile of each industry, what it would score */
+    out[at + 29 + k] = vp / 12;
   }
   out[at + 28] = stack / 40;
+  /* around one's links: icons already there and empty slots that may yet bring some */
+  let icons = 0;
+  let room = 0;
+  for (const [id, l] of Object.entries(s.links)) {
+    if (l.owner !== j) continue;
+    const def = LINKS.find((d) => d.id === id);
+    if (!def) continue;
+    for (const end of [def.a, def.b]) {
+      if (MERCHANT_BY_ID[end]) {
+        icons += 2;
+        continue;
+      }
+      const town = TOWN_BY_ID[end];
+      if (!town) continue;
+      let built = 0;
+      for (const [key, t] of Object.entries(s.tiles)) {
+        if (key.split(':')[0] !== end) continue;
+        built += 1;
+        icons += INDUSTRIES[t.industry][t.level - 1].links;
+      }
+      room += Math.max(0, town.slots.length - built);
+    }
+  }
+  out[at + 35] = icons / 20;
+  out[at + 36] = room / 10;
+  /* goods that could sell right now: a buyer connected and beer somewhere for it */
+  const beerAround = beer > 0 || Object.values(s.merchantBeer).some((b) => b > 0) || Object.values(s.tiles).some((x) => x.industry === 'brewery' && !x.flipped && x.cubes > 0);
+  out[at + 37] = beerAround ? served / 3 : 0;
 }
 
 /** the table as seat `i` sees it, in numbers the network was trained on */
@@ -142,6 +173,19 @@ export interface Net {
   scale: Float32Array;
   /** what one unit of output means, in points */
   points: number;
+}
+
+/** several networks trained on the same positions from different starts:
+ *  their mean is steadier than any one of them */
+export interface Brain {
+  nets: Net[];
+}
+
+/** the brain's answer: the mean of its networks' */
+export function think(brain: Brain, x: Float32Array): number {
+  let sum = 0;
+  for (const net of brain.nets) sum += forward(net, x);
+  return sum / brain.nets.length;
 }
 
 /** the network's answer: points ahead (positive) or behind at the era's scoring */
@@ -237,12 +281,25 @@ export function unpack(text: string): Net {
 }
 
 /** the network in force: the one shipped, until a learner loads a fresher one */
-let active: Net | null = NET_B64 ? unpack(NET_B64) : null;
-export const activeNet = (): Net | null => active;
-export function loadNet(text: string | null): void {
-  active = text ? unpack(text) : null;
+/** a brain as one string: its networks packed, joined by a bar */
+export const packBrain = (brain: Brain): string => brain.nets.map(pack).join('|');
+export const unpackBrain = (text: string): Brain => ({ nets: text.split('|').filter(Boolean).map(unpack) });
+
+/** a brain is only as good as the features it was trained on: one packed
+ *  for another set of features is left aside rather than misread */
+function fitting(brain: Brain | null): Brain | null {
+  if (brain && brain.nets.some((net) => net.sizes[0] !== FEATURES)) {
+    console.warn(`a brain for ${brain.nets[0].sizes[0]} features cannot read ${FEATURES}: reading by hand`);
+    return null;
+  }
+  return brain && brain.nets.length ? brain : null;
 }
-/** an already unpacked network takes over (an arena seating two of them) */
-export function setNet(net: Net | null): void {
-  active = net;
+let active: Brain | null = fitting(NET_B64 ? unpackBrain(NET_B64) : null);
+export const activeNet = (): Brain | null => active;
+export function loadNet(text: string | null): void {
+  active = fitting(text ? unpackBrain(text) : null);
+}
+/** an already unpacked brain takes over (an arena seating two of them) */
+export function setNet(brain: Brain | null): void {
+  active = brain;
 }

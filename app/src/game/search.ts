@@ -37,7 +37,7 @@ import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID,
 import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
-import { activeNet, features, forward } from './net';
+import { activeNet, features, think } from './net';
 import { TRAINED } from './weights';
 import type { Weights } from './weights';
 
@@ -309,7 +309,7 @@ export function evaluate(s: GameState, i: number, w: Weights = weights): number 
   const hand = rival === -Infinity ? mine : mine - rival * w.rival;
   const net = activeNet();
   if (evalMode === 'hand' || !net) return hand;
-  const learned = forward(net, features(s, i));
+  const learned = think(net, features(s, i));
   return evalMode === 'net' ? learned : hand + learned;
 }
 

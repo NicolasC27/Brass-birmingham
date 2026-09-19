@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { newGame } from '../engine';
-import { adaptiveStrength, chooseBotAction, currentWeights, determinize, evaluate, isExpert, knobs, legalActions, searchTurn, setWeights } from '../search';
+import { adaptiveStrength, chooseBotAction, currentEvalMode, currentWeights, determinize, evaluate, isExpert, knobs, legalActions, searchTurn, setEvalMode, setWeights } from '../search';
 import { DEFAULTS, TRAINED } from '../weights';
 import type { GameState, SetupPayload } from '../types';
 
@@ -58,8 +58,12 @@ describe('the machines', () => {
 
   it('reads the table from its own seat', () => {
     const s = newGame(setup(), 13);
+    /* by hand: a learned brain may lean one way or another at an empty table */
+    const was = currentEvalMode();
+    setEvalMode('hand');
     const mine = evaluate(s, 0);
     const theirs = evaluate(s, 1);
+    setEvalMode(was);
     expect(Number.isFinite(mine)).toBe(true);
     expect(Number.isFinite(theirs)).toBe(true);
     /* a fresh table: nobody is ahead by much */
