@@ -45,6 +45,8 @@ export interface Weights {
   stack: number;
   /** how much the strongest rival's worth counts against one's own */
   rival: number;
+  /** the classic opening: what each of two loans in the first three canal rounds is worth on its own */
+  earlyLoan: number;
 }
 
 export const DEFAULTS: Weights = {
@@ -72,6 +74,7 @@ export const DEFAULTS: Weights = {
   noMarket: 4,
   stack: 0.08,
   rival: 1,
+  earlyLoan: 8,
 };
 
 /* written by tools/bots/train.ts — the reading that won the last training */

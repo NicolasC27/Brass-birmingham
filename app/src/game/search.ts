@@ -285,6 +285,8 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
   v += towns.size * w.towns * frac;
   const market = [...towns].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
   if (!market) v -= w.noMarket * frac;
+  /* the canal opening: two loans early buy the tiles that pay for themselves */
+  if (s.era === 'canal' && s.round <= 3) v += w.earlyLoan * Math.min(2, p.loans);
   /* the next tile of each industry: the higher, the better the builds ahead */
   for (const ind of Object.keys(p.stacks) as IndustryType[]) {
     const next = p.stacks[ind][0];
