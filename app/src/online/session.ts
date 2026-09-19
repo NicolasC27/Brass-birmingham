@@ -126,6 +126,8 @@ export const verifyEmail = (token: string): Promise<void> => wire().verify(token
 export const forgotPassword = (email: string): Promise<void> => wire().forgot(email.trim());
 export const resetPassword = (token: string, password: string): Promise<Me> => wire().reset(token, password);
 export const changePassword = (current: string, next: string): Promise<void> => wire().changePassword(current, next);
+export const exportData = (): Promise<Record<string, unknown>> => wire().exportData();
+export const closeAccount = (password: string): Promise<void> => wire().closeAccount(password);
 
 /** the letter again — to a new address when one is given */
 export async function resendLetter(email?: string): Promise<void> {

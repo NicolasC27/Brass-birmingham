@@ -503,7 +503,7 @@ describe('a table over the wire', () => {
     const twice = new Guest('nobody');
     guests.push(twice);
     await twice.open(server.port);
-    twice.send({ t: 'signup', rid: 2, name: 'nobody', email: 'nobody@example.test', password: PASSWORD });
+    twice.send({ t: 'signup', rid: 2, name: 'nobody', email: 'nobody@example.test', password: PASSWORD, accept: true });
     await twice.until('the refusal', () => twice.rejected.length > 0);
     expect(twice.rejected.at(-1)).toBe('name-taken');
     twice.send({ t: 'signin', rid: 3, name: 'Nobody', password: 'not-the-password' });

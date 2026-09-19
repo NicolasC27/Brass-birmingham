@@ -209,7 +209,7 @@ export class Wire {
   /* ---------------------------- accounts --------------------------- */
 
   async signUp(name: string, email: string, password: string): Promise<Me> {
-    return this.enter(await this.ask((rid) => ({ t: 'signup', rid, name, email, password }), true));
+    return this.enter(await this.ask((rid) => ({ t: 'signup', rid, name, email, password, accept: true }), true));
   }
 
   async signIn(name: string, password: string): Promise<Me> {
@@ -228,6 +228,18 @@ export class Wire {
 
   async reset(token: string, password: string): Promise<Me> {
     return this.enter(await this.ask((rid) => ({ t: 'reset', rid, token, password }), true));
+  }
+
+  /** everything the register holds under my name */
+  async exportData(): Promise<Record<string, unknown>> {
+    const m = await this.ask((rid) => ({ t: 'export', rid }));
+    return m.t === 'export' ? m.data : {};
+  }
+
+  /** the account closed for good: the office forgets me, and so does this socket */
+  async closeAccount(password: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'close', rid, password }));
+    this.signOut();
   }
 
   /** a new password: the office hands out a fresh session for it */

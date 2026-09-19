@@ -56,7 +56,7 @@ export interface GameView {
 
 export type ClientMessage =
   /** open an account, and be signed in with it — the letter leaves at once */
-  | { t: 'signup'; rid: number; name: string; email: string; password: string }
+  | { t: 'signup'; rid: number; name: string; email: string; password: string; accept: boolean }
   | { t: 'signin'; rid: number; name: string; password: string }
   /** first frame of a socket that already holds a session */
   | { t: 'auth'; rid?: number; token: string }
@@ -72,6 +72,10 @@ export type ClientMessage =
   /** the profile, as its owner would have it */
   | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null }
   | { t: 'password'; rid: number; current: string; next: string }
+  /** everything the register holds under my name, to take away */
+  | { t: 'export'; rid: number }
+  /** close my account and erase what identifies me; the password says it is me */
+  | { t: 'close'; rid: number; password: string }
   /** an idea or a bug for the house, from any page */
   | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
   /** the desk: my tables, my invitations, my past games */
@@ -135,6 +139,8 @@ export type ServerMessage =
   | { t: 'me'; rid?: number; me: Me }
   /** the answer to a request that has nothing else to say */
   | { t: 'done'; rid: number }
+  /** the member's data, as one document */
+  | { t: 'export'; rid: number; data: Record<string, unknown> }
   /** the desk, whenever it changes */
   | { t: 'desk'; rid?: number; desk: Desk }
   /** the table changed (null = it is gone) */

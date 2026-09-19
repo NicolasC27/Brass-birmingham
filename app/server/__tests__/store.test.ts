@@ -42,23 +42,23 @@ describe('the register', () => {
 
   it('opens an account, refuses the name twice and knows the password', () => {
     const { store } = open();
-    const made = store.signUp('Ada Lovelace', 'ada@example.test', 'countess-of-lovelace');
+    const made = store.signUp('Ada Lovelace', 'ada@example.test', 'analytical-engine-1843');
     expect('account' in made).toBe(true);
     expect(store.signUp('  ada   lovelace ', 'other@example.test', 'another-password-1')).toEqual({ error: 'name-taken' });
     expect(store.signUp('x', 'x@example.test', 'long-enough-password')).toEqual({ error: 'bad-name' });
     expect(store.signUp('Charles', 'charles@example.test', 'short')).toEqual({ error: 'weak-password' });
-    expect(store.signIn('ADA LOVELACE', 'countess-of-lovelace')?.name).toBe('Ada Lovelace');
+    expect(store.signIn('ADA LOVELACE', 'analytical-engine-1843')?.name).toBe('Ada Lovelace');
     expect(store.signIn('Ada Lovelace', 'wrong')).toBeNull();
-    expect(store.signIn('Nobody', 'countess-of-lovelace')).toBeNull();
+    expect(store.signIn('Nobody', 'analytical-engine-1843')).toBeNull();
     /* the address is a name too, and it is unique */
-    expect(store.signIn('ADA@example.test', 'countess-of-lovelace')?.name).toBe('Ada Lovelace');
+    expect(store.signIn('ADA@example.test', 'analytical-engine-1843')?.name).toBe('Ada Lovelace');
     expect(store.signUp('Charles', 'Ada@Example.test', 'long-enough-password')).toEqual({ error: 'email-taken' });
     expect(store.signUp('Charles', 'not-an-address', 'long-enough-password')).toEqual({ error: 'bad-email' });
   });
 
   it('opens the tables once the address has answered its letter, and lets a password be chosen again', () => {
     const { store } = open();
-    const made = store.signUp('Ada', 'ada@example.test', 'countess-of-lovelace');
+    const made = store.signUp('Ada', 'ada@example.test', 'analytical-engine-1843');
     const id = 'account' in made ? made.account.id : '';
     expect(store.account(id)?.verified).toBe(false);
     const stale = store.writeLetter(id, 'verify');
@@ -70,7 +70,7 @@ describe('the register', () => {
     expect(store.resetPassword(reset, 'short')).toBe('weak-password');
     const chosen = store.resetPassword(reset, 'a-brand-new-password');
     expect(typeof chosen === 'object' && chosen?.id).toBe(id);
-    expect(store.signIn('Ada', 'countess-of-lovelace')).toBeNull();
+    expect(store.signIn('Ada', 'analytical-engine-1843')).toBeNull();
     expect(store.signIn('Ada', 'a-brand-new-password')?.id).toBe(id);
     expect(store.changePassword(id, 'wrong', 'whatever-long-enough')).toBe('wrong-password');
     expect(store.changePassword(id, 'a-brand-new-password', 'yet-another-password')).toBeNull();
@@ -80,7 +80,7 @@ describe('the register', () => {
 
   it('carries invitations from one account to another, about one table, answered once', () => {
     const { store } = open();
-    const ada = store.signUp('Ada', 'ada@example.test', 'countess-of-lovelace');
+    const ada = store.signUp('Ada', 'ada@example.test', 'analytical-engine-1843');
     const bob = store.signUp('Bob', 'bob@example.test', 'a-good-long-password');
     const a = 'account' in ada ? ada.account : null!;
     const b = 'account' in bob ? bob.account : null!;
@@ -97,7 +97,7 @@ describe('the register', () => {
 
   it('hands out a session that stands for the account, until it is closed', () => {
     const { store } = open();
-    const made = store.signUp('Ada', 'ada@example.test', 'countess-of-lovelace');
+    const made = store.signUp('Ada', 'ada@example.test', 'analytical-engine-1843');
     const id = 'account' in made ? made.account.id : '';
     const token = store.openSession(id);
     expect(store.session(token)?.id).toBe(id);
@@ -165,11 +165,11 @@ describe('the register', () => {
 
   it('signs in off the event loop as well as on it', async () => {
     const { store } = open();
-    const made = await store.signUpAsync('Ada', 'ada@example.test', 'countess-of-lovelace');
+    const made = await store.signUpAsync('Ada', 'ada@example.test', 'analytical-engine-1843');
     expect('account' in made).toBe(true);
-    expect(await store.signUpAsync('ada', 'other@example.test', 'countess-of-lovelace')).toEqual({ error: 'name-taken' });
-    expect((await store.signInAsync('ADA', 'countess-of-lovelace'))?.name).toBe('Ada');
+    expect(await store.signUpAsync('ada', 'other@example.test', 'analytical-engine-1843')).toEqual({ error: 'name-taken' });
+    expect((await store.signInAsync('ADA', 'analytical-engine-1843'))?.name).toBe('Ada');
     expect(await store.signInAsync('Ada', 'wrong')).toBeNull();
-    expect(store.signIn('Ada', 'countess-of-lovelace')?.name).toBe('Ada');
+    expect(store.signIn('Ada', 'analytical-engine-1843')?.name).toBe('Ada');
   });
 });

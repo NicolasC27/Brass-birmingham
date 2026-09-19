@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
@@ -53,6 +53,10 @@ export interface Note {
 
 export interface Account extends Me {
   createdAt: number;
+  /** when the charter was accepted at sign-up (null for accounts from before it) */
+  acceptedAt: number | null;
+  /** the member closed the account: it holds nothing of them any more */
+  closedAt: number | null;
 }
 
 export interface StoredGame {
@@ -73,6 +77,12 @@ export const NAME_RULE = /^[\p{L}\p{N} ._'-]{2,20}$/u;
 /** an address: something, an at, a dot somewhere after it */
 export const EMAIL_RULE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 export const MIN_PASSWORD = 8;
+/** how long the address a post was written from is kept: a year, as the law asks of a host */
+export const POST_ADDRESS_MS = 365 * 24 * 60 * 60 * 1000;
+/** how long the name and address of a closed account are kept aside: five years, as the law asks */
+export const DEPARTED_MS = 5 * 365 * 24 * 60 * 60 * 1000;
+/** passwords everybody tries first: refused whatever their length */
+const COMMON_PASSWORDS = new Set(['password', 'password1', 'password123', 'motdepasse', 'passwort', 'contraseña', 'contrasena', '12345678', '123456789', '1234567890', 'qwertyuiop', 'azertyuiop', 'qwerty123', 'azerty123', 'iloveyou', 'sunshine', 'princess', 'football', 'baseball', 'superman', 'trustno1', 'letmein1', 'welcome1', 'admin123', 'abcd1234', 'abc12345', '11111111', '00000000', 'birmingham', 'blackrail', 'brassworks', 'brass1234', 'wedgwood']);
 export const MAX_MOTTO = 80;
 /** a session lasts a month of silence */
 export const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
@@ -91,6 +101,12 @@ create table if not exists accounts (
   verifiedAt    integer,
   motto         text not null default '',
   favoriteColor text
+);
+create table if not exists departed (
+  accountId text primary key,
+  name      text not null,
+  email     text,
+  closedAt  integer not null
 );
 create table if not exists sessions (
   token     text primary key,
@@ -263,6 +279,10 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'verifiedAt', 'integer'],
   ['accounts', 'motto', "text not null default ''"],
   ['accounts', 'favoriteColor', 'text'],
+  ['accounts', 'createdIp', 'text'],
+  ['accounts', 'acceptedAt', 'integer'],
+  ['accounts', 'closedAt', 'integer'],
+  ['forum_posts', 'ip', 'text'],
   ['games', 'result', 'text'],
   ['tables', 'ranked', 'integer not null default 0'],
 ];
@@ -272,6 +292,20 @@ const fold = (name: string): string => name.trim().toLowerCase().replace(/\s+/g,
 const foldEmail = (email: string): string => email.trim().toLowerCase();
 
 const token = (): string => randomBytes(24).toString('hex');
+/** a token as the register keeps it: its hash, so a copy of the register opens no session and resets no password */
+const sealed = (t: string): string => createHash('sha256').update(t).digest('hex');
+
+/** why a password will not do: too short, everybody's, or the member's own name or address */
+export function weakPassword(password: string, name = '', email = ''): boolean {
+  if (password.length < MIN_PASSWORD) return true;
+  const flat = password.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+  if (COMMON_PASSWORDS.has(flat) || /^(.)\1+$/.test(flat)) return true;
+  const own: (readonly [string, number])[] = [[name, 4], ...name.split(/\s+/).map((w) => [w, 4] as const), [email.split('@')[0], 6]];
+  return own.some(([x, least]) => {
+    const part = x.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+    return part.length >= least && flat.includes(part);
+  });
+}
 
 /** scrypt, salt and all, in one field */
 function seal(password: string): string {
@@ -312,10 +346,18 @@ interface AccountRow {
   verifiedAt: number | null;
   motto: string;
   favoriteColor: string | null;
+  acceptedAt: number | null;
+  closedAt: number | null;
+}
+
+/** where an account was opened from, and whether the charter was accepted */
+export interface Origin {
+  ip?: string | null;
+  accepted?: boolean;
 }
 
 const COLORS: PlayerColor[] = ['brass', 'oxblood', 'verdigris', 'steel'];
-const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor';
+const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt';
 
 function accountOf(r: AccountRow): Account {
   return {
@@ -326,6 +368,8 @@ function accountOf(r: AccountRow): Account {
     verified: r.verifiedAt !== null,
     motto: r.motto ?? '',
     favoriteColor: COLORS.includes(r.favoriteColor as PlayerColor) ? (r.favoriteColor as PlayerColor) : null,
+    acceptedAt: r.acceptedAt,
+    closedAt: r.closedAt,
   };
 }
 
@@ -360,6 +404,11 @@ export class Store {
     } catch (e) {
       console.error('register: two accounts share an address, the rule waits:', (e as Error).message);
     }
+    /* a register from before tokens were hashed: its sessions and letters are sealed in place */
+    for (const table of ['sessions', 'letters']) {
+      const plain = this.db.prepare(`select token from ${table} where length(token) = 48`).all() as { token: string }[];
+      for (const { token: t } of plain) this.db.prepare(`update ${table} set token = ? where token = ?`).run(sealed(t), t);
+    }
     /* the seats of every game, one row each, for the games before the ledger */
     this.db.exec('insert or ignore into game_players (code, accountId) select g.code, j.value from games g, json_each(g.seats) j where not exists (select 1 from game_players p where p.code = g.code)');
   }
@@ -376,18 +425,19 @@ export class Store {
     if (!NAME_RULE.test(clean)) return { error: 'bad-name' };
     const address = email.trim();
     if (!EMAIL_RULE.test(address) || address.length > 120) return { error: 'bad-email' };
-    if (password.length < MIN_PASSWORD) return { error: 'weak-password' };
+    if (weakPassword(password, clean, address)) return { error: 'weak-password' };
     if (this.db.prepare('select 1 from accounts where folded = ?').get(fold(clean))) return { error: 'name-taken' };
     if (this.db.prepare('select 1 from accounts where emailFolded = ?').get(foldEmail(address))) return { error: 'email-taken' };
     return { clean, address };
   }
 
-  private enrol(clean: string, address: string, secret: string): { account: Account } | { error: SignUpError } {
+  private enrol(clean: string, address: string, secret: string, from: Origin): { account: Account } | { error: SignUpError } {
     const id = 'a-' + randomBytes(8).toString('hex');
+    const now = Date.now();
     try {
       this.db
-        .prepare('insert into accounts (id, name, folded, secret, createdAt, email, emailFolded, verifiedAt, motto, favoriteColor) values (?, ?, ?, ?, ?, ?, ?, null, ?, null)')
-        .run(id, clean, fold(clean), secret, Date.now(), address, foldEmail(address), '');
+        .prepare('insert into accounts (id, name, folded, secret, createdAt, email, emailFolded, verifiedAt, motto, favoriteColor, createdIp, acceptedAt) values (?, ?, ?, ?, ?, ?, ?, null, ?, null, ?, ?)')
+        .run(id, clean, fold(clean), secret, now, address, foldEmail(address), '', from.ip ?? null, from.accepted ? now : null);
     } catch {
       /* two applications for one name, the other sealed first */
       return { error: this.db.prepare('select 1 from accounts where folded = ?').get(fold(clean)) ? 'name-taken' : 'email-taken' };
@@ -396,21 +446,21 @@ export class Store {
   }
 
   /** open an account, or say why it cannot be opened */
-  signUp(name: string, email: string, password: string): { account: Account } | { error: SignUpError } {
+  signUp(name: string, email: string, password: string, from: Origin = {}): { account: Account } | { error: SignUpError } {
     const a = this.application(name, email, password);
-    return 'error' in a ? a : this.enrol(a.clean, a.address, seal(password));
+    return 'error' in a ? a : this.enrol(a.clean, a.address, seal(password), from);
   }
 
   /** the same, with the key derived off the event loop */
-  async signUpAsync(name: string, email: string, password: string): Promise<{ account: Account } | { error: SignUpError }> {
+  async signUpAsync(name: string, email: string, password: string, from: Origin = {}): Promise<{ account: Account } | { error: SignUpError }> {
     const a = this.application(name, email, password);
-    return 'error' in a ? a : this.enrol(a.clean, a.address, await sealAsync(password));
+    return 'error' in a ? a : this.enrol(a.clean, a.address, await sealAsync(password), from);
   }
 
   private credentials(name: string): (AccountRow & { secret: string }) | undefined {
     const key = name.trim();
     return this.db
-      .prepare(`select ${ACCOUNT_COLUMNS}, secret from accounts where folded = ? or (emailFolded is not null and emailFolded = ?)`)
+      .prepare(`select ${ACCOUNT_COLUMNS}, secret from accounts where closedAt is null and (folded = ? or (emailFolded is not null and emailFolded = ?))`)
       .get(fold(key), foldEmail(key)) as (AccountRow & { secret: string }) | undefined;
   }
 
@@ -463,7 +513,8 @@ export class Store {
   changePassword(id: string, current: string, next: string): 'wrong-password' | 'weak-password' | null {
     const row = this.db.prepare('select secret from accounts where id = ?').get(id) as { secret: string } | undefined;
     if (!row || !matches(current, row.secret)) return 'wrong-password';
-    if (next.length < MIN_PASSWORD) return 'weak-password';
+    const own = this.account(id);
+    if (weakPassword(next, own?.name, own?.email ?? '')) return 'weak-password';
     this.db.prepare('update accounts set secret = ? where id = ?').run(seal(next), id);
     this.db.prepare('delete from sessions where accountId = ?').run(id);
     return null;
@@ -475,15 +526,15 @@ export class Store {
   writeLetter(accountId: string, kind: TokenKind): string {
     this.db.prepare('delete from letters where accountId = ? and kind = ?').run(accountId, kind);
     const t = token();
-    this.db.prepare('insert into letters (token, accountId, kind, createdAt) values (?, ?, ?, ?)').run(t, accountId, kind, Date.now());
+    this.db.prepare('insert into letters (token, accountId, kind, createdAt) values (?, ?, ?, ?)').run(sealed(t), accountId, kind, Date.now());
     return t;
   }
 
   /** the account a letter was written to — the letter is spent */
   openLetter(t: string, kind: TokenKind): Account | null {
-    const row = this.db.prepare('select accountId, createdAt from letters where token = ? and kind = ?').get(t, kind) as { accountId: string; createdAt: number } | undefined;
+    const row = this.db.prepare('select accountId, createdAt from letters where token = ? and kind = ?').get(sealed(t), kind) as { accountId: string; createdAt: number } | undefined;
     if (!row) return null;
-    this.db.prepare('delete from letters where token = ?').run(t);
+    this.db.prepare('delete from letters where token = ?').run(sealed(t));
     if (Date.now() - row.createdAt > TOKEN_MS) return null;
     return this.account(row.accountId);
   }
@@ -501,6 +552,7 @@ export class Store {
     if (password.length < MIN_PASSWORD) return 'weak-password';
     const account = this.openLetter(t, 'reset');
     if (!account) return null;
+    if (weakPassword(password, account.name, account.email ?? '')) return 'weak-password';
     this.db.prepare('update accounts set secret = ? where id = ?').run(seal(password), account.id);
     this.db.prepare('delete from sessions where accountId = ?').run(account.id);
     return account;
@@ -512,24 +564,97 @@ export class Store {
   openSession(accountId: string): string {
     const t = token();
     const now = Date.now();
-    this.db.prepare('insert into sessions (token, accountId, createdAt, seenAt) values (?, ?, ?, ?)').run(t, accountId, now, now);
+    this.db.prepare('insert into sessions (token, accountId, createdAt, seenAt) values (?, ?, ?, ?)').run(sealed(t), accountId, now, now);
     return t;
   }
 
   /** whose token this is — and it stays alive by being used */
   session(t: string): Account | null {
-    const row = this.db.prepare('select accountId, seenAt from sessions where token = ?').get(t) as { accountId: string; seenAt: number } | undefined;
+    const row = this.db.prepare('select accountId, seenAt from sessions where token = ?').get(sealed(t)) as { accountId: string; seenAt: number } | undefined;
     if (!row) return null;
     if (Date.now() - row.seenAt > SESSION_MS) {
       this.closeSession(t);
       return null;
     }
-    this.db.prepare('update sessions set seenAt = ? where token = ?').run(Date.now(), t);
-    return this.account(row.accountId);
+    this.db.prepare('update sessions set seenAt = ? where token = ?').run(Date.now(), sealed(t));
+    const account = this.account(row.accountId);
+    return account && !account.closedAt ? account : null;
   }
 
   closeSession(t: string): void {
-    this.db.prepare('delete from sessions where token = ?').run(t);
+    this.db.prepare('delete from sessions where token = ?').run(sealed(t));
+  }
+
+  /** the sessions this account holds: when each was opened and last used */
+  sessionsOf(accountId: string): { createdAt: number; seenAt: number }[] {
+    return this.db.prepare('select createdAt, seenAt from sessions where accountId = ? order by seenAt desc').all(accountId) as { createdAt: number; seenAt: number }[];
+  }
+
+  /* --------------------------- the member's data --------------------------- */
+
+  /** everything the register holds under this account, for the member to take away */
+  exportOf(accountId: string): Record<string, unknown> | null {
+    const a = this.db.prepare('select id, name, email, createdAt, verifiedAt, motto, favoriteColor, acceptedAt, createdIp from accounts where id = ?').get(accountId) as Record<string, unknown> | undefined;
+    if (!a) return null;
+    const rows = (sql: string) => this.db.prepare(sql).all(accountId);
+    return {
+      exportedAt: new Date().toISOString(),
+      account: a,
+      sessions: this.sessionsOf(accountId),
+      friends: rows('select f.createdAt, f.acceptedAt, a.name from friends f join accounts a on a.id = (case when f.aId = ?1 then f.bId else f.aId end) where f.aId = ?1 or f.bId = ?1'),
+      threads: rows('select id, board, title, lang, createdAt, hiddenAt from forum_threads where accountId = ?'),
+      posts: rows('select id, threadId, body, lang, createdAt, editedAt, hiddenAt, ip from forum_posts where accountId = ?'),
+      reports: rows('select postId, reason, text, createdAt, resolvedAt from forum_reports where accountId = ?'),
+      feedback: rows('select page, kind, text, createdAt from feedback where accountId = ?'),
+      games: rows('select g.code, g.startedAt, g.finishedAt, g.result from games g join game_players p on p.code = g.code where p.accountId = ?1'),
+      ratings: rows('select season, rating, games, won, updatedAt from ratings where accountId = ?'),
+      purse: this.db.prepare('select guineas, owned from purses where accountId = ?').get(accountId) ?? null,
+      flags: rows('select kind, detail, code, at from flags where accountId = ?'),
+    };
+  }
+
+  /** the account is closed and what identifies the member is erased: the name
+   *  becomes a number, the address and the password go, every session, letter,
+   *  friendship, invitation, report and note goes with them. The posts stay
+   *  under the number, so the threads still read. The name and address are kept
+   *  aside, apart from everything, for as long as the law asks of a host. */
+  closeAccount(accountId: string, password: string): 'wrong-password' | 'not-found' | null {
+    const row = this.db.prepare('select name, email, secret from accounts where id = ? and closedAt is null').get(accountId) as { name: string; email: string | null; secret: string } | undefined;
+    if (!row) return 'not-found';
+    if (!matches(password, row.secret)) return 'wrong-password';
+    const now = Date.now();
+    const gone = `Membre ${accountId.slice(2, 8)}`;
+    this.db.exec('begin');
+    try {
+      this.db.prepare('insert or replace into departed (accountId, name, email, closedAt) values (?, ?, ?, ?)').run(accountId, row.name, row.email, now);
+      this.db
+        .prepare("update accounts set name = ?, folded = ?, email = null, emailFolded = null, secret = ?, motto = '', favoriteColor = null, createdIp = null, closedAt = ? where id = ?")
+        .run(gone, fold(gone), seal(randomBytes(32).toString('hex')), now, accountId);
+      for (const table of ['sessions', 'letters', 'feedback', 'forum_reports', 'forum_seen', 'forum_bans', 'purses']) {
+        try {
+          this.db.prepare(`delete from ${table} where accountId = ?`).run(accountId);
+        } catch {
+          /* a table this register does not have */
+        }
+      }
+      this.db.prepare('delete from friends where aId = ? or bId = ?').run(accountId, accountId);
+      this.db.prepare('delete from invitations where fromId = ? or toId = ?').run(accountId, accountId);
+      this.db.prepare('update forum_posts set ip = null where accountId = ?').run(accountId);
+      this.db.exec('commit');
+    } catch (e) {
+      this.db.exec('rollback');
+      throw e;
+    }
+    return null;
+  }
+
+  /** what the law lets go, let go: the addresses of posts older than a year,
+   *  the names kept aside longer than five, the sessions and letters long dead */
+  sweepPrivacy(now = Date.now()): void {
+    this.db.prepare('update forum_posts set ip = null where ip is not null and createdAt < ?').run(now - POST_ADDRESS_MS);
+    this.db.prepare('delete from departed where closedAt < ?').run(now - DEPARTED_MS);
+    this.db.prepare('delete from sessions where seenAt < ?').run(now - SESSION_MS);
+    this.db.prepare('delete from letters where createdAt < ?').run(now - TOKEN_MS);
   }
 
   /* -------------------------- invitations -------------------------- */
@@ -1036,17 +1161,17 @@ export class Store {
   }
 
   /** a new thread with its first post */
-  forumOpen(accountId: string, board: BoardKey, title: string, body: string, lang: Lang = 'en'): string {
+  forumOpen(accountId: string, board: BoardKey, title: string, body: string, lang: Lang = 'en', ip: string | null = null): string {
     const now = Date.now();
     const id = 't-' + randomBytes(6).toString('hex');
     this.db.prepare('insert into forum_threads (id, board, accountId, title, createdAt, lastAt, lastBy, lang) values (?, ?, ?, ?, ?, ?, ?, ?)').run(id, board, accountId, title, now, now, accountId, lang);
-    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt, lang) values (?, ?, ?, ?, ?, ?)').run('p-' + randomBytes(6).toString('hex'), id, accountId, body, now, lang);
+    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt, lang, ip) values (?, ?, ?, ?, ?, ?, ?)').run('p-' + randomBytes(6).toString('hex'), id, accountId, body, now, lang, ip);
     this.forumSeen(accountId, id, now);
     return id;
   }
 
   /** a reply: the post, and the page it lands on */
-  forumReply(accountId: string, threadId: string, body: string, lang: Lang = 'en'): { post: Post; page: number } | 'forum-not-found' | 'forum-locked' {
+  forumReply(accountId: string, threadId: string, body: string, lang: Lang = 'en', ip: string | null = null): { post: Post; page: number } | 'forum-not-found' | 'forum-locked' {
     const where = this.forumWhere(threadId);
     if (!where || where.hidden) return 'forum-not-found';
     if (where.locked) return 'forum-locked';
@@ -1054,7 +1179,7 @@ export class Store {
     const last = (this.db.prepare('select lastAt from forum_threads where id = ?').get(threadId) as { lastAt: number }).lastAt;
     const now = Math.max(Date.now(), last + 1);
     const id = 'p-' + randomBytes(6).toString('hex');
-    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt, lang) values (?, ?, ?, ?, ?, ?)').run(id, threadId, accountId, body, now, lang);
+    this.db.prepare('insert into forum_posts (id, threadId, accountId, body, createdAt, lang, ip) values (?, ?, ?, ?, ?, ?, ?)').run(id, threadId, accountId, body, now, lang, ip);
     this.db.prepare('update forum_threads set replies = replies + 1, lastAt = ?, lastBy = ? where id = ?').run(now, accountId, threadId);
     this.forumSeen(accountId, threadId, now);
     const total = (this.db.prepare('select count(*) as n from forum_posts where threadId = ?').get(threadId) as { n: number }).n;

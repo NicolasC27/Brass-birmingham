@@ -97,7 +97,7 @@ export class Guest {
 
   /** open an account, be signed in with it, and answer the letter */
   async signUp(verify = true): Promise<void> {
-    this.send({ t: 'signup', rid: ++this.rid, name: this.name, email: this.email, password: PASSWORD });
+    this.send({ t: 'signup', rid: ++this.rid, name: this.name, email: this.email, password: PASSWORD, accept: true });
     await this.until('a session', () => !!this.id);
     if (!verify) return;
     await this.until('the letter', () => letters.has(this.email));

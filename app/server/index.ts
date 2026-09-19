@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import type { ServerResponse } from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
 import { appendFile } from 'node:fs/promises';
@@ -96,6 +97,33 @@ const REGISTER_PUSH_MS = 1000;
 /** how often the office looks down the queues */
 const QUEUE_EVERY_MS = 5000;
 
+/** the address a request comes from: the socket's, or the first one a trusted
+ *  proxy forwarded (TRUST_PROXY=1 behind nginx or Caddy) */
+const addressOf = (req: IncomingMessage, trustProxy: boolean): string => {
+  if (trustProxy) {
+    const fwd = req.headers['x-forwarded-for'];
+    const first = (Array.isArray(fwd) ? fwd[0] : (fwd ?? '')).split(',')[0].trim();
+    if (first) return first;
+  }
+  return req.socket.remoteAddress ?? '';
+};
+/** the headers every answer of the counter carries: nothing sniffed, nothing framed, nothing told */
+const headed = (res: ServerResponse, status: number, type: string): void => {
+  res.writeHead(status, {
+    'content-type': type,
+    'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
+    'referrer-policy': 'no-referrer',
+    'cache-control': 'no-store',
+    'content-security-policy': "default-src 'none'",
+  });
+};
+/** sign-in attempts that failed, by address and name: after a few, the door waits */
+const ATTEMPTS = { each: 8, all: 40, forMs: 15 * 60 * 1000 };
+interface Attempts {
+  n: number;
+  at: number;
+}
 /** the counter's own reading of the letters and the box: only from this machine */
 const loopback = (req: IncomingMessage): boolean => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
 const sameToken = (a: string, b: string): boolean => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -150,6 +178,11 @@ export interface ServeOptions {
   waits?: Partial<Waits>;
   /** how often the queues are looked down (0 = only on a join) */
   queueEvery?: number;
+  /** the origins a browser may open a socket from (BLACKRAIL_ORIGINS, comma-separated;
+   *  the app's own address, this machine and the desktop app are always let in) */
+  origins?: string[];
+  /** the addresses come from a trusted proxy's x-forwarded-for (TRUST_PROXY=1) */
+  trustProxy?: boolean;
 }
 
 export interface Serving {
@@ -239,17 +272,52 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
      forgets, or one told DEV_LETTERS=1, and only from this very machine */
   const dev = file === ':memory:' || process.env.DEV_LETTERS === '1';
   const feedbackToken = (process.env.FEEDBACK_TOKEN ?? '').trim();
+  const trustProxy = options.trustProxy ?? process.env.TRUST_PROXY === '1';
+  /* the origins a browser may speak from: a page elsewhere gets no socket */
+  const origins = new Set<string>();
+  for (const o of [...(options.origins ?? (process.env.BLACKRAIL_ORIGINS ?? '').split(',')), options.appUrl ?? process.env.APP_URL ?? '']) {
+    try {
+      if (o.trim()) origins.add(new URL(o.trim()).origin);
+    } catch {
+      console.error(`origins: not an address: ${o}`);
+    }
+  }
+  const originAllowed = (origin: string | undefined): boolean => {
+    if (!origin) return true; /* not a browser: no page to protect */
+    if (origins.has(origin)) return true;
+    try {
+      const u = new URL(origin);
+      return ['localhost', '127.0.0.1', '[::1]', 'tauri.localhost'].includes(u.hostname) || u.protocol === 'tauri:';
+    } catch {
+      return false;
+    }
+  };
+  const failures = new Map<string, Attempts>();
+  /** one more failure from this key */
+  const failed = (key: string): void => {
+    const now = Date.now();
+    for (const [k, a] of failures) if (now - a.at > ATTEMPTS.forMs) failures.delete(k);
+    const a = failures.get(key) ?? { n: 0, at: now };
+    a.n += 1;
+    a.at = now;
+    failures.set(key, a);
+  };
+  /** the door waits for this key: too many failures, too recently */
+  const waiting = (key: string, limit: number): boolean => {
+    const a = failures.get(key);
+    return !!a && a.n >= limit && Date.now() - a.at < ATTEMPTS.forMs;
+  };
   const http = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://blackrail');
     const own = dev && loopback(req);
     /* the counter: with no real post, the letters can be read here */
     if (url.pathname === '/letters') {
       if (!own || !post.kept) {
-        res.writeHead(404, { 'content-type': 'text/plain' });
+        headed(res, 404, 'text/plain');
         res.end('Not found\n');
         return;
       }
-      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      headed(res, 200, 'text/plain; charset=utf-8');
       res.end(post.kept.length ? post.kept.map((m) => `To: ${m.to}\nSubject: ${m.subject}\n\n${m.text}\n\n${'─'.repeat(60)}\n`).join('\n') : 'No letter yet.\n');
       return;
     }
@@ -258,11 +326,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (url.pathname === '/flags') {
       const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
       if (!shown) {
-        res.writeHead(404, { 'content-type': 'text/plain' });
+        headed(res, 404, 'text/plain');
         res.end('Not found\n');
         return;
       }
-      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      headed(res, 200, 'text/plain; charset=utf-8');
       const flags = store.flags();
       res.end(flags.length ? flags.map((f) => `${new Date(f.at).toISOString()}  ${f.kind.padEnd(10)} ${f.name ?? f.accountId}${f.code ? ` @${f.code}` : ''} — ${f.detail}`).join('\n') + '\n' : 'Nothing noted.\n');
       return;
@@ -272,19 +340,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (url.pathname === '/feedback') {
       const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
       if (!shown) {
-        res.writeHead(404, { 'content-type': 'text/plain' });
+        headed(res, 404, 'text/plain');
         res.end('Not found\n');
         return;
       }
-      res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      headed(res, 200, 'text/plain; charset=utf-8');
       const notes = store.feedbackList();
       res.end(notes.length ? notes.map((n) => noteText(n)).join('\n') : 'No idea yet.\n');
       return;
     }
-    res.writeHead(200, { 'content-type': 'text/plain' });
+    headed(res, 200, 'text/plain');
     res.end('blackrail\n');
   });
-  const wss = new WebSocketServer({ server: http, maxPayload: 64 * 1024 });
+  const wss = new WebSocketServer({ server: http, maxPayload: 64 * 1024, verifyClient: ({ origin }: { origin: string }) => originAllowed(origin || undefined) });
 
   const send = (c: Client, m: ServerMessage) => {
     if (c.socket.readyState === 1) c.socket.send(encode(m));
@@ -397,7 +465,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, ip: req.socket.remoteAddress ?? '', me: null, token: null, watching: new Set(), askedTables: 0, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, ip: addressOf(req, trustProxy), me: null, token: null, watching: new Set(), askedTables: 0, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
@@ -447,7 +515,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         send(c, { t: 'pong' });
         return;
       case 'signup': {
-        const made = await store.signUpAsync(m.name, m.email, m.password);
+        /* the charter and the policy are accepted before the register is signed: kept with the date */
+        if (m.accept !== true) {
+          send(c, { t: 'refused', rid: m.rid, error: 'must-accept' });
+          return;
+        }
+        const made = await store.signUpAsync(m.name, m.email, m.password, { ip: c.ip, accepted: true });
         if ('error' in made) {
           send(c, { t: 'refused', rid: m.rid, error: made.error });
           return;
@@ -457,11 +530,23 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'signin': {
+        /* a name tried too often, from here or from everywhere, waits a quarter of an hour */
+        const name = foldName(String(m.name ?? ''));
+        const keys: [string, number][] = [
+          [`${c.ip}|${name}`, ATTEMPTS.each],
+          [`*|${name}`, ATTEMPTS.all],
+        ];
+        if (keys.some(([k, limit]) => waiting(k, limit))) {
+          send(c, { t: 'refused', rid: m.rid, error: 'too-many-attempts' });
+          return;
+        }
         const account = await store.signInAsync(m.name, m.password);
         if (!account) {
+          for (const [k] of keys) failed(k);
           send(c, { t: 'refused', rid: m.rid, error: 'bad-credentials' });
           return;
         }
+        for (const [k] of keys) failures.delete(k);
         open(c, account, m.rid);
         return;
       }
@@ -552,6 +637,30 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         evict(who.id, c);
         c.token = store.openSession(who.id);
         send(c, { t: 'session', rid: m.rid, token: c.token, me: who });
+        return;
+      }
+      case 'export': {
+        const data = store.exportOf(who.id);
+        if (!data) {
+          send(c, { t: 'refused', rid: m.rid, error: 'no-session' });
+          return;
+        }
+        send(c, { t: 'export', rid: m.rid, data });
+        return;
+      }
+      case 'close': {
+        const error = store.closeAccount(who.id, String(m.password ?? ''));
+        if (error) {
+          send(c, { t: 'refused', rid: m.rid, error: error === 'not-found' ? 'no-session' : error });
+          return;
+        }
+        console.log(`account closed: ${who.id}`);
+        for (const mode of ['quick', 'ranked'] as const) hall.queue(who.id, mode, false);
+        send(c, { t: 'done', rid: m.rid });
+        evict(who.id, c);
+        c.me = null;
+        c.token = null;
+        c.watching.clear();
         return;
       }
       case 'desk':
@@ -647,7 +756,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-board' });
           return;
         }
-        const id = store.forumOpen(who.id, m.board, title, body, isLang(m.lang) ? m.lang : 'en');
+        const id = store.forumOpen(who.id, m.board, title, body, isLang(m.lang) ? m.lang : 'en', c.ip || null);
         console.log(`forum: ${who.name} opens "${title}" on ${m.board}`);
         send(c, { t: 'forum.opened', rid: m.rid, id });
         tellForum(m.board, id);
@@ -672,7 +781,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         /* a moderator may still answer on a locked thread: the lock is lifted for the reply alone */
         if (where.locked) store.forumMod(who.id, 'unlock', String(m.id));
-        const r = store.forumReply(who.id, String(m.id), body, isLang(m.lang) ? m.lang : 'en');
+        const r = store.forumReply(who.id, String(m.id), body, isLang(m.lang) ? m.lang : 'en', c.ip || null);
         if (where.locked) store.forumMod(who.id, 'lock', String(m.id));
         if (typeof r === 'string') {
           send(c, { t: 'refused', rid: m.rid, error: r });
@@ -919,7 +1028,14 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   }
 
   const every = options.sweepEvery ?? 15 * 60 * 1000;
-  const janitor = every > 0 ? setInterval(() => hall.sweep(STALE_MS), every) : null;
+  const janitor =
+    every > 0
+      ? setInterval(() => {
+          hall.sweep(STALE_MS);
+          store.sweepPrivacy();
+        }, every)
+      : null;
+  store.sweepPrivacy();
   const queueEvery = options.queueEvery ?? QUEUE_EVERY_MS;
   const usher = queueEvery > 0 ? setInterval(() => hall.matchQueues(), queueEvery) : null;
   /* the pulse: every socket is pinged, and each table in play hears its seats' lines */
