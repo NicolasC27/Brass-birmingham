@@ -24,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { applyAction, fallbackAction } from '@/game/actions';
 import { newGame } from '@/game/engine';
-import { FEATURES, features, loadNet, pack } from '@/game/net';
+import { FEATURES, GLOBAL_ERA, features, loadNet, pack } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
 import type { Net } from '@/game/net';
 import { chooseBotAction, setEvalMode } from '@/game/search';
@@ -39,12 +39,18 @@ const STRENGTH = Number(process.env.STRENGTH ?? 0.6);
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 1));
 const CHECK_GAMES = Number(process.env.CHECK_GAMES ?? 24);
 const HIDDEN = [64, 32];
+/** weight decay, and how many epochs without a better held-out error before stopping */
+const DECAY = 1e-4;
+const PATIENCE = 5;
 const POINTS = 30;
 const DATA_DIR = resolve('tools/bots/data');
 const NET_FILE = resolve('src/game/net-weights.ts');
 const LOG_FILE = resolve('tools/bots/learning.log');
-/** a sample: the features, then the target (points ahead / POINTS) */
-const ROW = FEATURES + 1;
+/** what the network learns to read: the Canal Era's points, the game's, or a mix of both */
+const TARGET = (process.env.TARGET ?? 'canal') as 'canal' | 'game' | 'mix';
+const MIX = Number(process.env.MIX ?? 0.5);
+/** a sample: the features, then the canal-era lead and the game's lead (points / POINTS) */
+const ROW = FEATURES + 2;
 
 const COLORS = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
 const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
@@ -81,14 +87,10 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
   const finalScores = s.players.map((p) => p.vp);
   const out = new Float32Array((canal.length + rail.length) * ROW);
   let at = 0;
-  for (const { x, seat } of canal) {
+  for (const { x, seat } of [...canal, ...rail]) {
     out.set(x, at);
     out[at + FEATURES] = lead(canalScores, seat) / POINTS;
-    at += ROW;
-  }
-  for (const { x, seat } of rail) {
-    out.set(x, at);
-    out[at + FEATURES] = lead(finalScores, seat) / POINTS;
+    out[at + FEATURES + 1] = lead(finalScores, seat) / POINTS;
     at += ROW;
   }
   return { rows: out, canal: canalScores.reduce((a, b) => a + b, 0) / players };
@@ -118,7 +120,7 @@ async function play(tag: string): Promise<void> {
     all.set(new Uint8Array(r.buffer), at);
     at += r.buffer.byteLength;
   }
-  const file = resolve(DATA_DIR, `samples-${tag}.f32`);
+  const file = resolve(DATA_DIR, `positions-${tag}.f32`);
   writeFileSync(file, all);
   const rows = total / 4 / ROW;
   const canal = results.reduce((a, r) => a + r.canal, 0) / results.length;
@@ -129,7 +131,7 @@ async function play(tag: string): Promise<void> {
 
 function loadSamples(): Float32Array {
   if (!existsSync(DATA_DIR)) return new Float32Array(0);
-  const files = readdirSync(DATA_DIR).filter((f) => f.endsWith('.f32')).sort();
+  const files = readdirSync(DATA_DIR).filter((f) => f.startsWith('positions-') && f.endsWith('.f32')).sort();
   const parts = files.map((f) => {
     const bytes = readFileSync(resolve(DATA_DIR, f));
     return new Float32Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 4));
@@ -160,6 +162,17 @@ function fit(): Net {
   const n = Math.floor(data.length / ROW);
   if (n < 100) throw new Error(`only ${n} positions written down: play first`);
   const rand = mulberry(7);
+  /* the target of each row: in the Canal Era the era's lead, the game's lead, or a mix;
+     once the rails are laid the two are the same number */
+  const target = (r: number): number => {
+    const canal = data[r * ROW + FEATURES];
+    const game = data[r * ROW + FEATURES + 1];
+    const inCanal = data[r * ROW + FEATURES - GLOBAL_ERA] === 0;
+    if (!inCanal) return game;
+    if (TARGET === 'canal') return canal;
+    if (TARGET === 'game') return game;
+    return MIX * canal + (1 - MIX) * game;
+  };
   /* normalisation */
   const mean = new Float32Array(FEATURES);
   const scale = new Float32Array(FEATURES);
@@ -211,15 +224,20 @@ function fit(): Net {
   const rmse = (from: number, to: number): number => {
     let se = 0;
     for (let r = from; r < to; r++) {
-      const d = forwardTo(r) - data[r * ROW + FEATURES];
+      const d = forwardTo(r) - target(r);
       se += d * d;
     }
     return Math.sqrt(se / Math.max(1, to - from)) * POINTS;
   };
   let base = 0;
-  for (let r = cut; r < n; r++) base += (data[r * ROW + FEATURES] * POINTS) ** 2;
-  log(`fit: ${n} positions, ${cut} to learn from, ${n - cut} held out; guessing zero misses by ${Math.sqrt(base / (n - cut)).toFixed(2)} points`);
+  for (let r = cut; r < n; r++) base += (target(r) * POINTS) ** 2;
+  log(`fit (${TARGET}): ${n} positions, ${cut} to learn from, ${n - cut} held out; guessing zero misses by ${Math.sqrt(base / (n - cut)).toFixed(2)} points`);
   const order = Array.from({ length: cut }, (_, k) => k);
+  /* the network of the epoch that read the held-out positions best */
+  let bestHeld = Infinity;
+  let bestEpoch = 0;
+  let keptW = W.map((w) => Float32Array.from(w));
+  let keptB = B.map((b) => Float32Array.from(b));
   for (let epoch = 1; epoch <= EPOCHS; epoch++) {
     for (let k = order.length - 1; k > 0; k--) {
       const j = Math.floor(rand() * (k + 1));
@@ -232,7 +250,7 @@ function fit(): Net {
       for (let q = 0; q < rows; q++) {
         const r = order[b + q];
         const y = forwardTo(r);
-        grads[W.length][0] = (2 * (y - data[r * ROW + FEATURES])) / rows;
+        grads[W.length][0] = (2 * (y - target(r))) / rows;
         for (let l = W.length - 1; l >= 0; l--) {
           const nIn = sizes[l];
           const nOut = sizes[l + 1];
@@ -254,20 +272,31 @@ function fit(): Net {
       const c1 = 1 - Math.pow(B1, step);
       const c2 = 1 - Math.pow(B2, step);
       for (let l = 0; l < W.length; l++) {
-        const adam = (p: Float32Array, g: Float32Array, m: Float32Array, v: Float32Array) => {
+        const adam = (p: Float32Array, g: Float32Array, m: Float32Array, v: Float32Array, decay: boolean) => {
           for (let k = 0; k < p.length; k++) {
             m[k] = B1 * m[k] + (1 - B1) * g[k];
             v[k] = B2 * v[k] + (1 - B2) * g[k] * g[k];
-            p[k] -= (LR * (m[k] / c1)) / (Math.sqrt(v[k] / c2) + 1e-8);
+            p[k] -= (LR * (m[k] / c1)) / (Math.sqrt(v[k] / c2) + 1e-8) + (decay ? LR * DECAY * p[k] : 0);
           }
         };
-        adam(W[l], gW[l], mW[l], vW[l]);
-        adam(B[l], gB[l], mB[l], vB[l]);
+        adam(W[l], gW[l], mW[l], vW[l], true);
+        adam(B[l], gB[l], mB[l], vB[l], false);
       }
     }
-    if (epoch === 1 || epoch % 5 === 0 || epoch === EPOCHS) log(`fit: epoch ${epoch}, misses by ${rmse(0, Math.min(cut, 20000)).toFixed(2)} points learning, ${rmse(cut, n).toFixed(2)} held out`);
+    const held = rmse(cut, n);
+    if (held < bestHeld) {
+      bestHeld = held;
+      bestEpoch = epoch;
+      keptW = W.map((w) => Float32Array.from(w));
+      keptB = B.map((b) => Float32Array.from(b));
+    }
+    if (epoch === 1 || epoch % 5 === 0 || epoch === EPOCHS || epoch - bestEpoch >= PATIENCE) log(`fit: epoch ${epoch}, misses by ${rmse(0, Math.min(cut, 20000)).toFixed(2)} points learning, ${held.toFixed(2)} held out`);
+    if (epoch - bestEpoch >= PATIENCE) {
+      log(`fit: no better reading of the held-out positions for ${PATIENCE} epochs — keeping epoch ${bestEpoch} (${bestHeld.toFixed(2)})`);
+      break;
+    }
   }
-  return { sizes, weights: W, biases: B, mean, scale, points: POINTS };
+  return { sizes, weights: keptW, biases: keptB, mean, scale, points: POINTS };
 }
 
 function writeNet(net: Net): void {

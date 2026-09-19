@@ -24,6 +24,8 @@ const SEAT_FEATURES = 29;
 const GLOBAL_FEATURES = 7;
 /** own seat, the leading rival, the rivals on average, then the table */
 export const FEATURES = SEAT_FEATURES * 3 + GLOBAL_FEATURES;
+/** where the era flag sits, counted back from the end of the features */
+export const GLOBAL_ERA = GLOBAL_FEATURES;
 
 /** rounds per era, as the engine deals them */
 const ROUNDS: Record<2 | 3 | 4, number> = { 2: 10, 3: 9, 4: 8 };
