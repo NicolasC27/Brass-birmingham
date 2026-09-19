@@ -30,6 +30,8 @@ const platform: typeof enPlatform = {
     copyright: '© Blackrail',
     rules: 'Regeln',
     account: 'Konto',
+    legal: "Impressum",
+    privacy: "Datenschutz",
     version: 'v1.0',
   },
   tabs: {
@@ -505,11 +507,21 @@ const platform: typeof enPlatform = {
       unverified: 'Nicht bestätigt',
       current: 'Aktuelles Passwort',
       next: 'Neues Passwort',
-      passwordHint: 'Mindestens acht Zeichen.',
+      passwordHint: "Mindestens acht Zeichen, nicht dein Name, kein gängiges Passwort.",
       change: 'Passwort ändern',
       changed: 'Geändert. Deine anderen Sitzungen sind beendet.',
       signOut: 'Abmelden',
       signOutCopy: 'Abmelden lässt diesen Browser vergessen; deine Plätze warten weiter auf dich.',
+      data: "Deine Daten",
+      exportCopy: "Alles, was das Register unter deinem Namen führt, als eine Datei: Konto, Beiträge, Partien, Freunde.",
+      export: "Meine Daten herunterladen",
+      exported: "Die Datei ist bereit.",
+      closeCopy: "Das Konto zu schließen löscht, was dich kennzeichnet: Name, Adresse, Passwort, Freunde, Sitzungen. Deine Forumsbeiträge bleiben unter einer Nummer, damit die Themen lesbar bleiben. Es gibt kein Zurück.",
+      close: "Mein Konto schließen",
+      closePassword: "Dein Passwort, zur Bestätigung",
+      closeConfirm: "Konto endgültig schließen",
+      closed: "Das Konto ist geschlossen. Gute Reise.",
+      sessions: "Offene Sitzungen: {count}",
     },
   },
   // --- account ---
@@ -528,8 +540,11 @@ const platform: typeof enPlatform = {
     email: 'E-Mail-Adresse',
     emailHint: 'Dorthin geht ein Brief; die Tische öffnen, sobald du ihn beantwortet hast.',
     password: 'Passwort',
-    passwordHint: 'Mindestens acht Zeichen.',
+    passwordHint: "Mindestens acht Zeichen, nicht dein Name, kein gängiges Passwort.",
     passwordAgain: 'Dasselbe, noch einmal',
+    accept: "Ich habe {charter} und {privacy} gelesen und nehme sie an.",
+    acceptCharter: "die Charta des Clubs",
+    acceptPrivacy: "die Datenschutzerklärung",
     mismatch: 'Die beiden Passwörter stimmen nicht überein.',
     signIn: 'Anmelden',
     signUp: 'Konto anlegen',
@@ -679,6 +694,95 @@ const platform: typeof enPlatform = {
     },
   },
   // --- forum ---
+  legal: {
+    eyebrow: "DER CLUB",
+    title: "Impressum und Datenschutz",
+    lede: "Wer diese Seite betreibt, was sie von dir behält, wie lange, und was du damit tun kannst.",
+    todo: "noch auszufüllen",
+    notice: {
+      title: "Impressum",
+      items: [
+        "Herausgeber und verantwortlich für den Inhalt: {operator}.",
+        "Kontakt: {contact}. Jede Anfrage, Meldung oder Frage zu deinen Daten geht über diese Adresse.",
+        "Hosting: {host}.",
+        "Brass: Birmingham ist ein Brettspiel des Verlags Roxley Games. Blackrail ist ein unabhängiges Fanprojekt ohne Verbindung zum Verlag oder seinen Rechteinhabern; Namen, Regeln und Marken des Spiels bleiben bei ihren Eigentümern.",
+        "Die Mitglieder schreiben im Forum in eigener Verantwortung. Die Seite ist ihr Host im Sinne des Gesetzes: sie liest Beiträge nicht vor der Veröffentlichung und entfernt umgehend jeden offensichtlich rechtswidrigen Inhalt, der ihr gemeldet wird, über die obige Adresse oder den Knopf „Melden“ unter jedem Beitrag.",
+      ],
+    },
+    privacy: {
+      title: "Datenschutzerklärung",
+      sections: [
+        {
+          h: "Wer verantwortlich ist",
+          p: [
+            "Verantwortlich für die Verarbeitung ist der oben genannte Herausgeber. Die Seite wird von einer Person betrieben, nicht von einer Firma: sie verkauft nichts von dir, zeigt keine Werbung und misst keine Reichweite.",
+          ],
+        },
+        {
+          h: "Was wir behalten, und warum",
+          p: [
+            "Dein Konto: der Name, die E-Mail-Adresse, das Passwort (nie im Klartext: ein scrypt-Hash), das Eröffnungsdatum, das Datum der Annahme der Charta und die IP-Adresse, von der das Konto eröffnet wurde. Das braucht es, um dich zu erkennen und dir zu schreiben.",
+            "Deine Partien: die Züge, die Ergebnisse, die Rangliste, Freunde und Einladungen. Das ist der Dienst selbst.",
+            "Das Forum: deine Beiträge, die Sprache, in der sie geschrieben sind, deine Meldungen und die IP-Adresse, von der jeder Beitrag veröffentlicht wurde. Diese Adresse wird nie gezeigt; sie wird ein Jahr aufbewahrt, weil das Gesetz es von jedem Host verlangt, dann gelöscht.",
+            "In deinem Browser: das Sitzungstoken, das Thema und die Sprache, im lokalen Speicher. Kein Cookie, kein Tracker, keine Reichweitenmessung.",
+            "Mehr sammeln wir nicht. Kein bürgerlicher Name, keine Postanschrift, kein Zahlungsmittel.",
+          ],
+        },
+        {
+          h: "Auf welcher Grundlage",
+          p: [
+            "Konto, Partien und Forum: die Erbringung des Dienstes, den du verlangt hast. Die Aufbewahrung der IP-Adressen: die gesetzliche Pflicht der Hosts (französisches Gesetz über das Vertrauen in die digitale Wirtschaft und seine Durchführungsverordnung). Die Begrenzung der Anmeldeversuche und der Wortfilter: unser berechtigtes Interesse, die Seite und ihre Mitglieder zu schützen.",
+          ],
+        },
+        {
+          h: "Wer deine Daten sonst sieht",
+          p: [
+            "Anthropic (USA) übersetzt Forumsbeiträge in die Sprache jedes Lesers. Nur der Text des Beitrags wird gesendet, ohne deinen Namen oder deine Adresse. Nach seinen Geschäftsbedingungen trainiert Anthropic seine Modelle nicht mit diesen Texten; die Übermittlung außerhalb der EU ist durch Standardvertragsklauseln abgesichert. Ein Beitrag, den dieser Dienst nicht übersetzen will, wird nie erneut gesendet und geht an die Moderation.",
+            "Resend (USA) befördert die Briefe der Seite: Adressbestätigung und neues Passwort. Es erhält deine E-Mail-Adresse und deinen Namen.",
+            "Die Schriften werden von Google Fonts geladen: dein Browser übermittelt dabei deine IP-Adresse an Google.",
+            "Die Moderatoren des Clubs sehen gemeldete und entfernte Beiträge sowie Beiträge, die der Übersetzer abgelehnt hat. Sonst hat niemand Zugang zum Register.",
+          ],
+        },
+        {
+          h: "Wie lange",
+          p: [
+            "Das Konto, solange es offen ist. Eine Sitzung, dreißig Tage ohne Nutzung. Ein Brief zur Bestätigung oder zum Passwort, eine Stunde.",
+            "Die IP-Adresse eines Beitrags, ein Jahr. Forumsbeiträge und Partien, solange die Seite besteht: sie sind die Geschichte des Clubs und werden von mehreren gelesen.",
+            "Nach Schließung eines Kontos werden Name und E-Mail-Adresse fünf Jahre beiseitegelegt, außerhalb jeder Nutzung, weil das Gesetz es von Hosts verlangt; dann werden sie gelöscht.",
+          ],
+        },
+        {
+          h: "Deine Rechte",
+          p: [
+            "Auf deine Daten zugreifen und sie mitnehmen: der Knopf „Meine Daten herunterladen“ auf deinem Profil gibt dir alles, was das Register unter deinem Namen führt, als eine lesbare Datei.",
+            "Sie berichtigen: dein Profil für Motto und Farbe; der obige Kontakt für die E-Mail-Adresse. Der Name ändert sich nicht.",
+            "Sie löschen: der Knopf „Mein Konto schließen“ auf deinem Profil. Was dich kennzeichnet, verschwindet sofort; deine Beiträge bleiben unter einer Nummer, damit die Themen lesbar bleiben.",
+            "Einer Verarbeitung widersprechen, ihre Einschränkung verlangen oder uns zu allem anderen schreiben: der obige Kontakt. Wir antworten innerhalb eines Monats.",
+            "Wenn du meinst, deine Rechte würden nicht gewahrt, kannst du dich an die französische Aufsichtsbehörde CNIL wenden, www.cnil.fr, oder an die Behörde deines Landes.",
+          ],
+        },
+        {
+          h: "Wie deine Daten geschützt sind",
+          p: [
+            "Passwörter werden mit scrypt gehasht und gesalzen; Sitzungstoken und Brieflinks sind im Register gehasht, so dass eine Kopie davon keine Sitzung öffnet. Gängige Passwörter und solche, die deinen Namen enthalten, werden abgelehnt. Nach acht fehlgeschlagenen Anmeldungen wartet die Tür eine Viertelstunde. Die Seite muss über HTTPS und der Tischserver über WSS ausgeliefert werden: bei der offiziellen Adresse ist das so.",
+          ],
+        },
+        {
+          h: "Alter",
+          p: [
+            "Die Seite richtet sich an Spieler ab fünfzehn Jahren. Darunter ist die Zustimmung eines Elternteils nötig, um ein Konto zu eröffnen.",
+          ],
+        },
+        {
+          h: "Änderungen",
+          p: [
+            "Diese Erklärung kann sich mit der Seite ändern. Das Datum der letzten Fassung steht unten; eine wichtige Änderung wird im Forum unter „Ankündigungen“ bekannt gegeben.",
+          ],
+        },
+      ],
+      updated: "Zuletzt aktualisiert: {date}.",
+    },
+  },
   forum: {
     eyebrow: 'DER CLUB',
     title: 'Forum',

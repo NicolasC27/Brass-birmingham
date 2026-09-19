@@ -14,6 +14,7 @@ import Profile from "@/pages/Profile";
 import Comptoir from "@/pages/Comptoir";
 import Classement from "@/pages/Classement";
 import Forum, { ForumBoard, ForumModeration, ForumThread } from "@/pages/Forum";
+import Legal from "@/pages/Legal";
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="game" element={<Game />} />
         <Route path="game/:code" element={<Game />} />
         <Route path="rules" element={<Rules />} />
+        <Route path="legal" element={<Legal />} />
         <Route path="results" element={<Results />} />
         <Route path="replay" element={<Replay />} />
         <Route path="online" element={<Online />} />

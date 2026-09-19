@@ -28,6 +28,8 @@ const platform = {
     copyright: '© Blackrail',
     rules: 'Règles',
     account: 'Compte',
+    legal: "Mentions légales",
+    privacy: "Confidentialité",
     version: 'v1.0',
   },
   tabs: {
@@ -503,11 +505,21 @@ const platform = {
       unverified: 'Non vérifiée',
       current: 'Mot de passe actuel',
       next: 'Nouveau mot de passe',
-      passwordHint: 'Huit caractères au moins.',
+      passwordHint: "Huit caractères au moins, ni votre nom ni un mot de passe courant.",
       change: 'Changer le mot de passe',
       changed: 'Changé. Vos autres sessions sont fermées.',
       signOut: 'Se déconnecter',
       signOutCopy: 'Se déconnecter fait oublier ce navigateur ; vos places restent à vous attendre.',
+      data: "Vos données",
+      exportCopy: "Tout ce que le registre tient sous votre nom, en un fichier : compte, messages, parties, amis.",
+      export: "Télécharger mes données",
+      exported: "Le fichier est prêt.",
+      closeCopy: "Fermer le compte efface ce qui vous identifie : nom, adresse, mot de passe, amis, sessions. Vos messages du forum restent sous un numéro, pour que les sujets se lisent encore. C’est sans retour.",
+      close: "Fermer mon compte",
+      closePassword: "Votre mot de passe, pour confirmer",
+      closeConfirm: "Fermer le compte pour de bon",
+      closed: "Le compte est fermé. Bonne route.",
+      sessions: "Sessions ouvertes : {count}",
     },
   },
   // --- account ---
@@ -526,8 +538,11 @@ const platform = {
     email: 'Adresse e-mail',
     emailHint: 'Une lettre y sera envoyée ; les tables s’ouvrent quand vous y aurez répondu.',
     password: 'Mot de passe',
-    passwordHint: 'Huit caractères au moins.',
+    passwordHint: "Huit caractères au moins, ni votre nom ni un mot de passe courant.",
     passwordAgain: 'Le même, une seconde fois',
+    accept: "J’ai lu et j’accepte {charter} et {privacy}.",
+    acceptCharter: "la charte du club",
+    acceptPrivacy: "la politique de confidentialité",
     mismatch: 'Les deux mots de passe diffèrent.',
     signIn: 'Se connecter',
     signUp: 'Créer le compte',
@@ -677,6 +692,95 @@ const platform = {
     },
   },
   // --- forum ---
+  legal: {
+    eyebrow: "LE CLUB",
+    title: "Mentions légales et confidentialité",
+    lede: "Qui tient ce site, ce qu’il garde de vous, pour combien de temps, et ce que vous pouvez en faire.",
+    todo: "à compléter",
+    notice: {
+      title: "Mentions légales",
+      items: [
+        "Éditeur et directeur de la publication : {operator}.",
+        "Contact : {contact}. Toute demande, signalement ou question sur vos données passe par cette adresse.",
+        "Hébergeur : {host}.",
+        "Brass: Birmingham est un jeu de société édité par Roxley Games. Blackrail est un projet indépendant de passionnés, sans lien avec l’éditeur ni ses ayants droit ; les noms, règles et marques du jeu restent à leurs propriétaires.",
+        "Les membres écrivent sur le forum sous leur propre responsabilité. Le site en est l’hébergeur au sens de la loi : il ne relit pas les messages avant publication, et retire promptement tout contenu manifestement illicite qui lui est signalé, à l’adresse ci-dessus ou par le bouton « Signaler » présent sous chaque message.",
+      ],
+    },
+    privacy: {
+      title: "Politique de confidentialité",
+      sections: [
+        {
+          h: "Qui est responsable",
+          p: [
+            "Le responsable du traitement est l’éditeur nommé ci-dessus. Le site est tenu par une personne, pas par une société : il ne vend rien de vous, n’affiche aucune publicité et ne mesure pas votre audience.",
+          ],
+        },
+        {
+          h: "Ce que nous gardons, et pourquoi",
+          p: [
+            "Votre compte : le pseudo, l’adresse e-mail, le mot de passe (jamais en clair : une empreinte scrypt), la date d’ouverture, la date d’acceptation de la charte et l’adresse IP d’où le compte a été ouvert. C’est ce qu’il faut pour vous reconnaître et vous écrire.",
+            "Vos parties : les coups joués, les résultats, le classement, les amis et les invitations. C’est le service lui-même.",
+            "Le forum : vos messages, la langue dans laquelle ils sont écrits, vos signalements, et l’adresse IP d’où chaque message a été publié. Cette adresse n’est jamais montrée ; elle est gardée un an parce que la loi le demande à tout hébergeur, puis effacée.",
+            "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local. Aucun cookie, aucun traceur, aucune mesure d’audience.",
+            "Nous ne collectons rien d’autre. Pas de nom civil, pas d’adresse postale, pas de moyen de paiement.",
+          ],
+        },
+        {
+          h: "Sur quel fondement",
+          p: [
+            "Le compte, les parties et le forum : l’exécution du service que vous avez demandé. La conservation des adresses IP : l’obligation légale faite aux hébergeurs (loi pour la confiance dans l’économie numérique et son décret d’application). La limitation des tentatives de connexion et le filtre de mots : notre intérêt légitime à protéger le site et ses membres.",
+          ],
+        },
+        {
+          h: "Qui d’autre voit vos données",
+          p: [
+            "Anthropic (États-Unis) traduit les messages du forum dans la langue de chaque lecteur. Seul le texte du message lui est transmis, sans votre pseudo ni votre adresse. Selon ses conditions commerciales, Anthropic n’entraîne pas ses modèles sur ces textes ; le transfert hors de l’Union européenne est encadré par les clauses contractuelles types. Un message que ce service refuse de traduire n’est jamais renvoyé, et passe à la modération.",
+            "Resend (États-Unis) achemine les lettres du site : la vérification de l’adresse et le nouveau mot de passe. Il reçoit votre adresse e-mail et votre pseudo.",
+            "Les polices de caractères sont chargées depuis Google Fonts : votre navigateur transmet alors votre adresse IP à Google.",
+            "Les modérateurs du club voient les messages signalés et retirés, ainsi que les messages que le traducteur a refusés. Personne d’autre n’a accès au registre.",
+          ],
+        },
+        {
+          h: "Combien de temps",
+          p: [
+            "Le compte, tant qu’il est ouvert. Une session, trente jours sans usage. Une lettre de vérification ou de mot de passe, une heure.",
+            "L’adresse IP d’un message, un an. Les messages du forum et les parties, tant que le site existe : ils sont l’histoire du club et se lisent à plusieurs.",
+            "Après la fermeture d’un compte, le pseudo et l’adresse e-mail sont mis à part pendant cinq ans, hors de tout usage, parce que la loi le demande aux hébergeurs ; puis ils sont effacés.",
+          ],
+        },
+        {
+          h: "Vos droits",
+          p: [
+            "Accéder à vos données et les emporter : le bouton « Télécharger mes données », sur votre profil, vous remet tout ce que le registre tient sous votre nom, en un fichier lisible.",
+            "Les corriger : votre profil, pour la devise et la couleur ; le contact ci-dessus pour l’adresse e-mail. Le pseudo ne change pas.",
+            "Les effacer : le bouton « Fermer mon compte », sur votre profil. Ce qui vous identifie disparaît aussitôt ; vos messages restent sous un numéro pour que les sujets se lisent encore.",
+            "Vous opposer à un traitement, en demander la limitation, ou nous écrire pour tout le reste : le contact ci-dessus. Nous répondons sous un mois.",
+            "Si vous estimez que vos droits ne sont pas respectés, vous pouvez saisir la CNIL, www.cnil.fr.",
+          ],
+        },
+        {
+          h: "Comment vos données sont protégées",
+          p: [
+            "Les mots de passe sont hachés avec scrypt et salés ; les jetons de session et les liens des lettres sont hachés en base, de sorte qu’une copie du registre n’ouvre aucune session. Les mots de passe courants et ceux qui contiennent votre nom sont refusés. Après huit échecs de connexion, la porte attend un quart d’heure. Le site doit être servi en HTTPS et le serveur de tables en WSS : c’est le cas de l’adresse officielle.",
+          ],
+        },
+        {
+          h: "Âge",
+          p: [
+            "Le site s’adresse aux joueurs de quinze ans et plus. En dessous, l’accord d’un parent est nécessaire pour ouvrir un compte.",
+          ],
+        },
+        {
+          h: "Changements",
+          p: [
+            "Cette politique peut évoluer avec le site. La date de la dernière version figure ci-dessous ; un changement important est annoncé sur le tableau « Annonces » du forum.",
+          ],
+        },
+      ],
+      updated: "Dernière mise à jour : {date}.",
+    },
+  },
   forum: {
     eyebrow: 'LE CLUB',
     title: 'Forum',

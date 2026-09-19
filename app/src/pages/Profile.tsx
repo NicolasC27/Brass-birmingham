@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Coins, LogOut, MailWarning } from 'lucide-react';
+import { BadgeCheck, Coins, Download, LogOut, MailWarning, UserX } from 'lucide-react';
 import { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import Button from '@/components/platform/Button';
@@ -17,7 +17,7 @@ import { isOnline } from '@/online/lobby';
 import type { Rating, Stats } from '@/online/table';
 import { PLACEMENTS, rankOf } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
-import { changePassword, signOut, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
+import { changePassword, closeAccount, exportData, signOut, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
 import { HistoryLedger } from '@/pages/Desk';
 import { localeOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -505,6 +505,91 @@ function SecuritySettings() {
   );
 }
 
+/* -------------------------------- Your data -------------------------------- */
+
+/** what the register holds, to take away; and the account closed for good */
+function DataSettings() {
+  const t = useT();
+  const navigate = useNavigate();
+  const session = useSession();
+  const [taken, setTaken] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!session) return null;
+
+  const take = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const data = await exportData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `blackrail-${session.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      setTaken(true);
+    } catch (e) {
+      setError(t(`site.account.error.${(e as Error).message}`));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const close = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await closeAccount(password);
+      navigate('/', { replace: true });
+    } catch (e) {
+      setError(t(`site.account.error.${(e as Error).message}`));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Panel title={t('platform.profile.settings.data')}>
+      <div className="grid gap-5">
+        <div>
+          <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.profile.settings.exportCopy')}</p>
+          <div className="mt-3 flex items-center gap-3">
+            <Button variant="ghost" icon={<Download size={16} aria-hidden />} onClick={take} disabled={busy}>
+              {t('platform.profile.settings.export')}
+            </Button>
+            {taken && <span className="micro-label text-bottle-400">{t('platform.profile.settings.exported')}</span>}
+          </div>
+        </div>
+        <div className="border-t border-[rgb(var(--paper-100)/.07)] pt-5">
+          <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.profile.settings.closeCopy')}</p>
+          {closing ? (
+            <div className="mt-3 grid gap-3 sm:max-w-sm">
+              <Field id="close-password" label={t('platform.profile.settings.closePassword')}>
+                <input id="close-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" className={inputClass} />
+              </Field>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="danger-ghost" icon={<UserX size={16} aria-hidden />} onClick={close} disabled={busy || password.length < 8}>
+                  {t('platform.profile.settings.closeConfirm')}
+                </Button>
+                <Button variant="ghost" onClick={() => setClosing(false)} disabled={busy}>
+                  {t('platform.forum.cancel')}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="danger-ghost" className="mt-3" icon={<UserX size={16} aria-hidden />} onClick={() => setClosing(true)}>
+              {t('platform.profile.settings.close')}
+            </Button>
+          )}
+        </div>
+        <Refusal text={error} />
+      </div>
+    </Panel>
+  );
+}
+
 /* ----------------------------------- Page ----------------------------------- */
 
 export default function Profile() {
@@ -538,6 +623,7 @@ export default function Profile() {
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.24, ease }} className="mt-6 grid content-start gap-6 min-[900px]:grid-cols-2">
         <IdentitySettings />
         <SecuritySettings />
+        <DataSettings />
       </motion.div>
     </div>
   );

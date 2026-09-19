@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router';
 import { motion } from 'framer-motion';
 import { CheckCircle2, MailWarning } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
@@ -45,6 +45,8 @@ export default function Account() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [again, setAgain] = useState('');
+  /* the charter and the policy, read and accepted: the office asks for it too */
+  const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
@@ -241,9 +243,31 @@ export default function Account() {
                   <input id="acc-again" type="password" value={again} onChange={(e) => setAgain(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && submit()} maxLength={72} autoComplete="new-password" className={inputClass} />
                 </Field>
               )}
+              {mode === 'up' && (
+                <label className="flex items-start gap-3 font-ui text-[13px] leading-relaxed text-paper-300">
+                  <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-1 h-4 w-4 accent-brass-500" />
+                  <span>
+                    {t('platform.account.accept', { charter: '[[charter]]', privacy: '[[privacy]]' })
+                      .split(/(\[\[charter\]\]|\[\[privacy\]\])/)
+                      .map((part, i) =>
+                        part === '[[charter]]' ? (
+                          <Link key={i} to="/forum" className="text-brass-300 underline decoration-brass-500/40 underline-offset-2 hover:text-brass-200">
+                            {t('platform.account.acceptCharter')}
+                          </Link>
+                        ) : part === '[[privacy]]' ? (
+                          <Link key={i} to="/legal#privacy" className="text-brass-300 underline decoration-brass-500/40 underline-offset-2 hover:text-brass-200">
+                            {t('platform.account.acceptPrivacy')}
+                          </Link>
+                        ) : (
+                          part
+                        ),
+                      )}
+                  </span>
+                </label>
+              )}
               <Refusal text={error} />
               <div className="flex flex-wrap items-center gap-4">
-                <Button variant="primary" onClick={submit} disabled={busy || waiting || !name.trim() || password.length < 8 || (mode === 'up' && !email.includes('@'))}>
+                <Button variant="primary" onClick={submit} disabled={busy || waiting || !name.trim() || password.length < 8 || (mode === 'up' && (!email.includes('@') || !accepted))}>
                   {mode === 'in' ? t('platform.account.signIn') : t('platform.account.signUp')}
                 </Button>
                 {mode === 'in' && (

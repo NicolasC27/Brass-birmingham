@@ -28,6 +28,8 @@ const platform = {
     copyright: '© Blackrail',
     rules: 'Rules',
     account: 'Account',
+    legal: "Legal notice",
+    privacy: "Privacy",
     version: 'v1.0',
   },
   tabs: {
@@ -503,11 +505,21 @@ const platform = {
       unverified: 'Unverified',
       current: 'Current password',
       next: 'New password',
-      passwordHint: 'Eight characters at least.',
+      passwordHint: "Eight characters at least, not your name, not a common password.",
       change: 'Change the password',
       changed: 'Changed. Your other sessions are closed.',
       signOut: 'Sign out',
       signOutCopy: 'Signing out forgets this browser; your seats keep waiting for you.',
+      data: "Your data",
+      exportCopy: "Everything the register holds under your name, as one file: account, posts, games, friends.",
+      export: "Download my data",
+      exported: "The file is ready.",
+      closeCopy: "Closing the account erases what identifies you: name, address, password, friends, sessions. Your forum posts stay under a number, so the threads still read. There is no way back.",
+      close: "Close my account",
+      closePassword: "Your password, to confirm",
+      closeConfirm: "Close the account for good",
+      closed: "The account is closed. Safe travels.",
+      sessions: "Open sessions: {count}",
     },
   },
   // --- account ---
@@ -526,8 +538,11 @@ const platform = {
     email: 'E-mail address',
     emailHint: 'A letter will be sent there; the tables open once you have answered it.',
     password: 'Password',
-    passwordHint: 'Eight characters at least.',
+    passwordHint: "Eight characters at least, not your name, not a common password.",
     passwordAgain: 'The same, again',
+    accept: "I have read and accept {charter} and {privacy}.",
+    acceptCharter: "the club's charter",
+    acceptPrivacy: "the privacy policy",
     mismatch: 'The two passwords differ.',
     signIn: 'Sign in',
     signUp: 'Create the account',
@@ -677,6 +692,95 @@ const platform = {
     },
   },
   // --- forum ---
+  legal: {
+    eyebrow: "THE CLUB",
+    title: "Legal notice and privacy",
+    lede: "Who runs this site, what it keeps of you, for how long, and what you can do about it.",
+    todo: "to be filled in",
+    notice: {
+      title: "Legal notice",
+      items: [
+        "Publisher and editor: {operator}.",
+        "Contact: {contact}. Every request, report or question about your data goes through this address.",
+        "Host: {host}.",
+        "Brass: Birmingham is a board game published by Roxley Games. Blackrail is an independent fan project, unrelated to the publisher or its rights holders; the game’s names, rules and marks remain their owners’.",
+        "Members write on the forum under their own responsibility. The site is their host in the legal sense: it does not read posts before they go up, and promptly takes down any manifestly illicit content reported to it, at the address above or through the “Report” button under every post.",
+      ],
+    },
+    privacy: {
+      title: "Privacy policy",
+      sections: [
+        {
+          h: "Who is responsible",
+          p: [
+            "The data controller is the publisher named above. The site is run by a person, not a company: it sells nothing of you, shows no advertising and measures no audience.",
+          ],
+        },
+        {
+          h: "What we keep, and why",
+          p: [
+            "Your account: the name, the e-mail address, the password (never in the clear: a scrypt hash), the opening date, the date the charter was accepted, and the IP address the account was opened from. That is what it takes to recognise you and write to you.",
+            "Your games: the moves, the results, the ranking, friends and invitations. That is the service itself.",
+            "The forum: your posts, the language they are written in, your reports, and the IP address each post was published from. That address is never shown; it is kept one year because the law asks it of every host, then erased.",
+            "In your browser: the session token, the theme and the language, in local storage. No cookie, no tracker, no analytics.",
+            "We collect nothing else. No legal name, no postal address, no means of payment.",
+          ],
+        },
+        {
+          h: "On what grounds",
+          p: [
+            "The account, the games and the forum: performance of the service you asked for. Keeping IP addresses: the legal obligation on hosts (the French law on confidence in the digital economy and its implementing decree). Limiting sign-in attempts and the word filter: our legitimate interest in protecting the site and its members.",
+          ],
+        },
+        {
+          h: "Who else sees your data",
+          p: [
+            "Anthropic (United States) translates forum posts into each reader’s language. Only the text of the post is sent, without your name or address. Under its commercial terms, Anthropic does not train its models on these texts; the transfer outside the European Union is covered by standard contractual clauses. A post this service declines to translate is never sent again, and goes to the moderators.",
+            "Resend (United States) carries the site’s letters: address verification and password reset. It receives your e-mail address and your name.",
+            "Fonts are loaded from Google Fonts: your browser then sends your IP address to Google.",
+            "The club’s moderators see reported and taken-down posts, and posts the translator declined. Nobody else has access to the register.",
+          ],
+        },
+        {
+          h: "For how long",
+          p: [
+            "The account, as long as it is open. A session, thirty days without use. A verification or password letter, one hour.",
+            "A post’s IP address, one year. Forum posts and games, as long as the site exists: they are the club’s history and are read by several.",
+            "After an account is closed, the name and e-mail address are set aside for five years, out of any use, because the law asks it of hosts; then they are erased.",
+          ],
+        },
+        {
+          h: "Your rights",
+          p: [
+            "Access your data and take it away: the “Download my data” button on your profile hands you everything the register holds under your name, as one readable file.",
+            "Correct it: your profile, for the motto and colour; the contact above for the e-mail address. The name does not change.",
+            "Erase it: the “Close my account” button on your profile. What identifies you goes at once; your posts stay under a number so the threads still read.",
+            "Object to a processing, ask for it to be restricted, or write to us about anything else: the contact above. We answer within a month.",
+            "If you believe your rights are not respected, you may lodge a complaint with the French authority, the CNIL, www.cnil.fr.",
+          ],
+        },
+        {
+          h: "How your data is protected",
+          p: [
+            "Passwords are hashed with scrypt and salted; session tokens and letter links are hashed in the register, so a copy of it opens no session. Common passwords and those containing your name are refused. After eight failed sign-ins, the door waits a quarter of an hour. The site must be served over HTTPS and the table server over WSS: the official address is.",
+          ],
+        },
+        {
+          h: "Age",
+          p: [
+            "The site is for players fifteen and over. Below that, a parent’s consent is needed to open an account.",
+          ],
+        },
+        {
+          h: "Changes",
+          p: [
+            "This policy may change with the site. The date of the latest version is below; an important change is announced on the forum’s “Announcements” board.",
+          ],
+        },
+      ],
+      updated: "Last updated: {date}.",
+    },
+  },
   forum: {
     eyebrow: 'THE CLUB',
     title: 'Forum',

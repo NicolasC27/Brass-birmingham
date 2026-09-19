@@ -218,6 +218,12 @@ function CompactFooter() {
         <Link to="/account" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
           {t('platform.footer.account')}
         </Link>
+        <Link to="/legal" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
+          {t('platform.footer.legal')}
+        </Link>
+        <Link to="/legal#privacy" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
+          {t('platform.footer.privacy')}
+        </Link>
         <span className="flex-1" />
         <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-1">
           {LANGS.map((l) => (

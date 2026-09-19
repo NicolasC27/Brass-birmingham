@@ -28,6 +28,8 @@ const platform = {
     copyright: '© Blackrail',
     rules: 'Reglas',
     account: 'Cuenta',
+    legal: "Aviso legal",
+    privacy: "Privacidad",
     version: 'v1.0',
   },
   tabs: {
@@ -503,11 +505,21 @@ const platform = {
       unverified: 'Sin verificar',
       current: 'Contraseña actual',
       next: 'Nueva contraseña',
-      passwordHint: 'Ocho caracteres como mínimo.',
+      passwordHint: "Ocho caracteres al menos, ni tu nombre ni una contraseña corriente.",
       change: 'Cambiar la contraseña',
       changed: 'Cambiada. Tus otras sesiones se han cerrado.',
       signOut: 'Cerrar sesión',
       signOutCopy: 'Cerrar sesión hace olvidar este navegador; tus asientos siguen esperándote.',
+      data: "Tus datos",
+      exportCopy: "Todo lo que el registro guarda a tu nombre, en un archivo: cuenta, mensajes, partidas, amigos.",
+      export: "Descargar mis datos",
+      exported: "El archivo está listo.",
+      closeCopy: "Cerrar la cuenta borra lo que te identifica: nombre, dirección, contraseña, amigos, sesiones. Tus mensajes del foro quedan bajo un número, para que los temas sigan leyéndose. No hay vuelta atrás.",
+      close: "Cerrar mi cuenta",
+      closePassword: "Tu contraseña, para confirmar",
+      closeConfirm: "Cerrar la cuenta para siempre",
+      closed: "La cuenta está cerrada. Buen viaje.",
+      sessions: "Sesiones abiertas: {count}",
     },
   },
   // --- account ---
@@ -526,8 +538,11 @@ const platform = {
     email: 'Dirección de correo',
     emailHint: 'Allí se enviará una carta; las mesas se abren cuando la hayas respondido.',
     password: 'Contraseña',
-    passwordHint: 'Ocho caracteres como mínimo.',
+    passwordHint: "Ocho caracteres al menos, ni tu nombre ni una contraseña corriente.",
     passwordAgain: 'La misma, otra vez',
+    accept: "He leído y acepto {charter} y {privacy}.",
+    acceptCharter: "la carta del club",
+    acceptPrivacy: "la política de privacidad",
     mismatch: 'Las dos contraseñas no coinciden.',
     signIn: 'Iniciar sesión',
     signUp: 'Crear la cuenta',
@@ -677,6 +692,95 @@ const platform = {
     },
   },
   // --- forum ---
+  legal: {
+    eyebrow: "EL CLUB",
+    title: "Aviso legal y privacidad",
+    lede: "Quién lleva este sitio, qué guarda de ti, durante cuánto tiempo y qué puedes hacer al respecto.",
+    todo: "por completar",
+    notice: {
+      title: "Aviso legal",
+      items: [
+        "Editor y director de la publicación: {operator}.",
+        "Contacto: {contact}. Toda solicitud, denuncia o pregunta sobre tus datos pasa por esta dirección.",
+        "Alojamiento: {host}.",
+        "Brass: Birmingham es un juego de mesa editado por Roxley Games. Blackrail es un proyecto independiente de aficionados, sin vínculo con el editor ni sus derechohabientes; los nombres, reglas y marcas del juego siguen siendo de sus propietarios.",
+        "Los socios escriben en el foro bajo su propia responsabilidad. El sitio es su alojador en el sentido de la ley: no relee los mensajes antes de publicarlos y retira con prontitud todo contenido manifiestamente ilícito que se le señale, en la dirección de arriba o con el botón «Denunciar» presente bajo cada mensaje.",
+      ],
+    },
+    privacy: {
+      title: "Política de privacidad",
+      sections: [
+        {
+          h: "Quién es responsable",
+          p: [
+            "El responsable del tratamiento es el editor nombrado arriba. El sitio lo lleva una persona, no una empresa: no vende nada de ti, no muestra publicidad y no mide tu audiencia.",
+          ],
+        },
+        {
+          h: "Qué guardamos, y por qué",
+          p: [
+            "Tu cuenta: el nombre, la dirección de correo, la contraseña (nunca en claro: un hash scrypt), la fecha de apertura, la fecha de aceptación de la carta y la dirección IP desde la que se abrió la cuenta. Es lo necesario para reconocerte y escribirte.",
+            "Tus partidas: las jugadas, los resultados, la clasificación, los amigos y las invitaciones. Es el servicio mismo.",
+            "El foro: tus mensajes, el idioma en que están escritos, tus denuncias y la dirección IP desde la que se publicó cada mensaje. Esa dirección nunca se muestra; se guarda un año porque la ley lo exige a todo alojador, y luego se borra.",
+            "En tu navegador: el token de sesión, el tema y el idioma, en almacenamiento local. Ninguna cookie, ningún rastreador, ninguna medición de audiencia.",
+            "No recogemos nada más. Ni nombre civil, ni dirección postal, ni medio de pago.",
+          ],
+        },
+        {
+          h: "Con qué fundamento",
+          p: [
+            "La cuenta, las partidas y el foro: la prestación del servicio que has pedido. La conservación de las direcciones IP: la obligación legal de los alojadores (ley francesa para la confianza en la economía digital y su decreto de aplicación). La limitación de los intentos de conexión y el filtro de palabras: nuestro interés legítimo en proteger el sitio y a sus socios.",
+          ],
+        },
+        {
+          h: "Quién más ve tus datos",
+          p: [
+            "Anthropic (Estados Unidos) traduce los mensajes del foro al idioma de cada lector. Solo se le transmite el texto del mensaje, sin tu nombre ni tu dirección. Según sus condiciones comerciales, Anthropic no entrena sus modelos con estos textos; la transferencia fuera de la Unión Europea está amparada por cláusulas contractuales tipo. Un mensaje que este servicio se niega a traducir nunca se reenvía, y pasa a la moderación.",
+            "Resend (Estados Unidos) lleva las cartas del sitio: la verificación de la dirección y la nueva contraseña. Recibe tu dirección de correo y tu nombre.",
+            "Las fuentes tipográficas se cargan desde Google Fonts: tu navegador transmite entonces tu dirección IP a Google.",
+            "Los moderadores del club ven los mensajes denunciados y retirados, así como los que el traductor rechazó. Nadie más tiene acceso al registro.",
+          ],
+        },
+        {
+          h: "Durante cuánto tiempo",
+          p: [
+            "La cuenta, mientras esté abierta. Una sesión, treinta días sin uso. Una carta de verificación o de contraseña, una hora.",
+            "La dirección IP de un mensaje, un año. Los mensajes del foro y las partidas, mientras exista el sitio: son la historia del club y se leen entre varios.",
+            "Tras el cierre de una cuenta, el nombre y la dirección de correo se apartan durante cinco años, fuera de todo uso, porque la ley lo exige a los alojadores; después se borran.",
+          ],
+        },
+        {
+          h: "Tus derechos",
+          p: [
+            "Acceder a tus datos y llevártelos: el botón «Descargar mis datos», en tu perfil, te entrega todo lo que el registro guarda a tu nombre, en un archivo legible.",
+            "Corregirlos: tu perfil, para el lema y el color; el contacto de arriba para la dirección de correo. El nombre no cambia.",
+            "Borrarlos: el botón «Cerrar mi cuenta», en tu perfil. Lo que te identifica desaparece al momento; tus mensajes quedan bajo un número para que los temas sigan leyéndose.",
+            "Oponerte a un tratamiento, pedir su limitación o escribirnos por cualquier otra cosa: el contacto de arriba. Respondemos en el plazo de un mes.",
+            "Si consideras que no se respetan tus derechos, puedes acudir a la autoridad francesa, la CNIL, www.cnil.fr, o a la de tu país.",
+          ],
+        },
+        {
+          h: "Cómo se protegen tus datos",
+          p: [
+            "Las contraseñas se hashean con scrypt y sal; los tokens de sesión y los enlaces de las cartas se hashean en el registro, de modo que una copia de este no abre ninguna sesión. Se rechazan las contraseñas corrientes y las que contienen tu nombre. Tras ocho intentos fallidos de conexión, la puerta espera un cuarto de hora. El sitio debe servirse por HTTPS y el servidor de mesas por WSS: así es en la dirección oficial.",
+          ],
+        },
+        {
+          h: "Edad",
+          p: [
+            "El sitio se dirige a jugadores de quince años en adelante. Por debajo, hace falta el acuerdo de un padre o madre para abrir una cuenta.",
+          ],
+        },
+        {
+          h: "Cambios",
+          p: [
+            "Esta política puede evolucionar con el sitio. La fecha de la última versión figura abajo; un cambio importante se anuncia en el tablón «Anuncios» del foro.",
+          ],
+        },
+      ],
+      updated: "Última actualización: {date}.",
+    },
+  },
   forum: {
     eyebrow: 'EL CLUB',
     title: 'Foro',
