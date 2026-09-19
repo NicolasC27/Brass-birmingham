@@ -1006,7 +1006,7 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
                   <span {...grabProps} className={cn(grabClass, 'mt-0.5 shrink-0')}>
                     <Lightbulb className="h-4 w-4 text-ink-900/60" />
                   </span>
-                  <ul className={cn('min-w-0 flex-1 space-y-1.5', !dock && 'min-h-0 overflow-y-auto pr-1')}>
+                  <ul className={cn('min-w-0 flex-1 space-y-1.5', !dock && 'min-h-0 overflow-y-auto pr-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden')}>
                     {shown.map((line, i) => (
                       <li key={i}>
                         <Paragraphs text={line} />

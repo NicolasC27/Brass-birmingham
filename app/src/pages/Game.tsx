@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react';
 import NotebookButton from '@/components/game/Notebook';
 import LessonHalo from '@/components/game/LessonHalo';
+import Debrief from '@/components/game/Debrief';
+import AskGuide from '@/components/game/AskGuide';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -107,6 +109,12 @@ export default function Game() {
   /* the table a plan is made on: with moves already prepared, the one they leave */
   const planGame = useMemo(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const mySeat = useGame((s) => s.mySeat());
+  /* the debrief: the game read again once over, one of its moments on the board */
+  const debriefOpen = useGame((s) => s.debriefOpen);
+  /* whose turns the debrief reads: my seat online, the first human at home */
+  const reviewSeat = seat ?? game?.players.findIndex((p) => !p.isBot) ?? -1;
+  const review = useGame((s) => s.review);
+  const setReview = useGame((s) => s.setReview);
   /* the survey shown on the board: one object per survey, not one per render
      (the board rebuilds its overlay and its filter whenever it changes) */
   const preview = useMemo<ComponentProps<typeof PixiBoard>['preview']>(
@@ -514,13 +522,14 @@ export default function Game() {
       <div className="absolute inset-0">
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
-            game={game}
-            targets={targets}
-            linkTargetsList={linkTargetsList}
-            sellTargetsList={sellTargetsList}
-            ghost={ghost}
+            game={review?.state ?? game}
+            targets={review ? [] : targets}
+            linkTargetsList={review ? [] : linkTargetsList}
+            sellTargetsList={review ? [] : sellTargetsList}
+            ghost={review ? null : ghost}
             onInvalid={reject}
             preview={preview}
+            keyboard={!review}
           />
         </Suspense>
       </div>
@@ -550,6 +559,7 @@ export default function Game() {
             )}
             <TelegramButton className={TOOL} />
             <NotebookButton className={TOOL} />
+            <AskGuide className={TOOL} />
             <button
               type="button"
               onClick={() => {
@@ -771,6 +781,16 @@ export default function Game() {
       </div>
 
       {/* the guide's own lane, beside the table rather than over it */}
+      {/* the review's plate: which moment of the game the board shows */}
+      {review && (
+        <div className="pointer-events-auto fixed left-1/2 top-3 z-[66] flex -translate-x-1/2 items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
+          <span className="font-fell text-[12.5px] text-cream-100">{t('game.debrief.banner', { round: review.round })}</span>
+          <button type="button" onClick={() => setReview(null)} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
+            {t('game.debrief.back')}
+          </button>
+        </div>
+      )}
+      {debriefOpen && game.phase === 'game-over' && reviewSeat >= 0 && <Debrief game={game} me={reviewSeat} />}
       <Guide dock={dock} />
       {tutorial && <LessonHalo />}
     </div>

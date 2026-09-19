@@ -163,6 +163,11 @@ interface GameStore {
   /** what the guide's lesson lights on the table: slots of the map, a part of the HUD */
   lens: Lens | null;
   setLens: (lens: Lens | null) => void;
+  /* ---- the debrief: the game read again once over, a moment of it on the board ---- */
+  debriefOpen: boolean;
+  setDebriefOpen: (open: boolean) => void;
+  review: Review | null;
+  setReview: (review: Review | null) => void;
   /** a player rail chip under the pointer: their whole network lights up */
   netPeek: number | null;
   setNetPeek: (i: number | null) => void;
@@ -370,6 +375,8 @@ export const useGame = create<GameStore>((set, get) => ({
   setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
   spotlight: null,
   lens: null,
+  debriefOpen: false,
+  review: null,
   netPeek: null,
   coachStep: -1,
   ceremony: null,
@@ -796,6 +803,8 @@ export const useGame = create<GameStore>((set, get) => ({
   toggleFollowBots: () => set((s) => ({ followBots: !s.followBots })),
   setSpotlight: (i) => set({ spotlight: i }),
   setLens: (lens) => set((s) => (JSON.stringify(s.lens) === JSON.stringify(lens) ? s : { lens })),
+  setDebriefOpen: (open) => set(open ? { debriefOpen: true } : { debriefOpen: false, review: null }),
+  setReview: (review) => set({ review }),
   setNetPeek: (i) => set({ netPeek: i }),
   setCoachStep: (n) => {
     set({ coachStep: n });
@@ -1306,6 +1315,15 @@ export function projectQueued(g: GameState, me: number, queued: Prepared[]): Gam
 /* ------------------------- a prepared move ------------------------- */
 
 /** what would make a prepared move pointless: that player doing that (there) */
+/** a past moment of the game shown on the board: the table before a move, and the two moves weighed */
+export interface Review {
+  at: number;
+  round: number;
+  state: GameState;
+  mine: GameAction;
+  better: GameAction;
+}
+
 /** a part of the HUD a lesson points at (a `data-lens` mark on the element) */
 export type HudLens = 'vp' | 'market' | 'mat' | 'hand' | 'rail' | 'rail-bot' | 'income' | 'ledger' | 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
 /** what a lesson lights: slots of the map (their keys), a part of the HUD, a town to fly to */

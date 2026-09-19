@@ -11,6 +11,10 @@ import { useT } from '@/i18n';
  */
 export default function GameOverModal({ onRematch }: { onRematch: () => void }) {
   const t = useT();
+  const seat = useGame((s) => s.seat);
+  const mine = useGame((s) => seat ?? (s.game ? s.game.players.findIndex((p) => !p.isBot) : -1));
+  const setDebriefOpen = useGame((s) => s.setDebriefOpen);
+  const closeGameOver = useGame((s) => s.closeGameOver);
   const game = useGame((s) => s.game);
   const open = useGame((s) => s.gameOverOpen);
   const online = useGame((s) => s.code !== null);
@@ -132,6 +136,18 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
           ) : (
             <button type="button" onClick={onRematch} className="btn-strike">
               {t('game.scoring.rematch')}
+            </button>
+          )}
+          {mine !== null && mine >= 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setDebriefOpen(true);
+                closeGameOver();
+              }}
+              className="btn-ledger !text-ink-900 !border-ink-900/40 hover:!bg-ink-900/10"
+            >
+              {t('game.debrief.open')}
             </button>
           )}
           <button type="button" onClick={() => navigate('/setup')} className="btn-ledger !text-ink-900 !border-ink-900/40 hover:!bg-ink-900/10">
