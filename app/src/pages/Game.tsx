@@ -590,7 +590,7 @@ export default function Game() {
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed right-3 z-[64] w-[min(320px,88vw)]"
+            className="fixed right-3 z-[82] w-[min(320px,88vw)]"
             style={{ top: insets.top + 48 }}
             data-market
             aria-label={t('game.page.marketPanelAria')}

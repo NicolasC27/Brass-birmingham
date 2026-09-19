@@ -738,6 +738,7 @@ const fr: typeof engame = {
     foldHint: 'Un clic sur la note la replie en une ligne ; glissez son en-tête pour la déplacer.',
     detour: 'Un détour avant « {lesson} » :',
     suggest: {
+      closedMerchant: '{merchant} n’a pas de marchand à cette table, mais la place garde ses deux icônes lien pour la fin d’ère et son accès au marché du charbon.',
       aria: 'Ce que la machine jouerait à votre place',
       ask: 'Que ferait {name} à ma place ?',
       thinking: '{name} réfléchit…',

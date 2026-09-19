@@ -736,6 +736,7 @@ const game = {
     foldHint: 'A click on the note folds it to a line; drag its head to move it.',
     detour: 'A detour before « {lesson} »:',
     suggest: {
+      closedMerchant: '{merchant} has no merchant at this table, but the place keeps its two link icons for the era’s scoring and its way to the coal market.',
       aria: 'What the machine would play in your seat',
       ask: 'What would {name} do in my seat?',
       thinking: '{name} is thinking it over…',

@@ -738,6 +738,7 @@ const game: typeof engame = {
     foldHint: 'Un clic en la nota la pliega en una línea; arrastra su cabecera para moverla.',
     detour: 'Un desvío antes de « {lesson} »:',
     suggest: {
+      closedMerchant: '{merchant} no tiene mercader en esta mesa, pero el lugar conserva sus dos iconos de enlace para el recuento de la era y su acceso al mercado del carbón.',
       aria: 'Lo que la máquina jugaría en tu lugar',
       ask: '¿Qué haría {name} en mi lugar?',
       thinking: '{name} lo está pensando…',

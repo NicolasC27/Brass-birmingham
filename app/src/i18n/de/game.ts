@@ -738,6 +738,7 @@ const game: typeof engame = {
     foldHint: 'Ein Klick auf die Notiz klappt sie zu einer Zeile ein; ziehe den Kopf, um sie zu verschieben.',
     detour: 'Ein Umweg vor « {lesson} »:',
     suggest: {
+      closedMerchant: '{merchant} hat an diesem Tisch keinen Händler, doch der Ort behält seine zwei Verbindungssymbole für die Wertung und seinen Zugang zum Kohlemarkt.',
       aria: 'Was die Maschine an deiner Stelle spielen würde',
       ask: 'Was würde {name} an meiner Stelle tun?',
       thinking: '{name} überlegt…',

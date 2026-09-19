@@ -6,7 +6,7 @@ import { aidOn, getBoardOptions, setBoardOption } from '@/components/game/boardO
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
-import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
 import { carries, faqBest, faqFor, passagesOf, rulesMatch } from '@/game/faq';
@@ -1002,7 +1002,10 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
                 </>
               ) : (
                 <div className={cn('flex items-start gap-3', !dock && 'min-h-0')}>
-                  <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/60" />
+                  {/* the floating note is taken by its lamp and dragged where it reads best */}
+                  <span {...grabProps} className={cn(grabClass, 'mt-0.5 shrink-0')}>
+                    <Lightbulb className="h-4 w-4 text-ink-900/60" />
+                  </span>
                   <ul className={cn('min-w-0 flex-1 space-y-1.5', !dock && 'min-h-0 overflow-y-auto pr-1')}>
                     {shown.map((line, i) => (
                       <li key={i}>
@@ -1106,7 +1109,17 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
                 ) : advised.action ? (
                   <>
                     <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{describeAction(advised.action)}</p>
-                    <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{t(`game.guide.suggest.why.${whyKey(advised.action)}`, { name: machine })}</p>
+                    <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">
+                      {t(`game.guide.suggest.why.${whyKey(advised.action)}`, { name: machine })}
+                      {(() => {
+                        /* a link to a merchant place with no merchant at this table: worth its
+                           two link icons and the coal market all the same — say so */
+                        if (advised.action.kind !== 'network') return null;
+                        const ends = [advised.action.link, advised.action.second].flatMap((id) => (id ? [LINKS.find((l) => l.id === id)] : [])).flatMap((l) => (l ? [l.a, l.b] : []));
+                        const closed = ends.find((n) => MERCHANT_BY_ID[n] && !(game.merchantTiles[n]?.length));
+                        return closed ? ` ${t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[closed].name })}` : null;
+                      })()}
+                    </p>
                     {due?.done && !finished && !asked(due.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(due.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
