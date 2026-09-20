@@ -64,9 +64,19 @@ Les rivaux faibles font 17 à 34 selon la table.
 
 33 (sans cerveau) → 41 (v4) → 45 (v4 + emprunts d'ouverture) → 48 (trio 5) ; à force 1 : 36 → 43,5.
 
+## Parties entières : l'expert à pleine force contre une table faible (6 parties par table)
+
+| Cerveau | 2 joueurs (canal / final / gagnées) | 3 joueurs | 4 joueurs |
+|---|---|---|---|
+| Trio « ère canal » (le rail lu à la main) | 47 / 106 / 5 | 47 / 103 / 4 | 48 / 95 / 2 |
+| Trio « partie entière », 1er | 34 / 123 / 6 | 39 / 128 / 6 | 38 / 107 / 5 |
+| **Trio « partie entière », 2e (committé)** | 36 / 134 / 6 | 46 / 127 / 6 | 46 / 106 / 3 |
+
+Les termes tirés des guides, mesurés en auto-jeu (12 parties, final moyen) : tempo 1 → 112 contre 109, prêt pour le rail 3 → 113, canal faible → 106 à 111 ; adoptés : tempo 1, prêt pour le rail 3.
+
 ## Où on en est face à l'objectif
 
-- Objectif : 60 points d'ère canal, puis 80.
-- Expert à pleine force : 43 à 52 selon la table. Un bon joueur régulier ; un très bon joueur est à 55–75, un joueur de tournoi à 80.
+- Objectif : un bot fort sur la partie entière, 160 points au final pour l'expert, 60 puis 80 à l'ère canal.
+- Expert à pleine force contre une table faible : 106 à 134 au final, 36 à 46 à l'ère canal. Un bon joueur régulier ; 160 est le niveau d'un très bon joueur.
 
 Suite : [[07 Ce qui n'a pas marché]].
