@@ -27,8 +27,9 @@ import { newGame } from '@/game/engine';
 import { FEATURES, GLOBAL_ERA, features, forward, loadNet, packBrain, unpackBrain } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
 import type { Brain, Net } from '@/game/net';
-import { chooseBotAction, evaluate, legalActions, setEvalMode, setWeights } from '@/game/search';
-import type { GameAction } from '@/game/actions';
+import { chooseBotAction, setEvalMode, setWeights } from '@/game/search';
+import { OPENINGS } from '@/game/openings';
+import type { Opening } from '@/game/openings';
 import type { GameState, SetupPayload } from '@/game/types';
 import { TRAINED } from '@/game/weights';
 import type { Weights } from '@/game/weights';
@@ -99,66 +100,20 @@ function style(seed: number): Weights {
   return w;
 }
 
-/** the openings strong players swear by, imposed on a styled seat for its
- *  first actions so that the record shows where they lead: two developments
- *  first, two loans in two rounds, pottery as soon as a card allows, canals
- *  toward the merchants */
-type Opening = 'iron-battery' | 'beer-anchor' | 'flex-rails' | 'loans' | 'pottery' | null;
-const OPENINGS: Opening[] = ['iron-battery', 'beer-anchor', 'flex-rails', 'loans', 'pottery', null];
-
-/** what an action is, for the opening scripts */
-type Step = (a: GameAction) => boolean;
-const build = (...inds: string[]): Step => (a) => a.kind === 'build' && inds.includes(a.industry);
-const kind = (k: GameAction['kind']): Step => (a) => a.kind === k;
-const double: Step = (a) => a.kind === 'network' && !!a.second;
-
-/** the canal-era scripts, action by action, from the guides: an iron works
- *  turned into developments then a level-2 mill sold; a brewery in reach of
- *  the merchants then goods sold twice; develop, iron, a hub link; two loans
- *  paired with builds; pottery when a card allows */
-const CANAL_SCRIPTS: Record<NonNullable<Opening>, Step[]> = {
-  'iron-battery': [kind('network'), build('iron'), kind('develop'), kind('develop'), build('cotton', 'manufacturer'), kind('sell')],
-  'beer-anchor': [build('brewery'), build('cotton', 'manufacturer'), kind('sell'), build('cotton', 'manufacturer'), kind('sell')],
-  'flex-rails': [kind('develop'), build('iron'), kind('network'), kind('network')],
-  loans: [kind('loan'), kind('build'), kind('loan'), kind('build')],
-  pottery: [build('pottery'), kind('sell'), build('pottery'), kind('sell')],
-};
-/** the rail-era script every styled seat follows for its first rail actions:
- *  two double rails within two rounds */
-const RAIL_SCRIPT: Step[] = [double, double, kind('sell'), double];
-
-/** the opening's action for the k-th own action of the era, if the table
- *  allows one: the best-reading action of the prescribed kind; when the
- *  prescribed kind is not on the table, the script is not held up */
-function openingAction(s: GameState, seat: number, opening: Opening, k: number): GameAction | null {
-  if (!opening) return null;
-  const script = s.era === 'canal' ? CANAL_SCRIPTS[opening] : RAIL_SCRIPT;
-  const step = script[k];
-  if (!step) return null;
-  const wanted = step;
-  let best: { a: GameAction; v: number } | null = null;
-  for (const a of legalActions(s, seat)) {
-    if (!wanted(a)) continue;
-    const r = applyAction(s, seat, a);
-    if (!r.state) continue;
-    const v = evaluate(r.state, seat);
-    if (!best || v > best.v) best = { a, v };
-  }
-  return best?.a ?? null;
-}
+/** the openings strong players swear by, imposed on a styled seat while
+ *  they last, so that the record shows where they lead */
+const EXPLORE_OPENINGS: (Opening | null)[] = [...OPENINGS, null];
 
 /** one game of four machines, every position of every seat written down;
  *  some seats play a style of their own, so the record shows more than one way */
 function playOne(seed: number, players: number): { rows: Float32Array; canal: number } {
   const styles = Array.from({ length: players }, (_, k) => (mulberry(seed * 7 + k)() < EXPLORE ? style(seed * 13 + k) : TRAINED));
-  const openings: Opening[] = Array.from({ length: players }, (_, k) => (styles[k] === TRAINED ? null : OPENINGS[Math.floor(mulberry(seed * 17 + k)() * OPENINGS.length)]));
-  const taken = Array.from({ length: players }, () => 0);
+  const openings: (Opening | null)[] = Array.from({ length: players }, (_, k) => (styles[k] === TRAINED ? null : EXPLORE_OPENINGS[Math.floor(mulberry(seed * 17 + k)() * EXPLORE_OPENINGS.length)]));
   const setup: SetupPayload = {
     players: Array.from({ length: players }, (_, k) => ({ name: `P${k}`, color: COLORS[k], type: 'bot', persona: PERSONAS[k] })),
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
   };
   let s: GameState = newGame(setup, seed);
-  let era = s.era;
   /* the whole game: the Canal Era's positions and the rails' */
   const canal: { x: Float32Array; seat: number }[] = [];
   const rail: { x: Float32Array; seat: number }[] = [];
@@ -170,13 +125,8 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
     }
     for (let j = 0; j < players; j++) (s.era === 'canal' ? canal : rail).push({ x: features(s, j), seat: j });
     const seat = s.current;
-    if (s.era !== era) {
-      era = s.era;
-      taken.fill(0);
-    }
     setWeights(styles[seat]);
-    const a = openingAction(s, seat, openings[seat], taken[seat]) ?? chooseBotAction(s, seat, { strength: STRENGTH, depth: 0 }) ?? fallbackAction(s, seat);
-    taken[seat] += 1;
+    const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: 0, opening: openings[seat] ?? undefined }) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
   }
   const lead = (scores: number[], j: number) => scores[j] - Math.max(...scores.filter((_, k) => k !== j));

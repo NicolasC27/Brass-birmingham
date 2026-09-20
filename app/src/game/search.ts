@@ -38,6 +38,8 @@ import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLi
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
 import { activeNet, features, think } from './net';
+import { openingAction } from './openings';
+import type { Opening } from './openings';
 import { TRAINED } from './weights';
 import type { Weights } from './weights';
 
@@ -48,6 +50,8 @@ export interface SearchOptions {
   beam?: number;
   /** how well the machine plays, 0 (a beginner) to 1 (its best) */
   strength?: number;
+  /** an opening the machine follows while it lasts, then the search plays on */
+  opening?: Opening;
   /** rounds looked past this turn (0, 1 or 2); the strength sets it when absent */
   depth?: 0 | 1 | 2;
 }
@@ -565,6 +569,12 @@ export function adaptiveStrength(s: GameState, i: number, base: number): number 
 export function chooseBotAction(s: GameState, i: number, o: SearchOptions = {}): GameAction | null {
   /* the expert plays flat out, whoever sits across the table */
   const strength = isExpert(s, i) ? 1 : adaptiveStrength(s, i, o.strength ?? 1);
+  /* the expert's book: pottery at three, the one opening measured to pay */
+  const opening = o.opening ?? (isExpert(s, i) && s.players.length === 3 ? 'pottery' : undefined);
+  if (opening) {
+    const scripted = openingAction(s, i, opening, legalActions(s, i), (after) => evaluate(after, i));
+    if (scripted) return scripted;
+  }
   try {
     const r = searchTurn(s, i, { ...o, strength });
     if (r) return r.action;
