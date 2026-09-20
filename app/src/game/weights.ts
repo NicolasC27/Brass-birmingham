@@ -49,6 +49,12 @@ export interface Weights {
   earlyLoan: number;
   /** a mat developed in the Canal Era: per industry whose next tile is level 2 or above, which will survive the sweep and score twice */
   developed: number;
+  /** the turn-order weapon: per seat one would move ahead of next round by having spent less */
+  tempo: number;
+  /** a canal laid for less than four icons: the guides call it an inefficient action */
+  weakLink: number;
+  /** entering the rails ready: in the last two canal rounds, cash for two double rails and beer of one's own */
+  railReady: number;
 }
 
 export const DEFAULTS: Weights = {
@@ -77,7 +83,10 @@ export const DEFAULTS: Weights = {
   stack: 0.08,
   rival: 1,
   earlyLoan: 8,
-  developed: 0,
+  developed: 2,
+  tempo: 1,
+  weakLink: 0,
+  railReady: 3,
 };
 
 /* written by tools/bots/train.ts — the reading that won the last training */

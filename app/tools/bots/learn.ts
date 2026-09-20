@@ -27,7 +27,8 @@ import { newGame } from '@/game/engine';
 import { FEATURES, GLOBAL_ERA, features, forward, loadNet, packBrain, unpackBrain } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
 import type { Brain, Net } from '@/game/net';
-import { chooseBotAction, setEvalMode, setWeights } from '@/game/search';
+import { chooseBotAction, evaluate, legalActions, setEvalMode, setWeights } from '@/game/search';
+import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import { TRAINED } from '@/game/weights';
 import type { Weights } from '@/game/weights';
@@ -45,7 +46,7 @@ const CHECK_WORKERS = 8;
 const FIT_ROWS = Number(process.env.FIT_ROWS ?? 800000);
 /** how much of the field plays a style of its own while games are written down */
 const EXPLORE = Number(process.env.EXPLORE ?? 0.5);
-const HIDDEN = [64, 32];
+const HIDDEN = [128, 64];
 /** how many networks make a brain */
 const NETS = Number(process.env.NETS ?? 3);
 /** the target leans on the last brain's reading this many of the seat's positions later, by this much */
@@ -92,32 +93,95 @@ function style(seed: number): Weights {
   nudge('incomeOnFlip', 0.4, 1.4);
   nudge('goodsServed', 0.5, 0.9);
   nudge('developed', 0, 6);
+  nudge('tempo', 0, 3);
+  nudge('weakLink', 0, 4);
+  nudge('railReady', 0, 6);
   return w;
+}
+
+/** the openings strong players swear by, imposed on a styled seat for its
+ *  first actions so that the record shows where they lead: two developments
+ *  first, two loans in two rounds, pottery as soon as a card allows, canals
+ *  toward the merchants */
+type Opening = 'iron-battery' | 'beer-anchor' | 'flex-rails' | 'loans' | 'pottery' | null;
+const OPENINGS: Opening[] = ['iron-battery', 'beer-anchor', 'flex-rails', 'loans', 'pottery', null];
+
+/** what an action is, for the opening scripts */
+type Step = (a: GameAction) => boolean;
+const build = (...inds: string[]): Step => (a) => a.kind === 'build' && inds.includes(a.industry);
+const kind = (k: GameAction['kind']): Step => (a) => a.kind === k;
+const double: Step = (a) => a.kind === 'network' && !!a.second;
+
+/** the canal-era scripts, action by action, from the guides: an iron works
+ *  turned into developments then a level-2 mill sold; a brewery in reach of
+ *  the merchants then goods sold twice; develop, iron, a hub link; two loans
+ *  paired with builds; pottery when a card allows */
+const CANAL_SCRIPTS: Record<NonNullable<Opening>, Step[]> = {
+  'iron-battery': [kind('network'), build('iron'), kind('develop'), kind('develop'), build('cotton', 'manufacturer'), kind('sell')],
+  'beer-anchor': [build('brewery'), build('cotton', 'manufacturer'), kind('sell'), build('cotton', 'manufacturer'), kind('sell')],
+  'flex-rails': [kind('develop'), build('iron'), kind('network'), kind('network')],
+  loans: [kind('loan'), kind('build'), kind('loan'), kind('build')],
+  pottery: [build('pottery'), kind('sell'), build('pottery'), kind('sell')],
+};
+/** the rail-era script every styled seat follows for its first rail actions:
+ *  two double rails within two rounds */
+const RAIL_SCRIPT: Step[] = [double, double, kind('sell'), double];
+
+/** the opening's action for the k-th own action of the era, if the table
+ *  allows one: the best-reading action of the prescribed kind; when the
+ *  prescribed kind is not on the table, the script is not held up */
+function openingAction(s: GameState, seat: number, opening: Opening, k: number): GameAction | null {
+  if (!opening) return null;
+  const script = s.era === 'canal' ? CANAL_SCRIPTS[opening] : RAIL_SCRIPT;
+  const step = script[k];
+  if (!step) return null;
+  const wanted = step;
+  let best: { a: GameAction; v: number } | null = null;
+  for (const a of legalActions(s, seat)) {
+    if (!wanted(a)) continue;
+    const r = applyAction(s, seat, a);
+    if (!r.state) continue;
+    const v = evaluate(r.state, seat);
+    if (!best || v > best.v) best = { a, v };
+  }
+  return best?.a ?? null;
 }
 
 /** one game of four machines, every position of every seat written down;
  *  some seats play a style of their own, so the record shows more than one way */
 function playOne(seed: number, players: number): { rows: Float32Array; canal: number } {
   const styles = Array.from({ length: players }, (_, k) => (mulberry(seed * 7 + k)() < EXPLORE ? style(seed * 13 + k) : TRAINED));
+  const openings: Opening[] = Array.from({ length: players }, (_, k) => (styles[k] === TRAINED ? null : OPENINGS[Math.floor(mulberry(seed * 17 + k)() * OPENINGS.length)]));
+  const taken = Array.from({ length: players }, () => 0);
   const setup: SetupPayload = {
     players: Array.from({ length: players }, (_, k) => ({ name: `P${k}`, color: COLORS[k], type: 'bot', persona: PERSONAS[k] })),
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
   };
   let s: GameState = newGame(setup, seed);
-  /* the Canal Era and nothing else: the game stops at its scoring */
+  let era = s.era;
+  /* the whole game: the Canal Era's positions and the rails' */
   const canal: { x: Float32Array; seat: number }[] = [];
   const rail: { x: Float32Array; seat: number }[] = [];
   let guard = 0;
-  while (s.phase === 'action' && guard++ < 5000) {
-    for (let j = 0; j < players; j++) canal.push({ x: features(s, j), seat: j });
+  while (s.phase !== 'game-over' && guard++ < 5000) {
+    if (s.phase === 'scoring-canal') {
+      s = applyAction(s, s.current, { kind: 'begin-rail' }).state!;
+      continue;
+    }
+    for (let j = 0; j < players; j++) (s.era === 'canal' ? canal : rail).push({ x: features(s, j), seat: j });
     const seat = s.current;
+    if (s.era !== era) {
+      era = s.era;
+      taken.fill(0);
+    }
     setWeights(styles[seat]);
-    const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: 0 }) ?? fallbackAction(s, seat);
+    const a = openingAction(s, seat, openings[seat], taken[seat]) ?? chooseBotAction(s, seat, { strength: STRENGTH, depth: 0 }) ?? fallbackAction(s, seat);
+    taken[seat] += 1;
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
   }
   const lead = (scores: number[], j: number) => scores[j] - Math.max(...scores.filter((_, k) => k !== j));
   const canalScores = s.canalScores ?? s.players.map(() => 0);
-  const finalScores = canalScores;
+  const finalScores = s.players.map((p) => p.vp);
   const out = new Float32Array((canal.length + rail.length) * ROW);
   let at = 0;
   for (const block of [canal, rail]) {
@@ -251,7 +315,7 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
   for (let k = 0; k < FEATURES; k++) scale[k] = Math.max(1e-3, Math.sqrt(scale[k]));
   /* a tenth of the positions is held out, in slices spread over the whole
      record so that every table and every style is in both parts */
-  const SLICE = 4000;
+  const SLICE = Math.max(100, Math.floor(n / 40));
   const heldOut = (r: number): boolean => Math.floor(r / SLICE) % 10 === 9;
   const learn: number[] = [];
   const held: number[] = [];
@@ -434,8 +498,9 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
     canalField: slices.reduce((a, s) => a + s.canalField * s.games, 0) / games,
   };
   /* the Canal Era first: more points there, without losing the game for it */
-  /* the Canal Era is the whole contest here: more points, and at least a share of the eras */
-  const keep = result.canal > result.canalField + 1 && result.wins / result.games >= 0.25;
+  /* the whole game is the contest: more than its share of wins, no points lost on the best rival, and no Canal Era given away */
+  const share = result.wins / result.games;
+  const keep = (share >= 0.33 || (share >= 0.29 && result.diff >= 0)) && result.canal >= result.canalField - 3;
   log(`check ${tag}: the new network wins ${result.wins}/${result.games} (par ${(result.games / 4).toFixed(0)}) against ${previous ? 'the last one' : 'the hand-written reading'}, ${result.diff.toFixed(1)} points on the best rival, canal ${result.canal.toFixed(1)} vs ${result.canalField.toFixed(1)}${keep ? ' — kept' : ' — the last one stays'}`);
   /* the yardsticks report on their own time: the next games need not wait */
   if (keep) void yardstick(tag, fresh);
@@ -452,7 +517,7 @@ async function yardstick(tag: string, net: string): Promise<void> {
         worker.once('message', ok);
         worker.once('error', fail);
       });
-      log(`yardstick ${tag}: the expert at ${players} against a weak table — ${r.canal.toFixed(1)} Canal Era points (rivals ${r.canalField.toFixed(1)}), ${r.wins}/${r.games} eras won`);
+      log(`yardstick ${tag}: the expert at ${players} against a weak table — ${r.canal.toFixed(1)} Canal Era points (rivals ${r.canalField.toFixed(1)}), ${r.vp.toFixed(0)} final, ${r.wins}/${r.games} games won`);
     }),
   );
 }
@@ -483,12 +548,12 @@ if (isMainThread) {
   const { players, seed, net } = workerData as { players: number; seed: number; net: string };
   loadNet(net);
   const weak: Weights = { ...TRAINED };
-  const r = playMatch({ games: 6, players, seed, subject: TRAINED, field: weak, search: { strength: 1 }, subjectMode: 'blend', fieldMode: 'hand', subjectNet: net, fieldNet: null, fieldStrength: 0.3, canalOnly: true });
+  const r = playMatch({ games: 6, players, seed, subject: TRAINED, field: weak, search: { strength: 1 }, subjectMode: 'blend', fieldMode: 'hand', subjectNet: net, fieldNet: null, fieldStrength: 0.3 });
   parentPort!.postMessage(r);
 } else if ((workerData as { check?: boolean }).check) {
   const { seed, net, previous, games } = workerData as { seed: number; net: string; previous: string | null; games: number };
   loadNet(net);
-  const r = playMatch({ games, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous, canalOnly: true });
+  const r = playMatch({ games, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous });
   parentPort!.postMessage(r);
 } else {
   const { seeds, net } = workerData as { seeds: number[]; net: string | null };

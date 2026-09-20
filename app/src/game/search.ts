@@ -287,6 +287,27 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
   if (!market) v -= w.noMarket * frac;
   /* a mat developed early: the next tiles survive the sweep and score twice */
   if (s.era === 'canal') for (const ind of Object.keys(p.stacks) as IndustryType[]) if ((p.stacks[ind][0] ?? 0) >= 2) v += w.developed * frac;
+  /* a canal that scores less than four icons is an action spent for little */
+  if (w.weakLink && s.era === 'canal') {
+    for (const [id, l] of Object.entries(s.links)) {
+      if (l.owner !== j) continue;
+      const def = LINKS.find((d) => d.id === id);
+      if (!def) continue;
+      let icons = 0;
+      for (const end of [def.a, def.b]) {
+        if (MERCHANT_BY_ID[end]) icons += 2;
+        else for (const [key, t] of Object.entries(s.tiles)) if (key.split(':')[0] === end) icons += INDUSTRIES[t.industry][t.level - 1].links;
+      }
+      if (icons < 4) v -= w.weakLink;
+    }
+  }
+  /* the rails are coming: cash for two double rails and a barrel of one's own */
+  if (w.railReady && s.era === 'canal' && s.eraLength === 'standard' && paydays <= ROUNDS[Math.min(4, Math.max(2, s.players.length)) as 2 | 3 | 4] + 1) {
+    if (p.money >= 30) v += w.railReady;
+    if (Object.values(s.tiles).some((t) => t.owner === j && t.industry === 'brewery' && !t.flipped && t.cubes > 0)) v += w.railReady;
+  }
+  /* next round's order goes to whoever spent least: seats one would move ahead of */
+  if (w.tempo) for (let k = 0; k < s.players.length; k++) if (k !== j && s.players[k].spent > p.spent) v += w.tempo;
   /* the canal opening: two loans early buy the tiles that pay for themselves */
   if (s.era === 'canal' && s.round <= 3) v += w.earlyLoan * Math.min(2, p.loans);
   /* the next tile of each industry: the higher, the better the builds ahead */
@@ -309,9 +330,8 @@ export function evaluate(s: GameState, i: number, w: Weights = weights): number 
     rival = Math.max(rival, worth(s, j, proj, frac, paydays, false, w));
   }
   const hand = rival === -Infinity ? mine : mine - rival * w.rival;
-  /* the brain was taught the Canal Era and nothing else: the rails are read by hand */
   const net = activeNet();
-  if (evalMode === 'hand' || !net || s.era !== 'canal') return hand;
+  if (evalMode === 'hand' || !net) return hand;
   const learned = think(net, features(s, i));
   return evalMode === 'net' ? learned : hand + learned;
 }

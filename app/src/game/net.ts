@@ -12,7 +12,7 @@
 /* layers with tanh, its weights a base64 string in net-weights.ts.    */
 /* ------------------------------------------------------------------ */
 
-import { INDUSTRIES, LINKS, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
+import { INDUSTRIES, LINKS, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, marketSellPrice } from './data';
 import { merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable } from './engine';
 import { NET_B64 } from './net-weights';
 import type { GameState, IndustryType } from './types';
@@ -20,8 +20,8 @@ import type { GameState, IndustryType } from './types';
 const INDUSTRY_ORDER: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 
 /** a seat's block of features */
-const SEAT_FEATURES = 45;
-const GLOBAL_FEATURES = 7;
+const SEAT_FEATURES = 52;
+const GLOBAL_FEATURES = 10;
 /** own seat, the leading rival, the rivals on average, then the table */
 export const FEATURES = SEAT_FEATURES * 3 + GLOBAL_FEATURES;
 /** where the era flag sits, counted back from the end of the features */
@@ -122,6 +122,41 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
   for (const [k, ind] of INDUSTRY_ORDER.entries()) out[at + 38 + k] = (p.stacks[ind][0] ?? 0) / 4;
   for (const t of Object.values(s.tiles)) if (t.owner === j && t.level >= 2) lasting += 1;
   out[at + 44] = lasting / 6;
+  /* room to build in one's network: empty slots for goods, coal, iron and beer */
+  let goodsRoom = 0;
+  let coalRoom = 0;
+  let ironRoom = 0;
+  let beerRoom = 0;
+  for (const town of towns) {
+    const def = TOWN_BY_ID[town];
+    if (!def) continue;
+    for (const [k, slot] of def.slots.entries()) {
+      if (s.tiles[`${town}:${k}`]) continue;
+      if (slot.allows.some((ind) => ind === 'cotton' || ind === 'manufacturer' || ind === 'pottery')) goodsRoom += 1;
+      if (slot.allows.includes('coal')) coalRoom += 1;
+      if (slot.allows.includes('iron')) ironRoom += 1;
+      if (slot.allows.includes('brewery')) beerRoom += 1;
+    }
+  }
+  out[at + 45] = goodsRoom / 8;
+  out[at + 46] = coalRoom / 4;
+  out[at + 47] = ironRoom / 3;
+  out[at + 48] = beerRoom / 4;
+  /* buyers on one's network: merchants taking cotton, goods and pottery */
+  const seen = new Set<string>();
+  for (const town of towns) for (const n of reachable(s, town, s.era, null)) if (MERCHANT_BY_ID[n] && merchantOpen(s, n)) seen.add(n);
+  let cottonBuyers = 0;
+  let goodsBuyers = 0;
+  let potteryBuyers = 0;
+  for (const m of seen) {
+    const demand = merchantDemand(s, m);
+    if (demand.includes('cotton')) cottonBuyers += 1;
+    if (demand.includes('manufacturer')) goodsBuyers += 1;
+    if (demand.includes('pottery')) potteryBuyers += 1;
+  }
+  out[at + 49] = cottonBuyers / 3;
+  out[at + 50] = goodsBuyers / 3;
+  out[at + 51] = potteryBuyers / 3;
 }
 
 /** the table as seat `i` sees it, in numbers the network was trained on */
@@ -162,6 +197,10 @@ export function features(s: GameState, i: number): Float32Array {
   out[g + 4] = s.market.coal / MARKET_MAX.coal;
   out[g + 5] = s.market.iron / MARKET_MAX.iron;
   out[g + 6] = s.deck.length / 60;
+  /* the table's beer on the merchants, and what the market pays for coal and iron now */
+  out[g + 7] = Object.values(s.merchantBeer).reduce((a, b) => a + b, 0) / 6;
+  out[g + 8] = marketSellPrice('coal', s.market.coal) / 7;
+  out[g + 9] = marketSellPrice('iron', s.market.iron) / 5;
   return out;
 }
 
