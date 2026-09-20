@@ -14,3 +14,4 @@ Les décisions qui ont changé la méthode, pour comprendre pourquoi les notes d
 - Nicolas précise l'objectif : **un bot fort sur la partie entière**, avec des tuiles de niveau 2 gardées pour le rail. L'entraînement rejoue la partie entière, la cible mélange à parts égales l'écart d'ère canal et l'écart final, le cerveau lit les deux ères, le poids « plateau développé » passe à 2 (mesuré : −1,5 point d'ère canal, +3 au final).
 - Les ouvertures d'expert (deux développements, deux emprunts, poterie, canaux vers les négociants) sont imposées à un tiers des sièges d'exploration.
 - Le cycle repart de zéro sur 166 traits, trio 128×64, parties à la force de l'expert.
+- **Midi** : nouveau cerveau « partie entière » embarqué (134 / 127 / 106 au final contre une table faible). Termes du tempo et de l'entrée dans le rail adoptés. Livre d'ouvertures mesuré : seule la poterie à trois joueurs paie ; Mr Watt l'ouvre à trois. Barre fixée par Nicolas : 160 au final pour l'expert.

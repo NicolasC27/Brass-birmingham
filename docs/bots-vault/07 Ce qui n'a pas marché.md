@@ -16,6 +16,9 @@
 | Évolution des poids manuels par auto-jeu (`train.ts`) | deux générations sans gagnant | mesure trop bruitée pour des gains de un point ; le cerveau rapporte plus |
 | Cible TD sur des cerveaux non « ère canal » | erreur retenue 8,3 mais 6/24 | mieux lire n'est pas mieux jouer ; la cible TD reste, elle n'est pas magique |
 
+| Bandit à rivaux joués par le cerveau, 20 s par coup | 2/8, 40,4 contre 43,3 | quatrième forme d'anticipation sans gain ; retirée |
+| Ouvertures imposées à l'expert (livre) | à 3 : poterie +6 d'ère canal, les autres égales ou pires ; à 4 : toutes pires que rien | le bot choisit déjà ces lignes quand elles valent ; seule la poterie à trois est gardée |
+
 ## La leçon transversale
 
 Le plafond n'est pas dans la profondeur de recherche : sans anticipation, avec une ronde, deux, trois ou quatre, avec 1,5 s ou 4 s, l'expert fait 50. Ce qui a fait monter les chiffres, c'est ce que le cerveau **voit** (traits) et ce qu'il a **vu jouer** (exploration, force des parties).
