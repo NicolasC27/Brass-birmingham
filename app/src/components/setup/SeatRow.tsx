@@ -191,7 +191,7 @@ export default function SeatRow({
                       onClick={() => onPersonaChange(d.id)}
                       style={{ borderColor: hex, color: active ? hex : undefined }}
                       className={cn(
-                        "inline-flex items-center gap-1.5 rounded-full border-2 py-0.5 pl-0.5 pr-2.5 font-ui text-[12px] font-semibold tracking-wide transition-all duration-150",
+                        "group relative inline-flex items-center gap-1.5 rounded-full border-2 py-0.5 pl-0.5 pr-2.5 font-ui text-[12px] font-semibold tracking-wide transition-all duration-150",
                         active
                           ? "bg-enamel-850 shadow-[0_0_10px_var(--brass-hairline-strong)]"
                           : "border-opacity-40 text-iron-400 opacity-55 hover:opacity-100",
@@ -199,6 +199,14 @@ export default function SeatRow({
                     >
                       <img src={`/portrait-${d.id}.webp`} alt="" draggable={false} className="h-6 w-6 rounded-full object-cover" />
                       {d.name}
+                      {/* the portrait in full, on hover */}
+                      <img
+                        src={`/portrait-${d.id}.webp`}
+                        alt=""
+                        draggable={false}
+                        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden h-40 w-40 -translate-x-1/2 rounded-full object-cover shadow-[0_8px_30px_rgba(0,0,0,.6)] group-hover:block"
+                        style={{ boxShadow: `0 0 0 3px ${hex}` }}
+                      />
                     </button>
                   </Tip>
                 );

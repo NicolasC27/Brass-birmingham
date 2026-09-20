@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { isExpert } from '@/game/search';
+import PortraitLightbox from './PortraitLightbox';
+import { portraitFor } from './portraits';
 import { useGame } from '@/game/store';
 import type { GameState } from '@/game/types';
 import { titlesFor } from '@/components/results/titles';
@@ -27,6 +29,7 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
   const me = useSession();
   const code = useGame((s) => s.code);
   const table = useTable(code);
+  const [zoom, setZoom] = useState(false);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
@@ -67,7 +70,9 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
         <X className="h-3.5 w-3.5" />
       </button>
       <div className="flex items-center gap-3">
-        <PortraitMedallion p={p} index={seat} active={false} size={44} />
+        <button type="button" onClick={() => setZoom(true)} aria-label={t('game.card.portrait', { name: p.name })} className="rounded-full transition-transform hover:scale-105">
+          <PortraitMedallion p={p} index={seat} active={false} size={44} />
+        </button>
         <div className="min-w-0">
           <p className="truncate font-fell text-[16px] tracking-wide" style={{ color: color.hex }}>{p.name}</p>
           <p className="font-mono text-[10px] uppercase tracking-wider text-cream-100/50">
@@ -98,6 +103,7 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
           </button>
         </div>
       )}
+      {zoom && <PortraitLightbox src={portraitFor(p, seat)} name={p.name} line={p.isBot ? t(isExpert(game, seat) ? 'setup.persona.expertShort' : 'setup.persona.short') : undefined} rim={color.hex} onClose={() => setZoom(false)} />}
     </motion.div>
   );
 }

@@ -555,6 +555,8 @@ const game = {
     wildIndustry: 'Wild Industry',
   },
   card: {
+    portrait: 'See {name}’s portrait',
+    portraitClose: 'Close the portrait',
     aria: '{name}’s card',
     open: '{name}’s card',
     you: 'You',

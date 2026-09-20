@@ -557,6 +557,8 @@ const game: typeof engame = {
     wildIndustry: 'Industria comodín',
   },
   card: {
+    portrait: 'Ver el retrato de {name}',
+    portraitClose: 'Cerrar el retrato',
     aria: 'La carta de {name}',
     open: 'La carta de {name}',
     you: 'Tú',

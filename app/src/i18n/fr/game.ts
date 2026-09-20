@@ -557,6 +557,8 @@ const fr: typeof engame = {
     wildIndustry: 'Industrie joker',
   },
   card: {
+    portrait: 'Voir le portrait de {name}',
+    portraitClose: 'Fermer le portrait',
     aria: 'Carte de {name}',
     open: 'La carte de {name}',
     you: 'Vous',
