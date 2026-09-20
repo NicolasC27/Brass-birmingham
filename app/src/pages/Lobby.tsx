@@ -227,11 +227,11 @@ function SeatSlot({
                     title={d.name}
                     onClick={() => onPersona(d.id)}
                     className={cn(
-                      'rounded border px-1.5 py-[2px] font-ui text-[9px] font-semibold uppercase tracking-[0.1em]',
-                      slot.persona === d.id ? 'border-brass-500 bg-brass-500/15 text-brass-300' : 'border-enamel-line text-iron-400 hover:border-brass-hairline-strong hover:text-paper-300',
+                      'rounded-full border p-[2px]',
+                      slot.persona === d.id ? 'border-brass-500 bg-brass-500/15' : 'border-enamel-line opacity-60 hover:border-brass-hairline-strong hover:opacity-100',
                     )}
                   >
-                    {d.initials}
+                    <img src={`/portrait-${d.id}.webp`} alt={d.name} draggable={false} className="h-6 w-6 rounded-full object-cover" />
                   </button>
                 ))}
               </div>

@@ -59,8 +59,8 @@ function ShapeToken({ color, size = 12 }: { color: string; size?: number }) {
 
 export { ShapeToken };
 
-/** victorian oil-portrait medallion per seat (human first, then the bots) */
-const portraitFor = (index: number): string => `/portrait-${(index % 4) + 1}.webp`;
+/** the machines wear their character's portrait; a human seat one of the house's oil portraits, by seat */
+const portraitFor = (p: { isBot: boolean; persona: string }, index: number): string => (p.isBot ? `/portrait-${p.persona}.webp` : `/portrait-${(index % 4) + 1}.webp`);
 
 /** circular portrait medallion with a player-colour rim (Steam reference);
  *  the active player gets a glowing ring. */
@@ -79,7 +79,7 @@ export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; 
       aria-hidden
     >
       <img
-        src={portraitFor(index)}
+        src={portraitFor(p, index)}
         alt=""
         draggable={false}
         className="h-full w-full rounded-full object-cover"

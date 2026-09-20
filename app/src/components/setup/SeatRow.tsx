@@ -191,12 +191,13 @@ export default function SeatRow({
                       onClick={() => onPersonaChange(d.id)}
                       style={{ borderColor: hex, color: active ? hex : undefined }}
                       className={cn(
-                        "rounded-full border-2 px-2.5 py-1 font-ui text-[12px] font-semibold tracking-wide transition-all duration-150",
+                        "inline-flex items-center gap-1.5 rounded-full border-2 py-0.5 pl-0.5 pr-2.5 font-ui text-[12px] font-semibold tracking-wide transition-all duration-150",
                         active
                           ? "bg-enamel-850 shadow-[0_0_10px_var(--brass-hairline-strong)]"
                           : "border-opacity-40 text-iron-400 opacity-55 hover:opacity-100",
                       )}
                     >
+                      <img src={`/portrait-${d.id}.webp`} alt="" draggable={false} className="h-6 w-6 rounded-full object-cover" />
                       {d.name}
                     </button>
                   </Tip>
