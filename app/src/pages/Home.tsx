@@ -6,7 +6,8 @@ import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
-import { forgetLocalGame, readResume } from '@/game/quickplay';
+import { forgetLocalGame } from '@/game/local';
+import { readResume } from '@/game/quickplay';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
 import CodeInput from '@/components/platform/CodeInput';
@@ -39,15 +40,16 @@ function ResumeBanner() {
   if (!table && !local) return null;
 
   /* the game at home is a table like the others: it has a name and a code */
-  const localName = local ? (local.table ? tableTitle(local.table.name, lang) : t('platform.action.localGame')) : '';
+  const localName = local ? tableTitle(local.name, lang) : '';
   const text = table ? t('platform.home.resumeBanner', { name: tableTitle(table.name, lang) }) : t('platform.home.resumeLocal', { name: localName });
   const saveMeta = local ? t('platform.home.resumeSaveMeta', { era: local.era === 'rail' ? t('platform.home.eraRail') : t('platform.home.eraCanal'), round: local.round }) : '';
-  const meta = table ? t('platform.home.resumeMeta', { round: table.round ?? 1, opponents: table.seats.length - 1 }) : local?.table ? `${local.table.code} · ${saveMeta}` : saveMeta;
-  const to = table ? `/game/${table.code}` : '/game';
+  const meta = table ? t('platform.home.resumeMeta', { round: table.round ?? 1, opponents: table.seats.length - 1 }) : local ? `${local.code} · ${saveMeta}` : '';
+  const to = table ? `/game/${table.code}` : local ? `/game/local/${local.code}` : '/game';
 
   const discard = () => {
-    forgetLocalGame();
-    setLocal(null);
+    if (local) forgetLocalGame(local.code);
+    /* the next game of the register, if any, takes the banner */
+    setLocal(readResume());
     setDiscarding(false);
   };
 

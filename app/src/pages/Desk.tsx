@@ -16,8 +16,9 @@ import type { RankTier } from '@/components/platform/RankBadge';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLACEMENTS, rankOf, type RankView } from '@/platform/rank';
 import { collectRewards, useWallet } from '@/platform/wallet';
-import { forgetLocalGame, readResume, startTutorial } from '@/game/quickplay';
-import type { LocalResume } from '@/game/quickplay';
+import { forgetLocalGame, listLocalGames } from '@/game/local';
+import type { LocalTable } from '@/game/local';
+import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
 import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
@@ -170,10 +171,7 @@ function TutorialStrip() {
       <Button
         variant="ghost"
         className="shrink-0"
-        onClick={() => {
-          startTutorial();
-          navigate('/game');
-        }}
+        onClick={() => navigate(`/game/local/${startTutorial()}`)}
       >
         {t('platform.desk.tutorial.cta')}
       </Button>
@@ -256,12 +254,12 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
 /** une table du bureau : celle du serveur, ou la partie jouée sur cet appareil */
 type DeskTable = TableSummary & { local?: boolean };
 
-/** la partie de cet appareil, présentée comme une table : son code, son nom, ses sièges */
-function localTable(local: LocalResume, me: string): DeskTable {
+/** une partie de cet appareil, présentée comme une table : son code, son nom, ses sièges */
+function localTable(local: LocalTable, me: string): DeskTable {
   let mine = false;
   return {
-    code: local.table?.code ?? '····',
-    name: local.table?.name ?? '',
+    code: local.code,
+    name: local.name,
     hostId: me,
     seats: local.seats.map((s, i) => {
       /* le premier siège humain est le mien ; en chaise tournante, les autres sont les invités */
@@ -273,7 +271,7 @@ function localTable(local: LocalResume, me: string): DeskTable {
     era: local.era,
     round: local.round,
     myTurn: false,
-    updatedAt: local.table?.updatedAt ?? 0,
+    updatedAt: local.updatedAt,
     local: true,
   };
 }
@@ -310,7 +308,7 @@ function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string;
   const ago = useAgo();
   const [menu, setMenu] = useState(false);
   const toAct = table.current !== undefined ? table.seats[table.current] : null;
-  const to = table.local ? '/game' : table.status === 'open' ? `/online/${table.code}` : `/game/${table.code}`;
+  const to = table.local ? `/game/local/${table.code}` : table.status === 'open' ? `/online/${table.code}` : `/game/${table.code}`;
   const meta = [
     table.era ? t(table.era === 'rail' ? 'platform.desk.tables.eraRail' : 'platform.desk.tables.eraCanal') : null,
     table.status === 'playing' ? t('platform.desk.tables.round', { round: table.round ?? 1 }) : null,
@@ -391,11 +389,11 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
   const t = useT();
   const lang = useLang();
   const [leaving, setLeaving] = useState<DeskTable | null>(null);
-  /* la partie jouée sur cet appareil siège au bureau comme les autres */
-  const [local, setLocal] = useState(readResume);
+  /* les parties jouées sur cet appareil siègent au bureau comme les autres */
+  const [locals, setLocals] = useState(listLocalGames);
   const rank = (x: TableSummary) => (x.myTurn ? 0 : x.status === 'playing' ? 1 : x.status === 'open' ? 2 : 3);
   const sorted: DeskTable[] = [...tables].sort((a, b) => rank(a) - rank(b));
-  if (local) sorted.push(localTable(local, me));
+  for (const local of locals) sorted.push(localTable(local, me));
 
   if (sorted.length === 0) {
     return <EmptyState image="/empty-tables.png" title={t('platform.desk.tables.emptyTitle')} copy={t('platform.desk.tables.emptyCopy')} cta={{ label: t('platform.desk.tables.emptyCta'), to: '/online' }} />;
@@ -403,8 +401,8 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
 
   const leave = () => {
     if (leaving?.local) {
-      forgetLocalGame();
-      setLocal(null);
+      forgetLocalGame(leaving.code);
+      setLocals(listLocalGames());
     } else if (leaving) lobby.leave(leaving.code);
     setLeaving(null);
   };
@@ -413,10 +411,10 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
     <>
       <ul className="grid gap-3">
         {sorted.map((x, i) => (
-          <TableRow key={x.local ? 'local' : x.code} table={x} me={me} pulse={i < 3} onLeave={setLeaving} />
+          <TableRow key={x.local ? `local:${x.code}` : x.code} table={x} me={me} pulse={i < 3} onLeave={setLeaving} />
         ))}
       </ul>
-      <Modal open={leaving !== null} onClose={() => setLeaving(null)} title={leaving ? t('platform.desk.tables.leaveTitle', { name: leaving.local && !leaving.name ? t('platform.action.localGame') : tableTitle(leaving.name, lang) }) : undefined}>
+      <Modal open={leaving !== null} onClose={() => setLeaving(null)} title={leaving ? t('platform.desk.tables.leaveTitle', { name: tableTitle(leaving.name, lang) }) : undefined}>
         <p className="font-ui text-[13px] leading-relaxed text-paper-300">{leaving && t(leaving.local ? 'platform.desk.tables.leaveCopyLocal' : LEAVE_COPY[leaving.status])}</p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Button variant="danger-ghost" icon={<LogOut size={16} aria-hidden />} onClick={leave}>

@@ -23,6 +23,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="setup" element={<Setup />} />
         <Route path="game" element={<Game />} />
+        <Route path="game/local/:local" element={<Game />} />
         <Route path="game/:code" element={<Game />} />
         <Route path="rules" element={<Rules />} />
         <Route path="legal" element={<Legal />} />

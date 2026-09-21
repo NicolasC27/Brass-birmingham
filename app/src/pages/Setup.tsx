@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { BookOpen, Bot, MonitorSmartphone, Play, Save, Users, X } from "lucide-react";
+import { openLocalGame } from "@/game/local";
 import { pickTableName, tableTitle } from "@/online/tableNames";
 import { useLang, useT } from "@/i18n";
 import SeatRow from "@/components/setup/SeatRow";
@@ -65,7 +66,8 @@ export default function Setup() {
   });
   /* the table draws its name from the club register, like every table */
   const [tableName] = useState(() => pickTableName([]));
-  const [starting, setStarting] = useState(false);
+  /** the code of the table just opened on the register, while the wipe plays */
+  const [starting, setStarting] = useState<string | null>(null);
 
   const seated = useMemo(() => seats.filter((s) => s.type !== "closed"), [seats]);
   const canStart = seated.length >= 2;
@@ -123,7 +125,8 @@ export default function Setup() {
     } catch {
       /* storage unavailable — the game page will fall back to defaults */
     }
-    setStarting(true);
+    /* a new table every time: the one before stays on the register, to come back to */
+    setStarting(openLocalGame(payload).code);
   }, [canStart, starting, seats, options, tableName]);
 
   // Live-persist the seating draft (v10 hot-seat): edited player names and
@@ -375,7 +378,7 @@ export default function Setup() {
                   <Button
                     variant="primary"
                     onClick={start}
-                    disabled={starting}
+                    disabled={starting !== null}
                     icon={<Play size={16} aria-hidden />}
                     className="!h-12 w-full"
                   >
@@ -432,7 +435,7 @@ export default function Setup() {
         })}
       </div>
 
-      <ShutterWipe active={starting} onDone={() => navigate("/game")} />
+      <ShutterWipe active={starting !== null} onDone={() => navigate(`/game/local/${starting}`)} />
     </div>
   );
 }

@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, deserialize, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, serialize, tileKey } from './engine';
+import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, tileKey } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
@@ -28,9 +28,10 @@ import type {
   Verb,
   LedgerEntry,
 } from './types';
-import { PINS_KEY, RESUME_KEY, SETUP_KEY } from './types';
+import { PINS_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
-import { TUTORIAL_KEY, TUTORIAL_SEED, nameLocalTable, readLocalTable, touchLocalTable } from './quickplay';
+import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
+import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
 
 export interface Shake {
   key: string;
@@ -43,6 +44,8 @@ interface GameStore {
   /* ---- the table, when the game is played over the wire ---- */
   /** the online table's code, null when the game is played in this browser */
   code: string | null;
+  /** the code of the game on this device's register, null online */
+  local: string | null;
   /** my seat at that table (the engine's player index), null offline */
   seat: number | null;
   /** the state of the line, null offline */
@@ -166,8 +169,9 @@ interface GameStore {
   gameOverOpen: boolean;
 
   /* ---- lifecycle ---- */
-  /** `code` names an online table; without one the game is played here */
-  init: (code?: string) => void;
+  /** `code` names an online table; `local` a game of this device's register
+   *  (without either, a new one is opened there) */
+  init: (code?: string, local?: string) => void;
   /** is the seat to act mine? (always, when the game is played here) */
   myTurn: () => boolean;
   /** the player whose hand this screen shows */
@@ -331,6 +335,7 @@ const freshTable = {
 export const useGame = create<GameStore>((set, get) => ({
   game: null,
   code: null,
+  local: null,
   seat: null,
   line: null,
   serverUndo: false,
@@ -338,7 +343,7 @@ export const useGame = create<GameStore>((set, get) => ({
   mood: NO_MOOD,
   ...clearSelection,
   ...freshTable,
-  pins: readPins(null),
+  pins: {},
   marketFocus: false,
   ledgerFilter: 'all',
   flyTo: null,
@@ -354,24 +359,19 @@ export const useGame = create<GameStore>((set, get) => ({
   rulesOpen: false,
   matPlayer: null,
 
-  init: (code) => {
+  init: (code, local) => {
     /* the table's code is in the address bar: a game online is a place you
        can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
     if (code && wire) {
       /* the table's pins and notes come back with the table */
-      set({ ...clearSelection, ...freshTable, game: null, code, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1, pins: readPins(code) });
+      set({ ...clearSelection, ...freshTable, game: null, code, local: null, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1, pins: readPins(code) });
       listen(code, wire);
       return;
     }
-    const resumed = (() => {
-      try {
-        const raw = localStorage.getItem(RESUME_KEY);
-        return raw ? deserialize(raw) : null;
-      } catch {
-        return null;
-      }
-    })();
+    /* a game of this device: the one named, or a new table on the register */
+    const at = local ?? openLocalGame().code;
+    const resumed = readLocalSave(at);
     /* the guided game: a fixed deal, remembered by its seed so a reload keeps the guide */
     const wanted = (() => {
       try {
@@ -383,17 +383,16 @@ export const useGame = create<GameStore>((set, get) => ({
     const seedWanted = wanted === 'new' ? TUTORIAL_SEED : wanted && /^\d+$/.test(wanted) ? Number(wanted) : null;
     const game = resumed ?? (seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
     const tutorial = seedWanted !== null && game.seed === seedWanted;
-    /* the table at home has a name and a code, like any of the club's; a
-       save from before it was named gets them now */
-    if (!resumed || !readLocalTable()) nameLocalTable();
-    try {
-      if (tutorial) localStorage.setItem(TUTORIAL_KEY, String(game.seed));
-      /* the deal is kept at once: the table is on the desk from its first
-         minute, and a reload before the first move keeps the guide */
-      if (!resumed) localStorage.setItem(RESUME_KEY, serialize(game));
-    } catch {
-      /* non-fatal */
+    if (tutorial) {
+      try {
+        localStorage.setItem(TUTORIAL_KEY, String(game.seed));
+      } catch {
+        /* non-fatal */
+      }
     }
+    /* the deal is kept at once: the table is on the desk from its first
+       minute, and a reload before the first move keeps the guide */
+    if (!resumed) saveLocalGame(at, game);
     const coached = (() => {
       try {
         return localStorage.getItem('brassworks.coached.v1') === '1';
@@ -413,6 +412,7 @@ export const useGame = create<GameStore>((set, get) => ({
       ...freshTable,
       game,
       code: null,
+      local: at,
       seat: null,
       line: null,
       candle: null,
@@ -420,7 +420,7 @@ export const useGame = create<GameStore>((set, get) => ({
       tutorial,
       humanMarks,
       /* a game resumed keeps its pins and notes; a new one starts clean */
-      pins: resumed ? readPins(null) : {},
+      pins: resumed ? readPins(localPinScope(at)) : {},
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
       gameOverOpen: false,
       coachStep: coached || tutorial ? -1 : 0,
@@ -452,28 +452,19 @@ export const useGame = create<GameStore>((set, get) => ({
 
   reset: () => {
     /* a rematch is a table's business, not a page's: online it does nothing */
-    if (get().code) return;
+    const at = get().local;
+    if (get().code || !at) return;
     const game = newGame(readSetup());
     set({ ...clearSelection, ...freshTable, game, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {} });
-    writePins(null, {});
-    nameLocalTable();
-    try {
-      localStorage.setItem(RESUME_KEY, serialize(game));
-    } catch {
-      /* storage full/blocked — non-fatal */
-    }
+    writePins(localPinScope(at), {});
+    saveLocalGame(at, game);
   },
 
   save: () => {
-    const g = get().game;
+    const { game: g, code, local } = get();
     /* a filtered state is nobody's save: it would resume a crippled game */
-    if (!g || get().code) return;
-    try {
-      localStorage.setItem(RESUME_KEY, serialize(g));
-    } catch {
-      /* non-fatal */
-    }
-    touchLocalTable();
+    if (!g || code || !local) return;
+    saveLocalGame(local, g);
   },
 
   /* ------------------------- selection ------------------------- */
@@ -685,13 +676,13 @@ export const useGame = create<GameStore>((set, get) => ({
     if (on) pins[town] = pins[town] ?? '';
     else delete pins[town];
     set({ pins });
-    writePins(get().code, pins);
+    writePins(pinScope(get()), pins);
   },
   setPinNote: (town, note) => {
     /* a word on a town pins it; an emptied note leaves the pin standing */
     const pins = { ...get().pins, [town]: note };
     set({ pins });
-    writePins(get().code, pins);
+    writePins(pinScope(get()), pins);
   },
   sendToast: () => {
     const st = get();
@@ -1249,7 +1240,7 @@ export function leaveOnlineTable(): void {
   deafen?.();
   const code = useGame.getState().code;
   if (code) onlineWire()?.unwatch(code);
-  useGame.setState({ code: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
+  useGame.setState({ code: null, local: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
 }
 
 /* --------------------- the table once my moves have played --------------------- */
@@ -1371,6 +1362,8 @@ export function describeAction(a: GameAction): string {
 
 /* ------------------------------ the pins ------------------------------ */
 
+/** where a table's pins are kept: the code online, the register's scope at home */
+const pinScope = (st: { code: string | null; local: string | null }): string | null => st.code ?? (st.local ? localPinScope(st.local) : null);
 /** each table keeps its own pins: the code online, the home table otherwise */
 const pinsKey = (code: string | null): string => (code ? `${PINS_KEY}:${code}` : PINS_KEY);
 /** the reader's pinned towns and notes, kept across reloads of the same table */

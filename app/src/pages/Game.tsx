@@ -36,6 +36,7 @@ import { routeFor } from '@/components/game/routePaths';
 import { buildTargets, candleMinutes, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
+import { listLocalGames, openLocalGame } from '@/game/local';
 import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame } from '@/game/store';
 import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
@@ -63,8 +64,9 @@ const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center 
 export default function Game() {
   const t = useT();
   const navigate = useNavigate();
-  /* /game/ABCD is a table on the server, /game a game played in this browser */
-  const { code: tableCode } = useParams();
+  /* /game/ABCD is a table on the server, /game/local/ABCD a game of this
+     device's register; bare /game is the old address of the latter */
+  const { code: tableCode, local: localCode } = useParams();
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const line = useGame((s) => s.line);
@@ -162,12 +164,18 @@ export default function Game() {
 
   /* ------------------------- lifecycle ------------------------- */
   useEffect(() => {
-    init(tableCode);
+    if (!tableCode && !localCode) {
+      /* the old address of the game at home: the one last touched, else a new deal */
+      const at = listLocalGames()[0] ?? openLocalGame();
+      navigate(`/game/local/${at.code}`, { replace: true });
+      return;
+    }
+    init(tableCode, localCode);
     /* leaving the page leaves the table: its frames must not land on the next board */
     return () => {
       if (tableCode) leaveOnlineTable();
     };
-  }, [init, tableCode]);
+  }, [init, tableCode, localCode, navigate]);
   /* a table on the server is no place for a stranger: the office signs
      you in first, the code travelling along */
   const stranger = useStranger();
