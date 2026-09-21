@@ -56,6 +56,8 @@ const PATIENCE = Number(process.env.PATIENCE ?? 6);
 /** names the guided search keeps, and how far past the turn it then looks */
 const GUIDED = Number(process.env.GUIDED ?? 8);
 const GUIDED_DEPTH = Number(process.env.GUIDED_DEPTH ?? DEPTH) as 0 | 1 | 2;
+/** whether the ranker narrows the turn's second action as well as its first */
+const GUIDED_PAIRS = (process.env.GUIDED_PAIRS ?? '1') !== '0';
 const DECAY = Number(process.env.DECAY ?? 1e-5);
 
 /** moves kept per position: the rest read too badly to be worth the room */
@@ -561,7 +563,7 @@ function playDuel(seed: number, players: number, subject: number): GameState {
     const seat = s.current;
     const o =
       seat === subject
-        ? { strength: STRENGTH, depth: GUIDED_DEPTH, budgetMs: BUDGET, guided: GUIDED }
+        ? { strength: STRENGTH, depth: GUIDED_DEPTH, budgetMs: BUDGET, guided: GUIDED, guidedPairs: GUIDED_PAIRS }
         : { strength: STRENGTH, depth: DEPTH, budgetMs: BUDGET };
     const a = chooseBotAction(s, seat, o) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
@@ -600,7 +602,7 @@ async function duel(): Promise<void> {
   const mean = diff / games;
   const spread = 2 * (30 / Math.sqrt(games));
   log(
-    `duel: the search guided to ${GUIDED} names at depth ${GUIDED_DEPTH} wins ${wins}/${games} against the plain one at depth ${DEPTH} (par about ${(games / 3).toFixed(0)}), ${mean.toFixed(1)} ± ${spread.toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
+    `duel: the search guided to ${GUIDED} names${GUIDED_PAIRS ? '' : ' (first action only)'} at depth ${GUIDED_DEPTH} wins ${wins}/${games} against the plain one at depth ${DEPTH} (par about ${(games / 3).toFixed(0)}), ${mean.toFixed(1)} ± ${spread.toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
   );
 }
 

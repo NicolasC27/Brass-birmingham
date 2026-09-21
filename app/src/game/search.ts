@@ -59,6 +59,8 @@ export interface SearchOptions {
   rank?: boolean;
   /** look only at the moves the ranker puts among its best this many names */
   guided?: number;
+  /** narrow the turn's second action too, not only its first */
+  guidedPairs?: boolean;
 }
 
 export interface SearchResult {
@@ -512,7 +514,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
     let turn: Turn = { first: first.action, after: first.state, score: first.score };
     const s1 = first.state;
     if (s1.phase === 'action' && s1.current === i) {
-      for (const action of worthTrying(s1, i, o.guided)) {
+      for (const action of worthTrying(s1, i, o.guidedPairs === false ? 0 : o.guided)) {
         const r = applyAction(s1, i, action);
         if (!r.state) continue;
         nodes += 1;
