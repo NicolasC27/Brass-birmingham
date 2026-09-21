@@ -159,7 +159,16 @@ const tableOf = (seed: number): number => [4, 4, 3, 2][seed % 4];
 
 function runWorker(seeds: number[]): Promise<{ buffer: ArrayBuffer; turns: number }> {
   return new Promise((ok, fail) => {
-    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { seeds } });
+    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { job: 'play', seeds } });
+    worker.once('message', ok);
+    worker.once('error', fail);
+  });
+}
+
+/** a slice of a duel, played on its own core */
+function runDuelWorker(seeds: number[]): Promise<{ wins: number; diff: number; games: number }> {
+  return new Promise((ok, fail) => {
+    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { job: 'duel', seeds, guided: GUIDED, guidedDepth: GUIDED_DEPTH } });
     worker.once('message', ok);
     worker.once('error', fail);
   });
@@ -560,21 +569,38 @@ function playDuel(seed: number, players: number, subject: number): GameState {
   return s;
 }
 
-/** the guided search against the plain one, the subject seat rotating */
-function duel(): void {
-  const started = Date.now();
+/** a slice of games, their wins and their margin */
+function duelSlice(seeds: number[]): { wins: number; diff: number; games: number } {
   let wins = 0;
   let diff = 0;
-  for (let g = 0; g < CHECK_GAMES; g++) {
-    const players = tableOf(g);
-    const s = playDuel(900000 + g, players, g % players);
+  for (const seed of seeds) {
+    const players = tableOf(seed);
+    const subject = seed % players;
+    const s = playDuel(900000 + seed, players, subject);
     const scores = s.players.map((p) => p.vp);
-    const rivals = Math.max(...scores.filter((_, k) => k !== g % players));
-    if (scores[g % players] > rivals) wins += 1;
-    diff += scores[g % players] - rivals;
+    const rivals = Math.max(...scores.filter((_, k) => k !== subject));
+    if (scores[subject] > rivals) wins += 1;
+    diff += scores[subject] - rivals;
   }
+  return { wins, diff, games: seeds.length };
+}
+
+/** the guided search against the plain one, the subject seat rotating, every
+ *  core playing its own slice. Twenty-four games cannot separate two settings
+ *  ten points apart: the margin's spread over a game is that wide on its own. */
+async function duel(): Promise<void> {
+  const started = Date.now();
+  const seeds = Array.from({ length: CHECK_GAMES }, (_, g) => g);
+  const slices = Array.from({ length: WORKERS }, (_, w) => seeds.filter((_, k) => k % WORKERS === w)).filter((x) => x.length);
+  const parts = await Promise.all(slices.map((x) => runDuelWorker(x)));
+  const wins = parts.reduce((a, r) => a + r.wins, 0);
+  const diff = parts.reduce((a, r) => a + r.diff, 0);
+  const games = parts.reduce((a, r) => a + r.games, 0);
+  /* how far the margin could be off by chance alone, at two standard errors */
+  const mean = diff / games;
+  const spread = 2 * (30 / Math.sqrt(games));
   log(
-    `duel: the search guided to ${GUIDED} names at depth ${GUIDED_DEPTH} wins ${wins}/${CHECK_GAMES} against the plain one at depth ${DEPTH} (par about ${(CHECK_GAMES / 3).toFixed(0)}), ${(diff / CHECK_GAMES).toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
+    `duel: the search guided to ${GUIDED} names at depth ${GUIDED_DEPTH} wins ${wins}/${games} against the plain one at depth ${DEPTH} (par about ${(games / 3).toFixed(0)}), ${mean.toFixed(1)} ± ${spread.toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
   );
 }
 
@@ -651,7 +677,10 @@ function readPolicy(): Net {
 
 /* ================================ main ============================= */
 
-if (!isMainThread) {
+if (!isMainThread && (workerData as { job?: string }).job === 'duel') {
+  const { seeds } = workerData as { seeds: number[] };
+  parentPort!.postMessage(duelSlice(seeds));
+} else if (!isMainThread) {
   const { seeds } = workerData as { seeds: number[] };
   const parts: Float32Array[] = [];
   let turns = 0;
@@ -676,7 +705,7 @@ if (!isMainThread) {
     else if (what === 'check') check(readPolicy());
     else if (what === 'families') families(readPolicy(), loadSamples());
     else if (what === 'prune') prune(readPolicy(), loadSamples());
-    else if (what === 'duel') duel();
+    else if (what === 'duel') await duel();
     else if (what === 'loop') {
       for (let k = 1; k <= ITERATIONS; k++) {
         log(`--- iteration ${k} of ${ITERATIONS}`);
