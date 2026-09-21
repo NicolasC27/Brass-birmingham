@@ -21,7 +21,7 @@ import { keyLabel, useKeybindings } from './keybindings';
    the card it spends, and the condition that would cancel it. From here
    a move is dropped, a condition set, and the board asked to show them. */
 
-const VERB_ICON: Record<GameAction['kind'], typeof Hammer> = { build: Hammer, network: Route, develop: DraftingCompass, sell: Scale, loan: Landmark, scout: Binoculars, pass: SkipForward, concede: X, 'begin-rail': SkipForward };
+const VERB_ICON: Record<GameAction['kind'], typeof Hammer> = { build: Hammer, network: Route, develop: DraftingCompass, sell: Scale, loan: Landmark, scout: Binoculars, pass: SkipForward, concede: X, resign: X, 'begin-rail': SkipForward };
 
 /** the card a move spends, in miniature */
 function MiniCard({ card }: { card: Card }) {

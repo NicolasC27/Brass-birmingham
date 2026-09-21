@@ -8,7 +8,7 @@ import { chooseBotMove } from '@/game/bot';
 import type { GameState } from '@/game/types';
 import type { GameView } from '@/online/protocol';
 import { FREE_ITEMS, GUINEAS } from '@/online/counter';
-import type { Table } from '@/online/table';
+import type { Table, TableSeat } from '@/online/table';
 import { TABLE_NAMES } from '@/online/tableNames';
 import { serve } from '../index';
 import type { Serving } from '../index';
@@ -128,6 +128,69 @@ describe('the hall', () => {
     expect(server!.store.purse(ids[loser]).guineas).toBe(GUINEAS.sitting * GUINEAS.rankedTimes);
     expect(server!.hall.desk(ids[winner]).tables[0]).toMatchObject({ code: 'RANK', status: 'over', ranked: true });
   }, 60000);
+
+  /** everyone stamps their own chair, then the host seats the machines and rings the bell */
+  function ring(code: string, ids: string[], bots: TableSeat[] = []): void {
+    const hall = server!.hall;
+    for (const id of ids) hall.rewrite(code, id, { ...hall.table(code)!, seats: hall.table(code)!.seats.map((s) => (s.id === id ? { ...s, ready: true } : s)) });
+    hall.rewrite(code, ids[0], { ...hall.table(code)!, seats: [...hall.table(code)!.seats, ...bots], status: 'starting' });
+  }
+
+  it('hands a chair left mid-game to a machine, and abandons the game once the last human is gone', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    const bob = await arrive('Bob');
+    const hall = server!.hall;
+    const { code } = hall.create({ id: ada.id, name: ada.name }, OPTIONS);
+    hall.join(code, { id: bob.id, name: bob.name });
+    ring(code, [ada.id, bob.id], [{ id: 'bot-cy', name: 'Cy', color: 'verdigris', kind: 'bot', persona: 'boulton', ready: true, joinedAt: Date.now() }]);
+    const game = hall.game(code)!;
+    expect(game.state.players.map((p) => p.isBot)).toEqual([false, false, true]);
+
+    /* Bob leaves: his chair is a machine's, the table is no longer on his desk */
+    hall.leave(code, bob.id);
+    expect(game.state.players[1]).toMatchObject({ isBot: true, resigned: true });
+    expect(game.over).toBe(false);
+    expect(hall.table(code)!.seats.map((s) => s.kind)).toEqual(['human', 'bot']);
+    expect(hall.table(code)!.seats.some((s) => s.id === bob.id)).toBe(false);
+    expect(hall.desk(bob.id).tables).toEqual([]);
+    expect(hall.desk(ada.id).tables[0]).toMatchObject({ code, status: 'playing' });
+    expect(hall.act(code, bob.id, { kind: 'pass' })).not.toBeNull();
+
+    /* Ada leaves too: nobody is left, the game is abandoned and the table closed */
+    hall.leave(code, ada.id);
+    expect(game.over).toBe(true);
+    expect(game.state.abandoned).toBe(true);
+    expect(hall.table(code)).toBeNull();
+    expect(hall.desk(ada.id).tables).toEqual([]);
+    const past = server!.store.historyFor(ada.id)[0];
+    expect(past).toMatchObject({ code, abandoned: true });
+    expect(past.players.map((p) => [p.bot, !!p.resigned])).toEqual([[false, true], [false, true], [true, false]]);
+  });
+
+  it('takes a table played out off the desk of whoever leaves it, and closes it after the last', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    const bob = await arrive('Bob');
+    const hall = server!.hall;
+    const { code } = hall.create({ id: ada.id, name: ada.name }, OPTIONS);
+    hall.join(code, { id: bob.id, name: bob.name });
+    ring(code, [ada.id, bob.id]);
+    const game = hall.game(code)!;
+    expect(hall.act(code, ada.id, { kind: 'concede', player: 0, vote: 'yes' })).toBeNull();
+    expect(hall.act(code, bob.id, { kind: 'concede', player: 1, vote: 'yes' })).toBeNull();
+    expect(game.over).toBe(true);
+    expect(hall.desk(ada.id).tables[0]).toMatchObject({ code, status: 'over' });
+
+    hall.leave(code, ada.id);
+    expect(hall.desk(ada.id).tables).toEqual([]);
+    expect(hall.desk(bob.id).tables[0]).toMatchObject({ code, status: 'over' });
+    hall.leave(code, bob.id);
+    expect(hall.table(code)).toBeNull();
+    /* the record of the game stays with both */
+    expect(server!.store.historyFor(ada.id)[0]).toMatchObject({ code, abandoned: true });
+    expect(server!.store.historyFor(bob.id)[0]).toMatchObject({ code, abandoned: true });
+  });
 
   it('orders the season\'s board by cote and finds my place on it', async () => {
     await open();

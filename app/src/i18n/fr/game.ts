@@ -485,6 +485,8 @@ const fr: typeof engame = {
     refuse: '{name} refuse d’abandonner — la partie continue.',
     fold: '{name} abandonne aussi : la table se retire.',
     propose: '{name} propose d’abandonner la partie ({n} sur {h} d’accord).',
+    resign: '{name} quitte la table — une machine prend le siège.',
+    deserted: 'Plus personne pour jouer : la table abandonne la partie.',
     sellOff: '{name} cède {industry} N{level} pour {value} £ afin de couvrir le manque',
     short: 'Il manque {amount} £ à {name} — perd {amount} PV',
     payday: 'Jour de paie — les comptoirs règlent leurs comptes.',

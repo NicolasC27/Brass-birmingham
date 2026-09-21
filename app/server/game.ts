@@ -221,6 +221,19 @@ export class TableGame {
     return null;
   }
 
+  /** a human seat left: a pause or a rollback the others had all agreed to goes through */
+  private settleVotes(): void {
+    const humans = this.humans;
+    const p = this.pause;
+    if (p && p.kind === 'table' && !p.held && humans.length > 0 && humans.every((i) => p.votes.includes(i))) {
+      p.held = true;
+      this.freeze();
+      this.emit();
+    }
+    const r = this.rollback;
+    if (r && humans.length > 0 && humans.every((i) => r.votes.includes(i))) this.rollbackTable(this.seatIds[humans[0]], 'agree');
+  }
+
   private endBreak(): void {
     if (this.breakTimer) clearTimeout(this.breakTimer);
     this.breakTimer = null;
@@ -284,6 +297,20 @@ export class TableGame {
       if (this.state.phase !== 'action') return 'The game is not in play';
       if (action.player !== seat) return 'A vote is cast in one\'s own name';
       return this.commit(seat, action, false, true);
+    }
+    if (action.kind === 'resign') {
+      /* the chair is handed over on anyone's turn; the seat to act keeps its
+         candle — unless the chair was theirs, and the machine plays at once */
+      if (this.state.phase === 'game-over') return 'The game is over';
+      if (action.player !== seat) return 'A seat is left in one\'s own name';
+      const wasOnBreak = this.pause?.kind === 'break' && this.pause.by === seat;
+      const error = this.commit(seat, action, false, seat !== this.state.current);
+      if (error) return error;
+      /* the departed held nothing up: their break ends, a proposal awaiting
+         their word is settled by those who remain */
+      if (wasOnBreak) this.endBreak();
+      this.settleVotes();
+      return null;
     }
     if (action.kind === 'begin-rail') {
       /* the ceremony is closed by the seat to act, or by the table's own clock */

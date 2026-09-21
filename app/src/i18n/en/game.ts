@@ -483,6 +483,8 @@ const game = {
     refuse: '{name} refuses to fold — the game goes on.',
     fold: '{name} folds too: the table abandons the game.',
     propose: '{name} proposes to abandon the game ({n} of {h} agree).',
+    resign: '{name} leaves the table — a machine takes the chair.',
+    deserted: 'Nobody is left to play: the table abandons the game.',
     sellOff: '{name} sells off {industry} L{level} for £{value} to cover the shortfall',
     short: '{name} is £{amount} short — loses {amount} VP',
     payday: 'Payday — the counting-houses settle up.',

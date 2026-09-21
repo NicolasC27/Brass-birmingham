@@ -187,7 +187,7 @@ export interface PastGame {
   code: string;
   name: string;
   finishedAt: number;
-  players: { id: string; name: string; color: PlayerColor; vp: number; bot: boolean; tally?: Tally }[];
+  players: { id: string; name: string; color: PlayerColor; vp: number; bot: boolean; /** left the table before the end: a machine played the chair out */ resigned?: boolean; tally?: Tally }[];
   winner: number;
   /** the game ended by the table's own vote */
   abandoned: boolean;

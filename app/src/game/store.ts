@@ -830,8 +830,8 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!r.state) return false;
     const mut = r.state;
     const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
-    /* a vote is not a turn: nothing to take back */
-    const human = action.kind !== 'concede' && g.phase === 'action' && !g.players[g.current].isBot;
+    /* a vote, or a chair handed over, is not a turn: nothing to take back */
+    const human = action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
     if (mut.phase === 'game-over' && !get().code) noteForm(mut);

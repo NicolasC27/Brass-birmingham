@@ -60,6 +60,49 @@ describe('abandoning the game', () => {
   });
 });
 
+describe('leaving the table', () => {
+  const s0 = newGame({ players: HUMANS, options: setup(2).options }, 7);
+  const leave = (s: GameState, player: number) => applyAction(s, player, { kind: 'resign', player });
+  const move = (s: GameState): GameState => applyAction(s, s.current, botAction(chooseBotMove(s, s.current)) ?? fallbackAction(s, s.current)).state!;
+
+  it("hands the chair to a machine, in one's own name, and the game goes on", () => {
+    const left = leave(s0, 1).state!;
+    expect(left.phase).toBe('action');
+    expect(left.players[1]).toMatchObject({ isBot: true, resigned: true });
+    expect(left.current).toBe(s0.current); // leaving is not a turn
+    expect(applyAction(s0, 0, { kind: 'resign', player: 1 }).state).toBeNull();
+    expect(leave(s0, 2).state).toBeNull(); // a machine does not leave
+    expect(leave(left, 1).state).toBeNull(); // nor does anyone leave twice
+    /* the log replays: the setup remembers the chair was a human's at the deal */
+    expect(setupOf(left).players[1].type).toBe('human');
+    expect(serialize(replay(setupOf(left), left.seed, left.actions))).toBe(serialize(left));
+    expect(humanActionIndices(setupOf(left), left.seed, left.actions)).toEqual([]);
+  });
+
+  it('lets the machine play the chair it was handed', () => {
+    let s = s0;
+    while (s.players[s.current].isBot) s = move(s);
+    const seat = s.current;
+    const left = leave(s, seat).state!;
+    expect(left.current).toBe(seat);
+    const played = move(left);
+    expect(played.actions.length).toBe(left.actions.length + 1);
+    expect(serialize(replay(setupOf(played), played.seed, played.actions))).toBe(serialize(played));
+  });
+
+  it('abandons the game once nobody human is left, or once those left had all voted to fold', () => {
+    const one = leave(s0, 1).state!;
+    const none = leave(one, 0).state!;
+    expect(none.phase).toBe('game-over');
+    expect(none.abandoned).toBe(true);
+    const voted = applyAction(s0, 0, { kind: 'concede', player: 0, vote: 'yes' }).state!;
+    const folded = leave(voted, 1).state!;
+    expect(folded.phase).toBe('game-over');
+    expect(folded.abandoned).toBe(true);
+    expect(folded.concessions).toEqual([0]);
+  });
+});
+
 /** bots play until the game is over (or a generous cap) */
 function selfPlay(s0: GameState, cap = 600): GameState {
   let s = s0;

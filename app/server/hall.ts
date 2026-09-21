@@ -435,23 +435,37 @@ export class Hall {
     return room.table;
   }
 
+  /** a seat given up for good. At an open table the chair is freed; at a
+   *  game in play a machine takes it over and plays it out, the last human
+   *  out abandoning the game; a game played out simply leaves the desk.
+   *  The table closes once no human is left at it. */
   leave(code: string, playerId: string): void {
     const room = this.rooms.get(code);
-    /* a game in play keeps its seats: leaving is a disconnection, not a quit */
-    if (!room || room.game) return;
+    if (!room) return;
     const seats = room.table.seats.filter((s) => s.id !== playerId);
     if (seats.length === room.table.seats.length) return;
-    let hostId = room.table.hostId;
-    if (hostId === playerId) {
-      const next = seats.find((s) => s.kind === 'human');
-      if (!next) {
-        this.close(code);
-        return;
+    const game = room.game;
+    if (game && !game.over) {
+      const seat = game.seatOf(playerId);
+      if (seat >= 0 && !game.state.players[seat].isBot) {
+        const error = game.act(playerId, { kind: 'resign', player: seat });
+        if (error) {
+          console.error(`table ${code}: ${playerId} could not leave the game: ${error}`);
+          return;
+        }
       }
-      hostId = next.id;
     }
+    let hostId = room.table.hostId;
+    const next = seats.find((s) => s.kind === 'human');
+    if (!next) {
+      this.close(code);
+      return;
+    }
+    if (hostId === playerId) hostId = next.id;
     room.table = { ...room.table, seats, hostId, updatedAt: Date.now() };
     this.write(code);
+    /* no longer seated, the leaver is not on the table's list: their desk is told apart */
+    this.announceDesk(playerId);
   }
 
   close(code: string): void {
@@ -554,7 +568,7 @@ export class Hall {
     const opening = game.turnActions() === 0 && game.state.phase === 'action' && game.seatOf(playerId) === game.state.current;
     const age = game.turnAge();
     const error = game.act(playerId, action);
-    if (!error && opening && action.kind !== 'concede' && this.watch.note(code, game.seatOf(playerId), age)) {
+    if (!error && opening && action.kind !== 'concede' && action.kind !== 'resign' && this.watch.note(code, game.seatOf(playerId), age)) {
       this.store.flag(playerId, 'pace', `turn opened in ${age} ms, the twelfth such in a row`, code);
     }
     return error;

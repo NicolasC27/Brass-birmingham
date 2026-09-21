@@ -113,6 +113,8 @@ export interface PlayerState {
   color: string; // token id: brass | oxblood | verdigris | steel
   isBot: boolean;
   persona: BotPersona;
+  /** a human who left the table: the chair is played by a machine from then on */
+  resigned?: boolean;
   /** this seat's own candle (null = none), when it differs from the table's */
   minutes?: number | null;
   money: number;

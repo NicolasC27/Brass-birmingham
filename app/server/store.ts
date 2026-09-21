@@ -375,7 +375,7 @@ function accountOf(r: AccountRow): Account {
 
 /** the game's outcome, kept with the game once it is over */
 interface Result {
-  players: { name: string; color: PlayerColor; vp: number; bot: boolean; tally?: Tally }[];
+  players: { name: string; color: PlayerColor; vp: number; bot: boolean; resigned?: boolean; tally?: Tally }[];
   winner: number;
   abandoned: boolean;
 }
@@ -847,7 +847,7 @@ export class Store {
   finishGame(code: string, state?: GameState, tallies?: Tally[], ranked = false): void {
     const result: Result | null = state
       ? {
-          players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot, ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
+          players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot && !p.resigned, ...(p.resigned ? { resigned: true } : {}), ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
           winner: state.winner ?? 0,
           abandoned: !!state.abandoned,
         }
@@ -860,8 +860,11 @@ export class Store {
     const seatIds = JSON.parse(row.seats) as string[];
     const winner = state.winner ?? 0;
     const times = ranked ? GUINEAS.rankedTimes : 1;
-    const humans = state.players.map((_, i) => i).filter((i) => !state.players[i].isBot && !!seatIds[i]);
-    for (const i of humans) this.earn(seatIds[i], (GUINEAS.sitting + (i === winner ? GUINEAS.win : 0)) * times);
+    /* the seats that stayed to the end are paid; a chair left to a machine
+       earns nothing, but at a ranked table its result is still its account's */
+    const stayed = state.players.map((_, i) => i).filter((i) => !state.players[i].isBot && !!seatIds[i]);
+    for (const i of stayed) this.earn(seatIds[i], (GUINEAS.sitting + (i === winner ? GUINEAS.win : 0)) * times);
+    const humans = state.players.map((_, i) => i).filter((i) => (!state.players[i].isBot || state.players[i].resigned) && !!seatIds[i]);
     if (!ranked || humans.length < 2) return;
     const season = seasonAt();
     const before = humans.map((i) => this.standing(seatIds[i], season.id) ?? fresh());

@@ -1041,6 +1041,24 @@ export function applyConcede(s: GameState, playerIdx: number, vote: 'yes' | 'no'
   log(s, playerIdx, 'system', `${p.name} proposes to abandon the game (${votes.size} of ${humans.length} agree).`, undefined, 'propose', { name: p.name, n: votes.size, h: humans.length });
 }
 
+/** a seat left for good: a machine takes the chair and plays it out. With
+ *  nobody human left — or every human left having already voted to fold —
+ *  the table abandons the game. */
+export function applyResign(s: GameState, playerIdx: number): void {
+  const p = s.players[playerIdx];
+  p.isBot = true;
+  p.resigned = true;
+  const votes = (s.concessions ?? []).filter((i) => i !== playerIdx);
+  s.concessions = votes;
+  log(s, playerIdx, 'system', `${p.name} leaves the table — a machine takes the chair.`, undefined, 'resign', { name: p.name });
+  const humans = s.players.map((_, i) => i).filter((i) => !s.players[i].isBot);
+  if (humans.length === 0 || humans.every((i) => votes.includes(i))) {
+    s.abandoned = true;
+    log(s, playerIdx, 'system', 'Nobody is left to play: the table abandons the game.', undefined, 'deserted');
+    finishGame(s);
+  }
+}
+
 /* ========================== turn & era flow ======================== */
 
 export function drawUp(s: GameState, p: PlayerState) {

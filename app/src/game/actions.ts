@@ -1,4 +1,4 @@
-import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets } from './engine';
+import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets } from './engine';
 import type { BotMove } from './bot';
 import type { GameState, IndustryType, SetupPayload } from './types';
 
@@ -25,6 +25,8 @@ export type GameAction =
   | { kind: 'pass'; card?: string; reason?: string }
   /** a vote to abandon the game — cast in one's own name, on anyone's turn */
   | { kind: 'concede'; player: number; vote: 'yes' | 'no' }
+  /** a seat left for good: a machine takes the chair — the last human out abandons the game */
+  | { kind: 'resign'; player: number }
   /** the canal ceremony is over: sweep the board and deal the rail era */
   | { kind: 'begin-rail' };
 
@@ -50,6 +52,15 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     if (s.players[action.player]?.isBot) return fail('That seat plays itself');
     const mut = structuredClone(s);
     applyConcede(mut, action.player, action.vote);
+    mut.actions.push(action);
+    return { state: mut };
+  }
+  if (action.kind === 'resign') {
+    if (s.phase === 'game-over') return fail('The game is over');
+    if (playerIdx !== action.player) return fail('A seat is left in one\'s own name');
+    if (s.players[action.player]?.isBot) return fail('That seat plays itself');
+    const mut = structuredClone(s);
+    applyResign(mut, action.player);
     mut.actions.push(action);
     return { state: mut };
   }
@@ -147,7 +158,7 @@ export function fallbackAction(s: GameState, playerIdx: number): GameAction {
 }
 
 /** who takes an action of the log: the player to act, except a vote, which is cast in its author's name */
-export const actorOf = (s: GameState, a: GameAction): number => (a.kind === 'concede' ? a.player : s.current);
+export const actorOf = (s: GameState, a: GameAction): number => (a.kind === 'concede' || a.kind === 'resign' ? a.player : s.current);
 
 /** rebuild a game from its seed and its log; throws on the first refused action */
 export function replay(setup: SetupPayload, seed: number, actions: GameAction[]): GameState {
@@ -172,8 +183,8 @@ export function humanActionIndices(setup: SetupPayload, seed: number, actions: G
   const marks: UndoMark[] = [];
   let s = newGame(setup, seed);
   actions.forEach((a, i) => {
-    /* a vote is nobody's turn: it is not an undo point */
-    if (a.kind !== 'concede' && s.phase === 'action' && !s.players[s.current].isBot) marks.push({ at: i, by: s.current });
+    /* a vote, or a seat handed over, is nobody's turn: it is not an undo point */
+    if (a.kind !== 'concede' && a.kind !== 'resign' && s.phase === 'action' && !s.players[s.current].isBot) marks.push({ at: i, by: s.current });
     const r = applyAction(s, actorOf(s, a), a);
     if (!r.state) throw new Error(`replay: action ${i} (${a.kind}) refused — ${r.error}`);
     s = r.state;
@@ -204,7 +215,8 @@ export function undoLastHuman(s: GameState, marks: UndoMark[]): GameState | null
 /** the setup a state was created from (what replay needs besides the seed) */
 export function setupOf(s: GameState): SetupPayload {
   return {
-    players: s.players.map((p) => ({ name: p.name, color: p.color, type: p.isBot ? 'bot' : 'human', ...(p.isBot ? { persona: p.persona } : {}) })),
+    /* a chair handed to a machine was a human's at the deal: the log says when it changed hands */
+    players: s.players.map((p) => ({ name: p.name, color: p.color, type: p.isBot && !p.resigned ? 'bot' : 'human', ...(p.isBot && !p.resigned ? { persona: p.persona } : {}) })),
     options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity },
   };
 }
