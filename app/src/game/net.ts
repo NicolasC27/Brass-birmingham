@@ -234,6 +234,12 @@ export function think(brain: Brain, x: Float32Array): number {
 
 /** the network's answer: points ahead (positive) or behind at the era's scoring */
 export function forward(net: Net, x: Float32Array): number {
+  return forwardAll(net, x)[0] * net.points;
+}
+
+/** the whole of the last layer, raw: one number for a network that reads the
+ *  table, one per move for a network that ranks them */
+export function forwardAll(net: Net, x: Float32Array): Float32Array {
   let cur = new Float32Array(x.length);
   for (let k = 0; k < x.length; k++) cur[k] = (x[k] - net.mean[k]) / net.scale[k];
   for (let l = 0; l < net.weights.length; l++) {
@@ -251,7 +257,7 @@ export function forward(net: Net, x: Float32Array): number {
     }
     cur = next;
   }
-  return cur[0] * net.points;
+  return cur;
 }
 
 /* ------------------------- packing the weights --------------------- */
