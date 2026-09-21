@@ -116,6 +116,7 @@ export default function Setup() {
         timerMinutes: options.timerMinutes,
         fidelity: options.fidelity,
       },
+      name: tableName,
     };
     try {
       localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(payload));
@@ -123,7 +124,7 @@ export default function Setup() {
       /* storage unavailable — the game page will fall back to defaults */
     }
     setStarting(true);
-  }, [canStart, starting, seats, options]);
+  }, [canStart, starting, seats, options, tableName]);
 
   // Live-persist the seating draft (v10 hot-seat): edited player names and
   // house rules survive a round-trip and prefill the next visit, without

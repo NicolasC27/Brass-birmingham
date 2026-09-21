@@ -46,6 +46,8 @@ export interface StoredSetup {
     minutes?: number | null;
   }[];
   options: SetupOptions;
+  /** the table's name, drawn from the club register on the setup page */
+  name?: string;
 }
 
 /** Player colors paired with shapes (design.md §8 accessibility pairing). */
@@ -140,6 +142,7 @@ export function loadStoredSetup(): StoredSetup | null {
       /* a setup from before the characters names none: the colour picks one */
       players: (data.players as StoredSetup["players"]).map((p) => (p.type === "bot" ? { ...p, persona: personaFor(p) } : p)),
       options: { ...DEFAULT_OPTIONS, ...(data.options ?? {}) },
+      ...(typeof data.name === "string" && data.name ? { name: data.name } : {}),
     };
   } catch {
     return null;

@@ -16,7 +16,8 @@ import type { RankTier } from '@/components/platform/RankBadge';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLACEMENTS, rankOf, type RankView } from '@/platform/rank';
 import { collectRewards, useWallet } from '@/platform/wallet';
-import { startTutorial } from '@/game/quickplay';
+import { forgetLocalGame, readResume, startTutorial } from '@/game/quickplay';
+import type { LocalResume } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
 import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
@@ -252,8 +253,36 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
 
 /* ------------------------------ Panneau A — Mes tables ------------------------------ */
 
-function TableRibbon({ table, pulse }: { table: TableSummary; pulse: boolean }) {
+/** une table du bureau : celle du serveur, ou la partie jouée sur cet appareil */
+type DeskTable = TableSummary & { local?: boolean };
+
+/** la partie de cet appareil, présentée comme une table : son code, son nom, ses sièges */
+function localTable(local: LocalResume, me: string): DeskTable {
+  let mine = false;
+  return {
+    code: local.table?.code ?? '····',
+    name: local.table?.name ?? '',
+    hostId: me,
+    seats: local.seats.map((s, i) => {
+      /* le premier siège humain est le mien ; en chaise tournante, les autres sont les invités */
+      const you = s.kind === 'human' && !mine;
+      if (you) mine = true;
+      return { id: you ? me : `local-${i}`, name: s.name, color: s.color, kind: s.kind };
+    }),
+    status: 'playing',
+    era: local.era,
+    round: local.round,
+    myTurn: false,
+    updatedAt: local.table?.updatedAt ?? 0,
+    local: true,
+  };
+}
+
+function TableRibbon({ table, pulse }: { table: DeskTable; pulse: boolean }) {
   const t = useT();
+  if (table.local) {
+    return <span className="micro-label flex h-[22px] shrink-0 items-center rounded-full bg-enamel-700 px-2.5 text-brass-300">{t('platform.desk.tables.local')}</span>;
+  }
   if (table.myTurn) {
     return (
       <span className="micro-label flex h-[22px] shrink-0 items-center gap-1.5 rounded-full bg-[rgb(var(--signal-400)/.12)] px-2.5 text-signal-400">
@@ -275,17 +304,17 @@ function TableRibbon({ table, pulse }: { table: TableSummary; pulse: boolean }) 
   return <span className={cn('micro-label flex h-[22px] shrink-0 items-center rounded-full px-2.5', styles[table.status])}>{labels[table.status]}</span>;
 }
 
-function TableRow({ table, me, pulse, onLeave }: { table: TableSummary; me: string; pulse: boolean; onLeave: (table: TableSummary) => void }) {
+function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string; pulse: boolean; onLeave: (table: DeskTable) => void }) {
   const t = useT();
   const lang = useLang();
   const ago = useAgo();
   const [menu, setMenu] = useState(false);
   const toAct = table.current !== undefined ? table.seats[table.current] : null;
-  const to = table.status === 'open' ? `/online/${table.code}` : `/game/${table.code}`;
+  const to = table.local ? '/game' : table.status === 'open' ? `/online/${table.code}` : `/game/${table.code}`;
   const meta = [
     table.era ? t(table.era === 'rail' ? 'platform.desk.tables.eraRail' : 'platform.desk.tables.eraCanal') : null,
     table.status === 'playing' ? t('platform.desk.tables.round', { round: table.round ?? 1 }) : null,
-    ago(table.updatedAt),
+    table.local ? t('platform.desk.tables.localHint') : ago(table.updatedAt),
     toAct && table.status === 'playing' && !table.myTurn ? t('platform.desk.tables.toAct', { name: toAct.name }) : null,
   ].filter(Boolean);
 
@@ -354,36 +383,44 @@ function TableRow({ table, me, pulse, onLeave }: { table: TableSummary; me: stri
   );
 }
 
+/** ce que quitter veut dire, selon l'état de la table */
+const LEAVE_COPY: Record<DeskTable['status'], string> = { open: 'platform.desk.tables.leaveCopy', playing: 'platform.desk.tables.leaveCopyPlaying', over: 'platform.desk.tables.leaveCopyOver' };
+const LEAVE_CONFIRM: Record<DeskTable['status'], string> = { open: 'platform.desk.tables.leaveConfirm', playing: 'platform.desk.tables.leaveConfirm', over: 'platform.desk.tables.leaveConfirmOver' };
+
 function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
   const t = useT();
   const lang = useLang();
-  const [leaving, setLeaving] = useState<TableSummary | null>(null);
+  const [leaving, setLeaving] = useState<DeskTable | null>(null);
+  /* la partie jouée sur cet appareil siège au bureau comme les autres */
+  const [local, setLocal] = useState(readResume);
   const rank = (x: TableSummary) => (x.myTurn ? 0 : x.status === 'playing' ? 1 : x.status === 'open' ? 2 : 3);
-  const sorted = [...tables].sort((a, b) => rank(a) - rank(b));
+  const sorted: DeskTable[] = [...tables].sort((a, b) => rank(a) - rank(b));
+  if (local) sorted.push(localTable(local, me));
 
   if (sorted.length === 0) {
     return <EmptyState image="/empty-tables.png" title={t('platform.desk.tables.emptyTitle')} copy={t('platform.desk.tables.emptyCopy')} cta={{ label: t('platform.desk.tables.emptyCta'), to: '/online' }} />;
   }
 
+  const leave = () => {
+    if (leaving?.local) {
+      forgetLocalGame();
+      setLocal(null);
+    } else if (leaving) lobby.leave(leaving.code);
+    setLeaving(null);
+  };
+
   return (
     <>
       <ul className="grid gap-3">
         {sorted.map((x, i) => (
-          <TableRow key={x.code} table={x} me={me} pulse={i < 3} onLeave={setLeaving} />
+          <TableRow key={x.local ? 'local' : x.code} table={x} me={me} pulse={i < 3} onLeave={setLeaving} />
         ))}
       </ul>
-      <Modal open={leaving !== null} onClose={() => setLeaving(null)} title={leaving ? t('platform.desk.tables.leaveTitle', { name: tableTitle(leaving.name, lang) }) : undefined}>
-        <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.desk.tables.leaveCopy')}</p>
+      <Modal open={leaving !== null} onClose={() => setLeaving(null)} title={leaving ? t('platform.desk.tables.leaveTitle', { name: leaving.local && !leaving.name ? t('platform.action.localGame') : tableTitle(leaving.name, lang) }) : undefined}>
+        <p className="font-ui text-[13px] leading-relaxed text-paper-300">{leaving && t(leaving.local ? 'platform.desk.tables.leaveCopyLocal' : LEAVE_COPY[leaving.status])}</p>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Button
-            variant="danger-ghost"
-            icon={<LogOut size={16} aria-hidden />}
-            onClick={() => {
-              if (leaving) lobby.leave(leaving.code);
-              setLeaving(null);
-            }}
-          >
-            {t('platform.desk.tables.leaveConfirm')}
+          <Button variant="danger-ghost" icon={<LogOut size={16} aria-hidden />} onClick={leave}>
+            {leaving && t(leaving.local ? 'platform.desk.tables.leaveConfirmLocal' : LEAVE_CONFIRM[leaving.status])}
           </Button>
           <Button variant="ghost" onClick={() => setLeaving(null)}>
             {t('platform.desk.tables.cancel')}

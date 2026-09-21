@@ -271,4 +271,6 @@ export interface FinalPayload {
 
 export const SETUP_KEY = 'brassworks.setup.v1';
 export const RESUME_KEY = 'brassworks.resume.v1';
+/** the reader's pinned towns and notes (one key per online table, this one at home) */
+export const PINS_KEY = 'brassworks.pins.v1';
 export const FINAL_KEY = 'brassworks.final.v1';

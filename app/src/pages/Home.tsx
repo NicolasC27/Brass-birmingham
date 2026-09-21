@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { BookOpen, Briefcase, ChevronRight, Hash, Play, Plus, RotateCcw, User } from 'lucide-react';
+import { BookOpen, Briefcase, ChevronRight, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
-import { readResume } from '@/game/quickplay';
+import { forgetLocalGame, readResume } from '@/game/quickplay';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
 import CodeInput from '@/components/platform/CodeInput';
@@ -32,21 +32,24 @@ function ResumeBanner() {
   const t = useT();
   const lang = useLang();
   const desk = useDesk();
-  const local = readResume();
+  const [local, setLocal] = useState(readResume);
+  const [discarding, setDiscarding] = useState(false);
 
   const table = desk?.tables.find((tb) => tb.myTurn && tb.status === 'playing');
   if (!table && !local) return null;
 
-  const text = table
-    ? t('platform.home.resumeBanner', { name: tableTitle(table.name, lang) })
-    : t('platform.home.resumeBanner', { name: t('platform.action.localGame') });
-  const meta = table
-    ? t('platform.home.resumeMeta', { round: table.round ?? 1, opponents: table.seats.length - 1 })
-    : t('platform.home.resumeSaveMeta', {
-        era: local!.era === 'rail' ? t('platform.home.eraRail') : t('platform.home.eraCanal'),
-        round: local!.round,
-      });
+  /* the game at home is a table like the others: it has a name and a code */
+  const localName = local ? (local.table ? tableTitle(local.table.name, lang) : t('platform.action.localGame')) : '';
+  const text = table ? t('platform.home.resumeBanner', { name: tableTitle(table.name, lang) }) : t('platform.home.resumeLocal', { name: localName });
+  const saveMeta = local ? t('platform.home.resumeSaveMeta', { era: local.era === 'rail' ? t('platform.home.eraRail') : t('platform.home.eraCanal'), round: local.round }) : '';
+  const meta = table ? t('platform.home.resumeMeta', { round: table.round ?? 1, opponents: table.seats.length - 1 }) : local?.table ? `${local.table.code} · ${saveMeta}` : saveMeta;
   const to = table ? `/game/${table.code}` : '/game';
+
+  const discard = () => {
+    forgetLocalGame();
+    setLocal(null);
+    setDiscarding(false);
+  };
 
   return (
     <motion.div
@@ -60,9 +63,23 @@ function ResumeBanner() {
         <p className="truncate font-ui text-[14px] font-semibold text-paper-100">{text}</p>
         <p className="data-text text-[11px] text-iron-400 tnums">{meta}</p>
       </div>
+      {!table && (
+        <Button variant="icon" aria-label={t('platform.home.discard')} title={t('platform.home.discard')} onClick={() => setDiscarding(true)} icon={<Trash2 size={16} aria-hidden />} />
+      )}
       <Button variant="live" className="!h-9 shrink-0" to={to}>
         {t('platform.action.resume')}
       </Button>
+      <Modal open={discarding} onClose={() => setDiscarding(false)} title={t('platform.home.discardTitle', { name: localName })}>
+        <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.home.discardCopy')}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button variant="danger-ghost" icon={<Trash2 size={16} aria-hidden />} onClick={discard}>
+            {t('platform.home.discardConfirm')}
+          </Button>
+          <Button variant="ghost" onClick={() => setDiscarding(false)}>
+            {t('platform.action.close')}
+          </Button>
+        </div>
+      </Modal>
     </motion.div>
   );
 }

@@ -28,9 +28,9 @@ import type {
   Verb,
   LedgerEntry,
 } from './types';
-import { RESUME_KEY, SETUP_KEY } from './types';
+import { PINS_KEY, RESUME_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
-import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
+import { TUTORIAL_KEY, TUTORIAL_SEED, nameLocalTable, readLocalTable, touchLocalTable } from './quickplay';
 
 export interface Shake {
   key: string;
@@ -383,14 +383,16 @@ export const useGame = create<GameStore>((set, get) => ({
     const seedWanted = wanted === 'new' ? TUTORIAL_SEED : wanted && /^\d+$/.test(wanted) ? Number(wanted) : null;
     const game = resumed ?? (seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
     const tutorial = seedWanted !== null && game.seed === seedWanted;
-    if (tutorial) {
-      try {
-        localStorage.setItem(TUTORIAL_KEY, String(game.seed));
-        /* the deal is kept at once: a reload before the first move keeps the guide */
-        if (!resumed) localStorage.setItem(RESUME_KEY, serialize(game));
-      } catch {
-        /* non-fatal */
-      }
+    /* the table at home has a name and a code, like any of the club's; a
+       save from before it was named gets them now */
+    if (!resumed || !readLocalTable()) nameLocalTable();
+    try {
+      if (tutorial) localStorage.setItem(TUTORIAL_KEY, String(game.seed));
+      /* the deal is kept at once: the table is on the desk from its first
+         minute, and a reload before the first move keeps the guide */
+      if (!resumed) localStorage.setItem(RESUME_KEY, serialize(game));
+    } catch {
+      /* non-fatal */
     }
     const coached = (() => {
       try {
@@ -454,6 +456,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const game = newGame(readSetup());
     set({ ...clearSelection, ...freshTable, game, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {} });
     writePins(null, {});
+    nameLocalTable();
     try {
       localStorage.setItem(RESUME_KEY, serialize(game));
     } catch {
@@ -470,6 +473,7 @@ export const useGame = create<GameStore>((set, get) => ({
     } catch {
       /* non-fatal */
     }
+    touchLocalTable();
   },
 
   /* ------------------------- selection ------------------------- */
@@ -1367,7 +1371,6 @@ export function describeAction(a: GameAction): string {
 
 /* ------------------------------ the pins ------------------------------ */
 
-const PINS_KEY = 'brassworks.pins.v1';
 /** each table keeps its own pins: the code online, the home table otherwise */
 const pinsKey = (code: string | null): string => (code ? `${PINS_KEY}:${code}` : PINS_KEY);
 /** the reader's pinned towns and notes, kept across reloads of the same table */
