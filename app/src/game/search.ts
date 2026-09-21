@@ -37,7 +37,8 @@ import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID,
 import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
-import { activeNet, features, think } from './net';
+import { FEATURES, activeNet, features, think } from './net';
+import { activePolicy, keepBest } from './policy';
 import { openingAction } from './openings';
 import type { Opening } from './openings';
 import { TRAINED } from './weights';
@@ -56,6 +57,8 @@ export interface SearchOptions {
   depth?: 0 | 1 | 2;
   /** also hand back how every move read, for a learner to be taught from */
   rank?: boolean;
+  /** look only at the moves the ranker puts among its best this many names */
+  guided?: number;
 }
 
 export interface SearchResult {
@@ -198,6 +201,17 @@ export function legalActions(s: GameState, i: number): GameAction[] {
   if (canScout(s, i).ok) out.push({ kind: 'scout', cards: byWorth.slice(0, 3).map((c) => c.id) });
   out.push({ kind: 'pass', card: spare.id });
   return out;
+}
+
+/** the moves a search bothers with: all of them, or — when a ranker is
+ *  loaded and a narrower look is asked for — those it puts first. The
+ *  ranker is consulted before any move is played out, which is where the
+ *  saving is: the engine never sees the moves it threw away. */
+export function worthTrying(s: GameState, i: number, names?: number): GameAction[] {
+  const all = legalActions(s, i);
+  if (!names || all.length <= names) return all;
+  const policy = activePolicy(FEATURES);
+  return policy ? keepBest(policy, features(s, i), all, names) : all;
 }
 
 /* ============================ evaluation ============================ */
@@ -466,7 +480,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
   let nodes = 0;
   const firsts: Candidate[] = [];
   const ranked: { action: GameAction; score: number }[] | undefined = o.rank ? [] : undefined;
-  for (const action of legalActions(s, i)) {
+  for (const action of worthTrying(s, i, o.guided)) {
     const r = applyAction(s, i, action);
     if (!r.state) continue;
     nodes += 1;
@@ -498,7 +512,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
     let turn: Turn = { first: first.action, after: first.state, score: first.score };
     const s1 = first.state;
     if (s1.phase === 'action' && s1.current === i) {
-      for (const action of legalActions(s1, i)) {
+      for (const action of worthTrying(s1, i, o.guided)) {
         const r = applyAction(s1, i, action);
         if (!r.state) continue;
         nodes += 1;

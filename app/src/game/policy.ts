@@ -175,3 +175,18 @@ export function setPolicy(policy: Net | null, featureCount: number): void {
 
 export const packPolicy = (policy: Net): string => pack(policy);
 export const unpackPolicy = (text: string): Net => unpack(text);
+
+/** the moves worth a search's time: those whose name the policy puts among
+ *  its `names` best. A name kept brings every move that carries it, since
+ *  the policy cannot tell them apart and the search can. */
+export function keepBest(policy: Net, x: Float32Array, legal: GameAction[], names: number): GameAction[] {
+  if (names <= 0 || legal.length <= names) return legal;
+  const at = legal.map(actionIndex);
+  const distinct = [...new Set(at.filter((k) => k >= 0))];
+  if (distinct.length <= names) return legal;
+  const logits = forwardAll(policy, x);
+  distinct.sort((a, b) => logits[b] - logits[a]);
+  const kept = new Set(distinct.slice(0, names));
+  const out = legal.filter((_, m) => at[m] < 0 || kept.has(at[m]));
+  return out.length ? out : legal;
+}

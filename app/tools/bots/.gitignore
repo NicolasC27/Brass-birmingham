@@ -4,3 +4,6 @@ training.log
 learning.log
 policy-data/
 distil.log
+distil-run.out
+duel-*.out
+distil-play2.out

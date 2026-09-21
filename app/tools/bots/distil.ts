@@ -9,6 +9,8 @@
 /*           search: if it holds its own, the naming carries the       */
 /*           knowledge and a tree can be built on it                   */
 /*   families — where the two part ways, by family of move             */
+/*   duel  — a search guided by the ranker against the plain one, same  */
+/*           budget: does narrowing the breadth buy any points at all   */
 /*   prune — what a search would keep and lose by looking only at the  */
 /*           moves the ranker puts first: the measure that decides     */
 /*           whether a tree can be built on it                         */
@@ -51,6 +53,9 @@ const TEMP = Number(process.env.TEMP ?? 3);
 /** how much of the target is the move actually played, the rest the reading */
 const CHOSEN = Number(process.env.CHOSEN ?? 0.5);
 const PATIENCE = Number(process.env.PATIENCE ?? 6);
+/** names the guided search keeps, and how far past the turn it then looks */
+const GUIDED = Number(process.env.GUIDED ?? 8);
+const GUIDED_DEPTH = Number(process.env.GUIDED_DEPTH ?? DEPTH) as 0 | 1 | 2;
 const DECAY = Number(process.env.DECAY ?? 1e-5);
 
 /** moves kept per position: the rest read too badly to be worth the room */
@@ -532,6 +537,47 @@ function families(policy: Net, data: Float32Array): void {
   for (const [k, c] of [...instead.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)) log(`  ${((c / m) * 100).toFixed(1).padStart(5)}%  ${k}`);
 }
 
+/* ================================ duel ============================= */
+
+/** one game where `subject` searches only the moves the ranker puts first
+ *  and the rest search everything, both on the same clock */
+function playDuel(seed: number, players: number, subject: number): GameState {
+  let s: GameState = newGame(setupFor(players), seed);
+  let guard = 0;
+  while (s.phase !== 'game-over' && guard++ < 5000) {
+    if (s.phase === 'scoring-canal') {
+      s = applyAction(s, s.current, { kind: 'begin-rail' }).state!;
+      continue;
+    }
+    const seat = s.current;
+    const o =
+      seat === subject
+        ? { strength: STRENGTH, depth: GUIDED_DEPTH, budgetMs: BUDGET, guided: GUIDED }
+        : { strength: STRENGTH, depth: DEPTH, budgetMs: BUDGET };
+    const a = chooseBotAction(s, seat, o) ?? fallbackAction(s, seat);
+    s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
+  }
+  return s;
+}
+
+/** the guided search against the plain one, the subject seat rotating */
+function duel(): void {
+  const started = Date.now();
+  let wins = 0;
+  let diff = 0;
+  for (let g = 0; g < CHECK_GAMES; g++) {
+    const players = tableOf(g);
+    const s = playDuel(900000 + g, players, g % players);
+    const scores = s.players.map((p) => p.vp);
+    const rivals = Math.max(...scores.filter((_, k) => k !== g % players));
+    if (scores[g % players] > rivals) wins += 1;
+    diff += scores[g % players] - rivals;
+  }
+  log(
+    `duel: the search guided to ${GUIDED} names at depth ${GUIDED_DEPTH} wins ${wins}/${CHECK_GAMES} against the plain one at depth ${DEPTH} (par about ${(CHECK_GAMES / 3).toFixed(0)}), ${(diff / CHECK_GAMES).toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
+  );
+}
+
 /* =============================== prune ============================= */
 
 /** How much of the search survives if it only ever looks at the moves the
@@ -630,6 +676,7 @@ if (!isMainThread) {
     else if (what === 'check') check(readPolicy());
     else if (what === 'families') families(readPolicy(), loadSamples());
     else if (what === 'prune') prune(readPolicy(), loadSamples());
+    else if (what === 'duel') duel();
     else if (what === 'loop') {
       for (let k = 1; k <= ITERATIONS; k++) {
         log(`--- iteration ${k} of ${ITERATIONS}`);
