@@ -14,9 +14,10 @@ Coffre de notes sur le cerveau des bots : comment ils choisissent un coup, comme
 8. [[08 Comment lancer]] — commandes, variables, fichiers
 9. [[09 Pistes]] — ce qui reste à essayer pour atteindre 60 puis 80
 10. [[10 Journal]] — les changements d'objectif et de méthode, datés
+11. [[11 Nommer les coups]] — donner un nom à chaque coup et distiller la recherche, pour sortir du plateau
 
 ## Repères
 
-- Code : `app/src/game/search.ts` (recherche), `weights.ts` (évaluation manuelle), `net.ts` (cerveau), `net-weights.ts` (poids appris), `app/tools/bots/` (arène, entraîneur, apprentissage).
+- Code : `app/src/game/search.ts` (recherche), `weights.ts` (évaluation manuelle), `net.ts` (cerveau), `net-weights.ts` (poids appris), `policy.ts` (les noms des coups et leur classement), `app/tools/bots/` (arène, entraîneur, apprentissage, distillation).
 - Objectif fixé par Nicolas : **un bot fort sur la partie entière**, avec pour repère 60 points d'ère canal minimum, puis 80. Un temps, l'entraînement s'est limité à l'ère canal ; il rejoue la partie entière depuis le 20 septembre (voir [[10 Journal]]).
 - Où on en est : l'expert fait **43 à 52 points d'ère canal** à pleine force selon la table, contre 30 pour la lecture manuelle seule au départ.

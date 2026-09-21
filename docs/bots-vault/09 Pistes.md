@@ -14,8 +14,8 @@ Nicolas accepte une minute par coup. Cela ne sert que si le temps rapporte des p
 - Un trio par nombre de joueurs.
 
 ## 4. La recherche, si le cerveau devient bon
-- Monte-Carlo guidé par le cerveau pour choisir le tour (le schéma AlphaZero en petit) : plusieurs jours.
-- Un cerveau de **politique** (quelle action jouer) en plus du cerveau de valeur, appris sur les choix de l'expert : accélère la recherche et permet plus de largeur.
+- Un cerveau de **politique** (quel coup jouer) en plus du cerveau de valeur, appris sur les choix de l'expert : **commencé**, voir [[11 Nommer les coups]]. C'est le prérequis de tout le reste.
+- Monte-Carlo guidé par la politique et le cerveau pour choisir le tour (le schéma AlphaZero en petit) : plusieurs jours, et seulement si la politique distillée tient le rang.
 
 ## 5. Apprendre des humains
 La revue d'après-partie (écart entre le coup joué et le meilleur coup trouvé, expliqué par les termes de la lecture manuelle) donnerait à la fois un coach pour le joueur et des positions humaines pour le cerveau.
