@@ -9,6 +9,9 @@
 /*           search: if it holds its own, the naming carries the       */
 /*           knowledge and a tree can be built on it                   */
 /*   families — where the two part ways, by family of move             */
+/*   prune — what a search would keep and lose by looking only at the  */
+/*           moves the ranker puts first: the measure that decides     */
+/*           whether a tree can be built on it                         */
 /*   loop  — play, fit, check, and again                               */
 /*                                                                     */
 /*   sh tools/bots/distil.sh loop   (GAMES, ITERATIONS, EPOCHS,        */
@@ -529,6 +532,70 @@ function families(policy: Net, data: Float32Array): void {
   for (const [k, c] of [...instead.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)) log(`  ${((c / m) * 100).toFixed(1).padStart(5)}%  ${k}`);
 }
 
+/* =============================== prune ============================= */
+
+/** How much of the search survives if it only ever looks at the moves the
+ *  ranker puts first. This, and not whether the ranker can play a game on
+ *  its own, is what says a tree can be built on it: a prior's job is to
+ *  narrow the breadth without throwing the right move away. */
+function prune(policy: Net, data: Float32Array): void {
+  const asInts = new Uint32Array(data.buffer);
+  const n = Math.floor(data.length / ROW);
+  const SLICE = Math.max(100, Math.floor(n / 40));
+  const sliced = n >= SLICE * 10;
+  const held: number[] = [];
+  for (let r = 0; r < n; r++) if (sliced ? Math.floor(r / SLICE) % 10 === 9 : r % 10 === 9) held.push(r);
+  const KS = [1, 3, 5, 8, 12, 16];
+  const covered = KS.map(() => 0);
+  const lost = KS.map(() => 0);
+  const worst = KS.map(() => 0);
+  let legalTotal = 0;
+  let turns = 0;
+  const x = new Float32Array(FEATURES);
+  for (const r of held) {
+    for (let k = 0; k < FEATURES; k++) x[k] = data[r * ROW + k];
+    const out = forwardAll(policy, x);
+    const legal: number[] = [];
+    for (let w = 0; w < MASK_WORDS; w++) {
+      const bits = asInts[r * ROW + MASK_AT + w];
+      for (let b = 0; b < 32; b++) if (bits & (1 << b)) legal.push(w * 32 + b);
+    }
+    if (!legal.length) continue;
+    turns += 1;
+    legalTotal += legal.length;
+    const ranked = [...legal].sort((a, b) => out[b] - out[a]);
+    const played = data[r * ROW + CHOSEN_AT];
+    const read = new Map<number, number>();
+    let floor = Infinity;
+    for (let k = 0; k < KEPT; k++) {
+      const at = data[r * ROW + KEPT_AT + k * 2];
+      if (at < 0) break;
+      const v = data[r * ROW + KEPT_AT + k * 2 + 1];
+      read.set(at, v);
+      floor = Math.min(floor, v);
+    }
+    const best = data[r * ROW + KEPT_AT + 1];
+    for (const [i, K] of KS.entries()) {
+      const top = ranked.slice(0, K);
+      if (top.includes(played)) covered[i] += 1;
+      /* the best the search could still find among what was kept; a name
+         it never read is at best as good as the worst one it did */
+      let reach = -Infinity;
+      for (const at of top) reach = Math.max(reach, read.get(at) ?? floor);
+      const gap = best - reach;
+      lost[i] += gap;
+      worst[i] = Math.max(worst[i], gap);
+    }
+  }
+  const m = Math.max(1, turns);
+  const breadth = legalTotal / m;
+  log(`prune: ${turns} turns held out, ${breadth.toFixed(1)} names on offer per turn`);
+  log('  kept   the move survives   breadth   points given up (mean / worst)');
+  for (const [i, K] of KS.entries()) {
+    log(`  ${String(K).padStart(4)}   ${((covered[i] / m) * 100).toFixed(1).padStart(15)}%   ${(breadth / K).toFixed(1).padStart(6)}x   ${(lost[i] / m).toFixed(2).padStart(12)} / ${worst[i].toFixed(1)}`);
+  }
+}
+
 /** the policy last written, unpacked */
 function readPolicy(): Net {
   const text = readFileSync(resolve('src/game/policy-weights.ts'), 'utf8').match(/'([A-Za-z0-9+/=]+)'/)?.[1];
@@ -562,6 +629,7 @@ if (!isMainThread) {
     else if (what === 'fit') writePolicy(fit(loadSamples(), 11));
     else if (what === 'check') check(readPolicy());
     else if (what === 'families') families(readPolicy(), loadSamples());
+    else if (what === 'prune') prune(readPolicy(), loadSamples());
     else if (what === 'loop') {
       for (let k = 1; k <= ITERATIONS; k++) {
         log(`--- iteration ${k} of ${ITERATIONS}`);
@@ -570,6 +638,7 @@ if (!isMainThread) {
         const policy = fit(data, 11 + k);
         writePolicy(policy);
         families(policy, data);
+        prune(policy, data);
         check(policy);
       }
     } else throw new Error(`unknown command ${what}`);
