@@ -41,6 +41,8 @@ const EPOCHS = Number(process.env.EPOCHS ?? 30);
 const STRENGTH = Number(process.env.STRENGTH ?? 0.6);
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 1));
 const CHECK_GAMES = Number(process.env.CHECK_GAMES ?? 48);
+/** how long the expert thinks on the yardstick: what the app gives it */
+const YARDSTICK_BUDGET = Number(process.env.YARDSTICK_BUDGET ?? 1500);
 /** the check is split over this many workers */
 const CHECK_WORKERS = 8;
 /** the fit reads at most this many of the latest positions */
@@ -498,7 +500,22 @@ if (isMainThread) {
   const { players, seed, net } = workerData as { players: number; seed: number; net: string };
   loadNet(net);
   const weak: Weights = { ...TRAINED };
-  const r = playMatch({ games: 6, players, seed, subject: TRAINED, field: weak, search: { strength: 1 }, subjectMode: 'blend', fieldMode: 'hand', subjectNet: net, fieldNet: null, fieldStrength: 0.3 });
+  /* the expert as it ships, which names its own thinking time, against a
+     table left at the dial's own pace — the yardstick used to let the
+     search cap the expert to 300 ms and so measured a bot nobody plays */
+  const r = playMatch({
+    games: 6,
+    players,
+    seed,
+    subject: TRAINED,
+    field: weak,
+    search: { strength: 1, budgetMs: YARDSTICK_BUDGET },
+    subjectMode: 'blend',
+    fieldMode: 'hand',
+    subjectNet: net,
+    fieldNet: null,
+    fieldSearch: { strength: 0.3 },
+  });
   parentPort!.postMessage(r);
 } else if ((workerData as { check?: boolean }).check) {
   const { seed, net, previous, games } = workerData as { seed: number; net: string; previous: string | null; games: number };

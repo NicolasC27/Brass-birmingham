@@ -33,6 +33,9 @@ export interface MatchOptions {
   fieldNet?: string | null;
   /** the field's strength when it differs from the subject's */
   fieldStrength?: number;
+  /** the field's whole search when it differs by more than strength — a
+   *  subject given longer to think must not hand the same to the table */
+  fieldSearch?: SearchOptions;
   /** stop at the canal scoring: wins and points are the Canal Era's */
   canalOnly?: boolean;
 }
@@ -85,7 +88,7 @@ export function playMatch(o: MatchOptions): MatchResult {
   const nets: [Brain | null, Brain | null] = [netOf(o.subjectNet), netOf(o.fieldNet)];
   for (let g = 0; g < o.games; g++) {
     const subject = g % o.players;
-    const s = playGame(o.seed + g, o.players, subject, o.subject, o.field, o.search, [o.subjectMode ?? currentEvalMode(), o.fieldMode ?? currentEvalMode()], nets, o.fieldStrength === undefined ? o.search : { ...o.search, strength: o.fieldStrength }, !!o.canalOnly);
+    const s = playGame(o.seed + g, o.players, subject, o.subject, o.field, o.search, [o.subjectMode ?? currentEvalMode(), o.fieldMode ?? currentEvalMode()], nets, o.fieldSearch ?? (o.fieldStrength === undefined ? o.search : { ...o.search, strength: o.fieldStrength }), !!o.canalOnly);
     const points = o.canalOnly ? (s.canalScores ?? s.players.map(() => 0)) : s.players.map((p) => p.vp);
     const others = points.filter((_, k) => k !== subject);
     const winner = o.canalOnly ? points.indexOf(Math.max(...points)) : s.winner;
