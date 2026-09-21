@@ -8,6 +8,7 @@
 /*   check — the network alone, with no search at all, plays the       */
 /*           search: if it holds its own, the naming carries the       */
 /*           knowledge and a tree can be built on it                   */
+/*   families — where the two part ways, by family of move             */
 /*   loop  — play, fit, check, and again                               */
 /*                                                                     */
 /*   sh tools/bots/distil.sh loop   (GAMES, ITERATIONS, EPOCHS,        */
@@ -26,9 +27,9 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { applyAction, fallbackAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { newGame } from '@/game/engine';
-import { FEATURES, features, pack, unpack } from '@/game/net';
+import { FEATURES, features, forwardAll, pack, unpack } from '@/game/net';
 import type { Net } from '@/game/net';
-import { ACTIONS, actionIndex, priors } from '@/game/policy';
+import { ACTIONS, DEVELOP_ONE_AT, DEVELOP_TWO_AT, LINK_ONE_AT, LINK_TWO_AT, LOAN_AT, PASS_AT, SCOUT_AT, SELL_ALL_AT, actionIndex, priors } from '@/game/policy';
 import { chooseBotAction, legalActions, searchTurn } from '@/game/search';
 import type { GameState, SetupPayload } from '@/game/types';
 
@@ -454,6 +455,87 @@ function check(policy: Net): void {
   );
 }
 
+/* ============================== families =========================== */
+
+/** which family of move a name belongs to */
+function family(at: number): string {
+  if (at < LINK_ONE_AT) return 'build';
+  if (at < LINK_TWO_AT) return 'link';
+  if (at < SELL_ALL_AT) return 'double link';
+  if (at < DEVELOP_ONE_AT) return 'sell';
+  if (at < DEVELOP_TWO_AT) return 'develop';
+  if (at < LOAN_AT) return 'develop twice';
+  if (at === LOAN_AT) return 'loan';
+  if (at === SCOUT_AT) return 'scout';
+  if (at === PASS_AT) return 'pass';
+  return '?';
+}
+
+/** where the ranker and the search part ways: a family it never gets right
+ *  points at the naming, a family it gets right but for the wrong town at
+ *  a want of turns to learn from */
+function families(policy: Net, data: Float32Array): void {
+  const asInts = new Uint32Array(data.buffer);
+  const n = Math.floor(data.length / ROW);
+  const SLICE = Math.max(100, Math.floor(n / 40));
+  const sliced = n >= SLICE * 10;
+  const held: number[] = [];
+  for (let r = 0; r < n; r++) if (sliced ? Math.floor(r / SLICE) % 10 === 9 : r % 10 === 9) held.push(r);
+  const seen = new Map<string, { n: number; one: number; three: number }>();
+  const instead = new Map<string, number>();
+  const x = new Float32Array(FEATURES);
+  let one = 0;
+  let three = 0;
+  for (const r of held) {
+    for (let k = 0; k < FEATURES; k++) x[k] = data[r * ROW + k];
+    const out = forwardAll(policy, x);
+    const legal: number[] = [];
+    for (let w = 0; w < MASK_WORDS; w++) {
+      const bits = asInts[r * ROW + MASK_AT + w];
+      for (let b = 0; b < 32; b++) if (bits & (1 << b)) legal.push(w * 32 + b);
+    }
+    if (!legal.length) continue;
+    const played = data[r * ROW + CHOSEN_AT];
+    let better = 0;
+    let top = legal[0];
+    for (const k of legal) {
+      if (out[k] > out[played]) better += 1;
+      if (out[k] > out[top]) top = k;
+    }
+    const fam = family(played);
+    const cur = seen.get(fam) ?? { n: 0, one: 0, three: 0 };
+    cur.n += 1;
+    if (better === 0) {
+      cur.one += 1;
+      one += 1;
+    }
+    if (better < 3) {
+      cur.three += 1;
+      three += 1;
+    }
+    seen.set(fam, cur);
+    if (better > 0) {
+      const key = `${fam} → ${family(top)}`;
+      instead.set(key, (instead.get(key) ?? 0) + 1);
+    }
+  }
+  const m = Math.max(1, held.length);
+  log(`families: ${held.length} turns held out of ${n}; the search's move comes first ${((one / m) * 100).toFixed(1)}% of the time, in the first three ${((three / m) * 100).toFixed(1)}%`);
+  log('  family          share   first   in three');
+  for (const [fam, v] of [...seen.entries()].sort((a, b) => b[1].n - a[1].n)) {
+    log(`  ${fam.padEnd(14)} ${((v.n / m) * 100).toFixed(1).padStart(5)}%  ${((v.one / v.n) * 100).toFixed(1).padStart(5)}%  ${((v.three / v.n) * 100).toFixed(1).padStart(8)}%`);
+  }
+  log('  what it wants instead:');
+  for (const [k, c] of [...instead.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8)) log(`  ${((c / m) * 100).toFixed(1).padStart(5)}%  ${k}`);
+}
+
+/** the policy last written, unpacked */
+function readPolicy(): Net {
+  const text = readFileSync(resolve('src/game/policy-weights.ts'), 'utf8').match(/'([A-Za-z0-9+/=]+)'/)?.[1];
+  if (!text) throw new Error('no policy trained yet: fit first');
+  return unpack(text);
+}
+
 /* ================================ main ============================= */
 
 if (!isMainThread) {
@@ -478,16 +560,16 @@ if (!isMainThread) {
   const run = async (): Promise<void> => {
     if (what === 'play') await play(tag());
     else if (what === 'fit') writePolicy(fit(loadSamples(), 11));
-    else if (what === 'check') {
-      const text = readFileSync(resolve('src/game/policy-weights.ts'), 'utf8').match(/'([A-Za-z0-9+/=]+)'/)?.[1];
-      if (!text) throw new Error('no policy trained yet: fit first');
-      check(unpack(text));
-    } else if (what === 'loop') {
+    else if (what === 'check') check(readPolicy());
+    else if (what === 'families') families(readPolicy(), loadSamples());
+    else if (what === 'loop') {
       for (let k = 1; k <= ITERATIONS; k++) {
         log(`--- iteration ${k} of ${ITERATIONS}`);
         await play(tag());
-        const policy = fit(loadSamples(), 11 + k);
+        const data = loadSamples();
+        const policy = fit(data, 11 + k);
         writePolicy(policy);
+        families(policy, data);
         check(policy);
       }
     } else throw new Error(`unknown command ${what}`);
