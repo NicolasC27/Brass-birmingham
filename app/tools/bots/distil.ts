@@ -11,7 +11,7 @@
 /*   loop  — play, fit, check, and again                               */
 /*                                                                     */
 /*   sh tools/bots/distil.sh loop   (GAMES, ITERATIONS, EPOCHS,        */
-/*                                   STRENGTH, WORKERS in the env)     */
+/*                                   STRENGTH, BUDGET, WORKERS)        */
 /*                                                                     */
 /* This is the cheap way to find out whether a move's name is enough   */
 /* to learn from, before spending weeks on a search that thinks in     */
@@ -37,6 +37,8 @@ const ITERATIONS = Number(process.env.ITERATIONS ?? 1);
 const EPOCHS = Number(process.env.EPOCHS ?? 40);
 const STRENGTH = Number(process.env.STRENGTH ?? 1);
 const DEPTH = Number(process.env.DEPTH ?? 0) as 0 | 1 | 2;
+/** the teacher's thinking time: past a second it tries every pair of actions */
+const BUDGET = Number(process.env.BUDGET ?? 1500);
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 4));
 const CHECK_GAMES = Number(process.env.CHECK_GAMES ?? 24);
 const HIDDEN = (process.env.HIDDEN ?? '128,96').split(',').map(Number);
@@ -100,7 +102,7 @@ function playOne(seed: number, players: number): { rows: Float32Array; turns: nu
       continue;
     }
     const seat = s.current;
-    const found = searchTurn(s, seat, { strength: STRENGTH, depth: DEPTH, rank: true });
+    const found = searchTurn(s, seat, { strength: STRENGTH, depth: DEPTH, budgetMs: BUDGET, rank: true });
     const action: GameAction = found?.action ?? fallbackAction(s, seat);
     const chosen = actionIndex(action);
     if (found?.ranked && chosen >= 0) {
@@ -425,7 +427,7 @@ function playCheck(policy: Net, seed: number, players: number, subject: number):
       continue;
     }
     const seat = s.current;
-    const a = (seat === subject ? policyMove(policy, s, seat) : chooseBotAction(s, seat, { strength: STRENGTH, depth: DEPTH })) ?? fallbackAction(s, seat);
+    const a = (seat === subject ? policyMove(policy, s, seat) : chooseBotAction(s, seat, { strength: STRENGTH, depth: DEPTH, budgetMs: BUDGET })) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
   }
   return s;
