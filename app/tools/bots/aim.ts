@@ -11,7 +11,9 @@
 /* points against a weak table, at three seats and at four, the two    */
 /* tables the target is set on. An evolution of one parent and a       */
 /* handful of children, each child judged on exactly the same games    */
-/* as its parent so that the luck of the deal cancels out.             */
+/* as its parent so that the luck of the deal cancels out. The weak    */
+/* table is held at the hand-written defaults for good, so that a      */
+/* score means the same thing from one run to the next.                */
 /*                                                                     */
 /*   sh tools/bots/aim.sh      (GENERATIONS, GAMES, BUDGET, SEED,      */
 /*                              CHALLENGERS, SEATS in the env)         */
@@ -90,7 +92,10 @@ interface Score {
 /** one candidate played over the same games as everyone else this generation */
 function judge(w: Weights, seed: number): Score {
   const brain = unpackBrain(NET_B64);
-  const weak: Weights = { ...TRAINED };
+  /* the table the score is posted against never moves: were it the reading
+     being bred, every generation would face a different opponent and the
+     numbers of one run would mean nothing beside another's */
+  const weak: Weights = { ...DEFAULTS };
   let points = 0;
   let wins = 0;
   let games = 0;
