@@ -15,9 +15,10 @@ Coffre de notes sur le cerveau des bots : comment ils choisissent un coup, comme
 9. [[09 Pistes]] — ce qui reste à essayer pour atteindre 60 puis 80
 10. [[10 Journal]] — les changements d'objectif et de méthode, datés
 11. [[11 Nommer les coups]] — donner un nom à chaque coup et distiller la recherche, pour sortir du plateau
+12. [[12 Le plafond de réflexion]] — la ligne qui bridait le bot et faussait toutes les jauges
 
 ## Repères
 
 - Code : `app/src/game/search.ts` (recherche), `weights.ts` (évaluation manuelle), `net.ts` (cerveau), `net-weights.ts` (poids appris), `policy.ts` (les noms des coups et leur classement), `app/tools/bots/` (arène, entraîneur, apprentissage, distillation).
 - Objectif fixé par Nicolas : **un bot fort sur la partie entière**, avec pour repère 60 points d'ère canal minimum, puis 80. Un temps, l'entraînement s'est limité à l'ère canal ; il rejoue la partie entière depuis le 20 septembre (voir [[10 Journal]]).
-- Où on en est : l'expert fait **43 à 52 points d'ère canal** à pleine force selon la table, contre 30 pour la lecture manuelle seule au départ.
+- Où on en est : avec son vrai temps de réflexion, l'expert fait **149,7 points à deux sièges et 138,2 à trois** contre une table faible, et **157,2 à deux** s'il vise son propre score avec vingt secondes par coup. Les chiffres plus bas qu'on lit ailleurs dans ce coffre datent d'avant la correction du plafond de réflexion : voir [[12 Le plafond de réflexion]].

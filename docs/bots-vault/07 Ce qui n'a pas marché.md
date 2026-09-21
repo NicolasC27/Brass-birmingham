@@ -12,7 +12,7 @@
 | Anticipation élargie (8 tours, 3 tirages) | 39–52, même fourchette | rien de mesurable |
 | Tour suivant planifié (recherche) au lieu de glouton | 6/16 contre 6/16 | rien |
 | Rivaux figés dans l'anticipation | 2/8, −4,4 | trompe la machine |
-| N+3, N+4 avec 4 s de réflexion, contre N+2 à 1,5 s | 0/12, 2/12, et N+2 à 4 s 1/12 | plus de temps d'anticipation n'apporte rien ; sans anticipation, égalité (3/12, 50,0 contre 49,7) |
+| ~~N+3, N+4 avec 4 s de réflexion, contre N+2 à 1,5 s~~ **mesure invalide** | 0/12, 2/12, et N+2 à 4 s 1/12 | les 4 s n'ont jamais été accordées : le budget était plafonné à 1500 ms, la ligne comparait 1,5 s contre elle-même. Voir [[12 Le plafond de réflexion]] |
 | Évolution des poids manuels par auto-jeu (`train.ts`) | deux générations sans gagnant | mesure trop bruitée pour des gains de un point ; le cerveau rapporte plus |
 | Cible TD sur des cerveaux non « ère canal » | erreur retenue 8,3 mais 6/24 | mieux lire n'est pas mieux jouer ; la cible TD reste, elle n'est pas magique |
 
@@ -21,6 +21,6 @@
 
 ## La leçon transversale
 
-Le plafond n'est pas dans la profondeur de recherche : sans anticipation, avec une ronde, deux, trois ou quatre, avec 1,5 s ou 4 s, l'expert fait 50. Ce qui a fait monter les chiffres, c'est ce que le cerveau **voit** (traits) et ce qu'il a **vu jouer** (exploration, force des parties).
+Le plafond n'est pas dans la profondeur de recherche : sans anticipation, avec une ronde, deux, trois ou quatre, l'expert fait 50. (La partie « avec 1,5 s ou 4 s » de cette conclusion était fausse — les 4 s n'étaient pas accordées. Remesuré proprement, le temps ne paie que lorsque le bot vise son propre score : voir [[12 Le plafond de réflexion]].) Ce qui a fait monter les chiffres, c'est ce que le cerveau **voit** (traits) et ce qu'il a **vu jouer** (exploration, force des parties).
 
 Suite : [[08 Comment lancer]].

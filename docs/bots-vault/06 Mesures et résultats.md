@@ -1,5 +1,12 @@
 # Mesures et résultats
 
+> [!warning] Chiffres à relire — mesure faussée jusqu'au 21 septembre 2026
+> `searchTurn` plafonnait le temps de réflexion contre le curseur de force : un appel qui ne nommait pas de budget tombait à **300 ms**, un appel qui en demandait plus était rabaissé à 1500 ms. Or aucun outil d'entraînement ni de mesure ne nommait de budget, tandis que l'application donne 1500 ms à son expert.
+> Conséquences : **toutes les jauges ci-dessous décrivent un bot bridé à 300 ms**, plus faible que celui qui tourne réellement ; et toute comparaison de temps de réflexion comparait le même temps contre lui-même.
+> Remesuré avec le vrai budget : **149,7 points à deux sièges et 138,2 à trois**, contre 134 et 127 ici. Voir [[12 Le plafond de réflexion]].
+
+
+
 Toutes les mesures du 19 septembre 2026, dans l'ordre. « Pair » = la part de victoires qu'un siège aurait au hasard (1/4 à quatre).
 
 ## La recherche contre l'ancien bot heuristique (4 joueurs, 16 parties)
