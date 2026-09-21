@@ -54,6 +54,8 @@ export interface SearchOptions {
   opening?: Opening;
   /** rounds looked past this turn (0, 1 or 2); the strength sets it when absent */
   depth?: 0 | 1 | 2;
+  /** also hand back how every move read, for a learner to be taught from */
+  rank?: boolean;
 }
 
 export interface SearchResult {
@@ -64,6 +66,8 @@ export interface SearchResult {
   nodes: number;
   /** the time it took, in ms */
   ms: number;
+  /** every move and how the table read right after it, unblurred, when asked */
+  ranked?: { action: GameAction; score: number }[];
 }
 
 const DEFAULT_BUDGET_MS = 300;
@@ -461,15 +465,19 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
   const start = now();
   let nodes = 0;
   const firsts: Candidate[] = [];
+  const ranked: { action: GameAction; score: number }[] | undefined = o.rank ? [] : undefined;
   for (const action of legalActions(s, i)) {
     const r = applyAction(s, i, action);
     if (!r.state) continue;
     nodes += 1;
-    firsts.push({ action, state: r.state, score: evaluate(r.state, i) + dial.noise * blur() });
+    const clean = evaluate(r.state, i);
+    ranked?.push({ action, score: clean });
+    firsts.push({ action, state: r.state, score: clean + dial.noise * blur() });
   }
   if (!firsts.length) return null;
   firsts.sort((a, b) => b.score - a.score);
-  const done = (best: Candidate): SearchResult => ({ action: best.action, score: best.score, nodes, ms: now() - start });
+  ranked?.sort((a, b) => b.score - a.score);
+  const done = (best: Candidate): SearchResult => ({ action: best.action, score: best.score, nodes, ms: now() - start, ranked });
   /* the turn ends with this action, or the machine does not look further */
   if (s.actionsLeft <= 1 || !dial.second) return done(firsts[0]);
 
