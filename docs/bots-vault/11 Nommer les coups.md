@@ -50,6 +50,62 @@ La politique joue **seule, sans aucune recherche** : elle prend le coup le mieux
 
 C'est la seule mesure qui compte à ce stade. Si la politique seule tient le rang de la recherche qu'elle a copiée, alors un nom porte assez de connaissance pour qu'un arbre soit construit dessus. Sinon, l'encodage est à revoir avant d'aller plus loin.
 
+## Ce que cela a donné, mesuré le 21 septembre 2026
+
+Deux lots de parties, 25 080 puis 62 700 tours au total, professeur à 1500 ms.
+
+| Politique | Tours appris | Coup exact | Dans les trois |
+|---|---|---|---|
+| v1 | 25 080 | 40,4 % | 65,7 % |
+| v2 | 62 700 | 43,2 % | 69,4 % |
+
+Deux fois et demie plus de données ne rapportent que trois points : **le volume de parties n'est pas la limite**. Le hasard sur 27 coups donnerait 3,6 %.
+
+### Par famille de coup (v1)
+
+| Famille | Part | Coup exact | Dans les trois |
+|---|---|---|---|
+| Vendre | 9,9 % | 92,3 % | 100 % |
+| Construire | 38,7 % | 38,4 % | 64,1 % |
+| Liaison | 25,4 % | 31,0 % | 59,0 % |
+| Emprunt | 9,7 % | 39,8 % | 73,0 % |
+| Double liaison | 9,1 % | 33,6 % | 66,4 % |
+| Développer deux fois | 4,6 % | 33,9 % | 48,7 % |
+| Scout | 1,7 % | 4,7 % | 34,9 % |
+| Développer une fois | 0,9 % | 0 % | 9,1 % |
+
+Quand la politique se trompe, elle propose presque toujours un coup de la **même famille** : une autre construction (13,2 % des tours), une autre liaison (7,7 %). Elle trouve la bonne idée et la mauvaise ville. La vente à 92 % montre que l'encodage n'est pas en cause : là où le coup est presque forcé, le réseau le trouve. Le développement simple est écrasé par le double dans presque toute position, et le scout est un jugement de main que les traits du plateau ne décrivent pas.
+
+### L'épreuve, et pourquoi elle était mal posée
+
+La politique seule, sans recherche, **perd nettement** : 1 ère sur 24 contre une parité à 8, −38,9 points. C'est le défaut connu de l'apprentissage par imitation : un imitateur à 40 % dérive de la ligne de son professeur au fil d'une centaine de décisions et finit dans des positions qu'il n'a jamais apprises.
+
+C'était le mauvais critère. Ce qu'on demande à une intuition, c'est d'élaguer sans jeter le bon coup :
+
+| Noms gardés sur 26,9 | Le bon coup survit | Largeur ÷ | Points lâchés par tour |
+|---|---|---|---|
+| 5 | 81,4 % | 5,4 | 0,25 |
+| 8 | 89,7 % | 3,4 | 0,11 |
+| 12 | 95,3 % | 2,2 | 0,04 |
+
+### Le résultat négatif qui compte
+
+Le classement branché sur la recherche comme **filtre dur** (`guided` dans `search.ts`, la politique consultée avant que le moteur ne joue quoi que ce soit) écarte 60 % des coups à huit noms. Mesuré en duel à horloge égale : **4 ères sur 24, −11,5 points**. L'élagage dur coûte cher.
+
+Le chiffre « 0,11 point lâché » se lit **par tour**, pas par partie : deux actions par tour, une trentaine de tours, l'ordre de grandeur du duel est retrouvé. Lire ce coût comme négligeable face à une partie de 130 points est une erreur d'échelle.
+
+Rendre le temps gagné en anticipation récupère la moitié du coût :
+
+| Réglage | Ères gagnées sur 24 | Points sur le meilleur rival |
+|---|---|---|
+| 8 noms, profondeur 0 | 4 | −11,5 |
+| 8 noms, profondeur 2 | 8 | −5,3 |
+| parité | 8 | 0 |
+
+C'est un fait nouveau qui contredit [[07 Ce qui n'a pas marché]] : l'anticipation **rapporte**, dès qu'on lui laisse la place. Elle était étranglée par la largeur, pas inutile. Le filtre dur reste malgré tout à peine à parité.
+
+**Ce que cela ne dit pas** : un Monte-Carlo n'élague pas dur. Le prior y oriente les visites sans supprimer personne — un coup mal classé est visité rarement, et l'arbre y revient s'il s'avère bon. Le duel condamne l'élagage dur, pas l'arbre.
+
 ## Ce que cela ne fait pas encore
 
 La distillation ne rend personne plus fort : elle copie. Son intérêt est de valider l'infrastructure et de fournir un **prior** à un Monte-Carlo guidé, qui lui seul fera progresser la cible. Voir [[09 Pistes]].
