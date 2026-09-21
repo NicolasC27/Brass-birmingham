@@ -474,7 +474,11 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
   const s = bare(full);
   const strength = clamp01(o.strength ?? 1);
   const dial = knobs(strength);
-  const budget = Math.min(o.budgetMs ?? DEFAULT_BUDGET_MS, dial.budgetMs);
+  /* A caller that names a budget means it, upwards as well as downwards:
+     capping it against the dial silently turned every study of longer
+     thinking into another study of 1500 ms. With no budget named, the
+     modest default stands, so the table server plays as it always has. */
+  const budget = o.budgetMs ?? Math.min(DEFAULT_BUDGET_MS, dial.budgetMs);
   const depth = o.depth ?? dial.depth;
   const dice = diceFrom(s, i);
   const blur = bell(dice);
