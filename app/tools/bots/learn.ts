@@ -57,7 +57,7 @@ const CHECK_WORKERS = 8;
 const FIT_ROWS = Number(process.env.FIT_ROWS ?? 800000);
 /** how much of the field plays a style of its own while games are written down */
 const EXPLORE = Number(process.env.EXPLORE ?? 0.5);
-const HIDDEN = [128, 64];
+const HIDDEN = (process.env.HIDDEN ?? '128,64').split(',').map(Number);
 /** how many networks make a brain */
 const NETS = Number(process.env.NETS ?? 3);
 /** the target leans on the last brain's reading this many of the seat's positions later, by this much */
