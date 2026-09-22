@@ -12,7 +12,8 @@
 /*     sh tools/bots/trial.sh                                          */
 /*                                                                     */
 /* A trial names weights to override (stack=0.8) and search options    */
-/* (planBeam=12, budgetMs=1500, depth=2). Everything unnamed is left   */
+/* (planBeam=12, depth=2) and an opening (opening=goods-engine).       */
+/* Everything unnamed is left                                          */
 /* as it ships.                                                        */
 /* ------------------------------------------------------------------ */
 
@@ -37,6 +38,8 @@ const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 2));
 const LOG_FILE = resolve('tools/bots/trial.log');
 
 const SEARCH_KEYS = new Set(['planBeam', 'budgetMs', 'depth', 'guided', 'beam', 'strength']);
+/** search options that name something rather than measure it */
+const WORD_KEYS = new Set(['opening']);
 
 interface Trial {
   name: string;
@@ -52,6 +55,10 @@ function parseTrials(text: string): Trial[] {
     for (const pair of (rest ?? '').split(',').filter(Boolean)) {
       const [k, v] = pair.split('=');
       const key = k.trim();
+      if (WORD_KEYS.has(key)) {
+        (t.search as Record<string, string>)[key] = v.trim();
+        continue;
+      }
       const value = Number(v);
       if (SEARCH_KEYS.has(key)) (t.search as Record<string, number>)[key] = value;
       else (t.weights as Record<string, number>)[key] = value;
@@ -63,6 +70,8 @@ function parseTrials(text: string): Trial[] {
 const TRIALS = parseTrials(process.env.TRIALS ?? 'as it stands:');
 
 interface Slice {
+  /** the seed of each game, so that two settings can be set side by side */
+  seeds: number[];
   points: number[];
   wins: number;
   goods: Record<string, number>;
@@ -86,7 +95,7 @@ function run(trial: Trial, players: number, seeds: number[]): Slice {
       if (INDUSTRIES[t.industry][t.level - 1].beerToSell > 0) goods[t.industry] = (goods[t.industry] ?? 0) + 1;
     }
   }
-  return { points, wins, goods };
+  return { seeds, points, wins, goods };
 }
 
 if (!isMainThread) {
@@ -123,8 +132,19 @@ if (!isMainThread) {
         }),
     ),
   ).then((slices) => {
-    log('  seats  setting                     points   ± chance   won      goods flipped');
-    const base = new Map<number, number>();
+    log('  seats  setting                     points   won      against the first        goods flipped');
+    /* every setting played the same games, so the honest comparison is game
+       by game: the deal's luck falls on both and cancels, which sees a gain
+       half the size of what the raw averages could ever separate */
+    const byGame = new Map<string, Map<number, number>>();
+    for (const trial of TRIALS) {
+      for (const players of SEATS) {
+        const mine = slices.filter((_, k) => jobs[k].trial === trial && jobs[k].players === players);
+        const m = new Map<number, number>();
+        for (const s of mine) s.seeds.forEach((seed, k) => m.set(seed, s.points[k]));
+        byGame.set(`${trial.name}|${players}`, m);
+      }
+    }
     for (const trial of TRIALS) {
       for (const players of SEATS) {
         const mine = slices.filter((_, k) => jobs[k].trial === trial && jobs[k].players === players);
@@ -133,13 +153,19 @@ if (!isMainThread) {
         const goods: Record<string, number> = {};
         for (const s of mine) for (const [k, v] of Object.entries(s.goods)) goods[k] = (goods[k] ?? 0) + v;
         const mean = pts.reduce((a, b) => a + b, 0) / pts.length;
-        const sd = Math.sqrt(pts.reduce((a, b) => a + (b - mean) ** 2, 0) / Math.max(1, pts.length - 1));
-        const err = 2 * (sd / Math.sqrt(pts.length));
-        if (trial === TRIALS[0]) base.set(players, mean);
-        const gap = mean - (base.get(players) ?? mean);
-        const verdict = trial === TRIALS[0] ? '' : Math.abs(gap) > err ? `  ${gap > 0 ? '+' : ''}${gap.toFixed(1)} real` : `  ${gap > 0 ? '+' : ''}${gap.toFixed(1)} undecided`;
+        let verdict = '';
+        if (trial !== TRIALS[0]) {
+          const here = byGame.get(`${trial.name}|${players}`)!;
+          const there = byGame.get(`${TRIALS[0].name}|${players}`)!;
+          const diffs: number[] = [];
+          for (const [seed, v] of here) if (there.has(seed)) diffs.push(v - there.get(seed)!);
+          const gap = diffs.reduce((a, b) => a + b, 0) / Math.max(1, diffs.length);
+          const sd = Math.sqrt(diffs.reduce((a, b) => a + (b - gap) ** 2, 0) / Math.max(1, diffs.length - 1));
+          const err = 2 * (sd / Math.sqrt(Math.max(1, diffs.length)));
+          verdict = `${gap >= 0 ? '+' : ''}${gap.toFixed(1)} ± ${err.toFixed(1)} ${Math.abs(gap) > err ? 'real   ' : 'undecided'}`;
+        }
         const g = Object.entries(goods).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${(v / pts.length).toFixed(1)}`).join(', ') || 'none';
-        log(`  ${players}      ${trial.name.padEnd(26)} ${mean.toFixed(1).padStart(6)}   ± ${err.toFixed(1).padStart(4)}   ${String(wins + '/' + pts.length).padEnd(7)}  ${g}${verdict}`);
+        log(`  ${players}      ${trial.name.padEnd(26)} ${mean.toFixed(1).padStart(6)}   ${String(wins + '/' + pts.length).padEnd(7)}  ${verdict.padEnd(22)}   ${g}`);
       }
     }
     log(`  ${Math.round((Date.now() - started) / 1000)} s`);

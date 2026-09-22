@@ -8,20 +8,23 @@
 /* Canal Era — an iron works turned into developments then a level-2   */
 /* mill sold; a brewery in reach of the merchants then goods sold; a   */
 /* development, an iron works, two links; two loans paired with        */
-/* builds; pottery when a card allows. Rail Era — double rails first,   */
-/* whatever the opening.                                               */
+/* builds; pottery when a card allows; and the goods engine strong     */
+/* players describe for three and four seats. Rail Era — double rails  */
+/* first, whatever the opening.                                        */
 /* ------------------------------------------------------------------ */
 
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
 import type { GameState, IndustryType } from './types';
 
-export type Opening = 'iron-battery' | 'beer-anchor' | 'flex-rails' | 'loans' | 'pottery';
-export const OPENINGS: Opening[] = ['iron-battery', 'beer-anchor', 'flex-rails', 'loans', 'pottery'];
+export type Opening = 'iron-battery' | 'beer-anchor' | 'flex-rails' | 'loans' | 'pottery' | 'goods-engine';
+export const OPENINGS: Opening[] = ['iron-battery', 'beer-anchor', 'flex-rails', 'loans', 'pottery', 'goods-engine'];
 
 /** how many canal rounds an opening lasts, and how many rail rounds the double-rail rule does */
 const CANAL_ROUNDS = 4;
 const RAIL_ROUNDS = 2;
+/** an opening that needs longer than the rest to lay its groundwork */
+const LASTS: Partial<Record<Opening, number>> = { 'goods-engine': 6 };
 
 type Rule = { when: (s: GameState, seat: number) => boolean; play: (a: GameAction) => boolean };
 
@@ -29,6 +32,9 @@ const own = (s: GameState, seat: number, industry: IndustryType) => Object.value
 const goods = (s: GameState, seat: number) => Object.values(s.tiles).filter((t) => t.owner === seat && !t.flipped && ['cotton', 'manufacturer', 'pottery'].includes(t.industry));
 const nextLevel = (s: GameState, seat: number, industry: IndustryType) => s.players[seat].stacks[industry][0] ?? 9;
 const build = (...inds: string[]) => (a: GameAction) => a.kind === 'build' && inds.includes(a.industry);
+/** a development that clears two tiles: clearing one wastes the action */
+const developTwo = (...inds: string[]) => (a: GameAction) => a.kind === 'develop' && a.industries.length > 1 && a.industries.every((x) => inds.includes(x));
+const unflipped = (s: GameState, seat: number, industry: IndustryType) => Object.values(s.tiles).filter((t) => t.owner === seat && t.industry === industry && !t.flipped).length;
 const is = (k: GameAction['kind']) => (a: GameAction) => a.kind === k;
 const double = (a: GameAction) => a.kind === 'network' && !!a.second;
 
@@ -58,6 +64,20 @@ const CANAL: Record<Opening, Rule[]> = {
     { when: (s, i) => goods(s, i).length > 0, play: is('sell') },
     { when: () => true, play: build('pottery') },
   ],
+  /* The plan strong players give for three and four seats: clear the level
+     one breweries and mills off the mat first, since the level twos score
+     twice when they are sold before the canals go, then build two of each
+     and sell the goods with one's own beer. The borrowing is done here,
+     while the rails are still far off and there is time to spend it. */
+  'goods-engine': [
+    { when: (s, i) => nextLevel(s, i, 'brewery') < 2, play: developTwo('brewery') },
+    { when: (s, i) => nextLevel(s, i, 'manufacturer') < 2, play: developTwo('manufacturer', 'coal', 'iron', 'brewery') },
+    { when: (s, i) => s.players[i].loans < 3 && s.players[i].money < 30, play: is('loan') },
+    { when: (s, i) => own(s, i, 'iron').length === 0, play: build('iron') },
+    { when: (s, i) => own(s, i, 'brewery').length < 2, play: build('brewery') },
+    { when: (s, i) => unflipped(s, i, 'manufacturer') < 2, play: build('manufacturer') },
+    { when: (s, i) => goods(s, i).length > 0, play: is('sell') },
+  ],
 };
 const RAIL: Rule[] = [{ when: () => true, play: double }];
 
@@ -65,7 +85,8 @@ const RAIL: Rule[] = [{ when: () => true, play: double }];
  *  or the table allows nothing of the kind; `read` scores a table after
  *  an action, the best-reading candidate is played */
 export function openingAction(s: GameState, seat: number, opening: Opening, legal: GameAction[], read: (after: GameState) => number): GameAction | null {
-  const rules = s.era === 'canal' ? (s.round <= CANAL_ROUNDS ? CANAL[opening] : []) : s.round <= RAIL_ROUNDS ? RAIL : [];
+  const lasts = LASTS[opening] ?? CANAL_ROUNDS;
+  const rules = s.era === 'canal' ? (s.round <= lasts ? CANAL[opening] : []) : s.round <= RAIL_ROUNDS ? RAIL : [];
   const rule = rules.find((r) => r.when(s, seat));
   if (!rule) return null;
   let best: { a: GameAction; v: number } | null = null;
