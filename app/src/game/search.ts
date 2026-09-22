@@ -66,6 +66,16 @@ export interface SearchOptions {
    *  followed by their best second. Zero leaves the old greedy walk, which
    *  models a future self more short-sighted than the machine really is */
   planBeam?: number;
+  /** spend the turn's second action before walking on. A turn whose second
+   *  action does not strictly beat the first is recorded with an action
+   *  unspent, and the walk then stops at once — so that candidate is judged
+   *  a whole round earlier than the ones that spent both. On by default */
+  finishTurn?: boolean;
+  /** rival actions played before the table is read. The default six is
+   *  exactly one round at four seats, and since next round's order is
+   *  least-spent-first a cheap turn can buy itself an extra own turn that
+   *  an expensive one does not get */
+  lookTurns?: number;
 }
 
 export interface SearchResult {
@@ -91,7 +101,11 @@ const BEAM_CAP = 14;
 /** how many of the best turns are looked ahead from */
 const LOOKAHEAD_TURNS_KEPT = 4;
 /** turns played on when looking ahead, and hands drawn for each */
-const LOOKAHEAD_TURNS = 6;
+/* Rival actions played before the table is read. Six was exactly one round
+   at four seats, and since next round's order is least-spent-first a cheap
+   turn bought itself an extra own turn that an expensive one did not get.
+   Far enough now that every candidate is read after the same round. */
+const LOOKAHEAD_TURNS = 24;
 const LOOKAHEAD_DEALS = 2;
 /** what the look ahead weighs against the table as it stands after the turn */
 const LOOKAHEAD_WEIGHT = 0.7;
@@ -465,14 +479,24 @@ function greedyTurn(s: GameState, i: number): { state: GameState; nodes: number 
 
 /** the table `depth` rounds on from the end of our turn, as one deal of
  *  the unseen cards has it */
-function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number, planBeam = 0): { score: number; nodes: number } {
+function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number, o: SearchOptions = {}): { score: number; nodes: number } {
+  const planBeam = o.planBeam ?? 0;
+  const turns = o.lookTurns ?? LOOKAHEAD_TURNS;
+  const finish = o.finishTurn !== false;
   let cur = determinize(after, i, rand);
   let nodes = 0;
-  cur = rivalsUntilMyTurn(cur, i, LOOKAHEAD_TURNS);
+  /* the turn is finished before the rivals answer, so that every candidate
+     is read at the same point of the game rather than one round apart */
+  if (finish && cur.phase === 'action' && cur.current === i) {
+    const rest = greedyTurn(cur, i);
+    nodes += rest.nodes;
+    cur = rest.state;
+  }
+  cur = rivalsUntilMyTurn(cur, i, turns);
   if (depth === 2 && cur.phase === 'action' && cur.current === i) {
     const mine = planBeam > 0 ? plannedTurn(cur, i, planBeam) : greedyTurn(cur, i);
     nodes += mine.nodes;
-    cur = rivalsUntilMyTurn(mine.state, i, LOOKAHEAD_TURNS);
+    cur = rivalsUntilMyTurn(mine.state, i, turns);
   }
   return { score: evaluate(cur, i), nodes };
 }
@@ -588,7 +612,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
     if (k > 0 && now() - start > budget) break;
     let sum = 0;
     for (let d = 0; d < LOOKAHEAD_DEALS; d++) {
-      const look = lookAhead(turn.after, i, depth, dice, o.planBeam ?? 0);
+      const look = lookAhead(turn.after, i, depth, dice, o);
       nodes += look.nodes;
       sum += look.score;
     }
@@ -647,8 +671,12 @@ export function adaptiveStrength(s: GameState, i: number, base: number): number 
 export function chooseBotAction(s: GameState, i: number, o: SearchOptions = {}): GameAction | null {
   /* the expert plays flat out, whoever sits across the table */
   const strength = isExpert(s, i) ? 1 : adaptiveStrength(s, i, o.strength ?? 1);
-  /* the expert's book: pottery at three, the one opening measured to pay */
-  const opening = o.opening ?? (isExpert(s, i) && s.players.length === 3 ? 'pottery' : undefined);
+  /* No book. The pottery opening was blessed on eight games of canal-era
+     points under an evaluation since replaced twice, and no bench ever sat
+     the expert at three seats to check it again. Measured on the bot as it
+     stands, ninety-six games a cell: −4.0 points at three seats and −5.5 at
+     four, both clear of the spread. */
+  const opening = o.opening;
   if (opening) {
     const scripted = openingAction(s, i, opening, legalActions(s, i), (after) => evaluate(after, i));
     if (scripted) return scripted;

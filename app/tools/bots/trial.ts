@@ -43,7 +43,7 @@ const FIELD_BUDGET = process.env.FIELD_BUDGET === undefined ? undefined : Number
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 2));
 const LOG_FILE = resolve('tools/bots/trial.log');
 
-const SEARCH_KEYS = new Set(['planBeam', 'budgetMs', 'depth', 'guided', 'beam', 'strength']);
+const SEARCH_KEYS = new Set(['planBeam', 'budgetMs', 'depth', 'guided', 'beam', 'strength', 'lookTurns', 'finishTurn']);
 /** search options that name something rather than measure it */
 const WORD_KEYS = new Set(['opening']);
 /** how the subject reads the board: 'hand', 'net' or 'blend' */
