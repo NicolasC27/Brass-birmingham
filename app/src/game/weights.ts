@@ -54,6 +54,11 @@ export interface Weights {
   earlyLoan: number;
   /** a mat developed in the Canal Era: per industry whose next tile is level 2 or above, which will survive the sweep and score twice */
   developed: number;
+  /** what it costs to have spent a level-1 goods mill or brewery on the board.
+   *  The tile is gone from the mat either way, and the strong players' advice
+   *  is to develop those away rather than build them: half our builds are
+   *  level 1 and our mats end the game barely started (cotton at 1.3 of 4) */
+  lowTile: number;
   /** the turn-order weapon: per seat one would move ahead of next round by having spent less */
   tempo: number;
   /** a canal laid for less than four icons: the guides call it an inefficient action */
@@ -91,6 +96,7 @@ export const DEFAULTS: Weights = {
   rival: 0,
   earlyLoan: 8,
   developed: 2,
+  lowTile: 0,
   tempo: 1,
   weakLink: 0,
   railReady: 3,

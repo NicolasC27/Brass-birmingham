@@ -275,6 +275,9 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
   for (const [key, t] of Object.entries(s.tiles)) {
     if (t.owner !== j) continue;
     const lv = INDUSTRIES[t.industry][t.level - 1];
+    /* a level-1 mill or brewery is a tile spent off the mat for little: the
+       strong players develop those away instead of building them */
+    if (w.lowTile && t.level === 1 && (lv.beerToSell > 0 || t.industry === 'brewery')) v -= w.lowTile * frac;
     const twice = again && lv.eras.includes('rail') ? 1 : 0;
     if (t.flipped) {
       v += lv.vp * twice;
