@@ -35,7 +35,7 @@ import { cloneState } from './clone';
 import type { GameAction } from './actions';
 import { chooseBotMove } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
-import { buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
+import { beerSources, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
 import { FEATURES, activeNet, features, think } from './net';
@@ -71,6 +71,11 @@ export interface SearchOptions {
    *  unspent, and the walk then stops at once — so that candidate is judged
    *  a whole round earlier than the ones that spent both. On by default */
   finishTurn?: boolean;
+  /** offer every second rail the rules allow, not only those glued to the
+   *  first. Three times the choices on a family worth a tenth of the actions,
+   *  but the breadth of a turn goes from 33 moves to 51 and the pair search
+   *  costs the square of that */
+  wideSecond?: boolean;
   /** rival actions played before the table is read. The default six is
    *  exactly one round at four seats, and since next round's order is
    *  least-spent-first a cheap turn can buy itself an extra own turn that
@@ -149,7 +154,7 @@ function cardWorth(card: Card, uses: Map<string, BuildTarget[]>): number {
 /** every action worth trying for the player to act: each build once, with
  *  the card best spared for it; every link, single or double; the sales,
  *  all at once and one by one; the developments; a loan, a scout, a pass */
-export function legalActions(s: GameState, i: number): GameAction[] {
+export function legalActions(s: GameState, i: number, o: SearchOptions = {}): GameAction[] {
   const p = s.players[i];
   if (s.phase !== 'action' || s.current !== i || !p.hand.length) return [];
   const out: GameAction[] = [];
@@ -166,18 +171,49 @@ export function legalActions(s: GameState, i: number): GameAction[] {
       if (!builds.has(key)) builds.set(key, { card, t });
     }
   }
-  for (const { card, t } of builds.values()) out.push({ kind: 'build', card: card.id, town: t.town, slot: t.slot, industry: t.industry });
+  /* A build draws iron from whichever works one names. Only one naming can
+     change anything: one's own works holding exactly the cubes the build
+     wants, which empties it and turns it over for its points. Every other
+     source costs the same and leaves the board where it was, so the engine's
+     nearest is kept and the search is spared a branch it cannot use. */
+  const ownWorksToFlip = ironSources(s).filter((w) => w.owner === i);
+  for (const { card, t } of builds.values()) {
+    out.push({ kind: 'build', card: card.id, town: t.town, slot: t.slot, industry: t.industry });
+    const wanted = INDUSTRIES[t.industry][t.level - 1].iron;
+    if (!wanted) continue;
+    for (const w of ownWorksToFlip) {
+      if (w.cubes !== wanted) continue;
+      const named = { kind: 'build' as const, card: card.id, town: t.town, slot: t.slot, industry: t.industry, ironFrom: w.key };
+      if (applyAction(s, i, named).state) out.push(named);
+    }
+  }
 
   /* links: every single, and in the Rail Era every double that holds */
   const links = linkTargets(s, i).filter((t) => t.valid);
   for (const first of links) {
     out.push({ kind: 'network', card: spare.id, link: first.link.id });
     if (s.era !== 'rail') continue;
+    /* The second rail must touch the network as it stands once the first is
+       laid — the first's ends count, but the two need not meet. Offering only
+       the ones glued to the first showed the machine a third of its legal
+       double rails (1.5 of 4.6 a first link), on a family it spends a tenth
+       of its actions. */
     const ends = new Set([first.link.a, first.link.b, first.link.alsoConnects].filter(Boolean));
+    const mine = networkTowns(s, i);
     for (const def of LINKS) {
       if (def.id === first.link.id || s.links[def.id] || !def.rail) continue;
-      if (!ends.has(def.a) && !ends.has(def.b)) continue;
-      if (doubleLinkPlan(s, i, first, def).valid) out.push({ kind: 'network', card: spare.id, link: first.link.id, second: def.id });
+      /* the bench hands numbers, and 0 !== false in this language */
+      const wide = o.wideSecond === undefined ? true : !!o.wideSecond;
+      if (!ends.has(def.a) && !ends.has(def.b) && (!wide || (!mine.has(def.a) && !mine.has(def.b)))) continue;
+      if (!doubleLinkPlan(s, i, first, def).valid) continue;
+      out.push({ kind: 'network', card: spare.id, link: first.link.id, second: def.id });
+      /* and, where one of our own breweries would empty paying for it, the
+         naming that turns it over for its points */
+      for (const b of beerSources(s, i, first.link, def)) {
+        if (!b.own || b.cubes !== 1) continue;
+        const named: GameAction = { kind: 'network', card: spare.id, link: first.link.id, second: def.id, beerFrom: b.key };
+        if (applyAction(s, i, named).state) out.push(named);
+      }
     }
   }
 
@@ -228,8 +264,8 @@ export function legalActions(s: GameState, i: number): GameAction[] {
  *  loaded and a narrower look is asked for — those it puts first. The
  *  ranker is consulted before any move is played out, which is where the
  *  saving is: the engine never sees the moves it threw away. */
-export function worthTrying(s: GameState, i: number, names?: number): GameAction[] {
-  const all = legalActions(s, i);
+export function worthTrying(s: GameState, i: number, names?: number, o: SearchOptions = {}): GameAction[] {
+  const all = legalActions(s, i, o);
   if (!names || all.length <= names) return all;
   const policy = activePolicy(FEATURES);
   return policy ? keepBest(policy, features(s, i), all, names) : all;
@@ -482,7 +518,7 @@ function greedyTurn(s: GameState, i: number): { state: GameState; nodes: number 
 function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number, o: SearchOptions = {}): { score: number; nodes: number } {
   const planBeam = o.planBeam ?? 0;
   const turns = o.lookTurns ?? LOOKAHEAD_TURNS;
-  const finish = o.finishTurn !== false;
+  const finish = o.finishTurn === undefined ? true : !!o.finishTurn;
   let cur = determinize(after, i, rand);
   let nodes = 0;
   /* the turn is finished before the rivals answer, so that every candidate
@@ -560,7 +596,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
   let nodes = 0;
   const firsts: Candidate[] = [];
   const ranked: { action: GameAction; score: number }[] | undefined = o.rank ? [] : undefined;
-  for (const action of worthTrying(s, i, o.guided)) {
+  for (const action of worthTrying(s, i, o.guided, o)) {
     const r = applyAction(s, i, action);
     if (!r.state) continue;
     nodes += 1;
@@ -592,7 +628,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
     let turn: Turn = { first: first.action, after: first.state, score: first.score };
     const s1 = first.state;
     if (s1.phase === 'action' && s1.current === i) {
-      for (const action of worthTrying(s1, i, o.guidedPairs === false ? 0 : o.guided)) {
+      for (const action of worthTrying(s1, i, o.guidedPairs !== undefined && !o.guidedPairs ? 0 : o.guided, o)) {
         const r = applyAction(s1, i, action);
         if (!r.state) continue;
         nodes += 1;

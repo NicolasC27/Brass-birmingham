@@ -106,14 +106,18 @@ if (!isMainThread) {
     const spread = Math.sqrt(ranked.reduce((a, g) => a + (g[0] - at(0)) ** 2, 0) / Math.max(1, ranked.length - 1)) / Math.sqrt(ranked.length);
     const seatsOver = (n: number) => ((all.filter((x) => x >= n).length / all.length) * 100).toFixed(0);
     const tablesOver = (n: number) => ((games.filter((g) => g.every((x) => x >= n)).length / games.length) * 100).toFixed(0);
+    const winnersOver = (n: number) => ((ranked.filter((g) => g[0] >= n).length / ranked.length) * 100).toFixed(0);
     log(`--- table ${new Date().toISOString()}: ${games.length} games, ${PLAYERS} of one reading, thinking ${BUDGET} ms, depth ${DEPTH}${PLAN_BEAM ? `, planning ${PLAN_BEAM}` : ''}, rival ${RIVAL === null ? TRAINED.rival : RIVAL}`);
     log(`  winner        ${at(0).toFixed(1)} ± ${(2 * spread).toFixed(1)}`);
     const place = ['', 'second', 'third', 'last'];
     for (let k = 1; k < PLAYERS; k++) log(`  ${(k === PLAYERS - 1 ? 'last' : place[k]).padEnd(12)}  ${at(k).toFixed(1)}`);
     log(`  table mean    ${mean.toFixed(1)}, table total ${(mean * PLAYERS).toFixed(0)}`);
     log(`  lowest ${Math.min(...all)}, highest ${Math.max(...all)}`);
-    log(`  seats at 120+ ${seatsOver(120)}%, 140+ ${seatsOver(140)}%, 160+ ${seatsOver(160)}%`);
-    log(`  whole tables at 120+ ${tablesOver(120)}%, 140+ ${tablesOver(140)}%`);
+    /* the bands that matter now: a strong human table wins near 175 at three
+       seats and 145-150 at four, and passes 200 about one game in ten */
+    log(`  seats at 140+ ${seatsOver(140)}%, 160+ ${seatsOver(160)}%, 175+ ${seatsOver(175)}%, 200+ ${seatsOver(200)}%`);
+    log(`  winners at 160+ ${winnersOver(160)}%, 175+ ${winnersOver(175)}%, 190+ ${winnersOver(190)}%, 200+ ${winnersOver(200)}%`);
+    log(`  whole tables at 140+ ${tablesOver(140)}%, 160+ ${tablesOver(160)}%`);
     log(`  ${Math.round((Date.now() - started) / 1000)} s`);
   });
 }
