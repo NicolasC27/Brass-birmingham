@@ -12,6 +12,11 @@ export interface Weights {
   /** what a pound is worth in points at the end, and per fraction of game left */
   cashFloor: number;
   cashSlope: number;
+  /** what one action can plausibly lay out, and what a pound beyond
+   *  everything one's remaining actions could spend is worth, as a share
+   *  of a spendable one: money one never gets to spend is dead weight */
+  cashPerAction: number;
+  idleCash: number;
   /** the income a flip moves the marker to, per payday left */
   incomeOnFlip: number;
   /** the chance a goods tile flips: a buyer connected (with beer around, without), one link away, none */
@@ -60,6 +65,10 @@ export interface Weights {
 export const DEFAULTS: Weights = {
   cashFloor: 0.05,
   cashSlope: 0.4,
+  cashPerAction: 20,
+  /* one keeps the whole purse until this is measured: at 1 a pound beyond
+     what can be spent counts exactly as one that can, as it always has */
+  idleCash: 1,
   incomeOnFlip: 0.8,
   goodsServed: 0.7,
   goodsNoBeer: 0.4,

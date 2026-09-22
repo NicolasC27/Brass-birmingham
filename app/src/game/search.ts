@@ -61,6 +61,10 @@ export interface SearchOptions {
   guided?: number;
   /** narrow the turn's second action too, not only its first */
   guidedPairs?: boolean;
+  /** how many first actions of a turn played out in the look-ahead are
+   *  followed by their best second. Zero leaves the old greedy walk, which
+   *  models a future self more short-sighted than the machine really is */
+  planBeam?: number;
 }
 
 export interface SearchResult {
@@ -298,7 +302,13 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
     v += lv.links * w.linkIcons;
   }
   const stream = INCOME_PAYOUT[p.income] * paydays;
-  v += (p.money + stream) * rate;
+  /* A pound is only worth what one gets to spend. Past what the actions
+     still to come could lay out, it is dead weight — which is why a loan
+     taken late looks like a gain to a reading that counts every pound
+     alike, and why a seat ends the game sitting on money. */
+  const purse = p.money + stream;
+  const spendable = paydays * 2 * w.cashPerAction;
+  v += Math.min(purse, spendable) * rate + Math.max(0, purse - spendable) * rate * w.idleCash;
   /* a negative income is a threat to the tiles themselves */
   if (level < 0) v -= (-level) * w.negIncome;
   /* once the deck is out, every card in hand is one more action */
@@ -451,16 +461,52 @@ function greedyTurn(s: GameState, i: number): { state: GameState; nodes: number 
 
 /** the table `depth` rounds on from the end of our turn, as one deal of
  *  the unseen cards has it */
-function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number): { score: number; nodes: number } {
+function lookAhead(after: GameState, i: number, depth: 1 | 2, rand: () => number, planBeam = 0): { score: number; nodes: number } {
   let cur = determinize(after, i, rand);
   let nodes = 0;
   cur = rivalsUntilMyTurn(cur, i, LOOKAHEAD_TURNS);
   if (depth === 2 && cur.phase === 'action' && cur.current === i) {
-    const mine = greedyTurn(cur, i);
+    const mine = planBeam > 0 ? plannedTurn(cur, i, planBeam) : greedyTurn(cur, i);
     nodes += mine.nodes;
     cur = rivalsUntilMyTurn(mine.state, i, LOOKAHEAD_TURNS);
   }
   return { score: evaluate(cur, i), nodes };
+}
+
+/** The machine's own turn to come, played as the machine really plays it:
+ *  the promising first actions each followed by their best second, the pair
+ *  judged together. `greedyTurn` takes the best single action twice over,
+ *  which models a future self more short-sighted than the present one — and
+ *  so makes any move that needs following up look worse than it is. */
+function plannedTurn(s: GameState, i: number, beam: number): { state: GameState; nodes: number } {
+  let nodes = 0;
+  const firsts: Candidate[] = [];
+  for (const action of legalActions(s, i)) {
+    const r = applyAction(s, i, action);
+    if (!r.state) continue;
+    nodes += 1;
+    firsts.push({ action, state: r.state, score: evaluate(r.state, i) });
+  }
+  if (!firsts.length) return { state: s, nodes };
+  firsts.sort((a, b) => b.score - a.score);
+  let best = firsts[0];
+  for (const first of firsts.slice(0, beam)) {
+    const s1 = first.state;
+    if (s1.phase !== 'action' || s1.current !== i) {
+      if (first.score > best.score) best = first;
+      continue;
+    }
+    let pair = first;
+    for (const action of legalActions(s1, i)) {
+      const r = applyAction(s1, i, action);
+      if (!r.state) continue;
+      nodes += 1;
+      const score = evaluate(r.state, i);
+      if (score > pair.score) pair = { action: first.action, state: r.state, score };
+    }
+    if (pair.score > best.score) best = pair;
+  }
+  return { state: best.state, nodes };
 }
 
 /** the table without its paperwork: the ledger, the history and the log
@@ -538,7 +584,7 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
     if (k > 0 && now() - start > budget) break;
     let sum = 0;
     for (let d = 0; d < LOOKAHEAD_DEALS; d++) {
-      const look = lookAhead(turn.after, i, depth, dice);
+      const look = lookAhead(turn.after, i, depth, dice, o.planBeam ?? 0);
       nodes += look.nodes;
       sum += look.score;
     }
