@@ -1,3 +1,4 @@
+import { cloneState } from './clone';
 import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets } from './engine';
 import type { BotMove } from './bot';
 import type { GameState, IndustryType, SetupPayload } from './types';
@@ -41,7 +42,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
   const fail = (error: string): ActionResult => ({ state: null, error });
   if (action.kind === 'begin-rail') {
     if (s.phase !== 'scoring-canal') return fail('No ceremony to close');
-    const mut = structuredClone(s);
+    const mut = cloneState(s);
     beginRailEra(mut);
     mut.actions.push(action);
     return { state: mut };
@@ -50,7 +51,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     if (s.phase !== 'action') return fail('The game is not in play');
     if (playerIdx !== action.player) return fail('A vote is cast in one\'s own name');
     if (s.players[action.player]?.isBot) return fail('That seat plays itself');
-    const mut = structuredClone(s);
+    const mut = cloneState(s);
     applyConcede(mut, action.player, action.vote);
     mut.actions.push(action);
     return { state: mut };
@@ -59,14 +60,14 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
     if (s.phase === 'game-over') return fail('The game is over');
     if (playerIdx !== action.player) return fail('A seat is left in one\'s own name');
     if (s.players[action.player]?.isBot) return fail('That seat plays itself');
-    const mut = structuredClone(s);
+    const mut = cloneState(s);
     applyResign(mut, action.player);
     mut.actions.push(action);
     return { state: mut };
   }
   if (s.phase !== 'action') return fail('The game is not in play');
   if (playerIdx !== s.current) return fail('Not your turn');
-  const mut = structuredClone(s);
+  const mut = cloneState(s);
   const p = mut.players[playerIdx];
   const cardOf = (id: string | undefined) => (id ? p.hand.find((c) => c.id === id) : undefined);
   /* a refused card is the classic sign of a log that no longer matches its
