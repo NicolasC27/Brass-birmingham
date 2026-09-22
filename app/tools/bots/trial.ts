@@ -34,6 +34,12 @@ const GAMES = Number(process.env.GAMES ?? 96);
 const SEATS = (process.env.SEATS ?? '3,4').split(',').map(Number);
 const BUDGET = Number(process.env.BUDGET ?? 1500);
 const RIVAL = Number(process.env.RIVAL ?? 0);
+/** the table the subject faces: by default the weak one it has always faced,
+ *  but a full-strength field playing for the gap is the honest test of a bot
+ *  that plays for its own score — does it still win when the others block? */
+const FIELD_RIVAL = Number(process.env.FIELD_RIVAL ?? 1);
+const FIELD_STRENGTH = Number(process.env.FIELD_STRENGTH ?? 0.3);
+const FIELD_BUDGET = process.env.FIELD_BUDGET === undefined ? undefined : Number(process.env.FIELD_BUDGET);
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 2));
 const LOG_FILE = resolve('tools/bots/trial.log');
 
@@ -95,7 +101,7 @@ function run(trial: Trial, players: number, seeds: number[]): Slice {
   const whole = unpackBrain(NET_B64);
   const brain = trial.brainNets ? { nets: whole.nets.slice(0, trial.brainNets) } : whole;
   const subject: Weights = { ...TRAINED, rival: RIVAL, ...trial.weights };
-  const field: Weights = { ...DEFAULTS };
+  const field: Weights = { ...DEFAULTS, rival: FIELD_RIVAL };
   const search: SearchOptions = { strength: 1, budgetMs: BUDGET, depth: 2, ...trial.search };
   const reads: EvalMode = trial.reads ?? 'blend';
   const points: number[] = [];
@@ -103,7 +109,7 @@ function run(trial: Trial, players: number, seeds: number[]): Slice {
   const goods: Record<string, number> = {};
   for (const seed of seeds) {
     const seat = seed % players;
-    const s = playGame(seed, players, seat, subject, field, search, [reads, 'hand'], [brain, null], { strength: 0.3 }, false);
+    const s = playGame(seed, players, seat, subject, field, search, [reads, 'hand'], [brain, null], { strength: FIELD_STRENGTH, budgetMs: FIELD_BUDGET, depth: 2 }, false);
     points.push(s.players[seat].vp);
     if (s.winner === seat) wins += 1;
     for (const t of Object.values(s.tiles)) {
@@ -137,7 +143,7 @@ if (!isMainThread) {
     }
   }
   const started = Date.now();
-  log(`--- trial ${new Date().toISOString()}: ${GAMES} games a cell, seats ${SEATS.join(' and ')}, thinking ${BUDGET} ms, rival ${RIVAL}, ${jobs.length} workers`);
+  log(`--- trial ${new Date().toISOString()}: ${GAMES} games a cell, seats ${SEATS.join(' and ')}, thinking ${BUDGET} ms, rival ${RIVAL}, field rival ${FIELD_RIVAL} at strength ${FIELD_STRENGTH}, ${jobs.length} workers`);
   void Promise.all(
     jobs.map(
       (j) =>

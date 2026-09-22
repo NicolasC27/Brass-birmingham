@@ -88,7 +88,7 @@ export const DEFAULTS: Weights = {
   towns: 0.6,
   noMarket: 4,
   stack: 0.08,
-  rival: 1,
+  rival: 0,
   earlyLoan: 8,
   developed: 2,
   tempo: 1,

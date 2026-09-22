@@ -26,7 +26,8 @@ import { applyAction, fallbackAction } from '@/game/actions';
 import { newGame } from '@/game/engine';
 import { loadNet } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
-import { chooseBotAction, setEvalMode } from '@/game/search';
+import { chooseBotAction, setEvalMode, setWeights } from '@/game/search';
+import { TRAINED } from '@/game/weights';
 import type { GameState, SetupPayload } from '@/game/types';
 
 const GAMES = Number(process.env.GAMES ?? 24);
@@ -34,6 +35,10 @@ const PLAYERS = Number(process.env.PLAYERS ?? 4);
 const BUDGET = Number(process.env.BUDGET ?? 1500);
 const DEPTH = Number(process.env.DEPTH ?? 2) as 0 | 1 | 2;
 const PLAN_BEAM = Number(process.env.PLAN_BEAM ?? 0);
+/** how much the strongest rival's worth counts against one's own. The bench
+ *  in trial.ts reads the board with this at zero while this yardstick has
+ *  always read it at one, so the two were never measuring the same goal */
+const RIVAL = process.env.RIVAL === undefined ? null : Number(process.env.RIVAL);
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, Math.min(GAMES, cpus().length - 2)));
 const LOG_FILE = resolve('tools/bots/table.log');
 
@@ -68,6 +73,7 @@ if (!isMainThread) {
   const { seeds } = workerData as { seeds: number[] };
   loadNet(NET_B64);
   setEvalMode('blend');
+  if (RIVAL !== null) setWeights({ ...TRAINED, rival: RIVAL });
   parentPort!.postMessage(seeds.map(play));
 } else {
   const log = (line: string) => {
@@ -100,7 +106,7 @@ if (!isMainThread) {
     const spread = Math.sqrt(ranked.reduce((a, g) => a + (g[0] - at(0)) ** 2, 0) / Math.max(1, ranked.length - 1)) / Math.sqrt(ranked.length);
     const seatsOver = (n: number) => ((all.filter((x) => x >= n).length / all.length) * 100).toFixed(0);
     const tablesOver = (n: number) => ((games.filter((g) => g.every((x) => x >= n)).length / games.length) * 100).toFixed(0);
-    log(`--- table ${new Date().toISOString()}: ${games.length} games, ${PLAYERS} of one reading, thinking ${BUDGET} ms, depth ${DEPTH}${PLAN_BEAM ? `, planning ${PLAN_BEAM}` : ''}`);
+    log(`--- table ${new Date().toISOString()}: ${games.length} games, ${PLAYERS} of one reading, thinking ${BUDGET} ms, depth ${DEPTH}${PLAN_BEAM ? `, planning ${PLAN_BEAM}` : ''}, rival ${RIVAL === null ? TRAINED.rival : RIVAL}`);
     log(`  winner        ${at(0).toFixed(1)} ± ${(2 * spread).toFixed(1)}`);
     const place = ['', 'second', 'third', 'last'];
     for (let k = 1; k < PLAYERS; k++) log(`  ${(k === PLAYERS - 1 ? 'last' : place[k]).padEnd(12)}  ${at(k).toFixed(1)}`);

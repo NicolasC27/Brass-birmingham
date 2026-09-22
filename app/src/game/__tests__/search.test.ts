@@ -66,8 +66,11 @@ describe('the machines', () => {
     setEvalMode(was);
     expect(Number.isFinite(mine)).toBe(true);
     expect(Number.isFinite(theirs)).toBe(true);
-    /* a fresh table: nobody is ahead by much */
-    expect(Math.abs(mine)).toBeLessThan(5);
+    /* A fresh table: nobody is ahead by much. The reading is a seat's own
+       worth rather than its lead — `rival` is zero, measured worth +4.6
+       points at three seats and +2.9 at four against a table that blocks —
+       so the test is that two seats read alike, not that either reads nil. */
+    expect(Math.abs(mine - theirs)).toBeLessThan(5);
   });
 
   it('plays weaker on a shorter leash, and no worse than the heuristic at the bottom', () => {
