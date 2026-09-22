@@ -34,7 +34,7 @@ import { applyAction, botAction, fallbackAction } from './actions';
 import { cloneState } from './clone';
 import type { GameAction } from './actions';
 import { chooseBotMove } from './bot';
-import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
+import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, TOWNS, incomeLevel } from './data';
 import { beerSources, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
@@ -202,8 +202,13 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
     const mine = networkTowns(s, i);
     for (const def of LINKS) {
       if (def.id === first.link.id || s.links[def.id] || !def.rail) continue;
-      /* the bench hands numbers, and 0 !== false in this language */
-      const wide = o.wideSecond === undefined ? true : !!o.wideSecond;
+      /* Every second rail the rules allow is worth +1.9 points at four seats,
+         but finding them means checking a plan for fifteen candidates a first
+         link instead of three, and that work is not bounded by the clock: at a
+         sixty-millisecond budget a move took 1244 ms. So it is offered only
+         where there is time to use it. The bench hands numbers, and 0 is not
+         false in this language. */
+      const wide = o.wideSecond === undefined ? (o.budgetMs ?? 0) >= EXHAUSTIVE_MS : !!o.wideSecond;
       if (!ends.has(def.a) && !ends.has(def.b) && (!wide || (!mine.has(def.a) && !mine.has(def.b)))) continue;
       if (!doubleLinkPlan(s, i, first, def).valid) continue;
       out.push({ kind: 'network', card: spare.id, link: first.link.id, second: def.id });
@@ -271,6 +276,33 @@ export function worthTrying(s: GameState, i: number, names?: number, o: SearchOp
   return policy ? keepBest(policy, features(s, i), all, names) : all;
 }
 
+/** how far an industry's slots are used up across the whole board, 0 to 1.
+ *  Counted once a turn rather than once a tile: the board does not move
+ *  between two readings of the same position. */
+let scarceAt = '';
+const scarceOf: Partial<Record<IndustryType, number>> = {};
+function scarcity(s: GameState, industry: IndustryType): number {
+  const stamp = `${Object.keys(s.tiles).length}:${s.era}:${s.round}`;
+  if (scarceAt !== stamp) {
+    scarceAt = stamp;
+    for (const ind of Object.keys(scarceOf) as IndustryType[]) delete scarceOf[ind];
+  }
+  const known = scarceOf[industry];
+  if (known !== undefined) return known;
+  let total = 0;
+  let taken = 0;
+  for (const town of TOWNS) {
+    for (const [k, slot] of town.slots.entries()) {
+      if (!slot.allows.includes(industry)) continue;
+      total += 1;
+      if (s.tiles[`${town.id}:${k}`]) taken += 1;
+    }
+  }
+  const out = total ? taken / total : 0;
+  scarceOf[industry] = out;
+  return out;
+}
+
 /* ============================ evaluation ============================ */
 
 /** paydays still to come for everyone at the table: one per round but the
@@ -328,6 +360,8 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
     /* a level-1 mill or brewery is a tile spent off the mat for little: the
        strong players develop those away instead of building them */
     if (w.lowTile && t.level === 1 && (lv.beerToSell > 0 || t.industry === 'brewery')) v -= w.lowTile * frac;
+    /* and a slot nobody else can have now is worth more than a plentiful one */
+    if (w.scarceSlot) v += w.scarceSlot * scarcity(s, t.industry) * frac;
     const twice = again && lv.eras.includes('rail') ? 1 : 0;
     if (t.flipped) {
       v += lv.vp * twice;

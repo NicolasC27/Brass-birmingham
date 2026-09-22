@@ -54,6 +54,12 @@ export interface Weights {
   earlyLoan: number;
   /** a mat developed in the Canal Era: per industry whose next tile is level 2 or above, which will survive the sweep and score twice */
   developed: number;
+  /** what a slot is worth for being scarce: per own tile, times the share of
+   *  that industry's slots already taken across the board. Strong players say
+   *  the question at every action is whether it helps the others more than
+   *  oneself; taking the contested thing first is that question's answer, and
+   *  it is an opportunity cost rather than an aggression */
+  scarceSlot: number;
   /** what it costs to have spent a level-1 goods mill or brewery on the board.
    *  The tile is gone from the mat either way, and the strong players' advice
    *  is to develop those away rather than build them: half our builds are
@@ -96,6 +102,7 @@ export const DEFAULTS: Weights = {
   rival: 0,
   earlyLoan: 8,
   developed: 2,
+  scarceSlot: 0,
   lowTile: 3,
   tempo: 1,
   weakLink: 0,
