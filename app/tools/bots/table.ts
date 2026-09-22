@@ -38,7 +38,10 @@ const WORKERS = Number(process.env.WORKERS ?? Math.max(1, Math.min(GAMES, cpus()
 const LOG_FILE = resolve('tools/bots/table.log');
 
 const COLORS = ['red', 'yellow', 'purple', 'teal'] as const;
-const PERSONAS = ['watt', 'bright', 'owen', 'peel'] as const;
+/* the four the engine knows; 'bright', 'owen' and 'peel' were never personas,
+   and naming the expert first would have exempted seat zero from the dial and,
+   at three seats, handed it an opening book the others do not follow */
+const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
 
 const setup = (n: number): SetupPayload =>
   ({

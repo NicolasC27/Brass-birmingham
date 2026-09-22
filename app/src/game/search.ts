@@ -31,6 +31,7 @@
 /* ------------------------------------------------------------------ */
 
 import { applyAction, botAction, fallbackAction } from './actions';
+import { cloneState } from './clone';
 import type { GameAction } from './actions';
 import { chooseBotMove } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, incomeLevel } from './data';
@@ -405,7 +406,7 @@ const bell = (dice: () => number) => () => dice() + dice() + dice() - 1.5;
 /** the same table with every card nobody has seen — the deck and the
  *  rivals' hands — dealt afresh: what the machine may fairly assume */
 export function determinize(s: GameState, i: number, rand: () => number): GameState {
-  const c = structuredClone(s);
+  const c = cloneState(s);
   const pool: Card[] = [...c.deck];
   for (const [j, p] of c.players.entries()) if (j !== i) pool.push(...p.hand);
   for (let k = pool.length - 1; k > 0; k--) {
