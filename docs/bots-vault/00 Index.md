@@ -17,6 +17,7 @@ Coffre de notes sur le cerveau des bots : comment ils choisissent un coup, comme
 11. [[11 Nommer les coups]] — donner un nom à chaque coup et distiller la recherche, pour sortir du plateau
 12. [[12 Le plafond de réflexion]] — la ligne qui bridait le bot et faussait toutes les jauges
 13. [[13 Le budget d'actions]] — trente actions par partie : où elles passent, et ce que 160 points exigerait
+14. [[14 Ce que fait un expert]] — repères humains : 31 actions et 155 points à quatre, et les cinq écarts mesurés
 
 ## Repères
 
