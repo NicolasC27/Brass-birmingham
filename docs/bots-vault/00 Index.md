@@ -19,9 +19,20 @@ Coffre de notes sur le cerveau des bots : comment ils choisissent un coup, comme
 13. [[13 Le budget d'actions]] — trente actions par partie : où elles passent, et ce que 160 points exigerait
 14. [[14 Ce que fait un expert]] — repères humains : 31 actions et 155 points à quatre, et les cinq écarts mesurés
 15. [[15 Mesurer sans se tromper]] — le banc est exact à budget non mordant ; les quatre pièges qui ont coûté une nuit
+16. [[16 L'état des lieux]] — le chiffre officiel, ce qui a été gagné, et les six pistes mortes
 
 ## Repères
 
 - Code : `app/src/game/search.ts` (recherche), `weights.ts` (évaluation manuelle), `net.ts` (cerveau), `net-weights.ts` (poids appris), `policy.ts` (les noms des coups et leur classement), `app/tools/bots/` (arène, entraîneur, apprentissage, distillation).
 - Objectif fixé par Nicolas : **un bot fort sur la partie entière**, avec pour repère 60 points d'ère canal minimum, puis 80. Un temps, l'entraînement s'est limité à l'ère canal ; il rejoue la partie entière depuis le 20 septembre (voir [[10 Journal]]).
-- Où on en est : avec son vrai temps de réflexion, l'expert fait **149,7 points à deux sièges et 138,2 à trois** contre une table faible, et **157,2 à deux** s'il vise son propre score avec vingt secondes par coup. Les chiffres plus bas qu'on lit ailleurs dans ce coffre datent d'avant la correction du plafond de réflexion : voir [[12 Le plafond de réflexion]].
+- **Où on en est, au 22 septembre 2026.** Sur la jauge qui ne mesure que le jeu — quatre lectures identiques à une même table, recherche non bridée ([[16 L'état des lieux]]) :
+
+| Position | Points |
+|---|---|
+| Vainqueur | **132,7 ± 3,0** |
+| Deuxième | 124,5 |
+| Troisième | 118,4 |
+| Dernier | 111,4 |
+| Total de la table | 487 |
+
+  Contre une table faible : **143,6 à trois sièges, 125,1 à quatre**. La cible est 155 à quatre et 175 à trois ([[14 Ce que fait un expert]]). Tout chiffre plus bas lu ailleurs dans ce coffre date d'avant la correction du plafond de réflexion ([[12 Le plafond de réflexion]]).
