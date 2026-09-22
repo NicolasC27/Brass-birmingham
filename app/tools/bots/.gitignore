@@ -10,4 +10,5 @@ fit2.out
 learning.log
 *.out
 policy-data/
+table.log
 training.log
