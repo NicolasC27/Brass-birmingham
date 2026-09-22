@@ -237,17 +237,36 @@ export function forward(net: Net, x: Float32Array): number {
   return forwardAll(net, x)[0] * net.points;
 }
 
+
+/* A forward pass used to allocate an array per layer, three of them per
+ * network and nine per reading of the board, all thrown away at once. The
+ * search does this hundreds of times a move, so the collector ended up
+ * doing a good part of the thinking. Two buffers are kept and swapped
+ * instead, grown when a wider network turns up; only the answer is fresh,
+ * since callers hold on to it. */
+let scratchA = new Float32Array(0);
+let scratchB = new Float32Array(0);
+
+function room(n: number): void {
+  if (scratchA.length >= n) return;
+  scratchA = new Float32Array(n);
+  scratchB = new Float32Array(n);
+}
+
 /** the whole of the last layer, raw: one number for a network that reads the
  *  table, one per move for a network that ranks them */
 export function forwardAll(net: Net, x: Float32Array): Float32Array {
-  let cur = new Float32Array(x.length);
+  let widest = x.length;
+  for (const z of net.sizes) if (z > widest) widest = z;
+  room(widest);
+  let cur = scratchA;
+  let next = scratchB;
   for (let k = 0; k < x.length; k++) cur[k] = (x[k] - net.mean[k]) / net.scale[k];
   for (let l = 0; l < net.weights.length; l++) {
     const nIn = net.sizes[l];
     const nOut = net.sizes[l + 1];
     const w = net.weights[l];
     const b = net.biases[l];
-    const next = new Float32Array(nOut);
     const last = l === net.weights.length - 1;
     for (let o = 0; o < nOut; o++) {
       let sum = b[o];
@@ -255,9 +274,12 @@ export function forwardAll(net: Net, x: Float32Array): Float32Array {
       for (let k = 0; k < nIn; k++) sum += w[row + k] * cur[k];
       next[o] = last ? sum : Math.tanh(sum);
     }
+    const swap = cur;
     cur = next;
+    next = swap;
   }
-  return cur;
+  const out = net.sizes[net.sizes.length - 1];
+  return cur.slice(0, out);
 }
 
 /* ------------------------- packing the weights --------------------- */
