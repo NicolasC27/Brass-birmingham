@@ -96,7 +96,7 @@ export const DEFAULTS: Weights = {
   rival: 0,
   earlyLoan: 8,
   developed: 2,
-  lowTile: 0,
+  lowTile: 3,
   tempo: 1,
   weakLink: 0,
   railReady: 3,
