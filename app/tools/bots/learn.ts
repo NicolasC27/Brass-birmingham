@@ -71,7 +71,7 @@ const DATA_DIR = resolve('tools/bots/data');
 const NET_FILE = resolve('src/game/net-weights.ts');
 const LOG_FILE = resolve('tools/bots/learning.log');
 /** what the network learns to read: the Canal Era's points, the game's, or a mix of both */
-const TARGET = (process.env.TARGET ?? 'canal') as 'canal' | 'game' | 'mix' | 'own-canal' | 'own-game' | 'own-mix';
+const TARGET = (process.env.TARGET ?? 'own-mix') as 'canal' | 'game' | 'mix' | 'own-canal' | 'own-game' | 'own-mix';
 const MIX = Number(process.env.MIX ?? 0.5);
 /** a sample: the features, the canal-era lead and the game's lead (points / POINTS),
  *  the seats at the table and how many later positions of this seat follow in the era */
