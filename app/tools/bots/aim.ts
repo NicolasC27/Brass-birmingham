@@ -11,9 +11,10 @@
 /* points against a weak table, at three seats and at four, the two    */
 /* tables the target is set on. An evolution of one parent and a       */
 /* handful of children, each child judged on exactly the same games    */
-/* as its parent so that the luck of the deal cancels out. The weak    */
-/* table is held at the hand-written defaults for good, so that a      */
-/* score means the same thing from one run to the next.                */
+/* as its parent so that the luck of the deal cancels out, and the     */
+/* best of them played again on games nobody has seen before it may    */
+/* take over. The weak table is held at the hand-written defaults for  */
+/* good, so that a score means the same thing from one run to the next.*/
 /*                                                                     */
 /*   sh tools/bots/aim.sh      (GENERATIONS, GAMES, BUDGET, SEED,      */
 /*                              CHALLENGERS, SEATS in the env)         */
@@ -44,8 +45,13 @@ const CHALLENGERS = Number(process.env.CHALLENGERS ?? Math.max(2, Math.min(7, cp
 const SEED = Number(process.env.SEED ?? 20260921);
 /** how far a mutation moves a weight: a log-normal step */
 const STEP = Number(process.env.STEP ?? 0.25);
-/** points a child must add before it takes over, on top of its parent */
+/** points a child must add before it is even considered, on top of its parent */
 const MARGIN = Number(process.env.MARGIN ?? 1.5);
+/** the best child is played again on games nobody has seen, and must still
+ *  lead by this much. Without it half the takeovers are luck: the spread of
+ *  a paired comparison over a dozen games is itself about two points, so a
+ *  child clearing a two-point bar is as often lucky as better */
+const CONFIRM = Number(process.env.CONFIRM ?? 1);
 
 const WEIGHTS_FILE = resolve('src/game/weights.ts');
 const LOG_FILE = resolve('tools/bots/aim.log');
@@ -158,9 +164,16 @@ async function evolve(): Promise<void> {
       if (ok && (best < 0 || r.points > scores[best].points)) best = k;
     });
     if (best >= 0) {
-      parent = children[best];
-      writeWeights(parent);
-      log(`gen ${g}: child ${best + 1} takes over at ${scores[best].points.toFixed(1)} points — ${JSON.stringify(parent)}`);
+      /* the same two, on games neither has seen */
+      const proof = SEED + g * 1000 + 500000;
+      const [again, child] = await Promise.all([parent, children[best]].map((w) => runOne(w, proof)));
+      const gain = child.points - again.points;
+      log(`gen ${g}: child ${best + 1} played again on fresh games — ${child.points.toFixed(1)} against ${again.points.toFixed(1)}, ${gain >= 0 ? '+' : ''}${gain.toFixed(1)}`);
+      if (gain >= CONFIRM) {
+        parent = children[best];
+        writeWeights(parent);
+        log(`gen ${g}: child ${best + 1} takes over — ${JSON.stringify(parent)}`);
+      } else log(`gen ${g}: child ${best + 1} was lucky the first time; the parent holds`);
     } else log(`gen ${g}: the parent holds`);
     log(`gen ${g} took ${Math.round((Date.now() - started) / 1000)} s`);
   }
