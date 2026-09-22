@@ -25,7 +25,7 @@ import { Worker, isMainThread, parentPort, workerData } from 'node:worker_thread
 import { INDUSTRIES } from '@/game/data';
 import { loadNet, unpackBrain } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
-import type { SearchOptions } from '@/game/search';
+import type { EvalMode, SearchOptions } from '@/game/search';
 import { DEFAULTS, TRAINED } from '@/game/weights';
 import type { Weights } from '@/game/weights';
 import { playGame } from './arena';
@@ -40,11 +40,15 @@ const LOG_FILE = resolve('tools/bots/trial.log');
 const SEARCH_KEYS = new Set(['planBeam', 'budgetMs', 'depth', 'guided', 'beam', 'strength']);
 /** search options that name something rather than measure it */
 const WORD_KEYS = new Set(['opening']);
+/** how the subject reads the board: 'hand', 'net' or 'blend' */
+const MODE_KEY = 'reads';
 
 interface Trial {
   name: string;
   weights: Partial<Weights>;
   search: SearchOptions;
+  /** how the subject reads the board; the blend of hand and net when absent */
+  reads?: EvalMode;
 }
 
 /** "the mat worth a lot:stack=0.8,planBeam=12" */
@@ -55,6 +59,10 @@ function parseTrials(text: string): Trial[] {
     for (const pair of (rest ?? '').split(',').filter(Boolean)) {
       const [k, v] = pair.split('=');
       const key = k.trim();
+      if (key === MODE_KEY) {
+        t.reads = v.trim() as EvalMode;
+        continue;
+      }
       if (WORD_KEYS.has(key)) {
         (t.search as Record<string, string>)[key] = v.trim();
         continue;
@@ -82,12 +90,13 @@ function run(trial: Trial, players: number, seeds: number[]): Slice {
   const subject: Weights = { ...TRAINED, rival: RIVAL, ...trial.weights };
   const field: Weights = { ...DEFAULTS };
   const search: SearchOptions = { strength: 1, budgetMs: BUDGET, depth: 2, ...trial.search };
+  const reads: EvalMode = trial.reads ?? 'blend';
   const points: number[] = [];
   let wins = 0;
   const goods: Record<string, number> = {};
   for (const seed of seeds) {
     const seat = seed % players;
-    const s = playGame(seed, players, seat, subject, field, search, ['blend', 'hand'], [brain, null], { strength: 0.3 }, false);
+    const s = playGame(seed, players, seat, subject, field, search, [reads, 'hand'], [brain, null], { strength: 0.3 }, false);
     points.push(s.players[seat].vp);
     if (s.winner === seat) wins += 1;
     for (const t of Object.values(s.tiles)) {

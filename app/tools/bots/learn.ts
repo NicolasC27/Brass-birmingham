@@ -10,7 +10,8 @@
 /*   loop  — play, fit, check, and again                               */
 /*                                                                     */
 /*   sh tools/bots/learn.sh loop     (GAMES, ITERATIONS, EPOCHS,       */
-/*                                    STRENGTH, WORKERS in the env)    */
+/*                                    STRENGTH, PLAY_BUDGET,           */
+/*                                    PLAY_DEPTH, WORKERS in the env)  */
 /*                                                                     */
 /* The target is the Canal Era's points while the canals are open —   */
 /* own score less the best rival's when the era is scored — and the   */
@@ -39,6 +40,13 @@ const GAMES = Number(process.env.GAMES ?? 200);
 const ITERATIONS = Number(process.env.ITERATIONS ?? 3);
 const EPOCHS = Number(process.env.EPOCHS ?? 30);
 const STRENGTH = Number(process.env.STRENGTH ?? 0.6);
+/** how long the machines think while filling the record. Naming it matters:
+ *  left unsaid the search caps itself at 300 ms, and every position the
+ *  network has ever learned from was reached by a player five times weaker
+ *  than the one the app ships. A network cannot outgrow its teacher. */
+const PLAY_BUDGET = Number(process.env.PLAY_BUDGET ?? 300);
+/** rounds the machines look past their turn while filling the record */
+const PLAY_DEPTH = Number(process.env.PLAY_DEPTH ?? 0) as 0 | 1 | 2;
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 1));
 const CHECK_GAMES = Number(process.env.CHECK_GAMES ?? 48);
 /** how long the expert thinks on the yardstick: what the app gives it */
@@ -128,7 +136,7 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
     for (let j = 0; j < players; j++) (s.era === 'canal' ? canal : rail).push({ x: features(s, j), seat: j });
     const seat = s.current;
     setWeights(styles[seat]);
-    const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: 0, opening: openings[seat] ?? undefined }) ?? fallbackAction(s, seat);
+    const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: PLAY_DEPTH, budgetMs: PLAY_BUDGET, opening: openings[seat] ?? undefined }) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
   }
   const lead = (scores: number[], j: number) => scores[j] - Math.max(...scores.filter((_, k) => k !== j));
