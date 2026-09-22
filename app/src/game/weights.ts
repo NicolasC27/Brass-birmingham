@@ -65,10 +65,8 @@ export interface Weights {
 export const DEFAULTS: Weights = {
   cashFloor: 0.05,
   cashSlope: 0.4,
-  cashPerAction: 20,
-  /* one keeps the whole purse until this is measured: at 1 a pound beyond
-     what can be spent counts exactly as one that can, as it always has */
-  idleCash: 1,
+  cashPerAction: 12,
+  idleCash: 0.05,
   incomeOnFlip: 0.8,
   goodsServed: 0.7,
   goodsNoBeer: 0.4,
