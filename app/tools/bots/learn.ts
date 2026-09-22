@@ -71,11 +71,21 @@ const DATA_DIR = resolve('tools/bots/data');
 const NET_FILE = resolve('src/game/net-weights.ts');
 const LOG_FILE = resolve('tools/bots/learning.log');
 /** what the network learns to read: the Canal Era's points, the game's, or a mix of both */
-const TARGET = (process.env.TARGET ?? 'canal') as 'canal' | 'game' | 'mix';
+const TARGET = (process.env.TARGET ?? 'canal') as 'canal' | 'game' | 'mix' | 'own-canal' | 'own-game' | 'own-mix';
 const MIX = Number(process.env.MIX ?? 0.5);
 /** a sample: the features, the canal-era lead and the game's lead (points / POINTS),
  *  the seats at the table and how many later positions of this seat follow in the era */
-const ROW = FEATURES + 4;
+/* A row: the features, then the era's lead and the game's, the seats at the
+ * table, how many of this seat's positions still follow in the era, and last
+ * the seat's OWN scores. The leads were all a row held for a long time, from
+ * when the machines played to widen a gap; they play for their own score now
+ * (measured +4.6 points at three seats, +2.9 at four against a table that
+ * blocks), so the network has to be able to learn that quantity too. */
+const ROW = FEATURES + 6;
+const OWN_CANAL_AT = FEATURES + 4;
+const OWN_GAME_AT = FEATURES + 5;
+/** a seat's own score hovers around this, so the target is taken from here */
+const OWN_CENTRE = Number(process.env.OWN_CENTRE ?? 120);
 
 const COLORS = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
 const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
@@ -152,6 +162,8 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
       out[at + FEATURES + 1] = lead(finalScores, seat) / POINTS;
       out[at + FEATURES + 2] = players;
       out[at + FEATURES + 3] = perSeat - 1 - Math.floor(k / players);
+      out[at + OWN_CANAL_AT] = (canalScores[seat] - OWN_CENTRE) / POINTS;
+      out[at + OWN_GAME_AT] = (finalScores[seat] - OWN_CENTRE) / POINTS;
       at += ROW;
     }
   }
@@ -251,12 +263,13 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
   /* the target of each row: in the Canal Era the era's lead, the game's lead, or a mix;
      once the rails are laid the two are the same number */
   const outcome = (r: number): number => {
-    const canal = data[r * ROW + FEATURES];
-    const game = data[r * ROW + FEATURES + 1];
+    const own = TARGET.startsWith('own-');
+    const canal = data[r * ROW + (own ? OWN_CANAL_AT : FEATURES)];
+    const game = data[r * ROW + (own ? OWN_GAME_AT : FEATURES + 1)];
     const inCanal = data[r * ROW + FEATURES - GLOBAL_ERA] === 0;
     if (!inCanal) return game;
-    if (TARGET === 'canal') return canal;
-    if (TARGET === 'game') return game;
+    if (TARGET === 'canal' || TARGET === 'own-canal') return canal;
+    if (TARGET === 'game' || TARGET === 'own-game') return game;
     return MIX * canal + (1 - MIX) * game;
   };
   const target = (r: number): number => {
