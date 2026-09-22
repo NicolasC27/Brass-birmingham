@@ -49,6 +49,8 @@ interface Trial {
   search: SearchOptions;
   /** how the subject reads the board; the blend of hand and net when absent */
   reads?: EvalMode;
+  /** how many of the brain's networks are consulted; all of them when absent */
+  brainNets?: number;
 }
 
 /** "the mat worth a lot:stack=0.8,planBeam=12" */
@@ -61,6 +63,10 @@ function parseTrials(text: string): Trial[] {
       const key = k.trim();
       if (key === MODE_KEY) {
         t.reads = v.trim() as EvalMode;
+        continue;
+      }
+      if (key === 'brainNets') {
+        t.brainNets = Number(v);
         continue;
       }
       if (WORD_KEYS.has(key)) {
@@ -86,7 +92,8 @@ interface Slice {
 }
 
 function run(trial: Trial, players: number, seeds: number[]): Slice {
-  const brain = unpackBrain(NET_B64);
+  const whole = unpackBrain(NET_B64);
+  const brain = trial.brainNets ? { nets: whole.nets.slice(0, trial.brainNets) } : whole;
   const subject: Weights = { ...TRAINED, rival: RIVAL, ...trial.weights };
   const field: Weights = { ...DEFAULTS };
   const search: SearchOptions = { strength: 1, budgetMs: BUDGET, depth: 2, ...trial.search };

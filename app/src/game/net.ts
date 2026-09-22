@@ -160,6 +160,9 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
 }
 
 /** the table as seat `i` sees it, in numbers the network was trained on */
+/** one seat's block, borrowed while the rivals are read */
+const block = new Float32Array(SEAT_FEATURES);
+
 export function features(s: GameState, i: number): Float32Array {
   const out = new Float32Array(FEATURES);
   const proj = projectEraScores(s);
@@ -177,14 +180,14 @@ export function features(s: GameState, i: number): Float32Array {
       lead = j;
     }
   }
-  if (lead >= 0) seatBlock(s, lead, proj, out, SEAT_FEATURES);
-  /* the rivals on average */
+  /* the rivals on average, and the leader among them — his block used to be
+     read a second time, which is a fifth of the work at four seats */
   if (rivals.length) {
-    const tmp = new Float32Array(FEATURES);
     for (const j of rivals) {
-      tmp.fill(0);
-      seatBlock(s, j, proj, tmp, 0);
-      for (let k = 0; k < SEAT_FEATURES; k++) out[SEAT_FEATURES * 2 + k] += tmp[k] / rivals.length;
+      block.fill(0);
+      seatBlock(s, j, proj, block, 0);
+      for (let k = 0; k < SEAT_FEATURES; k++) out[SEAT_FEATURES * 2 + k] += block[k] / rivals.length;
+      if (j === lead) out.set(block, SEAT_FEATURES);
     }
   }
   const per = ROUNDS[Math.min(4, Math.max(2, s.players.length)) as 2 | 3 | 4];
