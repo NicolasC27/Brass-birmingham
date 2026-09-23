@@ -126,6 +126,7 @@ function Candle({ candle, total }: { candle: CandleProp; total: number }) {
 export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: boolean }) {
   const t = useT();
   const game = useGame((s) => s.game);
+  const botHold = useGame((s) => s.botHold);
   const band = useBand(marketOpen, game?.players.length ?? 0);
   const mine = useGame((s) => s.planActor() >= 0);
   const planActor = useGame((s) => s.planActor());
@@ -177,7 +178,7 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
 
   let line: string;
   if (stage === 'theirs') {
-    line = game.phase !== 'action' ? t('game.topbar.between') : p.isBot ? t('game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
+    line = game.phase !== 'action' ? t('game.topbar.between') : p.isBot ? t(botHold ? 'game.topbar.waitsRead' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
   } else if (stage === 'ready') {
     line = preparing ? t('game.topbar.hint.prepared') : t('game.topbar.hint.ready');
   } else if (stage === 'target') {

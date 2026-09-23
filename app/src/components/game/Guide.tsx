@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Sparkles, X } from 'lucide-react';
 import { aidOn, setBoardOption } from '@/components/game/boardOptions';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
-import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
 import { describeAction, useGame } from '@/game/store';
@@ -94,6 +94,8 @@ const readPos = (): Pos => {
   return { x: 0, y: 0 };
 };
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+/** a sentence that follows a colon starts low */
+const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
 const place = (p: Pos) => `translate(calc(-50% + ${p.x}px), ${p.y}px)`;
 
 /* ---------------------------- the machine ---------------------------- */
@@ -187,7 +189,18 @@ function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
     return { short: why, text: short ? `${why} ${t('game.guide.blocked.loanAdvice', vars)}` : why, money: short };
   }
   const plain = (why: string): Block => ({ short: why, text: why, money: false });
-  if (id === 'sell') return sellTargets(g, me).some((x) => x.valid) ? null : plain(t('game.guide.blocked.sell', vars));
+  if (id === 'sell') {
+    if (sellTargets(g, me).some((x) => x.valid)) return null;
+    /* the unsold works, and the merchants who buy their goods */
+    const mine = Object.entries(g.tiles).filter(([, x]) => x.owner === me && !x.flipped && WORKS.includes(x.industry));
+    const lines = mine.map(([key, x]) => {
+      const buyers = Object.entries(g.merchantTiles)
+        .filter(([, tiles]) => tiles.some((m) => m === 'all' || m === x.industry))
+        .map(([id]) => MERCHANT_BY_ID[id]?.name ?? id);
+      return t('game.guide.blocked.sellWorks', { industry: t(`game.log.industry.${x.industry}`), town: TOWN_BY_ID[key.split(':')[0]]?.name ?? key, buyers: buyers.join(', ') || '—' });
+    });
+    return plain([t('game.guide.blocked.sell', vars), ...lines].join(' '));
+  }
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
   return null;
 }
@@ -265,6 +278,7 @@ export default function Guide() {
   const endTutorial = useGame((s) => s.endTutorial);
   const matPlayer = useGame((s) => s.matPlayer);
   const openMat = useGame((s) => s.openMat);
+  const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
   const [hidden, setHidden] = useState(false);
   /* the machine's move that was read and understood, by its entry in the
@@ -393,6 +407,8 @@ export default function Guide() {
   const advance = (to: number) => {
     /* reading on does not pass a lesson still waiting on the game */
     const reach = pending >= 0 && pending < to ? pending : to;
+    /* the lesson on the hand wants the hand in view: the mat goes */
+    if (STEPS[to]?.id === 'hand' && matPlayer !== null) closeMat();
     setReadPast(to);
     setReached(reach);
     try {
@@ -546,7 +562,7 @@ export default function Guide() {
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
     const k = getKeybindings();
-    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: INCOME_PAYOUT[p.income], rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: INCOME_PAYOUT[p.income], rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
   };
 
   return (
@@ -595,11 +611,11 @@ export default function Guide() {
                         </button>
                       </div>
                       <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
-                        {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${due!.id}.title`, stepVars()) })} {block.short}</p>}
+                        {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${due!.id}.title`, stepVars()) })} {lower(block.short)}</p>}
+                        {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
                       </div>
-                      {blocked && <p className="mt-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
-                      {warnings.filter((w) => !block || (w.id !== 'broke' && w.id !== 'brokeAgain')).map((w) => (
+                      {warnings.filter((w) => (w.id === 'negative' || ((w.id === 'broke' || w.id === 'brokeAgain') && !block))).map((w) => (
                         <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
                           {w.text}
                         </p>
@@ -625,7 +641,7 @@ export default function Guide() {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      {step.show && (
+                      {step.show && !(step.show === 'mat' && matPlayer !== null) && (
                         <button type="button" onClick={() => show(step.show!)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
                         </button>
@@ -684,8 +700,12 @@ export default function Guide() {
               <div className="min-w-0 flex-1">
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.botWhy', { name: bot.name })}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
-                <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
-                <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
+                {(reading || !tutorial) && (
+                  <>
+                    <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
+                    <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
+                  </>
+                )}
               </div>
               {reading ? (
                 <button type="button" onClick={() => setBotHidden(bot.id)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
