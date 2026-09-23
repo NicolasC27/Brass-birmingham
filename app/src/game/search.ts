@@ -31,6 +31,7 @@
 /* ------------------------------------------------------------------ */
 
 import { applyAction, botAction, fallbackAction } from './actions';
+import { chainSurplus } from './chains';
 import { cloneState } from './clone';
 import type { GameAction } from './actions';
 import { chooseBotMove } from './bot';
@@ -421,6 +422,14 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
   v += towns.size * w.towns * frac;
   const market = [...towns].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
   if (!market) v -= w.noMarket * frac;
+  /* what a line of play would still pay, less the actions it still costs.
+     A summand, never a command: every legal move is still generated, applied
+     and ranked, and the search overrules this the moment anything reads
+     better — which is the whole difference from the opening book. */
+  if (w.chainPay) {
+    const left = paydays * 2;
+    v += w.chainPay * chainSurplus(s, j, w.chainAction, left).best;
+  }
   /* a mat developed early: the next tiles survive the sweep and score twice */
   if (s.era === 'canal') for (const ind of Object.keys(p.stacks) as IndustryType[]) if ((p.stacks[ind][0] ?? 0) >= 2) v += w.developed * frac;
   /* a canal that scores less than four icons is an action spent for little */

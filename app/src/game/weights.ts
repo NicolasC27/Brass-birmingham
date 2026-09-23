@@ -62,6 +62,14 @@ export interface Weights {
   /** how much a build this card names, that only the purse forbids today,
    *  counts towards keeping the card. At zero a card is ranked by what it
    *  can pay for this instant, which throws away the expensive builds */
+  /** what a line of play still standing is worth: its outstanding tiles'
+   *  points less the actions still between the seat and their sale, charged
+   *  at `chainAction` a piece. Nothing is promised and nothing is forbidden;
+   *  a line the board or the hand has closed reads zero at once */
+  chainPay: number;
+  /** what an action is charged against a line. The machines make 4.0 points
+   *  an action today and would need 5.3 to match a strong human */
+  chainAction: number;
   cardLater: number;
   scarceSlot: number;
   /** what it costs to have spent a level-1 goods mill or brewery on the board.
@@ -106,6 +114,8 @@ export const DEFAULTS: Weights = {
   rival: 0,
   earlyLoan: 8,
   developed: 2,
+  chainPay: 0,
+  chainAction: 5,
   cardLater: 1,
   scarceSlot: 0,
   lowTile: 3,

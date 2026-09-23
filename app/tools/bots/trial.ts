@@ -80,8 +80,15 @@ function parseTrials(text: string): Trial[] {
         continue;
       }
       const value = Number(v);
-      if (SEARCH_KEYS.has(key)) (t.search as Record<string, number>)[key] = value;
-      else (t.weights as Record<string, number>)[key] = value;
+      if (SEARCH_KEYS.has(key)) {
+        (t.search as Record<string, number>)[key] = value;
+        continue;
+      }
+      /* a misspelt weight used to fall through into the override map and do
+         nothing, so the cell read exactly like its baseline and printed
+         "+0.0 ± 2.1 undecided" — a dead idea and a typo look the same */
+      if (!(key in DEFAULTS)) throw new Error(`no weight named ${key}; the trial would have measured nothing`);
+      (t.weights as Record<string, number>)[key] = value;
     }
     return t;
   });

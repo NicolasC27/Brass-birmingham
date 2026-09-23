@@ -28,6 +28,7 @@ import { loadNet } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
 import { chooseBotAction, setEvalMode, setWeights } from '@/game/search';
 import { TRAINED } from '@/game/weights';
+import type { Weights } from '@/game/weights';
 import type { GameState, SetupPayload } from '@/game/types';
 
 const GAMES = Number(process.env.GAMES ?? 24);
@@ -39,6 +40,14 @@ const PLAN_BEAM = Number(process.env.PLAN_BEAM ?? 0);
  *  in trial.ts reads the board with this at zero while this yardstick has
  *  always read it at one, so the two were never measuring the same goal */
 const RIVAL = process.env.RIVAL === undefined ? null : Number(process.env.RIVAL);
+/** weights to override, as "chainPay=0.7,chainAction=5.5" */
+const WEIGHTS: Partial<Weights> = {};
+for (const pair of (process.env.WEIGHTS ?? '').split(',').filter(Boolean)) {
+  const [k, v] = pair.split('=');
+  const key = k.trim();
+  if (!(key in TRAINED)) throw new Error(`no weight named ${key}`);
+  (WEIGHTS as Record<string, number>)[key] = Number(v);
+}
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, Math.min(GAMES, cpus().length - 2)));
 const LOG_FILE = resolve('tools/bots/table.log');
 
@@ -73,7 +82,7 @@ if (!isMainThread) {
   const { seeds } = workerData as { seeds: number[] };
   loadNet(NET_B64);
   setEvalMode('blend');
-  if (RIVAL !== null) setWeights({ ...TRAINED, rival: RIVAL });
+  if (RIVAL !== null || Object.keys(WEIGHTS).length) setWeights({ ...TRAINED, ...(RIVAL !== null ? { rival: RIVAL } : {}), ...WEIGHTS });
   parentPort!.postMessage(seeds.map(play));
 } else {
   const log = (line: string) => {
