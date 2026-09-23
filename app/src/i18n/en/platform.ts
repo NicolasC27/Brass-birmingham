@@ -186,6 +186,8 @@ const platform = {
       tableLive: '"{table}" — round {round}, {name} to act',
     },
     shortcuts: {
+      guided: 'Guided first game',
+      guidedCopy: 'The Canal Era against a gentle machine, a lesson at every step.',
       rules: 'Learn the rules',
       rulesCopy: 'The full ledger, from the first round to victory.',
       desk: 'My desk',

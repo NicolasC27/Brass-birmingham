@@ -186,6 +186,8 @@ const platform = {
       tableLive: '« {table} » — ronda {round}, juega {name}',
     },
     shortcuts: {
+      guided: 'Partida guiada',
+      guidedCopy: 'La era del canal contra una máquina suave, una lección en cada paso.',
       rules: 'Aprender las reglas',
       rulesCopy: 'El registro completo, de la primera ronda a la victoria.',
       desk: 'Mi oficina',

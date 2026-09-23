@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { BookOpen, Briefcase, ChevronRight, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
+import { BookOpen, Briefcase, ChevronRight, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
 import { forgetLocalGame } from '@/game/local';
-import { readResume } from '@/game/quickplay';
+import { readResume, startTutorial } from '@/game/quickplay';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
 import CodeInput from '@/components/platform/CodeInput';
@@ -170,34 +170,49 @@ function QueueRankStrip() {
 
 function Shortcuts() {
   const t = useT();
+  const navigate = useNavigate();
+  /* the guided game opens a table of its own rather than a page: the card
+     dresses it on the register, then goes where the guide takes over */
   const cards = [
-    { to: '/rules', icon: BookOpen, title: t('platform.home.shortcuts.rules'), copy: t('platform.home.shortcuts.rulesCopy') },
-    { to: '/desk', icon: Briefcase, title: t('platform.home.shortcuts.desk'), copy: t('platform.home.shortcuts.deskCopy') },
-    { to: '/profile', icon: User, title: t('platform.home.shortcuts.profile'), copy: t('platform.home.shortcuts.profileCopy') },
+    { key: 'guided', icon: GraduationCap, title: t('platform.home.shortcuts.guided'), copy: t('platform.home.shortcuts.guidedCopy'), go: () => navigate(`/game/local/${startTutorial()}`) },
+    { key: '/rules', icon: BookOpen, title: t('platform.home.shortcuts.rules'), copy: t('platform.home.shortcuts.rulesCopy') },
+    { key: '/desk', icon: Briefcase, title: t('platform.home.shortcuts.desk'), copy: t('platform.home.shortcuts.deskCopy') },
+    { key: '/profile', icon: User, title: t('platform.home.shortcuts.profile'), copy: t('platform.home.shortcuts.profileCopy') },
   ];
+  const card = 'group flex h-24 w-full items-center gap-4 rounded-xl border border-[rgb(var(--paper-100)/.14)] px-5 text-left transition-colors duration-150 hover:bg-enamel-800';
   return (
-    <div className="mb-2 mt-8 grid gap-4 min-[760px]:grid-cols-3">
-      {cards.map(({ to, icon: Icon, title, copy }, i) => (
-        <motion.div
-          key={to}
-          initial={{ opacity: 0, y: 12 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ amount: 0.2, once: true }}
-          transition={{ duration: 0.22, ease, delay: i * 0.06 }}
-        >
-          <Link
-            to={to}
-            className="group flex h-24 items-center gap-4 rounded-xl border border-[rgb(var(--paper-100)/.14)] px-5 transition-colors duration-150 hover:bg-enamel-800"
-          >
+    <div className="mb-2 mt-8 grid gap-4 min-[760px]:grid-cols-2 min-[1100px]:grid-cols-4">
+      {cards.map(({ key, icon: Icon, title, copy, go }, i) => {
+        const inner = (
+          <>
             <Icon size={20} aria-hidden className="shrink-0 text-brass-300 transition-colors duration-150 group-hover:text-brass-500" />
             <span className="min-w-0 flex-1">
               <span className="block font-ui text-[14px] font-semibold text-paper-100">{title}</span>
               <span className="mt-0.5 block truncate font-ui text-[12px] text-iron-400">{copy}</span>
             </span>
             <ChevronRight size={16} aria-hidden className="shrink-0 text-iron-600 transition-transform duration-150 group-hover:translate-x-1" />
-          </Link>
-        </motion.div>
-      ))}
+          </>
+        );
+        return (
+          <motion.div
+            key={key}
+            initial={{ opacity: 0, y: 12 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ amount: 0.2, once: true }}
+            transition={{ duration: 0.22, ease, delay: i * 0.06 }}
+          >
+            {go ? (
+              <button type="button" onClick={go} className={card}>
+                {inner}
+              </button>
+            ) : (
+              <Link to={key} className={card}>
+                {inner}
+              </Link>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 }

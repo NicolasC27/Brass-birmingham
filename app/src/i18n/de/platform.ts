@@ -188,6 +188,8 @@ const platform: typeof enPlatform = {
       tableLive: '„{table}“ — Runde {round}, {name} ist am Zug',
     },
     shortcuts: {
+      guided: 'Geführte Partie',
+      guidedCopy: 'Die Kanalzeit gegen eine sanfte Maschine, eine Lektion bei jedem Schritt.',
       rules: 'Regeln lernen',
       rulesCopy: 'Das vollständige Register, von der ersten Runde bis zum Sieg.',
       desk: 'Mein Kontor',
