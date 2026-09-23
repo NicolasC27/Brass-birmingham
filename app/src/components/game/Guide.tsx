@@ -156,9 +156,13 @@ function botReason(g: GameState, me: number, t: T): { name: string; what: string
 
 const money = (r?: string) => !!r && r.startsWith('Needs £');
 
+/** the reason alone, and the reason with the advice that follows it */
+type Block = { short: string; text: string; money: boolean };
+
 /** why the lesson's deed cannot be done at this table right now, said
- *  with the player's own figures; null when it can */
-function blockedBy(id: string, g: GameState, me: number, t: T): string | null {
+ *  with the player's own figures, and whether money is what is missing;
+ *  null when it can */
+function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
   const p = g.players[me];
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
   if (id === 'coal' || id === 'works') {
@@ -166,18 +170,26 @@ function blockedBy(id: string, g: GameState, me: number, t: T): string | null {
     const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
     if (targets.some((x) => x.valid)) return null;
     const short = targets.filter((x) => money(x.reason));
-    if (short.length) return t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...short.map((x) => x.total)) });
-    return t(`game.guide.blocked.${id}Card`, vars);
+    if (short.length) {
+      const why = t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...short.map((x) => x.total)) });
+      return { short: why, text: `${why} ${t('game.guide.blocked.loanAdvice', vars)}`, money: true };
+    }
+    const why = t(`game.guide.blocked.${id}Card`, vars);
+    return { short: why, text: why, money: false };
   }
   if (id === 'link') {
     const targets = linkTargets(g, me);
     if (targets.some((x) => x.valid)) return null;
-    return t(targets.some((x) => money(x.reason)) ? 'game.guide.blocked.linkMoney' : 'game.guide.blocked.link', vars);
+    const short = targets.some((x) => money(x.reason));
+    const why = t(short ? 'game.guide.blocked.linkMoney' : 'game.guide.blocked.link', vars);
+    return { short: why, text: short ? `${why} ${t('game.guide.blocked.loanAdvice', vars)}` : why, money: short };
   }
-  if (id === 'sell') return sellTargets(g, me).some((x) => x.valid) ? null : t('game.guide.blocked.sell', vars);
-  if (id === 'loan') return canLoan(g, me).ok ? null : t('game.guide.blocked.loan', vars);
+  const plain = (why: string): Block => ({ short: why, text: why, money: false });
+  if (id === 'sell') return sellTargets(g, me).some((x) => x.valid) ? null : plain(t('game.guide.blocked.sell', vars));
+  if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
   return null;
 }
+const LOAN_AT = STEPS.findIndex((x) => x.id === 'loan');
 
 /* ----------------------------- the alerts ---------------------------- */
 
@@ -349,8 +361,16 @@ export default function Guide() {
 
   if (!game || game.phase !== 'action') return null;
   const showSteps = tutorial && stepIndex >= 0;
-  const step = showSteps ? STEPS[Math.min(stepIndex, STEPS.length - 1)] : null;
+  const due = showSteps ? STEPS[Math.min(stepIndex, STEPS.length - 1)] : null;
   const finished = showSteps && stepIndex >= STEPS.length;
+  /* the deed the lesson asks for, when the table does not allow it now;
+     when money is what is missing and the loan is still to be taught, the
+     guide takes that lesson first and comes back to this one after */
+  const block = due?.done && myTurn && !finished ? blockedBy(due.id, game, me, t) : null;
+  const detour = !!block?.money && due!.id !== 'loan' && stepIndex < LOAN_AT && !STEPS[LOAN_AT].done!(game, me, selectedCardId, matPlayer, ack) && canLoan(game, me).ok;
+  const step = detour ? STEPS[LOAN_AT] : due;
+  const shownIndex = detour ? LOAN_AT : stepIndex;
+  const blocked = detour ? null : (block?.text ?? null);
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
@@ -438,8 +458,6 @@ export default function Guide() {
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
   };
-  /* the deed the lesson asks for, when the table does not allow it now */
-  const blocked = step?.done && myTurn && !finished ? blockedBy(step.id, game, me, t) : null;
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
     const k = getKeybindings();
@@ -454,7 +472,7 @@ export default function Guide() {
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
-              <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</span>
+              <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</span>
             </div>
             {!reading && (
@@ -484,7 +502,7 @@ export default function Guide() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
-                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</p>
+                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
                           <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</h3>
                         </div>
                         <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.minify')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
@@ -492,10 +510,11 @@ export default function Guide() {
                         </button>
                       </div>
                       <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
+                        {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${due!.id}.title`, stepVars()) })} {block.short}</p>}
                         <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
                       </div>
                       {blocked && <p className="mt-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
-                      {warnings.filter((w) => w.id !== 'broke' || !blocked).map((w) => (
+                      {warnings.filter((w) => !block || (w.id !== 'broke' && w.id !== 'brokeAgain')).map((w) => (
                         <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
                           {w.text}
                         </p>
