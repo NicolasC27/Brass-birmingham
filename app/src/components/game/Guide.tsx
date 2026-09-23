@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, X } from 'lucide-react';
+import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, X } from 'lucide-react';
 import { aidOn } from '@/components/game/boardOptions';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
@@ -72,6 +73,21 @@ const STEPS: Step[] = [
 
 const STEP_KEY = 'brassworks.tutorial.step';
 const REACH_KEY = 'brassworks.tutorial.reached';
+/** where the note was dragged to, and whether it was folded to a strip */
+const POS_KEY = 'brassworks.guide.pos';
+const MINI_KEY = 'brassworks.guide.mini';
+
+type Pos = { x: number; y: number };
+const readPos = (): Pos => {
+  try {
+    const v = JSON.parse(localStorage.getItem(POS_KEY) ?? 'null') as Pos | null;
+    if (v && typeof v.x === 'number' && typeof v.y === 'number') return v;
+  } catch {
+    /* fresh table */
+  }
+  return { x: 0, y: 0 };
+};
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /* ---------------------------- the machine ---------------------------- */
 
@@ -201,6 +217,17 @@ export default function Guide() {
   const [botHidden, setBotHidden] = useState<number>(-1);
   const setBotHold = useGame((s) => s.setBotHold);
   const [paged, setPaged] = useState({ key: '', page: 0 });
+  /* the note can be dragged by its head, and folded to a strip; a new
+     lesson unfolds it */
+  const [pos, setPos] = useState<Pos>(readPos);
+  const [miniAt, setMiniAt] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem(MINI_KEY) ?? -1);
+    } catch {
+      return -1;
+    }
+  });
+  const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number } | null>(null);
   const [readPast, setReadPast] = useState<number>(() => {
     try {
       return Number(localStorage.getItem(STEP_KEY) ?? 0);
@@ -262,6 +289,9 @@ export default function Guide() {
     return () => setBotHold(false);
   }, [holdWanted, setBotHold]);
 
+  /* folded for this lesson only: the next one unfolds the note */
+  const mini = miniAt === stepIndex;
+
   if (!game || game.phase !== 'action') return null;
   const showSteps = tutorial && stepIndex >= 0;
   const step = showSteps ? STEPS[Math.min(stepIndex, STEPS.length - 1)] : null;
@@ -285,6 +315,48 @@ export default function Guide() {
       /* non-fatal */
     }
   };
+  const fold = (to: boolean) => {
+    setMiniAt(to ? stepIndex : -1);
+    try {
+      localStorage.setItem(MINI_KEY, String(to ? stepIndex : -1));
+    } catch {
+      /* non-fatal */
+    }
+  };
+  const grab = (e: ReactPointerEvent<HTMLElement>) => {
+    if (e.button !== 0) return;
+    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const drag = (e: ReactPointerEvent<HTMLElement>) => {
+    const g = grip.current;
+    if (!g || g.id !== e.pointerId) return;
+    const reach = window.innerWidth / 2 - 80;
+    setPos({ x: clamp(g.ox + e.clientX - g.sx, -reach, reach), y: clamp(g.oy + e.clientY - g.sy, -90, window.innerHeight - 170) });
+  };
+  const drop = (e: ReactPointerEvent<HTMLElement>) => {
+    if (!grip.current || grip.current.id !== e.pointerId) return;
+    grip.current = null;
+    setPos((p) => {
+      try {
+        localStorage.setItem(POS_KEY, JSON.stringify(p));
+      } catch {
+        /* non-fatal */
+      }
+      return p;
+    });
+  };
+  /* a double click on the head puts the note back under the top bar */
+  const home = () => {
+    setPos({ x: 0, y: 0 });
+    try {
+      localStorage.removeItem(POS_KEY);
+    } catch {
+      /* non-fatal */
+    }
+  };
+  const grabProps = { onPointerDown: grab, onPointerMove: drag, onPointerUp: drop, onPointerCancel: drop, onDoubleClick: home, title: t('game.guide.move') };
+  const grabClass = 'cursor-grab touch-none select-none active:cursor-grabbing';
   const show = (what: Show) => {
     if (what === 'mat') openMat(me);
     if (what === 'market') setMarketFocus(true);
@@ -295,9 +367,22 @@ export default function Guide() {
   };
 
   return (
-    <div className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] -translate-x-1/2 flex-col gap-2">
+    <div className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2" style={{ transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)` }}>
       <AnimatePresence initial={false} mode="popLayout">
-        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && (
+        {showSteps && step && mini && !holding && (
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3">
+            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
+            <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
+              <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
+              <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</span>
+              <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</span>
+            </div>
+            <button type="button" onClick={() => fold(false)} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+              <ChevronDown className="h-3.5 w-3.5" />
+            </button>
+          </motion.aside>
+        )}
+        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && mini) && (
           <motion.aside
             key="note"
             layout
@@ -305,7 +390,7 @@ export default function Guide() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             aria-label={t('game.guide.aria')}
-            className="paper pointer-events-auto relative px-4 py-3 shadow-e3"
+            className="paper pointer-events-auto relative w-full px-4 py-3 shadow-e3"
           >
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div className="relative">
@@ -314,8 +399,15 @@ export default function Guide() {
                   <div className="flex items-start gap-3">
                     <GraduationCap className="mt-0.5 h-5 w-5 shrink-0 text-ink-900/70" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</p>
-                      <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</h3>
+                      <div className="flex items-start justify-between gap-2">
+                        <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
+                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</p>
+                          <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</h3>
+                        </div>
+                        <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.minify')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                          <Minus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                       <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
                         <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
                       </div>
@@ -376,7 +468,7 @@ export default function Guide() {
 
         {/* the machine's reasons: why a player would have made that move */}
         {showBot && bot && (
-          <motion.aside key={`bot-${botSeq}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative px-4 py-2.5">
+          <motion.aside key={`bot-${botSeq}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
             <div className="flex items-start gap-3">
               <Bot className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
               <div className="min-w-0 flex-1">
