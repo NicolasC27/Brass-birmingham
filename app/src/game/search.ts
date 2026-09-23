@@ -460,15 +460,22 @@ export function evaluate(s: GameState, i: number, w: Weights = weights): number 
   const paydays = paydaysLeft(s);
   const frac = paydays / roundsTotal(s);
   const mine = worth(s, i, proj, frac, paydays, true, w);
-  let rival = -Infinity;
-  for (let j = 0; j < s.players.length; j++) {
-    if (j === i) continue;
-    rival = Math.max(rival, worth(s, j, proj, frac, paydays, false, w));
+  /* the rivals' worth is read only if it counts for anything: the machines
+     play for their own score now, so at a four-seat table this spares three
+     readings of the board out of four */
+  let hand = mine;
+  if (w.rival) {
+    let rival = -Infinity;
+    for (let j = 0; j < s.players.length; j++) {
+      if (j === i) continue;
+      rival = Math.max(rival, worth(s, j, proj, frac, paydays, false, w));
+    }
+    if (rival !== -Infinity) hand = mine - rival * w.rival;
   }
-  const hand = rival === -Infinity ? mine : mine - rival * w.rival;
   const net = activeNet();
   if (evalMode === 'hand' || !net) return hand;
-  const learned = think(net, features(s, i));
+  /* the projection is already made: the features need not make it again */
+  const learned = think(net, features(s, i, proj));
   return evalMode === 'net' ? learned : hand + learned;
 }
 

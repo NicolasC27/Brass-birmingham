@@ -163,9 +163,8 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
 /** one seat's block, borrowed while the rivals are read */
 const block = new Float32Array(SEAT_FEATURES);
 
-export function features(s: GameState, i: number): Float32Array {
+export function features(s: GameState, i: number, proj: ReturnType<typeof projectEraScores> = projectEraScores(s)): Float32Array {
   const out = new Float32Array(FEATURES);
-  const proj = projectEraScores(s);
   seatBlock(s, i, proj, out, 0);
   /* the leading rival: most points on the table now */
   let lead = -1;
