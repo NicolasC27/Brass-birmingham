@@ -5,7 +5,7 @@ import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightb
 import { aidOn, setBoardOption } from '@/components/game/boardOptions';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, incomeLevel } from '@/game/data';
-import { buildTargets, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
+import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
 import { useGame } from '@/game/store';
 import type { GameState } from '@/game/types';
@@ -150,6 +150,33 @@ function botReason(g: GameState, me: number, t: T): { name: string; what: string
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
   return { name: p.name, what: ledgerText(e, t), why, turn, fresh: e.at === g.actions.length - 1 };
+}
+
+/* ----------------------------- the block ----------------------------- */
+
+const money = (r?: string) => !!r && r.startsWith('Needs £');
+
+/** why the lesson's deed cannot be done at this table right now, said
+ *  with the player's own figures; null when it can */
+function blockedBy(id: string, g: GameState, me: number, t: T): string | null {
+  const p = g.players[me];
+  const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
+  if (id === 'coal' || id === 'works') {
+    const inds = id === 'coal' ? ['coal'] : WORKS;
+    const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
+    if (targets.some((x) => x.valid)) return null;
+    const short = targets.filter((x) => money(x.reason));
+    if (short.length) return t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...short.map((x) => x.total)) });
+    return t(`game.guide.blocked.${id}Card`, vars);
+  }
+  if (id === 'link') {
+    const targets = linkTargets(g, me);
+    if (targets.some((x) => x.valid)) return null;
+    return t(targets.some((x) => money(x.reason)) ? 'game.guide.blocked.linkMoney' : 'game.guide.blocked.link', vars);
+  }
+  if (id === 'sell') return sellTargets(g, me).some((x) => x.valid) ? null : t('game.guide.blocked.sell', vars);
+  if (id === 'loan') return canLoan(g, me).ok ? null : t('game.guide.blocked.loan', vars);
+  return null;
 }
 
 /* ----------------------------- the alerts ---------------------------- */
@@ -411,6 +438,8 @@ export default function Guide() {
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
   };
+  /* the deed the lesson asks for, when the table does not allow it now */
+  const blocked = step?.done && myTurn && !finished ? blockedBy(step.id, game, me, t) : null;
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
     const k = getKeybindings();
@@ -465,7 +494,13 @@ export default function Guide() {
                       <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
                         <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
                       </div>
-                      {step.done && !finished && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {blocked && <p className="mt-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
+                      {warnings.filter((w) => w.id !== 'broke' || !blocked).map((w) => (
+                        <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
+                          {w.text}
+                        </p>
+                      ))}
+                      {step.done && !finished && !blocked && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                     </div>
                   </div>
                   <p className="mt-2 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
@@ -484,6 +519,12 @@ export default function Guide() {
                       {step.show && (
                         <button type="button" onClick={() => show(step.show!)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
+                        </button>
+                      )}
+                      {blocked && (
+                        <button type="button" onClick={() => advance(stepIndex + 1)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                          {t('game.guide.skip')}
+                          <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
                       {(!step.done || finished) && (
