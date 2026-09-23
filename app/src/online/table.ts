@@ -67,8 +67,6 @@ export interface Me extends Identity {
   motto: string;
   favoriteColor: PlayerColor | null;
   createdAt: number;
-  /** named by the house to keep the forum: may hide, lock, pin and answer reports */
-  moderator?: boolean;
 }
 
 /** a table as the desk lists it: who sits there, and whose move it is */

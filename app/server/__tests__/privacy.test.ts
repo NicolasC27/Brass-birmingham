@@ -4,15 +4,15 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import WebSocket from 'ws';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DEPARTED_MS, POST_ADDRESS_MS, Store, weakPassword } from '../store';
+import { DEPARTED_MS, Store, weakPassword } from '../store';
 import { serve } from '../index';
 import type { Serving } from '../index';
 import { Guest, PASSWORD, post } from './guest';
 
 /* What the register keeps of a member, and how little a copy of it gives
-   away: tokens sealed, passwords worth the name, the address of a post let
-   go after a year, an account closed and its owner forgotten. And the door:
-   a name tried too often waits, a page from elsewhere gets no socket. */
+   away: tokens sealed, passwords worth the name, an account closed and its
+   owner forgotten. And the door: a name tried too often waits, a page from
+   elsewhere gets no socket. */
 
 describe('the seals', () => {
   const dirs: string[] = [];
@@ -64,20 +64,19 @@ describe('the seals', () => {
     expect(weakPassword('another-password-1', 'Ada Lovelace', 'other@example.test')).toBe(false);
   });
 
-  it('closes an account and forgets its owner, keeps the posts and the law’s copy', () => {
+  it('closes an account and forgets its owner, keeps the law’s copy', () => {
     const file = fresh();
     const store = new Store(file);
     const ada = store.signUp('Ada', 'ada@example.test', 'countess-of-lovelace', { ip: '10.0.0.1', accepted: true });
     const bob = store.signUp('Bob', 'bob@example.test', 'another-password-1');
     if (!('account' in ada) || !('account' in bob)) throw new Error('accounts');
     expect(ada.account.acceptedAt).not.toBeNull();
-    const thread = store.forumOpen(ada.account.id, 'tables', 'A table on Friday', 'Who is in?', 'en', '10.0.0.1');
-    store.forumReply(bob.account.id, thread, 'me', 'en', '10.0.0.2');
     store.befriend(ada.account.id, bob.account.id);
     const token = store.openSession(ada.account.id);
     const taken = store.exportOf(ada.account.id)!;
-    expect((taken.posts as unknown[]).length).toBe(1);
-    expect((taken.account as { email: string }).email).toBe('ada@example.test');
+    expect((taken.friends as unknown[]).length).toBe(1);
+    expect((taken.account as { email: string; createdIp: string }).email).toBe('ada@example.test');
+    expect((taken.account as { createdIp: string }).createdIp).toBe('10.0.0.1');
 
     expect(store.closeAccount(ada.account.id, 'wrong')).toBe('wrong-password');
     expect(store.closeAccount(ada.account.id, 'countess-of-lovelace')).toBeNull();
@@ -85,18 +84,15 @@ describe('the seals', () => {
     expect(store.session(token)).toBeNull();
     expect(store.signIn('Ada', 'countess-of-lovelace')).toBeNull();
     expect(store.accountByEmail('ada@example.test')).toBeNull();
-    /* the name is free again, the posts read under a number */
+    /* the name is free again, the account reads as a number */
     expect('account' in store.signUp('Ada', 'ada2@example.test', 'countess-of-lovelace')).toBe(true);
-    const view = store.forumThread(thread, 1, bob.account.id, false)!;
-    expect(view.posts[0].by.name).toMatch(/^Membre [0-9a-f]{6}$/);
-    expect(view.posts[0].body).toBe('Who is in?');
+    expect(store.account(ada.account.id)?.name).toMatch(/^Membre [0-9a-f]{6}$/);
     expect(store.friendsOf(bob.account.id)).toHaveLength(0);
     const db = new DatabaseSync(file);
     expect(db.prepare('select name, email from departed').get()).toMatchObject({ name: 'Ada', email: 'ada@example.test' });
-    expect((db.prepare('select ip from forum_posts where accountId = ?').get(ada.account.id) as { ip: string | null }).ip).toBeNull();
-    /* the sweep: Bob's address goes after a year, the law's copy after five */
-    store.sweepPrivacy(Date.now() + POST_ADDRESS_MS + 1000);
-    expect((db.prepare('select count(*) as n from forum_posts where ip is not null').get() as { n: number }).n).toBe(0);
+    expect((db.prepare('select createdIp from accounts where id = ?').get(ada.account.id) as { createdIp: string | null }).createdIp).toBeNull();
+    /* the sweep: the law's copy goes after five years */
+    store.sweepPrivacy(Date.now() + 1000);
     expect((db.prepare('select count(*) as n from departed').get() as { n: number }).n).toBe(1);
     store.sweepPrivacy(Date.now() + DEPARTED_MS + 1000);
     expect((db.prepare('select count(*) as n from departed').get() as { n: number }).n).toBe(0);

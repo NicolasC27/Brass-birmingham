@@ -3,7 +3,7 @@ import { serve } from './index';
 
 /* The server as a process: PORT, HOST and BLACKRAIL_DB from the
    environment, and the keys the house keeps in `.env.local` beside the
-   app or at the repository's root (ANTHROPIC_API_KEY, RESEND_API_KEY…) —
+   app or at the repository's root (RESEND_API_KEY, FEEDBACK_TOKEN…) —
    read here so an ignored file holds every secret, the shell's own
    values winning. SQLite ships
    with Node but still announces itself as experimental on every start;

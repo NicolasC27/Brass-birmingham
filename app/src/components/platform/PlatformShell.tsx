@@ -10,6 +10,9 @@ import Button from './Button';
 import RankBadge from './RankBadge';
 import { usePresence } from './presence';
 
+/** the club's Discord, when the build names one (VITE_DISCORD_URL); the header shows it */
+const DISCORD_URL = String(import.meta.env.VITE_DISCORD_URL ?? '').trim();
+
 /* ------------------------------------------------------------------ */
 /* PlatformShell — variante « platform » du shell (design.md §6.2).    */
 /* TopBar 56px + StatusStrip 32px (≥900px) + contenu + footer 48px +   */
@@ -138,9 +141,11 @@ function TopBar() {
           <NavLink to="/classement" className={navLink}>
             {t('platform.nav.ranking')}
           </NavLink>
-          <NavLink to="/forum" className={navLink}>
-            {t('platform.nav.forum')}
-          </NavLink>
+          {DISCORD_URL && (
+            <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className={navLink({ isActive: false })}>
+              {t('platform.nav.discord')}
+            </a>
+          )}
           <NavLink to="/desk" className={navLink}>
             {t('platform.nav.desk')}
           </NavLink>

@@ -574,7 +574,7 @@ function DataSettings() {
                   {t('platform.profile.settings.closeConfirm')}
                 </Button>
                 <Button variant="ghost" onClick={() => setClosing(false)} disabled={busy}>
-                  {t('platform.forum.cancel')}
+                  {t('platform.profile.settings.keep')}
                 </Button>
               </div>
             </div>

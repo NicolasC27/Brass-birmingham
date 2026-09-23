@@ -64,39 +64,6 @@
       "port": 4174
     },
     {
-      "name": "brass-forum-server",
-      "runtimeExecutable": "env",
-      "runtimeArgs": [
-        "PORT=8790",
-        "DEV_LETTERS=1",
-        "BLACKRAIL_DB=:memory:",
-        "BLACKRAIL_MODERATORS=Ada",
-        "npm",
-        "run",
-        "server",
-        "--prefix",
-        "app"
-      ],
-      "port": 8790
-    },
-    {
-      "name": "brass-forum-web",
-      "runtimeExecutable": "env",
-      "runtimeArgs": [
-        "VITE_ONLINE_URL=ws://localhost:8790",
-        "npm",
-        "run",
-        "dev",
-        "--prefix",
-        "app",
-        "--",
-        "--port",
-        "3010",
-        "--strictPort"
-      ],
-      "port": 3010
-    },
-    {
       "name": "brass-bots",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

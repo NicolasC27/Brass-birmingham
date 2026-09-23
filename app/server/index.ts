@@ -19,11 +19,6 @@ import type { Waits } from './queue';
 import { letters, mailerFromEnv } from './mail';
 import type { Mailer } from './mail';
 import { Store } from './store';
-import { BODY_MAX, BODY_MIN, MODS_OPEN, POSTS_PER_HOUR, POST_COOLDOWN_MS, REPORT_MAX, THREAD_COOLDOWN_MS, TITLE_MAX, TITLE_MIN, isBoard, isLang, isModAction, isReason } from '@/forum/types';
-import { PROMPT_VERSION, claudeTranslator, costOf } from './translate';
-import type { Translator } from './translate';
-import type { BoardKey, ForumError, Lang } from '@/forum/types';
-import { offends } from '@/forum/words';
 import type { Account } from './store';
 
 /* ------------------------------------------------------------------ */
@@ -167,12 +162,6 @@ export interface ServeOptions {
   /** the book ideas and bugs are written in (FEEDBACK_FILE; feedback.md
    *  next to the register by default, none for a house that forgets) */
   feedbackFile?: string | null;
-  /** the members who keep the forum, by name (BLACKRAIL_MODERATORS, comma-separated) */
-  moderators?: string[];
-  /** the forum's interpreter (Claude with ANTHROPIC_API_KEY by default; null for none) */
-  translator?: Translator | null;
-  /** dollars the interpreter may spend, all time (TRANSLATE_BUDGET_USD, 10 by default) */
-  translateBudget?: number;
   /** the clock the queues wait by, and how long they wait — for the tests */
   clock?: () => number;
   waits?: Partial<Waits>;
@@ -196,19 +185,8 @@ export interface Serving {
 const noteText = (n: { name: string; page: string; kind: string; text: string; createdAt: number }): string =>
   [`## ${n.kind === 'bug' ? 'Bug' : 'Idea'} — ${n.name} · ${new Date(n.createdAt).toISOString().slice(0, 16).replace('T', ' ')} · ${n.page}`, '', n.text, ''].join('\n');
 
-/** a name as the register folds it, to know a moderator by it */
+/** a name as the register folds it, to count the tries on it */
 const foldName = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ');
-/** a post's text as it is kept: unix lines, no control characters, trimmed */
-const tidy = (s: unknown, oneLine = false): string => {
-  const text = String(s ?? '')
-    .replace(/\r\n?/g, '\n')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '')
-    .trim();
-  return oneLine ? text.replace(/\s*\n\s*/g, ' ') : text;
-};
-/** why a text may not go up on the forum, or null */
-const wording = (text: string, min: number, max: number): ForumError | null => (text.length < min ? 'forum-too-short' : text.length > max ? 'forum-too-long' : offends(text) ? 'forum-words' : null);
 
 export function serve(options: ServeOptions = {}): Promise<Serving> {
   const store = new Store(options.file ?? 'brassworks.db');
@@ -219,53 +197,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
-  const moderators = new Set((options.moderators ?? (process.env.BLACKRAIL_MODERATORS ?? '').split(',')).map(foldName).filter(Boolean));
-  const isMod = (a: { name: string }): boolean => moderators.has(foldName(a.name));
-  const translator = options.translator === undefined ? claudeTranslator() : options.translator;
-  const translateBudget = options.translateBudget ?? Number(process.env.TRANSLATE_BUDGET_USD ?? 10);
-  if (options.translator === undefined) console.log(translator ? `interpreter: ${translator.model}, up to $${translateBudget}` : 'interpreter: none (no ANTHROPIC_API_KEY)');
-  /** the interpreter works while the house has a key and the budget is not spent */
-  const interpreting = (): boolean => !!translator && store.forumRenderingSpend() < translateBudget;
-  /** renderings under way, so a page asking twice does not pay twice */
-  const rendering = new Set<string>();
-  /** render what a page lacks, in the background; the thread's readers are told when it is done */
-  const renderLater = (board: BoardKey, thread: string | null, jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[]) => {
-    const t = translator;
-    if (!t) return;
-    const mine = jobs.filter((j) => !rendering.has(`${j.subject}:${j.id}:${j.to}`));
-    for (const j of mine) rendering.add(`${j.subject}:${j.id}:${j.to}`);
-    if (!mine.length) return;
-    void (async () => {
-      /* four at a time: a long thread on first reading is not a storm */
-      const queue = [...mine];
-      const worker = async () => {
-        for (let j = queue.shift(); j; j = queue.shift()) {
-          try {
-            if (!interpreting()) break;
-            const r = await t.translate(j.text, j.from, j.to);
-            store.forumKeepRendering(j.subject, j.id, j.to, r.text, t.model, r.tokensIn, r.tokensOut, costOf(t.model, r.tokensIn, r.tokensOut), PROMPT_VERSION);
-          } catch (e) {
-            console.error(`interpreter: ${j.subject} ${j.id} to ${j.to}: ${e instanceof Error ? e.message : e}`);
-            /* the interpreter declined the text itself: the post is not sent again,
-               and the moderators' queue shows it */
-            if (j.subject === 'post' && e instanceof Error && e.message === 'refused') {
-              store.forumRefuse(j.id);
-              for (const k of clients) if (k.me && isMod(k.me)) send(k, { t: 'forum', board, thread: null });
-            }
-          } finally {
-            rendering.delete(`${j.subject}:${j.id}:${j.to}`);
-          }
-        }
-      };
-      await Promise.all([worker(), worker(), worker(), worker()]);
-      tellForum(board, thread);
-    })();
-  };
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt, moderator: isMod(a) });
-  /** something moved on the forum: every signed-in socket hears it, the pages that show it ask again */
-  const tellForum = (board: BoardKey, thread: string | null) => {
-    for (const k of clients) if (k.me) send(k, { t: 'forum', board, thread });
-  };
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt });
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
@@ -703,191 +635,6 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         if (feedbackTo) void post.send({ to: feedbackTo, subject: `Blackrail — ${note.kind === 'bug' ? 'a bug' : 'an idea'} from ${who.name}`, text }).catch((e) => console.error(`feedback post: ${e}`));
         return;
       }
-      /* ------------------------------ the forum ------------------------------ */
-      case 'forum.boards': {
-        const boards = store.forumBoards(who.id);
-        /* the last title of each board in the reader's tongue, when already rendered */
-        if (isLang(m.lang)) for (const b of boards) if (b.last) b.last.rendered = store.forumRendering('thread', b.last.threadId, m.lang, PROMPT_VERSION);
-        send(c, { t: 'forum.boards', rid: m.rid, boards });
-        return;
-      }
-      case 'forum.threads': {
-        if (!isBoard(m.board)) {
-          send(c, { t: 'refused', rid: m.rid, error: 'forum-board' });
-          return;
-        }
-        const r = store.forumThreads(m.board, Number(m.page) || 1, who.id, isMod(who));
-        /* the titles in the reader's tongue: the rendered ones now, the rest rendered
-           behind and the board's readers told */
-        if (isLang(m.lang)) {
-          const to = m.lang;
-          const jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[] = [];
-          for (const th of r.threads) {
-            if (th.lang === to || th.hidden) continue;
-            th.rendered = store.forumRendering('thread', th.id, to, PROMPT_VERSION);
-            if (th.rendered === null) jobs.push({ subject: 'thread', id: th.id, text: th.title, from: th.lang, to });
-          }
-          if (jobs.length && interpreting()) renderLater(m.board, null, jobs);
-        }
-        send(c, { t: 'forum.threads', rid: m.rid, board: m.board, page: r.page, pages: r.pages, threads: r.threads });
-        return;
-      }
-      case 'forum.thread': {
-        const view = store.forumThread(String(m.id), Number(m.page) || 0, who.id, isMod(who));
-        if (!view) send(c, { t: 'refused', rid: m.rid, error: 'forum-not-found' });
-        else send(c, { t: 'forum.thread', rid: m.rid, view });
-        return;
-      }
-      case 'forum.open': {
-        const title = tidy(m.title, true);
-        const body = tidy(m.body);
-        const pace = store.forumPace(who.id, Date.now() - 60 * 60 * 1000);
-        const error: ForumError | null = !isBoard(m.board)
-          ? 'forum-board'
-          : store.forumBanned(who.id)
-            ? 'forum-banned'
-          : !who.verified
-            ? 'forum-verified'
-            : MODS_OPEN.includes(m.board) && !isMod(who)
-              ? 'forum-mods-only'
-              : (wording(title, TITLE_MIN, TITLE_MAX) ?? wording(body, BODY_MIN, BODY_MAX)) ??
-                (!isMod(who) && (Date.now() - pace.lastThreadAt < THREAD_COOLDOWN_MS || pace.posts >= POSTS_PER_HOUR) ? 'forum-cooldown' : null);
-        if (error || !isBoard(m.board)) {
-          send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-board' });
-          return;
-        }
-        const id = store.forumOpen(who.id, m.board, title, body, isLang(m.lang) ? m.lang : 'en', c.ip || null);
-        console.log(`forum: ${who.name} opens "${title}" on ${m.board}`);
-        send(c, { t: 'forum.opened', rid: m.rid, id });
-        tellForum(m.board, id);
-        return;
-      }
-      case 'forum.reply': {
-        const body = tidy(m.body);
-        const where = store.forumWhere(String(m.id));
-        const pace = store.forumPace(who.id, Date.now() - 60 * 60 * 1000);
-        const error: ForumError | null = !where || where.hidden
-          ? 'forum-not-found'
-          : store.forumBanned(who.id)
-            ? 'forum-banned'
-          : !who.verified
-            ? 'forum-verified'
-            : where.locked && !isMod(who)
-              ? 'forum-locked'
-              : (wording(body, BODY_MIN, BODY_MAX) ?? (!isMod(who) && (Date.now() - pace.lastPostAt < POST_COOLDOWN_MS || pace.posts >= POSTS_PER_HOUR) ? 'forum-cooldown' : null));
-        if (error || !where) {
-          send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-not-found' });
-          return;
-        }
-        /* a moderator may still answer on a locked thread: the lock is lifted for the reply alone */
-        if (where.locked) store.forumMod(who.id, 'unlock', String(m.id));
-        const r = store.forumReply(who.id, String(m.id), body, isLang(m.lang) ? m.lang : 'en', c.ip || null);
-        if (where.locked) store.forumMod(who.id, 'lock', String(m.id));
-        if (typeof r === 'string') {
-          send(c, { t: 'refused', rid: m.rid, error: r });
-          return;
-        }
-        send(c, { t: 'forum.posted', rid: m.rid, post: r.post, page: r.page });
-        tellForum(where.board, String(m.id));
-        return;
-      }
-      case 'forum.edit': {
-        const body = tidy(m.body);
-        const post = store.forumPostWhere(String(m.post));
-        const error = !post ? 'forum-not-found' : store.forumBanned(who.id) && !isMod(who) ? 'forum-banned' : wording(body, BODY_MIN, BODY_MAX);
-        if (error || !post) {
-          send(c, { t: 'refused', rid: m.rid, error: error ?? 'forum-not-found' });
-          return;
-        }
-        const r = store.forumEdit(who.id, String(m.post), body, isMod(who), isLang(m.lang) ? m.lang : undefined);
-        if (r) send(c, { t: 'refused', rid: m.rid, error: r });
-        else {
-          send(c, { t: 'done', rid: m.rid });
-          tellForum(post.board, post.threadId);
-        }
-        return;
-      }
-      case 'forum.report': {
-        const text = tidy(m.text, true).slice(0, REPORT_MAX);
-        if (!isReason(m.reason) || offends(text)) {
-          send(c, { t: 'refused', rid: m.rid, error: 'forum-words' });
-          return;
-        }
-        const r = store.forumReport(who.id, String(m.post), m.reason, text);
-        if (r) send(c, { t: 'refused', rid: m.rid, error: r });
-        else {
-          console.log(`forum: ${who.name} reports post ${String(m.post)} (${m.reason})`);
-          send(c, { t: 'done', rid: m.rid });
-          /* the moderators' queue is a page too: it asks again */
-          const post = store.forumPostWhere(String(m.post));
-          if (post) for (const k of clients) if (k.me && isMod(k.me)) send(k, { t: 'forum', board: post.board, thread: post.threadId });
-        }
-        return;
-      }
-      case 'forum.mod': {
-        if (!isMod(who)) {
-          send(c, { t: 'refused', rid: m.rid, error: 'forum-not-mod' });
-          return;
-        }
-        if (!isModAction(m.action)) {
-          send(c, { t: 'refused', rid: m.rid, error: 'forum-not-found' });
-          return;
-        }
-        const id = String(m.id);
-        const post = m.action === 'hide' || m.action === 'unhide' || m.action === 'clear' ? store.forumPostWhere(id) : null;
-        const thread = post ? post.threadId : m.action === 'resolve' || m.action === 'ban' || m.action === 'unban' ? null : id;
-        const r = store.forumMod(who.id, m.action, id);
-        if (r) {
-          send(c, { t: 'refused', rid: m.rid, error: r });
-          return;
-        }
-        console.log(`forum: ${who.name} ${m.action} ${id}`);
-        send(c, { t: 'done', rid: m.rid });
-        const where = thread ? store.forumWhere(thread) : null;
-        if (where && thread) tellForum(where.board, thread);
-        else for (const k of clients) if (k.me && isMod(k.me)) send(k, { t: 'forum', board: 'atelier', thread: null });
-        return;
-      }
-      case 'forum.reports': {
-        if (!isMod(who)) {
-          send(c, { t: 'refused', rid: m.rid, error: 'forum-not-mod' });
-          return;
-        }
-        send(c, { t: 'forum.reports', rid: m.rid, reports: store.forumReports(), refused: store.forumRefused(), translation: { spent: store.forumRenderingSpend(), budget: translateBudget, on: !!translator } });
-        return;
-      }
-      case 'forum.translate': {
-        const view = store.forumThread(String(m.id), Number(m.page) || 0, who.id, isMod(who));
-        if (!view || !isLang(m.lang)) {
-          send(c, { t: 'refused', rid: m.rid, error: 'forum-not-found' });
-          return;
-        }
-        const to = m.lang;
-        const jobs: { subject: 'post' | 'thread'; id: string; text: string; from: Lang; to: Lang }[] = [];
-        let title: string | null = null;
-        if (view.thread.lang !== to) {
-          title = store.forumRendering('thread', view.thread.id, to, PROMPT_VERSION);
-          if (title === null) jobs.push({ subject: 'thread', id: view.thread.id, text: view.thread.title, from: view.thread.lang, to });
-        }
-        const posts: Record<string, string> = {};
-        for (const p of view.posts) {
-          if (p.lang === to || p.hidden || !p.body) continue;
-          const kept = store.forumRendering('post', p.id, to, PROMPT_VERSION);
-          if (kept !== null) posts[p.id] = kept;
-          else {
-            /* nothing under report, and nothing the interpreter declined, goes out again */
-            const where = store.forumPostWhere(p.id);
-            if (where && !where.refused && !where.reported) jobs.push({ subject: 'post', id: p.id, text: p.body, from: p.lang, to });
-          }
-        }
-        const on = interpreting();
-        send(c, { t: 'forum.translated', rid: m.rid, id: view.thread.id, page: view.page, lang: to, rendered: { title, posts, pending: on ? jobs.length : 0, on } });
-        if (on && jobs.length) renderLater(view.thread.board, view.thread.id, jobs);
-        return;
-      }
-      case 'forum.seen':
-        if (store.forumWhere(String(m.id))) store.forumSeen(who.id, String(m.id));
-        return;
     }
     /* from here on, the tables: an address must have answered its letter */
     if (!who.verified) {

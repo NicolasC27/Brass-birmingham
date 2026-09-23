@@ -45,7 +45,7 @@ export default function Account() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [again, setAgain] = useState('');
-  /* the charter and the policy, read and accepted: the office asks for it too */
+  /* the policy, read and accepted: the office asks for it too */
   const [accepted, setAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -247,14 +247,10 @@ export default function Account() {
                 <label className="flex items-start gap-3 font-ui text-[13px] leading-relaxed text-paper-300">
                   <input type="checkbox" checked={accepted} onChange={(e) => setAccepted(e.target.checked)} className="mt-1 h-4 w-4 accent-brass-500" />
                   <span>
-                    {t('platform.account.accept', { charter: '[[charter]]', privacy: '[[privacy]]' })
-                      .split(/(\[\[charter\]\]|\[\[privacy\]\])/)
+                    {t('platform.account.accept', { privacy: '[[privacy]]' })
+                      .split(/(\[\[privacy\]\])/)
                       .map((part, i) =>
-                        part === '[[charter]]' ? (
-                          <Link key={i} to="/forum" className="text-brass-300 underline decoration-brass-500/40 underline-offset-2 hover:text-brass-200">
-                            {t('platform.account.acceptCharter')}
-                          </Link>
-                        ) : part === '[[privacy]]' ? (
+                        part === '[[privacy]]' ? (
                           <Link key={i} to="/legal#privacy" className="text-brass-300 underline decoration-brass-500/40 underline-offset-2 hover:text-brass-200">
                             {t('platform.account.acceptPrivacy')}
                           </Link>

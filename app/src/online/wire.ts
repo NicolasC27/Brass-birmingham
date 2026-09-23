@@ -1,7 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
 import type { Desk, Me, Leaderboard, PublicTable } from './table';
-import type { BoardKey, BoardSummary, Lang, ModAction, Post, Rendered, Report, ReportReason, ThreadRow, ThreadView, TranslationSpend } from '@/forum/types';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -40,7 +39,6 @@ export class Wire {
   /** the table the office just dealt me from a queue, until the page takes me there */
   dealt: string | null = null;
   private halls = new Set<() => void>();
-  private forums = new Set<(board: BoardKey, thread: string | null) => void>();
   private token: string | null = null;
   private socket: WebSocket | null = null;
   private outbox: ClientMessage[] = [];
@@ -113,57 +111,6 @@ export class Wire {
 
   askLeaderboard(): void {
     void this.ask((rid) => ({ t: 'leaderboard', rid })).catch(() => undefined);
-  }
-
-  /* ------------------------------ the forum ------------------------------ */
-  /** something moved on the forum: a board, and the thread when it is one */
-  onForum(cb: (board: BoardKey, thread: string | null) => void): () => void {
-    this.forums.add(cb);
-    return () => this.forums.delete(cb);
-  }
-  async forumBoards(lang: Lang): Promise<BoardSummary[]> {
-    const m = await this.ask((rid) => ({ t: 'forum.boards', rid, lang }));
-    return m.t === 'forum.boards' ? m.boards : [];
-  }
-  async forumThreads(board: BoardKey, page: number, lang: Lang): Promise<{ page: number; pages: number; threads: ThreadRow[] }> {
-    const m = await this.ask((rid) => ({ t: 'forum.threads', rid, board, page, lang }));
-    return m.t === 'forum.threads' ? { page: m.page, pages: m.pages, threads: m.threads } : { page: 1, pages: 1, threads: [] };
-  }
-  async forumThread(id: string, page: number): Promise<ThreadView> {
-    const m = await this.ask((rid) => ({ t: 'forum.thread', rid, id, page }));
-    if (m.t !== 'forum.thread') throw new Error('forum-not-found');
-    return m.view;
-  }
-  async forumOpen(board: BoardKey, title: string, body: string, lang: Lang): Promise<string> {
-    const m = await this.ask((rid) => ({ t: 'forum.open', rid, board, title, body, lang }));
-    if (m.t !== 'forum.opened') throw new Error('refused');
-    return m.id;
-  }
-  async forumReply(id: string, body: string, lang: Lang): Promise<{ post: Post; page: number }> {
-    const m = await this.ask((rid) => ({ t: 'forum.reply', rid, id, body, lang }));
-    if (m.t !== 'forum.posted') throw new Error('refused');
-    return { post: m.post, page: m.page };
-  }
-  async forumEdit(post: string, body: string, lang: Lang): Promise<void> {
-    await this.ask((rid) => ({ t: 'forum.edit', rid, post, body, lang }));
-  }
-  async forumTranslate(id: string, page: number, lang: Lang): Promise<Rendered> {
-    const m = await this.ask((rid) => ({ t: 'forum.translate', rid, id, page, lang }));
-    if (m.t !== 'forum.translated') throw new Error('forum-not-found');
-    return m.rendered;
-  }
-  async forumReport(post: string, reason: ReportReason, text: string): Promise<void> {
-    await this.ask((rid) => ({ t: 'forum.report', rid, post, reason, text }));
-  }
-  async forumMod(action: ModAction, id: string): Promise<void> {
-    await this.ask((rid) => ({ t: 'forum.mod', rid, action, id }));
-  }
-  async forumReports(): Promise<{ reports: Report[]; refused: Report[]; translation: TranslationSpend }> {
-    const m = await this.ask((rid) => ({ t: 'forum.reports', rid }));
-    return m.t === 'forum.reports' ? { reports: m.reports, refused: m.refused, translation: m.translation } : { reports: [], refused: [], translation: { spent: 0, budget: 0, on: false } };
-  }
-  forumSeen(id: string): void {
-    this.send({ t: 'forum.seen', id });
   }
 
   /** stand in the quick or the ranked queue, or step out of it */
@@ -350,7 +297,6 @@ export class Wire {
       this.board = m.board;
       for (const cb of this.halls) cb();
     }
-    if (m.t === 'forum') for (const cb of this.forums) cb(m.board, m.thread);
     /* the queue moved: the desk says where I stand, so ask it again */
     if (m.t === 'queue' && this.desk) {
       this.desk = { ...this.desk, queue: m.state };
