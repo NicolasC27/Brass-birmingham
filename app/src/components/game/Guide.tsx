@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, X } from 'lucide-react';
+import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Sparkles, X } from 'lucide-react';
 import { aidOn, setBoardOption } from '@/components/game/boardOptions';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
-import { useGame } from '@/game/store';
+import { describeAction, useGame } from '@/game/store';
+import { chooseBotAction } from '@/game/search';
+import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -269,6 +271,9 @@ export default function Guide() {
      log: the length of the log moves with every entry and would bring
      the plate back after each move of one's own */
   const [botHidden, setBotHidden] = useState<number>(-1);
+  /* what the machine would play in the reader's seat, asked for one
+     position: the index of the action to come names it */
+  const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean } | null>(null);
   const setBotHold = useGame((s) => s.setBotHold);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   /* the note can be dragged by its head, and folded to a strip; a new
@@ -460,6 +465,84 @@ export default function Guide() {
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
   };
+  /* the machine's name at the table, for the words of the advice */
+  const machine = game.players.find((x) => x.isBot)?.name ?? '';
+  const here = game.actions.length;
+  const advised = advice && advice.at === here ? advice : null;
+  const ask = () => {
+    setAdvice({ at: here, action: null, busy: true });
+    /* the search thinks on the thread that paints: let the note say so first */
+    window.setTimeout(() => {
+      const g = useGame.getState().game;
+      if (!g || g.actions.length !== here) return;
+      const a = chooseBotAction(g, me, { budgetMs: 400, strength: 1 });
+      setAdvice({ at: here, action: a, busy: false });
+    }, 30);
+  };
+  /* the advised move, set up in the hand as if the reader had chosen it;
+     the confirm bar is theirs */
+  const prepare = (a: GameAction) => {
+    const st = useGame.getState();
+    st.cancel();
+    const card = (id?: string) => id ?? st.game?.players[me].hand[0]?.id ?? null;
+    switch (a.kind) {
+      case 'build': {
+        st.selectCard(a.card);
+        useGame.getState().setVerb('build');
+        const t = useGame.getState().currentTargets().find((x) => x.town === a.town && x.slot === a.slot && x.industry === a.industry);
+        if (t) useGame.getState().pickBuild(t);
+        break;
+      }
+      case 'network': {
+        st.selectCard(a.card);
+        useGame.getState().setVerb('network');
+        const t = useGame.getState().currentLinks().find((x) => x.link.id === a.link);
+        if (t) useGame.getState().pickLink(t);
+        break;
+      }
+      case 'sell': {
+        st.selectCard(a.card);
+        useGame.getState().setVerb('sell');
+        for (const sale of a.sales) {
+          const t = useGame.getState().currentSells().find((x) => x.town === sale.town && x.slot === sale.slot);
+          if (t) useGame.getState().pickSell(t);
+        }
+        break;
+      }
+      case 'develop':
+        st.selectCard(a.card);
+        useGame.getState().setVerb('develop');
+        for (const ind of a.industries) useGame.getState().toggleDevelop(ind);
+        break;
+      case 'scout':
+        st.selectCard(a.cards[0]);
+        useGame.getState().setVerb('scout');
+        for (const id of a.cards.slice(1)) useGame.getState().toggleScout(id);
+        break;
+      case 'loan':
+        st.selectCard(card(a.card));
+        useGame.getState().setVerb('loan');
+        break;
+      case 'pass':
+        st.selectCard(card(a.card));
+        useGame.getState().setVerb('pass');
+        break;
+      default:
+        break;
+    }
+  };
+  /* does the advised move do what the lesson asks? */
+  const asked = (id: string, a: GameAction): boolean =>
+    id === 'coal' ? a.kind === 'build' && a.industry === 'coal'
+    : id === 'works' ? a.kind === 'build' && WORKS.includes(a.industry)
+    : id === 'link' ? a.kind === 'network'
+    : id === 'sell' ? a.kind === 'sell'
+    : id === 'loan' ? a.kind === 'loan'
+    : true;
+  const whyKey = (a: GameAction): string => {
+    if (a.kind === 'build') return a.industry === 'coal' || a.industry === 'iron' || a.industry === 'brewery' ? a.industry : 'works';
+    return a.kind;
+  };
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
     const k = getKeybindings();
@@ -535,6 +618,11 @@ export default function Guide() {
                           <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                         </button>
                       )}
+                      {myTurn && !advised && (
+                        <button type="button" onClick={ask} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-bottle-600 hover:text-ink-900">
+                          <Sparkles className="h-3 w-3" /> {t('game.guide.suggest.ask', { name: machine })}
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {step.show && (
@@ -571,6 +659,11 @@ export default function Guide() {
                     <button type="button" onClick={() => setHidden(true)} aria-label={t('game.guide.hide')} title={t('game.guide.hide')} className="rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                       <X className="h-3.5 w-3.5" />
                     </button>
+                    {myTurn && !advised && (
+                      <button type="button" onClick={ask} aria-label={t('game.guide.suggest.ask', { name: machine })} title={t('game.guide.suggest.ask', { name: machine })} className="rounded-full p-0.5 text-bottle-600 hover:text-ink-900">
+                        <Sparkles className="h-3.5 w-3.5" />
+                      </button>
+                    )}
                     {pages > 1 && (
                       <button type="button" onClick={() => setPage((page + 1) % pages)} className="font-mono text-[10px] text-ink-900/50 hover:text-ink-900">
                         {page + 1}/{pages} ›
@@ -606,6 +699,40 @@ export default function Guide() {
               )}
             </div>
             {holding && <p className="mt-1.5 pl-7 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
+          </motion.aside>
+        )}
+
+        {/* what the machine would play in the reader's seat, on request */}
+        {advised && myTurn && (
+          <motion.aside key={`advice-${here}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.suggest.aria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
+            <div className="flex items-start gap-3">
+              <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-bottle-400" />
+              <div className="min-w-0 flex-1">
+                <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-bottle-400">{t('game.guide.suggest.title', { name: machine })}</p>
+                {advised.busy ? (
+                  <p className="mt-0.5 font-serif text-[13px] italic text-cream-100/70">{t('game.guide.suggest.thinking', { name: machine })}</p>
+                ) : advised.action ? (
+                  <>
+                    <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{describeAction(advised.action)}</p>
+                    <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{t(`game.guide.suggest.why.${whyKey(advised.action)}`, { name: machine })}</p>
+                    {due?.done && !finished && !asked(due.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${due.id}.title`, stepVars()) })}</p>}
+                  </>
+                ) : (
+                  <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none', { name: machine })}</p>
+                )}
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                {!advised.busy && advised.action && (
+                  <button type="button" onClick={() => prepare(advised.action!)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
+                    {t('game.guide.suggest.prepare')}
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                )}
+                <button type="button" onClick={() => setAdvice(null)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </motion.aside>
         )}
       </AnimatePresence>
