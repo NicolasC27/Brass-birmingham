@@ -705,6 +705,8 @@ const game: typeof engame = {
     botAria: 'Warum die Maschine das gespielt hat',
     botWhy: 'Warum {name} das tut',
     botNext: 'Verstanden, {name} darf weitermachen',
+    botOk: 'Verstanden',
+    readPlate: 'Warte auf den Zug von {bot}, lies warum, dann Verstanden.',
     turn: {
       first: 'Erste Runde der Partie: eine Aktion für jeden, in der ausgelosten Sitzreihenfolge.',
       orderBefore: 'Runde {round}: die Reihenfolge richtet sich nach dem Geld, das letzte Runde ausgegeben wurde, der Sparsamste zuerst — {name} hat £{spentBot} ausgegeben, du £{spentMe}, also zieht {name} vor dir. Jeder Zug hat zwei Aktionen, jede kostet eine Karte; das war die erste.',

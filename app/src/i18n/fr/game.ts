@@ -705,6 +705,8 @@ const fr: typeof engame = {
     botAria: 'Pourquoi la machine a joué cela',
     botWhy: 'Pourquoi {name} fait ça',
     botNext: 'Compris, {name} peut continuer',
+    botOk: 'Compris',
+    readPlate: 'Attendez le coup de {bot}, lisez pourquoi, puis « Compris ».',
     turn: {
       first: 'Première manche de la partie : une seule action chacun, dans l’ordre tiré des sièges.',
       orderBefore: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord — {name} a dépensé {spentBot} £, vous {spentMe} £, donc {name} joue avant vous. Chaque tour compte deux actions, chacune coûtant une carte ; c’était la première.',

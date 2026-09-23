@@ -703,6 +703,8 @@ const game = {
     botAria: 'Why the machine played that',
     botWhy: 'Why {name} did that',
     botNext: 'Understood, {name} may go on',
+    botOk: 'Understood',
+    readPlate: 'Wait for {bot} to play, read why, then say Understood.',
     turn: {
       first: 'First round of the game: one action each, in the order the seats were drawn.',
       orderBefore: 'Round {round}: the order goes by money spent last round, least first — {name} spent £{spentBot}, you spent £{spentMe}, so {name} moves before you. Every turn has two actions, each costing a card; this was the first.',

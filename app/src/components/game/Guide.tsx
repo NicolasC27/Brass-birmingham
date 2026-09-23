@@ -40,8 +40,9 @@ type Show = 'mat' | 'market' | 'income' | 'vp' | 'hand';
 
 interface Step {
   id: string;
-  /** done by the state (a 'do' step), or by reading on (a 'read' step) */
-  done?: (g: GameState, me: number, sel: string | null, mat: number | null) => boolean;
+  /** done by the state (a 'do' step), or by reading on (a 'read' step);
+   *  `ack` says the machine's latest move has been read and understood */
+  done?: (g: GameState, me: number, sel: string | null, mat: number | null, ack: boolean) => boolean;
   show?: Show;
   /** a read step that only makes sense once this holds */
   when?: (g: GameState, me: number) => boolean;
@@ -58,7 +59,9 @@ const STEPS: Step[] = [
   { id: 'matRead', show: 'mat' },
   { id: 'hand', show: 'hand', done: (_g, _me, sel) => sel !== null },
   { id: 'coal', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'coal') },
-  { id: 'botTurn', when: (g, me) => !!g.players[g.current]?.isBot || g.ledger.some((e) => e.player !== undefined && e.player !== me && e.verb !== 'system') },
+  /* done once the machine has played and its reasons were read: the
+     lesson is the plate under it, not the words above */
+  { id: 'botTurn', done: (g, me, _sel, _mat, ack) => ack && g.ledger.some((e) => e.player !== undefined && e.player !== me && e.verb !== 'system') },
   { id: 'payday', when: (g) => g.round >= 2 },
   { id: 'link', done: (g, me) => Object.values(g.links).some((l) => l.owner === me) },
   { id: 'works', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && WORKS.includes(t.industry)) },
@@ -224,6 +227,8 @@ export default function Guide() {
   const setMarketFocus = useGame((s) => s.setMarketFocus);
   const [hidden, setHidden] = useState(false);
   const [botHidden, setBotHidden] = useState<number>(-1);
+  /* the machine's latest move was read and understood */
+  const ack = !!game && botHidden === game.ledger.length;
   const setBotHold = useGame((s) => s.setBotHold);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   /* the note can be dragged by its head, and folded to a strip; a new
@@ -274,7 +279,7 @@ export default function Guide() {
     for (let i = 0; i < STEPS.length; i++) {
       const s = STEPS[i];
       if (i < reached) continue;
-      if (s.done ? s.done(game, me, selectedCardId, matPlayer) : i < readPast) continue;
+      if (s.done ? s.done(game, me, selectedCardId, matPlayer, ack) : i < readPast) continue;
       /* a read step waiting on the game: skipped until it makes sense */
       if (!s.done && s.when && !s.when(game, me)) {
         if (pending < 0) pending = i;
@@ -326,6 +331,9 @@ export default function Guide() {
   const showBot = bot && botHidden !== botSeq && (showSteps || !hidden);
   /* the guided game waits: the machine's next move comes once this one is read */
   const holding = !!(tutorial && showBot && bot?.fresh && game.players[game.current]?.isBot);
+  /* the machine's fresh move is on show: the lesson folds to its strip
+     so the plate reads first, until it is understood */
+  const reading = !!(tutorial && showBot && bot?.fresh);
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
@@ -412,22 +420,22 @@ export default function Guide() {
   return (
     <div ref={box} className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2 will-change-transform" style={{ transform: place(pos) }}>
       <AnimatePresence initial={false} mode="popLayout">
-        {showSteps && step && (mini || holding) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={holding ? undefined : t('game.guide.expand')} onClick={holding ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !holding && 'cursor-pointer')}>
+        {showSteps && step && (mini || reading) && (
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={reading ? undefined : t('game.guide.expand')} onClick={reading ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
               <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</span>
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</span>
             </div>
-            {!holding && (
+            {!reading && (
               <button type="button" onClick={() => fold(false)} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             )}
           </motion.aside>
         )}
-        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && mini) && (
+        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && (mini || reading)) && (
           <motion.aside
             key="note"
             layout
@@ -457,7 +465,7 @@ export default function Guide() {
                       <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
                         <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
                       </div>
-                      {step.done && !finished && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {step.done && !finished && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                     </div>
                   </div>
                   <p className="mt-2 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
@@ -524,9 +532,9 @@ export default function Guide() {
                 <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
                 <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
               </div>
-              {holding ? (
+              {reading ? (
                 <button type="button" onClick={() => setBotHidden(botSeq)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
-                  {t('game.guide.botNext', { name: bot.name })}
+                  {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               ) : (
