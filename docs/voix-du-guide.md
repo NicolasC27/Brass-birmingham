@@ -12,6 +12,10 @@ Voix : ElevenLabs, modèle v3, Stability « Creative », Similarity 70,
 Speed 1,1. Les balises entre crochets sont lues par v3 ; pour v2, les
 retirer et écrire les rires (« Ha ha ha ! », « hé hé hé »).
 
+Il se croit bilingue : un ou deux mots d'anglais par réplique, avec
+l'accent, jamais une phrase entière. La balise `[strong French accent]`
+précède chaque mot anglais ; en v2, l'écrire à la française (« Ouelcome »).
+
 Prompt de conception de la voix :
 
 > An eccentric French showman in his forties, the crooked owner of a
@@ -22,36 +26,36 @@ Prompt de conception de la voix :
 
 ## 1 · welcome
 
-[amused] Tiens, un nouveau. On m'envoie des débutants dans ma propre maison, maintenant ? [laughs] Parfait. Tu vas adorer ce jeu, mon ami. Et tout le monde autour de cette table va te le faire regretter. [mischievously] Moi le premier.
+[amused] Tiens, un nouveau. On m'envoie des débutants dans ma propre maison, maintenant ? [laughs] Parfait. [strong French accent] Welcome, my friend. [amused] Tu vas adorer ce jeu. Et tout le monde autour de cette table va te le faire regretter. [mischievously] Moi le premier.
 
 ## 3 · goal
 
-[amused] Les points. Rien d'autre ne compte. Tuiles retournées, liaisons, c'est tout. [whispers] Et ton argent ? [laughs] À la fin il vaut zéro. Zéro ! Alors dépense. Tout.
+[amused] Les points. Rien d'autre ne compte. Tuiles retournées, liaisons, c'est tout. [whispers] Et ton argent ? [laughs] À la fin il vaut zéro. [strong French accent] Zero, nothing ! [amused] Alors dépense. Tout.
 
 ## 8 · coal
 
-[excited] Assez parlé. Une carte charbon, un emplacement, construis. [amused] Le charbon, c'est le sang de cette ville. Sans lui, personne ne bâtit rien. [mischievously] Même pas tes ennemis.
+[excited] Assez parlé. Une carte charbon, un emplacement, construis. [strong French accent] Come on ! [amused] Le charbon, c'est le sang de cette ville. Sans lui, personne ne bâtit rien. [mischievously] Même pas tes ennemis.
 
 ## 9 · botTurn
 
-[mischievously] Regarde-la jouer. Chaque coup de Wedgwood, je te dis ce qu'elle mijote. [amused] Et ses mines, ses forges ? Sers-toi. Ses cubes sont à toi si tu es relié. [laughs] Elle en fera autant.
+[mischievously] Regarde-la jouer. Chaque coup de Wedgwood, je te dis ce qu'elle mijote. [amused] Et ses mines, ses forges ? Sers-toi. Ses cubes sont à toi si tu es relié. [laughs] [strong French accent] It's business. [amused] Elle en fera autant.
 
 ## 10 · payday
 
-[excited] Ah, l'argent tombe ! Fin de manche, chacun touche son revenu. [amused] Le tien est maigre. Retourne des tuiles, il grossit. [whispers] Et celui qui dépense le moins joue en premier. Retiens ça.
+[excited] Ah, l'argent tombe ! [strong French accent] Payday ! [amused] Fin de manche, chacun touche son revenu. Le tien est maigre. Retourne des tuiles, il grossit. [whispers] Et celui qui dépense le moins joue en premier. Retiens ça.
 
 ## 15 · sell
 
-[excited] Vends ! Une bière, un marchand, et ta tuile se retourne. [laughs] Revenu tout de suite, points à la fin. [amused] C'est ça, le jeu. Tout le reste n'est que préparation.
+[excited] Vends ! Une bière, un marchand, et ta tuile se retourne. [laughs] Revenu tout de suite, points à la fin. [strong French accent] Money, money. [amused] C'est ça, le jeu. Tout le reste n'est que préparation.
 
 ## 17 · loan
 
-[amused] Plus un sou ? [laughs] Emprunte. Trente livres, trois niveaux de revenu en moins, pour toujours. [mischievously] Tout le monde le fait. Ne fais pas le fier, fais-le tôt.
+[amused] Plus un sou ? [laughs] Emprunte. Trente livres, trois niveaux de revenu en moins, pour toujours. [mischievously] Tout le monde le fait. [strong French accent] Trust me. [amused] Ne fais pas le fier, fais-le tôt.
 
 ## 19 · eraEnd
 
-[excited] L'ère se termine ! On compte, on balaie. [mischievously] Les tuiles de niveau un jamais retournées ? Disparues. Sans un point. [laughs] J'adore ce moment.
+[excited] L'ère se termine ! On compte, on balaie. [mischievously] Les tuiles de niveau un jamais retournées ? Disparues. Sans un point. [laughs] [strong French accent] Goodbye ! [amused] J'adore ce moment.
 
 ## 20 · onward
 
-[amused] Tu connais le jeu, maintenant. Construire, relier, retourner, emprunter, vendre. [laughs] Va ouvrir une vraie table. [whispers] Et reviens te faire plumer.
+[amused] Tu connais le jeu, maintenant. Construire, relier, retourner, emprunter, vendre. [laughs] Va ouvrir une vraie table. [whispers] Et reviens te faire plumer. [strong French accent] See you soon, my friend.
