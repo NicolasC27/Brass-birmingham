@@ -1,6 +1,7 @@
 aim.log
 aim-noisy.log
 data/
+data-lead-era/
 dist/
 distil.log
 distil-play2.out
@@ -11,6 +12,7 @@ fit2.out
 learning.log
 *.out
 policy-data/
+probe/
 table.log
 training.log
 trial.log
