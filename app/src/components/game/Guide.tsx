@@ -236,7 +236,10 @@ export default function Guide() {
       return -1;
     }
   });
-  const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos } | null>(null);
+  const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos; t0: number } | null>(null);
+  /* the press that just ended was a move or a hold, not a click: the
+     click that follows it must not fold the note */
+  const held = useRef(false);
   /* the box moves under the pointer without a render: the state is
      written once, when it is let go */
   const box = useRef<HTMLDivElement>(null);
@@ -347,7 +350,7 @@ export default function Guide() {
   };
   const grab = (e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
-    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y, at: pos };
+    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y, at: pos, t0: e.timeStamp };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const drag = (e: ReactPointerEvent<HTMLElement>) => {
@@ -361,8 +364,11 @@ export default function Guide() {
     const g = grip.current;
     if (!g || g.id !== e.pointerId) return;
     grip.current = null;
-    /* a press that did not travel is a click: the note's own click folds it */
-    if (Math.abs(e.clientX - g.sx) < 4 && Math.abs(e.clientY - g.sy) < 4) return;
+    /* a short press that did not travel is a click, and the note's own
+       click folds it; a move or a hold is a grip, and lets go in place */
+    const still = Math.abs(e.clientX - g.sx) < 4 && Math.abs(e.clientY - g.sy) < 4;
+    held.current = !still || e.timeStamp - g.t0 > 300;
+    if (still) return;
     setPos(g.at);
     try {
       localStorage.setItem(POS_KEY, JSON.stringify(g.at));
@@ -383,6 +389,10 @@ export default function Guide() {
      unfolds it; buttons, links and a text selection are left alone */
   const tap = (e: ReactMouseEvent<HTMLElement>) => {
     const el = e.target as HTMLElement;
+    if (held.current) {
+      held.current = false;
+      return;
+    }
     if (el.closest('button, a') || window.getSelection()?.toString()) return;
     fold(!mini);
   };
