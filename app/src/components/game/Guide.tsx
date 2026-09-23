@@ -105,7 +105,9 @@ function botReason(g: GameState, me: number, t: T): { name: string; what: string
       const ind = String(v.industry);
       const base = ind === 'coal' ? 'coal' : ind === 'iron' ? 'iron' : ind === 'brewery' ? 'brewery' : 'works';
       why = t(`game.guide.bot.build.${base}`, facts);
-      if (Number(v.saleN) > 0) why += ' ' + t('game.guide.bot.build.sold', facts);
+      /* a mine sells its spare cubes only when a merchant is in reach; a
+         forge sells them wherever it stands, and restocks the market at once */
+      if (Number(v.saleN) > 0) why += ' ' + t(base === 'iron' ? 'game.guide.bot.build.soldIron' : 'game.guide.bot.build.sold', facts);
       if (v.overName) why += ' ' + t('game.guide.bot.build.over', facts);
       break;
     }
@@ -175,8 +177,13 @@ const TIPS: { id: string; when: (c: Ctx) => boolean; vars?: (c: Ctx) => Record<s
   { id: 'wild', when: ({ card }) => !!card && card.kind.startsWith('wild') },
   {
     id: 'coalMarket',
-    when: ({ g, buildPick }) => !!buildPick && (buildPick.industry === 'coal' || buildPick.industry === 'iron') && marketSaleOnBuild(g, buildPick.town, buildPick.industry as 'coal' | 'iron', buildPick.level).sold > 0,
-    vars: ({ g, buildPick }) => marketSaleOnBuild(g, buildPick!.town, buildPick!.industry as 'coal' | 'iron', buildPick!.level),
+    when: ({ g, buildPick }) => !!buildPick && buildPick.industry === 'coal' && marketSaleOnBuild(g, buildPick.town, 'coal', buildPick.level).sold > 0,
+    vars: ({ g, buildPick }) => marketSaleOnBuild(g, buildPick!.town, 'coal', buildPick!.level),
+  },
+  {
+    id: 'ironMarket',
+    when: ({ g, buildPick }) => !!buildPick && buildPick.industry === 'iron' && marketSaleOnBuild(g, buildPick.town, 'iron', buildPick.level).sold > 0,
+    vars: ({ g, buildPick }) => marketSaleOnBuild(g, buildPick!.town, 'iron', buildPick!.level),
   },
   { id: 'buildCost', when: ({ buildPick }) => !!buildPick, vars: ({ buildPick }) => ({ cost: INDUSTRIES[buildPick!.industry as keyof typeof INDUSTRIES][buildPick!.level - 1].cost, income: INDUSTRIES[buildPick!.industry as keyof typeof INDUSTRIES][buildPick!.level - 1].incomeDelta, vp: INDUSTRIES[buildPick!.industry as keyof typeof INDUSTRIES][buildPick!.level - 1].vp }) },
   { id: 'network', when: ({ g, me, verb }) => verb === 'network' && linkTargets(g, me).some((l) => l.valid) },
