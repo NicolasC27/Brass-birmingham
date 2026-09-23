@@ -59,6 +59,10 @@ export interface Weights {
    *  the question at every action is whether it helps the others more than
    *  oneself; taking the contested thing first is that question's answer, and
    *  it is an opportunity cost rather than an aggression */
+  /** how much a build this card names, that only the purse forbids today,
+   *  counts towards keeping the card. At zero a card is ranked by what it
+   *  can pay for this instant, which throws away the expensive builds */
+  cardLater: number;
   scarceSlot: number;
   /** what it costs to have spent a level-1 goods mill or brewery on the board.
    *  The tile is gone from the mat either way, and the strong players' advice
@@ -102,6 +106,7 @@ export const DEFAULTS: Weights = {
   rival: 0,
   earlyLoan: 8,
   developed: 2,
+  cardLater: 1,
   scarceSlot: 0,
   lowTile: 3,
   tempo: 1,

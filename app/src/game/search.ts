@@ -146,21 +146,35 @@ const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
 
 /* ============================ legal moves =========================== */
 
-/** how much a card is worth keeping: the builds it allows, wilds above all */
-function cardWorth(card: Card, uses: Map<string, BuildTarget[]>): number {
-  return (uses.get(card.id)?.length ?? 0) + (isWild(card) ? 100 : 0);
+/** A card is spared for every move that is not a build — a loan, a link, a
+ *  sale, a scout, a pass — which is some seventeen discards a game. It was
+ *  ranked by the builds it allows RIGHT NOW, and a target counts as allowed
+ *  only if the purse covers it this instant. So the card named worthless, and
+ *  thrown away, was often the one naming the expensive high-scoring builds
+ *  one is saving up for. What a card is worth is what it will ever unlock. */
+function cardWorth(card: Card, uses: Map<string, BuildTarget[]>, later: Map<string, number>): number {
+  return (uses.get(card.id)?.length ?? 0) + (later.get(card.id) ?? 0) + (isWild(card) ? 100 : 0);
 }
+
+/** a build this card names that only the purse forbids */
+const onlyMoney = (t: BuildTarget): boolean => !t.valid && !!t.reason?.startsWith('Needs £');
 
 /** every action worth trying for the player to act: each build once, with
  *  the card best spared for it; every link, single or double; the sales,
  *  all at once and one by one; the developments; a loan, a scout, a pass */
 export function legalActions(s: GameState, i: number, o: SearchOptions = {}): GameAction[] {
   const p = s.players[i];
+  const w = weights;
   if (s.phase !== 'action' || s.current !== i || !p.hand.length) return [];
   const out: GameAction[] = [];
   const uses = new Map<string, BuildTarget[]>();
-  for (const card of p.hand) uses.set(card.id, buildTargets(s, i, card).filter((t) => t.valid));
-  const byWorth = [...p.hand].sort((a, b) => cardWorth(a, uses) - cardWorth(b, uses));
+  const later = new Map<string, number>();
+  for (const card of p.hand) {
+    const all = buildTargets(s, i, card);
+    uses.set(card.id, all.filter((t) => t.valid));
+    later.set(card.id, w.cardLater ? w.cardLater * all.filter(onlyMoney).length : 0);
+  }
+  const byWorth = [...p.hand].sort((a, b) => cardWorth(a, uses, later) - cardWorth(b, uses, later));
   const spare = byWorth[0];
 
   /* builds: one entry per slot and industry, paid with the cheapest card */
