@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, loanLanding } from '@/game/data';
-import { vpTrackShown } from '@/game/engine';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
 import Tooltip from './Tooltip';
@@ -388,10 +387,10 @@ export default function EdgeTracks() {
   return (
     <div role="group" aria-label={t('game.frame.aria')}>
       {/* ====================== TOP — victory points ======================
-          on screen once points are on the board: before that, a row of
-          zeros would only take the board's room (engine vpTrackShown) */}
+          on screen when the player asked for it (settings, or the key):
+          a row of zeros is what they asked to see, not a surprise */}
       <AnimatePresence initial={false}>
-        {game && vpTrackShown(game) && vpTrackOn && (
+        {game && vpTrackOn && (
           <motion.div
             key="vp"
             initial={{ y: -TRACK_H }}

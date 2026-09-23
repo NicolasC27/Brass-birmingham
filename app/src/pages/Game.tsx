@@ -332,6 +332,11 @@ export default function Game() {
         setBoardOption('focus', !getBoardOptions().focus);
         return;
       }
+      /* the points ruler along the top edge, shown or put away */
+      if (isKey(e, 'vpTrack')) {
+        setBoardOption('vpTrack', !getBoardOptions().vpTrack);
+        return;
+      }
       /* the survey of the orders, from anywhere, as long as there are orders */
       if (isKey(e, 'survey')) {
         const st = useGame.getState();

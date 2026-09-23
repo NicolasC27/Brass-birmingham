@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, X } from 'lucide-react';
-import { aidOn } from '@/components/game/boardOptions';
+import { aidOn, setBoardOption } from '@/components/game/boardOptions';
+import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
@@ -390,10 +391,12 @@ export default function Guide() {
   const show = (what: Show) => {
     if (what === 'mat') openMat(me);
     if (what === 'market') setMarketFocus(true);
+    if (what === 'vp') setBoardOption('vpTrack', true);
   };
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
-    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: INCOME_PAYOUT[p.income], rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '' };
+    const k = getKeybindings();
+    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: INCOME_PAYOUT[p.income], rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
   };
 
   return (
