@@ -88,6 +88,7 @@ const readPos = (): Pos => {
   return { x: 0, y: 0 };
 };
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+const place = (p: Pos) => `translate(calc(-50% + ${p.x}px), ${p.y}px)`;
 
 /* ---------------------------- the machine ---------------------------- */
 
@@ -227,7 +228,10 @@ export default function Guide() {
       return -1;
     }
   });
-  const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number } | null>(null);
+  const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos } | null>(null);
+  /* the box moves under the pointer without a render: the state is
+     written once, when it is let go */
+  const box = useRef<HTMLDivElement>(null);
   const [readPast, setReadPast] = useState<number>(() => {
     try {
       return Number(localStorage.getItem(STEP_KEY) ?? 0);
@@ -325,26 +329,26 @@ export default function Guide() {
   };
   const grab = (e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
-    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y };
+    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y, at: pos };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const drag = (e: ReactPointerEvent<HTMLElement>) => {
     const g = grip.current;
     if (!g || g.id !== e.pointerId) return;
     const reach = window.innerWidth / 2 - 80;
-    setPos({ x: clamp(g.ox + e.clientX - g.sx, -reach, reach), y: clamp(g.oy + e.clientY - g.sy, -90, window.innerHeight - 170) });
+    g.at = { x: clamp(g.ox + e.clientX - g.sx, -reach, reach), y: clamp(g.oy + e.clientY - g.sy, -90, window.innerHeight - 170) };
+    if (box.current) box.current.style.transform = place(g.at);
   };
   const drop = (e: ReactPointerEvent<HTMLElement>) => {
-    if (!grip.current || grip.current.id !== e.pointerId) return;
+    const g = grip.current;
+    if (!g || g.id !== e.pointerId) return;
     grip.current = null;
-    setPos((p) => {
-      try {
-        localStorage.setItem(POS_KEY, JSON.stringify(p));
-      } catch {
-        /* non-fatal */
-      }
-      return p;
-    });
+    setPos(g.at);
+    try {
+      localStorage.setItem(POS_KEY, JSON.stringify(g.at));
+    } catch {
+      /* non-fatal */
+    }
   };
   /* a double click on the head puts the note back under the top bar */
   const home = () => {
@@ -367,7 +371,7 @@ export default function Guide() {
   };
 
   return (
-    <div className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2" style={{ transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)` }}>
+    <div ref={box} className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2 will-change-transform" style={{ transform: place(pos) }}>
       <AnimatePresence initial={false} mode="popLayout">
         {showSteps && step && mini && !holding && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3">
