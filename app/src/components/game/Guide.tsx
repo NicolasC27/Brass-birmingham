@@ -57,7 +57,7 @@ const STEPS: Step[] = [
   { id: 'matRead', show: 'mat' },
   { id: 'hand', show: 'hand', done: (_g, _me, sel) => sel !== null },
   { id: 'coal', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'coal') },
-  { id: 'botTurn', when: (g, me) => g.ledger.some((e) => e.player !== undefined && e.player !== me && e.verb !== 'system') },
+  { id: 'botTurn', when: (g, me) => !!g.players[g.current]?.isBot || g.ledger.some((e) => e.player !== undefined && e.player !== me && e.verb !== 'system') },
   { id: 'payday', when: (g) => g.round >= 2 },
   { id: 'link', done: (g, me) => Object.values(g.links).some((l) => l.owner === me) },
   { id: 'works', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && WORKS.includes(t.industry)) },
@@ -255,23 +255,31 @@ export default function Guide() {
       return 0;
     }
   });
-  const rawIndex = useMemo(() => {
-    if (!game || !tutorial) return -1;
+  /* the first lesson not done, and the first one waiting on the game
+     before it: that one is not passed, it comes up when its time comes */
+  const lesson = (): { rawIndex: number; pending: number } => {
+    if (!game || !tutorial) return { rawIndex: -1, pending: -1 };
+    let pending = -1;
     for (let i = 0; i < STEPS.length; i++) {
       const s = STEPS[i];
       if (i < reached) continue;
       if (s.done ? s.done(game, me, selectedCardId, matPlayer) : i < readPast) continue;
       /* a read step waiting on the game: skipped until it makes sense */
-      if (!s.done && s.when && !s.when(game, me)) continue;
-      return i;
+      if (!s.done && s.when && !s.when(game, me)) {
+        if (pending < 0) pending = i;
+        continue;
+      }
+      return { rawIndex: i, pending };
     }
-    return STEPS.length;
-  }, [game, tutorial, me, selectedCardId, matPlayer, readPast, reached]);
+    return { rawIndex: STEPS.length, pending };
+  };
+  const { rawIndex, pending } = lesson();
   const stepIndex = rawIndex < 0 ? -1 : Math.max(rawIndex, reached);
-  if (tutorial && rawIndex > reached) {
-    setReached(rawIndex);
+  const reachable = pending >= 0 ? Math.min(rawIndex, pending) : rawIndex;
+  if (tutorial && reachable > reached) {
+    setReached(reachable);
     try {
-      localStorage.setItem(REACH_KEY, String(rawIndex));
+      localStorage.setItem(REACH_KEY, String(reachable));
     } catch {
       /* non-fatal */
     }
@@ -310,11 +318,13 @@ export default function Guide() {
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
+    /* reading on does not pass a lesson still waiting on the game */
+    const reach = pending >= 0 && pending < to ? pending : to;
     setReadPast(to);
-    setReached(to);
+    setReached(reach);
     try {
       localStorage.setItem(STEP_KEY, String(to));
-      localStorage.setItem(REACH_KEY, String(to));
+      localStorage.setItem(REACH_KEY, String(reach));
     } catch {
       /* non-fatal */
     }
@@ -373,7 +383,7 @@ export default function Guide() {
   return (
     <div ref={box} className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2 will-change-transform" style={{ transform: place(pos) }}>
       <AnimatePresence initial={false} mode="popLayout">
-        {showSteps && step && mini && !holding && (
+        {showSteps && step && (mini || holding) && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3">
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
@@ -381,9 +391,11 @@ export default function Guide() {
               <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(stepIndex + 1, STEPS.length), total: STEPS.length })}</span>
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</span>
             </div>
-            <button type="button" onClick={() => fold(false)} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
-              <ChevronDown className="h-3.5 w-3.5" />
-            </button>
+            {!holding && (
+              <button type="button" onClick={() => fold(false)} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            )}
           </motion.aside>
         )}
         {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && mini) && (
