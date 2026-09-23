@@ -97,7 +97,7 @@ const place = (p: Pos) => `translate(calc(-50% + ${p.x}px), ${p.y}px)`;
 /* ---------------------------- the machine ---------------------------- */
 
 /** the last move a machine made, said as a player would reason it */
-function botReason(g: GameState, me: number, t: T): { name: string; what: string; why: string; turn: string; fresh: boolean } | null {
+function botReason(g: GameState, me: number, t: T): { id: number; name: string; what: string; why: string; turn: string; fresh: boolean } | null {
   const e = [...g.ledger].reverse().find((x) => x.player !== undefined && x.player !== me && g.players[x.player]?.isBot && x.key && x.key !== 'flip');
   if (!e || e.player === undefined) return null;
   const p = g.players[e.player];
@@ -149,7 +149,7 @@ function botReason(g: GameState, me: number, t: T): { name: string; what: string
   else if (played <= 1) turn = spentBot !== undefined && spentMe !== undefined ? t(botIdx < meIdx ? 'game.guide.turn.orderBefore' : 'game.guide.turn.orderAfter', { name: p.name, you, spentBot, spentMe, round: e.round }) : t('game.guide.turn.order', { name: p.name, round: e.round });
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
-  return { name: p.name, what: ledgerText(e, t), why, turn, fresh: e.at === g.actions.length - 1 };
+  return { id: e.id, name: p.name, what: ledgerText(e, t), why, turn, fresh: e.at === g.actions.length - 1 };
 }
 
 /* ----------------------------- the block ----------------------------- */
@@ -265,9 +265,10 @@ export default function Guide() {
   const openMat = useGame((s) => s.openMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
   const [hidden, setHidden] = useState(false);
+  /* the machine's move that was read and understood, by its entry in the
+     log: the length of the log moves with every entry and would bring
+     the plate back after each move of one's own */
   const [botHidden, setBotHidden] = useState<number>(-1);
-  /* the machine's latest move was read and understood */
-  const ack = !!game && botHidden === game.ledger.length;
   const setBotHold = useGame((s) => s.setBotHold);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   /* the note can be dragged by its head, and folded to a strip; a new
@@ -299,6 +300,8 @@ export default function Guide() {
   const me = seat ?? Math.max(0, game?.players.findIndex((p) => !p.isBot) ?? 0);
   const myTurn = !!game && game.phase === 'action' && game.current === me && !game.players[me].isBot;
   const aid = !!game && me >= 0 && aidOn(game.assist, code !== null);
+  const botNow = useMemo(() => (game ? botReason(game, me, t) : null), [game, me, t]);
+  const ack = !!botNow && botHidden === botNow.id;
 
   /* the lesson: the first step not done — a read step is done once read past,
      and a step once passed stays passed (closing the mat again is no reason
@@ -350,7 +353,7 @@ export default function Guide() {
   const setPage = (p: number) => setPaged({ key: situation, page: p });
 
   /* the machine's next move waits while its last one is being read (guided game only) */
-  const holdWanted = !!(tutorial && game && game.phase === 'action' && bot && bot.fresh && botHidden !== game.ledger.length && game.players[game.current]?.isBot);
+  const holdWanted = !!(tutorial && game && game.phase === 'action' && bot && bot.fresh && botHidden !== bot.id && game.players[game.current]?.isBot);
   useEffect(() => {
     setBotHold(holdWanted);
     return () => setBotHold(false);
@@ -374,13 +377,12 @@ export default function Guide() {
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
-  const botSeq = game.ledger.length;
-  const showBot = bot && botHidden !== botSeq && (showSteps || !hidden);
+  const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
   /* the guided game waits: the machine's next move comes once this one is read */
   const holding = !!(tutorial && showBot && bot?.fresh && game.players[game.current]?.isBot);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood */
-  const reading = !!(tutorial && showBot && bot?.fresh);
+  const reading = !!(tutorial && showBot && bot?.fresh && (holding || due?.id === 'botTurn'));
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
@@ -583,7 +585,7 @@ export default function Guide() {
 
         {/* the machine's reasons: why a player would have made that move */}
         {showBot && bot && (
-          <motion.aside key={`bot-${botSeq}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
+          <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
             <div className="flex items-start gap-3">
               <Bot className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
               <div className="min-w-0 flex-1">
@@ -593,12 +595,12 @@ export default function Guide() {
                 <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
               </div>
               {reading ? (
-                <button type="button" onClick={() => setBotHidden(botSeq)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
+                <button type="button" onClick={() => setBotHidden(bot.id)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
                   {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>
               ) : (
-                <button type="button" onClick={() => setBotHidden(botSeq)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+                <button type="button" onClick={() => setBotHidden(bot.id)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
