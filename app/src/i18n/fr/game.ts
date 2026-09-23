@@ -714,6 +714,7 @@ const fr: typeof engame = {
     },
     botHeld: '{name} attend que vous ayez lu avant de continuer.',
     canBuild: 'Cette carte peut construire quelque chose maintenant',
+    foldHint: 'Un clic sur la note la replie en une ligne ; glissez son en-tête pour la déplacer.',
     minify: 'Réduire la leçon',
     expand: 'Agrandir la leçon',
     move: 'Glisser pour déplacer ; double-clic pour remettre en place',

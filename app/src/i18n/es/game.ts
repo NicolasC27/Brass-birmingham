@@ -714,6 +714,7 @@ const game: typeof engame = {
     },
     botHeld: '{name} espera a que hayas leído antes de continuar.',
     canBuild: 'Esta carta puede construir algo ahora',
+    foldHint: 'Un clic en la nota la pliega en una línea; arrastra su cabecera para moverla.',
     minify: 'Plegar la lección',
     expand: 'Desplegar la lección',
     move: 'Arrastra para mover; doble clic para volver a su sitio',

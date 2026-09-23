@@ -714,6 +714,7 @@ const game: typeof engame = {
     },
     botHeld: '{name} wartet, bis du gelesen hast, bevor es weitergeht.',
     canBuild: 'Mit dieser Karte lässt sich jetzt etwas bauen',
+    foldHint: 'Ein Klick auf die Notiz klappt sie zu einer Zeile ein; ziehe den Kopf, um sie zu verschieben.',
     minify: 'Lektion einklappen',
     expand: 'Lektion ausklappen',
     move: 'Ziehen zum Verschieben; Doppelklick setzt zurück',

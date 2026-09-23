@@ -712,6 +712,7 @@ const game = {
     },
     botHeld: '{name} waits for you to read this before playing on.',
     canBuild: 'This card can build something now',
+    foldHint: 'A click on the note folds it to a line; drag its head to move it.',
     minify: 'Fold the lesson',
     expand: 'Unfold the lesson',
     move: 'Drag to move; double-click to put it back',

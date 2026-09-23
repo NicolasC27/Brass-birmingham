@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, X } from 'lucide-react';
 import { aidOn } from '@/components/game/boardOptions';
@@ -360,6 +360,8 @@ export default function Guide() {
     const g = grip.current;
     if (!g || g.id !== e.pointerId) return;
     grip.current = null;
+    /* a press that did not travel is a click: the note's own click folds it */
+    if (Math.abs(e.clientX - g.sx) < 4 && Math.abs(e.clientY - g.sy) < 4) return;
     setPos(g.at);
     try {
       localStorage.setItem(POS_KEY, JSON.stringify(g.at));
@@ -376,6 +378,13 @@ export default function Guide() {
       /* non-fatal */
     }
   };
+  /* a click anywhere on the paper folds the note, a click on the strip
+     unfolds it; buttons, links and a text selection are left alone */
+  const tap = (e: ReactMouseEvent<HTMLElement>) => {
+    const el = e.target as HTMLElement;
+    if (el.closest('button, a') || window.getSelection()?.toString()) return;
+    fold(!mini);
+  };
   const grabProps = { onPointerDown: grab, onPointerMove: drag, onPointerUp: drop, onPointerCancel: drop, onDoubleClick: home, title: t('game.guide.move') };
   const grabClass = 'cursor-grab touch-none select-none active:cursor-grabbing';
   const show = (what: Show) => {
@@ -391,7 +400,7 @@ export default function Guide() {
     <div ref={box} className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2 will-change-transform" style={{ transform: place(pos) }}>
       <AnimatePresence initial={false} mode="popLayout">
         {showSteps && step && (mini || holding) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3">
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={holding ? undefined : t('game.guide.expand')} onClick={holding ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !holding && 'cursor-pointer')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
@@ -413,7 +422,8 @@ export default function Guide() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             aria-label={t('game.guide.aria')}
-            className="paper pointer-events-auto relative w-full px-4 py-3 shadow-e3"
+            onClick={showSteps ? tap : undefined}
+            className={cn('paper pointer-events-auto relative w-full px-4 py-3 shadow-e3', showSteps && 'cursor-pointer')}
           >
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div className="relative">
@@ -437,7 +447,8 @@ export default function Guide() {
                       {step.done && !finished && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                     </div>
                   </div>
-                  <div className="mt-2.5 flex items-center justify-between gap-3">
+                  <p className="mt-2 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
+                  <div className="mt-2 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
                         {t('game.guide.leave')}
