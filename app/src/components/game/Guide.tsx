@@ -294,6 +294,10 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
 
 /* ------------------------------ the tips ----------------------------- */
 
+/** the tips that speak to the move being prepared rather than to the game at
+ *  large: under a lesson, the rest is what the lesson itself is for */
+const AT_HAND = new Set(['coalMarket', 'ironMarket', 'buildCost', 'network', 'sell', 'unsold', 'noLinks']);
+
 const TIPS: { id: string; when: (c: Ctx) => boolean; vars?: (c: Ctx) => Record<string, string | number> }[] = [
   { id: 'firstRound', when: ({ g }) => g.era === 'canal' && g.round === 1 },
   { id: 'select', when: ({ card, g, me }) => !card && g.current === me },
@@ -729,7 +733,7 @@ export default function Guide() {
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
                           <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
-                        <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.minify')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                        <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                           <Minus className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -739,7 +743,7 @@ export default function Guide() {
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
                       {/* what the chosen card allows, what the pick costs: the
                           assistance speaks under the lesson too */}
-                      {tips.slice(0, 2).map((x) => (
+                      {tips.filter((x) => AT_HAND.has(x.id)).slice(0, 2).map((x) => (
                         <p key={x.id} className="mt-1.5 font-serif text-[12.5px] leading-snug text-ink-900/80">
                           {x.text}
                         </p>
@@ -755,7 +759,7 @@ export default function Guide() {
                       </div>
                     </div>
                   </div>
-                  <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
+                  {shownIndex === 0 && <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>}
                   <div className="mt-2 flex shrink-0 items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
