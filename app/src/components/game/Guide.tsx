@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Sparkles, X } from 'lucide-react';
+import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
 import { aidOn, setBoardOption } from '@/components/game/boardOptions';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
@@ -161,6 +161,51 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
   return { id: e.id, name: p.name, what, why, turn, fresh: e.at === g.actions.length - 1 };
 }
 
+/* ------------------------ what just happened ------------------------- */
+
+/** the turns of the table a beginner would not notice on their own: a
+ *  tile of theirs flipped by someone else's use, the exchange restocked,
+ *  a merchant's bonus taken, a debt paid in tiles. Read from the entries
+ *  of the action just played (and the payday that may follow it). */
+function happenings(g: GameState, me: number, t: T): { id: number; text: string }[] {
+  const at = g.actions.length - 1;
+  if (at < 0) return [];
+  const actor = g.ledger.find((e) => e.at === at && e.player !== undefined && e.verb !== 'system' && e.verb !== 'score')?.player;
+  const out: { id: number; text: string }[] = [];
+  for (const e of g.ledger) {
+    if ((e.at ?? -1) < at || !e.key) continue;
+    const v = e.vars ?? {};
+    const town = e.region ? (TOWN_BY_ID[e.region]?.name ?? e.region) : '';
+    const industry = typeof v.industry === 'string' ? t(`game.log.industry.${v.industry}`) : '';
+    const vars = { name: typeof v.name === 'string' ? v.name : '', industry, town, income: v.income ?? 0, n: v.saleN ?? 0, gain: v.saleGain ?? 0, merchant: v.merchant ?? '', value: v.value ?? 0, amount: v.amount ?? 0, bits: v.bonusBits ?? '' };
+    switch (e.key) {
+      case 'flip':
+        /* a sale of one's own is the lesson's business, not a surprise */
+        if (v.why === 'merchant') break;
+        if (e.player === me) out.push({ id: e.id, text: t(`game.guide.happens.${v.why === 'barrel' ? 'barrel' : v.why === 'market' ? 'market' : 'empties'}`, vars) });
+        else if (actor === me) out.push({ id: e.id, text: t('game.guide.happens.theirs', vars) });
+        break;
+      case 'build':
+        if (Number(v.saleN) > 0) out.push({ id: e.id, text: t(e.player === me ? 'game.guide.happens.restockMine' : 'game.guide.happens.restock', vars) });
+        break;
+      case 'sell': {
+        const bits = [v.bonusVp ? t('game.log.bonusVp', { n: v.bonusVp }) : '', v.bonusIncome ? t('game.log.bonusIncome', { n: v.bonusIncome }) : '', v.bonusMoney ? t('game.log.bonusMoney', { n: v.bonusMoney }) : '', v.bonusDevelop ? t('game.log.bonusDevelop') : ''].filter(Boolean);
+        if (e.player === me && bits.length) out.push({ id: e.id, text: t('game.guide.happens.bonus', { ...vars, bits: bits.join(' · ') }) });
+        break;
+      }
+      case 'sellOff':
+        if (e.player === me) out.push({ id: e.id, text: t('game.guide.happens.sellOff', vars) });
+        break;
+      case 'short':
+        if (e.player === me) out.push({ id: e.id, text: t('game.guide.happens.short', vars) });
+        break;
+      default:
+        break;
+    }
+  }
+  return out;
+}
+
 /* ----------------------------- the block ----------------------------- */
 
 const money = (r?: string) => !!r && r.startsWith('Needs £');
@@ -223,8 +268,6 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
   if (p.money < 8 && p.loans === 0) out.push({ id: 'broke', text: t('game.guide.alerts.broke', { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT, level, after: Math.max(-10, level - LOAN_INCOME_HIT) }) });
   else if (p.money < 8) out.push({ id: 'brokeAgain', text: t('game.guide.alerts.brokeAgain', { money: p.money, level }) });
   if (last?.key === 'payday') out.push({ id: 'payday', text: t(level >= 0 ? 'game.guide.alerts.payday' : 'game.guide.alerts.paydayOwed', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
-  const flipped = [...g.ledger].reverse().find((x) => x.key === 'flip' && x.player === me);
-  if (flipped && g.ledger.indexOf(flipped) >= g.ledger.length - 3) out.push({ id: 'flipped', text: t('game.guide.alerts.flipped', { industry: t(`game.log.industry.${flipped.vars?.industry}`), income: flipped.vars?.income ?? 0, level }) });
   if (level < 0) out.push({ id: 'negative', text: t('game.guide.alerts.negative', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
   if (g.era === 'canal' && g.round >= eraRounds(g.players.length) - 1) out.push({ id: 'eraEnd', text: t('game.guide.alerts.eraEnd') });
   return out;
@@ -326,6 +369,10 @@ export default function Guide() {
   const aid = !!game && me >= 0 && aidOn(game.assist, code !== null);
   const botNow = useMemo(() => (game ? botReason(game, me, t) : null), [game, me, t]);
   const ack = !!botNow && botHidden === botNow.id;
+  /* the turns of the table, and the highest entry read of them */
+  const happens = useMemo(() => (game && aid ? happenings(game, me, t) : []), [game, aid, me, t]);
+  const [eventsSeen, setEventsSeen] = useState(-1);
+  const news = happens.filter((x) => x.id > eventsSeen);
 
   /* the lesson: the first step not done — a read step is done once read past,
      and a step once passed stays passed (closing the mat again is no reason
@@ -379,7 +426,7 @@ export default function Guide() {
   /* the machine's next move waits while its last one is being read (guided game only) */
   const lessonNow = tutorial && stepIndex >= 0 && stepIndex < STEPS.length ? STEPS[stepIndex] : null;
   const unread = !!lessonNow && !lessonNow.done;
-  const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread));
+  const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0));
   useEffect(() => {
     setBotHold(holdWanted);
     return () => setBotHold(false);
@@ -735,6 +782,27 @@ export default function Guide() {
               )}
             </div>
             {holding && <p className="mt-1.5 pl-7 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
+          </motion.aside>
+        )}
+
+        {/* the turns of the table: what just happened, and why it matters */}
+        {news.length > 0 && (
+          <motion.aside key={`news-${news[news.length - 1].id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.happens.aria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
+            <div className="flex items-start gap-3">
+              <Newspaper className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
+              <div className="min-w-0 flex-1">
+                <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.happens.title')}</p>
+                {news.map((x) => (
+                  <p key={x.id} className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">
+                    {x.text}
+                  </p>
+                ))}
+              </div>
+              <button type="button" onClick={() => setEventsSeen(news[news.length - 1].id)} className="btn-strike !min-h-[30px] shrink-0 !px-3 !py-1 !text-[10px]">
+                {t('game.guide.botOk')}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </motion.aside>
         )}
 
