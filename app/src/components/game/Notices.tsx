@@ -50,7 +50,10 @@ export default function Notices() {
        each time, and followed while a notice hangs under it */
     const measure = () => {
       const bar = document.querySelector('[data-topbar]');
-      if (bar) setUnder(Math.round(bar.getBoundingClientRect().bottom));
+      /* the guide's note holds the same lane: a notice hangs under it too */
+      const note = document.querySelector('[data-guide]');
+      const foot = Math.max(bar?.getBoundingClientRect().bottom ?? 0, note?.getBoundingClientRect().bottom ?? 0);
+      if (foot > 0) setUnder(Math.round(foot));
     };
     measure();
     if (!shown) return;

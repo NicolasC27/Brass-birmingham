@@ -87,13 +87,20 @@ type Pos = { x: number; y: number };
 const readPos = (): Pos => {
   try {
     const v = JSON.parse(localStorage.getItem(POS_KEY) ?? 'null') as Pos | null;
-    if (v && typeof v.x === 'number' && typeof v.y === 'number') return v;
+    if (v && typeof v.x === 'number' && typeof v.y === 'number') return fit(v);
   } catch {
     /* fresh table */
   }
   return { x: 0, y: 0 };
 };
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+/** a spot the note can still be read at, in this window */
+const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
+  /* a window too small to measure (a hidden tab) must not move the note */
+  const reach = Math.max(0, w / 2 - 80);
+  const down = Math.max(0, h - 220);
+  return { x: clamp(p.x, -reach, reach), y: clamp(p.y, Math.min(0, -90), down) };
+};
 /** a sentence that follows a colon starts low */
 const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
 const place = (p: Pos) => `translate(calc(-50% + ${p.x}px), ${p.y}px)`;
@@ -331,6 +338,7 @@ export default function Guide() {
   const tutorial = useGame((s) => s.tutorial);
   const endTutorial = useGame((s) => s.endTutorial);
   const matPlayer = useGame((s) => s.matPlayer);
+  const marketFocus = useGame((s) => s.marketFocus);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
@@ -355,6 +363,28 @@ export default function Guide() {
     }
   });
   const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos; t0: number } | null>(null);
+  /* the room the note has: under whatever the top bar occupies, above the hand */
+  const [band, setBand] = useState<{ top: number; height: number }>({ top: 100, height: 520 });
+  useEffect(() => {
+    const measure = () => {
+      /* a hidden tab measures every box at zero: nothing is learned from it */
+      if (window.innerHeight < 320) return;
+      const bar = document.querySelector('[data-topbar]')?.getBoundingClientRect();
+      const rail = document.querySelector('[data-player-rail]')?.getBoundingClientRect();
+      const dock = document.querySelector('[data-dock]')?.getBoundingClientRect();
+      const top = Math.round(Math.max(bar?.bottom || 80, window.innerWidth < 1024 ? rail?.bottom || 0 : 0)) + 12;
+      const foot = dock && dock.top > top ? dock.top : window.innerHeight - 40;
+      setBand({ top, height: Math.max(220, Math.round(foot - top - 12)) });
+      setPos((p) => fit(p));
+    };
+    measure();
+    const t = window.setInterval(measure, 1000);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.clearInterval(t);
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
   /* the press that just ended was a move or a hold, not a click: the
      click that follows it must not fold the note */
   const held = useRef(false);
@@ -457,6 +487,10 @@ export default function Guide() {
   const blocked = detour ? null : (block?.text ?? null);
   /* folded for the lesson on show only: the next one unfolds the note */
   const mini = miniAt === shownIndex;
+  /* a side panel opened by a lesson is what the lesson talks about: the
+     note leans off it, unless the reader has placed it themselves */
+  const room = Math.min(180, Math.max(0, window.innerWidth / 2 - 320));
+  const lean = pos.x !== 0 || pos.y !== 0 ? pos : matPlayer !== null ? { x: room, y: 0 } : marketFocus ? { x: -room, y: 0 } : pos;
   /* the deed this lesson asks for is already done: it reads on like any page */
   const already = !!step?.done && step.done(game, me, selectedCardId, matPlayer, ack);
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
@@ -502,8 +536,7 @@ export default function Guide() {
   const drag = (e: ReactPointerEvent<HTMLElement>) => {
     const g = grip.current;
     if (!g || g.id !== e.pointerId) return;
-    const reach = window.innerWidth / 2 - 80;
-    g.at = { x: clamp(g.ox + e.clientX - g.sx, -reach, reach), y: clamp(g.oy + e.clientY - g.sy, -90, window.innerHeight - 170) };
+    g.at = fit({ x: g.ox + e.clientX - g.sx, y: g.oy + e.clientY - g.sy });
     if (box.current) box.current.style.transform = place(g.at);
   };
   const drop = (e: ReactPointerEvent<HTMLElement>) => {
@@ -546,6 +579,7 @@ export default function Guide() {
   const grabClass = 'cursor-grab touch-none select-none active:cursor-grabbing';
   const show = (what: Show) => {
     if (what === 'mat') openMat(me);
+    /* the note leans out of the mat's way so both can be read at once */
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
   };
@@ -638,7 +672,7 @@ export default function Guide() {
   };
 
   return (
-    <div ref={box} className="pointer-events-none fixed left-1/2 top-[100px] z-[80] flex w-[min(600px,92vw)] flex-col items-center gap-2 will-change-transform" style={{ transform: place(pos) }}>
+    <div ref={box} data-guide className="pointer-events-none fixed left-1/2 z-[80] flex w-[min(600px,92vw)] min-h-0 flex-col items-center gap-2 overflow-y-auto overscroll-contain will-change-transform" style={{ top: band.top, maxHeight: band.height, transform: place(lean) }}>
       <AnimatePresence initial={false} mode="popLayout">
         {showSteps && step && (mini || reading) && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={reading ? undefined : t('game.guide.expand')} onClick={reading ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
@@ -664,15 +698,16 @@ export default function Guide() {
             exit={{ opacity: 0 }}
             aria-label={t('game.guide.aria')}
             onClick={showSteps ? tap : undefined}
-            className={cn('paper pointer-events-auto relative w-full px-4 py-3 shadow-e3', showSteps && 'cursor-pointer')}
+            style={{ maxHeight: band.height }}
+            className={cn('paper pointer-events-auto relative flex w-full min-h-0 flex-col px-4 py-3 shadow-e3', showSteps && 'cursor-pointer')}
           >
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
-            <div className="relative">
+            <div className="relative flex min-h-0 flex-col">
               {showSteps && step ? (
                 <>
-                  <div className="flex items-start gap-3">
+                  <div className="flex min-h-0 items-start gap-3">
                     <GraduationCap className="mt-0.5 h-5 w-5 shrink-0 text-ink-900/70" />
-                    <div className="min-w-0 flex-1">
+                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
@@ -682,11 +717,10 @@ export default function Guide() {
                           <Minus className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
+                      <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
                         {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(due!.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
-                      </div>
                       {/* what the chosen card allows, what the pick costs: the
                           assistance speaks under the lesson too */}
                       {tips.map((x) => (
@@ -702,10 +736,11 @@ export default function Guide() {
                       {!step.done && !finished && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
                       {step.done && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                       {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
+                      </div>
                     </div>
                   </div>
-                  <p className="mt-2 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
-                  <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
+                  <div className="mt-2 flex shrink-0 items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
                         {t('game.guide.leave')}
@@ -743,9 +778,9 @@ export default function Guide() {
                   </div>
                 </>
               ) : (
-                <div className="flex items-start gap-3">
+                <div className="flex min-h-0 items-start gap-3">
                   <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/60" />
-                  <ul className="min-w-0 flex-1 space-y-1.5">
+                  <ul className="min-h-0 min-w-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
                     {shown.map((line, i) => (
                       <li key={i}>
                         <Paragraphs text={line} />

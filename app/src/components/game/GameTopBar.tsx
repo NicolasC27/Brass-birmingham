@@ -289,7 +289,8 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
             </span>
           </Tooltip>
 
-          <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5">
+          {/* the fixed cluster is clipped before it can ride over the summary */}
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2.5">
             <PortraitMedallion p={p} index={me} active={mine} size={22} />
             {mine && (
               <span className="flex shrink-0 items-center gap-[3px]" aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
@@ -306,7 +307,7 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
                 ))}
               </span>
             )}
-            {mine && verb && <span className="shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-brass-400">{t(VERB_LABEL[verb])}</span>}
+            {mine && verb && <span className="hidden shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-brass-400 min-[1180px]:inline">{t(VERB_LABEL[verb])}</span>}
             <span className={cn('min-w-0 flex-1 truncate font-fell text-[13px] leading-none', theirs && 'text-cream-100/85')} title={summaryFull ?? undefined}>
               {mine && summary ? <span className="text-cream-100/90">{summary}</span> : sentence}
             </span>
