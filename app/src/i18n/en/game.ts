@@ -786,6 +786,7 @@ const game = {
     expand: 'Unfold the lesson',
     move: 'Drag to move; double-click to put it back',
     hide: 'Hide',
+    waitingTurn: '{name} plays — action {n} of {max}',
     stepOf: 'Lesson {n} of {total}',
     yourTurn: 'Your move — the machine waits.',
     wait: 'The machine is playing; your move comes next.',

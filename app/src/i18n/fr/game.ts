@@ -788,6 +788,7 @@ const fr: typeof engame = {
     expand: 'Agrandir la leçon',
     move: 'Glisser pour déplacer ; double-clic pour remettre en place',
     hide: 'Masquer',
+    waitingTurn: '{name} joue — action {n} sur {max}',
     stepOf: 'Leçon {n} sur {total}',
     yourTurn: 'À vous — la machine attend.',
     wait: 'La machine joue ; votre tour vient ensuite.',

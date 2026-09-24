@@ -64,9 +64,8 @@ const STEPS: Step[] = [
   { id: 'matRead', show: 'mat' },
   { id: 'hand', done: (_g, _me, sel) => sel !== null },
   { id: 'coal', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'coal') },
-  /* done once the machine has played and its reasons were read: the
-     lesson is the plate under it, not the words above */
-  { id: 'botTurn', done: (g, me, _sel, _mat, ack) => ack && g.ledger.some((e) => e.player !== undefined && e.player !== me && e.verb !== 'system') },
+  /* read while the table waits: her turn comes once it has been read */
+  { id: 'botTurn' },
   { id: 'payday', when: (g) => g.round >= 2 },
   { id: 'link', done: (g, me) => Object.values(g.links).some((l) => l.owner === me) },
   { id: 'works', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && WORKS.includes(t.industry)) },
@@ -483,6 +482,7 @@ export default function Guide() {
 
   /* the machine's next move waits while its last one is being read (guided game only) */
   const lessonNow = tutorial && stepIndex >= 0 && stepIndex < STEPS.length ? STEPS[stepIndex] : null;
+  /* a lesson still to be read holds the table: the reader sets the pace */
   const unread = !!lessonNow && !lessonNow.done;
   const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0));
   useEffect(() => {
@@ -524,6 +524,10 @@ export default function Guide() {
   const reading = !!(tutorial && showBot && bot?.fresh);
   /* the reader asked for the lesson back while the plate is on show */
   const unfolded = unfoldAt === bot?.id;
+  /* her turn is running: the note steps back to a line that says so */
+  const theirTurn = !!(tutorial && game.phase === 'action' && game.players[game.current]?.isBot && !unread);
+  const maxActions = game.round === 1 && game.era === 'canal' ? 1 : 2;
+  const waiting = theirTurn ? t('game.guide.waitingTurn', { name: game.players[game.current]?.name ?? '', n: Math.min(maxActions - game.actionsLeft + 1, maxActions), max: maxActions }) : null;
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
@@ -695,22 +699,22 @@ export default function Guide() {
   return (
     <div ref={box} data-guide className="pointer-events-none fixed left-1/2 z-[80] flex w-[min(600px,92vw)] min-h-0 flex-col items-center gap-2 overflow-y-auto overscroll-contain will-change-transform" style={{ top: band.top, maxHeight: band.height, transform: place(lean) }}>
       <AnimatePresence initial={false} mode="popLayout">
-        {showSteps && step && (mini || (reading && !unfolded)) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={reading && !mini ? undefined : t('game.guide.expand')} onClick={reading && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
+        {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={(reading || theirTurn) && !mini ? undefined : t('game.guide.expand')} onClick={(reading || theirTurn) && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
-              <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>
-              <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
+              {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>}
+              <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
-            {(!reading || mini) && (
+            {(!reading || mini) && !theirTurn && (
               <button type="button" onClick={() => (reading ? setUnfoldAt(bot?.id ?? -1) : fold(false))} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             )}
           </motion.aside>
         )}
-        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && (mini || reading)) && (
+        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && (mini || theirTurn || reading)) && (
           <motion.aside
             key="note"
             layout
@@ -755,7 +759,7 @@ export default function Guide() {
                         </p>
                       ))}
                       {!step.done && !finished && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
-                      {step.done && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {step.done && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                       {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
                       </div>
                     </div>

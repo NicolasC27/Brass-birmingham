@@ -788,6 +788,7 @@ const game: typeof engame = {
     expand: 'Lektion ausklappen',
     move: 'Ziehen zum Verschieben; Doppelklick setzt zurück',
     hide: 'Ausblenden',
+    waitingTurn: '{name} ist am Zug — Aktion {n} von {max}',
     stepOf: 'Lektion {n} von {total}',
     yourTurn: 'Du bist dran — die Maschine wartet.',
     wait: 'Die Maschine spielt; danach bist du dran.',
