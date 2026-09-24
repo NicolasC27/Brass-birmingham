@@ -220,6 +220,22 @@ function happenings(g: GameState, me: number, t: T): { id: number; text: string 
   return out;
 }
 
+/* ------------------------------ the thread --------------------------- */
+
+/** a turn of the conversation, kept once it is no longer the live one */
+interface Said {
+  key: string;
+  kind: 'lesson' | 'bot' | 'news' | 'ask' | 'answer';
+  head?: string;
+  body: string;
+  /** the seat whose move this was, for the look back at the board */
+  seat?: number;
+}
+
+/** the questions the guide knows, in the order they are tried */
+const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win'] as const;
+type Ask = (typeof ASKS)[number];
+
 /* ----------------------------- the block ----------------------------- */
 
 const money = (r?: string) => !!r && r.startsWith('Needs £');
@@ -422,6 +438,17 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   const [eventsSeen, setEventsSeen] = useState(-1);
   /* the machine's move whose reading the reader has set aside to see the lesson */
   const [unfoldAt, setUnfoldAt] = useState(-1);
+  /* everything already said, oldest first, and what is still live */
+  const [said, setSaid] = useState<Said[]>([]);
+  const [liveLesson, setLiveLesson] = useState<{ at: number; head: string; body: string } | null>(null);
+  const [liveBot, setLiveBot] = useState<{ id: number; head: string; body: string; seat: number } | null>(null);
+  const [filed, setFiled] = useState(-1);
+  const [question, setQuestion] = useState('');
+  /* the lane reads like a conversation: the newest turn is the one in view */
+  useEffect(() => {
+    const el = box.current;
+    if (dock && el) el.scrollTop = el.scrollHeight;
+  }, [dock, said.length, readPast, game?.ledgerSeq]);
   /* a lesson the reader went back to: held until they read forward again */
   const [review, setReview] = useState<number | null>(null);
   /* the lesson whose deed was already done when it came up: it stays a page
@@ -689,11 +716,77 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
      a payday owed rather than paid, a short game that ends here */
   const stepKey = (id: string): string =>
     id === 'payday' && incomeLevel(game.players[me].income) < 0 ? 'paydayOwed' : id === 'eraEnd' && game.eraLength === 'short' ? 'eraEndShort' : id;
+  /* the question the words point at, if the guide knows one */
+  const intentOf = (q: string): Ask | null => {
+    const said = q.toLowerCase();
+    for (const id of ASKS) {
+      const words = t(`game.guide.ask.words.${id}`).split(',').map((w) => w.trim().toLowerCase()).filter(Boolean);
+      if (words.some((w) => said.includes(w))) return id;
+    }
+    return null;
+  };
+  /* the answer, read off the table as it stands */
+  const answerTo = (id: Ask): string => {
+    const p = game.players[me];
+    const level = incomeLevel(p.income);
+    switch (id) {
+      case 'sell': {
+        const ok = sellTargets(game, me).find((x) => x.valid);
+        if (ok) return t('game.guide.ask.answer.sellYes', { industry: t(`game.log.industry.${ok.tile.industry}`), town: TOWN_BY_ID[ok.town]?.name ?? ok.town, merchant: MERCHANT_BY_ID[ok.merchant]?.name ?? ok.merchant });
+        return blockedBy('sell', game, me, t)?.text ?? t('game.guide.ask.answer.sellNo');
+      }
+      case 'build': {
+        const n = p.hand.flatMap((c) => buildTargets(game, me, c)).filter((x) => x.valid).length;
+        return n > 0 ? t('game.guide.ask.answer.buildYes', { n }) : (blockedBy('works', game, me, t)?.text ?? t('game.guide.ask.answer.buildNo'));
+      }
+      case 'coal':
+        return t('game.guide.ask.answer.coal', { left: game.market.coal, mine: Object.values(game.tiles).filter((x) => x.industry === 'coal' && !x.flipped).length });
+      case 'beer':
+        return t('game.guide.ask.answer.beer', { mine: Object.values(game.tiles).filter((x) => x.owner === me && x.industry === 'brewery' && !x.flipped).length, merchant: Object.values(game.merchantBeer).reduce((a, b) => a + b, 0) });
+      case 'money':
+        return t(level >= 0 ? 'game.guide.ask.answer.money' : 'game.guide.ask.answer.moneyOwed', { money: p.money, level, pay: Math.abs(INCOME_PAYOUT[p.income]) });
+      case 'rounds':
+        return t('game.guide.ask.answer.rounds', { left: Math.max(0, eraRounds(game.players.length) - game.round + 1), round: game.round, total: eraRounds(game.players.length), actions: game.actionsLeft });
+      case 'win':
+        return t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...game.players.map((x) => x.vp)) });
+      case 'do':
+      default:
+        return t('game.guide.ask.answer.do', { name: machine });
+    }
+  };
+  const putQuestion = () => {
+    const q = question.trim();
+    if (!q) return;
+    setQuestion('');
+    const id = intentOf(q);
+    setSaid((prev) => [
+      ...prev,
+      { key: `q${prev.length}`, kind: 'ask', body: q },
+      { key: `a${prev.length}`, kind: 'answer', body: id ? answerTo(id) : t('game.guide.ask.answer.none') },
+    ]);
+    if (id === 'do' && myTurn && !advised) ask();
+  };
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
     const k = getKeybindings();
     return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
   };
+
+  /* a lesson, a move of hers or an event that is no longer the live one
+     is filed into the thread, worded as it was when it was read */
+  if (dock && showSteps && step && liveLesson?.at !== shownIndex) {
+    if (liveLesson) setSaid((prev) => [...prev, { key: `l${liveLesson.at}`, kind: 'lesson', head: liveLesson.head, body: liveLesson.body }]);
+    setLiveLesson({ at: shownIndex, head: t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars()), body: t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars()) });
+  }
+  if (dock && bot && liveBot?.id !== bot.id) {
+    if (liveBot) setSaid((prev) => [...prev, { key: `b${liveBot.id}`, kind: 'bot', head: liveBot.head, body: liveBot.body, seat: liveBot.seat }]);
+    setLiveBot({ id: bot.id, head: bot.what, body: bot.why, seat: bot.seat });
+  }
+  const toFile = dock ? happens.filter((x) => x.id <= eventsSeen && x.id > filed) : [];
+  if (toFile.length) {
+    setSaid((prev) => [...prev, ...toFile.map((x) => ({ key: `n${x.id}`, kind: 'news' as const, body: x.text }))]);
+    setFiled(toFile[toFile.length - 1].id);
+  }
 
   return (
     <div
@@ -705,6 +798,22 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
       )}
       style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
     >
+      {/* what has already been said, kept so a reader can look back at it */}
+      {dock && said.length > 0 && (
+        <div aria-label={t('game.guide.thread.aria')} className="flex shrink-0 flex-col gap-2">
+          {said.map((m) => (
+            <article key={m.key} className={cn('relative rounded-md border px-3 py-2', m.kind === 'ask' ? 'ml-6 border-bottle-600/50 bg-bottle-600/10' : 'border-brass-700/40 bg-coal-900/70')}>
+              {m.head && <p className="font-mono text-[10.5px] leading-snug text-cream-100/55">{m.head}</p>}
+              <p className={cn('font-serif text-[12px] leading-snug', m.kind === 'ask' ? 'text-bottle-400' : 'text-cream-100/70')}>{m.body}</p>
+              {m.kind === 'bot' && m.seat !== undefined && m.seat >= 0 && (
+                <button type="button" onClick={() => setGlimpse({ seat: m.seat!, at: Date.now() })} className="mt-1 inline-flex items-center gap-1 font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400">
+                  <Eye className="h-3 w-3" /> {t('game.guide.ask.replay')}
+                </button>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
       <AnimatePresence initial={false} mode="popLayout">
         {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={(reading || theirTurn) && !mini ? undefined : t('game.guide.expand')} onClick={(reading || theirTurn) && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
@@ -937,6 +1046,28 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
           </motion.aside>
         )}
       </AnimatePresence>
+
+      {/* a question to the guide, answered from the table as it stands */}
+      {dock && showSteps && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            putQuestion();
+          }}
+          className="sticky bottom-0 mt-auto flex shrink-0 items-center gap-2 pt-2"
+        >
+          <input
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder={t('game.guide.ask.placeholder')}
+            aria-label={t('game.guide.ask.placeholder')}
+            className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] text-cream-100 placeholder:text-cream-100/35 focus:border-brass-400 focus:outline-none"
+          />
+          <button type="submit" disabled={!question.trim()} aria-label={t('game.guide.ask.send')} title={t('game.guide.ask.send')} className="btn-strike !min-h-[32px] shrink-0 !px-3 !py-1 !text-[10px] disabled:opacity-40">
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
+        </form>
+      )}
     </div>
   );
 }
