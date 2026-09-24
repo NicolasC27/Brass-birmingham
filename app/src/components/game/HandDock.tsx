@@ -13,7 +13,7 @@ import { INDUSTRY_COLOR } from './townChrome';
 import { industryFaceUrl } from '@/gl/faces';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
-import { minimapWidth, useBoardOptions } from './boardOptions';
+import { minimapWidth, tableWidth, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { isKey, keyLabel, useKeybindings } from './keybindings';
 
@@ -317,9 +317,10 @@ export default function HandDock() {
   /* the dock sits in the middle of the screen when the rail and the minimap
      leave it room there; when they do not (a wide minimap), it takes the
      middle of what is left between them instead of squeezing its cards */
-  const [vw, setVw] = useState(() => (typeof window === 'undefined' ? 1600 : window.innerWidth));
+  /* the room the hand has is the table's, which a guide lane may narrow */
+  const [vw, setVw] = useState(tableWidth);
   useEffect(() => {
-    const onResize = () => setVw(window.innerWidth);
+    const onResize = () => setVw(tableWidth());
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);

@@ -11,6 +11,8 @@ import ConcedeBanner from '@/components/game/ConcedeBanner';
 import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
+import { guideDock } from '@/components/game/guideKeys';
+import { useWide } from '@/hooks/use-narrow';
 import Notices from '@/components/game/Notices';
 import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
 import Gazette from '@/components/game/Gazette';
@@ -79,6 +81,10 @@ export default function Game() {
   const surveySeat = useGame((s) => s.surveySeat);
   const surveyEmpires = useGame((s) => s.surveyEmpires);
   const glimpse = useGame((s) => s.glimpse);
+  const tutorial = useGame((s) => s.tutorial);
+  /* the room the guide takes from the table: a lane of its own when the
+     window can spare it, nothing when it cannot */
+  const wide = useWide();
   const setGlimpse = useGame((s) => s.setGlimpse);
   const setSurveySeat = useGame((s) => s.setSurveySeat);
   const cycleSurveySeat = useGame((s) => s.cycleSurveySeat);
@@ -483,11 +489,16 @@ export default function Game() {
   const botThinking = seat === null && game.phase === 'action' && game.players[game.current].isBot && !ceremony;
   /* read up to: the drawer's last closing, or the reader's own last move */
   const lastMine = game.ledger.reduce((acc, e, i) => (e.player === mySeat ? i + 1 : acc), 0);
+  const dock = tutorial && wide ? guideDock() : 0;
   const seenIdx = Math.max(ledgerRead, lastMine);
   const unread = game.ledger.slice(seenIdx).filter((e) => e.player !== undefined && e.player !== mySeat).length;
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
+      {/* the table keeps the room the guide leaves it: `contain` makes this
+          box the frame every fixed panel below positions against, so the
+          board and its HUD shrink together rather than hiding under the lane */}
+      <div data-table className="absolute inset-y-0 left-0 overflow-hidden" style={{ right: dock, contain: 'paint' }}>
       {/* mahogany table under the board */}
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-0 opacity-35" />
 
@@ -629,7 +640,6 @@ export default function Game() {
       {!surveying && (spectating ? <SpectatorStrip /> : <HandDock />)}
       <ConcedeBanner />
       <TableMood />
-      <Guide />
       {!surveying && <Notices />}
       <Gazette />
       <PreparedPanel />
@@ -752,6 +762,10 @@ export default function Game() {
       />
       <RulesOverlay />
       <CoachMarks />
+      </div>
+
+      {/* the guide's own lane, beside the table rather than over it */}
+      <Guide dock={dock} />
     </div>
   );
 }

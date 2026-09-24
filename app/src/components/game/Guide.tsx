@@ -338,7 +338,7 @@ function Paragraphs({ text, className }: { text: string; className?: string }) {
   );
 }
 
-export default function Guide() {
+export default function Guide({ dock = 0 }: { dock?: number }) {
   const t = useT();
   const game = useGame((s) => s.game);
   const code = useGame((s) => s.code);
@@ -599,8 +599,8 @@ export default function Guide() {
     if (el.closest('button, a') || window.getSelection()?.toString()) return;
     fold(!mini);
   };
-  const grabProps = { onPointerDown: grab, onPointerMove: drag, onPointerUp: drop, onPointerCancel: drop, onDoubleClick: home, title: t('game.guide.move') };
-  const grabClass = 'cursor-grab touch-none select-none active:cursor-grabbing';
+  const grabProps = dock ? {} : { onPointerDown: grab, onPointerMove: drag, onPointerUp: drop, onPointerCancel: drop, onDoubleClick: home, title: t('game.guide.move') };
+  const grabClass = dock ? '' : 'cursor-grab touch-none select-none active:cursor-grabbing';
   const show = (what: Show) => {
     if (what === 'mat') openMat(me);
     /* the note leans out of the mat's way so both can be read at once */
@@ -696,7 +696,15 @@ export default function Guide() {
   };
 
   return (
-    <div ref={box} data-guide className="pointer-events-none fixed right-3 z-[80] flex min-h-0 flex-col items-stretch gap-2 overflow-y-auto overscroll-contain will-change-transform" style={{ top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}>
+    <div
+      ref={box}
+      data-guide
+      className={cn(
+        'z-[80] flex min-h-0 flex-col items-stretch gap-2 overflow-y-auto overscroll-contain',
+        dock ? 'pointer-events-auto fixed inset-y-0 right-0 border-l border-brass-hairline bg-coal-950/92 px-3 py-3 backdrop-blur-md' : 'pointer-events-none fixed right-3 will-change-transform',
+      )}
+      style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
+    >
       <AnimatePresence initial={false} mode="popLayout">
         {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={(reading || theirTurn) && !mini ? undefined : t('game.guide.expand')} onClick={(reading || theirTurn) && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
@@ -721,9 +729,9 @@ export default function Guide() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             aria-label={t('game.guide.aria')}
-            onClick={showSteps ? tap : undefined}
-            style={{ maxHeight: band.height }}
-            className={cn('paper pointer-events-auto relative flex w-full min-h-0 flex-col px-4 py-3 shadow-e3', showSteps && 'cursor-pointer')}
+            onClick={showSteps && !dock ? tap : undefined}
+            style={{ maxHeight: dock ? undefined : band.height }}
+            className={cn('paper pointer-events-auto relative flex w-full min-h-0 flex-col px-4 py-3 shadow-e3', showSteps && !dock && 'cursor-pointer')}
           >
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div className="relative flex min-h-0 flex-col">
@@ -737,9 +745,11 @@ export default function Guide() {
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
                           <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
-                        <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
-                          <Minus className="h-3.5 w-3.5" />
-                        </button>
+                        {!dock && (
+                          <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                       <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
                         {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(due!.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
@@ -763,7 +773,7 @@ export default function Guide() {
                       </div>
                     </div>
                   </div>
-                  {shownIndex === 0 && <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>}
+                  {shownIndex === 0 && !dock && <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>}
                   <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
@@ -834,7 +844,7 @@ export default function Guide() {
 
         {/* the machine's reasons: why a player would have made that move */}
         {showBot && bot && (
-          <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} style={{ maxHeight: band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
+          <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
             <div className="flex min-h-0 flex-1 items-start gap-2">
               <Bot className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -874,7 +884,7 @@ export default function Guide() {
 
         {/* the turns of the table: what just happened, and why it matters */}
         {news.length > 0 && (
-          <motion.aside key={`news-${news[news.length - 1].id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.happens.aria')} style={{ maxHeight: band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
+          <motion.aside key={`news-${news[news.length - 1].id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.happens.aria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
             <div className="flex min-h-0 flex-1 items-start gap-2">
               <Newspaper className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
               <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -897,7 +907,7 @@ export default function Guide() {
 
         {/* what the machine would play in the reader's seat, on request */}
         {advised && myTurn && (
-          <motion.aside key={`advice-${here}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.suggest.aria')} style={{ maxHeight: band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
+          <motion.aside key={`advice-${here}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.suggest.aria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
             <div className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-bottle-400" />
               <div className="min-w-0 flex-1">

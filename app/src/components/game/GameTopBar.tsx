@@ -43,7 +43,8 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
       /* the quotation strip is always there; the tray opens under the
          banner's rows, so the band never changes with it */
       const pill = document.querySelector('[data-market-pill]')?.getBoundingClientRect();
-      const right = pill && pill.width > 0 ? Math.round(window.innerWidth - pill.left) + 12 : 12;
+      const edge = Math.round(document.querySelector('[data-table]')?.getBoundingClientRect().right || window.innerWidth);
+      const right = pill && pill.width > 0 ? Math.round(edge - pill.left) + 12 : 12;
       setBand((prev) => (prev.left === left && prev.right === right ? prev : { left, right }));
     };
     measure();

@@ -42,11 +42,17 @@ export const mapUrls = (style: MapStyle, rail: RailPainting): { canal: string; r
 export const MM_W_FOR = { s: 320, m: 400, l: 480 } as const;
 export const MM_MIN_W = 160;
 export const MM_MAX_W = 640;
+/** the room the table has: the window, less whatever lane sits beside it */
+export const tableWidth = (): number => {
+  if (typeof window === 'undefined') return 1280;
+  return Math.round(document.querySelector('[data-table]')?.getBoundingClientRect().width || window.innerWidth);
+};
+
 export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number; focus?: boolean }): number => {
   if (o.focus) return MM_MIN_W;
   const wanted = o.minimapWidth ? Math.min(MM_MAX_W, Math.max(MM_MIN_W, o.minimapWidth)) : MM_W_FOR[o.minimapSize];
-  /* on a tablet the plate yields to the hand: never more than a fifth of the screen */
-  const cap = typeof window !== 'undefined' ? Math.max(MM_MIN_W, Math.floor(window.innerWidth * 0.22)) : MM_MAX_W;
+  /* on a tablet the plate yields to the hand: never more than a fifth of the table */
+  const cap = Math.max(MM_MIN_W, Math.floor(tableWidth() * 0.22));
   return Math.min(wanted, cap);
 };
 

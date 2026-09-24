@@ -20,3 +20,22 @@ export function useNarrow(): boolean {
   );
 }
 
+
+/* ------------------------------------------------------------------ */
+/* Wide screens: enough room beside the board for a lane of its own —  */
+/* the guide's, in a guided game.                                      */
+/* ------------------------------------------------------------------ */
+
+const WIDE = '(min-width: 1100px)';
+const wide = typeof window !== 'undefined' && 'matchMedia' in window ? window.matchMedia(WIDE) : null;
+
+export function useWide(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      wide?.addEventListener('change', cb);
+      return () => wide?.removeEventListener('change', cb);
+    },
+    () => wide?.matches ?? false,
+    () => false,
+  );
+}
