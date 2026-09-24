@@ -8,11 +8,12 @@ import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
+import { faqFor, faqMatch, passagesOf, rulesMatch } from '@/game/faq';
 import { describeAction, useGame } from '@/game/store';
 import { chooseBotAction } from '@/game/search';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
-import { useT } from '@/i18n';
+import { dictOf, getLang, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -444,6 +445,9 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   const [liveBot, setLiveBot] = useState<{ id: number; head: string; body: string; seat: number } | null>(null);
   const [filed, setFiled] = useState(-1);
   const [question, setQuestion] = useState('');
+  /* the rules codex, flattened once into the passages a question searches */
+  const lang = useLang();
+  const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
   /* the lane reads like a conversation: the newest turn is the one in view */
   useEffect(() => {
     const el = box.current;
@@ -754,15 +758,20 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
         return t('game.guide.ask.answer.do', { name: machine });
     }
   };
+  /* a question is answered in three tries: the table as it stands, then the
+     rules as the guide has them written, then the rules codex read as it is */
   const putQuestion = () => {
     const q = question.trim();
     if (!q) return;
     setQuestion('');
     const id = intentOf(q);
+    const entry = id ? null : faqMatch(q, faqFor(getLang()));
+    const passage = id || entry ? null : rulesMatch(q, passages);
+    const answer = id ? answerTo(id) : entry ? entry.answer : passage ? `${passage.title} — ${passage.body}` : t('game.guide.ask.answer.none');
     setSaid((prev) => [
       ...prev,
       { key: `q${prev.length}`, kind: 'ask', body: q },
-      { key: `a${prev.length}`, kind: 'answer', body: id ? answerTo(id) : t('game.guide.ask.answer.none') },
+      { key: `a${prev.length}`, kind: 'answer', body: answer },
     ]);
     if (id === 'do' && myTurn && !advised) ask();
   };

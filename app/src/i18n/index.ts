@@ -70,7 +70,8 @@ export function useLang(): Lang {
 type AnyDict = Record<string, unknown>;
 
 const DICTS: Record<Lang, Dict> = { en, fr, es, de };
-const dictOf = (l: Lang): AnyDict => DICTS[l] as unknown as AnyDict;
+/** a whole dictionary, for a reader that searches it rather than looks a key up */
+export const dictOf = (l: Lang): AnyDict => DICTS[l] as unknown as AnyDict;
 
 function lookup(dict: AnyDict, key: string): string | undefined {
   const v = key.split('.').reduce<unknown>((o, k) => (o as AnyDict | undefined)?.[k], dict);
