@@ -106,6 +106,10 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
   if (!e || e.player === undefined) return null;
   const p = g.players[e.player];
   const v = e.vars ?? {};
+  /* the entries of that same action: a development clearing two tiles
+     writes one line per tile, and is one move all the same */
+  const same = g.ledger.filter((x) => x.at === e.at && x.player === e.player && x.key === e.key);
+  const what = e.key === 'develop' && same.length > 1 ? t('game.guide.developTwo', { name: p.name, list: same.map((x) => t('game.log.developed', { industry: t(`game.log.industry.${x.vars?.industry}`), level: x.vars?.level ?? '' })).join(', '), n: same.length }) : ledgerText(e, t);
   const facts = { name: p.name, money: p.money, level: incomeLevel(p.income), industry: typeof v.industry === 'string' ? t(`game.log.industry.${v.industry}`) : '', town: v.town ?? '', merchant: v.merchant ?? '', a: v.a ?? '', b: v.b ?? '', sale: v.saleN ?? 0, gain: v.saleGain ?? 0, to: v.to ?? 0 };
   let why = '';
   switch (e.key) {
@@ -142,7 +146,7 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
       return null;
   }
   /* the turn: why the machine is the one moving — its first or second action, and the round's order */
-  const played = g.ledger.filter((x) => x.era === e.era && x.round === e.round && x.player === e.player && x.verb !== 'system' && x.verb !== 'score').length;
+  const played = new Set(g.ledger.filter((x) => x.era === e.era && x.round === e.round && x.player === e.player && x.verb !== 'system' && x.verb !== 'score').map((x) => x.at)).size;
   const you = g.players[me]?.name ?? '';
   const meIdx = g.order.indexOf(me);
   const botIdx = g.order.indexOf(e.player);
@@ -151,9 +155,10 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
   let turn: string;
   if (e.round === 1 && e.era === 'canal') turn = t('game.guide.turn.first', { name: p.name });
   else if (played <= 1) turn = spentBot !== undefined && spentMe !== undefined ? t(botIdx < meIdx ? 'game.guide.turn.orderBefore' : 'game.guide.turn.orderAfter', { name: p.name, you, spentBot, spentMe, round: e.round }) : t('game.guide.turn.order', { name: p.name, round: e.round });
+  else if (g.round !== e.round || g.era !== e.era) turn = t(g.current === e.player ? 'game.guide.turn.roundOverBot' : g.current === me ? 'game.guide.turn.roundOverYou' : 'game.guide.turn.roundOver', { name: p.name, you });
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
-  return { id: e.id, name: p.name, what: ledgerText(e, t), why, turn, fresh: e.at === g.actions.length - 1 };
+  return { id: e.id, name: p.name, what, why, turn, fresh: e.at === g.actions.length - 1 };
 }
 
 /* ----------------------------- the block ----------------------------- */
