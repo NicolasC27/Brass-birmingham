@@ -267,6 +267,10 @@ export default function Game() {
   /* -------------------------- keyboard -------------------------- */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      /* a reader writing somewhere keeps their letters: the shortcuts are
+         for the board, not for a field */
+      const on = e.target as HTMLElement | null;
+      if (on && (on.tagName === 'INPUT' || on.tagName === 'TEXTAREA' || on.isContentEditable)) return;
       /* the orders shown on the board: Escape closes that first */
       if (e.key === 'Escape' && (useGame.getState().previewQueue || useGame.getState().surveySeat !== null)) {
         e.preventDefault();

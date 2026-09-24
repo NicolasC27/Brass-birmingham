@@ -840,15 +840,15 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
             aria-label={t('game.guide.aria')}
             onClick={showSteps && !dock ? tap : undefined}
             style={{ maxHeight: dock ? undefined : band.height }}
-            className={cn('paper pointer-events-auto relative flex w-full min-h-0 flex-col px-4 py-3 shadow-e3', showSteps && !dock && 'cursor-pointer')}
+            className={cn('paper pointer-events-auto relative flex w-full flex-col px-4 py-3 shadow-e3', dock ? 'shrink-0' : 'min-h-0', showSteps && !dock && 'cursor-pointer')}
           >
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div className="relative flex min-h-0 flex-col">
               {showSteps && step ? (
                 <>
-                  <div className="flex min-h-0 items-start gap-2">
+                  <div className={cn('flex items-start gap-2', !dock && 'min-h-0')}>
                     <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+                    <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
@@ -860,7 +860,7 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
                           </button>
                         )}
                       </div>
-                      <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
+                      <div className={cn('mt-1', !dock && 'min-h-0 flex-1 overflow-y-auto pr-1')}>
                         {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(due!.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
@@ -921,9 +921,9 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
                   </div>
                 </>
               ) : (
-                <div className="flex min-h-0 items-start gap-3">
+                <div className={cn('flex items-start gap-3', !dock && 'min-h-0')}>
                   <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/60" />
-                  <ul className="min-h-0 min-w-0 flex-1 space-y-1.5 overflow-y-auto pr-1">
+                  <ul className={cn('min-w-0 flex-1 space-y-1.5', !dock && 'min-h-0 overflow-y-auto pr-1')}>
                     {shown.map((line, i) => (
                       <li key={i}>
                         <Paragraphs text={line} />
@@ -954,14 +954,14 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
         {/* the machine's reasons: why a player would have made that move */}
         {showBot && bot && (
           <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
-            <div className="flex min-h-0 flex-1 items-start gap-2">
+            <div className={cn('flex items-start gap-2', !dock && 'min-h-0 flex-1')}>
               <Bot className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.botWhy', { name: bot.name })}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
                 {reading && <p className="mt-0.5 font-sans text-[9.5px] uppercase tracking-[0.12em] text-brass-400/60">{t('game.guide.seeMove', { key: keyLabel(getKeybindings().lastMove), name: bot.name })}</p>}
                 {(reading || !tutorial) && (
-                  <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
+                  <div className={cn('mt-1', !dock && 'min-h-0 flex-1 overflow-y-auto pr-1')}>
                     <p className="font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
                     <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
                   </div>
@@ -994,11 +994,11 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
         {/* the turns of the table: what just happened, and why it matters */}
         {news.length > 0 && (
           <motion.aside key={`news-${news[news.length - 1].id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.happens.aria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
-            <div className="flex min-h-0 flex-1 items-start gap-2">
+            <div className={cn('flex items-start gap-2', !dock && 'min-h-0 flex-1')}>
               <Newspaper className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.happens.title')}</p>
-                <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
+                <div className={cn('mt-1', !dock && 'min-h-0 flex-1 overflow-y-auto pr-1')}>
                   {news.map((x) => (
                     <p key={x.id} className="font-serif text-[13px] leading-snug text-cream-100/90 [&+&]:mt-1.5">
                       {x.text}
