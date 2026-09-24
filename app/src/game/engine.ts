@@ -638,7 +638,8 @@ export function developOptions(s: GameState, playerIdx: number): { industry: Ind
       const valid = !lv.noDevelop && iron.shortage === 0 && iron.totalCost <= p.money;
       return {
         industry: ind, level, iron, valid,
-        reason: lv.noDevelop ? 'Lightbulb tile — cannot be developed' : iron.shortage > 0 ? 'No iron available' : iron.totalCost > p.money ? 'Cannot afford the iron' : undefined,
+        /* the refusals the reader sees: each one is a key of the tongues */
+        reason: lv.noDevelop ? 'Lightbulb tile — cannot be developed' : iron.shortage > 0 ? 'No iron available anywhere' : iron.totalCost > p.money ? 'Cannot afford the iron' : undefined,
       };
     });
 }

@@ -98,6 +98,8 @@ export function reasonText(text: string | null | undefined): string {
   /* the few refusals that carry a number: match on the words around it */
   const money = text.match(/^Needs £(\d+) — you hold £(\d+)$/);
   if (money && said?.needsMoney) return fmt(said.needsMoney, { need: money[1], have: money[2] });
+  const beer = text.match(/^Needs (\d+) beer — a brewery of yours, one connected here, or the merchant's barrel$/);
+  if (beer && said?.needsBeer) return fmt(said.needsBeer, { n: beer[1] }, lang);
   /* the refusals that carry a name — a town, an industry, an era */
   const board = dict.board as AnyDict | undefined;
   const refusal = board?.refusal as (Record<string, string> & { plain?: Record<string, string> }) | undefined;
