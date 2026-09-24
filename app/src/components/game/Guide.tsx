@@ -623,6 +623,13 @@ export default function Guide() {
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
                       </div>
+                      {/* what the chosen card allows, what the pick costs: the
+                          assistance speaks under the lesson too */}
+                      {tips.map((x) => (
+                        <p key={x.id} className="mt-1.5 font-serif text-[12.5px] leading-snug text-ink-900/80">
+                          {x.text}
+                        </p>
+                      ))}
                       {warnings.filter((w) => (w.id === 'negative' || ((w.id === 'broke' || w.id === 'brokeAgain') && !block))).map((w) => (
                         <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
                           {w.text}
