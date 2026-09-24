@@ -68,7 +68,7 @@ const game = {
     unlessNone: 'No condition',
     unlessOk: 'Set the condition',
     canalTip:
-      'Canals £3. Level-1 works are swept away when this era ends. Income pays at each round’s close.',
+      'Canals £3. Every level-1 tile is swept from the board when this era ends. Income pays at each round’s close.',
     railTip:
       'Rails £5 + 1 coal (double: £15 + 2 coal). Final scoring follows this era. Income pays at each round’s close.',
     badgeCanal: 'CANAL ERA',
@@ -909,13 +909,13 @@ const game = {
     closeAria: 'Close rules',
     title: 'Field Rules',
     yourTurnLead: 'Your turn',
-    yourTurnBody: 'two actions (one in the first Canal round). Every action but Loan spends a card.',
+    yourTurnBody: 'two actions (one in the first Canal round). Every action spends a card, Loan included.',
     buildLead: 'Build',
     buildBody:
       'a location card builds in its town; an industry card builds anywhere connected to your network. Coal must be reachable from a connected mine or the market; iron ships freely.',
     networkLead: 'Network',
     networkBody:
-      'canals £3 in the Canal Era; rails £5 + 1 coal in the Rail Era (two rails for £15 + 2 coal — pick two touching links).',
+      'canals £3 in the Canal Era; rails £5 + 1 coal in the Rail Era (two rails for £15, 1 coal each and 1 beer from a brewery — the second link must reach your network once the first is laid).',
     sellLead: 'Sell',
     sellBody:
       'flip cotton, manufactories and pottery through a connected merchant; every flip costs a beer from your breweries or the port.',
@@ -923,7 +923,7 @@ const game = {
     loanBody: '£30 now, −3 income forever.',
     scoringLead: 'Scoring',
     scoringBody:
-      "at each era's end: flipped industries pay their VP, and every link scores for the flipped works it touches. Level-1 works are swept away between eras.",
+      "at each era's end: flipped industries pay their VP, and every link scores the link icons of every tile in the places it touches, flipped or not, whoever owns them — two for a merchant. Every level-1 tile is swept away between eras.",
     codex: 'Open the Rules Codex',
   },
 };

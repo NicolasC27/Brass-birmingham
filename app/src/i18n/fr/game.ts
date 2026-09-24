@@ -70,7 +70,7 @@ const fr: typeof engame = {
     unlessNone: 'Sans condition',
     unlessOk: 'Poser la condition',
     canalTip:
-      'Canaux £3. Les manufactures de niveau 1 sont balayées à la fin de cette ère. Le revenu est payé à la clôture de chaque manche.',
+      'Canaux £3. Toutes les tuiles de niveau 1 sont balayées du plateau à la fin de cette ère. Le revenu est payé à la clôture de chaque manche.',
     railTip:
       'Rails £5 + 1 charbon (double : £15 + 2 charbon). Le décompte final suit cette ère. Le revenu est payé à la clôture de chaque manche.',
     badgeCanal: 'ÈRE CANAL',
@@ -911,13 +911,13 @@ const fr: typeof engame = {
     closeAria: 'Fermer les règles',
     title: 'Règles express',
     yourTurnLead: 'Votre tour',
-    yourTurnBody: 'deux actions (une à la première manche de l’ère canal). Chaque action sauf l’emprunt dépense une carte.',
+    yourTurnBody: 'deux actions (une à la première manche de l’ère canal). Chaque action dépense une carte, l’emprunt compris.',
     buildLead: 'Construire',
     buildBody:
       'une carte lieu construit dans sa ville ; une carte industrie construit partout où votre réseau est connecté. Le charbon doit être accessible depuis une mine connectée ou le marché ; le fer voyage librement.',
     networkLead: 'Réseau',
     networkBody:
-      'canaux £3 à l’ère canal ; rails £5 + 1 charbon à l’ère rail (deux rails pour £15 + 2 charbon — choisissez deux liaisons qui se touchent).',
+      'canaux £3 à l’ère canal ; rails £5 + 1 charbon à l’ère rail (deux rails pour £15, 1 charbon chacun et 1 bière d’une brasserie — la seconde liaison doit toucher votre réseau une fois la première posée).',
     sellLead: 'Vendre',
     sellBody:
       'retournez filatures de coton, manufactures et poteries via un négociant connecté ; chaque retournement coûte une bière de vos brasseries ou du port.',
@@ -925,7 +925,7 @@ const fr: typeof engame = {
     loanBody: '£30 maintenant, −3 revenu pour toujours.',
     scoringLead: 'Décompte',
     scoringBody:
-      'à la fin de chaque ère : les industries retournées paient leurs PV, et chaque liaison marque pour les manufactures retournées qu’elle touche. Les manufactures de niveau 1 sont balayées entre les ères.',
+      'à la fin de chaque ère : les industries retournées paient leurs PV, et chaque liaison marque les icônes lien de toutes les tuiles des lieux qu’elle touche, retournées ou non, à qui qu’elles soient — deux pour un marchand. Toutes les tuiles de niveau 1 sont balayées entre les ères.',
     codex: 'Ouvrez le codex des règles',
   },
 };

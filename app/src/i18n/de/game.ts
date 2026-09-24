@@ -70,7 +70,7 @@ const game: typeof engame = {
     unlessNone: 'Ohne Bedingung',
     unlessOk: 'Bedingung setzen',
     canalTip:
-      'Kanäle £3. Betriebe der Stufe 1 werden am Ende dieser Zeit abgeräumt. Das Einkommen wird am Ende jeder Runde ausgezahlt.',
+      'Kanäle £3. Jedes Plättchen der Stufe 1 verlässt am Ende dieser Zeit den Spielplan. Das Einkommen wird am Ende jeder Runde ausgezahlt.',
     railTip:
       'Bahnstrecken £5 + 1 Kohle (doppelt: £15 + 2 Kohle). Die Endwertung folgt auf diese Zeit. Das Einkommen wird am Ende jeder Runde ausgezahlt.',
     badgeCanal: 'KANALZEIT',
@@ -911,13 +911,13 @@ const game: typeof engame = {
     closeAria: 'Regeln schließen',
     title: 'Regeln in Kürze',
     yourTurnLead: 'Dein Zug',
-    yourTurnBody: 'zwei Aktionen (eine in der ersten Runde der Kanalzeit). Jede Aktion außer dem Kredit verbraucht eine Karte.',
+    yourTurnBody: 'zwei Aktionen (eine in der ersten Runde der Kanalzeit). Jede Aktion verbraucht eine Karte, auch der Kredit.',
     buildLead: 'Bauen',
     buildBody:
       'eine Ortskarte baut in ihrer Stadt; eine Industriekarte baut überall, wo dein Netzwerk angebunden ist. Kohle muss aus einer verbundenen Mine oder vom Markt erreichbar sein; Eisen reist frei.',
     networkLead: 'Netzwerk',
     networkBody:
-      'Kanäle £3 in der Kanalzeit; Bahnstrecken £5 + 1 Kohle in der Eisenbahnzeit (zwei Bahnstrecken für £15 + 2 Kohle — wähle zwei sich berührende Verbindungen).',
+      'Kanäle £3 in der Kanalzeit; Bahnstrecken £5 + 1 Kohle in der Eisenbahnzeit (zwei Bahnstrecken für £15, je 1 Kohle und 1 Bier aus einer Brauerei — die zweite Verbindung muss dein Netzwerk berühren, sobald die erste liegt).',
     sellLead: 'Verkaufen',
     sellBody:
       'drehe Baumwollspinnereien, Manufakturen und Töpfereien über einen verbundenen Händler um; jedes Umdrehen kostet ein Bier aus deinen Brauereien oder vom Hafen.',
@@ -925,7 +925,7 @@ const game: typeof engame = {
     loanBody: '£30 jetzt, −3 Einkommen für immer.',
     scoringLead: 'Wertung',
     scoringBody:
-      'am Ende jeder Zeit: umgedrehte Industrien zahlen ihre SP, und jede Verbindung wertet die umgedrehten Betriebe, die sie berührt. Betriebe der Stufe 1 werden zwischen den Zeiten abgeräumt.',
+      'am Ende jeder Zeit: umgedrehte Industrien zahlen ihre SP, und jede Verbindung wertet die Verbindungssymbole aller Plättchen in den Orten, die sie berührt — umgedreht oder nicht, wem sie auch gehören; zwei für einen Händler. Alle Plättchen der Stufe 1 werden zwischen den Zeiten abgeräumt.',
     codex: 'Öffne den Regelkodex',
   },
 };

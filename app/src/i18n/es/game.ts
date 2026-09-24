@@ -70,7 +70,7 @@ const game: typeof engame = {
     unlessNone: 'Sin condición',
     unlessOk: 'Poner la condición',
     canalTip:
-      'Canales £3. Las industrias de nivel 1 se retiran al final de esta era. Los ingresos se pagan al cierre de cada ronda.',
+      'Canales £3. Todas las losetas de nivel 1 se retiran del tablero al final de esta era. Los ingresos se pagan al cierre de cada ronda.',
     railTip:
       'Vías £5 + 1 carbón (doble: £15 + 2 carbón). La puntuación final sigue a esta era. Los ingresos se pagan al cierre de cada ronda.',
     badgeCanal: 'ERA DEL CANAL',
@@ -911,13 +911,13 @@ const game: typeof engame = {
     closeAria: 'Cerrar las reglas',
     title: 'Reglas exprés',
     yourTurnLead: 'Tu turno',
-    yourTurnBody: 'dos acciones (una en la primera ronda de la era del canal). Cada acción salvo el préstamo gasta una carta.',
+    yourTurnBody: 'dos acciones (una en la primera ronda de la era del canal). Cada acción gasta una carta, incluido el préstamo.',
     buildLead: 'Construir',
     buildBody:
       'una carta de lugar construye en su ciudad; una carta de industria construye en cualquier punto conectado con tu red. El carbón debe ser accesible desde una mina conectada o el mercado; el hierro viaja libremente.',
     networkLead: 'Red',
     networkBody:
-      'canales £3 en la era del canal; vías £5 + 1 carbón en la era del ferrocarril (dos vías por £15 + 2 carbón — elige dos conexiones que se toquen).',
+      'canales £3 en la era del canal; vías £5 + 1 carbón en la era del ferrocarril (dos vías por £15, 1 carbón cada una y 1 cerveza de una cervecería — la segunda conexión debe tocar tu red una vez tendida la primera).',
     sellLead: 'Vender',
     sellBody:
       'voltea hilanderías, manufacturas y alfarerías a través de un mercader conectado; cada volteo cuesta una cerveza de tus cervecerías o del puerto.',
@@ -925,7 +925,7 @@ const game: typeof engame = {
     loanBody: '£30 ahora, −3 ingresos para siempre.',
     scoringLead: 'Puntuación',
     scoringBody:
-      'al final de cada era: las industrias volteadas pagan sus PV, y cada conexión puntúa por las fábricas volteadas que toca. Las industrias de nivel 1 se retiran entre eras.',
+      'al final de cada era: las industrias volteadas pagan sus PV, y cada conexión puntúa los iconos de enlace de todas las losetas de los lugares que toca, volteadas o no, sean de quien sean — dos por un mercader. Todas las losetas de nivel 1 se retiran entre eras.',
     codex: 'Abre el códice de reglas',
   },
 };
