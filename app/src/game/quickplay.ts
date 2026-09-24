@@ -1,3 +1,4 @@
+import { MINI_KEY } from '@/components/game/guideKeys';
 import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
 import { personaName } from '@/game/data';
@@ -55,6 +56,8 @@ export function startTutorial(): string {
     localStorage.setItem(TUTORIAL_KEY, 'new');
     localStorage.removeItem('brassworks.tutorial.step');
     localStorage.removeItem('brassworks.tutorial.reached');
+    /* a fold left over from a past run must not re-apply to a fresh one */
+    localStorage.removeItem(MINI_KEY);
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }

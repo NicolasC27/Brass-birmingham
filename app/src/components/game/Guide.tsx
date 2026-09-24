@@ -3,6 +3,7 @@ import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent }
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
 import { aidOn, setBoardOption } from '@/components/game/boardOptions';
+import { MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
@@ -30,6 +31,8 @@ type T = (key: string, vars?: Record<string, string | number>) => string;
 interface Ctx {
   g: GameState;
   me: number;
+  /** the lesson on show, when one is */
+  step: string | null;
   card: GameState['players'][number]['hand'][number] | null;
   verb: string | null;
   buildPick: { industry: string; level: number; town: string } | null;
@@ -79,9 +82,6 @@ const STEPS: Step[] = [
 
 const STEP_KEY = 'brassworks.tutorial.step';
 const REACH_KEY = 'brassworks.tutorial.reached';
-/** where the note was dragged to, and whether it was folded to a strip */
-const POS_KEY = 'brassworks.guide.pos';
-const MINI_KEY = 'brassworks.guide.mini';
 
 type Pos = { x: number; y: number };
 const readPos = (): Pos => {
@@ -133,9 +133,11 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
     case 'network':
       why = t('game.guide.bot.network', facts);
       break;
-    case 'sell':
-      why = t('game.guide.bot.sell', facts);
+    case 'sell': {
+      const bits = [v.bonusVp ? t('game.log.bonusVp', { n: v.bonusVp }) : '', v.bonusIncome ? t('game.log.bonusIncome', { n: v.bonusIncome }) : '', v.bonusMoney ? t('game.log.bonusMoney', { n: v.bonusMoney }) : '', v.bonusDevelop ? t('game.log.bonusDevelop') : ''].filter(Boolean);
+      why = t('game.guide.bot.sell', facts) + (bits.length ? ` ${t('game.guide.bot.sellBonus', { ...facts, bits: bits.join(' · ') })}` : '');
       break;
+    }
     case 'loan':
       why = t('game.guide.bot.loan', facts);
       break;
@@ -155,13 +157,17 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
   /* the turn: why the machine is the one moving — its first or second action, and the round's order */
   const played = new Set(g.ledger.filter((x) => x.era === e.era && x.round === e.round && x.player === e.player && x.verb !== 'system' && x.verb !== 'score').map((x) => x.at)).size;
   const you = g.players[me]?.name ?? '';
-  const meIdx = g.order.indexOf(me);
-  const botIdx = g.order.indexOf(e.player);
   const spentBot = g.lastSpent?.[e.player];
   const spentMe = g.lastSpent?.[me];
   let turn: string;
   if (e.round === 1 && e.era === 'canal') turn = t('game.guide.turn.first', { name: p.name });
-  else if (played <= 1) turn = spentBot !== undefined && spentMe !== undefined ? t(botIdx < meIdx ? 'game.guide.turn.orderBefore' : 'game.guide.turn.orderAfter', { name: p.name, you, spentBot, spentMe, round: e.round }) : t('game.guide.turn.order', { name: p.name, round: e.round });
+  else if (played <= 1)
+    turn =
+      spentBot !== undefined && spentMe !== undefined
+        ? spentBot === spentMe
+          ? t('game.guide.turn.orderTie', { name: p.name, you, spentMe, round: e.round })
+          : t(spentBot < spentMe ? 'game.guide.turn.orderBefore' : 'game.guide.turn.orderAfter', { name: p.name, you, spentBot, spentMe, round: e.round })
+        : t('game.guide.turn.order', { name: p.name, round: e.round });
   else if (g.round !== e.round || g.era !== e.era) turn = t(g.current === e.player ? 'game.guide.turn.roundOverBot' : g.current === me ? 'game.guide.turn.roundOverYou' : 'game.guide.turn.roundOver', { name: p.name, you });
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
@@ -305,7 +311,7 @@ const TIPS: { id: string; when: (c: Ctx) => boolean; vars?: (c: Ctx) => Record<s
     vars: ({ g, buildPick }) => marketSaleOnBuild(g, buildPick!.town, 'iron', buildPick!.level),
   },
   { id: 'buildCost', when: ({ buildPick }) => !!buildPick, vars: ({ buildPick }) => ({ cost: INDUSTRIES[buildPick!.industry as keyof typeof INDUSTRIES][buildPick!.level - 1].cost, income: INDUSTRIES[buildPick!.industry as keyof typeof INDUSTRIES][buildPick!.level - 1].incomeDelta, vp: INDUSTRIES[buildPick!.industry as keyof typeof INDUSTRIES][buildPick!.level - 1].vp }) },
-  { id: 'network', when: ({ g, me, verb }) => verb === 'network' && linkTargets(g, me).some((l) => l.valid) },
+  { id: 'network', when: ({ g, me, verb, step }) => verb === 'network' && step !== 'link' && linkTargets(g, me).some((l) => l.valid) },
   { id: 'sell', when: ({ verb }) => verb === 'sell' },
   { id: 'noLinks', when: ({ g, me }) => g.round >= 2 && !Object.values(g.links).some((l) => l.owner === me) },
   { id: 'unsold', when: ({ g, me }) => Object.values(g.tiles).some((t) => t.owner === me && !t.flipped && WORKS.includes(t.industry)) && sellTargets(g, me).some((x) => x.valid) },
@@ -443,6 +449,8 @@ export default function Guide() {
     return { rawIndex: STEPS.length, pending };
   };
   const { rawIndex, pending } = review !== null ? { rawIndex: review, pending: -1 } : lesson();
+  /* the lesson on show, for the tips that must not repeat it */
+  const dueId = tutorial && rawIndex >= 0 && rawIndex < STEPS.length ? STEPS[rawIndex].id : null;
   const stepIndex = rawIndex < 0 ? -1 : review !== null ? review : Math.max(rawIndex, reached);
   const reachable = pending >= 0 ? Math.min(rawIndex, pending) : rawIndex;
   if (tutorial && review === null && reachable > reached) {
@@ -454,7 +462,7 @@ export default function Guide() {
     }
   }
 
-  const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, selectedCardId, verb, buildPick]);
+  const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, step: dueId, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, dueId, selectedCardId, verb, buildPick]);
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
   const warnings = useMemo(() => (ctx && aid ? alerts(ctx, t) : []), [ctx, aid, t]);
   const bot = useMemo(() => (game && aid ? botReason(game, me, t) : null), [game, aid, me, t]);
