@@ -38,7 +38,7 @@ interface Ctx {
 /* ------------------------------- lessons ----------------------------- */
 
 /** what a lesson may point at on the screen */
-type Show = 'mat' | 'market' | 'income' | 'vp' | 'hand';
+type Show = 'mat' | 'market' | 'vp';
 
 interface Step {
   id: string;
@@ -56,10 +56,10 @@ const STEPS: Step[] = [
   { id: 'welcome' },
   { id: 'board' },
   { id: 'goal', show: 'vp' },
-  { id: 'money', show: 'income' },
+  { id: 'money' },
   { id: 'mat', show: 'mat', done: (_g, _me, _sel, mat) => mat !== null },
   { id: 'matRead', show: 'mat' },
-  { id: 'hand', show: 'hand', done: (_g, _me, sel) => sel !== null },
+  { id: 'hand', done: (_g, _me, sel) => sel !== null },
   { id: 'coal', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'coal') },
   /* done once the machine has played and its reasons were read: the
      lesson is the plate under it, not the words above */
@@ -70,7 +70,7 @@ const STEPS: Step[] = [
   { id: 'market', show: 'market' },
   { id: 'beer' },
   { id: 'sell', done: (g, me) => g.players[me].stats.sold > 0 },
-  { id: 'flipped' },
+  { id: 'flipped', when: (g, me) => g.players[me].stats.sold > 0 },
   { id: 'loan', done: (g, me) => g.players[me].loans > 0 },
   { id: 'develop' },
   { id: 'eraEnd' },
@@ -268,8 +268,14 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
   if (p.money < 8 && p.loans === 0) out.push({ id: 'broke', text: t('game.guide.alerts.broke', { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT, level, after: Math.max(-10, level - LOAN_INCOME_HIT) }) });
   else if (p.money < 8) out.push({ id: 'brokeAgain', text: t('game.guide.alerts.brokeAgain', { money: p.money, level }) });
   if (last?.key === 'payday') out.push({ id: 'payday', text: t(level >= 0 ? 'game.guide.alerts.payday' : 'game.guide.alerts.paydayOwed', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
+  if (g.deck.length === 0 && p.hand.length > 0) out.push({ id: 'deckOut', text: t('game.guide.alerts.deckOut', { cards: p.hand.length }) });
   if (level < 0) out.push({ id: 'negative', text: t('game.guide.alerts.negative', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
-  if (g.era === 'canal' && g.round >= eraRounds(g.players.length) - 1) out.push({ id: 'eraEnd', text: t('game.guide.alerts.eraEnd') });
+  if (g.era === 'canal' && g.round >= eraRounds(g.players.length) - 1) {
+    out.push({ id: 'eraEnd', text: t('game.guide.alerts.eraEnd') });
+    /* the tiles of theirs the sweep is about to take, named */
+    const doomed = Object.entries(g.tiles).filter(([, x]) => x.owner === me && x.level === 1);
+    if (doomed.length) out.push({ id: 'eraEndMine', text: t('game.guide.alerts.eraEndMine', { list: doomed.map(([key, x]) => `${t(`game.log.industry.${x.industry}`)} (${TOWN_BY_ID[key.split(':')[0]]?.name ?? key})`).join(', '), n: doomed.length, unsold: doomed.filter(([, x]) => !x.flipped).length }) });
+  }
   return out;
 }
 
@@ -372,6 +378,8 @@ export default function Guide() {
   /* the turns of the table, and the highest entry read of them */
   const happens = useMemo(() => (game && aid ? happenings(game, me, t) : []), [game, aid, me, t]);
   const [eventsSeen, setEventsSeen] = useState(-1);
+  /* a lesson the reader went back to: held until they read forward again */
+  const [review, setReview] = useState<number | null>(null);
   const news = happens.filter((x) => x.id > eventsSeen);
 
   /* the lesson: the first step not done — a read step is done once read past,
@@ -392,7 +400,9 @@ export default function Guide() {
     for (let i = 0; i < STEPS.length; i++) {
       const s = STEPS[i];
       if (i < reached) continue;
-      if (s.done ? s.done(game, me, selectedCardId, matPlayer, ack) : i < readPast) continue;
+      /* a deed already done when the lesson comes up is no reason to skip
+         the lesson: it becomes a page to read on from */
+      if (s.done ? s.done(game, me, selectedCardId, matPlayer, ack) && i < readPast : i < readPast) continue;
       /* a read step waiting on the game: skipped until it makes sense */
       if (!s.done && s.when && !s.when(game, me)) {
         if (pending < 0) pending = i;
@@ -402,10 +412,10 @@ export default function Guide() {
     }
     return { rawIndex: STEPS.length, pending };
   };
-  const { rawIndex, pending } = lesson();
-  const stepIndex = rawIndex < 0 ? -1 : Math.max(rawIndex, reached);
+  const { rawIndex, pending } = review !== null ? { rawIndex: review, pending: -1 } : lesson();
+  const stepIndex = rawIndex < 0 ? -1 : review !== null ? review : Math.max(rawIndex, reached);
   const reachable = pending >= 0 ? Math.min(rawIndex, pending) : rawIndex;
-  if (tutorial && reachable > reached) {
+  if (tutorial && review === null && reachable > reached) {
     setReached(reachable);
     try {
       localStorage.setItem(REACH_KEY, String(reachable));
@@ -432,8 +442,6 @@ export default function Guide() {
     return () => setBotHold(false);
   }, [holdWanted, setBotHold]);
 
-  /* folded for this lesson only: the next one unfolds the note */
-  const mini = miniAt === stepIndex;
 
   if (!game || game.phase !== 'action') return null;
   const showSteps = tutorial && stepIndex >= 0;
@@ -442,11 +450,15 @@ export default function Guide() {
   /* the deed the lesson asks for, when the table does not allow it now;
      when money is what is missing and the loan is still to be taught, the
      guide takes that lesson first and comes back to this one after */
-  const block = due?.done && myTurn && !finished ? blockedBy(due.id, game, me, t) : null;
+  const block = due?.done && !finished && review === null ? blockedBy(due.id, game, me, t) : null;
   const detour = !!block?.money && due!.id !== 'loan' && stepIndex < LOAN_AT && !STEPS[LOAN_AT].done!(game, me, selectedCardId, matPlayer, ack) && canLoan(game, me).ok;
   const step = detour ? STEPS[LOAN_AT] : due;
   const shownIndex = detour ? LOAN_AT : stepIndex;
   const blocked = detour ? null : (block?.text ?? null);
+  /* folded for the lesson on show only: the next one unfolds the note */
+  const mini = miniAt === shownIndex;
+  /* the deed this lesson asks for is already done: it reads on like any page */
+  const already = !!step?.done && step.done(game, me, selectedCardId, matPlayer, ack);
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
@@ -460,6 +472,7 @@ export default function Guide() {
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
+    setReview(null);
     /* reading on does not pass a lesson still waiting on the game */
     const reach = pending >= 0 && pending < to ? pending : to;
     /* the lesson on the hand wants the hand in view: the mat goes */
@@ -474,9 +487,9 @@ export default function Guide() {
     }
   };
   const fold = (to: boolean) => {
-    setMiniAt(to ? stepIndex : -1);
+    setMiniAt(to ? shownIndex : -1);
     try {
-      localStorage.setItem(MINI_KEY, String(to ? stepIndex : -1));
+      localStorage.setItem(MINI_KEY, String(to ? shownIndex : -1));
     } catch {
       /* non-fatal */
     }
@@ -614,10 +627,14 @@ export default function Guide() {
     if (a.kind === 'build') return a.industry === 'coal' || a.industry === 'iron' || a.industry === 'brewery' ? a.industry : 'works';
     return a.kind;
   };
+  /* the lesson's words, when the table asks for another telling of it:
+     a payday owed rather than paid, a short game that ends here */
+  const stepKey = (id: string): string =>
+    id === 'payday' && incomeLevel(game.players[me].income) < 0 ? 'paydayOwed' : id === 'eraEnd' && game.eraLength === 'short' ? 'eraEndShort' : id;
   const stepVars = (): Record<string, string | number> => {
     const p = game.players[me];
     const k = getKeybindings();
-    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: INCOME_PAYOUT[p.income], rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
   };
 
   return (
@@ -629,7 +646,7 @@ export default function Guide() {
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
               <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>
-              <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</span>
+              <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
             {!reading && (
               <button type="button" onClick={() => fold(false)} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
@@ -659,16 +676,16 @@ export default function Guide() {
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
-                          <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${step.id}.title`, stepVars())}</h3>
+                          <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
                         <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.minify')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                           <Minus className="h-3.5 w-3.5" />
                         </button>
                       </div>
                       <div className="mt-1 max-h-[38vh] overflow-y-auto pr-1">
-                        {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${due!.id}.title`, stepVars()) })} {lower(block.short)}</p>}
+                        {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(due!.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
-                        <Paragraphs text={t(`game.guide.steps.${step.id}.body`, stepVars())} />
+                        <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
                       </div>
                       {/* what the chosen card allows, what the pick costs: the
                           assistance speaks under the lesson too */}
@@ -677,13 +694,14 @@ export default function Guide() {
                           {x.text}
                         </p>
                       ))}
-                      {warnings.filter((w) => (w.id === 'negative' || ((w.id === 'broke' || w.id === 'brokeAgain') && !block))).map((w) => (
+                      {warnings.filter((w) => (['negative', 'eraEnd', 'eraEndMine', 'deckOut'].includes(w.id) || ((w.id === 'broke' || w.id === 'brokeAgain') && !block))).map((w) => (
                         <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
                           {w.text}
                         </p>
                       ))}
                       {!step.done && !finished && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
-                      {step.done && !finished && !blocked && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {step.done && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
                     </div>
                   </div>
                   <p className="mt-2 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>
@@ -693,7 +711,7 @@ export default function Guide() {
                         {t('game.guide.leave')}
                       </button>
                       {stepIndex > 0 && (
-                        <button type="button" onClick={() => advance(Math.max(0, stepIndex - 1))} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                        <button type="button" onClick={() => setReview(Math.max(0, shownIndex - 1))} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
                           <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                         </button>
                       )}
@@ -709,14 +727,14 @@ export default function Guide() {
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
                         </button>
                       )}
-                      {blocked && (
+                      {blocked && myTurn && !already && (
                         <button type="button" onClick={() => advance(stepIndex + 1)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           {t('game.guide.skip')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      {(!step.done || finished) && (
-                        <button type="button" onClick={finished || stepIndex === STEPS.length - 1 ? endTutorial : () => advance(stepIndex + 1)} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
+                      {(!step.done || finished || review !== null || already) && (
+                        <button type="button" onClick={finished || stepIndex === STEPS.length - 1 ? endTutorial : () => advance(Math.max(stepIndex + 1, reached))} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
                           {finished || stepIndex === STEPS.length - 1 ? t('game.guide.done') : t('game.guide.next')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
@@ -819,7 +837,7 @@ export default function Guide() {
                   <>
                     <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{describeAction(advised.action)}</p>
                     <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{t(`game.guide.suggest.why.${whyKey(advised.action)}`, { name: machine })}</p>
-                    {due?.done && !finished && !asked(due.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${due.id}.title`, stepVars()) })}</p>}
+                    {due?.done && !finished && !asked(due.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(due.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
                   <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none', { name: machine })}</p>
