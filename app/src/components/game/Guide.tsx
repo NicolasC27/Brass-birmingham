@@ -414,8 +414,13 @@ export default function Guide() {
   /* the turns of the table, and the highest entry read of them */
   const happens = useMemo(() => (game && aid ? happenings(game, me, t) : []), [game, aid, me, t]);
   const [eventsSeen, setEventsSeen] = useState(-1);
+  /* the machine's move whose reading the reader has set aside to see the lesson */
+  const [unfoldAt, setUnfoldAt] = useState(-1);
   /* a lesson the reader went back to: held until they read forward again */
   const [review, setReview] = useState<number | null>(null);
+  /* the lesson whose deed was already done when it came up: it stays a page
+     to read on from, even if the reader undoes the deed meanwhile */
+  const [arrived, setArrived] = useState<{ at: number; done: boolean }>({ at: -1, done: false });
   const news = happens.filter((x) => x.id > eventsSeen);
 
   /* the lesson: the first step not done — a read step is done once read past,
@@ -499,8 +504,9 @@ export default function Guide() {
      note leans off it, unless the reader has placed it themselves */
   const room = Math.min(180, Math.max(0, window.innerWidth / 2 - 320));
   const lean = pos.x !== 0 || pos.y !== 0 ? pos : matPlayer !== null ? { x: room, y: 0 } : marketFocus ? { x: -room, y: 0 } : pos;
-  /* the deed this lesson asks for is already done: it reads on like any page */
-  const already = !!step?.done && step.done(game, me, selectedCardId, matPlayer, ack);
+  const doneNow = !!step?.done && step.done(game, me, selectedCardId, matPlayer, ack);
+  if (shownIndex >= 0 && arrived.at !== shownIndex) setArrived({ at: shownIndex, done: doneNow });
+  const already = doneNow || (arrived.at === shownIndex && arrived.done);
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
@@ -511,6 +517,8 @@ export default function Guide() {
      so the plate reads first, until it is understood — every move of
      hers, in the guided game; an older plate is a line */
   const reading = !!(tutorial && showBot && bot?.fresh);
+  /* the reader asked for the lesson back while the plate is on show */
+  const unfolded = unfoldAt === bot?.id;
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
@@ -682,16 +690,16 @@ export default function Guide() {
   return (
     <div ref={box} data-guide className="pointer-events-none fixed left-1/2 z-[80] flex w-[min(600px,92vw)] min-h-0 flex-col items-center gap-2 overflow-y-auto overscroll-contain will-change-transform" style={{ top: band.top, maxHeight: band.height, transform: place(lean) }}>
       <AnimatePresence initial={false} mode="popLayout">
-        {showSteps && step && (mini || reading) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={reading ? undefined : t('game.guide.expand')} onClick={reading ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
+        {showSteps && step && (mini || (reading && !unfolded)) && (
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={reading && !mini ? undefined : t('game.guide.expand')} onClick={reading && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
               <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
-            {!reading && (
-              <button type="button" onClick={() => fold(false)} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+            {(!reading || mini) && (
+              <button type="button" onClick={() => (reading ? setUnfoldAt(bot?.id ?? -1) : fold(false))} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             )}
@@ -731,7 +739,7 @@ export default function Guide() {
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
                       {/* what the chosen card allows, what the pick costs: the
                           assistance speaks under the lesson too */}
-                      {tips.map((x) => (
+                      {tips.slice(0, 2).map((x) => (
                         <p key={x.id} className="mt-1.5 font-serif text-[12.5px] leading-snug text-ink-900/80">
                           {x.text}
                         </p>

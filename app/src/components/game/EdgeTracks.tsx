@@ -403,7 +403,7 @@ export default function EdgeTracks() {
           >
             <span aria-hidden className="absolute left-1.5 top-[3px] font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
               {t('game.frame.vpTrackShort')}
-              {vpLane.zoom > 1.01 && <span className="ml-1 text-cream-100/50">×{vpLane.zoom.toFixed(1)}</span>}
+              {vpLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{vpLane.zoom.toFixed(1)}</span>}
             </span>
             <div ref={vpLane.ref} className={`relative mx-12 h-full overflow-hidden ${grab(vpLane)}`} {...vpLane.handlers}>
               <div style={vpLane.inner}>
@@ -436,7 +436,7 @@ export default function EdgeTracks() {
       >
         <span aria-hidden className={`absolute font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}>
           {t('game.incomeRail.trackShort')}
-          {incLane.zoom > 1.01 && <span className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
+          {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
         </span>
         <div ref={incLane.ref} className={`relative overflow-hidden ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-4 h-[calc(100%-28px)]'} ${grab(incLane)}`} {...incLane.handlers}>
           <div style={incLane.inner}>

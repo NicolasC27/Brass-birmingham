@@ -159,7 +159,7 @@ export default function IncomeRail() {
           const off = (group.indexOf(i) - (group.length - 1) / 2) * 10;
           const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
           const spot = spotlight === i;
-          const pay = INCOME_PAYOUT[p.income];
+          const pay = fmtPay(INCOME_PAYOUT[p.income]);
           const after = Math.max(0, p.income - LOAN_INCOME_HIT);
           return (
             /* the ABSOLUTE wrapper carries the position — the Tooltip span
@@ -168,7 +168,7 @@ export default function IncomeRail() {
               <Tooltip
                 side="bottom"
                 title={t('game.incomeRail.pawnTitle', { name: p.name, lvl: p.income, pay })}
-                content={t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after, pay: INCOME_PAYOUT[after] })}
+                content={t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after, pay: fmtPay(INCOME_PAYOUT[after]) })}
               >
                 <button
                   type="button"
