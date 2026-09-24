@@ -220,6 +220,8 @@ export function setupOf(s: GameState): SetupPayload {
   return {
     /* a chair handed to a machine was a human's at the deal: the log says when it changed hands */
     players: s.players.map((p) => ({ name: p.name, color: p.color, type: p.isBot && !p.resigned ? 'bot' : 'human', ...(p.isBot && !p.resigned ? { persona: p.persona } : {}) })),
-    options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity },
+    /* the house rule travels with the setup: an undo that dropped it
+       would take the assistance away mid-game */
+    options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity, assist: s.assist },
   };
 }

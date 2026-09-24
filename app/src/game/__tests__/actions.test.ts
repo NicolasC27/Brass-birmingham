@@ -360,3 +360,16 @@ describe('the merchant and the beer of a sale', () => {
     expect(bonus.state!.tiles['stone:0'].cubes).toBe(1);
   });
 });
+
+describe('the setup a state remembers', () => {
+  it('carries the house rules an undo must not drop', () => {
+    const base = setup(2, 'short');
+    const guided = newGame({ ...base, options: { ...base.options, assist: true } }, 3);
+    const back = replay(setupOf(guided), guided.seed, []);
+    expect(back.assist).toBe(true);
+    expect(back.eraLength).toBe(guided.eraLength);
+    /* and a table without the rule stays without it */
+    const plain = newGame(base, 3);
+    expect(replay(setupOf(plain), plain.seed, []).assist).toBe(false);
+  });
+});
