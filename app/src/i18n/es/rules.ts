@@ -196,7 +196,7 @@ const es: typeof enrules = {
       none: "—",
     },
     beer: {
-      count: "{n} cerveza(s)",
+      count: "{n} [n|cerveza|cervezas]",
       onEmpty: "al vaciarse",
     },
     coalMine: {

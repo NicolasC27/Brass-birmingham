@@ -111,7 +111,7 @@ const board = {
     free: 'free',
   },
   inspector: {
-    links: '{n} link(s)',
+    links: '{n} [n|link|links]',
     pin: 'Pin',
     unpin: 'Unpin',
     pinTip: 'Watch this town: what others do there is reported to you, and you can leave a note',

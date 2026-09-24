@@ -793,7 +793,7 @@ const game: typeof engame = {
       brokeAgain: 'Das Geld ist wieder knapp (£{money}, Einkommensstufe {level}). Ein weiterer Kredit ist möglich, solange das Einkommen über −10 bleibt; sonst verkaufe einen Betrieb oder lege billige Kanäle, bis der Zahltag kommt.',
       payday: 'Zahltag: jede Runde endet damit, dass jeder seine Einkommensstufe ausgezahlt bekommt — du hast £{pay} für Stufe {level} erhalten. Das Einkommen zu heben (durch Umdrehen von Plättchen) ist es, was Geld hereinbringt.',
       paydayOwed: 'Zahltag: dein Einkommen liegt auf Stufe {level}, also hast du diese Runde £{pay} an die Bank GEZAHLT. Dreh Plättchen um, um wieder über null zu kommen, und Vorsicht: eine unbezahlbare Schuld kostet Plättchen, dann Punkte.',
-      flipped: 'Dein Plättchen {industry} hat sich umgedreht: Einkommen sofort +{income} (jetzt Stufe {level}), und seine Punkte zählen am Ende der Zeit. Umgedrehte Plättchen sind es, worum es in diesem Spiel geht.',
+      flipped: 'Deine {industry} hat sich umgedreht: sofort Einkommen +{income} (jetzt Stufe {level}), und ihre Punkte zählen am Ende der Zeit. Umgedrehte Plättchen sind, worum es im Spiel geht.',
       negative: 'Dein Einkommen liegt auf Stufe {level}: jeder Zahltag kostet dich £{pay}. Verkaufe einen Betrieb oder leere eine Mine, um ein Plättchen umzudrehen und wieder zu steigen.',
       eraEnd: 'Die Kanalzeit endet: nicht umgedrehte Betriebe der Stufe 1 verschwinden ungezählt, und jede Verbindung verlässt nach der Wertung den Spielplan. Verkaufe, was du kannst.',
     },

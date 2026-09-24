@@ -114,7 +114,7 @@ const fr: typeof enboard = {
   },
   inspector: {
     ariaLabel: 'Inspecteur de {name}',
-    links: '{n} liaison(s)',
+    links: '{n} [n|liaison|liaisons]',
     pin: 'Épingler',
     unpin: 'Désépingler',
     pinTip: 'Suivre cette ville : ce que les autres y font vous sera signalé, et vous pouvez y laisser une note',

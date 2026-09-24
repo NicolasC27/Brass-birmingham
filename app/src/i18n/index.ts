@@ -77,9 +77,14 @@ function lookup(dict: AnyDict, key: string): string | undefined {
   return typeof v === 'string' ? v : undefined;
 }
 
-function fmt(s: string, vars?: Record<string, string | number>): string {
+/** one or many: French counts 0 as one thing, the others do not */
+const isOne = (n: number, l: Lang): boolean => (l === 'fr' ? Math.abs(n) < 2 : Math.abs(n) === 1);
+
+function fmt(s: string, vars?: Record<string, string | number>, l: Lang = lang): string {
   if (!vars) return s;
   let out = s;
+  /* [n|cube|cubes] — the word agreeing with the count named first */
+  out = out.replace(/\[(\w+)\|([^|\]]*)\|([^\]]*)\]/g, (_m, k: string, one: string, many: string) => (isOne(Number(vars[k] ?? 0), l) ? one : many));
   for (const [k, v] of Object.entries(vars)) out = out.replaceAll(`{${k}}`, String(v));
   return out;
 }
@@ -112,12 +117,12 @@ export function reasonText(text: string | null | undefined): string {
 /** translate outside React (current language, English fallback) */
 export function tr(key: string, vars?: Record<string, string | number>): string {
   const dict = dictOf(lang);
-  return fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars);
+  return fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars, lang);
 }
 
 /** React hook: t('game.topbar.toAct', { name }) re-renders on language change */
 export function useT(): (key: string, vars?: Record<string, string | number>) => string {
   const l = useLang();
   const dict = dictOf(l);
-  return (key, vars) => fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars);
+  return (key, vars) => fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars, l);
 }

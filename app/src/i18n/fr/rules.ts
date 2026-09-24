@@ -196,7 +196,7 @@ const fr: typeof enrules = {
       none: "—",
     },
     beer: {
-      count: "{n} bière(s)",
+      count: "{n} [n|bière|bières]",
       onEmpty: "à vide",
     },
     coalMine: {
