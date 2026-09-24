@@ -20,6 +20,21 @@ export default function Gazette() {
   const game = useGame((s) => s.game);
   const { telegrams: enabled, focus } = useBoardOptions();
   const insets = useHudInsets();
+  /* the guide keeps the right lane while it runs: the headlines step left of it */
+  const [aside, setAside] = useState(16);
+  useEffect(() => {
+    const measure = () => {
+      const lane = document.querySelector('[data-guide]')?.getBoundingClientRect();
+      setAside(lane && lane.width > 0 ? Math.round(window.innerWidth - lane.left + 12) : 16);
+    };
+    measure();
+    const t = window.setInterval(measure, 1000);
+    window.addEventListener('resize', measure);
+    return () => {
+      window.clearInterval(t);
+      window.removeEventListener('resize', measure);
+    };
+  }, []);
   const [issue, setIssue] = useState<{ id: string; round: number; era: GameState['era']; lines: Headline[] } | null>(null);
   const [seen, setSeen] = useState<string | null>(null);
   const mark = game ? `${game.era}:${game.round}` : null;
@@ -60,7 +75,7 @@ export default function Gazette() {
           role="status"
           aria-label={t('game.gazette.aria', { round: issue.round })}
           className="paper pointer-events-auto fixed z-[66] w-[330px] rounded-[3px] px-4 py-3 shadow-e3"
-          style={{ top: insets.top + 64, right: 16 }}
+          style={{ top: insets.top + 64, right: aside }}
         >
           <button type="button" onClick={() => setIssue(null)} aria-label={t('game.notice.dismiss')} className="absolute right-1.5 top-1.5 rounded-sm p-0.5 text-ink-900/45 hover:bg-ink-900/10 hover:text-ink-900">
             <X className="h-3.5 w-3.5" />

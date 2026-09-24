@@ -77,6 +77,7 @@ export default function Minimap({
   return (
     <div
       ref={plate}
+      data-minimap
       role="presentation"
       /* sits just above the income track that runs along the bottom */
       className="fixed right-3 z-[62] cursor-crosshair touch-none overflow-hidden rounded border border-brass-700/80 bg-coal-900/85 shadow-e3"

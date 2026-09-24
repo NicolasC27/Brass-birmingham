@@ -96,13 +96,15 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 /** a spot the note can still be read at, in this window */
 const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
   /* a window too small to measure (a hidden tab) must not move the note */
-  const reach = Math.max(0, w / 2 - 80);
+  const left = Math.max(0, w - laneWidth(w) - 40);
   const down = Math.max(0, h - 220);
-  return { x: clamp(p.x, -reach, reach), y: clamp(p.y, Math.min(0, -90), down) };
+  return { x: clamp(p.x, -left, 0), y: clamp(p.y, Math.min(0, -90), down) };
 };
 /** a sentence that follows a colon starts low */
 const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
-const place = (p: Pos) => `translate(calc(-50% + ${p.x}px), ${p.y}px)`;
+const place = (p: Pos) => `translate(${p.x}px, ${p.y}px)`;
+/** the lane the note keeps down the right edge of the table */
+const laneWidth = (w = typeof window === 'undefined' ? 1280 : window.innerWidth): number => Math.max(300, Math.min(380, Math.round(w * 0.34)));
 
 /* ---------------------------- the machine ---------------------------- */
 
@@ -347,7 +349,6 @@ export default function Guide() {
   const tutorial = useGame((s) => s.tutorial);
   const endTutorial = useGame((s) => s.endTutorial);
   const matPlayer = useGame((s) => s.matPlayer);
-  const marketFocus = useGame((s) => s.marketFocus);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
@@ -380,11 +381,12 @@ export default function Guide() {
       /* a hidden tab measures every box at zero: nothing is learned from it */
       if (window.innerHeight < 320) return;
       const bar = document.querySelector('[data-topbar]')?.getBoundingClientRect();
-      const rail = document.querySelector('[data-player-rail]')?.getBoundingClientRect();
+      const map = document.querySelector('[data-minimap]')?.getBoundingClientRect();
       const dock = document.querySelector('[data-dock]')?.getBoundingClientRect();
-      const top = Math.round(Math.max(bar?.bottom || 80, window.innerWidth < 1024 ? rail?.bottom || 0 : 0)) + 12;
-      const foot = dock && dock.top > top ? dock.top : window.innerHeight - 40;
-      setBand({ top, height: Math.max(220, Math.round(foot - top - 12)) });
+      const top = Math.round(bar?.bottom || 80) + 12;
+      /* the lane runs down to whatever the right edge already holds */
+      const feet = [map?.top, dock && dock.right > window.innerWidth - laneWidth() - 40 ? dock.top : undefined, window.innerHeight - 40].filter((x): x is number => typeof x === 'number' && x > top);
+      setBand({ top, height: Math.max(220, Math.round(Math.min(...feet) - top - 12)) });
       setPos((p) => fit(p));
     };
     measure();
@@ -505,10 +507,7 @@ export default function Guide() {
   const blocked = detour ? null : (block?.text ?? null);
   /* folded for the lesson on show only: the next one unfolds the note */
   const mini = miniAt === shownIndex;
-  /* a side panel opened by a lesson is what the lesson talks about: the
-     note leans off it, unless the reader has placed it themselves */
-  const room = Math.min(180, Math.max(0, window.innerWidth / 2 - 320));
-  const lean = pos.x !== 0 || pos.y !== 0 ? pos : matPlayer !== null ? { x: room, y: 0 } : marketFocus ? { x: -room, y: 0 } : pos;
+  const lean = pos;
   const doneNow = !!step?.done && step.done(game, me, selectedCardId, matPlayer, ack);
   if (shownIndex >= 0 && arrived.at !== shownIndex) setArrived({ at: shownIndex, done: doneNow });
   const already = doneNow || (arrived.at === shownIndex && arrived.done);
@@ -697,7 +696,7 @@ export default function Guide() {
   };
 
   return (
-    <div ref={box} data-guide className="pointer-events-none fixed left-1/2 z-[80] flex w-[min(600px,92vw)] min-h-0 flex-col items-center gap-2 overflow-y-auto overscroll-contain will-change-transform" style={{ top: band.top, maxHeight: band.height, transform: place(lean) }}>
+    <div ref={box} data-guide className="pointer-events-none fixed right-3 z-[80] flex min-h-0 flex-col items-stretch gap-2 overflow-y-auto overscroll-contain will-change-transform" style={{ top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}>
       <AnimatePresence initial={false} mode="popLayout">
         {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={(reading || theirTurn) && !mini ? undefined : t('game.guide.expand')} onClick={(reading || theirTurn) && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
@@ -730,13 +729,13 @@ export default function Guide() {
             <div className="relative flex min-h-0 flex-col">
               {showSteps && step ? (
                 <>
-                  <div className="flex min-h-0 items-start gap-3">
-                    <GraduationCap className="mt-0.5 h-5 w-5 shrink-0 text-ink-900/70" />
+                  <div className="flex min-h-0 items-start gap-2">
+                    <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
                     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
-                          <h3 className="mt-0.5 font-display text-[17px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
+                          <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
                         <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                           <Minus className="h-3.5 w-3.5" />
@@ -765,8 +764,8 @@ export default function Guide() {
                     </div>
                   </div>
                   {shownIndex === 0 && <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>}
-                  <div className="mt-2 flex shrink-0 items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                  <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
                         {t('game.guide.leave')}
                       </button>
@@ -781,7 +780,7 @@ export default function Guide() {
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="ml-auto flex items-center gap-2">
                       {step.show && !(step.show === 'mat' && matPlayer !== null) && (
                         <button type="button" onClick={() => show(step.show!)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
@@ -835,68 +834,71 @@ export default function Guide() {
 
         {/* the machine's reasons: why a player would have made that move */}
         {showBot && bot && (
-          <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
-            <div className="flex items-start gap-3">
+          <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} style={{ maxHeight: band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
+            <div className="flex min-h-0 flex-1 items-start gap-2">
               <Bot className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
-              <div className="min-w-0 flex-1">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.botWhy', { name: bot.name })}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
                 {reading && <p className="mt-0.5 font-sans text-[9.5px] uppercase tracking-[0.12em] text-brass-400/60">{t('game.guide.seeMove', { key: keyLabel(getKeybindings().lastMove), name: bot.name })}</p>}
                 {(reading || !tutorial) && (
-                  <>
-                    <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
+                  <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
+                    <p className="font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
                     <p className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{bot.turn}</p>
-                  </>
+                  </div>
                 )}
               </div>
-              {reading ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setBotHidden(bot.id);
-                    /* the words were read: the board now shows the move itself */
-                    if (bot.seat >= 0) setGlimpse({ seat: bot.seat, at: Date.now() });
-                  }}
-                  className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]"
-                >
-                  {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-              ) : (
-                <button type="button" onClick={() => setBotHidden(bot.id)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+              {!reading && (
+                <button type="button" onClick={() => setBotHidden(bot.id)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
-            {holding && <p className="mt-1.5 pl-7 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
+            {holding && <p className="mt-1.5 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
+            {reading && (
+              <button
+                type="button"
+                onClick={() => {
+                  setBotHidden(bot.id);
+                  /* the words were read: the board now shows the move itself */
+                  if (bot.seat >= 0) setGlimpse({ seat: bot.seat, at: Date.now() });
+                }}
+                className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]"
+              >
+                {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
           </motion.aside>
         )}
 
         {/* the turns of the table: what just happened, and why it matters */}
         {news.length > 0 && (
-          <motion.aside key={`news-${news[news.length - 1].id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.happens.aria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
-            <div className="flex items-start gap-3">
+          <motion.aside key={`news-${news[news.length - 1].id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.happens.aria')} style={{ maxHeight: band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
+            <div className="flex min-h-0 flex-1 items-start gap-2">
               <Newspaper className="mt-0.5 h-4 w-4 shrink-0 text-brass-400" />
-              <div className="min-w-0 flex-1">
+              <div className="flex min-h-0 min-w-0 flex-1 flex-col">
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.happens.title')}</p>
-                {news.map((x) => (
-                  <p key={x.id} className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">
-                    {x.text}
-                  </p>
-                ))}
+                <div className="mt-1 min-h-0 flex-1 overflow-y-auto pr-1">
+                  {news.map((x) => (
+                    <p key={x.id} className="font-serif text-[13px] leading-snug text-cream-100/90 [&+&]:mt-1.5">
+                      {x.text}
+                    </p>
+                  ))}
+                </div>
               </div>
-              <button type="button" onClick={() => setEventsSeen(news[news.length - 1].id)} className="btn-strike !min-h-[30px] shrink-0 !px-3 !py-1 !text-[10px]">
-                {t('game.guide.botOk')}
-                <ChevronRight className="h-3.5 w-3.5" />
-              </button>
             </div>
+            <button type="button" onClick={() => setEventsSeen(news[news.length - 1].id)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+              {t('game.guide.botOk')}
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
           </motion.aside>
         )}
 
         {/* what the machine would play in the reader's seat, on request */}
         {advised && myTurn && (
-          <motion.aside key={`advice-${here}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.suggest.aria')} className="plate pointer-events-auto relative w-full px-4 py-2.5">
-            <div className="flex items-start gap-3">
+          <motion.aside key={`advice-${here}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.suggest.aria')} style={{ maxHeight: band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
+            <div className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-bottle-400" />
               <div className="min-w-0 flex-1">
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-bottle-400">{t('game.guide.suggest.title', { name: machine })}</p>
@@ -912,18 +914,16 @@ export default function Guide() {
                   <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none', { name: machine })}</p>
                 )}
               </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {!advised.busy && advised.action && (
-                  <button type="button" onClick={() => prepare(advised.action!)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
-                    {t('game.guide.suggest.prepare')}
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                )}
-                <button type="button" onClick={() => setAdvice(null)} aria-label={t('game.guide.hide')} className="rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
+              <button type="button" onClick={() => setAdvice(null)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
+            {!advised.busy && advised.action && (
+              <button type="button" onClick={() => prepare(advised.action!)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+                {t('game.guide.suggest.prepare')}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
           </motion.aside>
         )}
       </AnimatePresence>
