@@ -715,6 +715,7 @@ const game = {
     botWhy: 'Why {name} did that',
     botNext: 'Understood, {name} may go on',
     botOk: 'Understood',
+    seeMove: 'Press {key} to look at {name}’s move on the board',
     readPlate: 'Wait for {bot} to play, read why, then say Understood.',
     turn: {
       first: 'First round of the game: one action each, in the order the seats were drawn.',

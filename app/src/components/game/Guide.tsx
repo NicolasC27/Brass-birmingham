@@ -108,7 +108,7 @@ const place = (p: Pos) => `translate(calc(-50% + ${p.x}px), ${p.y}px)`;
 /* ---------------------------- the machine ---------------------------- */
 
 /** the last move a machine made, said as a player would reason it */
-function botReason(g: GameState, me: number, t: T): { id: number; name: string; what: string; why: string; turn: string; fresh: boolean } | null {
+function botReason(g: GameState, me: number, t: T): { id: number; seat: number; name: string; what: string; why: string; turn: string; fresh: boolean } | null {
   const e = [...g.ledger].reverse().find((x) => x.player !== undefined && x.player !== me && g.players[x.player]?.isBot && x.key && x.key !== 'flip');
   if (!e || e.player === undefined) return null;
   const p = g.players[e.player];
@@ -171,7 +171,7 @@ function botReason(g: GameState, me: number, t: T): { id: number; name: string; 
   else if (g.round !== e.round || g.era !== e.era) turn = t(g.current === e.player ? 'game.guide.turn.roundOverBot' : g.current === me ? 'game.guide.turn.roundOverYou' : 'game.guide.turn.roundOver', { name: p.name, you });
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
-  return { id: e.id, name: p.name, what, why, turn, fresh: e.at === g.actions.length - 1 };
+  return { id: e.id, seat: e.player, name: p.name, what, why, turn, fresh: e.at === g.actions.length - 1 };
 }
 
 /* ------------------------ what just happened ------------------------- */
@@ -361,6 +361,7 @@ export default function Guide() {
      position: the index of the action to come names it */
   const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean } | null>(null);
   const setBotHold = useGame((s) => s.setBotHold);
+  const setGlimpse = useGame((s) => s.setGlimpse);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   /* the note can be dragged by its head, and folded to a strip; a new
      lesson unfolds it */
@@ -836,6 +837,7 @@ export default function Guide() {
               <div className="min-w-0 flex-1">
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.botWhy', { name: bot.name })}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
+                {reading && <p className="mt-0.5 font-sans text-[9.5px] uppercase tracking-[0.12em] text-brass-400/60">{t('game.guide.seeMove', { key: keyLabel(getKeybindings().lastMove), name: bot.name })}</p>}
                 {(reading || !tutorial) && (
                   <>
                     <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>
@@ -844,7 +846,15 @@ export default function Guide() {
                 )}
               </div>
               {reading ? (
-                <button type="button" onClick={() => setBotHidden(bot.id)} className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBotHidden(bot.id);
+                    /* the words were read: the board now shows the move itself */
+                    if (bot.seat >= 0) setGlimpse({ seat: bot.seat, at: Date.now() });
+                  }}
+                  className="btn-strike !min-h-[30px] !px-3 !py-1 !text-[10px]"
+                >
                   {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                   <ChevronRight className="h-3.5 w-3.5" />
                 </button>

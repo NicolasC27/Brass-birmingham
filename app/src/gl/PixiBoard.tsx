@@ -723,6 +723,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       let lastSpot: number | null = null;
       let lastFlyAt = 0;
       let lastLedgerSeq = -1;
+      let lastGlimpseAt = -1;
       const unsub = useGame.subscribe((s) => {
         /* the live table repaints from the store; a replayed board is
            repainted by the prop effect below instead */
@@ -742,12 +743,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           if (pos) cam.flyTo(pos[0], pos[1], Math.max(cam.target.k, 1.5));
         }
         /* follow the others: glide to wherever a bot, or another player
-           at an online table, just played */
+           at an online table, just played — the move itself, not the payday
+           or the scoring the engine may log after it */
         if (s.followBots && s.game && s.game.ledgerSeq !== lastLedgerSeq) {
           lastLedgerSeq = s.game.ledgerSeq;
-          const e = s.game.ledger[s.game.ledger.length - 1];
+          const at = s.game.actions.length - 1;
+          const e = [...s.game.ledger].reverse().find((x) => x.at === at && x.player !== undefined && !!x.region && x.verb !== 'system' && x.verb !== 'score');
           const other = e?.player !== undefined && (s.game.players[e.player]?.isBot || (s.seat !== null && e.player !== s.seat));
-          if (e?.region && other && Date.now() - cam.lastManual > 4000) {
+          /* a guided table holds the machine while its reasons are read: the
+             look at the board waits for that reading, not for this instant */
+          if (e && other && !s.botHold && at !== lastGlimpseAt && Date.now() - cam.lastManual > 4000) {
+            lastGlimpseAt = at;
             /* shown the survey's way for a moment: the table dims, the move
                stands in colour, the camera comes to it (see the preview effect) */
             const seat = e.player as number;

@@ -717,6 +717,7 @@ const fr: typeof engame = {
     botWhy: 'Pourquoi {name} fait ça',
     botNext: 'Compris, {name} peut continuer',
     botOk: 'Compris',
+    seeMove: 'Touche {key} pour revoir le coup de {name} sur la carte',
     readPlate: 'Attendez le coup de {bot}, lisez pourquoi, puis « Compris ».',
     turn: {
       first: 'Première manche de la partie : une seule action chacun, dans l’ordre tiré des sièges.',

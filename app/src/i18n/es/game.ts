@@ -717,6 +717,7 @@ const game: typeof engame = {
     botWhy: 'Por qué {name} hace esto',
     botNext: 'Entendido, {name} puede seguir',
     botOk: 'Entendido',
+    seeMove: 'Tecla {key} para ver la jugada de {name} en el tablero',
     readPlate: 'Espera la jugada de {bot}, lee por qué, y pulsa Entendido.',
     turn: {
       first: 'Primera ronda de la partida: una sola acción cada uno, en el orden sorteado de los asientos.',
