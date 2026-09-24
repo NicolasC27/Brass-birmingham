@@ -377,7 +377,9 @@ export default function Guide() {
   const setPage = (p: number) => setPaged({ key: situation, page: p });
 
   /* the machine's next move waits while its last one is being read (guided game only) */
-  const holdWanted = !!(tutorial && game && game.phase === 'action' && bot && bot.fresh && botHidden !== bot.id && game.players[game.current]?.isBot);
+  const lessonNow = tutorial && stepIndex >= 0 && stepIndex < STEPS.length ? STEPS[stepIndex] : null;
+  const unread = !!lessonNow && !lessonNow.done;
+  const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread));
   useEffect(() => {
     setBotHold(holdWanted);
     return () => setBotHold(false);
@@ -405,8 +407,9 @@ export default function Guide() {
   /* the guided game waits: the machine's next move comes once this one is read */
   const holding = !!(tutorial && showBot && bot?.fresh && game.players[game.current]?.isBot);
   /* the machine's fresh move is on show: the lesson folds to its strip
-     so the plate reads first, until it is understood */
-  const reading = !!(tutorial && showBot && bot?.fresh && (holding || due?.id === 'botTurn'));
+     so the plate reads first, until it is understood — every move of
+     hers, in the guided game; an older plate is a line */
+  const reading = !!(tutorial && showBot && bot?.fresh);
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
   const advance = (to: number) => {
@@ -625,6 +628,7 @@ export default function Guide() {
                           {w.text}
                         </p>
                       ))}
+                      {!step.done && !finished && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
                       {step.done && !finished && !blocked && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{step.id === 'botTurn' ? t('game.guide.readPlate', stepVars()) : myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                     </div>
                   </div>
