@@ -703,6 +703,10 @@ const game: typeof engame = {
     canalEra: 'Kanalzeit',
     subline: 'Plättchen der Stufe 1 zerfallen · die Händler füllen ihr Bier auf · alle Ablagen werden neu gemischt',
     railEra: 'DIE EISENBAHNZEIT',
+    headlineShort: 'Und so wird dieser erste Kanalabschnitt abgerechnet…',
+    sublineShort: 'Diese Einstiegspartie endet hier · der Abschluss zählt Geld, Einkommensstufe und die stärkeren Betriebe',
+    mine: 'Deine {vp} Punkte der Kanalzeit: {tiles} aus deinen umgedrehten Plättchen, {links} aus deinen Verbindungen — eine Verbindung wertet die Verbindungssymbole jedes Ortes, den sie berührt.',
+    pending: 'Nie umgedrehte Plättchen waren {vp} wert und haben nichts gezählt.',
     continue: 'Weiter',
   },
   guide: {

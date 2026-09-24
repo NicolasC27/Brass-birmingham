@@ -205,6 +205,9 @@ export interface GameState {
     player: number;
   };
   canalScores?: number[];
+  /** the canal era's points split per seat: what the tiles paid, what the
+   *  links paid, and what the unflipped tiles did not */
+  canalSplit?: { links: number; tiles: number; pending: number }[];
   finalScores?: number[];
   winner?: number;
   /** seats that have voted to abandon the game — unanimity among the

@@ -701,6 +701,10 @@ const game = {
     canalEra: 'Canal Era',
     subline: 'Level-1 works crumble away · merchants restock their beer · every discard is re-shuffled',
     railEra: 'THE RAIL ERA',
+    headlineShort: 'And so this first stretch of canal is reckoned up…',
+    sublineShort: 'This initiation game closes here · the books add money, income level and the stronger works',
+    mine: 'Your {vp} points for the Canal Era: {tiles} from your flipped tiles, {links} from your links — a link scores the link icons of every place it touches.',
+    pending: 'Tiles you never flipped were worth {vp} and scored nothing.',
     continue: 'Continue',
   },
   guide: {

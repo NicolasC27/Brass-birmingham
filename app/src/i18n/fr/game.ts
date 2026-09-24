@@ -703,6 +703,10 @@ const fr: typeof engame = {
     canalEra: 'Ère canal',
     subline: 'Les tuiles de niveau 1 s’effondrent · les marchands regarnissent leur bière · toutes les défausses sont rebattues',
     railEra: 'L’ÈRE RAIL',
+    headlineShort: 'Et voilà ce premier bief de canal mis en comptes…',
+    sublineShort: 'Cette partie d’initiation s’arrête ici · la clôture ajoute l’argent, le niveau de revenu et les ouvrages les plus forts',
+    mine: 'Vos {vp} points d’ère canal : {tiles} pour vos tuiles retournées, {links} pour vos liaisons — une liaison compte les icônes lien de chaque lieu qu’elle touche.',
+    pending: 'Les tuiles jamais retournées valaient {vp} et n’ont rien marqué.',
     continue: 'Continuer',
   },
   guide: {

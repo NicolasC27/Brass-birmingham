@@ -1333,14 +1333,18 @@ export function projectedOrder(s: GameState): number[] {
 }
 
 export function scoreEra(s: GameState, era: Era): number[] {
-  const scores = projectEraScores(s).map((pr, i) => {
+  const projection = projectEraScores(s);
+  const scores = projection.map((pr, i) => {
     s.players[i].vp += pr.total;
     return pr.total;
   });
   // link tiles come off the board after scoring
   s.links = {};
-  if (era === 'canal') s.canalScores = scores;
-  else s.finalScores = scores;
+  if (era === 'canal') {
+    s.canalScores = scores;
+    /* the links leave the board with the era: the split cannot be read back */
+    s.canalSplit = projection.map((pr) => ({ links: pr.links, tiles: pr.tiles, pending: pr.pending }));
+  } else s.finalScores = scores;
   log(s, undefined, 'score', `${era === 'canal' ? 'Canal' : 'Rail'} Era scoring: ${scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ')}`, undefined, 'eraScore', { era, scores: scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ') });
   return scores;
 }

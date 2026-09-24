@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { PLAYER_COLORS } from '@/game/data';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
+import { cn } from '@/lib/utils';
 import { useReducedMotion } from './useReducedMotion';
 
 /**
@@ -29,21 +30,29 @@ export default function Ceremony() {
 
   useEffect(() => {
     if (!ceremony) return;
+    /* an assisted table reads the figures at its own pace */
+    const wait = !!game?.assist;
     if (reduced) {
-      const t = window.setTimeout(() => endCeremony(), 900);
-      return () => window.clearTimeout(t);
+      /* no motion to wait on: the figures and the button are there at once */
+      const shown = [window.setTimeout(() => setStage(2), 0), window.setTimeout(() => setCanSkip(true), 0)];
+      if (!wait) shown.push(window.setTimeout(() => endCeremony(), 900));
+      return () => shown.forEach((t) => window.clearTimeout(t));
     }
     const timers = [
       window.setTimeout(() => setCanSkip(true), 800),
       window.setTimeout(() => setStage(1), 500),
       window.setTimeout(() => setStage(2), 2100),
-      window.setTimeout(() => endCeremony(), 3400),
+      ...(wait ? [] : [window.setTimeout(() => endCeremony(), 3400)]),
     ];
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [ceremony, reduced, endCeremony]);
+  }, [ceremony, reduced, endCeremony, game?.assist]);
 
   if (!ceremony || !game) return null;
   const scores = game.canalScores ?? game.players.map(() => 0);
+  /* an initiation game closes on this ceremony: no rail era follows it */
+  const short = game.eraLength === 'short';
+  const split = game.canalSplit;
+  const me = game.players.findIndex((p) => !p.isBot);
 
   return (
     <motion.div
@@ -72,7 +81,7 @@ export default function Ceremony() {
         transition={{ duration: reduced ? 0.15 : 1.0, delay: reduced ? 0 : 0.4 }}
         className="mt-6 font-fell text-3xl tracking-wide text-cream-100"
       >
-        {t('game.ceremony.headline')}
+        {t(short ? 'game.ceremony.headlineShort' : 'game.ceremony.headline')}
       </motion.h2>
 
       {/* scoring tickers */}
@@ -100,16 +109,22 @@ export default function Ceremony() {
         ))}
       </div>
 
+      {split && me >= 0 && (
+        <p className="mt-4 max-w-[min(680px,90vw)] text-center font-serif text-sm leading-snug text-cream-100/85">
+          {t('game.ceremony.mine', { vp: scores[me] ?? 0, tiles: split[me]?.tiles ?? 0, links: split[me]?.links ?? 0 })}
+          {(split[me]?.pending ?? 0) > 0 ? ` ${t('game.ceremony.pending', { vp: split[me].pending })}` : ''}
+        </p>
+      )}
       <p className="mt-5 font-sans text-xs text-cream-100/60">
-        {t('game.ceremony.subline')}
+        {t(short ? 'game.ceremony.sublineShort' : 'game.ceremony.subline')}
       </p>
 
-      {/* rail banner locks in */}
+      {/* rail banner locks in — an initiation game has no era after this one */}
       <motion.div
         initial={{ x: '110%', opacity: 0 }}
         animate={stage >= 2 ? { x: '0%', opacity: 1 } : {}}
         transition={{ duration: reduced ? 0.15 : 0.9, ease: [0.16, 1, 0.3, 1] }}
-        className="mt-6 w-[min(860px,90vw)]"
+        className={cn('mt-6 w-[min(860px,90vw)]', short && 'hidden')}
       >
         <img src="/era-rail-banner.webp" alt={t('game.ceremony.railAlt')} className="mx-auto max-h-[30vh] w-auto max-w-full rounded-md border border-copper-500/70 shadow-e4" />
         <p className="mt-2 text-center font-display text-2xl font-black tracking-wide text-copper-500 brightness-125">

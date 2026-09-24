@@ -703,6 +703,10 @@ const game: typeof engame = {
     canalEra: 'Era del canal',
     subline: 'Las losetas de nivel 1 se desmoronan · los mercaderes reponen su cerveza · todos los descartes se barajan de nuevo',
     railEra: 'LA ERA DEL FERROCARRIL',
+    headlineShort: 'Y así se ajusta cuentas este primer tramo de canal…',
+    sublineShort: 'Esta partida de iniciación acaba aquí · el cierre suma el dinero, el nivel de ingresos y las fábricas más fuertes',
+    mine: 'Tus {vp} puntos de la era del canal: {tiles} por tus losetas volteadas, {links} por tus conexiones — una conexión puntúa los iconos de enlace de cada lugar que toca.',
+    pending: 'Las losetas que nunca volteaste valían {vp} y no contaron nada.',
     continue: 'Continuar',
   },
   guide: {
