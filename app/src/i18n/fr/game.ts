@@ -735,6 +735,7 @@ const fr: typeof engame = {
     followed: 'Puis : {moves}',
     branchOn: 'Branche : {move}, puis {n} coups',
     playFrom: 'Jouer à partir d’ici',
+    lost: '−{p} % de chances',
     quality: { top: 'juste', good: 'bon', inaccuracy: 'imprécision', mistake: 'erreur', blunder: 'bévue' },
     close: 'Fermer le débrief',
     open: 'Le débrief',

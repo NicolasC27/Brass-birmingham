@@ -733,6 +733,7 @@ const game = {
     followed: 'Then: {moves}',
     branchOn: 'Branch: {move}, then {n} moves',
     playFrom: 'Play on from here',
+    lost: '−{p} % chance',
     quality: { top: 'best', good: 'good', inaccuracy: 'inaccuracy', mistake: 'mistake', blunder: 'blunder' },
     close: 'Close the debrief',
     open: 'The debrief',

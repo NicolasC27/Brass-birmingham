@@ -2,7 +2,8 @@ import { applyAction, fallbackAction, setupOf } from './actions';
 import { eraRounds, newGame } from './engine';
 import type { GameAction } from './actions';
 import { chooseBotAction, evaluate, worthTrying } from './search';
-import type { GameState } from './types';
+import type { Era, GameState } from './types';
+import type { Grade } from './review';
 
 /* ------------------------------------------------------------------ */
 /* The analysis — a finished game read move by move, the way a chess    */
@@ -109,6 +110,11 @@ export function roadsFrom(s: GameState, me: number, keep = 8, played?: GameActio
     if (!top.some((r) => sameRoad(r.action) === key)) {
       const it = roads.find((r) => sameRoad(r.action) === key);
       if (it) top.push(it);
+      else {
+        /* a move the search never offers, a plain pass say: still a road */
+        const after = applyAction(s, me, played).state;
+        if (after) top.push({ action: played, after, chance: winChance(after, me) });
+      }
     }
   }
   return top;
@@ -118,7 +124,7 @@ export function roadsFrom(s: GameState, me: number, keep = 8, played?: GameActio
     the engine would pick alike: what it does on the board */
 export function sameRoad(a: GameAction): string {
   const rest: Record<string, unknown> = { ...a };
-  for (const k of ['card', 'slot', 'ironFrom', 'beerFrom']) delete rest[k];
+  for (const k of ['card', 'slot', 'ironFrom', 'beerFrom', 'reason']) delete rest[k];
   return JSON.stringify(rest);
 }
 
@@ -154,4 +160,97 @@ export function followOn(s: GameState, moves: number, budgetMs = 40): { moves: F
     cur = next;
   }
   return { moves: played, after: cur };
+}
+
+/* ------------------------------------------------------------------ */
+/* The long judge. A position weighed as it stands says little about a */
+/* loan against a pass: the cash is on the table, the cost comes later. */
+/* So, the way an engine reads the replies, the machine plays on a few  */
+/* moves for every seat before the position is weighed — and every      */
+/* figure the analysis shows, the curve, the roads and the grades, is   */
+/* read on that one scale: the chance of winning.                       */
+/* ------------------------------------------------------------------ */
+
+export interface Judge {
+  /** moves played on, every seat, before the table is weighed */
+  plies: number;
+  /** how long the machine thinks about each of them */
+  budgetMs: number;
+}
+
+export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15 };
+
+/** the table a few moves on, the machine playing every seat flat out */
+export function lookAhead(s: GameState, judge: Judge): GameState {
+  let cur = s;
+  let played = 0;
+  let guard = 0;
+  while (played < judge.plies && cur.phase !== 'game-over' && guard++ < judge.plies * 3) {
+    if (cur.phase === 'scoring-canal') {
+      const next = applyAction(cur, cur.current, { kind: 'begin-rail' }).state;
+      if (!next) break;
+      cur = next;
+      continue;
+    }
+    const seat = cur.current;
+    const action = chooseBotAction(cur, seat, { strength: 1, budgetMs: judge.budgetMs }) ?? fallbackAction(cur, seat);
+    const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
+    if (!next) break;
+    cur = next;
+    played += 1;
+  }
+  return cur;
+}
+
+/** the chance of winning from here, read after the replies */
+export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE): number {
+  if (s.phase === 'game-over') return winChance(s, me);
+  return winChance(lookAhead(s, judge), me);
+}
+
+/** what a move may cost in chance before it stops being a good one: the
+    grades of the review, on the one scale */
+export const LOSS = { top: 0.01, good: 0.03, inaccuracy: 0.07, mistake: 0.15 } as const;
+
+export const gradeOfLoss = (loss: number): Grade =>
+  loss <= LOSS.top ? 'top' : loss <= LOSS.good ? 'good' : loss <= LOSS.inaccuracy ? 'inaccuracy' : loss <= LOSS.mistake ? 'mistake' : 'blunder';
+
+/** a road as the long judge reads it, without the table it leads to (that
+    is one applyAction away) — light enough to cross a worker's wire */
+export interface Weighed {
+  action: GameAction;
+  chance: number;
+}
+
+/** the long judge's verdict on one move of the reader's */
+export interface Verdict {
+  /** the move's index in the log */
+  at: number;
+  round: number;
+  era: Era;
+  /** the roads open there, the played one among them, best first */
+  roads: Weighed[];
+  /** the chance after the move played, and after the best road */
+  mine: number;
+  best: number;
+  /** what the move cost, in chance: best less mine, never below nought */
+  loss: number;
+  grade: Grade;
+}
+
+/** the reader's move at `before`, judged long: the roads worth a look are
+    ranked as they stand, then each is read after the replies */
+export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE): Verdict | null {
+  if (before.phase !== 'action' || before.current !== me) return null;
+  const roads = roadsFrom(before, me, 8, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge) })).sort((a, b) => b.chance - a.chance);
+  if (!roads.length) return null;
+  const key = sameRoad(played);
+  const own = roads.find((r) => sameRoad(r.action) === key);
+  const mine = own ? own.chance : (() => {
+    const after = applyAction(before, me, played).state;
+    return after ? deepChance(after, me, judge) : roads[roads.length - 1].chance;
+  })();
+  const best = Math.max(mine, roads[0].chance);
+  const loss = Math.max(0, best - mine);
+  return { at: before.actions.length, round: before.round, era: before.era, roads, mine, best, loss, grade: gradeOfLoss(loss) };
 }

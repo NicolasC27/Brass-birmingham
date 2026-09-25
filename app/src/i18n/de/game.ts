@@ -735,6 +735,7 @@ const game: typeof engame = {
     followed: 'Dann: {moves}',
     branchOn: 'Zweig: {move}, dann {n} Züge',
     playFrom: 'Von hier weiterspielen',
+    lost: '−{p} % Chancen',
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',

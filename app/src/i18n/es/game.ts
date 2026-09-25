@@ -735,6 +735,7 @@ const game: typeof engame = {
     followed: 'Luego: {moves}',
     branchOn: 'Rama: {move}, luego {n} jugadas',
     playFrom: 'Jugar desde aquí',
+    lost: '−{p} % de opciones',
     quality: { top: 'precisa', good: 'buena', inaccuracy: 'imprecisión', mistake: 'error', blunder: 'pifia' },
     close: 'Cerrar el balance',
     open: 'El balance',
