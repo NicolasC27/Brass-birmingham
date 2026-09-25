@@ -31,11 +31,13 @@ export interface AskRoads {
   me: number;
   roads: GameAction[];
   judge?: Judge;
+  /** echoed in the answer: the line of moves the roads start from */
+  key: string;
 }
 
 export type Note =
   | { kind: 'position'; k: number; chance: number; done: number; total: number }
-  | { kind: 'roads'; at: number; roads: Weighed[] }
+  | { kind: 'roads'; key: string; roads: Weighed[] }
   | { kind: 'turn'; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
   | { kind: 'failed'; why: string };
@@ -82,7 +84,7 @@ export function readRoads(ask: AskRoads): Note {
     if (!next) return { kind: 'failed', why: 'a move refused on the way' };
     s = next;
   }
-  return { kind: 'roads', at: ask.actions.length, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? DEEP_JUDGE) };
+  return { kind: 'roads', key: ask.key, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? DEEP_JUDGE) };
 }
 
 /* the worker's own mouth, when this module is loaded as one */

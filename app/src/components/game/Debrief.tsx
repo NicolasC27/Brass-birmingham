@@ -52,7 +52,7 @@ const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumF
    reader's chance after every move, lit above the half-way mark and dark
    below it, the eras named, the wider misses as dots; a press picks, a
    drag scrubs, a hover reads the figure */
-function Curve({ chances, at, marks, split, label, eras, onPick }: { chances: number[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; onPick: (k: number) => void }) {
+function Curve({ chances, at, marks, split, label, eras, vary, onPick }: { chances: number[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -151,6 +151,13 @@ function Curve({ chances, at, marks, split, label, eras, onPick }: { chances: nu
         {misses.map((m) => (
           <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
         ))}
+        {/* the variation, dashed, leaving the game where it does */}
+        {vary && vary.chances.length > 1 && (
+          <g pointerEvents="none">
+            <path d={vary.chances.map((c, i) => `${i === 0 ? 'M' : 'L'}${x(vary.from + i).toFixed(1)},${y(c).toFixed(1)}`).join(' ')} fill="none" stroke="#F5EBD7" strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" />
+            <circle cx={x(vary.from + vary.chances.length - 1)} cy={y(vary.chances[vary.chances.length - 1])} r={3} fill="#F5EBD7" stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
+          </g>
+        )}
         {hover !== null && hover !== at && mark(hover, false)}
         {mark(at, true)}
       </svg>
@@ -178,11 +185,15 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   const chances = useMemo(() => positions.map((p, k) => deep[k] ?? winChance(p, me)), [positions, me, deep]);
   const [at, setAt] = useState(last);
   /* the roads being explored: from which move, which one is picked (by what it does, so the judge's later figures keep the pick), and the tail played on */
-  const [road, setRoad] = useState<{ from: number; picked: string | null; followed?: Followed[]; step?: number } | null>(null);
-  /* one turn's roads read longer, by the position they start from */
-  const [deeper, setDeeper] = useState<{ of: GameState; byAt: Record<number, Weighed[]> }>({ of: game, byAt: {} });
-  /* the turns already sent for a longer reading, so each goes once */
-  const asked = useRef<Set<number>>(new Set());
+  /* the variation being explored, the way a chess line is: from which move
+     it leaves the game, the moves played along it (the reader's picks and
+     the machine's replies), the road picked at its tip, and which of its
+     moves the board shows (null: the tip, or the pick) */
+  const [vary, setVary] = useState<{ from: number; moves: Followed[]; picked: string | null; step: number | null } | null>(null);
+  /* roads read longer, by the line of moves that leads to them */
+  const [deeper, setDeeper] = useState<{ of: GameState; byKey: Record<string, Weighed[]> }>({ of: game, byKey: {} });
+  /* the lines already sent for a longer reading, so each goes once */
+  const asked = useRef<Set<string>>(new Set());
   const machine = game.players.find((p) => p.isBot)?.name ?? t('game.debrief.machine');
 
   /* the long judge thinks on a thread of its own and posts as it goes */
@@ -196,7 +207,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
     w.onmessage = (e: MessageEvent<Note>) => {
       const n = e.data;
       if (n.kind === 'roads') {
-        setDeeper((d) => ({ of: game, byAt: { ...(d.of === game ? d.byAt : {}), [n.at]: n.roads } }));
+        setDeeper((d) => ({ of: game, byKey: { ...(d.of === game ? d.byKey : {}), [n.key]: n.roads } }));
         return;
       }
       setJudged((j) => {
@@ -216,19 +227,6 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
     };
   }, [game, me]);
   const workerRef = useRef<Worker | null>(null);
-  /* a turn being explored: its roads go to the worker for a longer reading,
-     once, after the pass has spoken there (the pass's worker is the same one,
-     so the ask waits its turn behind it) */
-  useEffect(() => {
-    if (!road || road.followed || !verdicts[road.from - 1]) return;
-    const w = workerRef.current;
-    const k = road.from - 1;
-    if (!w || asked.current.has(k)) return;
-    asked.current.add(k);
-    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions.slice(0, k), me, roads: verdicts[k].roads.map((r) => r.action) });
-  }, [road, verdicts, game, me]);
-  /* the roads on show are the pass's, the longer reading still to come */
-  const readingLonger = !!road && !road.followed && !!verdicts[road.from - 1] && !(deeper.of === game && deeper.byAt[road.from - 1]);
   /* the key moments: where the curve fell hardest, whoever moved — the
      reader's own miss or a rival's stroke */
   const keyMoments = useMemo(() => {
@@ -248,37 +246,61 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       });
   }, [chances, positions, game.actions]);
 
-  /* the roads from the position before move `from`: the long judge's once it
-     has read that turn, the short judge's meanwhile; the pick follows by key */
+  /* the variation's ground and tip */
+  const base = vary ? positions[vary.from - 1] : undefined;
+  const tip = vary ? (vary.moves.length ? vary.moves[vary.moves.length - 1].after : base) : undefined;
+  const tipMine = !!tip && tip.phase === 'action' && tip.current === me;
+  /* the line of moves that leads to the tip, as the worker names it */
+  const lineKey = vary ? `${vary.from - 1}|${vary.moves.map((m) => JSON.stringify(m.action)).join(';')}` : '';
+  /* the roads at the tip: the longer reading once it has come, the pass's
+     verdict where the tip is the game's own position, the short judge's meanwhile */
   const roads = useMemo<Road[]>(() => {
-    if (!road) return [];
-    const from = positions[road.from - 1];
-    if (!from) return [];
-    const weighed = (deeper.of === game ? deeper.byAt[road.from - 1] : undefined) ?? verdicts[road.from - 1]?.roads;
-    if (weighed) return weighed.map((r) => ({ action: r.action, after: applyAction(from, me, r.action).state, chance: r.chance })).filter((r): r is Road => !!r.after);
-    return roadsFrom(from, me, 8, game.actions[road.from - 1]);
-  }, [road, positions, verdicts, deeper, me, game, game.actions]);
-  const pickedAt = road?.picked ? roads.findIndex((r) => sameRoad(r.action) === road.picked) : -1;
+    if (!vary || !tip || !tipMine) return [];
+    const weighed = (deeper.of === game ? deeper.byKey[lineKey] : undefined) ?? (vary.moves.length === 0 ? verdicts[vary.from - 1]?.roads : undefined);
+    if (weighed) return weighed.map((r) => ({ action: r.action, after: applyAction(tip, me, r.action).state, chance: r.chance })).filter((r): r is Road => !!r.after);
+    return roadsFrom(tip, me, 8, vary.moves.length === 0 ? game.actions[vary.from - 1] : undefined);
+  }, [vary, tip, tipMine, lineKey, verdicts, deeper, me, game]);
+  const pickedAt = vary?.picked ? roads.findIndex((r) => sameRoad(r.action) === vary.picked) : -1;
   const branch = pickedAt >= 0 ? roads[pickedAt] : null;
-
-  /* the board follows the pick: the table after move `at`, or the end of the branch taken */
+  /* the tip's roads go to the worker for a longer reading, once per line */
   useEffect(() => {
-    const tailAt = road?.followed?.length ? Math.min(road.step ?? road.followed.length - 1, road.followed.length - 1) : -1;
-    const tail = tailAt >= 0 ? road!.followed![tailAt] : undefined;
-    const state = branch ? (tail?.after ?? branch.after) : positions[at];
+    if (!vary || !tipMine || !roads.length) return;
+    const w = workerRef.current;
+    if (!w || asked.current.has(lineKey)) return;
+    asked.current.add(lineKey);
+    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey });
+  }, [vary, tipMine, roads, lineKey, game, me]);
+  const readingLonger = !!vary && tipMine && !(deeper.of === game && deeper.byKey[lineKey]);
+  /* what the board shows */
+  const stepMove = vary && vary.step !== null ? vary.moves[vary.step] : undefined;
+  const shown = vary ? (stepMove?.after ?? branch?.after ?? tip) : positions[at];
+  const firstPick = vary?.moves.find((m) => m.pick)?.action ?? branch?.action;
+  /* the variation's own chances, for the curve: from the ground, move by move, the pick at the end */
+  const varyChances = useMemo(() => {
+    if (!vary) return null;
+    const line = [chances[vary.from - 1] ?? 0.5, ...vary.moves.map((m) => winChance(m.after, me))];
+    if (branch && vary.step === null) line.push(branch.chance);
+    return { from: vary.from - 1, chances: line };
+  }, [vary, chances, branch, me]);
+
+  /* the board follows: the table after move `at`, or the variation's move on show */
+  useEffect(() => {
+    const state = shown;
     if (!state) return;
-    const label = branch
-      ? tail
-        ? t(tailAt === 0 ? 'game.debrief.branchOnOne' : 'game.debrief.branchOn', { move: describeAction(branch.action), n: tailAt + 1 })
-        : t('game.debrief.branch', { move: describeAction(branch.action) })
+    const n = vary ? (stepMove ? vary.step! + 1 : vary.moves.length + (branch ? 1 : 0)) : 0;
+    const label = vary && firstPick
+      ? n <= 1
+        ? t(vary.moves.length && !stepMove ? 'game.debrief.branchOnOne' : 'game.debrief.branch', { move: describeAction(firstPick) })
+        : t(n === 1 ? 'game.debrief.branchOnOne' : 'game.debrief.branchOn', { move: describeAction(firstPick), n })
       : at === 0 ? t('game.debrief.start') : `${at}/${last} · ${describeAction(game.actions[at - 1])}`;
-    const played = branch ? branch.action : game.actions[at - 1];
+    const onShow = vary ? (stepMove ?? (branch ? { seat: me, action: branch.action } : vary.moves[vary.moves.length - 1])) : undefined;
+    const played = onShow ? onShow.action : game.actions[at - 1];
     const before = positions[at - 1];
-    const seat = tail ? tail.seat : played && before ? (played.kind === 'concede' ? played.player : before.current) : undefined;
+    const seat = onShow ? onShow.seat : played && before ? (played.kind === 'concede' ? played.player : before.current) : undefined;
     setReview({ at, round: state.round, state, label, ...(seat !== undefined ? { seat } : {}) });
-    const where = regionOf(tail ? tail.action : branch ? branch.action : game.actions[at - 1]);
+    const where = regionOf(played);
     if (where) flyToRegion(where);
-  }, [at, road, branch, positions, game.actions, game.players, setReview, flyToRegion, last, t]);
+  }, [at, vary, shown, stepMove, branch, firstPick, positions, game.actions, setReview, flyToRegion, last, t, me]);
   /* the arrows step through the game */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -288,17 +310,15 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       else if (e.key === 'ArrowRight') setAt((k) => Math.min(last, k + 1));
       else return;
       e.preventDefault();
-      setRoad(null);
+      setVary(null);
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [last]);
 
-  const shownTail = road?.followed?.length ? road.followed[Math.min(road.step ?? road.followed.length - 1, road.followed.length - 1)] : undefined;
-  const shown = branch ? (shownTail?.after ?? branch.after) : positions[at];
   /* the figure in the header, on the same reading as the curve and the roads */
-  const chance = branch ? (shownTail ? winChance(shownTail.after, me) : branch.chance) : (chances[at] ?? 0.5);
-  const explore = () => setRoad({ from: at, picked: null });
+  const chance = vary ? (stepMove ? winChance(stepMove.after, me) : branch ? branch.chance : vary.moves.length && tip ? winChance(tip, me) : (chances[at] ?? 0.5)) : (chances[at] ?? 0.5);
+  const explore = () => setVary({ from: at, moves: [], picked: null, step: null });
   const canExplore = at > 0 && positions[at - 1]?.phase === 'action' && positions[at - 1]?.current === me;
   /* the move under the cursor, when the reader's and read wider than good:
      what was better, and how much more chance the judge gave it */
@@ -310,7 +330,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
     return { v, better: better.action, delta: Math.round(v.loss * 100) };
   }, [at, verdicts, game.actions]);
   const seeBetter = () => {
-    if (lesson) setRoad({ from: at, picked: sameRoad(lesson.better) });
+    if (lesson) setVary({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
   };
   /* the position on show becomes a table of this device: the reader plays
      on from there, the machines with them */
@@ -320,13 +340,20 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
     setDebriefOpen(false);
     navigate(`/game/local/${code}`);
   };
+  /* the pick joins the line and the machine answers until the reader's next
+     turn; with no pick at a tip of theirs, the machine plays them too */
   const follow = () => {
-    if (!road || !branch) return;
-    const from = road.followed?.length ? road.followed[road.followed.length - 1].after : branch.after;
+    if (!vary || !tip) return;
+    const picked: Followed[] = branch ? [{ seat: me, action: branch.action, after: branch.after, pick: true }] : [];
+    const from = branch ? branch.after : tip;
     const more = followToTurn(from, me);
-    if (!more.length) return;
-    const followed = [...(road.followed ?? []), ...more];
-    setRoad({ ...road, followed, step: followed.length - 1 });
+    if (!picked.length && !more.length) return;
+    setVary({ ...vary, moves: [...vary.moves, ...picked, ...more], picked: null, step: null });
+  };
+  /* back to one of the picks along the line: the roads there again, that pick selected */
+  const backTo = (i: number) => {
+    if (!vary) return;
+    setVary({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
   const close = () => setDebriefOpen(false);
   /* the board goes back to the live table when the panel goes */
@@ -345,7 +372,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
         <span className="flex-1" />
         <label className="flex items-center gap-1 text-cream-100/60" title={t('game.debrief.seat')}>
           <UserRound className="h-3.5 w-3.5" aria-hidden />
-          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMe(Number(e.target.value)); setRoad(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
+          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMe(Number(e.target.value)); setVary(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
             {game.players.map((p, i) => (
               <option key={i} value={i}>{p.name}</option>
             ))}
@@ -366,13 +393,13 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
         <div className="mt-2">
-          <Curve chances={chances} at={at} marks={verdicts} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setRoad(null); }} />
+          <Curve chances={chances} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
         </div>
         <div className="mt-2 flex items-center gap-1.5">
-          <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setRoad(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVary(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setRoad(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setVary(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
           {shown?.phase === 'action' && (
@@ -381,13 +408,13 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
             </button>
           )}
           {progress.done < progress.total && <span className="ml-2 font-mono text-[10px] text-cream-100/45">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>}
-          {canExplore && !road && (
+          {canExplore && !vary && (
             <button type="button" onClick={explore} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               <Compass className="h-3.5 w-3.5" /> {t('game.debrief.explore')}
             </button>
           )}
-          {road && (
-            <button type="button" onClick={() => setRoad(null)} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
+          {vary && (
+            <button type="button" onClick={() => setVary(null)} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               {t('game.debrief.backToLine')}
             </button>
           )}
@@ -395,7 +422,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       </div>
 
       {/* the move under the cursor, read wider than good: what was better */}
-      {lesson && !road && (
+      {lesson && !vary && (
         <div className="paper shrink-0 px-3 py-2">
           <p className="font-sans text-[11.5px] text-ink-900">
             <span className="font-fell text-[10px] uppercase tracking-[0.14em] text-rust-700">{t(`game.debrief.quality.${lesson.v.grade}`)}</span>
@@ -413,45 +440,59 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
         </div>
       )}
 
-      {/* the other roads from this turn of the reader's */}
-      {road && (
+      {/* the variation: its picks as a trail, the roads at its tip, its moves */}
+      {vary && (
         <div className="paper shrink-0 px-3 py-2">
-          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.debrief.roads')}</p>
-          <ul className="mt-1 flex flex-col gap-1">
-            {roads.map((r, i) => {
-              const same = sameRoad(r.action) === sameRoad(game.actions[road.from - 1]);
-              return (
-                <li key={i}>
-                  <button type="button" onClick={() => setRoad({ from: road.from, picked: pickedAt === i ? null : sameRoad(r.action) })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-1 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', pickedAt === i && 'bg-ink-900/10 ring-1 ring-brass-500')}>
-                    <span className="w-10 shrink-0 font-mono text-[10.5px] font-semibold text-ink-900">{t('game.debrief.road', { p: fine(r.chance, lang) })}</span>
-                    <span className="min-w-0 flex-1 truncate">{describeAction(r.action)}</span>
-                    {same && <span className="shrink-0 font-fell text-[9px] uppercase tracking-[0.14em] text-ink-900/50">{t('game.debrief.played')}</span>}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="flex flex-wrap items-center gap-1 font-sans text-[10.5px] text-ink-900/70">
+            <span className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.debrief.roads')}</span>
+            {vary.moves.map((m, i) => (m.pick ? (
+              <span key={i} className="flex items-center gap-1">
+                <span aria-hidden>›</span>
+                <button type="button" onClick={() => backTo(i)} className="rounded border border-ink-900/25 px-1.5 py-0.5 hover:bg-ink-900/10">
+                  {t('game.debrief.roundShort', { round: (i === 0 ? base : vary.moves[i - 1].after)?.round ?? '' })} · {describeAction(m.action)}
+                </button>
+              </span>
+            ) : null))}
+            {branch && <span className="flex items-center gap-1"><span aria-hidden>›</span><span className="rounded border border-brass-500 bg-brass-500/15 px-1.5 py-0.5">{t('game.debrief.roundShort', { round: tip?.round ?? '' })} · {describeAction(branch.action)}</span></span>}
+          </div>
+          {tipMine && (
+            <ul className="mt-1 flex flex-col gap-1">
+              {roads.map((r, i) => {
+                const same = vary.moves.length === 0 && sameRoad(r.action) === sameRoad(game.actions[vary.from - 1]);
+                return (
+                  <li key={i}>
+                    <button type="button" onClick={() => setVary({ ...vary, picked: pickedAt === i ? null : sameRoad(r.action), step: null })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-1 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', pickedAt === i && vary.step === null && 'bg-ink-900/10 ring-1 ring-brass-500')}>
+                      <span className="w-10 shrink-0 font-mono text-[10.5px] font-semibold text-ink-900">{t('game.debrief.road', { p: fine(r.chance, lang) })}</span>
+                      <span className="min-w-0 flex-1 truncate">{describeAction(r.action)}</span>
+                      {same && <span className="shrink-0 font-fell text-[9px] uppercase tracking-[0.14em] text-ink-900/50">{t('game.debrief.played')}</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
           {branch && (
             <p className="mt-1.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
               {t(`game.guide.suggest.why.${whyKey(branch.action)}`, { name: machine })}
             </p>
           )}
           {readingLonger && <p className="mt-1 font-mono text-[9.5px] text-ink-900/50">{t('game.debrief.deeper')}</p>}
-          {branch && shown?.phase !== 'game-over' && (
+          {(branch || (vary.moves.length > 0 && tip?.phase !== 'game-over')) && (
             <button type="button" onClick={follow} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-              {road.followed?.length ? t('game.debrief.followMore') : t('game.debrief.follow')}
+              {branch ? t('game.debrief.follow') : t('game.debrief.followMore')}
             </button>
           )}
-          {road.followed && road.followed.length > 0 && (
+          {vary.moves.length > 0 && (
             <ol className="mt-1.5 flex flex-col gap-0.5">
-              {road.followed.map((f, i) => {
-                const on = i === Math.min(road.step ?? road.followed!.length - 1, road.followed!.length - 1);
+              {vary.moves.map((f, i) => {
+                const on = vary.step === i || (vary.step === null && !branch && i === vary.moves.length - 1);
                 return (
                   <li key={i}>
-                    <button type="button" onClick={() => setRoad({ ...road, step: i })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', on && 'bg-ink-900/10 ring-1 ring-brass-500')}>
+                    <button type="button" onClick={() => setVary({ ...vary, step: i })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', on && 'bg-ink-900/10 ring-1 ring-brass-500')}>
                       <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[f.seat]?.color]?.hex ?? '#C9A45C' }} />
                       <span className="w-14 shrink-0 truncate font-mono text-[10px] text-ink-900/60">{f.seat === me ? t('game.debrief.you') : game.players[f.seat]?.name}</span>
                       <span className="min-w-0 flex-1 truncate">{describeAction(f.action)}</span>
+                      {f.pick && <Compass className="h-3 w-3 shrink-0 text-brass-700" aria-hidden />}
                       <span className="shrink-0 font-mono text-[10px] text-ink-900/70">{pct(winChance(f.after, me))}</span>
                     </button>
                   </li>
@@ -463,12 +504,12 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       )}
 
       {/* the key moments, the widest gaps once read */}
-      {keyMoments.length > 0 && !road && (
+      {keyMoments.length > 0 && !vary && (
         <div className="shrink-0">
           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.keyMoments')}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {keyMoments.map((m) => (
-              <button key={m.k} type="button" onClick={() => { setAt(m.k); setRoad(null); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
+              <button key={m.k} type="button" onClick={() => { setAt(m.k); setVary(null); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
                 <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[m.seat]?.color]?.hex ?? '#C9A45C' }} />
                 <span>{t('game.debrief.round', { round: m.round, era: t(m.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })} · {m.seat === me ? t('game.debrief.you') : game.players[m.seat]?.name}</span>
                 <span className="font-mono text-[10px] text-rust-400">{t('game.debrief.lost', { p: Math.round(m.drop * 100) })}</span>
@@ -493,7 +534,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
           return (
             <li key={k} data-at={k + 1}>
               {newRound && <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.debrief.round', { round: before.round, era: t(before.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })}</p>}
-              <button type="button" onClick={() => { setAt(k + 1); setRoad(null); }} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] transition-colors', at === k + 1 && !road ? 'bg-brass-500/15 text-cream-100' : 'text-cream-100/70 hover:bg-coal-800/70')}>
+              <button type="button" onClick={() => { setAt(k + 1); setVary(null); }} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] transition-colors', at === k + 1 && !vary ? 'bg-brass-500/15 text-cream-100' : 'text-cream-100/70 hover:bg-coal-800/70')}>
                 <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[p?.color]?.hex ?? '#C9A45C' }} />
                 <span className={cn('w-14 shrink-0 truncate font-mono text-[10px]', mine ? 'text-brass-300' : 'text-cream-100/45')}>{mine ? t('game.debrief.you') : p?.name}</span>
                 <span className="min-w-0 flex-1 truncate">{describeAction(a)}</span>

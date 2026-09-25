@@ -740,6 +740,7 @@ const game: typeof engame = {
     branchOnOne: 'Zweig: {move}, dann ein Zug',
     playFrom: 'Von hier weiterspielen',
     lost: '−{p} % Chancen',
+    roundShort: 'R{round}',
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',

@@ -738,6 +738,7 @@ const game = {
     branchOnOne: 'Branch: {move}, then one move',
     playFrom: 'Play on from here',
     lost: '−{p} % chance',
+    roundShort: 'R{round}',
     quality: { top: 'best', good: 'good', inaccuracy: 'inaccuracy', mistake: 'mistake', blunder: 'blunder' },
     close: 'Close the debrief',
     open: 'The debrief',

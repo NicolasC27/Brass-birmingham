@@ -138,6 +138,8 @@ export interface Followed {
   seat: number;
   action: GameAction;
   after: GameState;
+  /** a road the reader chose, not a move the machine played */
+  pick?: boolean;
 }
 
 /** the machine plays every seat on from here until the reader's turn comes

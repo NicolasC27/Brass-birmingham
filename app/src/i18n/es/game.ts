@@ -740,6 +740,7 @@ const game: typeof engame = {
     branchOnOne: 'Rama: {move}, luego una jugada',
     playFrom: 'Jugar desde aquí',
     lost: '−{p} % de opciones',
+    roundShort: 'R{round}',
     quality: { top: 'precisa', good: 'buena', inaccuracy: 'imprecisión', mistake: 'error', blunder: 'pifia' },
     close: 'Cerrar el balance',
     open: 'El balance',

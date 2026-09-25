@@ -740,6 +740,7 @@ const fr: typeof engame = {
     branchOnOne: 'Branche : {move}, puis un coup',
     playFrom: 'Jouer à partir d’ici',
     lost: '−{p} % de chances',
+    roundShort: 'M{round}',
     quality: { top: 'juste', good: 'bon', inaccuracy: 'imprécision', mistake: 'erreur', blunder: 'bévue' },
     close: 'Fermer le débrief',
     open: 'Le débrief',
