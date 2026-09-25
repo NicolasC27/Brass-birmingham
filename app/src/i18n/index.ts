@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 import { en } from './en';
 import { fr } from './fr';
 import { es } from './es';
@@ -126,6 +126,9 @@ export function tr(key: string, vars?: Record<string, string | number>): string 
 /** React hook: t('game.topbar.toAct', { name }) re-renders on language change */
 export function useT(): (key: string, vars?: Record<string, string | number>) => string {
   const l = useLang();
-  const dict = dictOf(l);
-  return (key, vars) => fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars, l);
+  /* one function per language, so effects may depend on it without churning */
+  return useCallback((key: string, vars?: Record<string, string | number>) => {
+    const dict = dictOf(l);
+    return fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars, l);
+  }, [l]);
 }
