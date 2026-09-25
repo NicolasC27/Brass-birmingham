@@ -128,6 +128,7 @@ const fr: typeof enresults = {
     machineAsk: "Relire la partie de {name}",
     machineBusy: "Lecture…",
     machineRead: "{done} coups lus sur {total}",
+    machineLeft: "encore {s} s environ",
     machineFailed: "La partie n'a pas pu être rejouée, il n'y a rien à relire.",
     machineAgrees: "Rien à ajouter : la machine aurait joué la partie de {name} comme elle a été jouée.",
     machineFound: "{n} [n|coup qu'elle aurait joué|coups qu'elle aurait joués] autrement, le plus grand écart d'abord.",

@@ -126,6 +126,7 @@ const results = {
     machineAsk: "Read {name}'s game",
     machineBusy: "Reading…",
     machineRead: "{done} of {total} moves read",
+    machineLeft: "about {s} s to go",
     machineFailed: "The game could not be replayed, so there is nothing to read.",
     machineAgrees: "Nothing to add: the machine would have played {name}'s game as it was played.",
     machineFound: "{n} [n|move|moves] it would have played otherwise, the widest disagreement first.",

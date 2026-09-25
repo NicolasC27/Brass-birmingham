@@ -128,6 +128,7 @@ const es: typeof enresults = {
     machineAsk: "Releer la partida de {name}",
     machineBusy: "Leyendo…",
     machineRead: "{done} de {total} movimientos leídos",
+    machineLeft: "quedan unos {s} s",
     machineFailed: "La partida no pudo rejugarse, así que no hay nada que leer.",
     machineAgrees: "Nada que añadir: la máquina habría jugado la partida de {name} tal como se jugó.",
     machineFound: "{n} [n|movimiento que habría jugado|movimientos que habría jugado] de otro modo, primero la mayor discrepancia.",

@@ -108,7 +108,8 @@ export default function Review() {
   const [picked, setPicked] = useState<number | null>(null);
   const [depth, setDepth] = useState<Depth>('quick');
   const [busy, setBusy] = useState(false);
-  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [progress, setProgress] = useState({ done: 0, total: 0, left: 0 });
+  const started = useRef(0);
   const [seconds, setSeconds] = useState<Second[] | null>(null);
   const [failed, setFailed] = useState(false);
   const worker = useRef<Worker | null>(null);
@@ -141,7 +142,7 @@ export default function Review() {
     setBusy(false);
     setSeconds(null);
     setFailed(false);
-    setProgress({ done: 0, total: 0 });
+    setProgress({ done: 0, total: 0, left: 0 });
   };
 
   const ask = () => {
@@ -150,12 +151,20 @@ export default function Review() {
     setBusy(true);
     setFailed(false);
     setSeconds(null);
-    setProgress({ done: 0, total: 0 });
+    setProgress({ done: 0, total: 0, left: 0 });
     const w = new Worker(new URL('../game/reviewWorker.ts', import.meta.url), { type: 'module' });
     worker.current = w;
     w.onmessage = (e: MessageEvent<Note>) => {
       const note = e.data;
-      if (note.kind === 'progress') setProgress({ done: note.done, total: note.total });
+      if (note.kind === 'progress') {
+        /* what is left is measured, not guessed: the moves already read say
+           how long a move takes at this table */
+        /* the worker opens with an empty bar: that note is the starting gun */
+        if (note.done === 0) started.current = performance.now();
+        const spent = performance.now() - started.current;
+        const left = note.done > 1 ? Math.round(((spent / note.done) * (note.total - note.done)) / 1000) : 0;
+        setProgress({ done: note.done, total: note.total, left });
+      }
       if (note.kind === 'done') {
         setSeconds(note.seconds);
         setBusy(false);
@@ -358,7 +367,10 @@ export default function Review() {
                   style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 4}%` }}
                 />
               </span>
-              <span className="font-mono text-[11px] text-cream-100/55 tnums">{t('results.review.machineRead', { done: progress.done, total: progress.total })}</span>
+              <span className="font-mono text-[11px] text-cream-100/55 tnums">
+                {t('results.review.machineRead', { done: progress.done, total: progress.total })}
+                {progress.left > 0 ? ` · ${t('results.review.machineLeft', { s: progress.left })}` : ''}
+              </span>
             </div>
           )}
 

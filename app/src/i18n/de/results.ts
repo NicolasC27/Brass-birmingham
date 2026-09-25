@@ -128,6 +128,7 @@ const de: typeof enresults = {
     machineAsk: "Partie von {name} nachlesen",
     machineBusy: "Liest…",
     machineRead: "{done} von {total} Zügen gelesen",
+    machineLeft: "noch etwa {s} s",
     machineFailed: "Die Partie ließ sich nicht nachspielen, es gibt nichts zu lesen.",
     machineAgrees: "Nichts hinzuzufügen: die Maschine hätte die Partie von {name} genauso gespielt.",
     machineFound: "{n} [n|Zug, den sie anders gespielt hätte|Züge, die sie anders gespielt hätte], der größte Abstand zuerst.",
