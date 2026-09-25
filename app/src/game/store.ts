@@ -449,7 +449,8 @@ export const useGame = create<GameStore>((set, get) => ({
       /* a game resumed keeps its pins and notes; a new one starts clean */
       pins: resumed ? readPins(localPinScope(at)) : {},
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
-      gameOverOpen: false,
+      /* a finished game resumed opens on its scores, the debrief a click away */
+      gameOverOpen: game.phase === 'game-over',
       coachStep: coached || tutorial ? -1 : 0,
     });
   },

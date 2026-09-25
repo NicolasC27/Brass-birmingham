@@ -262,8 +262,14 @@ export default function Game() {
   }, [seat, onlineCandle, frozen, candleEnd]);
 
   /* ------------------------- final write ------------------------ */
+  /* a game already over when the page opened is being looked at again:
+     its results were written then, and nobody is sent on to them */
+  const overAtStart = useRef<boolean | null>(null);
   useEffect(() => {
-    if (!game || game.phase !== 'game-over' || !gameOverOpen || finalWritten.current) return;
+    if (game && overAtStart.current === null) overAtStart.current = game.phase === 'game-over';
+  }, [game]);
+  useEffect(() => {
+    if (!game || game.phase !== 'game-over' || !gameOverOpen || finalWritten.current || overAtStart.current) return;
     finalWritten.current = true;
     try {
       localStorage.setItem(FINAL_KEY, JSON.stringify(buildFinalPayload(game)));
