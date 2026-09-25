@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { Eye } from 'lucide-react';
 import { PLAYER_COLORS } from '@/game/data';
-import { useGame } from '@/game/store';
+import { useShownGame } from '@/game/store';
 import { useT } from '@/i18n';
 import { keyLabel, useKeybindings } from './keybindings';
 import { useHudInsets } from './useHudInsets';
@@ -12,7 +12,7 @@ import { useHudInsets } from './useHudInsets';
    and the way back to the desk. */
 export default function SpectatorStrip() {
   const t = useT();
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const keys = useKeybindings();
   const insets = useHudInsets();
   if (!game) return null;

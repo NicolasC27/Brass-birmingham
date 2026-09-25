@@ -598,7 +598,7 @@ export default function Game() {
           the full tray hangs right under it when asked, whole, no scrolling,
           and the banner never moves for it (it keeps clear of the tray's
           column by itself) */}
-      {!surveying && <MarketPill market={game.market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
+      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
       <AnimatePresence initial={false}>
         {marketOpen && (
           <motion.aside
@@ -660,7 +660,7 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {!surveying && (spectating ? <SpectatorStrip /> : <HandDock />)}
+      {!surveying && !review && (spectating ? <SpectatorStrip /> : <HandDock />)}
       <ConcedeBanner />
       <TableMood />
       {!surveying && <Notices />}

@@ -1329,6 +1329,10 @@ export interface Review {
   better?: GameAction;
 }
 
+/** the table on show: the position under review while the analysis is
+    open, the live game otherwise — for what displays, never for what acts */
+export const useShownGame = (): GameState | null => useGame((s) => s.review?.state ?? s.game);
+
 /** a part of the HUD a lesson points at (a `data-lens` mark on the element) */
 export type HudLens = 'vp' | 'market' | 'mat' | 'hand' | 'rail' | 'rail-bot' | 'income' | 'ledger' | 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
 /** what a lesson lights: slots of the map (their keys), a part of the HUD, a town to fly to */

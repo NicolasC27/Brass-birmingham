@@ -4,7 +4,7 @@ import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { ChevronsDownUp, ChevronsUpDown, Coins, Eye, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
-import { useGame } from '@/game/store';
+import { useGame, useShownGame } from '@/game/store';
 import { projectedOrder } from '@/game/engine';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets, narrowRailTop } from './useHudInsets';
@@ -218,7 +218,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
  * hover expansion: the strip is all there is. */
 export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   const t = useT();
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const insets = useHudInsets();
   const narrow = useNarrow();
   const { railCompact, focus } = useBoardOptions();

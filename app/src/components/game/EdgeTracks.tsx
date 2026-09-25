@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, loanLanding } from '@/game/data';
-import { useGame } from '@/game/store';
+import { useGame, useShownGame } from '@/game/store';
 import { useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
@@ -175,7 +175,7 @@ function Pawn({
   onToggle: () => void;
   reduced: boolean;
 }) {
-  const game = useGame((s) => s.game)!;
+  const game = useShownGame()!;
   const t = useT();
   const p = game.players[idx];
   const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
@@ -268,7 +268,7 @@ function MoveFx({ axis, move, pct, from, to, col, reduced }: { axis: Axis; move:
 /* ------------------------------ tracks ----------------------------- */
 
 export default function EdgeTracks() {
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const spotlight = useGame((s) => s.spotlight);
   const setSpotlight = useGame((s) => s.setSpotlight);
   const loanConfirm = useGame((s) => s.loanConfirm);

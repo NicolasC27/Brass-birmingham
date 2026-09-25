@@ -4,7 +4,7 @@ import { TrainFront, Waves } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
-import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard } from '@/game/store';
+import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard, useShownGame } from '@/game/store';
 import type { Verb } from '@/game/types';
 import { reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
@@ -126,7 +126,7 @@ function Candle({ candle, total }: { candle: CandleProp; total: number }) {
 
 export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: boolean }) {
   const t = useT();
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const botHold = useGame((s) => s.botHold);
   const band = useBand(marketOpen, game?.players.length ?? 0);
   const mine = useGame((s) => s.planActor() >= 0);

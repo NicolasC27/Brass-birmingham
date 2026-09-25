@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MARKET_MAX, marketBuyPrice, marketSellPrice } from '@/game/data';
 import type { Resource } from '@/game/types';
-import { useGame } from '@/game/store';
+import { useGame, useShownGame } from '@/game/store';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -221,7 +221,7 @@ function drawCost(resource: Resource, have: number, n: number): number {
 
 export default function MarketTray({ consumePreview }: { consumePreview?: Partial<Record<Resource, number>> }) {
   const t = useT();
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const marketFocus = useGame((s) => s.marketFocus);
   if (!game) return null;
   const { coal, iron } = game.market;

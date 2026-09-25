@@ -1,5 +1,5 @@
 import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, PLAYER_COLORS, fmtPay, incomeLevel, loanLanding } from '@/game/data';
-import { useGame } from '@/game/store';
+import { useGame, useShownGame } from '@/game/store';
 import { useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
@@ -98,7 +98,7 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
 }
 
 export default function IncomeRail() {
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const setSpotlight = useGame((s) => s.setSpotlight);
   const spotlight = useGame((s) => s.spotlight);
   const t = useT();

@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, CircleMinus, Coins, Compass, FlaskConical, Hammer, Info, Landmark, Trophy, Waypoints } from 'lucide-react';
 import { PLAYER_COLORS } from '@/game/data';
-import { useGame } from '@/game/store';
+import { useGame, useShownGame } from '@/game/store';
 import type { LedgerEntry } from '@/game/types';
 import { useT } from '@/i18n';
 import { ledgerParts } from '@/game/ledgerText';
@@ -119,7 +119,7 @@ function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: str
 export default function Ledger({ seen = 0 }: { seen?: number }) {
   const t = useT();
   const keys = useKeybindings();
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const ledgerFilter = useGame((s) => s.ledgerFilter);
   const setLedgerFilter = useGame((s) => s.setLedgerFilter);
   const setHover = useGame((s) => s.setHover);

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GripVertical, Maximize2, Minimize2, X } from 'lucide-react';
 import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
-import { useGame } from '@/game/store';
+import { useGame, useShownGame } from '@/game/store';
 import type { IndustryLevel, IndustryType, PlayerState } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -249,7 +249,7 @@ function IndustryBlock({
   drag: { dragging: IndustryType | null; over: { ind: IndustryType; side: DropSide } | null; wide: boolean; start: (i: IndustryType) => void; hover: (i: IndustryType, side: DropSide) => void; drop: () => void; end: () => void };
 }) {
   const t = useT();
-  const game = useGame((s) => s.game)!;
+  const game = useShownGame()!;
   const tileArt = useBoardOptions().tileArt;
   const levels = INDUSTRIES[ind];
   const left = p.stacks[ind];
@@ -354,7 +354,7 @@ function IndustryBlock({
 
 export default function PlayerMat() {
   const t = useT();
-  const game = useGame((s) => s.game);
+  const game = useShownGame();
   const matPlayer = useGame((s) => s.matPlayer);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
