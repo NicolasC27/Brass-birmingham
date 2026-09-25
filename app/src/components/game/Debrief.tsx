@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Compass, Sparkles, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
-import { positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
-import type { Road } from '@/game/analysis';
+import { applyAction } from '@/game/actions';
+import { followOn, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import type { Followed, Road } from '@/game/analysis';
 import { readDebrief, turnsOf } from '@/game/debrief';
 import type { Moment } from '@/game/debrief';
 import type { GameAction } from '@/game/actions';
@@ -42,6 +43,38 @@ const regionOf = (a: GameAction | undefined): string | null => {
 };
 const pct = (p: number) => Math.round(p * 100);
 
+/* the game as a line: the reader's chance after every move, the half-way
+   mark, the era's turn, their wider misses as dots; a click goes there */
+function Curve({ chances, at, turns, marks, split, label, onPick }: { chances: number[]; at: number; turns: Set<number>; marks: Record<number, Moment>; split: number; label: string; onPick: (k: number) => void }) {
+  const W = 100;
+  const H = 36;
+  const last = Math.max(1, chances.length - 1);
+  const x = (k: number) => (k / last) * W;
+  const y = (c: number) => H - c * (H - 2) - 1;
+  const line = chances.map((c, k) => `${k === 0 ? 'M' : 'L'}${x(k).toFixed(2)},${y(c).toFixed(2)}`).join(' ');
+  const area = `${line} L${W},${H} L0,${H} Z`;
+  const misses = Object.values(marks).filter((m) => m.grade !== 'top' && m.grade !== 'good');
+  const pick = (e: React.MouseEvent<SVGSVGElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    onPick(Math.max(0, Math.min(last, Math.round(((e.clientX - r.left) / r.width) * last))));
+  };
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={label} onClick={pick} className="mt-2 h-14 w-full cursor-crosshair rounded-sm border border-brass-700/40 bg-coal-900/70">
+      <path d={area} fill="rgba(201,164,92,0.14)" />
+      <line x1={0} x2={W} y1={y(0.5)} y2={y(0.5)} stroke="rgba(245,235,215,0.25)" strokeWidth={0.4} strokeDasharray="1.5 1.5" vectorEffect="non-scaling-stroke" />
+      {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} stroke="rgba(245,235,215,0.22)" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />}
+      <path d={line} fill="none" stroke="#C9A45C" strokeWidth={1.4} vectorEffect="non-scaling-stroke" strokeLinejoin="round" />
+      {misses.map((m) => (
+        <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={1.6} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.5)" strokeWidth={0.4} vectorEffect="non-scaling-stroke" />
+      ))}
+      {[...turns].filter((k) => !marks[k]).map((k) => (
+        <circle key={`t${k}`} cx={x(k + 1)} cy={y(chances[k + 1] ?? 0.5)} r={0.7} fill="rgba(201,164,92,0.7)" />
+      ))}
+      <line x1={x(at)} x2={x(at)} y1={0} y2={H} stroke="#F5EBD7" strokeWidth={0.8} vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 export default function Debrief({ game, me }: { game: GameState; me: number }) {
   const t = useT();
   const setDebriefOpen = useGame((s) => s.setDebriefOpen);
@@ -50,9 +83,11 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
   /* every position, once: positions[k] is the table after k moves */
   const positions = useMemo(() => positionsOf(game), [game]);
   const last = positions.length - 1;
+  const chances = useMemo(() => positions.map((p) => winChance(p, me)), [positions, me]);
   const turns = useMemo(() => new Set(turnsOf(game, me)), [game, me]);
   const [at, setAt] = useState(last);
-  const [road, setRoad] = useState<{ from: number; roads: Road[]; picked: number | null } | null>(null);
+  const [road, setRoad] = useState<{ from: number; roads: Road[]; picked: number | null; followed?: { moves: Followed[]; after: GameState } } | null>(null);
+  const FOLLOW = 4;
   const machine = game.players.find((p) => p.isBot)?.name ?? t('game.debrief.machine');
 
   /* the reader's moves read one per tick by the debrief's own reader, the
@@ -80,10 +115,12 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
   /* the board follows the pick: the table after move `at`, or the end of the branch taken */
   useEffect(() => {
     const branch = road && road.picked !== null ? road.roads[road.picked] : null;
-    const state = branch ? branch.after : positions[at];
+    const state = branch ? (road?.followed?.after ?? branch.after) : positions[at];
     if (!state) return;
     const label = branch
-      ? t('game.debrief.branch', { move: describeAction(branch.action) })
+      ? road?.followed
+        ? t('game.debrief.branchOn', { move: describeAction(branch.action), n: road.followed.moves.length })
+        : t('game.debrief.branch', { move: describeAction(branch.action) })
       : at === 0 ? t('game.debrief.start') : `${at}/${last} · ${describeAction(game.actions[at - 1])}`;
     setReview({ at, round: state.round, state, label, ...(grades.byAt[at - 1] ? { mine: grades.byAt[at - 1].mine, better: grades.byAt[at - 1].better } : {}) });
     const where = regionOf(branch ? branch.action : game.actions[at - 1]);
@@ -104,7 +141,7 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [last]);
 
-  const shown = road && road.picked !== null ? road.roads[road.picked].after : positions[at];
+  const shown = road && road.picked !== null ? (road.followed?.after ?? road.roads[road.picked].after) : positions[at];
   const chance = shown ? winChance(shown, me) : 0.5;
   const explore = () => {
     /* the other roads from the position before the reader's selected move */
@@ -113,6 +150,35 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
     setRoad({ from: at, roads: roadsFrom(from, me, 8, game.actions[at - 1]), picked: null });
   };
   const canExplore = at > 0 && turns.has(at - 1) && positions[at - 1]?.phase === 'action';
+  /* the move under the cursor, when the reader's and read wider than good:
+     what was better, and how much more chance the judge gave it */
+  const lesson = useMemo(() => {
+    const m = at > 0 ? grades.byAt[at - 1] : undefined;
+    if (!m || m.grade === 'top' || m.grade === 'good') return null;
+    const after = applyAction(m.before, me, m.better).state;
+    if (!after) return null;
+    const delta = Math.round((winChance(after, me) - (chances[at] ?? 0.5)) * 100);
+    return { m, delta };
+  }, [at, grades.byAt, me, chances]);
+  const seeBetter = () => {
+    if (!lesson) return;
+    const from = positions[at - 1];
+    if (!from) return;
+    const roads = roadsFrom(from, me, 8, game.actions[at - 1]);
+    const key = sameRoad(lesson.m.better);
+    let picked = roads.findIndex((r) => sameRoad(r.action) === key);
+    if (picked < 0) {
+      const after = applyAction(from, me, lesson.m.better).state;
+      if (!after) return;
+      roads.push({ action: lesson.m.better, after, chance: winChance(after, me) });
+      picked = roads.length - 1;
+    }
+    setRoad({ from: at, roads, picked });
+  };
+  const follow = () => {
+    if (!road || road.picked === null) return;
+    setRoad({ ...road, followed: followOn(road.roads[road.picked].after, FOLLOW) });
+  };
   const close = () => setDebriefOpen(false);
   /* the board goes back to the live table when the panel goes */
   useEffect(() => () => setReview(null), [setReview]);
@@ -142,6 +208,7 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
         <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-coal-800" aria-hidden>
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
+        <Curve chances={chances} at={at} turns={turns} marks={grades.byAt} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} onPick={(k) => { setAt(k); setRoad(null); }} />
         <div className="mt-2 flex items-center gap-1.5">
           <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setRoad(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -162,6 +229,24 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
           )}
         </div>
       </div>
+
+      {/* the move under the cursor, read wider than good: what was better */}
+      {lesson && !road && (
+        <div className="paper shrink-0 px-3 py-2">
+          <p className="font-sans text-[11.5px] text-ink-900">
+            <span className="font-fell text-[10px] uppercase tracking-[0.14em] text-rust-700">{t(`game.debrief.quality.${lesson.m.grade}`)}</span>
+            {' · '}
+            {t('game.debrief.betterWas', { move: describeAction(lesson.m.better) })}
+          </p>
+          <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
+            {lesson.delta > 0 ? t('game.debrief.whyGap', { name: machine, p: lesson.delta }) + ' ' : ''}
+            {t(`game.guide.suggest.why.${whyKey(lesson.m.better)}`, { name: machine })}
+          </p>
+          <button type="button" onClick={seeBetter} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+            <Compass className="h-3 w-3" /> {t('game.debrief.seeBetter')}
+          </button>
+        </div>
+      )}
 
       {/* the other roads from this turn of the reader's */}
       {road && (
@@ -184,6 +269,16 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
           {road.picked !== null && (
             <p className="mt-1.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
               {t(`game.guide.suggest.why.${whyKey(road.roads[road.picked].action)}`, { name: machine })}
+            </p>
+          )}
+          {road.picked !== null && !road.followed && road.roads[road.picked].after.phase !== 'game-over' && (
+            <button type="button" onClick={follow} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+              {t('game.debrief.follow', { n: FOLLOW })}
+            </button>
+          )}
+          {road.followed && (
+            <p className="mt-1.5 font-sans text-[11px] leading-snug text-ink-900/85">
+              {t('game.debrief.followed', { moves: road.followed.moves.map((f) => `${f.seat === me ? t('game.debrief.you') : game.players[f.seat]?.name} · ${describeAction(f.action)}`).join(' — ') })}
             </p>
           )}
         </div>

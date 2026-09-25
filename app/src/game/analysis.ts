@@ -1,7 +1,7 @@
-import { applyAction, setupOf } from './actions';
+import { applyAction, fallbackAction, setupOf } from './actions';
 import { eraRounds, newGame } from './engine';
 import type { GameAction } from './actions';
-import { evaluate, worthTrying } from './search';
+import { chooseBotAction, evaluate, worthTrying } from './search';
 import type { GameState } from './types';
 
 /* ------------------------------------------------------------------ */
@@ -112,4 +112,33 @@ export function sameRoad(a: GameAction): string {
 /* the setup a game began from, as the store keeps it on the state */
 function setupFrom(g: GameState): GameState {
   return newGame(setupOf(g), g.seed);
+}
+
+/** a move of the machine's while a branch is followed on */
+export interface Followed {
+  seat: number;
+  action: GameAction;
+}
+
+/** the machine plays every seat from here for a few moves, so a branch shows
+    where it leads rather than only the table the move leaves */
+export function followOn(s: GameState, moves: number, budgetMs = 40): { moves: Followed[]; after: GameState } {
+  const played: Followed[] = [];
+  let cur = s;
+  let guard = 0;
+  while (played.length < moves && cur.phase !== 'game-over' && guard++ < moves * 3) {
+    if (cur.phase === 'scoring-canal') {
+      const next = applyAction(cur, cur.current, { kind: 'begin-rail' }).state;
+      if (!next) break;
+      cur = next;
+      continue;
+    }
+    const seat = cur.current;
+    const action = chooseBotAction(cur, seat, { strength: 0.8, budgetMs }) ?? fallbackAction(cur, seat);
+    const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
+    if (!next) break;
+    played.push({ seat, action });
+    cur = next;
+  }
+  return { moves: played, after: cur };
 }
