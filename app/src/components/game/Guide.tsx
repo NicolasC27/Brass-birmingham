@@ -9,7 +9,7 @@ import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
-import { faqFor, faqMatch, passagesOf, rulesMatch } from '@/game/faq';
+import { carries, faqBest, faqFor, passagesOf, rulesMatch } from '@/game/faq';
 import { describeAction, useGame } from '@/game/store';
 import { chooseBotAction } from '@/game/search';
 import type { GameAction } from '@/game/actions';
@@ -742,14 +742,18 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
      a payday owed rather than paid, a short game that ends here */
   const stepKey = (id: string): string =>
     id === 'payday' && incomeLevel(game.players[me].income) < 0 ? 'paydayOwed' : id === 'eraEnd' && game.eraLength === 'short' ? 'eraEndShort' : id;
-  /* the question the words point at, if the guide knows one */
-  const intentOf = (q: string): Ask | null => {
-    const said = q.toLowerCase();
+  /* the question about this table the words point at, and how long the
+     phrase matched was — the same measure the written answers use, so the
+     surest of the two wins rather than whichever was tried first */
+  const intentOf = (q: string): { id: Ask; score: number } | null => {
+    let best: { id: Ask; score: number } | null = null;
     for (const id of ASKS) {
-      const words = t(`game.guide.ask.words.${id}`).split(',').map((w) => w.trim().toLowerCase()).filter(Boolean);
-      if (words.some((w) => said.includes(w))) return id;
+      for (const phrase of t(`game.guide.ask.words.${id}`).split(',')) {
+        const score = carries(q, phrase);
+        if (score && (!best || score > best.score)) best = { id, score };
+      }
     }
-    return null;
+    return best;
   };
   /* the answer, read off the table as it stands */
   const answerTo = (id: Ask): string => {
@@ -786,10 +790,13 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
     const q = question.trim();
     if (!q) return;
     setQuestion('');
-    const id = intentOf(q);
-    const entry = id ? null : faqMatch(q, faqFor(getLang()));
+    const table = intentOf(q);
+    const written = faqBest(q, faqFor(getLang()));
+    /* the table answers when it is the surer match; the rules when they are */
+    const id = table && (!written || table.score >= written.score) ? table.id : null;
+    const entry = id ? null : written?.entry;
     const passage = id || entry ? null : rulesMatch(q, passages);
-    const answer = id ? answerTo(id) : entry ? entry.answer : passage ? `${passage.title} — ${passage.body}` : t('game.guide.ask.answer.none');
+    const answer = id ? answerTo(id) : entry ? entry.answer : passage ? (passage.title ? `${passage.title} — ${passage.body}` : passage.body) : t('game.guide.ask.answer.none');
     setSaid((prev) => [
       ...prev,
       { key: `q${prev.length}`, kind: 'ask', body: q },

@@ -30,8 +30,8 @@ describe('the rules the guide knows', () => {
       ['un emprunt se rembourse ?', 'loan'],
       ['je peux développer une poterie à ampoule ?', 'develop'],
       ['qui joue en premier', 'order'],
-      ['je peux mettre deux tuiles dans la même ville ?', 'onePerTown'],
-      ['la surconstruction marche comment', 'overbuild'],
+      ['une tuile par lieu ou plusieurs ?', 'oneTilePerPlace'],
+      ['la surconstruction marche comment', 'overbuildTile'],
     ];
     for (const [q, id] of asks) expect(`${q} → ${faqMatch(q, faqFor('fr'))?.id ?? 'none'}`).toBe(`${q} → ${id}`);
   });
@@ -73,5 +73,39 @@ describe('the rules codex, searched', () => {
 
   it('holds its tongue when nothing is close', () => {
     expect(rulesMatch('zzz', frPassages)).toBeNull();
+  });
+});
+
+describe('the answers written from the rules dossier', () => {
+  it('cover every area of the game', () => {
+    /* the four areas the entries were written from */
+    const ids = faqFor('fr').map((e) => e.id);
+    expect(ids.length).toBeGreaterThanOrEqual(100);
+    for (const must of ['boardTowns', 'merchantPlaces', 'cottonCost', 'potteryCost', 'deckSize', 'coalOrder', 'progressBands', 'gameEndTie', 'initiationBonus'])
+      expect(`${must}: ${ids.includes(must)}`).toBe(`${must}: true`);
+  });
+
+  it('holds the same ids in both tongues', () => {
+    expect(faqFor('en').map((e) => e.id)).toEqual(faqFor('fr').map((e) => e.id));
+  });
+
+  it('keeps the entries mostly out of each other’s way', () => {
+    /* a phrase belonging to one entry may be answered by another when both
+       answers are true — two entries on the income track, say. What must not
+       happen is a corpus where that is the rule rather than the exception */
+    const entries = faqFor('fr');
+    const phrases = entries.flatMap((e) => e.words.map((w) => ({ e, w })));
+    const stolen = phrases.filter(({ e, w }) => {
+      const hit = faqMatch(w, entries);
+      return hit && hit.id !== e.id;
+    });
+    expect(stolen.length / phrases.length).toBeLessThan(0.15);
+  });
+
+  it('answers a hundred plain questions without falling through', () => {
+    const entries = faqFor('fr');
+    /* every entry must be reachable by at least one of its own phrases */
+    const mute = entries.filter((e) => !e.words.some((w) => faqMatch(w, entries)?.id === e.id));
+    expect(mute.map((e) => e.id)).toEqual([]);
   });
 });
