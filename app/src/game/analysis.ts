@@ -52,10 +52,25 @@ export function roundsLeft(s: GameState): number {
    fit): the width of the curve at the last round, how much it widens
    per round still to play, and how far a tie with the best rival sits
    below even while other rivals remain. Predicted deciles land within
-   five points of the observed win rate at two, three and four seats. */
-const WIDTH = 4.5;
-const WIDEN = 2;
-const RIVALS = 0.7;
+   five points of the observed win rate at two, three and four seats.
+   The judges that read on before weighing have scales of their own. */
+export interface Scale {
+  /** the width of the curve at the last round */
+  width: number;
+  /** how much it widens per round still to play */
+  widen: number;
+  /** how far a tie with the best rival sits below even, per rival beyond one and per round left */
+  rivals: number;
+}
+/** the scale of a position weighed as it stands */
+export const SHORT_SCALE: Scale = { width: 4.5, widen: 2, rivals: 0.7 };
+
+/** the chance a lead gives, on a scale: a logistic, wider while rounds remain */
+export function chanceOf(edge: number, left: number, seats: number, scale: Scale): number {
+  const spread = scale.width * Math.sqrt(1 + scale.widen * left);
+  const shift = scale.rivals * (seats - 2) * left;
+  return 1 / (1 + Math.exp(-(edge - shift) / spread));
+}
 
 /** the chance of winning the judge gives this seat here, 0 to 1: a logistic
     on the edge, wider while the game is young — the same lead is worth less
@@ -66,10 +81,7 @@ export function winChance(s: GameState, me: number): number {
     const top = Math.max(...s.players.map((p) => p.vp));
     return s.players[me].vp >= top ? 1 : 0;
   }
-  const left = roundsLeft(s);
-  const spread = WIDTH * Math.sqrt(1 + WIDEN * left);
-  const shift = RIVALS * (s.players.length - 2) * left;
-  return 1 / (1 + Math.exp(-(edgeOf(s, me) - shift) / spread));
+  return chanceOf(edgeOf(s, me), roundsLeft(s), s.players.length, SHORT_SCALE);
 }
 
 export type Quality = 'best' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
@@ -182,16 +194,23 @@ export interface Judge {
   plies: number;
   /** how long the machine thinks about each of them */
   budgetMs: number;
+  /** the scale its leads are read on, fitted for this depth (tools/bots/calibrate.ts) */
+  scale: Scale;
 }
 
-export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15 };
+/* Each judge's scale is fitted on its own readings (tools/bots/calibrate.ts
+   with DEEP=1: 96 tables of two to four uneven machines, 22 600 positions
+   read by all three judges). The longer the reading, the better it tells
+   the outcome — log loss 0.403 as the table stands, 0.391 five moves on,
+   0.377 ten moves on — and each lands its deciles within five points. */
+export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 7, widen: 0.5, rivals: 0.5 } };
 
-/** the table a few moves on, the machine playing every seat flat out */
-export function lookAhead(s: GameState, judge: Judge): GameState {
+/** the tables a few moves on, one per move, the machine playing every seat flat out */
+export function lookAhead(s: GameState, judge: Judge): GameState[] {
+  const out: GameState[] = [];
   let cur = s;
-  let played = 0;
   let guard = 0;
-  while (played < judge.plies && cur.phase !== 'game-over' && guard++ < judge.plies * 3) {
+  while (out.length < judge.plies && cur.phase !== 'game-over' && guard++ < judge.plies * 3) {
     if (cur.phase === 'scoring-canal') {
       const next = applyAction(cur, cur.current, { kind: 'begin-rail' }).state;
       if (!next) break;
@@ -203,15 +222,28 @@ export function lookAhead(s: GameState, judge: Judge): GameState {
     const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
     if (!next) break;
     cur = next;
-    played += 1;
+    out.push(cur);
   }
-  return cur;
+  return out;
 }
 
-/** the chance of winning from here, read after the replies */
+/** the lead read along the continuation: the mean over its tables, which
+    steadies a figure that one table alone would leave to the last move */
+export function deepEdge(s: GameState, me: number, judge: Judge): number {
+  const path = lookAhead(s, judge);
+  if (!path.length) return edgeOf(s, me);
+  return path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
+}
+
+/** the chance of winning from here, read after the replies, on the judge's own scale */
 export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE): number {
   if (s.phase === 'game-over') return winChance(s, me);
-  return winChance(lookAhead(s, judge), me);
+  const path = lookAhead(s, judge);
+  if (!path.length) return winChance(s, me);
+  const last = path[path.length - 1];
+  if (last.phase === 'game-over') return winChance(last, me);
+  const edge = path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
+  return chanceOf(edge, roundsLeft(s), s.players.length, judge.scale);
 }
 
 /** what a move may cost in chance before it stops being a good one: the
@@ -263,7 +295,7 @@ export function judgeTurn(before: GameState, me: number, played: GameAction, jud
 
 /** the roads of one turn read again, longer: what the panel asks for the
     turn being explored */
-export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25 };
+export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 6.5, widen: 0.5, rivals: 0.4 } };
 
 export function weighRoads(before: GameState, me: number, roads: GameAction[], judge: Judge = DEEP_JUDGE): Weighed[] {
   return roads

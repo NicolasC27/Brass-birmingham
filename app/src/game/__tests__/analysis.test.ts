@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
-import { deepChance, gradeOfLoss, judgeTurn, positionsOf, qualityOf, roadsFrom, sameRoad, winChance } from '../analysis';
+import { SHORT_SCALE, deepChance, gradeOfLoss, judgeTurn, positionsOf, qualityOf, roadsFrom, sameRoad, winChance } from '../analysis';
 import { newGame } from '../engine';
 import type { SetupPayload } from '../types';
 
@@ -57,7 +57,7 @@ describe('the long judge', () => {
     }
     const positions = positionsOf(s);
     const k = positions.findIndex((p) => p.current === me && p.phase === 'action');
-    const quick = { plies: 2, budgetMs: 5 };
+    const quick = { plies: 2, budgetMs: 5, scale: SHORT_SCALE };
     const v = judgeTurn(positions[k], me, s.actions[k], quick);
     expect(v).not.toBeNull();
     expect(v!.at).toBe(k);

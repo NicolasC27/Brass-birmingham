@@ -17,7 +17,7 @@ import { cpus } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { applyAction, fallbackAction } from '@/game/actions';
-import { edgeOf, roundsLeft } from '@/game/analysis';
+import { DEEP_JUDGE, LONG_JUDGE, deepEdge, edgeOf, roundsLeft } from '@/game/analysis';
 import { newGame } from '@/game/engine';
 import { chooseBotAction } from '@/game/search';
 import type { GameState, SetupPayload } from '@/game/types';
@@ -28,6 +28,9 @@ const OUT = process.env.OUT ?? 'tools/bots/data/calibrate.jsonl';
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, Math.min(GAMES, cpus().length - 2)));
 /** seats at every table, or a mix of two to four when unset */
 const SEATS = process.env.SEATS ? Number(process.env.SEATS) : null;
+/** DEEP=1: every EVERY-th position is also read by the long and the deep judge (slow) */
+const DEEP = process.env.DEEP === '1';
+const EVERY = Number(process.env.EVERY ?? 3);
 
 const COLORS = ['brass', 'oxblood', 'verdigris', 'indigo'] as const;
 const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
@@ -46,6 +49,9 @@ const setup = (n: number): SetupPayload =>
 
 interface Row {
   edge: number;
+  /** the lead read by the long and the deep judge, when asked */
+  long?: number;
+  deep?: number;
   left: number;
   era: 'canal' | 'rail';
   won: 0 | 1;
@@ -61,7 +67,8 @@ function play(seed: number): Row[] {
      even games to routs */
   const strengths = Array.from({ length: n }, () => 0.3 + 0.7 * r());
   let s: GameState = newGame(setup(n), seed);
-  const seen: { edge: number[]; left: number; era: 'canal' | 'rail' }[] = [];
+  const seen: { edge: number[]; long?: number[]; deep?: number[]; left: number; era: 'canal' | 'rail' }[] = [];
+  let tick = 0;
   let guard = 0;
   while (s.phase !== 'game-over' && guard++ < 5000) {
     if (s.phase === 'scoring-canal') {
@@ -71,11 +78,22 @@ function play(seed: number): Row[] {
     const seat = s.current;
     const a = chooseBotAction(s, seat, { strength: strengths[seat], budgetMs: BUDGET }) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
-    if (s.phase === 'action') seen.push({ edge: s.players.map((_, i) => edgeOf(s, i)), left: roundsLeft(s), era: s.era });
+    if (s.phase === 'action') {
+      const row: (typeof seen)[number] = { edge: s.players.map((_, i) => edgeOf(s, i)), left: roundsLeft(s), era: s.era };
+      if (DEEP && tick++ % EVERY === 0) {
+        const at = s;
+        row.long = at.players.map((_, i) => deepEdge(at, i, LONG_JUDGE));
+        row.deep = at.players.map((_, i) => deepEdge(at, i, DEEP_JUDGE));
+      }
+      seen.push(row);
+    }
   }
   const top = Math.max(...s.players.map((p) => p.vp));
   const out: Row[] = [];
-  for (const p of seen) p.edge.forEach((edge, i) => out.push({ edge: Math.round(edge * 10) / 10, left: p.left, era: p.era, won: s.players[i].vp >= top ? 1 : 0, seats: n, seed }));
+  for (const p of seen) {
+    if (DEEP && !p.long) continue;
+    p.edge.forEach((edge, i) => out.push({ edge: Math.round(edge * 10) / 10, ...(p.long ? { long: Math.round(p.long[i] * 10) / 10, deep: Math.round(p.deep![i] * 10) / 10 } : {}), left: p.left, era: p.era, won: s.players[i].vp >= top ? 1 : 0, seats: n, seed }));
+  }
   return out;
 }
 
