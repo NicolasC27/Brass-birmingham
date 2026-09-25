@@ -126,7 +126,24 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
     w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions, me });
     return () => w?.terminate();
   }, [game, me]);
-  const keyMoments = useMemo(() => Object.values(verdicts).filter((v) => v.loss > LOSS.good).sort((a, b) => b.loss - a.loss).slice(0, 3), [verdicts]);
+  /* the key moments: where the curve fell hardest, whoever moved — the
+     reader's own miss or a rival's stroke */
+  const keyMoments = useMemo(() => {
+    const drops: { k: number; drop: number }[] = [];
+    for (let k = 1; k < chances.length; k++) {
+      const drop = chances[k - 1] - chances[k];
+      if (drop > LOSS.good) drops.push({ k, drop });
+    }
+    return drops
+      .sort((a, b) => b.drop - a.drop)
+      .slice(0, 3)
+      .map(({ k, drop }) => {
+        const before = positions[k - 1];
+        const a = game.actions[k - 1];
+        const seat = a?.kind === 'concede' ? a.player : before.current;
+        return { k, drop, round: before.round, era: before.era, seat };
+      });
+  }, [chances, positions, game.actions]);
 
   /* the roads from the position before move `from`: the long judge's once it
      has read that turn, the short judge's meanwhile; the pick follows by key */
@@ -324,8 +341,10 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.keyMoments')}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {keyMoments.map((m) => (
-              <button key={m.at} type="button" onClick={() => { setAt(m.at + 1); setRoad(null); }} className={cn('rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.at + 1 ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
-                {t('game.debrief.round', { round: m.round, era: t(m.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })} · <span className="text-rust-400">{t(`game.debrief.quality.${m.grade}`)}</span> <span className="font-mono text-[10px] text-rust-400/80">{t('game.debrief.lost', { p: Math.round(m.loss * 100) })}</span>
+              <button key={m.k} type="button" onClick={() => { setAt(m.k); setRoad(null); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
+                <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[m.seat]?.color]?.hex ?? '#C9A45C' }} />
+                <span>{t('game.debrief.round', { round: m.round, era: t(m.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })} · {m.seat === me ? t('game.debrief.you') : game.players[m.seat]?.name}</span>
+                <span className="font-mono text-[10px] text-rust-400">{t('game.debrief.lost', { p: Math.round(m.drop * 100) })}</span>
               </button>
             ))}
           </div>
