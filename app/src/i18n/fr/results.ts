@@ -81,7 +81,7 @@ const fr: typeof enresults = {
     total: "Total",
     finalIncome: "Revenu final",
     linksBuilt: "Liaisons posées",
-    tilesBuilt: "Tuiles construites / flippées",
+    tilesBuilt: "Tuiles construites",
   },
   frieze: {
     title: "Frise de la partie",

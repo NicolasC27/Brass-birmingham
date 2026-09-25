@@ -81,7 +81,7 @@ const es: typeof enresults = {
     total: "Total",
     finalIncome: "Ingresos finales",
     linksBuilt: "Enlaces construidos",
-    tilesBuilt: "Losetas construidas / volteadas",
+    tilesBuilt: "Losetas construidas",
   },
   frieze: {
     title: "Friso de la partida",

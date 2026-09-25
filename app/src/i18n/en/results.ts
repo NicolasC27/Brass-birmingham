@@ -79,7 +79,7 @@ const results = {
     total: "Total",
     finalIncome: "Final income",
     linksBuilt: "Links built",
-    tilesBuilt: "Tiles built / flipped",
+    tilesBuilt: "Tiles built",
   },
   frieze: {
     title: "Game Timeline",

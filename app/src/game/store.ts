@@ -288,8 +288,10 @@ export function buildFinalPayload(g: GameState): FinalPayload {
       color: p.color,
       vp: p.vp,
       income: incomeLevel(p.income),
-      links: Object.values(g.links).filter((l) => l.owner === g.players.indexOf(p)).length,
-      industries: Object.values(g.tiles).filter((t) => t.owner === g.players.indexOf(p)).length + p.stats.sold,
+      /* the link tiles leave the board with their era, so the board cannot
+         be counted at the close: the tally of what was laid is the figure */
+      links: p.stats.links,
+      industries: p.stats.built,
       stats: { ...p.stats },
       bot: p.isBot,
     })),
