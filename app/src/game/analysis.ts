@@ -46,16 +46,29 @@ export function roundsLeft(s: GameState): number {
   return Math.max(0, eras * perEra - played);
 }
 
+/* The chance's constants, fitted on 340 tables of machines of uneven
+   strength (98 000 positions, tools/bots/calibrate.ts then a log-loss
+   fit): the width of the curve at the last round, how much it widens
+   per round still to play, and how far a tie with the best rival sits
+   below even while other rivals remain. Predicted deciles land within
+   five points of the observed win rate at two, three and four seats. */
+const WIDTH = 4.5;
+const WIDEN = 2;
+const RIVALS = 0.7;
+
 /** the chance of winning the judge gives this seat here, 0 to 1: a logistic
     on the edge, wider while the game is young — the same lead is worth less
-    with eighteen rounds to play than with one */
+    with eighteen rounds to play than with one — and, at a table of more than
+    two, a tie with the best rival reads below even while rounds remain */
 export function winChance(s: GameState, me: number): number {
   if (s.phase === 'game-over') {
     const top = Math.max(...s.players.map((p) => p.vp));
     return s.players[me].vp >= top ? 1 : 0;
   }
-  const spread = 8 * Math.sqrt(1 + roundsLeft(s) / 3);
-  return 1 / (1 + Math.exp(-edgeOf(s, me) / spread));
+  const left = roundsLeft(s);
+  const spread = WIDTH * Math.sqrt(1 + WIDEN * left);
+  const shift = RIVALS * (s.players.length - 2) * left;
+  return 1 / (1 + Math.exp(-(edgeOf(s, me) - shift) / spread));
 }
 
 export type Quality = 'best' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
