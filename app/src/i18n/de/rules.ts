@@ -428,7 +428,7 @@ const de: typeof enrules = {
     },
     clockworkClub: {
       term: "The Clockwork Club",
-      def: "Die mechanischen Spieler — die Bots Vorarbeiter, Industrieller und Magnat, die einen leeren Stuhl besetzen.",
+      def: "Die mechanischen Spieler, die einen leeren Stuhl besetzen — Mr Boulton, Mrs Wedgwood und Miss Arkwright spielen auf deinem Niveau; Mr Watt, der Experte, spielt mit voller Kraft.",
     },
   },
   approx: {
@@ -461,7 +461,7 @@ const de: typeof enrules = {
     },
     bots: {
       area: "The Clockwork Club (Bots)",
-      note: "Vorarbeiter, Industrieller und Magnat sind Heuristiken mit unterschiedlichem Appetit — keine Gegner mit tiefer Suche.",
+      note: "Vier Charaktere teilen sich ein Gehirn: jeder denkt seinen ganzen Zug durch und blickt bei voller Stärke ein oder zwei Runden voraus. Drei spielen auf deinem Niveau, Mr Watt spielt mit voller Kraft — keiner sucht das Spiel bis zum Ende durch.",
     },
     multiplayer: {
       area: "Online-Mehrspieler",

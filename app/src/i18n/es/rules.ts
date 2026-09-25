@@ -428,7 +428,7 @@ const es: typeof enrules = {
     },
     clockworkClub: {
       term: "The Clockwork Club",
-      def: "Los jugadores mecánicos — los bots Capataz, Industrial y Magnate que ocupan una silla vacía.",
+      def: "Los jugadores mecánicos que ocupan una silla vacía — Mr Boulton, Mrs Wedgwood y Miss Arkwright juegan a tu nivel; Mr Watt, el experto, juega a fondo.",
     },
   },
   approx: {
@@ -461,7 +461,7 @@ const es: typeof enrules = {
     },
     bots: {
       area: "The Clockwork Club (bots)",
-      note: "Capataz, Industrial y Magnate son heurísticas de apetitos distintos — no rivales de búsqueda profunda.",
+      note: "Cuatro personajes comparten un mismo cerebro: cada uno piensa todo su turno y, a plena fuerza, mira una o dos rondas más allá. Tres juegan a tu nivel, Mr Watt juega a fondo — ninguno lleva la búsqueda hasta el final de la partida.",
     },
     multiplayer: {
       area: "Multijugador en línea",

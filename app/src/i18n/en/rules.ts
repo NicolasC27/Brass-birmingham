@@ -426,7 +426,7 @@ const rules = {
     },
     clockworkClub: {
       term: 'The Clockwork Club',
-      def: 'The mechanical players — Foreman, Industrialist and Magnate bots that fill an empty chair.',
+      def: 'The mechanical players that fill an empty chair — Mr Boulton, Mrs Wedgwood and Miss Arkwright play to your level; Mr Watt, the expert, plays flat out.',
     },
   },
   approx: {
@@ -459,7 +459,7 @@ const rules = {
     },
     bots: {
       area: 'The Clockwork Club (bots)',
-      note: 'Foreman, Industrialist and Magnate are heuristics with differing appetites — not deep-search opponents.',
+      note: 'Four characters share one brain: each thinks its whole turn through and, at full strength, looks a round or two ahead. Three play to your level; Mr Watt plays flat out — none searches the game to its end.',
     },
     multiplayer: {
       area: 'Online multiplayer',

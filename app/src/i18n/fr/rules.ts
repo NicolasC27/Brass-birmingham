@@ -428,7 +428,7 @@ const fr: typeof enrules = {
     },
     clockworkClub: {
       term: "The Clockwork Club",
-      def: "Les joueurs mécaniques — les bots Contremaître, Industriel et Magnat qui occupent une chaise vide.",
+      def: "Les joueurs mécaniques qui occupent une chaise vide — Mr Boulton, Mrs Wedgwood et Miss Arkwright jouent à votre niveau ; Mr Watt, l'expert, joue à fond.",
     },
   },
   approx: {
@@ -461,7 +461,7 @@ const fr: typeof enrules = {
     },
     bots: {
       area: "The Clockwork Club (bots)",
-      note: "Contremaître, Industriel et Magnat sont des heuristiques aux appétits différents — pas des adversaires à recherche profonde.",
+      note: "Quatre personnages partagent une même cervelle : chacun réfléchit tout son tour et, à pleine force, regarde un ou deux tours plus loin. Trois jouent à votre niveau, Mr Watt joue à fond — aucun ne pousse la recherche jusqu'à la fin de la partie.",
     },
     multiplayer: {
       area: "Multijoueur en ligne",
