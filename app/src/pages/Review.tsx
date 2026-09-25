@@ -166,7 +166,7 @@ export default function Review() {
         setProgress({ done: note.done, total: note.total, left });
       }
       if (note.kind === 'done') {
-        setSeconds(note.seconds);
+        setSeconds(note.moves.filter((m) => m.gap > 0).sort((a, b) => b.gap - a.gap));
         setBusy(false);
         stop();
       }
@@ -288,6 +288,7 @@ export default function Review() {
                 <tr className="text-cream-100/45">
                   <th className="border-b border-brass-700/40 py-1 text-left font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colRound')}</th>
                   <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colVp')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400">{t('results.review.colProj')}</th>
                   <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colIncome')}</th>
                   <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colPurse')}</th>
                   <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colSpent')}</th>
@@ -300,6 +301,7 @@ export default function Review() {
                       {t(r.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: r.round })}
                     </td>
                     <td className="border-b border-brass-700/15 py-1 text-right">{r.vp[mineSeat] ?? 0}</td>
+                    <td className="border-b border-brass-700/15 py-1 text-right text-brass-400">{r.proj[mineSeat] ?? 0}</td>
                     <td className="border-b border-brass-700/15 py-1 text-right">{r.income[mineSeat] ?? 0}</td>
                     <td className="border-b border-brass-700/15 py-1 text-right">£{r.money[mineSeat] ?? 0}</td>
                     <td className="border-b border-brass-700/15 py-1 text-right text-cream-100/55">£{mine.spent[i] ?? 0}</td>
@@ -308,6 +310,7 @@ export default function Review() {
                 <tr className="font-semibold text-cream-100">
                   <td className="py-1.5 text-left font-sans text-[11px] uppercase tracking-[0.12em] text-brass-400">{t('results.review.colClose')}</td>
                   <td className="py-1.5 text-right">{mine.vp}</td>
+                  <td className="py-1.5 text-right text-brass-400">{mine.vp}</td>
                   <td className="py-1.5 text-right">{mine.income}</td>
                   <td className="py-1.5 text-right">£{mine.money}</td>
                   <td className="py-1.5 text-right text-cream-100/40">—</td>
@@ -392,7 +395,7 @@ export default function Review() {
                       </span>
                     </p>
                     <p className="mt-1 font-mono text-[11.5px] text-cream-100/85">{t('results.review.yours', { move: describeAction(s.yours) })}</p>
-                    <p className="font-mono text-[11.5px] text-brass-400">{t('results.review.theirs', { move: describeAction(s.theirs) })}</p>
+                    <p className="font-mono text-[11.5px] text-brass-400">{t('results.review.theirs', { move: s.theirs ? describeAction(s.theirs) : '—' })}</p>
                   </li>
                 ))}
               </ol>

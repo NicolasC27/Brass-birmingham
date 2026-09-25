@@ -11,7 +11,7 @@
 import { actorOf, applyAction } from './actions';
 import type { GameAction } from './actions';
 import { INDUSTRIES, incomeLevel } from './data';
-import { newGame } from './engine';
+import { newGame, projectEraScores } from './engine';
 import type { Era, GameState, IndustryType, SetupPayload, Verb } from './types';
 
 /** a tile of one's own the game ended with, still face up */
@@ -55,10 +55,27 @@ export interface SeatReview {
   byKind: Record<Verb, number>;
 }
 
+/** one move of the game, and where the table stood once it was played */
+export interface Beat {
+  /** the move's index in the log */
+  at: number;
+  era: Era;
+  round: number;
+  /** the seat that played it */
+  seat: number;
+  /** each seat's standing were the era scored here: what is banked plus
+   *  what the board would pay. During play this would be a cheat; on a
+   *  finished game it is simply how the position read at the time. */
+  proj: number[];
+}
+
 export interface Review {
   seats: SeatReview[];
-  /** the table at the close of every round */
-  rounds: { era: Era; round: number; vp: number[]; income: number[]; money: number[] }[];
+  /** the standing after every move, for the curve */
+  curve: Beat[];
+  /** the table at the close of every round; `proj` is the standing as it
+   *  read then, banked points plus what the board was owed */
+  rounds: { era: Era; round: number; vp: number[]; income: number[]; money: number[]; proj: number[] }[];
   /** what the game was worth in actions, for the points-per-action bar */
   actionsTotal: number;
   short: boolean;
@@ -80,6 +97,16 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
   const spent: number[][] = s.players.map(() => []);
   const opened = s.players.map(() => 0);
   const rounds: Review['rounds'] = [];
+  const curve: Beat[] = [];
+  /** the standing of every seat as the board reads now: what is banked
+   *  plus what an era scored this instant would pay. Once the last era is
+   *  scored there is nothing left to pay, and the board pays nothing more. */
+  const standing = (g: GameState): number[] => {
+    const settled = g.phase === 'game-over' || !!g.finalScores;
+    if (settled) return g.players.map((p) => p.vp);
+    const proj = projectEraScores(g);
+    return g.players.map((p, i) => p.vp + proj[i].total);
+  };
   /* what was won and lost away from the era scores, watched move by move */
   const bonus = s.players.map(() => 0);
   const penalty = s.players.map(() => 0);
@@ -90,8 +117,12 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
   let round = s.round;
   let era: Era = s.era;
   opened[s.order[0]] += 1;
-  for (const a of actions) {
+  for (let at = 0; at < actions.length; at += 1) {
+    const a = actions[at];
     const seat = actorOf(s, a);
+    /* the move is named by the round it was played in, not the one it
+       opened: the action that ends an era carries the table into the next */
+    const playedIn = { era: s.era, round: s.round };
     if (seat >= 0 && a.kind !== 'begin-rail' && a.kind !== 'concede' && a.kind !== 'resign') byKind[seat][a.kind as Verb] += 1;
     /* the canal era is scored by the action that ends it; the sweep waits
        for the next one, so this is the moment the doomed tiles are read */
@@ -109,6 +140,7 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
       if (d > 0) bonus[i] += d;
       else if (d < 0) penalty[i] -= d;
     });
+    curve.push({ at, era: playedIn.era, round: playedIn.round, seat: seat < 0 ? 0 : seat, proj: standing(s) });
     if (wasCanal && s.canalScores) {
       swept = s.players.map((_, i) => tilesOf(s, i, (t) => t.level === 1));
       canalSplit = s.canalSplit ?? null;
@@ -117,7 +149,10 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
       const last = s.lastSpent ?? s.players.map(() => 0);
       s.players.forEach((_, i) => spent[i].push(last[i] ?? 0));
       const snap = s.history[s.history.length - 1];
-      if (snap) rounds.push({ era: snap.era, round: snap.round, vp: [...snap.vp], income: [...snap.income], money: [...snap.money] });
+      /* the standing at the close is the one the curve just took: the same
+         instant, read the same way */
+      const now = curve[curve.length - 1]?.proj ?? s.players.map((p) => p.vp);
+      if (snap) rounds.push({ era: snap.era, round: snap.round, vp: [...snap.vp], income: [...snap.income], money: [...snap.money], proj: [...now] });
       if (s.phase === 'action') opened[s.order[0]] += 1;
       round = s.round;
       era = s.era;
@@ -157,5 +192,5 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
       byKind: byKind[i],
     };
   });
-  return { seats, rounds, actionsTotal: seats.reduce((sum, x) => sum + x.actions, 0) / Math.max(1, n), short };
+  return { seats, curve, rounds, actionsTotal: seats.reduce((sum, x) => sum + x.actions, 0) / Math.max(1, n), short };
 }
