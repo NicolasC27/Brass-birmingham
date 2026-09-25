@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react';
 import NotebookButton from '@/components/game/Notebook';
+import LessonHalo from '@/components/game/LessonHalo';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -11,7 +12,7 @@ import ConcedeBanner from '@/components/game/ConcedeBanner';
 import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
-import { guideDock } from '@/components/game/guideKeys';
+import { guideDock, GUIDE_RAIL } from '@/components/game/guideKeys';
 import { useWide } from '@/hooks/use-narrow';
 import Notices from '@/components/game/Notices';
 import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
@@ -493,7 +494,8 @@ export default function Game() {
   const botThinking = seat === null && game.phase === 'action' && game.players[game.current].isBot && !ceremony;
   /* read up to: the drawer's last closing, or the reader's own last move */
   const lastMine = game.ledger.reduce((acc, e, i) => (e.player === mySeat ? i + 1 : acc), 0);
-  const dock = tutorial && wide ? guideDock() : 0;
+  /* the guide's lane down the right edge: a rail when folded (key G) */
+  const dock = tutorial && wide ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0;
   const seenIdx = Math.max(ledgerRead, lastMine);
   const unread = game.ledger.slice(seenIdx).filter((e) => e.player !== undefined && e.player !== mySeat).length;
 
@@ -563,7 +565,7 @@ export default function Game() {
             </button>
             <FeedbackButton compact className={TOOL} />
             <TableMenu compact className={TOOL} />
-            <button type="button" onClick={() => setLedgerOpen((o) => !o)} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (L)`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
+            <button type="button" data-lens="ledger" onClick={() => setLedgerOpen((o) => !o)} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (L)`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
               <ScrollText className="h-4 w-4" />
               {unread > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold leading-[14px] text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
@@ -770,6 +772,7 @@ export default function Game() {
 
       {/* the guide's own lane, beside the table rather than over it */}
       <Guide dock={dock} />
+      {tutorial && <LessonHalo />}
     </div>
   );
 }

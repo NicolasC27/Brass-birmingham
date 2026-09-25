@@ -57,6 +57,7 @@ export default function MarketPill({ market, consume, top, open, onToggle }: { m
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
       onClick={onToggle}
       data-market-pill
+      data-lens="market"
       aria-expanded={open}
       aria-label={t(open ? 'game.page.foldMarket' : 'game.page.openMarket')}
       className={cn(

@@ -93,6 +93,8 @@ export interface BoardOptions {
   beginnerAid: boolean;
   /** the player rail folded to one line per seat, for more board */
   railCompact: boolean;
+  /** the guide's column folded to a rail down the right edge (key G) */
+  guideFolded: boolean;
   /** player mat spread wide (six columns) instead of the slim docked panel */
   matWide: boolean;
   /** the board's small sounds (a bell over a hovered house) */
@@ -131,6 +133,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   traffic: 'brassworks.traffic',
   beginnerAid: 'brassworks.beginnerAid',
   railCompact: 'brassworks.railCompact',
+  guideFolded: 'brassworks.guideFolded',
   matWide: 'brassworks.matWide',
   sound: 'brassworks.sound',
   telegrams: 'brassworks.telegrams',
@@ -173,6 +176,7 @@ let state: BoardOptions = {
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
   railCompact: read('railCompact', false),
+  guideFolded: read('guideFolded', false),
   matWide: read('matWide', false),
   sound: read('sound', true),
   telegrams: read('telegrams', true),

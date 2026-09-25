@@ -198,6 +198,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
         type="button"
         aria-label={t('game.mat.openAria', { name: p.name })}
         title={t('game.mat.openTip')}
+        data-lens={p.isBot ? undefined : 'mat'}
         onClick={(e) => {
           e.stopPropagation();
           openMat(index);

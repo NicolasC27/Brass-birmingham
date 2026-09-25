@@ -400,6 +400,7 @@ export default function EdgeTracks() {
             className={`fixed inset-x-0 top-0 z-[58] border-b ${belt}`}
             style={{ height: TRACK_H }}
             aria-label={t('game.frame.vpTrackLabel')}
+            data-lens="vp"
           >
             <span aria-hidden className="absolute left-1.5 top-[3px] font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
               {t('game.frame.vpTrackShort')}
@@ -433,6 +434,7 @@ export default function EdgeTracks() {
         className={`fixed z-[58] ${belt} ${incAxis === 'x' ? 'inset-x-0 bottom-0 border-t' : 'bottom-0 left-0 border-r'}`}
         style={incAxis === 'x' ? { height: TRACK_H } : { width: TRACK_W, top: TRACK_H }}
         aria-label={t('game.incomeRail.aria')}
+        data-lens="income"
       >
         <span aria-hidden className={`absolute font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}>
           {t('game.incomeRail.trackShort')}

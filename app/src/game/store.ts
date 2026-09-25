@@ -160,6 +160,9 @@ interface GameStore {
   followBots: boolean;
   /** player index highlighted on the map (others dimmed), null = off */
   spotlight: number | null;
+  /** what the guide's lesson lights on the table: slots of the map, a part of the HUD */
+  lens: Lens | null;
+  setLens: (lens: Lens | null) => void;
   /** a player rail chip under the pointer: their whole network lights up */
   netPeek: number | null;
   setNetPeek: (i: number | null) => void;
@@ -366,6 +369,7 @@ export const useGame = create<GameStore>((set, get) => ({
   botHold: false,
   setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
   spotlight: null,
+  lens: null,
   netPeek: null,
   coachStep: -1,
   ceremony: null,
@@ -791,6 +795,7 @@ export const useGame = create<GameStore>((set, get) => ({
   setGlimpse: (glimpse) => set({ glimpse }),
   toggleFollowBots: () => set((s) => ({ followBots: !s.followBots })),
   setSpotlight: (i) => set({ spotlight: i }),
+  setLens: (lens) => set((s) => (JSON.stringify(s.lens) === JSON.stringify(lens) ? s : { lens })),
   setNetPeek: (i) => set({ netPeek: i }),
   setCoachStep: (n) => {
     set({ coachStep: n });
@@ -1301,6 +1306,15 @@ export function projectQueued(g: GameState, me: number, queued: Prepared[]): Gam
 /* ------------------------- a prepared move ------------------------- */
 
 /** what would make a prepared move pointless: that player doing that (there) */
+/** a part of the HUD a lesson points at (a `data-lens` mark on the element) */
+export type HudLens = 'vp' | 'market' | 'mat' | 'hand' | 'rail' | 'rail-bot' | 'income' | 'ledger' | 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
+/** what a lesson lights: slots of the map (their keys), a part of the HUD, a town to fly to */
+export interface Lens {
+  slots?: string[];
+  hud?: HudLens;
+  town?: string;
+}
+
 export interface Unless {
   /** a seat, or 'any' for anyone but me */
   player: number | 'any';

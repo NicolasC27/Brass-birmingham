@@ -69,14 +69,17 @@ const STEPS: Step[] = [
   { id: 'botTurn' },
   { id: 'payday', when: (g) => g.round >= 2 },
   { id: 'link', done: (g, me) => Object.values(g.links).some((l) => l.owner === me) },
+  { id: 'iron', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'iron') },
+  { id: 'develop' },
   { id: 'works', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && WORKS.includes(t.industry)) },
   { id: 'market', show: 'market' },
   { id: 'beer' },
   { id: 'sell', done: (g, me) => g.players[me].stats.sold > 0 },
   { id: 'flipped', when: (g, me) => g.players[me].stats.sold > 0 },
   { id: 'loan', done: (g, me) => g.players[me].loans > 0 },
-  { id: 'develop' },
   { id: 'eraEnd' },
+  { id: 'plan' },
+  { id: 'tips' },
   { id: 'onward' },
 ];
 
@@ -250,8 +253,8 @@ type Block = { short: string; text: string; money: boolean };
 function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
   const p = g.players[me];
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
-  if (id === 'coal' || id === 'works') {
-    const inds = id === 'coal' ? ['coal'] : WORKS;
+  if (id === 'coal' || id === 'iron' || id === 'works') {
+    const inds = id === 'coal' ? ['coal'] : id === 'iron' ? ['iron'] : WORKS;
     const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
     if (targets.some((x) => x.valid)) return null;
     const short = targets.filter((x) => money(x.reason));
@@ -711,6 +714,7 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   /* does the advised move do what the lesson asks? */
   const asked = (id: string, a: GameAction): boolean =>
     id === 'coal' ? a.kind === 'build' && a.industry === 'coal'
+    : id === 'iron' ? a.kind === 'build' && a.industry === 'iron'
     : id === 'works' ? a.kind === 'build' && WORKS.includes(a.industry)
     : id === 'link' ? a.kind === 'network'
     : id === 'sell' ? a.kind === 'sell'

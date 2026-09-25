@@ -403,7 +403,7 @@ export default function HandDock() {
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
 
   return (
-    <footer data-dock aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={centredOnScreen ? { bottom: insets.bottom, left: 0, right: 0 } : { bottom: insets.bottom, left: insets.left, right: bandRight }}>
+    <footer data-dock data-lens="hand" aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={centredOnScreen ? { bottom: insets.bottom, left: 0, right: 0 } : { bottom: insets.bottom, left: insets.left, right: bandRight }}>
       <motion.div
         initial={false}
         animate={{ height: expanded ? 180 : 32 }}
@@ -555,6 +555,7 @@ export default function HandDock() {
                   key={v}
                   type="button"
                   disabled={!clickable}
+                  data-lens={v}
                   onClick={() => setVerb(verb === v ? null : v)}
                   onPointerEnter={v === 'loan' && ok ? () => setLoanPeek(true) : undefined}
                   onPointerLeave={v === 'loan' ? () => setLoanPeek(false) : undefined}

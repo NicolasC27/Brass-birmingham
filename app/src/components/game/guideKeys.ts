@@ -7,6 +7,9 @@ export const MINI_KEY = 'brassworks.guide.mini';
 /** the spot the note was dragged to */
 export const POS_KEY = 'brassworks.guide.pos';
 
+/** the guide folded: a rail this wide down the right edge */
+export const GUIDE_RAIL = 44;
+
 /** how wide a lane the guide holds down the right edge, and zero when the
  *  window is too narrow to spare it — the note then floats over the board */
 export function guideDock(width = typeof window === 'undefined' ? 1280 : window.innerWidth): number {

@@ -1707,6 +1707,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   })();
   const sellableHere = hoverMerchantDef && viewerIdx >= 0 ? sellTargets(game, viewerIdx).filter((s) => s.merchant === hoverMerchantDef.id) : [];
   const netPeek = useGame((s) => s.netPeek);
+  const lens = useGame((s) => s.lens);
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
@@ -1714,7 +1715,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
        planning, a hovered player's network, the tiles a hovered merchant
        would buy — otherwise everything */
     const aid = aidOn(game.assist, code !== null);
-    if (aid && selectedCardId && verb === 'build') {
+    if (lens?.slots?.length) {
+      /* the guide's lesson names the places it is about: they alone stay lit */
+      scene.setHighlight(lens.slots);
+    } else if (aid && selectedCardId && verb === 'build') {
       scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
     } else if (selectedCardId && verb === 'sell') {
       /* what can be sold is one's own affair: the rest of the board dims */
@@ -1727,7 +1731,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setHighlight(keys);
     } else scene.setHighlight(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoverMerchant, game.ledgerSeq, idle, netPeek, opts.beginnerAid, game.assist, code, selectedCardId, verb, targets, sellTargetsList]);
+  }, [hoverMerchant, game.ledgerSeq, idle, netPeek, opts.beginnerAid, game.assist, code, selectedCardId, verb, targets, sellTargetsList, lens]);
 
   return (
     <div
