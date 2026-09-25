@@ -133,33 +133,37 @@ function setupFrom(g: GameState): GameState {
   return newGame(setupOf(g), g.seed);
 }
 
-/** a move of the machine's while a branch is followed on */
+/** a move of the machine's while a branch is followed on, and the table after it */
 export interface Followed {
   seat: number;
   action: GameAction;
+  after: GameState;
 }
 
-/** the machine plays every seat from here for a few moves, so a branch shows
-    where it leads rather than only the table the move leaves */
-export function followOn(s: GameState, moves: number, budgetMs = 40): { moves: Followed[]; after: GameState } {
+/** the machine plays every seat on from here until the reader's turn comes
+    round again (or the game ends), so a branch shows the replies and the
+    table as the reader would find it; each move keeps its table */
+export function followToTurn(s: GameState, me: number, budgetMs = 40, most = 16): Followed[] {
   const played: Followed[] = [];
   let cur = s;
   let guard = 0;
-  while (played.length < moves && cur.phase !== 'game-over' && guard++ < moves * 3) {
+  while (played.length < most && cur.phase !== 'game-over' && guard++ < most * 3) {
     if (cur.phase === 'scoring-canal') {
       const next = applyAction(cur, cur.current, { kind: 'begin-rail' }).state;
       if (!next) break;
       cur = next;
       continue;
     }
+    /* a new turn of the reader's: not the one the branch left them in */
+    if (played.length > 0 && cur.phase === 'action' && cur.current === me && (cur.round !== s.round || cur.turnPos !== s.turnPos || cur.era !== s.era)) break;
     const seat = cur.current;
     const action = chooseBotAction(cur, seat, { strength: 0.8, budgetMs }) ?? fallbackAction(cur, seat);
     const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
     if (!next) break;
-    played.push({ seat, action });
+    played.push({ seat, action, after: next });
     cur = next;
   }
-  return { moves: played, after: cur };
+  return played;
 }
 
 /* ------------------------------------------------------------------ */
@@ -253,4 +257,18 @@ export function judgeTurn(before: GameState, me: number, played: GameAction, jud
   const best = Math.max(mine, roads[0].chance);
   const loss = Math.max(0, best - mine);
   return { at: before.actions.length, round: before.round, era: before.era, roads, mine, best, loss, grade: gradeOfLoss(loss) };
+}
+
+/** the roads of one turn read again, longer: what the panel asks for the
+    turn being explored */
+export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25 };
+
+export function weighRoads(before: GameState, me: number, roads: GameAction[], judge: Judge = DEEP_JUDGE): Weighed[] {
+  return roads
+    .map((action) => {
+      const after = applyAction(before, me, action).state;
+      return after ? { action, chance: deepChance(after, me, judge) } : null;
+    })
+    .filter((r): r is Weighed => !!r)
+    .sort((a, b) => b.chance - a.chance);
 }

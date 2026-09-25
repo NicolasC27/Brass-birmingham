@@ -7,8 +7,8 @@
 
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
-import { LONG_JUDGE, deepChance, judgeTurn } from './analysis';
-import type { Judge, Verdict } from './analysis';
+import { DEEP_JUDGE, LONG_JUDGE, deepChance, judgeTurn, weighRoads } from './analysis';
+import type { Judge, Verdict, Weighed } from './analysis';
 import { newGame } from './engine';
 import type { GameState, SetupPayload } from './types';
 
@@ -21,8 +21,21 @@ export interface Ask {
   judge?: Judge;
 }
 
+/** one turn's roads, read longer than the pass: the panel asks when a
+    turn is being explored */
+export interface AskRoads {
+  setup: SetupPayload;
+  seed: number;
+  /** the moves up to the position in question */
+  actions: GameAction[];
+  me: number;
+  roads: GameAction[];
+  judge?: Judge;
+}
+
 export type Note =
   | { kind: 'position'; k: number; chance: number; done: number; total: number }
+  | { kind: 'roads'; at: number; roads: Weighed[] }
   | { kind: 'turn'; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
   | { kind: 'failed'; why: string };
@@ -60,9 +73,22 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   yield { kind: 'done' };
 }
 
+/** the position after the moves given, then the roads weighed long */
+export function readRoads(ask: AskRoads): Note {
+  let s = newGame(ask.setup, ask.seed);
+  for (const a of ask.actions) {
+    const r = applyAction(s, s.current, a);
+    const next = r.state ?? (a.kind === 'concede' ? applyAction(s, a.player, a).state : null);
+    if (!next) return { kind: 'failed', why: 'a move refused on the way' };
+    s = next;
+  }
+  return { kind: 'roads', at: ask.actions.length, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? DEEP_JUDGE) };
+}
+
 /* the worker's own mouth, when this module is loaded as one */
 if (typeof self !== 'undefined' && typeof (self as unknown as { postMessage?: unknown }).postMessage === 'function' && typeof window === 'undefined') {
-  self.onmessage = (e: MessageEvent<Ask>) => {
-    for (const note of analyse(e.data)) self.postMessage(note);
+  self.onmessage = (e: MessageEvent<Ask | AskRoads>) => {
+    if ('roads' in e.data) self.postMessage(readRoads(e.data));
+    else for (const note of analyse(e.data)) self.postMessage(note);
   };
 }

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, Compass, Play, Sparkles, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
-import { LOSS, followOn, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
-import type { Followed, Road, Verdict } from '@/game/analysis';
+import { LOSS, followToTurn, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import type { Followed, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Note } from '@/game/analysisWorker';
 import { turnsOf } from '@/game/debrief';
 import type { GameAction } from '@/game/actions';
@@ -60,12 +60,24 @@ function Curve({ chances, at, turns, marks, split, label, onPick }: { chances: n
   const line = chances.map((c, k) => `${k === 0 ? 'M' : 'L'}${x(k).toFixed(2)},${y(c).toFixed(2)}`).join(' ');
   const area = `${line} L${W},${H} L0,${H} Z`;
   const misses = Object.values(marks).filter((m) => m.grade !== 'top' && m.grade !== 'good');
-  const pick = (e: React.MouseEvent<SVGSVGElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    onPick(Math.max(0, Math.min(last, Math.round(((e.clientX - r.left) / r.width) * last))));
+  const pickAt = (el: SVGSVGElement, clientX: number) => {
+    const r = el.getBoundingClientRect();
+    onPick(Math.max(0, Math.min(last, Math.round(((clientX - r.left) / r.width) * last))));
+  };
+  /* a press picks, a drag scrubs: the board follows the finger */
+  const down = (e: React.PointerEvent<SVGSVGElement>) => {
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      /* a pointer the browser does not track: the press still picks */
+    }
+    pickAt(e.currentTarget, e.clientX);
+  };
+  const move = (e: React.PointerEvent<SVGSVGElement>) => {
+    if (e.buttons & 1) pickAt(e.currentTarget, e.clientX);
   };
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={label} onClick={pick} className="h-28 w-full cursor-crosshair rounded-sm border border-brass-700/40 bg-coal-900/70">
+    <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label={label} onPointerDown={down} onPointerMove={move} className="h-28 w-full cursor-crosshair rounded-sm border border-brass-700/40 bg-coal-900/70">
       <path d={area} fill="rgba(201,164,92,0.14)" />
       <line x1={0} x2={W} y1={y(0.5)} y2={y(0.5)} stroke="rgba(245,235,215,0.25)" strokeWidth={0.4} strokeDasharray="1.5 1.5" vectorEffect="non-scaling-stroke" />
       {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} stroke="rgba(245,235,215,0.22)" strokeWidth={0.5} vectorEffect="non-scaling-stroke" />}
@@ -81,7 +93,8 @@ function Curve({ chances, at, turns, marks, split, label, onPick }: { chances: n
   );
 }
 
-export default function Debrief({ game, me }: { game: GameState; me: number }) {
+export default function Debrief({ game, me: opened }: { game: GameState; me: number }) {
+  const [me, setMe] = useState(opened);
   const t = useT();
   const lang = useLang();
   const navigate = useNavigate();
@@ -101,8 +114,11 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
   const turns = useMemo(() => new Set(turnsOf(game, me)), [game, me]);
   const [at, setAt] = useState(last);
   /* the roads being explored: from which move, which one is picked (by what it does, so the judge's later figures keep the pick), and the tail played on */
-  const [road, setRoad] = useState<{ from: number; picked: string | null; followed?: { moves: Followed[]; after: GameState } } | null>(null);
-  const FOLLOW = 4;
+  const [road, setRoad] = useState<{ from: number; picked: string | null; followed?: Followed[]; step?: number } | null>(null);
+  /* one turn's roads read longer, by the position they start from */
+  const [deeper, setDeeper] = useState<{ of: GameState; byAt: Record<number, Weighed[]> }>({ of: game, byAt: {} });
+  /* the turns already sent for a longer reading, so each goes once */
+  const asked = useRef<Set<number>>(new Set());
   const machine = game.players.find((p) => p.isBot)?.name ?? t('game.debrief.machine');
 
   /* the long judge thinks on a thread of its own and posts as it goes */
@@ -115,6 +131,10 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
     }
     w.onmessage = (e: MessageEvent<Note>) => {
       const n = e.data;
+      if (n.kind === 'roads') {
+        setDeeper((d) => ({ of: game, byAt: { ...(d.of === game ? d.byAt : {}), [n.at]: n.roads } }));
+        return;
+      }
       setJudged((j) => {
         const base = j.of === game ? j : { of: game, deep: {}, verdicts: {}, done: 0, total: 0 };
         if (n.kind === 'position') return { ...base, deep: { ...base.deep, [n.k]: n.chance }, done: n.done, total: n.total };
@@ -124,8 +144,27 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
       });
     };
     w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions, me });
-    return () => w?.terminate();
+    workerRef.current = w;
+    asked.current = new Set();
+    return () => {
+      w?.terminate();
+      workerRef.current = null;
+    };
   }, [game, me]);
+  const workerRef = useRef<Worker | null>(null);
+  /* a turn being explored: its roads go to the worker for a longer reading,
+     once, after the pass has spoken there (the pass's worker is the same one,
+     so the ask waits its turn behind it) */
+  useEffect(() => {
+    if (!road || road.followed || !verdicts[road.from - 1]) return;
+    const w = workerRef.current;
+    const k = road.from - 1;
+    if (!w || asked.current.has(k)) return;
+    asked.current.add(k);
+    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions.slice(0, k), me, roads: verdicts[k].roads.map((r) => r.action) });
+  }, [road, verdicts, game, me]);
+  /* the roads on show are the pass's, the longer reading still to come */
+  const readingLonger = !!road && !road.followed && !!verdicts[road.from - 1] && !(deeper.of === game && deeper.byAt[road.from - 1]);
   /* the key moments: where the curve fell hardest, whoever moved — the
      reader's own miss or a rival's stroke */
   const keyMoments = useMemo(() => {
@@ -151,28 +190,29 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
     if (!road) return [];
     const from = positions[road.from - 1];
     if (!from) return [];
-    const v = verdicts[road.from - 1];
-    if (v) return v.roads.map((r) => ({ action: r.action, after: applyAction(from, me, r.action).state, chance: r.chance })).filter((r): r is Road => !!r.after);
+    const weighed = (deeper.of === game ? deeper.byAt[road.from - 1] : undefined) ?? verdicts[road.from - 1]?.roads;
+    if (weighed) return weighed.map((r) => ({ action: r.action, after: applyAction(from, me, r.action).state, chance: r.chance })).filter((r): r is Road => !!r.after);
     return roadsFrom(from, me, 8, game.actions[road.from - 1]);
-  }, [road, positions, verdicts, me, game.actions]);
+  }, [road, positions, verdicts, deeper, me, game, game.actions]);
   const pickedAt = road?.picked ? roads.findIndex((r) => sameRoad(r.action) === road.picked) : -1;
   const branch = pickedAt >= 0 ? roads[pickedAt] : null;
 
   /* the board follows the pick: the table after move `at`, or the end of the branch taken */
   useEffect(() => {
-    const state = branch ? (road?.followed?.after ?? branch.after) : positions[at];
+    const tailAt = road?.followed?.length ? Math.min(road.step ?? road.followed.length - 1, road.followed.length - 1) : -1;
+    const tail = tailAt >= 0 ? road!.followed![tailAt] : undefined;
+    const state = branch ? (tail?.after ?? branch.after) : positions[at];
     if (!state) return;
     const label = branch
-      ? road?.followed
-        ? t('game.debrief.branchOn', { move: describeAction(branch.action), n: road.followed.moves.length })
+      ? tail
+        ? t(tailAt === 0 ? 'game.debrief.branchOnOne' : 'game.debrief.branchOn', { move: describeAction(branch.action), n: tailAt + 1 })
         : t('game.debrief.branch', { move: describeAction(branch.action) })
       : at === 0 ? t('game.debrief.start') : `${at}/${last} · ${describeAction(game.actions[at - 1])}`;
     const played = branch ? branch.action : game.actions[at - 1];
     const before = positions[at - 1];
-    const tail = road?.followed?.moves.at(-1);
     const seat = tail ? tail.seat : played && before ? (played.kind === 'concede' ? played.player : before.current) : undefined;
     setReview({ at, round: state.round, state, label, ...(seat !== undefined ? { seat } : {}) });
-    const where = regionOf(branch ? branch.action : game.actions[at - 1]);
+    const where = regionOf(tail ? tail.action : branch ? branch.action : game.actions[at - 1]);
     if (where) flyToRegion(where);
   }, [at, road, branch, positions, game.actions, game.players, setReview, flyToRegion, last, t]);
   /* the arrows step through the game */
@@ -190,7 +230,8 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [last]);
 
-  const shown = branch ? (road?.followed?.after ?? branch.after) : positions[at];
+  const shownTail = road?.followed?.length ? road.followed[Math.min(road.step ?? road.followed.length - 1, road.followed.length - 1)] : undefined;
+  const shown = branch ? (shownTail?.after ?? branch.after) : positions[at];
   const chance = shown ? winChance(shown, me) : 0.5;
   const explore = () => setRoad({ from: at, picked: null });
   const canExplore = at > 0 && positions[at - 1]?.phase === 'action' && positions[at - 1]?.current === me;
@@ -216,7 +257,11 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
   };
   const follow = () => {
     if (!road || !branch) return;
-    setRoad({ ...road, followed: followOn(branch.after, FOLLOW) });
+    const from = road.followed?.length ? road.followed[road.followed.length - 1].after : branch.after;
+    const more = followToTurn(from, me);
+    if (!more.length) return;
+    const followed = [...(road.followed ?? []), ...more];
+    setRoad({ ...road, followed, step: followed.length - 1 });
   };
   const close = () => setDebriefOpen(false);
   /* the board goes back to the live table when the panel goes */
@@ -233,6 +278,14 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
         <Sparkles className="h-4 w-4 text-brass-400" aria-hidden />
         <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.debrief.title')}</span>
         <span className="flex-1" />
+        <label className="flex items-center gap-1 text-cream-100/60" title={t('game.debrief.seat')}>
+          <UserRound className="h-3.5 w-3.5" aria-hidden />
+          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMe(Number(e.target.value)); setRoad(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
+            {game.players.map((p, i) => (
+              <option key={i} value={i}>{p.name}</option>
+            ))}
+          </select>
+        </label>
         <button type="button" onClick={close} aria-label={t('game.debrief.close')} title={t('game.debrief.close')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
           <X className="h-3.5 w-3.5" />
         </button>
@@ -322,15 +375,28 @@ export default function Debrief({ game, me }: { game: GameState; me: number }) {
               {t(`game.guide.suggest.why.${whyKey(branch.action)}`, { name: machine })}
             </p>
           )}
-          {branch && !road.followed && branch.after.phase !== 'game-over' && (
+          {readingLonger && <p className="mt-1 font-mono text-[9.5px] text-ink-900/50">{t('game.debrief.deeper')}</p>}
+          {branch && shown?.phase !== 'game-over' && (
             <button type="button" onClick={follow} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-              {t('game.debrief.follow', { n: FOLLOW })}
+              {road.followed?.length ? t('game.debrief.followMore') : t('game.debrief.follow')}
             </button>
           )}
-          {road.followed && (
-            <p className="mt-1.5 font-sans text-[11px] leading-snug text-ink-900/85">
-              {t('game.debrief.followed', { moves: road.followed.moves.map((f) => `${f.seat === me ? t('game.debrief.you') : game.players[f.seat]?.name} · ${describeAction(f.action)}`).join(' — ') })}
-            </p>
+          {road.followed && road.followed.length > 0 && (
+            <ol className="mt-1.5 flex flex-col gap-0.5">
+              {road.followed.map((f, i) => {
+                const on = i === Math.min(road.step ?? road.followed!.length - 1, road.followed!.length - 1);
+                return (
+                  <li key={i}>
+                    <button type="button" onClick={() => setRoad({ ...road, step: i })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', on && 'bg-ink-900/10 ring-1 ring-brass-500')}>
+                      <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[f.seat]?.color]?.hex ?? '#C9A45C' }} />
+                      <span className="w-14 shrink-0 truncate font-mono text-[10px] text-ink-900/60">{f.seat === me ? t('game.debrief.you') : game.players[f.seat]?.name}</span>
+                      <span className="min-w-0 flex-1 truncate">{describeAction(f.action)}</span>
+                      <span className="shrink-0 font-mono text-[10px] text-ink-900/70">{pct(winChance(f.after, me))}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           )}
         </div>
       )}
