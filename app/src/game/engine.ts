@@ -1344,7 +1344,10 @@ export function scoreEra(s: GameState, era: Era): number[] {
     s.canalScores = scores;
     /* the links leave the board with the era: the split cannot be read back */
     s.canalSplit = projection.map((pr) => ({ links: pr.links, tiles: pr.tiles, pending: pr.pending }));
-  } else s.finalScores = scores;
+  } else {
+    s.finalScores = scores;
+    s.finalSplit = projection.map((pr) => ({ links: pr.links, tiles: pr.tiles, pending: pr.pending }));
+  }
   log(s, undefined, 'score', `${era === 'canal' ? 'Canal' : 'Rail'} Era scoring: ${scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ')}`, undefined, 'eraScore', { era, scores: scores.map((v, i) => `${s.players[i].name} +${v}`).join(' · ') });
   return scores;
 }

@@ -209,6 +209,8 @@ export interface GameState {
    *  links paid, and what the unflipped tiles did not */
   canalSplit?: { links: number; tiles: number; pending: number }[];
   finalScores?: number[];
+  /** the rail era's points split per seat, kept like the canal's */
+  finalSplit?: { links: number; tiles: number; pending: number }[];
   winner?: number;
   /** seats that have voted to abandon the game — unanimity among the
    *  humans folds the table */
