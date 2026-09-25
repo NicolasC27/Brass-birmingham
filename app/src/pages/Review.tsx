@@ -40,6 +40,8 @@ const GRADE_TONE: Record<Grade, string> = {
 /** how long the machine may think about one move, by the reader's choice */
 const THINK = { quick: 350, careful: 1500 } as const;
 type Depth = keyof typeof THINK;
+/** whose moves the reading goes through: one place, or every one of them */
+type Scope = 'seat' | 'table';
 
 function readFinal(): FinalPayload | null {
   try {
@@ -119,14 +121,25 @@ export default function Review() {
   /* the seat being read: the reader's own unless another is asked for */
   const [picked, setPicked] = useState<number | null>(null);
   const [depth, setDepth] = useState<Depth>('quick');
+  const [scope, setScope] = useState<Scope>('seat');
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0, left: 0 });
   const started = useRef(0);
-  const [moves, setMoves] = useState<Second[] | null>(null);
+  /* the reading, seat by seat: a place already read is switched to at once */
+  const [reading, setReading] = useState<Record<number, Second[]>>({});
   const [failed, setFailed] = useState(false);
-  const worker = useRef<Worker | null>(null);
+  /* one thread per seat, so reading the whole table costs about what
+     reading one place costs: the threads run beside each other */
+  const pool = useRef<Worker[]>([]);
+  const tally = useRef<Record<number, { done: number; total: number }>>({});
 
-  useEffect(() => () => worker.current?.terminate(), []);
+  useEffect(() => {
+    const live = pool;
+    return () => {
+      for (const w of live.current) w.terminate();
+      live.current = [];
+    };
+  }, []);
 
   if (!review || !final) {
     return (
@@ -144,65 +157,80 @@ export default function Review() {
   const mine = review.seats[mineSeat] ?? review.seats[0];
 
   const stop = () => {
-    worker.current?.terminate();
-    worker.current = null;
+    for (const w of pool.current) w.terminate();
+    pool.current = [];
   };
 
-  const pick = (seat: number) => {
-    stop();
-    setPicked(seat);
-    setBusy(false);
-    setMoves(null);
-    setFailed(false);
-    setProgress({ done: 0, total: 0, left: 0 });
-  };
+  /* switching places never throws a reading away: the picker only changes
+     which of them the page is showing */
+  const pick = (seat: number) => setPicked(seat);
 
   const ask = () => {
     if (!final.setup || final.seed === undefined || !final.actions) return;
     stop();
+    const wanted = scope === 'table' ? review.seats.map((x) => x.seat) : [mineSeat];
     setBusy(true);
     setFailed(false);
-    setMoves(null);
+    setReading({});
     setProgress({ done: 0, total: 0, left: 0 });
-    const w = new Worker(new URL('../game/reviewWorker.ts', import.meta.url), { type: 'module' });
-    worker.current = w;
-    w.onmessage = (e: MessageEvent<Note>) => {
-      const note = e.data;
-      if (note.kind === 'progress') {
-        /* what is left is measured, not guessed: the moves already read say
-           how long a move takes at this table */
-        /* the worker opens with an empty bar: that note is the starting gun */
-        if (note.done === 0) started.current = performance.now();
-        const spent = performance.now() - started.current;
-        const left = note.done > 1 ? Math.round(((spent / note.done) * (note.total - note.done)) / 1000) : 0;
-        setProgress({ done: note.done, total: note.total, left });
-      }
-      if (note.kind === 'done') {
-        setMoves(note.moves);
-        setBusy(false);
-        stop();
-      }
-      if (note.kind === 'failed') {
+    tally.current = {};
+    started.current = 0;
+    let left = wanted.length;
+    const stride = () => {
+      const rows = Object.values(tally.current);
+      const done = rows.reduce((a, r) => a + r.done, 0);
+      const total = rows.reduce((a, r) => a + r.total, 0);
+      /* what remains is measured from the moves already read, not guessed */
+      if (!started.current) started.current = performance.now();
+      const spent = performance.now() - started.current;
+      const over = done > 1 ? Math.round(((spent / done) * (total - done)) / 1000) : 0;
+      setProgress({ done, total, left: over });
+    };
+    for (const seat of wanted) {
+      const w = new Worker(new URL('../game/reviewWorker.ts', import.meta.url), { type: 'module' });
+      pool.current.push(w);
+      w.onmessage = (e: MessageEvent<Note>) => {
+        const note = e.data;
+        if (note.kind === 'progress') {
+          tally.current[seat] = { done: note.done, total: note.total };
+          stride();
+        }
+        if (note.kind === 'done') {
+          setReading((was) => ({ ...was, [seat]: note.moves }));
+          left -= 1;
+          if (left <= 0) {
+            setBusy(false);
+            stop();
+          }
+        }
+        if (note.kind === 'failed') {
+          setFailed(true);
+          setBusy(false);
+          stop();
+        }
+      };
+      w.onerror = () => {
         setFailed(true);
         setBusy(false);
         stop();
-      }
-    };
-    w.onerror = () => {
-      setFailed(true);
-      setBusy(false);
-      stop();
-    };
-    w.postMessage({ setup: final.setup, seed: final.seed, actions: final.actions, seat: mineSeat, budgetMs: THINK[depth] });
+      };
+      w.postMessage({ setup: final.setup, seed: final.seed, actions: final.actions, seat, budgetMs: THINK[depth] });
+    }
   };
 
   const tileName = (x: Idle): string => t('results.review.tile', { works: t(`game.log.industry.${x.industry}`), level: x.level, town: TOWN_BY_ID[x.town]?.name ?? x.town });
 
   /* the reading, sorted into the grades a chess review would use */
-  const graded = (moves ?? []).map((m) => ({ ...m, grade: gradeOf(m.give) }));
-  const tally = GRADE_ORDER.map((g) => ({ grade: g, n: graded.filter((m) => m.grade === g).length }));
-  const sound = graded.filter((m) => m.grade === 'top' || m.grade === 'good').length;
-  const rightness = graded.length ? Math.round((sound / graded.length) * 100) : 0;
+  const gradesOf = (list: Second[]) => list.map((m) => ({ ...m, grade: gradeOf(m.give) }));
+  const soundness = (list: Second[]): number => {
+    const g = gradesOf(list);
+    return g.length ? Math.round((g.filter((m) => m.grade === 'top' || m.grade === 'good').length / g.length) * 100) : 0;
+  };
+  const graded = gradesOf(reading[mineSeat] ?? []);
+  const counts = GRADE_ORDER.map((g) => ({ grade: g, n: graded.filter((m) => m.grade === g).length }));
+  const rightness = soundness(reading[mineSeat] ?? []);
+  /* every place the reading has been through, for the comparison */
+  const readSeats = review.seats.filter((x) => reading[x.seat]?.length);
   const marks: Mark[] = graded.filter((m) => m.grade === 'inaccuracy' || m.grade === 'mistake' || m.grade === 'blunder').map((m) => ({ at: m.at, grade: m.grade as Mark['grade'] }));
   /* the moves it would have played otherwise, worst reading first. A move
      it would have played itself is not one to look at again, whatever the
@@ -405,9 +433,22 @@ export default function Review() {
                 </button>
               ))}
             </div>
+            <div className="flex overflow-hidden rounded-md border border-brass-700/60">
+              {(['seat', 'table'] as Scope[]).map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={scope === k}
+                  onClick={() => setScope(k)}
+                  className={cn('px-2.5 py-1 font-sans text-[10.5px] font-bold uppercase tracking-[0.1em]', scope === k ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400')}
+                >
+                  {t(`results.review.scope.${k}`)}
+                </button>
+              ))}
+            </div>
             <button type="button" onClick={ask} disabled={busy} className="btn-strike !h-9 !px-4 !text-[11px] disabled:opacity-50">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-              {busy ? t('results.review.machineBusy') : t('results.review.machineAsk', { name: mine.name })}
+              {busy ? t('results.review.machineBusy') : scope === 'table' ? t('results.review.machineAskAll') : t('results.review.machineAsk', { name: mine.name })}
             </button>
           </div>
 
@@ -437,7 +478,7 @@ export default function Review() {
                   <span className="mt-1 font-sans text-[10.5px] uppercase tracking-[0.14em] text-cream-100/50">{t('results.review.rightness')}</span>
                 </p>
                 <ul className="flex flex-wrap items-center gap-1.5">
-                  {tally.map((x) => (
+                  {counts.map((x) => (
                     <li
                       key={x.grade}
                       className={cn('rounded-md border px-2 py-1 font-sans text-[11px]', GRADE_TONE[x.grade], x.n === 0 && 'opacity-35')}
@@ -448,6 +489,40 @@ export default function Review() {
                 </ul>
               </div>
               <p className="mt-2 font-sans text-[11.5px] leading-relaxed text-cream-100/50">{t('results.review.rightnessLead', { n: graded.length })}</p>
+
+              {readSeats.length > 1 && (
+                <div className="mt-4 border-t border-brass-700/30 pt-3">
+                  <p className="mb-2 font-sans text-[10.5px] uppercase tracking-[0.14em] text-cream-100/45">{t('results.review.everySeat')}</p>
+                  <ul className="flex flex-col gap-1.5">
+                    {[...readSeats]
+                      .sort((a, b) => soundness(reading[b.seat] ?? []) - soundness(reading[a.seat] ?? []))
+                      .map((x) => {
+                        const pc = soundness(reading[x.seat] ?? []);
+                        return (
+                          <li key={x.seat}>
+                            <button
+                              type="button"
+                              onClick={() => pick(x.seat)}
+                              aria-pressed={x.seat === mineSeat}
+                              className="flex w-full items-center gap-2.5 text-left"
+                            >
+                              <span className="flex w-[130px] shrink-0 items-center gap-1.5">
+                                <ShapeChip color={colors[x.seat]} size={10} />
+                                <span className={cn('truncate font-fell text-[13px]', x.seat === mineSeat ? 'text-cream-100' : 'text-cream-100/65')}>{x.name}</span>
+                              </span>
+                              <span className="relative h-3 flex-1 overflow-hidden rounded-sm border border-brass-700/40 bg-coal-900/70">
+                                <span className="absolute inset-y-0 left-0 rounded-sm" style={{ width: `${pc}%`, background: hexOf(colors[x.seat]), opacity: x.seat === mineSeat ? 0.9 : 0.5 }} />
+                              </span>
+                              <span className="w-[92px] shrink-0 text-right font-mono text-[11.5px] text-cream-100/70 tnums">
+                                {t('results.review.seatScore', { pc, n: (reading[x.seat] ?? []).length })}
+                              </span>
+                            </button>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </div>
+              )}
 
               {worst.length === 0 && <p className="mt-3 font-sans text-[12.5px] text-cream-100/75">{t('results.review.machineAgrees', { name: mine.name })}</p>}
 
