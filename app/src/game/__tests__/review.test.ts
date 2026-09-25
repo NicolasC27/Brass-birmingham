@@ -60,6 +60,22 @@ describe('the review of a finished game', () => {
     });
   });
 
+  it('reads the standing after every move, banked plus what the board owes', () => {
+    expect(review.curve.length).toBeGreaterThan(40);
+    /* every beat names the move it followed */
+    review.curve.forEach((b) => {
+      expect(log[b.at]).toBeTruthy();
+      expect(b.proj).toHaveLength(review.seats.length);
+    });
+    /* the indices climb, one beat per move the table accepted */
+    for (let i = 1; i < review.curve.length; i++) expect(review.curve[i].at).toBeGreaterThan(review.curve[i - 1].at);
+    /* once the books are closed the standing is the score itself */
+    const last = review.curve[review.curve.length - 1];
+    expect(last.proj).toEqual(review.seats.map((x) => x.vp));
+    /* and before a penny is spent nobody is owed anything but their tiles */
+    expect(review.curve[0].proj.every((v) => v >= 0)).toBe(true);
+  });
+
   it('counts the actions each seat actually took', () => {
     /* the actor of a move is whoever was to act when it was played, so the
        count is made the same way the review makes it: by replaying */
@@ -155,17 +171,24 @@ describe('the machine reading the moves back', () => {
     expect(last.done).toBe(mine);
   });
 
-  it('keeps only the moves it would have played differently, widest gap first', () => {
+  it('reports every move it read, in play order, with what it would have done', () => {
     const { log } = playOut(2, 3, 'short');
     const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 0, budgetMs: 40 })];
     const done = notes.find((n) => n.kind === 'done');
     if (done?.kind !== 'done') throw new Error('no reading');
-    done.seconds.forEach((sec) => {
-      expect(sec.gap).toBeGreaterThan(0);
-      expect(JSON.stringify(sec.yours)).not.toBe(JSON.stringify(sec.theirs));
-      expect(log[sec.at]).toEqual(sec.yours);
+    /* every move of the seat is reported, in the order it was played */
+    expect(done.moves.length).toBeGreaterThan(5);
+    for (let i = 1; i < done.moves.length; i++) expect(done.moves[i].at).toBeGreaterThan(done.moves[i - 1].at);
+    done.moves.forEach((m) => {
+      expect(log[m.at]).toEqual(m.yours);
+      expect(m.gap).toBeGreaterThanOrEqual(0);
+      /* the machine's own move is named only where it differs */
+      if (m.same) expect(m.theirs).toBeNull();
+      else if (m.theirs) expect(JSON.stringify(m.yours)).not.toBe(JSON.stringify(m.theirs));
+      if (m.same) expect(m.gap).toBe(0);
     });
-    for (let i = 1; i < done.seconds.length; i++) expect(done.seconds[i - 1].gap).toBeGreaterThanOrEqual(done.seconds[i].gap);
+    /* and at least one of them is a move it would have played otherwise */
+    expect(done.moves.some((m) => m.gap > 0)).toBe(true);
   });
 
   it('says so rather than throwing when a log does not replay', () => {

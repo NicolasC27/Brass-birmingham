@@ -34,12 +34,17 @@ export interface Second {
   era: 'canal' | 'rail';
   round: number;
   yours: GameAction;
-  theirs: GameAction;
-  /** how much better the machine reads its own move, in its own units */
+  /** what the machine would have played, when it found anything */
+  theirs: GameAction | null;
+  /** how much better the machine reads its own move than the one played,
+   *  in the units of its own reading. Never below zero: a move the machine
+   *  reads as better than its own costs nothing. */
   gap: number;
+  /** the machine would have played this very move */
+  same: boolean;
 }
 
-export type Note = { kind: 'progress'; done: number; total: number } | { kind: 'done'; seconds: Second[] } | { kind: 'failed'; why: string };
+export type Note = { kind: 'progress'; done: number; total: number } | { kind: 'done'; moves: Second[] } | { kind: 'failed'; why: string };
 
 /** a move of the given seat's that is worth a second reading */
 const readable = (s: GameState, a: GameAction, seat: number): boolean =>
@@ -76,7 +81,7 @@ export function* readGame(ask: Ask): Generator<Note, void, unknown> {
     return;
   }
   const mine = countReadable(ask);
-  const seconds: Second[] = [];
+  const moves: Second[] = [];
   let done = 0;
   yield { kind: 'progress', done: 0, total: mine };
   for (let at = 0; at < actions.length; at += 1) {
@@ -87,11 +92,15 @@ export function* readGame(ask: Ask): Generator<Note, void, unknown> {
       const theirs = chooseBotAction(before, seat, { budgetMs, strength: 1 });
       const yoursAfter = applyAction(before, seat, a).state;
       const theirsAfter = theirs ? applyAction(before, seat, theirs).state : null;
-      if (theirs && yoursAfter && theirsAfter) {
-        const gap = Math.round((evaluate(theirsAfter, seat) - evaluate(yoursAfter, seat)) * 10) / 10;
-        /* the same move read twice is no second opinion */
-        if (gap > 0 && JSON.stringify(theirs) !== JSON.stringify(a)) seconds.push({ at, era: before.era, round: before.round, yours: a, theirs, gap });
-      }
+      const same = !!theirs && JSON.stringify(theirs) === JSON.stringify(a);
+      /* the machine's own move against the one played, read from the same
+         table one ply on. A move it likes better than its own costs nothing:
+         the reading is not fine enough to call that a gain. */
+      const gap =
+        theirs && yoursAfter && theirsAfter && !same
+          ? Math.max(0, Math.round((evaluate(theirsAfter, seat) - evaluate(yoursAfter, seat)) * 10) / 10)
+          : 0;
+      moves.push({ at, era: before.era, round: before.round, yours: a, theirs: same ? null : theirs, gap, same });
       done += 1;
       yield { kind: 'progress', done, total: mine };
     }
@@ -102,9 +111,8 @@ export function* readGame(ask: Ask): Generator<Note, void, unknown> {
     }
     s = r.state;
   }
-  /* the widest gaps first: those are the moves worth looking at again */
-  seconds.sort((x, y) => y.gap - x.gap);
-  yield { kind: 'done', seconds };
+  /* in the order they were played: the page sorts them as it needs */
+  yield { kind: 'done', moves };
 }
 
 /* the worker's own mouth, when this module is loaded as one */
