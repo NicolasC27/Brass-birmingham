@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowLeft, Beer, BookOpen, RotateCcw, Share2, Check } from "lucide-react";
+import { ArrowLeft, Beer, BookOpen, LineChart, RotateCcw, Share2, Check } from "lucide-react";
 import { useGame } from "@/game/store";
 import { PLAYER_COLORS } from "@/game/data";
 import { useTable } from "@/online/lobby";
@@ -369,6 +369,10 @@ export default function Results() {
           </button>
           <Link to="/replay" className="btn-ledger !h-12" aria-label={t("results.page.replayAria")}>
             {t("results.page.replay")}
+          </Link>
+          <Link to="/review" className="btn-ledger !h-12">
+            <LineChart className="h-4 w-4" />
+            {t("results.review.title")}
           </Link>
           <Link to="/" className="btn-ledger !h-12">
             {t("results.actions.backToMenu")}

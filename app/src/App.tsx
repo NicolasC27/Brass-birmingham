@@ -6,6 +6,7 @@ import Game from "@/pages/Game";
 import Rules from "@/pages/Rules";
 import Results from "@/pages/Results";
 import Replay from "@/pages/Replay";
+import Review from "@/pages/Review";
 import Online from "@/pages/Online";
 import Lobby from "@/pages/Lobby";
 import Account from "@/pages/Account";
@@ -28,6 +29,7 @@ export default function App() {
         <Route path="legal" element={<Legal />} />
         <Route path="results" element={<Results />} />
         <Route path="replay" element={<Replay />} />
+        <Route path="review" element={<Review />} />
         <Route path="online" element={<Online />} />
         <Route path="online/:code" element={<Lobby />} />
         <Route path="account" element={<Account />} />
