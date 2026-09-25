@@ -115,6 +115,7 @@ export default function Game() {
   const reviewSeat = seat ?? game?.players.findIndex((p) => !p.isBot) ?? -1;
   const review = useGame((s) => s.review);
   const setReview = useGame((s) => s.setReview);
+  const setDebriefOpen = useGame((s) => s.setDebriefOpen);
   /* the survey shown on the board: one object per survey, not one per render
      (the board rebuilds its overlay and its filter whenever it changes) */
   const preview = useMemo<ComponentProps<typeof PixiBoard>['preview']>(
@@ -784,8 +785,8 @@ export default function Game() {
       {/* the review's plate: which moment of the game the board shows */}
       {review && (
         <div className="pointer-events-auto fixed left-1/2 top-3 z-[66] flex -translate-x-1/2 items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
-          <span className="font-fell text-[12.5px] text-cream-100">{t('game.debrief.banner', { round: review.round })}</span>
-          <button type="button" onClick={() => setReview(null)} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
+          <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
+          <button type="button" onClick={() => { setReview(null); setDebriefOpen(false); }} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
             {t('game.debrief.back')}
           </button>
         </div>

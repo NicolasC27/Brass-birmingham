@@ -1322,8 +1322,10 @@ export interface Review {
   at: number;
   round: number;
   state: GameState;
-  mine: GameAction;
-  better: GameAction;
+  /** what the board shows, in words: the move just played or the branch taken */
+  label?: string;
+  mine?: GameAction;
+  better?: GameAction;
 }
 
 /** a part of the HUD a lesson points at (a `data-lens` mark on the element) */
