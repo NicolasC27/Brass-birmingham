@@ -37,6 +37,10 @@ export default function ScoringTable({
   const [open, setOpen] = useState<Record<string, boolean>>(
     () => Object.fromEntries(eras.map((e) => [e.name, true])),
   );
+  /* what the eras do not explain: a merchant's barrel pays on the spot, an
+     empty purse on payday costs on the spot, and the initiation game closes
+     its books with a bonus. Without this line the total reads as an error. */
+  const aside = players.map((p, i) => p.vp - eraTotal(result, i));
 
   let row = 0;
 
@@ -115,17 +119,36 @@ export default function ScoringTable({
             ];
           })}
 
+          {/* What fell outside the eras, when anything did */}
+          {aside.some((v) => v !== 0) && (
+            <TableRow className="border-b border-coal-700/40 hover:bg-transparent">
+              <motion.td
+                initial={{ opacity: 0, y: 8 }}
+                animate={reveal ? { opacity: 1, y: 0 } : {}}
+                transition={{ duration: 0.2 }}
+                className="pl-8 font-sans text-[13px] text-cream-100/75"
+              >
+                {t("results.table.aside")}
+              </motion.td>
+              {players.map((p, i) => (
+                <TableCell key={p.name} className="text-right font-mono text-sm text-cream-100 tabular-nums">
+                  {aside[i] > 0 ? `+${aside[i]}` : aside[i]}
+                </TableCell>
+              ))}
+            </TableRow>
+          )}
+
           {/* Total — brass line */}
           <TableRow className="border-y border-brass-700/70 bg-brass-500/[0.07] hover:bg-brass-500/[0.07]">
             <TableCell className="font-display text-base font-bold text-brass-400">
               {t("results.table.total")}
             </TableCell>
-            {players.map((p, i) => (
+            {players.map((p) => (
               <TableCell
                 key={p.name}
                 className="text-right font-display text-lg font-bold text-brass-400 tabular-nums"
               >
-                {eraTotal(result, i)}
+                {p.vp}
               </TableCell>
             ))}
           </TableRow>

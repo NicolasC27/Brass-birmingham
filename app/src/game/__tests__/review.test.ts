@@ -48,6 +48,18 @@ describe('the review of a finished game', () => {
     expect(review.seats.map((x) => x.vp)).toEqual(s.players.map((p) => p.vp));
   });
 
+  it('accounts for every point away from the era scores', () => {
+    review.seats.forEach((x) => {
+      const canal = x.canal.tiles + x.canal.links;
+      const rail = x.rail ? x.rail.tiles + x.rail.links : 0;
+      /* a merchant's barrel pays at once, an empty purse costs at once:
+         between them they close the gap the era scores leave */
+      expect(canal + rail + x.bonus - x.penalty).toBe(x.vp);
+      expect(x.bonus).toBeGreaterThanOrEqual(0);
+      expect(x.penalty).toBeGreaterThanOrEqual(0);
+    });
+  });
+
   it('counts the actions each seat actually took', () => {
     /* the actor of a move is whoever was to act when it was played, so the
        count is made the same way the review makes it: by replaying */

@@ -33,8 +33,12 @@ export interface SeatReview {
   /** where the points came from, era by era */
   canal: { tiles: number; links: number };
   rail: { tiles: number; links: number } | null;
-  /** the initiation game's closing books, when it was one */
+  /** points won and lost away from the era scores: a merchant's barrel
+   *  pays at once, a purse short at payday costs at once, and the
+   *  initiation game closes its books with a bonus of its own */
   close: number;
+  bonus: number;
+  penalty: number;
   /** what was never flipped, and what it would have been worth */
   idle: Idle[];
   idleVp: number;
@@ -76,6 +80,9 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
   const spent: number[][] = s.players.map(() => []);
   const opened = s.players.map(() => 0);
   const rounds: Review['rounds'] = [];
+  /* what was won and lost away from the era scores, watched move by move */
+  const bonus = s.players.map(() => 0);
+  const penalty = s.players.map(() => 0);
   /* what the sweep is about to take, captured while it is still on the board */
   let swept: Idle[][] = s.players.map(() => []);
   let canalSplit: { links: number; tiles: number }[] | null = null;
@@ -89,9 +96,19 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
     /* the canal era is scored by the action that ends it; the sweep waits
        for the next one, so this is the moment the doomed tiles are read */
     const wasCanal = s.era === 'canal' && !s.canalScores;
+    const hadCanal = !!s.canalScores;
+    const hadFinal = !!s.finalScores;
+    const held = s.players.map((p) => p.vp);
     const r = applyAction(s, seat < 0 ? s.current : seat, a);
     if (!r.state) continue;
     s = r.state;
+    /* the era's own scoring is not a bonus: it is taken out of the count */
+    const scoredNow = (!hadCanal && s.canalScores) || (!hadFinal && s.finalScores) || null;
+    s.players.forEach((p, i) => {
+      const d = p.vp - held[i] - (scoredNow?.[i] ?? 0);
+      if (d > 0) bonus[i] += d;
+      else if (d < 0) penalty[i] -= d;
+    });
     if (wasCanal && s.canalScores) {
       swept = s.players.map((_, i) => tilesOf(s, i, (t) => t.level === 1));
       canalSplit = s.canalSplit ?? null;
@@ -127,6 +144,8 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
       canal: { tiles: canal.tiles, links: canal.links },
       rail: rail ? { tiles: rail.tiles, links: rail.links } : null,
       close: p.vp - scored,
+      bonus: bonus[i],
+      penalty: penalty[i],
       idle,
       idleVp: idle.reduce((sum, t) => sum + t.vp, 0),
       swept: swept[i] ?? [],

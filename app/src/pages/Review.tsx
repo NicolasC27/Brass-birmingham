@@ -238,7 +238,8 @@ export default function Review() {
                   <p className="mt-1 font-sans text-[12.5px] leading-relaxed text-cream-100/70">
                     {t('results.review.sourcesCanal', { total: canal, tiles: s.canal.tiles, links: s.canal.links })}
                     {s.rail ? ` · ${t('results.review.sourcesRail', { total: rail, tiles: s.rail.tiles, links: s.rail.links })}` : ''}
-                    {s.close !== 0 ? ` · ${t('results.review.sourcesClose', { close: s.close })}` : ''}
+                    {s.bonus > 0 ? ` · ${t(review.short ? 'results.review.sourcesClose' : 'results.review.sourcesBonus', { n: s.bonus })}` : ''}
+                    {s.penalty > 0 ? ` · ${t('results.review.sourcesPenalty', { n: s.penalty })}` : ''}
                   </p>
                 </li>
               );
