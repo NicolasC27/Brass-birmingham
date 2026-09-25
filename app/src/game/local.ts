@@ -111,6 +111,25 @@ function freeCode(list: LocalTable[]): string {
   return code;
 }
 
+/** a new table of this device that starts from a given position — a game
+    under review played on from there. Its code, for the address */
+export function forkLocalGame(g: GameState): string {
+  const list = readIndex();
+  const now = Date.now();
+  const entry: LocalTable = {
+    code: freeCode(list),
+    name: pickTableName(list.map((t) => t.name)),
+    startedAt: now,
+    updatedAt: now,
+    era: g.era,
+    round: g.round,
+    seats: g.players.map((p) => ({ name: p.name, color: p.color as PlayerColor, kind: p.isBot ? 'bot' : 'human' })),
+  };
+  writeIndex([entry, ...list]);
+  write(localSaveKey(entry.code), serialize(g));
+  return entry.code;
+}
+
 /** the games in play on this device, the last touched first */
 export function listLocalGames(): LocalTable[] {
   return readIndex()

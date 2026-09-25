@@ -1332,6 +1332,8 @@ export interface Review {
   state: GameState;
   /** what the board shows, in words: the move just played or the branch taken */
   label?: string;
+  /** who played the move on show, for the board to mark it */
+  seat?: number;
   mine?: GameAction;
   better?: GameAction;
 }

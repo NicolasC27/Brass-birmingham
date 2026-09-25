@@ -119,8 +119,8 @@ export default function Game() {
   /* the survey shown on the board: one object per survey, not one per render
      (the board rebuilds its overlay and its filter whenever it changes) */
   const preview = useMemo<ComponentProps<typeof PixiBoard>['preview']>(
-    () => (surveySeat !== null ? { kind: 'player', seat: surveySeat, empires: surveyEmpires } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat, empires: surveyEmpires } : glimpse ? { kind: 'player', seat: glimpse.seat, transient: true, at: glimpse.at } : null),
-    [surveySeat, surveyEmpires, previewQueue, queued, mySeat, glimpse],
+    () => (review?.seat !== undefined ? { kind: 'player', seat: review.seat } : surveySeat !== null ? { kind: 'player', seat: surveySeat, empires: surveyEmpires } : previewQueue && mySeat >= 0 ? { kind: 'orders', queued, actor: mySeat, empires: surveyEmpires } : glimpse ? { kind: 'player', seat: glimpse.seat, transient: true, at: glimpse.at } : null),
+    [review, surveySeat, surveyEmpires, previewQueue, queued, mySeat, glimpse],
   );
   /* a glimpse of another seat's move lasts a few seconds, then the table is itself again */
   useEffect(() => {

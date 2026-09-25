@@ -734,6 +734,7 @@ const game: typeof engame = {
     follow: '{n} Züge spielen lassen',
     followed: 'Dann: {moves}',
     branchOn: 'Zweig: {move}, dann {n} Züge',
+    playFrom: 'Von hier weiterspielen',
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',
