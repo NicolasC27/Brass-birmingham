@@ -32,6 +32,7 @@ import { PINS_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
+import { readShared } from './share';
 
 export interface Shake {
   key: string;
@@ -398,6 +399,12 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     /* a game of this device: the one named, or a new table on the register */
     const at = local ?? openLocalGame().code;
+    /* a game already on this device, or one carried here in the address */
+    const carried = readLocalSave(at) ? null : readShared(window.location.hash);
+    if (carried) {
+      saveLocalGame(at, carried);
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
     const resumed = readLocalSave(at);
     /* the guided game: a fixed deal, remembered by its seed so a reload keeps the guide */
     const wanted = (() => {
