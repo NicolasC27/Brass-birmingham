@@ -60,9 +60,17 @@ export default function Replay() {
     if (!liveGame) return null;
     return { players: [], eras: [], winnerIndex: 0, timeline: [], history: liveGame.history, seed: liveGame.seed, setup: setupOf(liveGame), actions: liveGame.actions };
   }, [live, liveGame]);
-  const backTo = live ? '/game' : '/results';
+  /* ?at=N opens the reel on the table as it stood once move N was played,
+     which is how the debrief points at a move */
+  const at = Number(params.get('at'));
+  const from = params.get('from');
+  const backTo = from === 'review' ? '/review' : live ? '/game' : '/results';
   const states = useMemo(() => (final ? rebuild(final) : null), [final]);
-  const [i, setI] = useState(() => (live && states ? states.length - 1 : 0));
+  const [i, setI] = useState(() => {
+    if (live && states) return states.length - 1;
+    if (!states || !Number.isFinite(at)) return 0;
+    return Math.max(0, Math.min(states.length - 1, at + 1));
+  });
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const n = states ? states.length - 1 : 0;
@@ -102,7 +110,7 @@ export default function Replay() {
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
         <p className="font-fell text-lg text-cream-100/80">{t('results.page.replayMissing')}</p>
         <Link to={backTo} className="btn-ledger">
-          {live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
+          {from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
         </Link>
       </div>
     );
@@ -144,7 +152,7 @@ export default function Replay() {
 
       {/* back */}
       <Link to={backTo} className="plate fixed right-3 top-3 z-[64] flex items-center gap-1.5 px-3 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-cream-100/75 hover:text-brass-400">
-        <ArrowLeft className="h-3 w-3" /> {live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
+        <ArrowLeft className="h-3 w-3" /> {from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
       </Link>
 
       {/* the reel: what just happened, the scrubber, transport */}
