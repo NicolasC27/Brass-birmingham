@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { PLAYER_COLORS } from '@/game/data';
 import { leaveOnlineTable, useGame } from '@/game/store';
+import { shareFragment } from '@/game/share';
 import { useT } from '@/i18n';
 
 /**
@@ -18,7 +19,21 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
   const game = useGame((s) => s.game);
   const open = useGame((s) => s.gameOverOpen);
   const online = useGame((s) => s.code !== null);
+  const local = useGame((s) => s.local);
+  const code = useGame((s) => s.code);
   const navigate = useNavigate();
+  /* the game handed on in a link: the deal and the moves, replayed on arrival */
+  const [shared, setShared] = useState(false);
+  const share = () => {
+    if (!game) return;
+    const url = `${window.location.origin}/game/local/${local ?? code ?? 'GAME'}${shareFragment(game)}`;
+    const done = () => {
+      setShared(true);
+      window.setTimeout(() => setShared(false), 2200);
+    };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(done, () => window.prompt(t('game.scoring.shareCopy'), url));
+    else window.prompt(t('game.scoring.shareCopy'), url);
+  };
 
   const rows = useMemo(() => {
     if (!game) return [];
@@ -150,6 +165,9 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
               {t('game.debrief.open')}
             </button>
           )}
+          <button type="button" onClick={share} className="btn-ledger !text-ink-900 !border-ink-900/40 hover:!bg-ink-900/10" aria-live="polite">
+            {shared ? t('game.scoring.shared') : t('game.scoring.share')}
+          </button>
           <button type="button" onClick={() => navigate('/setup')} className="btn-ledger !text-ink-900 !border-ink-900/40 hover:!bg-ink-900/10">
             {t('game.scoring.changeTable')}
           </button>
