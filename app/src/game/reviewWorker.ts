@@ -14,7 +14,7 @@
 import { actorOf, applyAction } from './actions';
 import type { GameAction } from './actions';
 import { newGame } from './engine';
-import { chooseBotAction, evaluate } from './search';
+import { chooseBotAction, evaluate, searchTurn } from './search';
 import type { GameState, SetupPayload } from './types';
 
 export interface Ask {
@@ -27,21 +27,34 @@ export interface Ask {
   budgetMs?: number;
 }
 
-/** one move of the reader's, beside the one the machine would have made */
+/** one move of the reader's, beside the ones it could have played
+ *
+ *  The machine's reading is on a scale of its own — banked points, what may
+ *  still flip, cash, income and position, blended — and that scale drifts
+ *  as a game runs on: early moves are worth far more to it than late ones.
+ *  A move is therefore not judged against a fixed bar but against the other
+ *  moves open at that very table: the best of them, and the middling one.
+ *  `give` is what was given up in middling-move widths, which is a figure
+ *  that means the same thing in the first round and the last. */
 export interface Second {
   /** the index of the move in the log */
   at: number;
   era: 'canal' | 'rail';
   round: number;
   yours: GameAction;
-  /** what the machine would have played, when it found anything */
+  /** what the machine would have played, when it differs from the move */
   theirs: GameAction | null;
-  /** how much better the machine reads its own move than the one played,
-   *  in the units of its own reading. Never below zero: a move the machine
-   *  reads as better than its own costs nothing. */
-  gap: number;
-  /** the machine would have played this very move */
-  same: boolean;
+  /** the machine's reading of the table after the move played, the best
+   *  move open, and the middling one */
+  mine: number;
+  best: number;
+  median: number;
+  /** how many moves were open at that table */
+  choices: number;
+  /** what was given up, measured in middling-move widths */
+  give: number;
+  /** the move played was the best reading of them all */
+  top: boolean;
 }
 
 export type Note = { kind: 'progress'; done: number; total: number } | { kind: 'done'; moves: Second[] } | { kind: 'failed'; why: string };
@@ -89,18 +102,33 @@ export function* readGame(ask: Ask): Generator<Note, void, unknown> {
     const who = actorOf(s, a);
     if (readable(s, a, seat)) {
       const before = s;
-      const theirs = chooseBotAction(before, seat, { budgetMs, strength: 1 });
+      /* every move open at this table, each read one move on: the spread
+         of the position, which is the only fair yardstick for the one
+         played. The search fills this list on its way past, so it is free. */
+      const read = searchTurn(before, seat, { budgetMs, strength: 1, rank: true });
+      const ranked = read?.ranked ?? [];
       const yoursAfter = applyAction(before, seat, a).state;
-      const theirsAfter = theirs ? applyAction(before, seat, theirs).state : null;
+      const played = yoursAfter ? evaluate(yoursAfter, seat) : 0;
+      const scores = ranked.map((r) => r.score);
+      const best = scores.length ? Math.max(scores[0], played) : played;
+      const median = scores.length ? scores[Math.floor(scores.length / 2)] : played;
+      const width = Math.max(0.5, best - median);
+      const give = Math.round(((best - played) / width) * 100) / 100;
+      const theirs = read?.action ?? chooseBotAction(before, seat, { budgetMs, strength: 1 });
       const same = !!theirs && JSON.stringify(theirs) === JSON.stringify(a);
-      /* the machine's own move against the one played, read from the same
-         table one ply on. A move it likes better than its own costs nothing:
-         the reading is not fine enough to call that a gain. */
-      const gap =
-        theirs && yoursAfter && theirsAfter && !same
-          ? Math.max(0, Math.round((evaluate(theirsAfter, seat) - evaluate(yoursAfter, seat)) * 10) / 10)
-          : 0;
-      moves.push({ at, era: before.era, round: before.round, yours: a, theirs: same ? null : theirs, gap, same });
+      moves.push({
+        at,
+        era: before.era,
+        round: before.round,
+        yours: a,
+        theirs: same ? null : theirs,
+        mine: Math.round(played * 10) / 10,
+        best: Math.round(best * 10) / 10,
+        median: Math.round(median * 10) / 10,
+        choices: scores.length,
+        give: Math.max(0, give),
+        top: give <= 0,
+      });
       done += 1;
       yield { kind: 'progress', done, total: mine };
     }

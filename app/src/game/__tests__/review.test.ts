@@ -3,7 +3,7 @@ import { actorOf, applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { BOT_SKILL } from '../data';
 import { newGame } from '../engine';
-import { reviewGame } from '../review';
+import { GIVE, gradeOf, reviewGame, swingsFor } from '../review';
 import { readGame } from '../reviewWorker';
 import type { GameAction } from '../actions';
 import type { SetupPayload } from '../types';
@@ -74,6 +74,30 @@ describe('the review of a finished game', () => {
     expect(last.proj).toEqual(review.seats.map((x) => x.vp));
     /* and before a penny is spent nobody is owed anything but their tiles */
     expect(review.curve[0].proj.every((v) => v >= 0)).toBe(true);
+  });
+
+  it('does not credit the canal tiles twice at the turn of the eras', () => {
+    /* the canal scoring banks the links and the tiles; the sweep that takes
+       the level-1 tiles waits for the next move. Between the two the
+       standing must already read as it will once the sweep has run. */
+    const turn = log.findIndex((a) => a.kind === 'begin-rail');
+    expect(turn).toBeGreaterThan(0);
+    const scored = review.curve.find((b) => b.at === turn - 1);
+    const swept = review.curve.find((b) => b.at === turn);
+    if (!scored || !swept) throw new Error('no turn of the eras on the curve');
+    expect(scored.proj).toEqual(swept.proj);
+  });
+
+  it('reads how each move moved the lead', () => {
+    const swings = swingsFor(review, 0);
+    expect(swings).toHaveLength(review.curve.length);
+    /* the lead after one move is the lead before the next */
+    for (let i = 1; i < swings.length; i++) expect(swings[i].was).toBeCloseTo(swings[i - 1].now, 6);
+    swings.forEach((x) => expect(x.shift).toBeCloseTo(Math.round((x.now - x.was) * 10) / 10, 6));
+    /* at the close the lead is the winner's margin */
+    const last = swings[swings.length - 1];
+    const others = review.seats.filter((x) => x.seat !== 0).map((x) => x.vp);
+    expect(last.now).toBe(review.seats[0].vp - Math.max(...others));
   });
 
   it('counts the actions each seat actually took', () => {
@@ -181,18 +205,49 @@ describe('the machine reading the moves back', () => {
     for (let i = 1; i < done.moves.length; i++) expect(done.moves[i].at).toBeGreaterThan(done.moves[i - 1].at);
     done.moves.forEach((m) => {
       expect(log[m.at]).toEqual(m.yours);
-      expect(m.gap).toBeGreaterThanOrEqual(0);
-      /* the machine's own move is named only where it differs */
-      if (m.same) expect(m.theirs).toBeNull();
-      else if (m.theirs) expect(JSON.stringify(m.yours)).not.toBe(JSON.stringify(m.theirs));
-      if (m.same) expect(m.gap).toBe(0);
+      /* what was given up is never negative, and the position's own spread
+         is the yardstick: the best reading is never below the middling one */
+      expect(m.give).toBeGreaterThanOrEqual(0);
+      expect(m.best).toBeGreaterThanOrEqual(m.median);
+      expect(m.best).toBeGreaterThanOrEqual(m.mine);
+      expect(m.choices).toBeGreaterThan(0);
+      if (m.theirs) expect(JSON.stringify(m.yours)).not.toBe(JSON.stringify(m.theirs));
+      if (m.top) expect(m.give).toBe(0);
     });
-    /* and at least one of them is a move it would have played otherwise */
-    expect(done.moves.some((m) => m.gap > 0)).toBe(true);
+    /* a game played by the plain machine is not a game of best moves */
+    expect(done.moves.some((m) => m.give > 0)).toBe(true);
   });
 
   it('says so rather than throwing when a log does not replay', () => {
     const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: [{ kind: 'sell', card: 'nope', sales: [] }], seat: 0, budgetMs: 20 })];
     expect(notes.some((n) => n.kind === 'failed')).toBe(true);
+  });
+});
+
+describe('grading a move against its own position', () => {
+  it('calls the best reading of them all the best move', () => {
+    expect(gradeOf(0)).toBe('top');
+    expect(gradeOf(-1)).toBe('top');
+  });
+
+  it('climbs through the grades as more is given up', () => {
+    expect(gradeOf(GIVE.good - 0.01)).toBe('good');
+    expect(gradeOf(GIVE.good)).toBe('good');
+    expect(gradeOf(GIVE.good + 0.01)).toBe('inaccuracy');
+    expect(gradeOf(GIVE.inaccuracy)).toBe('inaccuracy');
+    expect(gradeOf(GIVE.inaccuracy + 0.01)).toBe('mistake');
+    expect(gradeOf(GIVE.mistake)).toBe('mistake');
+    expect(gradeOf(GIVE.mistake + 0.01)).toBe('blunder');
+    expect(gradeOf(99)).toBe('blunder');
+  });
+
+  it('never runs backwards', () => {
+    const order = ['top', 'good', 'inaccuracy', 'mistake', 'blunder'];
+    let last = 0;
+    for (let g = 0; g < 4; g += 0.05) {
+      const rank = order.indexOf(gradeOf(g));
+      expect(rank).toBeGreaterThanOrEqual(last);
+      last = rank;
+    }
   });
 });

@@ -99,11 +99,20 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
   const rounds: Review['rounds'] = [];
   const curve: Beat[] = [];
   /** the standing of every seat as the board reads now: what is banked
-   *  plus what an era scored this instant would pay. Once the last era is
-   *  scored there is nothing left to pay, and the board pays nothing more. */
+   *  plus what the NEXT scoring would pay.
+   *
+   *  Two moments need care. Once the last era is scored nothing is left to
+   *  pay. And in the breath between the canal scoring and the rail era the
+   *  links are already gone from the board while the level-1 tiles are not
+   *  yet swept: counting them would credit a seat twice for tiles that are
+   *  about to leave, so only the tiles that will survive the sweep count. */
   const standing = (g: GameState): number[] => {
-    const settled = g.phase === 'game-over' || !!g.finalScores;
-    if (settled) return g.players.map((p) => p.vp);
+    if (g.phase === 'game-over' || g.finalScores) return g.players.map((p) => p.vp);
+    if (g.era === 'canal' && g.canalScores) {
+      const kept = g.players.map(() => 0);
+      for (const t of Object.values(g.tiles)) if (t.flipped && t.level >= 2 && t.owner >= 0) kept[t.owner] += INDUSTRIES[t.industry][t.level - 1].vp;
+      return g.players.map((p, i) => p.vp + kept[i]);
+    }
     const proj = projectEraScores(g);
     return g.players.map((p, i) => p.vp + proj[i].total);
   };
@@ -194,3 +203,65 @@ export function reviewGame(setup: SetupPayload, seed: number, actions: GameActio
   });
   return { seats, curve, rounds, actionsTotal: seats.reduce((sum, x) => sum + x.actions, 0) / Math.max(1, n), short };
 }
+
+/* ---------------------- how the lead changed hands ---------------------- */
+
+/** a seat's lead over the best of the others, as the board read it */
+export const leadAt = (beat: Beat, seat: number): number => {
+  const mine = beat.proj[seat] ?? 0;
+  let best = -Infinity;
+  beat.proj.forEach((v, i) => {
+    if (i !== seat) best = Math.max(best, v);
+  });
+  return best === -Infinity ? mine : mine - best;
+};
+
+/** one move and what it did to a seat's lead */
+export interface Swing {
+  at: number;
+  era: Era;
+  round: number;
+  /** the seat that played the move */
+  by: number;
+  /** the lead before and after it */
+  was: number;
+  now: number;
+  /** the change, positive when the lead grew */
+  shift: number;
+}
+
+/** every move of a game, by how much it moved the given seat's lead.
+ *  Read off the positions alone: no opinion, only arithmetic. */
+export function swingsFor(review: Review, seat: number): Swing[] {
+  const out: Swing[] = [];
+  let was = 0;
+  for (const beat of review.curve) {
+    const now = leadAt(beat, seat);
+    out.push({ at: beat.at, era: beat.era, round: beat.round, by: beat.seat, was, now, shift: Math.round((now - was) * 10) / 10 });
+    was = now;
+  }
+  return out;
+}
+
+/* ------------------------- how a move is graded ------------------------- */
+
+export type Grade = 'top' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
+
+/** What was given up, in widths of the gap between the best move open and
+ *  the middling one. A width means the same thing in the first round and
+ *  the last, which a figure in the machine's own units does not: its scale
+ *  runs high early and low late. One width is the whole distance between
+ *  playing well and playing averagely.
+ *
+ *  The bounds are measured, not chosen. Over eight games at four seats, a
+ *  seat playing the search gave up 0.06 of a width a move and half its
+ *  moves gave up nothing; the stronger heuristic 0.6; the weaker one 0.8;
+ *  a seat that scouted and passed its way through the game 1.3. So half a
+ *  width is still good play, a width is the middling move, and two widths
+ *  is worse than a seat that did not try. */
+export const GIVE = { good: 0.5, inaccuracy: 1, mistake: 2 } as const;
+
+export const gradeOf = (give: number): Grade =>
+  give <= 0 ? 'top' : give <= GIVE.good ? 'good' : give <= GIVE.inaccuracy ? 'inaccuracy' : give <= GIVE.mistake ? 'mistake' : 'blunder';
+
+export const GRADES: Grade[] = ['top', 'good', 'inaccuracy', 'mistake', 'blunder'];
