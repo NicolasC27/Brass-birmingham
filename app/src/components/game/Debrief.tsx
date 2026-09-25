@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
-import { LOSS, followToTurn, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import { LOSS, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
 import type { Followed, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
@@ -208,6 +208,24 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       const n = e.data;
       if (n.kind === 'roads') {
         setDeeper((d) => ({ of: game, byKey: { ...(d.of === game ? d.byKey : {}), [n.key]: n.roads } }));
+        /* the longer reading of one of the game's own turns is the best
+           reading there is of it: the curve, the list and the grade take it,
+           so the same position never shows two figures */
+        const own = /^(\d+)\|$/.exec(n.key);
+        if (own) {
+          const k = Number(own[1]);
+          const played = game.actions[k];
+          const mine = played ? n.roads.find((r) => sameRoad(r.action) === sameRoad(played)) : undefined;
+          if (mine && n.roads.length) {
+            const best = Math.max(mine.chance, n.roads[0].chance);
+            const loss = Math.max(0, best - mine.chance);
+            setJudged((j) => {
+              if (j.of !== game) return j;
+              const v = j.verdicts[k];
+              return { ...j, deep: { ...j.deep, [k + 1]: mine.chance }, verdicts: v ? { ...j.verdicts, [k]: { ...v, roads: n.roads, mine: mine.chance, best, loss, grade: gradeOfLoss(loss) } } : j.verdicts };
+            });
+          }
+        }
         return;
       }
       setJudged((j) => {
