@@ -478,9 +478,13 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
     for (let i = 0; i < STEPS.length; i++) {
       const s = STEPS[i];
       if (i < reached) continue;
-      /* a deed already done when the lesson comes up is no reason to skip
-         the lesson: it becomes a page to read on from */
-      if (s.done ? s.done(game, me, selectedCardId, matPlayer, ack) && i < readPast : i < readPast) continue;
+      if (s.done) {
+        /* a deed done passes its lesson — unless it was already done when
+           the lesson came up, and then the lesson is still to be read */
+        const done = s.done(game, me, selectedCardId, matPlayer, ack);
+        const beforehand = arrived.at === i && arrived.done;
+        if (done && (!beforehand || i < readPast)) continue;
+      } else if (i < readPast) continue;
       /* a read step waiting on the game: skipped until it makes sense */
       if (!s.done && s.when && !s.when(game, me)) {
         if (pending < 0) pending = i;
