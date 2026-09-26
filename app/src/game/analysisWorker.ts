@@ -7,7 +7,7 @@
 
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
-import { DEEP_JUDGE, LONG_JUDGE, deepChance, judgeTurn, weighRoads } from './analysis';
+import { DEEP_JUDGE, LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChance, judgeTurn, weighRoads } from './analysis';
 import type { Judge, Verdict, Weighed } from './analysis';
 import { newGame } from './engine';
 import type { GameState, SetupPayload } from './types';
@@ -19,6 +19,8 @@ export interface Ask {
   /** the seat read */
   me: number;
   judge?: Judge;
+  /** the strengths the continuations are played at, one pass each */
+  passes?: readonly number[];
 }
 
 /** one turn's roads, read longer than the pass: the panel asks when a
@@ -36,15 +38,18 @@ export interface AskRoads {
 }
 
 export type Note =
-  | { kind: 'position'; k: number; chance: number; done: number; total: number }
+  | { kind: 'position'; k: number; chance: number; low: number; high: number; passes: number; done: number; total: number }
   | { kind: 'roads'; key: string; roads: Weighed[] }
   | { kind: 'turn'; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
   | { kind: 'failed'; why: string };
 
-/** every position of the game, then every turn of the reader's */
+/** every position of the game, then every turn of the reader's — and the
+    whole round again for each further pass, the machine a shade weaker, so
+    the panel has a figure early and a steadier one after */
 export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   const judge = ask.judge ?? LONG_JUDGE;
+  const passes = ask.passes ?? PASSES;
   let positions: GameState[];
   try {
     let s = newGame(ask.setup, ask.seed);
@@ -61,16 +66,26 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
     return;
   }
   const turns = positions.map((_, k) => k).filter((k) => k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === ask.me && ask.actions[k].kind !== 'concede');
-  const total = positions.length + turns.length;
+  const total = passes.length * (positions.length + turns.length);
+  /* what the passes have said so far, position by position and turn by turn */
+  const chances = positions.map<number[]>(() => []);
+  const verdicts = new Map<number, Verdict[]>();
   let done = 0;
-  for (let k = 0; k < positions.length; k++) {
-    done += 1;
-    yield { kind: 'position', k, chance: deepChance(positions[k], ask.me, judge), done, total };
-  }
-  for (const k of turns) {
-    done += 1;
-    const verdict = judgeTurn(positions[k], ask.me, ask.actions[k], judge);
-    if (verdict) yield { kind: 'turn', verdict, done, total };
+  for (const strength of passes) {
+    for (let k = 0; k < positions.length; k++) {
+      done += 1;
+      chances[k].push(deepChance(positions[k], ask.me, judge, strength));
+      const read = blendChances(chances[k]);
+      yield { kind: 'position', k, chance: read.chance, low: read.low, high: read.high, passes: read.passes, done, total };
+    }
+    for (const k of turns) {
+      done += 1;
+      const verdict = judgeTurn(positions[k], ask.me, ask.actions[k], judge, strength);
+      if (!verdict) continue;
+      const seen = [...(verdicts.get(k) ?? []), verdict];
+      verdicts.set(k, seen);
+      yield { kind: 'turn', verdict: blendVerdicts(seen), done, total };
+    }
   }
   yield { kind: 'done' };
 }

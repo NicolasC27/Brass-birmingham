@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
-import { SHORT_SCALE, deepChance, gradeOfLoss, judgeTurn, positionsOf, qualityOf, roadsFrom, sameRoad, winChance } from '../analysis';
+import { PASSES, SHORT_SCALE, bandOf, blendChances, blendVerdicts, deepChance, gradeOfLoss, judgeTurn, positionsOf, qualityOf, readChance, roadsFrom, sameRoad, winChance } from '../analysis';
 import { newGame } from '../engine';
 import type { SetupPayload } from '../types';
 
@@ -78,5 +78,60 @@ describe('the long judge', () => {
     expect(gradeOfLoss(0.05)).toBe('inaccuracy');
     expect(gradeOfLoss(0.1)).toBe('mistake');
     expect(gradeOfLoss(0.3)).toBe('blunder');
+  });
+});
+
+describe('the three passes', () => {
+  it('reads a position by several continuations and keeps how far they landed apart', () => {
+    let s = newGame(SETUP, 13);
+    const me = 0;
+    for (let i = 0; i < 8 && s.phase === 'action'; i++) {
+      const wanted = s.current === me ? fallbackAction(s, me) : (botAction(chooseBotMove(s, s.current)) ?? fallbackAction(s, s.current));
+      const r = applyAction(s, s.current, wanted);
+      if (!r.state) throw new Error(r.error);
+      s = r.state;
+    }
+    const at = positionsOf(s)[4];
+    const quick = { plies: 2, budgetMs: 5, scale: SHORT_SCALE };
+    const read = readChance(at, me, quick, PASSES);
+    expect(read.passes).toBe(PASSES.length);
+    expect(read.low).toBeLessThanOrEqual(read.chance);
+    expect(read.high).toBeGreaterThanOrEqual(read.chance);
+    expect(bandOf(read)).toBeGreaterThanOrEqual(0);
+    /* the mean of the passes, and every pass a chance of the game */
+    const each = PASSES.map((x) => deepChance(at, me, quick, x));
+    expect(read.chance).toBeCloseTo(each.reduce((a, b) => a + b, 0) / each.length, 10);
+    /* one pass alone: no spread at all */
+    const one = blendChances([0.4]);
+    expect(one).toEqual({ chance: 0.4, low: 0.4, high: 0.4, passes: 1 });
+    expect(bandOf(blendChances([0.3, 0.5]))).toBeCloseTo(0.1, 10);
+  });
+
+  it('blends the verdicts of several passes, the grade read on the mean', () => {
+    let s = newGame(SETUP, 21);
+    const me = 0;
+    for (let i = 0; i < 6 && s.phase === 'action'; i++) {
+      const wanted = s.current === me ? fallbackAction(s, me) : (botAction(chooseBotMove(s, s.current)) ?? fallbackAction(s, s.current));
+      const r = applyAction(s, s.current, wanted);
+      if (!r.state) throw new Error(r.error);
+      s = r.state;
+    }
+    const positions = positionsOf(s);
+    const k = positions.findIndex((p) => p.current === me && p.phase === 'action');
+    const quick = { plies: 2, budgetMs: 5, scale: SHORT_SCALE };
+    const each = PASSES.map((x) => judgeTurn(positions[k], me, s.actions[k], quick, x)!);
+    for (const v of each) expect(v).not.toBeNull();
+    const blended = blendVerdicts(each);
+    expect(blended.at).toBe(k);
+    expect(blended.mine).toBeCloseTo(each.reduce((a, v) => a + v.mine, 0) / each.length, 10);
+    for (let i = 1; i < blended.roads.length; i++) expect(blended.roads[i - 1].chance).toBeGreaterThanOrEqual(blended.roads[i].chance);
+    expect(blended.best).toBeGreaterThanOrEqual(blended.mine);
+    expect(blended.grade).toBe(gradeOfLoss(blended.loss));
+    /* a road every pass saw is the mean of what they said of it */
+    const key = sameRoad(blended.roads[0].action);
+    const seen = each.map((v) => v.roads.find((r) => sameRoad(r.action) === key)?.chance).filter((c): c is number => c !== undefined);
+    expect(blended.roads[0].chance).toBeCloseTo(seen.reduce((a, b) => a + b, 0) / seen.length, 10);
+    /* one reading blends to itself */
+    expect(blendVerdicts([each[0]])).toBe(each[0]);
   });
 });

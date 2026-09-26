@@ -1,7 +1,7 @@
 import { applyAction, fallbackAction, setupOf } from './actions';
 import { eraRounds, newGame } from './engine';
 import type { GameAction } from './actions';
-import { chooseBotAction, evaluate, worthTrying } from './search';
+import { chooseBotAction, evaluate, searchTurn, worthTrying } from './search';
 import type { Era, GameState } from './types';
 import type { Grade } from './review';
 
@@ -205,8 +205,23 @@ export interface Judge {
    0.377 ten moves on — and each lands its deciles within five points. */
 export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 7, widen: 0.5, rivals: 0.5 } };
 
-/** the tables a few moves on, one per move, the machine playing every seat flat out */
-export function lookAhead(s: GameState, judge: Judge): GameState[] {
+/** the machine's move while a position is read on: the search plain, at the
+    strength asked for — not chooseBotAction, whose easing bends to who sits
+    at the table and pins the expert's seat at its best, neither of which a
+    judge should care about */
+function readerMove(s: GameState, seat: number, strength: number, budgetMs: number): GameAction {
+  try {
+    const r = searchTurn(s, seat, { strength, budgetMs });
+    if (r) return r.action;
+  } catch {
+    /* a line the search loses: the plain move stands in */
+  }
+  return fallbackAction(s, seat);
+}
+
+/** the tables a few moves on, one per move, the machine playing every seat at
+    `strength` — one continuation of the several a position is read by */
+export function lookAhead(s: GameState, judge: Judge, strength = 1): GameState[] {
   const out: GameState[] = [];
   let cur = s;
   let guard = 0;
@@ -218,7 +233,7 @@ export function lookAhead(s: GameState, judge: Judge): GameState[] {
       continue;
     }
     const seat = cur.current;
-    const action = chooseBotAction(cur, seat, { strength: 1, budgetMs: judge.budgetMs }) ?? fallbackAction(cur, seat);
+    const action = readerMove(cur, seat, strength, judge.budgetMs);
     const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
     if (!next) break;
     cur = next;
@@ -229,21 +244,62 @@ export function lookAhead(s: GameState, judge: Judge): GameState[] {
 
 /** the lead read along the continuation: the mean over its tables, which
     steadies a figure that one table alone would leave to the last move */
-export function deepEdge(s: GameState, me: number, judge: Judge): number {
-  const path = lookAhead(s, judge);
+export function deepEdge(s: GameState, me: number, judge: Judge, strength = 1): number {
+  const path = lookAhead(s, judge, strength);
   if (!path.length) return edgeOf(s, me);
   return path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
 }
 
 /** the chance of winning from here, read after the replies, on the judge's own scale */
-export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE): number {
+export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, strength = 1): number {
   if (s.phase === 'game-over') return winChance(s, me);
-  const path = lookAhead(s, judge);
+  const path = lookAhead(s, judge, strength);
   if (!path.length) return winChance(s, me);
   const last = path[path.length - 1];
   if (last.phase === 'game-over') return winChance(last, me);
   const edge = path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
   return chanceOf(edge, roundsLeft(s), s.players.length, judge.scale);
+}
+
+/* ------------------------------------------------------------------ */
+/* Three continuations, not one. A position played on once hangs on the */
+/* line the machine happened to pick there: one loan taken a move early */
+/* and the figure jumps. So it is played on three times, the machine a  */
+/* shade weaker each time — a weaker machine picks a different line, not */
+/* a worse position — and the reading is the mean of the three, with the */
+/* spread between them kept: how far apart the three passes landed is    */
+/* how sure the judge is, and the panel says so.                        */
+/* ------------------------------------------------------------------ */
+
+/** the strengths a position is read at, the flat-out pass first so the first
+    figure to land is the best single one */
+export const PASSES = [1, 0.85, 0.7] as const;
+
+/** a position read by one or more continuations */
+export interface Reading {
+  /** the mean of the passes */
+  chance: number;
+  /** the lowest and the highest of them */
+  low: number;
+  high: number;
+  /** how many passes it holds */
+  passes: number;
+}
+
+/** several readings of the same position as one: the mean, and the spread */
+export function blendChances(list: readonly number[]): Reading {
+  const chance = list.reduce((sum, c) => sum + c, 0) / list.length;
+  return { chance, low: Math.min(...list), high: Math.max(...list), passes: list.length };
+}
+
+/** half the spread between the passes, the figure the panel shows after the
+    mean: « 34 % ± 6 » */
+export const bandOf = (r: Reading): number => (r.high - r.low) / 2;
+
+/** the position read by every pass at once — the worker reads them one pass
+    at a time instead, so the curve lands early and sharpens after */
+export function readChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, strengths: readonly number[] = PASSES): Reading {
+  return blendChances(strengths.map((x) => deepChance(s, me, judge, x)));
 }
 
 /** what a move may cost in chance before it stops being a good one: the
@@ -278,23 +334,48 @@ export interface Verdict {
 
 /** the reader's move at `before`, judged long: the roads worth a look are
     ranked as they stand, then each is read after the replies */
-export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE): Verdict | null {
+export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE, strength = 1): Verdict | null {
   if (before.phase !== 'action' || before.current !== me) return null;
-  const roads = roadsFrom(before, me, 8, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge) })).sort((a, b) => b.chance - a.chance);
+  const roads = roadsFrom(before, me, 8, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge, strength) })).sort((a, b) => b.chance - a.chance);
   if (!roads.length) return null;
   const key = sameRoad(played);
   const own = roads.find((r) => sameRoad(r.action) === key);
   const mine = own ? own.chance : (() => {
     const after = applyAction(before, me, played).state;
-    return after ? deepChance(after, me, judge) : roads[roads.length - 1].chance;
+    return after ? deepChance(after, me, judge, strength) : roads[roads.length - 1].chance;
   })();
   const best = Math.max(mine, roads[0].chance);
   const loss = Math.max(0, best - mine);
   return { at: before.actions.length, round: before.round, era: before.era, roads, mine, best, loss, grade: gradeOfLoss(loss) };
 }
 
+/** the same turn read by several continuations: every road's chance is the
+    mean of the passes that saw it, and the grade is read on that mean. A road
+    one pass never offered counts only on the passes that did — the machine's
+    own hand varies with its strength, and a road missed is not a road lost */
+export function blendVerdicts(list: readonly Verdict[]): Verdict {
+  const first = list[0];
+  if (list.length === 1) return first;
+  const sums = new Map<string, { action: GameAction; sum: number; n: number }>();
+  for (const v of list) {
+    for (const r of v.roads) {
+      const key = sameRoad(r.action);
+      const e = sums.get(key) ?? { action: r.action, sum: 0, n: 0 };
+      e.sum += r.chance;
+      e.n += 1;
+      sums.set(key, e);
+    }
+  }
+  const roads = [...sums.values()].map((e) => ({ action: e.action, chance: e.sum / e.n })).sort((a, b) => b.chance - a.chance);
+  const mine = list.reduce((sum, v) => sum + v.mine, 0) / list.length;
+  const best = Math.max(mine, roads[0]?.chance ?? mine);
+  const loss = Math.max(0, best - mine);
+  return { ...first, roads, mine, best, loss, grade: gradeOfLoss(loss) };
+}
+
 /** the roads of one turn read again, longer: what the panel asks for the
-    turn being explored */
+    turn being explored. One continuation only — the deep judge plays ten
+    moves on, which steadies it, and the panel waits on this one */
 export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 6.5, widen: 0.5, rivals: 0.4 } };
 
 export function weighRoads(before: GameState, me: number, roads: GameAction[], judge: Judge = DEEP_JUDGE): Weighed[] {
@@ -306,3 +387,11 @@ export function weighRoads(before: GameState, me: number, roads: GameAction[], j
     .filter((r): r is Weighed => !!r)
     .sort((a, b) => b.chance - a.chance);
 }
+
+/* ------------------------------------------------------------------ */
+/* What a kept analysis was read by. A game read once is kept, so the  */
+/* panel opens on its own figures instead of thinking again — but only */
+/* while the judge that wrote them is the judge that stands. Bump this */
+/* on any change to a judge, a scale, the passes or the grades.        */
+/* ------------------------------------------------------------------ */
+export const ANALYSIS_VERSION = 2;
