@@ -95,6 +95,9 @@ describe('the three passes', () => {
     const quick = { plies: 2, budgetMs: 5, scale: SHORT_SCALE };
     const read = readChance(at, me, quick, PASSES);
     expect(read.passes).toBe(PASSES.length);
+    /* three readings, and each its own continuation: the machine's line, then
+       the lines after its second and third reply */
+    expect(PASSES.map((x) => x.skip)).toEqual([0, 1, 2]);
     expect(read.low).toBeLessThanOrEqual(read.chance);
     expect(read.high).toBeGreaterThanOrEqual(read.chance);
     expect(bandOf(read)).toBeGreaterThanOrEqual(0);

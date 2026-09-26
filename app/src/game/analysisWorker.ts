@@ -8,7 +8,7 @@
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
 import { DEEP_JUDGE, LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChance, judgeTurn, weighRoads } from './analysis';
-import type { Judge, Verdict, Weighed } from './analysis';
+import type { Judge, Pass, Verdict, Weighed } from './analysis';
 import { newGame } from './engine';
 import type { GameState, SetupPayload } from './types';
 
@@ -19,8 +19,8 @@ export interface Ask {
   /** the seat read */
   me: number;
   judge?: Judge;
-  /** the strengths the continuations are played at, one pass each */
-  passes?: readonly number[];
+  /** the continuations the positions are read by, one pass each */
+  passes?: readonly Pass[];
 }
 
 /** one turn's roads, read longer than the pass: the panel asks when a
@@ -71,16 +71,16 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   const chances = positions.map<number[]>(() => []);
   const verdicts = new Map<number, Verdict[]>();
   let done = 0;
-  for (const strength of passes) {
+  for (const pass of passes) {
     for (let k = 0; k < positions.length; k++) {
       done += 1;
-      chances[k].push(deepChance(positions[k], ask.me, judge, strength));
+      chances[k].push(deepChance(positions[k], ask.me, judge, pass));
       const read = blendChances(chances[k]);
       yield { kind: 'position', k, chance: read.chance, low: read.low, high: read.high, passes: read.passes, done, total };
     }
     for (const k of turns) {
       done += 1;
-      const verdict = judgeTurn(positions[k], ask.me, ask.actions[k], judge, strength);
+      const verdict = judgeTurn(positions[k], ask.me, ask.actions[k], judge, pass);
       if (!verdict) continue;
       const seen = [...(verdicts.get(k) ?? []), verdict];
       verdicts.set(k, seen);

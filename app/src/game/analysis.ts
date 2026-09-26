@@ -208,10 +208,14 @@ export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 7, wi
 /** the machine's move while a position is read on: the search plain, at the
     strength asked for — not chooseBotAction, whose easing bends to who sits
     at the table and pins the expert's seat at its best, neither of which a
-    judge should care about */
-function readerMove(s: GameState, seat: number, strength: number, budgetMs: number): GameAction {
+    judge should care about. `skip` steps over that many of the best replies,
+    which is how a second and a third continuation are had from the same
+    position: not a worse machine, another line it might well have played */
+function readerMove(s: GameState, seat: number, strength: number, budgetMs: number, skip = 0): GameAction {
   try {
-    const r = searchTurn(s, seat, { strength, budgetMs });
+    const r = searchTurn(s, seat, { strength, budgetMs, rank: skip > 0 });
+    const ranked = r?.ranked;
+    if (skip > 0 && ranked?.length) return ranked[Math.min(skip, ranked.length - 1)].action;
     if (r) return r.action;
   } catch {
     /* a line the search loses: the plain move stands in */
@@ -219,9 +223,20 @@ function readerMove(s: GameState, seat: number, strength: number, budgetMs: numb
   return fallbackAction(s, seat);
 }
 
-/** the tables a few moves on, one per move, the machine playing every seat at
-    `strength` — one continuation of the several a position is read by */
-export function lookAhead(s: GameState, judge: Judge, strength = 1): GameState[] {
+/** one way a position may be read on: how well the machine plays the
+ *  continuation, and how many of its best first replies it steps over */
+export interface Pass {
+  strength: number;
+  /** 0: the line the machine would play; 1: the line after its second reply */
+  skip: number;
+}
+
+/** the pass every figure that is read once is read by */
+export const BEST: Pass = { strength: 1, skip: 0 };
+
+/** the tables a few moves on, one per move — the first the pass's own reply,
+    the rest the machine's best at that strength */
+export function lookAhead(s: GameState, judge: Judge, pass: Pass = BEST): GameState[] {
   const out: GameState[] = [];
   let cur = s;
   let guard = 0;
@@ -233,7 +248,7 @@ export function lookAhead(s: GameState, judge: Judge, strength = 1): GameState[]
       continue;
     }
     const seat = cur.current;
-    const action = readerMove(cur, seat, strength, judge.budgetMs);
+    const action = readerMove(cur, seat, pass.strength, judge.budgetMs, out.length === 0 ? pass.skip : 0);
     const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
     if (!next) break;
     cur = next;
@@ -244,16 +259,16 @@ export function lookAhead(s: GameState, judge: Judge, strength = 1): GameState[]
 
 /** the lead read along the continuation: the mean over its tables, which
     steadies a figure that one table alone would leave to the last move */
-export function deepEdge(s: GameState, me: number, judge: Judge, strength = 1): number {
-  const path = lookAhead(s, judge, strength);
+export function deepEdge(s: GameState, me: number, judge: Judge, pass: Pass = BEST): number {
+  const path = lookAhead(s, judge, pass);
   if (!path.length) return edgeOf(s, me);
   return path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
 }
 
 /** the chance of winning from here, read after the replies, on the judge's own scale */
-export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, strength = 1): number {
+export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, pass: Pass = BEST): number {
   if (s.phase === 'game-over') return winChance(s, me);
-  const path = lookAhead(s, judge, strength);
+  const path = lookAhead(s, judge, pass);
   if (!path.length) return winChance(s, me);
   const last = path[path.length - 1];
   if (last.phase === 'game-over') return winChance(last, me);
@@ -263,17 +278,21 @@ export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, 
 
 /* ------------------------------------------------------------------ */
 /* Three continuations, not one. A position played on once hangs on the */
-/* line the machine happened to pick there: one loan taken a move early */
-/* and the figure jumps. So it is played on three times, the machine a  */
-/* shade weaker each time — a weaker machine picks a different line, not */
-/* a worse position — and the reading is the mean of the three, with the */
-/* spread between them kept: how far apart the three passes landed is    */
-/* how sure the judge is, and the panel says so.                        */
+/* one line the machine picked there: one loan taken a move early and   */
+/* the figure jumps. So it is played on three times — the machine's own */
+/* line, then the lines after its second and its third reply, each a    */
+/* shade less flat out — and the reading is the mean of the three, with */
+/* the spread between them kept: how far apart the passes landed is how */
+/* sure the judge is, and the panel says so.                           */
+/*                                                                     */
+/* The strength alone would not do it: at fifteen milliseconds a move   */
+/* the dial buys a little blur and nothing else, and the three passes   */
+/* walked the same line. The reply is what makes them three readings.   */
 /* ------------------------------------------------------------------ */
 
-/** the strengths a position is read at, the flat-out pass first so the first
-    figure to land is the best single one */
-export const PASSES = [1, 0.85, 0.7] as const;
+/** the passes a position is read by, the machine's own line first so the
+    first figure to land is the best single one */
+export const PASSES: readonly Pass[] = [BEST, { strength: 0.85, skip: 1 }, { strength: 0.7, skip: 2 }];
 
 /** a position read by one or more continuations */
 export interface Reading {
@@ -298,8 +317,8 @@ export const bandOf = (r: Reading): number => (r.high - r.low) / 2;
 
 /** the position read by every pass at once — the worker reads them one pass
     at a time instead, so the curve lands early and sharpens after */
-export function readChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, strengths: readonly number[] = PASSES): Reading {
-  return blendChances(strengths.map((x) => deepChance(s, me, judge, x)));
+export function readChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, passes: readonly Pass[] = PASSES): Reading {
+  return blendChances(passes.map((x) => deepChance(s, me, judge, x)));
 }
 
 /** what a move may cost in chance before it stops being a good one: the
@@ -334,15 +353,15 @@ export interface Verdict {
 
 /** the reader's move at `before`, judged long: the roads worth a look are
     ranked as they stand, then each is read after the replies */
-export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE, strength = 1): Verdict | null {
+export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE, pass: Pass = BEST): Verdict | null {
   if (before.phase !== 'action' || before.current !== me) return null;
-  const roads = roadsFrom(before, me, 8, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge, strength) })).sort((a, b) => b.chance - a.chance);
+  const roads = roadsFrom(before, me, 8, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge, pass) })).sort((a, b) => b.chance - a.chance);
   if (!roads.length) return null;
   const key = sameRoad(played);
   const own = roads.find((r) => sameRoad(r.action) === key);
   const mine = own ? own.chance : (() => {
     const after = applyAction(before, me, played).state;
-    return after ? deepChance(after, me, judge, strength) : roads[roads.length - 1].chance;
+    return after ? deepChance(after, me, judge, pass) : roads[roads.length - 1].chance;
   })();
   const best = Math.max(mine, roads[0].chance);
   const loss = Math.max(0, best - mine);
