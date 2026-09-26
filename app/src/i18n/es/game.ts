@@ -714,6 +714,8 @@ const game: typeof engame = {
   debrief: {
     title: 'El análisis',
     chance: 'Probabilidad de ganar aquí: {p} %',
+    chanceBand: 'Probabilidad de ganar aquí: {p} % ± {band}',
+    spread: 'Leída por {passes} continuaciones, separadas {band} puntos',
     moves: 'Jugada a jugada',
     keyMoments: 'Momentos clave',
     roads: 'Si hubieras jugado…',

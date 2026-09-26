@@ -712,6 +712,8 @@ const game = {
   debrief: {
     title: 'The analysis',
     chance: 'Chances of winning here: {p}%',
+    chanceBand: 'Chances of winning here: {p}% ± {band}',
+    spread: 'Read by {passes} continuations, {band} points apart',
     moves: 'Move by move',
     keyMoments: 'Key moments',
     roads: 'Had you played…',

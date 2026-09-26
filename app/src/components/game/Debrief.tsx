@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
-import { LOSS, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
-import type { Followed, Road, Verdict, Weighed } from '@/game/analysis';
+import { LOSS, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import type { Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
@@ -42,7 +42,7 @@ const regionOf = (a: GameAction | undefined): string | null => {
       return null;
   }
 };
-const EMPTY_DEEP: Record<number, number> = {};
+const EMPTY_DEEP: Record<number, Reading> = {};
 const EMPTY_VERDICTS: Record<number, Verdict> = {};
 const pct = (p: number) => Math.round(p * 100);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
@@ -52,7 +52,7 @@ const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumF
    reader's chance after every move, lit above the half-way mark and dark
    below it, the eras named, the wider misses as dots; a press picks, a
    drag scrubs, a hover reads the figure */
-function Curve({ chances, at, marks, split, label, eras, vary, onPick }: { chances: number[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
+function Curve({ chances, bands, at, marks, split, label, eras, vary, onPick }: { chances: number[]; bands: (number | null)[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -112,7 +112,9 @@ function Curve({ chances, at, marks, split, label, eras, vary, onPick }: { chanc
   const mark = (k: number, strong: boolean) => {
     const cx = x(k);
     const cy = y(chances[k] ?? 0.5);
-    const text = `${k} · ${Math.round((chances[k] ?? 0.5) * 100)} %`;
+    /* the spread between the passes, when they disagreed by a point or more */
+    const band = Math.round((bands[k] ?? 0) * 100);
+    const text = `${k} · ${Math.round((chances[k] ?? 0.5) * 100)} %${band > 0 ? ` ± ${band}` : ''}`;
     const right = cx > w - 56;
     return (
       <g key={strong ? 'at' : 'hover'} pointerEvents="none">
@@ -177,12 +179,14 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   const positions = useMemo(() => positionsOf(game), [game]);
   const last = positions.length - 1;
   /* the long judge's figures as they land: a chance per position, a verdict per turn of the reader's */
-  const [judged, setJudged] = useState<{ of: GameState; deep: Record<number, number>; verdicts: Record<number, Verdict>; done: number; total: number }>({ of: game, deep: {}, verdicts: {}, done: 0, total: 0 });
+  const [judged, setJudged] = useState<{ of: GameState; deep: Record<number, Reading>; verdicts: Record<number, Verdict>; done: number; total: number }>({ of: game, deep: {}, verdicts: {}, done: 0, total: 0 });
   const fresh = judged.of === game;
   const deep = fresh ? judged.deep : EMPTY_DEEP;
   const verdicts = fresh ? judged.verdicts : EMPTY_VERDICTS;
   const progress = fresh ? judged : { done: 0, total: 0 };
-  const chances = useMemo(() => positions.map((p, k) => deep[k] ?? winChance(p, me)), [positions, me, deep]);
+  const chances = useMemo(() => positions.map((p, k) => deep[k]?.chance ?? winChance(p, me)), [positions, me, deep]);
+  /* how far the judge's passes disagreed at each position, nothing where only one has landed */
+  const bands = useMemo(() => positions.map((_, k) => (deep[k] && deep[k].passes > 1 ? bandOf(deep[k]) : null)), [positions, deep]);
   const [at, setAt] = useState(last);
   /* the roads being explored: from which move, which one is picked (by what it does, so the judge's later figures keep the pick), and the tail played on */
   /* the variation being explored, the way a chess line is: from which move
@@ -222,7 +226,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
             setJudged((j) => {
               if (j.of !== game) return j;
               const v = j.verdicts[k];
-              return { ...j, deep: { ...j.deep, [k + 1]: mine.chance }, verdicts: v ? { ...j.verdicts, [k]: { ...v, roads: n.roads, mine: mine.chance, best, loss, grade: gradeOfLoss(loss) } } : j.verdicts };
+              return { ...j, deep: { ...j.deep, [k + 1]: { chance: mine.chance, low: mine.chance, high: mine.chance, passes: 1 } }, verdicts: v ? { ...j.verdicts, [k]: { ...v, roads: n.roads, mine: mine.chance, best, loss, grade: gradeOfLoss(loss) } } : j.verdicts };
             });
           }
         }
@@ -230,7 +234,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       }
       setJudged((j) => {
         const base = j.of === game ? j : { of: game, deep: {}, verdicts: {}, done: 0, total: 0 };
-        if (n.kind === 'position') return { ...base, deep: { ...base.deep, [n.k]: n.chance }, done: n.done, total: n.total };
+        if (n.kind === 'position') return { ...base, deep: { ...base.deep, [n.k]: { chance: n.chance, low: n.low, high: n.high, passes: n.passes } }, done: n.done, total: n.total };
         if (n.kind === 'turn') return { ...base, verdicts: { ...base.verdicts, [n.verdict.at]: n.verdict }, done: n.done, total: n.total };
         if (n.kind === 'done') return { ...base, done: base.total };
         return base;
@@ -336,6 +340,9 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
 
   /* the figure in the header, on the same reading as the curve and the roads */
   const chance = vary ? (stepMove ? winChance(stepMove.after, me) : branch ? branch.chance : vary.moves.length && tip ? winChance(tip, me) : (chances[at] ?? 0.5)) : (chances[at] ?? 0.5);
+  /* how sure that figure is: half the spread of the passes, in points, and
+     nothing at all along a variation, which is read once */
+  const band = vary ? 0 : Math.round((bands[at] ?? 0) * 100);
   const explore = () => setVary({ from: at, moves: [], picked: null, step: null });
   const canExplore = at > 0 && positions[at - 1]?.phase === 'action' && positions[at - 1]?.current === me;
   /* the move under the cursor, when the reader's and read wider than good:
@@ -404,14 +411,16 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       {/* the judge's chance, for the position on the board */}
       <div className="shrink-0">
         <div className="flex items-baseline justify-between">
-          <span className="font-sans text-[11px] text-cream-100/70">{t('game.debrief.chance', { p: pct(chance) })}</span>
+          <span className="font-sans text-[11px] text-cream-100/70" title={band ? t('game.debrief.spread', { passes: deep[at]?.passes ?? 1, band }) : undefined}>
+            {band ? t('game.debrief.chanceBand', { p: pct(chance), band }) : t('game.debrief.chance', { p: pct(chance) })}
+          </span>
           <span className="font-mono text-[10.5px] text-cream-100/45">{at === 0 ? t('game.debrief.start') : at === last && game.phase === 'game-over' ? t('game.debrief.endOf') : `${at}/${last}`}</span>
         </div>
         <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-coal-800" aria-hidden>
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
         <div className="mt-2">
-          <Curve chances={chances} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
+          <Curve chances={chances} bands={bands} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
         </div>
         <div className="mt-2 flex items-center gap-1.5">
           <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVary(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
