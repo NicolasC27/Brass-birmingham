@@ -5,8 +5,8 @@
 /* whose width grows with the rounds still to play. Its two constants  */
 /* were guesses. This plays tables of machines of uneven strength,     */
 /* notes at every position each seat's lead and the rounds left, and   */
-/* at the end who won — one row per seat and position. fit.mjs then    */
-/* finds the width that makes "70 %" win seven times in ten.           */
+/* at the end who won — one row per seat and position. fit-chance.mjs  */
+/* then finds the width that makes "70 %" win seven times in ten.      */
 /*                                                                     */
 /*   GAMES=200 WORKERS=4 BUDGET=60 OUT=/tmp/calibrate.jsonl \          */
 /*     sh tools/bots/calibrate.sh                                      */
@@ -17,7 +17,7 @@ import { cpus } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { applyAction, fallbackAction } from '@/game/actions';
-import { DEEP_JUDGE, LONG_JUDGE, deepEdge, edgeOf, roundsLeft } from '@/game/analysis';
+import { DEEP_JUDGE, LONG_JUDGE, PASSES, deepEdge, edgeOf, roundsLeft } from '@/game/analysis';
 import { newGame } from '@/game/engine';
 import { chooseBotAction } from '@/game/search';
 import type { GameState, SetupPayload } from '@/game/types';
@@ -49,9 +49,11 @@ const setup = (n: number): SetupPayload =>
 
 interface Row {
   edge: number;
-  /** the lead read by the long and the deep judge, when asked */
-  long?: number;
-  deep?: number;
+  /** the lead each pass of the long and of the deep judge read, the flat-out
+      one first: the panel shows the mean of the passes, so the fit sees them
+      all (tools/bots/fit-chance.mjs) */
+  long?: number[];
+  deep?: number[];
   left: number;
   era: 'canal' | 'rail';
   won: 0 | 1;
@@ -67,7 +69,7 @@ function play(seed: number): Row[] {
      even games to routs */
   const strengths = Array.from({ length: n }, () => 0.3 + 0.7 * r());
   let s: GameState = newGame(setup(n), seed);
-  const seen: { edge: number[]; long?: number[]; deep?: number[]; left: number; era: 'canal' | 'rail' }[] = [];
+  const seen: { edge: number[]; long?: number[][]; deep?: number[][]; left: number; era: 'canal' | 'rail' }[] = [];
   let tick = 0;
   let guard = 0;
   while (s.phase !== 'game-over' && guard++ < 5000) {
@@ -82,8 +84,8 @@ function play(seed: number): Row[] {
       const row: (typeof seen)[number] = { edge: s.players.map((_, i) => edgeOf(s, i)), left: roundsLeft(s), era: s.era };
       if (DEEP && tick++ % EVERY === 0) {
         const at = s;
-        row.long = at.players.map((_, i) => deepEdge(at, i, LONG_JUDGE));
-        row.deep = at.players.map((_, i) => deepEdge(at, i, DEEP_JUDGE));
+        row.long = at.players.map((_, i) => PASSES.map((x) => deepEdge(at, i, LONG_JUDGE, x)));
+        row.deep = at.players.map((_, i) => PASSES.map((x) => deepEdge(at, i, DEEP_JUDGE, x)));
       }
       seen.push(row);
     }
@@ -92,7 +94,8 @@ function play(seed: number): Row[] {
   const out: Row[] = [];
   for (const p of seen) {
     if (DEEP && !p.long) continue;
-    p.edge.forEach((edge, i) => out.push({ edge: Math.round(edge * 10) / 10, ...(p.long ? { long: Math.round(p.long[i] * 10) / 10, deep: Math.round(p.deep![i] * 10) / 10 } : {}), left: p.left, era: p.era, won: s.players[i].vp >= top ? 1 : 0, seats: n, seed }));
+    const round1 = (x: number[]) => x.map((v) => Math.round(v * 10) / 10);
+    p.edge.forEach((edge, i) => out.push({ edge: Math.round(edge * 10) / 10, ...(p.long ? { long: round1(p.long[i]), deep: round1(p.deep![i]) } : {}), left: p.left, era: p.era, won: s.players[i].vp >= top ? 1 : 0, seats: n, seed }));
   }
   return out;
 }
