@@ -7,8 +7,8 @@
 
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
-import { DEEP_JUDGE, LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChance, judgeTurn, weighRoads } from './analysis';
-import type { Judge, Pass, Verdict, Weighed } from './analysis';
+import { DEEP_JUDGE, LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChances, judgeTurn, weighRoads } from './analysis';
+import type { Judge, Pass, Reading, Verdict, Weighed } from './analysis';
 import { newGame } from './engine';
 import type { GameState, SetupPayload } from './types';
 
@@ -23,6 +23,8 @@ export interface Ask {
   passes?: readonly Pass[];
   /** moves already read by a kept reading: the pass picks up after them */
   from?: number;
+  /** the positions are read for every seat already: judge the turns only */
+  turnsOnly?: boolean;
 }
 
 /** one turn's roads, read longer than the pass: the panel asks when a
@@ -40,7 +42,7 @@ export interface AskRoads {
 }
 
 export type Note =
-  | { kind: 'position'; k: number; chance: number; low: number; high: number; passes: number; done: number; total: number }
+  | { kind: 'position'; k: number; seats: Reading[]; done: number; total: number }
   | { kind: 'roads'; key: string; roads: Weighed[] }
   | { kind: 'turn'; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
@@ -71,18 +73,19 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
      there — a position is read forward, never from what came after it */
   const from = Math.max(0, Math.min(ask.from ?? 0, positions.length - 1));
   const turns = positions.map((_, k) => k).filter((k) => k >= from && k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === ask.me && ask.actions[k].kind !== 'concede');
-  const first = from === 0 ? 0 : from + 1;
+  const first = ask.turnsOnly ? positions.length : from === 0 ? 0 : from + 1;
   const total = passes.length * (positions.length - first + turns.length);
-  /* what the passes have said so far, position by position and turn by turn */
-  const chances = positions.map<number[]>(() => []);
+  /* what the passes have said so far: every seat's chance at every position,
+     and the turns of the seat being read */
+  const chances = positions.map<number[][]>(() => []);
   const verdicts = new Map<number, Verdict[]>();
   let done = 0;
   for (const pass of passes) {
     for (let k = first; k < positions.length; k++) {
       done += 1;
-      chances[k].push(deepChance(positions[k], ask.me, judge, pass));
-      const read = blendChances(chances[k]);
-      yield { kind: 'position', k, chance: read.chance, low: read.low, high: read.high, passes: read.passes, done, total };
+      chances[k].push(deepChances(positions[k], judge, pass));
+      const seats = positions[k].players.map((_, i) => blendChances(chances[k].map((one) => one[i])));
+      yield { kind: 'position', k, seats, done, total };
     }
     for (const k of turns) {
       done += 1;

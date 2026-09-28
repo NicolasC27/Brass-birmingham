@@ -269,15 +269,24 @@ export function deepEdge(s: GameState, me: number, judge: Judge, pass: Pass = BE
   return path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
 }
 
+/** the chance of winning from here for every seat at once, read after the
+    replies. The continuation does not depend on who is being read — the
+    machine plays them all — so one reading serves the whole table, and the
+    panel changes seats without the judge thinking again. */
+export function deepChances(s: GameState, judge: Judge = LONG_JUDGE, pass: Pass = BEST): number[] {
+  const all = (at: GameState) => at.players.map((_, i) => winChance(at, i));
+  if (s.phase === 'game-over') return all(s);
+  const path = lookAhead(s, judge, pass);
+  if (!path.length) return all(s);
+  const last = path[path.length - 1];
+  if (last.phase === 'game-over') return all(last);
+  const left = roundsLeft(s);
+  return s.players.map((_, i) => chanceOf(path.reduce((sum, p) => sum + edgeOf(p, i), 0) / path.length, left, s.players.length, judge.scale));
+}
+
 /** the chance of winning from here, read after the replies, on the judge's own scale */
 export function deepChance(s: GameState, me: number, judge: Judge = LONG_JUDGE, pass: Pass = BEST): number {
-  if (s.phase === 'game-over') return winChance(s, me);
-  const path = lookAhead(s, judge, pass);
-  if (!path.length) return winChance(s, me);
-  const last = path[path.length - 1];
-  if (last.phase === 'game-over') return winChance(last, me);
-  const edge = path.reduce((sum, p) => sum + edgeOf(p, me), 0) / path.length;
-  return chanceOf(edge, roundsLeft(s), s.players.length, judge.scale);
+  return deepChances(s, judge, pass)[me] ?? winChance(s, me);
 }
 
 /* ------------------------------------------------------------------ */
@@ -417,11 +426,10 @@ export function weighRoads(before: GameState, me: number, roads: GameAction[], j
 /* while the judge that wrote them is the judge that stands. Bump this */
 /* on any change to a judge, a scale, the passes or the grades.        */
 /* ------------------------------------------------------------------ */
-export const ANALYSIS_VERSION = 3;
+export const ANALYSIS_VERSION = 4;
 
-/** when a game may be read again: once it is played out, or at the turn of
-    the eras when the table plays with assistance. A half-game read while the
-    rail era is still to play is a training aid, so it stays behind that
-    setting — the reading itself is honest, only much wider: the scale grows
-    with the rounds left, and a lead at nine rounds says little. */
-export const readable = (g: GameState | null | undefined): boolean => !!g && (g.phase === 'game-over' || (!!g.assist && g.era === 'rail'));
+/** when a game may be read again: once it is played out, and not before. A
+    reading of a game still being played is a decision aid, whatever it is
+    called — the judge may think ahead of time (analysisAhead.ts warms the
+    shelf at the turn of the eras), but nothing of it is shown until the end. */
+export const readable = (g: GameState | null | undefined): boolean => !!g && g.phase === 'game-over';
