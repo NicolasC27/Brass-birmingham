@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react';
-import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react';
@@ -168,11 +168,11 @@ export default function Game() {
   const analysisPane = debriefOpen && game?.phase === 'game-over' ? Math.max(GUIDE_RAIL, guideDock()) : 0;
   /* leaving the review puts the final ledger back up: the board of a game
      played out has nothing more to say on its own */
-  const leaveReview = () => {
+  const leaveReview = useCallback(() => {
     setReview(null);
     setDebriefOpen(false);
-    if (game?.phase === 'game-over') useGame.getState().openGameOver();
-  };
+    if (useGame.getState().game?.phase === 'game-over') useGame.getState().openGameOver();
+  }, [setReview, setDebriefOpen]);
 
   const [passTo, setPassTo] = useState<string | null>(null);
   const [skipAnim, setSkipAnim] = useState(false);
@@ -309,6 +309,13 @@ export default function Game() {
         return;
       }
       if (!game || passTo) return;
+      /* the analysis is a place of its own: Escape leaves it before it
+         touches anything else on the board */
+      if (e.key === 'Escape' && (review || debriefOpen)) {
+        e.preventDefault();
+        leaveReview();
+        return;
+      }
       if (e.key === 'Escape') {
         cancel();
         setRulesOpen(false);
@@ -407,7 +414,7 @@ export default function Game() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, mySeat, spectating, passTo, isHumanTurn, ledgerOpen, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
+  }, [game, mySeat, spectating, passTo, isHumanTurn, ledgerOpen, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, review, debriefOpen, leaveReview, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
 
   /* ---------------------- planning targets ---------------------- */
   const selectedCard = useMemo(() => {
