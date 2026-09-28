@@ -173,7 +173,9 @@ function Curve({ chances, reads, settled, at, marks, split, label, eras, vary, o
         <path d={line} fill="none" stroke="#E7C978" strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
         {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke="#E7C978" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
         {misses.map((m) => (
-          <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
+          <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1}>
+            <title>{`${m.at + 1} · −${Math.round(m.loss * 100)} %`}</title>
+          </circle>
         ))}
         {/* the variation, dashed, leaving the game where it does */}
         {vary && vary.chances.length > 1 && (
@@ -476,6 +478,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
         <span className="flex-1" />
         <label className="flex items-center gap-1 text-cream-100/60" title={t('game.debrief.seat')}>
           <UserRound className="h-3.5 w-3.5" aria-hidden />
+          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#C9A45C' }} />
           <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMe(Number(e.target.value)); setVary(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
             {game.players.map((p, i) => (
               <option key={i} value={i}>{p.name}</option>
