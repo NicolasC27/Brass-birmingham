@@ -774,12 +774,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       }
       case 'review': {
         /* a seat reading the game again shows the table where it is looking:
-           a move's number and nothing else, so the others may follow along */
+           the move, the corner of the map its camera sits on and where its
+           pointer is — figures only, nothing the office has to believe */
         const table = hall.table(m.code);
         const from = table?.seats.findIndex((s) => s.id === who.id) ?? -1;
         const at = m.at === null ? null : Math.max(0, Math.floor(m.at));
         if (from < 0 || (at !== null && !Number.isFinite(at))) return;
-        for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at });
+        const spot = (p: { wx: number; wy: number } | null | undefined) => (p && Number.isFinite(p.wx) && Number.isFinite(p.wy) ? { wx: Math.round(p.wx), wy: Math.round(p.wy) } : null);
+        const look = m.look && Number.isFinite(m.look.k) ? { ...spot(m.look)!, k: Math.round(m.look.k * 100) / 100 } : undefined;
+        const cursor = m.cursor === undefined ? undefined : spot(m.cursor);
+        for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at, ...(look ? { look } : {}), ...(cursor !== undefined ? { cursor } : {}) });
         return;
       }
     }

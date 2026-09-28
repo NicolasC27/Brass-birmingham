@@ -106,8 +106,10 @@ export type ClientMessage =
   | { t: 'telegram'; code: string; key: string }
   /** look here: a town, a house or a route pointed at */
   | { t: 'mark'; code: string; key: string }
-  /** the move my analysis is showing, for the table to follow; null: I stopped */
-  | { t: 'review'; code: string; at: number | null }
+  /** the move my analysis is showing, for the table to follow; null: I stopped.
+      `look` is where my camera sits on the map and `cursor` where my pointer
+      is, both in world units, so the table sees what I am looking at */
+  | { t: 'review'; code: string; at: number | null; look?: { wx: number; wy: number; k: number }; cursor?: { wx: number; wy: number } | null }
   /** the register of tables being played, for the hall */
   | { t: 'tables'; rid: number; query?: TableQuery }
   | { t: 'seatme'; rid: number; color?: PlayerColor }
@@ -143,7 +145,7 @@ export type ServerMessage =
   | { t: 'telegram'; code: string; from: number; key: string; at: number }
   | { t: 'mark'; code: string; from: number; key: string; at: number }
   /** a seat is reading the game again, and showing where it stands */
-  | { t: 'review'; code: string; from: number; at: number | null }
+  | { t: 'review'; code: string; from: number; at: number | null; look?: { wx: number; wy: number; k: number }; cursor?: { wx: number; wy: number } | null }
   /** the office frowns at a shower of marks: a warning, then silence for the game */
   | { t: 'warned'; code: string; about: 'marks'; muted: boolean }
   /** every seat's line to the office, in ms (null for a machine or an empty chair), now and then */
