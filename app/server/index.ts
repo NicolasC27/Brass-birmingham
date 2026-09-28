@@ -783,7 +783,11 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const spot = (p: { wx: number; wy: number } | null | undefined) => (p && Number.isFinite(p.wx) && Number.isFinite(p.wy) ? { wx: Math.round(p.wx), wy: Math.round(p.wy) } : null);
         const look = m.look && Number.isFinite(m.look.k) ? { ...spot(m.look)!, k: Math.round(m.look.k * 100) / 100 } : undefined;
         const cursor = m.cursor === undefined ? undefined : spot(m.cursor);
-        for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at, ...(look ? { look } : {}), ...(cursor !== undefined ? { cursor } : {}) });
+        /* the seat being read and the line being explored ride along, so the
+           table follows the whole reading and not only its cursor */
+        const seat = typeof m.seat === 'number' && Number.isInteger(m.seat) && m.seat >= 0 && m.seat < (table?.seats.length ?? 0) ? m.seat : undefined;
+        const line = m.line === undefined ? undefined : m.line && Array.isArray(m.line.moves) && m.line.moves.length <= 40 && Number.isFinite(m.line.from) ? { from: Math.max(0, Math.floor(m.line.from)), moves: m.line.moves } : null;
+        for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at, ...(look ? { look } : {}), ...(cursor !== undefined ? { cursor } : {}), ...(seat !== undefined ? { seat } : {}), ...(line !== undefined ? { line } : {}) });
         return;
       }
     }

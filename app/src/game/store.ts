@@ -248,15 +248,16 @@ interface GameStore {
   /* ---- reading a game again, together: one seat shows, the others follow ---- */
   /** what a seat of this table is showing in its analysis: the move, the
       corner of the map its camera sits on, and where its pointer is */
-  shown: { from: number; at: number; look?: { wx: number; wy: number; k: number }; cursor?: { wx: number; wy: number } | null } | null;
+  shown: { from: number; at: number; look?: { wx: number; wy: number; k: number }; cursor?: { wx: number; wy: number } | null; seat?: number; line?: { from: number; moves: GameAction[] } | null } | null;
   /** my own reading goes out to the table */
   sharing: boolean;
   /** my analysis follows whoever is showing */
   following: boolean;
   shareReview: (on: boolean) => void;
   followReview: (on: boolean) => void;
-  /** where my analysis stands, told to the table when I am sharing */
-  showReviewAt: (at: number) => void;
+  /** where my analysis stands, told to the table when I am sharing: the move,
+      the seat being read and the line being explored */
+  showReviewAt: (at: number, seat: number, line: { from: number; moves: GameAction[] } | null) => void;
   /** where my camera and my pointer are, told to the table while I am sharing
       — at most a few times a second, and only what moved */
   showLook: (look: { wx: number; wy: number; k: number }, cursor: { wx: number; wy: number } | null) => void;
@@ -986,11 +987,11 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!on && st.code) onlineWire()?.send({ t: 'review', code: st.code, at: null });
   },
   followReview: (on) => set({ following: on, ...(on ? { sharing: false } : {}) }),
-  showReviewAt: (at) => {
+  showReviewAt: (at, seat, line) => {
     const st = get();
     if (!st.sharing || !st.code) return;
     lookAt = at;
-    onlineWire()?.send({ t: 'review', code: st.code, at });
+    onlineWire()?.send({ t: 'review', code: st.code, at, seat, line });
   },
   showLook: (look, cursor) => {
     const st = get();
@@ -1346,6 +1347,7 @@ function listen(code: string, wire: Wire): void {
     if (m.t === 'mark' && m.code === code) useGame.getState().receivePing(m.from, m.key);
     if (m.t === 'review' && m.code === code && m.from !== useGame.getState().seat) {
       const was = useGame.getState().shown;
+      const same = was?.from === m.from;
       useGame.setState({
         shown:
           m.at === null
@@ -1354,8 +1356,10 @@ function listen(code: string, wire: Wire): void {
                 from: m.from,
                 at: m.at,
                 /* a note that carries neither keeps what the last one said */
-                look: m.look ?? (was?.from === m.from ? was.look : undefined),
-                cursor: m.cursor === undefined ? (was?.from === m.from ? was.cursor : null) : m.cursor,
+                look: m.look ?? (same ? was.look : undefined),
+                cursor: m.cursor === undefined ? (same ? was.cursor : null) : m.cursor,
+                seat: m.seat ?? (same ? was.seat : undefined),
+                line: m.line === undefined ? (same ? was.line : null) : m.line,
               },
       });
     }
