@@ -709,6 +709,7 @@ const game: typeof engame = {
     sublineShort: 'Esta partida de iniciación acaba aquí · el cierre suma el dinero, el nivel de ingresos y las fábricas más fuertes',
     mine: 'Tus {vp} puntos de la era del canal: {tiles} por tus losetas volteadas, {links} por tus conexiones — una conexión puntúa los iconos de enlace de cada lugar que toca.',
     pending: 'Las losetas que nunca volteaste valían {vp} y no contaron nada.',
+    readCanal: 'Releer la era del canal',
     continue: 'Continuar',
   },
   debrief: {

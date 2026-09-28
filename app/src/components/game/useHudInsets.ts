@@ -1,3 +1,4 @@
+import { readable } from '@/game/analysis';
 import { useGame } from '@/game/store';
 import { hudInsets, useBoardOptions } from './boardOptions';
 import { GUIDE_RAIL, guideDock } from './guideKeys';
@@ -14,7 +15,7 @@ export function analysisLane(open: boolean): number {
 export function useHudInsets(): { left: number; bottom: number; top: number; right: number } {
   const opts = useBoardOptions();
   const table = useGame((s) => s.game !== null);
-  const reading = useGame((s) => s.debriefOpen && s.game?.phase === 'game-over');
+  const reading = useGame((s) => s.debriefOpen && readable(s.game));
   return hudInsets(opts, table && opts.vpTrack, analysisLane(!!reading));
 }
 

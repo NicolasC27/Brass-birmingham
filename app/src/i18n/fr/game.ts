@@ -709,6 +709,7 @@ const fr: typeof engame = {
     sublineShort: 'Cette partie d’initiation s’arrête ici · la clôture ajoute l’argent, le niveau de revenu et les ouvrages les plus forts',
     mine: 'Vos {vp} points d’ère canal : {tiles} pour vos tuiles retournées, {links} pour vos liaisons — une liaison compte les icônes lien de chaque lieu qu’elle touche.',
     pending: 'Les tuiles jamais retournées valaient {vp} et n’ont rien marqué.',
+    readCanal: 'Relire l’ère canal',
     continue: 'Continuer',
   },
   debrief: {

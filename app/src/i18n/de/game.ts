@@ -709,6 +709,7 @@ const game: typeof engame = {
     sublineShort: 'Diese Einstiegspartie endet hier · der Abschluss zählt Geld, Einkommensstufe und die stärkeren Betriebe',
     mine: 'Deine {vp} Punkte der Kanalzeit: {tiles} aus deinen umgedrehten Plättchen, {links} aus deinen Verbindungen — eine Verbindung wertet die Verbindungssymbole jedes Ortes, den sie berührt.',
     pending: 'Nie umgedrehte Plättchen waren {vp} wert und haben nichts gezählt.',
+    readCanal: 'Die Kanal-Ära nachlesen',
     continue: 'Weiter',
   },
   debrief: {

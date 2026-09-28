@@ -16,6 +16,7 @@ export default function Ceremony() {
   const ceremony = useGame((s) => s.ceremony);
   const game = useGame((s) => s.game);
   const endCeremony = useGame((s) => s.endCeremony);
+  const setDebriefOpen = useGame((s) => s.setDebriefOpen);
   const reduced = useReducedMotion();
   const [stage, setStage] = useState(0);
   const [canSkip, setCanSkip] = useState(false);
@@ -133,9 +134,25 @@ export default function Ceremony() {
       </motion.div>
 
       {canSkip && (
-        <button type="button" onClick={endCeremony} className="btn-ledger mt-6 !min-h-[36px] !px-4 !py-1.5 text-xs">
-          {t('game.ceremony.continue')}
-        </button>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <button type="button" onClick={endCeremony} className="btn-ledger !min-h-[36px] !px-4 !py-1.5 text-xs">
+            {t('game.ceremony.continue')}
+          </button>
+          {/* a table that plays with assistance may read the canal era before
+              the rail one begins: a training aid, hence the setting */}
+          {game?.assist && ceremony === 'canal-end' && (
+            <button
+              type="button"
+              onClick={() => {
+                endCeremony();
+                setDebriefOpen(true);
+              }}
+              className="btn-strike !min-h-[36px] !px-4 !py-1.5 text-xs"
+            >
+              {t('game.ceremony.readCanal')}
+            </button>
+          )}
+        </div>
       )}
     </motion.div>
   );

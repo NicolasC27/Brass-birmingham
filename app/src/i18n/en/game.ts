@@ -707,6 +707,7 @@ const game = {
     sublineShort: 'This initiation game closes here · the books add money, income level and the stronger works',
     mine: 'Your {vp} points for the Canal Era: {tiles} from your flipped tiles, {links} from your links — a link scores the link icons of every place it touches.',
     pending: 'Tiles you never flipped were worth {vp} and scored nothing.',
+    readCanal: 'Read the canal era again',
     continue: 'Continue',
   },
   debrief: {

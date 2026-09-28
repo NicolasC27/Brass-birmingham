@@ -418,3 +418,10 @@ export function weighRoads(before: GameState, me: number, roads: GameAction[], j
 /* on any change to a judge, a scale, the passes or the grades.        */
 /* ------------------------------------------------------------------ */
 export const ANALYSIS_VERSION = 3;
+
+/** when a game may be read again: once it is played out, or at the turn of
+    the eras when the table plays with assistance. A half-game read while the
+    rail era is still to play is a training aid, so it stays behind that
+    setting — the reading itself is honest, only much wider: the scale grows
+    with the rounds left, and a lead at nine rounds says little. */
+export const readable = (g: GameState | null | undefined): boolean => !!g && (g.phase === 'game-over' || (!!g.assist && g.era === 'rail'));

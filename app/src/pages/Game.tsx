@@ -7,6 +7,7 @@ import NotebookButton from '@/components/game/Notebook';
 import LessonHalo from '@/components/game/LessonHalo';
 import Debrief from '@/components/game/Debrief';
 import AskGuide from '@/components/game/AskGuide';
+import { readable } from '@/game/analysis';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -166,7 +167,7 @@ export default function Game() {
   /* the room the analysis panel takes down the right edge: the board, the
      review's plate and the ledger's drawer keep out of it rather than hide
      under it */
-  const analysisPane = analysisLane(debriefOpen && game?.phase === 'game-over');
+  const analysisPane = analysisLane(debriefOpen && readable(game));
   /* leaving the review puts the final ledger back up: the board of a game
      played out has nothing more to say on its own */
   const leaveReview = useCallback(() => {
@@ -824,8 +825,10 @@ export default function Game() {
           </div>
         </div>
       )}
-      {debriefOpen && game.phase === 'game-over' && reviewSeat >= 0 && <Debrief game={game} me={reviewSeat} />}
-      <Guide dock={dock} />
+      {debriefOpen && readable(game) && reviewSeat >= 0 && <Debrief game={game} me={reviewSeat} />}
+      {/* the guide and the analysis share the right lane: while a game is
+          being read, the analysis has it */}
+      {!analysisPane && <Guide dock={dock} />}
       {tutorial && <LessonHalo />}
     </div>
   );

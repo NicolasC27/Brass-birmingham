@@ -192,7 +192,12 @@ function Curve({ chances, reads, settled, at, marks, split, label, eras, vary, o
   );
 }
 
-export default function Debrief({ game, me: opened }: { game: GameState; me: number }) {
+export default function Debrief({ game: live, me: opened }: { game: GameState; me: number }) {
+  /* the game as it stood when the panel opened. A game read at the turn of
+     the eras is still being played: were the panel to follow every move, the
+     judge would start over at each one. It reads the table it was opened on,
+     and the next reading is asked for by opening it again. */
+  const [game] = useState(live);
   const [me, setMe] = useState(opened);
   const t = useT();
   const lang = useLang();
@@ -215,7 +220,10 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   const fresh = judged.of === game && judged.key === keptKey;
   const deep = fresh ? judged.deep : (kept?.deep ?? EMPTY_DEEP);
   const verdicts = fresh ? judged.verdicts : (kept?.verdicts ?? EMPTY_VERDICTS);
-  const progress = fresh ? judged : { done: kept?.total ?? 0, total: kept?.total ?? 0 };
+  /* a kept reading of the whole game is done; one of a first half still has
+     the rest to read, and the worker's first note says how much */
+  const whole = !!kept && kept.moves >= game.actions.length;
+  const progress = fresh ? judged : { done: whole ? (kept?.total ?? 0) : 0, total: whole ? (kept?.total ?? 0) : 0 };
   const chances = useMemo(() => positions.map((p, k) => deep[k]?.chance ?? winChance(p, me)), [positions, me, deep]);
   /* the reading at each position, and whether every pass has been through it */
   const reads = useMemo(() => positions.map((_, k) => deep[k]), [positions, deep]);
@@ -241,7 +249,8 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   useEffect(() => {
     /* what a note lands on: the reading under way, or the one kept from last
        time — a road read longer joins a reading that came off the shelf */
-    const ground = (j: { of: GameState; key: string }) => (j.of === game && j.key === keptKey ? null : { of: game, key: keptKey, deep: kept?.deep ?? {}, verdicts: kept?.verdicts ?? {}, done: kept?.total ?? 0, total: kept?.total ?? 0 });
+    const whole = !!kept && kept.moves >= game.actions.length;
+    const ground = (j: { of: GameState; key: string }) => (j.of === game && j.key === keptKey ? null : { of: game, key: keptKey, deep: kept?.deep ?? {}, verdicts: kept?.verdicts ?? {}, done: whole ? (kept?.total ?? 0) : 0, total: whole ? (kept?.total ?? 0) : 0 });
     let w: Worker | null = null;
     try {
       w = new Worker(new URL('../../game/analysisWorker.ts', import.meta.url), { type: 'module' });
@@ -284,7 +293,10 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
        and nothing is thought again — only the roads of a line never explored
        still go to the worker */
     const before = readKept(keptKey, game.actions.length);
+    /* nothing kept, or only the first part of the game: the worker reads what
+       is missing and the kept figures stand for the rest */
     if (!before) w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions, me });
+    else if (before.moves < game.actions.length) w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions, me, from: before.moves });
     workerRef.current = w;
     asked.current = new Set(Object.keys(before?.roads ?? {}));
     return () => {
