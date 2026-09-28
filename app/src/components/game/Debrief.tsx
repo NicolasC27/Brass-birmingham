@@ -364,17 +364,22 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     if (weighed) return weighed.map((r) => ({ action: r.action, after: applyAction(tip, me, r.action).state, chance: r.chance })).filter((r): r is Road => !!r.after);
     return roadsFrom(tip, me, 8, vary.moves.length === 0 ? game.actions[vary.from - 1] : undefined);
   }, [vary, tip, tipMine, lineKey, verdicts, roadsRead, me, game]);
+  /* the road actually played, when the line is a turn of the game: every other
+     road is read against it */
+  const playedRoad = vary && vary.moves.length === 0 ? (roads.find((r) => sameRoad(r.action) === sameRoad(game.actions[vary.from - 1]))?.chance ?? null) : null;
   const pickedAt = vary?.picked ? roads.findIndex((r) => sameRoad(r.action) === vary.picked) : -1;
   const branch = pickedAt >= 0 ? roads[pickedAt] : null;
   /* the tip's roads go to the worker for a longer reading, once per line */
   useEffect(() => {
-    if (!vary || !tipMine || !roads.length) return;
+    /* a turn of the game itself is already judged, roads and all, by the pass
+       that read the game: only a branch the judge never saw is asked for */
+    if (!vary || !tipMine || !roads.length || vary.moves.length === 0) return;
     const w = workerRef.current;
     if (!w || asked.current.has(lineKey)) return;
     asked.current.add(lineKey);
     w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey });
   }, [vary, tipMine, roads, lineKey, game, me]);
-  const readingLonger = !!vary && tipMine && !roadsRead[lineKey];
+  const readingLonger = !!vary && tipMine && vary.moves.length > 0 && !roadsRead[lineKey];
   /* what the board shows */
   const stepMove = vary && vary.step !== null ? vary.moves[vary.step] : undefined;
   const shown = vary ? (stepMove?.after ?? branch?.after ?? tip) : positions[at];
@@ -705,12 +710,19 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             <ul className="mt-1 flex flex-col gap-1">
               {roads.map((r, i) => {
                 const same = vary.moves.length === 0 && sameRoad(r.action) === sameRoad(game.actions[vary.from - 1]);
+                /* what the road would have changed, against the move played:
+                   the figure the grade is read on, said plainly */
+                const gap = playedRoad === null ? null : Math.round((r.chance - playedRoad) * 1000) / 10;
                 return (
                   <li key={i}>
                     <button type="button" onClick={() => setVaryMine({ ...vary, picked: pickedAt === i ? null : sameRoad(r.action), step: null })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-1 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', pickedAt === i && vary.step === null && 'bg-ink-900/10 ring-1 ring-brass-500')}>
                       <span className="w-10 shrink-0 font-mono text-[10.5px] font-semibold text-ink-900">{t('game.debrief.road', { p: fine(r.chance, lang) })}</span>
                       <span className="min-w-0 flex-1 truncate">{describeAction(r.action)}</span>
-                      {same && <span className="shrink-0 font-fell text-[9px] uppercase tracking-[0.14em] text-ink-900/50">{t('game.debrief.played')}</span>}
+                      {same ? (
+                        <span className="shrink-0 font-fell text-[9px] uppercase tracking-[0.14em] text-ink-900/50">{t('game.debrief.played')}</span>
+                      ) : (
+                        gap !== null && <span className={cn('shrink-0 font-mono text-[10px]', gap > 0 ? 'text-bottle-700' : 'text-ink-900/35')}>{gap > 0 ? `+${fine(gap / 100, lang)}` : fine(gap / 100, lang)}</span>
+                      )}
                     </button>
                   </li>
                 );
