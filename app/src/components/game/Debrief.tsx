@@ -5,6 +5,7 @@ import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, PASSES, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
 import type { Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
+import type { Grade } from '@/game/review';
 import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
@@ -365,6 +366,21 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
     const where = regionOf(played);
     if (where) flyToRegion(where);
   }, [at, vary, shown, stepMove, branch, firstPick, positions, game.actions, setReview, flyToRegion, last, t, me]);
+  /* the seat's own game in one line: how its moves were graded, and what
+     they left on the table all told */
+  const tally = useMemo(() => {
+    const list = Object.values(verdicts);
+    if (!list.length) return null;
+    const by = { top: 0, good: 0, inaccuracy: 0, mistake: 0, blunder: 0 } as Record<Grade, number>;
+    let lost = 0;
+    for (const v of list) {
+      by[v.grade] += 1;
+      lost += v.loss;
+    }
+    /* the mean, not the sum: chances lost by ten moves do not add up to a
+       tenth of anything, and a total past a hundred per cent reads broken */
+    return { by, lost: Math.round((100 * lost) / list.length) };
+  }, [verdicts]);
   /* the arrows step through the game */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -495,6 +511,21 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
           )}
         </div>
       </div>
+
+      {/* the seat's game in one line: its moves graded, and what they cost */}
+      {tally && !vary && (
+        <div className="shrink-0">
+          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.tally.label')}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            {(['top', 'good', 'inaccuracy', 'mistake', 'blunder'] as Grade[]).filter((g) => tally.by[g] > 0).map((g) => (
+              <span key={g} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px]', g === 'blunder' ? 'border-rust-700/60 text-rust-400' : g === 'mistake' ? 'border-copper-500/50 text-copper-500' : g === 'inaccuracy' ? 'border-brass-700/50 text-cream-100/70' : 'border-brass-700/40 text-cream-100/50')}>
+                {t(`game.debrief.tally.${g}`, { n: tally.by[g] })}
+              </span>
+            ))}
+            {tally.lost > 0 && <span className="font-mono text-[10px] text-rust-400/80">{t('game.debrief.tally.lost', { p: tally.lost })}</span>}
+          </div>
+        </div>
+      )}
 
       {/* the move under the cursor, read wider than good: what was better */}
       {lesson && !vary && (
