@@ -1,5 +1,5 @@
 import { ANALYSIS_VERSION } from './analysis';
-import type { Reading, Verdict, Weighed } from './analysis';
+import type { JudgeId, Reading, Verdict, Weighed } from './analysis';
 
 /* ------------------------------------------------------------------ */
 /* An analysis kept.                                                   */
@@ -48,8 +48,10 @@ interface Entry extends Kept {
   read: number;
 }
 
-/** the entry of one table: its code and its deal. Every seat is in it */
-export const analysisKey = (table: string, seed: number): string => `${PREFIX}:${table}:${seed}`;
+/** the entry of one table read by one judge: its code, its deal and the judge
+    that read it — a reading by another judge is another reading, on another
+    scale, and the two never mix */
+export const analysisKey = (table: string, seed: number, judge: JudgeId = 'long'): string => `${PREFIX}:${table}:${seed}:${judge}`;
 
 /* figures to four decimals: a chance is shown to the point, and the entry is
    half the size for it */

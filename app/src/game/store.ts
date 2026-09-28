@@ -33,6 +33,7 @@ import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
 import { readShared, sharedMoment } from './share';
+import type { JudgeId } from './analysis';
 
 export interface Shake {
   key: string;
@@ -242,6 +243,9 @@ interface GameStore {
   closeGameOver: () => void;
   /** the final ledger back up: leaving the analysis of a game played out */
   openGameOver: () => void;
+  /** which judge reads a game again: the table as it stands, five moves on, ten */
+  judgeId: JudgeId;
+  setJudgeId: (id: JudgeId) => void;
   /** the move a shared link pointed at, for the analysis to open on; null once read */
   reviewAt: number | null;
   setReviewAt: (at: number | null) => void;
@@ -279,6 +283,10 @@ interface GameStore {
   currentSells: () => SellTarget[];
   currentDevelops: () => ReturnType<typeof developOptions>;
 }
+
+/** the judge a reader last chose, kept for the next game they read. Declared
+    before the store: its first state reads it as the module is evaluated */
+const JUDGE_KEY = 'brassworks.analysis.judge';
 
 const NO_MOOD = { pause: null, breaks: [] as number[], rollback: null, frozen: false, host: -1 };
 
@@ -973,6 +981,23 @@ export const useGame = create<GameStore>((set, get) => ({
 
   closeGameOver: () => set({ gameOverOpen: false }),
   openGameOver: () => set({ gameOverOpen: true }),
+  judgeId: (() => {
+    try {
+      const saved = localStorage.getItem(JUDGE_KEY);
+      if (saved === 'quick' || saved === 'long' || saved === 'deep') return saved;
+    } catch {
+      /* private mode */
+    }
+    return 'long' as JudgeId;
+  })(),
+  setJudgeId: (id) => {
+    set({ judgeId: id });
+    try {
+      localStorage.setItem(JUDGE_KEY, id);
+    } catch {
+      /* non-fatal */
+    }
+  },
   reviewAt: null,
   setReviewAt: (at) => set({ reviewAt: at }),
   shown: null,

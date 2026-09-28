@@ -1,6 +1,6 @@
 import { setupOf } from './actions';
-import { PASSES } from './analysis';
-import type { Reading, Verdict, Weighed } from './analysis';
+import { judgeOf } from './analysis';
+import type { JudgeId, Reading, Verdict, Weighed } from './analysis';
 import { analysisKey, isWhole, keepAnalysis, readKept } from './analysisKeep';
 import type { Kept } from './analysisKeep';
 import type { Note } from './analysisWorker';
@@ -24,13 +24,15 @@ export interface Snapshot extends Kept {
   key: string;
   /** the seat whose turns are being judged */
   seat: number;
+  /** the judge reading it */
+  judge: JudgeId;
   done: number;
   /** what the pass set out to do (0 when nothing is running) */
   total: number;
   running: boolean;
 }
 
-const EMPTY: Snapshot = { key: '', seat: -1, seats: {}, verdicts: {}, roads: {}, total: 0, moves: 0, done: 0, running: false };
+const EMPTY: Snapshot = { key: '', seat: -1, judge: 'long', seats: {}, verdicts: {}, roads: {}, total: 0, moves: 0, done: 0, running: false };
 
 let snap: Snapshot = EMPTY;
 let worker: Worker | null = null;
@@ -67,9 +69,9 @@ const keep = (): void => {
 /** read this game for this seat, and keep the figures as they land. Starts
  *  nothing when the same reading is already under way, or when the shelf
  *  already holds it whole. */
-export function readGame(game: GameState, table: string, seat: number): Snapshot {
+export function readGame(game: GameState, table: string, seat: number, judge: JudgeId = 'long'): Snapshot {
   if (seat < 0 || !game.actions.length) return snap;
-  const key = analysisKey(table, game.seed);
+  const key = analysisKey(table, game.seed, judge);
   const moves = game.actions.length;
   const kept = readKept(key, moves);
   const whole = isWhole(kept, moves);
@@ -78,7 +80,7 @@ export function readGame(game: GameState, table: string, seat: number): Snapshot
   /* the shelf holds it all, this seat's turns included */
   if (whole && kept!.verdicts[seat]) {
     if (snap.key !== key || snap.seat !== seat || snap.moves !== moves || snap.running) {
-      snap = { ...kept!, key, seat, done: kept!.total, total: kept!.total, running: false };
+      snap = { ...kept!, key, seat, judge, done: kept!.total, total: kept!.total, running: false };
       tell();
     }
     return snap;
@@ -95,6 +97,7 @@ export function readGame(game: GameState, table: string, seat: number): Snapshot
   snap = {
     key,
     seat,
+    judge,
     moves,
     seats: kept?.seats ?? {},
     verdicts: kept?.verdicts ?? {},
@@ -127,7 +130,8 @@ export function readGame(game: GameState, table: string, seat: number): Snapshot
     }
     tell();
   };
-  const ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me: seat, passes: PASSES };
+  const read = judgeOf(judge);
+  const ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me: seat, judge: read.judge, passes: read.passes };
   /* nothing kept, or a reading left halfway: read it through. A reading of a
      shorter game reads on from where it stopped, and one that only wants this
      seat's turns leaves the positions alone */

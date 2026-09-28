@@ -412,6 +412,30 @@ export function blendVerdicts(list: readonly Verdict[]): Verdict {
     other (tools/bots/calibrate.ts). */
 export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 4.8, widen: 1, rivals: 0.4 } };
 
+/* ------------------------------------------------------------------ */
+/* The three judges a reader may choose from. They differ in how far   */
+/* the machine plays a position on before weighing it — not at all,    */
+/* five moves, ten — and each reads its leads on a scale fitted to its */
+/* own depth, so the figures stay honest whichever is asked for. The   */
+/* longer the reading, the better it tells the outcome and the longer  */
+/* the wait: log loss 0.407, 0.388, 0.377 on the same 4 800 readings.  */
+/* ------------------------------------------------------------------ */
+
+export type JudgeId = 'quick' | 'long' | 'deep';
+
+/** the table as it stands, weighed without playing a move on: instant */
+export const QUICK_JUDGE: Judge = { plies: 0, budgetMs: 0, scale: SHORT_SCALE };
+
+export const JUDGES: Record<JudgeId, { judge: Judge; passes: readonly Pass[] }> = {
+  /* no continuation to vary, so one pass says all there is to say */
+  quick: { judge: QUICK_JUDGE, passes: [BEST] },
+  long: { judge: LONG_JUDGE, passes: PASSES },
+  deep: { judge: DEEP_JUDGE, passes: PASSES },
+};
+
+/** the judge a reading was asked for, the long one when nothing was said */
+export const judgeOf = (id: JudgeId | undefined): { judge: Judge; passes: readonly Pass[] } => JUDGES[id ?? 'long'] ?? JUDGES.long;
+
 /** the roads of one turn, each played and read by every pass: the same judge,
     the same passes and the same scale as the curve, so the figure a road
     shows is the figure the curve would show had it been played */
