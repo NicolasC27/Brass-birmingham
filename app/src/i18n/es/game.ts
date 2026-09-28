@@ -716,6 +716,8 @@ const game: typeof engame = {
     chance: 'Probabilidad de ganar aquí: {p} %',
     chanceBand: 'Probabilidad de ganar aquí: {p} % ± {band}',
     spread: 'Leída por {passes} continuaciones, separadas {band} puntos',
+    linkHere: 'Copiar un enlace a este momento',
+    linkCopy: 'Copia este enlace:',
     stillReading: 'Lectura en curso: la cifra se afinará',
     prevMiss: 'Fallo anterior (↑)',
     nextMiss: 'Fallo siguiente (↓)',

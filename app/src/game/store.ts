@@ -32,7 +32,7 @@ import { PINS_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
-import { readShared } from './share';
+import { readShared, sharedMoment } from './share';
 
 export interface Shake {
   key: string;
@@ -242,6 +242,9 @@ interface GameStore {
   closeGameOver: () => void;
   /** the final ledger back up: leaving the analysis of a game played out */
   openGameOver: () => void;
+  /** the move a shared link pointed at, for the analysis to open on; null once read */
+  reviewAt: number | null;
+  setReviewAt: (at: number | null) => void;
   runBot: () => GameAction | null;
   takeLoan: () => void;
   pass: (reason?: string) => void;
@@ -403,6 +406,9 @@ export const useGame = create<GameStore>((set, get) => ({
     const at = local ?? openLocalGame().code;
     /* a game already on this device, or one carried here in the address */
     const carried = readLocalSave(at) ? null : readShared(window.location.hash);
+    /* a link that points at a move: the game arrives with its analysis open
+       on that very move, which is the whole point of sending it */
+    const moment = carried ? sharedMoment(window.location.hash) : null;
     if (carried) {
       saveLocalGame(at, carried);
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -458,8 +464,11 @@ export const useGame = create<GameStore>((set, get) => ({
       /* a game resumed keeps its pins and notes; a new one starts clean */
       pins: resumed ? readPins(localPinScope(at)) : {},
       ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
-      /* a finished game resumed opens on its scores, the debrief a click away */
-      gameOverOpen: game.phase === 'game-over',
+      /* a finished game resumed opens on its scores, the debrief a click away
+         — unless the link pointed at a move, and then the analysis opens on it */
+      gameOverOpen: game.phase === 'game-over' && moment === null,
+      debriefOpen: moment !== null && game.phase === 'game-over',
+      reviewAt: moment,
       coachStep: coached || tutorial ? -1 : 0,
     });
   },
@@ -946,6 +955,8 @@ export const useGame = create<GameStore>((set, get) => ({
 
   closeGameOver: () => set({ gameOverOpen: false }),
   openGameOver: () => set({ gameOverOpen: true }),
+  reviewAt: null,
+  setReviewAt: (at) => set({ reviewAt: at }),
 
   takeLoan: () => {
     const g = get().game;

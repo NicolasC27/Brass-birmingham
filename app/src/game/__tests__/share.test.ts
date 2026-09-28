@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { newGame } from '../engine';
-import { readShared, shareFragment } from '../share';
+import { readShared, shareFragment, sharedMoment } from '../share';
 import type { SetupPayload } from '../types';
 
 const SETUP: SetupPayload = {
@@ -35,5 +35,17 @@ describe('a game carried in a link', () => {
     expect(readShared('')).toBeNull();
     expect(readShared('#g=not-a-game')).toBeNull();
     expect(readShared('#other')).toBeNull();
+  });
+});
+
+describe('a moment pointed at', () => {
+  it('rides in the same fragment and comes back whole', () => {
+    const g = newGame(SETUP, 11);
+    const fragment = shareFragment(g, 12);
+    expect(sharedMoment(fragment)).toBe(12);
+    /* the game still arrives, the moment being only a word on the end */
+    expect(readShared(fragment)).not.toBeNull();
+    /* a fragment that points at nothing says so */
+    expect(sharedMoment(shareFragment(g))).toBeNull();
   });
 });

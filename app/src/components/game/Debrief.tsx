@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Link2, Play, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, PASSES, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
@@ -12,6 +12,7 @@ import type { GameState } from '@/game/types';
 import { PLAYER_COLORS } from '@/game/data';
 import { useLang, useT } from '@/i18n';
 import { forkLocalGame } from '@/game/local';
+import { shareFragment } from '@/game/share';
 import { analysisKey, keepAnalysis, readKept } from '@/game/analysisKeep';
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
 import { GUIDE_RAIL, guideDock } from './guideKeys';
@@ -219,7 +220,10 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   /* the reading at each position, and whether every pass has been through it */
   const reads = useMemo(() => positions.map((_, k) => deep[k]), [positions, deep]);
   const settled = useMemo(() => reads.map((r) => !!r && r.passes > 1), [reads]);
-  const [at, setAt] = useState(last);
+  /* a link may point at a move: the panel opens there rather than at the end */
+  const wanted = useGame((s) => s.reviewAt);
+  const setReviewAt = useGame((s) => s.setReviewAt);
+  const [at, setAt] = useState(wanted !== null && wanted >= 0 && wanted <= last ? wanted : last);
   /* the roads being explored: from which move, which one is picked (by what it does, so the judge's later figures keep the pick), and the tail played on */
   /* the variation being explored, the way a chess line is: from which move
      it leaves the game, the moves played along it (the reader's picks and
@@ -438,6 +442,18 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   const seeBetter = () => {
     if (lesson) setVary({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
   };
+  /* this moment in a link: the game and the move, so a reader arrives on the
+     same position with the analysis open */
+  const [linked, setLinked] = useState(false);
+  const linkHere = () => {
+    const url = `${window.location.origin}/game/local/${table}${shareFragment(game, at)}`;
+    const done = () => {
+      setLinked(true);
+      window.setTimeout(() => setLinked(false), 2200);
+    };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(done, () => window.prompt(t('game.debrief.linkCopy'), url));
+    else window.prompt(t('game.debrief.linkCopy'), url);
+  };
   /* the position on show becomes a table of this device: the reader plays
      on from there, the machines with them */
   const playFrom = () => {
@@ -462,8 +478,12 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
     setVary({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
   const close = () => setDebriefOpen(false);
-  /* the board goes back to the live table when the panel goes */
-  useEffect(() => () => setReview(null), [setReview]);
+  /* the board goes back to the live table when the panel goes, and the moment
+     a link pointed at is spent once it has been opened */
+  useEffect(() => () => {
+    setReview(null);
+    setReviewAt(null);
+  }, [setReview, setReviewAt]);
   const width = Math.max(GUIDE_RAIL, guideDock());
   const listRef = useRef<HTMLOListElement>(null);
   useEffect(() => {
@@ -528,6 +548,9 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
               <Play className="h-3.5 w-3.5" /> {t('game.debrief.playFrom')}
             </button>
           )}
+          <button type="button" onClick={linkHere} aria-label={t('game.debrief.linkHere')} title={t('game.debrief.linkHere')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
+            {linked ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+          </button>
           {canExplore && !vary && (
             <button type="button" onClick={explore} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               <Compass className="h-3.5 w-3.5" /> {t('game.debrief.explore')}

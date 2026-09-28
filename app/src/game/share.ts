@@ -31,17 +31,25 @@ const fromBase64Url = (s: string): string => {
   return new TextDecoder().decode(bytes);
 };
 
-/** the fragment that carries this game: append it to a local game's address */
-export function shareFragment(g: GameState): string {
+/** the fragment that carries this game: append it to a local game's address.
+    `at` names a move, and the reader arrives with the analysis open there —
+    a moment pointed at rather than a whole game handed over */
+export function shareFragment(g: GameState, at?: number): string {
   const carried: Carried = { v: 1, seed: g.seed, setup: setupOf(g), actions: g.actions };
-  return MARK + toBase64Url(JSON.stringify(carried));
+  return MARK + toBase64Url(JSON.stringify(carried)) + (at !== undefined ? `&at=${at}` : '');
+}
+
+/** the move a fragment points at, if it points at one */
+export function sharedMoment(hash: string): number | null {
+  const m = /[&?]at=(\d+)/.exec(hash);
+  return m ? Number(m[1]) : null;
 }
 
 /** the game a fragment carries, played again from its deal; nothing if the fragment is not one of ours or a move refuses */
 export function readShared(hash: string): GameState | null {
   if (!hash.startsWith(MARK)) return null;
   try {
-    const c = JSON.parse(fromBase64Url(hash.slice(MARK.length))) as Carried;
+    const c = JSON.parse(fromBase64Url(hash.slice(MARK.length).split('&')[0])) as Carried;
     if (c.v !== 1 || !c.setup || !Array.isArray(c.actions)) return null;
     let s = newGame(c.setup, c.seed);
     for (const a of c.actions) {
