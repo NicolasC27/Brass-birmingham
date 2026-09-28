@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { ChevronLeft, ChevronRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
-import { LOSS, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import { LOSS, PASSES, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
 import type { Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
@@ -52,12 +52,13 @@ const NO_ENTRY = '';
 const pct = (p: number) => Math.round(p * 100);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
 const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(p * 100);
-
 /* the game as a line, the way a chess site draws an evaluation: the
    reader's chance after every move, lit above the half-way mark and dark
    below it, the eras named, the wider misses as dots; a press picks, a
-   drag scrubs, a hover reads the figure */
-function Curve({ chances, bands, at, marks, split, label, eras, vary, onPick }: { chances: number[]; bands: (number | null)[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
+   drag scrubs, a hover reads the figure. The judge's own doubt is drawn
+   too: a ribbon between the lowest and the highest of its passes, and a
+   dashed line as long as a stretch has been read by one pass only */
+function Curve({ chances, reads, settled, at, marks, split, label, eras, vary, onPick }: { chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -79,10 +80,9 @@ function Curve({ chances, bands, at, marks, split, label, eras, vary, onPick }: 
   const y = (c: number) => TOP + (1 - c) * (H - TOP - BOTTOM);
   const mid = y(0.5);
   /* a soft line through the points: Catmull-Rom turned into cubic curves */
-  const pts = chances.map((c, k) => [x(k), y(c)] as const);
-  let line = '';
-  if (pts.length) {
-    line = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  const smooth = (pts: (readonly [number, number])[]): string => {
+    if (!pts.length) return '';
+    let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
       const p0 = pts[Math.max(0, i - 1)];
       const p1 = pts[i];
@@ -90,11 +90,22 @@ function Curve({ chances, bands, at, marks, split, label, eras, vary, onPick }: 
       const p3 = pts[Math.min(pts.length - 1, i + 2)];
       const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
       const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
-      line += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+      d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
     }
-  }
+    return d;
+  };
+  const pts = chances.map((c, k) => [x(k), y(c)] as const);
+  const line = smooth(pts);
   const areaDown = `${line} L${w},${H} L0,${H} Z`;
   const areaUp = `${line} L${w},0 L0,0 Z`;
+  /* the judge's doubt: the passes' highest edge out, their lowest back */
+  const doubt = reads.some((r) => r && r.high > r.low)
+    ? `${smooth(chances.map((c, k) => [x(k), y(reads[k]?.high ?? c)] as const))} ${smooth(chances.map((c, k) => [x(k), y(reads[k]?.low ?? c)] as const).reverse()).replace(/^M/, 'L')} Z`
+    : '';
+  /* how far the reading has settled: every position up to here has been
+     read by every pass, so the line is drawn full rather than dashed */
+  let front = -1;
+  while (front + 1 < chances.length && settled[front + 1]) front += 1;
   const misses = Object.values(marks).filter((m) => m.grade !== 'top' && m.grade !== 'good');
   const kAt = (el: Element, clientX: number) => {
     const r = el.getBoundingClientRect();
@@ -118,7 +129,8 @@ function Curve({ chances, bands, at, marks, split, label, eras, vary, onPick }: 
     const cx = x(k);
     const cy = y(chances[k] ?? 0.5);
     /* the spread between the passes, when they disagreed by a point or more */
-    const band = Math.round((bands[k] ?? 0) * 100);
+    const r = reads[k];
+    const band = r ? Math.round(((r.high - r.low) / 2) * 100) : 0;
     const text = `${k} · ${Math.round((chances[k] ?? 0.5) * 100)} %${band > 0 ? ` ± ${band}` : ''}`;
     const right = cx > w - 56;
     return (
@@ -154,7 +166,10 @@ function Curve({ chances, bands, at, marks, split, label, eras, vary, onPick }: 
         {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} stroke="rgba(245,235,215,0.22)" strokeWidth={1} />}
         <text x={4} y={H - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>
         {split > 0 && <text x={x(split) + 4} y={H - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
-        <path d={line} fill="none" stroke="#E7C978" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+        {doubt && <path d={doubt} fill="rgba(231,201,120,0.22)" stroke="none" />}
+        {/* the line: dashed while a stretch is read by one pass only */}
+        <path d={line} fill="none" stroke="#E7C978" strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
+        {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke="#E7C978" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
         {misses.map((m) => (
           <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
         ))}
@@ -197,8 +212,9 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   const verdicts = fresh ? judged.verdicts : (kept?.verdicts ?? EMPTY_VERDICTS);
   const progress = fresh ? judged : { done: kept?.total ?? 0, total: kept?.total ?? 0 };
   const chances = useMemo(() => positions.map((p, k) => deep[k]?.chance ?? winChance(p, me)), [positions, me, deep]);
-  /* how far the judge's passes disagreed at each position, nothing where only one has landed */
-  const bands = useMemo(() => positions.map((_, k) => (deep[k] && deep[k].passes > 1 ? bandOf(deep[k]) : null)), [positions, deep]);
+  /* the reading at each position, and whether every pass has been through it */
+  const reads = useMemo(() => positions.map((_, k) => deep[k]), [positions, deep]);
+  const settled = useMemo(() => reads.map((r) => !!r && r.passes > 1), [reads]);
   const [at, setAt] = useState(last);
   /* the roads being explored: from which move, which one is picked (by what it does, so the judge's later figures keep the pick), and the tail played on */
   /* the variation being explored, the way a chess line is: from which move
@@ -242,7 +258,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
             setJudged((j) => {
               const base = ground(j) ?? j;
               const v = base.verdicts[k];
-              return { ...base, deep: { ...base.deep, [k + 1]: { chance: mine.chance, low: mine.chance, high: mine.chance, passes: 1 } }, verdicts: v ? { ...base.verdicts, [k]: { ...v, roads: n.roads, mine: mine.chance, best, loss, grade: gradeOfLoss(loss) } } : base.verdicts };
+              return { ...base, deep: { ...base.deep, [k + 1]: { chance: mine.chance, low: mine.chance, high: mine.chance, passes: PASSES.length } }, verdicts: v ? { ...base.verdicts, [k]: { ...v, roads: n.roads, mine: mine.chance, best, loss, grade: gradeOfLoss(loss) } } : base.verdicts };
             });
           }
         }
@@ -368,7 +384,9 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
   const chance = vary ? (stepMove ? winChance(stepMove.after, me) : branch ? branch.chance : vary.moves.length && tip ? winChance(tip, me) : (chances[at] ?? 0.5)) : (chances[at] ?? 0.5);
   /* how sure that figure is: half the spread of the passes, in points, and
      nothing at all along a variation, which is read once */
-  const band = vary ? 0 : Math.round((bands[at] ?? 0) * 100);
+  const band = vary || !reads[at] ? 0 : Math.round(bandOf(reads[at]) * 100);
+  /* the figure of a position still being read is held lightly */
+  const reading = !vary && !settled[at];
   const explore = () => setVary({ from: at, moves: [], picked: null, step: null });
   const canExplore = at > 0 && positions[at - 1]?.phase === 'action' && positions[at - 1]?.current === me;
   /* the move under the cursor, when the reader's and read wider than good:
@@ -437,7 +455,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       {/* the judge's chance, for the position on the board */}
       <div className="shrink-0">
         <div className="flex items-baseline justify-between">
-          <span className="font-sans text-[11px] text-cream-100/70" title={band ? t('game.debrief.spread', { passes: deep[at]?.passes ?? 1, band }) : undefined}>
+          <span className={cn('font-sans text-[11px] transition-colors', reading ? 'text-cream-100/40' : 'text-cream-100/70')} title={reading ? t('game.debrief.stillReading') : band ? t('game.debrief.spread', { passes: reads[at]?.passes ?? 1, band }) : undefined}>
             {band ? t('game.debrief.chanceBand', { p: pct(chance), band }) : t('game.debrief.chance', { p: pct(chance) })}
           </span>
           <span className="font-mono text-[10.5px] text-cream-100/45">{at === 0 ? t('game.debrief.start') : at === last && game.phase === 'game-over' ? t('game.debrief.endOf') : `${at}/${last}`}</span>
@@ -446,7 +464,12 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
         <div className="mt-2">
-          <Curve chances={chances} bands={bands} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
+          <Curve chances={chances} reads={reads} settled={settled} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
+          {/* how far the judge has got, a hair under the curve: it keeps its
+              room once read, so nothing below it moves */}
+          <div className={cn('mt-1 h-[3px] w-full overflow-hidden rounded-full bg-coal-800 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} title={t('game.debrief.reading', { done: progress.done, total: progress.total })}>
+            <div className="h-full rounded-full bg-brass-400/50 transition-[width] duration-300" style={{ width: `${progress.total ? Math.round((100 * progress.done) / progress.total) : 0}%` }} />
+          </div>
         </div>
         <div className="mt-2 flex items-center gap-1.5">
           <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVary(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
@@ -460,7 +483,6 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
               <Play className="h-3.5 w-3.5" /> {t('game.debrief.playFrom')}
             </button>
           )}
-          {progress.done < progress.total && <span className="ml-2 font-mono text-[10px] text-cream-100/45">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>}
           {canExplore && !vary && (
             <button type="button" onClick={explore} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               <Compass className="h-3.5 w-3.5" /> {t('game.debrief.explore')}
@@ -593,7 +615,7 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
                 <span className="min-w-0 flex-1 truncate">{describeAction(a)}</span>
                 {quality && quality !== 'top' && quality !== 'good' && <span className={cn('shrink-0 font-fell text-[9px] uppercase tracking-[0.14em]', quality === 'blunder' ? 'text-rust-400' : quality === 'mistake' ? 'text-copper-500' : 'text-cream-100/50')}>{t(`game.debrief.quality.${quality}`)}</span>}
                 {v && v.loss > LOSS.good && <span className="shrink-0 font-mono text-[9.5px] text-rust-400/80">−{Math.round(v.loss * 100)}</span>}
-                <span className={cn('w-8 shrink-0 text-right font-mono text-[10px]', deep[k + 1] !== undefined ? 'text-cream-100/70' : 'text-cream-100/35')}>{pct(chances[k + 1] ?? 0.5)}</span>
+                <span className={cn('w-8 shrink-0 text-right font-mono text-[10px]', settled[k + 1] ? 'text-cream-100/70' : 'text-cream-100/35')}>{pct(chances[k + 1] ?? 0.5)}</span>
               </button>
             </li>
           );

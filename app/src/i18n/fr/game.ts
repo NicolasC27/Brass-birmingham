@@ -716,6 +716,7 @@ const fr: typeof engame = {
     chance: 'Chances de l’emporter ici : {p} %',
     chanceBand: 'Chances de l’emporter ici : {p} % ± {band}',
     spread: 'Lue par {passes} suites, écartées de {band} points',
+    stillReading: 'Lecture en cours : le chiffre va se préciser',
     moves: 'Coup par coup',
     keyMoments: 'Moments clés',
     roads: 'Et si vous aviez joué…',
