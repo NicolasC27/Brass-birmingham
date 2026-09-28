@@ -256,6 +256,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const hoverRef = useRef({ setHoverTown, setHoverLink, setInspect, setHoverMerchant });
   hoverRef.current = { setHoverTown, setHoverLink, setInspect, setHoverMerchant };
   const suppressClick = useRef(false);
+  /* where the pointer sits on the map, for a reading shown to the table */
+  const pointerAt = useRef<{ wx: number; wy: number } | null>(null);
   useEffect(() => {
     sceneRef.current?.setHideUnbuilt(hideUnbuilt);
   }, [hideUnbuilt]);
@@ -519,6 +521,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const fxLayer = new Container();
       fxLayerRef.current = fxLayer;
       scene.world.addChild(fxLayer);
+      /* the pointer of whoever is showing their reading to the table: a ring
+         in their colour, hung on the map itself so it rides with the camera */
+      const ghost = new Graphics();
+      ghost.circle(0, 0, 13).stroke({ width: 3, color: 0xffffff, alpha: 0.95 });
+      ghost.circle(0, 0, 4).fill({ color: 0xffffff, alpha: 0.95 });
+      ghost.visible = false;
+      fxLayer.addChild(ghost);
       let clock = 0;
       let railAlphaTarget = 0;
       let lastFxSeq = -1;
@@ -715,6 +724,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         ambiance.tick(clock, gameRef.current);
         railAlphaTarget = gameRef.current.era === 'rail' ? 1 : 0;
+        /* a reading shown to the table: where this camera sits on the map and
+           where the pointer is, a few times a second and no oftener */
+        if (useGame.getState().sharing) {
+          const box = el.getBoundingClientRect();
+          const [cx, cy] = screenToWorld(box.width / 2, box.height / 2, cam.view, box.width, box.height);
+          useGame.getState().showLook({ wx: cx, wy: cy, k: cam.view.k }, pointerAt.current);
+        }
       });
 
       /* --------------------- game state → scene ----------------------- */
@@ -722,6 +738,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       let lastGame: GameState | null = gameRef.current;
       let lastSpot: number | null = null;
       let lastFlyAt = 0;
+      let lastLook = { wx: NaN, wy: NaN, k: NaN };
       let lastLedgerSeq = -1;
       let lastGlimpseAt = -1;
       const unsub = useGame.subscribe((s) => {
@@ -737,6 +754,21 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           lastSpot = spot;
           scene.setSpotlight(spot);
         }
+        /* following a reading shown at this table: the camera goes where the
+           reader in charge is looking, and their pointer shows on the map */
+        const led = s.following ? s.shown : null;
+        const look = led?.look;
+        if (look && (look.wx !== lastLook.wx || look.wy !== lastLook.wy || look.k !== lastLook.k)) {
+          lastLook = look;
+          cam.flyTo(look.wx, look.wy, look.k);
+        }
+        const cursor = led?.cursor ?? null;
+        if (cursor) {
+          const hex = PLAYER_COLORS[s.game?.players[led!.from]?.color ?? '']?.hex ?? '#F5EBD7';
+          ghost.visible = true;
+          ghost.tint = Number(`0x${hex.replace('#', '')}`);
+          ghost.position.set(cursor.wx, cursor.wy);
+        } else ghost.visible = false;
         if (s.flyTo && s.flyTo.at !== lastFlyAt) {
           lastFlyAt = s.flyTo.at;
           const pos = regionPos(s.flyTo.key, s.game?.era ?? 'canal');
@@ -1065,6 +1097,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       };
       const onMove = (e: PointerEvent) => {
         if (fingers.has(e.pointerId)) fingers.set(e.pointerId, local(e));
+        /* a reading shown to the table carries the pointer with it */
+        const r = el.getBoundingClientRect();
+        const [wx, wy] = screenToWorld(e.clientX - r.left, e.clientY - r.top, cam.view, r.width, r.height);
+        pointerAt.current = { wx, wy };
         const two = pair();
         if (two && cam.pinching()) {
           cam.pinchMove(two[0], two[1]);
