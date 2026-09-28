@@ -245,6 +245,17 @@ interface GameStore {
   /** the move a shared link pointed at, for the analysis to open on; null once read */
   reviewAt: number | null;
   setReviewAt: (at: number | null) => void;
+  /* ---- reading a game again, together: one seat shows, the others follow ---- */
+  /** the move a seat of this table is showing in its analysis, if one is */
+  shown: { from: number; at: number } | null;
+  /** my own reading goes out to the table */
+  sharing: boolean;
+  /** my analysis follows whoever is showing */
+  following: boolean;
+  shareReview: (on: boolean) => void;
+  followReview: (on: boolean) => void;
+  /** where my analysis stands, told to the table when I am sharing */
+  showReviewAt: (at: number) => void;
   runBot: () => GameAction | null;
   takeLoan: () => void;
   pass: (reason?: string) => void;
@@ -957,6 +968,22 @@ export const useGame = create<GameStore>((set, get) => ({
   openGameOver: () => set({ gameOverOpen: true }),
   reviewAt: null,
   setReviewAt: (at) => set({ reviewAt: at }),
+  shown: null,
+  sharing: false,
+  following: false,
+  shareReview: (on) => {
+    const st = get();
+    set({ sharing: on, ...(on ? { following: false } : {}) });
+    /* the panel says where it stands as soon as it is sharing; stopping is
+       told at once, so nobody is left following a reader who has gone */
+    if (!on && st.code) onlineWire()?.send({ t: 'review', code: st.code, at: null });
+  },
+  followReview: (on) => set({ following: on, ...(on ? { sharing: false } : {}) }),
+  showReviewAt: (at) => {
+    const st = get();
+    if (!st.sharing || !st.code) return;
+    onlineWire()?.send({ t: 'review', code: st.code, at });
+  },
 
   takeLoan: () => {
     const g = get().game;
@@ -1301,6 +1328,7 @@ function listen(code: string, wire: Wire): void {
     if (m.t === 'rejected' && m.code === code) useGame.setState({ shake: { key: '', reason: m.error, at: Date.now() } });
     if (m.t === 'telegram' && m.code === code) useGame.getState().receiveTelegram(m.from, m.key);
     if (m.t === 'mark' && m.code === code) useGame.getState().receivePing(m.from, m.key);
+    if (m.t === 'review' && m.code === code && m.from !== useGame.getState().seat) useGame.setState({ shown: m.at === null ? null : { from: m.from, at: m.at } });
     if (m.t === 'warned' && m.code === code) useGame.setState({ markStrikes: m.muted ? 2 : 1, markWarning: m.muted ? 'muted' : 'warned' });
     if (m.t === 'pulse' && m.code === code) useGame.setState({ latency: m.latency });
   });
@@ -1318,7 +1346,7 @@ export function leaveOnlineTable(): void {
   deafen?.();
   const code = useGame.getState().code;
   if (code) onlineWire()?.unwatch(code);
-  useGame.setState({ code: null, local: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD });
+  useGame.setState({ code: null, local: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD, shown: null, sharing: false, following: false });
 }
 
 /* --------------------- the table once my moves have played --------------------- */

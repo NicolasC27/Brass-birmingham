@@ -772,6 +772,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         for (const w of watchers(m.code)) send(w, { t: 'mark', code: m.code, from, key: m.key, at: now });
         return;
       }
+      case 'review': {
+        /* a seat reading the game again shows the table where it is looking:
+           a move's number and nothing else, so the others may follow along */
+        const table = hall.table(m.code);
+        const from = table?.seats.findIndex((s) => s.id === who.id) ?? -1;
+        const at = m.at === null ? null : Math.max(0, Math.floor(m.at));
+        if (from < 0 || (at !== null && !Number.isFinite(at))) return;
+        for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at });
+        return;
+      }
     }
   }
 

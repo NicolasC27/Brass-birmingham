@@ -445,6 +445,29 @@ describe('a table over the wire', () => {
     expectCandle();
   });
 
+  it('carries a seat\u2019s reading of the game to the whole table', async () => {
+    const { host, guest, code } = await seatTwo({ bot: 60000, ceremony: 60000 });
+    ring(host, code);
+    await guest.until('the game', () => !!guest.view);
+    /* the host reads the game again and shows where it is looking */
+    host.send({ t: 'review', code, at: 12 });
+    await guest.until('the reading', () => guest.frames.some((f) => f.t === 'review' && f.at === 12));
+    const told = guest.frames.filter((f) => f.t === 'review');
+    expect(told[0]).toMatchObject({ code, from: 0, at: 12 });
+    /* and says when it stops, so nobody follows a reader who has gone */
+    host.send({ t: 'review', code, at: null });
+    await guest.until('the end of it', () => guest.frames.some((f) => f.t === 'review' && f.at === null));
+    /* a seat only: a move's number from a stranger goes nowhere */
+    const stranger = new Guest('Cy');
+    guests.push(stranger);
+    await stranger.open(server!.port);
+    await stranger.signUp();
+    stranger.send({ t: 'review', code, at: 3 });
+    stranger.send({ t: 'ping' });
+    await stranger.until('the office to answer something else', () => stranger.trace.length > 0);
+    expect(guest.frames.filter((f) => f.t === 'review' && f.at === 3)).toEqual([]);
+  });
+
   it('keeps an idea in the book, on the page and in the post', async () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'brass-'));
     dirs.push(dir);
