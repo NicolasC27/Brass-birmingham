@@ -524,8 +524,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       /* the pointer of whoever is showing their reading to the table: a ring
          in their colour, hung on the map itself so it rides with the camera */
       const ghost = new Graphics();
-      ghost.circle(0, 0, 13).stroke({ width: 3, color: 0xffffff, alpha: 0.95 });
-      ghost.circle(0, 0, 4).fill({ color: 0xffffff, alpha: 0.95 });
+      ghost.circle(0, 0, 30).stroke({ width: 7, color: 0xffffff, alpha: 0.95 });
+      ghost.circle(0, 0, 10).fill({ color: 0xffffff, alpha: 0.95 });
       ghost.visible = false;
       fxLayer.addChild(ghost);
       let clock = 0;
