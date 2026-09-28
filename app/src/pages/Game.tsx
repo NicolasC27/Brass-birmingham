@@ -28,7 +28,7 @@ import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
-import { useHudInsets } from '@/components/game/useHudInsets';
+import { narrowRailTop, useHudInsets } from '@/components/game/useHudInsets';
 import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
@@ -163,6 +163,9 @@ export default function Game() {
   const boardOpts = useBoardOptions();
   const insets = useHudInsets();
 
+  /* the room the analysis panel takes down the right edge: the review's plate
+     and the ledger's drawer keep out of it rather than hide under it */
+  const analysisPane = debriefOpen && game?.phase === 'game-over' ? Math.max(GUIDE_RAIL, guideDock()) : 0;
   const [passTo, setPassTo] = useState<string | null>(null);
   const [skipAnim, setSkipAnim] = useState(false);
   /* the candle of a home turn: when it goes out (one moment per turn, not a tick a second) */
@@ -639,7 +642,8 @@ export default function Game() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 380, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed bottom-0 right-0 top-0 z-[66] w-[min(360px,92vw)] p-3"
+            className="fixed bottom-0 top-0 z-[66] w-[min(360px,92vw)] p-3"
+            style={{ right: analysisPane }}
             aria-label={t('game.page.ledgerDrawerAria')}
           >
             <div className="relative h-full rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e4 backdrop-blur-md [&>.plate]:h-full [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">
@@ -790,11 +794,13 @@ export default function Game() {
       {/* the guide's own lane, beside the table rather than over it */}
       {/* the review's plate: which moment of the game the board shows */}
       {review && (
-        <div className="pointer-events-auto fixed left-1/2 top-3 z-[66] flex -translate-x-1/2 items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
-          <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
-          <button type="button" onClick={() => { setReview(null); setDebriefOpen(false); }} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
-            {t('game.debrief.back')}
-          </button>
+        <div className="pointer-events-none fixed left-0 z-[66] flex justify-center" style={{ top: narrowRailTop(insets), right: analysisPane }}>
+          <div className="pointer-events-auto flex items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
+            <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
+            <button type="button" onClick={() => { setReview(null); setDebriefOpen(false); }} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
+              {t('game.debrief.back')}
+            </button>
+          </div>
         </div>
       )}
       {debriefOpen && game.phase === 'game-over' && reviewSeat >= 0 && <Debrief game={game} me={reviewSeat} />}
