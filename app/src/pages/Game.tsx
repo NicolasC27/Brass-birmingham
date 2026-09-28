@@ -166,6 +166,14 @@ export default function Game() {
   /* the room the analysis panel takes down the right edge: the review's plate
      and the ledger's drawer keep out of it rather than hide under it */
   const analysisPane = debriefOpen && game?.phase === 'game-over' ? Math.max(GUIDE_RAIL, guideDock()) : 0;
+  /* leaving the review puts the final ledger back up: the board of a game
+     played out has nothing more to say on its own */
+  const leaveReview = () => {
+    setReview(null);
+    setDebriefOpen(false);
+    if (game?.phase === 'game-over') useGame.getState().openGameOver();
+  };
+
   const [passTo, setPassTo] = useState<string | null>(null);
   const [skipAnim, setSkipAnim] = useState(false);
   /* the candle of a home turn: when it goes out (one moment per turn, not a tick a second) */
@@ -273,6 +281,9 @@ export default function Game() {
   }, [game]);
   useEffect(() => {
     if (!game || game.phase !== 'game-over' || !gameOverOpen || finalWritten.current || overAtStart.current) return;
+    /* the reader is in the analysis: the ledger waits for them, it does not
+       pull them out of it */
+    if (debriefOpen || review) return;
     finalWritten.current = true;
     try {
       localStorage.setItem(FINAL_KEY, JSON.stringify(buildFinalPayload(game)));
@@ -281,7 +292,7 @@ export default function Game() {
     }
     const t = window.setTimeout(() => navigate('/results'), 9000);
     return () => window.clearTimeout(t);
-  }, [game, gameOverOpen, navigate]);
+  }, [game, gameOverOpen, debriefOpen, review, navigate]);
 
   /* -------------------------- keyboard -------------------------- */
   useEffect(() => {
@@ -797,7 +808,7 @@ export default function Game() {
         <div className="pointer-events-none fixed left-0 z-[66] flex justify-center" style={{ top: narrowRailTop(insets), right: analysisPane }}>
           <div className="pointer-events-auto flex items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
             <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
-            <button type="button" onClick={() => { setReview(null); setDebriefOpen(false); }} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
+            <button type="button" onClick={leaveReview} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
               {t('game.debrief.back')}
             </button>
           </div>

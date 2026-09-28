@@ -240,6 +240,8 @@ interface GameStore {
   setCoachStep: (n: number) => void;
   endCeremony: () => void;
   closeGameOver: () => void;
+  /** the final ledger back up: leaving the analysis of a game played out */
+  openGameOver: () => void;
   runBot: () => GameAction | null;
   takeLoan: () => void;
   pass: (reason?: string) => void;
@@ -943,6 +945,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   closeGameOver: () => set({ gameOverOpen: false }),
+  openGameOver: () => set({ gameOverOpen: true }),
 
   takeLoan: () => {
     const g = get().game;
