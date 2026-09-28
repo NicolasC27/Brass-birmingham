@@ -715,6 +715,8 @@ const game = {
     chanceBand: 'Chances of winning here: {p}% ± {band}',
     spread: 'Read by {passes} continuations, {band} points apart',
     stillReading: 'Still reading: the figure will sharpen',
+    prevMiss: 'Previous miss (↑)',
+    nextMiss: 'Next miss (↓)',
     tally: {
       label: 'Your moves',
       top: '{n} best',

@@ -717,6 +717,8 @@ const game: typeof engame = {
     chanceBand: 'Gewinnchance hier: {p} % ± {band}',
     spread: 'Von {passes} Fortsetzungen gelesen, {band} Punkte auseinander',
     stillReading: 'Wird noch gelesen: die Zahl wird genauer',
+    prevMiss: 'Vorheriger Fehler (↑)',
+    nextMiss: 'Nächster Fehler (↓)',
     tally: {
       label: 'Deine Züge',
       top: '{n} [n|bester Zug|beste Züge]',

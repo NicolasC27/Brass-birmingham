@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ChevronLeft, ChevronRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Play, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, PASSES, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
@@ -381,6 +381,15 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
        tenth of anything, and a total past a hundred per cent reads broken */
     return { by, lost: Math.round((100 * lost) / list.length) };
   }, [verdicts]);
+  /* the moves that cost more than a good one: what the arrows jump between */
+  const misses = useMemo(() => Object.values(verdicts).filter((v) => v.loss > LOSS.good).map((v) => v.at + 1).sort((a, b) => a - b), [verdicts]);
+  const nextMiss = useCallback((dir: 1 | -1): number | null => (dir > 0 ? misses.find((k) => k > at) : [...misses].reverse().find((k) => k < at)) ?? null, [misses, at]);
+  const jump = (dir: 1 | -1) => {
+    const k = nextMiss(dir);
+    if (k === null) return;
+    setAt(k);
+    setVary(null);
+  };
   /* the arrows step through the game */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -388,13 +397,19 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
       if (e.key === 'ArrowLeft') setAt((k) => Math.max(0, k - 1));
       else if (e.key === 'ArrowRight') setAt((k) => Math.min(last, k + 1));
-      else return;
+      else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        const k = nextMiss(e.key === 'ArrowDown' ? 1 : -1);
+        if (k === null) return;
+        setAt(k);
+      } else return;
       e.preventDefault();
       setVary(null);
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
-  }, [last]);
+    /* the jump reads the misses and where the cursor stands, so the listener
+       is bound again whenever either moves */
+  }, [last, nextMiss]);
 
   /* the figure in the header, on the same reading as the curve and the roads */
   const chance = vary ? (stepMove ? winChance(stepMove.after, me) : branch ? branch.chance : vary.moves.length && tip ? winChance(tip, me) : (chances[at] ?? 0.5)) : (chances[at] ?? 0.5);
@@ -494,6 +509,13 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
           <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setVary(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
+          {/* faute à faute, the way a game is read again: the arrows up and down */}
+          <button type="button" onClick={() => jump(-1)} disabled={nextMiss(-1) === null} aria-label={t('game.debrief.prevMiss')} title={t('game.debrief.prevMiss')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+            <ChevronsLeft className="h-3.5 w-3.5" />
+          </button>
+          <button type="button" onClick={() => jump(1)} disabled={nextMiss(1) === null} aria-label={t('game.debrief.nextMiss')} title={t('game.debrief.nextMiss')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+            <ChevronsRight className="h-3.5 w-3.5" />
+          </button>
           {shown?.phase === 'action' && (
             <button type="button" onClick={playFrom} title={t('game.debrief.playFrom')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[10px]">
               <Play className="h-3.5 w-3.5" /> {t('game.debrief.playFrom')}
@@ -524,25 +546,6 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
             ))}
             {tally.lost > 0 && <span className="font-mono text-[10px] text-rust-400/80">{t('game.debrief.tally.lost', { p: tally.lost })}</span>}
           </div>
-        </div>
-      )}
-
-      {/* the move under the cursor, read wider than good: what was better */}
-      {lesson && !vary && (
-        <div className="paper shrink-0 px-3 py-2">
-          <p className="font-sans text-[11.5px] text-ink-900">
-            <span className="font-fell text-[10px] uppercase tracking-[0.14em] text-rust-700">{t(`game.debrief.quality.${lesson.v.grade}`)}</span>
-            {' · '}
-            <span className="font-mono text-[10.5px] text-rust-700">{t('game.debrief.lost', { p: lesson.delta })}</span>
-            {' · '}
-            {t('game.debrief.betterWas', { move: describeAction(lesson.better) })}
-          </p>
-          <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
-            {t('game.debrief.whyGap', { name: machine, p: lesson.delta })} {t(`game.guide.suggest.why.${whyKey(lesson.better)}`, { name: machine })}
-          </p>
-          <button type="button" onClick={seeBetter} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-            <Compass className="h-3 w-3" /> {t('game.debrief.seeBetter')}
-          </button>
         </div>
       )}
 
@@ -648,6 +651,25 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
                 {v && v.loss > LOSS.good && <span className="shrink-0 font-mono text-[9.5px] text-rust-400/80">−{Math.round(v.loss * 100)}</span>}
                 <span className={cn('w-8 shrink-0 text-right font-mono text-[10px]', settled[k + 1] ? 'text-cream-100/70' : 'text-cream-100/35')}>{pct(chances[k + 1] ?? 0.5)}</span>
               </button>
+              {/* what was better, under the move it was played instead of: the
+                  lesson stays where the eye already is and nothing shifts */}
+              {lesson && !vary && at === k + 1 && (
+                <div className="paper my-1 px-3 py-2">
+                  <p className="font-sans text-[11.5px] text-ink-900">
+                    <span className="font-fell text-[10px] uppercase tracking-[0.14em] text-rust-700">{t(`game.debrief.quality.${lesson.v.grade}`)}</span>
+                    {' · '}
+                    <span className="font-mono text-[10.5px] text-rust-700">{t('game.debrief.lost', { p: lesson.delta })}</span>
+                    {' · '}
+                    {t('game.debrief.betterWas', { move: describeAction(lesson.better) })}
+                  </p>
+                  <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
+                    {t('game.debrief.whyGap', { name: machine, p: lesson.delta })} {t(`game.guide.suggest.why.${whyKey(lesson.better)}`, { name: machine })}
+                  </p>
+                  <button type="button" onClick={seeBetter} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                    <Compass className="h-3 w-3" /> {t('game.debrief.seeBetter')}
+                  </button>
+                </div>
+              )}
             </li>
           );
         })}

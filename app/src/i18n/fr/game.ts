@@ -717,6 +717,8 @@ const fr: typeof engame = {
     chanceBand: 'Chances de l’emporter ici : {p} % ± {band}',
     spread: 'Lue par {passes} suites, écartées de {band} points',
     stillReading: 'Lecture en cours : le chiffre va se préciser',
+    prevMiss: 'Faute précédente (↑)',
+    nextMiss: 'Faute suivante (↓)',
     tally: {
       label: 'Vos coups',
       top: '{n} [n|juste|justes]',
