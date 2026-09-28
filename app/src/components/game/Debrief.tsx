@@ -202,7 +202,11 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      judge would start over at each one. It reads the table it was opened on,
      and the next reading is asked for by opening it again. */
   const [game] = useState(live);
-  const [me, setMe] = useState(opened);
+  /* the seat being read: mine, or the one the reader in charge is reading
+     while I follow them */
+  const [ownMe, setMe] = useState(opened);
+  const ledSeat = useGame((s) => (s.following && s.shown && s.shown.seat !== undefined ? s.shown.seat : null));
+  const me = ledSeat !== null && ledSeat >= 0 && ledSeat < live.players.length ? ledSeat : ownMe;
   const t = useT();
   const lang = useLang();
   const navigate = useNavigate();
@@ -249,6 +253,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      I follow them. A move of my own takes the wheel back at once */
   const followed = useGame((s) => (s.following && s.shown ? s.shown.at : null));
   const at = followed === null ? ownAt : Math.max(0, Math.min(last, followed));
+  /* a branch of my own, or another seat: I stop following whoever was leading */
+  const takeWheel = useCallback(<T,>(f: (x: T) => void) => (x: T) => {
+    const st = useGame.getState();
+    if (st.following) st.followReview(false);
+    f(x);
+  }, []);
   const setAt = useCallback((next: number | ((k: number) => number)) => {
     const st = useGame.getState();
     const from = st.following && st.shown ? Math.max(0, Math.min(last, st.shown.at)) : null;
@@ -263,7 +273,28 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      it leaves the game, the moves played along it (the reader's picks and
      the machine's replies), the road picked at its tip, and which of its
      moves the board shows (null: the tip, or the pick) */
-  const [vary, setVary] = useState<{ from: number; moves: Followed[]; picked: string | null; step: number | null } | null>(null);
+  const [ownVary, setVary] = useState<{ from: number; moves: Followed[]; picked: string | null; step: number | null } | null>(null);
+  /* the line the reader in charge is exploring, played again here from its
+     ground: a branch shown at the table is a branch everyone can read */
+  const ledLine = useGame((s) => (s.following && s.shown ? (s.shown.line ?? null) : null));
+  const followVary = useMemo(() => {
+    if (!ledLine) return null;
+    const ground = positions[ledLine.from - 1];
+    if (!ground) return null;
+    const moves: Followed[] = [];
+    let cur = ground;
+    for (const action of ledLine.moves) {
+      const seat = cur.current;
+      const after = applyAction(cur, seat, action).state;
+      if (!after) break;
+      moves.push({ seat, action, after });
+      cur = after;
+    }
+    return { from: ledLine.from, moves, picked: null, step: null };
+  }, [ledLine, positions]);
+  const vary = ledLine ? followVary : ownVary;
+  const setVaryMine = takeWheel(setVary);
+  const setMeMine = takeWheel(setMe);
   /* roads read longer, by the line of moves that leads to them */
   const roadsRead = read?.roads[me] ?? EMPTY_ROADS;
   /* the lines already sent for a longer reading, so each goes once */
@@ -401,7 +432,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     const k = nextMiss(dir);
     if (k === null) return;
     setAt(k);
-    setVary(null);
+    setVaryMine(null);
   };
   /* the arrows step through the game */
   useEffect(() => {
@@ -416,7 +447,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         setAt(k);
       } else return;
       e.preventDefault();
-      setVary(null);
+      setVaryMine(null);
     };
     window.addEventListener('keydown', onKey, true);
     return () => window.removeEventListener('keydown', onKey, true);
@@ -431,7 +462,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const band = vary || !reads[at] ? 0 : Math.round(bandOf(reads[at]) * 100);
   /* the figure of a position still being read is held lightly */
   const reading = !vary && !settled[at];
-  const explore = () => setVary({ from: at, moves: [], picked: null, step: null });
+  const explore = () => setVaryMine({ from: at, moves: [], picked: null, step: null });
   const canExplore = at > 0 && positions[at - 1]?.phase === 'action' && positions[at - 1]?.current === me;
   /* the move under the cursor, when the reader's and read wider than good:
      what was better, and how much more chance the judge gave it */
@@ -443,7 +474,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     return { v, better: better.action, delta: Math.round(v.loss * 100) };
   }, [at, verdicts, game.actions]);
   const seeBetter = () => {
-    if (lesson) setVary({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
+    if (lesson) setVaryMine({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
   };
   /* reading together: one seat shows where it is looking, the others follow.
      Only at a table online, and only from a seat — a spectator may follow,
@@ -456,19 +487,22 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const shareReview = useGame((s) => s.shareReview);
   const followReview = useGame((s) => s.followReview);
   const showReviewAt = useGame((s) => s.showReviewAt);
-  /* what I am reading goes out, at most ten times a second while scrubbing */
-  const toldAt = useRef<{ at: number; when: number } | null>(null);
+  /* what I am reading goes out, at most ten times a second while scrubbing:
+     the move, the seat I am reading and the line I am exploring */
+  const line = useMemo(() => (vary ? { from: vary.from, moves: vary.moves.map((m) => m.action) } : null), [vary]);
+  const toldAt = useRef<{ said: string; when: number } | null>(null);
   useEffect(() => {
     if (!sharing) return;
+    const said = `${at}:${me}:${line ? `${line.from}|${line.moves.length}` : ''}`;
     const last = toldAt.current;
-    if (last && last.at === at) return;
+    if (last && last.said === said) return;
     const wait = last ? Math.max(0, 120 - (Date.now() - last.when)) : 0;
     const t = window.setTimeout(() => {
-      toldAt.current = { at, when: Date.now() };
-      showReviewAt(at);
+      toldAt.current = { said, when: Date.now() };
+      showReviewAt(at, me, line);
     }, wait);
     return () => window.clearTimeout(t);
-  }, [sharing, at, showReviewAt]);
+  }, [sharing, at, me, line, showReviewAt]);
   /* the panel closes: nobody is left waiting on a reading that has gone */
   useEffect(() => () => {
     if (useGame.getState().sharing) useGame.getState().shareReview(false);
@@ -503,12 +537,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     const from = branch ? branch.after : tip;
     const more = followToTurn(from, me);
     if (!picked.length && !more.length) return;
-    setVary({ ...vary, moves: [...vary.moves, ...picked, ...more], picked: null, step: null });
+    setVaryMine({ ...vary, moves: [...vary.moves, ...picked, ...more], picked: null, step: null });
   };
   /* back to one of the picks along the line: the roads there again, that pick selected */
   const backTo = (i: number) => {
     if (!vary) return;
-    setVary({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
+    setVaryMine({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
   const close = () => setDebriefOpen(false);
   /* the board goes back to the live table when the panel goes, and the moment
@@ -532,7 +566,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         <label className="flex items-center gap-1 text-cream-100/60" title={t('game.debrief.seat')}>
           <UserRound className="h-3.5 w-3.5" aria-hidden />
           <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#C9A45C' }} />
-          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMe(Number(e.target.value)); setVary(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
+          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMeMine(Number(e.target.value)); setVaryMine(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
             {game.players.map((p, i) => (
               <option key={i} value={i}>{p.name}</option>
             ))}
@@ -555,7 +589,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
         <div className="mt-2">
-          <Curve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
+          <Curve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVaryMine(null); }} />
           {/* how far the judge has got, a hair under the curve: it keeps its
               room once read, so nothing below it moves */}
           <div className={cn('mt-1 h-[3px] w-full overflow-hidden rounded-full bg-coal-800 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} title={t('game.debrief.reading', { done: progress.done, total: progress.total })}>
@@ -563,10 +597,10 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           </div>
         </div>
         <div className="mt-2 flex items-center gap-1.5">
-          <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVary(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVaryMine(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setVary(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setVaryMine(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
           {/* faute à faute, the way a game is read again: the arrows up and down */}
@@ -600,7 +634,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             </button>
           )}
           {vary && (
-            <button type="button" onClick={() => setVary(null)} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
+            <button type="button" onClick={() => setVaryMine(null)} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               {t('game.debrief.backToLine')}
             </button>
           )}
@@ -673,7 +707,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                 const same = vary.moves.length === 0 && sameRoad(r.action) === sameRoad(game.actions[vary.from - 1]);
                 return (
                   <li key={i}>
-                    <button type="button" onClick={() => setVary({ ...vary, picked: pickedAt === i ? null : sameRoad(r.action), step: null })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-1 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', pickedAt === i && vary.step === null && 'bg-ink-900/10 ring-1 ring-brass-500')}>
+                    <button type="button" onClick={() => setVaryMine({ ...vary, picked: pickedAt === i ? null : sameRoad(r.action), step: null })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-1 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', pickedAt === i && vary.step === null && 'bg-ink-900/10 ring-1 ring-brass-500')}>
                       <span className="w-10 shrink-0 font-mono text-[10.5px] font-semibold text-ink-900">{t('game.debrief.road', { p: fine(r.chance, lang) })}</span>
                       <span className="min-w-0 flex-1 truncate">{describeAction(r.action)}</span>
                       {same && <span className="shrink-0 font-fell text-[9px] uppercase tracking-[0.14em] text-ink-900/50">{t('game.debrief.played')}</span>}
@@ -700,7 +734,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                 const on = vary.step === i || (vary.step === null && !branch && i === vary.moves.length - 1);
                 return (
                   <li key={i}>
-                    <button type="button" onClick={() => setVary({ ...vary, step: i })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', on && 'bg-ink-900/10 ring-1 ring-brass-500')}>
+                    <button type="button" onClick={() => setVaryMine({ ...vary, step: i })} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] text-ink-900/85 hover:bg-ink-900/10', on && 'bg-ink-900/10 ring-1 ring-brass-500')}>
                       <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[f.seat]?.color]?.hex ?? '#C9A45C' }} />
                       <span className="w-14 shrink-0 truncate font-mono text-[10px] text-ink-900/60">{f.seat === me ? t('game.debrief.you') : game.players[f.seat]?.name}</span>
                       <span className="min-w-0 flex-1 truncate">{describeAction(f.action)}</span>
@@ -721,7 +755,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.keyMoments')}</p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             {keyMoments.map((m) => (
-              <button key={m.k} type="button" onClick={() => { setAt(m.k); setVary(null); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
+              <button key={m.k} type="button" onClick={() => { setAt(m.k); setVaryMine(null); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
                 <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[m.seat]?.color]?.hex ?? '#C9A45C' }} />
                 <span>{t('game.debrief.round', { round: m.round, era: t(m.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })} · {m.seat === me ? t('game.debrief.you') : game.players[m.seat]?.name}</span>
                 <span className="font-mono text-[10px] text-rust-400">{t('game.debrief.lost', { p: Math.round(m.drop * 100) })}</span>
@@ -746,7 +780,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           return (
             <li key={k} data-at={k + 1}>
               {newRound && <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.debrief.round', { round: before.round, era: t(before.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })}</p>}
-              <button type="button" onClick={() => { setAt(k + 1); setVary(null); }} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] transition-colors', at === k + 1 && !vary ? 'bg-brass-500/15 text-cream-100' : 'text-cream-100/70 hover:bg-coal-800/70')}>
+              <button type="button" onClick={() => { setAt(k + 1); setVaryMine(null); }} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] transition-colors', at === k + 1 && !vary ? 'bg-brass-500/15 text-cream-100' : 'text-cream-100/70 hover:bg-coal-800/70')}>
                 <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[p?.color]?.hex ?? '#C9A45C' }} />
                 <span className={cn('w-14 shrink-0 truncate font-mono text-[10px]', mine ? 'text-brass-300' : 'text-cream-100/45')}>{mine ? t('game.debrief.you') : p?.name}</span>
                 <span className="min-w-0 flex-1 truncate">{describeAction(a)}</span>
