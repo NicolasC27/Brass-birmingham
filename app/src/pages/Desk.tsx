@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, ChevronDown, Coins, GraduationCap, History, LayoutGrid, LogOut, Mail, MailOpen, MoreHorizontal, Send, UserX, Users, X } from 'lucide-react';
+import { BarChart3, ChevronDown, Coins, GraduationCap, History, House, LayoutGrid, LogOut, Mail, MailOpen, MoreHorizontal, Send, UserX, Users, X } from 'lucide-react';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import { Refusal, inputClass } from '@/components/site/PageShell';
 import Button from '@/components/platform/Button';
@@ -691,7 +691,7 @@ function FriendsPanel({ friends, table, onToast }: { friends: Friend[]; table: T
 
 /* ------------------------ Registre d'historique (partagé) ------------------------ */
 
-type HistoryFilter = 'all' | 'won' | 'lost' | 'abandoned';
+type HistoryFilter = 'all' | 'won' | 'lost' | 'abandoned' | 'home';
 
 function HistoryRow({ game, me }: { game: PastGame; me: string }) {
   const t = useT();
@@ -714,8 +714,17 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
         </span>
       </td>
       <td className="py-2.5 pr-3">
-        <span className="font-ui text-[13px] font-semibold text-paper-100">{tableTitle(game.name, lang)}</span>
-        <span className="data-text ml-2 text-[10px] uppercase tracking-[0.2em] text-iron-600">{game.code}</span>
+        {game.home ? (
+          <span className="inline-flex items-center gap-1.5 font-ui text-[13px] font-semibold text-paper-300" title={t('platform.desk.history.homeNote')}>
+            <House size={13} aria-hidden className="text-iron-400" />
+            {t('platform.desk.history.atHome')}
+          </span>
+        ) : (
+          <>
+            <span className="font-ui text-[13px] font-semibold text-paper-100">{tableTitle(game.name, lang)}</span>
+            <span className="data-text ml-2 text-[10px] uppercase tracking-[0.2em] text-iron-600">{game.code}</span>
+          </>
+        )}
       </td>
       <td className="py-2.5 pr-3">
         <ul className="flex flex-wrap gap-x-3 gap-y-1">
@@ -747,14 +756,17 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
     if (filter === 'won') return won && !g.abandoned;
     if (filter === 'lost') return !won && !g.abandoned;
     if (filter === 'abandoned') return g.abandoned;
+    if (filter === 'home') return !!g.home;
     return true;
   };
   const filtered = history.filter(matches);
+  const athome = history.some((g) => g.home);
   const chips: { id: HistoryFilter; label: string }[] = [
     { id: 'all', label: t('platform.desk.history.all') },
     { id: 'won', label: t('platform.desk.history.wins') },
     { id: 'lost', label: t('platform.desk.history.losses') },
     { id: 'abandoned', label: t('platform.desk.history.abandoned') },
+    ...(athome ? [{ id: 'home' as const, label: t('platform.desk.history.home') }] : []),
   ];
 
   if (history.length === 0) {
@@ -810,6 +822,12 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
             {t('platform.desk.history.loadMore')}
           </Button>
         </div>
+      )}
+      {athome && (
+        <p className="mt-4 flex items-start gap-2 font-ui text-[12px] leading-relaxed text-iron-400">
+          <House size={13} aria-hidden className="mt-0.5 shrink-0" />
+          {t('platform.desk.history.homeNote')}
+        </p>
       )}
     </div>
   );
@@ -920,6 +938,13 @@ function StatsPanel() {
           </motion.div>
         ))}
       </div>
+
+      {!!stats?.home && (
+        <p className="flex items-start gap-2 font-ui text-[12px] leading-relaxed text-iron-400">
+          <House size={13} aria-hidden className="mt-0.5 shrink-0" />
+          {t('platform.desk.stats.home', { count: stats.home })}
+        </p>
+      )}
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
         <RatingCard rating={desk?.rating ?? null} season={desk?.season ?? null} />

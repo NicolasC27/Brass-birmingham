@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { BadgeCheck, Coins, Download, LogOut, MailWarning, UserX } from 'lucide-react';
+import { BadgeCheck, Coins, Download, House, LogOut, MailWarning, UserX } from 'lucide-react';
 import { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import Button from '@/components/platform/Button';
@@ -149,6 +149,13 @@ function StatsAndRanks() {
             </span>
           </Link>
         </motion.div>
+        {/* les parties à la maison sont au registre, dans aucun de ces chiffres */}
+        {!!stats?.home && (
+          <p className="flex items-start gap-2 font-ui text-[12px] leading-relaxed text-iron-400 min-[760px]:col-span-2 xl:col-span-3">
+            <House size={13} aria-hidden className="mt-0.5 shrink-0" />
+            {t('platform.profile.stats.home', { count: stats.home })}
+          </p>
+        )}
       </div>
 
       <motion.aside
