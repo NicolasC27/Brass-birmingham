@@ -32,8 +32,11 @@ export interface Kept {
   verdicts: Record<number, Record<number, Verdict>>;
   /** per seat, the roads read longer, by the line of moves that leads to them */
   roads: Record<number, Record<string, Weighed[]>>;
-  /** how many readings the pass was to make: a part-read game keeps its count */
+  /** how many readings the pass was to make, and how many have landed: an
+      entry written halfway through says so, and is read again rather than
+      taken for the whole truth */
   total: number;
+  done: number;
   /** how many moves of the game this reading covers */
   moves: number;
 }
@@ -73,11 +76,14 @@ export function readKept(key: string, moves: number): Kept | null {
   try {
     const e = JSON.parse(raw) as Entry;
     if (!e || e.v !== ANALYSIS_VERSION || !e.seats || e.moves > moves) return null;
-    return { seats: e.seats, verdicts: e.verdicts ?? {}, roads: e.roads ?? {}, total: e.total ?? 0, moves: e.moves };
+    return { seats: e.seats, verdicts: e.verdicts ?? {}, roads: e.roads ?? {}, total: e.total ?? 0, done: e.done ?? 0, moves: e.moves };
   } catch {
     return null;
   }
 }
+
+/** a reading is whole when every figure it set out to make has landed */
+export const isWhole = (k: Kept | null, moves: number): boolean => !!k && k.moves >= moves && k.total > 0 && k.done >= k.total;
 
 /** the reading of this game, written down */
 export function keepAnalysis(key: string, moves: number, kept: Omit<Kept, 'moves'>): void {
@@ -89,6 +95,7 @@ export function keepAnalysis(key: string, moves: number, kept: Omit<Kept, 'moves
     verdicts: numbered(kept.verdicts, (byTurn) => numbered(byTurn, trimVerdict)),
     roads: numbered(kept.roads, (byLine) => Object.fromEntries(Object.entries(byLine).map(([k, w]) => [k, trimWeighed(w)]))),
     total: kept.total,
+    done: kept.done,
   };
   try {
     localStorage.setItem(key, JSON.stringify(entry));

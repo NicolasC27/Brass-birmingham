@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ANALYSIS_VERSION } from '../analysis';
 import type { Kept } from '../analysisKeep';
-import { analysisKey, keepAnalysis, readKept } from '../analysisKeep';
+import { analysisKey, isWhole, keepAnalysis, readKept } from '../analysisKeep';
 
 /* a shelf of this browser's own, since the tests run outside one */
 class Shelf {
@@ -32,6 +32,7 @@ const kept = (): Omit<Kept, 'moves'> => ({
   verdicts: { 0: { 0: { at: 0, round: 1, era: 'canal', roads: [{ action: { kind: 'pass' }, chance: 0.4123456 }], mine: 0.4123456, best: 0.5123456, loss: 0.1, grade: 'mistake' } } },
   roads: { 0: { '0|': [{ action: { kind: 'pass' }, chance: 0.333333 }] } },
   total: 12,
+  done: 12,
 });
 
 describe('an analysis kept', () => {
@@ -43,6 +44,9 @@ describe('an analysis kept', () => {
     const back = readKept(key, 30);
     expect(back).not.toBeNull();
     expect(back!.total).toBe(12);
+    /* every figure it set out to make has landed: the panel need not read again */
+    expect(isWhole(back, 30)).toBe(true);
+    expect(isWhole({ ...back!, done: 5 }, 30)).toBe(false);
     /* a position carries a reading per seat, kept for all of them at once */
     expect(back!.seats[0]).toHaveLength(2);
     expect(back!.seats[0][0].chance).toBeCloseTo(0.5123, 6);

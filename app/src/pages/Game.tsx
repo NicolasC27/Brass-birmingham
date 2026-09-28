@@ -9,7 +9,7 @@ import Debrief from '@/components/game/Debrief';
 import ReviewHand from '@/components/game/ReviewHand';
 import AskGuide from '@/components/game/AskGuide';
 import { readable } from '@/game/analysis';
-import { readAhead, stopAhead } from '@/game/analysisAhead';
+import { readGame, stopReading } from '@/game/analysisRun';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -175,19 +175,22 @@ export default function Game() {
      work done. Nothing of it reaches the board before the game is over. */
   const warmed = useRef<string | null>(null);
   useEffect(() => {
-    if (!game || game.phase !== 'action' || game.era !== 'rail') return;
+    if (!game) return;
+    /* twice: when the rail era opens, and again the moment the game is played
+       out — the reader asks for the analysis a second later, and by then the
+       first half is on the shelf and the rest is already being read */
+    const when = game.phase === 'game-over' ? 'over' : game.era === 'rail' && game.phase === 'action' ? 'rail' : null;
+    if (!when) return;
     const seat = game.players.findIndex((p) => !p.isBot);
     const at = tableCode ?? localCode ?? 'x';
-    const mark = `${at}:${game.seed}:${seat}`;
+    const mark = `${at}:${game.seed}:${seat}:${when}`;
     if (seat < 0 || warmed.current === mark) return;
     warmed.current = mark;
-    readAhead(game, at, seat);
+    readGame(game, at, seat);
   }, [game, tableCode, localCode]);
-  /* the panel does its own reading: the one running ahead stands down */
-  useEffect(() => {
-    if (debriefOpen) stopAhead();
-  }, [debriefOpen]);
-  useEffect(() => () => stopAhead(), []);
+  /* the reading belongs to the game, not to the page: it stops when the board
+     goes, and the panel picks up the one already under way */
+  useEffect(() => () => stopReading(), []);
 
   /* leaving the review puts the final ledger back up: the board of a game
      played out has nothing more to say on its own */

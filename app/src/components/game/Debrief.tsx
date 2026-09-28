@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
 import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Link2, Play, Radio, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
@@ -13,7 +13,8 @@ import { PLAYER_COLORS } from '@/game/data';
 import { useLang, useT } from '@/i18n';
 import { forkLocalGame } from '@/game/local';
 import { shareFragment } from '@/game/share';
-import { analysisKey, keepAnalysis, readKept } from '@/game/analysisKeep';
+import { analysisKey, readKept } from '@/game/analysisKeep';
+import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/analysisRun';
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
 import { GUIDE_RAIL, guideDock } from './guideKeys';
 import { cn } from '@/lib/utils';
@@ -48,22 +49,8 @@ const regionOf = (a: GameAction | undefined): string | null => {
 };
 const EMPTY_VERDICTS: Record<number, Verdict> = {};
 const EMPTY_ROADS: Record<string, Weighed[]> = {};
-/** the entry no reading belongs to: what the panel holds before the judge has
-    said a word, so the reading kept from last time is the one on show */
-const NO_ENTRY = '';
 const EMPTY_SEATS: Record<number, Reading[]> = {};
 
-/** what the panel holds of a reading: the positions for every seat, and per
- *  seat what its own turns were worth and the roads read longer */
-interface Judged {
-  of: GameState;
-  key: string;
-  seats: Record<number, Reading[]>;
-  verdicts: Record<number, Record<number, Verdict>>;
-  roads: Record<number, Record<string, Weighed[]>>;
-  done: number;
-  total: number;
-}
 const pct = (p: number) => Math.round(p * 100);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
 const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(p * 100);
@@ -233,17 +220,14 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the long judge's figures as they land: a chance per position, a verdict
      per turn of the reader's — or, when this game was read before, the whole
      of the last reading, on the board before the first frame */
-  const [judged, setJudged] = useState<Judged>({ of: game, key: NO_ENTRY, seats: {}, verdicts: {}, roads: {}, done: 0, total: 0 });
-  /* the last reading of this game, if this browser kept one */
+  /* the game is read once, by the reader the board started when the last move
+     was played; the panel watches it rather than starting one of its own */
+  const snap = useSyncExternalStore(onReading, readingNow, readingNow);
   const kept = useMemo(() => readKept(keptKey, game.actions.length), [keptKey, game]);
-  const fresh = judged.of === game && judged.key === keptKey;
-  const read = fresh ? judged : kept;
+  const read = snap.key === keptKey && snap.moves === game.actions.length ? snap : kept;
   const seatsRead = read?.seats ?? EMPTY_SEATS;
   const verdicts = read?.verdicts[me] ?? EMPTY_VERDICTS;
-  /* a kept reading of the whole game is done; one of a first half still has
-     the rest to read, and the worker's first note says how much */
-  const whole = !!kept && kept.moves >= game.actions.length;
-  const progress = fresh ? judged : { done: whole ? (kept?.total ?? 0) : 0, total: whole ? (kept?.total ?? 0) : 0 };
+  const progress = snap.key === keptKey && snap.running ? { done: snap.done, total: snap.total } : { done: 1, total: 1 };
   /* the reading at each position, for the seat on show and for the others */
   const reads = useMemo(() => positions.map((_, k) => seatsRead[k]?.[me]), [positions, seatsRead, me]);
   const chances = useMemo(() => positions.map((p, k) => reads[k]?.chance ?? winChance(p, me)), [positions, me, reads]);
@@ -286,14 +270,15 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const asked = useRef<Set<string>>(new Set());
   const machine = game.players.find((p) => p.isBot)?.name ?? t('game.debrief.machine');
 
-  /* the long judge thinks on a thread of its own and posts as it goes */
+  /* the reading is asked for, not started twice: the board may have it under
+     way already, and a seat never judged has its turns read on their own */
   useEffect(() => {
-    /* what a note lands on: the reading under way, or the one kept from last
-       time — a road read longer joins a reading that came off the shelf */
-    const before = readKept(keptKey, game.actions.length);
-    const done = before && before.moves >= game.actions.length ? (before.total ?? 0) : 0;
-    const ground = (j: Judged): Judged | null =>
-      j.of === game && j.key === keptKey ? null : { of: game, key: keptKey, seats: before?.seats ?? {}, verdicts: before?.verdicts ?? {}, roads: before?.roads ?? {}, done, total: done };
+    readGame(game, table, me);
+  }, [game, table, me]);
+
+  /* the roads of a line, read longer, go to a worker of the panel's own: they
+     are asked for as the reader explores, and join the one reading */
+  useEffect(() => {
     let w: Worker | null = null;
     try {
       w = new Worker(new URL('../../game/analysisWorker.ts', import.meta.url), { type: 'module' });
@@ -302,39 +287,19 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     }
     w.onmessage = (e: MessageEvent<Note>) => {
       const n = e.data;
-      setJudged((j) => {
-        const base = ground(j) ?? j;
-        /* the roads of a line read longer: they rank what else could have been
-           played there, and nothing else — the curve and the grades keep the
-           one scale of the long judge, so no position ever shows two figures */
-        if (n.kind === 'roads') return { ...base, roads: { ...base.roads, [me]: { ...(base.roads[me] ?? {}), [n.key]: n.roads } } };
-        if (n.kind === 'position') return { ...base, seats: { ...base.seats, [n.k]: n.seats }, done: n.done, total: n.total };
-        if (n.kind === 'turn') return { ...base, verdicts: { ...base.verdicts, [me]: { ...(base.verdicts[me] ?? {}), [n.verdict.at]: n.verdict } }, done: n.done, total: n.total };
-        if (n.kind === 'done') return { ...base, done: base.total };
-        return base;
-      });
+      /* a line read longer ranks what else could have been played there, and
+         nothing else — the curve and the grades keep the one scale of the long
+         judge, so no position ever shows two figures */
+      if (n.kind === 'roads') keepRoads(keptKey, me, n.key, n.roads);
     };
-    /* read before, by this judge, on this game: the figures stand as they were
-       and nothing is thought again. A seat never read yet has its turns judged
-       on their own — the positions are the table's, not one chair's */
-    const ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me };
-    if (!before) w.postMessage(ask);
-    else if (before.moves < game.actions.length) w.postMessage({ ...ask, from: before.moves });
-    else if (!before.verdicts[me]) w.postMessage({ ...ask, turnsOnly: true });
     workerRef.current = w;
-    asked.current = new Set(Object.keys(before?.roads[me] ?? {}));
+    asked.current = new Set();
     return () => {
       w?.terminate();
       workerRef.current = null;
     };
-  }, [game, me, keptKey, kept]);
+  }, [game, me, keptKey]);
   const workerRef = useRef<Worker | null>(null);
-  /* the reading kept, once it is whole: the panel opens on it next time, and
-     a road read longer since joins it */
-  useEffect(() => {
-    if (!progress.total || progress.done < progress.total) return;
-    keepAnalysis(keptKey, game.actions.length, { seats: seatsRead, verdicts: read?.verdicts ?? {}, roads: read?.roads ?? {}, total: progress.total });
-  }, [seatsRead, read, progress.done, progress.total, keptKey, game]);
   /* the key moments: where the curve fell hardest, whoever moved — the
      reader's own miss or a rival's stroke */
   const keyMoments = useMemo(() => {
