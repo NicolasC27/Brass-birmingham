@@ -325,6 +325,8 @@ const game = {
     next: 'next: {rank}',
     nextShort: 'next {rank}',
     moneyTip: 'Money in hand',
+    vpLive: 'live',
+    vpLiveTip: 'Live points: {banked} banked + {board} on the board were the era to end here',
     vpTip: 'Victory points',
     fold: 'Fold the players to one line',
     expand: 'Unfold the players',

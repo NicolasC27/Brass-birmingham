@@ -327,6 +327,8 @@ const fr: typeof engame = {
     next: 'suivant : {rank}',
     nextShort: 'suivant {rank}',
     moneyTip: 'Argent en caisse',
+    vpLive: 'direct',
+    vpLiveTip: 'Points en direct : {banked} acquis + {board} sur le plateau si l’ère s’arrêtait ici',
     vpTip: 'Points de victoire',
     fold: 'Replier les joueurs sur une ligne',
     expand: 'Déplier les joueurs',

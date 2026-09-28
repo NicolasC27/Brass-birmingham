@@ -5,7 +5,7 @@ import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { ChevronsDownUp, ChevronsUpDown, Coins, Eye, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
 import { useGame, useShownGame } from '@/game/store';
-import { projectedOrder } from '@/game/engine';
+import { projectEraScores, projectedOrder } from '@/game/engine';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets, narrowRailTop } from './useHudInsets';
 import { TelegramPlaque } from './Telegrams';
@@ -90,13 +90,13 @@ export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; 
   );
 }
 
-function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number; compact?: boolean; onCard: () => void }) {
+function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard }: { p: PlayerState; index: number; active: boolean; nextRank: number; nowRank: number; compact?: boolean; /** while a game is read again: what the board is worth on top of the banked points */ live: number | null; onCard: () => void }) {
   const latency = useGame((st) => st.latency);
   const online = useGame((st) => st.code !== null);
   const t = useT();
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   const money = useCountTween(p.money);
-  const vp = useCountTween(p.vp);
+  const vp = useCountTween(live === null ? p.vp : p.vp + live);
   const spotlight = useGame((s) => s.spotlight);
   const setSpotlight = useGame((s) => s.setSpotlight);
   const openMat = useGame((s) => s.openMat);
@@ -176,9 +176,13 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
             {lvl}
             {!compact && <span className="text-cream-100/45">({pay})</span>}
           </span>
-          <span className="flex items-center gap-0.5 text-[10px] text-cream-100/75" title={t('game.rail.vpTip')}>
+          <span
+            className={cn('flex items-center gap-0.5 text-[10px]', live === null ? 'text-cream-100/75' : 'text-brass-300')}
+            title={live === null ? t('game.rail.vpTip') : t('game.rail.vpLiveTip', { banked: p.vp, board: live })}
+          >
             <Trophy aria-hidden className="h-2.5 w-2.5 shrink-0" />
             {vp}
+            {live !== null && <span className="text-[8px] uppercase tracking-[0.1em] text-brass-400/70">{t('game.rail.vpLive')}</span>}
           </span>
         </span>
         {/* turn order: what this round cost so far, and the seat it earns next
@@ -219,6 +223,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, onCard }: { p:
 export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   const t = useT();
   const game = useShownGame();
+  const reading = useGame((s) => s.review !== null);
   const insets = useHudInsets();
   const narrow = useNarrow();
   const { railCompact, focus } = useBoardOptions();
@@ -226,6 +231,9 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   if (!game) return null;
   const next = projectedOrder(game);
   const compact = narrow || railCompact || focus;
+  /* a game read again shows the standing as it was at that moment: the points
+     banked, plus what the board would have scored had the era ended there */
+  const live = reading ? projectEraScores(game) : null;
 
   /* wide: a vertical stack top-left. Narrow: a wrapping strip under the top
      bar, chips trimmed to portrait, name and the three numbers */
@@ -238,7 +246,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
     >
       {game.order.map((i, pos) => (
         <motion.div key={i} layout transition={{ type: 'spring', stiffness: 260, damping: 30 }} className="relative flex flex-col">
-          <RailChip p={game.players[i]} index={i} active={i === game.current} nowRank={pos + 1} nextRank={next.indexOf(i) + 1} compact={compact} onCard={() => setCardSeat((c) => (c === i ? null : i))} />
+          <RailChip p={game.players[i]} index={i} active={i === game.current} nowRank={pos + 1} nextRank={next.indexOf(i) + 1} compact={compact} live={live ? live[i].total : null} onCard={() => setCardSeat((c) => (c === i ? null : i))} />
           <TelegramPlaque seat={i} compact={compact} />
           {/* the player's card, beside their chip */}
           <AnimatePresence>

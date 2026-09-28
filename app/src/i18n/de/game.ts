@@ -327,6 +327,8 @@ const game: typeof engame = {
     next: 'nächster: {rank}',
     nextShort: 'nächster {rank}',
     moneyTip: 'Geld in der Kasse',
+    vpLive: 'live',
+    vpLiveTip: 'Punkte live: {banked} sicher + {board} auf dem Brett, endete die Ära hier',
     vpTip: 'Siegpunkte',
     fold: 'Spieler auf eine Zeile einklappen',
     expand: 'Spieler ausklappen',
