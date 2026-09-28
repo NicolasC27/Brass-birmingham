@@ -62,7 +62,8 @@ export interface Scale {
   /** how far a tie with the best rival sits below even, per rival beyond one and per round left */
   rivals: number;
 }
-/** the scale of a position weighed as it stands */
+/** the scale of a position weighed as it stands; the last calibration read it
+    again and left it where it was */
 export const SHORT_SCALE: Scale = { width: 4.5, widen: 2, rivals: 0.7 };
 
 /** the chance a lead gives, on a scale: a logistic, wider while rounds remain */
@@ -199,11 +200,14 @@ export interface Judge {
 }
 
 /* Each judge's scale is fitted on its own readings (tools/bots/calibrate.ts
-   with DEEP=1: 96 tables of two to four uneven machines, 22 600 positions
-   read by all three judges). The longer the reading, the better it tells
-   the outcome — log loss 0.403 as the table stands, 0.391 five moves on,
-   0.377 ten moves on — and each lands its deciles within five points. */
-export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 7, widen: 0.5, rivals: 0.5 } };
+   with DEEP=1, then tools/bots/fit-chance.mjs: 60 tables of two to four
+   uneven machines, 4 800 readings, every one read by all three passes of
+   both judges). The longer the reading, the better it tells the outcome —
+   log loss 0.407 as the table stands, 0.388 five moves on, 0.377 ten moves
+   on — and each lands its deciles within five points. The three passes are
+   worth their time twice over: blended they read 0.388 against 0.389 for
+   the flat-out pass alone, and the curve stops jumping. */
+export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 5.2, widen: 1, rivals: 0.45 } };
 
 /** the machine's move while a position is read on: the search plain, at the
     strength asked for — not chooseBotAction, whose easing bends to who sits
@@ -395,7 +399,7 @@ export function blendVerdicts(list: readonly Verdict[]): Verdict {
 /** the roads of one turn read again, longer: what the panel asks for the
     turn being explored. One continuation only — the deep judge plays ten
     moves on, which steadies it, and the panel waits on this one */
-export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 6.5, widen: 0.5, rivals: 0.4 } };
+export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 4.8, widen: 1, rivals: 0.4 } };
 
 export function weighRoads(before: GameState, me: number, roads: GameAction[], judge: Judge = DEEP_JUDGE): Weighed[] {
   return roads
@@ -413,4 +417,4 @@ export function weighRoads(before: GameState, me: number, roads: GameAction[], j
 /* while the judge that wrote them is the judge that stands. Bump this */
 /* on any change to a judge, a scale, the passes or the grades.        */
 /* ------------------------------------------------------------------ */
-export const ANALYSIS_VERSION = 2;
+export const ANALYSIS_VERSION = 3;
