@@ -343,13 +343,17 @@ export default function Game() {
         setDebriefOpen(false);
         return;
       }
+      /* the analysis is left by its own key, by Escape, and by the two keys
+         that read the board while a game runs — they have nothing to say to a
+         game already read, and the hand reaches for them out of habit */
+      if ((review || debriefOpen) && (isKey(e, 'analysis') || isKey(e, 'survey') || isKey(e, 'lastMove'))) {
+        e.preventDefault();
+        setReview(null);
+        setDebriefOpen(false);
+        return;
+      }
       if (isKey(e, 'analysis')) {
-        if (readable(game)) {
-          if (debriefOpen) {
-            setReview(null);
-            setDebriefOpen(false);
-          } else setDebriefOpen(true);
-        }
+        if (readable(game)) setDebriefOpen(true);
         return;
       }
       if (e.key === 'Escape') {
