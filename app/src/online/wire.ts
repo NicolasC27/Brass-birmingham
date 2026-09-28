@@ -1,5 +1,7 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
+import type { GameAction } from '@/game/actions';
+import type { SetupPayload } from '@/game/types';
 import type { Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
@@ -120,6 +122,14 @@ export class Wire {
 
   async buy(item: string): Promise<void> {
     await this.ask((rid) => ({ t: 'buy', rid, item }));
+  }
+
+  /** a game played out at home, to the office: the game itself, not its
+   *  result — the office replays it and records what its own board says.
+   *  It refuses a log that will not replay, one that stops short, and one
+   *  no chair of which was mine. Sending the same game twice is harmless. */
+  async home(seed: number, setup: SetupPayload, actions: GameAction[]): Promise<void> {
+    await this.ask((rid) => ({ t: 'home', rid, seed, setup, actions }));
   }
 
   send(m: ClientMessage): void {

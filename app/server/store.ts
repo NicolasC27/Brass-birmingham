@@ -8,6 +8,7 @@ import type { Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
+import type { HomeGame } from './home';
 import { fresh, ratingOf, seasonAt, settle } from './rating';
 import type { Standing } from './rating';
 import { MEETINGS_CAP } from './watch';
@@ -141,7 +142,8 @@ create table if not exists games (
   seats      text not null,
   startedAt  integer not null,
   finishedAt integer,
-  result     text
+  result     text,
+  home       integer not null default 0
 );
 create table if not exists friends (
   id         text primary key,
@@ -207,6 +209,7 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'acceptedAt', 'integer'],
   ['accounts', 'closedAt', 'integer'],
   ['games', 'result', 'text'],
+  ['games', 'home', 'integer not null default 0'],
   ['tables', 'ranked', 'integer not null default 0'],
 ];
 
@@ -301,6 +304,16 @@ interface Result {
   players: { name: string; color: PlayerColor; vp: number; bot: boolean; resigned?: boolean; tally?: Tally }[];
   winner: number;
   abandoned: boolean;
+}
+
+/** the standings as the board that played them out reads — the one place
+ *  a result is written, for a table of the house and for a home game alike */
+function resultOf(state: GameState, tallies?: Tally[]): Result {
+  return {
+    players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot && !p.resigned, ...(p.resigned ? { resigned: true } : {}), ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
+    winner: state.winner ?? 0,
+    abandoned: !!state.abandoned,
+  };
 }
 
 export class Store {
@@ -765,13 +778,7 @@ export class Store {
   /** the game is over: the standings go on the record, the humans are
    *  paid, and at a ranked table their cotes move */
   finishGame(code: string, state?: GameState, tallies?: Tally[], ranked = false): void {
-    const result: Result | null = state
-      ? {
-          players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot && !p.resigned, ...(p.resigned ? { resigned: true } : {}), ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
-          winner: state.winner ?? 0,
-          abandoned: !!state.abandoned,
-        }
-      : null;
+    const result = state ? resultOf(state, tallies) : null;
     this.db.prepare('update games set finishedAt = ?, result = ? where code = ?').run(Date.now(), result ? JSON.stringify(result) : null, code);
     /* a game the table voted away pays nothing and moves no cote */
     if (!state || state.abandoned) return;
@@ -809,6 +816,26 @@ export class Store {
     return row.n;
   }
 
+  /** a game played out at home goes on the record under the account that
+   *  played it: the row, the log and the standings the office replayed for
+   *  itself (see server/home.ts). False when that very game is already on
+   *  the record — the same log sent twice is one game, not two.
+   *
+   *  It is `finishGame`'s sibling and deliberately a poorer one: the house
+   *  did not umpire this game, so it pays no guineas and moves no cote. */
+  recordHomeGame(g: HomeGame): boolean {
+    if (this.db.prepare('select code from games where code = ?').get(g.code)) return false;
+    /* the account sat in one chair; the others belong to nobody */
+    const seats = g.state.players.map((_, i) => (i === g.seat ? g.accountId : ''));
+    const at = Date.now();
+    this.db
+      .prepare('insert into games (code, seed, setup, seats, startedAt, finishedAt, result, home) values (?, ?, ?, ?, ?, ?, ?, 1)')
+      .run(g.code, g.seed, JSON.stringify(g.setup), JSON.stringify(seats), at, at, JSON.stringify(resultOf(g.state, g.tallies)));
+    g.actions.forEach((a, i) => this.appendMove(g.code, i, a));
+    this.db.prepare('insert or ignore into game_players (code, accountId) values (?, ?)').run(g.code, g.accountId);
+    return true;
+  }
+
   /* ------------------------------- the watch ------------------------------ */
 
   /** a mark against an account: what the watch saw, where */
@@ -823,8 +850,10 @@ export class Store {
     return this.db.prepare('select f.*, a.name from flags f left join accounts a on a.id = f.accountId order by f.at desc').all() as unknown as (Flag & { name: string })[];
   }
 
+  /** the games played at the house's own tables, for the hall to reopen —
+   *  a game played at home stands at no table and is left where it lies */
   games(): StoredGame[] {
-    const rows = this.db.prepare('select * from games').all() as {
+    const rows = this.db.prepare('select * from games where home = 0').all() as {
       code: string;
       seed: number;
       setup: string;
@@ -845,9 +874,9 @@ export class Store {
   historyFor(accountId: string, limit = 20): PastGame[] {
     const rows = this.db
       .prepare(
-        'select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.code in (select code from game_players where accountId = ?) order by g.finishedAt desc, g.rowid desc limit ?',
+        'select g.code, g.seats, g.finishedAt, g.result, g.home, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.code in (select code from game_players where accountId = ?) order by g.finishedAt desc, g.rowid desc limit ?',
       )
-      .all(accountId, limit) as { code: string; seats: string; finishedAt: number; result: string; name: string | null }[];
+      .all(accountId, limit) as { code: string; seats: string; finishedAt: number; result: string; home: number; name: string | null }[];
     return rows.map((r) => {
       const seatIds = JSON.parse(r.seats) as string[];
       const result = JSON.parse(r.result) as Result;
@@ -858,12 +887,18 @@ export class Store {
         players: result.players.map((p, i) => ({ id: seatIds[i] ?? '', ...p })),
         winner: result.winner,
         abandoned: result.abandoned,
+        ...(r.home ? { home: true } : {}),
       };
     });
   }
 
   statsFor(accountId: string): Stats {
-    const games = this.historyFor(accountId, 10_000);
+    const record = this.historyFor(accountId, 10_000);
+    /* a game played at home is on the record but not in the figures: the
+       house never umpired it, and the player chose their own opposition,
+       its strength and how often to deal again. It would flatter or spoil
+       every number below without saying anything about play at a table. */
+    const games = record.filter((g) => !g.home);
     /* a game the table voted away was never played out: it counts for nothing */
     const mine = games.filter((g) => !g.abandoned).map((g) => ({ vp: g.players[g.players.findIndex((p) => p.id === accountId)]?.vp ?? 0, won: g.players[g.winner]?.id === accountId }));
     const played = mine.length;
@@ -906,6 +941,7 @@ export class Store {
       tally: tallied ? tally : null,
       colour,
       rivals: [...rivals.values()].sort((a, b) => b.played - a.played || a.name.localeCompare(b.name)).slice(0, 8),
+      home: record.length - games.length,
     };
   }
 

@@ -40,6 +40,17 @@ export interface Table {
 
 export type LobbyError = 'not-found' | 'full' | 'started' | 'refused' | 'offline' | 'verify-first' | 'no-such-player' | 'already-seated' | 'already-invited' | 'not-yours' | 'already-friends' | 'yourself';
 
+/** why the office would not put a game played at home on the record */
+export type HomeError =
+  /** the log will not replay: the engine refused one of its actions */
+  | 'no-replay'
+  /** the log stops before the last card is played */
+  | 'unfinished'
+  /** no single chair of that game was the sender's */
+  | 'not-seated'
+  /** the setup or the log is not the shape of a game */
+  | 'malformed';
+
 /** why the office would not sign you in */
 export type AuthError =
   | 'bad-name'
@@ -232,6 +243,8 @@ export interface PastGame {
   winner: number;
   /** the game ended by the table's own vote */
   abandoned: boolean;
+  /** played at home against the machines, not at a table the house ran */
+  home?: boolean;
 }
 
 export interface Stats {
@@ -250,6 +263,8 @@ export interface Stats {
   colour: PlayerColor | null;
   /** the record against every other person met at a table, most played first */
   rivals: { id: string; name: string; played: number; won: number; lost: number }[];
+  /** games played at home: on the record, counted in none of the figures above */
+  home: number;
 }
 
 /** a friend, or a friendship on its way: 'asks' = they asked me, 'asked' = I asked them */

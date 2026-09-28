@@ -268,6 +268,24 @@ function noteForm(g: GameState): void {
   recordForm(!g.players[g.winner].isBot);
 }
 
+/** the same game, to the office, when somebody is signed in: the seed, the
+ *  setup and the log — never the standings. The office replays the game
+ *  with this very engine and records what its own board says, so nothing
+ *  here needs to be believed. A game it will not take (a hotseat, a line
+ *  that was down) is simply not on the record; the game itself is unharmed. */
+function postHome(g: GameState): void {
+  const wire = onlineWire();
+  if (!wire?.session) return;
+  void wire.home(g.seed, setupOf(g), g.actions).catch(() => undefined);
+}
+
+/** a game played at home has been played out: the form moves and the log
+ *  goes to the office. Both happen once, on the action that ended it. */
+function closeLocalGame(g: GameState): void {
+  noteForm(g);
+  postHome(g);
+}
+
 function readSetup(): SetupPayload {
   try {
     const raw = localStorage.getItem(SETUP_KEY);
@@ -883,7 +901,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const human = action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
-    if (mut.phase === 'game-over' && !get().code) noteForm(mut);
+    if (mut.phase === 'game-over' && !get().code) closeLocalGame(mut);
     if (human) botBanter(mut, g.current, action);
     return true;
   },
@@ -931,7 +949,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!r.state) return;
     set({ game: r.state, ceremony: null, gameOverOpen: r.state.phase === 'game-over' });
     get().save();
-    if (r.state.phase === 'game-over') noteForm(r.state);
+    if (r.state.phase === 'game-over') closeLocalGame(r.state);
   },
 
   closeGameOver: () => set({ gameOverOpen: false }),

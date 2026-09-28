@@ -1,7 +1,7 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { AuthError, Desk, HomeError, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -77,6 +77,10 @@ export type ClientMessage =
   | { t: 'close'; rid: number; password: string }
   /** an idea or a bug for the house, from any page */
   | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
+  /** a game played out at home: not its result, the game itself — the
+   *  office replays seed, setup and log and reads the standings off its
+   *  own board (see server/home.ts) */
+  | { t: 'home'; rid: number; seed: number; setup: SetupPayload; actions: GameAction[] }
   /** the desk: my tables, my invitations, my past games */
   | { t: 'desk'; rid?: number }
   /** ask a player by name to be friends — or accept their asking */
@@ -133,7 +137,7 @@ export type ServerMessage =
   | { t: 'table'; code: string; table: Table | null }
   /** the answer to a create or a join */
   | { t: 'seated'; rid: number; table: Table }
-  | { t: 'refused'; rid?: number; error: AuthError | LobbyError | string }
+  | { t: 'refused'; rid?: number; error: AuthError | LobbyError | HomeError | string }
   | { t: 'game'; view: GameView }
   /** the engine turned an action down — its own words, for the shake */
   | { t: 'rejected'; code: string; error: string }

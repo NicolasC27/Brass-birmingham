@@ -13,6 +13,7 @@ import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { Me, TableQuery } from '@/online/table';
 import { normalizeCode } from '@/online/table';
 import { Hall, STALE_MS } from './hall';
+import { readHomeGame } from './home';
 import { DEFAULT_PACE } from './game';
 import type { Pace } from './game';
 import type { Waits } from './queue';
@@ -78,10 +79,11 @@ function drip(b: Bucket, size: number, perSecond: number): boolean {
 }
 /** thirty frames at once, then six a second */
 const WORDS = { size: 30, perSecond: 6 };
-/** the verbs that cost a key derivation or a letter: five a minute a socket, twenty an address */
+/** the verbs that cost a key derivation, a letter or a whole game replayed:
+ *  five a minute a socket, twenty an address */
 const CLAIMS = { size: 5, perSecond: 5 / 60 };
 const CLAIMS_PER_IP = { size: 20, perSecond: 20 / 60 };
-const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'signup' || t === 'forgot' || t === 'reset' || t === 'resend';
+const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'signup' || t === 'forgot' || t === 'reset' || t === 'resend' || t === 'home';
 /** after this many refusals the socket is simply closed */
 const PATIENCE = 60;
 /** ideas and bugs: five an hour an account */
@@ -678,6 +680,20 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         send(c, { t: 'done', rid: m.rid });
         for (const s of socketsOf(who.id)) pushDesk(s);
+        return;
+      }
+      case 'home': {
+        /* the client sends the game, never its result: the office replays
+           seed, setup and log and reads the standings off its own board */
+        const played = readHomeGame(who.id, m);
+        if ('error' in played) {
+          console.log(`home game from ${who.name} turned away: ${played.error}`);
+          send(c, { t: 'refused', rid: m.rid, error: played.error });
+          return;
+        }
+        /* the same log twice — a flaky line, a second tab — is one game */
+        if (store.recordHomeGame(played)) for (const s of socketsOf(who.id)) pushDesk(s);
+        send(c, { t: 'done', rid: m.rid });
         return;
       }
       case 'answer': {
