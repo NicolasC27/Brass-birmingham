@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Link2, Play, Sparkles, UserRound, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Link2, Play, Radio, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, PASSES, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
@@ -231,7 +231,20 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* a link may point at a move: the panel opens there rather than at the end */
   const wanted = useGame((s) => s.reviewAt);
   const setReviewAt = useGame((s) => s.setReviewAt);
-  const [at, setAt] = useState(wanted !== null && wanted >= 0 && wanted <= last ? wanted : last);
+  const [ownAt, setOwnAt] = useState(wanted !== null && wanted >= 0 && wanted <= last ? wanted : last);
+  /* the move on show: mine, or the one the reader in charge is showing while
+     I follow them. A move of my own takes the wheel back at once */
+  const followed = useGame((s) => (s.following && s.shown ? s.shown.at : null));
+  const at = followed === null ? ownAt : Math.max(0, Math.min(last, followed));
+  const setAt = useCallback((next: number | ((k: number) => number)) => {
+    const st = useGame.getState();
+    const from = st.following && st.shown ? Math.max(0, Math.min(last, st.shown.at)) : null;
+    if (st.following) st.followReview(false);
+    setOwnAt((k) => {
+      const base = from ?? k;
+      return typeof next === 'function' ? next(base) : next;
+    });
+  }, [last]);
   /* the roads being explored: from which move, which one is picked (by what it does, so the judge's later figures keep the pick), and the tail played on */
   /* the variation being explored, the way a chess line is: from which move
      it leaves the game, the moves played along it (the reader's picks and
@@ -454,6 +467,36 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const seeBetter = () => {
     if (lesson) setVary({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
   };
+  /* reading together: one seat shows where it is looking, the others follow.
+     Only at a table online, and only from a seat — a spectator may follow,
+     never lead */
+  const online = useGame((s) => s.code !== null);
+  const mySeat = useGame((s) => s.seat);
+  const showing = useGame((s) => s.shown);
+  const sharing = useGame((s) => s.sharing);
+  const following = useGame((s) => s.following);
+  const shareReview = useGame((s) => s.shareReview);
+  const followReview = useGame((s) => s.followReview);
+  const showReviewAt = useGame((s) => s.showReviewAt);
+  /* what I am reading goes out, at most ten times a second while scrubbing */
+  const toldAt = useRef<{ at: number; when: number } | null>(null);
+  useEffect(() => {
+    if (!sharing) return;
+    const last = toldAt.current;
+    if (last && last.at === at) return;
+    const wait = last ? Math.max(0, 120 - (Date.now() - last.when)) : 0;
+    const t = window.setTimeout(() => {
+      toldAt.current = { at, when: Date.now() };
+      showReviewAt(at);
+    }, wait);
+    return () => window.clearTimeout(t);
+  }, [sharing, at, showReviewAt]);
+  /* the panel closes: nobody is left waiting on a reading that has gone */
+  useEffect(() => () => {
+    if (useGame.getState().sharing) useGame.getState().shareReview(false);
+    useGame.getState().followReview(false);
+  }, []);
+
   /* this moment in a link: the game and the move, so a reader arrives on the
      same position with the analysis open */
   const [linked, setLinked] = useState(false);
@@ -563,6 +606,16 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <button type="button" onClick={linkHere} aria-label={t('game.debrief.linkHere')} title={t('game.debrief.linkHere')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
             {linked ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
           </button>
+          {online && mySeat !== null && mySeat >= 0 && (
+            <button type="button" onClick={() => shareReview(!sharing)} aria-pressed={sharing} aria-label={t('game.debrief.share')} title={t('game.debrief.share')} className={cn('btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]', sharing && '!border-brass-400 !text-brass-300')}>
+              <Radio className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {online && showing && !sharing && (
+            <button type="button" onClick={() => followReview(!following)} aria-pressed={following} title={t('game.debrief.followRead', { name: game.players[showing.from]?.name ?? '' })} className={cn('btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[10px]', following && '!border-brass-400 !text-brass-300')}>
+              <Eye className="h-3.5 w-3.5" /> {game.players[showing.from]?.name ?? ''}
+            </button>
+          )}
           {canExplore && !vary && (
             <button type="button" onClick={explore} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               <Compass className="h-3.5 w-3.5" /> {t('game.debrief.explore')}

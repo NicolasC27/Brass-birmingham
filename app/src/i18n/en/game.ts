@@ -715,6 +715,8 @@ const game = {
     chance: 'Chances of winning here: {p}%',
     chanceBand: 'Chances of winning here: {p}% ± {band}',
     spread: 'Read by {passes} continuations, {band} points apart',
+    share: 'Show my reading to the table',
+    followRead: "Follow {name}'s reading",
     linkHere: 'Copy a link to this moment',
     linkCopy: 'Copy this link:',
     stillReading: 'Still reading: the figure will sharpen',

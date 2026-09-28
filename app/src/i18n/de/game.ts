@@ -717,6 +717,8 @@ const game: typeof engame = {
     chance: 'Gewinnchance hier: {p} %',
     chanceBand: 'Gewinnchance hier: {p} % ± {band}',
     spread: 'Von {passes} Fortsetzungen gelesen, {band} Punkte auseinander',
+    share: 'Meine Lesart am Tisch zeigen',
+    followRead: 'Der Lesart von {name} folgen',
     linkHere: 'Link auf diesen Moment kopieren',
     linkCopy: 'Diesen Link kopieren:',
     stillReading: 'Wird noch gelesen: die Zahl wird genauer',
