@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
-import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Link2, Play, Radio, Sparkles, UserRound, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Gauge, Link2, Play, Radio, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
-import { LOSS, bandOf, followToTurn, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import { LOSS, bandOf, followToTurn, judgeOf, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
 import type { Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Grade } from '@/game/review';
 import type { Note } from '@/game/analysisWorker';
@@ -215,7 +215,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const table = useGame((s) => s.code ?? s.local ?? 'x');
   /* one entry for the whole table: the positions are read for every seat at
      once, and only the verdicts belong to a seat */
-  const keptKey = analysisKey(table, game.seed);
+  const judgeId = useGame((s) => s.judgeId);
+  const setJudgeId = useGame((s) => s.setJudgeId);
+  const keptKey = analysisKey(table, game.seed, judgeId);
   const setReview = useGame((s) => s.setReview);
   const flyToRegion = useGame((s) => s.flyToRegion);
   /* every position, once: positions[k] is the table after k moves */
@@ -244,7 +246,10 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         .filter((r) => r.seat !== me && r.chances.some((c) => c !== null)),
     [game.players, positions, seatsRead, me],
   );
-  const settled = useMemo(() => reads.map((r) => !!r && r.passes > 1), [reads]);
+  /* a position is settled once every pass the chosen judge asks for has been
+     through it — the quick judge asks for one, the others for three */
+  const wantPasses = judgeOf(judgeId).passes.length;
+  const settled = useMemo(() => reads.map((r) => !!r && r.passes >= wantPasses), [reads, wantPasses]);
   /* a link may point at a move: the panel opens there rather than at the end */
   const wanted = useGame((s) => s.reviewAt);
   const setReviewAt = useGame((s) => s.setReviewAt);
@@ -304,8 +309,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the reading is asked for, not started twice: the board may have it under
      way already, and a seat never judged has its turns read on their own */
   useEffect(() => {
-    readGame(game, table, me);
-  }, [game, table, me]);
+    readGame(game, table, me, judgeId);
+  }, [game, table, me, judgeId]);
 
   /* the roads of a line, read longer, go to a worker of the panel's own: they
      are asked for as the reader explores, and join the one reading */
@@ -377,7 +382,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     const w = workerRef.current;
     if (!w || asked.current.has(lineKey)) return;
     asked.current.add(lineKey);
-    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey });
+    const read = judgeOf(judgeId);
+    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey, judge: read.judge, passes: read.passes });
   }, [vary, tipMine, roads, lineKey, game, me]);
   const readingLonger = !!vary && tipMine && vary.moves.length > 0 && !roadsRead[lineKey];
   /* what the board shows */
@@ -574,6 +580,19 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMeMine(Number(e.target.value)); setVaryMine(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
             {game.players.map((p, i) => (
               <option key={i} value={i}>{p.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-1 text-cream-100/60" title={t(`game.debrief.judge.${judgeId}Tip`)}>
+          <Gauge className="h-3.5 w-3.5" aria-hidden />
+          <select
+            aria-label={t('game.debrief.judge.label')}
+            value={judgeId}
+            onChange={(e) => setJudgeId(e.target.value as 'quick' | 'long' | 'deep')}
+            className="rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100"
+          >
+            {(['quick', 'long', 'deep'] as const).map((id) => (
+              <option key={id} value={id}>{t(`game.debrief.judge.${id}`)}</option>
             ))}
           </select>
         </label>

@@ -183,10 +183,10 @@ export default function Game() {
     if (!when) return;
     const seat = game.players.findIndex((p) => !p.isBot);
     const at = tableCode ?? localCode ?? 'x';
-    const mark = `${at}:${game.seed}:${seat}:${when}`;
+    const mark = `${at}:${game.seed}:${seat}:${when}:${useGame.getState().judgeId}`;
     if (seat < 0 || warmed.current === mark) return;
     warmed.current = mark;
-    readGame(game, at, seat);
+    readGame(game, at, seat, useGame.getState().judgeId);
   }, [game, tableCode, localCode]);
   /* the reading belongs to the game, not to the page: it stops when the board
      goes, and the panel picks up the one already under way */
