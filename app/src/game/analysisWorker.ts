@@ -21,6 +21,8 @@ export interface Ask {
   judge?: Judge;
   /** the continuations the positions are read by, one pass each */
   passes?: readonly Pass[];
+  /** moves already read by a kept reading: the pass picks up after them */
+  from?: number;
 }
 
 /** one turn's roads, read longer than the pass: the panel asks when a
@@ -65,14 +67,18 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
     yield { kind: 'failed', why: e instanceof Error ? e.message : String(e) };
     return;
   }
-  const turns = positions.map((_, k) => k).filter((k) => k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === ask.me && ask.actions[k].kind !== 'concede');
-  const total = passes.length * (positions.length + turns.length);
+  /* a kept reading of the first `from` moves stands: this pass reads on from
+     there — a position is read forward, never from what came after it */
+  const from = Math.max(0, Math.min(ask.from ?? 0, positions.length - 1));
+  const turns = positions.map((_, k) => k).filter((k) => k >= from && k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === ask.me && ask.actions[k].kind !== 'concede');
+  const first = from === 0 ? 0 : from + 1;
+  const total = passes.length * (positions.length - first + turns.length);
   /* what the passes have said so far, position by position and turn by turn */
   const chances = positions.map<number[]>(() => []);
   const verdicts = new Map<number, Verdict[]>();
   let done = 0;
   for (const pass of passes) {
-    for (let k = 0; k < positions.length; k++) {
+    for (let k = first; k < positions.length; k++) {
       done += 1;
       chances[k].push(deepChance(positions[k], ask.me, judge, pass));
       const read = blendChances(chances[k]);

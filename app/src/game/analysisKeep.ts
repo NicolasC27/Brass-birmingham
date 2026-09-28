@@ -28,6 +28,8 @@ export interface Kept {
   roads: Record<string, Weighed[]>;
   /** how many readings the pass was to make: a part-read game keeps its count */
   total: number;
+  /** how many moves of the game this reading covers */
+  moves: number;
 }
 
 /** what is written: the reading, the judge that wrote it, and the game it
@@ -51,7 +53,10 @@ const trimVerdict = (v: Verdict): Verdict => ({ ...v, roads: trimWeighed(v.roads
 const numbered = <T,>(o: Record<number, T>, f: (x: T) => T): Record<number, T> => Object.fromEntries(Object.entries(o).map(([k, x]) => [k, f(x)]));
 
 /** the reading kept for this game and this seat, if one was written by the
-    judge that stands and by a game of this length */
+    judge that stands — of this game as it stands, or of a shorter stretch of
+    it: a position's reading plays the machine on from there and never looks
+    at what was played after, so the first half of a game keeps its worth
+    when the second is added to it */
 export function readKept(key: string, moves: number): Kept | null {
   let raw: string | null = null;
   try {
@@ -62,15 +67,15 @@ export function readKept(key: string, moves: number): Kept | null {
   if (!raw) return null;
   try {
     const e = JSON.parse(raw) as Entry;
-    if (!e || e.v !== ANALYSIS_VERSION || e.moves !== moves || !e.deep) return null;
-    return { deep: e.deep, verdicts: e.verdicts ?? {}, roads: e.roads ?? {}, total: e.total ?? 0 };
+    if (!e || e.v !== ANALYSIS_VERSION || !e.deep || e.moves > moves) return null;
+    return { deep: e.deep, verdicts: e.verdicts ?? {}, roads: e.roads ?? {}, total: e.total ?? 0, moves: e.moves };
   } catch {
     return null;
   }
 }
 
 /** the reading of this game and this seat, written down */
-export function keepAnalysis(key: string, moves: number, kept: Kept): void {
+export function keepAnalysis(key: string, moves: number, kept: Omit<Kept, 'moves'>): void {
   const entry: Entry = {
     v: ANALYSIS_VERSION,
     moves,

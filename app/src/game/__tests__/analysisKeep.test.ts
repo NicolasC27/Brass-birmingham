@@ -27,7 +27,7 @@ const shelf = new Shelf();
 Object.defineProperty(globalThis, 'localStorage', { value: shelf, configurable: true });
 
 const reading = (c: number) => ({ chance: c, low: c - 0.02, high: c + 0.02, passes: 3 });
-const kept = (): Kept => ({
+const kept = (): Omit<Kept, 'moves'> => ({
   deep: { 0: reading(0.512345), 1: reading(0.4987654) },
   verdicts: { 0: { at: 0, round: 1, era: 'canal', roads: [{ action: { kind: 'pass' }, chance: 0.4123456 }], mine: 0.4123456, best: 0.5123456, loss: 0.1, grade: 'mistake' } },
   roads: { '0|': [{ action: { kind: 'pass' }, chance: 0.333333 }] },
@@ -52,10 +52,14 @@ describe('an analysis kept', () => {
     expect(readKept(analysisKey('abcd', 8, 0), 30)).toBeNull();
   });
 
-  it('is thrown away when the game moved on or the judge changed', () => {
+  it('is thrown away when the judge changed, and serves a longer game', () => {
     const key = analysisKey('abcd', 7, 0);
     keepAnalysis(key, 30, kept());
-    expect(readKept(key, 31)).toBeNull();
+    /* a reading of the first thirty moves still reads the first thirty moves
+       of a game that has since played on */
+    expect(readKept(key, 31)?.moves).toBe(30);
+    /* but never a game shorter than what was read */
+    expect(readKept(key, 29)).toBeNull();
     const raw = JSON.parse(shelf.getItem(key)!);
     expect(raw.v).toBe(ANALYSIS_VERSION);
     shelf.setItem(key, JSON.stringify({ ...raw, v: ANALYSIS_VERSION + 1 }));
