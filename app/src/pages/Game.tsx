@@ -6,8 +6,10 @@ import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react
 import NotebookButton from '@/components/game/Notebook';
 import LessonHalo from '@/components/game/LessonHalo';
 import Debrief from '@/components/game/Debrief';
+import ReviewHand from '@/components/game/ReviewHand';
 import AskGuide from '@/components/game/AskGuide';
 import { readable } from '@/game/analysis';
+import { readAhead, stopAhead } from '@/game/analysisAhead';
 import { ghostFromPlan } from '@/game/ghost';
 import type { PlanGhost } from '@/game/ghost';
 import Ceremony from '@/components/game/Ceremony';
@@ -168,6 +170,25 @@ export default function Game() {
      review's plate and the ledger's drawer keep out of it rather than hide
      under it */
   const analysisPane = analysisLane(debriefOpen && readable(game));
+  /* the judge reads the canal era while the rail one is played, on a thread
+     of its own and in silence: the analysis opened at the end finds half its
+     work done. Nothing of it reaches the board before the game is over. */
+  const warmed = useRef<string | null>(null);
+  useEffect(() => {
+    if (!game || game.phase !== 'action' || game.era !== 'rail') return;
+    const seat = game.players.findIndex((p) => !p.isBot);
+    const at = tableCode ?? localCode ?? 'x';
+    const mark = `${at}:${game.seed}:${seat}`;
+    if (seat < 0 || warmed.current === mark) return;
+    warmed.current = mark;
+    readAhead(game, at, seat);
+  }, [game, tableCode, localCode]);
+  /* the panel does its own reading: the one running ahead stands down */
+  useEffect(() => {
+    if (debriefOpen) stopAhead();
+  }, [debriefOpen]);
+  useEffect(() => () => stopAhead(), []);
+
   /* leaving the review puts the final ledger back up: the board of a game
      played out has nothing more to say on its own */
   const leaveReview = useCallback(() => {
@@ -311,11 +332,21 @@ export default function Game() {
         return;
       }
       if (!game || passTo) return;
-      /* the analysis is a place of its own: Escape leaves it before it
-         touches anything else on the board */
+      /* the analysis is a place of its own: Escape leaves it and nothing more
+         — the board stays where it is, and the key opens it again */
       if (e.key === 'Escape' && (review || debriefOpen)) {
         e.preventDefault();
-        leaveReview();
+        setReview(null);
+        setDebriefOpen(false);
+        return;
+      }
+      if (isKey(e, 'analysis')) {
+        if (readable(game)) {
+          if (debriefOpen) {
+            setReview(null);
+            setDebriefOpen(false);
+          } else setDebriefOpen(true);
+        }
         return;
       }
       if (e.key === 'Escape') {
@@ -687,6 +718,9 @@ export default function Game() {
       </AnimatePresence>
 
       {!surveying && !review && (spectating ? <SpectatorStrip /> : <HandDock />)}
+      {/* reading a game again: the hand the move was chosen from, where the
+          player's own hand sits while the game runs */}
+      {review && <ReviewHand />}
       <ConcedeBanner />
       <TableMood />
       {!surveying && <Notices />}

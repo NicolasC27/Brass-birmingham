@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Link2, Play, Radio, Sparkles, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
-import { LOSS, PASSES, bandOf, followToTurn, gradeOfLoss, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
+import { LOSS, bandOf, followToTurn, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
 import type { Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Grade } from '@/game/review';
 import type { Note } from '@/game/analysisWorker';
@@ -46,12 +46,24 @@ const regionOf = (a: GameAction | undefined): string | null => {
       return null;
   }
 };
-const EMPTY_DEEP: Record<number, Reading> = {};
 const EMPTY_VERDICTS: Record<number, Verdict> = {};
 const EMPTY_ROADS: Record<string, Weighed[]> = {};
 /** the entry no reading belongs to: what the panel holds before the judge has
     said a word, so the reading kept from last time is the one on show */
 const NO_ENTRY = '';
+const EMPTY_SEATS: Record<number, Reading[]> = {};
+
+/** what the panel holds of a reading: the positions for every seat, and per
+ *  seat what its own turns were worth and the roads read longer */
+interface Judged {
+  of: GameState;
+  key: string;
+  seats: Record<number, Reading[]>;
+  verdicts: Record<number, Record<number, Verdict>>;
+  roads: Record<number, Record<string, Weighed[]>>;
+  done: number;
+  total: number;
+}
 const pct = (p: number) => Math.round(p * 100);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
 const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(p * 100);
@@ -61,7 +73,7 @@ const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumF
    drag scrubs, a hover reads the figure. The judge's own doubt is drawn
    too: a ribbon between the lowest and the highest of its passes, and a
    dashed line as long as a stretch has been read by one pass only */
-function Curve({ chances, reads, settled, at, marks, split, label, eras, vary, onPick }: { chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
+function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, onPick }: { chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -170,6 +182,11 @@ function Curve({ chances, reads, settled, at, marks, split, label, eras, vary, o
         <text x={4} y={H - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>
         {split > 0 && <text x={x(split) + 4} y={H - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
         {doubt && <path d={doubt} fill="rgba(231,201,120,0.22)" stroke="none" />}
+        {/* the other seats, faint: the same reading from their chair */}
+        {rivals.map((r) => {
+          const pts = r.chances.map((c, k) => (c === null ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
+          return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
+        })}
         {/* the line: dashed while a stretch is read by one pass only */}
         <path d={line} fill="none" stroke="#E7C978" strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
         {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke="#E7C978" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
@@ -205,7 +222,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const setDebriefOpen = useGame((s) => s.setDebriefOpen);
   /* where this game is kept: the table it was played at, its deal and the seat read */
   const table = useGame((s) => s.code ?? s.local ?? 'x');
-  const keptKey = analysisKey(table, game.seed, me);
+  /* one entry for the whole table: the positions are read for every seat at
+     once, and only the verdicts belong to a seat */
+  const keptKey = analysisKey(table, game.seed);
   const setReview = useGame((s) => s.setReview);
   const flyToRegion = useGame((s) => s.flyToRegion);
   /* every position, once: positions[k] is the table after k moves */
@@ -214,19 +233,29 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the long judge's figures as they land: a chance per position, a verdict
      per turn of the reader's — or, when this game was read before, the whole
      of the last reading, on the board before the first frame */
-  const [judged, setJudged] = useState<{ of: GameState; key: string; deep: Record<number, Reading>; verdicts: Record<number, Verdict>; done: number; total: number }>({ of: game, key: NO_ENTRY, deep: {}, verdicts: {}, done: 0, total: 0 });
-  /* the last reading of this game and this seat, if this browser kept one */
+  const [judged, setJudged] = useState<Judged>({ of: game, key: NO_ENTRY, seats: {}, verdicts: {}, roads: {}, done: 0, total: 0 });
+  /* the last reading of this game, if this browser kept one */
   const kept = useMemo(() => readKept(keptKey, game.actions.length), [keptKey, game]);
   const fresh = judged.of === game && judged.key === keptKey;
-  const deep = fresh ? judged.deep : (kept?.deep ?? EMPTY_DEEP);
-  const verdicts = fresh ? judged.verdicts : (kept?.verdicts ?? EMPTY_VERDICTS);
+  const read = fresh ? judged : kept;
+  const seatsRead = read?.seats ?? EMPTY_SEATS;
+  const verdicts = read?.verdicts[me] ?? EMPTY_VERDICTS;
   /* a kept reading of the whole game is done; one of a first half still has
      the rest to read, and the worker's first note says how much */
   const whole = !!kept && kept.moves >= game.actions.length;
   const progress = fresh ? judged : { done: whole ? (kept?.total ?? 0) : 0, total: whole ? (kept?.total ?? 0) : 0 };
-  const chances = useMemo(() => positions.map((p, k) => deep[k]?.chance ?? winChance(p, me)), [positions, me, deep]);
-  /* the reading at each position, and whether every pass has been through it */
-  const reads = useMemo(() => positions.map((_, k) => deep[k]), [positions, deep]);
+  /* the reading at each position, for the seat on show and for the others */
+  const reads = useMemo(() => positions.map((_, k) => seatsRead[k]?.[me]), [positions, seatsRead, me]);
+  const chances = useMemo(() => positions.map((p, k) => reads[k]?.chance ?? winChance(p, me)), [positions, me, reads]);
+  /* the other seats, drawn faintly behind the line: the same reading, read
+     from their chair — one continuation gives the whole table its chances */
+  const rivals = useMemo(
+    () =>
+      game.players
+        .map((p, i) => ({ seat: i, color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C', chances: positions.map((_, k) => seatsRead[k]?.[i]?.chance ?? null) }))
+        .filter((r) => r.seat !== me && r.chances.some((c) => c !== null)),
+    [game.players, positions, seatsRead, me],
+  );
   const settled = useMemo(() => reads.map((r) => !!r && r.passes > 1), [reads]);
   /* a link may point at a move: the panel opens there rather than at the end */
   const wanted = useGame((s) => s.reviewAt);
@@ -252,8 +281,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      moves the board shows (null: the tip, or the pick) */
   const [vary, setVary] = useState<{ from: number; moves: Followed[]; picked: string | null; step: number | null } | null>(null);
   /* roads read longer, by the line of moves that leads to them */
-  const [deeper, setDeeper] = useState<{ of: GameState; key: string; byKey: Record<string, Weighed[]> }>({ of: game, key: NO_ENTRY, byKey: {} });
-  const roadsRead = deeper.of === game && deeper.key === keptKey ? deeper.byKey : (kept?.roads ?? EMPTY_ROADS);
+  const roadsRead = read?.roads[me] ?? EMPTY_ROADS;
   /* the lines already sent for a longer reading, so each goes once */
   const asked = useRef<Set<string>>(new Set());
   const machine = game.players.find((p) => p.isBot)?.name ?? t('game.debrief.machine');
@@ -262,8 +290,10 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   useEffect(() => {
     /* what a note lands on: the reading under way, or the one kept from last
        time — a road read longer joins a reading that came off the shelf */
-    const whole = !!kept && kept.moves >= game.actions.length;
-    const ground = (j: { of: GameState; key: string }) => (j.of === game && j.key === keptKey ? null : { of: game, key: keptKey, deep: kept?.deep ?? {}, verdicts: kept?.verdicts ?? {}, done: whole ? (kept?.total ?? 0) : 0, total: whole ? (kept?.total ?? 0) : 0 });
+    const before = readKept(keptKey, game.actions.length);
+    const done = before && before.moves >= game.actions.length ? (before.total ?? 0) : 0;
+    const ground = (j: Judged): Judged | null =>
+      j.of === game && j.key === keptKey ? null : { of: game, key: keptKey, seats: before?.seats ?? {}, verdicts: before?.verdicts ?? {}, roads: before?.roads ?? {}, done, total: done };
     let w: Worker | null = null;
     try {
       w = new Worker(new URL('../../game/analysisWorker.ts', import.meta.url), { type: 'module' });
@@ -272,46 +302,27 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     }
     w.onmessage = (e: MessageEvent<Note>) => {
       const n = e.data;
-      if (n.kind === 'roads') {
-        setDeeper((d) => ({ of: game, key: keptKey, byKey: { ...(d.of === game && d.key === keptKey ? d.byKey : (kept?.roads ?? {})), [n.key]: n.roads } }));
-        /* the longer reading of one of the game's own turns is the best
-           reading there is of it: the curve, the list and the grade take it,
-           so the same position never shows two figures */
-        const own = /^(\d+)\|$/.exec(n.key);
-        if (own) {
-          const k = Number(own[1]);
-          const played = game.actions[k];
-          const mine = played ? n.roads.find((r) => sameRoad(r.action) === sameRoad(played)) : undefined;
-          if (mine && n.roads.length) {
-            const best = Math.max(mine.chance, n.roads[0].chance);
-            const loss = Math.max(0, best - mine.chance);
-            setJudged((j) => {
-              const base = ground(j) ?? j;
-              const v = base.verdicts[k];
-              return { ...base, deep: { ...base.deep, [k + 1]: { chance: mine.chance, low: mine.chance, high: mine.chance, passes: PASSES.length } }, verdicts: v ? { ...base.verdicts, [k]: { ...v, roads: n.roads, mine: mine.chance, best, loss, grade: gradeOfLoss(loss) } } : base.verdicts };
-            });
-          }
-        }
-        return;
-      }
       setJudged((j) => {
         const base = ground(j) ?? j;
-        if (n.kind === 'position') return { ...base, deep: { ...base.deep, [n.k]: { chance: n.chance, low: n.low, high: n.high, passes: n.passes } }, done: n.done, total: n.total };
-        if (n.kind === 'turn') return { ...base, verdicts: { ...base.verdicts, [n.verdict.at]: n.verdict }, done: n.done, total: n.total };
+        /* the roads of a line read longer: they rank what else could have been
+           played there, and nothing else — the curve and the grades keep the
+           one scale of the long judge, so no position ever shows two figures */
+        if (n.kind === 'roads') return { ...base, roads: { ...base.roads, [me]: { ...(base.roads[me] ?? {}), [n.key]: n.roads } } };
+        if (n.kind === 'position') return { ...base, seats: { ...base.seats, [n.k]: n.seats }, done: n.done, total: n.total };
+        if (n.kind === 'turn') return { ...base, verdicts: { ...base.verdicts, [me]: { ...(base.verdicts[me] ?? {}), [n.verdict.at]: n.verdict } }, done: n.done, total: n.total };
         if (n.kind === 'done') return { ...base, done: base.total };
         return base;
       });
     };
     /* read before, by this judge, on this game: the figures stand as they were
-       and nothing is thought again — only the roads of a line never explored
-       still go to the worker */
-    const before = readKept(keptKey, game.actions.length);
-    /* nothing kept, or only the first part of the game: the worker reads what
-       is missing and the kept figures stand for the rest */
-    if (!before) w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions, me });
-    else if (before.moves < game.actions.length) w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions, me, from: before.moves });
+       and nothing is thought again. A seat never read yet has its turns judged
+       on their own — the positions are the table's, not one chair's */
+    const ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me };
+    if (!before) w.postMessage(ask);
+    else if (before.moves < game.actions.length) w.postMessage({ ...ask, from: before.moves });
+    else if (!before.verdicts[me]) w.postMessage({ ...ask, turnsOnly: true });
     workerRef.current = w;
-    asked.current = new Set(Object.keys(before?.roads ?? {}));
+    asked.current = new Set(Object.keys(before?.roads[me] ?? {}));
     return () => {
       w?.terminate();
       workerRef.current = null;
@@ -322,8 +333,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      a road read longer since joins it */
   useEffect(() => {
     if (!progress.total || progress.done < progress.total) return;
-    keepAnalysis(keptKey, game.actions.length, { deep, verdicts, roads: roadsRead, total: progress.total });
-  }, [deep, verdicts, roadsRead, progress.done, progress.total, keptKey, game]);
+    keepAnalysis(keptKey, game.actions.length, { seats: seatsRead, verdicts: read?.verdicts ?? {}, roads: read?.roads ?? {}, total: progress.total });
+  }, [seatsRead, read, progress.done, progress.total, keptKey, game]);
   /* the key moments: where the curve fell hardest, whoever moved — the
      reader's own miss or a rival's stroke */
   const keyMoments = useMemo(() => {
@@ -394,10 +405,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     const played = onShow ? onShow.action : game.actions[at - 1];
     const before = positions[at - 1];
     const seat = onShow ? onShow.seat : played && before ? (played.kind === 'concede' ? played.player : before.current) : undefined;
-    setReview({ at, round: state.round, state, label, ...(seat !== undefined ? { seat } : {}) });
+    /* the hand the move was chosen from: the table before it, not after */
+    const held = (vary ? (stepMove ? undefined : tip) : positions[at - 1]) ?? before ?? state;
+    setReview({ at, round: state.round, state, label, reader: me, hand: held.players[me]?.hand, ...(seat !== undefined ? { seat } : {}) });
     const where = regionOf(played);
     if (where) flyToRegion(where);
-  }, [at, vary, shown, stepMove, branch, firstPick, positions, game.actions, setReview, flyToRegion, last, t, me]);
+  }, [at, vary, shown, stepMove, branch, firstPick, positions, tip, game.actions, setReview, flyToRegion, last, t, me]);
   /* the seat's own game in one line: how its moves were graded, and what
      they left on the table all told */
   const tally = useMemo(() => {
@@ -577,7 +590,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
         <div className="mt-2">
-          <Curve chances={chances} reads={reads} settled={settled} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
+          <Curve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVary(null); }} />
           {/* how far the judge has got, a hair under the curve: it keeps its
               room once read, so nothing below it moves */}
           <div className={cn('mt-1 h-[3px] w-full overflow-hidden rounded-full bg-coal-800 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} title={t('game.debrief.reading', { done: progress.done, total: progress.total })}>

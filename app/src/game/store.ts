@@ -835,7 +835,9 @@ export const useGame = create<GameStore>((set, get) => ({
   toggleFollowBots: () => set((s) => ({ followBots: !s.followBots })),
   setSpotlight: (i) => set({ spotlight: i }),
   setLens: (lens) => set((s) => (JSON.stringify(s.lens) === JSON.stringify(lens) ? s : { lens })),
-  setDebriefOpen: (open) => set(open ? { debriefOpen: true } : { debriefOpen: false, review: null }),
+  /* the analysis takes the table: the final ledger stands aside for it, and
+     the board is left as it is when the analysis closes */
+  setDebriefOpen: (open) => set(open ? { debriefOpen: true, gameOverOpen: false } : { debriefOpen: false, review: null }),
   setReview: (review) => set({ review }),
   setNetPeek: (i) => set({ netPeek: i }),
   setCoachStep: (n) => {
@@ -1376,6 +1378,10 @@ export interface Review {
   label?: string;
   /** who played the move on show, for the board to mark it */
   seat?: number;
+  /** the seat the analysis is about: whose hand the review shows */
+  reader?: number;
+  /** that seat's hand as it was before the move on show */
+  hand?: Card[];
   mine?: GameAction;
   better?: GameAction;
 }
