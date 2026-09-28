@@ -7,7 +7,7 @@
 
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
-import { DEEP_JUDGE, LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChances, judgeTurn, weighRoads } from './analysis';
+import { LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChances, judgeTurn, weighRoads } from './analysis';
 import type { Judge, Pass, Reading, Verdict, Weighed } from './analysis';
 import { newGame } from './engine';
 import type { GameState, SetupPayload } from './types';
@@ -37,6 +37,7 @@ export interface AskRoads {
   me: number;
   roads: GameAction[];
   judge?: Judge;
+  passes?: readonly Pass[];
   /** echoed in the answer: the line of moves the roads start from */
   key: string;
 }
@@ -108,7 +109,7 @@ export function readRoads(ask: AskRoads): Note {
     if (!next) return { kind: 'failed', why: 'a move refused on the way' };
     s = next;
   }
-  return { kind: 'roads', key: ask.key, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? DEEP_JUDGE) };
+  return { kind: 'roads', key: ask.key, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? LONG_JUDGE, ask.passes ?? PASSES) };
 }
 
 /* the worker's own mouth, when this module is loaded as one */

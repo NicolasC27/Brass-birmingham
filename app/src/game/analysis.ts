@@ -405,16 +405,21 @@ export function blendVerdicts(list: readonly Verdict[]): Verdict {
   return { ...first, roads, mine, best, loss, grade: gradeOfLoss(loss) };
 }
 
-/** the roads of one turn read again, longer: what the panel asks for the
-    turn being explored. One continuation only — the deep judge plays ten
-    moves on, which steadies it, and the panel waits on this one */
+/** a judge that plays ten moves on instead of five: steadier, and twice the
+    thinking. It weighs nothing the panel shows — every figure a reader sees
+    comes from the long judge, so the curve, the grades and the roads are one
+    scale — and it is kept for the bench, which measures the two against each
+    other (tools/bots/calibrate.ts). */
 export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 4.8, widen: 1, rivals: 0.4 } };
 
-export function weighRoads(before: GameState, me: number, roads: GameAction[], judge: Judge = DEEP_JUDGE): Weighed[] {
+/** the roads of one turn, each played and read by every pass: the same judge,
+    the same passes and the same scale as the curve, so the figure a road
+    shows is the figure the curve would show had it been played */
+export function weighRoads(before: GameState, me: number, roads: GameAction[], judge: Judge = LONG_JUDGE, passes: readonly Pass[] = PASSES): Weighed[] {
   return roads
     .map((action) => {
       const after = applyAction(before, me, action).state;
-      return after ? { action, chance: deepChance(after, me, judge) } : null;
+      return after ? { action, chance: blendChances(passes.map((pass) => deepChance(after, me, judge, pass))).chance } : null;
     })
     .filter((r): r is Weighed => !!r)
     .sort((a, b) => b.chance - a.chance);
@@ -426,7 +431,7 @@ export function weighRoads(before: GameState, me: number, roads: GameAction[], j
 /* while the judge that wrote them is the judge that stands. Bump this */
 /* on any change to a judge, a scale, the passes or the grades.        */
 /* ------------------------------------------------------------------ */
-export const ANALYSIS_VERSION = 4;
+export const ANALYSIS_VERSION = 5;
 
 /** when a game may be read again: once it is played out, and not before. A
     reading of a game still being played is a decision aid, whatever it is
