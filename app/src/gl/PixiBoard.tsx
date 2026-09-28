@@ -258,6 +258,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const suppressClick = useRef(false);
   /* where the pointer sits on the map, for a reading shown to the table */
   const pointerAt = useRef<{ wx: number; wy: number } | null>(null);
+  /* a game being read again: the land goes dark under the tiles */
+  const reading = useGame((s) => s.review !== null);
   useEffect(() => {
     sceneRef.current?.setHideUnbuilt(hideUnbuilt);
   }, [hideUnbuilt]);
@@ -319,6 +321,19 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       if (child === scene.overlay || child === fxLayerRef.current) continue;
       child.filters = sepia ? [sepia] : null;
     }
+    /* reading a game again: the land goes to night so the tiles, the links and
+       the merchants are the only thing left to read on it */
+    if (!sepia) {
+      const night = reading ? new ColorMatrixFilter() : null;
+      if (night) {
+        night.desaturate();
+        night.brightness(0.35, true);
+      }
+      scene.bgCanal.filters = night ? [night] : null;
+      scene.bgRail.filters = night ? [night] : null;
+      const ambiance = scene.world.children[3];
+      if (ambiance && ambiance !== scene.overlay) ambiance.alpha = reading ? 0.25 : 1;
+    }
     /* the camera on the orders: close on them when they sit together, the
        whole table when they are spread out */
     if (preview) {
@@ -368,7 +383,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       for (const child of scene.world.children) child.filters = null;
       sepia?.destroy();
     };
-  }, [preview]);
+  }, [preview, reading]);
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
