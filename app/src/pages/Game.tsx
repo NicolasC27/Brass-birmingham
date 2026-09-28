@@ -28,7 +28,7 @@ import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
-import { narrowRailTop, useHudInsets } from '@/components/game/useHudInsets';
+import { analysisLane, narrowRailTop, useHudInsets } from '@/components/game/useHudInsets';
 import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
@@ -163,9 +163,10 @@ export default function Game() {
   const boardOpts = useBoardOptions();
   const insets = useHudInsets();
 
-  /* the room the analysis panel takes down the right edge: the review's plate
-     and the ledger's drawer keep out of it rather than hide under it */
-  const analysisPane = debriefOpen && game?.phase === 'game-over' ? Math.max(GUIDE_RAIL, guideDock()) : 0;
+  /* the room the analysis panel takes down the right edge: the board, the
+     review's plate and the ledger's drawer keep out of it rather than hide
+     under it */
+  const analysisPane = analysisLane(debriefOpen && game?.phase === 'game-over');
   /* leaving the review puts the final ledger back up: the board of a game
      played out has nothing more to say on its own */
   const leaveReview = useCallback(() => {
@@ -531,7 +532,9 @@ export default function Game() {
   /* read up to: the drawer's last closing, or the reader's own last move */
   const lastMine = game.ledger.reduce((acc, e, i) => (e.player === mySeat ? i + 1 : acc), 0);
   /* the guide's lane down the right edge: a rail when folded (key G) */
-  const dock = tutorial && wide ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0;
+  /* the board's own lane: beside the guide while a lesson runs, and beside
+     the analysis while a game is read again — never under either */
+  const dock = analysisPane || (tutorial && wide ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
   const seenIdx = Math.max(ledgerRead, lastMine);
   const unread = game.ledger.slice(seenIdx).filter((e) => e.player !== undefined && e.player !== mySeat).length;
 
