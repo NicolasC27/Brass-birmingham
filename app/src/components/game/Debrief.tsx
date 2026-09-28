@@ -13,6 +13,7 @@ import { PLAYER_COLORS } from '@/game/data';
 import { useLang, useT } from '@/i18n';
 import { forkLocalGame } from '@/game/local';
 import { analysisKey, keepAnalysis, readKept } from '@/game/analysisKeep';
+import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
 import { GUIDE_RAIL, guideDock } from './guideKeys';
 import { cn } from '@/lib/utils';
 
@@ -381,6 +382,9 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
        tenth of anything, and a total past a hundred per cent reads broken */
     return { by, lost: Math.round((100 * lost) / list.length) };
   }, [verdicts]);
+  /* the plan the seat played, as the strategy guide names them: counted from
+     the moves alone, and read against what each plan asks for */
+  const plan = useMemo(() => planOf(game, me), [game, me]);
   /* the moves that cost more than a good one: what the arrows jump between */
   const misses = useMemo(() => Object.values(verdicts).filter((v) => v.loss > LOSS.good).map((v) => v.at + 1).sort((a, b) => a - b), [verdicts]);
   const nextMiss = useCallback((dir: 1 | -1): number | null => (dir > 0 ? misses.find((k) => k > at) : [...misses].reverse().find((k) => k < at)) ?? null, [misses, at]);
@@ -546,6 +550,36 @@ export default function Debrief({ game, me: opened }: { game: GameState; me: num
             ))}
             {tally.lost > 0 && <span className="font-mono text-[10px] text-rust-400/80">{t('game.debrief.tally.lost', { p: tally.lost })}</span>}
           </div>
+        </div>
+      )}
+
+      {/* the plan the moves add up to, against the guide's five */}
+      {!vary && plan.deeds.actions > 0 && (
+        <div className="shrink-0">
+          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.plan.label')}</p>
+          {plan.best.score < PLAN_FAINT ? (
+            <p className="mt-1 font-serif text-[12px] italic leading-snug text-cream-100/60">{t('game.debrief.plan.faint')}</p>
+          ) : (
+            <>
+              <p className="mt-1 flex items-baseline gap-2">
+                <span className="font-fell text-[13px] text-brass-300">{PLAN_NAMES[plan.best.id]}</span>
+                <span className="font-mono text-[10.5px] text-cream-100/60">{t('game.debrief.plan.score', { p: Math.round(plan.best.score * 100) })}</span>
+              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {plan.best.goals.map((g) => {
+                  const met = g.done >= g.target;
+                  return (
+                    <span key={g.id} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px]', met ? 'border-brass-500/60 text-brass-300' : 'border-brass-700/40 text-cream-100/45')}>
+                      <span className="font-mono">{g.done}/{g.target}</span> {t(`game.debrief.plan.goals.${g.id}`)}
+                    </span>
+                  );
+                })}
+              </div>
+            </>
+          )}
+          <p className="mt-1 font-mono text-[10px] text-cream-100/45">
+            {plan.tips.map((tip) => t(`game.debrief.plan.tips.${tip.id}`, { value: tip.id === 'perAction' ? fine(tip.value / 100, lang) : tip.value, want: tip.want, n: tip.value })).join(' · ')}
+          </p>
         </div>
       )}
 
