@@ -790,6 +790,8 @@ const game = {
     keyMoments: 'Key moments',
     roads: 'Had you played…',
     explore: 'Explore the other roads',
+    exploreShort: 'Explore',
+    backShort: 'Back',
     road: '{p}%',
     played: 'played',
     branch: 'Branch: {move}',

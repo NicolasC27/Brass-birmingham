@@ -792,6 +792,8 @@ const game: typeof engame = {
     keyMoments: 'Momentos clave',
     roads: 'Si hubieras jugado…',
     explore: 'Explorar las otras rutas',
+    exploreShort: 'Explorar',
+    backShort: 'Volver',
     road: '{p} %',
     played: 'jugada',
     branch: 'Rama: {move}',
