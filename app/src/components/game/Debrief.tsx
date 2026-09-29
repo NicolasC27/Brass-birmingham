@@ -10,9 +10,10 @@ import type { Grade } from '@/game/review';
 import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
-import { PLAYER_COLORS } from '@/game/data';
+import { LINKS, MERCHANT_BY_ID, PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { useLang, useT } from '@/i18n';
 import { forkLocalGame } from '@/game/local';
+import { ledgerText } from '@/game/ledgerText';
 import { shareFragment } from '@/game/share';
 import { analysisKey, isWhole, readKept } from '@/game/analysisKeep';
 import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/analysisRun';
@@ -518,6 +519,37 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     if (!better || sameRoad(better.action) === sameRoad(game.actions[at - 1])) return null;
     return { v, better: better.action, delta: Math.round(v.loss * 100) };
   }, [at, verdicts, game.actions]);
+  /* what a move does, in the game's own words: the ledger lines it would
+     have written from that position — the tile, its costs and where they
+     came from, what flipped, what was earned */
+  const linesOf = useCallback((before: GameState | undefined, seat: number, action: GameAction): string[] => {
+    if (!before) return [];
+    const after = applyAction(before, seat, action).state;
+    if (!after) return [];
+    const lines = after.ledger.slice(before.ledger.length).filter((e) => e.verb !== 'system').map((e) => ledgerText(e, t));
+    /* a link's ledger line names its ends and no more: what it reaches and
+       whom it serves is read off the table */
+    if (action.kind === 'network') {
+      for (const id of [action.link, action.second].filter((x): x is string => !!x)) {
+        const def = LINKS.find((l) => l.id === id);
+        if (!def) continue;
+        for (const end of [def.a, def.b]) {
+          const merchant = MERCHANT_BY_ID[end];
+          if (merchant) {
+            lines.push(t('game.debrief.reach', { merchant: merchant.name }));
+            continue;
+          }
+          const town = TOWN_BY_ID[end];
+          if (!town) continue;
+          const n = town.slots.filter((_, i) => { const tile = before.tiles[`${end}:${i}`]; return tile && tile.owner === seat && !tile.flipped; }).length;
+          if (n > 0) lines.push(t('game.debrief.serves', { n, town: town.name }));
+        }
+      }
+    }
+    return lines;
+  }, [t]);
+  const lessonLines = useMemo(() => (lesson ? linesOf(positions[at - 1], me, lesson.better) : []), [lesson, linesOf, positions, at, me]);
+  const branchLines = useMemo(() => (branch && tip ? linesOf(tip, me, branch.action) : []), [branch, tip, linesOf, me]);
   const seeBetter = () => {
     if (lesson) setVaryMine({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
   };
@@ -820,9 +852,14 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             </ul>
           )}
           {branch && (
-            <p className="mt-1.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
-              {t(`game.guide.suggest.why.${whyKey(branch.action)}`, { name: machine })}
-            </p>
+            <div className="mt-1.5">
+              {branchLines.length > 0 && (
+                <ul className="flex flex-col gap-0.5 font-sans text-[11px] leading-snug text-ink-900/85">
+                  {branchLines.map((line, i) => <li key={i}>{line}</li>)}
+                </ul>
+              )}
+              <p className="mt-0.5 font-serif text-[11.5px] italic leading-snug text-ink-900/65">{t(`game.guide.suggest.why.${whyKey(branch.action)}`, { name: machine })}</p>
+            </div>
           )}
           {readingLonger && <p className="mt-1 font-mono text-[9.5px] text-ink-900/50">{t('game.debrief.deeper')}</p>}
           {(branch || (vary.moves.length > 0 && tip?.phase !== 'game-over')) && (
@@ -905,7 +942,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                         {' · '}
                         {t('game.debrief.betterWas', { move: describeAction(lesson.better) })}
                       </p>
-                      <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
+                      {lessonLines.length > 0 && (
+                        <ul className="mt-1 flex flex-col gap-0.5 font-sans text-[11px] leading-snug text-ink-900/85">
+                          {lessonLines.map((line, i) => <li key={i}>{line}</li>)}
+                        </ul>
+                      )}
+                      <p className="mt-0.5 font-serif text-[11.5px] italic leading-snug text-ink-900/65">
                         {t('game.debrief.whyGap', { name: machine, p: lesson.delta })} {t(`game.guide.suggest.why.${whyKey(lesson.better)}`, { name: machine })}
                       </p>
                       {/* the miss in the game's coin: points, income and cash a few moves

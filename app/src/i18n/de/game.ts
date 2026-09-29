@@ -842,6 +842,8 @@ const game: typeof engame = {
       note: 'Der Richter ist der der Maschinen: er liest weiter, als sie spielen, und findet daher selbst bei den Bots Fehler. Seine Zahlen sind auf wenige Punkte verlässlich; die Reihenfolge der Wege mehr als die Einheiten.',
     },
     standings: { title: 'Wer am besten spielte', seat: 'Platz', vp: 'SP', lost: 'Verlust / Zug', misses: 'Fehler', missesTip: 'Ungenauigkeiten, Fehler und grobe Fehler zusammen' },
+    reach: 'Erreicht den Händler von {merchant}.',
+    serves: '{n} deiner Werke in {town} [n|gewinnt|gewinnen] eine Verbindung.',
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',
