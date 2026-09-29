@@ -16,6 +16,8 @@ import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { dictOf, getLang, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { listProgress, recurring } from '@/game/progress';
+import type { Motif } from '@/game/progress';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -472,6 +474,18 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   }, [dock, said.length, readPast, game?.ledgerSeq]);
   /* a lesson the reader went back to: held until they read forward again */
   const [review, setReview] = useState<number | null>(null);
+  /* the sheet of progress points at a lesson: the motif that came back most
+     over the last games, and the step of the guide that teaches against it */
+  const [adviceSeen, setAdviceSeen] = useState(false);
+  /* outside the guided game the lesson has no page to open: it unfolds in the plate */
+  const [adviceOpen, setAdviceOpen] = useState(false);
+  const sheetAdvice = useMemo(() => {
+    const back = recurring(listProgress(), 10)[0];
+    if (!back) return null;
+    const LESSON: Record<Motif, string> = { singleRail: 'link', buildOverLink: 'link', linkOverBuild: 'works', loanOverBuild: 'loan', sellLate: 'sell', buildOverDevelop: 'develop', developOverBuild: 'develop', wrongTown: 'works', wrongIndustry: 'works', passed: 'tips' };
+    const index = STEPS.findIndex((x) => x.id === LESSON[back.motif]);
+    return index >= 0 ? { motif: back.motif, times: back.times, index } : null;
+  }, []);
   /* the lesson whose deed was already done when it came up: it stays a page
      to read on from, even if the reader undoes the deed meanwhile */
   const [arrived, setArrived] = useState<{ at: number; done: boolean }>({ at: -1, done: false });
@@ -941,6 +955,19 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
                         )}
                       </div>
                       <div className={cn('mt-1', !dock && 'min-h-0 flex-1 overflow-y-auto pr-1')}>
+                        {sheetAdvice && !adviceSeen && review === null && (
+                          <div className="mb-2 rounded-md border border-brass-500/50 bg-brass-500/10 px-2.5 py-1.5">
+                            <p className="font-serif text-[12.5px] leading-snug text-ink-900/85">
+                              {t('game.guide.advice.lede', { n: sheetAdvice.times })} <span className="font-semibold">{t(`game.debrief.motifs.${sheetAdvice.motif}`)}</span>
+                            </p>
+                            <div className="mt-1 flex items-center gap-2">
+                              <button type="button" onClick={() => { setReview(sheetAdvice.index); setAdviceSeen(true); }} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                                {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.title`, stepVars()) })}
+                              </button>
+                              <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
+                            </div>
+                          </div>
+                        )}
                         {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(due!.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
@@ -1035,6 +1062,36 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
         )}
 
         {/* the machine's reasons: why a player would have made that move */}
+        {/* the sheet of progress points at a lesson: at a plain table the
+            lesson unfolds here, since the guided pages are not on */}
+        {!tutorial && sheetAdvice && !adviceSeen && (
+          <div className="paper pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-3 shadow-e3">
+            <div className="flex items-start gap-2">
+              <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
+              <div className="min-w-0 flex-1">
+                <p className="font-serif text-[12.5px] leading-snug text-ink-900/85">
+                  {t('game.guide.advice.lede', { n: sheetAdvice.times })} <span className="font-semibold">{t(`game.debrief.motifs.${sheetAdvice.motif}`)}</span>
+                </p>
+                {adviceOpen ? (
+                  <div className="mt-1.5">
+                    <p className="font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.title`, stepVars())}</p>
+                    <Paragraphs text={t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.body`, stepVars())} />
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-center gap-2">
+                    <button type="button" onClick={() => setAdviceOpen(true)} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                      {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.title`, stepVars()) })}
+                    </button>
+                    <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
+                  </div>
+                )}
+              </div>
+              <button type="button" onClick={() => setAdviceSeen(true)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
         {showBot && bot && (
           <motion.aside key={`bot-${bot.id}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.botAria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
             <div className={cn('flex items-start gap-2', !dock && 'min-h-0 flex-1')}>
