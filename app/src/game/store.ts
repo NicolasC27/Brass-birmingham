@@ -33,6 +33,9 @@ import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
 import { readShared, sharedMoment } from './share';
+import { coachMove } from './coach';
+import type { Coached } from './coach';
+import { aidOn } from '@/components/game/boardOptions';
 import type { JudgeId } from './analysis';
 
 export interface Shake {
@@ -248,6 +251,9 @@ interface GameStore {
   setJudgeId: (id: JudgeId) => void;
   /** the move a shared link pointed at, for the analysis to open on; null once read */
   reviewAt: number | null;
+  /** the last move the coach judged, at a home table with the aid on */
+  coached: Coached | null;
+  setCoached: (c: Coached | null) => void;
   setReviewAt: (at: number | null) => void;
   /* ---- reading a game again, together: one seat shows, the others follow ---- */
   /** what a seat of this table is showing in its analysis: the move, the
@@ -930,6 +936,16 @@ export const useGame = create<GameStore>((set, get) => ({
     get().save();
     if (mut.phase === 'game-over' && !get().code) noteForm(mut);
     if (human) botBanter(mut, g.current, action);
+    /* the coach, behind the aid and at home only: the move just made, read
+       against the roads that were open — never a move still to come */
+    if (human && aidOn(g.assist, false) && action.kind !== 'pass') {
+      set({ coached: null });
+      coachMove(g, g.current, action, (c) => {
+        /* the same game, the same move: the machines may have played on meanwhile */
+        const now = get().game;
+        if (c && now && now.seed === g.seed && now.actions[c.at] === action) set({ coached: c });
+      });
+    }
     return true;
   },
 
@@ -1000,6 +1016,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   reviewAt: null,
   setReviewAt: (at) => set({ reviewAt: at }),
+  coached: null,
+  setCoached: (c) => set({ coached: c }),
   shown: null,
   sharing: false,
   following: false,

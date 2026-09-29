@@ -45,7 +45,7 @@ import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnB
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { listLocalGames, openLocalGame } from '@/game/local';
-import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame } from '@/game/store';
+import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame, describeAction } from '@/game/store';
 import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
 import { useStranger } from '@/online/session';
@@ -743,6 +743,7 @@ export default function Game() {
       <ConcedeBanner />
       <TableMood />
       {!surveying && <Notices />}
+      {!surveying && !review && <CoachChip />}
       <Gazette />
       <PreparedPanel />
       <MarkWarning />
@@ -883,6 +884,31 @@ export default function Game() {
           being read, the analysis has it */}
       {!analysisPane && <Guide dock={dock} />}
       {tutorial && <LessonHalo />}
+    </div>
+  );
+}
+
+
+/** the coach's word on the move just played, behind the beginner's aid at a
+    home table: what it cost in chance, and what read better — after the
+    move, never before */
+function CoachChip() {
+  const t = useT();
+  const coached = useGame((s) => s.coached);
+  const setCoached = useGame((s) => s.setCoached);
+  const insets = useHudInsets();
+  if (!coached) return null;
+  const v = coached.verdict;
+  const better = v.roads[0];
+  const lost = Math.round(v.loss * 100);
+  const fine = v.grade === 'top' || v.grade === 'good';
+  return (
+    <div className="pointer-events-auto fixed left-1/2 z-[63] flex -translate-x-1/2 items-center gap-2 rounded-md border bg-coal-950/95 px-3 py-1.5 shadow-e3" style={{ top: insets.top + 44, borderColor: fine ? 'rgba(201,164,92,.5)' : 'rgba(180,71,46,.6)' }} role="status">
+      <span className={cn('font-fell text-[10px] uppercase tracking-[0.18em]', fine ? 'text-brass-300' : v.grade === 'blunder' ? 'text-rust-400' : 'text-copper-500')}>{t(`game.debrief.quality.${v.grade}`)}</span>
+      {lost > 0 && <span className="font-mono text-[11px] text-cream-100/80">−{lost} %</span>}
+      {!fine && better && <span className="font-sans text-[11.5px] text-cream-100/85">{t('game.coachChip.better', { move: describeAction(better.action) })}</span>}
+      {fine && <span className="font-sans text-[11.5px] text-cream-100/70">{t('game.coachChip.fine')}</span>}
+      <button type="button" onClick={() => setCoached(null)} aria-label={t('game.coachChip.close')} className="ml-1 text-cream-100/50 hover:text-cream-100">×</button>
     </div>
   );
 }

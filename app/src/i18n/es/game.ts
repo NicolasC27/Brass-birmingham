@@ -714,6 +714,7 @@ const game: typeof engame = {
     pending: 'Las losetas que nunca volteaste valían {vp} y no contaron nada.',
     continue: 'Continuar',
   },
+  coachChip: { better: 'Mejor: {move}', fine: 'El juez no lo habría hecho mejor', close: 'Cerrar' },
   debrief: {
     tabs: { moves: 'Jugadas', review: 'Balance' },
     lit: 'Tablero iluminado durante la revisión',
@@ -859,6 +860,7 @@ const game: typeof engame = {
       wrongTown: 'La ficha correcta en el lugar equivocado',
       wrongIndustry: 'La industria equivocada en el lugar correcto',
     },
+    report: 'Copiar el enlace del informe',
     quality: { top: 'precisa', good: 'buena', inaccuracy: 'imprecisión', mistake: 'error', blunder: 'pifia' },
     close: 'Cerrar el balance',
     open: 'El balance',
@@ -869,6 +871,7 @@ const game: typeof engame = {
     banner: 'Revisión · ronda {round} — el tablero tal como estaba antes de tu jugada',
   },
   guide: {
+    advice: { lede: 'Tus últimas partidas, {n} veces:', open: 'Releer «{lesson}»', later: 'Más tarde' },
     rail: { fold: 'Plegar la guía (G)', unfold: 'Desplegar la guía (G)', aria: 'La guía, plegada' },
     aria: 'La guía',
     botAria: 'Por qué la máquina ha jugado eso',

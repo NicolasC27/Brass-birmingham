@@ -714,6 +714,7 @@ const game: typeof engame = {
     pending: 'Nie umgedrehte Plättchen waren {vp} wert und haben nichts gezählt.',
     continue: 'Weiter',
   },
+  coachChip: { better: 'Besser: {move}', fine: 'Der Richter hätte es nicht besser gemacht', close: 'Schließen' },
   debrief: {
     tabs: { moves: 'Züge', review: 'Bilanz' },
     lit: 'Plan hell während der Rückschau',
@@ -859,6 +860,7 @@ const game: typeof engame = {
       wrongTown: 'Das richtige Plättchen am falschen Ort',
       wrongIndustry: 'Die falsche Industrie am richtigen Ort',
     },
+    report: 'Link zum Bericht kopieren',
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',
@@ -869,6 +871,7 @@ const game: typeof engame = {
     banner: 'Rückschau · Runde {round} — der Plan, wie er vor deinem Zug stand',
   },
   guide: {
+    advice: { lede: 'Deine letzten Partien, {n}-mal:', open: '„{lesson}“ noch einmal lesen', later: 'Später' },
     rail: { fold: 'Den Guide einklappen (G)', unfold: 'Den Guide ausklappen (G)', aria: 'Der Guide, eingeklappt' },
     aria: 'Das Tutorial',
     botAria: 'Warum die Maschine das gespielt hat',

@@ -59,8 +59,21 @@ export interface AskCost {
   key: string;
 }
 
+/** one move just played, judged on its own: the coach's ask during a game */
+export interface AskOne {
+  setup: SetupPayload;
+  seed: number;
+  /** the moves up to the position before the one judged */
+  actions: GameAction[];
+  me: number;
+  played: GameAction;
+  judge?: Judge;
+  key: string;
+}
+
 export type Note =
   | { kind: 'position'; k: number; seats: Reading[]; done: number; total: number }
+  | { kind: 'one'; key: string; verdict: Verdict | null }
   | { kind: 'cost'; key: string; cost: Cost | null }
   | { kind: 'roads'; key: string; roads: Weighed[] }
   | { kind: 'turn'; seat: number; verdict: Verdict; done: number; total: number }
@@ -158,10 +171,23 @@ export function readCost(ask: AskCost): Note {
   return { kind: 'cost', key: ask.key, cost: costOf(s, ask.me, ask.played, ask.better, ask.judge ?? LONG_JUDGE) };
 }
 
+/** the position after the moves given, then the move played there, judged once over six roads */
+export function readOne(ask: AskOne): Note {
+  let s = newGame(ask.setup, ask.seed);
+  for (const a of ask.actions) {
+    const r = applyAction(s, s.current, a);
+    const next = r.state ?? (a.kind === 'concede' ? applyAction(s, a.player, a).state : null);
+    if (!next) return { kind: 'failed', why: 'a move refused on the way' };
+    s = next;
+  }
+  return { kind: 'one', key: ask.key, verdict: judgeTurn(s, ask.me, ask.played, ask.judge ?? LONG_JUDGE, undefined, 6) };
+}
+
 /* the worker's own mouth, when this module is loaded as one */
 if (typeof self !== 'undefined' && typeof (self as unknown as { postMessage?: unknown }).postMessage === 'function' && typeof window === 'undefined') {
-  self.onmessage = (e: MessageEvent<Ask | AskRoads | AskCost>) => {
-    if ('better' in e.data) self.postMessage(readCost(e.data));
+  self.onmessage = (e: MessageEvent<Ask | AskRoads | AskCost | AskOne>) => {
+    if ('played' in e.data && !('better' in e.data)) self.postMessage(readOne(e.data));
+    else if ('better' in e.data) self.postMessage(readCost(e.data));
     else if ('roads' in e.data) self.postMessage(readRoads(e.data));
     else for (const note of analyse(e.data)) self.postMessage(note);
   };

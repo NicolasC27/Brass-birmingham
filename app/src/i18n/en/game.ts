@@ -712,6 +712,7 @@ const game = {
     pending: 'Tiles you never flipped were worth {vp} and scored nothing.',
     continue: 'Continue',
   },
+  coachChip: { better: 'Better: {move}', fine: 'The judge would not have done better', close: 'Close' },
   debrief: {
     tabs: { moves: 'Moves', review: 'Review' },
     lit: 'Board lit during the review',
@@ -857,6 +858,7 @@ const game = {
       wrongTown: 'The right tile in the wrong place',
       wrongIndustry: 'The wrong industry in the right place',
     },
+    report: 'Copy the report’s link',
     quality: { top: 'best', good: 'good', inaccuracy: 'inaccuracy', mistake: 'mistake', blunder: 'blunder' },
     close: 'Close the debrief',
     open: 'The debrief',
@@ -867,6 +869,7 @@ const game = {
     banner: 'Review · round {round} — the board as it stood before your move',
   },
   guide: {
+    advice: { lede: 'Your last games, {n} times:', open: 'Read “{lesson}” again', later: 'Later' },
     rail: { fold: 'Fold the guide (G)', unfold: 'Unfold the guide (G)', aria: 'The guide, folded' },
     aria: 'The guide',
     botAria: 'Why the machine played that',

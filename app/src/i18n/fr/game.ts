@@ -714,6 +714,7 @@ const fr: typeof engame = {
     pending: 'Les tuiles jamais retournées valaient {vp} et n’ont rien marqué.',
     continue: 'Continuer',
   },
+  coachChip: { better: 'Mieux : {move}', fine: 'Le juge n’aurait pas fait mieux', close: 'Fermer' },
   debrief: {
     tabs: { moves: 'Coups', review: 'Bilan' },
     lit: 'Plateau en clair pendant la revue',
@@ -859,6 +860,7 @@ const fr: typeof engame = {
       wrongTown: 'La bonne tuile au mauvais endroit',
       wrongIndustry: 'La mauvaise industrie au bon endroit',
     },
+    report: 'Copier le lien du rapport',
     quality: { top: 'juste', good: 'bon', inaccuracy: 'imprécision', mistake: 'erreur', blunder: 'bévue' },
     close: 'Fermer le débrief',
     open: 'Le débrief',
@@ -869,6 +871,7 @@ const fr: typeof engame = {
     banner: 'Revue · manche {round} — le plateau tel qu’il était avant votre coup',
   },
   guide: {
+    advice: { lede: 'Vos dernières parties, {n} fois :', open: 'Relire « {lesson} »', later: 'Plus tard' },
     rail: { fold: 'Replier le guide (G)', unfold: 'Déplier le guide (G)', aria: 'Le guide, replié' },
     aria: 'Le guide',
     botAria: 'Pourquoi la machine a joué cela',
