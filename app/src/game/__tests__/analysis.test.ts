@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
-import { PASSES, SHORT_SCALE, bandOf, blendChances, blendVerdicts, deepChance, gradeOfLoss, judgeTurn, positionsOf, qualityOf, readChance, roadsFrom, sameRoad, winChance } from '../analysis';
+import { PASSES, SHORT_SCALE, bandOf, blendChances, blendVerdicts, deepChance, gradeOfLoss, judgeTurn, positionsOf, readChance, roadsFrom, sameRoad, winChance } from '../analysis';
 import { newGame } from '../engine';
 import type { SetupPayload } from '../types';
 
@@ -41,7 +41,6 @@ describe('the analysis', () => {
     /* not my turn: no roads */
     const theirs = positions.findIndex((p) => p.current !== me && p.phase === 'action');
     expect(roadsFrom(positions[theirs], me)).toEqual([]);
-    expect([qualityOf(0), qualityOf(1), qualityOf(3), qualityOf(10), qualityOf(30)]).toEqual(['best', 'good', 'inaccuracy', 'mistake', 'blunder']);
   });
 });
 

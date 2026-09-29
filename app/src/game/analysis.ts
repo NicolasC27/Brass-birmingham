@@ -85,15 +85,6 @@ export function winChance(s: GameState, me: number): number {
   return chanceOf(edgeOf(s, me), roundsLeft(s), s.players.length, SHORT_SCALE);
 }
 
-export type Quality = 'best' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
-/** a move graded on what it left on the table against the machine's best */
-export function qualityOf(gap: number): Quality {
-  if (gap <= 0.5) return 'best';
-  if (gap < 2) return 'good';
-  if (gap < 6) return 'inaccuracy';
-  if (gap < 15) return 'mistake';
-  return 'blunder';
-}
 
 export interface Road {
   action: GameAction;
