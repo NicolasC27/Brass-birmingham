@@ -64,7 +64,7 @@ const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumF
    drag scrubs, a hover reads the figure. The judge's own doubt is drawn
    too: a ribbon between the lowest and the highest of its passes, and a
    dashed line as long as a stretch has been read by one pass only */
-function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, onPick }: { chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[] } | null; onPick: (k: number) => void }) {
+function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, onPick }: { chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -189,6 +189,9 @@ function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras,
         {/* the variation, dashed, leaving the game where it does */}
         {vary && vary.chances.length > 1 && (
           <g pointerEvents="none">
+            {vary.seats.map((r) => (
+              <path key={r.seat} d={r.chances.map((c, i) => `${i === 0 ? 'M' : 'L'}${x(vary.from + i).toFixed(1)},${y(c).toFixed(1)}`).join(' ')} fill="none" stroke={r.color} strokeOpacity={0.6} strokeWidth={1.2} strokeDasharray="3 3" strokeLinejoin="round" />
+            ))}
             <path d={vary.chances.map((c, i) => `${i === 0 ? 'M' : 'L'}${x(vary.from + i).toFixed(1)},${y(c).toFixed(1)}`).join(' ')} fill="none" stroke="#F5EBD7" strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" />
             <circle cx={x(vary.from + vary.chances.length - 1)} cy={y(vary.chances[vary.chances.length - 1])} r={3} fill="#F5EBD7" stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
           </g>
@@ -402,12 +405,16 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const shown = vary ? (stepMove?.after ?? branch?.after ?? tip) : positions[at];
   const firstPick = vary?.moves.find((m) => m.pick)?.action ?? branch?.action;
   /* the variation's own chances, for the curve: from the ground, move by move, the pick at the end */
+  /* … and the other seats' along the same line: a move of mine moves
+     everyone's chances, so their faint lines branch off with mine */
   const varyChances = useMemo(() => {
     if (!vary) return null;
     const line = [chances[vary.from - 1] ?? 0.5, ...vary.moves.map((m) => winChance(m.after, me))];
     if (branch && vary.step === null) line.push(branch.chance);
-    return { from: vary.from - 1, chances: line };
-  }, [vary, chances, branch, me]);
+    const tail = [...vary.moves.map((m) => m.after), ...(branch && vary.step === null ? [branch.after] : [])];
+    const seats = rivals.map((r) => ({ seat: r.seat, color: r.color, chances: [r.chances[vary.from - 1] ?? winChance(positions[vary.from - 1], r.seat), ...tail.map((st) => winChance(st, r.seat))] }));
+    return { from: vary.from - 1, chances: line, seats };
+  }, [vary, chances, branch, me, rivals, positions]);
 
   /* the board follows: the table after move `at`, or the variation's move on show */
   useEffect(() => {
