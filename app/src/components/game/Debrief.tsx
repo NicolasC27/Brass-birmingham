@@ -13,7 +13,7 @@ import { PLAYER_COLORS } from '@/game/data';
 import { useLang, useT } from '@/i18n';
 import { forkLocalGame } from '@/game/local';
 import { shareFragment } from '@/game/share';
-import { analysisKey, readKept } from '@/game/analysisKeep';
+import { analysisKey, isWhole, readKept } from '@/game/analysisKeep';
 import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/analysisRun';
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
 import type { PlanId } from '@/game/plan';
@@ -235,7 +235,10 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const read = snap.key === keptKey && snap.moves === game.actions.length ? snap : kept;
   const seatsRead = read?.seats ?? EMPTY_SEATS;
   const verdicts = read?.verdicts[me] ?? EMPTY_VERDICTS;
-  const progress = snap.key === keptKey && snap.running ? { done: snap.done, total: snap.total } : { done: 1, total: 1 };
+  /* a reading under way for this key: its own figures. Another key's reading,
+     or none: done only if the shelf holds this game whole — a judge just
+     changed has its reading still to start, and the bar says so */
+  const progress = snap.key === keptKey ? (snap.running ? { done: snap.done, total: snap.total } : { done: 1, total: 1 }) : isWhole(kept, game.actions.length) ? { done: 1, total: 1 } : { done: 0, total: 1 };
   /* the reading at each position, for the seat on show and for the others */
   const reads = useMemo(() => positions.map((_, k) => seatsRead[k]?.[me]), [positions, seatsRead, me]);
   const chances = useMemo(() => positions.map((p, k) => reads[k]?.chance ?? winChance(p, me)), [positions, me, reads]);
