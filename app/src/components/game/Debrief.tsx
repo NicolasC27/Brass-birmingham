@@ -572,7 +572,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     if (!vary) return;
     setVaryMine({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
-  const close = () => setDebriefOpen(false);
+  /* leaving the analysis is leaving the game: back to the desk, the table
+     itself has nothing more to show once it has been read */
+  const close = () => {
+    setDebriefOpen(false);
+    navigate('/desk');
+  };
   const plateLabel = useGame((s) => s.review?.label ?? '');
   /* the panel's two pages under the curve: the moves, or the seat's review;
      a line being explored takes the room above the moves */
