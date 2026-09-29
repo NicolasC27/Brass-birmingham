@@ -243,7 +243,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   return (
     <div
       data-player-rail
-      className={cn('fixed z-[64] flex gap-2', row ? 'flex-row flex-wrap' : 'flex-col')}
+      className={cn('fixed z-[64] flex gap-2', row ? 'flex-row flex-wrap' : 'flex-col', reading && 'justify-end')}
       style={reading ? { left: insets.left, right: insets.right, top: insets.top } : narrow ? { left: insets.left, right: 12, top: narrowRailTop(insets) } : { left: insets.left, top: insets.top }}
       aria-label={t('game.rail.playersAria')}
     >

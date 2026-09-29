@@ -673,17 +673,17 @@ export default function Game() {
           the full tray hangs right under it when asked, whole, no scrolling,
           and the banner never moves for it (it keeps clear of the tray's
           column by itself) */}
-      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} bottom={review ? insets.bottom + 8 : undefined} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
+      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} bottom={review ? insets.bottom + 8 : undefined} left={review ? insets.left : undefined} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
       <AnimatePresence initial={false}>
         {marketOpen && (
           <motion.aside
             key="market-panel"
-            initial={{ y: -28, opacity: 0 }}
+            initial={{ y: review ? 28 : -28, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -28, opacity: 0 }}
+            exit={{ y: review ? 28 : -28, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className="fixed right-3 z-[82] w-[min(320px,88vw)]"
-            style={{ top: insets.top + 48 }}
+            className={cn('fixed z-[82] w-[min(320px,88vw)]', !review && 'right-3')}
+            style={review ? { bottom: insets.bottom + 52, left: insets.left } : { top: insets.top + 48 }}
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >

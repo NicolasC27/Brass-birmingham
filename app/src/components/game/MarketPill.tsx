@@ -45,7 +45,7 @@ function useMarketMove(market: MarketState, watching: boolean): { text: string |
   return move;
 }
 
-export default function MarketPill({ market, consume, top, bottom, open, onToggle }: { market: MarketState; consume: Partial<Record<Resource, number>>; top: number; /** at the foot of the board instead, while a game is read */ bottom?: number; open: boolean; onToggle: () => void }) {
+export default function MarketPill({ market, consume, top, bottom, left, open, onToggle }: { market: MarketState; consume: Partial<Record<Resource, number>>; top: number; /** at the foot of the board instead, while a game is read */ bottom?: number; /** with `bottom`: at the left edge rather than the right */ left?: number; open: boolean; onToggle: () => void }) {
   const t = useT();
   const move = useMarketMove(market, !open);
   return (
@@ -61,10 +61,11 @@ export default function MarketPill({ market, consume, top, bottom, open, onToggl
       aria-expanded={open}
       aria-label={t(open ? 'game.page.foldMarket' : 'game.page.openMarket')}
       className={cn(
-        'fixed right-3 z-[64] flex flex-col items-stretch plaque gap-1 rounded-lg border px-3 py-1.5 transition-shadow',
+        'fixed z-[64] flex flex-col items-stretch plaque gap-1 rounded-lg border px-3 py-1.5 transition-shadow',
+        left === undefined && 'right-3',
         move.text ? 'border-brass-400 shadow-[0_0_0_1px_rgba(201,164,92,.5),0_0_18px_rgba(201,164,92,.35)]' : open ? 'border-brass-400/80' : 'border-brass-700/70',
       )}
-      style={bottom !== undefined ? { bottom } : { top }}
+      style={bottom !== undefined ? { bottom, ...(left !== undefined ? { left } : {}) } : { top }}
     >
       <span className="flex items-center gap-3">
         <Scale className="h-3.5 w-3.5 shrink-0 text-brass-400" />
