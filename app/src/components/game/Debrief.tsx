@@ -24,7 +24,7 @@ import type { PlanId } from '@/game/plan';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
 import AnalysisCurve from './AnalysisCurve';
-import Ledger from './Ledger';
+import { RoundsGrid } from './Ledger';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -514,6 +514,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     setVaryMine({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
   const close = () => setDebriefOpen(false);
+  const plateLabel = useGame((s) => s.review?.label ?? '');
   /* the panel's two pages under the curve: the moves, or the seat's review;
      a line being explored takes the room above the moves */
   const [tab, setTab] = useState<'moves' | 'review' | 'ledger'>('moves');
@@ -540,6 +541,24 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   }, [setReview, setReviewAt]);
   const width = Math.max(GUIDE_RAIL, guideDock());
   const listRef = useRef<HTMLOListElement>(null);
+  /* the register page: the ledger's lines up to the position on show, by round, and the cell picked in the grid */
+  const ledgerRef = useRef<HTMLOListElement>(null);
+  const [ledgerPick, setLedgerPick] = useState<{ key: string; player: number } | null>(null);
+  const ledgerRounds = useMemo(() => {
+    const rounds: { key: string; era: GameState['era']; round: number; items: GameState['ledger'] }[] = [];
+    for (const e of shown?.ledger ?? []) {
+      if (e.verb === 'system' && e.key !== 'payday') continue;
+      const key = `${e.era}:${e.round}`;
+      const last = rounds[rounds.length - 1];
+      if (last && last.key === key) last.items.push(e);
+      else rounds.push({ key, era: e.era, round: e.round, items: [e] });
+    }
+    return rounds;
+  }, [shown]);
+  useEffect(() => {
+    const el = ledgerRef.current;
+    if (el && tab === 'ledger' && !ledgerPick) el.scrollTop = el.scrollHeight;
+  }, [tab, shown, ledgerPick]);
   useEffect(() => {
     listRef.current?.querySelector<HTMLElement>(`[data-at="${at}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [at]);
@@ -548,7 +567,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      tall, and clear of the panel; the HUD keeps under it */
   const strip = createPortal(
     <div data-debrief-curve className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
-      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
     </div>,
     document.body,
   );
@@ -877,9 +896,23 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       )}
 
       {/* the register page: what the ledger says up to the position on show, latest last */}
-      {!help && !vary && tab === 'ledger' && (
-        <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-brass-700/40 bg-coal-900/60 [&>section]:h-full">
-          <Ledger seen={0} />
+      {!help && !vary && tab === 'ledger' && shown && (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {/* every player's every round at a glance, as the ledger draws it; a click scrolls the lines to that round */}
+          <RoundsGrid rounds={ledgerRounds} players={game.players.map((p) => ({ name: p.name, color: p.color }))} picked={ledgerPick} onPick={(key, player) => { setLedgerPick({ key, player }); ledgerRef.current?.querySelector<HTMLElement>(`[data-round="${key}"]`)?.scrollIntoView({ block: 'start' }); }} t={t} />
+          <ol ref={ledgerRef} className="min-h-0 flex-1 overflow-y-auto pr-1 font-sans text-[11px] text-cream-100/75 [scrollbar-width:thin]">
+            {ledgerRounds.map((r) => (
+              <li key={r.key} data-round={r.key}>
+                <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.debrief.round', { round: r.round, era: t(r.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })}</p>
+                {r.items.map((e) => (
+                  <p key={e.id} className={cn('flex items-start gap-2 rounded px-1.5 py-0.5', ledgerPick && ledgerPick.key === r.key && ledgerPick.player === e.player && 'bg-brass-500/15')}>
+                    {e.player !== undefined && <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[e.player]?.color]?.hex ?? '#C9A45C' }} />}
+                    <span className="min-w-0 flex-1 leading-snug">{ledgerText(e, t)}</span>
+                  </p>
+                ))}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
 
@@ -1027,6 +1060,13 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           )}
         </div>
       )}
+      {/* the foot of the panel: the moment on show, and the way out */}
+      <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-brass-700/40 pt-2">
+        <span className="min-w-0 flex-1 truncate font-fell text-[11.5px] text-cream-100/80">{plateLabel}</span>
+        <button type="button" onClick={close} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
+          {t('game.debrief.back')}
+        </button>
+      </div>
     </aside>
     </>
   );

@@ -868,9 +868,10 @@ export default function Game() {
       </div>
 
       {/* the guide's own lane, beside the table rather than over it */}
-      {/* the review's plate: which moment of the game the board shows */}
-      {review && (
-        <div className="pointer-events-none fixed z-[66] flex justify-end" style={{ bottom: insets.bottom + 8, right: analysisPane + 12 }}>
+      {/* the review's plate: which moment of the game the board shows — the
+          panel carries it at its foot when it is open */}
+      {review && !debriefOpen && (
+        <div className="pointer-events-none fixed z-[66] flex justify-start" style={{ bottom: insets.bottom + 8, left: insets.left }}>
           <div className="pointer-events-auto flex items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
             <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
             <button type="button" onClick={leaveReview} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">

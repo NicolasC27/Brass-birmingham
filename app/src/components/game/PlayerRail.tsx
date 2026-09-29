@@ -233,7 +233,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   /* a game being read: the chips trimmed and laid in a row under the curve,
      the board left to the reading */
   const compact = narrow || railCompact || focus || reading;
-  const row = narrow || reading;
+  const row = narrow;
   /* a game read again shows the standing as it was at that moment: the points
      banked, plus what the board would have scored had the era ended there */
   const live = reading ? projectEraScores(game) : null;
@@ -243,8 +243,8 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
   return (
     <div
       data-player-rail
-      className={cn('fixed z-[64] flex gap-2', row ? 'flex-row flex-wrap' : 'flex-col', reading && 'justify-end')}
-      style={reading ? { left: insets.left, right: insets.right, top: insets.top } : narrow ? { left: insets.left, right: 12, top: narrowRailTop(insets) } : { left: insets.left, top: insets.top }}
+      className={cn('fixed z-[64] flex gap-2', row ? 'flex-row flex-wrap' : 'flex-col')}
+      style={narrow ? { left: insets.left, right: 12, top: narrowRailTop(insets) } : { left: insets.left, top: insets.top }}
       aria-label={t('game.rail.playersAria')}
     >
       {game.order.map((i, pos) => (

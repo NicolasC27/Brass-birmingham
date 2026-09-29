@@ -63,7 +63,7 @@ const VERB_HEX: Record<LedgerEntry['verb'], string> = {
 /** Every player's every round at a glance, the way a contributions graph
  *  reads: one cell per player and round, split by the round's actions and
  *  coloured by what each was. Hover says the moves; a click opens the round. */
-function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
+export function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
   if (rounds.length < 1) return null;
   /* what a player's round cost the purse, from the entries' own figures */
   const spentIn = (r: (typeof rounds)[number], pi: number) => r.items.filter((e) => e.player === pi).reduce((a, e) => a + Number(e.vars?.spent ?? 0), 0);
