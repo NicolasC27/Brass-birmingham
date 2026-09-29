@@ -560,6 +560,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       };
       const onKeyDown = (ev: KeyboardEvent) => {
         if (!arrows.has(ev.key) || typing(ev) || ev.metaKey || ev.ctrlKey || ev.altKey) return;
+        /* a game being read: the arrows step the moves, and the map stays put */
+        if (!keyboardRef.current) return;
         ev.preventDefault();
         pressed.add(ev.key);
       };
