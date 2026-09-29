@@ -813,6 +813,7 @@ const fr: typeof engame = {
     playFrom: 'Jouer à partir d’ici',
     lost: '−{p} % de chances',
     roundShort: 'M{round}',
+    cost: { reading: 'Ce que ça a coûté… la machine joue les deux suites', short: 'À {n} coups :', shortTip: 'La meilleure route contre la vôtre, {n} coups plus loin, joués par la machine : vos points, votre revenu, votre caisse', vp: 'PV', income: 'revenu', long: 'Jusqu’au bout :', longTip: 'La machine joue la meilleure route puis toute la fin de partie à votre place ; le chiffre est le sien, pas le vôtre', longLine: '{vp} PV au lieu de {actual} ({gap}).', rivals: 'Les autres : {list}.' },
     quality: { top: 'juste', good: 'bon', inaccuracy: 'imprécision', mistake: 'erreur', blunder: 'bévue' },
     close: 'Fermer le débrief',
     open: 'Le débrief',

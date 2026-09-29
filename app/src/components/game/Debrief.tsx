@@ -4,7 +4,7 @@ import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass,
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, bandOf, followToTurn, judgeOf, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
-import type { Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
+import type { Cost, Followed, Reading, Road, Verdict, Weighed } from '@/game/analysis';
 import type { Grade } from '@/game/review';
 import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
@@ -54,6 +54,8 @@ const EMPTY_ROADS: Record<string, Weighed[]> = {};
 const EMPTY_SEATS: Record<number, Reading[]> = {};
 
 const pct = (p: number) => Math.round(p * 100);
+/** a difference with its sign, the nought bare */
+const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
 const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(p * 100);
 /* the game as a line, the way a chess site draws an evaluation: the
@@ -318,6 +320,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   }, [game, table, me, judgeId]);
 
   const workerRef = useRef<Worker | null>(null);
+  /* what a miss cost, in points, by turn and seat: asked of the worker once,
+     said under the lesson when it comes */
+  const [costs, setCosts] = useState<Record<string, Cost | null>>({});
   /* the roads of a line, read longer, go to a worker of the panel's own: they
      are asked for as the reader explores, and join the one reading */
   useEffect(() => {
@@ -333,6 +338,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
          nothing else — the curve and the grades keep the one scale of the long
          judge, so no position ever shows two figures */
       if (n.kind === 'roads') keepRoads(keptKey, me, n.key, n.roads);
+      if (n.kind === 'cost') setCosts((c) => ({ ...c, [n.key]: n.cost }));
     };
     workerRef.current = w;
     asked.current = new Set();
@@ -492,6 +498,16 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const seeBetter = () => {
     if (lesson) setVaryMine({ from: at, moves: [], picked: sameRoad(lesson.better), step: null });
   };
+  const costKey = lesson ? `${me}:${at - 1}` : '';
+  const costAsked = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!lesson || !costKey || costAsked.current.has(costKey)) return;
+    const w = workerRef.current;
+    if (!w) return;
+    costAsked.current.add(costKey);
+    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: game.actions.slice(0, at - 1), me, played: game.actions[at - 1], better: lesson.better, judge: judgeOf(judgeId).judge, key: costKey });
+  }, [lesson, costKey, game, me, at, judgeId]);
+  const cost = costKey ? costs[costKey] : undefined;
   /* reading together: one seat shows where it is looking, the others follow.
      Only at a table online, and only from a seat — a spectator may follow,
      never lead */
@@ -825,6 +841,30 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                       <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
                         {t('game.debrief.whyGap', { name: machine, p: lesson.delta })} {t(`game.guide.suggest.why.${whyKey(lesson.better)}`, { name: machine })}
                       </p>
+                      {/* the miss in the game's coin: points, income and cash a few moves
+                          on, and where the machine would have ended the game from there */}
+                      {cost === undefined ? (
+                        <p className="mt-1 font-mono text-[9.5px] text-ink-900/50">{t('game.debrief.cost.reading')}</p>
+                      ) : cost ? (
+                        <ul className="mt-1 flex flex-col gap-0.5 font-sans text-[11px] text-ink-900/80">
+                          <li title={t('game.debrief.cost.shortTip', { n: cost.short.plies })}>
+                            <span className="font-fell text-[9.5px] uppercase tracking-[0.14em] text-ink-900/55">{t('game.debrief.cost.short', { n: cost.short.plies })}</span>{' '}
+                            <span className={cn('font-mono', cost.short.vp > 0 ? 'text-bottle-700' : cost.short.vp < 0 ? 'text-rust-700' : '')}>{signed(cost.short.vp)} {t('game.debrief.cost.vp')}</span>
+                            {' · '}
+                            <span className={cn('font-mono', cost.short.income > 0 ? 'text-bottle-700' : cost.short.income < 0 ? 'text-rust-700' : '')}>{signed(cost.short.income)} {t('game.debrief.cost.income')}</span>
+                            {' · '}
+                            <span className={cn('font-mono', cost.short.money > 0 ? 'text-bottle-700' : cost.short.money < 0 ? 'text-rust-700' : '')}>{signed(cost.short.money)} £</span>
+                          </li>
+                          {cost.long && (
+                            <li title={t('game.debrief.cost.longTip')}>
+                              <span className="font-fell text-[9.5px] uppercase tracking-[0.14em] text-ink-900/55">{t('game.debrief.cost.long')}</span>{' '}
+                              {t('game.debrief.cost.longLine', { vp: cost.long.vps[me] ?? 0, actual: game.players[me]?.vp ?? 0, gap: signed((cost.long.vps[me] ?? 0) - (game.players[me]?.vp ?? 0)) })}
+                              {' '}
+                              <span className="text-ink-900/55">{t('game.debrief.cost.rivals', { list: game.players.map((p, i) => (i === me ? null : `${p.name} ${cost.long!.vps[i] ?? 0}`)).filter(Boolean).join(', ') })}</span>
+                            </li>
+                          )}
+                        </ul>
+                      ) : null}
                       <button type="button" onClick={seeBetter} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
                         <Compass className="h-3 w-3" /> {t('game.debrief.seeBetter')}
                       </button>

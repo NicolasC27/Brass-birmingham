@@ -441,6 +441,56 @@ export function weighRoads(before: GameState, me: number, roads: GameAction[], j
 }
 
 /* ------------------------------------------------------------------ */
+/* What a miss cost in the game's own coin. A chance says how much a    */
+/* move hurt; a player asks what it took off the table. Two readings:   */
+/* the short one plays both roads on by the judge's plies and compares  */
+/* the seat's points, income and cash; the long one lets the machine    */
+/* play the better road out to the end of the game and sets its final   */
+/* score beside the one the game actually ended on.                     */
+/* ------------------------------------------------------------------ */
+
+export interface Cost {
+  /** the better road against the played one, the judge's plies on: differences for the seat */
+  short: { plies: number; vp: number; income: number; money: number };
+  /** the machine's finish along the better road, every seat's points */
+  long: { vps: number[] } | null;
+}
+
+/** the machine plays every seat flat out to the end of the game */
+export function playOut(s: GameState, budgetMs = 15, most = 400): GameState {
+  let cur = s;
+  let guard = 0;
+  while (cur.phase !== 'game-over' && guard++ < most) {
+    if (cur.phase === 'scoring-canal') {
+      const next = applyAction(cur, cur.current, { kind: 'begin-rail' }).state;
+      if (!next) break;
+      cur = next;
+      continue;
+    }
+    const seat = cur.current;
+    const action = chooseBotAction(cur, seat, { strength: 1, budgetMs }) ?? fallbackAction(cur, seat);
+    const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
+    if (!next) break;
+    cur = next;
+  }
+  return cur;
+}
+
+/** what the better road would have changed for the seat, short and long */
+export function costOf(before: GameState, me: number, played: GameAction, better: GameAction, judge: Judge = LONG_JUDGE, toTheEnd = true): Cost | null {
+  const a = applyAction(before, me, played).state;
+  const b = applyAction(before, me, better).state;
+  if (!a || !b) return null;
+  const endA = lookAhead(a, judge).at(-1) ?? a;
+  const endB = lookAhead(b, judge).at(-1) ?? b;
+  const pa = endA.players[me];
+  const pb = endB.players[me];
+  const short = { plies: judge.plies, vp: pb.vp - pa.vp, income: pb.income - pa.income, money: pb.money - pa.money };
+  const long = toTheEnd ? { vps: playOut(b, judge.budgetMs).players.map((p) => p.vp) } : null;
+  return { short, long };
+}
+
+/* ------------------------------------------------------------------ */
 /* What a kept analysis was read by. A game read once is kept, so the  */
 /* panel opens on its own figures instead of thinking again — but only */
 /* while the judge that wrote them is the judge that stands. Bump this */

@@ -811,6 +811,7 @@ const game = {
     playFrom: 'Play on from here',
     lost: '−{p} % chance',
     roundShort: 'R{round}',
+    cost: { reading: 'What it cost… the machine plays both lines', short: '{n} moves on:', shortTip: 'The better road against yours, {n} moves on, played by the machine: your points, income and cash', vp: 'VP', income: 'income', long: 'To the end:', longTip: 'The machine plays the better road and the rest of the game in your seat; the figure is its own, not yours', longLine: '{vp} VP instead of {actual} ({gap}).', rivals: 'The others: {list}.' },
     quality: { top: 'best', good: 'good', inaccuracy: 'inaccuracy', mistake: 'mistake', blunder: 'blunder' },
     close: 'Close the debrief',
     open: 'The debrief',

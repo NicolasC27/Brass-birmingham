@@ -7,8 +7,8 @@
 
 import { applyAction } from './actions';
 import type { GameAction } from './actions';
-import { LONG_JUDGE, PASSES, blendChances, blendVerdicts, deepChances, judgeTurn, weighRoads } from './analysis';
-import type { Judge, Pass, Reading, Verdict, Weighed } from './analysis';
+import { LONG_JUDGE, PASSES, blendChances, blendVerdicts, costOf, deepChances, judgeTurn, weighRoads } from './analysis';
+import type { Cost, Judge, Pass, Reading, Verdict, Weighed } from './analysis';
 import { newGame } from './engine';
 import type { GameState, SetupPayload } from './types';
 
@@ -42,8 +42,22 @@ export interface AskRoads {
   key: string;
 }
 
+/** what a miss cost: the played and the better road, from the position
+    after the moves given */
+export interface AskCost {
+  setup: SetupPayload;
+  seed: number;
+  actions: GameAction[];
+  me: number;
+  played: GameAction;
+  better: GameAction;
+  judge?: Judge;
+  key: string;
+}
+
 export type Note =
   | { kind: 'position'; k: number; seats: Reading[]; done: number; total: number }
+  | { kind: 'cost'; key: string; cost: Cost | null }
   | { kind: 'roads'; key: string; roads: Weighed[] }
   | { kind: 'turn'; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
@@ -112,10 +126,23 @@ export function readRoads(ask: AskRoads): Note {
   return { kind: 'roads', key: ask.key, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? LONG_JUDGE, ask.passes ?? PASSES) };
 }
 
+/** the position after the moves given, then what the better road was worth */
+export function readCost(ask: AskCost): Note {
+  let s = newGame(ask.setup, ask.seed);
+  for (const a of ask.actions) {
+    const r = applyAction(s, s.current, a);
+    const next = r.state ?? (a.kind === 'concede' ? applyAction(s, a.player, a).state : null);
+    if (!next) return { kind: 'failed', why: 'a move refused on the way' };
+    s = next;
+  }
+  return { kind: 'cost', key: ask.key, cost: costOf(s, ask.me, ask.played, ask.better, ask.judge ?? LONG_JUDGE) };
+}
+
 /* the worker's own mouth, when this module is loaded as one */
 if (typeof self !== 'undefined' && typeof (self as unknown as { postMessage?: unknown }).postMessage === 'function' && typeof window === 'undefined') {
-  self.onmessage = (e: MessageEvent<Ask | AskRoads>) => {
-    if ('roads' in e.data) self.postMessage(readRoads(e.data));
+  self.onmessage = (e: MessageEvent<Ask | AskRoads | AskCost>) => {
+    if ('better' in e.data) self.postMessage(readCost(e.data));
+    else if ('roads' in e.data) self.postMessage(readRoads(e.data));
     else for (const note of analyse(e.data)) self.postMessage(note);
   };
 }

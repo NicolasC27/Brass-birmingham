@@ -813,6 +813,7 @@ const game: typeof engame = {
     playFrom: 'Von hier weiterspielen',
     lost: '−{p} % Chancen',
     roundShort: 'R{round}',
+    cost: { reading: 'Was es gekostet hat… die Maschine spielt beide Linien', short: '{n} Züge weiter:', shortTip: 'Der bessere Weg gegen deinen, {n} Züge weiter, von der Maschine gespielt: deine Punkte, dein Einkommen, deine Kasse', vp: 'SP', income: 'Einkommen', long: 'Bis zum Ende:', longTip: 'Die Maschine spielt den besseren Weg und den Rest der Partie an deiner Stelle; die Zahl ist ihre, nicht deine', longLine: '{vp} SP statt {actual} ({gap}).', rivals: 'Die anderen: {list}.' },
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',

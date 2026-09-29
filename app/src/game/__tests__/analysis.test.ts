@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
-import { PASSES, SHORT_SCALE, bandOf, blendChances, blendVerdicts, deepChance, gradeOfLoss, judgeTurn, positionsOf, readChance, roadsFrom, sameRoad, winChance } from '../analysis';
+import { PASSES, SHORT_SCALE, bandOf, blendChances, blendVerdicts, costOf, deepChance, gradeOfLoss, judgeTurn, playOut, positionsOf, readChance, roadsFrom, sameRoad, winChance } from '../analysis';
 import { newGame } from '../engine';
 import type { SetupPayload } from '../types';
 
@@ -135,5 +135,31 @@ describe('the three passes', () => {
     expect(blended.roads[0].chance).toBeCloseTo(seen.reduce((a, b) => a + b, 0) / seen.length, 10);
     /* one reading blends to itself */
     expect(blendVerdicts([each[0]])).toBe(each[0]);
+  });
+});
+
+describe('what a miss cost', () => {
+  it('sets the better road against the played one, in points, short and to the end', () => {
+    let s = newGame(SETUP, 31);
+    const me = 0;
+    for (let i = 0; i < 4 && s.phase === 'action'; i++) {
+      const wanted = s.current === me ? fallbackAction(s, me) : (botAction(chooseBotMove(s, s.current)) ?? fallbackAction(s, s.current));
+      const r = applyAction(s, s.current, wanted);
+      if (!r.state) throw new Error(r.error);
+      s = r.state;
+    }
+    const positions = positionsOf(s);
+    const k = positions.findIndex((p) => p.current === me && p.phase === 'action');
+    const quick = { plies: 2, budgetMs: 5, scale: SHORT_SCALE };
+    const roads = roadsFrom(positions[k], me, 4, s.actions[k]);
+    const better = roads.find((r) => r.action.kind !== 'pass')?.action ?? roads[0].action;
+    const cost = costOf(positions[k], me, s.actions[k], better, quick, false);
+    expect(cost).not.toBeNull();
+    expect(cost!.short.plies).toBe(2);
+    expect(Number.isFinite(cost!.short.vp + cost!.short.income + cost!.short.money)).toBe(true);
+    expect(cost!.long).toBeNull();
+    /* a game played out ends */
+    const end = playOut(positions[k], 3, 400);
+    expect(end.phase === 'game-over' || end.actions.length >= positions[k].actions.length + 400).toBe(true);
   });
 });
