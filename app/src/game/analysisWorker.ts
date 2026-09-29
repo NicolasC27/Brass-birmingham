@@ -78,6 +78,7 @@ export type Note =
   | { kind: 'one'; key: string; verdict: Verdict | null }
   | { kind: 'cost'; key: string; cost: Cost | null }
   | { kind: 'roads'; key: string; roads: Weighed[] }
+  | { kind: 'roadsProgress'; key: string; done: number; total: number }
   | { kind: 'turn'; seat: number; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
   | { kind: 'failed'; why: string };
@@ -158,15 +159,27 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
 }
 
 /** the position after the moves given, then the roads weighed long */
-export function readRoads(ask: AskRoads): Note {
+export function* readRoads(ask: AskRoads): Generator<Note, void, unknown> {
   let s = newGame(ask.setup, ask.seed);
   for (const a of ask.actions) {
     const r = applyAction(s, s.current, a);
     const next = r.state ?? (a.kind === 'concede' ? applyAction(s, a.player, a).state : null);
-    if (!next) return { kind: 'failed', why: 'a move refused on the way' };
+    if (!next) {
+      yield { kind: 'failed', why: 'a move refused on the way' };
+      return;
+    }
     s = next;
   }
-  return { kind: 'roads', key: ask.key, roads: weighRoads(s, ask.me, ask.roads, ask.judge ?? LONG_JUDGE, ask.passes ?? PASSES) };
+  /* one road at a time, the count posted after each, so the panel can say
+     how far the reading has got */
+  const total = ask.roads.length;
+  yield { kind: 'roadsProgress', key: ask.key, done: 0, total };
+  const out: Weighed[] = [];
+  for (let i = 0; i < total; i++) {
+    out.push(...weighRoads(s, ask.me, [ask.roads[i]], ask.judge ?? LONG_JUDGE, ask.passes ?? PASSES));
+    yield { kind: 'roadsProgress', key: ask.key, done: i + 1, total };
+  }
+  yield { kind: 'roads', key: ask.key, roads: out.sort((a, b) => b.chance - a.chance) };
 }
 
 /** the position after the moves given, then what the better road was worth */
@@ -198,7 +211,7 @@ if (typeof self !== 'undefined' && typeof (self as unknown as { postMessage?: un
   self.onmessage = (e: MessageEvent<Ask | AskRoads | AskCost | AskOne>) => {
     if ('played' in e.data && !('better' in e.data)) self.postMessage(readOne(e.data));
     else if ('better' in e.data) self.postMessage(readCost(e.data));
-    else if ('roads' in e.data) self.postMessage(readRoads(e.data));
+    else if ('roads' in e.data) for (const note of readRoads(e.data)) self.postMessage(note);
     else for (const note of analyse(e.data)) self.postMessage(note);
   };
 }

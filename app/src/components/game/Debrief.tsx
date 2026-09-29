@@ -193,6 +193,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* what a miss cost, in points, by turn and seat: asked of the worker once,
      said under the lesson when it comes */
   const [costs, setCosts] = useState<Record<string, Cost | null>>({});
+  /* how far the longer reading of a line's roads has got, and when it landed */
+  const [roadsProgress, setRoadsProgress] = useState<Record<string, { done: number; total: number; landed: number }>>({});
   /* the roads of a line, read longer, go to a worker of the panel's own: they
      are asked for as the reader explores, and join the one reading */
   useEffect(() => {
@@ -207,7 +209,11 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       /* a line read longer ranks what else could have been played there, and
          nothing else — the curve and the grades keep the one scale of the long
          judge, so no position ever shows two figures */
-      if (n.kind === 'roads') keepRoads(keptKey, me, n.key, n.roads);
+      if (n.kind === 'roads') {
+        keepRoads(keptKey, me, n.key, n.roads);
+        setRoadsProgress((p) => ({ ...p, [n.key]: { done: 1, total: 1, landed: Date.now() } }));
+      }
+      if (n.kind === 'roadsProgress') setRoadsProgress((p) => ({ ...p, [n.key]: { done: n.done, total: n.total, landed: 0 } }));
       if (n.kind === 'cost') setCosts((c) => ({ ...c, [n.key]: n.cost }));
     };
     workerRef.current = w;
@@ -267,6 +273,20 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey, judge: read.judge, passes: read.passes });
   }, [vary, tipMine, roads, lineKey, game, me, judgeId]);
   const readingLonger = !!vary && tipMine && vary.moves.length > 0 && !roadsRead[lineKey];
+  const longerProgress = readingLonger ? roadsProgress[lineKey] : undefined;
+  /* the reading just landed: the settled list is marked for a moment */
+  const [flashKey, setFlashKey] = useState<string | null>(null);
+  const landedAt = roadsProgress[lineKey]?.landed ?? 0;
+  useEffect(() => {
+    if (!landedAt || Date.now() - landedAt > 3000) return;
+    const key = lineKey;
+    const on = window.setTimeout(() => setFlashKey(key), 0);
+    const off = window.setTimeout(() => setFlashKey((k) => (k === key ? null : k)), 2200);
+    return () => {
+      window.clearTimeout(on);
+      window.clearTimeout(off);
+    };
+  }, [landedAt, lineKey]);
   /* what the board shows */
   const stepMove = vary && vary.step !== null ? vary.moves[vary.step] : undefined;
   const shown = vary ? (stepMove?.after ?? branch?.after ?? tip) : positions[at];
@@ -747,8 +767,20 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             ) : null))}
             {branch && <span className="flex items-center gap-1"><span aria-hidden>›</span><span className="rounded border border-brass-500 bg-brass-500/15 px-1.5 py-0.5">{t('game.debrief.roundShort', { round: tip?.round ?? '' })} · {describeAction(branch.action)}</span></span>}
           </div>
+          {readingLonger && (
+            <div className="mt-1.5 rounded-md border border-copper-500/60 bg-copper-500/10 px-2 py-1.5" role="status" aria-live="polite">
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-sans text-[11px] font-semibold text-ink-900">{t('game.debrief.deeperWait')}</span>
+                <span className="font-mono text-[10px] text-ink-900/70">{longerProgress ? `${longerProgress.done}/${longerProgress.total}` : '…'}</span>
+              </div>
+              <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ink-900/15">
+                <div className={cn('h-full rounded-full bg-copper-500 transition-[width] duration-300', !longerProgress && 'animate-pulse')} style={{ width: longerProgress && longerProgress.total ? `${Math.max(6, Math.round((100 * longerProgress.done) / longerProgress.total))}%` : '6%' }} />
+              </div>
+              <p className="mt-1 font-serif text-[11px] italic leading-snug text-ink-900/70">{t('game.debrief.deeperWhy')}</p>
+            </div>
+          )}
           {tipMine && (
-            <ul className="mt-1 flex flex-col gap-1">
+            <ul className={cn('mt-1 flex flex-col gap-1 rounded-md transition-all', readingLonger && 'opacity-55', flashKey === lineKey && 'ring-2 ring-bottle-500/70 bg-bottle-700/10')}>
               {roads.map((r, i) => {
                 const same = vary.moves.length === 0 && sameRoad(r.action) === sameRoad(game.actions[vary.from - 1]);
                 /* what the road would have changed, against the move played:
@@ -780,7 +812,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
               <p className="mt-0.5 font-serif text-[11.5px] italic leading-snug text-ink-900/65">{t(`game.guide.suggest.why.${whyKey(branch.action)}`, { name: machine })}</p>
             </div>
           )}
-          {readingLonger && <p className="mt-1 font-mono text-[9.5px] text-ink-900/50">{t('game.debrief.deeper')}</p>}
+          {flashKey === lineKey && <p className="mt-1 font-sans text-[10.5px] font-semibold text-bottle-700">{t('game.debrief.deeperDone')}</p>}
           {(branch || (vary.moves.length > 0 && tip?.phase !== 'game-over')) && (
             <button type="button" onClick={follow} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
               {branch ? t('game.debrief.follow') : t('game.debrief.followMore')}
