@@ -98,7 +98,7 @@ export default function Report() {
           {progress && <span className="data-text ml-auto text-[11px] text-iron-400">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>}
         </div>
         <div className="mt-3 rounded-md bg-coal-950 p-2">
-          <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={mine} vary={null} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={160} onPick={setAt} />
+          <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={mine} vary={null} color={PLAYER_COLORS[game.players[shown]?.color]?.hex ?? '#E7C978'} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={160} onPick={setAt} />
         </div>
         <p className="mt-2 data-text text-[11px] text-iron-400">{at === 0 ? t('game.debrief.start') : `${at}/${positions.length - 1} · ${describeAction(game.actions[at - 1])}`}</p>
       </div>

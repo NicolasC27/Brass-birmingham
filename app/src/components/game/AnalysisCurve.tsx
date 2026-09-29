@@ -7,7 +7,13 @@ import type { Reading, Verdict } from '@/game/analysis';
    drag scrubs, a hover reads the figure. The judge's own doubt is drawn
    too: a ribbon between the lowest and the highest of its passes, and a
    dashed line as long as a stretch has been read by one pass only */
-export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, onPick }: { height?: number; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+/** a hex colour with an alpha, for the fills */
+const tint = (hex: string, alpha: number): string => {
+  const n = parseInt(hex.replace('#', ''), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+};
+
+export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', onPick }: { height?: number; /** the seat's colour: the line and its ground wear it */ color?: string; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -104,7 +110,7 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
           </clipPath>
         </defs>
         {/* the ground: lit where the reader stood above even, dark below */}
-        <path d={areaDown} fill="rgba(201,164,92,0.28)" clipPath="url(#curve-above)" />
+        <path d={areaDown} fill={tint(color, 0.28)} clipPath="url(#curve-above)" />
         <path d={areaUp} fill="rgba(20,14,10,0.55)" clipPath="url(#curve-below)" />
         {[0.25, 0.75].map((c) => (
           <line key={c} x1={0} x2={w} y1={y(c)} y2={y(c)} stroke="rgba(245,235,215,0.08)" strokeWidth={1} />
@@ -115,15 +121,15 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
         {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} stroke="rgba(245,235,215,0.22)" strokeWidth={1} />}
         <text x={4} y={H - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>
         {split > 0 && <text x={x(split) + 4} y={H - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
-        {doubt && <path d={doubt} fill="rgba(231,201,120,0.22)" stroke="none" />}
+        {doubt && <path d={doubt} fill={tint(color, 0.22)} stroke="none" />}
         {/* the other seats, faint: the same reading from their chair */}
         {rivals.map((r) => {
           const pts = r.chances.map((c, k) => (c === null ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
           return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
         })}
         {/* the line: dashed while a stretch is read by one pass only */}
-        <path d={line} fill="none" stroke="#E7C978" strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
-        {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke="#E7C978" strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
+        <path d={line} fill="none" stroke={color} strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
+        {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
         {misses.map((m) => (
           <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1}>
             <title>{`${m.at + 1} · −${Math.round(m.loss * 100)} %`}</title>
