@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
-import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, FileText, Gauge, HelpCircle, Link2, Play, Radio, Sparkles, Sun, SunDim, UserRound, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, FileText, Gauge, HelpCircle, Link2, Play, Radio, Sparkles, Sun, SunDim, Undo2, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, bandOf, followToTurn, judgeOf, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
@@ -62,7 +62,7 @@ const EMPTY_SEATS: Record<number, Reading[]> = {};
 
 /* a joined set of keys, and one key of it */
 const SET = 'flex shrink-0 overflow-hidden rounded-md border border-brass-700/50 divide-x divide-brass-700/50';
-const KEY = 'flex h-[26px] w-8 items-center justify-center text-brass-400/85 transition-colors hover:bg-brass-500/15 hover:text-brass-300 disabled:opacity-35 disabled:hover:bg-transparent';
+const KEY = 'flex h-[26px] w-[30px] items-center justify-center text-brass-400/85 transition-colors hover:bg-brass-500/15 hover:text-brass-300 disabled:opacity-35 disabled:hover:bg-transparent';
 const pct = (p: number) => Math.round(p * 100);
 /** a difference with its sign, the nought bare */
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
@@ -679,12 +679,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           </div>
           {canExplore && !vary && (
             <button type="button" onClick={explore} title={t('game.debrief.explore')} className="btn-strike ml-auto shrink-0 whitespace-nowrap !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
-              <Compass className="h-3.5 w-3.5" /> {t('game.debrief.exploreShort')}
+              <Compass className="h-3.5 w-3.5" /> <span className="hidden min-[1560px]:inline">{t('game.debrief.exploreShort')}</span>
             </button>
           )}
           {vary && (
             <button type="button" onClick={() => setVaryMine(null)} title={t('game.debrief.backToLine')} className="btn-strike ml-auto shrink-0 whitespace-nowrap !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
-              {t('game.debrief.backShort')}
+              <Undo2 className="h-3.5 w-3.5" /> <span className="hidden min-[1560px]:inline">{t('game.debrief.backShort')}</span>
             </button>
           )}
         </div>
