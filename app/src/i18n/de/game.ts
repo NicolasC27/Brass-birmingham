@@ -802,7 +802,7 @@ const game: typeof engame = {
     endOf: 'Ende der Partie',
     you: 'du',
     curve: 'Die Kurve der Partie: deine Chancen Zug für Zug',
-    curveHint: 'Rad: Zoom · Umschalt + Ziehen: einen Abschnitt rahmen · Doppelklick: die ganze Partie · die Leiste unten verschiebt',
+    curveHint: 'Rad: Zoom · Umschalt + Ziehen: rahmen · Doppelklick: alles',
     betterWas: 'Besser: {move}',
     whyGap: '{name} las dort {p} % mehr Chancen.',
     seeBetter: 'Diesen Zug zeigen',
@@ -837,6 +837,7 @@ const game: typeof engame = {
         s4: 'Die Bilanz: wurde der Plan zu Ende geführt, und liegen die Punkte je Aktion nahe fünf? Eine Partie geht öfter an vergeudeten Aktionen verloren als an einem einzelnen schlechten Zug.',
         s5: 'Eine Note gilt für ihre Stellung: ein „Fehler“ in Runde 2 und einer in Runde 9 kosteten dieselbe Chance, nicht dieselben Punkte.',
       },
+      curve: { title: 'Die Kurve', text: 'Rad: Zoom um den Zeiger. Umschalt + Ziehen (oder rechte Taste): einen Abschnitt rahmen, er füllt die Breite und die Skala passt sich an. Doppelklick: die ganze Partie. Die Leiste unten zeigt das Fenster und verschiebt es. Ziehen ohne Umschalt fährt den Plan Zug für Zug ab.' },
       weigh: {
         title: 'Was am meisten zählt',
         text: 'Die Aktionen vor allem, jede sollte nahe fünf Punkte bringen. Früh zurückgesetztes Einkommen. Doppelschienen in der Schienenära. Nicht das Bier und Eisen der anderen bezahlen, wenn deine genügen.',

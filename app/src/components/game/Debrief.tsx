@@ -567,7 +567,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      tall, and clear of the panel; the HUD keeps under it */
   const strip = createPortal(
     <div data-debrief-curve title={t('game.debrief.curveHint')} className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
-      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t('game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
     </div>,
     document.body,
   );
@@ -705,6 +705,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
               <li key={k}>{t(`game.debrief.help.method.${k}`)}</li>
             ))}
           </ol>
+          <h3 className="mt-3 font-fell text-[13px] text-ink-900">{t('game.debrief.help.curve.title')}</h3>
+          <p className="mt-1 font-sans text-[11.5px] leading-snug text-ink-900/85">{t('game.debrief.help.curve.text')}</p>
           <h3 className="mt-3 font-fell text-[13px] text-ink-900">{t('game.debrief.help.weigh.title')}</h3>
           <p className="mt-1 font-sans text-[11.5px] leading-snug text-ink-900/85">{t('game.debrief.help.weigh.text')}</p>
           <p className="mt-3 font-serif text-[11.5px] italic leading-snug text-ink-900/65">{t('game.debrief.help.note')}</p>

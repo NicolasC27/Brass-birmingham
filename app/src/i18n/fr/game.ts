@@ -802,7 +802,7 @@ const fr: typeof engame = {
     endOf: 'Fin de partie',
     you: 'vous',
     curve: 'La courbe de la partie : vos chances coup par coup',
-    curveHint: 'Molette : zoom · Maj + glisser : cadrer une zone · double-clic : toute la partie · la barre du bas se glisse',
+    curveHint: 'Molette : zoom · Maj + glisser : cadrer · double-clic : tout',
     betterWas: 'Mieux : {move}',
     whyGap: '{name} y lisait {p} % de chances de plus.',
     seeBetter: 'Voir ce coup',
@@ -837,6 +837,7 @@ const fr: typeof engame = {
         s4: 'Le Bilan : le plan a-t-il été suivi jusqu’au bout, et les points par action sont-ils près de cinq ? Une partie se perd plus souvent par des actions gaspillées que par un mauvais coup isolé.',
         s5: 'Une note vaut pour la position : un coup « erreur » en manche 2 et un en manche 9 ont coûté la même chance, pas les mêmes points.',
       },
+      curve: { title: 'La courbe', text: 'Molette : zoom autour du pointeur. Maj + glisser (ou clic droit + glisser) : cadrer une zone, elle prend toute la largeur et l’échelle s’ajuste. Double-clic : toute la partie. La barre du bas montre la fenêtre et se glisse. Glisser sans Maj fait défiler le plateau coup par coup.' },
       weigh: {
         title: 'Ce qui pèse le plus',
         text: 'Les actions avant tout, chacune devrait rapporter près de cinq points. Le revenu remis à niveau tôt. Les rails doublés à l’ère rail. Ne pas payer la bière et le fer des autres quand les vôtres suffisent.',

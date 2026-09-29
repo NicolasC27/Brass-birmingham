@@ -800,7 +800,7 @@ const game = {
     endOf: 'End of the game',
     you: 'you',
     curve: 'The curve of the game: your chances move by move',
-    curveHint: 'Wheel: zoom · Shift + drag: frame a stretch · double-click: the whole game · the bar at the foot pans',
+    curveHint: 'Wheel: zoom · Shift + drag: frame · double-click: all',
     betterWas: 'Better: {move}',
     whyGap: '{name} read {p} % more chance there.',
     seeBetter: 'Show this move',
@@ -835,6 +835,7 @@ const game = {
         s4: 'The Review: was the plan carried through, and are the points per action near five? A game is lost more often to wasted actions than to one bad move.',
         s5: 'A grade holds for its position: a “mistake” in round 2 and one in round 9 cost the same chance, not the same points.',
       },
+      curve: { title: 'The curve', text: 'Wheel: zoom about the pointer. Shift + drag (or right-button drag): frame a stretch, it fills the width and the scale fits it. Double-click: the whole game. The bar at the foot shows the window and pans it. A plain drag scrubs the board move by move.' },
       weigh: {
         title: 'What weighs most',
         text: 'Actions above all, each should bring close to five points. Income reset early. Doubled rails in the rail era. Not paying for others’ beer and iron when yours will do.',

@@ -17,7 +17,7 @@ const tint = (hex: string, alpha: number): string => {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 };
 
-export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, onPick }: { height?: number; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, onPick }: { height?: number; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -267,6 +267,8 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
         )}
         {hover !== null && hover !== at && mark(hover, false)}
         {mark(at, true)}
+        {/* how to look closer, in the corner while the whole game is on view */}
+        {!view && hint && <text x={w - 4} y={BAR_Y - 4} textAnchor="end" fill="rgba(245,235,215,0.38)" fontSize={8.5} fontFamily="ui-monospace, monospace" pointerEvents="none">{hint}</text>}
         {/* the stretch being marked to zoom to */}
         {brush && <rect x={x(Math.min(brush.a, brush.b))} y={TOP - 4} width={Math.max(1, x(Math.max(brush.a, brush.b)) - x(Math.min(brush.a, brush.b)))} height={BAR_Y - TOP + 2} fill="rgba(245,235,215,0.12)" stroke="rgba(245,235,215,0.6)" strokeWidth={1} strokeDasharray="3 2" pointerEvents="none" />}
         {/* the window's bar at the foot: where the view sits in the whole game; drag it to pan */}
