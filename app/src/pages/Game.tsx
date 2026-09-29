@@ -31,7 +31,7 @@ import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
-import { analysisLane, narrowRailTop, useHudInsets } from '@/components/game/useHudInsets';
+import { analysisLane, useHudInsets } from '@/components/game/useHudInsets';
 import { isKey } from '@/components/game/keybindings';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
@@ -619,7 +619,7 @@ export default function Game() {
       {/* ------- floating HUD (panels: coal-900/80–85 + backdrop-blur) ------- */}
       {/* the orders shown on the board: the whole HUD steps aside, the ribbon alone stays */}
       {!surveying && <EdgeTracks />}
-      {!surveying && <GameTopBar candle={candle} marketOpen={marketOpen} />}
+      {!surveying && !review && <GameTopBar candle={candle} marketOpen={marketOpen} />}
       {!surveying && <PlayerRail
         tools={
           /* the tools under the players: the bots' pace while they play,
@@ -673,7 +673,7 @@ export default function Game() {
           the full tray hangs right under it when asked, whole, no scrolling,
           and the banner never moves for it (it keeps clear of the tray's
           column by itself) */}
-      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
+      {!surveying && <MarketPill market={(review?.state ?? game).market} consume={consumePreview ?? {}} top={insets.top} bottom={review ? insets.bottom + 8 : undefined} open={marketOpen} onToggle={() => setMarketOpen((o) => !o)} />}
       <AnimatePresence initial={false}>
         {marketOpen && (
           <motion.aside
@@ -870,7 +870,7 @@ export default function Game() {
       {/* the guide's own lane, beside the table rather than over it */}
       {/* the review's plate: which moment of the game the board shows */}
       {review && (
-        <div className="pointer-events-none fixed left-0 z-[66] flex justify-center" style={{ top: narrowRailTop(insets), right: analysisPane }}>
+        <div className="pointer-events-none fixed z-[66] flex justify-end" style={{ bottom: insets.bottom + 8, right: analysisPane + 12 }}>
           <div className="pointer-events-auto flex items-center gap-3 rounded-md border border-brass-400/70 bg-coal-950/95 px-3 py-1.5 shadow-e3">
             <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
             <button type="button" onClick={leaveReview} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">

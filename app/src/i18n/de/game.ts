@@ -716,7 +716,7 @@ const game: typeof engame = {
   },
   coachChip: { better: 'Besser: {move}', fine: 'Der Richter hätte es nicht besser gemacht', close: 'Schließen' },
   debrief: {
-    tabs: { moves: 'Züge', review: 'Bilanz' },
+    tabs: { moves: 'Züge', review: 'Bilanz', ledger: 'Register' },
     lit: 'Plan hell während der Rückschau',
     dim: 'Plan abgedunkelt während der Rückschau',
     keyTip: 'Die drei steilsten Einbrüche deiner Chancen, wer auch immer zog',

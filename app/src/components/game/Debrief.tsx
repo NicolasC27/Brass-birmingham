@@ -515,7 +515,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const close = () => setDebriefOpen(false);
   /* the panel's two pages under the curve: the moves, or the seat's review;
      a line being explored takes the room above the moves */
-  const [tab, setTab] = useState<'moves' | 'review'>('moves');
+  const [tab, setTab] = useState<'moves' | 'review' | 'ledger'>('moves');
   /* the moves shown: all of them, one grade of the reader's, or the key moments */
   const [filter, setFilter] = useState<Grade | 'key' | null>(null);
   const [fivePlans, setFivePlans] = useState(false);
@@ -539,6 +539,12 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   }, [setReview, setReviewAt]);
   const width = Math.max(GUIDE_RAIL, guideDock());
   const listRef = useRef<HTMLOListElement>(null);
+  const ledgerRef = useRef<HTMLOListElement>(null);
+  /* the register keeps its latest line in view */
+  useEffect(() => {
+    const el = ledgerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [tab, shown]);
   useEffect(() => {
     listRef.current?.querySelector<HTMLElement>(`[data-at="${at}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [at]);
@@ -694,7 +700,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       {/* the pages: the moves, or the seat's review; a line being explored sits above the moves */}
       {!help && !vary && (
         <div role="tablist" className="flex shrink-0 items-end gap-1 border-b border-brass-700/40">
-          {(['moves', 'review'] as const).map((id) => (
+          {(['moves', 'review', 'ledger'] as const).map((id) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn('-mb-px rounded-t px-3 py-1 font-fell text-[10.5px] uppercase tracking-[0.18em] transition-colors', tab === id ? 'border border-b-0 border-brass-700/40 bg-coal-900/80 text-brass-300' : 'text-cream-100/50 hover:text-cream-100/80')}>
               {t(`game.debrief.tabs.${id}`)}
             </button>
@@ -873,6 +879,24 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             })}
           </ol>
         </>
+      )}
+
+      {/* the register page: what the ledger says up to the position on show, latest last */}
+      {!help && !vary && tab === 'ledger' && shown && (
+        <ol ref={ledgerRef} className="min-h-0 flex-1 overflow-y-auto pr-1 font-sans text-[11px] text-cream-100/75 [scrollbar-width:thin]">
+          {shown.ledger.filter((e) => e.verb !== 'system' || e.key === 'payday').map((e, i, all) => {
+            const newRound = i === 0 || all[i - 1].round !== e.round || all[i - 1].era !== e.era;
+            return (
+              <li key={e.id}>
+                {newRound && <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.debrief.round', { round: e.round, era: t(e.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })}</p>}
+                <p className="flex items-start gap-2 px-1.5 py-0.5">
+                  {e.player !== undefined && <span aria-hidden className="mt-1.5 h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[e.player]?.color]?.hex ?? '#C9A45C' }} />}
+                  <span className="min-w-0 flex-1 leading-snug">{ledgerText(e, t)}</span>
+                </p>
+              </li>
+            );
+          })}
+        </ol>
       )}
 
       {/* the review page: the plan the moves add up to, the guide's counted tips, the key moments */}

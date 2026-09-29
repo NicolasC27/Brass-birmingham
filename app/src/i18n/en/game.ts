@@ -714,7 +714,7 @@ const game = {
   },
   coachChip: { better: 'Better: {move}', fine: 'The judge would not have done better', close: 'Close' },
   debrief: {
-    tabs: { moves: 'Moves', review: 'Review' },
+    tabs: { moves: 'Moves', review: 'Review', ledger: 'Ledger' },
     lit: 'Board lit during the review',
     dim: 'Board dimmed during the review',
     keyTip: 'The three steepest falls of your chances, whoever moved',

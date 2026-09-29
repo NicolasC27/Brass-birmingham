@@ -716,7 +716,7 @@ const fr: typeof engame = {
   },
   coachChip: { better: 'Mieux : {move}', fine: 'Le juge n’aurait pas fait mieux', close: 'Fermer' },
   debrief: {
-    tabs: { moves: 'Coups', review: 'Bilan' },
+    tabs: { moves: 'Coups', review: 'Bilan', ledger: 'Registre' },
     lit: 'Plateau en clair pendant la revue',
     dim: 'Plateau assombri pendant la revue',
     keyTip: 'Les trois plus grosses chutes de vos chances, qui que ce soit qui ait joué',
