@@ -814,6 +814,33 @@ const game: typeof engame = {
     lost: '−{p} % de opciones',
     roundShort: 'R{round}',
     cost: { reading: 'Lo que costó… la máquina juega las dos líneas', short: 'A {n} jugadas:', shortTip: 'La mejor ruta contra la tuya, {n} jugadas después, jugadas por la máquina: tus puntos, tus ingresos, tu caja', vp: 'PV', income: 'ingresos', long: 'Hasta el final:', longTip: 'La máquina juega la mejor ruta y el resto de la partida en tu lugar; la cifra es suya, no tuya', longLine: '{vp} PV en vez de {actual} ({gap}).', rivals: 'Los demás: {list}.' },
+    help: {
+      open: 'Cómo leer el análisis',
+      title: 'Cómo leer el análisis',
+      judges: {
+        title: 'Los tres jueces',
+        quick: 'la mesa tal como está, sin jugar una jugada más. Inmediato y tosco: casi todas las jugadas parecen justas.',
+        long: 'la máquina juega cinco jugadas más para todos los asientos, tres continuaciones distintas, y promedia. El ajuste por defecto, un minuto aproximadamente.',
+        deep: 'diez jugadas más, tres continuaciones. El más preciso, dos o tres veces más largo.',
+      },
+      grades: {
+        title: 'Las notas',
+        how: 'En cada turno tuyo, las ocho rutas mejor situadas más la tuya. Cada ruta la juega la máquina hacia delante y su opción de ganar se lee en una curva calibrada sobre cientos de partidas. La pérdida es la opción de la mejor ruta menos la tuya, en puntos.',
+      },
+      method: {
+        title: 'Releer una partida, en orden',
+        s1: 'La curva primero: las grandes caídas son los momentos que entender, no las olas pequeñas.',
+        s2: 'Los errores graves, luego los errores. Para cada uno: «Mejor», los puntos a cinco jugadas y hasta el final, luego «Ver esta jugada» y dejar jugar la línea para ver por qué.',
+        s3: 'Las imprecisiones solo después: son ajuste, no lección.',
+        s4: 'El Balance: ¿se siguió el plan hasta el final y los puntos por acción rondan los cinco? Una partida se pierde más a menudo por acciones desperdiciadas que por una mala jugada aislada.',
+        s5: 'Una nota vale para su posición: un «error» en la ronda 2 y otro en la 9 costaron la misma opción, no los mismos puntos.',
+      },
+      weigh: {
+        title: 'Lo que más pesa',
+        text: 'Las acciones ante todo, cada una debería rendir cerca de cinco puntos. Los ingresos repuestos pronto. Los raíles dobles en la era del raíl. No pagar la cerveza y el hierro ajenos cuando los tuyos bastan.',
+      },
+      note: 'El juez es el de las máquinas: lee más lejos de lo que ellas juegan, así que encuentra errores incluso a los bots. Sus cifras son fiables con unos puntos de margen; el orden de las rutas lo es más que las unidades.',
+    },
     quality: { top: 'precisa', good: 'buena', inaccuracy: 'imprecisión', mistake: 'error', blunder: 'pifia' },
     close: 'Cerrar el balance',
     open: 'El balance',

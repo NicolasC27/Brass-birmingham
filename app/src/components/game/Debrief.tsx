@@ -578,6 +578,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the moves shown: all of them, one grade of the reader's, or the key moments */
   const [filter, setFilter] = useState<Grade | 'key' | null>(null);
   const [fivePlans, setFivePlans] = useState(false);
+  /* the sheet that says how to read all this: the judges, the grades, a method */
+  const [help, setHelp] = useState(false);
   const lit = useBoardOptions().reviewLit;
   const keyAt = useMemo(() => new Set(keyMoments.map((m) => m.k)), [keyMoments]);
   const listed = (k: number, v: Verdict | undefined): boolean => {
@@ -628,6 +630,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             ))}
           </select>
         </label>
+        <button type="button" onClick={() => setHelp((o) => !o)} aria-pressed={help} aria-label={t('game.debrief.help.open')} title={t('game.debrief.help.open')} className={cn('rounded-md border p-1 transition-colors', help ? 'border-brass-400 text-brass-300' : 'border-brass-700/50 text-brass-400/80 hover:border-brass-400')}>
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
         <button type="button" onClick={close} aria-label={t('game.debrief.close')} title={t('game.debrief.close')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
           <X className="h-3.5 w-3.5" />
         </button>
@@ -703,8 +708,37 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         </div>
       </div>
 
+      {/* how to read all this: the judges, the grades, a method, and where the figures come from */}
+      {help && (
+        <div className="paper min-h-0 flex-1 overflow-y-auto px-3 py-2 [scrollbar-width:thin]">
+          <p className="font-fell text-[11px] uppercase tracking-[0.2em] text-ink-900/60">{t('game.debrief.help.title')}</p>
+          <h3 className="mt-2 font-fell text-[13px] text-ink-900">{t('game.debrief.help.judges.title')}</h3>
+          <ul className="mt-1 flex flex-col gap-1 font-sans text-[11.5px] leading-snug text-ink-900/85">
+            {(['quick', 'long', 'deep'] as const).map((id) => (
+              <li key={id}><span className="font-semibold">{t(`game.debrief.judge.${id}`)}</span> — {t(`game.debrief.help.judges.${id}`)}</li>
+            ))}
+          </ul>
+          <h3 className="mt-3 font-fell text-[13px] text-ink-900">{t('game.debrief.help.grades.title')}</h3>
+          <p className="mt-1 font-sans text-[11.5px] leading-snug text-ink-900/85">{t('game.debrief.help.grades.how')}</p>
+          <ul className="mt-1 flex flex-col gap-0.5 font-sans text-[11.5px] text-ink-900/85">
+            {(['top', 'good', 'inaccuracy', 'mistake', 'blunder'] as const).map((g) => (
+              <li key={g}><span className={cn('font-semibold', g === 'blunder' ? 'text-rust-700' : g === 'mistake' ? 'text-copper-700' : '')}>{t(`game.debrief.quality.${g}`)}</span> : {t(`game.debrief.gradeTip.${g}`)}</li>
+            ))}
+          </ul>
+          <h3 className="mt-3 font-fell text-[13px] text-ink-900">{t('game.debrief.help.method.title')}</h3>
+          <ol className="mt-1 flex list-decimal flex-col gap-1 pl-4 font-sans text-[11.5px] leading-snug text-ink-900/85">
+            {(['s1', 's2', 's3', 's4', 's5'] as const).map((k) => (
+              <li key={k}>{t(`game.debrief.help.method.${k}`)}</li>
+            ))}
+          </ol>
+          <h3 className="mt-3 font-fell text-[13px] text-ink-900">{t('game.debrief.help.weigh.title')}</h3>
+          <p className="mt-1 font-sans text-[11.5px] leading-snug text-ink-900/85">{t('game.debrief.help.weigh.text')}</p>
+          <p className="mt-3 font-serif text-[11.5px] italic leading-snug text-ink-900/65">{t('game.debrief.help.note')}</p>
+        </div>
+      )}
+
       {/* the pages: the moves, or the seat's review; a line being explored sits above the moves */}
-      {!vary && (
+      {!help && !vary && (
         <div role="tablist" className="flex shrink-0 items-end gap-1 border-b border-brass-700/40">
           {(['moves', 'review'] as const).map((id) => (
             <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn('-mb-px rounded-t px-3 py-1 font-fell text-[10.5px] uppercase tracking-[0.18em] transition-colors', tab === id ? 'border border-b-0 border-brass-700/40 bg-coal-900/80 text-brass-300' : 'text-cream-100/50 hover:text-cream-100/80')}>
@@ -715,7 +749,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       )}
 
       {/* the variation: its picks as a trail, the roads at its tip, its moves */}
-      {vary && (
+      {!help && vary && (
         <div className="paper max-h-[55%] shrink-0 overflow-y-auto px-3 py-2 [scrollbar-width:thin]">
           <div className="flex flex-wrap items-center gap-1 font-sans text-[10.5px] text-ink-900/70">
             <span className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.debrief.roads')}</span>
@@ -785,7 +819,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       )}
 
       {/* the moves page: the reader's grades as filters, then every move */}
-      {(vary || tab === 'moves') && (
+      {!help && (vary || tab === 'moves') && (
         <>
           {!vary && tally && (
             <div className="flex shrink-0 flex-wrap items-center gap-1.5">
@@ -878,7 +912,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       )}
 
       {/* the review page: the plan the moves add up to, the guide's counted tips, the key moments */}
-      {!vary && tab === 'review' && (
+      {!help && !vary && tab === 'review' && (
         <div className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
           {plan.deeds.actions > 0 && (
             <section>

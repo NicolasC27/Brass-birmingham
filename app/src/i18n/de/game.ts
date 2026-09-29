@@ -814,6 +814,33 @@ const game: typeof engame = {
     lost: '−{p} % Chancen',
     roundShort: 'R{round}',
     cost: { reading: 'Was es gekostet hat… die Maschine spielt beide Linien', short: '{n} Züge weiter:', shortTip: 'Der bessere Weg gegen deinen, {n} Züge weiter, von der Maschine gespielt: deine Punkte, dein Einkommen, deine Kasse', vp: 'SP', income: 'Einkommen', long: 'Bis zum Ende:', longTip: 'Die Maschine spielt den besseren Weg und den Rest der Partie an deiner Stelle; die Zahl ist ihre, nicht deine', longLine: '{vp} SP statt {actual} ({gap}).', rivals: 'Die anderen: {list}.' },
+    help: {
+      open: 'Wie die Analyse zu lesen ist',
+      title: 'Wie die Analyse zu lesen ist',
+      judges: {
+        title: 'Die drei Richter',
+        quick: 'der Tisch, wie er steht, ohne einen Zug weiterzuspielen. Sofort und grob: fast jeder Zug wirkt richtig.',
+        long: 'die Maschine spielt für alle Plätze fünf Züge weiter, drei verschiedene Fortsetzungen, und mittelt. Die Voreinstellung, etwa eine Minute.',
+        deep: 'zehn Züge weiter, drei Fortsetzungen. Am genauesten, zwei- bis dreimal so lang.',
+      },
+      grades: {
+        title: 'Die Noten',
+        how: 'In jedem deiner Züge die acht bestgelegenen Wege plus deiner. Jeden Weg spielt die Maschine weiter, und seine Gewinnchance wird an einer über Hunderte Partien geeichten Kurve abgelesen. Der Verlust ist die Chance des besten Wegs abzüglich deiner, in Punkten.',
+      },
+      method: {
+        title: 'Eine Partie nachlesen, der Reihe nach',
+        s1: 'Zuerst die Kurve: die großen Einbrüche sind die Momente, die es zu verstehen gilt, nicht die kleinen Wellen.',
+        s2: 'Grobe Fehler, dann Fehler. Zu jedem: „Besser“, die Punkte fünf Züge weiter und bis zum Ende, dann „Diesen Zug zeigen“ und die Linie spielen lassen, um zu sehen, warum.',
+        s3: 'Ungenauigkeiten erst danach: das ist Feinschliff, keine Lektion.',
+        s4: 'Die Bilanz: wurde der Plan zu Ende geführt, und liegen die Punkte je Aktion nahe fünf? Eine Partie geht öfter an vergeudeten Aktionen verloren als an einem einzelnen schlechten Zug.',
+        s5: 'Eine Note gilt für ihre Stellung: ein „Fehler“ in Runde 2 und einer in Runde 9 kosteten dieselbe Chance, nicht dieselben Punkte.',
+      },
+      weigh: {
+        title: 'Was am meisten zählt',
+        text: 'Die Aktionen vor allem, jede sollte nahe fünf Punkte bringen. Früh zurückgesetztes Einkommen. Doppelschienen in der Schienenära. Nicht das Bier und Eisen der anderen bezahlen, wenn deine genügen.',
+      },
+      note: 'Der Richter ist der der Maschinen: er liest weiter, als sie spielen, und findet daher selbst bei den Bots Fehler. Seine Zahlen sind auf wenige Punkte verlässlich; die Reihenfolge der Wege mehr als die Einheiten.',
+    },
     quality: { top: 'genau', good: 'gut', inaccuracy: 'Ungenauigkeit', mistake: 'Fehler', blunder: 'Patzer' },
     close: 'Nachlese schließen',
     open: 'Die Nachlese',

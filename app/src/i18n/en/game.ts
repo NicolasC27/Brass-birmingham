@@ -812,6 +812,33 @@ const game = {
     lost: '−{p} % chance',
     roundShort: 'R{round}',
     cost: { reading: 'What it cost… the machine plays both lines', short: '{n} moves on:', shortTip: 'The better road against yours, {n} moves on, played by the machine: your points, income and cash', vp: 'VP', income: 'income', long: 'To the end:', longTip: 'The machine plays the better road and the rest of the game in your seat; the figure is its own, not yours', longLine: '{vp} VP instead of {actual} ({gap}).', rivals: 'The others: {list}.' },
+    help: {
+      open: 'How to read the analysis',
+      title: 'How to read the analysis',
+      judges: {
+        title: 'The three judges',
+        quick: 'the table as it stands, without playing a move on. Instant and coarse: almost every move reads as best.',
+        long: 'the machine plays five moves on for every seat, three different continuations, and averages them. The default, about a minute.',
+        deep: 'ten moves on, three continuations. The most accurate, two to three times longer.',
+      },
+      grades: {
+        title: 'The grades',
+        how: 'At each of your turns, the eight best-placed roads plus yours. Each road is played on by the machine and its chance of winning read on a curve calibrated over hundreds of games. The loss is the best road’s chance less yours, in points.',
+      },
+      method: {
+        title: 'Reading a game again, in order',
+        s1: 'The curve first: the big falls are the moments to understand, not the small waves.',
+        s2: 'Blunders, then mistakes. For each: “Better”, the points a few moves on and to the end, then “Show this move” and let the line play to see why.',
+        s3: 'Inaccuracies only after: they are tuning, not a lesson.',
+        s4: 'The Review: was the plan carried through, and are the points per action near five? A game is lost more often to wasted actions than to one bad move.',
+        s5: 'A grade holds for its position: a “mistake” in round 2 and one in round 9 cost the same chance, not the same points.',
+      },
+      weigh: {
+        title: 'What weighs most',
+        text: 'Actions above all, each should bring close to five points. Income reset early. Doubled rails in the rail era. Not paying for others’ beer and iron when yours will do.',
+      },
+      note: 'The judge is the machines’ own: it reads further than they play, so it finds mistakes even in the bots. Its figures are reliable to a few points; the order of the roads more so than the units.',
+    },
     quality: { top: 'best', good: 'good', inaccuracy: 'inaccuracy', mistake: 'mistake', blunder: 'blunder' },
     close: 'Close the debrief',
     open: 'The debrief',

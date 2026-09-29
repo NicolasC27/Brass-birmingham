@@ -814,6 +814,33 @@ const fr: typeof engame = {
     lost: '−{p} % de chances',
     roundShort: 'M{round}',
     cost: { reading: 'Ce que ça a coûté… la machine joue les deux suites', short: 'À {n} coups :', shortTip: 'La meilleure route contre la vôtre, {n} coups plus loin, joués par la machine : vos points, votre revenu, votre caisse', vp: 'PV', income: 'revenu', long: 'Jusqu’au bout :', longTip: 'La machine joue la meilleure route puis toute la fin de partie à votre place ; le chiffre est le sien, pas le vôtre', longLine: '{vp} PV au lieu de {actual} ({gap}).', rivals: 'Les autres : {list}.' },
+    help: {
+      open: 'Comment lire l’analyse',
+      title: 'Comment lire l’analyse',
+      judges: {
+        title: 'Les trois juges',
+        quick: 'la table telle qu’elle est, sans jouer un coup de plus. Immédiat et grossier : presque tous les coups paraissent justes.',
+        long: 'la machine joue cinq coups de plus pour tous les sièges, trois suites différentes, et fait la moyenne. Le réglage par défaut, une minute environ.',
+        deep: 'dix coups de plus, trois suites. Le plus juste, deux à trois fois plus long.',
+      },
+      grades: {
+        title: 'Les notes',
+        how: 'À chacun de vos tours, les huit routes les mieux placées plus la vôtre. Chaque route est jouée en avant par la machine et sa chance de gagner est lue sur une courbe calibrée sur des centaines de parties. La perte, c’est la chance de la meilleure route moins celle de la vôtre, en points.',
+      },
+      method: {
+        title: 'Relire une partie, dans l’ordre',
+        s1: 'La courbe d’abord : les grandes chutes sont les moments à comprendre, pas les petites vagues.',
+        s2: 'Les bévues, puis les erreurs. Pour chacune : « Mieux », les points à cinq coups et jusqu’au bout, puis « Voir ce coup » et laisser jouer la suite pour voir pourquoi.',
+        s3: 'Les imprécisions seulement après : c’est du réglage, pas une leçon.',
+        s4: 'Le Bilan : le plan a-t-il été suivi jusqu’au bout, et les points par action sont-ils près de cinq ? Une partie se perd plus souvent par des actions gaspillées que par un mauvais coup isolé.',
+        s5: 'Une note vaut pour la position : un coup « erreur » en manche 2 et un en manche 9 ont coûté la même chance, pas les mêmes points.',
+      },
+      weigh: {
+        title: 'Ce qui pèse le plus',
+        text: 'Les actions avant tout, chacune devrait rapporter près de cinq points. Le revenu remis à niveau tôt. Les rails doublés à l’ère rail. Ne pas payer la bière et le fer des autres quand les vôtres suffisent.',
+      },
+      note: 'Le juge est celui des machines : il lit plus loin qu’elles ne jouent, et trouve donc des erreurs même aux bots. Ses chiffres sont fiables à quelques points près ; le classement des routes l’est davantage que les unités.',
+    },
     quality: { top: 'juste', good: 'bon', inaccuracy: 'imprécision', mistake: 'erreur', blunder: 'bévue' },
     close: 'Fermer le débrief',
     open: 'Le débrief',
