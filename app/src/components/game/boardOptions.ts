@@ -103,6 +103,8 @@ export interface BoardOptions {
   telegrams: boolean;
   /** the focus view: rail folded, tools away, minimap small, hand tucked, no Gazette */
   focus: boolean;
+  /** a game read again keeps its land lit rather than dimmed to night */
+  reviewLit: boolean;
   /** the victory-point track along the top edge (the rail tells the points anyway) */
   vpTrack: boolean;
   /** mat levels as the player's real cards with a pile, or compact boxes */
@@ -138,6 +140,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   sound: 'brassworks.sound',
   telegrams: 'brassworks.telegrams',
   focus: 'brassworks.focus',
+  reviewLit: 'brassworks.reviewLit',
   vpTrack: 'brassworks.vpTrack',
   matStyle: 'brassworks.matStyle',
   matCount: 'brassworks.matCount',
@@ -181,6 +184,7 @@ let state: BoardOptions = {
   sound: read('sound', true),
   telegrams: read('telegrams', true),
   focus: read('focus', false),
+  reviewLit: read('reviewLit', false),
   vpTrack: read('vpTrack', false),
   matStyle: read('matStyle', 'cards'),
   matCount: read('matCount', false),

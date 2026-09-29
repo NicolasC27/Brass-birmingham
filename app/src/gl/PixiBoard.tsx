@@ -310,7 +310,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (!scene) return;
     /* the survey: the land drained of colour and dimmed to a night-blue
        ink, so the orders and the tiles still to flip are the only warmth */
-    const sepia = preview ? new ColorMatrixFilter() : null;
+    /* the reader may keep the land lit while a game is read: no ink, no night */
+    const lit = reading && opts.reviewLit;
+    const sepia = preview && !lit ? new ColorMatrixFilter() : null;
     if (sepia) {
       sepia.desaturate();
       sepia.tint(0x7f9cc8, true);
@@ -324,7 +326,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     /* reading a game again: the land goes to night so the tiles, the links and
        the merchants are the only thing left to read on it */
     if (!sepia) {
-      const night = reading ? new ColorMatrixFilter() : null;
+      const night = reading && !lit ? new ColorMatrixFilter() : null;
       if (night) {
         night.desaturate();
         night.brightness(0.35, true);
@@ -332,7 +334,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.bgCanal.filters = night ? [night] : null;
       scene.bgRail.filters = night ? [night] : null;
       const ambiance = scene.world.children[3];
-      if (ambiance && ambiance !== scene.overlay) ambiance.alpha = reading ? 0.25 : 1;
+      if (ambiance && ambiance !== scene.overlay) ambiance.alpha = reading && !lit ? 0.25 : 1;
     }
     /* the camera on the orders: close on them when they sit together, the
        whole table when they are spread out */
@@ -383,7 +385,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       for (const child of scene.world.children) child.filters = null;
       sepia?.destroy();
     };
-  }, [preview, reading]);
+  }, [preview, reading, opts.reviewLit]);
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
