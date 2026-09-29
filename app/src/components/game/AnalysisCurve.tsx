@@ -61,18 +61,44 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
   if (view) {
     let a = 1;
     let b = 0;
-    for (let k = Math.max(0, Math.floor(lo)); k <= Math.min(last, Math.ceil(hi)); k++) {
+    const k0 = Math.max(0, Math.floor(lo));
+    const k1 = Math.min(last, Math.ceil(hi));
+    for (let k = k0; k <= k1; k++) {
       const r = reads[k];
       a = Math.min(a, r ? r.low : chances[k]);
       b = Math.max(b, r ? r.high : chances[k]);
+      for (const rv of rivals) {
+        const c = rv.chances[k];
+        if (c !== null) {
+          a = Math.min(a, c);
+          b = Math.max(b, c);
+        }
+      }
     }
-    const pad = Math.max(0.04, (b - a) * 0.2);
+    if (vary) {
+      vary.chances.forEach((c, i) => {
+        const k = vary.from + i;
+        if (k >= k0 && k <= k1) {
+          a = Math.min(a, c);
+          b = Math.max(b, c);
+        }
+      });
+      for (const sv of vary.seats) sv.chances.forEach((c, i) => {
+        const k = vary.from + i;
+        if (k >= k0 && k <= k1) {
+          a = Math.min(a, c);
+          b = Math.max(b, c);
+        }
+      });
+    }
+    /* a hair of room above and below, so the lines fill the height */
+    const pad = Math.max(0.015, (b - a) * 0.08);
     yLo = Math.max(0, a - pad);
     yHi = Math.min(1, b + pad);
-    if (yHi - yLo < 0.12) {
+    if (yHi - yLo < 0.06) {
       const c = (yLo + yHi) / 2;
-      yLo = Math.max(0, c - 0.06);
-      yHi = Math.min(1, c + 0.06);
+      yLo = Math.max(0, c - 0.03);
+      yHi = Math.min(1, c + 0.03);
     }
   }
   const y = (c: number) => TOP + (1 - (c - yLo) / (yHi - yLo)) * (H - TOP - BOTTOM);
@@ -211,6 +237,11 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
           <clipPath id="curve-above">
             <rect x={0} y={0} width={w} height={Math.max(0, Math.min(H, mid))} />
           </clipPath>
+          {vary && (
+            <clipPath id="curve-past">
+              <rect x={x(vary.from)} y={0} width={Math.max(0, w - x(vary.from))} height={H} />
+            </clipPath>
+          )}
           <clipPath id="curve-below">
             <rect x={0} y={Math.max(0, Math.min(H, mid))} width={w} height={Math.max(0, H - Math.max(0, Math.min(H, mid)))} />
           </clipPath>
@@ -243,13 +274,26 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
         ))}
         {doubt && <path d={doubt} fill={tint(color, 0.22)} stroke="none" />}
         {/* the other seats, faint: the same reading from their chair */}
-        {rivals.map((r) => {
-          const pts = r.chances.map((c, k) => (c === null ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
-          return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
-        })}
-        {/* the line: dashed while a stretch is read by one pass only */}
-        <path d={line} fill="none" stroke={color} strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
-        {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
+        {/* a variation on view: what the game did past the fork steps back,
+            so the lines that matter are the ones being tried */}
+        <g opacity={vary ? 0.35 : 1} clipPath={vary ? 'url(#curve-past)' : undefined}>
+          {rivals.map((r) => {
+            const pts = r.chances.map((c, k) => (c === null ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
+            return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
+          })}
+          {/* the line: dashed while a stretch is read by one pass only */}
+          <path d={line} fill="none" stroke={color} strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
+          {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
+        </g>
+        {vary && (
+          <g>
+            {rivals.map((r) => {
+              const pts = r.chances.map((c, k) => (c === null || k > vary.from ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
+              return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
+            })}
+            <path d={smooth(pts.slice(0, vary.from + 1))} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+          </g>
+        )}
         {misses.map((m) => (
           <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1}>
             <title>{`${m.at + 1} · −${Math.round(m.loss * 100)} %`}</title>
@@ -257,12 +301,16 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
         ))}
         {/* the variation, dashed, leaving the game where it does */}
         {vary && vary.chances.length > 1 && (
-          <g pointerEvents="none">
+          <g pointerEvents="none" className="curve-vary">
+            {/* the fork, marked */}
+            <line x1={x(vary.from)} x2={x(vary.from)} y1={TOP - 4} y2={BAR_Y - 2} stroke="rgba(245,235,215,0.5)" strokeWidth={1} strokeDasharray="2 2" />
             {vary.seats.map((r) => (
-              <path key={r.seat} d={r.chances.map((c, i) => `${i === 0 ? 'M' : 'L'}${x(vary.from + i).toFixed(1)},${y(c).toFixed(1)}`).join(' ')} fill="none" stroke={r.color} strokeOpacity={0.6} strokeWidth={1.2} strokeDasharray="3 3" strokeLinejoin="round" />
+              <path key={r.seat} d={smooth(r.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke={r.color} strokeOpacity={0.9} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
             ))}
-            <path d={vary.chances.map((c, i) => `${i === 0 ? 'M' : 'L'}${x(vary.from + i).toFixed(1)},${y(c).toFixed(1)}`).join(' ')} fill="none" stroke="#F5EBD7" strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" />
-            <circle cx={x(vary.from + vary.chances.length - 1)} cy={y(vary.chances[vary.chances.length - 1])} r={3} fill="#F5EBD7" stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
+            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke="rgba(0,0,0,0.55)" strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke={color} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke="#F5EBD7" strokeWidth={1} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
+            <circle cx={x(vary.from + vary.chances.length - 1)} cy={y(vary.chances[vary.chances.length - 1])} r={3.5} fill="#F5EBD7" stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
           </g>
         )}
         {hover !== null && hover !== at && mark(hover, false)}

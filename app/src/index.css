@@ -612,3 +612,16 @@ html[data-theme="light"] .platform-root {
     scroll-behavior: auto !important;
   }
 }
+
+/* the analysis: a variation being tried breathes, so it reads as a line
+   laid over the game rather than one of it */
+@keyframes curve-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.62; }
+}
+.curve-vary {
+  animation: curve-breathe 2.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .curve-vary { animation: none; }
+}
