@@ -274,6 +274,8 @@ export default function EdgeTracks() {
   const loanConfirm = useGame((s) => s.loanConfirm);
   const loanPeek = useGame((s) => s.loanPeek);
   const { incomeSide, vpTrack: vpTrackOn } = useBoardOptions();
+  /* a game being read: the analysis's curve takes the top edge */
+  const reading = useGame((s) => s.debriefOpen && s.game?.phase === 'game-over');
   const t = useT();
   const reduced = useReducedMotion();
   const incAxis: Axis = incomeSide === 'left' ? 'y' : 'x';
@@ -390,7 +392,7 @@ export default function EdgeTracks() {
           on screen when the player asked for it (settings, or the key):
           a row of zeros is what they asked to see, not a surprise */}
       <AnimatePresence initial={false}>
-        {game && vpTrackOn && (
+        {game && vpTrackOn && !reading && (
           <motion.div
             key="vp"
             initial={{ y: -TRACK_H }}

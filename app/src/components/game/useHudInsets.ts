@@ -1,7 +1,7 @@
 import { readable } from '@/game/analysis';
 import { useGame } from '@/game/store';
 import { hudInsets, useBoardOptions } from './boardOptions';
-import { GUIDE_RAIL, guideDock } from './guideKeys';
+import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
 
 /** the lane the analysis panel holds down the right edge, and nothing when it
  *  is closed: the HUD keeps out of it rather than hiding under it */
@@ -16,7 +16,9 @@ export function useHudInsets(): { left: number; bottom: number; top: number; rig
   const opts = useBoardOptions();
   const table = useGame((s) => s.game !== null);
   const reading = useGame((s) => s.debriefOpen && readable(s.game));
-  return hudInsets(opts, table && opts.vpTrack, analysisLane(!!reading));
+  const base = hudInsets(opts, table && opts.vpTrack && !reading, analysisLane(!!reading));
+  /* a game being read: the curve runs across the top where the VP track was */
+  return reading ? { ...base, top: REVIEW_CURVE_H + 8 } : base;
 }
 
 /** on narrow screens the player rail is a strip under the top bar */

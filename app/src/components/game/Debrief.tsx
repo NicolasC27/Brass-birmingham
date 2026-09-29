@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router';
 import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Gauge, HelpCircle, Link2, Play, Radio, Sparkles, Sun, SunDim, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
@@ -18,7 +19,7 @@ import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/an
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
 import type { PlanId } from '@/game/plan';
 import { setBoardOption, useBoardOptions } from './boardOptions';
-import { GUIDE_RAIL, guideDock } from './guideKeys';
+import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -64,7 +65,7 @@ const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumF
    drag scrubs, a hover reads the figure. The judge's own doubt is drawn
    too: a ribbon between the lowest and the highest of its passes, and a
    dashed line as long as a stretch has been read by one pass only */
-function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, onPick }: { chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, onPick }: { height?: number; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -78,7 +79,7 @@ function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras,
     return () => ro.disconnect();
   }, []);
   const [hover, setHover] = useState<number | null>(null);
-  const H = 112;
+  const H = height;
   const TOP = 16;
   const BOTTOM = 6;
   const last = Math.max(1, chances.length - 1);
@@ -151,7 +152,7 @@ function Curve({ chances, reads, settled, rivals, at, marks, split, label, eras,
   };
   return (
     <div ref={box} className="w-full">
-      <svg width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label} onPointerDown={down} onPointerMove={move} onPointerLeave={() => setHover(null)} className="block h-28 w-full cursor-crosshair touch-none select-none rounded-sm border border-brass-700/40 bg-coal-900/80">
+      <svg width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label} onPointerDown={down} onPointerMove={move} onPointerLeave={() => setHover(null)} style={{ height: H }} className="block w-full cursor-crosshair touch-none select-none rounded-sm border border-brass-700/40 bg-coal-900/80">
         <defs>
           <clipPath id="curve-above">
             <rect x={0} y={0} width={w} height={mid} />
@@ -609,7 +610,18 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     listRef.current?.querySelector<HTMLElement>(`[data-at="${at}"]`)?.scrollIntoView({ block: 'nearest' });
   }, [at]);
 
+  /* the curve across the top of the board, where the VP track stood: wide,
+     tall, and clear of the panel; the HUD keeps under it */
+  const strip = createPortal(
+    <div data-debrief-curve className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
+      <Curve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+    </div>,
+    document.body,
+  );
+
   return (
+    <>
+    {strip}
     <aside data-debrief aria-label={t('game.debrief.title')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col gap-2 border-l border-brass-hairline bg-coal-950/92 px-3 py-3 backdrop-blur-md" style={{ width }}>
       <div className="flex shrink-0 items-center gap-2">
         <Sparkles className="h-4 w-4 text-brass-400" aria-hidden />
@@ -656,8 +668,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-coal-800" aria-hidden>
           <div className="h-full rounded-full bg-brass-400 transition-[width] duration-300" style={{ width: `${pct(chance)}%` }} />
         </div>
-        <div className="mt-2">
-          <Curve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+        <div className="mt-1">
           {/* how far the judge has got, a hair under the curve: it keeps its
               room once read, so nothing below it moves */}
           <div className={cn('mt-1 flex items-center gap-2 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} aria-live="polite">
@@ -1009,5 +1020,6 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         </div>
       )}
     </aside>
+    </>
   );
 }

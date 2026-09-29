@@ -10,6 +10,10 @@ export const POS_KEY = 'brassworks.guide.pos';
 /** the guide folded: a rail this wide down the right edge */
 export const GUIDE_RAIL = 44;
 
+/** the analysis's curve, drawn across the top of the board while a game is
+    read, this tall: it takes the VP track's place and more */
+export const REVIEW_CURVE_H = 132;
+
 /** how wide a lane the guide holds down the right edge, and zero when the
  *  window is too narrow to spare it — the note then floats over the board */
 export function guideDock(width = typeof window === 'undefined' ? 1280 : window.innerWidth): number {
