@@ -1886,7 +1886,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* the settings gear lives in the bottom-right chip row (pages/Game.tsx);
           zoom lives on the wheel / + / − / 0 keys */}
 
-      {!preview && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} frameRef={mmFrameRef} />}
+      {!preview && !reading && <Minimap view={view} container={size} onCenter={(wx, wy) => cameraRef.current?.centerOn(wx, wy)} era={game.era} game={game} frameRef={mmFrameRef} />}
 
       {/* a slot that takes either of two industries, picked to build on: the
           two faces side by side, the one to be built ringed; the other is a
