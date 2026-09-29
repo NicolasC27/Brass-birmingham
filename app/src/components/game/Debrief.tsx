@@ -23,7 +23,6 @@ import type { Motif } from '@/game/progress';
 import type { PlanId } from '@/game/plan';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
-import { getKeybindings, keyLabel } from './keybindings';
 import AnalysisCurve from './AnalysisCurve';
 import { RoundsGrid } from './Ledger';
 import { cn } from '@/lib/utils';
@@ -666,7 +665,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         <button type="button" onClick={() => setHelp((o) => !o)} aria-pressed={help} aria-label={t('game.debrief.help.open')} title={t('game.debrief.help.open')} className={cn('rounded-md border p-1 transition-colors', help ? 'border-brass-400 text-brass-300' : 'border-brass-700/50 text-brass-400/80 hover:border-brass-400')}>
           <HelpCircle className="h-3.5 w-3.5" />
         </button>
-        <button type="button" onClick={close} aria-label={t('game.debrief.close')} title={`${t('game.debrief.close')} (${keyLabel(getKeybindings().analysis)})`} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
+        <button type="button" onClick={close} aria-label={t('game.debrief.close')} title={t('game.debrief.close')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
           <X className="h-3.5 w-3.5" />
         </button>
       </div>

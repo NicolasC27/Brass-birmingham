@@ -347,17 +347,11 @@ export default function Game() {
         return;
       }
       if (!game || passTo) return;
-      /* the analysis is a place of its own, and a reader deep in it does not
-         leave it by a slip of the hand: only its own key (or its close button)
-         leaves it. Escape and the two keys that read the board while a game
-         runs do nothing here — they have nothing to say to a game already read */
-      if ((review || debriefOpen) && isKey(e, 'analysis')) {
-        e.preventDefault();
-        setReview(null);
-        setDebriefOpen(false);
-        return;
-      }
-      if ((review || debriefOpen) && (e.key === 'Escape' || isKey(e, 'survey') || isKey(e, 'lastMove'))) {
+      /* the analysis is a place of its own, and no key leaves it: only its
+         close button and the way out at the foot of the panel do. Its own
+         key, Escape and the two keys that read the board while a game runs
+         do nothing here — they have nothing to say to a game already read */
+      if ((review || debriefOpen) && (isKey(e, 'analysis') || e.key === 'Escape' || isKey(e, 'survey') || isKey(e, 'lastMove'))) {
         e.preventDefault();
         return;
       }
