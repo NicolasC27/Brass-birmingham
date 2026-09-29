@@ -350,9 +350,16 @@ function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string;
               {t('platform.desk.tables.resume')}
             </Button>
           ) : (
-            <Button variant="ghost" to={to} className="!h-9 text-[13px]">
-              {table.status === 'open' ? t('platform.desk.tables.room') : t('platform.desk.tables.results')}
-            </Button>
+            <>
+              {table.status === 'over' && (
+                <Button variant="ghost" to={`${to}?analyse=1`} className="!h-9 text-[13px]">
+                  {t('platform.desk.tables.analysis')}
+                </Button>
+              )}
+              <Button variant="ghost" to={to} className="!h-9 text-[13px]">
+                {table.status === 'open' ? t('platform.desk.tables.room') : t('platform.desk.tables.results')}
+              </Button>
+            </>
           )}
           <div className="relative">
             <Button variant="icon" aria-label={t('platform.desk.tables.leave')} aria-expanded={menu} onClick={() => setMenu((m) => !m)} icon={<MoreHorizontal size={16} aria-hidden />} />

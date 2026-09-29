@@ -393,6 +393,7 @@ const platform = {
       resume: 'Reprendre',
       room: 'Retourner au salon',
       results: 'Résultats',
+      analysis: 'L’analyse',
       round: 'tour {round}',
       toAct: 'à {name} de jouer',
       eraCanal: 'Ère du canal',

@@ -395,6 +395,7 @@ const platform: typeof enPlatform = {
       resume: 'Fortsetzen',
       room: 'Zurück ins Wartezimmer',
       results: 'Ergebnisse',
+      analysis: 'Die Analyse',
       round: 'Runde {round}',
       toAct: '{name} ist am Zug',
       eraCanal: 'Kanalzeit',

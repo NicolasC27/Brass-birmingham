@@ -300,6 +300,16 @@ export default function Game() {
     return candleEnd !== null ? { end: candleEnd } : null;
   }, [seat, onlineCandle, frozen, candleEnd]);
 
+  /* the desk sends a reader straight to the analysis of a finished game:
+     the panel opens on arrival, and the address is tidied */
+  const wantsAnalysis = useRef(new URLSearchParams(window.location.search).has('analyse'));
+  useEffect(() => {
+    if (!wantsAnalysis.current || !readable(game)) return;
+    wantsAnalysis.current = false;
+    setDebriefOpen(true);
+    window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+  }, [game, setDebriefOpen]);
+
   /* ------------------------- final write ------------------------ */
   /* a game already over when the page opened is being looked at again:
      its results were written then, and nobody is sent on to them */
