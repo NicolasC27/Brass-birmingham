@@ -273,8 +273,8 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
           <Eye className="h-3.5 w-3.5" />
         </button>
       )}
-      {/* fold the rail to one line per seat, for more board */}
-      {!narrow && !focus && (
+      {/* fold the rail to one line per seat, for more board — not while a game is read, the row is already as small as it gets */}
+      {!narrow && !focus && !reading && (
         <button
           type="button"
           onClick={() => setBoardOption('railCompact', !railCompact)}
