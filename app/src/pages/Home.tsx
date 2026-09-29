@@ -15,6 +15,7 @@ import ModeCard from '@/components/platform/ModeCard';
 import RankBadge from '@/components/platform/RankBadge';
 import TableBoard from '@/components/home/TableBoard';
 import ClubActivity from '@/components/home/ClubActivity';
+import ProgressCard from '@/components/desk/ProgressCard';
 import { usePresence } from '@/components/platform/presence';
 import { PLACEMENTS, rankOf } from '@/platform/rank';
 
@@ -243,6 +244,8 @@ export default function Home() {
           </motion.div>
 
           <ResumeBanner />
+
+          <ProgressCard quiet />
 
           <div className="flex flex-wrap gap-3">
             {[
