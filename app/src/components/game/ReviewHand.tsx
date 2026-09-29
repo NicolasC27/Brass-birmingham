@@ -31,7 +31,7 @@ export default function ReviewHand() {
   const spent = played && 'card' in played ? played.card : undefined;
   const color = PLAYER_COLORS[player.color]?.hex ?? '#C9A45C';
   return (
-    <div data-review-hand className="pointer-events-none fixed left-0 z-[63] flex justify-center" style={{ bottom: insets.bottom, right: insets.right }}>
+    <div data-review-hand className="pointer-events-none fixed z-[63] flex justify-end" style={{ bottom: insets.bottom, right: insets.right + 12, left: 260 }}>
       <div className="plaque pointer-events-auto flex max-w-[min(760px,92vw)] flex-wrap items-center gap-1.5 rounded-lg px-3 py-1.5">
         <span className="flex shrink-0 items-center gap-1.5 pr-1 font-fell text-[11px] text-cream-100/70">
           <span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: color }} />
