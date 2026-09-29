@@ -3,7 +3,8 @@ import { actorOf, applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
 import { BOT_SKILL } from '../data';
 import { newGame } from '../engine';
-import { GIVE, gradeOf, reviewGame, swingsFor } from '../review';
+import { LOSS, gradeOfLoss } from '../analysis';
+import { reviewGame, swingsFor } from '../review';
 import { readGame } from '../reviewWorker';
 import type { GameAction } from '../actions';
 import type { SetupPayload } from '../types';
@@ -165,7 +166,7 @@ describe('the review of a finished game', () => {
 describe('the machine reading the moves back', () => {
   it('reads every move of the seat it was given, and no other', () => {
     const { log } = playOut(2, 3, 'short');
-    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 0, budgetMs: 40 })];
+    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 0, judge: 'quick' })];
     const progress = notes.filter((n) => n.kind === 'progress');
     const done = notes.find((n) => n.kind === 'done');
     expect(notes.some((n) => n.kind === 'failed')).toBe(false);
@@ -177,7 +178,7 @@ describe('the machine reading the moves back', () => {
 
   it('knows how many moves it has to read before it starts', () => {
     const { log } = playOut(2, 3, 'short');
-    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 1, budgetMs: 40 })];
+    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 1, judge: 'quick' })];
     const progress = notes.filter((n) => n.kind === 'progress');
     /* the seat's own moves, counted the slow way */
     let t = newGame(setup(2, 'short'), 3);
@@ -197,7 +198,7 @@ describe('the machine reading the moves back', () => {
 
   it('reports every move it read, in play order, with what it would have done', () => {
     const { log } = playOut(2, 3, 'short');
-    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 0, budgetMs: 40 })];
+    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: log, seat: 0, judge: 'quick' })];
     const done = notes.find((n) => n.kind === 'done');
     if (done?.kind !== 'done') throw new Error('no reading');
     /* every move of the seat is reported, in the order it was played */
@@ -205,47 +206,51 @@ describe('the machine reading the moves back', () => {
     for (let i = 1; i < done.moves.length; i++) expect(done.moves[i].at).toBeGreaterThan(done.moves[i - 1].at);
     done.moves.forEach((m) => {
       expect(log[m.at]).toEqual(m.yours);
-      /* what was given up is never negative, and the position's own spread
-         is the yardstick: the best reading is never below the middling one */
-      expect(m.give).toBeGreaterThanOrEqual(0);
-      expect(m.best).toBeGreaterThanOrEqual(m.median);
+      /* the cost is in chance of winning: never negative, never more than
+         the best road was worth, and both ends are real probabilities */
+      expect(m.loss).toBeGreaterThanOrEqual(0);
+      expect(m.mine).toBeGreaterThanOrEqual(0);
+      expect(m.mine).toBeLessThanOrEqual(1);
       expect(m.best).toBeGreaterThanOrEqual(m.mine);
+      expect(m.loss).toBeCloseTo(m.best - m.mine, 6);
       expect(m.choices).toBeGreaterThan(0);
+      /* and the grade is read off that cost, by the one grader */
+      expect(m.grade).toBe(gradeOfLoss(m.loss));
       if (m.theirs) expect(JSON.stringify(m.yours)).not.toBe(JSON.stringify(m.theirs));
-      if (m.top) expect(m.give).toBe(0);
+      if (m.top) expect(m.loss).toBeLessThanOrEqual(LOSS.top);
     });
-    /* a game played by the plain machine is not a game of best moves */
-    expect(done.moves.some((m) => m.give > 0)).toBe(true);
+    /* a game played by the plain machine is not a game of best roads */
+    expect(done.moves.some((m) => m.loss > 0)).toBe(true);
   });
 
   it('says so rather than throwing when a log does not replay', () => {
-    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: [{ kind: 'sell', card: 'nope', sales: [] }], seat: 0, budgetMs: 20 })];
+    const notes = [...readGame({ setup: setup(2, 'short'), seed: 3, actions: [{ kind: 'sell', card: 'nope', sales: [] }], seat: 0, judge: 'quick' })];
     expect(notes.some((n) => n.kind === 'failed')).toBe(true);
   });
 });
 
-describe('grading a move against its own position', () => {
-  it('calls the best reading of them all the best move', () => {
-    expect(gradeOf(0)).toBe('top');
-    expect(gradeOf(-1)).toBe('top');
+describe('grading a move by what it cost in chance', () => {
+  it('calls the best road open the best move', () => {
+    expect(gradeOfLoss(0)).toBe('top');
+    expect(gradeOfLoss(LOSS.top)).toBe('top');
   });
 
-  it('climbs through the grades as more is given up', () => {
-    expect(gradeOf(GIVE.good - 0.01)).toBe('good');
-    expect(gradeOf(GIVE.good)).toBe('good');
-    expect(gradeOf(GIVE.good + 0.01)).toBe('inaccuracy');
-    expect(gradeOf(GIVE.inaccuracy)).toBe('inaccuracy');
-    expect(gradeOf(GIVE.inaccuracy + 0.01)).toBe('mistake');
-    expect(gradeOf(GIVE.mistake)).toBe('mistake');
-    expect(gradeOf(GIVE.mistake + 0.01)).toBe('blunder');
-    expect(gradeOf(99)).toBe('blunder');
+  it('climbs through the grades as more chance is given up', () => {
+    expect(gradeOfLoss(LOSS.top + 0.001)).toBe('good');
+    expect(gradeOfLoss(LOSS.good)).toBe('good');
+    expect(gradeOfLoss(LOSS.good + 0.001)).toBe('inaccuracy');
+    expect(gradeOfLoss(LOSS.inaccuracy)).toBe('inaccuracy');
+    expect(gradeOfLoss(LOSS.inaccuracy + 0.001)).toBe('mistake');
+    expect(gradeOfLoss(LOSS.mistake)).toBe('mistake');
+    expect(gradeOfLoss(LOSS.mistake + 0.001)).toBe('blunder');
+    expect(gradeOfLoss(1)).toBe('blunder');
   });
 
   it('never runs backwards', () => {
     const order = ['top', 'good', 'inaccuracy', 'mistake', 'blunder'];
     let last = 0;
-    for (let g = 0; g < 4; g += 0.05) {
-      const rank = order.indexOf(gradeOf(g));
+    for (let loss = 0; loss <= 1; loss += 0.01) {
+      const rank = order.indexOf(gradeOfLoss(loss));
       expect(rank).toBeGreaterThanOrEqual(last);
       last = rank;
     }

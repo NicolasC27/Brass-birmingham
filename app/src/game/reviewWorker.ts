@@ -1,20 +1,29 @@
 /* ------------------------------------------------------------------ */
 /* The second reading: what the machine would have played in your seat. */
 /*                                                                     */
-/* The search thinks on whatever thread it is given, and it is slow by  */
-/* design, so it is given one of its own here: the page asks, this      */
-/* replays the log, and at each of the reader's moves it asks the       */
-/* machine for its own and measures the distance between the two.      */
+/* A judge is slow, so it is given a thread of its own: the page asks,  */
+/* this replays the log, and at each of the reader's moves it weighs    */
+/* every road open there and says what the one taken cost.              */
 /*                                                                     */
-/* Its verdict is an opinion, and the page says so. The machine plays   */
-/* about as well as a strong table and no better — it has been measured */
-/* refusing lines that strong players call best.                        */
+/* The cost is in chance of winning, not in the judge's own units. Its  */
+/* units drift as a game runs on — a pound reads as 0.43 in the first   */
+/* canal round and 0.05 in the last rail one — so the same figure means */
+/* different things at different tables. The chance does not: it is a   */
+/* logistic fitted on 98 000 positions whose deciles land within five   */
+/* points of the observed win rate, and it is read against the best     */
+/* rival, so a move that denies one counts for what it is worth. The    */
+/* panel in the game weighs its own roads the same way, on the same     */
+/* grades, so the two surfaces never contradict each other.             */
+/*                                                                     */
+/* It stays an opinion, and the page says so.                           */
 /* ------------------------------------------------------------------ */
 
 import { actorOf, applyAction } from './actions';
 import type { GameAction } from './actions';
+import { BEST, LOSS, judgeOf, judgeTurn, sameRoad } from './analysis';
+import type { JudgeId } from './analysis';
+import type { Grade } from './review';
 import { newGame } from './engine';
-import { chooseBotAction, evaluate, searchTurn } from './search';
 import type { GameState, SetupPayload } from './types';
 
 export interface Ask {
@@ -23,42 +32,34 @@ export interface Ask {
   actions: GameAction[];
   /** the seat whose moves are read */
   seat: number;
-  /** how long the machine may think about each move */
-  budgetMs?: number;
+  /** which judge reads them: the quick one weighs the table as it stands,
+   *  the longer ones play the replies out first */
+  judge?: JudgeId;
 }
 
-/** one move of the reader's, beside the ones it could have played
+/** one move of the reader's, beside the roads open beside it.
  *
- *  The machine's reading is on a scale of its own — banked points, what may
- *  still flip, cash, income and position, blended — and that scale drifts
- *  as a game runs on: early moves are worth far more to it than late ones.
- *  A move is therefore not judged against a fixed bar but against the other
- *  moves open at that very table: the best of them, and the middling one.
- *  `give` is what was given up in middling-move widths, which is a figure
- *  that means the same thing in the first round and the last. */
+ *  What a move cost is read in chance of winning, which means the same
+ *  thing at every table of every game. The judge's own units do not: they
+ *  run high while rounds remain and low at the close, so a figure in them
+ *  cannot be graded against a fixed bar. */
 export interface Second {
   /** the index of the move in the log */
   at: number;
   era: 'canal' | 'rail';
   round: number;
   yours: GameAction;
-  /** what the machine would have played, when it differs from the move */
+  /** the best road open there, when it is not the one taken */
   theirs: GameAction | null;
-  /** the best-reading move open at that table, when the move played was not
-   *  it. This is the move `give` is measured against, and it is often not
-   *  `theirs`: the machine picks a whole two-action turn with look-ahead,
-   *  so its choice regularly reads worse one move on than another does. */
-  better: GameAction | null;
-  /** the machine's reading of the table after the move played, the best
-   *  move open, and the middling one */
+  /** the chance of winning after the move played, and after the best road */
   mine: number;
   best: number;
-  median: number;
-  /** how many moves were open at that table */
+  /** what the move cost, in chance: never below nought */
+  loss: number;
+  grade: Grade;
+  /** how many roads the judge weighed there */
   choices: number;
-  /** what was given up, measured in middling-move widths */
-  give: number;
-  /** the move played was the best reading of them all */
+  /** nothing worth naming was given up */
   top: boolean;
 }
 
@@ -87,46 +88,35 @@ function countReadable(ask: Ask): number {
   return n;
 }
 
-/** one move of the reader's, weighed against every move open beside it.
+/** one move of the reader's, weighed against every road open beside it.
  *
- *  `before` is the table as it stood when the move was played, and the move
- *  itself is `played`. The search is asked for its own turn there and, on
- *  its way past, fills in its reading of every legal action one move on:
- *  that list costs nothing extra and is the only fair yardstick, since the
- *  reading's own scale runs high in the canal era and low in the rail one. */
-export function readMove(before: GameState, seat: number, at: number, played: GameAction, budgetMs: number): Second {
-  const read = searchTurn(before, seat, { budgetMs, strength: 1, rank: true });
-  const ranked = read?.ranked ?? [];
-  const after = applyAction(before, seat, played).state;
-  const mine = after ? evaluate(after, seat) : 0;
-  const scores = ranked.map((r) => r.score);
-  const best = scores.length ? Math.max(scores[0], mine) : mine;
-  const median = scores.length ? scores[Math.floor(scores.length / 2)] : mine;
-  const width = Math.max(0.5, best - median);
-  const give = Math.round(((best - mine) / width) * 100) / 100;
-  const same = (x: GameAction | null | undefined): boolean => !!x && JSON.stringify(x) === JSON.stringify(played);
-  const theirs = read?.action ?? chooseBotAction(before, seat, { budgetMs, strength: 1 });
-  const top = ranked[0]?.action ?? null;
+ *  The whole of the weighing is the panel's own `judgeTurn`, so a move
+ *  graded here and the same move graded in the game carry the same grade. */
+export function readMove(before: GameState, seat: number, at: number, played: GameAction, id: JudgeId): Second | null {
+  const { judge } = judgeOf(id);
+  const v = judgeTurn(before, seat, played, judge, BEST);
+  if (!v) return null;
+  const first = v.roads[0];
+  const same = !!first && sameRoad(first.action) === sameRoad(played);
   return {
     at,
     era: before.era,
     round: before.round,
     yours: played,
-    theirs: same(theirs) ? null : theirs,
-    better: give > 0 && !same(top) ? top : null,
-    mine: Math.round(mine * 10) / 10,
-    best: Math.round(best * 10) / 10,
-    median: Math.round(median * 10) / 10,
-    choices: scores.length,
-    give: Math.max(0, give),
-    top: give <= 0,
+    theirs: same ? null : (first?.action ?? null),
+    mine: v.mine,
+    best: v.best,
+    loss: v.loss,
+    grade: v.grade,
+    choices: v.roads.length,
+    top: v.loss <= LOSS.top,
   };
 }
 
 /** the reading, step by step, so a caller may show it moving */
 export function* readGame(ask: Ask): Generator<Note, void, unknown> {
   const { setup, seed, actions, seat } = ask;
-  const budgetMs = ask.budgetMs ?? 1200;
+  const id = ask.judge ?? 'quick';
   let s: GameState;
   try {
     s = newGame(setup, seed);
@@ -142,7 +132,8 @@ export function* readGame(ask: Ask): Generator<Note, void, unknown> {
     const a = actions[at];
     const who = actorOf(s, a);
     if (readable(s, a, seat)) {
-      moves.push(readMove(s, seat, at, a, budgetMs));
+      const read = readMove(s, seat, at, a, id);
+      if (read) moves.push(read);
       done += 1;
       yield { kind: 'progress', done, total: mine };
     }

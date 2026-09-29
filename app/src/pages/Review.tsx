@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, Bot, Eye, Loader2, Sparkles } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { describeAction } from '@/game/store';
-import { gradeOf, reviewGame, swingsFor } from '@/game/review';
+import { reviewGame, swingsFor } from '@/game/review';
 import type { Grade, Idle, Review as GameReview, SeatReview } from '@/game/review';
 import ReviewCurve from '@/components/results/ReviewCurve';
 import type { Mark } from '@/components/results/ReviewCurve';
@@ -37,8 +37,9 @@ const GRADE_TONE: Record<Grade, string> = {
   mistake: 'border-copper-500/70 text-copper-500',
   blunder: 'border-rust-500/70 text-rust-400',
 };
-/** how long the machine may think about one move, by the reader's choice */
-const THINK = { quick: 350, careful: 1500 } as const;
+/** which judge reads the moves, by the reader's choice: the quick one
+ *  weighs the table as it stands, the long one plays the replies out first */
+const THINK = { quick: 'quick', careful: 'long' } as const;
 type Depth = keyof typeof THINK;
 /** whose moves the reading goes through: one place, or every one of them */
 type Scope = 'seat' | 'table';
@@ -214,14 +215,14 @@ export default function Review() {
         setBusy(false);
         stop();
       };
-      w.postMessage({ setup: final.setup, seed: final.seed, actions: final.actions, seat, budgetMs: THINK[depth] });
+      w.postMessage({ setup: final.setup, seed: final.seed, actions: final.actions, seat, judge: THINK[depth] });
     }
   };
 
   const tileName = (x: Idle): string => t('results.review.tile', { works: t(`game.log.industry.${x.industry}`), level: x.level, town: TOWN_BY_ID[x.town]?.name ?? x.town });
 
   /* the reading, sorted into the grades a chess review would use */
-  const gradesOf = (list: Second[]) => list.map((m) => ({ ...m, grade: gradeOf(m.give) }));
+  const gradesOf = (list: Second[]) => list;
   const soundness = (list: Second[]): number => {
     const g = gradesOf(list);
     return g.length ? Math.round((g.filter((m) => m.grade === 'top' || m.grade === 'good').length / g.length) * 100) : 0;
@@ -236,8 +237,8 @@ export default function Review() {
      it would have played itself is not one to look at again, whatever the
      one-move reading makes of it: it chose that move for the whole turn. */
   const worst = graded
-    .filter((m) => m.theirs && m.give > 0)
-    .sort((a, b) => b.give - a.give)
+    .filter((m) => m.theirs && m.loss > 0)
+    .sort((a, b) => b.loss - a.loss)
     .slice(0, 6);
   /* the moves that moved the lead most, whoever played them */
   const turns = swingsFor(review, mineSeat)
@@ -541,7 +542,9 @@ export default function Review() {
                         </p>
                         <p className="mt-1 font-mono text-[11.5px] text-cream-100/85">{t('results.review.yours', { move: describeAction(m.yours) })}</p>
                         <p className="font-mono text-[11.5px] text-brass-400">{t('results.review.theirs', { move: m.theirs ? describeAction(m.theirs) : '—' })}</p>
-                        <p className="mt-0.5 font-sans text-[10.5px] text-cream-100/40">{t('results.review.among', { n: m.choices })}</p>
+                        <p className="mt-0.5 font-sans text-[10.5px] text-cream-100/40">
+                          {t('results.review.cost', { pc: Math.round(m.loss * 100) })} · {t('results.review.among', { n: m.choices })}
+                        </p>
                       </li>
                     ))}
                   </ol>

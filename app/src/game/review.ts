@@ -245,23 +245,10 @@ export function swingsFor(review: Review, seat: number): Swing[] {
 
 /* ------------------------- how a move is graded ------------------------- */
 
+/** the grades a move is read into, from the best road open to the worst.
+ *  The grading itself is `gradeOfLoss` in ./analysis, on what a move cost
+ *  in chance of winning: one scale for the page and for the panel in the
+ *  game, so the same move is never graded twice over. */
 export type Grade = 'top' | 'good' | 'inaccuracy' | 'mistake' | 'blunder';
-
-/** What was given up, in widths of the gap between the best move open and
- *  the middling one. A width means the same thing in the first round and
- *  the last, which a figure in the machine's own units does not: its scale
- *  runs high early and low late. One width is the whole distance between
- *  playing well and playing averagely.
- *
- *  The bounds are measured, not chosen. Over eight games at four seats, a
- *  seat playing the search gave up 0.06 of a width a move and half its
- *  moves gave up nothing; the stronger heuristic 0.6; the weaker one 0.8;
- *  a seat that scouted and passed its way through the game 1.3. So half a
- *  width is still good play, a width is the middling move, and two widths
- *  is worse than a seat that did not try. */
-export const GIVE = { good: 0.5, inaccuracy: 1, mistake: 2 } as const;
-
-export const gradeOf = (give: number): Grade =>
-  give <= 0 ? 'top' : give <= GIVE.good ? 'good' : give <= GIVE.inaccuracy ? 'inaccuracy' : give <= GIVE.mistake ? 'mistake' : 'blunder';
 
 export const GRADES: Grade[] = ['top', 'good', 'inaccuracy', 'mistake', 'blunder'];
