@@ -842,7 +842,7 @@ const fr: typeof engame = {
       },
       note: 'Le juge est celui des machines : il lit plus loin qu’elles ne jouent, et trouve donc des erreurs même aux bots. Ses chiffres sont fiables à quelques points près ; le classement des routes l’est davantage que les unités.',
     },
-    standings: { title: 'Qui a le mieux joué', seat: 'Siège', vp: 'PV', lost: 'Perte / coup', misses: 'Fautes', missesTip: 'Imprécisions, erreurs et bévues réunies' },
+    standings: { title: 'Qui a le mieux joué', seat: 'Siège', vp: 'PV', perAction: 'PV / action', perActionTip: 'Points de victoire par action jouée ; le guide en vise environ cinq', actionsN: '{n} actions jouées', lost: 'Perte / coup', misses: 'Fautes', missesTip: 'Imprécisions, erreurs et bévues réunies' },
     reach: 'Atteint le marchand de {merchant}.',
     serves: '{n} [n|de vos ouvrages|de vos ouvrages] à {town} y [n|gagne|gagnent] une liaison.',
     motifs: {

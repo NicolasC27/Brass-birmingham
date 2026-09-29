@@ -840,7 +840,7 @@ const game = {
       },
       note: 'The judge is the machines’ own: it reads further than they play, so it finds mistakes even in the bots. Its figures are reliable to a few points; the order of the roads more so than the units.',
     },
-    standings: { title: 'Who played best', seat: 'Seat', vp: 'VP', lost: 'Loss / move', misses: 'Misses', missesTip: 'Inaccuracies, mistakes and blunders together' },
+    standings: { title: 'Who played best', seat: 'Seat', vp: 'VP', perAction: 'VP / action', perActionTip: 'Victory points per action played; the guide aims at about five', actionsN: '{n} actions played', lost: 'Loss / move', misses: 'Misses', missesTip: 'Inaccuracies, mistakes and blunders together' },
     reach: 'Reaches the {merchant} merchant.',
     serves: '{n} of your works at {town} [n|gains|gain] a link.',
     motifs: {

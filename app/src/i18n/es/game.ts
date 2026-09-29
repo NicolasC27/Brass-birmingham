@@ -842,7 +842,7 @@ const game: typeof engame = {
       },
       note: 'El juez es el de las máquinas: lee más lejos de lo que ellas juegan, así que encuentra errores incluso a los bots. Sus cifras son fiables con unos puntos de margen; el orden de las rutas lo es más que las unidades.',
     },
-    standings: { title: 'Quién jugó mejor', seat: 'Asiento', vp: 'PV', lost: 'Pérdida / jugada', misses: 'Fallos', missesTip: 'Imprecisiones, errores y errores graves juntos' },
+    standings: { title: 'Quién jugó mejor', seat: 'Asiento', vp: 'PV', perAction: 'PV / acción', perActionTip: 'Puntos de victoria por acción jugada; la guía apunta a unos cinco', actionsN: '{n} acciones jugadas', lost: 'Pérdida / jugada', misses: 'Fallos', missesTip: 'Imprecisiones, errores y errores graves juntos' },
     reach: 'Alcanza al mercader de {merchant}.',
     serves: '{n} de tus obras en {town} [n|gana|ganan] un enlace.',
     motifs: {

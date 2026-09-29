@@ -55,7 +55,21 @@ export default function Report() {
     }
     return out.sort((a, b) => b.drop - a.drop).slice(0, 5);
   }, [chances, positions, game]);
-  const standings = useMemo(() => (game ? game.players.map((p, i) => { const list = Object.values(verdicts[i] ?? {}); return { seat: i, name: p.name, color: p.color, vp: p.vp, n: list.length, lost: list.length ? Math.round((100 * list.reduce((s, v) => s + v.loss, 0)) / list.length) : 0, misses: list.filter((v) => v.loss > LOSS.good).length }; }).sort((a, b) => b.vp - a.vp) : []), [game, verdicts]);
+  const standings = useMemo(() => {
+    if (!game) return [];
+    const acted = game.players.map(() => 0);
+    positions.forEach((p, k) => {
+      const a = game.actions[k];
+      if (!a || a.kind === 'concede' || a.kind === 'resign' || a.kind === 'begin-rail') return;
+      acted[p.current] += 1;
+    });
+    return game.players
+      .map((p, i) => {
+        const list = Object.values(verdicts[i] ?? {});
+        return { seat: i, name: p.name, color: p.color, vp: p.vp, n: list.length, lost: list.length ? Math.round((100 * list.reduce((s, v) => s + v.loss, 0)) / list.length) : 0, misses: list.filter((v) => v.loss > LOSS.good).length, perAction: acted[i] ? Math.round((10 * p.vp) / acted[i]) / 10 : 0 };
+      })
+      .sort((a, b) => b.vp - a.vp);
+  }, [game, verdicts, positions]);
   const progress = snap.key === key && snap.running ? snap : null;
 
   if (!game) {
@@ -97,6 +111,7 @@ export default function Report() {
               <tr className="data-text text-[10px] uppercase tracking-[0.14em] text-iron-400">
                 <th className="py-1 text-left font-normal">{t('game.debrief.standings.seat')}</th>
                 <th className="py-1 text-right font-normal">{t('game.debrief.standings.vp')}</th>
+                <th className="py-1 text-right font-normal" title={t('game.debrief.standings.perActionTip')}>{t('game.debrief.standings.perAction')}</th>
                 <th className="py-1 text-right font-normal">{t('game.debrief.standings.lost')}</th>
                 <th className="py-1 text-right font-normal">{t('game.debrief.standings.misses')}</th>
               </tr>
@@ -106,6 +121,7 @@ export default function Report() {
                 <tr key={r.seat} className={r.seat === shown ? 'text-brass-300' : ''}>
                   <td className="py-1"><span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[r.color]?.hex ?? '#C9A45C' }} />{r.name}</span></td>
                   <td className="py-1 text-right data-text">{r.vp}</td>
+                  <td className="py-1 text-right data-text">{r.perAction.toFixed(1)}</td>
                   <td className="py-1 text-right data-text">{r.n ? `−${r.lost}` : '…'}</td>
                   <td className="py-1 text-right data-text">{r.n ? r.misses : '…'}</td>
                 </tr>

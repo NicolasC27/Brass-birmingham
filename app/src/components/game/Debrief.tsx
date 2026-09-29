@@ -317,15 +317,24 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* every seat against the same judge: mean loss per move and the misses,
      the steadiest hand first — the seats not yet read wait with dots */
   const standings = useMemo(() => {
+    /* the actions each seat played, counted as the plan counts them: the
+       guide's own yardstick is points per action */
+    const acted = game.players.map(() => 0);
+    positions.forEach((p, k) => {
+      const a = game.actions[k];
+      if (!a || a.kind === 'concede' || a.kind === 'resign' || a.kind === 'begin-rail') return;
+      acted[p.current] += 1;
+    });
     return game.players
-      .map((_, seat) => {
+      .map((p, seat) => {
         const list = Object.values(allVerdicts[seat] ?? {});
         const lost = list.length ? Math.round((100 * list.reduce((sum, v) => sum + v.loss, 0)) / list.length) : 0;
         const misses = list.filter((v) => v.loss > LOSS.good).length;
-        return { seat, n: list.length, lost, misses };
+        const perAction = acted[seat] ? Math.round((10 * p.vp) / acted[seat]) / 10 : 0;
+        return { seat, n: list.length, lost, misses, perAction, actions: acted[seat] };
       })
       .sort((a, b) => (a.n && b.n ? a.lost - b.lost : b.n - a.n));
-  }, [game.players, allVerdicts]);
+  }, [game.players, game.actions, positions, allVerdicts]);
   /* the motifs of this seat's misses here, and the ones that keep coming
      back over the last games on the sheet (this one included once read) */
   const motifs = useMemo(() => {
@@ -932,6 +941,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                   <tr className="font-mono text-[9px] uppercase tracking-[0.12em] text-cream-100/40">
                     <th className="py-0.5 text-left font-normal">{t('game.debrief.standings.seat')}</th>
                     <th className="py-0.5 text-right font-normal">{t('game.debrief.standings.vp')}</th>
+                    <th className="py-0.5 text-right font-normal" title={t('game.debrief.standings.perActionTip')}>{t('game.debrief.standings.perAction')}</th>
                     <th className="py-0.5 text-right font-normal" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.standings.lost')}</th>
                     <th className="py-0.5 text-right font-normal" title={t('game.debrief.standings.missesTip')}>{t('game.debrief.standings.misses')}</th>
                   </tr>
@@ -946,6 +956,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                         </button>
                       </td>
                       <td className="py-0.5 text-right font-mono">{game.players[row.seat]?.vp ?? 0}</td>
+                      <td className={cn('py-0.5 text-right font-mono', row.perAction >= 5 ? 'text-bottle-400' : row.perAction < 4 ? 'text-copper-500' : '')} title={t('game.debrief.standings.actionsN', { n: row.actions })}>{fine(row.perAction / 100, lang)}</td>
                       <td className="py-0.5 text-right font-mono">{row.n ? `−${row.lost}` : '…'}</td>
                       <td className="py-0.5 text-right font-mono">{row.n ? row.misses : '…'}</td>
                     </tr>
