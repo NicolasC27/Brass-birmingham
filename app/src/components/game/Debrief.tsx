@@ -413,6 +413,13 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
+      /* a line being explored: Escape leaves the line and no more, the review stays */
+      if (e.key === 'Escape' && vary) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        setVaryMine(null);
+        return;
+      }
       if (e.key === 'ArrowLeft') setAt((k) => Math.max(0, k - 1));
       else if (e.key === 'ArrowRight') setAt((k) => Math.min(last, k + 1));
       else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -427,7 +434,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     return () => window.removeEventListener('keydown', onKey, true);
     /* the jump reads the misses and where the cursor stands, so the listener
        is bound again whenever either moves */
-  }, [last, nextMiss]);
+  }, [last, nextMiss, vary, setVaryMine]);
 
   /* the figure in the header, on the same reading as the curve and the roads */
   const chance = vary ? (stepMove ? winChance(stepMove.after, me) : branch ? branch.chance : vary.moves.length && tip ? winChance(tip, me) : (chances[at] ?? 0.5)) : (chances[at] ?? 0.5);
@@ -619,7 +626,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      tall, and clear of the panel; the HUD keeps under it */
   const strip = createPortal(
     <div data-debrief-curve title={t('game.debrief.curveHint')} className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
-      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t('game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t(vary ? 'game.debrief.curveLocked' : 'game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} locked={!!vary} onPick={(k) => { setAt(k); setVaryMine(null); }} />
     </div>,
     document.body,
   );

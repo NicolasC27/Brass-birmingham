@@ -17,7 +17,7 @@ const tint = (hex: string, alpha: number): string => {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 };
 
-export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, onPick }: { height?: number; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, locked = false, onPick }: { height?: number; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; /** a line is being explored: a press no longer picks a move (it would drop the line), zoom and pan still do */ locked?: boolean; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -160,6 +160,11 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
       setBrush({ a: f, b: f });
       return;
     }
+    if (locked) {
+      drag.current = { mode: 'brush', from: fracAt(e.currentTarget, e.clientX), x0: e.clientX, lo0: lo };
+      setBrush({ a: fracAt(e.currentTarget, e.clientX), b: fracAt(e.currentTarget, e.clientX) });
+      return;
+    }
     drag.current = { mode: 'scrub', from: 0, x0: e.clientX, lo0: lo };
     onPick(kAt(e.currentTarget, e.clientX));
   };
@@ -232,7 +237,7 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
   };
   return (
     <div ref={box} className="w-full">
-      <svg ref={svgRef} width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={() => setHover(null)} onDoubleClick={() => setWin(null)} onContextMenu={(e) => e.preventDefault()} style={{ height: H }} className="block w-full cursor-crosshair touch-none select-none rounded-sm border border-brass-700/40 bg-coal-900/80">
+      <svg ref={svgRef} width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={() => setHover(null)} onDoubleClick={() => setWin(null)} onContextMenu={(e) => e.preventDefault()} style={{ height: H }} className={`block w-full ${locked ? 'cursor-col-resize' : 'cursor-crosshair'} touch-none select-none rounded-sm border border-brass-700/40 bg-coal-900/80`}>
         <defs>
           <clipPath id="curve-above">
             <rect x={0} y={0} width={w} height={Math.max(0, Math.min(H, mid))} />

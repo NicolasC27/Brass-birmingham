@@ -805,6 +805,7 @@ const game: typeof engame = {
     you: 'tú',
     curve: 'La curva de la partida: tus opciones jugada a jugada',
     curveHint: 'Rueda: zoom · Mayús + arrastrar: encuadrar · doble clic: todo',
+    curveLocked: 'Variante en curso: arrastrar encuadra · Esc o «Volver» sale de la variante',
     betterWas: 'Mejor: {move}',
     whyGap: '{name} leía ahí un {p} % más de opciones.',
     seeBetter: 'Ver esta jugada',
@@ -842,7 +843,7 @@ const game: typeof engame = {
         s4: 'El Balance: ¿se siguió el plan hasta el final y los puntos por acción rondan los cinco? Una partida se pierde más a menudo por acciones desperdiciadas que por una mala jugada aislada.',
         s5: 'Una nota vale para su posición: un «error» en la ronda 2 y otro en la 9 costaron la misma opción, no los mismos puntos.',
       },
-      curve: { title: 'La curva', text: 'Rueda: zoom en torno al puntero. Mayús + arrastrar (o botón derecho): encuadrar un tramo, ocupa todo el ancho y la escala se ajusta. Doble clic: toda la partida. La barra inferior muestra la ventana y se desplaza. Arrastrar sin Mayús recorre el tablero jugada a jugada.' },
+      curve: { title: 'La curva', text: 'Rueda: zoom en torno al puntero. Mayús + arrastrar (o botón derecho): encuadrar un tramo, ocupa todo el ancho y la escala se ajusta. Doble clic: toda la partida. La barra inferior muestra la ventana y se desplaza. Arrastrar sin Mayús recorre el tablero jugada a jugada. Durante una variante, un clic en la curva no cambia de jugada (saldría de la variante): arrastrar encuadra un tramo, la rueda hace zoom, Esc o «Volver» sale de la variante.' },
       weigh: {
         title: 'Lo que más pesa',
         text: 'Las acciones ante todo, cada una debería rendir cerca de cinco puntos. Los ingresos repuestos pronto. Los raíles dobles en la era del raíl. No pagar la cerveza y el hierro ajenos cuando los tuyos bastan.',
