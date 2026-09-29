@@ -841,6 +841,7 @@ const fr: typeof engame = {
       },
       note: 'Le juge est celui des machines : il lit plus loin qu’elles ne jouent, et trouve donc des erreurs même aux bots. Ses chiffres sont fiables à quelques points près ; le classement des routes l’est davantage que les unités.',
     },
+    standings: { title: 'Qui a le mieux joué', seat: 'Siège', vp: 'PV', lost: 'Perte / coup', misses: 'Fautes', missesTip: 'Imprécisions, erreurs et bévues réunies' },
     quality: { top: 'juste', good: 'bon', inaccuracy: 'imprécision', mistake: 'erreur', blunder: 'bévue' },
     close: 'Fermer le débrief',
     open: 'Le débrief',

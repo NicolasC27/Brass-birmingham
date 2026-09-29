@@ -51,6 +51,7 @@ const regionOf = (a: GameAction | undefined): string | null => {
   }
 };
 const EMPTY_VERDICTS: Record<number, Verdict> = {};
+const EMPTY_ALL: Record<number, Record<number, Verdict>> = {};
 const EMPTY_ROADS: Record<string, Weighed[]> = {};
 const EMPTY_SEATS: Record<number, Reading[]> = {};
 
@@ -241,6 +242,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const read = snap.key === keptKey && snap.moves === game.actions.length ? snap : kept;
   const seatsRead = read?.seats ?? EMPTY_SEATS;
   const verdicts = read?.verdicts[me] ?? EMPTY_VERDICTS;
+  /* every seat's verdicts: the list marks them all, the review ranks the table */
+  const allVerdicts = read?.verdicts ?? EMPTY_ALL;
   /* a reading under way for this key: its own figures. Another key's reading,
      or none: done only if the shelf holds this game whole — a judge just
      changed has its reading still to start, and the bar says so */
@@ -452,6 +455,18 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
        tenth of anything, and a total past a hundred per cent reads broken */
     return { by, lost: Math.round((100 * lost) / list.length) };
   }, [verdicts]);
+  /* every seat against the same judge: mean loss per move and the misses,
+     the steadiest hand first — the seats not yet read wait with dots */
+  const standings = useMemo(() => {
+    return game.players
+      .map((_, seat) => {
+        const list = Object.values(allVerdicts[seat] ?? {});
+        const lost = list.length ? Math.round((100 * list.reduce((sum, v) => sum + v.loss, 0)) / list.length) : 0;
+        const misses = list.filter((v) => v.loss > LOSS.good).length;
+        return { seat, n: list.length, lost, misses };
+      })
+      .sort((a, b) => (a.n && b.n ? a.lost - b.lost : b.n - a.n));
+  }, [game.players, allVerdicts]);
   /* the plan the seat played, as the strategy guide names them: counted from
      the moves alone, and read against what each plan asks for */
   const plan = useMemo(() => planOf(game, me), [game, me]);
@@ -864,8 +879,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
               const seat = a.kind === 'concede' ? a.player : before.current;
               const p = game.players[seat];
               const mine = seat === me;
-              const v = mine ? verdicts[k] : undefined;
-              if (!listed(k, v)) return null;
+              const v = allVerdicts[seat]?.[k];
+              if (!listed(k, mine ? v : undefined)) return null;
               const quality = v ? v.grade : null;
               const newRound = k === 0 || positions[k - 1]?.round !== before.round || (filter !== null && !game.actions.slice(0, k).some((_, j) => positions[j]?.round === before.round && listed(j, seat === me ? verdicts[j] : undefined)));
               return (
@@ -985,6 +1000,36 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+          {standings.length > 1 && (
+            <section className="mt-3">
+              <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.standings.title')}</p>
+              <table className="mt-1 w-full border-collapse font-sans text-[11px] text-cream-100/80">
+                <thead>
+                  <tr className="font-mono text-[9px] uppercase tracking-[0.12em] text-cream-100/40">
+                    <th className="py-0.5 text-left font-normal">{t('game.debrief.standings.seat')}</th>
+                    <th className="py-0.5 text-right font-normal">{t('game.debrief.standings.vp')}</th>
+                    <th className="py-0.5 text-right font-normal" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.standings.lost')}</th>
+                    <th className="py-0.5 text-right font-normal" title={t('game.debrief.standings.missesTip')}>{t('game.debrief.standings.misses')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.map((row) => (
+                    <tr key={row.seat} className={cn(row.seat === me && 'text-brass-300')}>
+                      <td className="py-0.5">
+                        <button type="button" onClick={() => { setMeMine(row.seat); setVaryMine(null); }} className="flex items-center gap-1.5 hover:text-brass-300">
+                          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[row.seat]?.color]?.hex ?? '#C9A45C' }} />
+                          {game.players[row.seat]?.name}
+                        </button>
+                      </td>
+                      <td className="py-0.5 text-right font-mono">{game.players[row.seat]?.vp ?? 0}</td>
+                      <td className="py-0.5 text-right font-mono">{row.n ? `−${row.lost}` : '…'}</td>
+                      <td className="py-0.5 text-right font-mono">{row.n ? row.misses : '…'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </section>
           )}
           {tally && (

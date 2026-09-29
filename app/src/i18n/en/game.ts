@@ -839,6 +839,7 @@ const game = {
       },
       note: 'The judge is the machines’ own: it reads further than they play, so it finds mistakes even in the bots. Its figures are reliable to a few points; the order of the roads more so than the units.',
     },
+    standings: { title: 'Who played best', seat: 'Seat', vp: 'VP', lost: 'Loss / move', misses: 'Misses', missesTip: 'Inaccuracies, mistakes and blunders together' },
     quality: { top: 'best', good: 'good', inaccuracy: 'inaccuracy', mistake: 'mistake', blunder: 'blunder' },
     close: 'Close the debrief',
     open: 'The debrief',

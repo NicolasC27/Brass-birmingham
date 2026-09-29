@@ -357,9 +357,9 @@ export interface Verdict {
 
 /** the reader's move at `before`, judged long: the roads worth a look are
     ranked as they stand, then each is read after the replies */
-export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE, pass: Pass = BEST): Verdict | null {
+export function judgeTurn(before: GameState, me: number, played: GameAction, judge: Judge = LONG_JUDGE, pass: Pass = BEST, keep = 8): Verdict | null {
   if (before.phase !== 'action' || before.current !== me) return null;
-  const roads = roadsFrom(before, me, 8, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge, pass) })).sort((a, b) => b.chance - a.chance);
+  const roads = roadsFrom(before, me, keep, played).map((r) => ({ action: r.action, chance: deepChance(r.after, me, judge, pass) })).sort((a, b) => b.chance - a.chance);
   if (!roads.length) return null;
   const key = sameRoad(played);
   const own = roads.find((r) => sameRoad(r.action) === key);

@@ -25,6 +25,8 @@ export interface Ask {
   from?: number;
   /** the positions are read for every seat already: judge the turns only */
   turnsOnly?: boolean;
+  /** judge every seat's turns, the seat `me` first: a change of seat then costs nothing */
+  all?: boolean;
 }
 
 /** one turn's roads, read longer than the pass: the panel asks when a
@@ -59,7 +61,7 @@ export type Note =
   | { kind: 'position'; k: number; seats: Reading[]; done: number; total: number }
   | { kind: 'cost'; key: string; cost: Cost | null }
   | { kind: 'roads'; key: string; roads: Weighed[] }
-  | { kind: 'turn'; verdict: Verdict; done: number; total: number }
+  | { kind: 'turn'; seat: number; verdict: Verdict; done: number; total: number }
   | { kind: 'done' }
   | { kind: 'failed'; why: string };
 
@@ -87,13 +89,19 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   /* a kept reading of the first `from` moves stands: this pass reads on from
      there — a position is read forward, never from what came after it */
   const from = Math.max(0, Math.min(ask.from ?? 0, positions.length - 1));
-  const turns = positions.map((_, k) => k).filter((k) => k >= from && k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === ask.me && ask.actions[k].kind !== 'concede');
+  /* the turns to judge: the seat asked for first, then, when every seat is
+     wanted, the others in order */
+  const turnsOf = (seat: number) => positions.map((_, k) => k).filter((k) => k >= from && k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === seat && ask.actions[k].kind !== 'concede');
+  const turns = turnsOf(ask.me).map((k) => ({ seat: ask.me, k }));
+  /* the other seats, when every seat is wanted: read once, by the first
+     pass, over fewer roads — enough to grade them, a third of the thinking */
+  const others = ask.all ? positions[0].players.map((_, i) => i).filter((i) => i !== ask.me).flatMap((seat) => turnsOf(seat).map((k) => ({ seat, k }))) : [];
   const first = ask.turnsOnly ? positions.length : from === 0 ? 0 : from + 1;
-  const total = passes.length * (positions.length - first + turns.length);
+  const total = passes.length * (positions.length - first + turns.length) + others.length;
   /* what the passes have said so far: every seat's chance at every position,
      and the turns of the seat being read */
   const chances = positions.map<number[][]>(() => []);
-  const verdicts = new Map<number, Verdict[]>();
+  const verdicts = new Map<string, Verdict[]>();
   let done = 0;
   for (const pass of passes) {
     for (let k = first; k < positions.length; k++) {
@@ -102,13 +110,21 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
       const seats = positions[k].players.map((_, i) => blendChances(chances[k].map((one) => one[i])));
       yield { kind: 'position', k, seats, done, total };
     }
-    for (const k of turns) {
+    for (const { seat, k } of turns) {
       done += 1;
-      const verdict = judgeTurn(positions[k], ask.me, ask.actions[k], judge, pass);
+      const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, pass);
       if (!verdict) continue;
-      const seen = [...(verdicts.get(k) ?? []), verdict];
-      verdicts.set(k, seen);
-      yield { kind: 'turn', verdict: blendVerdicts(seen), done, total };
+      const id = `${seat}:${k}`;
+      const seen = [...(verdicts.get(id) ?? []), verdict];
+      verdicts.set(id, seen);
+      yield { kind: 'turn', seat, verdict: blendVerdicts(seen), done, total };
+    }
+    if (pass === passes[0]) {
+      for (const { seat, k } of others) {
+        done += 1;
+        const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, pass, 4);
+        if (verdict) yield { kind: 'turn', seat, verdict, done, total };
+      }
     }
   }
   yield { kind: 'done' };

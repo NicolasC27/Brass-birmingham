@@ -75,8 +75,15 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
   const moves = game.actions.length;
   const kept = readKept(key, moves);
   const whole = isWhole(kept, moves);
-  /* the same reading, still going: nothing to start */
-  if (worker && snap.key === key && snap.seat === seat && snap.moves === moves) return snap;
+  /* the same reading, still going: nothing to start — every seat's turns are
+     being read, so a change of seat only says which one the panel shows */
+  if (worker && snap.key === key && snap.moves === moves) {
+    if (snap.seat !== seat) {
+      snap = { ...snap, seat };
+      tell();
+    }
+    return snap;
+  }
   /* the shelf holds it all, this seat's turns included */
   if (whole && kept!.verdicts[seat]) {
     if (snap.key !== key || snap.seat !== seat || snap.moves !== moves || snap.running) {
@@ -110,7 +117,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
   w.onmessage = (e: MessageEvent<Note>) => {
     const n = e.data;
     if (n.kind === 'position') snap = { ...snap, seats: { ...snap.seats, [n.k]: n.seats }, done: n.done, total: n.total };
-    else if (n.kind === 'turn') snap = { ...snap, verdicts: { ...snap.verdicts, [seat]: { ...(snap.verdicts[seat] ?? {}), [n.verdict.at]: n.verdict } }, done: n.done, total: n.total };
+    else if (n.kind === 'turn') snap = { ...snap, verdicts: { ...snap.verdicts, [n.seat]: { ...(snap.verdicts[n.seat] ?? {}), [n.verdict.at]: n.verdict } }, done: n.done, total: n.total };
     else if (n.kind === 'roads') snap = { ...snap, roads: { ...snap.roads, [seat]: { ...(snap.roads[seat] ?? {}), [n.key]: n.roads } } };
     else if (n.kind === 'done') {
       snap = { ...snap, done: snap.total, running: false };
@@ -131,7 +138,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
     tell();
   };
   const read = judgeOf(judge);
-  const ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me: seat, judge: read.judge, passes: read.passes };
+  const ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me: seat, judge: read.judge, passes: read.passes, all: true };
   /* nothing kept, or a reading left halfway: read it through. A reading of a
      shorter game reads on from where it stopped, and one that only wants this
      seat's turns leaves the positions alone */
