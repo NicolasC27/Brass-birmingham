@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useNavigate } from 'react-router';
-import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Gauge, Link2, Play, Radio, Sparkles, UserRound, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Compass, Eye, Gauge, HelpCircle, Link2, Play, Radio, Sparkles, Sun, SunDim, UserRound, X } from 'lucide-react';
 import { describeAction, useGame } from '@/game/store';
 import { applyAction, setupOf } from '@/game/actions';
 import { LOSS, bandOf, followToTurn, judgeOf, positionsOf, roadsFrom, sameRoad, winChance } from '@/game/analysis';
@@ -16,6 +16,8 @@ import { shareFragment } from '@/game/share';
 import { analysisKey, readKept } from '@/game/analysisKeep';
 import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/analysisRun';
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
+import type { PlanId } from '@/game/plan';
+import { setBoardOption, useBoardOptions } from './boardOptions';
 import { GUIDE_RAIL, guideDock } from './guideKeys';
 import { cn } from '@/lib/utils';
 
@@ -312,6 +314,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     readGame(game, table, me, judgeId);
   }, [game, table, me, judgeId]);
 
+  const workerRef = useRef<Worker | null>(null);
   /* the roads of a line, read longer, go to a worker of the panel's own: they
      are asked for as the reader explores, and join the one reading */
   useEffect(() => {
@@ -335,7 +338,6 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       workerRef.current = null;
     };
   }, [game, me, keptKey]);
-  const workerRef = useRef<Worker | null>(null);
   /* the key moments: where the curve fell hardest, whoever moved — the
      reader's own miss or a rival's stroke */
   const keyMoments = useMemo(() => {
@@ -384,7 +386,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     asked.current.add(lineKey);
     const read = judgeOf(judgeId);
     w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey, judge: read.judge, passes: read.passes });
-  }, [vary, tipMine, roads, lineKey, game, me]);
+  }, [vary, tipMine, roads, lineKey, game, me, judgeId]);
   const readingLonger = !!vary && tipMine && vary.moves.length > 0 && !roadsRead[lineKey];
   /* what the board shows */
   const stepMove = vary && vary.step !== null ? vary.moves[vary.step] : undefined;
@@ -449,7 +451,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)) return;
       if (e.key === 'ArrowLeft') setAt((k) => Math.max(0, k - 1));
       else if (e.key === 'ArrowRight') setAt((k) => Math.min(last, k + 1));
       else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -514,11 +516,6 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     }, wait);
     return () => window.clearTimeout(t);
   }, [sharing, at, me, line, showReviewAt]);
-  /* the panel closes: nobody is left waiting on a reading that has gone */
-  useEffect(() => () => {
-    if (useGame.getState().sharing) useGame.getState().shareReview(false);
-    useGame.getState().followReview(false);
-  }, []);
 
   /* this moment in a link: the game and the move, so a reader arrives on the
      same position with the analysis open */
@@ -556,11 +553,27 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     setVaryMine({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
   const close = () => setDebriefOpen(false);
-  /* the board goes back to the live table when the panel goes, and the moment
-     a link pointed at is spent once it has been opened */
+  /* the panel's two pages under the curve: the moves, or the seat's review;
+     a line being explored takes the room above the moves */
+  const [tab, setTab] = useState<'moves' | 'review'>('moves');
+  /* the moves shown: all of them, one grade of the reader's, or the key moments */
+  const [filter, setFilter] = useState<Grade | 'key' | null>(null);
+  const [fivePlans, setFivePlans] = useState(false);
+  const lit = useBoardOptions().reviewLit;
+  const keyAt = useMemo(() => new Set(keyMoments.map((m) => m.k)), [keyMoments]);
+  const listed = (k: number, v: Verdict | undefined): boolean => {
+    if (!filter) return true;
+    if (filter === 'key') return keyAt.has(k + 1);
+    return !!v && v.grade === filter;
+  };
+  /* the panel goes: the board back to the live table, the moment a link
+     pointed at spent, and nobody left waiting on a reading that has gone */
   useEffect(() => () => {
     setReview(null);
     setReviewAt(null);
+    const st = useGame.getState();
+    if (st.sharing) st.shareReview(false);
+    st.followReview(false);
   }, [setReview, setReviewAt]);
   const width = Math.max(GUIDE_RAIL, guideDock());
   const listRef = useRef<HTMLOListElement>(null);
@@ -592,7 +605,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             className="rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100"
           >
             {(['quick', 'long', 'deep'] as const).map((id) => (
-              <option key={id} value={id}>{t(`game.debrief.judge.${id}`)}</option>
+              <option key={id} value={id} title={t(`game.debrief.judge.${id}Tip`)}>{t(`game.debrief.judge.${id}`)}</option>
             ))}
           </select>
         </label>
@@ -616,8 +629,11 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <Curve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} onPick={(k) => { setAt(k); setVaryMine(null); }} />
           {/* how far the judge has got, a hair under the curve: it keeps its
               room once read, so nothing below it moves */}
-          <div className={cn('mt-1 h-[3px] w-full overflow-hidden rounded-full bg-coal-800 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} title={t('game.debrief.reading', { done: progress.done, total: progress.total })}>
-            <div className="h-full rounded-full bg-brass-400/50 transition-[width] duration-300" style={{ width: `${progress.total ? Math.round((100 * progress.done) / progress.total) : 0}%` }} />
+          <div className={cn('mt-1 flex items-center gap-2 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} aria-live="polite">
+            <div className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-full bg-coal-800">
+              <div className="h-full rounded-full bg-brass-400/50 transition-[width] duration-300" style={{ width: `${progress.total ? Math.round((100 * progress.done) / progress.total) : 0}%` }} />
+            </div>
+            <span className="shrink-0 font-mono text-[9.5px] text-cream-100/45">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>
           </div>
         </div>
         <div className="mt-2 flex items-center gap-1.5">
@@ -652,6 +668,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
               <Eye className="h-3.5 w-3.5" /> {game.players[showing.from]?.name ?? ''}
             </button>
           )}
+          <button type="button" onClick={() => setBoardOption('reviewLit', !lit)} aria-pressed={lit} aria-label={t(lit ? 'game.debrief.dim' : 'game.debrief.lit')} title={t(lit ? 'game.debrief.dim' : 'game.debrief.lit')} className={cn('btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]', lit && '!border-brass-400 !text-brass-300')}>
+            {lit ? <Sun className="h-3.5 w-3.5" /> : <SunDim className="h-3.5 w-3.5" />}
+          </button>
           {canExplore && !vary && (
             <button type="button" onClick={explore} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               <Compass className="h-3.5 w-3.5" /> {t('game.debrief.explore')}
@@ -665,54 +684,20 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         </div>
       </div>
 
-      {/* the seat's game in one line: its moves graded, and what they cost */}
-      {tally && !vary && (
-        <div className="shrink-0">
-          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.tally.label')}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            {(['top', 'good', 'inaccuracy', 'mistake', 'blunder'] as Grade[]).filter((g) => tally.by[g] > 0).map((g) => (
-              <span key={g} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px]', g === 'blunder' ? 'border-rust-700/60 text-rust-400' : g === 'mistake' ? 'border-copper-500/50 text-copper-500' : g === 'inaccuracy' ? 'border-brass-700/50 text-cream-100/70' : 'border-brass-700/40 text-cream-100/50')}>
-                {t(`game.debrief.tally.${g}`, { n: tally.by[g] })}
-              </span>
-            ))}
-            {tally.lost > 0 && <span className="font-mono text-[10px] text-rust-400/80">{t('game.debrief.tally.lost', { p: tally.lost })}</span>}
-          </div>
-        </div>
-      )}
-
-      {/* the plan the moves add up to, against the guide's five */}
-      {!vary && plan.deeds.actions > 0 && (
-        <div className="shrink-0">
-          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.plan.label')}</p>
-          {plan.best.score < PLAN_FAINT ? (
-            <p className="mt-1 font-serif text-[12px] italic leading-snug text-cream-100/60">{t('game.debrief.plan.faint')}</p>
-          ) : (
-            <>
-              <p className="mt-1 flex items-baseline gap-2">
-                <span className="font-fell text-[13px] text-brass-300">{PLAN_NAMES[plan.best.id]}</span>
-                <span className="font-mono text-[10.5px] text-cream-100/60">{t('game.debrief.plan.score', { p: Math.round(plan.best.score * 100) })}</span>
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {plan.best.goals.map((g) => {
-                  const met = g.done >= g.target;
-                  return (
-                    <span key={g.id} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px]', met ? 'border-brass-500/60 text-brass-300' : 'border-brass-700/40 text-cream-100/45')}>
-                      <span className="font-mono">{g.done}/{g.target}</span> {t(`game.debrief.plan.goals.${g.id}`)}
-                    </span>
-                  );
-                })}
-              </div>
-            </>
-          )}
-          <p className="mt-1 font-mono text-[10px] text-cream-100/45">
-            {plan.tips.map((tip) => t(`game.debrief.plan.tips.${tip.id}`, { value: tip.id === 'perAction' ? fine(tip.value / 100, lang) : tip.value, want: tip.want, n: tip.value })).join(' · ')}
-          </p>
+      {/* the pages: the moves, or the seat's review; a line being explored sits above the moves */}
+      {!vary && (
+        <div role="tablist" className="flex shrink-0 items-end gap-1 border-b border-brass-700/40">
+          {(['moves', 'review'] as const).map((id) => (
+            <button key={id} type="button" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} className={cn('-mb-px rounded-t px-3 py-1 font-fell text-[10.5px] uppercase tracking-[0.18em] transition-colors', tab === id ? 'border border-b-0 border-brass-700/40 bg-coal-900/80 text-brass-300' : 'text-cream-100/50 hover:text-cream-100/80')}>
+              {t(`game.debrief.tabs.${id}`)}
+            </button>
+          ))}
         </div>
       )}
 
       {/* the variation: its picks as a trail, the roads at its tip, its moves */}
       {vary && (
-        <div className="paper shrink-0 px-3 py-2">
+        <div className="paper max-h-[55%] shrink-0 overflow-y-auto px-3 py-2 [scrollbar-width:thin]">
           <div className="flex flex-wrap items-center gap-1 font-sans text-[10.5px] text-ink-900/70">
             <span className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.debrief.roads')}</span>
             {vary.moves.map((m, i) => (m.pick ? (
@@ -780,68 +765,165 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         </div>
       )}
 
-      {/* the key moments, the widest gaps once read */}
-      {keyMoments.length > 0 && !vary && (
-        <div className="shrink-0">
-          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.keyMoments')}</p>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {keyMoments.map((m) => (
-              <button key={m.k} type="button" onClick={() => { setAt(m.k); setVaryMine(null); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
-                <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[m.seat]?.color]?.hex ?? '#C9A45C' }} />
-                <span>{t('game.debrief.round', { round: m.round, era: t(m.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })} · {m.seat === me ? t('game.debrief.you') : game.players[m.seat]?.name}</span>
-                <span className="font-mono text-[10px] text-rust-400">{t('game.debrief.lost', { p: Math.round(m.drop * 100) })}</span>
+      {/* the moves page: the reader's grades as filters, then every move */}
+      {(vary || tab === 'moves') && (
+        <>
+          {!vary && tally && (
+            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+              <button type="button" onClick={() => setFilter(null)} aria-pressed={filter === null} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px] transition-colors', filter === null ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/40 text-cream-100/55 hover:border-brass-400')}>
+                {t('game.debrief.tally.all', { n: game.actions.length })}
               </button>
-            ))}
-          </div>
-        </div>
+              {(['top', 'good', 'inaccuracy', 'mistake', 'blunder'] as Grade[]).filter((g) => tally.by[g] > 0).map((g) => (
+                <button key={g} type="button" onClick={() => setFilter(filter === g ? null : g)} aria-pressed={filter === g} title={t(`game.debrief.gradeTip.${g}`)} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px] transition-colors', filter === g ? 'border-brass-400 bg-brass-500/15' : 'border-brass-700/40 hover:border-brass-400', g === 'blunder' ? 'text-rust-400' : g === 'mistake' ? 'text-copper-500' : g === 'inaccuracy' ? 'text-cream-100/70' : 'text-brass-300/80')}>
+                  {t(`game.debrief.tally.${g}`, { n: tally.by[g] })}
+                </button>
+              ))}
+              {keyMoments.length > 0 && (
+                <button type="button" onClick={() => setFilter(filter === 'key' ? null : 'key')} aria-pressed={filter === 'key'} title={t('game.debrief.keyTip')} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px] transition-colors', filter === 'key' ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/40 text-cream-100/70 hover:border-brass-400')}>
+                  {t('game.debrief.tally.key', { n: keyMoments.length })}
+                </button>
+              )}
+              {tally.lost > 0 && <span className="ml-auto font-mono text-[10px] text-rust-400/80" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.tally.lost', { p: tally.lost })}</span>}
+            </div>
+          )}
+          <ol ref={listRef} className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
+            {game.actions.map((a, k) => {
+              const before = positions[k];
+              if (!before) return null;
+              const seat = a.kind === 'concede' ? a.player : before.current;
+              const p = game.players[seat];
+              const mine = seat === me;
+              const v = mine ? verdicts[k] : undefined;
+              if (!listed(k, v)) return null;
+              const quality = v ? v.grade : null;
+              const newRound = k === 0 || positions[k - 1]?.round !== before.round || (filter !== null && !game.actions.slice(0, k).some((_, j) => positions[j]?.round === before.round && listed(j, seat === me ? verdicts[j] : undefined)));
+              return (
+                <li key={k} data-at={k + 1}>
+                  {newRound && <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.debrief.round', { round: before.round, era: t(before.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })}</p>}
+                  <button type="button" onClick={() => { setAt(k + 1); setVaryMine(null); }} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] transition-colors', at === k + 1 && !vary ? 'bg-brass-500/15 text-cream-100' : 'text-cream-100/70 hover:bg-coal-800/70')}>
+                    <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[p?.color]?.hex ?? '#C9A45C' }} />
+                    <span className={cn('w-14 shrink-0 truncate font-mono text-[10px]', mine ? 'text-brass-300' : 'text-cream-100/45')}>{mine ? t('game.debrief.you') : p?.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{describeAction(a)}</span>
+                    {quality && quality !== 'top' && quality !== 'good' && <span className={cn('shrink-0 font-fell text-[9px] uppercase tracking-[0.14em]', quality === 'blunder' ? 'text-rust-400' : quality === 'mistake' ? 'text-copper-500' : 'text-cream-100/50')}>{t(`game.debrief.quality.${quality}`)}</span>}
+                    {v && v.loss > LOSS.good && <span className="shrink-0 font-mono text-[9.5px] text-rust-400/80">−{Math.round(v.loss * 100)}</span>}
+                    <span className={cn('w-8 shrink-0 text-right font-mono text-[10px]', settled[k + 1] ? 'text-cream-100/70' : 'text-cream-100/35')}>{pct(chances[k + 1] ?? 0.5)}</span>
+                  </button>
+                  {/* what was better, under the move it was played instead of: the
+                      lesson stays where the eye already is and nothing shifts */}
+                  {lesson && !vary && at === k + 1 && (
+                    <div className="paper my-1 px-3 py-2">
+                      <p className="font-sans text-[11.5px] text-ink-900">
+                        <span className="font-fell text-[10px] uppercase tracking-[0.14em] text-rust-700">{t(`game.debrief.quality.${lesson.v.grade}`)}</span>
+                        {' · '}
+                        <span className="font-mono text-[10.5px] text-rust-700">{t('game.debrief.lost', { p: lesson.delta })}</span>
+                        {' · '}
+                        {t('game.debrief.betterWas', { move: describeAction(lesson.better) })}
+                      </p>
+                      <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
+                        {t('game.debrief.whyGap', { name: machine, p: lesson.delta })} {t(`game.guide.suggest.why.${whyKey(lesson.better)}`, { name: machine })}
+                      </p>
+                      <button type="button" onClick={seeBetter} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                        <Compass className="h-3 w-3" /> {t('game.debrief.seeBetter')}
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </>
       )}
 
-      {/* the moves, one line each; the reader's graded */}
-      <p className="mt-1 shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.moves')}</p>
-      <ol ref={listRef} className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
-        {game.actions.map((a, k) => {
-          const before = positions[k];
-          if (!before) return null;
-          const seat = a.kind === 'concede' ? a.player : before.current;
-          const p = game.players[seat];
-          const mine = seat === me;
-          const v = mine ? verdicts[k] : undefined;
-          const quality = v ? v.grade : null;
-          const newRound = k === 0 || positions[k - 1]?.round !== before.round;
-          return (
-            <li key={k} data-at={k + 1}>
-              {newRound && <p className="mt-2 font-mono text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('game.debrief.round', { round: before.round, era: t(before.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })}</p>}
-              <button type="button" onClick={() => { setAt(k + 1); setVaryMine(null); }} className={cn('flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left font-sans text-[11px] transition-colors', at === k + 1 && !vary ? 'bg-brass-500/15 text-cream-100' : 'text-cream-100/70 hover:bg-coal-800/70')}>
-                <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[p?.color]?.hex ?? '#C9A45C' }} />
-                <span className={cn('w-14 shrink-0 truncate font-mono text-[10px]', mine ? 'text-brass-300' : 'text-cream-100/45')}>{mine ? t('game.debrief.you') : p?.name}</span>
-                <span className="min-w-0 flex-1 truncate">{describeAction(a)}</span>
-                {quality && quality !== 'top' && quality !== 'good' && <span className={cn('shrink-0 font-fell text-[9px] uppercase tracking-[0.14em]', quality === 'blunder' ? 'text-rust-400' : quality === 'mistake' ? 'text-copper-500' : 'text-cream-100/50')}>{t(`game.debrief.quality.${quality}`)}</span>}
-                {v && v.loss > LOSS.good && <span className="shrink-0 font-mono text-[9.5px] text-rust-400/80">−{Math.round(v.loss * 100)}</span>}
-                <span className={cn('w-8 shrink-0 text-right font-mono text-[10px]', settled[k + 1] ? 'text-cream-100/70' : 'text-cream-100/35')}>{pct(chances[k + 1] ?? 0.5)}</span>
-              </button>
-              {/* what was better, under the move it was played instead of: the
-                  lesson stays where the eye already is and nothing shifts */}
-              {lesson && !vary && at === k + 1 && (
-                <div className="paper my-1 px-3 py-2">
-                  <p className="font-sans text-[11.5px] text-ink-900">
-                    <span className="font-fell text-[10px] uppercase tracking-[0.14em] text-rust-700">{t(`game.debrief.quality.${lesson.v.grade}`)}</span>
-                    {' · '}
-                    <span className="font-mono text-[10.5px] text-rust-700">{t('game.debrief.lost', { p: lesson.delta })}</span>
-                    {' · '}
-                    {t('game.debrief.betterWas', { move: describeAction(lesson.better) })}
-                  </p>
-                  <p className="mt-0.5 font-serif text-[12px] italic leading-snug text-ink-900/80">
-                    {t('game.debrief.whyGap', { name: machine, p: lesson.delta })} {t(`game.guide.suggest.why.${whyKey(lesson.better)}`, { name: machine })}
-                  </p>
-                  <button type="button" onClick={seeBetter} className="btn-strike mt-1.5 !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-                    <Compass className="h-3 w-3" /> {t('game.debrief.seeBetter')}
-                  </button>
-                </div>
+      {/* the review page: the plan the moves add up to, the guide's counted tips, the key moments */}
+      {!vary && tab === 'review' && (
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
+          {plan.deeds.actions > 0 && (
+            <section>
+              <div className="flex items-center gap-2">
+                <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.plan.label')}</p>
+                <button type="button" onClick={() => setFivePlans((o) => !o)} aria-expanded={fivePlans} className="flex items-center gap-1 font-sans text-[10.5px] text-brass-400/80 hover:text-brass-300">
+                  <HelpCircle className="h-3.5 w-3.5" aria-hidden /> {t('game.debrief.plan.fivePlans')}
+                </button>
+              </div>
+              <p className="mt-1 font-serif text-[12px] italic leading-snug text-cream-100/60">{t('game.debrief.plan.lede')}</p>
+              {fivePlans && (
+                <ul className="mt-2 flex flex-col gap-1.5 rounded-md border border-brass-700/40 bg-coal-900/60 px-3 py-2">
+                  {(Object.keys(PLAN_NAMES) as PlanId[]).map((id) => {
+                    const read = plan.all.find((x) => x.id === id);
+                    return (
+                      <li key={id} className="font-sans text-[11px] leading-snug text-cream-100/75">
+                        <span className={cn('font-fell text-[12px]', id === plan.best.id ? 'text-brass-300' : 'text-cream-100')}>{PLAN_NAMES[id]}</span>
+                        {read && <span className="ml-1.5 font-mono text-[10px] text-cream-100/45">{Math.round(read.score * 100)} %</span>}
+                        <span className="ml-1.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-cream-100/40">{t(`game.debrief.plan.level.${id}`)}</span>
+                        <br />
+                        {t(`game.debrief.plan.about.${id}`)}
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </li>
-          );
-        })}
-      </ol>
+              {plan.best.score < PLAN_FAINT ? (
+                <p className="mt-2 font-serif text-[12px] italic leading-snug text-cream-100/60">{t('game.debrief.plan.faint')}</p>
+              ) : (
+                <>
+                  <p className="mt-2 flex items-baseline gap-2">
+                    <span className="font-fell text-[15px] text-brass-300">{PLAN_NAMES[plan.best.id]}</span>
+                    <span className="font-mono text-[10.5px] text-cream-100/60" title={t('game.debrief.plan.scoreTip')}>{t('game.debrief.plan.score', { p: Math.round(plan.best.score * 100) })}</span>
+                  </p>
+                  <p className="mt-0.5 font-sans text-[11px] leading-snug text-cream-100/70">{t(`game.debrief.plan.about.${plan.best.id}`)}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {plan.best.goals.map((g) => {
+                      const met = g.done >= g.target;
+                      return (
+                        <span key={g.id} title={t(`game.debrief.plan.goalsTip.${g.id}`)} className={cn('rounded-md border px-2 py-0.5 font-sans text-[10.5px]', met ? 'border-brass-500/60 text-brass-300' : 'border-brass-700/40 text-cream-100/45')}>
+                          <span className="font-mono">{g.done}/{g.target}</span> {t(`game.debrief.plan.goals.${g.id}`)}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              <ul className="mt-2 flex flex-col gap-0.5">
+                {plan.tips.filter((tip) => !(tip.id === 'lowLeft' && tip.value === 0)).map((tip) => (
+                  <li key={tip.id} title={t(`game.debrief.plan.tipsTip.${tip.id}`)} className={cn('font-sans text-[11px]', tip.met ? 'text-cream-100/70' : 'text-copper-500')}>
+                    {t(`game.debrief.plan.tips.${tip.id}`, { value: tip.id === 'perAction' ? fine(tip.value / 100, lang) : tip.value, want: tip.want, n: tip.value })}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          {tally && (
+            <section className="mt-3">
+              <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.tally.label')}</p>
+              <ul className="mt-1 flex flex-col gap-0.5">
+                {(['top', 'good', 'inaccuracy', 'mistake', 'blunder'] as Grade[]).map((g) => (
+                  <li key={g} className="flex items-center gap-2 font-sans text-[11px] text-cream-100/70">
+                    <button type="button" onClick={() => { setFilter(g); setTab('moves'); }} disabled={tally.by[g] === 0} className={cn('w-28 shrink-0 text-left hover:text-brass-300 disabled:opacity-40', g === 'blunder' ? 'text-rust-400' : g === 'mistake' ? 'text-copper-500' : '')}>
+                      {t(`game.debrief.tally.${g}`, { n: tally.by[g] })}
+                    </button>
+                    <span className="text-cream-100/45">{t(`game.debrief.gradeTip.${g}`)}</span>
+                  </li>
+                ))}
+              </ul>
+              {tally.lost > 0 && <p className="mt-1 font-mono text-[10px] text-rust-400/80" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.tally.lost', { p: tally.lost })}</p>}
+            </section>
+          )}
+          {keyMoments.length > 0 && (
+            <section className="mt-3">
+              <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.keyMoments')}</p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {keyMoments.map((m) => (
+                  <button key={m.k} type="button" onClick={() => { setAt(m.k); setVaryMine(null); setTab('moves'); }} className={cn('flex items-center gap-1.5 rounded-md border px-2 py-1 text-left font-sans text-[10.5px] transition-colors', at === m.k ? 'border-brass-400 bg-brass-500/15 text-brass-300' : 'border-brass-700/50 text-cream-100/75 hover:border-brass-400')}>
+                    <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[m.seat]?.color]?.hex ?? '#C9A45C' }} />
+                    <span>{t('game.debrief.round', { round: m.round, era: t(m.era === 'canal' ? 'game.topbar.eraCanal' : 'game.topbar.eraRail') })} · {m.seat === me ? t('game.debrief.you') : game.players[m.seat]?.name}</span>
+                    <span className="font-mono text-[10px] text-rust-400">{t('game.debrief.lost', { p: Math.round(m.drop * 100) })}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
     </aside>
   );
 }
