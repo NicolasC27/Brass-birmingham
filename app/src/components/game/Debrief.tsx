@@ -18,6 +18,8 @@ import { shareFragment } from '@/game/share';
 import { analysisKey, isWhole, readKept } from '@/game/analysisKeep';
 import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/analysisRun';
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
+import { listProgress, motifsOf, recurring } from '@/game/progress';
+import type { Motif } from '@/game/progress';
 import type { PlanId } from '@/game/plan';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
@@ -468,6 +470,14 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       })
       .sort((a, b) => (a.n && b.n ? a.lost - b.lost : b.n - a.n));
   }, [game.players, allVerdicts]);
+  /* the motifs of this seat's misses here, and the ones that keep coming
+     back over the last games on the sheet (this one included once read) */
+  const motifs = useMemo(() => {
+    const here = motifsOf(game, verdicts);
+    const sheet = listProgress().filter((p) => p.seat === me || p.players === game.players.length);
+    const back = recurring(sheet, 10);
+    return { here: (Object.entries(here) as [Motif, number][]).sort((a, b) => b[1] - a[1]), back, games: Math.min(10, sheet.length) };
+  }, [game, verdicts, me]);
   /* the plan the seat played, as the strategy guide names them: counted from
      the moves alone, and read against what each plan asks for */
   const plan = useMemo(() => planOf(game, me), [game, me]);
@@ -1088,6 +1098,28 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                 ))}
               </ul>
               {tally.lost > 0 && <p className="mt-1 font-mono text-[10px] text-rust-400/80" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.tally.lost', { p: tally.lost })}</p>}
+            </section>
+          )}
+          {(motifs.here.length > 0 || motifs.back.length > 0) && (
+            <section className="mt-3">
+              <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-cream-100/50">{t('game.debrief.motifs.title')}</p>
+              {motifs.here.length > 0 && (
+                <ul className="mt-1 flex flex-col gap-0.5 font-sans text-[11px] text-cream-100/75">
+                  {motifs.here.slice(0, 3).map(([m, n]) => (
+                    <li key={m}><span className="font-mono text-[10px] text-rust-400/80">×{n}</span> {t(`game.debrief.motifs.${m}`)}</li>
+                  ))}
+                </ul>
+              )}
+              {motifs.back.length > 0 && (
+                <>
+                  <p className="mt-1.5 font-serif text-[11.5px] italic text-cream-100/60">{t('game.debrief.motifs.back', { n: motifs.games })}</p>
+                  <ul className="mt-0.5 flex flex-col gap-0.5 font-sans text-[11px] text-cream-100/75">
+                    {motifs.back.slice(0, 3).map((r) => (
+                      <li key={r.motif}><span className="font-mono text-[10px] text-copper-500">×{r.times}</span> {t(`game.debrief.motifs.${r.motif}`)} <span className="text-cream-100/45">{t('game.debrief.motifs.inGames', { n: r.games })}</span></li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </section>
           )}
           {keyMoments.length > 0 && (
