@@ -27,6 +27,8 @@ export interface Ask {
   turnsOnly?: boolean;
   /** judge every seat's turns, the seat `me` first: a change of seat then costs nothing */
   all?: boolean;
+  /** the positions and turns this worker takes, [lo, hi): a game is read by two at once */
+  range?: [number, number];
 }
 
 /** one turn's roads, read longer than the pass: the panel asks when a
@@ -89,22 +91,24 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   /* a kept reading of the first `from` moves stands: this pass reads on from
      there — a position is read forward, never from what came after it */
   const from = Math.max(0, Math.min(ask.from ?? 0, positions.length - 1));
+  const [lo, hi] = ask.range ?? [0, positions.length];
   /* the turns to judge: the seat asked for first, then, when every seat is
      wanted, the others in order */
-  const turnsOf = (seat: number) => positions.map((_, k) => k).filter((k) => k >= from && k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === seat && ask.actions[k].kind !== 'concede');
+  const turnsOf = (seat: number) => positions.map((_, k) => k).filter((k) => k >= from && k >= lo && k < hi && k < ask.actions.length && positions[k].phase === 'action' && positions[k].current === seat && ask.actions[k].kind !== 'concede');
   const turns = turnsOf(ask.me).map((k) => ({ seat: ask.me, k }));
   /* the other seats, when every seat is wanted: read once, by the first
      pass, over fewer roads — enough to grade them, a third of the thinking */
   const others = ask.all ? positions[0].players.map((_, i) => i).filter((i) => i !== ask.me).flatMap((seat) => turnsOf(seat).map((k) => ({ seat, k }))) : [];
-  const first = ask.turnsOnly ? positions.length : from === 0 ? 0 : from + 1;
-  const total = passes.length * (positions.length - first + turns.length) + others.length;
+  const first = ask.turnsOnly ? positions.length : Math.max(lo, from === 0 ? 0 : from + 1);
+  const last = Math.min(hi, positions.length);
+  const total = passes.length * (Math.max(0, last - first) + turns.length) + others.length;
   /* what the passes have said so far: every seat's chance at every position,
      and the turns of the seat being read */
   const chances = positions.map<number[][]>(() => []);
   const verdicts = new Map<string, Verdict[]>();
   let done = 0;
   for (const pass of passes) {
-    for (let k = first; k < positions.length; k++) {
+    for (let k = first; k < last; k++) {
       done += 1;
       chances[k].push(deepChances(positions[k], judge, pass));
       const seats = positions[k].players.map((_, i) => blendChances(chances[k].map((one) => one[i])));
