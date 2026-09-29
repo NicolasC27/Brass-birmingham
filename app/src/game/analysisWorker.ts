@@ -21,6 +21,8 @@ export interface Ask {
   judge?: Judge;
   /** the continuations the positions are read by, one pass each */
   passes?: readonly Pass[];
+  /** the continuations a turn's grade is read by: more than the curve's, being a difference */
+  turnPasses?: readonly Pass[];
   /** moves already read by a kept reading: the pass picks up after them */
   from?: number;
   /** the positions are read for every seat already: judge the turns only */
@@ -86,6 +88,7 @@ export type Note =
 export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   const judge = ask.judge ?? LONG_JUDGE;
   const passes = ask.passes ?? PASSES;
+  const turnPasses = ask.turnPasses ?? passes;
   let positions: GameState[];
   try {
     let s = newGame(ask.setup, ask.seed);
@@ -114,32 +117,39 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
   const others = ask.all ? positions[0].players.map((_, i) => i).filter((i) => i !== ask.me).flatMap((seat) => turnsOf(seat).map((k) => ({ seat, k }))) : [];
   const first = ask.turnsOnly ? positions.length : Math.max(lo, from === 0 ? 0 : from + 1);
   const last = Math.min(hi, positions.length);
-  const total = passes.length * (Math.max(0, last - first) + turns.length) + others.length;
+  const total = passes.length * Math.max(0, last - first) + turnPasses.length * turns.length + others.length;
   /* what the passes have said so far: every seat's chance at every position,
      and the turns of the seat being read */
   const chances = positions.map<number[][]>(() => []);
   const verdicts = new Map<string, Verdict[]>();
   let done = 0;
-  for (const pass of passes) {
-    for (let k = first; k < last; k++) {
-      done += 1;
-      chances[k].push(deepChances(positions[k], judge, pass));
-      const seats = positions[k].players.map((_, i) => blendChances(chances[k].map((one) => one[i])));
-      yield { kind: 'position', k, seats, done, total };
+  const rounds = Math.max(passes.length, turnPasses.length);
+  for (let i = 0; i < rounds; i++) {
+    const pass = passes[i];
+    if (pass) {
+      for (let k = first; k < last; k++) {
+        done += 1;
+        chances[k].push(deepChances(positions[k], judge, pass));
+        const seats = positions[k].players.map((_, j) => blendChances(chances[k].map((one) => one[j])));
+        yield { kind: 'position', k, seats, done, total };
+      }
     }
-    for (const { seat, k } of turns) {
-      done += 1;
-      const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, pass);
-      if (!verdict) continue;
-      const id = `${seat}:${k}`;
-      const seen = [...(verdicts.get(id) ?? []), verdict];
-      verdicts.set(id, seen);
-      yield { kind: 'turn', seat, verdict: blendVerdicts(seen), done, total };
+    const turnPass = turnPasses[i];
+    if (turnPass) {
+      for (const { seat, k } of turns) {
+        done += 1;
+        const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, turnPass);
+        if (!verdict) continue;
+        const id = `${seat}:${k}`;
+        const seen = [...(verdicts.get(id) ?? []), verdict];
+        verdicts.set(id, seen);
+        yield { kind: 'turn', seat, verdict: blendVerdicts(seen), done, total };
+      }
     }
-    if (pass === passes[0]) {
+    if (i === 0) {
       for (const { seat, k } of others) {
         done += 1;
-        const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, pass, 4);
+        const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, turnPasses[0] ?? passes[0], 4);
         if (verdict) yield { kind: 'turn', seat, verdict, done, total };
       }
     }

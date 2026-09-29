@@ -735,8 +735,8 @@ const fr: typeof engame = {
       long: 'Long',
       deep: 'Profond',
       quickTip: 'Rapide : la table telle qu’elle est, sans jouer un coup de plus. Immédiat, et le plus approximatif.',
-      longTip: 'Long : la machine joue cinq coups de plus, trois suites. Une minute ou deux, et le réglage par défaut.',
-      deepTip: 'Profond : dix coups de plus, trois suites. Le plus juste, et deux à trois fois plus long.',
+      longTip: 'Long : la machine joue cinq coups de plus ; la courbe est lue une fois, vos coups deux fois. Une minute environ, et le réglage par défaut.',
+      deepTip: 'Profond : dix coups de plus, deux suites pour la courbe et trois pour vos coups. Le plus juste, et trois fois plus long.',
     },
     linkHere: 'Copier le lien vers ce moment',
     linkCopy: 'Copiez ce lien :',
@@ -821,8 +821,8 @@ const fr: typeof engame = {
       judges: {
         title: 'Les trois juges',
         quick: 'la table telle qu’elle est, sans jouer un coup de plus. Immédiat et grossier : presque tous les coups paraissent justes.',
-        long: 'la machine joue cinq coups de plus pour tous les sièges, trois suites différentes, et fait la moyenne. Le réglage par défaut, une minute environ.',
-        deep: 'dix coups de plus, trois suites. Le plus juste, deux à trois fois plus long.',
+        long: 'la machine joue cinq coups de plus pour tous les sièges ; la courbe est lue une fois, chacun de vos coups deux fois. Le réglage par défaut, une minute environ. Mesuré : une suite prédit l’issue aussi bien que trois.',
+        deep: 'dix coups de plus, deux suites pour la courbe et trois pour vos coups. Le plus juste, trois fois plus long.',
       },
       grades: {
         title: 'Les notes',

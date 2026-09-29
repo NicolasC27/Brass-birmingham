@@ -31,6 +31,8 @@ const SEATS = process.env.SEATS ? Number(process.env.SEATS) : null;
 /** DEEP=1: every EVERY-th position is also read by the long and the deep judge (slow) */
 const DEEP = process.env.DEEP === '1';
 const EVERY = Number(process.env.EVERY ?? 3);
+/** CANDIDATE=3: a judge of that many plies on the long scale is read beside the long and the deep, as `cand` */
+const CANDIDATE = process.env.CANDIDATE ? Number(process.env.CANDIDATE) : null;
 
 const COLORS = ['brass', 'oxblood', 'verdigris', 'indigo'] as const;
 const PERSONAS = ['boulton', 'wedgwood', 'arkwright', 'watt'] as const;
@@ -69,7 +71,7 @@ function play(seed: number): Row[] {
      even games to routs */
   const strengths = Array.from({ length: n }, () => 0.3 + 0.7 * r());
   let s: GameState = newGame(setup(n), seed);
-  const seen: { edge: number[]; long?: number[][]; deep?: number[][]; left: number; era: 'canal' | 'rail' }[] = [];
+  const seen: { edge: number[]; long?: number[][]; deep?: number[][]; cand?: number[][]; left: number; era: 'canal' | 'rail' }[] = [];
   let tick = 0;
   let guard = 0;
   while (s.phase !== 'game-over' && guard++ < 5000) {
@@ -86,6 +88,7 @@ function play(seed: number): Row[] {
         const at = s;
         row.long = at.players.map((_, i) => PASSES.map((x) => deepEdge(at, i, LONG_JUDGE, x)));
         row.deep = at.players.map((_, i) => PASSES.map((x) => deepEdge(at, i, DEEP_JUDGE, x)));
+        if (CANDIDATE !== null) row.cand = at.players.map((_, i) => PASSES.map((x) => deepEdge(at, i, { ...LONG_JUDGE, plies: CANDIDATE }, x)));
       }
       seen.push(row);
     }
@@ -95,7 +98,7 @@ function play(seed: number): Row[] {
   for (const p of seen) {
     if (DEEP && !p.long) continue;
     const round1 = (x: number[]) => x.map((v) => Math.round(v * 10) / 10);
-    p.edge.forEach((edge, i) => out.push({ edge: Math.round(edge * 10) / 10, ...(p.long ? { long: round1(p.long[i]), deep: round1(p.deep![i]) } : {}), left: p.left, era: p.era, won: s.players[i].vp >= top ? 1 : 0, seats: n, seed }));
+    p.edge.forEach((edge, i) => out.push({ edge: Math.round(edge * 10) / 10, ...(p.long ? { long: round1(p.long[i]), deep: round1(p.deep![i]) } : {}), ...(p.cand ? { cand: round1(p.cand[i]) } : {}), left: p.left, era: p.era, won: s.players[i].vp >= top ? 1 : 0, seats: n, seed }));
   }
   return out;
 }

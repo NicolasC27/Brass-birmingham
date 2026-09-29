@@ -99,7 +99,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
   stopReading();
   written = 0;
   const read = judgeOf(judge);
-  const ask: Ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me: seat, judge: read.judge, passes: read.passes, all: true };
+  const ask: Ask = { setup: setupOf(game), seed: game.seed, actions: game.actions, me: seat, judge: read.judge, passes: read.passes, turnPasses: read.turnPasses, all: true };
   /* nothing kept, or a reading left halfway: read it through. A reading of a
      shorter game reads on from where it stopped, and one that only wants this
      seat's turns leaves the positions alone. A game read from scratch is split

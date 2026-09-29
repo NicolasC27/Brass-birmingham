@@ -733,8 +733,8 @@ const game = {
       long: 'Long',
       deep: 'Deep',
       quickTip: 'Quick: the table as it stands, no move played on. Instant, and the roughest.',
-      longTip: 'Long: the machine plays five moves on, three continuations. A minute or two, and the default.',
-      deepTip: 'Deep: ten moves on, three continuations. The truest reading, and two to three times the wait.',
+      longTip: 'Long: the machine plays five moves on; the curve is read once, your moves twice. About a minute, and the default.',
+      deepTip: 'Deep: ten moves on, two continuations for the curve and three for your moves. The most accurate, and three times longer.',
     },
     linkHere: 'Copy a link to this moment',
     linkCopy: 'Copy this link:',
@@ -819,8 +819,8 @@ const game = {
       judges: {
         title: 'The three judges',
         quick: 'the table as it stands, without playing a move on. Instant and coarse: almost every move reads as best.',
-        long: 'the machine plays five moves on for every seat, three different continuations, and averages them. The default, about a minute.',
-        deep: 'ten moves on, three continuations. The most accurate, two to three times longer.',
+        long: 'the machine plays five moves on for every seat; the curve is read once, each of your moves twice. The default, about a minute. Measured: one continuation tells the outcome as well as three.',
+        deep: 'ten moves on, two continuations for the curve and three for your moves. The most accurate, three times longer.',
       },
       grades: {
         title: 'The grades',

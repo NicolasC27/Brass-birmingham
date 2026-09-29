@@ -735,8 +735,8 @@ const game: typeof engame = {
       long: 'Largo',
       deep: 'Profundo',
       quickTip: 'Rápido: la mesa tal cual, sin jugar nada más. Inmediato y el más aproximado.',
-      longTip: 'Largo: la máquina juega cinco jugadas más, tres continuaciones. Uno o dos minutos, y es el valor por defecto.',
-      deepTip: 'Profundo: diez jugadas más, tres continuaciones. El más certero y dos o tres veces más lento.',
+      longTip: 'Largo: la máquina juega cinco jugadas más; la curva se lee una vez, tus jugadas dos. Un minuto aproximadamente, y es el valor por defecto.',
+      deepTip: 'Profundo: diez jugadas más, dos continuaciones para la curva y tres para tus jugadas. El más certero, y tres veces más lento.',
     },
     linkHere: 'Copiar un enlace a este momento',
     linkCopy: 'Copia este enlace:',
@@ -821,8 +821,8 @@ const game: typeof engame = {
       judges: {
         title: 'Los tres jueces',
         quick: 'la mesa tal como está, sin jugar una jugada más. Inmediato y tosco: casi todas las jugadas parecen justas.',
-        long: 'la máquina juega cinco jugadas más para todos los asientos, tres continuaciones distintas, y promedia. El ajuste por defecto, un minuto aproximadamente.',
-        deep: 'diez jugadas más, tres continuaciones. El más preciso, dos o tres veces más largo.',
+        long: 'la máquina juega cinco jugadas más para todos los asientos; la curva se lee una vez, cada jugada tuya dos. El ajuste por defecto, un minuto aproximadamente. Medido: una continuación predice el resultado tan bien como tres.',
+        deep: 'diez jugadas más, dos continuaciones para la curva y tres para tus jugadas. El más preciso, tres veces más largo.',
       },
       grades: {
         title: 'Las notas',

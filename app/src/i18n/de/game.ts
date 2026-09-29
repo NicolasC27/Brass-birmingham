@@ -735,8 +735,8 @@ const game: typeof engame = {
       long: 'Lang',
       deep: 'Tief',
       quickTip: 'Schnell: der Tisch, wie er steht, ohne einen weiteren Zug. Sofort und am gröbsten.',
-      longTip: 'Lang: die Maschine spielt fünf Züge weiter, drei Fortsetzungen. Ein, zwei Minuten — die Voreinstellung.',
-      deepTip: 'Tief: zehn Züge weiter, drei Fortsetzungen. Am genauesten, und zwei- bis dreimal so lang.',
+      longTip: 'Lang: die Maschine spielt fünf Züge weiter; die Kurve wird einmal gelesen, deine Züge zweimal. Etwa eine Minute — die Voreinstellung.',
+      deepTip: 'Tief: zehn Züge weiter, zwei Fortsetzungen für die Kurve und drei für deine Züge. Am genauesten, und dreimal so lang.',
     },
     linkHere: 'Link auf diesen Moment kopieren',
     linkCopy: 'Diesen Link kopieren:',
@@ -821,8 +821,8 @@ const game: typeof engame = {
       judges: {
         title: 'Die drei Richter',
         quick: 'der Tisch, wie er steht, ohne einen Zug weiterzuspielen. Sofort und grob: fast jeder Zug wirkt richtig.',
-        long: 'die Maschine spielt für alle Plätze fünf Züge weiter, drei verschiedene Fortsetzungen, und mittelt. Die Voreinstellung, etwa eine Minute.',
-        deep: 'zehn Züge weiter, drei Fortsetzungen. Am genauesten, zwei- bis dreimal so lang.',
+        long: 'die Maschine spielt für alle Plätze fünf Züge weiter; die Kurve wird einmal gelesen, jeder deiner Züge zweimal. Die Voreinstellung, etwa eine Minute. Gemessen: eine Fortsetzung sagt den Ausgang so gut voraus wie drei.',
+        deep: 'zehn Züge weiter, zwei Fortsetzungen für die Kurve und drei für deine Züge. Am genauesten, dreimal so lang.',
       },
       grades: {
         title: 'Die Noten',

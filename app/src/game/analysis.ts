@@ -417,15 +417,20 @@ export type JudgeId = 'quick' | 'long' | 'deep';
 /** the table as it stands, weighed without playing a move on: instant */
 export const QUICK_JUDGE: Judge = { plies: 0, budgetMs: 0, scale: SHORT_SCALE };
 
-export const JUDGES: Record<JudgeId, { judge: Judge; passes: readonly Pass[] }> = {
+/* How many continuations a position is read by, and how many a turn. Measured
+   on 24 tables read three ways (tools/bots/calibrate.ts, CANDIDATE=3): one
+   pass tells the outcome as well as three — log loss 0.4158 against 0.4160 —
+   and three plies a shade worse than five (0.4188). So the curve is read once,
+   at five plies; a turn's grade, a difference of two readings, keeps two. */
+export const JUDGES: Record<JudgeId, { judge: Judge; passes: readonly Pass[]; turnPasses: readonly Pass[] }> = {
   /* no continuation to vary, so one pass says all there is to say */
-  quick: { judge: QUICK_JUDGE, passes: [BEST] },
-  long: { judge: LONG_JUDGE, passes: PASSES },
-  deep: { judge: DEEP_JUDGE, passes: PASSES },
+  quick: { judge: QUICK_JUDGE, passes: [BEST], turnPasses: [BEST] },
+  long: { judge: LONG_JUDGE, passes: [BEST], turnPasses: PASSES.slice(0, 2) },
+  deep: { judge: DEEP_JUDGE, passes: PASSES.slice(0, 2), turnPasses: PASSES },
 };
 
 /** the judge a reading was asked for, the long one when nothing was said */
-export const judgeOf = (id: JudgeId | undefined): { judge: Judge; passes: readonly Pass[] } => JUDGES[id ?? 'long'] ?? JUDGES.long;
+export const judgeOf = (id: JudgeId | undefined): { judge: Judge; passes: readonly Pass[]; turnPasses: readonly Pass[] } => JUDGES[id ?? 'long'] ?? JUDGES.long;
 
 /** the roads of one turn, each played and read by every pass: the same judge,
     the same passes and the same scale as the curve, so the figure a road
@@ -496,7 +501,7 @@ export function costOf(before: GameState, me: number, played: GameAction, better
 /* while the judge that wrote them is the judge that stands. Bump this */
 /* on any change to a judge, a scale, the passes or the grades.        */
 /* ------------------------------------------------------------------ */
-export const ANALYSIS_VERSION = 5;
+export const ANALYSIS_VERSION = 6;
 
 /** when a game may be read again: once it is played out, and not before. A
     reading of a game still being played is a decision aid, whatever it is
