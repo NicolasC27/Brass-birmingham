@@ -566,8 +566,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the curve across the top of the board, where the VP track stood: wide,
      tall, and clear of the panel; the HUD keeps under it */
   const strip = createPortal(
-    <div data-debrief-curve className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
-      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+    <div data-debrief-curve title={t('game.debrief.curveHint')} className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
+      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} onPick={(k) => { setAt(k); setVaryMine(null); }} />
     </div>,
     document.body,
   );

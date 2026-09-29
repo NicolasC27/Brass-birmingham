@@ -802,6 +802,7 @@ const game: typeof engame = {
     endOf: 'Ende der Partie',
     you: 'du',
     curve: 'Die Kurve der Partie: deine Chancen Zug für Zug',
+    curveHint: 'Rad: Zoom · Umschalt + Ziehen: einen Abschnitt rahmen · Doppelklick: die ganze Partie · die Leiste unten verschiebt',
     betterWas: 'Besser: {move}',
     whyGap: '{name} las dort {p} % mehr Chancen.',
     seeBetter: 'Diesen Zug zeigen',

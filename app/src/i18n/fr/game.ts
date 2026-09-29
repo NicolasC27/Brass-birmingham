@@ -802,6 +802,7 @@ const fr: typeof engame = {
     endOf: 'Fin de partie',
     you: 'vous',
     curve: 'La courbe de la partie : vos chances coup par coup',
+    curveHint: 'Molette : zoom · Maj + glisser : cadrer une zone · double-clic : toute la partie · la barre du bas se glisse',
     betterWas: 'Mieux : {move}',
     whyGap: '{name} y lisait {p} % de chances de plus.',
     seeBetter: 'Voir ce coup',

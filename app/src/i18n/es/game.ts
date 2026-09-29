@@ -802,6 +802,7 @@ const game: typeof engame = {
     endOf: 'Fin de la partida',
     you: 'tú',
     curve: 'La curva de la partida: tus opciones jugada a jugada',
+    curveHint: 'Rueda: zoom · Mayús + arrastrar: encuadrar un tramo · doble clic: toda la partida · la barra inferior desplaza',
     betterWas: 'Mejor: {move}',
     whyGap: '{name} leía ahí un {p} % más de opciones.',
     seeBetter: 'Ver esta jugada',

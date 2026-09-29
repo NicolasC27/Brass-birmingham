@@ -800,6 +800,7 @@ const game = {
     endOf: 'End of the game',
     you: 'you',
     curve: 'The curve of the game: your chances move by move',
+    curveHint: 'Wheel: zoom · Shift + drag: frame a stretch · double-click: the whole game · the bar at the foot pans',
     betterWas: 'Better: {move}',
     whyGap: '{name} read {p} % more chance there.',
     seeBetter: 'Show this move',
