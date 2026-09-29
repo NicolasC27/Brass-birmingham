@@ -117,6 +117,8 @@ export default function Game() {
   /* whose turns the debrief reads: my seat online, the first human at home */
   const reviewSeat = seat ?? game?.players.findIndex((p) => !p.isBot) ?? -1;
   const review = useGame((s) => s.review);
+  /* one panel per game read: a new table or deal starts it afresh */
+  const reviewTable = useGame((s) => s.code ?? s.local ?? 'x');
   const setReview = useGame((s) => s.setReview);
   const setDebriefOpen = useGame((s) => s.setDebriefOpen);
   /* the survey shown on the board: one object per survey, not one per render
@@ -326,7 +328,7 @@ export default function Game() {
       /* a reader writing somewhere keeps their letters: the shortcuts are
          for the board, not for a field */
       const on = e.target as HTMLElement | null;
-      if (on && (on.tagName === 'INPUT' || on.tagName === 'TEXTAREA' || on.isContentEditable)) return;
+      if (on && (on.tagName === 'INPUT' || on.tagName === 'TEXTAREA' || on.tagName === 'SELECT' || on.isContentEditable)) return;
       /* the orders shown on the board: Escape closes that first */
       if (e.key === 'Escape' && (useGame.getState().previewQueue || useGame.getState().surveySeat !== null)) {
         e.preventDefault();
@@ -866,7 +868,7 @@ export default function Game() {
           </div>
         </div>
       )}
-      {debriefOpen && readable(game) && reviewSeat >= 0 && <Debrief game={game} me={reviewSeat} />}
+      {debriefOpen && readable(game) && reviewSeat >= 0 && <Debrief key={`${reviewTable}:${game.seed}`} game={game} me={reviewSeat} />}
       {/* the guide and the analysis share the right lane: while a game is
           being read, the analysis has it */}
       {!analysisPane && <Guide dock={dock} />}
