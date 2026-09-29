@@ -142,7 +142,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
       snap = { ...snap, done: snap.total, running: false };
       keep();
       /* the seat's game, summed up for the desk's sheet of progress */
-      if (snap.verdicts[seat]) recordProgress(game, table, seat, snap.verdicts[seat]);
+      if (snap.verdicts[seat] && !table.startsWith('report:')) recordProgress(game, table, seat, snap.verdicts[seat]);
       stopReading();
       tell();
       return;

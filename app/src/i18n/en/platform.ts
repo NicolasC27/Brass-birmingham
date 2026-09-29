@@ -377,6 +377,7 @@ const platform = {
       lastPlan: 'Last plan played',
       back: 'What keeps coming back',
     },
+    report: { eyebrow: 'Game report', title: 'The report', lede: '{n} moves, {players} players. The curve settles as the reading goes; click a seat to read its game.', none: 'This link carries no game.', noDrops: 'No clear fall in this game.', open: 'Open the game and its analysis', home: 'Back home' },
     stats: {
       played: 'Games',
       won: 'Wins',

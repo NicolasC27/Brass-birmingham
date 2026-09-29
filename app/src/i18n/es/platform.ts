@@ -377,6 +377,7 @@ const platform = {
       lastPlan: 'Último plan jugado',
       back: 'Lo que se repite',
     },
+    report: { eyebrow: 'Informe de partida', title: 'El informe', lede: '{n} jugadas, {players} jugadores. La curva se afina durante la lectura; un clic en un asiento lee su partida.', none: 'Este enlace no lleva ninguna partida.', noDrops: 'Ninguna caída clara en esta partida.', open: 'Abrir la partida y su análisis', home: 'Volver al inicio' },
     stats: {
       played: 'Partidas',
       won: 'Victorias',

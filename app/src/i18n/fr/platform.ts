@@ -377,6 +377,7 @@ const platform = {
       lastPlan: 'Dernier plan joué',
       back: 'Ce qui revient',
     },
+    report: { eyebrow: 'Rapport de partie', title: 'Le rapport', lede: '{n} coups, {players} joueurs. La courbe se précise pendant la lecture ; un clic sur un siège lit sa partie.', none: 'Ce lien ne porte aucune partie.', noDrops: 'Aucune chute nette dans cette partie.', open: 'Ouvrir la partie et l’analyse', home: 'Retour à l’accueil' },
     stats: {
       played: 'Parties',
       won: 'Victoires',

@@ -379,6 +379,7 @@ const platform: typeof enPlatform = {
       lastPlan: 'Zuletzt gespielter Plan',
       back: 'Was wiederkehrt',
     },
+    report: { eyebrow: 'Partiebericht', title: 'Der Bericht', lede: '{n} Züge, {players} Spieler. Die Kurve verfeinert sich während der Lesung; ein Klick auf einen Platz liest dessen Partie.', none: 'Dieser Link trägt keine Partie.', noDrops: 'Kein klarer Einbruch in dieser Partie.', open: 'Partie und Analyse öffnen', home: 'Zurück zur Startseite' },
     stats: {
       played: 'Partien',
       won: 'Siege',
