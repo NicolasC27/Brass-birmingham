@@ -632,32 +632,27 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           </div>
         </div>
         <div className="mt-2 flex items-center gap-1.5">
-          <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVaryMine(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => { setAt((k) => Math.max(0, k - 1)); setVaryMine(null); }} disabled={at === 0} aria-label={t('game.debrief.prev')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronLeft className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setVaryMine(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => { setAt((k) => Math.min(last, k + 1)); setVaryMine(null); }} disabled={at === last} aria-label={t('game.debrief.next')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
           {/* faute à faute, the way a game is read again: the arrows up and down */}
-          <button type="button" onClick={() => jump(-1)} disabled={nextMiss(-1) === null} aria-label={t('game.debrief.prevMiss')} title={t('game.debrief.prevMiss')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => jump(-1)} disabled={nextMiss(-1) === null} aria-label={t('game.debrief.prevMiss')} title={t('game.debrief.prevMiss')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronsLeft className="h-3.5 w-3.5" />
           </button>
-          <button type="button" onClick={() => jump(1)} disabled={nextMiss(1) === null} aria-label={t('game.debrief.nextMiss')} title={t('game.debrief.nextMiss')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
+          <button type="button" onClick={() => jump(1)} disabled={nextMiss(1) === null} aria-label={t('game.debrief.nextMiss')} title={t('game.debrief.nextMiss')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px] disabled:opacity-30">
             <ChevronsRight className="h-3.5 w-3.5" />
           </button>
-          {shown?.phase === 'action' && (
-            <button type="button" onClick={playFrom} title={t('game.debrief.playFrom')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[10px]">
-              <Play className="h-3.5 w-3.5" /> {t('game.debrief.playFrom')}
-            </button>
-          )}
-          <button type="button" onClick={linkHere} aria-label={t('game.debrief.linkHere')} title={t('game.debrief.linkHere')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
+          <button type="button" onClick={linkHere} aria-label={t('game.debrief.linkHere')} title={t('game.debrief.linkHere')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
             {linked ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
           </button>
-          <button type="button" onClick={reportLink} aria-label={t('game.debrief.report')} title={t('game.debrief.report')} className="btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
+          <button type="button" onClick={reportLink} aria-label={t('game.debrief.report')} title={t('game.debrief.report')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]">
             {reported ? <Check className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
           </button>
           {online && mySeat !== null && mySeat >= 0 && (
-            <button type="button" onClick={() => shareReview(!sharing)} aria-pressed={sharing} aria-label={t('game.debrief.share')} title={t('game.debrief.share')} className={cn('btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]', sharing && '!border-brass-400 !text-brass-300')}>
+            <button type="button" onClick={() => shareReview(!sharing)} aria-pressed={sharing} aria-label={t('game.debrief.share')} title={t('game.debrief.share')} className={cn('shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]', sharing && '!border-brass-400 !text-brass-300')}>
               <Radio className="h-3.5 w-3.5" />
             </button>
           )}
@@ -666,16 +661,24 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
               <Eye className="h-3.5 w-3.5" /> {game.players[showing.from]?.name ?? ''}
             </button>
           )}
-          <button type="button" onClick={() => setBoardOption('reviewLit', !lit)} aria-pressed={lit} aria-label={t(lit ? 'game.debrief.dim' : 'game.debrief.lit')} title={t(lit ? 'game.debrief.dim' : 'game.debrief.lit')} className={cn('btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]', lit && '!border-brass-400 !text-brass-300')}>
+          <button type="button" onClick={() => setBoardOption('reviewLit', !lit)} aria-pressed={lit} aria-label={t(lit ? 'game.debrief.dim' : 'game.debrief.lit')} title={t(lit ? 'game.debrief.dim' : 'game.debrief.lit')} className={cn('shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[11px]', lit && '!border-brass-400 !text-brass-300')}>
             {lit ? <Sun className="h-3.5 w-3.5" /> : <SunDim className="h-3.5 w-3.5" />}
           </button>
+        </div>
+        {/* the ways off the line: play on from here, explore the roads, come back */}
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {shown?.phase === 'action' && (
+            <button type="button" onClick={playFrom} title={t('game.debrief.playFrom')} className="shrink-0 whitespace-nowrap btn-ledger !min-h-[26px] !px-2 !py-0.5 text-[10px]">
+              <Play className="h-3.5 w-3.5" /> {t('game.debrief.playFrom')}
+            </button>
+          )}
           {canExplore && !vary && (
-            <button type="button" onClick={explore} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
+            <button type="button" onClick={explore} className="btn-strike ml-auto shrink-0 whitespace-nowrap !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               <Compass className="h-3.5 w-3.5" /> {t('game.debrief.explore')}
             </button>
           )}
           {vary && (
-            <button type="button" onClick={() => setVaryMine(null)} className="btn-strike ml-auto !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
+            <button type="button" onClick={() => setVaryMine(null)} className="btn-strike ml-auto shrink-0 whitespace-nowrap !min-h-[26px] !px-2.5 !py-0.5 !text-[10px]">
               {t('game.debrief.backToLine')}
             </button>
           )}
