@@ -614,9 +614,10 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     }
     return rounds;
   }, [shown]);
+  /* the register opens at its head, the game read from its first line */
   useEffect(() => {
     const el = ledgerRef.current;
-    if (el && tab === 'ledger' && !ledgerPick) el.scrollTop = el.scrollHeight;
+    if (el && tab === 'ledger' && !ledgerPick) el.scrollTop = 0;
   }, [tab, shown, ledgerPick]);
   useEffect(() => {
     listRef.current?.querySelector<HTMLElement>(`[data-at="${at}"]`)?.scrollIntoView({ block: 'nearest' });
