@@ -190,6 +190,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   }, [game, table, me, judgeId]);
 
   const workerRef = useRef<Worker | null>(null);
+  /* the roads' own worker, and the line it is reading */
+  const roadsWorker = useRef<Worker | null>(null);
+  const roadsBusy = useRef<string | null>(null);
   /* what a miss cost, in points, by turn and seat: asked of the worker once,
      said under the lesson when it comes */
   const [costs, setCosts] = useState<Record<string, Cost | null>>({});
@@ -206,14 +209,6 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     }
     w.onmessage = (e: MessageEvent<Note>) => {
       const n = e.data;
-      /* a line read longer ranks what else could have been played there, and
-         nothing else — the curve and the grades keep the one scale of the long
-         judge, so no position ever shows two figures */
-      if (n.kind === 'roads') {
-        keepRoads(keptKey, me, n.key, n.roads);
-        setRoadsProgress((p) => ({ ...p, [n.key]: { done: 1, total: 1, landed: Date.now() } }));
-      }
-      if (n.kind === 'roadsProgress') setRoadsProgress((p) => ({ ...p, [n.key]: { done: n.done, total: n.total, landed: 0 } }));
       if (n.kind === 'cost') setCosts((c) => ({ ...c, [n.key]: n.cost }));
     };
     workerRef.current = w;
@@ -221,8 +216,43 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     return () => {
       w?.terminate();
       workerRef.current = null;
+      roadsWorker.current?.terminate();
+      roadsWorker.current = null;
+      roadsBusy.current = null;
     };
   }, [game, me, keptKey]);
+  /* the roads of a line have a worker of their own, so a cost being played
+     out never holds them up; and it reads one line at a time — the line on
+     show — so a line left behind is dropped, to be read again if revisited */
+  const readRoadsOf = useCallback((ask: object, key: string) => {
+    if (roadsBusy.current && roadsBusy.current !== key) {
+      roadsWorker.current?.terminate();
+      roadsWorker.current = null;
+      asked.current.delete(roadsBusy.current);
+      roadsBusy.current = null;
+    }
+    if (!roadsWorker.current) {
+      try {
+        roadsWorker.current = new Worker(new URL('../../game/analysisWorker.ts', import.meta.url), { type: 'module' });
+      } catch {
+        return;
+      }
+      roadsWorker.current.onmessage = (e: MessageEvent<Note>) => {
+        const n = e.data;
+        /* a line read longer ranks what else could have been played there, and
+           nothing else — the curve and the grades keep the one scale of the long
+           judge, so no position ever shows two figures */
+        if (n.kind === 'roads') {
+          keepRoads(keptKey, me, n.key, n.roads);
+          setRoadsProgress((p) => ({ ...p, [n.key]: { done: 1, total: 1, landed: Date.now() } }));
+          if (roadsBusy.current === n.key) roadsBusy.current = null;
+        }
+        if (n.kind === 'roadsProgress') setRoadsProgress((p) => ({ ...p, [n.key]: { done: n.done, total: n.total, landed: 0 } }));
+      };
+    }
+    roadsBusy.current = key;
+    roadsWorker.current.postMessage(ask);
+  }, [keptKey, me]);
   /* the key moments: where the curve fell hardest, whoever moved — the
      reader's own miss or a rival's stroke */
   const keyMoments = useMemo(() => {
@@ -266,12 +296,11 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     /* a turn of the game itself is already judged, roads and all, by the pass
        that read the game: only a branch the judge never saw is asked for */
     if (!vary || !tipMine || !roads.length || vary.moves.length === 0) return;
-    const w = workerRef.current;
-    if (!w || asked.current.has(lineKey)) return;
+    if (asked.current.has(lineKey)) return;
     asked.current.add(lineKey);
     const read = judgeOf(judgeId);
-    w.postMessage({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey, judge: read.judge, passes: read.passes });
-  }, [vary, tipMine, roads, lineKey, game, me, judgeId]);
+    readRoadsOf({ setup: setupOf(game), seed: game.seed, actions: [...game.actions.slice(0, vary.from - 1), ...vary.moves.map((m) => m.action)], me, roads: roads.map((r) => r.action), key: lineKey, judge: read.judge, passes: read.passes }, lineKey);
+  }, [vary, tipMine, roads, lineKey, game, me, judgeId, readRoadsOf]);
   const readingLonger = !!vary && tipMine && vary.moves.length > 0 && !roadsRead[lineKey];
   const longerProgress = readingLonger ? roadsProgress[lineKey] : undefined;
   /* the reading just landed: the settled list is marked for a moment */
