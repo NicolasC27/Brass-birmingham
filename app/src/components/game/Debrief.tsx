@@ -16,7 +16,7 @@ import { forkLocalGame } from '@/game/local';
 import { ledgerText } from '@/game/ledgerText';
 import { shareFragment } from '@/game/share';
 import { analysisKey, isWhole, readKept } from '@/game/analysisKeep';
-import { keepRoads, onReading, readGame, reading as readingNow } from '@/game/analysisRun';
+import { keepRoads, onReading, readGame, reading as readingNow, stopReading } from '@/game/analysisRun';
 import { PLAN_FAINT, PLAN_NAMES, planOf } from '@/game/plan';
 import { listProgress, motifsOf, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
@@ -64,6 +64,8 @@ const EMPTY_SEATS: Record<number, Reading[]> = {};
 const SET = 'flex shrink-0 overflow-hidden rounded-md border border-brass-700/50 divide-x divide-brass-700/50';
 const KEY = 'flex h-[26px] w-[30px] items-center justify-center text-brass-400/85 transition-colors hover:bg-brass-500/15 hover:text-brass-300 disabled:opacity-35 disabled:hover:bg-transparent';
 const pct = (p: number) => Math.round(p * 100);
+/** how long a reading may say nothing before the bar calls it stuck */
+const STUCK_MS = 60_000;
 /** a difference with its sign, the nought bare */
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
@@ -118,6 +120,23 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the readers of this game at the table, this one counted: the office
      shares the positions out between them, so the wait is cut by as many */
   const readers = snap.key === keptKey && snap.running ? snap.readers : 0;
+  /* the reading stopped short — a worker failed, or never loaded, as on a
+     page open since before a rebuild — or has said nothing for a long while:
+     the bar says so and offers to start it again, rather than showing a game
+     half read as if it were whole */
+  const mine = snap.key === keptKey && snap.moves === game.actions.length;
+  const stopped = mine && !snap.running && snap.stopped !== null;
+  const [stuckOn, setStuckOn] = useState<number | null>(null);
+  useEffect(() => {
+    if (!mine || !snap.running) return;
+    const timer = setTimeout(() => setStuckOn(snap.done), STUCK_MS);
+    return () => clearTimeout(timer);
+  }, [mine, snap.running, snap.done]);
+  const stuck = mine && snap.running && stuckOn === snap.done;
+  const resume = useCallback(() => {
+    stopReading();
+    readGame(game, table, me, judgeId, online);
+  }, [game, table, me, judgeId, online]);
   /* the reading at each position, for the seat on show and for the others */
   const reads = useMemo(() => positions.map((_, k) => seatsRead[k]?.[me]), [positions, seatsRead, me]);
   const chances = useMemo(() => positions.map((p, k) => reads[k]?.chance ?? winChance(p, me)), [positions, me, reads]);
@@ -695,12 +714,19 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         <div className="mt-1">
           {/* how far the judge has got, a hair under the curve: it keeps its
               room once read, so nothing below it moves */}
-          <div className={cn('mt-1 flex items-center gap-2 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} aria-live="polite">
-            <div className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-full bg-coal-800">
-              <div className="h-full rounded-full bg-brass-400/50 transition-[width] duration-300" style={{ width: `${progress.total ? Math.round((100 * progress.done) / progress.total) : 0}%` }} />
+          {stopped || stuck ? (
+            <div className="mt-1 flex items-center gap-2" role="status" aria-live="polite">
+              <span className="min-w-0 flex-1 truncate font-mono text-[9.5px] text-cream-100/70" title={snap.stopped ?? undefined}>{t(stuck ? 'game.debrief.readingStuck' : 'game.debrief.readingStopped')}</span>
+              <button type="button" onClick={resume} className="shrink-0 rounded border border-brass-700/50 px-1.5 py-0.5 font-sans text-[10px] text-brass-300 transition-colors hover:bg-brass-500/15">{t('game.debrief.readingResume')}</button>
             </div>
-            <span className="shrink-0 font-mono text-[9.5px] text-cream-100/45">{readers > 1 ? t('game.debrief.readingShared', { done: progress.done, total: progress.total, n: readers }) : t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>
-          </div>
+          ) : (
+            <div className={cn('mt-1 flex items-center gap-2 transition-opacity', progress.done < progress.total ? 'opacity-100' : 'opacity-0')} aria-live="polite">
+              <div className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-full bg-coal-800">
+                <div className="h-full rounded-full bg-brass-400/50 transition-[width] duration-300" style={{ width: `${progress.total ? Math.round((100 * progress.done) / progress.total) : 0}%` }} />
+              </div>
+              <span className="shrink-0 font-mono text-[9.5px] text-cream-100/45">{readers > 1 ? t('game.debrief.readingShared', { done: progress.done, total: progress.total, n: readers }) : t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>
+            </div>
+          )}
         </div>
         {/* one row: the steps as a joined set, the tools as another, the way onto a line at the right */}
         <div className="mt-2 flex items-center gap-2">

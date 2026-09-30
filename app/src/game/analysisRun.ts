@@ -41,11 +41,15 @@ export interface Snapshot extends Kept {
   /** what the pass set out to do (0 when nothing is running) */
   total: number;
   running: boolean;
+  /** why the reading stopped short, when it did: a worker that failed or never
+      loaded — a page open since before a rebuild asks for a script that is
+      gone — leaves what was read and says so, rather than going quiet */
+  stopped: string | null;
   /** the other readers of this table at work on the same reading */
   readers: number;
 }
 
-const EMPTY: Snapshot = { key: '', seat: -1, judge: 'long', seats: {}, verdicts: {}, roads: {}, total: 0, moves: 0, done: 0, running: false, readers: 0 };
+const EMPTY: Snapshot = { key: '', seat: -1, judge: 'long', seats: {}, verdicts: {}, roads: {}, total: 0, moves: 0, done: 0, running: false, stopped: null, readers: 0 };
 
 let snap: Snapshot = EMPTY;
 /* the workers reading now: two share a fresh game, half the positions each */
@@ -167,6 +171,16 @@ function flush(): void {
 
 /* ---------------------------- the workers ------------------------- */
 
+/** the reading stops short: what was read stays on show and on the shelf,
+ *  and the panel is told why, so the reader can start it again */
+function halt(why: string): void {
+  if (!snap.running) return;
+  keep();
+  stopReading();
+  snap = { ...snap, stopped: why };
+  tell();
+}
+
 /** the workers set going on these asks; it settles when every one of them is
  *  over, when one of them gives up, or when the reading is dropped */
 function run(asks: Ask[], seat: number): Promise<void> {
@@ -191,7 +205,7 @@ function run(asks: Ask[], seat: number): Promise<void> {
       part.over = true;
       part.done = part.total;
     } else if (n.kind === 'failed') {
-      stopReading();
+      halt(n.why);
       return;
     }
     parts.set(w, part);
@@ -227,6 +241,10 @@ function run(asks: Ask[], seat: number): Promise<void> {
     workers.push(w);
     parts.set(w, { done: 0, total: 0, over: false });
     w.onmessage = onNote(w);
+    /* a worker that never loads or throws outright says nothing on its
+       channel: without this the reading would wait on it for ever */
+    w.onerror = (e) => halt(e.message || 'the reader failed to load');
+    w.onmessageerror = () => halt('the reader lost a note');
     w.postMessage(one);
   }
   if (!workers.length) return Promise.resolve();
@@ -409,7 +427,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
   /* the shelf holds it all, this seat's turns included */
   if (whole && kept!.verdicts[seat] && !online) {
     if (snap.key !== key || snap.seat !== seat || snap.moves !== moves || snap.running) {
-      snap = { ...kept!, key, seat, judge, done: kept!.total, total: kept!.total, running: false, readers: 0 };
+      snap = { ...kept!, key, seat, judge, done: kept!.total, total: kept!.total, running: false, stopped: null, readers: 0 };
       tell();
     }
     return snap;
@@ -434,6 +452,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
     total,
     done: Math.min(base, total),
     running: true,
+    stopped: null,
     readers: 0,
   };
   share = online ? shareOf(table, judge) : null;
@@ -443,7 +462,7 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
     /* the shelf's copy is worth posting: the office may have none */
     if (kept) stash({ moves: kept.moves, seats: kept.seats, total });
     else stash({ moves, total });
-    void shareRead(game, table, seat, ask, moves, share).catch(() => stopReading());
+    void shareRead(game, table, seat, ask, moves, share).catch((e: unknown) => halt(e instanceof Error ? e.message : 'the table could not be read'));
     tell();
     return snap;
   }
