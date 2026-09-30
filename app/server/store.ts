@@ -4,6 +4,7 @@ import { promisify } from 'node:util';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
+import type { Held } from '@/game/analysisMerge';
 import type { Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { emptyTally } from '@/game/tally';
@@ -188,6 +189,15 @@ create table if not exists flags (
   detail    text not null,
   code      text,
   at        integer not null
+);
+create table if not exists analyses (
+  code      text not null,
+  seed      integer not null,
+  judge     text not null,
+  v         integer not null,
+  body      text not null,
+  updatedAt integer not null,
+  primary key (code, seed, judge, v)
 );
 create table if not exists purses (
   accountId text primary key,
@@ -704,6 +714,7 @@ export class Store {
     }
     this.db.prepare('delete from invitations where code = ?').run(code);
     this.db.prepare('delete from tables where code = ?').run(code);
+    if (!this.gameFinished(code)) this.dropAnalyses(code);
   }
 
   tables(): Table[] {
@@ -741,6 +752,7 @@ export class Store {
       .run(code, seed, JSON.stringify(setup), JSON.stringify(seatIds), Date.now());
     this.db.prepare('delete from moves where code = ?').run(code);
     this.db.prepare('delete from game_players where code = ?').run(code);
+    this.dropAnalyses(code);
     const seat = this.db.prepare('insert or ignore into game_players (code, accountId) values (?, ?)');
     for (const id of seatIds) seat.run(code, id);
     return true;
@@ -839,6 +851,52 @@ export class Store {
       finishedAt: r.finishedAt,
       actions: (this.db.prepare('select action from moves where code = ? order by idx').all(r.code) as { action: string }[]).map((m) => JSON.parse(m.action) as GameAction),
     }));
+  }
+
+  /* ---------------------------- readings --------------------------- */
+
+  /** the reading kept of this table's game, under this judge and this
+   *  version of the analysis — another judge, or another version, is another
+   *  reading and never mixes with this one */
+  analysis(code: string, seed: number, judge: string, v: number): Held | null {
+    const row = this.db.prepare('select body from analyses where code = ? and seed = ? and judge = ? and v = ?').get(code, seed, judge, v) as { body: string } | undefined;
+    if (!row) return null;
+    try {
+      return JSON.parse(row.body) as Held;
+    } catch {
+      return null;
+    }
+  }
+
+  /** the reading as it now stands, over the last */
+  saveAnalysis(code: string, seed: number, judge: string, v: number, held: Held): void {
+    this.db.prepare('insert or replace into analyses (code, seed, judge, v, body, updatedAt) values (?, ?, ?, ?, ?, ?)').run(code, seed, judge, v, JSON.stringify(held), Date.now());
+  }
+
+  /** the readings of a table, thrown away — a fresh game at the same code */
+  dropAnalyses(code: string): void {
+    this.db.prepare('delete from analyses where code = ?').run(code);
+  }
+
+  /** readings nobody has come back to in a long while */
+  sweepAnalyses(olderThan: number, now = Date.now()): void {
+    this.db.prepare('delete from analyses where updatedAt < ?').run(now - olderThan);
+  }
+
+  /** what a part of a reading is measured against: the deal, the length of
+   *  the game and the seats at it — a game the office no longer plays but
+   *  still has on the record is read all the same */
+  gameFacts(code: string): { seed: number; moves: number; seats: number } | null {
+    const row = this.db.prepare('select seed, seats from games where code = ?').get(code) as { seed: number; seats: string } | undefined;
+    if (!row) return null;
+    const moves = (this.db.prepare('select count(*) as n from moves where code = ?').get(code) as { n: number }).n;
+    let seats = 0;
+    try {
+      seats = (JSON.parse(row.seats) as string[]).length;
+    } catch {
+      return null;
+    }
+    return { seed: row.seed, moves, seats };
   }
 
   /** the finished games this account sat at, newest first */

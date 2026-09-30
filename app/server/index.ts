@@ -10,8 +10,13 @@ import { decode, encode } from '@/online/protocol';
 import { PING_SHOWER, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, isTelegramKey } from '@/game/telegrams';
 import { LINKS, MERCHANT_BY_ID, TOWN_BY_ID } from '@/game/data';
 import type { ClientMessage, ServerMessage } from '@/online/protocol';
+import type { JudgeId } from '@/game/analysis';
 import type { Me, TableQuery } from '@/online/table';
 import { normalizeCode } from '@/online/table';
+import { CAPS } from '@/game/analysisMerge';
+import type { Facts } from '@/game/analysisMerge';
+import { Readings, isJudge, isVersion } from './analysis';
+import type { Id } from './analysis';
 import { Hall, STALE_MS } from './hall';
 import { DEFAULT_PACE } from './game';
 import type { Pace } from './game';
@@ -37,6 +42,8 @@ import type { Account } from './store';
 
 interface Client {
   socket: WebSocket;
+  /** this socket's own mark, for the slices of a reading it takes */
+  mark: string;
   /** where the socket comes from, for the counters kept per address */
   ip: string;
   me: Me | null;
@@ -192,6 +199,9 @@ const foldName = (name: string): string => name.trim().toLowerCase().replace(/\s
 export function serve(options: ServeOptions = {}): Promise<Serving> {
   const store = new Store(options.file ?? 'brassworks.db');
   const hall = new Hall(store, options.pace ?? DEFAULT_PACE, { now: options.clock, waits: options.waits });
+  /* the office's copy of what the tables have read of their games */
+  const readings = new Readings(store, options.clock);
+  let marks = 0;
   const post = options.mailer ?? mailerFromEnv();
   const letter = letters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000');
   const feedbackTo = (options.feedbackTo ?? process.env.FEEDBACK_TO ?? '').trim();
@@ -398,7 +408,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, ip: addressOf(req, trustProxy), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, mark: `s-${++marks}`, ip: addressOf(req, trustProxy), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
@@ -422,6 +432,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     });
     const gone = () => {
       clients.delete(client);
+      /* the stretches of a reading this socket had taken are free again */
+      readings.release(client.mark);
       if (client.tablesTimer) clearTimeout(client.tablesTimer);
       client.tablesTimer = null;
       if (client.me) tellFriends(client.me.id);
@@ -790,7 +802,44 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at, ...(look ? { look } : {}), ...(cursor !== undefined ? { cursor } : {}), ...(seat !== undefined ? { seat } : {}), ...(line !== undefined ? { line } : {}) });
         return;
       }
+      case 'analysis.get': {
+        /* the reading the office keeps of this table, for anyone who may see
+           it — a player at it or a spectator following it */
+        const one = reading(c, m);
+        send(c, { t: 'analysis', rid: m.rid, code: normalizeCode(m.code), v: m.v, judge: m.judge, reading: one ? readings.read(one.id) : null, readers: one ? readings.readers(one.id) : 0 });
+        return;
+      }
+      case 'analysis.post': {
+        /* figures read in a browser: checked against the game the office
+           itself holds, folded into its copy, then passed round the table */
+        const one = reading(c, m);
+        if (!one) return;
+        const part = readings.add(one.id, c.mark, m.part, one.facts);
+        if (!part) return;
+        const readers = readings.readers(one.id);
+        for (const w of watchers(one.id.code)) if (w !== c) send(w, { t: 'analysis.add', code: one.id.code, v: one.id.v, judge: one.id.judge, part, readers });
+        return;
+      }
+      case 'analysis.claim': {
+        /* a stretch of the game to read: the office hands out what nobody
+           else is reading, so several readers never read the same positions */
+        const one = reading(c, m);
+        const slice = one ? readings.claim(one.id, c.mark, m.want, one.facts) : { lo: 0, hi: 0 };
+        send(c, { t: 'analysis.slice', rid: m.rid, code: normalizeCode(m.code), v: m.v, judge: m.judge, lo: slice.lo, hi: slice.hi, readers: one ? readings.readers(one.id) : 0 });
+        return;
+      }
     }
+  }
+
+  /** the game a reading is of: the table's own, or the record of one played
+   *  out at it — and null when this socket has no business reading it */
+  function reading(c: Client, m: { code: string; v: number; judge: JudgeId }): { id: Id; facts: Facts } | null {
+    const code = normalizeCode(m.code);
+    if (!c.watching.has(code) || !isJudge(m.judge) || !isVersion(m.v)) return null;
+    const game = hall.game(code);
+    const facts = game ? { seed: game.seed, moves: game.state.actions.length, seats: game.state.players.length } : store.gameFacts(code);
+    if (!facts || facts.moves < 1 || facts.moves > CAPS.moves || facts.seats < 2) return null;
+    return { id: { code, seed: facts.seed, judge: m.judge, v: m.v }, facts: { moves: facts.moves, seats: facts.seats } };
   }
 
   /** signed in: a fresh token, and the socket speaks for the account */
@@ -807,6 +856,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       ? setInterval(() => {
           hall.sweep(STALE_MS);
           store.sweepPrivacy();
+          readings.sweep();
         }, every)
       : null;
   store.sweepPrivacy();

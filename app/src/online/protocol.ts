@@ -1,5 +1,8 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
+import type { JudgeId } from '@/game/analysis';
+import type { Kept } from '@/game/analysisKeep';
+import type { ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
@@ -110,6 +113,14 @@ export type ClientMessage =
       `look` is where my camera sits on the map and `cursor` where my pointer
       is, both in world units, so the table sees what I am looking at */
   | { t: 'review'; code: string; at: number | null; look?: { wx: number; wy: number; k: number }; cursor?: { wx: number; wy: number } | null; seat?: number; line?: { from: number; moves: GameAction[] } | null }
+  /** the reading the office keeps of this table, under this judge and this
+      version of the analysis — the answer carries it whole, or nothing */
+  | { t: 'analysis.get'; rid: number; code: string; v: number; judge: JudgeId }
+  /** figures just read, for the office to fold into its copy and pass on */
+  | { t: 'analysis.post'; code: string; v: number; judge: JudgeId; part: ReadingPart }
+  /** a stretch of positions to read, taken from what is left: the office
+      hands out one slice at a time so two readers never read the same */
+  | { t: 'analysis.claim'; rid: number; code: string; v: number; judge: JudgeId; want: number }
   /** the register of tables being played, for the hall */
   | { t: 'tables'; rid: number; query?: TableQuery }
   | { t: 'seatme'; rid: number; color?: PlayerColor }
@@ -150,6 +161,13 @@ export type ServerMessage =
   | { t: 'warned'; code: string; about: 'marks'; muted: boolean }
   /** every seat's line to the office, in ms (null for a machine or an empty chair), now and then */
   | { t: 'pulse'; code: string; latency: (number | null)[] }
+  /** the office's copy of a reading (null: it keeps none) */
+  | { t: 'analysis'; rid?: number; code: string; v: number; judge: JudgeId; reading: Kept | null; readers: number }
+  /** what another reader of this table has just read */
+  | { t: 'analysis.add'; code: string; v: number; judge: JudgeId; part: ReadingPart; readers: number }
+  /** the slice of positions this reader may take, [lo, hi) — empty when the
+      whole game is taken already, and the reader has only to listen */
+  | { t: 'analysis.slice'; rid: number; code: string; v: number; judge: JudgeId; lo: number; hi: number; readers: number }
   | { t: 'tables'; rid?: number; page: TablesPage }
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
