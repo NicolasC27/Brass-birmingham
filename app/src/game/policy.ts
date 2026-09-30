@@ -145,14 +145,32 @@ export function priors(policy: Net, x: Float32Array, legal: GameAction[]): Float
 }
 
 /** a policy is only as good as the features and the names it was trained
- *  on: one packed for another board is left aside rather than misread */
+ *  on. One trained on fewer features is widened to ignore the newcomers —
+ *  a weight of nought for each, which leaves its ranking exactly as it
+ *  was — so that adding a feature costs no ranking while a fresh record
+ *  is written. That holds only while features are appended and never
+ *  inserted. One that names a different set of moves is left aside: a
+ *  name is the thing being learned and cannot be guessed at. */
+function widen(policy: Net, want: number): Net {
+  const had = policy.sizes[0];
+  const units = policy.sizes[1];
+  const weights = new Float32Array(want * units);
+  for (let o = 0; o < units; o++) weights.set(policy.weights[0].subarray(o * had, (o + 1) * had), o * want);
+  const mean = new Float32Array(want);
+  const scale = new Float32Array(want).fill(1);
+  mean.set(policy.mean.subarray(0, had));
+  scale.set(policy.scale.subarray(0, had));
+  return { ...policy, sizes: [want, ...policy.sizes.slice(1)], weights: [weights, ...policy.weights.slice(1)], mean, scale };
+}
+
 function fitting(policy: Net | null, featureCount: number): Net | null {
   if (!policy) return null;
-  if (policy.sizes[0] !== featureCount || policy.sizes[policy.sizes.length - 1] !== ACTIONS) {
+  const wide = policy.sizes[0] < featureCount ? widen(policy, featureCount) : policy;
+  if (wide.sizes[0] !== featureCount || wide.sizes[wide.sizes.length - 1] !== ACTIONS) {
     console.warn(`a policy of ${policy.sizes[0]}→${policy.sizes[policy.sizes.length - 1]} cannot rank ${featureCount}→${ACTIONS} moves: ranking by hand`);
     return null;
   }
-  return policy;
+  return wide;
 }
 
 let active: Net | null = null;

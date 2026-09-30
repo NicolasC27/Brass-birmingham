@@ -359,14 +359,44 @@ export function unpack(text: string): Net {
 export const packBrain = (brain: Brain): string => brain.nets.map(pack).join('|');
 export const unpackBrain = (text: string): Brain => ({ nets: text.split('|').filter(Boolean).map(unpack) });
 
-/** a brain is only as good as the features it was trained on: one packed
- *  for another set of features is left aside rather than misread */
+/** a network trained on fewer features, taught to ignore the rest.
+ *
+ *  A first layer holds one weight per feature per unit; widening it means
+ *  giving every unit a weight of nought for each feature that did not
+ *  exist, which leaves what it already read exactly as it read it. The
+ *  reading is unchanged, and the new numbers reach it as nothing at all
+ *  until something is trained that wants them.
+ *
+ *  This holds only because a feature is added at the END and every one
+ *  before it keeps its meaning and its place. Insert one in the middle
+ *  and the old weights land on the wrong numbers, silently — so add
+ *  features by appending, never by inserting. */
+function widen(net: Net, want: number): Net {
+  const had = net.sizes[0];
+  if (had === want) return net;
+  const units = net.sizes[1];
+  const weights = new Float32Array(want * units);
+  for (let o = 0; o < units; o++) weights.set(net.weights[0].subarray(o * had, (o + 1) * had), o * want);
+  const mean = new Float32Array(want);
+  const scale = new Float32Array(want).fill(1);
+  mean.set(net.mean.subarray(0, had));
+  scale.set(net.scale.subarray(0, had));
+  return { ...net, sizes: [want, ...net.sizes.slice(1)], weights: [weights, ...net.weights.slice(1)], mean, scale };
+}
+
+/** a brain is only as good as the features it was trained on. One packed
+ *  for fewer is widened to ignore the newcomers, so that adding a feature
+ *  costs no strength while a fresh record is written; one packed for more
+ *  cannot be narrowed without guessing which to drop, and is left aside. */
 function fitting(brain: Brain | null): Brain | null {
-  if (brain && brain.nets.some((net) => net.sizes[0] !== FEATURES)) {
-    console.warn(`a brain for ${brain.nets[0].sizes[0]} features cannot read ${FEATURES}: reading by hand`);
+  if (!brain || !brain.nets.length) return null;
+  const nets = brain.nets.map((net) => (net.sizes[0] < FEATURES ? widen(net, FEATURES) : net));
+  const odd = nets.find((net) => net.sizes[0] !== FEATURES);
+  if (odd) {
+    console.warn(`a brain for ${odd.sizes[0]} features cannot read ${FEATURES}: reading by hand`);
     return null;
   }
-  return brain && brain.nets.length ? brain : null;
+  return { nets };
 }
 let active: Brain | null = fitting(NET_B64 ? unpackBrain(NET_B64) : null);
 export const activeNet = (): Brain | null => active;
