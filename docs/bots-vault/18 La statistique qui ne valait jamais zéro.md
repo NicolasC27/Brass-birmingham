@@ -48,4 +48,4 @@ Avant de juger une idée, faire rendre zéro à l'instrument sur une comparaison
 ## Repères
 
 - Code : `app/tools/bots/arena.ts` (les trois lectures, l'appariement), `learn.ts` (la porte séquentielle, `BLIND`), `train.ts` (cribler puis confirmer), `distil.ts` (duel et check appariés), `widen.ts` (porter un corpus d'une version de features à la suivante).
-- Voir aussi [[15 Mesurer sans se tromper]] pour le bruit, et [[17 La chaîne qui ne paie pas]] pour l'hypothèse précédente.
+- Voir aussi [[15 Mesurer sans se tromper]] pour le bruit, [[17 La chaîne qui ne paie pas]] pour l'hypothèse précédente, et [[07 Ce qui n'a pas marché]] pour le premier trait pesé avec l'instrument réparé — les cartes en main, sans effet — et le crible à quinze minutes qui en découle.
