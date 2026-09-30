@@ -593,6 +593,7 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
   let diffSq = 0;
   let soloSum = 0;
   let soloSq = 0;
+  let soloDeals = 0;
   let canal = 0;
   let canalField = 0;
   let verdict: 'kept' | 'refused' | null = null;
@@ -608,6 +609,7 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
       diffSq += r.diffSq;
       soloSum += r.soloSum;
       soloSq += r.soloSq;
+      soloDeals += r.deals;
       canal += r.canal * r.games;
       canalField += r.canalField * r.games;
     }
@@ -624,8 +626,8 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
      the deal bought: against the rest of its own table, which costs no
      extra game and is honest but wider, and on the best rival, which is
      the old yardstick and sits a dozen points under nought by its shape */
-  const solo = soloSum / Math.max(1, games);
-  const wide = errorOf(games, soloSum, soloSq);
+  const solo = soloSum / Math.max(1, soloDeals);
+  const wide = errorOf(soloDeals, soloSum, soloSq);
   const raw = errorOf(games, diffSum, diffSq);
   /* the Canal Era must not be sold to win the rail one */
   const held = canal / Math.max(1, games) >= canalField / Math.max(1, games) - 3;

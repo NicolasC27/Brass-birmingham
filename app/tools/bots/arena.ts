@@ -101,6 +101,8 @@ export interface MatchResult {
   soloSum: number;
   soloSq: number;
   soloSpread: number;
+  /** how many deals were played at all — the count `soloSum` is a sum of */
+  deals: number;
 }
 
 const COLORS = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
@@ -153,10 +155,28 @@ export function playMatch(o: MatchOptions): MatchResult {
   let pairs = 0;
   let soloSum = 0;
   let soloSq = 0;
-  /* the deal being played, gathered until its chairs are all in */
+  let deals = 0;
+  /* the deal being played, gathered until its chairs are all in.
+   *
+   *  Everything read off a deal is counted once for that deal and not once
+   *  for each chair of it. Paired, the chairs of a deal share a single game
+   *  of the field alone and rise and fall with it together; unpaired they
+   *  share the cards. Either way they are not that many separate answers,
+   *  and counting them as such would report a spread tighter than the one
+   *  the games actually support. */
   let dealEdge = 0;
   let dealGames = 0;
+  let dealSolo = 0;
+  let dealSoloGames = 0;
   const closeDeal = (): void => {
+    if (dealSoloGames > 0) {
+      const mean = dealSolo / dealSoloGames;
+      soloSum += mean;
+      soloSq += mean * mean;
+      deals += 1;
+      dealSolo = 0;
+      dealSoloGames = 0;
+    }
     if (dealGames === 0) return;
     const mean = dealEdge / dealGames;
     edgeSum += mean;
@@ -186,9 +206,9 @@ export function playMatch(o: MatchOptions): MatchResult {
        game in each chair, since the control game takes its luck away */
     const deal = o.paired ? Math.floor(g / o.players) : g;
     const seed = o.seed + deal;
-    if (o.paired && deal !== lastDeal) {
+    if (deal !== lastDeal) {
       closeDeal();
-      lastControl = control(seed);
+      if (o.paired) lastControl = control(seed);
       lastDeal = deal;
     }
     const held = o.paired ? lastControl : null;
@@ -198,9 +218,8 @@ export function playMatch(o: MatchOptions): MatchResult {
     const winner = o.canalOnly ? points.indexOf(Math.max(...points)) : s.winner;
     if (winner === subject) wins += 1;
     const margin = points[subject] - Math.max(...others);
-    const alone = points[subject] - others.reduce((a, b) => a + b, 0) / Math.max(1, others.length);
-    soloSum += alone;
-    soloSq += alone * alone;
+    dealSolo += points[subject] - others.reduce((a, b) => a + b, 0) / Math.max(1, others.length);
+    dealSoloGames += 1;
     diff += margin;
     diffSum += margin;
     diffSq += margin * margin;
@@ -231,9 +250,10 @@ export function playMatch(o: MatchOptions): MatchResult {
     edgeSq,
     edgeSpread: o.paired ? errorOf(pairs, edgeSum, edgeSq) : null,
     pairs,
-    solo: soloSum / Math.max(1, o.games),
+    solo: soloSum / Math.max(1, deals),
     soloSum,
     soloSq,
-    soloSpread: errorOf(o.games, soloSum, soloSq),
+    soloSpread: errorOf(deals, soloSum, soloSq),
+    deals,
   };
 }
