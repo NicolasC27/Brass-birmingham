@@ -435,8 +435,32 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
  *  A feature is only worth what it adds, and the only way to know is to
  *  train the same record twice, once with it and once without, and let
  *  the two play. Anything else compares a network to one trained on a
- *  different record, which answers a different question. */
+ *  different record, which answers a different question.
+ *
+ *  Hiding a feature is not merely leaving it out of the fit. A column
+ *  held at nought has no spread, so its scale falls to the floor of a
+ *  thousandth and its weights keep whatever they were first given; the
+ *  network then meets the real number at the table, divides it by that
+ *  thousandth and takes a value of three quarters as a hundred. The
+ *  control is not blind, it is blinded — and it loses, which reads as
+ *  the feature being worth thirty points when it is worth nothing of
+ *  the sort. So the weights on a hidden feature are set to nought and
+ *  its scale to one, and the network truly cannot tell it apart. */
 const BLIND = Number(process.env.BLIND ?? 0);
+
+/** a network that genuinely ignores the last `BLIND` features, whatever
+ *  value they take: no weight reaches them, and the scale that would have
+ *  magnified them is put back to one */
+function blinded(net: Net): Net {
+  if (BLIND <= 0) return net;
+  const from = FEATURES - BLIND;
+  for (let o = 0; o < net.sizes[1]; o += 1) net.weights[0].fill(0, o * FEATURES + from, (o + 1) * FEATURES);
+  for (let k = from; k < FEATURES; k += 1) {
+    net.mean[k] = 0;
+    net.scale[k] = 1;
+  }
+  return net;
+}
 
 function fitBrain(): Brain {
   const data = loadSamples();
@@ -449,7 +473,7 @@ function fitBrain(): Brain {
   const nets: Net[] = [];
   for (let k = 0; k < NETS; k++) {
     log(`fit: network ${k + 1} of ${NETS}`);
-    nets.push(fit(data, 7 + 4 * k, previous));
+    nets.push(blinded(fit(data, 7 + 4 * k, previous)));
   }
   return { nets };
 }
