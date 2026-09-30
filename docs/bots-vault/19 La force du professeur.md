@@ -37,11 +37,31 @@ Et la profondeur, qui paie bien (+4,08 ± 2,01 de la profondeur 0 à la profonde
 
 Autrement dit, tout ce qui touche à la **recherche** est épuisé. Ce qui reste est ce que la note [[07 Ce qui n'a pas marché]] identifiait déjà : ce que le cerveau **voit**, et ce qu'il a **vu jouer**. Les traits n'ont rien donné cette fois ; le registre, oui.
 
+## Mais l'effet ne survit pas à la quantité
+
+Le registre du professeur fort a été porté à **354 500 positions**, de quoi dépasser les 319 050 du faible sur lesquelles le cerveau livré a appris. Trois réseaux fittés dessus, puis 96 parties appariées contre lui :
+
+| | |
+|---|---|
+| apparié sur la donne | **−1,42 ± 2,28** |
+| contre sa propre table | −0,27 ± 1,36 |
+| parties gagnées | 17/96 pour une par de 24 |
+
+Les parties ne tranchent pas, et l'estimation penche du mauvais côté. À quantité comparable, **les deux cerveaux se valent**.
+
+Les dix points ne se sont donc pas propagés, et la raison saute aux yeux après coup : dans la mesure qui les a produits, **les deux réseaux étaient affamés**, 70 900 positions chacun. Quand les données manquent, la qualité des étiquettes décide de tout. Quand il y en a assez, le réseau finit par apprendre malgré des étiquettes moyennes, et l'écart se dilue.
+
+L'erreur retenue raconte la même histoire : 6,77 à 70 900 positions du professeur fort, **5,81** à 354 500. C'est la quantité qui a fait le gros du travail.
+
+**La règle qui en sort** : un effet mesuré dans un régime ne se transporte pas dans un autre. Ici l'effet était réel — 4,4 écarts-types — et néanmoins sans portée pratique, parce qu'il avait été mesuré à une taille de registre où personne ne travaille. Avant d'extrapoler un gain, vérifier qu'il tient à l'échelle où il servira.
+
+Question ouverte que cela pose, et qui n'est pas tranchée : à **temps de calcul fixe**, vaut-il mieux beaucoup de positions d'un professeur faible ou peu d'un fort ? Le registre à 300 ms coûte deux fois moins cher par position, donc à budget égal il en donne deux fois plus — et la quantité a visiblement porté davantage.
+
 ## La suite naturelle
 
 Si passer de 300 ms à 600 ms avec une ronde vaut dix points, il faut savoir ce que vaut d'aller jusqu'à 1500 ms et deux rondes — le réglage même de l'expert livré. Le registre coûte environ deux fois et demie plus cher par position ; la question est donc de savoir si un professeur encore plus fort compense d'avoir moins de positions.
 
-Le premier pas est plus court : le réseau livré aujourd'hui a été entraîné sur 319 000 positions du **professeur faible**. Il en existe 70 900 du fort. Quatre fois moins de données, un professeur deux fois plus fort — à mesurer directement l'un contre l'autre.
+Ce premier pas a été fait le jour même, et il est raconté ci-dessus : il ne donne rien. La question de 1500 ms et deux rondes garde son intérêt, mais elle doit maintenant se poser à budget de calcul fixe, pas à nombre de positions fixe — sans quoi elle rejoue l'erreur de régime qui vient d'être décrite.
 
 ## Repères
 
