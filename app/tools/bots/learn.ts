@@ -35,6 +35,7 @@ import type { GameState, SetupPayload } from '@/game/types';
 import { TRAINED } from '@/game/weights';
 import type { Weights } from '@/game/weights';
 import { playMatch } from './arena';
+import type { MatchResult } from './arena';
 
 const GAMES = Number(process.env.GAMES ?? 200);
 const ITERATIONS = Number(process.env.ITERATIONS ?? 3);
@@ -43,7 +44,8 @@ const STRENGTH = Number(process.env.STRENGTH ?? 0.6);
 /** how long the machines think while filling the record. Naming it matters:
  *  left unsaid the search caps itself at 300 ms, and every position the
  *  network has ever learned from was reached by a player five times weaker
- *  than the one the app ships. A network cannot outgrow its teacher. */
+ *  than the one the app ships. A network cannot outgrow its teacher.
+ * */
 const PLAY_BUDGET = Number(process.env.PLAY_BUDGET ?? 300);
 /** rounds the machines look past their turn while filling the record */
 const PLAY_DEPTH = Number(process.env.PLAY_DEPTH ?? 0) as 0 | 1 | 2;
@@ -447,34 +449,109 @@ function restoreNet(packed: string | null): void {
 
 /* =============================== check ============================= */
 
-/** the new reading against the one it would replace — the last network, or
- *  the hand-written reading when there is none — everyone at the same
- *  strength; the newcomer stays only if it wins more than its share */
-async function check(tag: string, fresh: string, previous: string | null): Promise<boolean> {
-  type Slice = { wins: number; games: number; diff: number; canal: number; canalField: number };
-  const per = Math.max(1, Math.round(CHECK_GAMES / CHECK_WORKERS));
-  const slices = await Promise.all(
+/* A network replaces the one before it only when the games say so, and
+ * saying so is harder than it looks. A deal of cards decides a great
+ * deal here, so forty-eight games tell two equal readings apart about as
+ * well as a coin does: at the old bar of a third of the games won, one
+ * neutral network in ten walked through the gate on luck alone, and a
+ * loop that adopts noise wanders instead of climbing.
+ *
+ * So the check plays each deal twice — once with the newcomer at the
+ * table, once with the field alone — and reads the newcomer's chair
+ * against what that same chair made of that same deal with nobody new
+ * in it. The deal's own luck falls out of the difference.
+ *
+ * Then it stops when it knows, and not before. After every block it asks
+ * whether the edge it has measured clears zero by more than the spread
+ * allows for — either way — and it keeps dealing while the answer is
+ * neither. An easy case is settled in one block, a close one is given as
+ * many as the cap allows, and one the games never decide leaves the
+ * incumbent in place, because a reading that could not be shown to help
+ * has not helped. */
+
+/** how many spreads the edge must clear zero by before a network is adopted.
+ *
+ *  Not the 1.645 of a single look. The check looks after every block and
+ *  stops as soon as it can, and a test that may stop early at eight points
+ *  along the way crosses a 1.645 bound seventeen times in a hundred on a
+ *  network that is no better at all — worse than the flat bar it replaces.
+ *  At 2.33 the same eight looks come to about one in twenty, which is what
+ *  a promotion is meant to mean. */
+const BOUND = Number(process.env.BOUND ?? 2.33);
+/** the most games a single check may spend before it gives up deciding.
+ *  Eight blocks; past it the incumbent keeps its seat, because a reading
+ *  that could not be shown to help has not helped. */
+const CHECK_MAX = Number(process.env.CHECK_MAX ?? CHECK_GAMES * 8);
+
+/** how far the average of these deals might be from the average of every
+ *  deal that could have been dealt */
+const errorOf = (n: number, sum: number, sq: number): number => {
+  if (n < 2) return 0;
+  const mean = sum / n;
+  return Math.sqrt(Math.max(0, (sq - n * mean * mean) / (n - 1)) / n);
+};
+
+async function block(tag: string, fresh: string, previous: string | null, at: number, games: number): Promise<MatchResult[]> {
+  const per = Math.max(1, Math.round(games / CHECK_WORKERS));
+  return Promise.all(
     Array.from({ length: CHECK_WORKERS }, (_, k) =>
-      new Promise<Slice>((ok, fail) => {
-        const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { check: true, games: per, seed: 900000 + Number(tag) * 100 + k * per, net: fresh, previous } });
+      new Promise<MatchResult>((ok, fail) => {
+        const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { check: true, games: per, seed: 900000 + Number(tag) * 10000 + (at + k * per) * 4, net: fresh, previous } });
         worker.once('message', ok);
         worker.once('error', fail);
       }),
     ),
   );
-  const games = slices.reduce((a, s) => a + s.games, 0);
-  const result: Slice = {
-    games,
-    wins: slices.reduce((a, s) => a + s.wins, 0),
-    diff: slices.reduce((a, s) => a + s.diff * s.games, 0) / games,
-    canal: slices.reduce((a, s) => a + s.canal * s.games, 0) / games,
-    canalField: slices.reduce((a, s) => a + s.canalField * s.games, 0) / games,
-  };
-  /* the Canal Era first: more points there, without losing the game for it */
-  /* the whole game is the contest: more than its share of wins, no points lost on the best rival, and no Canal Era given away */
-  const share = result.wins / result.games;
-  const keep = (share >= 0.33 || (share >= 0.29 && result.diff >= 0)) && result.canal >= result.canalField - 3;
-  log(`check ${tag}: the new network wins ${result.wins}/${result.games} (par ${(result.games / 4).toFixed(0)}) against ${previous ? 'the last one' : 'the hand-written reading'}, ${result.diff.toFixed(1)} points on the best rival, canal ${result.canal.toFixed(1)} vs ${result.canalField.toFixed(1)}${keep ? ' — kept' : ' — the last one stays'}`);
+}
+
+/** the new reading against the one it would replace — the last network, or
+ *  the hand-written reading when there is none — everyone at the same
+ *  strength; the newcomer stays only once the games have said it is better */
+async function check(tag: string, fresh: string, previous: string | null): Promise<boolean> {
+  let games = 0;
+  let wins = 0;
+  let edgeSum = 0;
+  let edgeSq = 0;
+  /* the test counts deals, not games: the chairs of one deal share a single
+     game of the field alone and are one answer between them */
+  let deals = 0;
+  let diffSum = 0;
+  let diffSq = 0;
+  let canal = 0;
+  let canalField = 0;
+  let verdict: 'kept' | 'refused' | null = null;
+  while (games < CHECK_MAX && !verdict) {
+    const slices = await block(tag, fresh, previous, games, CHECK_GAMES);
+    for (const r of slices) {
+      games += r.games;
+      wins += r.wins;
+      edgeSum += r.edgeSum;
+      edgeSq += r.edgeSq;
+      deals += r.pairs;
+      diffSum += r.diffSum;
+      diffSq += r.diffSq;
+      canal += r.canal * r.games;
+      canalField += r.canalField * r.games;
+    }
+    const mean = edgeSum / Math.max(1, deals);
+    const err = errorOf(deals, edgeSum, edgeSq);
+    if (deals >= 8 && err > 0) {
+      if (mean - BOUND * err > 0) verdict = 'kept';
+      else if (mean + BOUND * err < 0) verdict = 'refused';
+    }
+  }
+  const edge = edgeSum / Math.max(1, deals);
+  const spread = errorOf(deals, edgeSum, edgeSq);
+  /* the same games read without the pairing, so the record shows what
+     holding the deal still bought: the raw margin is the old yardstick */
+  const raw = errorOf(games, diffSum, diffSq);
+  /* the Canal Era must not be sold to win the rail one */
+  const held = canal / Math.max(1, games) >= canalField / Math.max(1, games) - 3;
+  const keep = verdict === 'kept' && held;
+  const why = verdict === null ? 'the games never decided' : verdict === 'refused' ? 'no better' : held ? 'better' : 'better, but the canal era was given away';
+  log(
+    `check ${tag}: ${games} games over ${deals} deals against ${previous ? 'the last one' : 'the hand-written reading'} — ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${spread.toFixed(2)} points on the same deals (± ${raw.toFixed(2)} had they not been held), ${wins} won, canal ${(canal / Math.max(1, games)).toFixed(1)} vs ${(canalField / Math.max(1, games)).toFixed(1)} — ${why}${keep ? ', kept' : ', the last one stays'}`,
+  );
   /* the yardsticks report on their own time: the next games need not wait */
   if (keep) void yardstick(tag, fresh);
   return keep;
@@ -541,7 +618,10 @@ if (isMainThread) {
 } else if ((workerData as { check?: boolean }).check) {
   const { seed, net, previous, games } = workerData as { seed: number; net: string; previous: string | null; games: number };
   loadNet(net);
-  const r = playMatch({ games, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous });
+  /* each deal played twice, the newcomer's chair read against the same
+     chair on the same deal with the field alone: the luck of the cards
+     answers the same question in both games and cancels */
+  const r = playMatch({ games, players: 4, seed, subject: TRAINED, field: TRAINED, search: { strength: STRENGTH, depth: 0 }, subjectMode: 'blend', fieldMode: previous ? 'blend' : 'hand', subjectNet: net, fieldNet: previous, paired: true });
   parentPort!.postMessage(r);
 } else {
   const { seeds, net } = workerData as { seeds: number[]; net: string | null };
