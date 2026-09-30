@@ -874,6 +874,7 @@ const game: typeof engame = {
     open: 'Die Nachlese',
     machine: 'die Maschine',
     reading: 'Lese… {done}/{total}',
+    readingShared: 'Von {n} am Tisch gelesen… {done}/{total}',
     round: 'Runde {round} · {era}',
     back: 'Rückschau verlassen',
     banner: 'Rückschau · Runde {round} — der Plan, wie er vor deinem Zug stand',

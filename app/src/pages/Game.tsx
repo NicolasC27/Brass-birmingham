@@ -188,7 +188,7 @@ export default function Game() {
     const mark = `${at}:${game.seed}:${seat}:${when}:${useGame.getState().judgeId}`;
     if (seat < 0 || warmed.current === mark) return;
     warmed.current = mark;
-    readGame(game, at, seat, useGame.getState().judgeId);
+    readGame(game, at, seat, useGame.getState().judgeId, !!tableCode);
   }, [game, tableCode, localCode]);
   /* the reading belongs to the game, not to the page: it stops when the board
      goes, and the panel picks up the one already under way */

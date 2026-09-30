@@ -872,6 +872,7 @@ const game = {
     open: 'The debrief',
     machine: 'the machine',
     reading: 'Reading… {done}/{total}',
+    readingShared: 'Read by {n} at the table… {done}/{total}',
     round: 'Round {round} · {era}',
     back: 'Leave the review',
     banner: 'Review · round {round} — the board as it stood before your move',

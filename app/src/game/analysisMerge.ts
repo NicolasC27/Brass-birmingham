@@ -69,10 +69,6 @@ export const CAPS = {
 
 export const emptyHeld = (): Held => ({ seats: {}, verdicts: {}, roads: {}, grades: {}, total: 0, done: 0, moves: 0 });
 
-/** the reading as it goes out on the wire: the passes behind each verdict
-    are the office's own business */
-export const shared = (h: Held): Kept => ({ seats: h.seats, verdicts: h.verdicts, roads: h.roads, total: h.total, done: h.done, moves: h.moves });
-
 /* ------------------------- what a figure is ----------------------- */
 
 const rate = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= 1;
@@ -163,6 +159,43 @@ export function cleanPart(raw: unknown, facts: Facts): ReadingPart | null {
 /** how many figures a reading holds: a pass at a position, a pass at a turn */
 export const doneOf = (h: Held): number =>
   Object.values(h.seats).reduce((n, list) => n + (list[0]?.passes ?? 0), 0) + Object.values(h.grades).reduce((n, byMove) => n + Object.values(byMove).reduce((s, p) => s + p, 0), 0);
+
+/** the shelf's own entry, as a reading the office would keep: nothing is
+    known of the passes behind its verdicts, so a verdict from anywhere else
+    wins over it — the office's copy is the fuller of the two */
+export const heldOf = (k: Kept): Held => ({ ...k, grades: {} });
+
+/** two readings of the same game as one. It is the same rule as a part's:
+ *  the longer reading of a position or a turn wins, and roads already read
+ *  are left alone — so a browser's shelf and the office's copy fold into
+ *  each other whichever way round they are taken. */
+export function foldHeld(into: Held, other: Held): Held {
+  const out: Held = { ...into, moves: Math.max(into.moves, other.moves), seats: { ...into.seats }, verdicts: { ...into.verdicts }, roads: { ...into.roads }, grades: { ...into.grades } };
+  for (const [k, list] of Object.entries(other.seats)) {
+    const at = Number(k);
+    if ((out.seats[at]?.[0]?.passes ?? 0) < (list[0]?.passes ?? 0)) out.seats[at] = list;
+  }
+  for (const [s, byMove] of Object.entries(other.verdicts)) {
+    const seat = Number(s);
+    for (const [m, verdict] of Object.entries(byMove)) {
+      const at = Number(m);
+      const passes = other.grades[seat]?.[at] ?? 0;
+      if (out.verdicts[seat]?.[at] && (out.grades[seat]?.[at] ?? 0) >= passes) continue;
+      out.verdicts[seat] = { ...(out.verdicts[seat] ?? {}), [at]: verdict };
+      out.grades[seat] = { ...(out.grades[seat] ?? {}), [at]: passes };
+    }
+  }
+  for (const [s, byLine] of Object.entries(other.roads)) {
+    const seat = Number(s);
+    for (const [line, roads] of Object.entries(byLine)) {
+      if (out.roads[seat]?.[line]) continue;
+      out.roads[seat] = { ...(out.roads[seat] ?? {}), [line]: roads };
+    }
+  }
+  out.total = Math.max(out.total, other.total);
+  out.done = out.total > 0 ? Math.min(doneOf(out), out.total) : doneOf(out);
+  return out;
+}
 
 /** a part folded into a reading. Nothing is ever lost: a figure read by more
  *  passes takes the place of one read by fewer, and a figure read by fewer

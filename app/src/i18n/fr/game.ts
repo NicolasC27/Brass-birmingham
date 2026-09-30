@@ -874,6 +874,7 @@ const fr: typeof engame = {
     open: 'Le débrief',
     machine: 'la machine',
     reading: 'Relecture… {done}/{total}',
+    readingShared: 'Relecture partagée à {n} lecteurs… {done}/{total}',
     round: 'Manche {round} · {era}',
     back: 'Quitter la revue',
     banner: 'Revue · manche {round} — le plateau tel qu’il était avant votre coup',

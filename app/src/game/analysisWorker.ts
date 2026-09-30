@@ -79,7 +79,9 @@ export type Note =
   | { kind: 'cost'; key: string; cost: Cost | null }
   | { kind: 'roads'; key: string; roads: Weighed[] }
   | { kind: 'roadsProgress'; key: string; done: number; total: number }
-  | { kind: 'turn'; seat: number; verdict: Verdict; done: number; total: number }
+  /** a turn judged, and how many passes the verdict holds: a turn read again
+      by a further pass is worth more than the same turn read once */
+  | { kind: 'turn'; seat: number; verdict: Verdict; passes: number; done: number; total: number }
   | { kind: 'done' }
   | { kind: 'failed'; why: string };
 
@@ -144,14 +146,14 @@ export function* analyse(ask: Ask): Generator<Note, void, unknown> {
         const id = `${seat}:${k}`;
         const seen = [...(verdicts.get(id) ?? []), verdict];
         verdicts.set(id, seen);
-        yield { kind: 'turn', seat, verdict: blendVerdicts(seen), done, total };
+        yield { kind: 'turn', seat, verdict: blendVerdicts(seen), passes: seen.length, done, total };
       }
     }
     if (i === 0) {
       for (const { seat, k } of others) {
         done += 1;
         const verdict = judgeTurn(positions[k], seat, ask.actions[k], judge, turnPasses[0] ?? passes[0], 4);
-        if (verdict) yield { kind: 'turn', seat, verdict, done, total };
+        if (verdict) yield { kind: 'turn', seat, verdict, passes: 1, done, total };
       }
     }
   }

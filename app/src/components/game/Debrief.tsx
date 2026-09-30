@@ -85,6 +85,10 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   const setDebriefOpen = useGame((s) => s.setDebriefOpen);
   /* where this game is kept: the table it was played at, its deal and the seat read */
   const table = useGame((s) => s.code ?? s.local ?? 'x');
+  /* a table of the club: its reading belongs to the office and to everyone
+     sitting at it, not to this browser alone — and a seat there may show the
+     others where it is looking */
+  const online = useGame((s) => s.code !== null);
   /* one entry for the whole table: the positions are read for every seat at
      once, and only the verdicts belong to a seat */
   const judgeId = useGame((s) => s.judgeId);
@@ -111,6 +115,9 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
      or none: done only if the shelf holds this game whole — a judge just
      changed has its reading still to start, and the bar says so */
   const progress = snap.key === keptKey ? (snap.running ? { done: snap.done, total: snap.total } : { done: 1, total: 1 }) : isWhole(kept, game.actions.length) ? { done: 1, total: 1 } : { done: 0, total: 1 };
+  /* the readers of this game at the table, this one counted: the office
+     shares the positions out between them, so the wait is cut by as many */
+  const readers = snap.key === keptKey && snap.running ? snap.readers : 0;
   /* the reading at each position, for the seat on show and for the others */
   const reads = useMemo(() => positions.map((_, k) => seatsRead[k]?.[me]), [positions, seatsRead, me]);
   const chances = useMemo(() => positions.map((p, k) => reads[k]?.chance ?? winChance(p, me)), [positions, me, reads]);
@@ -186,8 +193,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* the reading is asked for, not started twice: the board may have it under
      way already, and a seat never judged has its turns read on their own */
   useEffect(() => {
-    readGame(game, table, me, judgeId);
-  }, [game, table, me, judgeId]);
+    readGame(game, table, me, judgeId, online);
+  }, [game, table, me, judgeId, online]);
 
   const workerRef = useRef<Worker | null>(null);
   /* the roads' own worker, and the line it is reading */
@@ -501,7 +508,6 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   /* reading together: one seat shows where it is looking, the others follow.
      Only at a table online, and only from a seat — a spectator may follow,
      never lead */
-  const online = useGame((s) => s.code !== null);
   const mySeat = useGame((s) => s.seat);
   const showing = useGame((s) => s.shown);
   const sharing = useGame((s) => s.sharing);
@@ -693,7 +699,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             <div className="h-[3px] min-w-0 flex-1 overflow-hidden rounded-full bg-coal-800">
               <div className="h-full rounded-full bg-brass-400/50 transition-[width] duration-300" style={{ width: `${progress.total ? Math.round((100 * progress.done) / progress.total) : 0}%` }} />
             </div>
-            <span className="shrink-0 font-mono text-[9.5px] text-cream-100/45">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>
+            <span className="shrink-0 font-mono text-[9.5px] text-cream-100/45">{readers > 1 ? t('game.debrief.readingShared', { done: progress.done, total: progress.total, n: readers }) : t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>
           </div>
         </div>
         {/* one row: the steps as a joined set, the tools as another, the way onto a line at the right */}

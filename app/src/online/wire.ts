@@ -147,8 +147,9 @@ export class Wire {
     if ((this.known || asStranger) && this.socket?.readyState === WebSocket.OPEN) this.socket.send(encode(m));
     else {
       /* a move or an undo is meant for the table as it stands now: held
-         back, it would play on a table that has moved on */
-      if (m.t !== 'act' && m.t !== 'undo') this.outbox.push(m);
+         back, it would play on a table that has moved on — and so are the
+         figures of a reading, which are read again rather than kept waiting */
+      if (m.t !== 'act' && m.t !== 'undo' && m.t !== 'analysis.post' && m.t !== 'analysis.claim') this.outbox.push(m);
       this.open();
     }
   }

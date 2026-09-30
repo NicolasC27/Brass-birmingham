@@ -501,6 +501,19 @@ export function costOf(before: GameState, me: number, played: GameAction, better
 /* while the judge that wrote them is the judge that stands. Bump this */
 /* on any change to a judge, a scale, the passes or the grades.        */
 /* ------------------------------------------------------------------ */
+/** how many figures a whole reading of a game holds, counted the way the
+    worker counts them: every position by every pass, the reader's own turns
+    by every turn pass, and one look at each other seat's turn. The panel
+    measures its progress against it, and the office keeps it to know a
+    reading that came in whole from one left halfway. */
+export function readingTotal(positions: readonly GameState[], actions: readonly GameAction[], me: number, id: JudgeId): number {
+  const { passes, turnPasses } = judgeOf(id);
+  const turns = (seat: number): number => positions.reduce((n, p, k) => n + (k < actions.length && p.phase === 'action' && p.current === seat && actions[k].kind !== 'concede' ? 1 : 0), 0);
+  const mine = turns(me);
+  const all = positions[0]?.players.reduce((n, _, i) => n + turns(i), 0) ?? 0;
+  return passes.length * positions.length + turnPasses.length * mine + (all - mine);
+}
+
 export const ANALYSIS_VERSION = 6;
 
 /** when a game may be read again: once it is played out, and not before. A

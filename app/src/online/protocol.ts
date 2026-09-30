@@ -1,8 +1,7 @@
 import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
-import type { Kept } from '@/game/analysisKeep';
-import type { ReadingPart } from '@/game/analysisMerge';
+import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
@@ -162,7 +161,7 @@ export type ServerMessage =
   /** every seat's line to the office, in ms (null for a machine or an empty chair), now and then */
   | { t: 'pulse'; code: string; latency: (number | null)[] }
   /** the office's copy of a reading (null: it keeps none) */
-  | { t: 'analysis'; rid?: number; code: string; v: number; judge: JudgeId; reading: Kept | null; readers: number }
+  | { t: 'analysis'; rid?: number; code: string; v: number; judge: JudgeId; reading: Held | null; readers: number }
   /** what another reader of this table has just read */
   | { t: 'analysis.add'; code: string; v: number; judge: JudgeId; part: ReadingPart; readers: number }
   /** the slice of positions this reader may take, [lo, hi) — empty when the

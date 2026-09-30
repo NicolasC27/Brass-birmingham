@@ -1,7 +1,6 @@
 import { JUDGES } from '@/game/analysis';
 import type { JudgeId } from '@/game/analysis';
-import type { Kept } from '@/game/analysisKeep';
-import { cleanPart, emptyHeld, foldPart, shared } from '@/game/analysisMerge';
+import { cleanPart, emptyHeld, foldPart } from '@/game/analysisMerge';
 import type { Facts, Held, ReadingPart } from '@/game/analysisMerge';
 import type { Store } from './store';
 
@@ -77,9 +76,9 @@ export class Readings {
   }
 
   /** the reading as the table may see it (null: the office keeps none yet) */
-  read(id: Id): Kept | null {
+  read(id: Id): Held | null {
     const held = this.held(id);
-    return held.moves > 0 || Object.keys(held.seats).length > 0 ? shared(held) : null;
+    return held.moves > 0 || Object.keys(held.seats).length > 0 ? held : null;
   }
 
   /** figures just read, folded in — the part as it was kept, to pass on to

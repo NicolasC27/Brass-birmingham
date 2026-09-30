@@ -874,6 +874,7 @@ const game: typeof engame = {
     open: 'El balance',
     machine: 'la máquina',
     reading: 'Releyendo… {done}/{total}',
+    readingShared: 'Relectura compartida entre {n}… {done}/{total}',
     round: 'Ronda {round} · {era}',
     back: 'Salir de la revisión',
     banner: 'Revisión · ronda {round} — el tablero tal como estaba antes de tu jugada',
