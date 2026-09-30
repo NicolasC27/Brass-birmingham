@@ -430,8 +430,21 @@ function fit(data: Float32Array, seed: number, previous: Brain | null): Net {
 }
 
 /** a brain of NETS networks, each from its own start, on the same positions */
+/** how many of the last features to hide from the fit.
+ *
+ *  A feature is only worth what it adds, and the only way to know is to
+ *  train the same record twice, once with it and once without, and let
+ *  the two play. Anything else compares a network to one trained on a
+ *  different record, which answers a different question. */
+const BLIND = Number(process.env.BLIND ?? 0);
+
 function fitBrain(): Brain {
   const data = loadSamples();
+  if (BLIND > 0) {
+    const rows = Math.floor(data.length / ROW);
+    for (let r = 0; r < rows; r += 1) data.fill(0, r * ROW + FEATURES - BLIND, r * ROW + FEATURES);
+    log(`fit: the last ${BLIND} of ${FEATURES} features are hidden from this fit`);
+  }
   const previous = netText ? unpackBrain(netText) : null;
   const nets: Net[] = [];
   for (let k = 0; k < NETS; k++) {
