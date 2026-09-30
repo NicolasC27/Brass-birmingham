@@ -1,4 +1,4 @@
-import { LINKS, NODE_POS } from '@/game/data';
+import { LINKS, NODE_POS, onBoardChange } from '@/game/data';
 import type { Era, LinkDef } from '@/game/types';
 import { RAIL_ROUTES } from './railRoutes';
 
@@ -112,18 +112,30 @@ function buildRoute(def: LinkDef): Route {
   return { d, mid: quadPoint(q, 0.5), pts };
 }
 
-const ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
+let ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
 
 /* the Rail Era's routes were traced on the relief of the rail-era painting
    (tools/map/rail-routes.py): the map engraves the very same lines, so a
    railway built on the board lies exactly on the one painted under it */
-const RAIL_ERA = new Map<string, Route>(
+let RAIL_ERA = new Map<string, Route>(
   LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => {
     const pts = RAIL_ROUTES[def.id];
     const d = `M${pts.map(([x, y]) => `${x},${y}`).join(' L')}`;
     return [def.id, { d, mid: pts[Math.floor(pts.length / 2)], pts }];
   }),
 );
+
+/* another board draws another network: both tables are traced again */
+onBoardChange(() => {
+  ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
+  RAIL_ERA = new Map<string, Route>(
+    LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => {
+      const pts = RAIL_ROUTES[def.id];
+      const d = `M${pts.map(([x, y]) => `${x},${y}`).join(' L')}`;
+      return [def.id, { d, mid: pts[Math.floor(pts.length / 2)], pts }];
+    }),
+  );
+});
 
 /** winding route for a link (precomputed, deterministic); the Rail Era has
  *  its own tracing for every link that can carry rails */

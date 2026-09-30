@@ -17,7 +17,7 @@
 /* ------------------------------------------------------------------ */
 
 import type { GameAction } from './actions';
-import { LINKS, TOWNS } from './data';
+import { LINKS, onBoardChange, TOWNS } from './data';
 import { forwardAll, pack, unpack } from './net';
 import type { Net } from './net';
 import { POLICY_B64 } from './policy-weights';
@@ -28,8 +28,15 @@ import type { IndustryType } from './types';
  *  must never shift, and a change to the features must not rename a move. */
 export const INDUSTRY_ORDER: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 
-const TOWN_AT: Record<string, number> = Object.fromEntries(TOWNS.map((t, k) => [t.id, k]));
-const LINK_AT: Record<string, number> = Object.fromEntries(LINKS.map((l, k) => [l.id, k]));
+let TOWN_AT: Record<string, number> = Object.fromEntries(TOWNS.map((t, k) => [t.id, k]));
+let LINK_AT: Record<string, number> = Object.fromEntries(LINKS.map((l, k) => [l.id, k]));
+/* another board names other towns in another order: the tables follow it.
+   The offsets below do not, and need not while every board carries the same
+   count of towns and links — `nameable` says so out loud if one ever does not */
+onBoardChange(() => {
+  TOWN_AT = Object.fromEntries(TOWNS.map((t, k) => [t.id, k]));
+  LINK_AT = Object.fromEntries(LINKS.map((l, k) => [l.id, k]));
+});
 const INDUSTRY_AT: Record<string, number> = Object.fromEntries(INDUSTRY_ORDER.map((ind, k) => [ind, k]));
 
 const TOWNS_N = TOWNS.length;
@@ -50,6 +57,10 @@ export const PASS_AT = SCOUT_AT + 1;
 
 /** how many names there are */
 export const ACTIONS = PASS_AT + 1;
+
+/** does the board in play fit the vector the policies were trained on? A
+ *  board of another size would silently rename every move. */
+export const nameable = (): boolean => TOWNS.length === TOWNS_N && LINKS.length === LINKS_N;
 
 /** the index of a move, or -1 for one the policy does not name (the
  *  engine's own book-keeping moves: beginning the rails, conceding) */

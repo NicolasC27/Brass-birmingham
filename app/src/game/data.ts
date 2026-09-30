@@ -104,215 +104,51 @@ export const INDUSTRY_ICON: Record<IndustryType, string> = {
   pottery: '/icon-pottery.svg',
 };
 
-/* ------------------ towns (20) + farm breweries (2) ---------------- */
-/* Authentic Roxley geography (research/board-data.md §1, §5).         */
-/* Literal coordinates below = location centres on the ORIGINAL        */
-/* 1600×1100 canvas; they are scaled to the 3200×1800 world by SX/SY.  */
-/* Industry spaces in board order (left-to-right, top-to-bottom);      */
-/* sockets are laid out around the medallion by SLOT_LAYOUT.           */
+/* ---------------------- the board in play -------------------------- */
+/* The geometry lives in ./boards: a board is towns, merchants, links    */
+/* and the cards each town deals, and the game is the same on any of     */
+/* them. What follows are live bindings onto the board a game stands on, */
+/* so the thirty-odd modules that read the map need no argument passed   */
+/* through them. `setBoard` swaps them, and wakes the tables that other  */
+/* modules derive once at import.                                       */
 
-/** world upscale: 1600×1100 → 3200×1800 (v13: maximum air — ×2.0/×1.6364,
- * i.e. ×1.25 on both axes from the v11 2560×1440 world; every inter-town
- * distance grows 25% while clusters shrink, brassforge-style spacing) */
-const SX = 3200 / 1600;
-const SY = 1800 / 1100;
-const wx = (x: number): number => Math.round(x * SX);
-const wy = (y: number): number => Math.round(y * SY);
+import { type Board, boardOf, DEFAULT_BOARD } from './boards';
 
-/** socket offsets per town slot-count (sockets are 64×44, medallion r=22) */
-const SLOT_LAYOUT: Record<number, [number, number][]> = {
-  1: [[0, -70]],
-  2: [[-74, -26], [74, 26]],
-  3: [[0, -78], [-78, 34], [78, 34]],
-  4: [[-44, -78], [44, -78], [-82, 34], [82, 34]],
-};
+let board: Board = boardOf(DEFAULT_BOARD);
 
-type Space = IndustryType[];
+export let TOWNS: Town[] = board.towns;
+export let MERCHANTS: Merchant[] = board.merchants;
+export let LINKS: LinkDef[] = board.links;
+export let NODE_POS: Record<string, [number, number]> = board.nodePos;
+export let TOWN_BY_ID: Record<string, Town> = board.townById;
+export let MERCHANT_BY_ID: Record<string, Merchant> = board.merchantById;
+let LOCATION_CARDS: Record<string, [number, number, number]> = board.locationCards;
 
-const TOWN_DEFS: { id: string; name: string; x: number; y: number; spaces: Space[]; farm?: boolean }[] = [
-  // Derbyshire (teal) — location cards only at 4 players
-  // v12: Belper 92 → 100 (+11px world) so its cluster clears the top edge
-  { id: 'belper', name: 'Belper', x: 1074, y: 100, spaces: [['cotton', 'manufacturer'], ['coal'], ['pottery']] },
-  { id: 'derby', name: 'Derby', x: 1083, y: 261, spaces: [['cotton', 'brewery'], ['cotton', 'manufacturer'], ['iron']] },
-  // Staffordshire (blue) — cards at 3–4 players
-  { id: 'leek', name: 'Leek', x: 843, y: 87, spaces: [['cotton', 'manufacturer'], ['cotton', 'coal']] },
-  { id: 'stoke', name: 'Stoke-on-Trent', x: 698, y: 156, spaces: [['cotton', 'manufacturer'], ['pottery', 'iron'], ['manufacturer']] },
-  { id: 'stone', name: 'Stone', x: 590, y: 280, spaces: [['cotton', 'brewery'], ['manufacturer', 'coal']] },
-  { id: 'uttoxeter', name: 'Uttoxeter', x: 870, y: 266, spaces: [['manufacturer', 'brewery'], ['cotton', 'brewery']] },
-  // West Midlands (maroon)
-  { id: 'stafford', name: 'Stafford', x: 689, y: 385, spaces: [['manufacturer', 'brewery'], ['pottery']] },
-  { id: 'burton', name: 'Burton-on-Trent', x: 996, y: 417, spaces: [['manufacturer', 'coal'], ['brewery']] },
-  { id: 'cannock', name: 'Cannock', x: 762, y: 500, spaces: [['manufacturer', 'coal'], ['coal']] },
-  { id: 'tamworth', name: 'Tamworth', x: 1023, y: 564, spaces: [['cotton', 'coal'], ['cotton', 'coal']] },
-  { id: 'walsall', name: 'Walsall', x: 822, y: 614, spaces: [['iron', 'manufacturer'], ['manufacturer', 'brewery']] },
-  // Black Country (brown)
-  { id: 'wolverhampton', name: 'Wolverhampton', x: 657, y: 591, spaces: [['manufacturer'], ['manufacturer', 'coal']] },
-  { id: 'coalbrookdale', name: 'Coalbrookdale', x: 510, y: 619, spaces: [['iron', 'brewery'], ['iron'], ['coal']] },
-  { id: 'dudley', name: 'Dudley', x: 704, y: 729, spaces: [['coal'], ['iron']] },
-  { id: 'kidderminster', name: 'Kidderminster', x: 629, y: 839, spaces: [['cotton', 'coal'], ['cotton']] },
-  { id: 'worcester', name: 'Worcester', x: 652, y: 985, spaces: [['cotton'], ['cotton']] },
-  // Birmingham region (purple)
-  { id: 'birmingham', name: 'Birmingham', x: 913, y: 756, spaces: [['cotton', 'manufacturer'], ['manufacturer'], ['iron'], ['manufacturer']] },
-  { id: 'coventry', name: 'Coventry', x: 1130, y: 784, spaces: [['pottery'], ['manufacturer', 'coal'], ['iron', 'manufacturer']] },
-  { id: 'nuneaton', name: 'Nuneaton', x: 1119, y: 669, spaces: [['manufacturer', 'brewery'], ['cotton', 'coal']] },
-  { id: 'redditch', name: 'Redditch', x: 886, y: 894, spaces: [['manufacturer', 'coal'], ['iron']] },
-  // Farm breweries — single brewery socket, industry cards only
-  { id: 'farm-n', name: 'Farm Brewery', x: 580, y: 477, spaces: [['brewery']], farm: true },
-  // v12: farm-s (535,917) → (500,930): its wide ribbon quasi-touched both
-  // Kidderminster (4px) and Worcester (4px); shifted SW into open country
-  { id: 'farm-s', name: 'Farm Brewery', x: 500, y: 930, spaces: [['brewery']], farm: true },
-];
+/** the board in play */
+export const activeBoard = (): Board => board;
 
-export const TOWNS: Town[] = TOWN_DEFS.map((d) => {
-  const layout = SLOT_LAYOUT[d.spaces.length];
-  return {
-    id: d.id,
-    name: d.name,
-    x: wx(d.x),
-    y: wy(d.y),
-    farm: d.farm,
-    slots: d.spaces.map((allows, i) => ({
-      allows,
-      x: wx(d.x + layout[i][0]),
-      y: wy(d.y + layout[i][1]),
-    })),
-  };
-});
+/* modules that build a table from the geometry once, at import, ask to be
+   woken when the geometry underneath them changes */
+const wakers = new Set<() => void>();
+export function onBoardChange(rebuild: () => void): void {
+  wakers.add(rebuild);
+}
 
-/* --------------------------- merchants (5) ------------------------ */
-/* Authentic edge merchants (research/board-data.md §3).               */
-/* Demand is NOT printed here: the 9 official merchant tiles are        */
-/* shuffled at setup (merchantTilePool) and dealt one per slot; every   */
-/* non-blank tile brings one beer barrel. Warrington opens at 3+        */
-/* players, Nottingham at 4 (game-data.md §1.3).                        */
-
-export const MERCHANTS: Merchant[] = [
-  {
-    id: 'm-warrington',
-    name: 'Warrington',
-    x: wx(551),
-    y: wy(119),
-    slots: 2,
-    minPlayers: 3,
-    bonus: { money: 5 },
-    bonusLabel: '£5',
-  },
-  {
-    id: 'm-nottingham',
-    name: 'Nottingham',
-    x: wx(1243),
-    y: wy(197),
-    slots: 2,
-    minPlayers: 4,
-    bonus: { vp: 3 },
-    bonusLabel: '+3 VP',
-  },
-  {
-    id: 'm-shrewsbury',
-    name: 'Shrewsbury',
-    x: wx(354),
-    y: wy(632),
-    slots: 1,
-    minPlayers: 2,
-    bonus: { vp: 4 },
-    bonusLabel: '+4 VP',
-  },
-  {
-    id: 'm-oxford',
-    name: 'Oxford',
-    x: wx(1152),
-    y: wy(944),
-    slots: 2,
-    minPlayers: 2,
-    bonus: { income: 2 },
-    bonusLabel: '+2 income',
-  },
-  {
-    id: 'm-gloucester',
-    name: 'Gloucester',
-    // v12: 1040 → 1024 (−21px world) so the sign + barrels clear the bottom edge
-    x: wx(872),
-    y: wy(1024),
-    slots: 2,
-    minPlayers: 2,
-    bonus: { develop: true },
-    bonusLabel: 'Develop',
-  },
-];
-
-/* ------------------------------ links ------------------------------ */
-/* 39 printed link spaces (research/board-data.md §2):                 */
-/* 30 both-era, 8 rail-only, 1 canal-only (Burton-on-Trent ⇄ Walsall). */
-
-const L = (
-  a: string,
-  b: string,
-  opts: { canal?: boolean; rail?: boolean; path?: [number, number][]; alsoConnects?: string } = {},
-): LinkDef => ({
-  id: `${a}--${b}`,
-  a,
-  b,
-  canal: opts.canal ?? true,
-  rail: opts.rail ?? true,
-  path: opts.path,
-  alsoConnects: opts.alsoConnects,
-});
-
-export const LINKS: LinkDef[] = [
-  /* --- both eras (30) --- */
-  L('m-warrington', 'stoke'),
-  L('stoke', 'leek'),
-  L('belper', 'derby'),
-  L('derby', 'm-nottingham'),
-  L('derby', 'burton'),
-  L('stoke', 'stone'),
-  L('stone', 'stafford'),
-  L('stone', 'burton'),
-  L('stafford', 'cannock'),
-  L('cannock', 'farm-n'),
-  L('cannock', 'wolverhampton'),
-  L('cannock', 'walsall'),
-  L('burton', 'tamworth'),
-  L('tamworth', 'nuneaton'),
-  L('tamworth', 'birmingham'),
-  L('coventry', 'birmingham'),
-  L('birmingham', 'm-oxford', { path: [[wx(913), wy(756)], [wx(1060), wy(828)], [wx(1152), wy(944)]] }),
-  L('redditch', 'm-oxford'),
-  L('redditch', 'm-gloucester'),
-  L('birmingham', 'walsall'),
-  L('walsall', 'wolverhampton'),
-  L('wolverhampton', 'coalbrookdale'),
-  L('coalbrookdale', 'm-shrewsbury'),
-  L('coalbrookdale', 'kidderminster'),
-  L('wolverhampton', 'dudley'),
-  L('birmingham', 'dudley'),
-  L('dudley', 'kidderminster'),
-  // rules: this one link also connects Kidderminster AND Worcester to farm-s
-  L('kidderminster', 'worcester', { alsoConnects: 'farm-s' }),
-  L('birmingham', 'worcester', { path: [[wx(913), wy(756)], [wx(760), wy(880)], [wx(652), wy(985)]] }),
-  L('worcester', 'm-gloucester'),
-  /* --- rail only (8) --- */
-  L('leek', 'belper', { canal: false }),
-  L('derby', 'uttoxeter', { canal: false }),
-  L('uttoxeter', 'stone', { canal: false }),
-  L('burton', 'cannock', { canal: false }),
-  L('tamworth', 'walsall', { canal: false }),
-  L('nuneaton', 'coventry', { canal: false }),
-  L('nuneaton', 'birmingham', { canal: false }),
-  L('birmingham', 'redditch', { canal: false }),
-  /* --- canal only (1) --- */
-  L('burton', 'walsall', { rail: false, path: [[wx(996), wy(417)], [wx(930), wy(500)], [wx(822), wy(614)]] }),
-];
-
-/* --------------------------- node lookup --------------------------- */
-
-export const NODE_POS: Record<string, [number, number]> = Object.fromEntries([
-  ...TOWNS.map((t) => [t.id, [t.x, t.y] as [number, number]]),
-  ...MERCHANTS.map((m) => [m.id, [m.x, m.y] as [number, number]]),
-]);
-
-export const TOWN_BY_ID: Record<string, Town> = Object.fromEntries(TOWNS.map((t) => [t.id, t]));
-export const MERCHANT_BY_ID: Record<string, Merchant> = Object.fromEntries(MERCHANTS.map((m) => [m.id, m]));
+/** put a board in play. Every game says which board it stands on, so this
+ *  is called when a game is made or replayed, never on a whim. */
+export function setBoard(id: string | undefined): void {
+  const next = boardOf(id);
+  if (next.id === board.id) return;
+  board = next;
+  TOWNS = board.towns;
+  MERCHANTS = board.merchants;
+  LINKS = board.links;
+  NODE_POS = board.nodePos;
+  TOWN_BY_ID = board.townById;
+  MERCHANT_BY_ID = board.merchantById;
+  LOCATION_CARDS = board.locationCards;
+  for (const wake of wakers) wake();
+}
 
 /* the 9 merchant tiles (game-data.md §1.3, variant S4 for the 3–4p additions).
  * `all` buys cotton, manufactured goods AND pottery; `blank` buys nothing
@@ -436,28 +272,6 @@ export function shuffle<T>(arr: T[], rand: () => number): T[] {
  * count, industry cards (cotton + manufactured goods share ONE double
  * card). Totals 40 / 54 / 64 for 2 / 3 / 4 players. Wild cards live in
  * their own piles (see WILD_CARDS_EACH), never in the draw deck. */
-const LOCATION_CARDS: Record<string, [number, number, number]> = {
-  stafford: [2, 2, 2],
-  burton: [2, 2, 2],
-  cannock: [2, 2, 2],
-  tamworth: [1, 1, 1],
-  walsall: [1, 1, 1],
-  coalbrookdale: [3, 3, 3],
-  dudley: [2, 2, 2],
-  kidderminster: [2, 2, 2],
-  wolverhampton: [2, 2, 2],
-  worcester: [2, 2, 2],
-  birmingham: [3, 3, 3],
-  coventry: [3, 3, 3],
-  nuneaton: [1, 1, 1],
-  redditch: [1, 1, 1],
-  leek: [0, 2, 2],
-  stoke: [0, 3, 3],
-  stone: [0, 2, 2],
-  uttoxeter: [0, 1, 2],
-  belper: [0, 0, 2],
-  derby: [0, 0, 3],
-};
 const INDUSTRY_CARDS: { industry: IndustryType; industry2?: IndustryType; n: [number, number, number] }[] = [
   { industry: 'iron', n: [4, 4, 4] },
   { industry: 'coal', n: [2, 2, 3] },

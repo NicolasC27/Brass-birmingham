@@ -1,4 +1,4 @@
-import { TOWNS, TOWN_BY_ID } from '@/game/data';
+import { TOWNS, TOWN_BY_ID, onBoardChange } from '@/game/data';
 import type { IndustryType, Town } from '@/game/types';
 import { WORLD_H, WORLD_W } from './boardView';
 
@@ -277,12 +277,22 @@ export function townChrome(town: Town): TownChromeGeo {
 /* the rendered tiles.                                                  */
 
 const SLOT_REMAP = new Map<string, [number, number]>();
-for (const t of TOWNS) {
-  const c = townChrome(t);
-  t.slots.forEach((sp, si) => {
-    SLOT_REMAP.set(`${Math.round(sp.x)},${Math.round(sp.y)}`, [c.slots[si].x, c.slots[si].y]);
-  });
+function mapSlots(): void {
+  SLOT_REMAP.clear();
+  for (const t of TOWNS) {
+    const c = townChrome(t);
+    t.slots.forEach((sp, si) => {
+      SLOT_REMAP.set(`${Math.round(sp.x)},${Math.round(sp.y)}`, [c.slots[si].x, c.slots[si].y]);
+    });
+  }
 }
+mapSlots();
+/* another board is another crowd of towns: the nudges that keep clusters
+   apart, and the slot map drawn from them, are worked out again */
+onBoardChange(() => {
+  CHROME_CACHE.clear();
+  mapSlots();
+});
 
 /** map an authentic slot coordinate to its display position (identity for non-slot points) */
 export function displayPosFor(x: number, y: number): [number, number] {

@@ -31,6 +31,8 @@ export interface SetupOptions {
   fidelity: Fidelity;
   /** beginner assistance for everyone at the table: playable slots lit, prices itemised, tips */
   assist?: boolean;
+  /** the board: absent means the Midlands */
+  map?: string;
 }
 
 /** Exact persisted contract (brassworks.setup.v1). */

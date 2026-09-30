@@ -39,6 +39,7 @@ import {
   shuffle,
   startMarket,
   personaFor,
+  setBoard,
 } from './data';
 import type {
   Card,
@@ -80,6 +81,9 @@ function dealHands(s: GameState) {
 }
 
 export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1e9)): GameState {
+  /* the board first: every table dealt below — the towns, the links, the
+     merchants, the deck — is read off whichever board this game stands on */
+  setBoard(setup.options.map);
   const rand = rng(seed);
   const players: PlayerState[] = setup.players.map((p) => ({
     name: p.name,

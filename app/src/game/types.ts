@@ -252,6 +252,9 @@ export interface SetupPayload {
     timerMinutes: number | null;
     fidelity: 'core' | 'approx';
     assist?: boolean;
+    /** the board this game stands on; absent means the Midlands, which is
+        where every game played before there was a second one stood */
+    map?: string;
   };
 }
 
