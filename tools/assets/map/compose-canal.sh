@@ -18,6 +18,10 @@ WW=3200 WH=1800 BX=480 BY=270
 # painting's (100 = no fall), FADE how wide the step is softened. A pale
 # painting wants a gentler fall, or the world reads as a lit rectangle.
 DIM=${DIM:-72} FADE=${FADE:-30}
+# the painting's own tone, as brightness,saturation: the default keeps a pale
+# sheet under engraved tiles. Painted tiles with their own light want a dark
+# ground instead — around TONE=62,70 — or they read as holes rather than lamps.
+TONE=${TONE:-100,92}
 FW=$((WW + 2 * BX)) FH=$((WH + 2 * BY))
 # 0. a painting smaller than the world is brought up to cover it (a Midjourney
 #    2× upscale is 2912×1632, a tenth short), so nothing mirrored or blurred
@@ -37,7 +41,7 @@ magick "$T/mirror.png" \( +clone -blur 0x14 -modulate ${DIM},80 \) "$T/outside.p
 # 2. the grade: the painting's bleached clearings pulled back into the land
 #    (whites capped, the blacks untouched) and a breath of grey-green, so
 #    the parchment tiles stay the brightest thing on the table
-magick "$T/full.png" -level 0%,108% -modulate 100,92 -fill 'rgb(118,138,126)' -colorize 3 "$T/graded.png"
+magick "$T/full.png" -level 0%,108% -modulate ${TONE} -fill 'rgb(118,138,126)' -colorize 3 "$T/graded.png"
 # 3. the geometry, drawn by python from geo.json (world → frame offset)
 python3 - "$GEO" "$BX" "$BY" "$T" <<'PY'
 import json, math, sys
