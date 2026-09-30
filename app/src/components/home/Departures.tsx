@@ -1,0 +1,262 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { motion } from 'framer-motion';
+import { Eye, RefreshCw } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useLang, useT } from '@/i18n';
+import { onlineWire } from '@/online/net';
+import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
+import { colorDef } from '@/components/setup/constants';
+import { toCards, type CardTable } from '@/platform/tables';
+import Button from '@/components/platform/Button';
+
+/* ------------------------------------------------------------------ */
+/* The departures: the register of tables printed as a timetable —    */
+/* one line a table, the seats as four marks, the state in small       */
+/* capitals, the way to board at the end of the line. My tables come   */
+/* first (platform/tables.ts). Under the board, my own place in the    */
+/* queue; the office does not say who else waits.                      */
+/* ------------------------------------------------------------------ */
+
+const ROWS = 8;
+
+/** the clock, ticking every second while something is timed */
+function useNow(on: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!on) return;
+    const iv = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(iv);
+  }, [on]);
+  return now;
+}
+
+const mmss = (ms: number) => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+};
+
+/* four marks: a filled disc in the player's colour, a hollow one for a free chair */
+function Seats({ table }: { table: CardTable }) {
+  const t = useT();
+  const filled = table.seats.filter(Boolean).length;
+  return (
+    <span className="flex items-center gap-1.5" aria-label={t('platform.state.seats', { filled, total: table.seats.length })}>
+      {table.seats.map((s, i) =>
+        s ? (
+          <span
+            key={i}
+            title={s.name}
+            className={cn('block h-2.5 w-2.5 rounded-full', s.you && 'ring-2 ring-brass-300 ring-offset-1 ring-offset-[rgb(var(--enamel-850))]')}
+            style={{ background: colorDef(s.color).hex }}
+          />
+        ) : (
+          <span key={i} className="block h-2.5 w-2.5 rounded-full border border-[var(--gz-ink-soft)]" />
+        ),
+      )}
+    </span>
+  );
+}
+
+function Boarding({ table }: { table: CardTable }) {
+  const t = useT();
+  const navigate = useNavigate();
+  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap transition-colors';
+  if (table.mine) {
+    const to = table.state === 'live' ? `/game/${table.code}` : `/online/${table.code}`;
+    return (
+      <Link to={to} className={cn(link, table.myTurn ? 'text-signal-400 hover:text-paper-100' : 'text-brass-300 hover:text-paper-100')}>
+        {table.state === 'live' ? (table.myTurn ? t('platform.play.tables.yourTurn') : t('platform.action.resume')) : t('platform.action.enterLobby')} →
+      </Link>
+    );
+  }
+  if (table.state === 'open') {
+    return table.mode === 'ranked' ? (
+      <span className={cn(link, 'text-iron-600')} title={t('platform.play.tables.viaQueueHint')}>
+        {t('platform.play.tables.viaQueue')}
+      </span>
+    ) : (
+      <button type="button" onClick={() => navigate(`/online/${table.code}`)} className={cn(link, 'text-brass-300 hover:text-paper-100')}>
+        {t('platform.action.join')} →
+      </button>
+    );
+  }
+  if (table.state === 'live') {
+    return (
+      <button type="button" onClick={() => navigate(`/game/${table.code}`)} className={cn(link, 'inline-flex items-center gap-1 text-paper-300 hover:text-paper-100')}>
+        <Eye size={12} aria-hidden />
+        {t('platform.action.watch')}
+      </button>
+    );
+  }
+  return <span className={cn(link, 'text-iron-600')}>{t('platform.action.full')}</span>;
+}
+
+function Row({ table, i }: { table: CardTable; i: number }) {
+  const t = useT();
+  const detail =
+    table.state === 'live'
+      ? [
+          table.era ? t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal') : null,
+          table.round !== undefined ? (table.rounds ? t('platform.play.tables.roundOf', { round: table.round, total: table.rounds }) : t('platform.state.turn', { round: table.round })) : null,
+        ]
+      : [t('platform.play.tables.host', { name: table.hostName })];
+  return (
+    <motion.tr initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.04 * i }}>
+      <td className="max-w-0">
+        <span className={cn('block truncate font-fraunces text-[14px] font-medium', table.mine ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 48' }}>
+          {table.name}
+        </span>
+        <span className="data-text block truncate text-[11px] text-iron-600">
+          {[t(`platform.mode.${table.mode}`), ...detail].filter(Boolean).join(' · ')}
+        </span>
+      </td>
+      <td className="w-[76px]">
+        <Seats table={table} />
+      </td>
+      <td className="w-[88px]">
+        <span className={cn('micro-label flex items-center gap-1.5', table.state === 'live' ? 'text-signal-400' : table.state === 'open' ? 'text-bottle-400' : 'text-iron-400')}>
+          {table.state === 'live' && <span className={cn('h-1.5 w-1.5 rounded-full bg-signal-400', i < 3 && 'animate-pulse-signal')} aria-hidden />}
+          {t(`platform.state.${table.state}`)}
+        </span>
+      </td>
+      <td className="w-px pr-2 text-right">
+        <Boarding table={table} />
+      </td>
+    </motion.tr>
+  );
+}
+
+/* a quiet line across the board when there is nothing to list */
+function Notice({ text, cta }: { text: string; cta?: { label: string; to: string } }) {
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+      <p className="max-w-[300px] font-serif text-[14px] italic text-paper-300">{text}</p>
+      {cta && (
+        <Button variant="ghost" className="!h-8 px-3" to={cta.to}>
+          {cta.label}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* my own wait, under the board */
+function MyQueue() {
+  const t = useT();
+  const session = useSession();
+  const desk = useDesk();
+  const queue = desk?.queue ?? null;
+  const now = useNow(queue !== null);
+  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100';
+
+  if (!session) return null;
+  if (!queue) {
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
+        <span className="font-serif text-[13px] italic text-paper-300">
+          {t('platform.home.departures.queueNone')}
+          {desk && desk.hall.queued > 0 && <span className="data-text ml-2 text-[11px] not-italic text-iron-600 tnums">{t('platform.home.board.queue.house', { count: desk.hall.queued })}</span>}
+        </span>
+        <Link to="/online" className={link}>
+          {t('platform.home.departures.enter')}
+        </Link>
+      </div>
+    );
+  }
+  const mode = queue.mode === 'ranked' ? 'ranked' : 'normal';
+  return (
+    <div role="status" className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
+      <span className="flex items-center gap-2 font-ui text-[12.5px] text-paper-100">
+        <span className={cn('h-1.5 w-1.5 animate-pulse-signal rounded-full', mode === 'ranked' ? 'bg-rust-600' : 'bg-bottle-500')} aria-hidden />
+        {t('platform.home.board.queue.mine', { mode: t(`platform.mode.${mode}`) })}
+        <span className="data-text text-[12px] text-brass-300 tnums">{mmss(now - queue.since)}</span>
+        <span className="data-text text-[11px] text-iron-600">
+          {queue.waiting <= 1 ? t('platform.home.board.queue.alone') : t('platform.home.board.queue.others', { count: queue.waiting - 1 })}
+        </span>
+      </span>
+      <Link to="/online" className={link}>
+        {t('platform.home.board.queue.see')}
+      </Link>
+    </div>
+  );
+}
+
+export default function Departures() {
+  const t = useT();
+  const session = useSession();
+  const desk = useDesk();
+  const page = useTables({ limit: 12 });
+  const tables = page?.tables ?? null;
+  const [spin, setSpin] = useState(0);
+  const lang = useLang();
+  const cards = useMemo(() => toCards(tables ?? [], desk?.tables, session?.name, lang), [tables, desk?.tables, session?.name, lang]);
+  const stranger = useStranger();
+  const line = useLine();
+  const waiting = tables === null && !stranger;
+  const open = page ? page.counts.all - page.counts.live : cards.filter((tb) => tb.state !== 'live').length;
+  const live = page?.counts.live ?? cards.filter((tb) => tb.state === 'live').length;
+
+  const refresh = () => {
+    setSpin((n) => n + 1);
+    const w = onlineWire();
+    w?.askTables({ limit: 12 });
+    w?.askDesk();
+  };
+
+  let body: React.ReactNode;
+  if (stranger) body = <Notice text={t('platform.home.board.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
+  else if (waiting && line !== 'online') body = <Notice text={t('platform.serverOffline')} />;
+  else if (waiting) body = <Notice text={t('platform.home.board.loading')} />;
+  else if (cards.length === 0) body = <Notice text={t('platform.home.departures.none')} cta={{ label: t('platform.action.createTable'), to: '/setup' }} />;
+  else
+    body = (
+      <table className="gz-timetable">
+        <thead>
+          <tr>
+            <th>{t('platform.home.departures.table')}</th>
+            <th>{t('platform.home.departures.seats')}</th>
+            <th>{t('platform.home.departures.state')}</th>
+            <th />
+          </tr>
+        </thead>
+        <tbody>
+          {cards.slice(0, ROWS).map((tb, i) => (
+            <Row key={tb.code} table={tb} i={i} />
+          ))}
+        </tbody>
+      </table>
+    );
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.28, ease: 'easeOut', delay: 0.08 }}
+      aria-label={t('platform.home.board.title')}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="micro-label flex items-center gap-2 text-paper-100">
+          <span className={cn('h-1.5 w-1.5 rounded-full', tables ? 'animate-presence-dot bg-signal-400' : 'bg-iron-600')} aria-hidden />
+          {t('platform.home.board.title')}
+        </span>
+        <span className="flex items-center gap-3">
+          <span className="data-text text-[11px] text-iron-400 tnums">{waiting ? t('platform.home.board.loading') : stranger ? '' : t('platform.home.board.counts', { open, live })}</span>
+          <button type="button" aria-label={t('platform.home.board.refresh')} onClick={refresh} className="text-iron-400 transition-colors hover:text-paper-100">
+            <motion.span animate={{ rotate: spin * 360 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="flex">
+              <RefreshCw size={13} aria-hidden />
+            </motion.span>
+          </button>
+          <Link to="/online#tables" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+            {t('platform.home.board.seeAll')}
+          </Link>
+        </span>
+      </div>
+      <div className="gz-rule-double mt-2" aria-hidden />
+      <div className="mt-1">{body}</div>
+      <div className="mt-2">
+        <MyQueue />
+      </div>
+    </motion.section>
+  );
+}

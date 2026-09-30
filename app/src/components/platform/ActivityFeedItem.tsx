@@ -3,8 +3,9 @@ import { cn } from '@/lib/utils';
 import { useLang, useT, localeOf } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
-/* ActivityFeedItem (design.md §7.8) — icône 16px + phrase 13px +      */
-/* horodatage mono « il y a 4 min », calculé depuis l'instant réel.    */
+/* ActivityFeedItem — a line of the club's news: a small mark, the     */
+/* sentence in the serif, the time in the mono at the end of the line, */
+/* « il y a 4 min », counted from the real instant. A rule under each. */
 /* ------------------------------------------------------------------ */
 
 /** what the club's feed can say: my finished games, the tables in play */
@@ -47,19 +48,12 @@ export default function ActivityFeedItem({ kind, vars, at, onClick, className }:
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors duration-150 hover:bg-enamel-800',
+        'flex w-full items-center gap-3 border-b border-[var(--gz-ink-faint)] px-1 py-2.5 text-left transition-colors duration-150 hover:bg-enamel-800',
         className,
       )}
     >
-      <span
-        className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700',
-          kind === 'tableLive' ? 'text-signal-400' : 'text-brass-300',
-        )}
-      >
-        <Icon size={16} aria-hidden />
-      </span>
-      <span className="min-w-0 flex-1 truncate font-ui text-[13px] text-paper-300">{t(`platform.home.feed.${kind}`, vars)}</span>
+      <Icon size={13} strokeWidth={1.75} aria-hidden className={cn('shrink-0', kind === 'tableLive' ? 'text-signal-400' : 'text-brass-300')} />
+      <span className="min-w-0 flex-1 truncate font-serif text-[13.5px] text-paper-100">{t(`platform.home.feed.${kind}`, vars)}</span>
       <span className="data-text shrink-0 text-[11px] text-iron-600 tnums">{ago(t, lang, at)}</span>
     </button>
   );

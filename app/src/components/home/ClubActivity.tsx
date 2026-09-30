@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
@@ -38,7 +38,7 @@ function Reveal({ i, children, className }: { i: number; children: ReactNode; cl
 function Empty({ copy, cta }: { copy: string; cta?: { label: string; to: string } }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
-      <p className="max-w-[280px] font-ui text-[13px] text-paper-300">{copy}</p>
+      <p className="max-w-[280px] font-serif text-[14px] italic text-paper-300">{copy}</p>
       {cta && (
         <Button variant="ghost" className="!h-8 px-3 text-[12px]" to={cta.to}>
           {cta.label}
@@ -112,9 +112,9 @@ function LiveTables() {
   const live = tables?.live ?? [];
 
   return (
-    <div className="console p-2" aria-label={t('platform.home.activity.liveTitle')}>
-      <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
-        <span className="micro-label text-iron-400">{t('platform.home.activity.liveTitle')}</span>
+    <div aria-label={t('platform.home.activity.liveTitle')}>
+      <div className="flex items-center justify-between gap-3 pb-2">
+        <span className="micro-label text-paper-100">{t('platform.home.activity.liveTitle')}</span>
         {live.length > 0 && (
           <span className="micro-label flex items-center gap-1.5 text-signal-400">
             <span className="animate-pulse-signal h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
@@ -128,8 +128,8 @@ function LiveTables() {
         <Empty copy={line === 'online' ? t('platform.home.activity.loading') : t('platform.serverOffline')} />
       ) : live.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-6 text-center">
-          <img src="/empty-queue.png" alt="" width={200} className="w-[200px] rounded-lg border border-[rgb(var(--paper-100)/.07)]" />
-          <p className="max-w-[260px] font-ui text-[13px] text-paper-300">{t('platform.home.activity.liveEmpty')}</p>
+          <img src="/empty-queue.png" alt="" width={200} className="w-[200px] border border-[var(--gz-ink-soft)] p-1" />
+          <p className="max-w-[260px] font-serif text-[14px] italic text-paper-300">{t('platform.home.activity.liveEmpty')}</p>
         </div>
       ) : (
         live.slice(0, LIVE).map((x, i) => (
@@ -149,22 +149,20 @@ export default function ClubActivity() {
     <div className="grid gap-6 min-[900px]:grid-cols-12">
       <section className="min-[900px]:col-span-7" aria-label={t('platform.home.activity.title')}>
         <Reveal i={0}>
-          <div className="flex items-baseline gap-3">
-            <h2 className="h2-section">{t('platform.home.activity.title')}</h2>
-            <span className="micro-label text-iron-400">{t('platform.home.activity.mine')}</span>
-          </div>
+          <h2 className="gz-head h2-section">{t('platform.home.activity.title')}</h2>
+          <p className="micro-label mt-3 text-paper-100">{t('platform.home.activity.mine')}</p>
         </Reveal>
-        <div className="mt-4 console p-2">
+        <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
           <MyGames />
         </div>
         <Reveal i={FEED + 1} className="mt-3">
-          <Button variant="ghost" className="!h-9 text-[13px]" to="/desk#historique">
+          <Link to="/desk#historique" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
             {t('platform.home.activity.seeHistory')}
-          </Button>
+          </Link>
         </Reveal>
       </section>
       <motion.section
-        className="min-[900px]:col-span-5 min-[900px]:pt-[44px]"
+        className="gz-col-rule min-[900px]:col-span-5 min-[900px]:pt-[52px]"
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ amount: 0.15, once: true }}

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { BookOpen, Briefcase, ChevronRight, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
+import { BookOpen, Briefcase, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
@@ -13,22 +13,41 @@ import Modal from '@/components/platform/Modal';
 import CodeInput from '@/components/platform/CodeInput';
 import ModeCard from '@/components/platform/ModeCard';
 import RankBadge from '@/components/platform/RankBadge';
-import TableBoard from '@/components/home/TableBoard';
+import Departures from '@/components/home/Departures';
 import ClubActivity from '@/components/home/ClubActivity';
 import ProgressCard from '@/components/desk/ProgressCard';
 import { usePresence } from '@/components/platform/presence';
 import { PLACEMENTS, rankOf } from '@/platform/rank';
 
 /* ------------------------------------------------------------------ */
-/* Accueil « hall du club » (home.md) — tableau de bord plateforme :   */
-/* jouer / reprendre / rejoindre au-dessus de la ligne de flottaison,  */
-/* tableau des tables vivant, strip files & rang, activité. Motion :   */
-/* Framer Motion uniquement — Lenis/GSAP n'ont pas cours ici.          */
+/* The front page. Under the masthead: the engraving of the day, then  */
+/* the leader — the headline, what waits for me, the tickets — beside  */
+/* the departures; below, the queues and my standing, the club's news  */
+/* in two columns, and the classifieds. Framer Motion only.            */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
 
-/* --------------------- Bandeau « Reprendre » (§S1) --------------------- */
+/* a printed ticket: the front page's way of saying « go » */
+function Ticket({ to, onClick, tone, icon, children }: { to?: string; onClick?: () => void; tone?: 'brass' | 'signal'; icon: ReactNode; children: ReactNode }) {
+  const cls = cn('gz-ticket', tone === 'brass' && 'gz-ticket-brass', tone === 'signal' && 'gz-ticket-signal');
+  if (to) {
+    return (
+      <Link to={to} className={cls}>
+        {icon}
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} className={cls}>
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+/* --------------------- The telegram: a game waits --------------------- */
 
 function ResumeBanner() {
   const t = useT();
@@ -56,22 +75,26 @@ function ResumeBanner() {
 
   return (
     <motion.div
-      initial={{ x: -16, opacity: 0 }}
+      initial={{ x: -12, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.26, ease, delay: 0.1 }}
-      className="halo-signal console flex h-14 items-center gap-3 !border-[rgb(var(--signal-400)/.5)] px-4"
+      className="flex items-center gap-3 border-y border-[var(--gz-ink-soft)] py-3"
     >
-      <RotateCcw size={18} className="animate-pulse-signal shrink-0 text-signal-400" aria-hidden />
+      <RotateCcw size={15} className="animate-pulse-signal shrink-0 text-signal-400" aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-ui text-[14px] font-semibold text-paper-100">{text}</p>
+        <p className="truncate font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+          {text}
+        </p>
         <p className="data-text text-[11px] text-iron-400 tnums">{meta}</p>
       </div>
       {!table && (
-        <Button variant="icon" aria-label={t('platform.home.discard')} title={t('platform.home.discard')} onClick={() => setDiscarding(true)} icon={<Trash2 size={16} aria-hidden />} />
+        <button type="button" aria-label={t('platform.home.discard')} title={t('platform.home.discard')} onClick={() => setDiscarding(true)} className="text-iron-400 transition-colors hover:text-rust-400">
+          <Trash2 size={14} aria-hidden />
+        </button>
       )}
-      <Button variant="live" className="!h-9 shrink-0" to={to}>
+      <Ticket to={to} tone="signal" icon={<Play aria-hidden />}>
         {t('platform.action.resume')}
-      </Button>
+      </Ticket>
       <Modal open={discarding} onClose={() => setDiscarding(false)} title={t('platform.home.discardTitle', { name: localName })}>
         <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.home.discardCopy')}</p>
         <div className="mt-5 flex flex-wrap gap-3">
@@ -87,7 +110,7 @@ function ResumeBanner() {
   );
 }
 
-/* ------------------- Section 3 — strip files & rang ------------------- */
+/* --------------------- The queues, and my standing --------------------- */
 
 function QueueRankStrip() {
   const t = useT();
@@ -107,34 +130,19 @@ function QueueRankStrip() {
   });
 
   return (
-    <div className="mt-6 grid gap-4 min-[900px]:grid-cols-3">
+    <div className="grid gap-4 border-y border-[var(--gz-ink-soft)] py-5 min-[900px]:grid-cols-3">
       <motion.div {...reveal(0)}>
-        <ModeCard
-          mode="normal"
-          compact
-          disabled={offline}
-          queueCount={presence.normalQueue.count}
-          estimateMin={presence.normalQueue.estimateMin}
-          onSelect={() => navigate('/online')}
-        />
+        <ModeCard mode="normal" compact disabled={offline} queueCount={presence.normalQueue.count} estimateMin={presence.normalQueue.estimateMin} onSelect={() => navigate('/online')} />
       </motion.div>
       <motion.div {...reveal(1)}>
-        <ModeCard
-          mode="ranked"
-          compact
-          disabled={offline}
-          queueCount={presence.rankedQueue.count}
-          estimateMin={presence.rankedQueue.estimateMin}
-          rank={badge}
-          onSelect={() => navigate('/online')}
-        />
+        <ModeCard mode="ranked" compact disabled={offline} queueCount={presence.rankedQueue.count} estimateMin={presence.rankedQueue.estimateMin} rank={badge} onSelect={() => navigate('/online')} />
       </motion.div>
       <motion.div {...reveal(2)}>
         {session ? (
-          <div className="console flex h-[76px] items-center gap-4 p-4">
+          <div className="flex h-[76px] items-center gap-4 border border-[var(--gz-ink-soft)] p-4">
             <RankBadge tier={rank.tier} division={rank.division} size={32} compact />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-ui text-[14px] font-semibold text-paper-100">
+              <p className="title-card truncate">
                 {rank.tier === 'placement'
                   ? rank.rating === null
                     ? t('platform.home.rating.none')
@@ -143,21 +151,15 @@ function QueueRankStrip() {
                     ? t('platform.home.rating.value', { tier: t(`platform.rank.${rank.tier}`), division: rank.division, lp: rank.lp ?? 0 })
                     : t('platform.home.rating.valueTop', { tier: t(`platform.rank.${rank.tier}`), lp: rank.lp ?? 0 })}
               </p>
-              <div className="mt-2 h-1 overflow-hidden rounded-full bg-enamel-700">
-                <motion.div
-                  initial={{ width: 0 }}
-                  whileInView={{ width: `${rank.progress}%` }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.6, ease }}
-                  className="h-full rounded-full bg-gradient-to-r from-brass-300 via-brass-500 to-brass-600"
-                />
+              <div className="mt-2 h-px overflow-hidden bg-[var(--gz-ink-faint)]">
+                <motion.div initial={{ width: 0 }} whileInView={{ width: `${rank.progress}%` }} viewport={{ once: true }} transition={{ duration: 0.6, ease }} className="h-full bg-brass-300" />
               </div>
             </div>
           </div>
         ) : (
-          <div className="flex h-[76px] items-center justify-between gap-3 border border-dashed border-brass-hairline-strong bg-transparent p-4">
-            <p className="font-ui text-[13px] text-iron-400">{t('platform.home.rating.signIn')}</p>
-            <Button variant="ghost" className="!h-9 shrink-0" to="/account">
+          <div className="flex h-[76px] items-center justify-between gap-3 border border-dashed border-[var(--gz-ink-soft)] p-4">
+            <p className="font-serif text-[13px] italic text-paper-300">{t('platform.home.rating.signIn')}</p>
+            <Button variant="ghost" className="!h-8 shrink-0" to="/account">
               {t('platform.action.signIn')}
             </Button>
           </div>
@@ -167,47 +169,36 @@ function QueueRankStrip() {
   );
 }
 
-/* --------------------- Section 5 — raccourcis du club --------------------- */
+/* --------------------------- The classifieds --------------------------- */
 
-function Shortcuts() {
+function Classifieds() {
   const t = useT();
   const navigate = useNavigate();
-  /* the guided game opens a table of its own rather than a page: the card
-     dresses it on the register, then goes where the guide takes over */
-  const cards = [
+  /* the guided game opens a table of its own rather than a page */
+  const ads = [
     { key: 'guided', icon: GraduationCap, title: t('platform.home.shortcuts.guided'), copy: t('platform.home.shortcuts.guidedCopy'), go: () => navigate(`/game/local/${startTutorial()}`) },
     { key: '/rules', icon: BookOpen, title: t('platform.home.shortcuts.rules'), copy: t('platform.home.shortcuts.rulesCopy') },
     { key: '/desk', icon: Briefcase, title: t('platform.home.shortcuts.desk'), copy: t('platform.home.shortcuts.deskCopy') },
     { key: '/profile', icon: User, title: t('platform.home.shortcuts.profile'), copy: t('platform.home.shortcuts.profileCopy') },
   ];
-  const card = 'group flex h-20 w-full items-center gap-4 border border-brass-hairline px-5 text-left transition-colors duration-150 hover:border-brass-hairline-strong hover:bg-enamel-800';
   return (
-    <div className="mb-2 mt-8 grid gap-4 min-[760px]:grid-cols-2 min-[1100px]:grid-cols-4">
-      {cards.map(({ key, icon: Icon, title, copy, go }, i) => {
+    <div className="mt-10 grid gap-4 min-[760px]:grid-cols-2 min-[1100px]:grid-cols-4">
+      {ads.map(({ key, icon: Icon, title, copy, go }, i) => {
         const inner = (
           <>
-            <Icon size={18} strokeWidth={1.5} aria-hidden className="shrink-0 text-brass-300 transition-colors duration-150 group-hover:text-brass-500" />
-            <span className="min-w-0 flex-1">
-              <span className="title-card block">{title}</span>
-              <span className="mt-0.5 block truncate font-ui text-[12px] text-iron-400">{copy}</span>
-            </span>
-            <ChevronRight size={16} aria-hidden className="shrink-0 text-iron-600 transition-transform duration-150 group-hover:translate-x-1" />
+            <Icon size={18} strokeWidth={1.5} aria-hidden className="text-brass-300" />
+            <span className="title-card mt-1">{title}</span>
+            <span className="font-serif text-[12.5px] italic leading-snug text-paper-300">{copy}</span>
           </>
         );
         return (
-          <motion.div
-            key={key}
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ amount: 0.2, once: true }}
-            transition={{ duration: 0.22, ease, delay: i * 0.06 }}
-          >
+          <motion.div key={key} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.2, once: true }} transition={{ duration: 0.22, ease, delay: i * 0.06 }}>
             {go ? (
-              <button type="button" onClick={go} className={card}>
+              <button type="button" onClick={go} className="gz-classified h-full w-full">
                 {inner}
               </button>
             ) : (
-              <Link to={key} className={card}>
+              <Link to={key} className="gz-classified h-full">
                 {inner}
               </Link>
             )}
@@ -227,68 +218,64 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
-      {/* Section 1 + 2 — console d'accueil & tableau des tables */}
-      <div className="grid gap-8 pb-6 pt-10 min-[1100px]:grid-cols-12">
-        <section className="flex flex-col justify-center gap-5 min-[1100px]:col-span-5">
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.24, ease }}
-            className="eyebrow-fell"
-          >
+      {/* the engraving of the day */}
+      <motion.figure initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, ease }} className="gz-engraving mt-6 h-[180px] min-[900px]:h-[300px]">
+        <img src="/hero-diorama.webp" alt="" style={{ objectPosition: 'center 40%' }} />
+      </motion.figure>
+
+      {/* the leader beside the departures */}
+      <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">
+        <section className="flex flex-col gap-5 min-[1100px]:col-span-7">
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.24, ease }} className="eyebrow-fell">
             {t('platform.home.eyebrow')}
           </motion.p>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease, delay: 0.06 }}>
-            <h1 className="display-hero">{t('platform.home.title')}</h1>
-            <p className="mt-3 max-w-md font-serif text-[16px] italic leading-relaxed text-paper-300">{t('platform.home.tagline')}</p>
-            <div className="rule-fine mt-5 max-w-[200px]" aria-hidden />
-          </motion.div>
+          <motion.h1
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.24, ease, delay: 0.06 }}
+            className="-mt-2 max-w-[560px] font-fraunces text-[30px] font-normal italic leading-[1.15] text-paper-100 min-[900px]:text-[36px]"
+            style={{ fontVariationSettings: '"opsz" 144' }}
+          >
+            {t('platform.home.tagline')}
+          </motion.h1>
 
           <ResumeBanner />
-
           <ProgressCard quiet />
 
           <div className="flex flex-wrap gap-3">
             {[
-              <Button key="play" variant="live" to="/online" icon={<Play size={16} aria-hidden />}>
+              <Ticket key="play" to="/online" tone="signal" icon={<Play aria-hidden />}>
                 {t('platform.action.playNow')}
-              </Button>,
-              <Button key="create" variant="primary" to="/setup" icon={<Plus size={16} aria-hidden />}>
+              </Ticket>,
+              <Ticket key="create" to="/setup" tone="brass" icon={<Plus aria-hidden />}>
                 {t('platform.action.createTable')}
-              </Button>,
-              <Button key="code" variant="ghost" icon={<Hash size={16} aria-hidden />} onClick={() => setCodeOpen(true)}>
+              </Ticket>,
+              <Ticket key="code" onClick={() => setCodeOpen(true)} icon={<Hash aria-hidden />}>
                 {t('platform.action.joinWithCode')}
-              </Button>,
+              </Ticket>,
             ].map((btn, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.22, ease, delay: 0.12 + i * 0.05 }}
-              >
+              <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.12 + i * 0.05 }}>
                 {btn}
               </motion.div>
             ))}
           </div>
         </section>
 
-        <div className={cn('min-[1100px]:col-span-7')}>
-          <TableBoard />
-        </div>
+        <aside className="gz-col-rule min-[1100px]:col-span-5">
+          <Departures />
+        </aside>
       </div>
 
-      {/* Section 3 — bandeau files & classement */}
-      <QueueRankStrip />
+      <div className="mt-10">
+        <QueueRankStrip />
+      </div>
 
-      {/* Section 4 — activité du club */}
-      <div className="mt-8">
+      <div className="mt-10">
         <ClubActivity />
       </div>
 
-      {/* Section 5 — raccourcis */}
-      <Shortcuts />
+      <Classifieds />
 
-      {/* Modale « rejoindre avec un code » */}
       <Modal open={codeOpen} onClose={() => setCodeOpen(false)} title={t('platform.code.title')}>
         <p className="mb-5 font-ui text-[13px] text-paper-300">{t('platform.code.hint')}</p>
         <CodeInput
