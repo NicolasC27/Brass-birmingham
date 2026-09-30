@@ -14,6 +14,10 @@ IN=$1 GEO=$2 STEM=${3:-map-era-canal}
 T=${WORK:-$(mktemp -d)}
 mkdir -p "$T"
 WW=3200 WH=1800 BX=480 BY=270
+# how the land beyond the board falls away: DIM is its brightness against the
+# painting's (100 = no fall), FADE how wide the step is softened. A pale
+# painting wants a gentler fall, or the world reads as a lit rectangle.
+DIM=${DIM:-72} FADE=${FADE:-30}
 FW=$((WW + 2 * BX)) FH=$((WH + 2 * BY))
 # 0. a painting smaller than the world is brought up to cover it (a Midjourney
 #    2× upscale is 2912×1632, a tenth short), so nothing mirrored or blurred
@@ -28,8 +32,8 @@ TY=$(( (FH - SH) / 2 )) BYY=$(( FH - SH - TY ))
 magick \( "$SRC" -crop "${LX}x${SH}+0+0" +repage -flop \) "$SRC" \( "$SRC" -crop "${RX}x${SH}+$((SW - RX))+0" +repage -flop \) +append "$T/row.png"
 magick \( "$T/row.png" -crop "${FW}x${TY}+0+0" +repage -flip \) "$T/row.png" \( "$T/row.png" -crop "${FW}x${BYY}+0+$((SH - BYY))" +repage -flip \) -append "$T/mirror.png"
 #    the mirrored land is only distance: blurred and darkened
-magick -size ${SW}x${SH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x30 -negate "$T/outside.png"
-magick "$T/mirror.png" \( +clone -blur 0x14 -modulate 72,80 \) "$T/outside.png" -compose over -composite "$T/full.png"
+magick -size ${SW}x${SH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x${FADE} -negate "$T/outside.png"
+magick "$T/mirror.png" \( +clone -blur 0x14 -modulate ${DIM},80 \) "$T/outside.png" -compose over -composite "$T/full.png"
 # 2. the grade: the painting's bleached clearings pulled back into the land
 #    (whites capped, the blacks untouched) and a breath of grey-green, so
 #    the parchment tiles stay the brightest thing on the table

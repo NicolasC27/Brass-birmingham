@@ -14,6 +14,10 @@ SRC=$1 GEO=$2 STEM=${3:-map-era-rail}
 T=${WORK:-$(mktemp -d)}
 mkdir -p "$T"
 WW=3200 WH=1800 BX=480 BY=270
+# how the land beyond the board falls away: DIM is its brightness against the
+# painting's (100 = no fall), FADE how wide the step is softened. A pale
+# painting wants a gentler fall, or the world reads as a lit rectangle.
+DIM=${DIM:-72} FADE=${FADE:-30}
 FW=$((WW + 2 * BX)) FH=$((WH + 2 * BY))
 SW=$(magick identify -format %w "$SRC") SH=$(magick identify -format %h "$SRC")
 # 1. the painting centred in the frame: margins to mirror on each side
@@ -24,8 +28,8 @@ magick \( "$SRC" -crop "${LX}x${SH}+0+0" +repage -flop \) "$SRC" \( "$SRC" -crop
 magick \( "$T/row.png" -crop "${FW}x${TY}+0+0" +repage -flip \) "$T/row.png" \( "$T/row.png" -crop "${FW}x${BYY}+0+$((SH - BYY))" +repage -flip \) -append "$T/mirror.png"
 #    the mirrored land is only distance: blurred and darkened, so a bright
 #    mill at the painting's edge does not come back as a kaleidoscope
-magick -size ${SW}x${SH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x30 -negate "$T/outside.png"
-magick "$T/mirror.png" \( +clone -blur 0x14 -modulate 72,80 \) "$T/outside.png" -compose over -composite "$T/full.png"
+magick -size ${SW}x${SH} xc:white -bordercolor black -border 1 -gravity center -background black -extent ${FW}x${FH} -blur 0x${FADE} -negate "$T/outside.png"
+magick "$T/mirror.png" \( +clone -blur 0x14 -modulate ${DIM},80 \) "$T/outside.png" -compose over -composite "$T/full.png"
 # 2. railways engraved along every rail route: a soft embankment blurred
 #    into the land, a thin umber ballast in the painting's own palette,
 #    dark sleepers, two fine rails catching a little light — quiet enough
