@@ -188,6 +188,9 @@ function Masthead() {
             <ThemeToggle />
             <span aria-hidden className="mx-1 hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
             <PlayerToken />
+            <Button variant="primary" className="!h-7 hidden px-3 !text-[10.5px] min-[1100px]:inline-flex" to="/setup" icon={<Plus size={13} aria-hidden />}>
+              {t('platform.nav.createTable')}
+            </Button>
           </span>
         </div>
       </div>
@@ -212,9 +215,9 @@ const rail = ({ isActive }: { isActive: boolean }) => cn('gz-nav-link', isActive
 function NavRail() {
   const t = useT();
   return (
-    <div className="sticky top-0 z-50 hidden bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block">
+    <div className="sticky top-0 z-50 hidden overflow-x-clip bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block">
       <div className="gz-rule-double mx-auto max-w-[1240px]" aria-hidden />
-      <div className="relative mx-auto max-w-[1240px] px-8">
+      <div className="mx-auto max-w-[1240px] px-8">
         <nav aria-label="Primary" className="flex items-center justify-center gap-7 min-[1100px]:gap-10">
           <NavLink to="/online" className={rail}>
             {t('platform.nav.play')}
@@ -240,13 +243,6 @@ function NavRail() {
             {t('platform.nav.rules')}
           </NavLink>
         </nav>
-        <Link
-          to="/setup"
-          className="absolute right-8 top-1/2 hidden -translate-y-1/2 items-center gap-1.5 font-ui text-[10.5px] font-semibold uppercase tracking-[0.16em] text-brass-300 transition-colors hover:text-paper-100 min-[1200px]:inline-flex"
-        >
-          <Plus size={13} aria-hidden />
-          {t('platform.nav.createTable')}
-        </Link>
       </div>
       <div className="relative mx-auto max-w-[1240px]">
         <div className="h-px bg-[var(--gz-ink)]" aria-hidden />
