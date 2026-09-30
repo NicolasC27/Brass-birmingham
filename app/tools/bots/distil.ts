@@ -70,6 +70,10 @@ const CHOSEN_AT = FEATURES;
 const MASK_AT = CHOSEN_AT + 1;
 const KEPT_AT = MASK_AT + MASK_WORDS;
 const ROW = KEPT_AT + KEPT * 2;
+/** A record is only readable by a reading of the same shape: change the
+ *  features and the same bytes are cut in the wrong places. The shape is
+ *  written into the name, and a record of another shape is left alone. */
+const STAMP = `moves-${FEATURES}f-`;
 
 const DATA_DIR = resolve('tools/bots/policy-data');
 const LOG = resolve('tools/bots/distil.log');
@@ -191,7 +195,7 @@ async function play(tag: string): Promise<void> {
     all.set(new Uint8Array(r.buffer), at);
     at += r.buffer.byteLength;
   }
-  writeFileSync(resolve(DATA_DIR, `moves-${tag}.f32`), all);
+  writeFileSync(resolve(DATA_DIR, `${STAMP}${tag}.f32`), all);
   const turns = results.reduce((a, r) => a + r.turns, 0);
   log(`play ${tag}: ${GAMES} games, ${turns} turns written down, ${Math.round((Date.now() - started) / 1000)} s`);
 }
@@ -200,8 +204,10 @@ async function play(tag: string): Promise<void> {
 
 function loadSamples(): Float32Array {
   if (!existsSync(DATA_DIR)) return new Float32Array(0);
+  const strangers = readdirSync(DATA_DIR).filter((f) => f.endsWith('.f32') && !f.startsWith(STAMP)).length;
+  if (strangers) console.warn(`${strangers} record${strangers > 1 ? 's were' : ' was'} written for a different reading and left unread: this one wants ${FEATURES} features`);
   const files = readdirSync(DATA_DIR)
-    .filter((f) => f.startsWith('moves-') && f.endsWith('.f32'))
+    .filter((f) => f.startsWith(STAMP) && f.endsWith('.f32'))
     .map((f) => ({ f, at: statSync(resolve(DATA_DIR, f)).mtimeMs }))
     .sort((a, b) => b.at - a.at)
     .map((x) => x.f);

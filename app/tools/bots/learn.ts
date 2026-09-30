@@ -90,6 +90,12 @@ const MIX = Number(process.env.MIX ?? 0.5);
  * (measured +4.6 points at three seats, +2.9 at four against a table that
  * blocks), so the network has to be able to learn that quantity too. */
 const ROW = FEATURES + 6;
+/** A record is only readable by a reading of the same shape. Change the
+ *  features and every row already written means something else — the same
+ *  bytes, cut in the wrong places — so the shape is written into the name
+ *  and a record of another shape is left where it lies rather than read as
+ *  gibberish. Nothing is deleted: an older reading can still find its own. */
+const STAMP = `positions-${FEATURES}f-`;
 const OWN_CANAL_AT = FEATURES + 4;
 const OWN_GAME_AT = FEATURES + 5;
 /** a seat's own score hovers around this, so the target is taken from here */
@@ -205,7 +211,7 @@ async function play(tag: string): Promise<void> {
     all.set(new Uint8Array(r.buffer), at);
     at += r.buffer.byteLength;
   }
-  const file = resolve(DATA_DIR, `positions-${tag}.f32`);
+  const file = resolve(DATA_DIR, `${STAMP}${tag}.f32`);
   writeFileSync(file, all);
   const rows = total / 4 / ROW;
   const canal = results.reduce((a, r) => a + r.canal, 0) / results.length;
@@ -217,8 +223,10 @@ async function play(tag: string): Promise<void> {
 /** the latest positions written down, newest files first, up to FIT_ROWS */
 function loadSamples(): Float32Array {
   if (!existsSync(DATA_DIR)) return new Float32Array(0);
+  const strangers = readdirSync(DATA_DIR).filter((f) => f.endsWith('.f32') && !f.startsWith(STAMP)).length;
+  if (strangers) console.warn(`${strangers} record${strangers > 1 ? 's were' : ' was'} written for a different reading and left unread: this one wants ${FEATURES} features`);
   const files = readdirSync(DATA_DIR)
-    .filter((f) => f.startsWith('positions-') && f.endsWith('.f32'))
+    .filter((f) => f.startsWith(STAMP) && f.endsWith('.f32'))
     .map((f) => ({ f, at: statSync(resolve(DATA_DIR, f)).mtimeMs }))
     .sort((a, b) => b.at - a.at)
     .map((x) => x.f);
