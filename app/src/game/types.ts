@@ -172,6 +172,9 @@ export interface GameState {
   timerMinutes: number | null;
   /** the table plays with beginner assistance (a house rule) */
   assist?: boolean;
+  /** the board this game stands on; absent means the Midlands. A save, a
+      replay and a shared link all carry it, so the ground is never guessed */
+  board?: string;
   players: PlayerState[];
   /** player indices in this round's turn order (least money spent first) */
   order: number[];

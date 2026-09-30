@@ -112,12 +112,9 @@ export default function Setup() {
         type: s.type === "human" ? ("human" as const) : ("bot" as const),
         ...(s.type === "bot" ? { persona: s.persona } : {}),
       })),
-      options: {
-        eraLength: options.eraLength,
-        marketTemper: options.marketTemper,
-        timerMinutes: options.timerMinutes,
-        fidelity: options.fidelity,
-      },
+      /* the whole of the house rules, the board among them: picking them
+         out one by one is how the board was left behind before */
+      options: { ...options },
       name: tableName,
     };
     try {
@@ -144,12 +141,7 @@ export default function Setup() {
           type: s.type === "human" ? ("human" as const) : ("bot" as const),
           ...(s.type === "bot" ? { persona: s.persona } : {}),
         })),
-        options: {
-          eraLength: options.eraLength,
-          marketTemper: options.marketTemper,
-          timerMinutes: options.timerMinutes,
-          fidelity: options.fidelity,
-        },
+        options: { ...options },
       };
       try {
         localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(payload));

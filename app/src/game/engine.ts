@@ -40,6 +40,7 @@ import {
   startMarket,
   personaFor,
   setBoard,
+  activeBoard,
 } from './data';
 import type {
   Card,
@@ -55,7 +56,7 @@ import type {
   TileState,
 } from './types';
 
-export const ENGINE_VERSION = 4;
+export const ENGINE_VERSION = 5;
 export { eraRounds };
 
 /* ============================ setup ================================ */
@@ -118,6 +119,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
 
   const state: GameState = {
     version: ENGINE_VERSION,
+    board: activeBoard().id,
     seed,
     era: 'canal',
     round: 1,
@@ -1401,6 +1403,9 @@ export function deserialize(raw: string): GameState | null {
   try {
     const s = JSON.parse(raw) as GameState;
     if (!s.players || !s.tiles || !s.ledger || s.version !== ENGINE_VERSION) return null;
+    /* a game read off the shelf stands where it was played, not where the
+       last game happened to leave the module */
+    setBoard(s.board);
     return s;
   } catch {
     return null;

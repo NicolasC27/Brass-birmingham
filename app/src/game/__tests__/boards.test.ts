@@ -68,3 +68,26 @@ describe('the boards', () => {
     expect(activeBoard().id).toBe(home);
   });
 });
+
+describe('a game and its board', () => {
+  it('deals the board it was asked for, and says so in its state', async () => {
+    const { newGame } = await import('../engine');
+    const { setupOf } = await import('../actions');
+    const seat = (name: string, color: string, type: 'human' | 'bot') => ({ name, color, type });
+    for (const id of BOARD_IDS) {
+      const setup = {
+        players: [seat('A', 'brass', 'human'), seat('B', 'oxblood', 'bot')],
+        options: { eraLength: 'standard' as const, marketTemper: 'standard' as const, timerMinutes: null, fidelity: 'core' as const, map: id },
+      };
+      const g = newGame(setup, 42);
+      expect(g.board, id).toBe(id);
+      const towns = new Set(boardOf(id).towns.map((t) => t.id));
+      for (const c of g.deck) if (c.kind === 'location') expect(towns.has(c.town!), `${id}: ${c.town}`).toBe(true);
+      /* and a replay of it stands on the same ground: this is what a share
+         link, an undo and the analysis all go through */
+      expect(setupOf(g).options.map, id).toBe(id);
+      const again = newGame(setupOf(g), g.seed);
+      expect(again.board, id).toBe(id);
+    }
+  });
+});

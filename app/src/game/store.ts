@@ -13,7 +13,7 @@ import { tr } from '@/i18n';
 import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
-import { INDUSTRIES, INDUSTRY_LABEL, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from './data';
+import { INDUSTRIES, INDUSTRY_LABEL, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, setBoard } from './data';
 import { onlineWire } from '@/online/net';
 import { DIALECT, PING_SHOWER, PING_SHOWN_MS, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
 import type { Ping, Telegram, TelegramKey } from './telegrams';
@@ -469,6 +469,10 @@ export const useGame = create<GameStore>((set, get) => ({
     /* the challenge of the week: the deal the notice fixes, no guide with it */
     const challengeSeed = challengeSeedFor(at);
     const game = resumed ?? (challengeSeed !== null ? newGame(readSetup(), challengeSeed) : seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
+    /* whatever road the game came by — dealt here, resumed from the shelf,
+       handed over by the table — the board it stands on goes in play before
+       anything is drawn on it */
+    setBoard(game.board);
     const tutorial = challengeSeed === null && seedWanted !== null && game.seed === seedWanted;
     if (tutorial) {
       try {

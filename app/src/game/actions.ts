@@ -222,6 +222,8 @@ export function setupOf(s: GameState): SetupPayload {
     players: s.players.map((p) => ({ name: p.name, color: p.color, type: p.isBot && !p.resigned ? 'bot' : 'human', ...(p.isBot && !p.resigned ? { persona: p.persona } : {}) })),
     /* the house rule travels with the setup: an undo that dropped it
        would take the assistance away mid-game */
-    options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity, assist: s.assist },
+    /* and the board with it: a game replayed without it would be dealt
+       the same cards on another country */
+    options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity, assist: s.assist, ...(s.board ? { map: s.board } : {}) },
   };
 }
