@@ -32,8 +32,28 @@ const PLAYERS = 4;
 /** how far a mutation moves a weight: a log-normal step */
 const STEP = 0.25;
 /** a challenger must win more than its share, and by this many points */
-const WIN_SHARE = 1 / PLAYERS + 0.05;
-const MARGIN = 1;
+/** the screen is a screen, not a verdict: it lets through anything that
+ *  read better than the incumbent on the same cards and leaves the deciding
+ *  to the confirmation. A share of games won was asked for here too, and on
+ *  thirty-two games it is a coarse enough statistic to have turned away a
+ *  challenger six points to the good. */
+/** The bar a challenger must clear, in points on the best rival, read on
+ *  the same deals the incumbent played.
+ *
+ *  It used to be read on the raw margin, which no seat at a four-handed
+ *  table ever posts above nought: a seat's points less the best of three
+ *  rivals sits about twelve under by the shape of the statistic alone, so
+ *  asking for one or better asked for a thirteen-point swing and no
+ *  challenger in the whole of the log ever took over. Paired against the
+ *  incumbent on the same cards the figure means what it says. */
+const MARGIN = Number(process.env.MARGIN ?? 0);
+/** how many spreads the winner must clear the bar by before its weights are
+ *  written down. The screen looks at every challenger, so the best of seven
+ *  is flattering on its own; the winner is played again on fresh deals and
+ *  must hold up there. */
+const BOUND = Number(process.env.BOUND ?? 1.645);
+/** the games the winner of a screen is asked to survive before it is kept */
+const CONFIRM = Number(process.env.CONFIRM ?? GAMES * 3);
 /* run from app/: the bundle lives in tools/bots/dist, the sources do not */
 const WEIGHTS_FILE = resolve('src/game/weights.ts');
 const LOG_FILE = resolve('tools/bots/training.log');
@@ -67,9 +87,9 @@ function writeWeights(w: Weights): void {
   writeFileSync(WEIGHTS_FILE, next);
 }
 
-function runChallenger(challenger: Weights, incumbent: Weights, seed: number): Promise<MatchResult> {
+function runChallenger(challenger: Weights, incumbent: Weights, seed: number, games = GAMES): Promise<MatchResult> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { challenger, incumbent, seed } });
+    const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { challenger, incumbent, seed, games } });
     worker.once('message', resolve);
     worker.once('error', reject);
   });
@@ -88,18 +108,35 @@ async function train(): Promise<void> {
     const challengers = Array.from({ length: CHALLENGERS }, () => mutate(incumbent, rand));
     const started = Date.now();
     const results = await Promise.all(challengers.map((c) => runChallenger(c, incumbent, seed)));
+    /* the screen: every challenger on the same deals as every other, read
+       against what the incumbent made of those same deals on its own */
     let best = -1;
     results.forEach((r, k) => {
-      const ok = r.wins / r.games >= WIN_SHARE && r.diff >= MARGIN;
-      log(`gen ${g} challenger ${k + 1}: ${r.wins}/${r.games} wins, diff ${r.diff.toFixed(1)}, canal ${r.canal.toFixed(1)} vs ${r.canalField.toFixed(1)}${ok ? ' ✓' : ''}`);
-      if (ok && (best < 0 || r.diff > results[best].diff)) best = k;
+      const edge = r.edge ?? 0;
+      const ok = edge > MARGIN;
+      log(`gen ${g} challenger ${k + 1}: ${r.wins}/${r.games} wins, ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${(r.edgeSpread ?? 0).toFixed(2)} on the same deals, canal ${r.canal.toFixed(1)} vs ${r.canalField.toFixed(1)}${ok ? ' ✓' : ''}`);
+      if (ok && (best < 0 || edge > (results[best].edge ?? 0))) best = k;
     });
-    if (best >= 0) {
+    if (best < 0) {
+      log(`gen ${g}: nothing came through the screen, the incumbent holds`);
+      log(`gen ${g} took ${Math.round((Date.now() - started) / 1000)} s`);
+      continue;
+    }
+    /* the best of seven is flattering on its own, so it plays again on
+       deals it has not seen and must clear the bar there too */
+    const again = await runChallenger(challengers[best], incumbent, seed + 500000, CONFIRM);
+    const edge = again.edge ?? 0;
+    const spread = again.edgeSpread ?? 0;
+    /* a spread read off two or three deals is not a spread: below eight the
+       confirmation cannot tell anything and says so rather than guessing */
+    const proved = again.pairs >= 8 && edge - BOUND * spread > MARGIN;
+    log(`gen ${g}: challenger ${best + 1} again over ${again.pairs} fresh deals — ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${spread.toFixed(2)}`);
+    if (proved) {
       incumbent = challengers[best];
       writeWeights(incumbent);
       log(`gen ${g}: challenger ${best + 1} takes over — ${JSON.stringify(incumbent)}`);
     } else {
-      log(`gen ${g}: the incumbent holds`);
+      log(`gen ${g}: it did not hold up, the incumbent holds`);
     }
     log(`gen ${g} took ${Math.round((Date.now() - started) / 1000)} s`);
   }
@@ -109,7 +146,7 @@ async function train(): Promise<void> {
 if (isMainThread) {
   void train();
 } else {
-  const { challenger, incumbent, seed } = workerData as { challenger: Weights; incumbent: Weights; seed: number };
-  const result = playMatch({ games: GAMES, players: PLAYERS, seed, subject: challenger, field: incumbent, search: { strength: STRENGTH } });
+  const { challenger, incumbent, seed, games } = workerData as { challenger: Weights; incumbent: Weights; seed: number; games: number };
+  const result = playMatch({ games: games ?? GAMES, players: PLAYERS, seed, subject: challenger, field: incumbent, search: { strength: STRENGTH }, paired: true });
   parentPort!.postMessage(result);
 }
