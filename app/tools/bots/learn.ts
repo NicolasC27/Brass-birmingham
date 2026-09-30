@@ -45,10 +45,16 @@ const STRENGTH = Number(process.env.STRENGTH ?? 0.6);
  *  left unsaid the search caps itself at 300 ms, and every position the
  *  network has ever learned from was reached by a player five times weaker
  *  than the one the app ships. A network cannot outgrow its teacher.
- * */
-const PLAY_BUDGET = Number(process.env.PLAY_BUDGET ?? 300);
+ *
+ *  What a position is worth is not a property of the position: it is what
+ *  the rest of the game makes of it. Written down at 300 ms the label says
+ *  how far ahead a weak player would finish, and the network learns to
+ *  read a board the way a weak player reads it, however many positions it
+ *  is shown. Six hundred is where the dial starts looking a round ahead,
+ *  and the record is worth about twice what it costs. */
+const PLAY_BUDGET = Number(process.env.PLAY_BUDGET ?? 600);
 /** rounds the machines look past their turn while filling the record */
-const PLAY_DEPTH = Number(process.env.PLAY_DEPTH ?? 0) as 0 | 1 | 2;
+const PLAY_DEPTH = Number(process.env.PLAY_DEPTH ?? 1) as 0 | 1 | 2;
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 1));
 const CHECK_GAMES = Number(process.env.CHECK_GAMES ?? 48);
 /** how long the expert thinks on the yardstick: what the app gives it */
@@ -576,6 +582,9 @@ async function yardstick(tag: string, net: string): Promise<void> {
 
 async function main(): Promise<void> {
   const mode = process.argv[2] ?? 'loop';
+  /* the mismatch that used to be silent: a record written by a player the
+     app never fields teaches a reading the app can never use */
+  if (PLAY_BUDGET < YARDSTICK_BUDGET) log(`note: the record is written at ${PLAY_BUDGET} ms and depth ${PLAY_DEPTH}, the expert ships at ${YARDSTICK_BUDGET} ms — the network learns from a weaker player than the one it will serve`);
   const tag = (k: number) => String(Date.now() % 100000 + k);
   if (mode === 'play') await play(tag(0));
   else if (mode === 'fit') netText = writeNet(fitBrain());
