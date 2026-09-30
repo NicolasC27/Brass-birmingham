@@ -17,6 +17,14 @@ const fr: typeof ensetup = {
   houseRules: {
     ariaLabel: "Règles maison",
     heading: "Règles maison",
+    map: {
+      label: "Le plateau",
+      ariaLabel: "Le plateau",
+      midlands: "Midlands",
+      veneto: "Vénétie",
+      midlandsHint: "Birmingham et le Pays noir : les canaux de 1770, les rails de 1830.",
+      venetoHint: "De la lagune aux Dolomites : le Brenta, la Piave, et la ligne de Vérone à Venise.",
+    },
     eraLength: {
       label: "Durée de la partie",
       hint: "Une partie courte se termine et est comptée après l'ère canal.",

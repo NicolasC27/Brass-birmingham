@@ -17,6 +17,14 @@ const de: typeof ensetup = {
   houseRules: {
     ariaLabel: "Hausregeln",
     heading: "Hausregeln",
+    map: {
+      label: "Das Spielbrett",
+      ariaLabel: "Das Spielbrett",
+      midlands: "Midlands",
+      veneto: "Venetien",
+      midlandsHint: "Birmingham und das Black Country: die Kanäle von 1770, die Schienen von 1830.",
+      venetoHint: "Von der Lagune zu den Dolomiten: die Brenta, die Piave und die Linie von Verona nach Venedig.",
+    },
     eraLength: {
       label: "Spieldauer",
       hint: "Eine kurze Partie endet und wird nach der Kanalzeit gewertet.",

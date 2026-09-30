@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { motion } from "framer-motion";
 import { BadgeCheck, ArrowUpRight } from "lucide-react";
 import { useT } from "@/i18n";
+import { BOARD_IDS, DEFAULT_BOARD } from "@/game/boards";
 import Segmented from "./Segmented";
 import Tip from "./Tip";
 import type { EraLength, MarketTemper, SetupOptions } from "./constants";
@@ -63,6 +64,20 @@ export default function HouseRules({
       </header>
 
       <div className="mt-2">
+        {BOARD_IDS.length > 1 && (
+          <RuleRow
+            index={0}
+            label={t("setup.houseRules.map.label")}
+            hint={t(`setup.houseRules.map.${options.map ?? DEFAULT_BOARD}Hint`)}
+          >
+            <Segmented<string>
+              ariaLabel={t("setup.houseRules.map.ariaLabel")}
+              value={options.map ?? DEFAULT_BOARD}
+              onChange={(map) => onChange({ map })}
+              options={BOARD_IDS.map((id) => ({ value: id, label: t(`setup.houseRules.map.${id}`) }))}
+            />
+          </RuleRow>
+        )}
         <RuleRow
           index={0}
           label={t("setup.houseRules.eraLength.label")}

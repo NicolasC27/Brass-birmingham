@@ -17,6 +17,14 @@ const es: typeof ensetup = {
   houseRules: {
     ariaLabel: "Reglas de la casa",
     heading: "Reglas de la casa",
+    map: {
+      label: "El tablero",
+      ariaLabel: "El tablero",
+      midlands: "Midlands",
+      veneto: "Véneto",
+      midlandsHint: "Birmingham y el País Negro: los canales de 1770, los raíles de 1830.",
+      venetoHint: "De la laguna a los Dolomitas: el Brenta, el Piave y la línea de Verona a Venecia.",
+    },
     eraLength: {
       label: "Duración de la partida",
       hint: "Una partida corta termina y se puntúa tras la era del canal.",

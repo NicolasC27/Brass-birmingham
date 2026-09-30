@@ -29,6 +29,32 @@ const BY_ID: Record<string, string> = {
   redditch: '#6E4668', // mauve
   'farm-n': '#B8A678', // crème (brasserie indépendante)
   'farm-s': '#B8A678',
+
+  /* La Vénétie — les provinces, du nord au sud : les Dolomites en bleu
+     d'ardoise, la Marche trévisane en vert, le piémont vicentin en ambre,
+     la lagune en pourpre, la basse plaine en rouge, les cantines en crème */
+  belluno: '#32497A',
+  vittorio: '#32497A',
+  bassano: '#3F7A6B',
+  schio: '#3F7A6B',
+  conegliano: '#2F5E50',
+  thiene: '#BF9540',
+  castelfranco: '#2F5E50',
+  treviso: '#2F5E50',
+  vicenza: '#BF9540',
+  arzignano: '#BF9540',
+  portogruaro: '#6E4668',
+  verona: '#BF9540',
+  mestre: '#6E4668',
+  padova: '#6E4668',
+  venezia: '#6E4668',
+  este: '#7C2E2A',
+  monselice: '#7C2E2A',
+  legnago: '#9E3B30',
+  chioggia: '#7C2E2A',
+  rovigo: '#7C2E2A',
+  'cantina-n': '#B8A678',
+  'cantina-s': '#B8A678',
 };
 
 /** muted banner colour identifying a town (physical board colour) */

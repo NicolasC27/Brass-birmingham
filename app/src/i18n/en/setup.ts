@@ -15,6 +15,14 @@ export default {
   houseRules: {
     ariaLabel: "House rules",
     heading: "House Rules",
+    map: {
+      label: "The board",
+      ariaLabel: "The board",
+      midlands: "Midlands",
+      veneto: "Veneto",
+      midlandsHint: "Birmingham and the Black Country: the canals of 1770, the rails of 1830.",
+      venetoHint: "From the lagoon to the Dolomites: the Brenta, the Piave, and the line from Verona to Venice.",
+    },
     eraLength: {
       label: "Era length",
       hint: "A short game ends and scores after the Canal Era.",
