@@ -17,6 +17,10 @@ const platform = {
     ranking: 'Clasificación',
     discord: 'Discord',
   },
+  masthead: {
+    motto: 'Canales, carbón y hierro — diario de los Midlands',
+    edition: 'Edición del {date}',
+  },
   status: {
     playersOnline: '{count} jugadores en línea',
     playing: '{count} mesas en juego',
@@ -136,6 +140,14 @@ const platform = {
     discardConfirm: 'Borrar la partida',
     eraCanal: 'Era del canal',
     eraRail: 'Era del ferrocarril',
+    departures: {
+      table: 'Mesa',
+      seats: 'Asientos',
+      state: 'Estado',
+      none: 'Ninguna mesa en el registro — abra la primera.',
+      queueNone: 'No espera en ninguna cola.',
+      enter: 'Entrar en una cola →',
+    },
     board: {
       title: 'TABLÓN DE MESAS',
       counts: '{open} abiertas · {live} en curso',

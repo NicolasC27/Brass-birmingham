@@ -17,6 +17,10 @@ const platform = {
     ranking: 'Classement',
     discord: 'Discord',
   },
+  masthead: {
+    motto: 'Canaux, charbon & fer — journal des Midlands',
+    edition: 'Édition du {date}',
+  },
   status: {
     playersOnline: '{count} joueurs en ligne',
     playing: '{count} tables en jeu',
@@ -136,6 +140,14 @@ const platform = {
     discardConfirm: 'Effacer la partie',
     eraCanal: 'Ère du canal',
     eraRail: 'Ère du rail',
+    departures: {
+      table: 'Table',
+      seats: 'Sièges',
+      state: 'État',
+      none: 'Aucune table au registre — ouvrez la première.',
+      queueNone: 'Vous n’attendez dans aucune file.',
+      enter: 'Entrer dans une file →',
+    },
     board: {
       title: 'TABLEAU DES TABLES',
       counts: '{open} ouvertes · {live} en cours',

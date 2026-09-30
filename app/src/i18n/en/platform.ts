@@ -17,6 +17,10 @@ const platform = {
     ranking: 'Ranking',
     discord: 'Discord',
   },
+  masthead: {
+    motto: 'Canals, coal & iron — a journal of the Midlands',
+    edition: 'Edition of {date}',
+  },
   status: {
     playersOnline: '{count} players online',
     playing: '{count} tables in play',
@@ -136,6 +140,14 @@ const platform = {
     discardConfirm: 'Erase the game',
     eraCanal: 'Canal Era',
     eraRail: 'Rail Era',
+    departures: {
+      table: 'Table',
+      seats: 'Seats',
+      state: 'State',
+      none: 'No table in the register yet — open the first.',
+      queueNone: 'You wait in no queue.',
+      enter: 'Enter a queue →',
+    },
     board: {
       title: 'TABLE BOARD',
       counts: '{open} open · {live} live',

@@ -19,6 +19,10 @@ const platform: typeof enPlatform = {
     ranking: 'Rangliste',
     discord: 'Discord',
   },
+  masthead: {
+    motto: 'Kanäle, Kohle & Eisen — Journal der Midlands',
+    edition: 'Ausgabe vom {date}',
+  },
   status: {
     playersOnline: '{count} Spieler online',
     playing: '{count} Tische im Spiel',
@@ -138,6 +142,14 @@ const platform: typeof enPlatform = {
     discardConfirm: 'Partie löschen',
     eraCanal: 'Kanalzeit',
     eraRail: 'Eisenbahnzeit',
+    departures: {
+      table: 'Tisch',
+      seats: 'Plätze',
+      state: 'Stand',
+      none: 'Noch kein Tisch im Register — eröffnen Sie den ersten.',
+      queueNone: 'Sie warten in keiner Schlange.',
+      enter: 'In eine Schlange treten →',
+    },
     board: {
       title: 'TISCHTAFEL',
       counts: '{open} offen · {live} laufen',

@@ -1,7 +1,7 @@
 import { Bell, Briefcase, Coins, LayoutGrid, Moon, Play, Plus, Sun, User } from 'lucide-react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router';
 import { cn } from '@/lib/utils';
-import { LANGS, setLang, useLang, useT } from '@/i18n';
+import { LANGS, localeOf, setLang, useLang, useT } from '@/i18n';
 import { useDesk, useSession } from '@/online/session';
 import { rankOf } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
@@ -10,27 +10,20 @@ import Button from './Button';
 import RankBadge from './RankBadge';
 import { usePresence } from './presence';
 
-/** the club's Discord, when the build names one (VITE_DISCORD_URL); the header shows it */
+/** the club's Discord, when the build names one (VITE_DISCORD_URL); the rail shows it */
 const DISCORD_URL = String(import.meta.env.VITE_DISCORD_URL ?? '').trim();
 
 /* ------------------------------------------------------------------ */
-/* PlatformShell — variante « platform » du shell (design.md §6.2).    */
-/* TopBar 56px + StatusStrip 32px (≥900px) + contenu + footer 48px +   */
-/* BottomTabBar mobile (<900px). Les routes /game gardent l'ancien     */
-/* shell (voir Layout.tsx) — rien ici ne s'y monte.                    */
+/* PlatformShell — the site read as a journal of the Midlands. A       */
+/* masthead (the ear line with the edition and the day's figures, the  */
+/* wordmark, the motto) that scrolls away, a rail of headings that     */
+/* stays at the top with the engine running under it, the page, and a */
+/* colophon. Routes under /game keep the old shell (Layout.tsx).       */
 /* ------------------------------------------------------------------ */
-
-const navLink = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    'relative whitespace-nowrap font-ui text-[11px] font-medium uppercase tracking-[0.16em] pb-1 transition-colors duration-150',
-    isActive
-      ? 'text-paper-100 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-brass-300'
-      : 'text-iron-400 hover:text-paper-100',
-  );
 
 /* ------------------------------ The rail ------------------------------ */
 
-/* The hairline under the top bar is a rail. Each time the page changes an
+/* The rule under the headings is a rail. Each time the page changes an
    engine crosses it, left to right, and is gone — an 1830s locomotive and
    its tender, drawn as one silhouette, smoke puffing from the chimney.
    Keyed on the path so every arrival gets its own run. */
@@ -51,7 +44,7 @@ function RailEngine() {
         <rect x="17" y="7" width="20" height="7" rx="3" />
         <rect x="32" y="1" width="3" height="7" />
         <rect x="25" y="4.5" width="4" height="3" rx="1.5" />
-        {/* driving wheel and the small one at the front */}
+        {/* driving wheel and the small ones at the front */}
         <circle cx="16" cy="14" r="3.4" />
         <circle cx="16" cy="14" r="1.4" fill="rgb(var(--lacquer-950, 10 14 12))" />
         <circle cx="30" cy="15.2" r="2.2" />
@@ -63,7 +56,7 @@ function RailEngine() {
   );
 }
 
-/* ------------------------------ TopBar ------------------------------ */
+/* ---------------------------- The ear line ---------------------------- */
 
 function PlayerToken() {
   const t = useT();
@@ -75,7 +68,7 @@ function PlayerToken() {
 
   if (!session) {
     return (
-      <Button variant="ghost" className="!h-8" to="/account">
+      <Button variant="ghost" className="!h-7 px-3 !text-[10.5px]" to="/account">
         {t('platform.action.signIn')}
       </Button>
     );
@@ -83,17 +76,16 @@ function PlayerToken() {
   return (
     <Link
       to="/profile"
-      className="flex h-8 items-center gap-2 rounded-full border border-brass-hairline-strong bg-enamel-850 py-0.5 pl-0.5 pr-3 transition-colors duration-150 hover:border-brass-300"
+      className="flex h-7 items-center gap-2 rounded-full border border-brass-hairline-strong bg-enamel-850 py-0.5 pl-0.5 pr-2.5 transition-colors duration-150 hover:border-brass-300"
     >
-      <img src={`/${wallet.equipped.avatar}.svg`} alt="" className="h-[26px] w-[26px] rounded-full" />
-      <span className="max-w-[110px] truncate font-ui text-[13px] font-medium text-paper-100">{session.name}</span>
-      <RankBadge tier={rank.tier} division={rank.division} size={16} compact />
+      <img src={`/${wallet.equipped.avatar}.svg`} alt="" className="h-[22px] w-[22px] rounded-full" />
+      <span className="max-w-[110px] truncate font-ui text-[12px] font-medium text-paper-100">{session.name}</span>
+      <RankBadge tier={rank.tier} division={rank.division} size={14} compact />
     </Link>
   );
 }
 
-/* puce bourse (comptoir) — les guinées de la bourse tenue par l'office, → /comptoir.
-   Sans compte il n'y a pas de bourse : la puce ne s'affiche pas. */
+/* the purse held by the office, → /comptoir. No account, no purse: nothing shows. */
 function WalletChip() {
   const t = useT();
   const session = useSession();
@@ -104,27 +96,25 @@ function WalletChip() {
     <Link
       to="/comptoir"
       aria-label={t('platform.comptoir.walletAria', { count: guineas })}
-      className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-brass-hairline-strong bg-enamel-850 px-3 transition-colors duration-150 hover:border-brass-300"
+      className="flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-brass-hairline-strong bg-enamel-850 px-2.5 transition-colors duration-150 hover:border-brass-300"
     >
-      <Coins size={14} aria-hidden className="text-brass-300" />
-      <span className="data-text tnums text-[12px] text-paper-100">{guineas}</span>
+      <Coins size={13} aria-hidden className="text-brass-300" />
+      <span className="data-text tnums text-[11.5px] text-paper-100">{guineas}</span>
     </Link>
   );
 }
+
+const earButton =
+  'relative flex h-7 w-7 items-center justify-center rounded-full border border-brass-hairline-strong text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100';
 
 function InvitationBell() {
   const t = useT();
   const session = useSession();
   const desk = useDesk();
   const count = session ? (desk?.invitations.length ?? 0) : 0;
-
   return (
-    <Link
-      to="/desk"
-      aria-label={t('platform.nav.invitations')}
-      className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-brass-hairline-strong text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100"
-    >
-      <Bell size={15} aria-hidden />
+    <Link to="/desk" aria-label={t('platform.nav.invitations')} className={earButton}>
+      <Bell size={13} aria-hidden />
       {count > 0 && (
         <span className="animate-pulse-signal absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signal-400 px-1 font-ui text-[10px] font-semibold text-[rgb(var(--ink-on-signal))] tnums">
           {count}
@@ -134,154 +124,180 @@ function InvitationBell() {
   );
 }
 
-/* Bascule thème clair/sombre « registre de jour » (src/platform/theme.ts) */
+/* the day and night registers (src/platform/theme.ts) */
 function ThemeToggle() {
   const t = useT();
   const theme = useTheme();
   const Icon = theme === 'dark' ? Sun : Moon;
   return (
-    <button
-      type="button"
-      onClick={toggleTheme}
-      aria-label={t(theme === 'dark' ? 'platform.theme.toLight' : 'platform.theme.toDark')}
-      className="flex h-8 w-8 items-center justify-center rounded-lg border border-brass-hairline-strong text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100"
-    >
-      <Icon size={15} aria-hidden />
+    <button type="button" onClick={toggleTheme} aria-label={t(theme === 'dark' ? 'platform.theme.toLight' : 'platform.theme.toDark')} className={earButton}>
+      <Icon size={13} aria-hidden />
     </button>
   );
 }
 
-function TopBar() {
+/* the day's figures, as a journal prints them under its title */
+function Figures() {
   const t = useT();
+  const p = usePresence();
+  if (!p.online) {
+    return (
+      <span className="flex items-center gap-2">
+        <span className="h-1.5 w-1.5 rounded-full bg-iron-600" aria-hidden />
+        {t('platform.status.localMode')}
+      </span>
+    );
+  }
   return (
-    <header className="sticky top-0 z-50 h-[52px] overflow-x-clip border-b border-brass-hairline-strong bg-[rgb(var(--lacquer-950)/.88)] backdrop-blur-[12px]">
-      <div className="mx-auto flex h-full max-w-[1240px] items-center gap-4 px-4 sm:px-8">
-        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Blackrail">
-          <img src="/logo-blackrail.svg" alt="" className="h-5 w-5" />
-          <span className="font-fraunces text-[14px] font-medium uppercase tracking-[0.22em] text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
-            Blackrail
+    <>
+      <Link to="/online" className="flex items-center gap-2 transition-colors hover:text-paper-100">
+        <span className="animate-presence-dot h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
+        <span className="tnums">{t('platform.status.playersOnline', { count: p.playersOnline })}</span>
+      </Link>
+      <span aria-hidden>·</span>
+      <Link to="/online#tables" className="tnums transition-colors hover:text-paper-100">
+        {t('platform.status.playing', { count: p.playing })}
+      </Link>
+      <span aria-hidden className="hidden min-[1100px]:inline">·</span>
+      <Link to="/online#file-normale" className="tnums hidden transition-colors hover:text-paper-100 min-[1100px]:inline">
+        {t('platform.status.normalQueue', { count: p.normalQueue.count, minutes: p.normalQueue.estimateMin })}
+      </Link>
+    </>
+  );
+}
+
+/* ------------------------------ Masthead ------------------------------ */
+
+function Masthead() {
+  const t = useT();
+  const lang = useLang();
+  const date = new Date().toLocaleDateString(localeOf(lang), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  return (
+    <header className="relative border-b border-[var(--gz-ink-faint)]">
+      {/* the ear line: the edition on the left, the figures, the tools on the right */}
+      <div className="border-b border-[var(--gz-ink-faint)]">
+        <div className="mx-auto flex h-9 max-w-[1240px] items-center gap-4 px-4 font-mono text-[11px] text-iron-400 sm:px-8">
+          <span className="hidden whitespace-nowrap min-[900px]:inline">{t('platform.masthead.edition', { date })}</span>
+          <span aria-hidden className="hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
+          <span className="flex min-w-0 items-center gap-2 truncate">
+            <Figures />
           </span>
-        </Link>
-
-        {/* in the flow between the wordmark and the chips, centred in what is left:
-            it can never slide under the chips, whatever the viewport */}
-        <nav aria-label="Primary" className="hidden min-w-0 flex-1 items-center justify-center gap-5 min-[900px]:flex min-[1200px]:gap-7">
-          <NavLink to="/online" className={navLink}>
-            {t('platform.nav.play')}
-          </NavLink>
-          <NavLink to="/comptoir" className={navLink}>
-            {t('platform.nav.comptoir')}
-          </NavLink>
-          <NavLink to="/online#tables" className={() => navLink({ isActive: false })}>
-            {t('platform.nav.tables')}
-          </NavLink>
-          <NavLink to="/classement" className={navLink}>
-            {t('platform.nav.ranking')}
-          </NavLink>
-          {DISCORD_URL && (
-            <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className={navLink({ isActive: false })}>
-              {t('platform.nav.discord')}
-            </a>
-          )}
-          <NavLink to="/desk" className={navLink}>
-            {t('platform.nav.desk')}
-          </NavLink>
-          <NavLink to="/rules" className={navLink}>
-            {t('platform.nav.rules')}
-          </NavLink>
-        </nav>
-
-        <div className="ml-auto flex shrink-0 items-center gap-3">
-          <WalletChip />
-          <InvitationBell />
-          <ThemeToggle />
-          <span aria-hidden className="hidden h-5 w-px bg-brass-hairline-strong min-[900px]:block" />
-          <PlayerToken />
-          <Button variant="primary" className="!h-8 hidden min-[1100px]:inline-flex" to="/setup" icon={<Plus size={16} aria-hidden />}>
-            {t('platform.nav.createTable')}
-          </Button>
+          <span className="ml-auto flex shrink-0 items-center gap-2">
+            <WalletChip />
+            <InvitationBell />
+            <ThemeToggle />
+            <span aria-hidden className="mx-1 hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
+            <PlayerToken />
+          </span>
         </div>
       </div>
-      <RailEngine />
+
+      {/* the title, between its marks, and the motto */}
+      <div className="mx-auto flex max-w-[1240px] flex-col items-center px-4 pb-4 pt-5 text-center sm:px-8 min-[900px]:pb-5 min-[900px]:pt-7">
+        <Link to="/" aria-label="Blackrail" className="flex items-center gap-5 min-[900px]:gap-8">
+          <img src="/logo-blackrail.svg" alt="" className="hidden h-6 w-6 opacity-80 min-[600px]:block" />
+          <span className="gz-wordmark">Blackrail</span>
+          <img src="/logo-blackrail.svg" alt="" className="hidden h-6 w-6 opacity-80 min-[600px]:block" />
+        </Link>
+        <p className="mt-3 font-fell text-[12px] uppercase tracking-[0.22em] text-paper-300 min-[900px]:text-[13px]">{t('platform.masthead.motto')}</p>
+      </div>
     </header>
   );
 }
 
-/* ---------------------------- StatusStrip ---------------------------- */
+/* ------------------------------ Nav rail ------------------------------ */
 
-function StatusStrip() {
+const rail = ({ isActive }: { isActive: boolean }) => cn('gz-nav-link', isActive && 'is-active');
+
+function NavRail() {
   const t = useT();
-  const p = usePresence();
-
   return (
-    <div className="hidden h-7 border-b border-brass-hairline bg-lacquer-950 min-[900px]:block">
-      <div className="mx-auto flex h-full max-w-[1240px] items-center gap-2 px-8 font-mono text-[11px] text-iron-400">
-        {!p.online ? (
-          <span className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-iron-600" aria-hidden />
-            {t('platform.status.localMode')}
-          </span>
-        ) : (
-          <>
-            <Link to="/online" className="flex items-center gap-2 transition-colors hover:text-paper-100">
-              <span className="animate-presence-dot h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
-              <span className="tnums">{t('platform.status.playersOnline', { count: p.playersOnline })}</span>
-            </Link>
-            <span aria-hidden>·</span>
-            <Link to="/online#tables" className="transition-colors hover:text-paper-100 tnums">
-              {t('platform.status.playing', { count: p.playing })}
-            </Link>
-            <span aria-hidden>·</span>
-            <Link to="/online#file-normale" className="transition-colors hover:text-paper-100 tnums">
-              {t('platform.status.normalQueue', { count: p.normalQueue.count, minutes: p.normalQueue.estimateMin })}
-            </Link>
-            <span aria-hidden>·</span>
-            <Link to="/online#file-classee" className="transition-colors hover:text-paper-100 tnums">
-              {t('platform.status.rankedQueue', { count: p.rankedQueue.count })}
-            </Link>
-          </>
-        )}
+    <div className="sticky top-0 z-50 hidden bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block">
+      <div className="gz-rule-double mx-auto max-w-[1240px]" aria-hidden />
+      <div className="relative mx-auto max-w-[1240px] px-8">
+        <nav aria-label="Primary" className="flex items-center justify-center gap-7 min-[1100px]:gap-10">
+          <NavLink to="/online" className={rail}>
+            {t('platform.nav.play')}
+          </NavLink>
+          <NavLink to="/comptoir" className={rail}>
+            {t('platform.nav.comptoir')}
+          </NavLink>
+          <NavLink to="/online#tables" className={() => rail({ isActive: false })}>
+            {t('platform.nav.tables')}
+          </NavLink>
+          <NavLink to="/classement" className={rail}>
+            {t('platform.nav.ranking')}
+          </NavLink>
+          {DISCORD_URL && (
+            <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className={rail({ isActive: false })}>
+              {t('platform.nav.discord')}
+            </a>
+          )}
+          <NavLink to="/desk" className={rail}>
+            {t('platform.nav.desk')}
+          </NavLink>
+          <NavLink to="/rules" className={rail}>
+            {t('platform.nav.rules')}
+          </NavLink>
+        </nav>
+        <Link
+          to="/setup"
+          className="absolute right-8 top-1/2 hidden -translate-y-1/2 items-center gap-1.5 font-ui text-[10.5px] font-semibold uppercase tracking-[0.16em] text-brass-300 transition-colors hover:text-paper-100 min-[1200px]:inline-flex"
+        >
+          <Plus size={13} aria-hidden />
+          {t('platform.nav.createTable')}
+        </Link>
+      </div>
+      <div className="relative mx-auto max-w-[1240px]">
+        <div className="h-px bg-[var(--gz-ink)]" aria-hidden />
+        <RailEngine />
       </div>
     </div>
   );
 }
 
-/* ------------------------- Footer compact 48px ------------------------- */
+/* ------------------------------ Colophon ------------------------------ */
 
-function CompactFooter() {
+function Colophon() {
   const t = useT();
   const lang = useLang();
+  const link = 'micro-label text-iron-400 transition-colors hover:text-paper-100';
   return (
-    <footer className="flex h-11 items-center border-t border-brass-hairline bg-lacquer-950">
-      <div className="mx-auto flex w-full max-w-[1240px] items-center gap-5 px-4 sm:px-8">
-        <span className="micro-label text-iron-400">{t('platform.footer.copyright')}</span>
-        <Link to="/rules" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
-          {t('platform.footer.rules')}
-        </Link>
-        <Link to="/account" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
-          {t('platform.footer.account')}
-        </Link>
-        <Link to="/legal" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
-          {t('platform.footer.legal')}
-        </Link>
-        <Link to="/legal#privacy" className="micro-label text-iron-400 transition-colors hover:text-paper-100">
-          {t('platform.footer.privacy')}
-        </Link>
-        <span className="flex-1" />
-        <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-1">
-          {LANGS.map((l) => (
-            <button
-              key={l}
-              type="button"
-              aria-pressed={lang === l}
-              onClick={() => setLang(l)}
-              className={cn('micro-label transition-colors', lang === l ? 'text-brass-300' : 'text-iron-600 hover:text-iron-400')}
-            >
-              {l.toUpperCase()}
-            </button>
-          ))}
-        </span>
-        <span className="micro-label text-iron-600">{t('platform.footer.version')}</span>
+    <footer className="mt-10 pb-8 pt-6">
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+        <div className="gz-rule-double" aria-hidden />
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <span className="micro-label text-iron-400">{t('platform.footer.copyright')}</span>
+          <Link to="/rules" className={link}>
+            {t('platform.footer.rules')}
+          </Link>
+          <Link to="/account" className={link}>
+            {t('platform.footer.account')}
+          </Link>
+          <Link to="/legal" className={link}>
+            {t('platform.footer.legal')}
+          </Link>
+          <Link to="/legal#privacy" className={link}>
+            {t('platform.footer.privacy')}
+          </Link>
+        </div>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-2">
+            {LANGS.map((l) => (
+              <button
+                key={l}
+                type="button"
+                aria-pressed={lang === l}
+                onClick={() => setLang(l)}
+                className={cn('micro-label transition-colors', lang === l ? 'text-brass-300' : 'text-iron-600 hover:text-iron-400')}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </span>
+          <span aria-hidden className="h-3 w-px bg-[var(--gz-ink-soft)]" />
+          <span className="micro-label text-iron-600">{t('platform.footer.version')}</span>
+        </div>
       </div>
     </footer>
   );
@@ -328,12 +344,12 @@ export default function PlatformShell() {
   return (
     <div className="platform-root relative flex min-h-[100dvh] flex-col bg-lacquer-900 font-ui text-paper-100">
       <div aria-hidden className="tex-lacquer pointer-events-none fixed inset-0 opacity-60" />
-      <TopBar />
-      <StatusStrip />
+      <Masthead />
+      <NavRail />
       <main className="relative flex-1 pb-[60px] min-[900px]:pb-0">
         <Outlet />
       </main>
-      <CompactFooter />
+      <Colophon />
       <BottomTabBar />
     </div>
   );
