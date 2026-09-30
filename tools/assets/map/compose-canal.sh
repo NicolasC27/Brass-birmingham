@@ -123,6 +123,18 @@ open(f'{t}/roofs.txt', 'w').write('\n'.join(roofs))
 open(f'{t}/basin.txt', 'w').write('\n'.join(f"circle {m['x'] + bx},{m['y'] + by} {m['x'] + bx + 70},{m['y'] + by}" for m in g['merchants']))
 open(f'{t}/edge.txt', 'w').write('\n'.join(f"circle {m['x'] + bx},{m['y'] + by} {m['x'] + bx + 62},{m['y'] + by}" for m in g['merchants']))
 PY
+# 3b. a shelf cut for each town. On a painting whose relief is its own — a
+#     terrain model, a photograph — nothing procedural can level it, so the
+#     painting itself is flattened under each place: the same colours, their
+#     modelling blurred away, laid back through a soft disc. A village then
+#     stands on a cut pad rather than across a hillside. PADS=1 turns it on.
+if [[ ${PADS:-0} == 1 ]]; then
+  magick -size ${FW}x${FH} xc:black -fill white -stroke none -draw "$(cat "$T/flat.txt")" -blur 0x${PAD_FADE:-46} "$T/pads-mask.png"
+  magick \( "$T/graded.png" -blur 0x${PAD_BLUR:-26} -modulate ${PAD_TONE:-104,94} \) "$T/pads-mask.png" -alpha off -compose CopyOpacity -composite "$T/pads.png"
+  magick "$T/graded.png" "$T/pads.png" -compose over -composite "$T/padded.png"
+  mv "$T/padded.png" "$T/graded.png"
+fi
+
 # 4. canal beds: a dug channel with earthen banks, a towpath on one side,
 #    still water with a lighter thread down the middle and faint ripples
 magick -size ${FW}x${FH} xc:none -fill none \
@@ -156,6 +168,7 @@ magick -size ${FW}x${FH} xc:none -stroke none -fill "$BASIN" -draw "$(cat "$T/ba
   -fill none -stroke "$RIM" -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
 magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/beds.png" -compose over -composite \
   "$T/lanes.png" -compose over -composite "$T/patch.png" -compose over -composite "$T/village.png" -compose over -composite "$T/basin.png" -compose over -composite "$T/land.png"
+
 # 6b. the lie of the land: a height field of our own making, smooth and
 #     seeded, lit from over the reader's left shoulder and laid on as light
 #     rather than paint — the tiles carry their light from the same side, so
