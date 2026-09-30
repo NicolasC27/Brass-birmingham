@@ -22,6 +22,7 @@ Coffre de notes sur le cerveau des bots : comment ils choisissent un coup, comme
 16. [[16 L'état des lieux]] — le chiffre officiel, ce qui a été gagné, et les six pistes mortes
 17. [[17 La chaîne qui ne paie pas]] — l'hypothèse centrale du 23 septembre, construite, mesurée, réfutée
 18. [[18 La statistique qui ne valait jamais zéro]] — le biais de −12 qui rendait trois portes muettes, et les quatre pièges voisins
+19. [[19 La force du professeur]] — dix points pour la même quantité de positions, selon qui a joué les parties
 
 ## Repères
 
