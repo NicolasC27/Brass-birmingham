@@ -90,12 +90,34 @@ function deciles(sample, p) {
   return bins.map((b, i) => `${i * 10}-${i * 10 + 10}%: ${b.n ? `${(100 * (b.said / b.n)).toFixed(1)} said, ${(100 * (b.won / b.n)).toFixed(1)} won, ${b.n} rows` : '—'}`);
 }
 
+/* The scales in force, read out of the source rather than written in here.
+   They were written in here once, and drifted: this reported a long judge
+   starting from a width of seven while the code had been on 5.2 for
+   months, so the "was" it printed belonged to nobody and the fit could not
+   be told to beat what is actually shipped. */
+function living(name) {
+  const src = readFileSync('src/game/analysis.ts', 'utf8');
+  const at = src.indexOf(`export const ${name}`);
+  if (at < 0) throw new Error(`${name} is not in src/game/analysis.ts`);
+  const line = src.slice(at, src.indexOf(';', at));
+  const of = (key) => {
+    const m = line.match(new RegExp(`${key}:\\s*(-?[0-9.]+)`));
+    if (!m) throw new Error(`${name} has no ${key}: ${line}`);
+    return Number(m[1]);
+  };
+  return [of('width'), of('widen'), of('rivals')];
+}
+
+const SHORT = living('SHORT_SCALE');
+const LONG = living('LONG_JUDGE');
+const DEEP = living('DEEP_JUDGE');
+
 const judges = {
-  'SHORT_SCALE (the table as it stands)': { pick: (r) => [r.edge], start: [4.5, 2, 0.7] },
-  'LONG_JUDGE (five moves on)': { pick: (r) => r.long, start: [7, 0.5, 0.5] },
-  'LONG_JUDGE, its first pass alone': { pick: (r) => r.long?.slice(0, 1), start: [7, 0.5, 0.5] },
-  'DEEP_JUDGE (ten moves on)': { pick: (r) => r.deep, start: [6.5, 0.5, 0.4] },
-  'DEEP_JUDGE, its first pass alone': { pick: (r) => r.deep?.slice(0, 1), start: [6.5, 0.5, 0.4] },
+  'SHORT_SCALE (the table as it stands)': { pick: (r) => [r.edge], start: SHORT },
+  'LONG_JUDGE (five moves on)': { pick: (r) => r.long, start: LONG },
+  'LONG_JUDGE, its first pass alone': { pick: (r) => r.long?.slice(0, 1), start: LONG },
+  'DEEP_JUDGE (ten moves on)': { pick: (r) => r.deep, start: DEEP },
+  'DEEP_JUDGE, its first pass alone': { pick: (r) => r.deep?.slice(0, 1), start: DEEP },
 };
 
 for (const [name, { pick, start }] of Object.entries(judges)) {
