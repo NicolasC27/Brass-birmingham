@@ -22,6 +22,18 @@ DIM=${DIM:-72} FADE=${FADE:-30}
 # sheet under engraved tiles. Painted tiles with their own light want a dark
 # ground instead — around TONE=62,70 — or they read as holes rather than lamps.
 TONE=${TONE:-100,92}
+# Ink made for a pale sheet drowns on a dark ground. LIT=1 swaps in a lighter
+# set — waters, lanes, village grounds, basin rims — so the geometry still
+# reads when the painting has been graded down for painted tiles.
+if [[ ${LIT:-0} == 1 ]]; then
+  W_DEEP='rgba(96,150,146,0.85)' W_SHEEN='rgba(150,200,196,0.55)' W_THREAD='rgba(238,248,242,0.55)'
+  TOWPATH='rgba(226,208,162,0.55)' LANE_UNDER='rgba(18,14,10,0.34)' LANE_OVER='rgba(222,206,166,0.52)'
+  PATCH='rgba(166,146,112,0.45)' RIM='rgba(228,216,182,0.70)' BASIN='rgba(62,104,100,0.80)'
+else
+  W_DEEP='rgba(34,62,60,0.72)' W_SHEEN='rgba(78,122,118,0.42)' W_THREAD='rgba(230,240,230,0.28)'
+  TOWPATH='rgba(214,196,150,0.42)' LANE_UNDER='rgba(70,56,38,0.28)' LANE_OVER='rgba(206,186,140,0.34)'
+  PATCH='rgba(90,72,50,0.6)' RIM='rgba(210,196,160,0.5)' BASIN='rgba(34,62,60,0.8)'
+fi
 FW=$((WW + 2 * BX)) FH=$((WH + 2 * BY))
 # 0. a painting smaller than the world is brought up to cover it (a Midjourney
 #    2× upscale is 2912×1632, a tenth short), so nothing mirrored or blurred
@@ -91,18 +103,18 @@ PY
 magick -size ${FW}x${FH} xc:none -fill none \
   -stroke 'rgba(60,50,30,0.22)' -strokewidth 30 -draw "$(cat "$T/canal.txt")" \
   -stroke 'rgba(22,30,20,0.55)' -strokewidth 20 -draw "$(cat "$T/canal.txt")" \
-  -stroke 'rgba(34,62,60,0.72)' -strokewidth 11 -draw "$(cat "$T/canal.txt")" \
-  -stroke 'rgba(78,122,118,0.42)' -strokewidth 5 -draw "$(cat "$T/canal.txt")" \
-  -stroke 'rgba(230,240,230,0.28)' -strokewidth 1.4 -draw "stroke-dasharray 3 26 $(cat "$T/canal.txt")" \
-  -stroke 'rgba(214,196,150,0.42)' -strokewidth 2.2 -draw "stroke-dasharray 12 10 $(cat "$T/towpath.txt")" \
+  -stroke "$W_DEEP" -strokewidth 11 -draw "$(cat "$T/canal.txt")" \
+  -stroke "$W_SHEEN" -strokewidth 5 -draw "$(cat "$T/canal.txt")" \
+  -stroke "$W_THREAD" -strokewidth 1.4 -draw "stroke-dasharray 3 26 $(cat "$T/canal.txt")" \
+  -stroke "$TOWPATH" -strokewidth 2.2 -draw "stroke-dasharray 12 10 $(cat "$T/towpath.txt")" \
   "$T/beds.png"
 # 5. rail-only lines: cart roads today, surveyed for rails tomorrow
 magick -size ${FW}x${FH} xc:none -fill none \
-  -stroke 'rgba(70,56,38,0.28)' -strokewidth 7 -draw "$(cat "$T/road.txt")" \
-  -stroke 'rgba(206,186,140,0.34)' -strokewidth 3 -draw "$(cat "$T/road.txt")" \
+  -stroke "$LANE_UNDER" -strokewidth 7 -draw "$(cat "$T/road.txt")" \
+  -stroke "$LANE_OVER" -strokewidth 3 -draw "$(cat "$T/road.txt")" \
   "$T/roads.png"
 # 6. village grounds and merchant basins
-magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(90,72,50,0.6)' -draw "$(cat "$T/patch.txt")" -channel RGBA -blur 0x26 +channel "$T/patch.png"
+magick -size ${FW}x${FH} xc:none -stroke none -fill "$PATCH" -draw "$(cat "$T/patch.txt")" -channel RGBA -blur 0x26 +channel "$T/patch.png"
 magick -size ${FW}x${FH} xc:none -stroke none \
   -fill 'rgba(150,128,98,0.45)' -draw "$(cat "$T/specks-light.txt")" \
   -fill 'rgba(36,28,20,0.5)' -draw "$(cat "$T/specks-dark.txt")" \
@@ -110,8 +122,8 @@ magick -size ${FW}x${FH} xc:none -stroke none \
   -fill 'rgba(104,72,58,0.85)' -draw "$(cat "$T/houses.txt")" \
   -fill 'rgba(255,220,180,0.18)' -draw "$(cat "$T/roofs.txt")" \
   "$T/village.png"
-magick -size ${FW}x${FH} xc:none -stroke none -fill 'rgba(34,62,60,0.8)' -draw "$(cat "$T/basin.txt")" -channel RGBA -blur 0x30 +channel \
-  -fill none -stroke 'rgba(210,196,160,0.5)' -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
+magick -size ${FW}x${FH} xc:none -stroke none -fill "$BASIN" -draw "$(cat "$T/basin.txt")" -channel RGBA -blur 0x30 +channel \
+  -fill none -stroke "$RIM" -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
 magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/beds.png" -compose over -composite \
   "$T/patch.png" -compose over -composite "$T/village.png" -compose over -composite "$T/basin.png" -compose over -composite "$T/land.png"
 # 7. mist past the play area only, so the far edges read as distance

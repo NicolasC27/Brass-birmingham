@@ -24,12 +24,17 @@ export const MAT_STYLES: MatStyle[] = ['cards', 'compact', 'chips'];
 export type IncomeSide = 'bottom' | 'left';
 /** the ground under the board: a period engraved map drawn from the geometry
  *  (the default), the painted terrain with etched waterways and its rail-era
- *  paintings, or the fully painted countryside with its canals and rails */
-export type MapStyle = 'engraved' | 'etched' | 'painted';
+ *  paintings, the fully painted countryside with its canals and rails, or the
+ *  same land at dusk, for the painted tiles */
+export type MapStyle = 'engraved' | 'etched' | 'painted' | 'dusk';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
   engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
   painted: { canal: '/map-painted-canal.webp', rail: '/map-painted-rail.webp' },
+  /* a land graded down under its own dusk, its waters and rails inked pale:
+     the ground for tiles that carry their own light, which read as holes on
+     a bright sheet and as lamps on this one */
+  dusk: { canal: '/map-dusk-canal.webp', rail: '/map-dusk-rail.webp' },
 };
 /** the rail era has three paintings to choose from (etched terrain only) */
 export type RailPainting = '1' | '2' | '3';

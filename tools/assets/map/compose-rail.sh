@@ -18,6 +18,14 @@ WW=3200 WH=1800 BX=480 BY=270
 # painting's (100 = no fall), FADE how wide the step is softened. A pale
 # painting wants a gentler fall, or the world reads as a lit rectangle.
 DIM=${DIM:-72} FADE=${FADE:-30}
+# the painting's own tone, as brightness,saturation, and the ink that suits it:
+# LIT=1 lightens ballast and rails for a ground graded down under painted tiles
+TONE=${TONE:-100,100}
+if [[ ${LIT:-0} == 1 ]]; then
+  BALLAST='rgba(150,138,110,0.55)' SLEEPER='rgba(20,16,10,0.60)' RAIL_WIDE='rgba(224,220,202,0.55)' RAIL_FINE='rgba(236,232,214,0.75)'
+else
+  BALLAST='rgba(72,66,52,0.45)' SLEEPER='rgba(24,20,14,0.55)' RAIL_WIDE='rgba(176,170,150,0.42)' RAIL_FINE='rgba(72,66,52,0.8)'
+fi
 FW=$((WW + 2 * BX)) FH=$((WH + 2 * BY))
 SW=$(magick identify -format %w "$SRC") SH=$(magick identify -format %h "$SRC")
 # 1. the painting centred in the frame: margins to mirror on each side
@@ -47,16 +55,16 @@ PY
 )
 magick -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(14,12,8,0.30)' -strokewidth 16 -draw "$DRAW" -channel RGBA -blur 0x4 +channel "$T/bank.png"
 magick -size ${FW}x${FH} xc:none -fill none \
-  -stroke 'rgba(72,66,52,0.45)' -strokewidth 7 -draw "$DRAW" \
-  -stroke 'rgba(24,20,14,0.55)' -strokewidth 6.5 -draw "stroke-dasharray 1.6 4.4 $DRAW" \
-  -stroke 'rgba(176,170,150,0.42)' -strokewidth 3.4 -draw "$DRAW" \
-  -stroke 'rgba(72,66,52,0.8)' -strokewidth 1.6 -draw "$DRAW" \
+  -stroke "$BALLAST" -strokewidth 7 -draw "$DRAW" \
+  -stroke "$SLEEPER" -strokewidth 6.5 -draw "stroke-dasharray 1.6 4.4 $DRAW" \
+  -stroke "$RAIL_WIDE" -strokewidth 3.4 -draw "$DRAW" \
+  -stroke "$RAIL_FINE" -strokewidth 1.6 -draw "$DRAW" \
   -channel RGBA -blur 0x0.4 +channel "$T/track.png"
 if [[ "${BEDS:-1}" == 0 ]]; then cp "$T/full.png" "$T/rails.png"; else magick "$T/full.png" "$T/bank.png" -compose over -composite "$T/track.png" -compose over -composite "$T/rails.png"; fi
 # 3. mist past the play area only, so the far edges read as distance
 magick -size $((WW + 80))x$((WH + 80)) xc:black -gravity center -background white -extent ${FW}x${FH} -blur 0x110 -evaluate multiply 0.45 "$T/mask.png"
 magick -size ${FW}x${FH} xc:'rgb(150,170,160)' "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"
-magick "$T/rails.png" "$T/mist.png" -compose over -composite -modulate 84,112 "$T/out.png"
+magick "$T/rails.png" "$T/mist.png" -compose over -composite -modulate 84,112 -modulate ${TONE} "$T/out.png"
 magick "$T/out.png" -quality 82 "app/public/$STEM.webp"
 echo "$STEM.webp: $(du -h "app/public/$STEM.webp" | cut -f1) from ${SW}x${SH}"
 [[ -n "${WORK:-}" ]] || rm -rf "$T"
