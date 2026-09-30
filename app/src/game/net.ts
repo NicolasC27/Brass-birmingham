@@ -21,10 +21,7 @@ const INDUSTRY_ORDER: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer'
 
 /** a seat's block of features */
 const SEAT_FEATURES = 52;
-/** the table, then the reading seat's own hand */
-const GLOBAL_FEATURES = 20;
-/** where the hand's ten numbers begin inside the global block */
-const HAND_AT = 10;
+const GLOBAL_FEATURES = 10;
 /** own seat, the leading rival, the rivals on average, then the table */
 export const FEATURES = SEAT_FEATURES * 3 + GLOBAL_FEATURES;
 /** where the era flag sits, counted back from the end of the features */
@@ -33,7 +30,7 @@ export const GLOBAL_ERA = GLOBAL_FEATURES;
 /** rounds per era, as the engine deals them */
 const ROUNDS: Record<2 | 3 | 4, number> = { 2: 10, 3: 9, 4: 8 };
 
-function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, out: Float32Array, at: number): Set<string> {
+function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraScores>, out: Float32Array, at: number): void {
   const p = s.players[j];
   const towns = networkTowns(s, j);
   let market = 0;
@@ -160,59 +157,6 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
   out[at + 49] = cottonBuyers / 3;
   out[at + 50] = goodsBuyers / 3;
   out[at + 51] = potteryBuyers / 3;
-  return towns;
-}
-
-/* ---------------------------- the hand ----------------------------- */
-
-/* What a seat may do next is decided by the cards it holds, and until now
- * the reading counted them and looked no further: a hand of six cards for
- * towns across the map and a hand of six for the one town with a slot left
- * read exactly alike. A whole quarter of what a player knows was missing.
- *
- * Only the reading seat's hand is read. The rivals' cards are hidden, and
- * the search already pools and redeals them before it looks ahead, so
- * nothing here may depend on them. */
-
-/** a town with a slot nobody has taken */
-function hasRoom(s: GameState, town: string): boolean {
-  const def = TOWN_BY_ID[town];
-  if (!def) return false;
-  for (const [k] of def.slots.entries()) if (!s.tiles[`${town}:${k}`]) return true;
-  return false;
-}
-
-function handBlock(s: GameState, i: number, towns: Set<string>, out: Float32Array, at: number): void {
-  const hand = s.players[i].hand;
-  /* in the canal era a seat with nothing on the board may open anywhere */
-  const open = towns.size === 0;
-  let ready = 0;
-  let away = 0;
-  let wild = 0;
-  const named = new Set<string>();
-  for (const card of hand) {
-    if (card.kind === 'wild-location' || card.kind === 'wild-industry') {
-      wild += 1;
-      continue;
-    }
-    if (card.kind === 'industry') {
-      for (const ind of [card.industry, card.industry2]) {
-        const k = ind ? INDUSTRY_ORDER.indexOf(ind) : -1;
-        if (k >= 0) out[at + 2 + k] += 1 / 3;
-      }
-      continue;
-    }
-    const town = card.town;
-    if (!town) continue;
-    named.add(town);
-    if (!hasRoom(s, town)) continue;
-    if (open || towns.has(town)) ready += 1;
-    else away += 1;
-  }
-  out[at + 0] = ready / 4;
-  out[at + 1] = away / 4;
-  out[at + 8] = wild / 2;
-  out[at + 9] = named.size / 4;
 }
 
 /** the table as seat `i` sees it, in numbers the network was trained on */
@@ -221,7 +165,7 @@ const block = new Float32Array(SEAT_FEATURES);
 
 export function features(s: GameState, i: number, proj: ReturnType<typeof projectEraScores> = projectEraScores(s)): Float32Array {
   const out = new Float32Array(FEATURES);
-  const towns = seatBlock(s, i, proj, out, 0);
+  seatBlock(s, i, proj, out, 0);
   /* the leading rival: most points on the table now */
   let lead = -1;
   let best = -Infinity;
@@ -259,7 +203,6 @@ export function features(s: GameState, i: number, proj: ReturnType<typeof projec
   out[g + 7] = Object.values(s.merchantBeer).reduce((a, b) => a + b, 0) / 6;
   out[g + 8] = marketSellPrice('coal', s.market.coal) / 7;
   out[g + 9] = marketSellPrice('iron', s.market.iron) / 5;
-  handBlock(s, i, towns, out, g + HAND_AT);
   return out;
 }
 
