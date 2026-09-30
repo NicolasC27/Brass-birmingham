@@ -190,10 +190,16 @@ let netText: string | null = NET_B64;
 /** the tables the machines train at: half of four, a quarter each of three and two */
 const tableOf = (seed: number): number => [4, 4, 3, 2][seed % 4];
 
-function runWorker(seeds: number[]): Promise<{ buffer: ArrayBuffer; canal: number }> {
+/** what a playing worker says: one word per game, then its whole slice */
+type Note = { kind: 'played' } | { kind?: undefined; buffer: ArrayBuffer; canal: number };
+
+function runWorker(seeds: number[], tick: () => void): Promise<{ buffer: ArrayBuffer; canal: number }> {
   return new Promise((ok, fail) => {
     const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { seeds, net: netText } });
-    worker.once('message', ok);
+    worker.on('message', (m: Note) => {
+      if (m.kind === 'played') tick();
+      else ok(m);
+    });
     worker.once('error', fail);
   });
 }
@@ -203,7 +209,19 @@ async function play(tag: string): Promise<void> {
   const seeds = Array.from({ length: GAMES }, (_, g) => 100000 + Number(tag) * 10000 + g);
   const slices = Array.from({ length: WORKERS }, (_, w) => seeds.filter((_, k) => k % WORKERS === w)).filter((x) => x.length);
   const started = Date.now();
-  const results = await Promise.all(slices.map((x) => runWorker(x)));
+  let done = 0;
+  /* a line every twentieth of the way, and never more than one a minute */
+  const step = Math.max(1, Math.floor(GAMES / 20));
+  let spoke = 0;
+  const tick = (): void => {
+    done += 1;
+    const now = Date.now();
+    if (done % step !== 0 || now - spoke < 60000) return;
+    spoke = now;
+    const per = (now - started) / done;
+    log(`play ${tag}: ${done} of ${GAMES} games, about ${Math.round(((GAMES - done) * per) / 60000)} min left`);
+  };
+  const results = await Promise.all(slices.map((x) => runWorker(x, tick)));
   const total = results.reduce((a, r) => a + r.buffer.byteLength, 0);
   const all = new Uint8Array(total);
   let at = 0;
@@ -487,6 +505,11 @@ function writeNet(brain: Brain): string {
     `/* written by tools/bots/learn.ts — the network the machines last learned; null until one has been */\nexport const NET_B64: string | null = [\n${body}\n].join('');\n`,
   );
   log(`fit: brain written, ${brain.nets.length} × ${brain.nets[0].sizes.join('×')}, ${Math.round(packed.length / 1024)} KB`);
+  /* the analysis turns a lead into a chance of winning through a logistic
+     whose width was fitted against the reading that was in force then. A
+     fresh reading moves the leads it is fitted to, so the review's grades
+     and the panel in the game drift until it is fitted again. */
+  log('fit: the chance of winning is fitted to a reading, not to this one — run tools/bots/calibrate.sh before this brain is shipped');
   return packed;
 }
 
@@ -690,7 +713,13 @@ if (isMainThread) {
   /* the machines play with what they know so far: the last network, if any */
   loadNet(net);
   setEvalMode('blend');
-  const parts = seeds.map((seed) => playOne(seed, tableOf(seed)));
+  /* a word after every game: filling the record takes hours, and a run
+     that says nothing until the end cannot be told from one that hung */
+  const parts = seeds.map((seed) => {
+    const one = playOne(seed, tableOf(seed));
+    parentPort!.postMessage({ kind: 'played' });
+    return one;
+  });
   const total = parts.reduce((a, p) => a + p.rows.length, 0);
   const all = new Float32Array(total);
   let at = 0;
