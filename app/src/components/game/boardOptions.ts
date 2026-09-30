@@ -53,8 +53,18 @@ export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
 /** the rail era has three paintings to choose from (etched terrain only) */
 export type RailPainting = '1' | '2' | '3';
 export const RAIL_PAINTINGS: RailPainting[] = ['1', '2', '3'];
-export const mapUrls = (style: MapStyle, rail: RailPainting): { canal: string; rail: string } =>
-  style === 'etched' && rail !== '1' ? { canal: MAP_URL.etched.canal, rail: `/map-era-rail-${rail}.webp` } : MAP_URL[style];
+/* every ground above is a painting of the Midlands. A second board is a
+   second country, so its grounds are its own: it is served the one style
+   painted for it, whatever the reader has chosen for home. */
+const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
+  veneto: { canal: '/map-veneto-canal.webp', rail: '/map-veneto-rail.webp' },
+};
+
+export const mapUrls = (style: MapStyle, rail: RailPainting, board?: string): { canal: string; rail: string } => {
+  const other = board ? OTHER_BOARDS[board] : undefined;
+  if (other) return other;
+  return style === 'etched' && rail !== '1' ? { canal: MAP_URL.etched.canal, rail: `/map-era-rail-${rail}.webp` } : MAP_URL[style];
+};
 
 /* the minimap's plate: the small preset stands level with the open hand
    dock (180px tall); a width dragged by hand overrides the preset */

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Application, Assets, ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
-import { INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
+import { activeBoard, INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
 import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
@@ -288,7 +288,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     let cancelled = false;
     void (async () => {
       const { Assets } = await import('pixi.js');
-      const urls = mapUrls(mapStyle, railPainting);
+      const urls = mapUrls(mapStyle, railPainting, activeBoard().id);
       const [canal, rail] = await Promise.all([Assets.load(urls.canal), Assets.load(urls.rail)]);
       if (cancelled) return;
       scene.setVillages(mapStyle === 'engraved' ? 'engraved' : 'painted');
@@ -447,7 +447,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const { Assets, Sprite, Texture } = await import('pixi.js');
       const bootOpts = getBoardOptions();
       /* both paintings carry a bleed of countryside around the play area */
-      const bgUrls = mapUrls(bootOpts.mapStyle, bootOpts.railPainting);
+      const bgUrls = mapUrls(bootOpts.mapStyle, bootOpts.railPainting, activeBoard().id);
       const [canalTex, railTex] = await Promise.all([Assets.load(bgUrls.canal), Assets.load(bgUrls.rail)]);
       if (destroyed) return;
       const bgCanal = new Sprite(canalTex);

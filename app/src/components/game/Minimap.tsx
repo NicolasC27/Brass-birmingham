@@ -4,7 +4,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { Maximize2 } from 'lucide-react';
 import { screenToWorld, WORLD_H, WORLD_W } from './boardView';
 import type { View } from './boardView';
-import { LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
+import { activeBoard, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
 import { merchantOpen } from '@/game/engine';
 import { tileKey } from '@/game/engine';
 import type { GameState } from '@/game/types';
@@ -48,7 +48,7 @@ export default function Minimap({
   const tracking = useRef(false);
   const boardOpts = useBoardOptions();
   const { minimapSize, mapStyle, railPainting } = boardOpts;
-  const maps = mapUrls(mapStyle, railPainting);
+  const maps = mapUrls(mapStyle, railPainting, activeBoard().id);
   const insets = useHudInsets();
   const t = useT();
   const MM_W = minimapWidth(boardOpts);
