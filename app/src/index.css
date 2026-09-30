@@ -748,6 +748,13 @@ html[data-theme="light"] .platform-root {
   text-indent: 0.26em;
   font-variation-settings: "opsz" 144;
 }
+html:not(.fonts-ready) .gz-wordmark {
+  opacity: 0;
+}
+html.fonts-ready .gz-wordmark {
+  opacity: 1;
+  transition: opacity 320ms ease-out;
+}
 /* the nav rail: a link is a heading in small capitals; the current one
    carries a diamond beneath */
 .gz-nav-link {
