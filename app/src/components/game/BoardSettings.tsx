@@ -120,14 +120,16 @@ function StockPreview({ style, active }: { style: StockStyle; active: boolean })
 /* ----------------------------- controls ---------------------------- */
 
 /** one option: label + hint on the left, its control on the right */
+/* a control too wide for what is left of the row drops under the words,
+   rather than squeezing them to one letter a line */
 function OptionRow({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-brass-700/25 py-2.5 last:border-b-0">
-      <div className="min-w-0">
+    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-brass-700/25 py-2.5 last:border-b-0">
+      <div className="min-w-[10rem] flex-1 basis-[10rem]">
         <div className="font-sans text-[12px] font-semibold text-cream-100/90">{label}</div>
         {hint && <div className="mt-0.5 font-sans text-[10.5px] leading-snug text-cream-100/50">{hint}</div>}
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="min-w-0 max-w-full shrink-0">{children}</div>
     </div>
   );
 }
@@ -149,9 +151,10 @@ function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; labe
 }
 
 /** segmented control */
+/* many choices wrap onto a second line instead of running off the panel */
 function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
   return (
-    <div className="flex overflow-hidden rounded-md border border-brass-700/60">
+    <div className="flex max-w-full flex-wrap overflow-hidden rounded-md border border-brass-700/60">
       {options.map((o) => (
         <button
           key={o.id}
@@ -159,7 +162,7 @@ function Segmented<T extends string>({ value, options, onChange }: { value: T; o
           aria-pressed={value === o.id}
           onClick={() => onChange(o.id)}
           className={cn(
-            'px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] transition-colors',
+            'whitespace-nowrap px-2.5 py-1 font-sans text-[10px] font-bold uppercase tracking-[0.1em] transition-colors',
             value === o.id ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400',
           )}
         >
