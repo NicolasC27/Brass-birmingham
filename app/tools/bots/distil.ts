@@ -109,6 +109,21 @@ const setupFor = (players: number): SetupPayload =>
 /* ================================ play ============================= */
 
 /** one game the search plays against itself, every turn written down */
+/** what every chair made of a finished game, each against its best rival */
+const marginsOf = (s: GameState): number[] => {
+  const scores = s.players.map((p) => p.vp);
+  return scores.map((v, k) => v - Math.max(...scores.filter((_, j) => j !== k)));
+};
+
+/** the standard error of a mean, measured rather than assumed: the spread
+ *  used to be written in as thirty points a game, which was a guess, and a
+ *  generous one — the margins actually run about twenty apart */
+const errorOf = (n: number, sum: number, sq: number): number => {
+  if (n < 2) return 0;
+  const mean = sum / n;
+  return Math.sqrt(Math.max(0, (sq - n * mean * mean) / (n - 1)) / n);
+};
+
 function playOne(seed: number, players: number): { rows: Float32Array; turns: number } {
   let s: GameState = newGame(setupFor(players), seed);
   const kept: number[][] = [];
@@ -461,24 +476,34 @@ function playCheck(policy: Net, seed: number, players: number, subject: number):
   return s;
 }
 
+/** the ranker playing on its own, against the search it was copied from.
+ *
+ *  Each deal is played twice — once with the ranker in a chair, once with
+ *  the search in that same chair — so the cards cancel and nought means
+ *  the two play alike. Read on the best rival alone it never could: a
+ *  seat against the best of three sits about twelve points under whoever
+ *  is playing, and the deficit once reported as thirty-nine points was
+ *  that dozen over again. */
 function check(policy: Net): void {
   const started = Date.now();
   let wins = 0;
-  let diff = 0;
+  let edgeSum = 0;
+  let edgeSq = 0;
   let played = 0;
   for (let g = 0; g < CHECK_GAMES; g++) {
     const players = tableOf(g);
     const subject = g % players;
-    const s = playCheck(policy, 900000 + g, players, subject);
-    const scores = s.players.map((p) => p.vp);
-    const rivals = Math.max(...scores.filter((_, k) => k !== subject));
-    if (scores[subject] > rivals) wins += 1;
-    diff += scores[subject] - rivals;
+    const mine = marginsOf(playCheck(policy, 900000 + g, players, subject))[subject];
+    const alone = marginsOf(playCheck(policy, 900000 + g, players, -1))[subject];
+    if (mine > 0) wins += 1;
+    const e = mine - alone;
+    edgeSum += e;
+    edgeSq += e * e;
     played += 1;
   }
-  const par = CHECK_GAMES / 3;
+  const edge = edgeSum / Math.max(1, played);
   log(
-    `check: the policy alone wins ${wins}/${played} against the search it copied (par about ${par.toFixed(0)}), ${(diff / played).toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
+    `check: the policy alone against the search it copied, over ${played} deals — ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${errorOf(played, edgeSum, edgeSq).toFixed(2)} points on the same deals, ${wins} games won, ${Math.round((Date.now() - started) / 1000)} s`,
   );
 }
 
@@ -579,12 +604,6 @@ function playDuel(seed: number, players: number, subject: number): GameState {
   return s;
 }
 
-/** what every chair made of a finished game, each against its best rival */
-const marginsOf = (s: GameState): number[] => {
-  const scores = s.players.map((p) => p.vp);
-  return scores.map((v, k) => v - Math.max(...scores.filter((_, j) => j !== k)));
-};
-
 /** a slice of games: their wins, their margin, and — since the deal decides
  *  so much of a game here — the same deal played again with nobody guided,
  *  so that the guided chair is read against what that chair made of those
@@ -615,15 +634,6 @@ function duelSlice(seeds: number[]): { wins: number; diff: number; diffSq: numbe
 /** the guided search against the plain one, the subject seat rotating, every
  *  core playing its own slice. Twenty-four games cannot separate two settings
  *  ten points apart: the margin's spread over a game is that wide on its own. */
-/** the standard error of a mean, measured rather than assumed: the spread
- *  used to be written in as thirty points a game, which was a guess, and a
- *  generous one — the margins actually run about twenty apart */
-const errorOf = (n: number, sum: number, sq: number): number => {
-  if (n < 2) return 0;
-  const mean = sum / n;
-  return Math.sqrt(Math.max(0, (sq - n * mean * mean) / (n - 1)) / n);
-};
-
 async function duel(): Promise<void> {
   const started = Date.now();
   const seeds = Array.from({ length: DUEL_GAMES }, (_, g) => g);
