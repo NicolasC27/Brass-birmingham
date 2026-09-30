@@ -64,7 +64,7 @@ function MemberCard() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.06 }} className="min-w-0 flex-1">
-          <p className="micro-label text-brass-300">{t('platform.profile.eyebrow')}</p>
+          <p className="eyebrow-fell">{t('platform.profile.eyebrow')}</p>
           <h1 className="mt-1 truncate font-fraunces text-[36px] font-semibold leading-tight text-paper-100">{session.name}</h1>
           {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
           <p className="micro-label mt-1.5 text-iron-400">{t('platform.profile.memberSince', { date: since })}</p>

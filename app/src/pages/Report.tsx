@@ -83,7 +83,7 @@ export default function Report() {
   const door = `/game/local/RPRT${shareFragment(game, at)}`;
   return (
     <div className="mx-auto max-w-[960px] px-4 py-10 sm:px-8">
-      <p className="micro-label text-brass-300">{t('platform.desk.report.eyebrow')}</p>
+      <p className="eyebrow-fell">{t('platform.desk.report.eyebrow')}</p>
       <h1 className="display-hero mt-1">{t('platform.desk.report.title')}</h1>
       <p className="mt-2 font-ui text-[14px] text-paper-300">{t('platform.desk.report.lede', { n: game.actions.length, players: game.players.length })}</p>
 

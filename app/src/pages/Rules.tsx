@@ -261,7 +261,7 @@ export default function Rules() {
             <motion.h1 {...headerReveal(1)} className="display-page mt-2">
               {t("platform.rules.title")}
             </motion.h1>
-            <motion.p {...headerReveal(2)} className="mt-2 max-w-[52ch] font-ui text-[15px] leading-relaxed text-paper-300">
+            <motion.p {...headerReveal(2)} className="mt-2 max-w-[52ch] font-serif text-[15px] italic leading-relaxed text-paper-300">
               {t("platform.rules.lede")}
             </motion.p>
           </div>

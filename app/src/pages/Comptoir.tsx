@@ -86,9 +86,9 @@ function Header({ wallet, signedIn }: { wallet: Wallet; signedIn: boolean }) {
     <header>
       <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-5">
         <div className="min-w-0">
-          <p className="micro-label text-brass-300">{t('platform.comptoir.eyebrow')}</p>
+          <p className="eyebrow-fell">{t('platform.comptoir.eyebrow')}</p>
           <h1 className="display-page mt-1">{t('platform.comptoir.title')}</h1>
-          <p className="mt-2 max-w-xl font-ui text-[15px] leading-relaxed text-paper-300">{t('platform.comptoir.lede')}</p>
+          <p className="mt-2 max-w-xl font-serif text-[15px] italic leading-relaxed text-paper-300">{t('platform.comptoir.lede')}</p>
         </div>
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="flex flex-col items-end gap-2">

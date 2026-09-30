@@ -27,7 +27,7 @@ import LocalFallback from '@/components/online/LocalFallback';
 function LineNotice({ line }: { line: 'offline' | 'connecting' }) {
   const t = useT();
   return (
-    <div role="status" className="mt-6 flex items-center gap-3 rounded-xl border border-rust-600/60 bg-enamel-850 px-4 py-3 font-ui text-[13px] text-paper-300">
+    <div role="status" className="mt-6 flex items-center gap-3 border border-rust-600/60 bg-enamel-850 px-4 py-3 font-serif text-[13.5px] italic text-paper-300">
       <WifiOff size={16} aria-hidden className="shrink-0 text-rust-400" />
       <span>{t(line === 'connecting' ? 'platform.play.lineConnecting' : 'platform.play.lineDown')}</span>
     </div>

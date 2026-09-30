@@ -182,7 +182,7 @@ export default function Classement() {
     <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-10 sm:px-8">
       <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
         <div className="min-w-0">
-          <p className="micro-label text-brass-300">{t('platform.ranking.eyebrow')}</p>
+          <p className="eyebrow-fell">{t('platform.ranking.eyebrow')}</p>
           <h1 className="display-page mt-1">
             {t('platform.ranking.title')}
             {season && <span className="text-iron-400"> · {season.name}</span>}

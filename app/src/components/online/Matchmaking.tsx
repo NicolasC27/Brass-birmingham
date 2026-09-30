@@ -131,7 +131,7 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
       </motion.p>
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease, delay: 0.04 }}>
         <h1 className="display-page mt-2">{t('platform.play.title')}</h1>
-        <p className="mt-2 font-ui text-[15px] text-paper-300">{t('platform.play.lede')}</p>
+        <p className="mt-2 font-serif text-[15px] italic text-paper-300">{t('platform.play.lede')}</p>
       </motion.div>
 
       <div className="mt-8 grid gap-6 min-[1100px]:grid-cols-12">
@@ -163,9 +163,9 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
               <QueuePanel mode={queueMode} since={queue.since} waiting={queue.waiting} estimate={estimateFor(queueMode)} onCancel={cancel} />
             </div>
           ) : (
-            <div className="flex h-[200px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[rgb(var(--paper-100)/.14)] px-6 text-center">
+            <div className="flex h-[200px] flex-col items-center justify-center gap-2 border border-dashed border-[var(--gz-ink-soft)] px-6 text-center">
               <Timer size={24} aria-hidden className="text-iron-400" />
-              <p className="font-ui text-[14px] font-semibold text-paper-100">{idleTitle}</p>
+              <p className="title-card">{idleTitle}</p>
               <p className="font-ui text-[13px] text-iron-400">{serverUp ? (session ? t('platform.play.idleHint') : t('platform.play.idleSignIn')) : t('platform.play.idleRetrying')}</p>
             </div>
           )}

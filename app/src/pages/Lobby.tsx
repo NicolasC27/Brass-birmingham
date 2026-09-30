@@ -533,7 +533,7 @@ export default function Lobby() {
                 {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
               </Link>
               <div className="flex items-center gap-3">
-                <p className="micro-label text-brass-300">{t('platform.lobby.eyebrow')}</p>
+                <p className="eyebrow-fell">{t('platform.lobby.eyebrow')}</p>
                 <span className="rounded-full bg-bottle-700 px-2.5 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-[0.12em] text-paper-100">{t('platform.state.open')}</span>
               </div>
             </motion.div>

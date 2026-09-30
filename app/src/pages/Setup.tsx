@@ -197,7 +197,7 @@ export default function Setup() {
       <header>
         <p className="micro-label text-brass-400">{t("platform.setup.eyebrow")}</p>
         <h1 className="display-page mt-2">{t("platform.setup.title")}</h1>
-        <p className="mt-2 font-ui text-[15px] text-paper-300">{t("platform.setup.tagline")}</p>
+        <p className="mt-2 font-serif text-[15px] italic text-paper-300">{t("platform.setup.tagline")}</p>
       </header>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-12">
