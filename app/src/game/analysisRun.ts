@@ -70,6 +70,16 @@ let unlisten: (() => void) | null = null;
 let pass = 0;
 /* the run under way, settled when every worker of it is over */
 let finish: (() => void) | null = null;
+/* the wait on the other readers of the table, and the question it waits on:
+   is the reading whole yet? */
+let wake: (() => void) | null = null;
+let ripe: (() => boolean) | null = null;
+
+/** how long a reader with nothing left to take waits before asking the office
+    again — a stretch taken by a browser that has gone comes free after a while
+    — and how many such waits before it gives up on the rest of the reading */
+const WATCH_MS = 20_000;
+const WATCH_ROUNDS = 12;
 
 const tell = () => watchers.forEach((f) => f());
 
@@ -95,6 +105,9 @@ export function stopReading(): void {
   outbox = null;
   finish?.();
   finish = null;
+  wake?.();
+  wake = null;
+  ripe = null;
   if (snap.running) {
     snap = { ...snap, running: false };
     tell();
@@ -117,6 +130,9 @@ function fold(part: ReadingPart, readers?: number): void {
   grades = held.grades;
   snap = { ...snap, seats: held.seats, verdicts: held.verdicts, roads: held.roads, ...(readers === undefined ? {} : { readers }) };
   snap = { ...snap, done: far() };
+  /* the figure the reading was waiting on: the wait is over at once, rather
+     than at the end of its own count */
+  if (ripe?.()) wake?.();
   tell();
 }
 
@@ -248,6 +264,21 @@ function asksFor(ask: Ask, kept: Kept | null, whole: boolean, moves: number): As
   return whole ? [{ ...ask, turnsOnly: true }] : [ask];
 }
 
+/** a wait on the rest of the table, cut short the moment the reading is whole */
+function rest(ms: number): Promise<void> {
+  return new Promise<void>((ok) => {
+    const timer = setTimeout(() => {
+      wake = null;
+      ok();
+    }, ms);
+    wake = () => {
+      clearTimeout(timer);
+      wake = null;
+      ok();
+    };
+  });
+}
+
 /** every turn of this seat read by every pass of the judge. At a table the
     positions are shared out between the readers, but a seat's own turns are
     its own business: another reader looks at them once, in passing, and that
@@ -289,7 +320,17 @@ async function shareRead(game: GameState, table: string, seat: number, ask: Ask,
   /* the stretches read here already: handed the same one twice — the office
      never heard what was posted — this reader stops rather than read it again */
   const done = new Set<string>();
-  for (;;) {
+  const turnPasses = ask.turnPasses?.length ?? 1;
+  const passes = ask.passes?.length ?? 1;
+  /* the reading is whole when every position has been read by every pass of
+     the judge, by whoever, and this seat's own turns to the last of them */
+  const covered = (): boolean => {
+    for (let k = 0; k <= moves; k++) if ((snap.seats[k]?.[0]?.passes ?? 0) < passes) return false;
+    return true;
+  };
+  ripe = () => covered() && deepEnough(seat, turnPasses);
+  let ownTurns = false;
+  for (let round = 0; round < WATCH_ROUNDS; round++) {
     const slices: Ask[] = [];
     let answered = true;
     for (let i = 0; i < 2; i++) {
@@ -310,13 +351,29 @@ async function shareRead(game: GameState, table: string, seat: number, ask: Ask,
       await run(asksFor(ask, null, false, moves), seat);
       break;
     }
-    if (!slices.length) break;
-    await run(slices, seat);
+    if (slices.length) {
+      await run(slices, seat);
+      if (pass !== mine || share !== held) return;
+      /* reading is not waiting: the rounds count the waits, not the work */
+      round = -1;
+      continue;
+    }
+    /* nothing left to take — but a turn of this seat's another reader only
+       glanced at is read again here, by every pass */
+    if (!ownTurns && !deepEnough(seat, turnPasses)) {
+      ownTurns = true;
+      await run([{ ...ask, turnsOnly: true, all: false }], seat);
+      if (pass !== mine || share !== held) return;
+      round = -1;
+      continue;
+    }
+    if (ripe()) break;
+    /* the rest of the game is in other hands: wait for their figures, and ask
+       again after a while — a reader who closed their browser leaves a
+       stretch behind, and it falls to whoever is still here */
+    await rest(WATCH_MS);
     if (pass !== mine || share !== held) return;
   }
-  /* every position is read, by somebody — but a turn of this seat's another
-     reader only glanced at is read again here, by every pass */
-  if (pass === mine && share === held && !deepEnough(seat, ask.turnPasses?.length ?? 1)) await run([{ ...ask, turnsOnly: true, all: false }], seat);
   if (pass !== mine || share !== held) return;
   land(game, table, seat);
 }
