@@ -47,9 +47,9 @@ export function roundsLeft(s: GameState): number {
   return Math.max(0, eras * perEra - played);
 }
 
-/* The chance's constants, fitted on 340 tables of machines of uneven
-   strength (98 000 positions, tools/bots/calibrate.ts then a log-loss
-   fit): the width of the curve at the last round, how much it widens
+/* The chance's constants, refitted on 200 tables of machines of uneven
+   strength against the brain now in force (32 000 readings,
+   tools/bots/calibrate.ts with DEEP=1, then a log-loss fit): the width of the curve at the last round, how much it widens
    per round still to play, and how far a tie with the best rival sits
    below even while other rivals remain. Predicted deciles land within
    five points of the observed win rate at two, three and four seats.
@@ -62,9 +62,10 @@ export interface Scale {
   /** how far a tie with the best rival sits below even, per rival beyond one and per round left */
   rivals: number;
 }
-/** the scale of a position weighed as it stands; the last calibration read it
-    again and left it where it was */
-export const SHORT_SCALE: Scale = { width: 4.5, widen: 2, rivals: 0.7 };
+/** the scale of a position weighed as it stands, fitted against the brain
+    now in force on 32 000 readings: log loss 0.3741 where the scale before
+    it read 0.3786 on the same rows */
+export const SHORT_SCALE: Scale = { width: 3.45, widen: 2.05, rivals: 0.485 };
 
 /** the chance a lead gives, on a scale: a logistic, wider while rounds remain */
 export function chanceOf(edge: number, left: number, seats: number, scale: Scale): number {
@@ -198,7 +199,7 @@ export interface Judge {
    on — and each lands its deciles within five points. The three passes are
    worth their time twice over: blended they read 0.388 against 0.389 for
    the flat-out pass alone, and the curve stops jumping. */
-export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 5.2, widen: 1, rivals: 0.45 } };
+export const LONG_JUDGE: Judge = { plies: 5, budgetMs: 15, scale: { width: 5.6, widen: 0.53, rivals: 0.375 } };
 
 /** the machine's move while a position is read on: the search plain, at the
     strength asked for — not chooseBotAction, whose easing bends to who sits
@@ -401,7 +402,7 @@ export function blendVerdicts(list: readonly Verdict[]): Verdict {
     comes from the long judge, so the curve, the grades and the roads are one
     scale — and it is kept for the bench, which measures the two against each
     other (tools/bots/calibrate.ts). */
-export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 4.8, widen: 1, rivals: 0.4 } };
+export const DEEP_JUDGE: Judge = { plies: 10, budgetMs: 25, scale: { width: 5.4, widen: 0.48, rivals: 0.315 } };
 
 /* ------------------------------------------------------------------ */
 /* The three judges a reader may choose from. They differ in how far   */
