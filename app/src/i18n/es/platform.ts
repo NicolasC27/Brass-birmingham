@@ -146,6 +146,8 @@ const platform = {
       state: 'Estado',
       none: 'Ninguna mesa en el registro — abra la primera.',
       queueNone: 'No espera en ninguna cola.',
+      localNone: 'Ninguna partida local en curso.',
+      machines: 'Una mesa contra las máquinas →',
       enter: 'Entrar en una cola →',
     },
     board: {

@@ -4,7 +4,11 @@ import { motion } from 'framer-motion';
 import { Eye, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
+import { tableTitle } from '@/online/tableNames';
+import { isOnline } from '@/online/lobby';
 import { onlineWire } from '@/online/net';
+import { listLocalGames, type LocalTable } from '@/game/local';
+import { startQuickGame } from '@/game/quickplay';
 import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
 import { colorDef } from '@/components/setup/constants';
 import { toCards, type CardTable } from '@/platform/tables';
@@ -127,6 +131,74 @@ function Row({ table, i }: { table: CardTable; i: number }) {
   );
 }
 
+/* the local edition: one line a saved game of this device */
+function LocalRow({ table, i }: { table: LocalTable; i: number }) {
+  const t = useT();
+  const lang = useLang();
+  return (
+    <motion.tr initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.04 * i }}>
+      <td className="max-w-0">
+        <span className="block truncate font-fraunces text-[14px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+          {tableTitle(table.name, lang)}
+        </span>
+        <span className="data-text block truncate text-[11px] text-iron-600">
+          {[t('platform.action.localGame'), t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal'), t('platform.state.turn', { round: table.round })].join(' · ')}
+        </span>
+      </td>
+      <td className="w-[76px]">
+        <span className="flex items-center gap-1.5">
+          {table.seats.map((s, j) => (
+            <span key={j} title={s.name} className={cn('block h-2.5 w-2.5 rounded-full', s.kind === 'bot' && 'opacity-60')} style={{ background: colorDef(s.color).hex }} />
+          ))}
+        </span>
+      </td>
+      <td className="w-[88px]">
+        <span className="micro-label text-bottle-400">{t('platform.state.open')}</span>
+      </td>
+      <td className="w-px pr-2 text-right">
+        <Link to={`/game/local/${table.code}`} className="whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+          {t('platform.action.resume')} →
+        </Link>
+      </td>
+    </motion.tr>
+  );
+}
+
+function LocalEdition() {
+  const t = useT();
+  const navigate = useNavigate();
+  const [games] = useState(() => listLocalGames().filter((g) => !g.over));
+  return (
+    <>
+      {games.length === 0 ? (
+        <Notice text={t('platform.home.departures.localNone')} />
+      ) : (
+        <table className="gz-timetable">
+          <thead>
+            <tr>
+              <th>{t('platform.home.departures.table')}</th>
+              <th>{t('platform.home.departures.seats')}</th>
+              <th>{t('platform.home.departures.state')}</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {games.slice(0, ROWS).map((g, i) => (
+              <LocalRow key={g.code} table={g} i={i} />
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
+        <span className="font-serif text-[13px] italic text-paper-300">{t('platform.serverOffline')}</span>
+        <button type="button" onClick={() => navigate(`/game/local/${startQuickGame()}`)} className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+          {t('platform.home.departures.machines')}
+        </button>
+      </div>
+    </>
+  );
+}
+
 /* a quiet line across the board when there is nothing to list */
 function Notice({ text, cta }: { text: string; cta?: { label: string; to: string } }) {
   return (
@@ -204,10 +276,13 @@ export default function Departures() {
     w?.askDesk();
   };
 
+  /* no line to the office: the local edition takes the board */
+  const local = !isOnline || (waiting && line !== 'online');
+
   let body: React.ReactNode;
-  if (stranger) body = <Notice text={t('platform.home.board.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
-  else if (waiting && line !== 'online') body = <Notice text={t('platform.serverOffline')} />;
-  else if (waiting) body = <Notice text={t('platform.home.board.loading')} />;
+  if (local) body = <LocalEdition />;
+  else if (stranger) body = <Notice text={t('platform.home.board.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
+    else if (waiting) body = <Notice text={t('platform.home.board.loading')} />;
   else if (cards.length === 0) body = <Notice text={t('platform.home.departures.none')} cta={{ label: t('platform.action.createTable'), to: '/setup' }} />;
   else
     body = (
@@ -241,7 +316,7 @@ export default function Departures() {
           {t('platform.home.board.title')}
         </span>
         <span className="flex items-center gap-3">
-          <span className="data-text text-[11px] text-iron-400 tnums">{waiting ? t('platform.home.board.loading') : stranger ? '' : t('platform.home.board.counts', { open, live })}</span>
+          <span className="data-text text-[11px] text-iron-400 tnums">{local ? t('platform.status.localMode') : waiting ? t('platform.home.board.loading') : stranger ? '' : t('platform.home.board.counts', { open, live })}</span>
           <button type="button" aria-label={t('platform.home.board.refresh')} onClick={refresh} className="text-iron-400 transition-colors hover:text-paper-100">
             <motion.span animate={{ rotate: spin * 360 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="flex">
               <RefreshCw size={13} aria-hidden />
@@ -254,9 +329,11 @@ export default function Departures() {
       </div>
       <div className="gz-rule-double mt-2" aria-hidden />
       <div className="mt-1">{body}</div>
-      <div className="mt-2">
-        <MyQueue />
-      </div>
+      {!local && (
+        <div className="mt-2">
+          <MyQueue />
+        </div>
+      )}
     </motion.section>
   );
 }

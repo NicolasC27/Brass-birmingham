@@ -148,6 +148,8 @@ const platform: typeof enPlatform = {
       state: 'Stand',
       none: 'Noch kein Tisch im Register — eröffnen Sie den ersten.',
       queueNone: 'Sie warten in keiner Schlange.',
+      localNone: 'Keine lokale Partie im Gange.',
+      machines: 'Ein Tisch gegen die Maschinen →',
       enter: 'In eine Schlange treten →',
     },
     board: {

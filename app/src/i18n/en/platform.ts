@@ -146,6 +146,8 @@ const platform = {
       state: 'State',
       none: 'No table in the register yet — open the first.',
       queueNone: 'You wait in no queue.',
+      localNone: 'No local game in play.',
+      machines: 'A table against the machines →',
       enter: 'Enter a queue →',
     },
     board: {

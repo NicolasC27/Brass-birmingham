@@ -146,6 +146,8 @@ const platform = {
       state: 'État',
       none: 'Aucune table au registre — ouvrez la première.',
       queueNone: 'Vous n’attendez dans aucune file.',
+      localNone: 'Pas de partie locale en cours.',
+      machines: 'Une table contre les machines →',
       enter: 'Entrer dans une file →',
     },
     board: {
