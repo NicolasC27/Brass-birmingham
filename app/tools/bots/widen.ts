@@ -1,5 +1,5 @@
 /* ------------------------------------------------------------------ */
-/* Carrying a record across a change to the reading.                   */
+/* Carrying a record across a change to the reading, either way.        */
 /*                                                                     */
 /* A row of the record is as wide as the features are many, so adding  */
 /* one leaves every row ever written unreadable — and a record is      */
@@ -11,6 +11,12 @@
 /* newcomers written into it as nought. That is what the position      */
 /* looked like to a reading that could not see them, which is exactly  */
 /* what a network widened the same way makes of it.                    */
+/*                                                                     */
+/* It carries a record the other way just as well. A feature weighed   */
+/* and found wanting is taken back out, and the record written while   */
+/* it existed is worth keeping: the games behind it were played, and   */
+/* the columns being dropped are the last ones, so what remains is     */
+/* exactly the record a reading without them would have written.       */
 /*                                                                     */
 /*   FROM=166 sh tools/bots/widen.sh                                   */
 /*                                                                     */
@@ -37,14 +43,16 @@ const DIR = resolve(process.env.DIR ?? 'tools/bots/data');
 const PREFIX = process.env.PREFIX ?? 'positions';
 const STAMP = `${PREFIX}-${FEATURES}f-`;
 
-if (!FROM || FROM >= FEATURES) {
-  console.error(`FROM must name the feature count the record was written for, below the ${FEATURES} this reading wants`);
+if (!FROM || FROM === FEATURES) {
+  console.error(`FROM must name the feature count the record was written for, and differ from the ${FEATURES} this reading wants`);
   process.exit(1);
 }
 
 const wasRow = FROM + TRAILING;
 const nowRow = FEATURES + TRAILING;
+/** how many columns are gained; negative when the record is being narrowed */
 const pad = FEATURES - FROM;
+const kept = Math.min(FROM, FEATURES);
 let carried = 0;
 
 for (const name of readdirSync(DIR)) {
@@ -59,16 +67,20 @@ for (const name of readdirSync(DIR)) {
   const rows = all.length / wasRow;
   const out = new Uint32Array(rows * nowRow);
   for (let r = 0; r < rows; r++) {
-    /* the features, then the newcomers as nought, then the targets */
-    out.set(all.subarray(r * wasRow, r * wasRow + FROM), r * nowRow);
-    out.set(all.subarray(r * wasRow + FROM, (r + 1) * wasRow), r * nowRow + FROM + pad);
+    /* the features this reading still has, then the targets. Widening
+       leaves the gap between them at nought; narrowing drops the last
+       columns, which are the ones that were appended */
+    out.set(all.subarray(r * wasRow, r * wasRow + kept), r * nowRow);
+    out.set(all.subarray(r * wasRow + FROM, (r + 1) * wasRow), r * nowRow + FEATURES);
   }
-  /* the tag the old name carried, so two records never collide */
-  const tag = name.slice(`${PREFIX}-`.length, -'.f32'.length);
+  /* the tag the old name carried, so two records never collide. Any
+     stamp it already holds is stripped rather than kept, or a record
+     carried twice would be named for every reading it has passed through */
+  const tag = name.slice(`${PREFIX}-`.length, -'.f32'.length).replace(/^\d+f-/, '');
   const to = resolve(DIR, `${STAMP}${tag}.f32`);
   writeFileSync(to, Buffer.from(out.buffer, 0, out.byteLength));
   const was = statSync(path).size;
-  console.log(`${name}: ${rows} rows carried from ${FROM} features to ${FEATURES} (${(was / 1e6).toFixed(0)} MB to ${(out.byteLength / 1e6).toFixed(0)} MB)`);
+  console.log(`${name}: ${rows} rows carried from ${FROM} features to ${FEATURES}, ${pad > 0 ? `${pad} written in as nought` : `${-pad} dropped from the end`} (${(was / 1e6).toFixed(0)} MB to ${(out.byteLength / 1e6).toFixed(0)} MB)`);
   carried += rows;
 }
 console.log(carried ? `${carried} rows now readable by this reading; the originals are untouched` : 'nothing to carry');
