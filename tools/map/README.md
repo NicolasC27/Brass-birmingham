@@ -52,6 +52,37 @@ named villages or mist got sprawling golden towns and cumulus clouds
 instead; the compositor draws both from the geometry, so the painting
 should carry neither.
 
+## Grounds for the painted tiles
+
+The woodcut tiles are ink on cream and want a pale sheet under them. The
+painted tiles carry their own light and want the opposite: on a bright
+ground they read as holes, on a dark one as lamps. Measured, the tiles sit
+between 28 and 42 in lightness, so a ground for them belongs around 20, at
+a saturation well under theirs.
+
+Two such grounds are served. "Terre sombre" (`map-dusk-*`) is a pair of
+paintings that had been set aside, graded down. "Terres boisées"
+(`map-wooded-*`) came from `fal-ai/nano-banana/edit` with a patch of the
+etched terrain as the reference image, upscaled three times by
+`fal-ai/clarity-upscaler`; the rail era is the same terrain handed back to
+the same model to be aged — woods cut back, spoil heaps, soot — so both
+eras stand on the same land. Sources in `tools/assets/map/map-wooded-*-fal.jpg`.
+
+Referring the model to an image beat describing the style in words. Five
+rounds of prompting produced nothing usable; one edit against the patch
+did.
+
+Both composers take four knobs, all defaulting to what they did before:
+`TONE` (the painting's brightness and saturation), `LIT=1` (waters, lanes,
+basin rims and rails inked pale, for a dark ground), `DIM` and `FADE` (how
+the land beyond the board falls away — a pale painting wants a gentler
+fall, or the world reads as a lit rectangle). The grounds above were made
+with `LIT=1 TONE=150,105 DIM=90 FADE=140` and the rail era at `135,108`.
+
+The "painted" setting no longer serves the Midjourney countryside: it is a
+hand-tinted 1830 survey sheet seen from directly above
+(`map-painted-canal-midjourney.jpg`), for the woodcut tiles.
+
 ## The engraved map
 
 The board's default ground is no painting at all: a period engraved map,
