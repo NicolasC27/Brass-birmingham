@@ -531,6 +531,8 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
   let deals = 0;
   let diffSum = 0;
   let diffSq = 0;
+  let soloSum = 0;
+  let soloSq = 0;
   let canal = 0;
   let canalField = 0;
   let verdict: 'kept' | 'refused' | null = null;
@@ -544,6 +546,8 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
       deals += r.pairs;
       diffSum += r.diffSum;
       diffSq += r.diffSq;
+      soloSum += r.soloSum;
+      soloSq += r.soloSq;
       canal += r.canal * r.games;
       canalField += r.canalField * r.games;
     }
@@ -556,15 +560,19 @@ async function check(tag: string, fresh: string, previous: string | null): Promi
   }
   const edge = edgeSum / Math.max(1, deals);
   const spread = errorOf(deals, edgeSum, edgeSq);
-  /* the same games read without the pairing, so the record shows what
-     holding the deal still bought: the raw margin is the old yardstick */
+  /* the same games read two other ways, so the record shows what holding
+     the deal bought: against the rest of its own table, which costs no
+     extra game and is honest but wider, and on the best rival, which is
+     the old yardstick and sits a dozen points under nought by its shape */
+  const solo = soloSum / Math.max(1, games);
+  const wide = errorOf(games, soloSum, soloSq);
   const raw = errorOf(games, diffSum, diffSq);
   /* the Canal Era must not be sold to win the rail one */
   const held = canal / Math.max(1, games) >= canalField / Math.max(1, games) - 3;
   const keep = verdict === 'kept' && held;
   const why = verdict === null ? 'the games never decided' : verdict === 'refused' ? 'no better' : held ? 'better' : 'better, but the canal era was given away';
   log(
-    `check ${tag}: ${games} games over ${deals} deals against ${previous ? 'the last one' : 'the hand-written reading'} — ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${spread.toFixed(2)} points on the same deals (± ${raw.toFixed(2)} had they not been held), ${wins} won, canal ${(canal / Math.max(1, games)).toFixed(1)} vs ${(canalField / Math.max(1, games)).toFixed(1)} — ${why}${keep ? ', kept' : ', the last one stays'}`,
+    `check ${tag}: ${games} games over ${deals} deals against ${previous ? 'the last one' : 'the hand-written reading'} — ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${spread.toFixed(2)} points on the same deals (${solo >= 0 ? '+' : ''}${solo.toFixed(2)} ± ${wide.toFixed(2)} against its own table, ${(diffSum / Math.max(1, games)).toFixed(1)} ± ${raw.toFixed(1)} on the best rival), ${wins} won, canal ${(canal / Math.max(1, games)).toFixed(1)} vs ${(canalField / Math.max(1, games)).toFixed(1)} — ${why}${keep ? ', kept' : ', the last one stays'}`,
   );
   /* the yardsticks report on their own time: the next games need not wait */
   if (keep) void yardstick(tag, fresh);

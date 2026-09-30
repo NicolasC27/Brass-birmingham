@@ -86,6 +86,21 @@ export interface MatchResult {
   edgeSpread: number | null;
   /** how many deals were played twice — the count `edgeSum` is a sum of */
   pairs: number;
+  /** the subject's points less what the rest of its own table averaged, in
+   *  the very same game.
+   *
+   *  Nought means neither reading is better: at a table of equals every
+   *  chair expects the same, so the difference expects nothing. The margin
+   *  on the *best* rival does not — one seat against the best of three sits
+   *  about twelve points under whoever is playing — and reading a gate off
+   *  that is how a criterion of "nought or better" came to be unreachable.
+   *
+   *  It costs nothing: the rivals played the same deal, in the same game,
+   *  so the cards cancel without a second game being played at all. */
+  solo: number;
+  soloSum: number;
+  soloSq: number;
+  soloSpread: number;
 }
 
 const COLORS = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
@@ -136,6 +151,8 @@ export function playMatch(o: MatchOptions): MatchResult {
   let edgeSum = 0;
   let edgeSq = 0;
   let pairs = 0;
+  let soloSum = 0;
+  let soloSq = 0;
   /* the deal being played, gathered until its chairs are all in */
   let dealEdge = 0;
   let dealGames = 0;
@@ -181,6 +198,9 @@ export function playMatch(o: MatchOptions): MatchResult {
     const winner = o.canalOnly ? points.indexOf(Math.max(...points)) : s.winner;
     if (winner === subject) wins += 1;
     const margin = points[subject] - Math.max(...others);
+    const alone = points[subject] - others.reduce((a, b) => a + b, 0) / Math.max(1, others.length);
+    soloSum += alone;
+    soloSq += alone * alone;
     diff += margin;
     diffSum += margin;
     diffSq += margin * margin;
@@ -211,5 +231,9 @@ export function playMatch(o: MatchOptions): MatchResult {
     edgeSq,
     edgeSpread: o.paired ? errorOf(pairs, edgeSum, edgeSq) : null,
     pairs,
+    solo: soloSum / Math.max(1, o.games),
+    soloSum,
+    soloSq,
+    soloSpread: errorOf(o.games, soloSum, soloSq),
   };
 }
