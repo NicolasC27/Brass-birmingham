@@ -242,9 +242,9 @@ export function townChrome(town: Town): TownChromeGeo {
   const halfW = clusterW / 2 + RIBBON_TAIL + BOX_PAD;
   const halfH = totalH / 2 + BOX_PAD;
 
-  // village grounds the unit: ≈ tile-block width × 1.15, never wider
-  // than the cluster + 30px, centred behind tiles + ribbon
-  const villageH = Math.min(bw * 1.15, clusterW + 30);
+  // village grounds the unit: wider than the cards it sits behind, so the
+  // place reads as a place rather than as a smudge showing between tiles
+  const villageH = Math.max(bw * 1.35, clusterW + 46);
 
   const geo: TownChromeGeo = {
     ax,

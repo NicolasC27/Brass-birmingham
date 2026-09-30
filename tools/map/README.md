@@ -89,6 +89,26 @@ The "painted" setting no longer serves the Midjourney countryside: it is a
 hand-tinted 1830 survey sheet seen from directly above
 (`map-painted-canal-midjourney.jpg`), for the woodcut tiles.
 
+## The quiet country, and the places on it
+
+The board's default ground is "Campagne paisible" (`map-calm-*`): a still
+morning over sage and oat fields, soft hedgerows, mist in the hollows,
+asked of `fal-ai/nano-banana` with no reference image and upscaled three
+times. It sits at 55 in lightness against tiles that sit between 28 and 42,
+so the tiles and the places are the brightest things on the table. The rail
+era is the same fields carried into industry by the same model.
+
+Under each town the board lays a painted place: four of them
+(`town-place-0..3.webp`), one to a town by its coordinates, the farm hamlet
+always the fourth. They were drawn by `fal-ai/nano-banana/edit` with the
+v3 tiles themselves as the reference image, so they carry the same brush,
+the same light from the upper left and the same weight of shape. Sources in
+`tools/assets/map/villages/`. The engraved map keeps its ink hamlets.
+
+Before this there was one painting for all twenty-two towns, drawn at the
+width of the card block and faded to 62 %: it read as a grey smudge. A
+place is now wider than the cards it stands behind and drawn at 84 %.
+
 ## The engraved map
 
 The board's default ground is no painting at all: a period engraved map,

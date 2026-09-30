@@ -27,7 +27,7 @@ export type IncomeSide = 'bottom' | 'left';
  *  paintings, the fully painted countryside with its canals and rails, or the
  *  same land at dusk, or the wooded country aged from one era into the next,
  *  both dark enough for the painted tiles */
-export type MapStyle = 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed';
+export type MapStyle = 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed' | 'quiet';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
   engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
@@ -45,6 +45,10 @@ export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
      them — the quietest of the dark grounds, and the only one with no
      water of its own to argue with the engraved canals */
   ploughed: { canal: '/map-ploughed-canal.webp', rail: '/map-ploughed-rail.webp' },
+  /* the board's own country: a still morning over sage and oat fields, soft
+     hedgerows, a breath of mist in the hollows. Light enough that the
+     painted tiles and their places read as the brightest things on it */
+  quiet: { canal: '/map-calm-canal.webp', rail: '/map-calm-rail.webp' },
 };
 /** the rail era has three paintings to choose from (etched terrain only) */
 export type RailPainting = '1' | '2' | '3';
@@ -189,7 +193,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  mapStyle: read('mapStyle', 'engraved'),
+  mapStyle: read('mapStyle', 'quiet'),
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
