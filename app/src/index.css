@@ -634,6 +634,41 @@ html[data-theme="light"] .platform-root {
   outline-offset: 2px;
 }
 
+/* The rail under the top bar, and the engine that runs it. A hairline
+   is the rail; the locomotive crosses it once per page, left to right,
+   a plume of smoke behind the chimney. Silhouette in the header's brass. */
+.rail-train {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 44px;
+  height: 18px;
+  color: rgb(var(--brass-300, 231 201 126));
+  pointer-events: none;
+  transform: translateX(-60px);
+  animation: train-run 3.4s cubic-bezier(0.55, 0.05, 0.45, 0.95) forwards;
+}
+.rail-train .smoke {
+  position: absolute;
+  left: 33px;
+  top: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(var(--iron-400, 139 148 140) / 0.55);
+  animation: train-smoke 1.1s ease-out infinite;
+}
+.rail-train .smoke:nth-child(2) { animation-delay: 0.35s; }
+.rail-train .smoke:nth-child(3) { animation-delay: 0.7s; }
+@keyframes train-run {
+  from { transform: translateX(-60px); }
+  to { transform: translateX(calc(100vw + 20px)); }
+}
+@keyframes train-smoke {
+  0% { transform: translate(0, 0) scale(0.4); opacity: 0.7; }
+  100% { transform: translate(-14px, -13px) scale(1.5); opacity: 0; }
+}
+
 /* Platform reduced-motion guard (design.md §5): kill pulses, ticker, shimmer, forge */
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-signal,
@@ -642,6 +677,9 @@ html[data-theme="light"] .platform-root {
   .animate-shimmer,
   .animate-forge {
     animation: none !important;
+  }
+  .rail-train {
+    display: none;
   }
 }
 

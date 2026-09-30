@@ -28,6 +28,41 @@ const navLink = ({ isActive }: { isActive: boolean }) =>
       : 'text-iron-400 hover:text-paper-100',
   );
 
+/* ------------------------------ The rail ------------------------------ */
+
+/* The hairline under the top bar is a rail. Each time the page changes an
+   engine crosses it, left to right, and is gone — an 1830s locomotive and
+   its tender, drawn as one silhouette, smoke puffing from the chimney.
+   Keyed on the path so every arrival gets its own run. */
+function RailEngine() {
+  const { pathname } = useLocation();
+  return (
+    <span key={pathname} className="rail-train" aria-hidden>
+      <span className="smoke" />
+      <span className="smoke" />
+      <span className="smoke" />
+      <svg viewBox="0 0 44 18" width="44" height="18" fill="currentColor" className="absolute bottom-px left-0">
+        {/* tender */}
+        <rect x="0" y="8" width="9" height="6" />
+        <circle cx="2.5" cy="15.5" r="1.7" />
+        <circle cx="6.5" cy="15.5" r="1.7" />
+        {/* cab, boiler, chimney, steam dome */}
+        <rect x="11" y="4" width="7" height="10" />
+        <rect x="17" y="7" width="20" height="7" rx="3" />
+        <rect x="32" y="1" width="3" height="7" />
+        <rect x="25" y="4.5" width="4" height="3" rx="1.5" />
+        {/* driving wheel and the small one at the front */}
+        <circle cx="16" cy="14" r="3.4" />
+        <circle cx="16" cy="14" r="1.4" fill="rgb(var(--lacquer-950, 10 14 12))" />
+        <circle cx="30" cy="15.2" r="2.2" />
+        <circle cx="36" cy="15.2" r="2.2" />
+        {/* the coupling rod */}
+        <rect x="16" y="14.6" width="14" height="1" opacity="0.8" />
+      </svg>
+    </span>
+  );
+}
+
 /* ------------------------------ TopBar ------------------------------ */
 
 function PlayerToken() {
@@ -119,7 +154,7 @@ function ThemeToggle() {
 function TopBar() {
   const t = useT();
   return (
-    <header className="sticky top-0 z-50 h-[52px] border-b border-brass-hairline-strong bg-[rgb(var(--lacquer-950)/.88)] backdrop-blur-[12px]">
+    <header className="sticky top-0 z-50 h-[52px] overflow-x-clip border-b border-brass-hairline-strong bg-[rgb(var(--lacquer-950)/.88)] backdrop-blur-[12px]">
       <div className="mx-auto flex h-full max-w-[1240px] items-center gap-4 px-4 sm:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Blackrail">
           <img src="/logo-blackrail.svg" alt="" className="h-5 w-5" />
@@ -167,6 +202,7 @@ function TopBar() {
           </Button>
         </div>
       </div>
+      <RailEngine />
     </header>
   );
 }
