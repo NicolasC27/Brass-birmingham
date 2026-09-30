@@ -58,6 +58,8 @@ const GUIDED = Number(process.env.GUIDED ?? 8);
 const GUIDED_DEPTH = Number(process.env.GUIDED_DEPTH ?? DEPTH) as 0 | 1 | 2;
 /** whether the ranker narrows the turn's second action as well as its first */
 const GUIDED_PAIRS = (process.env.GUIDED_PAIRS ?? '1') !== '0';
+/** how many deals the duel plays; each is played twice, guided and plain */
+const DUEL_GAMES = Number(process.env.DUEL_GAMES ?? CHECK_GAMES);
 const DECAY = Number(process.env.DECAY ?? 1e-5);
 
 /** moves kept per position: the rest read too badly to be worth the room */
@@ -168,7 +170,7 @@ function runWorker(seeds: number[]): Promise<{ buffer: ArrayBuffer; turns: numbe
 }
 
 /** a slice of a duel, played on its own core */
-function runDuelWorker(seeds: number[]): Promise<{ wins: number; diff: number; games: number }> {
+function runDuelWorker(seeds: number[]): Promise<{ wins: number; diff: number; diffSq: number; edgeSum: number; edgeSq: number; games: number }> {
   return new Promise((ok, fail) => {
     const worker = new Worker(fileURLToPath(import.meta.url), { workerData: { job: 'duel', seeds, guided: GUIDED, guidedDepth: GUIDED_DEPTH } });
     worker.once('message', ok);
@@ -571,38 +573,66 @@ function playDuel(seed: number, players: number, subject: number): GameState {
   return s;
 }
 
-/** a slice of games, their wins and their margin */
-function duelSlice(seeds: number[]): { wins: number; diff: number; games: number } {
+/** what every chair made of a finished game, each against its best rival */
+const marginsOf = (s: GameState): number[] => {
+  const scores = s.players.map((p) => p.vp);
+  return scores.map((v, k) => v - Math.max(...scores.filter((_, j) => j !== k)));
+};
+
+/** a slice of games: their wins, their margin, and — since the deal decides
+ *  so much of a game here — the same deal played again with nobody guided,
+ *  so that the guided chair is read against what that chair made of those
+ *  same cards on its own. The luck of the shuffle asks the same question
+ *  twice and falls out of the difference. */
+function duelSlice(seeds: number[]): { wins: number; diff: number; diffSq: number; edgeSum: number; edgeSq: number; games: number } {
   let wins = 0;
   let diff = 0;
+  let diffSq = 0;
+  let edgeSum = 0;
+  let edgeSq = 0;
   for (const seed of seeds) {
     const players = tableOf(seed);
     const subject = seed % players;
     const s = playDuel(900000 + seed, players, subject);
-    const scores = s.players.map((p) => p.vp);
-    const rivals = Math.max(...scores.filter((_, k) => k !== subject));
-    if (scores[subject] > rivals) wins += 1;
-    diff += scores[subject] - rivals;
+    const margin = marginsOf(s)[subject];
+    if (margin > 0) wins += 1;
+    diff += margin;
+    diffSq += margin * margin;
+    const alone = marginsOf(playDuel(900000 + seed, players, -1));
+    const e = margin - alone[subject];
+    edgeSum += e;
+    edgeSq += e * e;
   }
-  return { wins, diff, games: seeds.length };
+  return { wins, diff, diffSq, edgeSum, edgeSq, games: seeds.length };
 }
 
 /** the guided search against the plain one, the subject seat rotating, every
  *  core playing its own slice. Twenty-four games cannot separate two settings
  *  ten points apart: the margin's spread over a game is that wide on its own. */
+/** the standard error of a mean, measured rather than assumed: the spread
+ *  used to be written in as thirty points a game, which was a guess, and a
+ *  generous one — the margins actually run about twenty apart */
+const errorOf = (n: number, sum: number, sq: number): number => {
+  if (n < 2) return 0;
+  const mean = sum / n;
+  return Math.sqrt(Math.max(0, (sq - n * mean * mean) / (n - 1)) / n);
+};
+
 async function duel(): Promise<void> {
   const started = Date.now();
-  const seeds = Array.from({ length: CHECK_GAMES }, (_, g) => g);
+  const seeds = Array.from({ length: DUEL_GAMES }, (_, g) => g);
   const slices = Array.from({ length: WORKERS }, (_, w) => seeds.filter((_, k) => k % WORKERS === w)).filter((x) => x.length);
   const parts = await Promise.all(slices.map((x) => runDuelWorker(x)));
   const wins = parts.reduce((a, r) => a + r.wins, 0);
   const diff = parts.reduce((a, r) => a + r.diff, 0);
+  const diffSq = parts.reduce((a, r) => a + r.diffSq, 0);
+  const edgeSum = parts.reduce((a, r) => a + r.edgeSum, 0);
+  const edgeSq = parts.reduce((a, r) => a + r.edgeSq, 0);
   const games = parts.reduce((a, r) => a + r.games, 0);
-  /* how far the margin could be off by chance alone, at two standard errors */
   const mean = diff / games;
-  const spread = 2 * (30 / Math.sqrt(games));
+  const edge = edgeSum / games;
   log(
-    `duel: the search guided to ${GUIDED} names${GUIDED_PAIRS ? '' : ' (first action only)'} at depth ${GUIDED_DEPTH} wins ${wins}/${games} against the plain one at depth ${DEPTH} (par about ${(games / 3).toFixed(0)}), ${mean.toFixed(1)} ± ${spread.toFixed(1)} points on the best rival, ${Math.round((Date.now() - started) / 1000)} s`,
+    `duel: the search guided to ${GUIDED} names${GUIDED_PAIRS ? '' : ' (first action only)'} at depth ${GUIDED_DEPTH} against the plain one at depth ${DEPTH}, ${BUDGET} ms each — ${edge >= 0 ? '+' : ''}${edge.toFixed(2)} ± ${errorOf(games, edgeSum, edgeSq).toFixed(2)} points on the same deals (${mean.toFixed(1)} ± ${errorOf(games, diff, diffSq).toFixed(1)} unpaired), ${wins}/${games} won, ${Math.round((Date.now() - started) / 1000)} s`,
   );
 }
 
