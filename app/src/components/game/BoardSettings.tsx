@@ -505,7 +505,7 @@ export default function BoardSettings() {
                       <Segmented<MapStyle>
                         value={opts.mapStyle}
                         onChange={(v) => setBoardOption('mapStyle', v)}
-                        options={(['engraved', 'etched', 'painted', 'dusk', 'wooded'] as MapStyle[]).map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
+                        options={(['engraved', 'etched', 'painted', 'dusk', 'wooded', 'ploughed'] as MapStyle[]).map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
                       />
                     </OptionRow>
                     {opts.mapStyle === 'etched' && (

@@ -72,6 +72,12 @@ Referring the model to an image beat describing the style in words. Five
 rounds of prompting produced nothing usable; one edit against the patch
 did.
 
+"Terres labourées" (`map-ploughed-*`) came the same way, from four variants
+asked for in one pass: a quilt of small fields, a heather moor, a mixed
+country, and worked earth. The last won on measurement as much as on the
+eye — the lowest lightness and saturation of the four, even coverage, and
+the only one with no water of its own to argue with the engraved canals.
+
 Both composers take four knobs, all defaulting to what they did before:
 `TONE` (the painting's brightness and saturation), `LIT=1` (waters, lanes,
 basin rims and rails inked pale, for a dark ground), `DIM` and `FADE` (how

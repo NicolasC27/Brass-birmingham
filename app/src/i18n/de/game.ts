@@ -169,7 +169,7 @@ const game: typeof engame = {
     side: { bottom: 'Unten', left: 'Links' },
     mapStyle: 'Kartenhintergrund',
     mapStyleHint: 'Eine gestochene Karte der Zeit, das gravierte Gelände mit seinen Gemälden, die gemalte Landschaft mit ihren Kanälen oder dasselbe Land in der Dämmerung, für die gemalten Plättchen.',
-    map: { engraved: 'Gestochene Karte', etched: 'Graviertes Gelände', painted: 'Gemalte Kanäle', dusk: 'Dunkles Land', wooded: 'Bewaldetes Land' },
+    map: { engraved: 'Gestochene Karte', etched: 'Graviertes Gelände', painted: 'Gemalte Kanäle', dusk: 'Dunkles Land', wooded: 'Bewaldetes Land', ploughed: 'Gepflügtes Land' },
     railPainting: 'Gemälde der Eisenbahnzeit',
     railPaintingHint: 'Drei Gemälde für die zweite Zeit; die Schienen sind auf jedem eingraviert.',
     railPaint: 'Gemälde {n}',

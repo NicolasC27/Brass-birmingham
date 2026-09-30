@@ -169,7 +169,7 @@ const game: typeof engame = {
     side: { bottom: 'Abajo', left: 'A la izquierda' },
     mapStyle: 'Fondo del mapa',
     mapStyleHint: 'Un mapa grabado de época, el terreno grabado con sus cuadros, la campiña pintada con sus canales, o la misma tierra al anochecer, para las fichas pintadas.',
-    map: { engraved: 'Mapa grabado', etched: 'Terreno grabado', painted: 'Canales pintados', dusk: 'Tierra oscura', wooded: 'Tierras boscosas' },
+    map: { engraved: 'Mapa grabado', etched: 'Terreno grabado', painted: 'Canales pintados', dusk: 'Tierra oscura', wooded: 'Tierras boscosas', ploughed: 'Tierras aradas' },
     railPainting: 'Pintura de la era del ferrocarril',
     railPaintingHint: 'Tres cuadros para la segunda era; las vías van grabadas en cada uno.',
     railPaint: 'Cuadro {n}',
