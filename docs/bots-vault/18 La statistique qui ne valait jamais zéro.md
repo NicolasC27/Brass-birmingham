@@ -24,7 +24,20 @@ Douze points de biais structurel. Aucun réglage, aucune force, aucun réseau n'
 
 **La seconde clause de `learn.ts` était morte.** La porte s'écrivait `(part >= 0,33 || (part >= 0,29 && diff >= 0))`. La seconde moitié ne pouvait jamais se déclencher. Restait `part >= 0,33` sur 48 parties — soit 1,3 écart-type au-dessus de la par de 0,25, donc **un réseau strictement neutre sur dix franchissait la porte par chance**. Une boucle qui adopte du bruit dérive au lieu de monter.
 
-**Le duel du ranker se lisait comme une déroute.** Chaque duel affichait « −11,5 points sur le meilleur rival » et concluait à l'échec du classement des coups. Apparié, à 800 ms, le même réglage donne **+0,08 ± 0,55** : il ne coûte rien. Et quand le temps économisé sert à chercher plus loin, **+4,01 ± 2,05 sur 120 donnes** — significatif. Deux ans d'hypothèse enterrée par une soustraction.
+**Le duel du ranker se lisait comme une déroute.** Chaque duel affichait « −11,5 points sur le meilleur rival » et concluait à l'échec du classement des coups. Apparié, à 800 ms, le même réglage donne **+0,08 ± 0,55** : il ne coûte rien.
+
+Il ne rapporte rien non plus, et la mesure qui semblait dire le contraire s'est fait prendre à ce que cette note dénonce — une variable de trop dans la comparaison :
+
+| comparaison | résultat |
+|---|---|
+| guidé à 8 noms, profondeur 0, contre simple profondeur 0 | +0,08 ± 0,55 |
+| guidé à 8 noms, profondeur 2, contre simple **profondeur 0** | +4,01 ± 2,05 |
+| **simple** profondeur 2, sans élagage, contre simple profondeur 0 | **+4,08 ± 2,01** |
+| guidé à 8 noms, profondeur 2, contre simple profondeur 2, à 1500 ms | **−0,58 ± 0,95** |
+
+Les deux lignes du milieu sont à un dixième de point l'une de l'autre : les quatre points sont **entièrement** la profondeur, et l'élagage n'y est pour rien. La dernière ligne le confirme à profondeur égale et au budget livré. Le classement des coups ne coûte rien et ne rapporte rien.
+
+La leçon est la même que pour le biais, un cran plus haut : une comparaison qui change deux choses à la fois attribue le gain à celle qu'on regardait. Ici le premier chiffre a été annoncé comme « le ranker vaut 4 points » avant que la décomposition ne soit faite ; elle a coûté sept minutes.
 
 ## Les trois lectures, et laquelle choisir
 
