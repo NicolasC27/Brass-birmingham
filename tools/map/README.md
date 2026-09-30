@@ -109,6 +109,27 @@ Before this there was one painting for all twenty-two towns, drawn at the
 width of the card block and faded to 62 %: it read as a grey smudge. A
 place is now wider than the cards it stands behind and drawn at 84 %.
 
+## A second board
+
+`app/src/game/boards/` holds the geography: `midlands.ts`, `veneto.ts`, and
+a registry that places either on the 3200×1800 world. A game carries its
+board's id in `setup.options.map`, so a game replayed from seed and actions
+— by the analysis, by a bot, by the server — stands on the ground it was
+played on.
+
+The Veneto keeps every count the Midlands has: twenty towns and two
+cellars, five edge merchants, thirty-nine links split thirty both-era,
+eight rail, one canal, the same multiset of sockets and the same location
+card totals. That is what lets the tiles, the deck and the market balanced
+for one stand for the other; `boards.test.ts` holds it to that.
+
+Its art follows the same road as the home country's: the terrain from
+`fal-ai/nano-banana/edit` with the Midlands ground as the reference so the
+two read as one game, upscaled three times, then composed with the Veneto's
+own geometry — `node /tmp/geo.mjs /tmp/geo-veneto.json veneto`. Its five
+merchant houses were repainted from the Oxford plate, keeping the frame,
+the brass disc and the nameplate. Sources in `tools/assets/map/houses/`.
+
 ## The engraved map
 
 The board's default ground is no painting at all: a period engraved map,
