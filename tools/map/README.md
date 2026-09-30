@@ -109,6 +109,27 @@ Before this there was one painting for all twenty-two towns, drawn at the
 width of the card block and faded to 62 %: it read as a grey smudge. A
 place is now wider than the cards it stands behind and drawn at 84 %.
 
+## Anchoring a place
+
+A village drawn straight onto a terrain floats, and on a slope it looks
+pitched. Three things hold it down, all in `compose-canal.sh` except the
+last:
+
+* `RELIEF` lays a height field of our own making — plasma at a coarse
+  grain, blurred into rolling ground — lit from over the reader's left
+  shoulder and applied as `2·shade·land`, which leaves the overall tone
+  where it was. `RELIEF_WEIGHT` is gone; `RELIEF_SPREAD` sets how firmly
+  the ground is felt, `RELIEF_LIGHT` the sun's bearing, `RELIEF_SEED` the
+  hills themselves. Note that ImageMagick's own `soft-light` is not
+  Photoshop's and blows a mid-grey map out to white — hence the arithmetic.
+* Each town's ground is levelled: the shade map is brought back to neutral
+  in a disc around it, so no village ends up standing on a hillside.
+* Every link arrives as a pair of pale cart tracks, so a place reads as
+  somewhere roads meet.
+* The place sprites themselves carry a cleared patch of earth and a
+  contact shadow thrown down and to the right, baked onto the drawing's own
+  footprint (`tools/assets/map/villages/place-*-anchored.png`).
+
 ## A second board
 
 `app/src/game/boards/` holds the geography: `midlands.ts`, `veneto.ts`, and

@@ -91,6 +91,28 @@ for tn in g['towns']:
             shade.append(ctx + f'rectangle {-w/2+2:.1f},{-h/2+3:.1f} {w/2+2:.1f},{h/2+3:.1f} pop graphic-context')
             houses.append(ctx + f'rectangle {-w/2:.1f},{-h/2:.1f} {w/2:.1f},{h/2:.1f} pop graphic-context')
             roofs.append(ctx + f'rectangle {-w/2:.1f},{-h/2:.1f} {w/2:.1f},{-h/2 + h*0.45:.1f} pop graphic-context')
+# lanes: every link comes into its town as a pale cart track, so a place
+# reads as somewhere roads meet rather than a smudge on a field
+lanes = []
+for l in g['links']:
+    pts = l['pts']
+    for end in (0, -1):
+        ex, ey = pts[end][0] + bx, pts[end][1] + by
+        ix, iy = pts[6 if end == 0 else -7][0] + bx, pts[6 if end == 0 else -7][1] + by
+        dx, dy = ix - ex, iy - ey
+        n = math.hypot(dx, dy) or 1
+        for _ in range(2):
+            j = (rnd() - 0.5) * 26
+            lanes.append(f'polyline {ex + dx / n * 14 + j:.1f},{ey + dy / n * 14 - j:.1f} {ex + dx / n * 96 + j * 1.6:.1f},{ey + dy / n * 96 - j * 1.6:.1f}')
+open(f'{t}/lane.txt', 'w').write('\n'.join(lanes))
+# a town stands on level ground: the relief is brought back to neutral in a
+# disc around each one, so no village ends up pitched on a hillside
+flat = []
+for tn in g['towns']:
+    cx, cy = tn['x'] + bx, tn['y'] + by
+    fr = 96 if tn['farm'] else 168
+    flat.append(f'circle {cx},{cy} {cx + fr:.1f},{cy}')
+open(f'{t}/flat.txt', 'w').write('\n'.join(flat))
 open(f'{t}/patch.txt', 'w').write('\n'.join(patch))
 open(f'{t}/specks-light.txt', 'w').write('\n'.join(s for light, s in specks if light))
 open(f'{t}/specks-dark.txt', 'w').write('\n'.join(s for light, s in specks if not light))
@@ -149,7 +171,9 @@ if [[ ${RELIEF:-1} == 1 ]]; then
     -function polynomial "${RELIEF_SPREAD:-0.30},0.35" "$T/shade-relief.png"
   # 2·shade·land: a map that sits at a half leaves the tone where it was,
   # a lit slope lifts it and a shaded one drops it, and nothing drifts
-  magick "$T/land.png" "$T/shade-relief.png" -compose Mathematics -define compose:args="2,0,0,0" -composite "$T/relief.png"
+  # the towns' own ground goes flat: mid grey in the shade map is no relief
+  magick "$T/shade-relief.png" \( -size ${FW}x${FH} xc:none -fill 'gray(50%)' -stroke none -draw "$(cat "$T/flat.txt")" -channel RGBA -blur 0x40 +channel \) -compose over -composite "$T/shade-flat.png"
+  magick "$T/land.png" "$T/shade-flat.png" -compose Mathematics -define compose:args="2,0,0,0" -composite "$T/relief.png"
   mv "$T/relief.png" "$T/land.png"
 fi
 
