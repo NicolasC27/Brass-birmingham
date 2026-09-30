@@ -28,6 +28,15 @@ import { PLACEMENTS, rankOf } from '@/platform/rank';
 
 const ease = 'easeOut' as const;
 
+/* the plates the front page prints, one a day in turn: the Black Country
+   panorama, the canal, the rail */
+const PLATES = [
+  { src: '/hero-diorama.webp', position: 'center 40%' },
+  { src: '/era-canal-banner.webp', position: 'center 50%' },
+  { src: '/era-rail-banner.webp', position: 'center 50%' },
+];
+const plateOfTheDay = () => PLATES[Math.floor(Date.now() / 864e5) % PLATES.length];
+
 /* a printed ticket: the front page's way of saying « go » */
 function Ticket({ to, onClick, tone, icon, children }: { to?: string; onClick?: () => void; tone?: 'brass' | 'signal'; icon: ReactNode; children: ReactNode }) {
   const cls = cn('gz-ticket', tone === 'brass' && 'gz-ticket-brass', tone === 'signal' && 'gz-ticket-signal');
@@ -215,12 +224,13 @@ export default function Home() {
   const t = useT();
   const navigate = useNavigate();
   const [codeOpen, setCodeOpen] = useState(false);
+  const [plate] = useState(plateOfTheDay);
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
       {/* the engraving of the day */}
       <motion.figure initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, ease }} className="gz-engraving mt-6 h-[180px] min-[900px]:h-[300px]">
-        <img src="/hero-diorama.webp" alt="" style={{ objectPosition: 'center 40%' }} />
+        <img src={plate.src} alt="" style={{ objectPosition: plate.position }} />
       </motion.figure>
 
       {/* the leader beside the departures */}

@@ -799,6 +799,17 @@ html.fonts-ready .gz-wordmark {
   object-fit: cover;
   padding: 5px;
   filter: sepia(0.18) contrast(1.02);
+  transform-origin: 50% 60%;
+  animation: gz-pan 28s ease-in-out infinite alternate;
+}
+@keyframes gz-pan {
+  from { transform: scale(1) translateX(0); }
+  to { transform: scale(1.05) translateX(-1.2%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gz-engraving img {
+    animation: none;
+  }
 }
 html[data-theme="dark"] .platform-root .gz-engraving img {
   /* the plate printed in white on the lacquer, a night impression */
