@@ -14,7 +14,7 @@ export default function ProgressCard({ quiet = false }: { quiet?: boolean }) {
   if (!sheet.length) {
     if (quiet) return null;
     return (
-      <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+      <div className="console p-5">
         <p className="font-ui text-[13px] font-semibold text-paper-100">{t('platform.desk.progress.title')}</p>
         <p className="mt-1 font-ui text-[13px] text-iron-400">{t('platform.desk.progress.empty')}</p>
       </div>
@@ -29,7 +29,7 @@ export default function ProgressCard({ quiet = false }: { quiet?: boolean }) {
   const mean = recent.reduce((s, p) => s + p.lost, 0) / recent.length;
   const last = recent[recent.length - 1];
   return (
-    <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+    <div className="console p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-ui text-[13px] font-semibold text-paper-100">{t('platform.desk.progress.title')}</p>
         <p className="data-text text-[11px] text-iron-400">{t('platform.desk.progress.games', { n: sheet.length })}</p>

@@ -22,9 +22,9 @@ const DISCORD_URL = String(import.meta.env.VITE_DISCORD_URL ?? '').trim();
 
 const navLink = ({ isActive }: { isActive: boolean }) =>
   cn(
-    'relative whitespace-nowrap font-ui text-[13px] font-semibold pb-1 transition-colors duration-150',
+    'relative whitespace-nowrap font-ui text-[11px] font-medium uppercase tracking-[0.16em] pb-1 transition-colors duration-150',
     isActive
-      ? 'text-paper-100 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:bg-brass-500'
+      ? 'text-paper-100 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:bg-brass-300'
       : 'text-iron-400 hover:text-paper-100',
   );
 
@@ -40,7 +40,7 @@ function PlayerToken() {
 
   if (!session) {
     return (
-      <Button variant="ghost" className="!h-9" to="/account">
+      <Button variant="ghost" className="!h-8" to="/account">
         {t('platform.action.signIn')}
       </Button>
     );
@@ -48,9 +48,9 @@ function PlayerToken() {
   return (
     <Link
       to="/profile"
-      className="flex items-center gap-2 rounded-full border border-brass-hairline bg-enamel-850 py-1 pl-1 pr-3 transition-colors duration-150 hover:border-brass-hairline-strong"
+      className="flex h-8 items-center gap-2 rounded-full border border-brass-hairline-strong bg-enamel-850 py-0.5 pl-0.5 pr-3 transition-colors duration-150 hover:border-brass-300"
     >
-      <img src={`/${wallet.equipped.avatar}.svg`} alt="" className="h-7 w-7 rounded-full" />
+      <img src={`/${wallet.equipped.avatar}.svg`} alt="" className="h-[26px] w-[26px] rounded-full" />
       <span className="max-w-[110px] truncate font-ui text-[13px] font-medium text-paper-100">{session.name}</span>
       <RankBadge tier={rank.tier} division={rank.division} size={16} compact />
     </Link>
@@ -69,10 +69,10 @@ function WalletChip() {
     <Link
       to="/comptoir"
       aria-label={t('platform.comptoir.walletAria', { count: guineas })}
-      className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-brass-hairline bg-enamel-850 px-3 transition-colors duration-150 hover:border-brass-hairline-strong"
+      className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-brass-hairline-strong bg-enamel-850 px-3 transition-colors duration-150 hover:border-brass-300"
     >
-      <Coins size={15} aria-hidden className="text-brass-300" />
-      <span className="data-text tnums text-[13px] text-paper-100">{guineas}</span>
+      <Coins size={14} aria-hidden className="text-brass-300" />
+      <span className="data-text tnums text-[12px] text-paper-100">{guineas}</span>
     </Link>
   );
 }
@@ -87,9 +87,9 @@ function InvitationBell() {
     <Link
       to="/desk"
       aria-label={t('platform.nav.invitations')}
-      className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-[rgb(var(--paper-100)/.14)] text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100"
+      className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-brass-hairline-strong text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100"
     >
-      <Bell size={16} aria-hidden />
+      <Bell size={15} aria-hidden />
       {count > 0 && (
         <span className="animate-pulse-signal absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-signal-400 px-1 font-ui text-[10px] font-semibold text-[rgb(var(--ink-on-signal))] tnums">
           {count}
@@ -109,9 +109,9 @@ function ThemeToggle() {
       type="button"
       onClick={toggleTheme}
       aria-label={t(theme === 'dark' ? 'platform.theme.toLight' : 'platform.theme.toDark')}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-[rgb(var(--paper-100)/.14)] text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100"
+      className="flex h-8 w-8 items-center justify-center rounded-lg border border-brass-hairline-strong text-paper-300 transition-colors duration-150 hover:bg-enamel-800 hover:text-paper-100"
     >
-      <Icon size={16} aria-hidden />
+      <Icon size={15} aria-hidden />
     </button>
   );
 }
@@ -119,11 +119,13 @@ function ThemeToggle() {
 function TopBar() {
   const t = useT();
   return (
-    <header className="sticky top-0 z-50 h-14 border-b border-brass-hairline bg-[rgb(var(--lacquer-950)/.85)] backdrop-blur-[12px]">
+    <header className="sticky top-0 z-50 h-[52px] border-b border-brass-hairline-strong bg-[rgb(var(--lacquer-950)/.88)] backdrop-blur-[12px]">
       <div className="mx-auto flex h-full max-w-[1240px] items-center gap-4 px-4 sm:px-8">
         <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="Blackrail">
-          <img src="/logo-blackrail.svg" alt="" className="h-6 w-6" />
-          <span className="font-fraunces text-[15px] font-semibold uppercase tracking-[0.08em] text-paper-100">Blackrail</span>
+          <img src="/logo-blackrail.svg" alt="" className="h-5 w-5" />
+          <span className="font-fraunces text-[14px] font-medium uppercase tracking-[0.22em] text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+            Blackrail
+          </span>
         </Link>
 
         {/* in the flow between the wordmark and the chips, centred in what is left:
@@ -158,9 +160,9 @@ function TopBar() {
           <WalletChip />
           <InvitationBell />
           <ThemeToggle />
-          <span aria-hidden className="hidden h-6 w-px bg-[rgb(var(--paper-100)/.12)] min-[900px]:block" />
+          <span aria-hidden className="hidden h-5 w-px bg-brass-hairline-strong min-[900px]:block" />
           <PlayerToken />
-          <Button variant="primary" className="!h-9 hidden min-[1100px]:inline-flex" to="/setup" icon={<Plus size={16} aria-hidden />}>
+          <Button variant="primary" className="!h-8 hidden min-[1100px]:inline-flex" to="/setup" icon={<Plus size={16} aria-hidden />}>
             {t('platform.nav.createTable')}
           </Button>
         </div>
@@ -176,8 +178,8 @@ function StatusStrip() {
   const p = usePresence();
 
   return (
-    <div className="hidden h-8 border-b border-[rgb(var(--paper-100)/.06)] bg-lacquer-950 min-[900px]:block">
-      <div className="mx-auto flex h-full max-w-[1240px] items-center gap-2 px-8 font-mono text-[12px] text-iron-400">
+    <div className="hidden h-7 border-b border-brass-hairline bg-lacquer-950 min-[900px]:block">
+      <div className="mx-auto flex h-full max-w-[1240px] items-center gap-2 px-8 font-mono text-[11px] text-iron-400">
         {!p.online ? (
           <span className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-iron-600" aria-hidden />
@@ -214,7 +216,7 @@ function CompactFooter() {
   const t = useT();
   const lang = useLang();
   return (
-    <footer className="flex h-12 items-center border-t border-[rgb(var(--paper-100)/.06)] bg-lacquer-950">
+    <footer className="flex h-11 items-center border-t border-brass-hairline bg-lacquer-950">
       <div className="mx-auto flex w-full max-w-[1240px] items-center gap-5 px-4 sm:px-8">
         <span className="micro-label text-iron-400">{t('platform.footer.copyright')}</span>
         <Link to="/rules" className="micro-label text-iron-400 transition-colors hover:text-paper-100">

@@ -165,7 +165,7 @@ export default function TableBoard() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, ease: 'easeOut', delay: 0.08 }}
-      className="overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850"
+      className="overflow-hidden console"
       aria-label={t('platform.home.board.title')}
     >
       {/* header interne 44px */}

@@ -59,7 +59,7 @@ function ResumeBanner() {
       initial={{ x: -16, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.26, ease, delay: 0.1 }}
-      className="halo-signal flex h-16 items-center gap-3 rounded-xl border border-[rgb(var(--signal-400)/.5)] bg-enamel-850 px-4"
+      className="halo-signal console flex h-14 items-center gap-3 !border-[rgb(var(--signal-400)/.5)] px-4"
     >
       <RotateCcw size={18} className="animate-pulse-signal shrink-0 text-signal-400" aria-hidden />
       <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ function QueueRankStrip() {
       </motion.div>
       <motion.div {...reveal(2)}>
         {session ? (
-          <div className="flex h-[88px] items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-850 p-4">
+          <div className="console flex h-[76px] items-center gap-4 p-4">
             <RankBadge tier={rank.tier} division={rank.division} size={32} compact />
             <div className="min-w-0 flex-1">
               <p className="truncate font-ui text-[14px] font-semibold text-paper-100">
@@ -155,7 +155,7 @@ function QueueRankStrip() {
             </div>
           </div>
         ) : (
-          <div className="flex h-[88px] items-center justify-between gap-3 rounded-xl border border-dashed border-[rgb(var(--paper-100)/.14)] bg-transparent p-4">
+          <div className="flex h-[76px] items-center justify-between gap-3 border border-dashed border-brass-hairline-strong bg-transparent p-4">
             <p className="font-ui text-[13px] text-iron-400">{t('platform.home.rating.signIn')}</p>
             <Button variant="ghost" className="!h-9 shrink-0" to="/account">
               {t('platform.action.signIn')}
@@ -180,15 +180,15 @@ function Shortcuts() {
     { key: '/desk', icon: Briefcase, title: t('platform.home.shortcuts.desk'), copy: t('platform.home.shortcuts.deskCopy') },
     { key: '/profile', icon: User, title: t('platform.home.shortcuts.profile'), copy: t('platform.home.shortcuts.profileCopy') },
   ];
-  const card = 'group flex h-24 w-full items-center gap-4 rounded-xl border border-[rgb(var(--paper-100)/.14)] px-5 text-left transition-colors duration-150 hover:bg-enamel-800';
+  const card = 'group flex h-20 w-full items-center gap-4 border border-brass-hairline px-5 text-left transition-colors duration-150 hover:border-brass-hairline-strong hover:bg-enamel-800';
   return (
     <div className="mb-2 mt-8 grid gap-4 min-[760px]:grid-cols-2 min-[1100px]:grid-cols-4">
       {cards.map(({ key, icon: Icon, title, copy, go }, i) => {
         const inner = (
           <>
-            <Icon size={20} aria-hidden className="shrink-0 text-brass-300 transition-colors duration-150 group-hover:text-brass-500" />
+            <Icon size={18} strokeWidth={1.5} aria-hidden className="shrink-0 text-brass-300 transition-colors duration-150 group-hover:text-brass-500" />
             <span className="min-w-0 flex-1">
-              <span className="block font-ui text-[14px] font-semibold text-paper-100">{title}</span>
+              <span className="title-card block">{title}</span>
               <span className="mt-0.5 block truncate font-ui text-[12px] text-iron-400">{copy}</span>
             </span>
             <ChevronRight size={16} aria-hidden className="shrink-0 text-iron-600 transition-transform duration-150 group-hover:translate-x-1" />
@@ -234,13 +234,14 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.24, ease }}
-            className="micro-label text-brass-300"
+            className="eyebrow-fell"
           >
             {t('platform.home.eyebrow')}
           </motion.p>
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease, delay: 0.06 }}>
             <h1 className="display-hero">{t('platform.home.title')}</h1>
-            <p className="mt-3 max-w-md font-ui text-[15px] leading-relaxed text-paper-300">{t('platform.home.tagline')}</p>
+            <p className="mt-3 max-w-md font-serif text-[16px] italic leading-relaxed text-paper-300">{t('platform.home.tagline')}</p>
+            <div className="rule-fine mt-5 max-w-[200px]" aria-hidden />
           </motion.div>
 
           <ResumeBanner />

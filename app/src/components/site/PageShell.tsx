@@ -38,9 +38,9 @@ export default function PageShell({
               {back.label}
             </Link>
           )}
-          {eyebrow && <p className="micro-label text-brass-300">{eyebrow}</p>}
+          {eyebrow && <p className="eyebrow-fell">{eyebrow}</p>}
           <h1 className="display-page mt-2">{title}</h1>
-          {lede && <p className="mt-3 max-w-2xl font-ui text-[15px] leading-relaxed text-paper-300">{lede}</p>}
+          {lede && <p className="mt-3 max-w-2xl font-serif text-[15px] italic leading-relaxed text-paper-300">{lede}</p>}
         </div>
         {aside}
       </header>
@@ -52,7 +52,7 @@ export default function PageShell({
 /** an enamel console with a title rule — the panel the pages are built from */
 export function Panel({ title, meta, children, className, tone = 'plate' }: { title?: React.ReactNode; meta?: React.ReactNode; children: React.ReactNode; className?: string; tone?: 'plate' | 'paper' }) {
   return (
-    <section className={cn('relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-5 lg:p-6', className)}>
+    <section className={cn('console console-ruled relative overflow-hidden p-5 lg:p-6', className)}>
       {tone === 'paper' && <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />}
       {title && (
         <header className="relative mb-4">
@@ -82,7 +82,7 @@ export function Field({ id, label, hint, children }: { id: string; label: string
 }
 
 export const inputClass =
-  'w-full rounded-lg border border-brass-hairline bg-lacquer-950/70 px-3 py-2 font-ui text-[14px] text-paper-100 transition-colors duration-150 placeholder:text-iron-600 focus:border-brass-500 focus:outline-none disabled:opacity-50';
+  'w-full rounded-lg border border-brass-hairline-strong bg-lacquer-950/70 px-3 py-2 font-ui text-[13px] text-paper-100 transition-colors duration-150 placeholder:text-iron-600 focus:border-brass-500 focus:outline-none disabled:opacity-50';
 
 /** the office's own words for a refusal */
 export function Refusal({ text }: { text: string | null }) {

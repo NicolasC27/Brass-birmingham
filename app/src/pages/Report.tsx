@@ -87,7 +87,7 @@ export default function Report() {
       <h1 className="display-hero mt-1">{t('platform.desk.report.title')}</h1>
       <p className="mt-2 font-ui text-[14px] text-paper-300">{t('platform.desk.report.lede', { n: game.actions.length, players: game.players.length })}</p>
 
-      <div className="mt-6 rounded-xl border border-brass-hairline bg-enamel-850 p-4">
+      <div className="mt-6 console p-4">
         <div className="flex flex-wrap items-center gap-3">
           {game.players.map((p, i) => (
             <button key={i} type="button" onClick={() => setSeat(i)} className={`flex items-center gap-2 rounded-md border px-2.5 py-1 font-ui text-[13px] ${shown === i ? 'border-brass-500 bg-brass-500/10 text-brass-300' : 'border-brass-hairline text-paper-300 hover:border-brass-500'}`}>
@@ -104,7 +104,7 @@ export default function Report() {
       </div>
 
       <div className="mt-6 grid gap-6 min-[760px]:grid-cols-2">
-        <section className="rounded-xl border border-brass-hairline bg-enamel-850 p-4">
+        <section className="console p-4">
           <h2 className="font-ui text-[13px] font-semibold text-paper-100">{t('game.debrief.standings.title')}</h2>
           <table className="mt-2 w-full font-ui text-[13px] text-paper-300">
             <thead>
@@ -129,7 +129,7 @@ export default function Report() {
             </tbody>
           </table>
         </section>
-        <section className="rounded-xl border border-brass-hairline bg-enamel-850 p-4">
+        <section className="console p-4">
           <h2 className="font-ui text-[13px] font-semibold text-paper-100">{t('game.debrief.keyMoments')}</h2>
           <ul className="mt-2 flex flex-col gap-1 font-ui text-[13px] text-paper-300">
             {drops.map((d) => (

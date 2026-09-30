@@ -54,7 +54,7 @@ function MemberCard() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease }}
-      className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850"
+      className="relative overflow-hidden console"
     >
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />
       <div className="relative flex flex-wrap items-center gap-x-8 gap-y-6 p-6 lg:p-8">
@@ -127,7 +127,7 @@ function StatsAndRanks() {
         ))}
         {/* tuile cote — le badge de l'exercice et le chiffre */}
         <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
-          <div className="flex h-full items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-4">
+          <div className="flex h-full items-center gap-3 console p-4">
             <RankBadge tier={rank.tier} division={rank.division} lp={rank.lp} placementDone={rank.placementDone ?? undefined} size={32} />
             <span className="ml-auto text-right">
               <span className="tnums block font-fraunces text-[24px] font-semibold leading-none text-paper-100">{rank.rating !== null ? rank.rating.toLocaleString(locale(lang)) : '—'}</span>
@@ -140,7 +140,7 @@ function StatsAndRanks() {
           <Link
             to="/comptoir"
             aria-label={t('platform.comptoir.walletAria', { count: wallet.balance })}
-            className="flex h-full items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-4 transition-colors duration-150 hover:border-brass-hairline-strong hover:bg-enamel-800"
+            className="flex h-full items-center gap-3 console p-4 transition-colors duration-150 hover:border-brass-hairline-strong hover:bg-enamel-800"
           >
             <Coins size={24} aria-hidden className="shrink-0 text-brass-300" />
             <span>
@@ -156,7 +156,7 @@ function StatsAndRanks() {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ amount: 0.15, once: true }}
         transition={{ duration: 0.24, ease, delay: 0.08 }}
-        className="rounded-xl border border-brass-hairline bg-enamel-850 p-5 min-[1100px]:col-span-4"
+        className="console p-5 min-[1100px]:col-span-4"
       >
         <h2 className="title-card">{t('platform.profile.ranksTitle')}</h2>
         <div className="mb-4 mt-3 h-px bg-brass-hairline" />

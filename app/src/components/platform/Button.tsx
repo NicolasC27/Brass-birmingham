@@ -12,14 +12,14 @@ import { cn } from '@/lib/utils';
 export type ButtonVariant = 'primary' | 'live' | 'ghost' | 'danger-ghost' | 'icon';
 
 const base =
-  'inline-flex select-none items-center justify-center gap-2 rounded-lg font-ui text-[14px] font-semibold transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out active:scale-[.97] disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex select-none items-center justify-center gap-2 rounded-lg font-ui text-[12px] font-semibold uppercase tracking-[0.1em] transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out active:scale-[.97] disabled:pointer-events-none disabled:opacity-50 [&>svg]:h-[15px] [&>svg]:w-[15px]';
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'cta-brass h-10 px-4 text-[rgb(var(--ink-on-brass))]',
-  live: 'h-10 bg-signal-400 px-4 text-[rgb(var(--ink-on-signal))] hover:halo-signal',
-  ghost: 'h-10 border border-[rgb(var(--paper-100)/.14)] px-4 text-paper-100 hover:border-[rgb(var(--paper-100)/.3)] hover:bg-enamel-800',
-  'danger-ghost': 'h-10 border border-[rgb(var(--rust-400)/.4)] px-4 text-rust-400 hover:border-rust-400 hover:bg-[rgb(var(--rust-600)/.1)]',
-  icon: 'h-9 w-9 border border-[rgb(var(--paper-100)/.14)] text-paper-300 hover:border-[rgb(var(--paper-100)/.3)] hover:bg-enamel-800 hover:text-paper-100',
+  primary: 'cta-brass h-9 px-4 text-[rgb(var(--ink-on-brass))]',
+  live: 'h-9 bg-signal-400 px-4 text-[rgb(var(--ink-on-signal))] shadow-[inset_0_0_0_1px_rgba(35,22,3,.25)] hover:halo-signal',
+  ghost: 'h-9 border border-brass-hairline-strong px-4 text-paper-100 hover:border-brass-300 hover:bg-enamel-800',
+  'danger-ghost': 'h-9 border border-[rgb(var(--rust-400)/.4)] px-4 text-rust-400 hover:border-rust-400 hover:bg-[rgb(var(--rust-600)/.1)]',
+  icon: 'h-8 w-8 border border-brass-hairline-strong text-paper-300 hover:border-brass-300 hover:bg-enamel-800 hover:text-paper-100',
 };
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

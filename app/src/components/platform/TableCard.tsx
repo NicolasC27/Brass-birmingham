@@ -106,7 +106,7 @@ export default function TableCard({ table, pulse = true, onJoin, onResume, onWat
       exit={{ opacity: 0, x: 12 }}
       transition={spring}
       className={cn(
-        'rounded-xl border border-brass-hairline bg-enamel-850 p-4 transition-colors duration-150 ease-out',
+        'console p-4 transition-colors duration-150 ease-out',
         'hover:border-brass-hairline-strong hover:bg-enamel-800',
         table.myTurn && 'border-[rgb(var(--signal-400)/.5)]',
         className,

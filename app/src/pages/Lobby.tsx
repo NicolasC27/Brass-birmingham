@@ -569,7 +569,7 @@ export default function Lobby() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.26, ease: 'easeOut' }}
-            className="rounded-xl border border-brass-hairline bg-enamel-850 p-6 lg:col-span-8 lg:p-8"
+            className="console p-6 lg:col-span-8 lg:p-8"
             aria-label={t('online.room.seats')}
           >
             <ul className="grid grid-cols-2 gap-x-2 gap-y-6 lg:relative lg:block lg:h-[460px]">
@@ -619,7 +619,7 @@ export default function Lobby() {
             className="lg:col-span-4"
           >
             <div className="flex flex-col gap-6 lg:sticky lg:top-[88px]">
-              <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+              <div className="console p-5">
                 {/* 3a — code de salle */}
                 <section className="max-lg:hidden">
                   <p className="micro-label text-brass-300/80">{t('platform.lobby.codeLabel')}</p>

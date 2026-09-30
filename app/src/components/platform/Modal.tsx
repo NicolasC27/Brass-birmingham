@@ -51,7 +51,7 @@ export default function Modal({ open, onClose, title, children, className }: Mod
             exit={{ y: 8, scale: 0.98, opacity: 0 }}
             transition={{ duration: 0.22, ease: 'easeOut' }}
             className={cn(
-              'w-full max-w-[520px] rounded-xl border border-brass-hairline bg-enamel-800 p-6 shadow-[0_8px_24px_var(--shadow-modal)]',
+              'console console-ruled w-full max-w-[520px] !bg-enamel-800 p-6 shadow-[0_8px_24px_var(--shadow-modal)]',
               className,
             )}
             onClick={(e) => e.stopPropagation()}

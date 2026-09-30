@@ -114,7 +114,7 @@ function MemberHeader() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease }}
-      className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850"
+      className="relative overflow-hidden console"
     >
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />
       <div className="relative flex flex-wrap items-center gap-x-6 gap-y-5 p-6">
@@ -163,7 +163,7 @@ function TutorialStrip() {
   const t = useT();
   const navigate = useNavigate();
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-850 px-5 py-4">
+    <div className="mt-6 flex flex-wrap items-center gap-4 console px-5 py-4">
       <GraduationCap size={20} aria-hidden className="shrink-0 text-brass-300" />
       <div className="min-w-0 flex-1">
         <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.tutorial.title')}</p>
@@ -447,7 +447,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
 
   if (invitations.length === 0 && sent.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 px-6 py-12 text-center">
+      <div className="flex flex-col items-center gap-3 console px-6 py-12 text-center">
         <MailOpen size={28} aria-hidden className="text-iron-600" />
         <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.invitations.emptyTitle')}</p>
         <p className="max-w-sm font-ui text-[13px] text-iron-400">{t('platform.desk.invitations.emptyCopy')}</p>
@@ -493,7 +493,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
       </ul>
 
       {sent.length > 0 && (
-        <div className="rounded-xl border border-brass-hairline bg-enamel-850">
+        <div className="console">
           <button type="button" onClick={() => setShowSent((s) => !s)} aria-expanded={showSent} className="flex w-full items-center gap-2 px-4 py-3 font-ui text-[13px] font-semibold text-iron-400 transition-colors duration-150 hover:text-paper-100">
             <ChevronDown size={16} aria-hidden className={cn('transition-transform duration-200', showSent && 'rotate-180')} />
             {t('platform.desk.invitations.sentTitle')}
@@ -794,7 +794,7 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
       {filtered.length === 0 ? (
         <p className="py-6 text-center font-ui text-[13px] text-iron-400">{t('platform.desk.history.emptyTitle')}</p>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-brass-hairline bg-enamel-850">
+        <div className="overflow-x-auto console">
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-brass-hairline">
@@ -842,7 +842,7 @@ function RatingCard({ rating, season }: { rating: Rating | null; season: Season 
 
   if (!rating) {
     return (
-      <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+      <div className="console p-5">
         {head}
         <p className="py-8 text-center font-ui text-[13px] text-iron-400">{t('platform.desk.rating.empty')}</p>
       </div>
@@ -855,7 +855,7 @@ function RatingCard({ rating, season }: { rating: Rating | null; season: Season 
   const placing = rank.placementDone !== null;
 
   return (
-    <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+    <div className="console p-5">
       {head}
       <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-5">
         <div>
@@ -997,7 +997,7 @@ export default function Desk() {
   if (stranger || !session) {
     return (
       <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-850 px-8 py-12 text-center">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 console px-8 py-12 text-center">
           <UserX size={32} aria-hidden className="text-iron-600" />
           <h1 className="h2-section">{t('platform.desk.stranger.title')}</h1>
           <p className="font-ui text-[13px] text-paper-300">{t('platform.desk.stranger.copy')}</p>

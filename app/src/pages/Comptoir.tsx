@@ -182,7 +182,7 @@ function ShopItemCard({
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, ease, delay: index * 0.04 }}
-      className="flex flex-col items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-4 transition-colors duration-150 ease-out hover:border-brass-hairline-strong hover:bg-enamel-800"
+      className="flex flex-col items-center gap-3 console p-4 transition-colors duration-150 ease-out hover:border-brass-hairline-strong hover:bg-enamel-800"
     >
       <ItemVisual item={item} equippedAvatar={wallet.equipped.avatar} />
 
@@ -241,7 +241,7 @@ function MemberPreview({ wallet }: { wallet: Wallet }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease, delay: 0.08 }}
-      className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-6 min-[1100px]:sticky min-[1100px]:top-24"
+      className="relative overflow-hidden console p-6 min-[1100px]:sticky min-[1100px]:top-24"
       aria-label={t('platform.comptoir.preview.title')}
     >
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />
@@ -286,7 +286,7 @@ function Earnings() {
   ];
 
   return (
-    <section aria-label={t('platform.comptoir.earn.title')} className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+    <section aria-label={t('platform.comptoir.earn.title')} className="relative overflow-hidden console p-5">
       <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-40" />
       <div className="relative">
         <h2 className="title-card">{t('platform.comptoir.earn.title')}</h2>

@@ -294,7 +294,7 @@ export default function Rules() {
             initial={reduced ? false : { opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.28, ease: "easeOut" }}
-            className="rules-ledger relative mt-8 overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 px-6 py-8 min-[900px]:col-span-9 min-[900px]:mt-0 md:px-14 md:py-12"
+            className="rules-ledger relative mt-8 overflow-hidden console px-6 py-8 min-[900px]:col-span-9 min-[900px]:mt-0 md:px-14 md:py-12"
           >
             {/* ledger paper texture at 45% — never above text */}
             <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-45" />

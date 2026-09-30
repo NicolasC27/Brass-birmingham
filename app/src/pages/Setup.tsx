@@ -208,7 +208,7 @@ export default function Setup() {
           transition={{ duration: 0.22, ease }}
           className="order-2 lg:order-1 lg:col-span-7"
         >
-          <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-6">
+          <div className="console p-6">
             {/* A1. Identité de la table */}
             <section aria-label={t("platform.setup.identity.heading")}>
               <SheetHeading>{t("platform.setup.identity.heading")}</SheetHeading>
@@ -253,7 +253,7 @@ export default function Setup() {
                       aria-checked={active}
                       onClick={() => selectMode(m.id)}
                       className={cn(
-                        "flex h-[72px] items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-4 text-left transition-all duration-150 ease-out hover:bg-enamel-800",
+                        "flex h-[72px] items-center gap-3 console p-4 text-left transition-all duration-150 ease-out hover:bg-enamel-800",
                         active ? m.activeCls : "hover:border-brass-hairline-strong",
                       )}
                     >
@@ -310,7 +310,7 @@ export default function Setup() {
           aria-label={t("platform.setup.preview.label")}
           className="order-1 self-start lg:order-2 lg:col-span-5 lg:sticky lg:top-[88px]"
         >
-          <div className="relative overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+          <div className="relative overflow-hidden console p-5">
             <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-60" />
             <div className="relative">
               <p className="micro-label text-iron-400">{t("platform.setup.preview.label")}</p>

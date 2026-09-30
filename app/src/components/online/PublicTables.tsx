@@ -177,7 +177,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     body = <EmptyState className="mt-4" image="/empty-tables.png" title={t('platform.play.tables.signInTitle')} copy={t('platform.play.tables.signInCopy')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
   } else if (page === null) {
     body = (
-      <div className="mt-4 flex items-center justify-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 px-6 py-10">
+      <div className="mt-4 flex items-center justify-center gap-3 console px-6 py-10">
         <Loader2 size={18} className="animate-spin text-brass-300" aria-hidden />
         <p className="font-ui text-[13px] text-paper-300">{line === 'online' ? t('platform.play.tables.loading') : t('platform.play.tables.waitingLine')}</p>
       </div>
@@ -190,7 +190,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     const from = page.query.offset + 1;
     const to = page.query.offset + rows.length;
     body = (
-      <div className="mt-4 overflow-hidden rounded-xl border border-brass-hairline bg-enamel-850">
+      <div className="mt-4 overflow-hidden console">
         <div className="grid grid-cols-[minmax(0,1.6fr)_88px_minmax(0,1fr)_minmax(0,1fr)_96px] gap-3 border-b border-brass-hairline px-3 py-2">
           {[t('platform.play.tables.colTable'), t('platform.play.tables.colSeats'), t('platform.play.tables.colState'), t('platform.play.tables.colHost'), ''].map((h, i) => (
             <span key={i} className="micro-label text-iron-400">

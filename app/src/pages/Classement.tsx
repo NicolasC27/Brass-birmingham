@@ -84,7 +84,7 @@ function HonourTable({ rows, pinned, me, avatar }: { rows: Ranked[]; pinned: Ran
   const t = useT();
   const cols: { key: string; right?: boolean }[] = [{ key: 'rank' }, { key: 'player' }, { key: 'tier' }, { key: 'cote', right: true }, { key: 'trend' }, { key: 'games', right: true }, { key: 'won', right: true }];
   return (
-    <div className="overflow-x-auto rounded-xl border border-brass-hairline bg-enamel-850">
+    <div className="overflow-x-auto console">
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="border-b border-brass-hairline">
@@ -124,7 +124,7 @@ function Ladder({ mine }: { mine: RankView }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease, delay: 0.1 }}
-      className="self-start rounded-xl border border-brass-hairline bg-enamel-850 p-5 min-[1100px]:col-span-4"
+      className="self-start console p-5 min-[1100px]:col-span-4"
     >
       <h2 className="title-card">{t('platform.ranking.ladder.title')}</h2>
       <div className="mb-4 mt-3 h-px bg-brass-hairline" />
@@ -193,7 +193,7 @@ export default function Classement() {
           </p>
         </div>
         {board && (
-          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-brass-hairline bg-enamel-850 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 console px-4 py-3">
             <RankBadge tier={mine.tier} division={mine.division} lp={mine.lp} placementDone={mine.placementDone ?? undefined} size={32} />
             <span className="data-text text-[12px] tabular-nums text-iron-400">{me ? t('platform.ranking.myRank', { rank: me.rank, count: board.players }) : t('platform.ranking.unranked')}</span>
           </div>
@@ -203,7 +203,7 @@ export default function Classement() {
       <div className="mt-8 grid gap-6 min-[1100px]:grid-cols-12">
         <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease, delay: 0.06 }} className="min-w-0 min-[1100px]:col-span-8">
           {board === null ? (
-            <div className="grid gap-3 rounded-xl border border-brass-hairline bg-enamel-850 p-5" aria-busy aria-label={t('platform.ranking.loading')}>
+            <div className="grid gap-3 console p-5" aria-busy aria-label={t('platform.ranking.loading')}>
               {Array.from({ length: 8 }, (_, i) => (
                 <Skeleton key={i} className={cn('h-8', i === 0 ? 'w-2/3' : 'w-full')} />
               ))}

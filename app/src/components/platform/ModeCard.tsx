@@ -63,29 +63,29 @@ export default function ModeCard({
       title={disabled ? reason : undefined}
       onClick={() => onSelect?.(mode)}
       className={cn(
-        'group flex w-full items-center gap-4 rounded-xl border bg-enamel-850 p-4 text-left transition-all duration-150 ease-out',
+        'group flex w-full items-center gap-4 border bg-enamel-850 p-4 text-left transition-all duration-150 ease-out',
         ranked ? 'hover:border-rust-600' : 'hover:border-bottle-500',
         active && (ranked ? 'border-2 border-rust-600 bg-enamel-800' : 'border-2 border-bottle-500 bg-enamel-800'),
         !active && 'border-brass-hairline hover:bg-enamel-800',
         disabled && 'cursor-not-allowed opacity-55 hover:border-brass-hairline hover:bg-enamel-850',
-        compact && 'h-[88px]',
+        compact && 'h-[76px]',
         className,
       )}
     >
       <span
         className={cn(
-          'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-transform duration-150 group-hover:translate-x-0.5',
-          ranked ? 'bg-rust-700/50 text-rust-400' : 'bg-bottle-700/60 text-bottle-400',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-transform duration-150 group-hover:translate-x-0.5',
+          ranked ? 'border-rust-400/50 text-rust-400' : 'border-bottle-400/50 text-bottle-400',
         )}
       >
-        <Icon size={20} aria-hidden />
+        <Icon size={18} strokeWidth={1.5} aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="font-ui text-[15px] font-semibold text-paper-100">{title}</span>
+          <span className="title-card">{title}</span>
           {ranked && rank && <RankBadge tier={rank.tier} division={rank.division} size={20} compact />}
         </span>
-        <span className="mt-0.5 block truncate font-ui text-[13px] text-paper-300">{disabled ? reason : copy}</span>
+        <span className="mt-0.5 block truncate font-ui text-[12.5px] text-paper-300">{disabled ? reason : copy}</span>
       </span>
     </button>
   );

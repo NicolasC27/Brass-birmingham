@@ -55,7 +55,7 @@ export default function HouseRules({
   return (
     <section
       aria-label={t("setup.houseRules.ariaLabel")}
-      className="relative rounded-xl border border-brass-hairline bg-enamel-850 p-6"
+      className="relative console p-6"
     >
       <header>
         <h2 className="title-card">{t("setup.houseRules.heading")}</h2>

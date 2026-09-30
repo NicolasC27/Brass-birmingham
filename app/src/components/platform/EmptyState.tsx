@@ -30,9 +30,9 @@ export default function EmptyState({ title, copy, image, cta, mini = false, icon
     );
   }
   return (
-    <div className={cn('flex flex-col items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-850 px-6 py-10 text-center', className)}>
+    <div className={cn('flex flex-col items-center gap-4 console px-6 py-10 text-center', className)}>
       {image && <img src={image} alt="" className="w-60 rounded-lg border border-[rgb(var(--paper-100)/.07)]" width={240} />}
-      <h3 className="font-fraunces text-[20px] font-semibold text-paper-100">{title}</h3>
+      <h3 className="font-fraunces text-[20px] font-medium text-paper-100">{title}</h3>
       {copy && <p className="max-w-sm font-ui text-[13px] text-paper-300">{copy}</p>}
       {cta && (
         <Button variant="primary" to={cta.to} onClick={cta.onClick} icon={cta.icon}>

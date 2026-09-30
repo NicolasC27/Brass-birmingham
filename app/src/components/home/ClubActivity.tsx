@@ -112,7 +112,7 @@ function LiveTables() {
   const live = tables?.live ?? [];
 
   return (
-    <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-2" aria-label={t('platform.home.activity.liveTitle')}>
+    <div className="console p-2" aria-label={t('platform.home.activity.liveTitle')}>
       <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
         <span className="micro-label text-iron-400">{t('platform.home.activity.liveTitle')}</span>
         {live.length > 0 && (
@@ -154,7 +154,7 @@ export default function ClubActivity() {
             <span className="micro-label text-iron-400">{t('platform.home.activity.mine')}</span>
           </div>
         </Reveal>
-        <div className="mt-4 rounded-xl border border-brass-hairline bg-enamel-850 p-2">
+        <div className="mt-4 console p-2">
           <MyGames />
         </div>
         <Reveal i={FEED + 1} className="mt-3">

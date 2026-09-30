@@ -47,7 +47,7 @@ export default function CodeJoin() {
       viewport={{ amount: 0.15, once: true }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       aria-label={t('platform.play.code.title')}
-      className="mt-6 rounded-xl border border-brass-hairline bg-enamel-850 p-4"
+      className="mt-6 console p-4"
     >
       <div className="flex flex-col gap-4 min-[900px]:min-h-[64px] min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
         <div className="flex items-center gap-3">

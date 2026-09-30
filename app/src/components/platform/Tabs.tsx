@@ -35,7 +35,7 @@ export default function Tabs({ tabs, active, onChange, groupId, className }: Tab
             aria-selected={isActive}
             onClick={() => onChange(tab.id)}
             className={cn(
-              'relative px-3 pb-2 pt-1 font-ui text-[13px] font-semibold transition-colors duration-150',
+              'relative px-3 pb-2 pt-1 font-ui text-[12.5px] font-medium transition-colors duration-150',
               isActive ? 'text-paper-100' : 'text-iron-400 hover:text-paper-100',
             )}
           >
@@ -44,7 +44,7 @@ export default function Tabs({ tabs, active, onChange, groupId, className }: Tab
             {isActive && (
               <motion.span
                 layoutId={`tab-underline-${groupId}`}
-                className="absolute inset-x-2 -bottom-px h-0.5 bg-brass-500"
+                className="absolute inset-x-2 -bottom-px h-px bg-brass-300"
                 transition={{ type: 'spring', stiffness: 260, damping: 24 }}
               />
             )}

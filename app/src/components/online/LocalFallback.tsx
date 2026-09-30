@@ -56,7 +56,7 @@ function LocalOffice() {
   return (
     <div className="mt-6 grid gap-4 min-[900px]:grid-cols-[320px_1fr]">
       {/* Registre des visiteurs */}
-      <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+      <div className="console p-5">
         <label htmlFor="online-name" className="micro-label text-brass-300">
           {t('online.entry.yourName')}
         </label>
@@ -75,7 +75,7 @@ function LocalOffice() {
 
       <div className="grid content-start gap-4">
         {/* Ouvrir une table locale */}
-        <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+        <div className="console p-5">
           <h3 className="title-card">{t('site.desk.open')}</h3>
           <p className="mt-1 font-ui text-[13px] leading-relaxed text-paper-300">{t('site.desk.openCopy')}</p>
           <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -86,7 +86,7 @@ function LocalOffice() {
         </div>
 
         {/* Rejoindre par code (4 caractères) */}
-        <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-5">
+        <div className="console p-5">
           <h3 className="title-card">{t('site.desk.join')}</h3>
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <KeyRound size={16} aria-hidden className="text-brass-300" />
@@ -143,7 +143,7 @@ export default function LocalFallback({ onToast }: { onToast: Notify }) {
       transition={{ duration: 0.26, ease: 'easeOut' }}
       className="mx-auto mt-12 max-w-[640px] pb-10"
     >
-      <div className="rounded-xl border border-brass-hairline bg-enamel-850 p-6 text-center">
+      <div className="console p-6 text-center">
         <WifiOff size={28} aria-hidden className="mx-auto text-rust-400" />
         <h1 className="mt-3 font-fraunces text-[24px] font-semibold text-paper-100">{t('platform.play.offline.title')}</h1>
         <p className="mx-auto mt-2 max-w-md font-ui text-[14px] leading-relaxed text-paper-300">{t('platform.play.offline.copy')}</p>
