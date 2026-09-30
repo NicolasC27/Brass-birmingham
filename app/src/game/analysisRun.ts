@@ -340,6 +340,15 @@ export function readGame(game: GameState, table: string, seat: number, judge: Ju
     }
     return snap;
   }
+  /* the reading already in hand, whole, this seat's turns included: a change
+     of seat costs nothing, and a table's reading is not asked for again */
+  if (snap.key === key && snap.moves === moves && !snap.running && snap.verdicts[seat] && isWhole(snap, moves)) {
+    if (snap.seat !== seat) {
+      snap = { ...snap, seat };
+      tell();
+    }
+    return snap;
+  }
   /* the shelf holds it all, this seat's turns included */
   if (whole && kept!.verdicts[seat] && !online) {
     if (snap.key !== key || snap.seat !== seat || snap.moves !== moves || snap.running) {
