@@ -812,9 +812,8 @@ html.fonts-ready .gz-wordmark {
   }
 }
 html[data-theme="dark"] .platform-root .gz-engraving img {
-  /* the plate printed in white on the lacquer, a night impression */
-  filter: invert(1) hue-rotate(180deg) brightness(0.72) sepia(0.35) contrast(1.05);
-  opacity: 0.85;
+  /* the night impression is its own plate: nothing to invert */
+  filter: none;
 }
 /* a printed ticket: perforation down the left side, the label in capitals */
 .gz-ticket {
