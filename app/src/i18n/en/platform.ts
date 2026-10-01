@@ -881,7 +881,7 @@ const platform = {
       noBanker: "Not a shilling borrowed all game, eight links laid, and first place. The careful never win — prove otherwise.",
       burton: "Four breweries flipped, an income of twenty at the close, and the table beaten. Burton never saw so much beer.",
       manchesterLine: "Eight rails in the rail era, three of them doubled, and first place. A network, not a collection.",
-      staffordshire: "Two potteries sold in the canal era, a level-four pottery flipped, and a hundred and sixty points. Mrs Wedgwood is watching.",
+      staffordshire: "Two potteries sold in the canal era, a level-four pottery flipped, and a hundred and forty points. Mrs Wedgwood is watching.",
       bigCotton: "The market is volatile. Three level-three mills sold, two loans at most, and the win.",
       shortEra: "Two short eras. Ten links, thirty pounds in hand at the close, and first place. No time to hesitate.",
       boxes: "Two level-five manufactories built, three Develop actions, and the table beaten. Small boxes do not count.",

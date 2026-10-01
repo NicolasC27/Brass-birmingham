@@ -881,7 +881,7 @@ const platform = {
       noBanker: "Ni un chelín prestado en toda la partida, ocho enlaces, y el primer puesto. Los prudentes nunca ganan — demuestre lo contrario.",
       burton: "Cuatro cervecerías volteadas, ingreso de veinte al cierre, y la mesa vencida. Burton nunca vio tanta cerveza.",
       manchesterLine: "Ocho raíles en la era del ferrocarril, tres de ellos dobles, y el primer puesto. Una red, no una colección.",
-      staffordshire: "Dos alfarerías vendidas en la era del canal, una de nivel cuatro volteada, y ciento sesenta puntos. Mrs Wedgwood observa.",
+      staffordshire: "Dos alfarerías vendidas en la era del canal, una de nivel cuatro volteada, y ciento cuarenta puntos. Mrs Wedgwood observa.",
       bigCotton: "El mercado es volátil. Tres hilanderías de nivel tres vendidas, dos préstamos como mucho, y la victoria.",
       shortEra: "Dos eras cortas. Diez enlaces, treinta libras en caja al cierre, y el primer puesto. Sin tiempo para dudar.",
       boxes: "Dos manufacturas de nivel cinco construidas, tres acciones Desarrollar, y la mesa vencida. Las cajas pequeñas no cuentan.",

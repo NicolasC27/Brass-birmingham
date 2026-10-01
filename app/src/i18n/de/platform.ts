@@ -883,7 +883,7 @@ const platform: typeof enPlatform = {
       noBanker: "Keinen Shilling geliehen die ganze Partie, acht Verbindungen gelegt, und der erste Platz. Die Vorsichtigen gewinnen nie — beweisen Sie das Gegenteil.",
       burton: "Vier Brauereien umgedreht, ein Einkommen von zwanzig am Schluss, und der Tisch geschlagen. Burton sah nie so viel Bier.",
       manchesterLine: "Acht Schienen in der Eisenbahnzeit, drei davon doppelt gelegt, und der erste Platz. Ein Netz, keine Sammlung.",
-      staffordshire: "Zwei Töpfereien in der Kanalzeit verkauft, eine Töpferei der Stufe vier umgedreht, und hundertsechzig Punkte. Mrs Wedgwood sieht zu.",
+      staffordshire: "Zwei Töpfereien in der Kanalzeit verkauft, eine Töpferei der Stufe vier umgedreht, und hundertvierzig Punkte. Mrs Wedgwood sieht zu.",
       bigCotton: "Der Markt ist unruhig. Drei Spinnereien der Stufe drei verkauft, höchstens zwei Kredite, und der Sieg.",
       shortEra: "Zwei kurze Epochen. Zehn Verbindungen, dreißig Pfund in der Kasse am Schluss, und der erste Platz. Keine Zeit zum Zögern.",
       boxes: "Zwei Manufakturen der Stufe fünf gebaut, drei Entwickeln-Aktionen, und der Tisch geschlagen. Kleine Kisten zählen nicht.",

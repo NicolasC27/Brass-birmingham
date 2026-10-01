@@ -881,7 +881,7 @@ const platform = {
       noBanker: "Pas un shilling emprunté de toute la partie, huit liaisons posées, et le premier rang. Les prudents ne gagnent jamais — prouvez le contraire.",
       burton: "Quatre brasseries retournées, un revenu de vingt à la fin, et la table battue. Burton n’a jamais vu autant de bière.",
       manchesterLine: "Huit rails à l’ère du rail, dont trois poses doubles, et la première place. Un réseau, pas une collection.",
-      staffordshire: "Deux poteries vendues à l’ère du canal, une poterie de niveau quatre retournée, et cent soixante points. Mrs Wedgwood regarde.",
+      staffordshire: "Deux poteries vendues à l’ère du canal, une poterie de niveau quatre retournée, et cent quarante points. Mrs Wedgwood regarde.",
       bigCotton: "Le marché est volatil. Trois filatures de niveau trois vendues, deux emprunts au plus, et la victoire.",
       shortEra: "Deux ères courtes. Dix liaisons, trente livres en caisse à la fin, et le premier rang. Pas le temps d’hésiter.",
       boxes: "Deux manufactures de niveau cinq bâties, trois actions Développer, et la table battue. Les petites caisses ne comptent pas.",

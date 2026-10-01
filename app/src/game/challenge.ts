@@ -48,7 +48,7 @@ export const CHALLENGES: ChallengeDef[] = [
     id: 'forges',
     rivals: ['watt', 'boulton'],
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
-    rules: [{ kind: 'win' }, { kind: 'industry', industry: 'iron', level: 3, count: 2 }, { kind: 'loans', max: 1 }, { kind: 'vp', min: 150 }],
+    rules: [{ kind: 'win' }, { kind: 'industry', industry: 'iron', level: 3, count: 2 }, { kind: 'loans', max: 1 }, { kind: 'vp', min: 130 }],
   },
   {
     id: 'noBanker',
@@ -72,7 +72,7 @@ export const CHALLENGES: ChallengeDef[] = [
     id: 'staffordshire',
     rivals: ['wedgwood', 'watt'],
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
-    rules: [{ kind: 'industry', industry: 'pottery', level: 1, count: 2, sold: true, era: 'canal' }, { kind: 'industry', industry: 'pottery', level: 4, count: 1, sold: true }, { kind: 'vp', min: 160 }],
+    rules: [{ kind: 'industry', industry: 'pottery', level: 1, count: 2, sold: true, era: 'canal' }, { kind: 'industry', industry: 'pottery', level: 4, count: 1, sold: true }, { kind: 'vp', min: 140 }],
   },
   {
     id: 'bigCotton',
