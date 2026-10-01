@@ -257,6 +257,13 @@ function loadSamples(): Float32Array {
     parts.push(p);
     rows += p.length / ROW;
   }
+  /* A cap that says nothing reads as a count of everything there is. This
+     one held at eight hundred thousand while two million sat unread beside
+     it, and a run that fills the record is then filling a queue whose front
+     falls off — the oldest positions leave the fit as the newest arrive,
+     without a word. */
+  const onDisk = files.reduce((a, f) => a + statSync(resolve(DATA_DIR, f)).size / 4 / ROW, 0);
+  if (rows < onDisk) console.warn(`FIT_ROWS holds this fit to the newest ${Math.round(rows).toLocaleString('en')} positions of ${Math.round(onDisk).toLocaleString('en')} on disk`);
   const all = new Float32Array(parts.reduce((a, p) => a + p.length, 0));
   let at = 0;
   for (const p of parts) {
