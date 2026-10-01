@@ -14,6 +14,7 @@ import CodeInput from '@/components/platform/CodeInput';
 import ModeCard from '@/components/platform/ModeCard';
 import RankBadge from '@/components/platform/RankBadge';
 import Departures from '@/components/home/Departures';
+import Ephemeris from '@/components/home/Ephemeris';
 import ClubActivity from '@/components/home/ClubActivity';
 import ProgressCard from '@/components/desk/ProgressCard';
 import { usePresence } from '@/components/platform/presence';
@@ -273,6 +274,9 @@ export default function Home() {
 
         <aside className="gz-col-rule min-[1100px]:col-span-5">
           <Departures />
+          <div className="mt-8">
+            <Ephemeris />
+          </div>
         </aside>
       </div>
 
