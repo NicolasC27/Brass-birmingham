@@ -172,17 +172,14 @@ function Figures() {
 function Masthead() {
   const t = useT();
   const lang = useLang();
-  const date = new Date().toLocaleDateString(localeOf(lang), { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  /* the week's year of the era, the one the almanac prints */
-  const year = ephemerisOf().year;
+  /* the edition is dated in the era: today's day and month, the almanac's year */
+  const date = `${new Date().toLocaleDateString(localeOf(lang), { weekday: 'long', day: 'numeric', month: 'long' })} ${ephemerisOf().year}`;
   return (
     <header className="relative border-b border-[var(--gz-ink-faint)]">
       {/* the ear line: the edition on the left, the figures, the tools on the right */}
       <div className="border-b border-[var(--gz-ink-faint)]">
         <div className="mx-auto flex h-9 max-w-[1240px] items-center gap-4 px-4 font-mono text-[11px] text-iron-400 sm:px-8">
-          <span className="hidden whitespace-nowrap min-[900px]:inline">
-            {t('platform.masthead.edition', { date })} <span className="text-brass-300">· {t('platform.masthead.year', { year })}</span>
-          </span>
+          <span className="hidden whitespace-nowrap min-[900px]:inline">{t('platform.masthead.edition', { date })}</span>
           <span aria-hidden className="hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
           <span className="flex min-w-0 items-center gap-2 truncate">
             <Figures />
