@@ -27,7 +27,7 @@ export type IncomeSide = 'bottom' | 'left';
  *  paintings, the fully painted countryside with its canals and rails, or the
  *  same land at dusk, or the wooded country aged from one era into the next,
  *  both dark enough for the painted tiles */
-export type MapStyle = 'ridges' | 'model' | 'inked' | 'quiet' | 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed';
+export type MapStyle = 'relief' | 'ridges' | 'model' | 'inked' | 'quiet' | 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
   engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
@@ -49,6 +49,10 @@ export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
      hedgerows, a breath of mist in the hollows. Light enough that the
      painted tiles and their places read as the brightest things on it */
   quiet: { canal: '/map-calm-canal.webp', rail: '/map-calm-rail.webp' },
+  /* the country as a made thing: a painted plaster model of low English
+     swells under a raking light, a shelf cut in it for every town, the rail
+     era the same model gone grey with a century of smoke settled on it */
+  relief: { canal: '/map-relief-canal.webp', rail: '/map-relief-rail.webp' },
   /* three grounds that are not a patchwork of fields seen from a plane.
      Painted ridges: the terrain of a strategy board, long diagonal ridges,
      rock on the high ground, scattered painted woods, lit from the upper
@@ -215,7 +219,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  mapStyle: read('mapStyle', 'ridges'),
+  mapStyle: read('mapStyle', 'relief'),
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),

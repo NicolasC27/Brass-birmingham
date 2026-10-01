@@ -167,7 +167,7 @@ const game = {
     side: { bottom: 'Bottom', left: 'Left' },
     mapStyle: 'Map painting',
     mapStyleHint: 'A period engraved map, the etched terrain with its paintings, the painted countryside with its canals, or the same land at dusk, for the painted tiles.',
-    map: { engraved: 'Engraved map', etched: 'Etched terrain', painted: 'Painted canals', dusk: 'Dark land', wooded: 'Wooded land', ploughed: 'Ploughed land', quiet: 'Quiet country', ridges: 'Painted ridges', model: 'Model landscape', inked: 'Inked map' },
+    map: { relief: 'English model', engraved: 'Engraved map', etched: 'Etched terrain', painted: 'Painted canals', dusk: 'Dark land', wooded: 'Wooded land', ploughed: 'Ploughed land', quiet: 'Quiet country', ridges: 'Painted ridges', model: 'Model landscape', inked: 'Inked map' },
     railPainting: 'Rail-era painting',
     railPaintingHint: 'Three paintings for the second era; the rails are engraved on each.',
     railPaint: 'Painting {n}',
