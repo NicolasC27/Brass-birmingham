@@ -101,9 +101,14 @@ function Row({ table, busy, i = 0, onJoin, onResume, onWatch }: { table: CardTab
   );
 }
 
-/** a timetable: the lines given, under the column heads */
-function Timetable({ tables, busy, onJoin, onResume, onWatch }: { tables: CardTable[]; busy: boolean; onJoin: (t: CardTable) => void; onResume: (t: CardTable) => void; onWatch: (t: CardTable) => void }) {
+type Hands = { busy: boolean; onJoin: (t: CardTable) => void; onResume: (t: CardTable) => void; onWatch: (t: CardTable) => void };
+
+/** a timetable: the lines given under the column heads — in groups, each
+ *  under a heading of its own, when there are several */
+function Timetable({ tables, groups, busy, onJoin, onResume, onWatch }: { tables?: CardTable[]; groups?: { label: string; tables: CardTable[] }[] } & Hands) {
   const t = useT();
+  const parts = groups ?? [{ label: '', tables: tables ?? [] }];
+  let n = 0;
   return (
     <table className="gz-timetable">
       <thead>
@@ -115,23 +120,23 @@ function Timetable({ tables, busy, onJoin, onResume, onWatch }: { tables: CardTa
           <th />
         </tr>
       </thead>
-      <tbody>
-        {tables.map((table, i) => (
-          <Row key={table.code} table={table} i={i} busy={busy} onJoin={onJoin} onResume={onResume} onWatch={onWatch} />
+      {parts
+        .filter((g) => g.tables.length > 0)
+        .map((g) => (
+          <tbody key={g.label}>
+            {g.label && (
+              <tr>
+                <th colSpan={5} className="!border-b-0 !pb-1 !pt-4 !text-paper-100">
+                  {g.label}
+                </th>
+              </tr>
+            )}
+            {g.tables.map((table) => (
+              <Row key={table.code} table={table} i={n++} busy={busy} onJoin={onJoin} onResume={onResume} onWatch={onWatch} />
+            ))}
+          </tbody>
         ))}
-      </tbody>
     </table>
-  );
-}
-
-function Band({ title, tables, busy, onJoin, onResume, onWatch }: { title: string; tables: CardTable[]; busy: boolean; onJoin: (t: CardTable) => void; onResume: (t: CardTable) => void; onWatch: (t: CardTable) => void }) {
-  if (!tables.length) return null;
-  return (
-    <div>
-      <p className="micro-label text-paper-100">{title}</p>
-      <div className="gz-rule-double mt-2" aria-hidden />
-      <Timetable tables={tables.slice(0, 3)} busy={busy} onJoin={onJoin} onResume={onResume} onWatch={onWatch} />
-    </div>
   );
 }
 
@@ -220,7 +225,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     const from = page.query.offset + 1;
     const to = page.query.offset + rows.length;
     body = (
-      <div className="mt-3">
+      <div className="mt-2">
         <Timetable tables={rows} busy={busy !== null} onJoin={(tb) => void join(tb)} onResume={resume} onWatch={watch} />
         <div className="flex items-center justify-between gap-3 border-t border-[var(--gz-ink-soft)] px-2 py-2">
           <span className="data-text text-[11px] text-iron-400 tnums">{t('platform.play.tables.pageOf', { from, to, total: page.total })}</span>
@@ -240,7 +245,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   }
 
   return (
-    <section id="tables" aria-label={t('platform.play.tables.title')} className="mt-8 scroll-mt-28 pb-10">
+    <section id="tables" aria-label={t('platform.play.tables.title')} className="mt-12 scroll-mt-28 pb-10">
       <h2 className="gz-head h2-section">{t('platform.play.tables.title')}</h2>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <p className="data-text text-[12px] text-iron-400 tnums">{page ? t('platform.play.tables.count', { count: page.counts.all - page.counts.live, live: page.counts.live }) : ' '}</p>
@@ -252,18 +257,27 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
         )}
       </div>
 
-      {/* the first storey: what concerns the reader */}
+      {/* the first storey: what concerns the reader, one timetable in groups */}
       {page && !stranger && (mine.length > 0 || friends.length > 0 || live.length > 0) && (
-        <div className="mt-6 grid gap-8 min-[900px]:grid-cols-3">
-          <Band title={t('platform.play.tables.mine')} tables={mine} busy={busy !== null} onJoin={(tb) => void join(tb)} onResume={resume} onWatch={watch} />
-          <Band title={t('platform.play.tables.friendsTitle')} tables={friends} busy={busy !== null} onJoin={(tb) => void join(tb)} onResume={resume} onWatch={watch} />
-          <Band title={t('platform.play.tables.liveTitle')} tables={live} busy={busy !== null} onJoin={(tb) => void join(tb)} onResume={resume} onWatch={watch} />
+        <div className="mt-5">
+          <div className="gz-rule-double" aria-hidden />
+          <Timetable
+            groups={[
+              { label: t('platform.play.tables.mine'), tables: mine.slice(0, 3) },
+              { label: t('platform.play.tables.friendsTitle'), tables: friends.slice(0, 3) },
+              { label: t('platform.play.tables.liveTitle'), tables: live.slice(0, 3) },
+            ]}
+            busy={busy !== null}
+            onJoin={(tb) => void join(tb)}
+            onResume={resume}
+            onWatch={watch}
+          />
         </div>
       )}
 
       {/* the second storey: the register, one page at a time */}
       {!stranger && (
-        <div className="mt-8 flex flex-wrap items-center gap-2 border-y border-[var(--gz-ink-soft)] py-2">
+        <div className="mt-10 flex flex-wrap items-center gap-2 border-y border-[var(--gz-ink-soft)] py-2">
           <p className="micro-label mr-2 text-paper-100">{t('platform.play.tables.register')}</p>
           {chips.map((chip) => (
             <button

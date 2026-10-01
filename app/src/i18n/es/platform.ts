@@ -293,6 +293,13 @@ const platform = {
   },
   // --- play ---
   play: {
+    counter: {
+      title: "LAS VENTANILLAS",
+      normal: "Ventanilla normal",
+      ranked: "Ventanilla clasificada",
+      take: "Tomar la cola →",
+      leave: "Dejar la cola →",
+    },
     eyebrow: 'SALA DE MÁQUINAS',
     title: 'Jugar',
     lede: 'Elige un modo, la cola se encarga del resto.',

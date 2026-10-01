@@ -23,11 +23,11 @@ import LocalFallback from '@/components/online/LocalFallback';
 /* `/online?table=CODE` → `/account?table=CODE`.                       */
 /* ------------------------------------------------------------------ */
 
-/* the line to the office is not open: say so, once, above the hub */
+/* the line to the office is not open: say so, once, above the hall */
 function LineNotice({ line }: { line: 'offline' | 'connecting' }) {
   const t = useT();
   return (
-    <div role="status" className="mt-6 flex items-center gap-3 border border-rust-600/60 bg-enamel-850 px-4 py-3 font-serif text-[13.5px] italic text-paper-300">
+    <div role="status" className="mt-6 flex items-center gap-3 border-y border-rust-600/50 px-1 py-3 font-serif text-[13.5px] italic text-paper-300">
       <WifiOff size={16} aria-hidden className="shrink-0 text-rust-400" />
       <span>{t(line === 'connecting' ? 'platform.play.lineConnecting' : 'platform.play.lineDown')}</span>
     </div>
@@ -35,6 +35,7 @@ function LineNotice({ line }: { line: 'offline' | 'connecting' }) {
 }
 
 export default function Online() {
+  const t = useT();
   const session = useSession();
   const stranger = useStranger();
   const line = useLine();
@@ -65,9 +66,20 @@ export default function Online() {
     <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
       {isOnline ? (
         <>
+          <header className="pt-10">
+            <p className="eyebrow-fell">{t('platform.play.eyebrow')}</p>
+            <h1 className="display-page mt-2">{t('platform.play.title')}</h1>
+            <p className="mt-2 font-serif text-[15px] italic text-paper-300">{t('platform.play.lede')}</p>
+          </header>
           {line !== 'online' && <LineNotice line={line} />}
-          <Matchmaking onToast={notify} />
-          <CodeJoin />
+          <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">
+            <div className="min-[1100px]:col-span-8">
+              <Matchmaking onToast={notify} />
+            </div>
+            <aside className="gz-col-rule min-[1100px]:col-span-4">
+              <CodeJoin />
+            </aside>
+          </div>
           <PublicTables onToast={notify} />
         </>
       ) : (

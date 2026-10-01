@@ -295,6 +295,13 @@ const platform: typeof enPlatform = {
   },
   // --- play ---
   play: {
+    counter: {
+      title: "DIE SCHALTER",
+      normal: "Normaler Schalter",
+      ranked: "Gewerteter Schalter",
+      take: "Anstellen →",
+      leave: "Schlange verlassen →",
+    },
     eyebrow: 'MASCHINENHALLE',
     title: 'Spielen',
     lede: 'Wähl einen Modus, die Warteschlange erledigt den Rest.',

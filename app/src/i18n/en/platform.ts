@@ -293,6 +293,13 @@ const platform = {
   },
   // --- play ---
   play: {
+    counter: {
+      title: "THE COUNTERS",
+      normal: "Normal counter",
+      ranked: "Ranked counter",
+      take: "Take the line →",
+      leave: "Leave the line →",
+    },
     eyebrow: 'ENGINE ROOM',
     title: 'Play',
     lede: 'Pick a mode, the queue does the rest.',

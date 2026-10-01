@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
-import { Hash } from 'lucide-react';
 import { useT } from '@/i18n';
 import { lobby, normalizeCode } from '@/online/lobby';
 import { useSession } from '@/online/session';
@@ -9,10 +8,10 @@ import CodeInput from '@/components/platform/CodeInput';
 import { lobbyErrorText } from './notify';
 
 /* ------------------------------------------------------------------ */
-/* Section 2 (play.md) — bandeau « Rejoindre avec un code ». Codes     */
-/* réels = 4 caractères (normalizeCode) ; le submit passe par le flux  */
-/* lobby.join existant → /online/:code. Sans session, la chaîne        */
-/* d'invitation est préservée : /account?table=CODE.                   */
+/* The code window of the play hall: four cells for a table's code,    */
+/* real codes being four glyphs (normalizeCode); the submit goes        */
+/* through lobby.join → /online/:code. Without a session the chain of  */
+/* invitation is kept: /account?table=CODE.                            */
 /* ------------------------------------------------------------------ */
 
 export default function CodeJoin() {
@@ -41,26 +40,13 @@ export default function CodeJoin() {
   };
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ amount: 0.15, once: true }}
-      transition={{ duration: 0.22, ease: 'easeOut' }}
-      aria-label={t('platform.play.code.title')}
-      className="mt-8 border-y border-[var(--gz-ink-soft)] py-4"
-    >
-      <div className="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
-        <div className="flex items-center gap-3">
-          <Hash size={16} strokeWidth={1.5} aria-hidden className="shrink-0 text-brass-300" />
-          <div>
-            <h2 className="title-card">{t('platform.play.code.title')}</h2>
-            <p className="font-serif text-[13px] italic text-iron-400">{t('platform.play.code.copy')}</p>
-          </div>
-        </div>
-        <CodeInput onSubmit={(code) => void submit(code)} className="min-[900px]:flex-row min-[900px]:items-center" />
-      </div>
+    <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut', delay: 0.12 }} aria-label={t('platform.play.code.title')}>
+      <p className="micro-label text-paper-100">{t('platform.play.code.title')}</p>
+      <div className="gz-rule-double mt-2" aria-hidden />
+      <p className="mt-4 font-serif text-[13.5px] italic leading-relaxed text-paper-300">{t('platform.play.code.copy')}</p>
+      <CodeInput className="mt-4" onSubmit={(code) => void submit(code)} />
       {error && (
-        <p role="alert" className="mt-3 font-ui text-[13px] text-rust-400">
+        <p role="alert" className="mt-3 font-serif text-[13px] italic text-rust-400">
           {error}
         </p>
       )}

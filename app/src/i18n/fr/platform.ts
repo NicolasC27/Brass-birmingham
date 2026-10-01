@@ -293,6 +293,13 @@ const platform = {
   },
   // --- play ---
   play: {
+    counter: {
+      title: "LES GUICHETS",
+      normal: "Guichet normal",
+      ranked: "Guichet classé",
+      take: "Prendre la file →",
+      leave: "Quitter la file →",
+    },
     eyebrow: 'SALLE DES MACHINES',
     title: 'Jouer',
     lede: 'Choisissez un mode, la file s’occupe du reste.',
