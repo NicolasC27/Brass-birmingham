@@ -11,6 +11,8 @@ import Modal from '@/components/platform/Modal';
 import RankBadge from '@/components/platform/RankBadge';
 import type { TableMode } from '@/components/platform/ModeCard';
 import { usePresence } from '@/components/platform/presence';
+import { getBoardOptions } from '@/components/game/boardOptions';
+import { stationBell } from '@/gl/sfx';
 import type { Notify } from './notify';
 
 /* ------------------------------------------------------------------ */
@@ -69,6 +71,8 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
   useEffect(() => {
     if (!dealt) return;
     clearDealt();
+    /* the station bell: the train is made up, the passengers are called */
+    if (getBoardOptions().sound) stationBell();
     navigate(`/game/${dealt}`);
   }, [dealt, navigate]);
 

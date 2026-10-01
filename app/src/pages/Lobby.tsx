@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { getBoardOptions } from '@/components/game/boardOptions';
+import { steamWhistle } from '@/gl/sfx';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Play, Search, Send, X } from 'lucide-react';
@@ -409,6 +411,8 @@ export default function Lobby() {
     } catch {
       /* the game page falls back to its defaults */
     }
+    /* the whistle: the train leaves the platform */
+    if (getBoardOptions().sound) steamWhistle();
     /* on a server the game is a place of its own: it carries the code */
     navigate(isOnline ? `/game/${table.code}` : '/game');
   }, [table, navigate]);

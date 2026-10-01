@@ -209,3 +209,89 @@ export function mugClink(): void {
     }
   });
 }
+
+/* ---------------- the station: a bell when a train is made up, a whistle as it leaves ---------------- */
+
+/** the station bell: a large bell struck twice, low and long — the office
+ *  has made up a table and calls the passengers */
+export function stationBell(): void {
+  void context().then((ac) => {
+    if (!ac) return;
+    for (const strike of [0, 0.55]) {
+      const now = ac.currentTime + strike;
+      const master = ac.createGain();
+      master.gain.setValueAtTime(0.0001, now);
+      master.gain.exponentialRampToValueAtTime(0.12, now + 0.01);
+      master.gain.exponentialRampToValueAtTime(0.0001, now + 1.8);
+      master.connect(ac.destination);
+      for (const [ratio, level, decay] of [
+        [1, 1, 1.8],
+        [2.0, 0.5, 1.1],
+        [2.92, 0.28, 0.6],
+        [4.2, 0.12, 0.35],
+      ] as const) {
+        const o = ac.createOscillator();
+        o.type = 'sine';
+        o.frequency.setValueAtTime(523 * ratio, now);
+        const g = ac.createGain();
+        g.gain.setValueAtTime(level, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+        o.connect(g).connect(master);
+        o.start(now);
+        o.stop(now + decay + 0.05);
+      }
+    }
+  });
+}
+
+/** the steam whistle: two reeds a fifth apart with breath in them, a
+ *  rising attack and a long fall — the train leaves */
+export function steamWhistle(): void {
+  void context().then((ac) => {
+    if (!ac) return;
+    const now = ac.currentTime;
+    const master = ac.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.08, now + 0.12);
+    master.gain.setValueAtTime(0.08, now + 0.9);
+    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+    const tone = ac.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.frequency.setValueAtTime(2400, now);
+    tone.connect(master).connect(ac.destination);
+    for (const [f, level] of [
+      [587, 1],
+      [880, 0.7],
+      [1175, 0.25],
+    ] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sawtooth';
+      /* the note climbs as the steam comes up, then holds */
+      o.frequency.setValueAtTime(f * 0.94, now);
+      o.frequency.exponentialRampToValueAtTime(f, now + 0.18);
+      o.frequency.exponentialRampToValueAtTime(f * 0.985, now + 1.6);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(level * 0.35, now);
+      o.connect(g).connect(tone);
+      o.start(now);
+      o.stop(now + 1.7);
+    }
+    /* the breath: filtered noise under the reeds */
+    const seconds = 1.7;
+    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * seconds), ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+    const noise = ac.createBufferSource();
+    noise.buffer = buf;
+    const band = ac.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.setValueAtTime(1600, now);
+    band.Q.setValueAtTime(0.8, now);
+    const ng = ac.createGain();
+    ng.gain.setValueAtTime(0.18, now);
+    noise.connect(band).connect(ng).connect(tone);
+    noise.start(now);
+    noise.stop(now + seconds);
+  });
+}
+
