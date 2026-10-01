@@ -31,7 +31,17 @@ L'essai des cartes en main a donné le même verdict deux fois, une fois cher et
 
 L'erreur retenue, qui coûte deux fits et quinze minutes, disait déjà tout. Les parties, qui coûtent quarante minutes de plus, n'ont fait que le confirmer.
 
-**La règle qui en sort** : avant de jouer la moindre partie pour peser un trait, entraîner deux fois le même corpus — avec et sans — et regarder l'erreur retenue. Si elle ne bouge pas, le trait ne porte rien d'utilisable et les parties ne le feront pas apparaître. Si elle bouge, alors seulement les parties disent si mieux lire veut dire mieux jouer, ce qui n'est pas acquis (voir la ligne « Cible TD » ci-dessus : erreur 8,3 mais 6/24).
+**La règle qui en sort, et elle ne vaut que dans un sens** : avant de jouer la moindre partie, entraîner deux fois le même corpus et regarder l'erreur retenue. **Si elle ne bouge pas, ne jouez pas** — le changement ne porte rien d'utilisable. **Si elle bouge, le crible ne dit rien du tout** et il faut jouer quand même.
+
+Le premier soir j'ai écrit que le crible était « deux sur deux ». Mesuré trois fois de plus, il est **un sur trois** :
+
+| essai | erreur retenue | ce que les parties ont dit | le crible avait-il vu juste ? |
+|---|---|---|---|
+| les cartes en main | 6,62 → 6,60, rien | rien | oui |
+| l'ordre du tour | 5,81 → 5,64 | −0,69 ± 1,82, rien | non |
+| le plafond de lignes du fit | 5,73 → **5,28** | −0,28 ± 0,87 sur 400 parties, rien | non |
+
+Le dernier est le plus net : le plus gros gain de lecture de toutes les tentatives — 0,45 point — pour exactement rien au jeu. **Mieux lire n'est pas mieux jouer**, et la note [[06 Mesures et résultats]] le disait déjà d'une cible d'entraînement (erreur 8,3, 6 parties sur 24). Le crible fait économiser les essais morts, pas les essais vivants.
 
 Attention au témoin : mettre une colonne à zéro pendant l'apprentissage ne rend pas le réseau aveugle, cela l'empoisonne. Voir [[18 La statistique qui ne valait jamais zéro]].
 
