@@ -139,8 +139,12 @@ const houseArt = new Map<string, Texture>();
 /* dev only: the signs' textures at hand in the console (a film's clock) */
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __houseArt?: typeof houseArt }).__houseArt = houseArt;
 let villageTex: Texture;
+/** the trades that have a works of their own to show */
+const WORKS: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 /* four painted places, one to a town, for every ground but the engraved map */
 let placeTex: Texture[] = [];
+/* and one works to a trade: a town that has built shows what it built */
+let worksTex: Partial<Record<IndustryType, Texture>> = {};
 /* the engraved map lays an ink hamlet under each town instead (three, in turn) */
 let hamletTex: Texture[] = [];
 
@@ -377,6 +381,10 @@ export async function loadBoardAssets(): Promise<void> {
   Assets.setPreferences({ preferWorkers: !WEBKIT });
   const urls = ['/beer-barrel.png', '/town-village.webp', '/town-hamlet-0.webp', '/town-hamlet-1.webp', '/town-hamlet-2.webp', '/town-place-0.webp', '/town-place-1.webp', '/town-place-2.webp', '/town-place-3.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
   const loaded = await Assets.load(urls);
+  /* a works is a nicety, not a need: one not painted yet must not take the
+     whole board down with it, so each is asked for on its own and a miss
+     leaves the town its painted place */
+  const works = await Promise.all(WORKS.map(async (i) => [i, await Assets.load<Texture>(`/town-works-${i}.webp`).catch(() => null)] as const));
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
   /* a house may come alive: a short looping film of its quay served beside
@@ -405,6 +413,7 @@ export async function loadBoardAssets(): Promise<void> {
   villageTex = loaded['/town-village.webp'];
   hamletTex = [loaded['/town-hamlet-0.webp'], loaded['/town-hamlet-1.webp'], loaded['/town-hamlet-2.webp']];
   placeTex = [loaded['/town-place-0.webp'], loaded['/town-place-1.webp'], loaded['/town-place-2.webp'], loaded['/town-place-3.webp']];
+  worksTex = Object.fromEntries(works.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -749,7 +758,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   /* Painted village grounding each town cluster, BELOW the slot tiles   */
   /* (TownNode: deterministic mirror, 0.62 opacity — 0.55 for farms).    */
   /* Under the engraved map the same box holds an ink hamlet instead.    */
-  const villages: { box: Container; sprite: Sprite; farm: boolean; hamlet: number; place: number; h: number }[] = [];
+  const villages: { box: Container; sprite: Sprite; town: (typeof TOWNS)[number]; farm: boolean; hamlet: number; place: number; h: number }[] = [];
+  /* which family of places is in play, so a redraw knows whether to dress */
+  let villageStyle: 'painted' | 'engraved' = 'painted';
   for (const town of TOWNS) {
     const c = townChrome(town);
     const mirror = (town.x * 7 + town.y * 13) % 2 === 0;
@@ -765,7 +776,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     v.eventMode = 'none';
     vBox.addChild(v);
     townsLayer.addChild(vBox);
-    villages.push({ box: vBox, sprite: v, farm: !!town.farm, hamlet: (town.x * 3 + town.y * 5) % 3, place: (town.x * 5 + town.y * 11) % 4, h: c.villageH });
+    villages.push({ box: vBox, sprite: v, town, farm: !!town.farm, hamlet: (town.x * 3 + town.y * 5) % 3, place: (town.x * 5 + town.y * 11) % 4, h: c.villageH });
   }
 
   /* ----------------------------- towns ------------------------------- */
@@ -1012,6 +1023,28 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           drawShapeGlyph(g, shape, mid[0], mid[1]);
         }
       }
+    }
+  };
+
+  /** the trade a town wears: the first of its built tiles in the order the
+   *  board reads them, so a place changes the moment the first works goes
+   *  up and settles on whatever was built first after that */
+  const tradeOf = (game: GameState, town: (typeof TOWNS)[number]): IndustryType | null => {
+    for (let si = 0; si < town.slots.length; si++) {
+      const tile = game.tiles[tileKey(town.id, si)];
+      if (tile && worksTex[tile.industry]) return tile.industry;
+    }
+    return null;
+  };
+
+  /** lay the right place under each town: its works if it has one, else the
+   *  painted village its coordinates chose for it */
+  const dressVillages = (game: GameState | null) => {
+    if (villageStyle === 'engraved' || placeTex.length !== 4) return;
+    for (const v of villages) {
+      const trade = game && !v.farm ? tradeOf(game, v.town) : null;
+      const tex = (trade && worksTex[trade]) || placeTex[v.farm ? 3 : v.place];
+      if (v.sprite.texture !== tex) v.sprite.texture = tex;
     }
   };
 
@@ -1334,6 +1367,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       lastGame = game;
       drawLinks(game);
       drawTowns(game);
+      dressVillages(game);
       drawMerchants(game);
       applySpotlight(game);
     },
@@ -1383,6 +1417,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       }
     },
     setVillages(style) {
+      villageStyle = style;
       const engraved = style === 'engraved' && hamletTex.length === 3;
       /* every other ground gets one of four painted places, a farm always the
          hamlet of the four: the same picture under twenty-two towns read as
@@ -1399,6 +1434,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         v.sprite.position.set(-size / 2, -size + (engraved ? v.h * 0.4 : placed ? v.h * 0.22 : 0));
         v.box.alpha = engraved ? (v.farm ? 0 : 0.85) : placed ? (v.farm ? 0.72 : 0.84) : v.farm ? 0.55 : 0.62;
       }
+      dressVillages(lastGame);
     },
   };
 }
