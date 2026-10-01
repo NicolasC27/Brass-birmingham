@@ -1,0 +1,140 @@
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { motion } from 'framer-motion';
+import { Check, Flag, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useT } from '@/i18n';
+import { personaName } from '@/game/data';
+import { listLocalGames } from '@/game/local';
+import { attemptsOf, challengeOf, openAttemptOf, startChallenge, type Rule } from '@/game/challenge';
+import { daysLeft } from '@/platform/almanac';
+import { lobby } from '@/online/lobby';
+import { useSession } from '@/online/session';
+
+/* ------------------------------------------------------------------ */
+/* The notice of the week, printed on the front page: its number and   */
+/* title, the story in italic, the conditions as a list with a mark    */
+/* against each once an attempt has been read, the machines across    */
+/* the table, the days left, my best points, and the ticket to sit.    */
+/* ------------------------------------------------------------------ */
+
+/** a condition, in the reader's words */
+function ruleText(t: ReturnType<typeof useT>, rule: Rule): string {
+  switch (rule.kind) {
+    case 'win':
+      return t('platform.challenge.rules.win');
+    case 'vp':
+      return t('platform.challenge.rules.vp', { n: rule.min });
+    case 'loans':
+      return rule.max === 0 ? t('platform.challenge.rules.loansNone') : t('platform.challenge.rules.loansMax', { n: rule.max });
+    case 'industry': {
+      const industry = t(`game.settings.industry.${rule.industry}`).toLowerCase();
+      if (rule.era) return t('platform.challenge.rules.industryEra', { count: rule.count, industry, era: t(`platform.challenge.era.${rule.era}`) });
+      return t(rule.sold ? 'platform.challenge.rules.industrySold' : 'platform.challenge.rules.industry', { count: rule.count, industry, level: rule.level });
+    }
+    case 'links':
+      return t(rule.era === 'rail' ? 'platform.challenge.rules.linksRail' : 'platform.challenge.rules.links', { n: rule.min });
+    case 'doubleRails':
+      return t('platform.challenge.rules.doubleRails', { n: rule.min });
+    case 'income':
+      return t('platform.challenge.rules.income', { n: rule.min });
+    case 'money':
+      return t('platform.challenge.rules.money', { n: rule.min });
+    case 'develops':
+      return t('platform.challenge.rules.develops', { n: rule.min });
+  }
+}
+
+export default function ChallengeNotice() {
+  const t = useT();
+  const navigate = useNavigate();
+  const session = useSession();
+  const [challenge] = useState(() => challengeOf());
+  const [attempts] = useState(() => attemptsOf(challenge.week));
+  const [open] = useState(() => openAttemptOf(challenge.week, listLocalGames()));
+  const best = attempts[0] ?? null;
+  const rivals = challenge.rivals.map(personaName).join(', ');
+  const options = [challenge.options.marketTemper === 'volatile' && t('platform.challenge.optVolatile'), challenge.options.eraLength === 'short' && t('platform.challenge.optShort')].filter(Boolean).join(' · ');
+
+  const take = () => {
+    const me = session?.name ?? lobby.me.name.trim() ?? '';
+    navigate(`/game/local/${startChallenge(challenge, me || t('setup.defaults.playerOne'))}`);
+  };
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ amount: 0.15, once: true }}
+      transition={{ duration: 0.24, ease: 'easeOut' }}
+      aria-label={t('platform.challenge.eyebrow')}
+      className="gz-classified !items-stretch !p-0 !text-left"
+    >
+      <div className="grid gap-6 p-6 min-[900px]:grid-cols-12 min-[900px]:gap-8 min-[900px]:p-7">
+        <div className="min-[900px]:col-span-5">
+          <p className="eyebrow-fell flex items-center gap-2">
+            <Flag size={13} aria-hidden />
+            {t('platform.challenge.eyebrow')}
+          </p>
+          <p className="micro-label mt-3 text-iron-400">
+            {t('platform.challenge.number', { n: challenge.number })}
+            {options && <span className="text-iron-600"> · {options}</span>}
+          </p>
+          <h2 className="mt-1 font-fraunces text-[26px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+            {t(`platform.challenge.titles.${challenge.id}`)}
+          </h2>
+          <p className="mt-3 max-w-[440px] font-serif text-[14.5px] italic leading-relaxed text-paper-300">{t(`platform.challenge.stories.${challenge.id}`)}</p>
+          <p className="data-text mt-3 text-[11px] text-iron-400">{t('platform.challenge.rivals', { names: rivals })}</p>
+        </div>
+
+        <div className="min-[900px]:col-span-4 min-[900px]:border-l min-[900px]:border-[var(--gz-ink-soft)] min-[900px]:pl-8">
+          <ul className="flex flex-col">
+            {challenge.rules.map((rule, i) => {
+              const met = best ? best.met[i] : null;
+              return (
+                <li key={i} className="flex items-start gap-3 border-b border-[var(--gz-ink-faint)] py-2 last:border-b-0">
+                  <span
+                    className={cn(
+                      'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                      met === null ? 'border-[var(--gz-ink-soft)]' : met ? 'border-bottle-400 text-bottle-400' : 'border-rust-400 text-rust-400',
+                    )}
+                    aria-label={met === null ? undefined : t(met ? 'platform.challenge.met' : 'platform.challenge.missed')}
+                  >
+                    {met === true && <Check size={10} strokeWidth={3} aria-hidden />}
+                    {met === false && <X size={10} strokeWidth={3} aria-hidden />}
+                  </span>
+                  <span className="font-ui text-[13px] text-paper-100">{ruleText(t, rule)}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 font-serif text-[12px] italic leading-snug text-iron-400">{t('platform.challenge.scoring')}</p>
+        </div>
+
+        <div className="flex flex-col justify-between gap-4 min-[900px]:col-span-3 min-[900px]:border-l min-[900px]:border-[var(--gz-ink-soft)] min-[900px]:pl-8">
+          <div>
+            <p className="micro-label text-iron-400">{t('platform.challenge.deadline', { days: daysLeft(challenge.week) })}</p>
+            {best ? (
+              <>
+                <p className="mt-2 font-fraunces text-[34px] font-normal leading-none text-paper-100 tnums">{best.points}</p>
+                <p className="micro-label mt-1 text-paper-300">{t(best.met.every(Boolean) ? 'platform.challenge.verdictWon' : 'platform.challenge.verdictLost', { n: best.points })}</p>
+                <p className="data-text mt-1 text-[11px] text-iron-600">{t('platform.challenge.attempts', { n: attempts.length })}</p>
+              </>
+            ) : (
+              <p className="mt-2 font-serif text-[13.5px] italic text-paper-300">{t('platform.challenge.none')}</p>
+            )}
+          </div>
+          {open ? (
+            <Link to={`/game/local/${open}`} className="gz-ticket gz-ticket-signal self-start">
+              {t('platform.challenge.resume')}
+            </Link>
+          ) : (
+            <button type="button" onClick={take} className="gz-ticket gz-ticket-brass self-start">
+              {t('platform.challenge.take')}
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.section>
+  );
+}

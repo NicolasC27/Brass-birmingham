@@ -32,6 +32,7 @@ import { PINS_KEY, SETUP_KEY } from './types';
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
+import { challengeSeedFor, noteChallenge } from './challenge';
 import { readShared, sharedMoment } from './share';
 import { coachMove } from './coach';
 import type { Coached } from './coach';
@@ -304,6 +305,13 @@ function noteForm(g: GameState): void {
   recordForm(!g.players[g.winner].isBot);
 }
 
+/* a game at home is over: the form moves, and the notice of the week
+   gets its verdict */
+function noteHouse(g: GameState, local: string | null): void {
+  noteForm(g);
+  if (local) noteChallenge(g, local);
+}
+
 function readSetup(): SetupPayload {
   try {
     const raw = localStorage.getItem(SETUP_KEY);
@@ -453,8 +461,10 @@ export const useGame = create<GameStore>((set, get) => ({
       }
     })();
     const seedWanted = wanted === 'new' ? TUTORIAL_SEED : wanted && /^\d+$/.test(wanted) ? Number(wanted) : null;
-    const game = resumed ?? (seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
-    const tutorial = seedWanted !== null && game.seed === seedWanted;
+    /* the challenge of the week: the deal the notice fixes, no guide with it */
+    const challengeSeed = challengeSeedFor(at);
+    const game = resumed ?? (challengeSeed !== null ? newGame(readSetup(), challengeSeed) : seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
+    const tutorial = challengeSeed === null && seedWanted !== null && game.seed === seedWanted;
     if (tutorial) {
       try {
         localStorage.setItem(TUTORIAL_KEY, String(game.seed));
@@ -934,7 +944,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const human = action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
     get().save();
-    if (mut.phase === 'game-over' && !get().code) noteForm(mut);
+    if (mut.phase === 'game-over' && !get().code) noteHouse(mut, get().local);
     if (human) botBanter(mut, g.current, action);
     /* the coach, behind the aid and at home only: the move just made, read
        against the roads that were open — never a move still to come */
