@@ -7,6 +7,9 @@ import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/s
 import type { PastGame, PublicTable } from '@/online/table';
 import ActivityFeedItem from '@/components/platform/ActivityFeedItem';
 import Button from '@/components/platform/Button';
+import Post from './Post';
+import PatentsWall from './PatentsWall';
+import { storyOfGame, storyOfTable, winStreak } from '@/platform/chronicle';
 
 /* ------------------------------------------------------------------ */
 /* Activité du club (home.md §S4) — mes dernières parties (gauche :    */
@@ -50,15 +53,16 @@ function Empty({ copy, cta }: { copy: string; cta?: { label: string; to: string 
 
 /* ----------------------------- mes parties ----------------------------- */
 
-function GameItem({ game, me }: { game: PastGame; me: string }) {
+function GameItem({ game, me, streak }: { game: PastGame; me: string; streak: number }) {
   const navigate = useNavigate();
   const lang = useLang();
-  const winner = game.players[game.winner];
-  const won = winner?.id === me;
+  const won = game.players[game.winner]?.id === me;
+  const story = storyOfGame(game, me, streak, tableTitle(game.name, lang));
   return (
     <ActivityFeedItem
       kind={won ? 'gameWon' : 'gameOver'}
-      vars={{ table: tableTitle(game.name, lang), name: winner?.name ?? '—', vp: winner?.vp ?? 0 }}
+      vars={story.vars}
+      textKey={story.key}
       at={game.finishedAt}
       onClick={() => navigate('/desk#historique')}
     />
@@ -72,6 +76,8 @@ function MyGames() {
   const line = useLine();
   const desk = useDesk();
   const games = (desk?.history ?? []).slice(0, FEED);
+  /* a run of wins is a story of its own, told on the latest game */
+  const streak = session && desk ? winStreak(desk.history, session.id) : 0;
 
   if (stranger) return <Empty copy={t('platform.home.activity.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
   if (!session || !desk) return <Empty copy={line === 'online' ? t('platform.home.activity.loading') : t('platform.serverOffline')} />;
@@ -80,7 +86,7 @@ function MyGames() {
     <>
       {games.map((g, i) => (
         <Reveal key={g.code + g.finishedAt} i={i + 1}>
-          <GameItem game={g} me={session.id} />
+          <GameItem game={g} me={session.id} streak={i === 0 ? streak : 0} />
         </Reveal>
       ))}
     </>
@@ -92,11 +98,12 @@ function MyGames() {
 function LiveItem({ table }: { table: PublicTable }) {
   const navigate = useNavigate();
   const lang = useLang();
-  const cur = table.current !== undefined ? table.seats[table.current] : undefined;
+  const story = storyOfTable(table, tableTitle(table.name, lang));
   return (
     <ActivityFeedItem
       kind="tableLive"
-      vars={{ table: tableTitle(table.name, lang), round: table.round ?? 1, name: cur?.name ?? '—' }}
+      vars={story.vars}
+      textKey={story.key}
       at={table.updatedAt}
       onClick={() => navigate(`/game/${table.code}`)}
     />
@@ -160,6 +167,9 @@ export default function ClubActivity() {
             {t('platform.home.activity.seeHistory')}
           </Link>
         </Reveal>
+        <div className="mt-8">
+          <Post />
+        </div>
       </section>
       <motion.section
         className="gz-col-rule min-[900px]:col-span-5 min-[900px]:pt-[52px]"
@@ -169,6 +179,9 @@ export default function ClubActivity() {
         transition={{ duration: 0.22, ease: 'easeOut', delay: 0.08 }}
       >
         <LiveTables />
+        <div className="mt-8">
+          <PatentsWall />
+        </div>
       </motion.section>
     </div>
   );

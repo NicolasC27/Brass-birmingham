@@ -950,6 +950,99 @@ const platform = {
     e38: "La gare de New Street ouvre sous la plus grande verrière du monde.",
     e39: "Les canaux des Midlands passent un à un sous la coupe des compagnies de chemin de fer.",
   },
+  chronicle: {
+    won: {
+      0: "On apprend que vous l’avez emporté à « {table} », avec {vp} points ; les autres tables en parlent encore.",
+      1: "Victoire à « {table} » — {vp} points au décompte. Le Comptoir vous félicite, à sa manière.",
+      2: "« {table} » s’est terminée à votre avantage : {vp} points, et des adversaires songeurs.",
+    },
+    lost: {
+      0: "À « {table} », c’est {name} qui l’emporte avec {vp} points. On dit que vous n’étiez pas loin.",
+      1: "{name} a fait main basse sur « {table} » — {vp} points. Une revanche se murmure.",
+      2: "La partie « {table} » revient à {name}, {vp} points au décompte ; la maison prend note.",
+    },
+    live: {
+      0: "À « {table} », le tour {round} se joue ; {name} hésite devant sa main.",
+      1: "On joue encore à « {table} » — tour {round}, et c’est {name} qui doit agir.",
+      2: "« {table} », tour {round} : {name} réfléchit, les autres attendent.",
+    },
+    streak: "{n} victoires d’affilée, la dernière à « {table} » — le Comptoir commence à s’inquiéter.",
+  },
+  patents: {
+    eyebrow: "BREVETS",
+    title: "Lettres patentes",
+    granted: "Brevet accordé",
+    none: "Aucun brevet encore — ils s’obtiennent à la table.",
+    wall: "Accrochés au mur du bureau : {n} brevet(s).",
+    names: {
+      brewer: "Brevet de brasseur",
+      ironmaster: "Maître de forges",
+      noBanker: "Sans banquier",
+      network: "Le grand réseau",
+      centenary: "Les cent cinquante",
+      spinner: "Filateur",
+      potter: "Potier de la Couronne",
+      doubleRail: "Double pose",
+      rentier: "Rentier",
+    },
+    terms: {
+      brewer: "pour quatre brasseries retournées en une seule partie",
+      ironmaster: "pour une forge de niveau quatre bâtie",
+      noBanker: "pour une victoire sans un seul emprunt",
+      network: "pour quatorze liaisons posées en une partie",
+      centenary: "pour cent cinquante points de victoire et plus",
+      spinner: "pour quatre filatures vendues en une partie",
+      potter: "pour une poterie de niveau trois ou plus retournée",
+      doubleRail: "pour trois poses doubles de rail en une partie",
+      rentier: "pour un revenu de vingt-quatre à la clôture",
+    },
+  },
+  letters: {
+    eyebrow: "COURRIER",
+    from: "De {name}",
+    re: "Au sujet de « {table} »",
+    none: "Pas de lettre — les machines écrivent après une partie.",
+    boulton: {
+      won: {
+        0: "Cher {me}, {theirs} contre {vp} : ne le prenez pas mal, je gagne aussi contre Watt, et il me le pardonne. Repassez quand vous voudrez, la maison offre le thé.",
+        1: "{me}, votre réseau était joli à regarder. Le mien rapportait. {theirs} à {vp} — la différence, c’est ce qu’on vend, pas ce qu’on bâtit.",
+      },
+      lost: {
+        0: "{me}, {vp} contre {theirs} : je note. Je note aussi que vous avez laissé la bière à Watt, ce qui ne se reproduira pas de mon côté.",
+        1: "Bien joué, {me}. {vp} points. Je dirai à Soho que c’était une partie serrée ; ce sera un mensonge, mais un mensonge d’industriel.",
+      },
+    },
+    wedgwood: {
+      won: {
+        0: "{me}, {theirs} points contre vos {vp}. La poterie, voyez-vous, se vend à ceux qui savent attendre. Vous n’avez pas attendu.",
+        1: "Cher {me}, une partie soignée jusqu’au tour où elle ne l’a plus été. {theirs} à {vp}. Je vous garde une place à Etruria.",
+      },
+      lost: {
+        0: "{me}, {vp} contre {theirs}. Je n’en ferai pas un vase. Mais je m’en souviendrai.",
+        1: "Votre victoire à « {table} » est méritée, {me} — {vp} points. Les miens, {theirs}, sont allés au canal ; on ne peut pas tout retourner.",
+      },
+    },
+    arkwright: {
+      won: {
+        0: "{me}, {theirs} contre {vp}. Trois filatures et un rail double au bon moment. Vous en aviez une, et pas de rail. Voilà.",
+        1: "{me}, j’ai vendu plus vite que vous n’avez bâti. {theirs} à {vp}. Ce n’est pas de la chance, c’est Cromford.",
+      },
+      lost: {
+        0: "{vp} contre {theirs}, {me}. Bien. J’ai compté : vous avez emprunté au tour où il fallait. Je ne l’ai pas fait. La prochaine fois, si.",
+        1: "{me}, vous m’avez battue à « {table} ». Gardez cette lettre : elle sera rare.",
+      },
+    },
+    watt: {
+      won: {
+        0: "{me}. {theirs}–{vp}. Votre charbon manquait au tour douze ; tout le reste en découle. Corrigez cela.",
+        1: "{me}, partie propre de votre part. Insuffisante. {theirs} contre {vp}. Le fer avant le coton, toujours.",
+      },
+      lost: {
+        0: "{me}. {vp}–{theirs}. Erreur de ma part au sixième tour, relevée. Elle ne se reproduira pas.",
+        1: "Vous avez gagné, {me} — {vp} points. J’ai relu la partie deux fois. Je n’ai rien à redire, ce qui m’irrite.",
+      },
+    },
+  },
 };
 
 export default platform;

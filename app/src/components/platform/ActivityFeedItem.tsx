@@ -32,13 +32,15 @@ function ago(t: ReturnType<typeof useT>, lang: string, at: number, now = Date.no
 export interface ActivityFeedItemProps {
   kind: FeedKind;
   vars: Record<string, string | number>;
+  /** the line to print, when the chronicle has its own way of telling it */
+  textKey?: string;
   /** when it happened (ms since the epoch) */
   at: number;
   onClick?: () => void;
   className?: string;
 }
 
-export default function ActivityFeedItem({ kind, vars, at, onClick, className }: ActivityFeedItemProps) {
+export default function ActivityFeedItem({ kind, vars, at, textKey, onClick, className }: ActivityFeedItemProps) {
   const t = useT();
   const lang = useLang();
   const Icon = ICONS[kind];
@@ -53,7 +55,7 @@ export default function ActivityFeedItem({ kind, vars, at, onClick, className }:
       )}
     >
       <Icon size={13} strokeWidth={1.75} aria-hidden className={cn('shrink-0', kind === 'tableLive' ? 'text-signal-400' : 'text-brass-300')} />
-      <span className="min-w-0 flex-1 truncate font-serif text-[13.5px] text-paper-100">{t(`platform.home.feed.${kind}`, vars)}</span>
+      <span className="min-w-0 flex-1 truncate font-serif text-[13.5px] text-paper-100">{t(textKey ?? `platform.home.feed.${kind}`, vars)}</span>
       <span className="data-text shrink-0 text-[11px] text-iron-600 tnums">{ago(t, lang, at)}</span>
     </button>
   );

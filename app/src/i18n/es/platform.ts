@@ -950,6 +950,99 @@ const platform = {
     e38: "Se abre la estación de New Street bajo la mayor cubierta de cristal del mundo.",
     e39: "Uno a uno, los canales de los Midlands pasan a manos de las compañías ferroviarias.",
   },
+  chronicle: {
+    won: {
+      0: "Se sabe que ganó en «{table}» con {vp} puntos; las otras mesas aún hablan de ello.",
+      1: "Victoria en «{table}» — {vp} puntos al recuento. El Mostrador le felicita, a su manera.",
+      2: "«{table}» terminó a su favor: {vp} puntos y adversarios pensativos.",
+    },
+    lost: {
+      0: "En «{table}» se lo llevó {name} con {vp} puntos. Dicen que no anduvo lejos.",
+      1: "{name} se hizo con «{table}» — {vp} puntos. Se murmura una revancha.",
+      2: "La partida «{table}» es para {name}, {vp} puntos al recuento; la casa toma nota.",
+    },
+    live: {
+      0: "En «{table}» se juega la ronda {round}; {name} duda ante su mano.",
+      1: "Aún se juega en «{table}» — ronda {round}, y le toca a {name}.",
+      2: "«{table}», ronda {round}: {name} piensa, los demás esperan.",
+    },
+    streak: "{n} victorias seguidas, la última en «{table}» — el Mostrador empieza a inquietarse.",
+  },
+  patents: {
+    eyebrow: "PATENTES",
+    title: "Cartas patentes",
+    granted: "Patente concedida",
+    none: "Ninguna patente aún — se ganan en la mesa.",
+    wall: "Colgadas en la pared del despacho: {n} patente(s).",
+    names: {
+      brewer: "Patente de cervecero",
+      ironmaster: "Maestro de fraguas",
+      noBanker: "Sin banquero",
+      network: "La gran red",
+      centenary: "Ciento cincuenta",
+      spinner: "Hilandero",
+      potter: "Alfarero de la Corona",
+      doubleRail: "Tendido doble",
+      rentier: "Rentista",
+    },
+    terms: {
+      brewer: "por cuatro cervecerías volteadas en una sola partida",
+      ironmaster: "por una fragua de nivel cuatro construida",
+      noBanker: "por una victoria sin un solo préstamo",
+      network: "por catorce enlaces tendidos en una partida",
+      centenary: "por ciento cincuenta puntos de victoria o más",
+      spinner: "por cuatro hilanderías vendidas en una partida",
+      potter: "por una alfarería de nivel tres o más volteada",
+      doubleRail: "por tres tendidos dobles de raíl en una partida",
+      rentier: "por un ingreso de veinticuatro al cierre",
+    },
+  },
+  letters: {
+    eyebrow: "CORREO",
+    from: "De {name}",
+    re: "Sobre «{table}»",
+    none: "Sin cartas — las máquinas escriben después de una partida.",
+    boulton: {
+      won: {
+        0: "Estimado {me}, {theirs} contra {vp}: no lo tome a mal, también le gano a Watt y me lo perdona. Vuelva cuando guste; la casa invita al té.",
+        1: "{me}, su red daba gusto verla. La mía rendía. {theirs} a {vp} — la diferencia está en lo que se vende, no en lo que se construye.",
+      },
+      lost: {
+        0: "{me}, {vp} contra {theirs}: tomo nota. Tomo nota también de que dejó la cerveza a Watt, cosa que por mi parte no se repetirá.",
+        1: "Bien jugado, {me}. {vp} puntos. Diré en Soho que estuvo reñido; será mentira, pero mentira de industrial.",
+      },
+    },
+    wedgwood: {
+      won: {
+        0: "{me}, {theirs} puntos contra sus {vp}. La loza, verá, se vende a quien sabe esperar. Usted no esperó.",
+        1: "Estimado {me}, una partida pulcra hasta la ronda en que dejó de serlo. {theirs} a {vp}. Le guardo un sitio en Etruria.",
+      },
+      lost: {
+        0: "{me}, {vp} contra {theirs}. No haré de ello un jarrón. Pero lo recordaré.",
+        1: "Su victoria en «{table}» es merecida, {me} — {vp} puntos. Mis {theirs} se fueron al canal; no se puede voltear todo.",
+      },
+    },
+    arkwright: {
+      won: {
+        0: "{me}, {theirs} contra {vp}. Tres hilanderías y un raíl doble en el momento justo. Usted tenía una, y ningún raíl. Ahí está.",
+        1: "{me}, vendí más rápido de lo que usted construyó. {theirs} a {vp}. No es suerte, es Cromford.",
+      },
+      lost: {
+        0: "{vp} contra {theirs}, {me}. Bien. Lo conté: pidió préstamo en la ronda que lo pedía. Yo no. La próxima vez, sí.",
+        1: "{me}, me venció en «{table}». Guarde esta carta: será rara.",
+      },
+    },
+    watt: {
+      won: {
+        0: "{me}. {theirs}–{vp}. Le faltó carbón en la ronda doce; todo lo demás se sigue de ahí. Corríjalo.",
+        1: "{me}, partida limpia por su parte. Insuficiente. {theirs} contra {vp}. El hierro antes que el algodón, siempre.",
+      },
+      lost: {
+        0: "{me}. {vp}–{theirs}. Error mío en la sexta ronda, anotado. No se repetirá.",
+        1: "Ganó usted, {me} — {vp} puntos. Releí la partida dos veces. No encuentro nada que objetar, lo cual me irrita.",
+      },
+    },
+  },
 };
 
 export default platform;

@@ -952,6 +952,99 @@ const platform: typeof enPlatform = {
     e38: "Der Bahnhof New Street öffnet unter dem größten Glasdach der Welt.",
     e39: "Einer nach dem anderen gehen die Kanäle der Midlands in die Hände der Eisenbahngesellschaften über.",
   },
+  chronicle: {
+    won: {
+      0: "Man hört, Sie hätten „{table}“ mit {vp} Punkten gewonnen; die anderen Tische reden noch davon.",
+      1: "Sieg bei „{table}“ — {vp} Punkte bei der Zählung. Der Tresen gratuliert, auf seine Art.",
+      2: "„{table}“ endete zu Ihren Gunsten: {vp} Punkte, und nachdenkliche Gegner.",
+    },
+    lost: {
+      0: "Bei „{table}“ nahm {name} es mit {vp} Punkten. Man sagt, Sie seien nicht weit dahinter gewesen.",
+      1: "{name} hat sich „{table}“ geholt — {vp} Punkte. Von Revanche wird gemunkelt.",
+      2: "Die Partie „{table}“ geht an {name}, {vp} Punkte bei der Zählung; das Haus nimmt es zur Kenntnis.",
+    },
+    live: {
+      0: "Bei „{table}“ wird Runde {round} gespielt; {name} zögert über der Hand.",
+      1: "Bei „{table}“ wird noch gespielt — Runde {round}, und {name} ist am Zug.",
+      2: "„{table}“, Runde {round}: {name} denkt nach, die anderen warten.",
+    },
+    streak: "{n} Siege in Folge, der letzte bei „{table}“ — der Tresen beginnt sich zu sorgen.",
+  },
+  patents: {
+    eyebrow: "PATENTE",
+    title: "Patentbriefe",
+    granted: "Patent erteilt",
+    none: "Noch kein Patent — sie werden am Tisch verdient.",
+    wall: "An der Wand des Büros: {n} Patent(e).",
+    names: {
+      brewer: "Brauerpatent",
+      ironmaster: "Hüttenmeister",
+      noBanker: "Ohne Bankier",
+      network: "Das große Netz",
+      centenary: "Hundertfünfzig",
+      spinner: "Spinner",
+      potter: "Töpfer der Krone",
+      doubleRail: "Doppelte Legung",
+      rentier: "Rentier",
+    },
+    terms: {
+      brewer: "für vier in einer Partie umgedrehte Brauereien",
+      ironmaster: "für eine gebaute Hütte der Stufe vier",
+      noBanker: "für einen Sieg ohne einen einzigen Kredit",
+      network: "für vierzehn in einer Partie gelegte Verbindungen",
+      centenary: "für hundertfünfzig Siegpunkte und mehr",
+      spinner: "für vier in einer Partie verkaufte Spinnereien",
+      potter: "für eine umgedrehte Töpferei der Stufe drei oder höher",
+      doubleRail: "für drei doppelte Schienenlegungen in einer Partie",
+      rentier: "für ein Einkommen von vierundzwanzig am Schluss",
+    },
+  },
+  letters: {
+    eyebrow: "POST",
+    from: "Von {name}",
+    re: "Betreffend „{table}“",
+    none: "Keine Post — die Maschinen schreiben nach einer Partie.",
+    boulton: {
+      won: {
+        0: "Lieber {me}, {theirs} zu {vp}: nehmen Sie es nicht übel, ich schlage auch Watt, und er verzeiht es mir. Kommen Sie wieder, wann Sie mögen; der Tee geht aufs Haus.",
+        1: "{me}, Ihr Netz war hübsch anzusehen. Meines trug ein. {theirs} zu {vp} — der Unterschied ist, was man verkauft, nicht, was man baut.",
+      },
+      lost: {
+        0: "{me}, {vp} zu {theirs}: notiert. Notiert auch, dass Sie Watt das Bier überlassen haben, was sich meinerseits nicht wiederholen wird.",
+        1: "Gut gespielt, {me}. {vp} Punkte. Ich werde in Soho sagen, es sei knapp gewesen; das wird gelogen sein, aber eine Industriellenlüge.",
+      },
+    },
+    wedgwood: {
+      won: {
+        0: "{me}, {theirs} Punkte gegen Ihre {vp}. Töpferware, sehen Sie, verkauft sich an die, die warten können. Sie haben nicht gewartet.",
+        1: "Lieber {me}, eine saubere Partie bis zu der Runde, in der sie es nicht mehr war. {theirs} zu {vp}. Ich halte Ihnen einen Platz in Etruria frei.",
+      },
+      lost: {
+        0: "{me}, {vp} zu {theirs}. Ich werde keine Vase daraus machen. Aber ich werde es mir merken.",
+        1: "Ihr Sieg bei „{table}“ ist verdient, {me} — {vp} Punkte. Meine {theirs} gingen an den Kanal; man kann nicht alles umdrehen.",
+      },
+    },
+    arkwright: {
+      won: {
+        0: "{me}, {theirs} zu {vp}. Drei Spinnereien und eine doppelte Schiene im rechten Moment. Sie hatten eine, und keine Schiene. So ist es.",
+        1: "{me}, ich habe schneller verkauft, als Sie gebaut haben. {theirs} zu {vp}. Das ist kein Glück, das ist Cromford.",
+      },
+      lost: {
+        0: "{vp} zu {theirs}, {me}. Gut. Ich habe gezählt: Sie haben in der Runde geliehen, die es verlangte. Ich nicht. Nächstes Mal schon.",
+        1: "{me}, Sie haben mich bei „{table}“ geschlagen. Bewahren Sie diesen Brief auf: er wird selten sein.",
+      },
+    },
+    watt: {
+      won: {
+        0: "{me}. {theirs}–{vp}. Ihre Kohle fehlte in Runde zwölf; alles Weitere folgt daraus. Beheben Sie das.",
+        1: "{me}, eine saubere Partie Ihrerseits. Unzureichend. {theirs} zu {vp}. Eisen vor Baumwolle, immer.",
+      },
+      lost: {
+        0: "{me}. {vp}–{theirs}. Fehler meinerseits in der sechsten Runde, vermerkt. Er wird sich nicht wiederholen.",
+        1: "Sie haben gewonnen, {me} — {vp} Punkte. Ich habe die Partie zweimal nachgelesen. Ich finde nichts zu beanstanden, was mich ärgert.",
+      },
+    },
+  },
 };
 
 export default platform;

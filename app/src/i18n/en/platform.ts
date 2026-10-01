@@ -950,6 +950,99 @@ const platform = {
     e38: "New Street station opens under the largest glass roof in the world.",
     e39: "One by one, the Midlands canals pass into the hands of the railway companies.",
   },
+  chronicle: {
+    won: {
+      0: "We hear you carried “{table}” with {vp} points; the other tables still talk of it.",
+      1: "A win at “{table}” — {vp} points at the count. The Counter congratulates you, after its fashion.",
+      2: "“{table}” ended in your favour: {vp} points, and thoughtful opponents.",
+    },
+    lost: {
+      0: "At “{table}”, {name} took it with {vp} points. They say you were not far behind.",
+      1: "{name} made off with “{table}” — {vp} points. A return match is whispered.",
+      2: "The game “{table}” goes to {name}, {vp} points at the count; the house takes note.",
+    },
+    live: {
+      0: "At “{table}”, round {round} is in play; {name} hesitates over the hand.",
+      1: "Still playing at “{table}” — round {round}, and {name} to act.",
+      2: "“{table}”, round {round}: {name} thinks, the others wait.",
+    },
+    streak: "{n} wins in a row, the last at “{table}” — the Counter is starting to worry.",
+  },
+  patents: {
+    eyebrow: "PATENTS",
+    title: "Letters patent",
+    granted: "Patent granted",
+    none: "No patent yet — they are earned at the table.",
+    wall: "Hung on the desk’s wall: {n} patent(s).",
+    names: {
+      brewer: "Brewer’s patent",
+      ironmaster: "Ironmaster",
+      noBanker: "Without the banker",
+      network: "The great network",
+      centenary: "One hundred and fifty",
+      spinner: "Spinner",
+      potter: "Potter to the Crown",
+      doubleRail: "Double laying",
+      rentier: "Rentier",
+    },
+    terms: {
+      brewer: "for four breweries flipped in a single game",
+      ironmaster: "for a level-four iron works built",
+      noBanker: "for a win without a single loan",
+      network: "for fourteen links laid in one game",
+      centenary: "for a hundred and fifty victory points and more",
+      spinner: "for four cotton mills sold in one game",
+      potter: "for a pottery of level three or more flipped",
+      doubleRail: "for three double rail actions in one game",
+      rentier: "for an income of twenty-four at the close",
+    },
+  },
+  letters: {
+    eyebrow: "POST",
+    from: "From {name}",
+    re: "Concerning “{table}”",
+    none: "No letter — the machines write after a game.",
+    boulton: {
+      won: {
+        0: "Dear {me}, {theirs} to {vp}: take it kindly, I beat Watt too and he forgives me. Call again whenever you like; the house stands the tea.",
+        1: "{me}, your network was a pleasure to look at. Mine paid. {theirs} to {vp} — the difference is what one sells, not what one builds.",
+      },
+      lost: {
+        0: "{me}, {vp} to {theirs}: noted. Noted also that you left the beer to Watt, which will not happen on my side again.",
+        1: "Well played, {me}. {vp} points. I shall tell Soho it was close; it will be a lie, but an industrialist’s lie.",
+      },
+    },
+    wedgwood: {
+      won: {
+        0: "{me}, {theirs} points to your {vp}. Pottery, you see, sells to those who can wait. You did not wait.",
+        1: "Dear {me}, a tidy game until the round it stopped being one. {theirs} to {vp}. I keep a place for you at Etruria.",
+      },
+      lost: {
+        0: "{me}, {vp} to {theirs}. I shall not make a vase of it. But I shall remember it.",
+        1: "Your win at “{table}” is deserved, {me} — {vp} points. My {theirs} went to the canal; one cannot flip everything.",
+      },
+    },
+    arkwright: {
+      won: {
+        0: "{me}, {theirs} to {vp}. Three mills and a double rail at the right moment. You had one mill, and no rail. There it is.",
+        1: "{me}, I sold faster than you built. {theirs} to {vp}. That is not luck, that is Cromford.",
+      },
+      lost: {
+        0: "{vp} to {theirs}, {me}. Good. I counted: you borrowed in the round that called for it. I did not. Next time, I shall.",
+        1: "{me}, you beat me at “{table}”. Keep this letter: it will be rare.",
+      },
+    },
+    watt: {
+      won: {
+        0: "{me}. {theirs}–{vp}. Your coal was short in round twelve; everything else follows from it. Correct that.",
+        1: "{me}, a clean game on your part. Insufficient. {theirs} to {vp}. Iron before cotton, always.",
+      },
+      lost: {
+        0: "{me}. {vp}–{theirs}. An error on my part in the sixth round, noted. It will not recur.",
+        1: "You won, {me} — {vp} points. I read the game through twice. I find nothing to fault, which irritates me.",
+      },
+    },
+  },
 };
 
 export default platform;

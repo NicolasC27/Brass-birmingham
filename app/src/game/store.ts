@@ -33,6 +33,8 @@ import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
 import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
 import { challengeSeedFor, noteChallenge } from './challenge';
+import { grantFromGame } from '@/platform/patents';
+import { writeLetter } from '@/platform/letters';
 import { readShared, sharedMoment } from './share';
 import { coachMove } from './coach';
 import type { Coached } from './coach';
@@ -305,11 +307,14 @@ function noteForm(g: GameState): void {
   recordForm(!g.players[g.winner].isBot);
 }
 
-/* a game at home is over: the form moves, and the notice of the week
-   gets its verdict */
+/* a game at home is over: the form moves, the notice of the week gets its
+   verdict, the patents earned are granted, and a machine writes */
 function noteHouse(g: GameState, local: string | null): void {
   noteForm(g);
-  if (local) noteChallenge(g, local);
+  if (!local) return;
+  noteChallenge(g, local);
+  grantFromGame(g, local);
+  writeLetter(g, local);
 }
 
 function readSetup(): SetupPayload {

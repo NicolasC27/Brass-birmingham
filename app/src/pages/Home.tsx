@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { BookOpen, Briefcase, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
@@ -20,6 +20,7 @@ import ClubActivity from '@/components/home/ClubActivity';
 import ProgressCard from '@/components/desk/ProgressCard';
 import { usePresence } from '@/components/platform/presence';
 import { PLACEMENTS, rankOf } from '@/platform/rank';
+import { grantFromHistory } from '@/platform/patents';
 
 /* ------------------------------------------------------------------ */
 /* The front page. Under the masthead: the engraving of the day, then  */
@@ -225,6 +226,12 @@ function Classifieds() {
 export default function Home() {
   const t = useT();
   const navigate = useNavigate();
+  const session = useSession();
+  const desk = useDesk();
+  /* the office's history read through for the wall, whenever it arrives */
+  useEffect(() => {
+    if (session && desk) grantFromHistory(desk.history, session.id);
+  }, [session, desk]);
   const [codeOpen, setCodeOpen] = useState(false);
   const [plate] = useState(plateOfTheDay);
 
