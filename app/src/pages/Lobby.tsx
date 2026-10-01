@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { getBoardOptions } from '@/components/game/boardOptions';
+import TrainStrip from '@/components/online/TrainStrip';
 import { steamWhistle } from '@/gl/sfx';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -576,6 +577,9 @@ export default function Lobby() {
             className="console p-6 lg:col-span-8 lg:p-8"
             aria-label={t('online.room.seats')}
           >
+            <div className="mb-6">
+              <TrainStrip seats={table.seats.map((s) => ({ name: s.name, color: s.color, kind: s.kind, ready: s.ready }))} counting={counting} />
+            </div>
             <ul className="grid grid-cols-2 gap-x-2 gap-y-6 lg:relative lg:block lg:h-[460px]">
               <li className="col-span-2 flex justify-center lg:absolute lg:left-1/2 lg:top-1/2 lg:-ml-[60px] lg:-mt-[60px] lg:block">
                 <ReadyMedallion ready={readyCount} allReady={startable} />
