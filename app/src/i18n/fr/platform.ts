@@ -201,8 +201,8 @@ const platform = {
       tableLive: '« {table} » — tour {round}, {name} joue',
     },
     shortcuts: {
-      guided: 'Partie guidée',
-      guidedCopy: 'L’ère du canal contre une machine douce, une leçon à chaque étape.',
+      guided: "Cours du soir",
+      guidedCopy: "La leçon guidée, le registre chapitre par chapitre, et ce qu’il faut reprendre.",
       rules: 'Apprendre les règles',
       rulesCopy: 'Le registre complet, du premier tour à la victoire.',
       desk: 'Mon bureau',
@@ -1051,6 +1051,15 @@ const platform = {
         1: "Vous avez gagné, {me} — {vp} points. J’ai relu la partie deux fois. Je n’ai rien à redire, ce qui m’irrite.",
       },
     },
+  },
+  feuilleton: {
+    eyebrow: "FEUILLETON",
+    title: "La partie « {table} »",
+    none: "Pas d’épisode — le feuilleton s’écrit à la fin d’une partie à la maison.",
+    mine: "Tour {round}, ère du {era} — votre coup",
+    theirs: "Tour {round}, ère du {era} — le coup de {name}",
+    shift: "{n} sur votre avance",
+    open: "Revoir →",
   },
 };
 

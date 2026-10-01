@@ -35,6 +35,7 @@ import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './lo
 import { challengeSeedFor, noteChallenge } from './challenge';
 import { grantFromGame } from '@/platform/patents';
 import { writeLetter } from '@/platform/letters';
+import { noteFeuilleton } from '@/platform/feuilleton';
 import { readShared, sharedMoment } from './share';
 import { coachMove } from './coach';
 import type { Coached } from './coach';
@@ -317,6 +318,7 @@ function noteHouse(g: GameState, local: string | null): void {
   if (attempt && onlineWire()?.session) onlineWire()?.postChallenge(attempt);
   grantFromGame(g, local);
   writeLetter(g, local);
+  noteFeuilleton(g, local);
 }
 
 function readSetup(): SetupPayload {
@@ -453,7 +455,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const carried = readLocalSave(at) ? null : readShared(window.location.hash);
     /* a link that points at a move: the game arrives with its analysis open
        on that very move, which is the whole point of sending it */
-    const moment = carried ? sharedMoment(window.location.hash) : null;
+    const moment = sharedMoment(window.location.hash);
     if (carried) {
       saveLocalGame(at, carried);
       window.history.replaceState(null, '', window.location.pathname + window.location.search);

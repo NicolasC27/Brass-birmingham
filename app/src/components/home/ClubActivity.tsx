@@ -8,6 +8,7 @@ import type { PastGame, PublicTable } from '@/online/table';
 import ActivityFeedItem from '@/components/platform/ActivityFeedItem';
 import Button from '@/components/platform/Button';
 import Post from './Post';
+import Feuilleton from './Feuilleton';
 import PatentsWall from './PatentsWall';
 import { storyOfGame, storyOfTable, winStreak } from '@/platform/chronicle';
 
@@ -167,6 +168,9 @@ export default function ClubActivity() {
             {t('platform.home.activity.seeHistory')}
           </Link>
         </Reveal>
+        <div className="mt-8">
+          <Feuilleton />
+        </div>
         <div className="mt-8">
           <Post />
         </div>

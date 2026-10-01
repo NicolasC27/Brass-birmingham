@@ -201,8 +201,8 @@ const platform = {
       tableLive: '"{table}" — round {round}, {name} to act',
     },
     shortcuts: {
-      guided: 'Guided first game',
-      guidedCopy: 'The Canal Era against a gentle machine, a lesson at every step.',
+      guided: "Evening course",
+      guidedCopy: "The guided lesson, the register chapter by chapter, and what to take again.",
       rules: 'Learn the rules',
       rulesCopy: 'The full ledger, from the first round to victory.',
       desk: 'My desk',
@@ -1051,6 +1051,15 @@ const platform = {
         1: "You won, {me} — {vp} points. I read the game through twice. I find nothing to fault, which irritates me.",
       },
     },
+  },
+  feuilleton: {
+    eyebrow: "SERIAL",
+    title: "The game at “{table}”",
+    none: "No episode — the serial is written when a game at home ends.",
+    mine: "Round {round}, {era} era — your move",
+    theirs: "Round {round}, {era} era — {name}’s move",
+    shift: "{n} on your lead",
+    open: "Review →",
   },
 };
 

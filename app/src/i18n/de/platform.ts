@@ -203,8 +203,8 @@ const platform: typeof enPlatform = {
       tableLive: '„{table}“ — Runde {round}, {name} ist am Zug',
     },
     shortcuts: {
-      guided: 'Geführte Partie',
-      guidedCopy: 'Die Kanalzeit gegen eine sanfte Maschine, eine Lektion bei jedem Schritt.',
+      guided: "Abendkurs",
+      guidedCopy: "Die geführte Lektion, das Register Kapitel für Kapitel und was zu wiederholen ist.",
       rules: 'Regeln lernen',
       rulesCopy: 'Das vollständige Register, von der ersten Runde bis zum Sieg.',
       desk: 'Mein Kontor',
@@ -1053,6 +1053,15 @@ const platform: typeof enPlatform = {
         1: "Sie haben gewonnen, {me} — {vp} Punkte. Ich habe die Partie zweimal nachgelesen. Ich finde nichts zu beanstanden, was mich ärgert.",
       },
     },
+  },
+  feuilleton: {
+    eyebrow: "FORTSETZUNG",
+    title: "Die Partie „{table}“",
+    none: "Keine Folge — die Fortsetzung wird geschrieben, wenn eine Partie zu Hause endet.",
+    mine: "Runde {round}, {era}zeit — Ihr Zug",
+    theirs: "Runde {round}, {era}zeit — der Zug von {name}",
+    shift: "{n} auf Ihren Vorsprung",
+    open: "Nachsehen →",
   },
 };
 

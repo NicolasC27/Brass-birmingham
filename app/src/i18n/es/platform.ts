@@ -201,8 +201,8 @@ const platform = {
       tableLive: '« {table} » — ronda {round}, juega {name}',
     },
     shortcuts: {
-      guided: 'Partida guiada',
-      guidedCopy: 'La era del canal contra una máquina suave, una lección en cada paso.',
+      guided: "Curso nocturno",
+      guidedCopy: "La lección guiada, el registro capítulo a capítulo y lo que hay que repasar.",
       rules: 'Aprender las reglas',
       rulesCopy: 'El registro completo, de la primera ronda a la victoria.',
       desk: 'Mi oficina',
@@ -1051,6 +1051,15 @@ const platform = {
         1: "Ganó usted, {me} — {vp} puntos. Releí la partida dos veces. No encuentro nada que objetar, lo cual me irrita.",
       },
     },
+  },
+  feuilleton: {
+    eyebrow: "FOLLETÍN",
+    title: "La partida «{table}»",
+    none: "Sin episodio — el folletín se escribe al terminar una partida en casa.",
+    mine: "Ronda {round}, era del {era} — su jugada",
+    theirs: "Ronda {round}, era del {era} — la jugada de {name}",
+    shift: "{n} sobre su ventaja",
+    open: "Revisar →",
   },
 };
 
