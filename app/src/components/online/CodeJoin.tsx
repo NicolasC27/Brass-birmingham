@@ -47,16 +47,14 @@ export default function CodeJoin() {
       viewport={{ amount: 0.15, once: true }}
       transition={{ duration: 0.22, ease: 'easeOut' }}
       aria-label={t('platform.play.code.title')}
-      className="mt-6 console p-4"
+      className="mt-8 border-y border-[var(--gz-ink-soft)] py-4"
     >
-      <div className="flex flex-col gap-4 min-[900px]:min-h-[64px] min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
+      <div className="flex flex-col gap-4 min-[900px]:flex-row min-[900px]:items-center min-[900px]:justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-enamel-700 text-brass-300">
-            <Hash size={20} aria-hidden />
-          </span>
+          <Hash size={16} strokeWidth={1.5} aria-hidden className="shrink-0 text-brass-300" />
           <div>
-            <h2 className="font-ui text-[15px] font-semibold text-paper-100">{t('platform.play.code.title')}</h2>
-            <p className="font-ui text-[13px] text-iron-400">{t('platform.play.code.copy')}</p>
+            <h2 className="title-card">{t('platform.play.code.title')}</h2>
+            <p className="font-serif text-[13px] italic text-iron-400">{t('platform.play.code.copy')}</p>
           </div>
         </div>
         <CodeInput onSubmit={(code) => void submit(code)} className="min-[900px]:flex-row min-[900px]:items-center" />
