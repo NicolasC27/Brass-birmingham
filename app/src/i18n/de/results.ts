@@ -157,6 +157,18 @@ const de: typeof enresults = {
     theirs: "Maschine · {move}",
     andMore: "und {n} weitere, gelesen, aber hier nicht aufgeführt",
   },
+  ticket: {
+    company: "Midlands-Gesellschaft",
+    title: "Fahrkarte",
+    route: "Kanalzeit → Eisenbahnzeit",
+    passenger: "Reisender",
+    points: "{vp} Punkte",
+    place: "{n}. von {of}",
+    winner: "Sieger",
+    download: "Fahrkarte speichern",
+    alt: "Die Fahrkarte der Partie",
+    heading: "Ihre Fahrkarte",
+  },
   nameless: "Namenlos",
 };
 

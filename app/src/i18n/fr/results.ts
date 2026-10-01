@@ -157,6 +157,18 @@ const fr: typeof enresults = {
     theirs: "machine · {move}",
     andMore: "et {n} de plus, lus mais non listés ici",
   },
+  ticket: {
+    company: "Compagnie des Midlands",
+    title: "Billet de voyage",
+    route: "Ère du canal → Ère du rail",
+    passenger: "Voyageur",
+    points: "{vp} points",
+    place: "{n}e sur {of}",
+    winner: "Vainqueur",
+    download: "Télécharger le billet",
+    alt: "Le billet de la partie",
+    heading: "Votre billet",
+  },
   nameless: "Sans nom",
 };
 

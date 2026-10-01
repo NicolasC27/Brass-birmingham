@@ -157,6 +157,18 @@ const es: typeof enresults = {
     theirs: "máquina · {move}",
     andMore: "y {n} más, leídos pero no listados aquí",
   },
+  ticket: {
+    company: "Compañía de los Midlands",
+    title: "Billete de viaje",
+    route: "Era del canal → Era del ferrocarril",
+    passenger: "Viajero",
+    points: "{vp} puntos",
+    place: "{n}.º de {of}",
+    winner: "Ganador",
+    download: "Guardar el billete",
+    alt: "El billete de la partida",
+    heading: "Su billete",
+  },
   nameless: "Sin nombre",
 };
 

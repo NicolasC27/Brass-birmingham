@@ -155,6 +155,18 @@ const results = {
     theirs: "machine · {move}",
     andMore: "and {n} more, read but not listed here",
   },
+  ticket: {
+    company: "Midlands Company",
+    title: "Travel ticket",
+    route: "Canal era → Rail era",
+    passenger: "Passenger",
+    points: "{vp} points",
+    place: "{n} of {of}",
+    winner: "Winner",
+    download: "Save the ticket",
+    alt: "The ticket of the game",
+    heading: "Your ticket",
+  },
   nameless: "Nameless",
 };
 

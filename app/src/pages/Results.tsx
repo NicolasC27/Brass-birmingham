@@ -13,6 +13,8 @@ import { titlesFor } from "@/components/results/titles";
 import Podium, { type PodiumEntry } from "@/components/results/Podium";
 import ScoringTable from "@/components/results/ScoringTable";
 import TimelineFrieze from "@/components/results/TimelineFrieze";
+import Ticket from "@/components/results/Ticket";
+import { localGame } from "@/game/local";
 import ScoreCurves from "@/components/results/ScoreCurves";
 import EmberParticles from "@/components/results/EmberParticles";
 import {
@@ -128,7 +130,10 @@ export default function Results() {
   const desk = useDesk();
   const me = useSession();
   const code = useGame((s) => s.code);
+  const local = useGame((s) => s.local);
   const table = useTable(code);
+  /* the ticket names the table: the office's, or the register's at home */
+  const tableName = table?.name ?? (local ? (localGame(local)?.name ?? local) : "");
 
   const entries = useMemo(() => (result ? buildEntries(result) : []), [result]);
   const settled = phase >= 3;
@@ -304,6 +309,22 @@ export default function Results() {
         >
           <TimelineFrieze result={result} reveal={phase >= 2} />
         </motion.div>
+
+        {/* the ticket of the journey, once everything is settled — for the
+            seat the store knows, else the human seat the ledger names */}
+        {(() => {
+          const byName = me ? result.players.findIndex((p) => p.name === me.name) : -1;
+          const ticketSeat = mySeat >= 0 ? mySeat : byName >= 0 ? byName : result.players.findIndex((p) => !p.bot);
+          return ticketSeat >= 0 && (
+          <motion.section initial={false} animate={{ opacity: settled ? 1 : 0, y: settled ? 0 : 16 }} transition={{ duration: 0.35 }} className={cn("mt-14", !settled && "pointer-events-none")} aria-label={t("results.ticket.heading")}>
+            <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">{t("results.ticket.heading")}</h2>
+            <div className="divider-brass mt-3 !mx-0" />
+            <div className="mt-6">
+              <Ticket result={result} me={ticketSeat} table={tableName} />
+            </div>
+          </motion.section>
+          );
+        })()}
 
         {/* 5 — Final actions */}
         {/* titles of the game, the glasses raised, and the record against
