@@ -1063,6 +1063,24 @@ const platform: typeof enPlatform = {
     shift: "{n} auf Ihren Vorsprung",
     open: "Nachsehen →",
   },
+  cours: {
+    eyebrow: "ABENDKURS",
+    title: "Das Programm",
+    lede: "Die geführte Partie, die Kapitel des Registers und was der Richter Sie nachlesen heißt — zu einem Programm zusammengenäht, Abend für Abend abgehakt.",
+    guided: "Die geführte Lektion",
+    guidedCopy: "Eine kurze Partie gegen eine sanfte Maschine, der Führer daneben; jede gelesene Lektion bleibt hier abgehakt.",
+    begin: "Lektion beginnen",
+    resume: "Lektion fortsetzen",
+    again: "Noch einmal von vorn",
+    reached: "{done}/{total} Lektionen gelesen",
+    syllabus: "Das Register, Kapitel für Kapitel",
+    read: "Lesen",
+    redo: "Lektionen zum Wiederholen",
+    redoNone: "Nichts zu wiederholen — der Richter hat noch nicht genug Ihrer Partien gelesen.",
+    redoMeta: "{times}-mal in {games} Partien",
+    chapter: "Kapitel {n}, {title}",
+    sheet: "Das Fortschrittsblatt",
+  },
 };
 
 export default platform;

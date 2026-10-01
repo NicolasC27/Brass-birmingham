@@ -1061,6 +1061,24 @@ const platform = {
     shift: "{n} sobre su ventaja",
     open: "Revisar →",
   },
+  cours: {
+    eyebrow: "CURSO NOCTURNO",
+    title: "El programa",
+    lede: "La partida guiada, los capítulos del registro y lo que el juez le manda releer — cosidos en un solo programa, marcado noche tras noche.",
+    guided: "La lección guiada",
+    guidedCopy: "Una partida corta contra una máquina suave, con la guía al lado; cada lección leída queda marcada aquí.",
+    begin: "Empezar la lección",
+    resume: "Retomar la lección",
+    again: "Repetir desde el principio",
+    reached: "{done}/{total} lecciones leídas",
+    syllabus: "El registro, capítulo a capítulo",
+    read: "Leer",
+    redo: "Lecciones que repasar",
+    redoNone: "Nada que repasar — el juez aún no ha leído bastantes partidas suyas.",
+    redoMeta: "{times} veces en {games} partidas",
+    chapter: "capítulo {n}, {title}",
+    sheet: "La hoja de progreso",
+  },
 };
 
 export default platform;

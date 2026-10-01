@@ -1061,6 +1061,24 @@ const platform = {
     shift: "{n} sur votre avance",
     open: "Revoir →",
   },
+  cours: {
+    eyebrow: "COURS DU SOIR",
+    title: "Le programme",
+    lede: "La partie guidée, les chapitres du registre et ce que le juge vous renvoie relire — cousus en un seul programme, coché au fil des soirs.",
+    guided: "La leçon guidée",
+    guidedCopy: "Une partie courte contre une machine douce, le guide à côté ; chaque leçon lue reste cochée ici.",
+    begin: "Commencer la leçon",
+    resume: "Reprendre la leçon",
+    again: "Reprendre depuis le début",
+    reached: "{done}/{total} leçons lues",
+    syllabus: "Le registre, chapitre par chapitre",
+    read: "Lire",
+    redo: "Leçons à reprendre",
+    redoNone: "Rien à reprendre — le juge n’a pas encore lu assez de vos parties.",
+    redoMeta: "{times} fois sur {games} parties",
+    chapter: "chapitre {n}, {title}",
+    sheet: "La feuille de progrès",
+  },
 };
 
 export default platform;

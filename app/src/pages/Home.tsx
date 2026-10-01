@@ -7,7 +7,7 @@ import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
 import { forgetLocalGame } from '@/game/local';
-import { readResume, startTutorial } from '@/game/quickplay';
+import { readResume } from '@/game/quickplay';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
 import CodeInput from '@/components/platform/CodeInput';
@@ -187,17 +187,16 @@ function QueueRankStrip() {
 
 function Classifieds() {
   const t = useT();
-  const navigate = useNavigate();
-  /* the guided game opens a table of its own rather than a page */
+  /* the evening course holds the guided game, and the rest of the programme */
   const ads = [
-    { key: 'guided', icon: GraduationCap, title: t('platform.home.shortcuts.guided'), copy: t('platform.home.shortcuts.guidedCopy'), go: () => navigate(`/game/local/${startTutorial()}`) },
+    { key: '/cours', icon: GraduationCap, title: t('platform.home.shortcuts.guided'), copy: t('platform.home.shortcuts.guidedCopy') },
     { key: '/rules', icon: BookOpen, title: t('platform.home.shortcuts.rules'), copy: t('platform.home.shortcuts.rulesCopy') },
     { key: '/desk', icon: Briefcase, title: t('platform.home.shortcuts.desk'), copy: t('platform.home.shortcuts.deskCopy') },
     { key: '/profile', icon: User, title: t('platform.home.shortcuts.profile'), copy: t('platform.home.shortcuts.profileCopy') },
   ];
   return (
     <div className="mt-10 grid gap-4 min-[760px]:grid-cols-2 min-[1100px]:grid-cols-4">
-      {ads.map(({ key, icon: Icon, title, copy, go }, i) => {
+      {ads.map(({ key, icon: Icon, title, copy }, i) => {
         const inner = (
           <>
             <Icon size={18} strokeWidth={1.5} aria-hidden className="text-brass-300" />
@@ -207,15 +206,9 @@ function Classifieds() {
         );
         return (
           <motion.div key={key} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.2, once: true }} transition={{ duration: 0.22, ease, delay: i * 0.06 }}>
-            {go ? (
-              <button type="button" onClick={go} className="gz-classified h-full w-full">
-                {inner}
-              </button>
-            ) : (
-              <Link to={key} className="gz-classified h-full">
-                {inner}
-              </Link>
-            )}
+            <Link to={key} className="gz-classified h-full">
+              {inner}
+            </Link>
           </motion.div>
         );
       })}

@@ -1061,6 +1061,24 @@ const platform = {
     shift: "{n} on your lead",
     open: "Review →",
   },
+  cours: {
+    eyebrow: "EVENING COURSE",
+    title: "The programme",
+    lede: "The guided game, the chapters of the register and what the judge sends you back to read — stitched into one programme, ticked evening after evening.",
+    guided: "The guided lesson",
+    guidedCopy: "A short game against a gentle machine, the guide beside you; every lesson read stays ticked here.",
+    begin: "Begin the lesson",
+    resume: "Resume the lesson",
+    again: "Take it again from the start",
+    reached: "{done}/{total} lessons read",
+    syllabus: "The register, chapter by chapter",
+    read: "Read",
+    redo: "Lessons to take again",
+    redoNone: "Nothing to take again — the judge has not read enough of your games yet.",
+    redoMeta: "{times} times over {games} games",
+    chapter: "chapter {n}, {title}",
+    sheet: "The sheet of progress",
+  },
 };
 
 export default platform;
