@@ -27,7 +27,7 @@ export type IncomeSide = 'bottom' | 'left';
  *  paintings, the fully painted countryside with its canals and rails, or the
  *  same land at dusk, or the wooded country aged from one era into the next,
  *  both dark enough for the painted tiles */
-export type MapStyle = 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed' | 'quiet';
+export type MapStyle = 'ridges' | 'model' | 'inked' | 'quiet' | 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
   engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
@@ -49,6 +49,18 @@ export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
      hedgerows, a breath of mist in the hollows. Light enough that the
      painted tiles and their places read as the brightest things on it */
   quiet: { canal: '/map-calm-canal.webp', rail: '/map-calm-rail.webp' },
+  /* three grounds that are not a patchwork of fields seen from a plane.
+     Painted ridges: the terrain of a strategy board, long diagonal ridges,
+     rock on the high ground, scattered painted woods, lit from the upper
+     left as the painted tiles are — the one that speaks their language */
+  ridges: { canal: '/map-ridges-canal.webp', rail: '/map-ridges-rail.webp' },
+  /* a model landscape: sculpted plaster hills, static grass, lichen trees,
+     photographed straight down under studio light, so the whole table reads
+     as a miniature and the tiles as pieces set on it */
+  model: { canal: '/map-model-canal.webp', rail: '/map-model-rail.webp' },
+  /* an inked map: hill mounds and tiny trees drawn in sepia on parchment,
+     washed in green and ochre — the old-atlas charm, calm and legible */
+  inked: { canal: '/map-inked-canal.webp', rail: '/map-inked-rail.webp' },
 };
 /** the rail era has three paintings to choose from (etched terrain only) */
 export type RailPainting = '1' | '2' | '3';
@@ -203,7 +215,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  mapStyle: read('mapStyle', 'quiet'),
+  mapStyle: read('mapStyle', 'ridges'),
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),

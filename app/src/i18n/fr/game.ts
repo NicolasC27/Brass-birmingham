@@ -169,7 +169,7 @@ const fr: typeof engame = {
     side: { bottom: 'En bas', left: 'À gauche' },
     mapStyle: 'Fond de carte',
     mapStyleHint: 'Une carte gravée d’époque, le terrain gravé avec ses tableaux, la campagne peinte avec ses canaux, ou la même terre au crépuscule, pour les tuiles peintes.',
-    map: { engraved: 'Carte gravée', etched: 'Terrain gravé', painted: 'Canaux peints', dusk: 'Terre sombre', wooded: 'Terres boisées', ploughed: 'Terres labourées', quiet: 'Campagne paisible' },
+    map: { engraved: 'Carte gravée', etched: 'Terrain gravé', painted: 'Canaux peints', dusk: 'Terre sombre', wooded: 'Terres boisées', ploughed: 'Terres labourées', quiet: 'Campagne paisible', ridges: 'Crêtes peintes', model: 'Maquette', inked: 'Carte à l’encre' },
     railPainting: 'Peinture de l’ère rail',
     railPaintingHint: 'Trois tableaux pour la seconde ère ; les rails sont gravés sur chacun.',
     railPaint: 'Tableau {n}',

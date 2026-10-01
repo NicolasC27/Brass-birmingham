@@ -22,6 +22,9 @@ DIM=${DIM:-72} FADE=${FADE:-30}
 # sheet under engraved tiles. Painted tiles with their own light want a dark
 # ground instead — around TONE=62,70 — or they read as holes rather than lamps.
 TONE=${TONE:-100,92}
+# the lie of the land: RELIEF=0 leaves the ground flat, RELIEF_WEIGHT how
+# firmly it is felt, RELIEF_LIGHT the sun's bearing and height, RELIEF_SEED
+# the hills themselves — the same seed gives the same country every time
 # Ink made for a pale sheet drowns on a dark ground. LIT=1 swaps in a lighter
 # set — waters, lanes, village grounds, basin rims — so the geometry still
 # reads when the painting has been graded down for painted tiles.
@@ -115,6 +118,11 @@ magick -size ${FW}x${FH} xc:none -fill none \
   "$T/roads.png"
 # 6. village grounds and merchant basins
 magick -size ${FW}x${FH} xc:none -stroke none -fill "$PATCH" -draw "$(cat "$T/patch.txt")" -channel RGBA -blur 0x26 +channel "$T/patch.png"
+# the cart tracks that come into a town, drawn under its ground
+magick -size ${FW}x${FH} xc:none -fill none \
+  -stroke "$LANE_UNDER" -strokewidth 5 -draw "$(cat "$T/lane.txt")" \
+  -stroke "$LANE_OVER" -strokewidth 2.2 -draw "$(cat "$T/lane.txt")" \
+  -channel RGBA -blur 0x0.8 +channel "$T/lanes.png"
 magick -size ${FW}x${FH} xc:none -stroke none \
   -fill 'rgba(150,128,98,0.45)' -draw "$(cat "$T/specks-light.txt")" \
   -fill 'rgba(36,28,20,0.5)' -draw "$(cat "$T/specks-dark.txt")" \
@@ -125,7 +133,26 @@ magick -size ${FW}x${FH} xc:none -stroke none \
 magick -size ${FW}x${FH} xc:none -stroke none -fill "$BASIN" -draw "$(cat "$T/basin.txt")" -channel RGBA -blur 0x30 +channel \
   -fill none -stroke "$RIM" -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
 magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/beds.png" -compose over -composite \
-  "$T/patch.png" -compose over -composite "$T/village.png" -compose over -composite "$T/basin.png" -compose over -composite "$T/land.png"
+  "$T/lanes.png" -compose over -composite "$T/patch.png" -compose over -composite "$T/village.png" -compose over -composite "$T/basin.png" -compose over -composite "$T/land.png"
+# 6b. the lie of the land: a height field of our own making, smooth and
+#     seeded, lit from over the reader's left shoulder and laid on as light
+#     rather than paint — the tiles carry their light from the same side, so
+#     the ground stops reading flat under them. RELIEF=0 leaves it out.
+if [[ ${RELIEF:-1} == 1 ]]; then
+  # a smooth country of our own: plasma at a coarse grain, blurred into
+  # rolling ground rather than noise
+  magick -seed "${RELIEF_SEED:-21}" -size $((FW/10))x$((FH/10)) plasma:fractal -resize ${FW}x${FH}! -blur 0x34 -colorspace gray -auto-level "$T/height.png"
+  # lit from over the reader's left shoulder, then pulled back around mid
+  # grey: soft-light on a map centred at 50% lights the slopes facing the
+  # sun and shades the others without touching the overall tone
+  magick "$T/height.png" -shade "${RELIEF_LIGHT:-135x42}" -colorspace gray -auto-level \
+    -function polynomial "${RELIEF_SPREAD:-0.30},0.35" "$T/shade-relief.png"
+  # 2·shade·land: a map that sits at a half leaves the tone where it was,
+  # a lit slope lifts it and a shaded one drops it, and nothing drifts
+  magick "$T/land.png" "$T/shade-relief.png" -compose Mathematics -define compose:args="2,0,0,0" -composite "$T/relief.png"
+  mv "$T/relief.png" "$T/land.png"
+fi
+
 # 7. mist past the play area only, so the far edges read as distance
 magick -size $((WW + 80))x$((WH + 80)) xc:black -gravity center -background white -extent ${FW}x${FH} -blur 0x110 -evaluate multiply 0.45 "$T/mask.png"
 magick -size ${FW}x${FH} xc:'rgb(150,170,160)' "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"

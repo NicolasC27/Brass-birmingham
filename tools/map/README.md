@@ -130,6 +130,34 @@ own geometry — `node /tmp/geo.mjs /tmp/geo-veneto.json veneto`. Its five
 merchant houses were repainted from the Oxford plate, keeping the frame,
 the brass disc and the nameplate. Sources in `tools/assets/map/houses/`.
 
+## Three grounds that are not a patchwork
+
+Every ground above is a countryside seen from a plane: fields, hedges,
+copses. Asked for something else, three directions were tried in one pass
+and all three kept, each with a rail era aged from its own canal painting
+by `fal-ai/nano-banana/edit`, upscaled three times, composed with the
+geometry, RELIEF=0 (they carry their own):
+
+- **Crêtes peintes** (`map-ridges-*`, the default): the terrain of a
+  strategy board — long diagonal ridges, rock on the high ground,
+  scattered painted woods, lit from the upper left as the painted tiles
+  are. The one that speaks their language. Asked with "no grid of fields,
+  no repetition, no symmetry"; the first take tiled four identical islands.
+- **Maquette** (`map-model-*`): sculpted plaster hills, static grass,
+  lichen trees, photographed straight down — the table reads as a
+  miniature and the tiles as pieces set on it. Dark; composed LIT=1.
+- **Carte à l'encre** (`map-inked-*`): hill mounds and tiny trees in
+  sepia on parchment, washed green and ochre. Old-atlas charm.
+
+Sources in `tools/assets/map/map-{ridges,model,inked}-{canal,rail}-fal.jpg`.
+
+The quiet country's composer meanwhile gained cart tracks converging on
+every town (`lane.txt`), a wider cleared ground under each, and a relief
+pass: a seeded plasma height field lit from the upper left, applied as
+2·shade·land so a map centred at a half leaves the tone alone. Soft-light
+was tried first and brightened the whole sheet — ImageMagick's formula is
+not the one painters mean.
+
 ## The engraved map
 
 The board's default ground is no painting at all: a period engraved map,
