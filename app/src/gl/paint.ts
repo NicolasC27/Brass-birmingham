@@ -141,10 +141,15 @@ if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as 
 let villageTex: Texture;
 /** the trades that have a works of their own to show */
 const WORKS: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
+/** five wharves, one to a merchant */
+const WHARVES = [0, 1, 2, 3, 4];
 /* four painted places, one to a town, for every ground but the engraved map */
 let placeTex: Texture[] = [];
 /* and one works to a trade: a town that has built shows what it built */
 let worksTex: Partial<Record<IndustryType, Texture>> = {};
+/* and a wharf under every merchant's sign, so the edge of the map is a
+   place of business rather than a picture hung in the air */
+let wharfTex: (Texture | null)[] = [];
 /* the engraved map lays an ink hamlet under each town instead (three, in turn) */
 let hamletTex: Texture[] = [];
 
@@ -385,6 +390,7 @@ export async function loadBoardAssets(): Promise<void> {
      whole board down with it, so each is asked for on its own and a miss
      leaves the town its painted place */
   const works = await Promise.all(WORKS.map(async (i) => [i, await Assets.load<Texture>(`/town-works-${i}.webp`).catch(() => null)] as const));
+  const wharves = await Promise.all(WHARVES.map((n) => Assets.load<Texture>(`/merchant-wharf-${n}.webp`).catch(() => null)));
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
   /* a house may come alive: a short looping film of its quay served beside
@@ -414,6 +420,7 @@ export async function loadBoardAssets(): Promise<void> {
   hamletTex = [loaded['/town-hamlet-0.webp'], loaded['/town-hamlet-1.webp'], loaded['/town-hamlet-2.webp']];
   placeTex = [loaded['/town-place-0.webp'], loaded['/town-place-1.webp'], loaded['/town-place-2.webp'], loaded['/town-place-3.webp']];
   worksTex = Object.fromEntries(works.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
+  wharfTex = wharves;
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -651,6 +658,20 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     plate.scale.set(1.45);
     plate.eventMode = 'none';
 
+    /* the wharf the sign belongs to, standing on the map below it: the same
+       hand as the towns' places, the same light, its own cleared ground */
+    const quay = wharfTex[MERCHANTS.indexOf(m) % Math.max(1, wharfTex.length)];
+    if (quay) {
+      const qw = W * 0.92;
+      const q = new Sprite(quay);
+      q.anchor.set(0.5);
+      q.width = qw;
+      q.height = qw;
+      q.position.set(0, H * 0.52 + qw * 0.22);
+      q.alpha = 0.94;
+      q.eventMode = 'none';
+      plate.addChild(q);
+    }
     const shadow = new Graphics().roundRect(-W / 2 + 4, -H / 2 + 8, W, H, 6).fill({ color: 0x000000, alpha: 0.55 });
     shadow.eventMode = 'none';
     const sign = new Sprite(tex);

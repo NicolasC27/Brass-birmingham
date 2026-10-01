@@ -144,6 +144,16 @@ last:
   contact shadow thrown down and to the right, baked onto the drawing's own
   footprint (`tools/assets/map/villages/place-*-anchored.png`).
 
+## The wharves
+
+Each of the five edge merchants keeps its framed sign, and now stands on a
+wharf of its own below it (`merchant-wharf-0..4.webp`): a warehouse with a
+hoist, a customs house with a clock, a timber staithe on piles, a transit
+shed with its lime kiln, an arcaded market hall. Drawn from the v3 tiles as
+reference like the places and the works, keyed off magenta, and given the
+same cleared ground and cast shadow so they sit on the map rather than
+hang over it.
+
 ## A second board
 
 `app/src/game/boards/` holds the geography: `midlands.ts`, `veneto.ts`, and
