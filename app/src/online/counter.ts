@@ -52,7 +52,7 @@ export const COUNTER: CounterItem[] = [
 export const COUNTER_BY_ID: Record<string, CounterItem> = Object.fromEntries(COUNTER.map((i) => [i.id, i]));
 
 /** what a finished game pays: a sitting, more for the winner, twice for a ranked table */
-export const GUINEAS = { sitting: 10, win: 25, rankedTimes: 2 } as const;
+export const GUINEAS = { sitting: 10, win: 25, rankedTimes: 2, challengeRule: 5, challengeAll: 15 } as const;
 
 /** the items everyone owns without paying */
 export const FREE_ITEMS = COUNTER.filter((i) => i.price === 0).map((i) => i.id);

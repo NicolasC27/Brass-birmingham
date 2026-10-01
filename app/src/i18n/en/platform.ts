@@ -905,6 +905,15 @@ const platform = {
       canal: "canal",
       rail: "rail",
     },
+    board: {
+      title: "BOARD OF THE WEEK",
+      players: "{n} player(s)",
+      signIn: "Sign in to stand on the week’s board: the office pays the conditions held in guineas.",
+      empty: "Nobody has taken the notice yet. The first line is there to take.",
+      you: "you",
+      met: "{done}/{total}",
+      mine: "Your rank: {rank}, {points} points",
+    },
   },
   almanac: {
     eyebrow: "EPHEMERIS",

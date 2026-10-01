@@ -5,7 +5,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
@@ -203,6 +203,16 @@ create table if not exists purses (
   accountId text primary key,
   guineas   integer not null,
   owned     text not null
+);
+create table if not exists challenges (
+  accountId text not null,
+  week      integer not null,
+  id        text not null,
+  points    integer not null,
+  vp        integer not null,
+  met       text not null,
+  at        integer not null,
+  primary key (accountId, week)
 );
 `;
 
@@ -1001,6 +1011,38 @@ export class Store {
     });
     const at = all.findIndex((r) => r.id === meId);
     return { season, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };
+  }
+
+  /* --------------------------- the notices -------------------------- */
+
+  /** an attempt at the week's notice: the best per account is kept, and the
+   *  conditions newly met are paid — so many a condition, so much more
+   *  when every one holds for the first time. Returns what was paid. */
+  postChallenge(accountId: string, week: number, id: string, points: number, vp: number, met: boolean[]): number {
+    const row = this.db.prepare('select points, met from challenges where accountId = ? and week = ?').get(accountId, week) as { points: number; met: string } | undefined;
+    const before: boolean[] = row ? (JSON.parse(row.met) as boolean[]) : [];
+    const count = (m: boolean[]) => m.filter(Boolean).length;
+    const all = (m: boolean[]) => m.length > 0 && m.every(Boolean);
+    const paid = Math.max(0, count(met) - count(before)) * GUINEAS.challengeRule + (all(met) && !all(before) ? GUINEAS.challengeAll : 0);
+    const better = !row || points > row.points || count(met) > count(before);
+    if (better) {
+      const keptMet = count(met) >= count(before) ? met : before;
+      this.db
+        .prepare('insert into challenges (accountId, week, id, points, vp, met, at) values (?, ?, ?, ?, ?, ?, ?) on conflict (accountId, week) do update set id = excluded.id, points = max(points, excluded.points), vp = excluded.vp, met = excluded.met, at = excluded.at')
+        .run(accountId, week, id, points, vp, JSON.stringify(keptMet), Date.now());
+    }
+    if (paid > 0) this.earn(accountId, paid);
+    return paid;
+  }
+
+  /** the week's board: every account's best attempt, the most points first */
+  challengeBoard(week: number, meId: string, limit = 50): ChallengeBoard {
+    const rows = this.db
+      .prepare('select c.accountId as id, a.name, a.favoriteColor as color, c.points, c.vp, c.met, c.at from challenges c join accounts a on a.id = c.accountId where c.week = ? order by c.points desc, c.at asc')
+      .all(week) as { id: string; name: string; color: string | null; points: number; vp: number; met: string; at: number }[];
+    const all: ChallengeRow[] = rows.map((r) => ({ id: r.id, name: r.name, color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, points: r.points, vp: r.vp, met: JSON.parse(r.met) as boolean[], at: r.at }));
+    const at = all.findIndex((r) => r.id === meId);
+    return { week, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };
   }
 
   /* ----------------------------- the purse ------------------------- */

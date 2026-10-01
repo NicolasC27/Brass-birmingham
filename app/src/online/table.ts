@@ -193,6 +193,28 @@ export interface Leaderboard {
   me: (LeaderRow & { rank: number }) | null;
 }
 
+/** one line of the week's board: an account's best attempt at the notice */
+export interface ChallengeRow {
+  id: string;
+  name: string;
+  color: PlayerColor | null;
+  points: number;
+  vp: number;
+  /** the conditions, met or not, of the best attempt */
+  met: boolean[];
+  at: number;
+}
+
+/** the week's board, as the office keeps it */
+export interface ChallengeBoard {
+  week: number;
+  /** accounts that attempted the notice */
+  players: number;
+  rows: ChallengeRow[];
+  /** my own line and rank, when I attempted it */
+  me: (ChallengeRow & { rank: number }) | null;
+}
+
 /** the queue I stand in */
 export interface QueueState {
   mode: 'quick' | 'ranked';

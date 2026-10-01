@@ -905,6 +905,15 @@ const platform = {
       canal: "canal",
       rail: "ferrocarril",
     },
+    board: {
+      title: "CLASIFICACIÓN DE LA SEMANA",
+      players: "{n} jugador(es)",
+      signIn: "Inicie sesión para figurar en la clasificación de la semana: la oficina paga en guineas las condiciones cumplidas.",
+      empty: "Nadie ha aceptado aún el aviso. La primera línea está por tomar.",
+      you: "usted",
+      met: "{done}/{total}",
+      mine: "Su puesto: {rank}.º, {points} puntos",
+    },
   },
   almanac: {
     eyebrow: "EFEMÉRIDE",

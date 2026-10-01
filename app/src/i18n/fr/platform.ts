@@ -905,6 +905,15 @@ const platform = {
       canal: "canal",
       rail: "rail",
     },
+    board: {
+      title: "CLASSEMENT DE LA SEMAINE",
+      players: "{n} joueur(s)",
+      signIn: "Connectez-vous pour figurer au classement de la semaine : l’office paie en guinées les conditions tenues.",
+      empty: "Personne n’a encore relevé l’avis. La première ligne est à prendre.",
+      you: "vous",
+      met: "{done}/{total}",
+      mine: "Votre rang : {rank}e, {points} points",
+    },
   },
   almanac: {
     eyebrow: "ÉPHÉMÉRIDE",

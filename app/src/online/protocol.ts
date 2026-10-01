@@ -3,7 +3,7 @@ import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -124,6 +124,11 @@ export type ClientMessage =
   | { t: 'tables'; rid: number; query?: TableQuery }
   | { t: 'seatme'; rid: number; color?: PlayerColor }
   | { t: 'leaderboard'; rid: number }
+  /** the week's board of the challenge notice */
+  | { t: 'challenge'; rid: number; week: number }
+  /** an attempt at the week's notice, read at home: the office keeps the
+      best per account and pays the conditions newly met */
+  | { t: 'challenge.post'; rid: number; week: number; id: string; vp: number; rank: number; met: boolean[]; points: number }
   /** stand in (or leave) the quick or the ranked queue */
   | { t: 'queue'; mode: 'quick' | 'ranked'; on: boolean }
   /** buy an item at the counter with the guineas earned at the tables */
@@ -169,6 +174,7 @@ export type ServerMessage =
   | { t: 'analysis.slice'; rid: number; code: string; v: number; judge: JudgeId; lo: number; hi: number; readers: number }
   | { t: 'tables'; rid?: number; page: TablesPage }
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
+  | { t: 'challenge'; rid?: number; board: ChallengeBoard }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
   | { t: 'pong' };

@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { weekOf } from '@/platform/almanac';
 import type { ServerResponse } from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
@@ -628,6 +629,23 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'leaderboard':
         send(c, { t: 'leaderboard', rid: m.rid, board: hall.leaderboard(who.id) });
         return;
+      case 'challenge':
+        if (Number.isInteger(m.week) && m.week >= 0) send(c, { t: 'challenge', rid: m.rid, board: store.challengeBoard(m.week, who.id) });
+        return;
+      case 'challenge.post': {
+        /* an attempt of this week or the last, in figures a game can make */
+        const week = weekOf();
+        const sane =
+          Number.isInteger(m.week) && m.week <= week && m.week >= week - 1 && typeof m.id === 'string' && m.id.length <= 32 && Array.isArray(m.met) && m.met.length <= 8 && m.met.every((x) => typeof x === 'boolean') && Number.isInteger(m.points) && m.points >= 0 && m.points <= 500 && Number.isInteger(m.vp) && m.vp >= 0 && m.vp <= 400;
+        if (!sane) {
+          send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+          return;
+        }
+        const paid = store.postChallenge(who.id, m.week, m.id, m.points, m.vp, m.met);
+        send(c, { t: 'challenge', rid: m.rid, board: store.challengeBoard(m.week, who.id) });
+        if (paid > 0) for (const s of socketsOf(who.id)) pushDesk(s);
+        return;
+      }
       case 'queue':
         /* the queues are for verified accounts, and say nothing to the others */
         if (who.verified && (m.mode === 'quick' || m.mode === 'ranked')) hall.queue(who.id, m.mode, !!m.on);

@@ -907,6 +907,15 @@ const platform: typeof enPlatform = {
       canal: "Kanal",
       rail: "Eisenbahn",
     },
+    board: {
+      title: "TAFEL DER WOCHE",
+      players: "{n} Spieler",
+      signIn: "Melden Sie sich an, um auf der Tafel der Woche zu stehen: das Büro zahlt die erfüllten Bedingungen in Guineen.",
+      empty: "Noch niemand hat die Anzeige angenommen. Die erste Zeile ist zu haben.",
+      you: "Sie",
+      met: "{done}/{total}",
+      mine: "Ihr Rang: {rank}., {points} Punkte",
+    },
   },
   almanac: {
     eyebrow: "EPHEMERIDE",

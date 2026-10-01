@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -36,6 +36,8 @@ export class Wire {
   /** the register of tables in play, a page at a time, the roll of honour: asked for, then pushed */
   tables: TablesPage | null = null;
   board: Leaderboard | null = null;
+  /** the week's boards of the challenge notice, by week: asked for, then kept */
+  challenges = new Map<number, ChallengeBoard>();
   /** the table the office just dealt me from a queue, until the page takes me there */
   dealt: string | null = null;
   private halls = new Set<() => void>();
@@ -111,6 +113,15 @@ export class Wire {
 
   askLeaderboard(): void {
     void this.ask((rid) => ({ t: 'leaderboard', rid })).catch(() => undefined);
+  }
+
+  askChallenge(week: number): void {
+    void this.ask((rid) => ({ t: 'challenge', rid, week })).catch(() => undefined);
+  }
+
+  /** an attempt at the week's notice, for the office to keep and pay */
+  postChallenge(a: { week: number; id: string; vp: number; rank: number; met: boolean[]; points: number }): void {
+    void this.ask((rid) => ({ t: 'challenge.post', rid, week: a.week, id: a.id, vp: a.vp, rank: a.rank, met: a.met, points: a.points })).catch(() => undefined);
   }
 
   /** stand in the quick or the ranked queue, or step out of it */
@@ -296,6 +307,10 @@ export class Wire {
     }
     if (m.t === 'leaderboard') {
       this.board = m.board;
+      for (const cb of this.halls) cb();
+    }
+    if (m.t === 'challenge') {
+      this.challenges.set(m.board.week, m.board);
       for (const cb of this.halls) cb();
     }
     /* the queue moved: the desk says where I stand, so ask it again */

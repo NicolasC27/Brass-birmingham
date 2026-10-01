@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Check, Flag, X } from 'lucide-react';
@@ -9,7 +9,7 @@ import { listLocalGames } from '@/game/local';
 import { attemptsOf, challengeOf, openAttemptOf, startChallenge, type Rule } from '@/game/challenge';
 import { daysLeft } from '@/platform/almanac';
 import { lobby } from '@/online/lobby';
-import { useSession } from '@/online/session';
+import { postChallenge, useChallengeBoard, useSession } from '@/online/session';
 
 /* ------------------------------------------------------------------ */
 /* The notice of the week, printed on the front page: its number and   */
@@ -53,6 +53,11 @@ export default function ChallengeNotice() {
   const [attempts] = useState(() => attemptsOf(challenge.week));
   const [open] = useState(() => openAttemptOf(challenge.week, listLocalGames()));
   const best = attempts[0] ?? null;
+  const board = useChallengeBoard(challenge.week);
+  /* my best attempt reaches the office once I am signed in — it keeps the best */
+  useEffect(() => {
+    if (session && best) postChallenge(best);
+  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const rivals = challenge.rivals.map(personaName).join(', ');
   const options = [challenge.options.marketTemper === 'volatile' && t('platform.challenge.optVolatile'), challenge.options.eraLength === 'short' && t('platform.challenge.optShort')].filter(Boolean).join(' · ');
 
@@ -134,6 +139,36 @@ export default function ChallengeNotice() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* the week's board, as the office keeps it */}
+      <div className="border-t border-[var(--gz-ink-soft)] px-6 py-4 min-[900px]:px-7">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <p className="micro-label text-paper-100">{t('platform.challenge.board.title')}</p>
+          {board && board.players > 0 && <p className="data-text text-[11px] text-iron-600 tnums">{t('platform.challenge.board.players', { n: board.players })}</p>}
+        </div>
+        {!session ? (
+          <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.challenge.board.signIn')}</p>
+        ) : !board || board.players === 0 ? (
+          <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.challenge.board.empty')}</p>
+        ) : (
+          <ol className="mt-2 grid gap-x-8 gap-y-1 min-[900px]:grid-cols-2">
+            {board.rows.slice(0, 6).map((row, i) => (
+              <li key={row.id} className={cn('flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5', row.id === session.id && 'text-brass-300')}>
+                <span className="data-text w-5 text-[11px] text-iron-600 tnums">{i + 1}.</span>
+                <span className="min-w-0 flex-1 truncate font-fraunces text-[14px] font-medium" style={{ fontVariationSettings: '"opsz" 48' }}>
+                  {row.name}
+                  {row.id === session.id && <span className="micro-label ml-2 text-iron-600">{t('platform.challenge.board.you')}</span>}
+                </span>
+                <span className="data-text text-[11px] text-iron-400 tnums">{t('platform.challenge.board.met', { done: row.met.filter(Boolean).length, total: row.met.length })}</span>
+                <span className="font-fraunces text-[15px] font-medium tnums">{row.points}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+        {board?.me && board.me.rank > 6 && (
+          <p className="data-text mt-2 text-[11px] text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</p>
+        )}
       </div>
     </motion.section>
   );

@@ -312,7 +312,9 @@ function noteForm(g: GameState): void {
 function noteHouse(g: GameState, local: string | null): void {
   noteForm(g);
   if (!local) return;
-  noteChallenge(g, local);
+  const attempt = noteChallenge(g, local);
+  /* the office keeps the week's board when there is one on the line */
+  if (attempt && onlineWire()?.session) onlineWire()?.postChallenge(attempt);
   grantFromGame(g, local);
   writeLetter(g, local);
 }

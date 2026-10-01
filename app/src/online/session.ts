@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
-import type { Desk, Leaderboard, Me, TableQuery, TablesPage } from './table';
+import type { ChallengeBoard, Desk, Leaderboard, Me, TableQuery, TablesPage } from './table';
 import { normalizeQuery } from './table';
 
 /* ------------------------------------------------------------------ */
@@ -101,6 +101,23 @@ export function useLeaderboard(): Leaderboard | null {
   }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return board;
 }
+
+/** the week's board of the challenge notice, asked for once signed in */
+export function useChallengeBoard(week: number): ChallengeBoard | null {
+  const session = useSession();
+  const board = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => onlineWire()?.challenges.get(week) ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    if (session) onlineWire()?.askChallenge(week);
+  }, [session?.id, week]); // eslint-disable-line react-hooks/exhaustive-deps
+  return board;
+}
+
+/** an attempt at the notice, sent to the office when there is one to send to */
+export const postChallenge = (a: { week: number; id: string; vp: number; rank: number; met: boolean[]; points: number }): void => onlineWire()?.postChallenge(a);
 
 export const setQueue = (mode: 'quick' | 'ranked', on: boolean): void => onlineWire()?.setQueue(mode, on);
 
