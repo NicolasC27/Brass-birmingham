@@ -109,6 +109,20 @@ Before this there was one painting for all twenty-two towns, drawn at the
 width of the card block and faded to 62 %: it read as a grey smudge. A
 place is now wider than the cards it stands behind and drawn at 84 %.
 
+## The three grounds
+
+Eight grounds were tried and dropped. Three are offered: **the English
+model** (`map-relief-*`), the board's default — low swells in painted
+plaster under a raking light, a shelf cut for every town; **the engraved
+map** (`map-engraved-*`), drawn from the geometry and nothing else; and
+**the inked map** (`map-inked-*`), sepia mounds and tiny trees on
+parchment. A fourth, the etched terrain (`map-era-*`), is not in the
+settings: it is the ground a rail-era painting bought at the counter is
+shown on, and a reader who owns one keeps it.
+
+The sources of the ones dropped stay in `tools/assets/map/`, so any of
+them can be composed again; only their served WebP went.
+
 ## Anchoring a place
 
 A village drawn straight onto a terrain floats, and on a slope it looks

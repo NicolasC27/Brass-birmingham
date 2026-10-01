@@ -4,7 +4,7 @@ import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT, LANGS } from '@/i18n';
 import type { Lang } from '@/i18n';
-import { RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
+import { MAP_STYLES, RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
 import { narrowRailTop, useHudInsets } from './useHudInsets';
 import { useNarrow } from '@/hooks/use-narrow';
 import type { IncomeSide, MapStyle, MinimapSize, RailPainting } from './boardOptions';
@@ -505,7 +505,7 @@ export default function BoardSettings() {
                       <Segmented<MapStyle>
                         value={opts.mapStyle}
                         onChange={(v) => setBoardOption('mapStyle', v)}
-                        options={(['relief', 'ridges', 'model', 'inked', 'quiet', 'engraved', 'etched', 'painted', 'dusk', 'wooded', 'ploughed'] as MapStyle[]).map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
+                        options={MAP_STYLES.map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
                       />
                     </OptionRow>
                     {opts.mapStyle === 'etched' && (

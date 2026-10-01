@@ -27,45 +27,27 @@ export type IncomeSide = 'bottom' | 'left';
  *  paintings, the fully painted countryside with its canals and rails, or the
  *  same land at dusk, or the wooded country aged from one era into the next,
  *  both dark enough for the painted tiles */
-export type MapStyle = 'relief' | 'ridges' | 'model' | 'inked' | 'quiet' | 'engraved' | 'etched' | 'painted' | 'dusk' | 'wooded' | 'ploughed';
+/** the ground under the board. Three are offered: the plaster model the
+ *  board opens on, the engraved sheet drawn from the geometry itself, and
+ *  the inked atlas. `etched` is not among them — it is the ground a rail-era
+ *  painting bought at the counter is shown on, and a reader who owns one
+ *  keeps it. */
+export type MapStyle = 'relief' | 'engraved' | 'inked' | 'etched';
 export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
-  engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
-  etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
-  painted: { canal: '/map-painted-canal.webp', rail: '/map-painted-rail.webp' },
-  /* a land graded down under its own dusk, its waters and rails inked pale:
-     the ground for tiles that carry their own light, which read as holes on
-     a bright sheet and as lamps on this one */
-  dusk: { canal: '/map-dusk-canal.webp', rail: '/map-dusk-rail.webp' },
-  /* wooded ridges and hedgerow fields, the rail era the same land with its
-     woods cut back and its spoil heaps: one terrain aged into the other,
-     so the two eras stand on the same ground */
-  wooded: { canal: '/map-wooded-canal.webp', rail: '/map-wooded-rail.webp' },
-  /* worked earth: broad furrowed fields in umber and slate between thick
-     hedge lines, the rail era the same fields with the pits dug through
-     them — the quietest of the dark grounds, and the only one with no
-     water of its own to argue with the engraved canals */
-  ploughed: { canal: '/map-ploughed-canal.webp', rail: '/map-ploughed-rail.webp' },
-  /* the board's own country: a still morning over sage and oat fields, soft
-     hedgerows, a breath of mist in the hollows. Light enough that the
-     painted tiles and their places read as the brightest things on it */
-  quiet: { canal: '/map-calm-canal.webp', rail: '/map-calm-rail.webp' },
   /* the country as a made thing: a painted plaster model of low English
      swells under a raking light, a shelf cut in it for every town, the rail
      era the same model gone grey with a century of smoke settled on it */
   relief: { canal: '/map-relief-canal.webp', rail: '/map-relief-rail.webp' },
-  /* three grounds that are not a patchwork of fields seen from a plane.
-     Painted ridges: the terrain of a strategy board, long diagonal ridges,
-     rock on the high ground, scattered painted woods, lit from the upper
-     left as the painted tiles are — the one that speaks their language */
-  ridges: { canal: '/map-ridges-canal.webp', rail: '/map-ridges-rail.webp' },
-  /* a model landscape: sculpted plaster hills, static grass, lichen trees,
-     photographed straight down under studio light, so the whole table reads
-     as a miniature and the tiles as pieces set on it */
-  model: { canal: '/map-model-canal.webp', rail: '/map-model-rail.webp' },
+  /* a period engraved map, drawn from the geometry and nothing else */
+  engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   /* an inked map: hill mounds and tiny trees drawn in sepia on parchment,
      washed in green and ochre — the old-atlas charm, calm and legible */
   inked: { canal: '/map-inked-canal.webp', rail: '/map-inked-rail.webp' },
+  /* the etched terrain, kept for the paintings the counter sells */
+  etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
 };
+/** the three offered in the settings; `etched` arrives with a painting */
+export const MAP_STYLES: MapStyle[] = ['relief', 'engraved', 'inked'];
 /** the rail era has three paintings to choose from (etched terrain only) */
 export type RailPainting = '1' | '2' | '3';
 export const RAIL_PAINTINGS: RailPainting[] = ['1', '2', '3'];
@@ -219,7 +201,9 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  mapStyle: read('mapStyle', 'relief'),
+  /* a ground that is no longer offered — one of the eight that were tried
+     and dropped — falls back to the one the board opens on */
+  mapStyle: MAP_URL[read('mapStyle', 'relief')] ? read('mapStyle', 'relief') : 'relief',
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
