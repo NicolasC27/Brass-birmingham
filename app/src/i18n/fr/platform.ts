@@ -5,16 +5,16 @@
 const platform = {
   nav: {
     play: "Départs",
-    tables: 'Tables',
-    desk: 'Bureau',
+    tables: "Horaires",
+    desk: "Chef de gare",
     rules: 'Règles',
-    createTable: 'Créer une table',
+    createTable: "Affréter un convoi",
     invitations: 'Invitations',
     noInvitations: 'Aucune invitation en attente.',
     profile: 'Profil',
     home: 'Accueil',
-    comptoir: 'Comptoir',
-    ranking: 'Classement',
+    comptoir: "Buffet",
+    ranking: "Palmarès",
     discord: 'Discord',
   },
   masthead: {
@@ -39,8 +39,8 @@ const platform = {
   },
   tabs: {
     play: "Départs",
-    tables: 'Tables',
-    desk: 'Bureau',
+    tables: "Horaires",
+    desk: "Chef de gare",
     profile: 'Profil',
   },
   theme: {
@@ -49,8 +49,8 @@ const platform = {
   },
   action: {
     playNow: "Prochain départ",
-    createTable: 'Créer une table',
-    joinWithCode: 'Rejoindre avec un code',
+    createTable: "Affréter un convoi",
+    joinWithCode: "Mon billet",
     join: 'Rejoindre',
     watch: 'Regarder',
     full: 'Complet',
@@ -59,7 +59,7 @@ const platform = {
     enterLobby: 'Entrer dans le salon',
     seeAll: 'Tout voir →',
     localGame: 'Partie locale',
-    signIn: 'Se connecter',
+    signIn: "Signer le registre",
     close: 'Fermer',
   },
   seat: {
@@ -128,7 +128,7 @@ const platform = {
   },
   serverOffline: 'Serveur hors ligne — mode local disponible',
   home: {
-    eyebrow: 'HALL DU CLUB',
+    eyebrow: "HALL DE LA GARE",
     title: 'Blackrail',
     tagline: 'La plateforme du jeu. Trouvez une table, lancez la machine.',
     resumeBanner: 'Table « {name} » — c’est votre tour',
@@ -205,7 +205,7 @@ const platform = {
       guidedCopy: "La leçon guidée, le registre chapitre par chapitre, et ce qu’il faut reprendre.",
       rules: 'Apprendre les règles',
       rulesCopy: 'Le registre complet, du premier tour à la victoire.',
-      desk: 'Mon bureau',
+      desk: "Bureau du chef de gare",
       deskCopy: 'Tables, invitations, amis et statistiques.',
       profile: 'Mon profil',
       profileCopy: 'Rang, cote et historique public.',
@@ -255,8 +255,8 @@ const platform = {
   },
   // --- setup ---
   setup: {
-    eyebrow: 'FOURREAU N°7 — NOUVELLE TABLE',
-    title: 'Créer une table',
+    eyebrow: "LETTRE DE VOITURE N°7",
+    title: "Affréter un convoi",
     tagline: 'Réglez la machine, invitez vos joueurs, lancez.',
     identity: {
       heading: 'IDENTITÉ DE LA TABLE',
@@ -382,7 +382,7 @@ const platform = {
   },
   // --- desk ---
   desk: {
-    eyebrow: 'BUREAU DU JOUEUR',
+    eyebrow: "BUREAU DU CHEF DE GARE",
     memberSince: 'Membre du club depuis {date}',
     season: '{season} · J-{days}',
     editProfile: 'Modifier le profil',
@@ -645,8 +645,8 @@ const platform = {
   // --- comptoir ---
   comptoir: {
     nav: 'Comptoir',
-    eyebrow: 'LE COMPTOIR',
-    title: 'Le Comptoir',
+    eyebrow: "LE BUFFET DE LA GARE",
+    title: "Le Buffet",
     lede: 'Ce que les tables vous ont payé, le comptoir vous le monnaie.',
     walletAria: 'Bourse : {count} guinées — ouvrir le Comptoir',
     tokens: '{count} guinées',
@@ -748,8 +748,8 @@ const platform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: 'TABLEAU D’HONNEUR',
-    title: 'Classement',
+    eyebrow: "PALMARÈS DES COMPAGNIES",
+    title: "Le palmarès",
     players: '{count} classés cet exercice',
     daysLeft: 'clôture dans {days} j',
     myRank: 'Votre rang : {rank} sur {count}',

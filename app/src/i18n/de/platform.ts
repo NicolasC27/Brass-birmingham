@@ -7,16 +7,16 @@ import enPlatform from '../en/platform';
 const platform: typeof enPlatform = {
   nav: {
     play: "Abfahrten",
-    tables: 'Tische',
-    desk: 'Kontor',
+    tables: "Fahrplan",
+    desk: "Vorsteher",
     rules: 'Regeln',
-    createTable: 'Tisch eröffnen',
+    createTable: "Einen Zug chartern",
     invitations: 'Einladungen',
     noInvitations: 'Keine offene Einladung.',
     profile: 'Profil',
     home: 'Halle',
-    comptoir: 'Ladentisch',
-    ranking: 'Rangliste',
+    comptoir: "Buffet",
+    ranking: "Ehrentafel",
     discord: 'Discord',
   },
   masthead: {
@@ -41,8 +41,8 @@ const platform: typeof enPlatform = {
   },
   tabs: {
     play: "Abfahrten",
-    tables: 'Tische',
-    desk: 'Kontor',
+    tables: "Fahrplan",
+    desk: "Vorsteher",
     profile: 'Profil',
   },
   theme: {
@@ -51,8 +51,8 @@ const platform: typeof enPlatform = {
   },
   action: {
     playNow: "Nächste Abfahrt",
-    createTable: 'Tisch eröffnen',
-    joinWithCode: 'Mit Code beitreten',
+    createTable: "Einen Zug chartern",
+    joinWithCode: "Meine Fahrkarte",
     join: 'Beitreten',
     watch: 'Zuschauen',
     full: 'Voll',
@@ -61,7 +61,7 @@ const platform: typeof enPlatform = {
     enterLobby: 'Wartezimmer betreten',
     seeAll: 'Alle anzeigen →',
     localGame: 'Lokale Partie',
-    signIn: 'Anmelden',
+    signIn: "Ins Register eintragen",
     close: 'Schließen',
   },
   seat: {
@@ -130,7 +130,7 @@ const platform: typeof enPlatform = {
   },
   serverOffline: 'Server offline — lokaler Modus verfügbar',
   home: {
-    eyebrow: 'HALLE DES CLUBS',
+    eyebrow: "BAHNHOFSHALLE",
     title: 'Blackrail',
     tagline: 'Die Plattform zum Spiel. Finde einen Tisch, wirf die Maschine an.',
     resumeBanner: 'Tisch „{name}“ — du bist am Zug',
@@ -207,7 +207,7 @@ const platform: typeof enPlatform = {
       guidedCopy: "Die geführte Lektion, das Register Kapitel für Kapitel und was zu wiederholen ist.",
       rules: 'Regeln lernen',
       rulesCopy: 'Das vollständige Register, von der ersten Runde bis zum Sieg.',
-      desk: 'Mein Kontor',
+      desk: "Büro des Bahnhofsvorstehers",
       deskCopy: 'Tische, Einladungen, Freunde und Statistiken.',
       profile: 'Mein Profil',
       profileCopy: 'Rang, Wertung und öffentliche Historie.',
@@ -257,8 +257,8 @@ const platform: typeof enPlatform = {
   },
   // --- setup ---
   setup: {
-    eyebrow: 'SCHUBLADE NR. 7 — NEUER TISCH',
-    title: 'Tisch eröffnen',
+    eyebrow: "FRACHTBRIEF NR. 7",
+    title: "Einen Zug chartern",
     tagline: 'Stell die Maschine ein, lade deine Spieler ein, leg los.',
     identity: {
       heading: 'IDENTITÄT DES TISCHES',
@@ -384,7 +384,7 @@ const platform: typeof enPlatform = {
   },
   // --- desk ---
   desk: {
-    eyebrow: 'KONTOR DES SPIELERS',
+    eyebrow: "BÜRO DES BAHNHOFSVORSTEHERS",
     memberSince: 'Clubmitglied seit {date}',
     season: '{season} · noch {days} T.',
     editProfile: 'Profil bearbeiten',
@@ -647,8 +647,8 @@ const platform: typeof enPlatform = {
   // --- comptoir ---
   comptoir: {
     nav: 'Ladentisch',
-    eyebrow: 'DER LADENTISCH',
-    title: 'Der Ladentisch',
+    eyebrow: "DAS BAHNHOFSBUFFET",
+    title: "Das Buffet",
     lede: 'Was die Tische dir gezahlt haben, macht der Ladentisch zu Münze.',
     walletAria: 'Börse: {count} Guineen — Ladentisch öffnen',
     tokens: '{count} Guineen',
@@ -750,8 +750,8 @@ const platform: typeof enPlatform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: 'EHRENTAFEL',
-    title: 'Rangliste',
+    eyebrow: "EHRENTAFEL DER GESELLSCHAFTEN",
+    title: "Die Ehrentafel",
     players: '{count} gewertet in dieser Saison',
     daysLeft: 'endet in {days} T.',
     myRank: 'Dein Rang: {rank} von {count}',

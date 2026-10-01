@@ -5,16 +5,16 @@
 const platform = {
   nav: {
     play: "Salidas",
-    tables: 'Mesas',
-    desk: 'Oficina',
+    tables: "Horarios",
+    desk: "Jefe de estación",
     rules: 'Reglas',
-    createTable: 'Crear una mesa',
+    createTable: "Fletar un convoy",
     invitations: 'Invitaciones',
     noInvitations: 'Ninguna invitación pendiente.',
     profile: 'Perfil',
     home: 'Inicio',
-    comptoir: 'Mostrador',
-    ranking: 'Clasificación',
+    comptoir: "Cantina",
+    ranking: "Palmarés",
     discord: 'Discord',
   },
   masthead: {
@@ -39,8 +39,8 @@ const platform = {
   },
   tabs: {
     play: "Salidas",
-    tables: 'Mesas',
-    desk: 'Oficina',
+    tables: "Horarios",
+    desk: "Jefe",
     profile: 'Perfil',
   },
   theme: {
@@ -49,8 +49,8 @@ const platform = {
   },
   action: {
     playNow: "Próxima salida",
-    createTable: 'Crear una mesa',
-    joinWithCode: 'Unirse con un código',
+    createTable: "Fletar un convoy",
+    joinWithCode: "Mi billete",
     join: 'Unirse',
     watch: 'Mirar',
     full: 'Completa',
@@ -59,7 +59,7 @@ const platform = {
     enterLobby: 'Entrar en la sala',
     seeAll: 'Ver todo →',
     localGame: 'Partida local',
-    signIn: 'Iniciar sesión',
+    signIn: "Firmar el registro",
     close: 'Cerrar',
   },
   seat: {
@@ -128,7 +128,7 @@ const platform = {
   },
   serverOffline: 'Servidor fuera de línea — modo local disponible',
   home: {
-    eyebrow: 'VESTÍBULO DEL CLUB',
+    eyebrow: "VESTÍBULO DE LA ESTACIÓN",
     title: 'Blackrail',
     tagline: 'La plataforma del juego. Encuentra una mesa, arranca la máquina.',
     resumeBanner: 'Mesa « {name} » — te toca',
@@ -205,7 +205,7 @@ const platform = {
       guidedCopy: "La lección guiada, el registro capítulo a capítulo y lo que hay que repasar.",
       rules: 'Aprender las reglas',
       rulesCopy: 'El registro completo, de la primera ronda a la victoria.',
-      desk: 'Mi oficina',
+      desk: "Oficina del jefe de estación",
       deskCopy: 'Mesas, invitaciones, amigos y estadísticas.',
       profile: 'Mi perfil',
       profileCopy: 'Rango, cotización e historial público.',
@@ -255,8 +255,8 @@ const platform = {
   },
   // --- setup ---
   setup: {
-    eyebrow: 'CAJÓN N.º 7 — NUEVA MESA',
-    title: 'Crear una mesa',
+    eyebrow: "CARTA DE PORTE N.º 7",
+    title: "Fletar un convoy",
     tagline: 'Ajusta la máquina, invita a tus jugadores, arranca.',
     identity: {
       heading: 'IDENTIDAD DE LA MESA',
@@ -382,7 +382,7 @@ const platform = {
   },
   // --- desk ---
   desk: {
-    eyebrow: 'OFICINA DEL JUGADOR',
+    eyebrow: "OFICINA DEL JEFE DE ESTACIÓN",
     memberSince: 'Socio del club desde {date}',
     season: '{season} · faltan {days} d',
     editProfile: 'Editar el perfil',
@@ -645,8 +645,8 @@ const platform = {
   // --- comptoir ---
   comptoir: {
     nav: 'Mostrador',
-    eyebrow: 'EL MOSTRADOR',
-    title: 'El Mostrador',
+    eyebrow: "LA CANTINA DE LA ESTACIÓN",
+    title: "La Cantina",
     lede: 'Lo que las mesas te han pagado, el mostrador te lo cambia.',
     walletAria: 'Bolsa: {count} guineas — abrir el Mostrador',
     tokens: '{count} guineas',
@@ -748,8 +748,8 @@ const platform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: 'CUADRO DE HONOR',
-    title: 'Clasificación',
+    eyebrow: "PALMARÉS DE LAS COMPAÑÍAS",
+    title: "El palmarés",
     players: '{count} clasificados esta temporada',
     daysLeft: 'cierra en {days} d',
     myRank: 'Tu puesto: {rank} de {count}',

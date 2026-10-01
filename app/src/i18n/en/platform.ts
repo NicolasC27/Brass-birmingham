@@ -5,16 +5,16 @@
 const platform = {
   nav: {
     play: "Departures",
-    tables: 'Tables',
-    desk: 'Desk',
+    tables: "Timetable",
+    desk: "Stationmaster",
     rules: 'Rules',
-    createTable: 'Create a table',
+    createTable: "Charter a train",
     invitations: 'Invitations',
     noInvitations: 'No invitation waiting.',
     profile: 'Profile',
     home: 'Home',
-    comptoir: 'Counter',
-    ranking: 'Ranking',
+    comptoir: "Buffet",
+    ranking: "Honours",
     discord: 'Discord',
   },
   masthead: {
@@ -39,8 +39,8 @@ const platform = {
   },
   tabs: {
     play: "Departures",
-    tables: 'Tables',
-    desk: 'Desk',
+    tables: "Timetable",
+    desk: "Stationmaster",
     profile: 'Profile',
   },
   theme: {
@@ -49,8 +49,8 @@ const platform = {
   },
   action: {
     playNow: "Next departure",
-    createTable: 'Create a table',
-    joinWithCode: 'Join with a code',
+    createTable: "Charter a train",
+    joinWithCode: "My ticket",
     join: 'Join',
     watch: 'Watch',
     full: 'Full',
@@ -59,7 +59,7 @@ const platform = {
     enterLobby: 'Enter the room',
     seeAll: 'See all →',
     localGame: 'Local game',
-    signIn: 'Sign in',
+    signIn: "Sign the register",
     close: 'Close',
   },
   seat: {
@@ -128,7 +128,7 @@ const platform = {
   },
   serverOffline: 'Server offline — local mode available',
   home: {
-    eyebrow: 'CLUB HALL',
+    eyebrow: "THE STATION HALL",
     title: 'Blackrail',
     tagline: "The game's platform. Find a table, start the machine.",
     resumeBanner: 'Table "{name}" — your turn',
@@ -205,7 +205,7 @@ const platform = {
       guidedCopy: "The guided lesson, the register chapter by chapter, and what to take again.",
       rules: 'Learn the rules',
       rulesCopy: 'The full ledger, from the first round to victory.',
-      desk: 'My desk',
+      desk: "The stationmaster’s office",
       deskCopy: 'Tables, invitations, friends and statistics.',
       profile: 'My profile',
       profileCopy: 'Rank, rating and public history.',
@@ -255,8 +255,8 @@ const platform = {
   },
   // --- setup ---
   setup: {
-    eyebrow: 'DRAWER No.7 — NEW TABLE',
-    title: 'Create a table',
+    eyebrow: "WAYBILL NO. 7",
+    title: "Charter a train",
     tagline: 'Set the machine, invite your players, start.',
     identity: {
       heading: 'TABLE IDENTITY',
@@ -382,7 +382,7 @@ const platform = {
   },
   // --- desk ---
   desk: {
-    eyebrow: 'PLAYER DESK',
+    eyebrow: "THE STATIONMASTER’S OFFICE",
     memberSince: 'Club member since {date}',
     season: '{season} · {days} d left',
     editProfile: 'Edit profile',
@@ -645,8 +645,8 @@ const platform = {
   // --- comptoir ---
   comptoir: {
     nav: 'Counter',
-    eyebrow: 'THE COUNTER',
-    title: 'The Counter',
+    eyebrow: "THE STATION BUFFET",
+    title: "The Buffet",
     lede: 'What the tables paid you, the counter makes into change.',
     walletAria: 'Purse: {count} guineas — open the Counter',
     tokens: '{count} guineas',
@@ -748,8 +748,8 @@ const platform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: 'ROLL OF HONOUR',
-    title: 'Ranking',
+    eyebrow: "HONOURS OF THE COMPANIES",
+    title: "The honours",
     players: '{count} ranked this season',
     daysLeft: 'closes in {days} d',
     myRank: 'Your rank: {rank} of {count}',
