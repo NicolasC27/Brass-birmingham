@@ -588,6 +588,10 @@ const platform: typeof enPlatform = {
       games: { one: '1 Partie', many: '{n} Partien' },
     },
     settings: {
+      post: "Die Montagsausgabe",
+      postCopy: "Jeden Montag die Zeitung der Woche per Post: die Partie der Woche, die Tafel der Herausforderung, die Telegramme.",
+      postOn: "Die Montagsausgabe erhalten",
+      postVerify: "Bestätigen Sie Ihre Adresse, um sie zu erhalten.",
       identity: 'Identität',
       motto: 'Motto',
       mottoHint: 'Eine Zeile unter deinem Namen an den Tischen. Achtzig Zeichen.',

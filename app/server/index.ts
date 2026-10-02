@@ -1,6 +1,9 @@
 import { createServer } from 'node:http';
 import { seasonAt } from './rating';
 import { WEEK_MS, WEEK0, weekOf } from '@/platform/almanac';
+import { telegraphFromEnv } from './discord';
+import type { Telegraph } from './discord';
+import { dispatchLine, editionText } from './edition';
 import type { ServerResponse } from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
@@ -177,6 +180,10 @@ export interface ServeOptions {
   waits?: Partial<Waits>;
   /** how often the queues are looked down (0 = only on a join) */
   queueEvery?: number;
+  /** how often the house looks whether a Monday edition is due (0: never) */
+  editionEvery?: number;
+  /** the telegraph to the club's channel; the environment's when absent */
+  telegraph?: Telegraph;
   /** the origins a browser may open a socket from (BLACKRAIL_ORIGINS, comma-separated;
    *  the app's own address, this machine and the desktop app are always let in) */
   origins?: string[];
@@ -210,7 +217,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt });
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt, newsletter: a.newsletter });
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
@@ -366,12 +373,25 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     }
   };
 
+  /* the telegraph to the club's channel: each dispatch once, as it is wired */
+  const telegraph = options.telegraph ?? telegraphFromEnv();
+  const wiredAt = new Map<string, number>();
   hall.onChange((code, what) => {
     for (const c of watchers(code)) {
       if (what === 'table') pushTable(c, code);
       else pushGame(c, code);
     }
     for (const c of clients) pushTables(c);
+    if (what === 'game') {
+      const g = hall.game(code);
+      const name = hall.table(code)?.name ?? code;
+      const since = wiredAt.get(code) ?? 0;
+      for (const d of [...(g?.dispatches ?? [])].reverse()) {
+        if (d.at <= since) continue;
+        telegraph.post(dispatchLine({ ...d, code, table: name }));
+        wiredAt.set(code, d.at);
+      }
+    }
     /* the game is over: what the office held against its players is forgotten */
     const game = what === 'game' ? hall.game(code) : null;
     if (game?.over) for (const id of game.seatIds) offices.delete(id);
@@ -570,7 +590,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'profile': {
-        store.setProfile(who.id, { motto: m.motto, favoriteColor: m.favoriteColor });
+        store.setProfile(who.id, { motto: m.motto, favoriteColor: m.favoriteColor, newsletter: typeof m.newsletter === 'boolean' ? m.newsletter : undefined });
         pushMe(who.id, m.rid, c);
         return;
       }
@@ -632,6 +652,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       case 'challenge':
         if (Number.isInteger(m.week) && m.week >= 0) send(c, { t: 'challenge', rid: m.rid, board: store.challengeBoard(m.week, who.id) });
+        return;
+      case 'papers':
+        send(c, { t: 'papers', rid: m.rid, papers: store.papers(who.id) });
+        return;
+      case 'papers.put':
+        if (typeof m.kind === 'string' && store.putPaper(who.id, m.kind, m.body)) send(c, { t: 'done', rid: m.rid });
+        else send(c, { t: 'refused', rid: m.rid, error: 'refused' });
         return;
       case 'companies':
         send(c, { t: 'companies', rid: m.rid, board: store.companies(seasonAt(), who.id) });
@@ -900,6 +927,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }, every)
       : null;
   store.sweepPrivacy();
+  /* the Monday edition: once a week, the week just closed goes out by
+     post to those who asked, and to the club's channel */
+  const monday = () => {
+    const week = weekOf();
+    if (week < 1 || !store.claimMailing(`edition:${week - 1}`)) return;
+    const from = WEEK0 + (week - 1) * WEEK_MS;
+    const { subject, text } = editionText(store.editionOf(week - 1, from, from + WEEK_MS), store.challengeBoard(week - 1, ''), letter.appUrl);
+    void telegraph.send(text);
+    for (const s of store.subscribers()) void post.send({ to: s.email, subject, text: `${s.name},\n\n${text}` }).catch((e) => console.warn('edition: a letter did not leave', e instanceof Error ? e.message : e));
+  };
+  const editionEvery = options.editionEvery ?? 10 * 60 * 1000;
+  const postman = editionEvery > 0 ? setInterval(monday, editionEvery) : null;
+  if (editionEvery > 0) monday();
   const queueEvery = options.queueEvery ?? QUEUE_EVERY_MS;
   const usher = queueEvery > 0 ? setInterval(() => hall.matchQueues(), queueEvery) : null;
   /* the pulse: every socket is pinged, and each table in play hears its seats' lines */
@@ -926,6 +966,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         close: () =>
           new Promise<void>((done) => {
             if (janitor) clearInterval(janitor);
+            if (postman) clearInterval(postman);
+            telegraph.close();
             if (usher) clearInterval(usher);
             clearInterval(pulses);
             hall.dispose();

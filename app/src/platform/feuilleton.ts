@@ -70,5 +70,17 @@ export function readFeuilleton(): Episode | null {
   }
 }
 
+/** an episode kept elsewhere, folded in: the later of the two stays */
+export function mergeFeuilleton(e: Episode): void {
+  const mine = readFeuilleton();
+  if (!Array.isArray(e.moments) || typeof e.fragment !== 'string' || typeof e.at !== 'number') return;
+  if (mine && mine.at >= e.at) return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(e));
+  } catch {
+    /* non-fatal */
+  }
+}
+
 /** the address of a moment: the table, the game in its fragment, the move */
 export const momentAddress = (e: Episode, m: Moment): string => `/game/local/${e.code}${e.fragment}&at=${m.at}`;

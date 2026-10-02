@@ -432,6 +432,36 @@ function IdentitySettings() {
   );
 }
 
+/* ------------------------------ Réglages : la poste ------------------------------ */
+
+function PostSettings() {
+  const t = useT();
+  const session = useSession();
+  const [busy, setBusy] = useState(false);
+  if (!session) return null;
+  const toggle = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await updateProfile({ newsletter: !session.newsletter });
+    } catch {
+      /* the office refused: the switch stays as it was */
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Panel title={t('platform.profile.settings.post')}>
+      <p className="font-serif text-[13.5px] italic leading-relaxed text-paper-300">{t('platform.profile.settings.postCopy')}</p>
+      <label className="mt-4 flex cursor-pointer items-center gap-3">
+        <input type="checkbox" checked={session.newsletter} onChange={() => void toggle()} disabled={busy || !session.verified} className="h-4 w-4 accent-[#C9A24B]" />
+        <span className="font-ui text-[13px] text-paper-100">{t('platform.profile.settings.postOn')}</span>
+      </label>
+      {!session.verified && <p className="mt-2 font-ui text-[12px] text-iron-400">{t('platform.profile.settings.postVerify')}</p>}
+    </Panel>
+  );
+}
+
 /* --------------------------- Réglages : compte & sécurité --------------------------- */
 
 function SecuritySettings() {
@@ -623,6 +653,7 @@ export default function Profile() {
       <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.24, ease }} className="mt-6 grid content-start gap-6 min-[900px]:grid-cols-2">
         <IdentitySettings />
         <SecuritySettings />
+        <PostSettings />
         <DataSettings />
       </motion.div>
     </div>

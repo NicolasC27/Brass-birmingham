@@ -3,7 +3,7 @@ import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { CompanyBoard, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, Paper, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -71,7 +71,7 @@ export type ClientMessage =
   | { t: 'forgot'; rid: number; email: string }
   | { t: 'reset'; rid: number; token: string; password: string }
   /** the profile, as its owner would have it */
-  | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null }
+  | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean }
   | { t: 'password'; rid: number; current: string; next: string }
   /** everything the register holds under my name, to take away */
   | { t: 'export'; rid: number }
@@ -128,6 +128,9 @@ export type ClientMessage =
   | { t: 'challenge'; rid: number; week: number }
   /** the club's edition of a week: the games played out, the best of them */
   | { t: 'edition'; rid: number; week: number }
+  /** the papers the office keeps for me, and one of them written */
+  | { t: 'papers'; rid: number }
+  | { t: 'papers.put'; rid: number; kind: string; body: unknown }
   /** the companies of the club and their honours */
   | { t: 'companies'; rid: number }
   /** found a company under a name, and be its first member */
@@ -185,6 +188,7 @@ export type ServerMessage =
   | { t: 'challenge'; rid?: number; board: ChallengeBoard }
   | { t: 'edition'; rid?: number; edition: Edition }
   | { t: 'companies'; rid?: number; board: CompanyBoard }
+  | { t: 'papers'; rid: number; papers: Record<string, Paper> }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
   | { t: 'pong' };

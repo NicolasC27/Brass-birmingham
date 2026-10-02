@@ -41,6 +41,19 @@ const readAll = (): Letter[] => {
 /** the letters received, the latest first */
 export const listLetters = (): Letter[] => readAll().sort((a, b) => b.at - a.at);
 
+/** letters kept elsewhere, folded in: the latest few of both, by id */
+export function mergeLetters(list: unknown[]): void {
+  const have = readAll();
+  const ids = new Set(have.map((l) => l.id));
+  const fresh = list.filter((l): l is Letter => !!l && typeof l === 'object' && typeof (l as Letter).id === 'string' && typeof (l as Letter).at === 'number' && !ids.has((l as Letter).id));
+  if (!fresh.length) return;
+  try {
+    localStorage.setItem(KEY, JSON.stringify([...have, ...fresh].sort((a, b) => b.at - a.at).slice(0, KEPT)));
+  } catch {
+    /* non-fatal */
+  }
+}
+
 /** the key of a letter's text */
 export const letterKey = (l: Letter): string => `platform.letters.${l.persona}.${l.kind}.${l.variant}`;
 

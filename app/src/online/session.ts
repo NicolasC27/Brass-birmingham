@@ -190,7 +190,7 @@ export async function resendLetter(email?: string): Promise<void> {
   await wire().ask((rid) => ({ t: 'resend', rid, email: email?.trim() }));
 }
 
-export async function updateProfile(patch: { motto?: string; favoriteColor?: PlayerColor | null }): Promise<void> {
+export async function updateProfile(patch: { motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean }): Promise<void> {
   await wire().ask((rid) => ({ t: 'profile', rid, ...patch }));
 }
 

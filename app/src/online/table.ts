@@ -67,6 +67,14 @@ export interface Me extends Identity {
   motto: string;
   favoriteColor: PlayerColor | null;
   createdAt: number;
+  /** the Monday edition by post, asked for */
+  newsletter: boolean;
+}
+
+/** a paper the office keeps for an account: what the browser wrote, as it wrote it */
+export interface Paper {
+  body: unknown;
+  updatedAt: number;
 }
 
 /** a table as the desk lists it: who sits there, and whose move it is */

@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { CompanyBoard, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, Paper, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -117,6 +117,16 @@ export class Wire {
 
   askLeaderboard(): void {
     void this.ask((rid) => ({ t: 'leaderboard', rid })).catch(() => undefined);
+  }
+
+  /** the papers the office keeps for me */
+  async askPapers(): Promise<Record<string, Paper>> {
+    const m = await this.ask((rid) => ({ t: 'papers', rid }));
+    return m.t === 'papers' ? m.papers : {};
+  }
+
+  async putPaper(kind: string, body: unknown): Promise<void> {
+    await this.ask((rid) => ({ t: 'papers.put', rid, kind, body }));
   }
 
   askCompanies(): void {

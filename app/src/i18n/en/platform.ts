@@ -586,6 +586,10 @@ const platform = {
       games: { one: '1 game', many: '{n} games' },
     },
     settings: {
+      post: "The Monday edition",
+      postCopy: "Every Monday, the week’s journal by post: the game of the week, the challenge board, the dispatches.",
+      postOn: "Receive the Monday edition",
+      postVerify: "Verify your address to receive it.",
       identity: 'Identity',
       motto: 'Motto',
       mottoHint: 'A line under your name at the tables. Eighty characters.',

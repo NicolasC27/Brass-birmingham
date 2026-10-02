@@ -5,7 +5,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, Paper, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { randomId } from '@/online/table';
 import { emptyTally } from '@/game/tally';
@@ -205,6 +205,17 @@ create table if not exists purses (
   guineas   integer not null,
   owned     text not null
 );
+create table if not exists papers (
+  accountId text not null,
+  kind      text not null,
+  body      text not null,
+  updatedAt integer not null,
+  primary key (accountId, kind)
+);
+create table if not exists mailings (
+  key text primary key,
+  at  integer not null
+);
 create table if not exists companies (
   id        text primary key,
   name      text not null,
@@ -227,6 +238,7 @@ create table if not exists challenges (
 /** columns added since the first register: an old file learns them on opening */
 const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'companyId', 'text'],
+  ['accounts', 'newsletter', 'integer not null default 0'],
   ['accounts', 'email', 'text'],
   ['accounts', 'emailFolded', 'text'],
   ['accounts', 'verifiedAt', 'integer'],
@@ -300,6 +312,7 @@ interface AccountRow {
   favoriteColor: string | null;
   acceptedAt: number | null;
   closedAt: number | null;
+  newsletter: number | null;
 }
 
 /** where an account was opened from, and whether the charter was accepted */
@@ -309,7 +322,7 @@ export interface Origin {
 }
 
 const COLORS: PlayerColor[] = ['brass', 'oxblood', 'verdigris', 'steel'];
-const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt';
+const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter';
 
 function accountOf(r: AccountRow): Account {
   return {
@@ -322,6 +335,7 @@ function accountOf(r: AccountRow): Account {
     favoriteColor: COLORS.includes(r.favoriteColor as PlayerColor) ? (r.favoriteColor as PlayerColor) : null,
     acceptedAt: r.acceptedAt,
     closedAt: r.closedAt,
+    newsletter: r.newsletter === 1,
   };
 }
 
@@ -458,7 +472,8 @@ export class Store {
   }
 
   /** the profile, within its margins */
-  setProfile(id: string, patch: { motto?: string; favoriteColor?: PlayerColor | null }): void {
+  setProfile(id: string, patch: { motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean }): void {
+    if (patch.newsletter !== undefined) this.db.prepare('update accounts set newsletter = ? where id = ?').run(patch.newsletter ? 1 : 0, id);
     if (patch.motto !== undefined) this.db.prepare('update accounts set motto = ? where id = ?').run(patch.motto.trim().slice(0, MAX_MOTTO), id);
     if (patch.favoriteColor !== undefined) this.db.prepare('update accounts set favoriteColor = ? where id = ?').run(patch.favoriteColor && COLORS.includes(patch.favoriteColor) ? patch.favoriteColor : null, id);
   }
@@ -1052,6 +1067,45 @@ export class Store {
     const all: ChallengeRow[] = rows.map((r) => ({ id: r.id, name: r.name, color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, points: r.points, vp: r.vp, met: JSON.parse(r.met) as boolean[], at: r.at }));
     const at = all.findIndex((r) => r.id === meId);
     return { week, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };
+  }
+
+  /* ---------------------------- the papers -------------------------- */
+
+  /** every paper the office keeps for an account, by kind */
+  papers(accountId: string): Record<string, Paper> {
+    const rows = this.db.prepare('select kind, body, updatedAt from papers where accountId = ?').all(accountId) as { kind: string; body: string; updatedAt: number }[];
+    const out: Record<string, Paper> = {};
+    for (const r of rows) {
+      try {
+        out[r.kind] = { body: JSON.parse(r.body) as unknown, updatedAt: r.updatedAt };
+      } catch {
+        /* a paper that no longer reads: left out */
+      }
+    }
+    return out;
+  }
+
+  /** a paper written: kept as given, sixty-four thousand characters at most */
+  putPaper(accountId: string, kind: string, body: unknown): boolean {
+    const text = JSON.stringify(body ?? null);
+    if (!/^[a-z]{2,24}$/.test(kind) || text.length > 64_000) return false;
+    this.db.prepare('insert into papers (accountId, kind, body, updatedAt) values (?, ?, ?, ?) on conflict (accountId, kind) do update set body = excluded.body, updatedAt = excluded.updatedAt').run(accountId, kind, text, Date.now());
+    return true;
+  }
+
+  /* --------------------------- the mailings -------------------------- */
+
+  /** a mailing done once: true the first time the key is claimed */
+  claimMailing(key: string): boolean {
+    const had = this.db.prepare('select 1 from mailings where key = ?').get(key);
+    if (had) return false;
+    this.db.prepare('insert into mailings (key, at) values (?, ?)').run(key, Date.now());
+    return true;
+  }
+
+  /** the verified addresses that asked for the Monday edition */
+  subscribers(): { email: string; name: string }[] {
+    return this.db.prepare('select email, name from accounts where newsletter = 1 and verifiedAt is not null and email is not null and closedAt is null').all() as { email: string; name: string }[];
   }
 
   /* -------------------------- the companies ------------------------- */

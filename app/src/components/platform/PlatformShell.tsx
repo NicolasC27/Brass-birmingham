@@ -11,6 +11,8 @@ import RankBadge from './RankBadge';
 import { usePresence } from './presence';
 import { ephemerisOf } from '@/platform/almanac';
 import Arrival from './Arrival';
+import { useEffect } from 'react';
+import { syncPapers } from '@/platform/papers';
 
 /** the club's Discord, when the build names one (VITE_DISCORD_URL); the rail shows it */
 const DISCORD_URL = String(import.meta.env.VITE_DISCORD_URL ?? '').trim();
@@ -340,6 +342,11 @@ function BottomTabBar() {
 /* -------------------------------- Shell -------------------------------- */
 
 export default function PlatformShell() {
+  const session = useSession();
+  /* signed in: the papers the office keeps are folded into this browser's */
+  useEffect(() => {
+    if (session) void syncPapers();
+  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="platform-root relative flex min-h-[100dvh] flex-col bg-lacquer-900 font-ui text-paper-100">
       <div aria-hidden className="tex-lacquer pointer-events-none fixed inset-0 opacity-60" />

@@ -586,6 +586,10 @@ const platform = {
       games: { one: '1 partida', many: '{n} partidas' },
     },
     settings: {
+      post: "La edición del lunes",
+      postCopy: "Cada lunes, el diario de la semana por correo: la partida de la semana, la clasificación del desafío, los despachos.",
+      postOn: "Recibir la edición del lunes",
+      postVerify: "Verifique su dirección para recibirla.",
       identity: 'Identidad',
       motto: 'Lema',
       mottoHint: 'Una línea bajo tu nombre en las mesas. Ochenta caracteres.',

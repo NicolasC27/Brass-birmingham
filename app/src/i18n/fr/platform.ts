@@ -586,6 +586,10 @@ const platform = {
       games: { one: '1 partie', many: '{n} parties' },
     },
     settings: {
+      post: "L’édition du lundi",
+      postCopy: "Chaque lundi, le journal de la semaine par la poste : la partie de la semaine, le palmarès du défi, les dépêches.",
+      postOn: "Recevoir l’édition du lundi",
+      postVerify: "Vérifiez votre adresse pour la recevoir.",
       identity: 'Identité',
       motto: 'Devise',
       mottoHint: 'Une ligne sous votre nom aux tables. Quatre-vingts caractères.',
