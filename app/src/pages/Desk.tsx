@@ -18,6 +18,7 @@ import { PLACEMENTS, rankOf, type RankView } from '@/platform/rank';
 import { collectRewards, useWallet } from '@/platform/wallet';
 import { forgetLocalGame, listLocalGames } from '@/game/local';
 import ProgressCard from '@/components/desk/ProgressCard';
+import LinesMap from '@/components/desk/LinesMap';
 import type { LocalTable } from '@/game/local';
 import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
@@ -931,6 +932,10 @@ function StatsPanel() {
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
         <RatingCard rating={desk?.rating ?? null} season={desk?.season ?? null} />
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: (tiles.length + 1) * 0.05 }}>
+        <LinesMap />
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: (tiles.length + 1) * 0.05 }}>

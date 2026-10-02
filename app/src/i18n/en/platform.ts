@@ -382,6 +382,12 @@ const platform = {
   },
   // --- desk ---
   desk: {
+    lines: {
+      title: "YOUR LINES",
+      lede: "Every town at the size of what you built there; the first six are named.",
+      none: "Nothing on the map yet — your first tiles will draw it.",
+      legend: "{towns} towns · {tiles} tiles · {games} games",
+    },
     eyebrow: "THE STATIONMASTER’S OFFICE",
     memberSince: 'Club member since {date}',
     season: '{season} · {days} d left',

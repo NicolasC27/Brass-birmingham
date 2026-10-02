@@ -384,6 +384,12 @@ const platform: typeof enPlatform = {
   },
   // --- desk ---
   desk: {
+    lines: {
+      title: "IHRE LINIEN",
+      lede: "Jede Stadt in der Größe dessen, was Sie dort gebaut haben; die ersten sechs sind benannt.",
+      none: "Noch nichts auf der Karte — Ihre ersten Plättchen zeichnen sie.",
+      legend: "{towns} Städte · {tiles} Plättchen · {games} Partien",
+    },
     eyebrow: "BÜRO DES BAHNHOFSVORSTEHERS",
     memberSince: 'Clubmitglied seit {date}',
     season: '{season} · noch {days} T.',

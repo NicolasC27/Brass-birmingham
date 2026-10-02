@@ -382,6 +382,12 @@ const platform = {
   },
   // --- desk ---
   desk: {
+    lines: {
+      title: "VOS LIGNES",
+      lede: "Chaque ville à la taille de ce que vous y avez bâti ; les six premières sont nommées.",
+      none: "Rien sur la carte encore — vos premières tuiles la dessineront.",
+      legend: "{towns} villes · {tiles} tuiles · {games} parties",
+    },
     eyebrow: "BUREAU DU CHEF DE GARE",
     memberSince: 'Membre du club depuis {date}',
     season: '{season} · J-{days}',

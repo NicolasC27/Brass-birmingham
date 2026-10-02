@@ -382,6 +382,12 @@ const platform = {
   },
   // --- desk ---
   desk: {
+    lines: {
+      title: "SUS LÍNEAS",
+      lede: "Cada ciudad al tamaño de lo que construyó allí; las seis primeras llevan nombre.",
+      none: "Nada en el mapa aún — sus primeras losetas lo dibujarán.",
+      legend: "{towns} ciudades · {tiles} losetas · {games} partidas",
+    },
     eyebrow: "OFICINA DEL JEFE DE ESTACIÓN",
     memberSince: 'Socio del club desde {date}',
     season: '{season} · faltan {days} d',
