@@ -927,3 +927,79 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
     padding-left: 28px;
   }
 }
+
+/* ================= The paper edition =================
+   Printed, the journal is a journal: the day register whatever the
+   screen shows, the chrome gone (the rail, the tools, the tickets), the
+   columns kept, and nothing that moves. */
+@media print {
+  .platform-root {
+  /* surfaces — papier de registre */
+  --lacquer-950: 244 238 225; /* #F4EEE1 fond app */
+  --lacquer-900: 239 232 214; /* #EFE8D6 */
+  --enamel-850: 251 247 236; /* #FBF7EC panneaux */
+  --enamel-800: 253 250 243; /* #FDFAF3 */
+  --enamel-700: 240 233 214; /* #F0E9D6 hover */
+  --enamel-line: 226 216 190; /* #E2D8BE */
+  /* metal — laiton assombri pour le contraste sur papier */
+  --brass-300: 168 127 42; /* #A87F2A */
+  --brass-hairline: rgba(143, 107, 35, 0.28);
+  --brass-hairline-strong: rgba(143, 107, 35, 0.5);
+  /* mode & state */
+  --signal-400: 185 122 15; /* #B97A0F — AA en texte sur clair */
+  --signal-glow: rgba(185, 122, 15, 0.25);
+  --bottle-400: 46 107 79; /* #2E6B4F */
+  --bottle-500: 38 90 66; /* #265A42 */
+  --bottle-700: 223 233 221; /* #DFE9DD badge Normal */
+  --rust-400: 168 73 47; /* #A8492F */
+  --rust-600: 172 74 46; /* #AC4A2E */
+  --rust-700: 242 220 208; /* #F2DCD0 badge Classé */
+  /* texte — encre ferro-gallique */
+  --paper-100: 36 29 18; /* #241D12 texte principal */
+  --paper-300: 74 65 50; /* #4A4132 */
+  --iron-400: 110 116 104; /* #6E7468 */
+  --iron-600: 154 148 132; /* #9A9484 */
+  /* encre sur métal/signal : inchangée (fonds laiton/signal identiques) */
+  --ink-on-brass: 26 20 8;
+  --ink-on-signal: 35 22 3;
+  /* ombres adoucies, halo signal atténué */
+  --shadow-modal: rgba(60, 45, 20, 0.18);
+  --halo-signal-ring: rgba(185, 122, 15, 0.45);
+  --halo-signal-glow: rgba(185, 122, 15, 0.18);
+  /* textures désactivées : papier uni (plus net que l'inversion) */
+  --tex-lacquer-image: none;
+  --tex-ledger-image: none;
+  /* ornements « registre » (diagrammes des règles : traits et cartes) */
+  --rd-ink: #6E7468; /* iron-400 clair — linework */
+  --rd-brass: #A87F2A; /* laiton assombri — traits/points */
+  --rd-rust: #A8492F; /* rust-400 clair */
+  --rd-cream: #FFFFFF; /* cartes/jetons papier sur le registre */
+  }
+  .platform-root {
+    background: #f4eee1 !important;
+  }
+  .platform-root .tex-lacquer,
+  .platform-root .rail-train,
+  .platform-root nav,
+  .platform-root .gz-ticket,
+  .platform-root button,
+  .platform-root [data-print="hide"] {
+    display: none !important;
+  }
+  .platform-root .gz-engraving img {
+    animation: none !important;
+  }
+  .platform-root main {
+    padding-bottom: 0 !important;
+  }
+  .platform-root .gz-col-rule {
+    border-left: 1px solid rgba(36, 29, 18, 0.32);
+  }
+  a[href]::after {
+    content: none !important;
+  }
+  @page {
+    margin: 12mm;
+  }
+}
+

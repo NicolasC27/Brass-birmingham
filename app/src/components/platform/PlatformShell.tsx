@@ -184,7 +184,7 @@ function Masthead() {
           <span className="flex min-w-0 items-center gap-2 truncate">
             <Figures />
           </span>
-          <span className="ml-auto flex shrink-0 items-center gap-2">
+          <span className="ml-auto flex shrink-0 items-center gap-2" data-print="hide">
             <WalletChip />
             <InvitationBell />
             <ThemeToggle />
@@ -217,7 +217,7 @@ const rail = ({ isActive }: { isActive: boolean }) => cn('gz-nav-link', isActive
 function NavRail() {
   const t = useT();
   return (
-    <div className="sticky top-0 z-50 hidden overflow-x-clip bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block">
+    <div className="sticky top-0 z-50 hidden overflow-x-clip bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block" data-print="hide">
       <div className="gz-rule-double mx-auto max-w-[1240px]" aria-hidden />
       <div className="mx-auto max-w-[1240px] px-8">
         <nav aria-label="Primary" className="flex items-center justify-center gap-7 min-[1100px]:gap-10">
@@ -279,7 +279,7 @@ function Colophon() {
             {t('platform.footer.privacy')}
           </Link>
         </div>
-        <div className="mt-2 flex items-center justify-center gap-3">
+        <div className="mt-2 flex items-center justify-center gap-3" data-print="hide">
           <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-2">
             {LANGS.map((l) => (
               <button
