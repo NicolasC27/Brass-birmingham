@@ -1,4 +1,5 @@
 import type { Rating, Season } from '@/online/table';
+import { ephemerisOf, weekOf } from '@/platform/almanac';
 import { tierOf } from '@/online/table';
 
 /* ------------------------------------------------------------------ */
@@ -43,7 +44,9 @@ export function seasonAt(now = Date.now()): Season {
   const year = d.getUTCFullYear();
   const quarter = Math.floor(d.getUTCMonth() / 3) + 1;
   const endsAt = quarter === 4 ? Date.UTC(year + 1, 0, 1) : Date.UTC(year, quarter * 3, 1);
-  return { id: `${year}-Q${quarter}`, name: `Exercice ${year - 200} · T${quarter}`, endsAt };
+  /* the season is named for the service it runs, in the almanac's year */
+  const service = ['d’hiver', 'de printemps', 'd’été', 'd’automne'][quarter - 1];
+  return { id: `${year}-Q${quarter}`, name: `Service ${service} ${ephemerisOf(weekOf(now)).year}`, endsAt };
 }
 
 const expected = (mine: number, theirs: number): number => 1 / (1 + 10 ** ((theirs - mine) / 400));

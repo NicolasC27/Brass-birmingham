@@ -1148,6 +1148,13 @@ const platform: typeof enPlatform = {
     course: "Der Abendkurs →",
     enter: "In den Bahnhof →",
   },
+  almanach: {
+    eyebrow: "DER ALMANACH",
+    title: "Almanach der Epoche",
+    lede: "Vierzig Jahre, eines je Woche: was die Midlands in jenem Jahr taten. Die Zeitung blättert sie der Reihe nach um und beginnt von vorn.",
+    thisWeek: "diese Woche",
+    all: "Der ganze Almanach →",
+  },
 };
 
 export default platform;

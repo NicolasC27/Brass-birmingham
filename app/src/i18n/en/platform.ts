@@ -1146,6 +1146,13 @@ const platform = {
     course: "The evening course →",
     enter: "Into the station →",
   },
+  almanach: {
+    eyebrow: "THE ALMANAC",
+    title: "Almanac of the era",
+    lede: "Forty years, one a week: what the Midlands did that year. The journal turns them in order and begins again.",
+    thisWeek: "this week",
+    all: "The whole almanac →",
+  },
 };
 
 export default platform;

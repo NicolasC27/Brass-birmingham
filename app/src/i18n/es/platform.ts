@@ -1146,6 +1146,13 @@ const platform = {
     course: "El curso nocturno →",
     enter: "Entrar en la estación →",
   },
+  almanach: {
+    eyebrow: "EL ALMANAQUE",
+    title: "Almanaque de la era",
+    lede: "Cuarenta años, uno por semana: lo que hicieron los Midlands aquel año. El diario los recorre en orden y vuelve a empezar.",
+    thisWeek: "esta semana",
+    all: "Todo el almanaque →",
+  },
 };
 
 export default platform;

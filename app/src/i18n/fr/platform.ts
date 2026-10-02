@@ -1146,6 +1146,13 @@ const platform = {
     course: "Le cours du soir →",
     enter: "Entrer dans la gare →",
   },
+  almanach: {
+    eyebrow: "L’ALMANACH",
+    title: "Almanach de l’ère",
+    lede: "Quarante années, une par semaine : ce que les Midlands ont fait cette année-là. Le journal les tourne dans l’ordre et recommence.",
+    thisWeek: "cette semaine",
+    all: "Tout l’almanach →",
+  },
 };
 
 export default platform;
