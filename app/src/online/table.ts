@@ -132,6 +132,28 @@ export function normalizeQuery(q: TableQuery = {}): Required<TableQuery> {
     limit,
   };
 }
+/** the club's week, as the office prints it on Monday: how many games were
+ *  played out, the game of the week, the most assiduous member, the latest games */
+export interface Edition {
+  week: number;
+  games: number;
+  best: { code: string; name: string; finishedAt: number; winner: string; vp: number; players: string[] } | null;
+  busiest: { name: string; games: number } | null;
+  latest: { code: string; name: string; finishedAt: number; winner: string; vp: number; players: number }[];
+}
+
+/** a headline wired from a table in play: the round just played, told the
+ *  Gazette's way (game/gazette.ts), with the table it came from */
+export interface Dispatch {
+  code: string;
+  table: string;
+  at: number;
+  era: 'canal' | 'rail';
+  round: number;
+  key: string;
+  vars: Record<string, string | number>;
+}
+
 export interface TablesPage {
   query: Required<TableQuery>;
   /** the page asked for */
@@ -146,6 +168,8 @@ export interface TablesPage {
   friends: PublicTable[];
   /** the tables most watched right now, three at most */
   live: PublicTable[];
+  /** the latest headlines from the tables in play, the newest first */
+  dispatches: Dispatch[];
 }
 
 /** the guild ranks, by cote */

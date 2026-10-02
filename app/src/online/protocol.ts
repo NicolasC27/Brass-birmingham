@@ -3,7 +3,7 @@ import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -126,6 +126,8 @@ export type ClientMessage =
   | { t: 'leaderboard'; rid: number }
   /** the week's board of the challenge notice */
   | { t: 'challenge'; rid: number; week: number }
+  /** the club's edition of a week: the games played out, the best of them */
+  | { t: 'edition'; rid: number; week: number }
   /** an attempt at the week's notice, read at home: the office keeps the
       best per account and pays the conditions newly met */
   | { t: 'challenge.post'; rid: number; week: number; id: string; vp: number; rank: number; met: boolean[]; points: number }
@@ -175,6 +177,7 @@ export type ServerMessage =
   | { t: 'tables'; rid?: number; page: TablesPage }
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
   | { t: 'challenge'; rid?: number; board: ChallengeBoard }
+  | { t: 'edition'; rid?: number; edition: Edition }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
   | { t: 'pong' };

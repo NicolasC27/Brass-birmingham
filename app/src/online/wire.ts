@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -38,6 +38,8 @@ export class Wire {
   board: Leaderboard | null = null;
   /** the week's boards of the challenge notice, by week: asked for, then kept */
   challenges = new Map<number, ChallengeBoard>();
+  /** the club's editions, by week: asked for, then kept */
+  editions = new Map<number, Edition>();
   /** the table the office just dealt me from a queue, until the page takes me there */
   dealt: string | null = null;
   private halls = new Set<() => void>();
@@ -113,6 +115,10 @@ export class Wire {
 
   askLeaderboard(): void {
     void this.ask((rid) => ({ t: 'leaderboard', rid })).catch(() => undefined);
+  }
+
+  askEdition(week: number): void {
+    void this.ask((rid) => ({ t: 'edition', rid, week })).catch(() => undefined);
   }
 
   askChallenge(week: number): void {
@@ -311,6 +317,10 @@ export class Wire {
     }
     if (m.t === 'challenge') {
       this.challenges.set(m.board.week, m.board);
+      for (const cb of this.halls) cb();
+    }
+    if (m.t === 'edition') {
+      this.editions.set(m.edition.week, m.edition);
       for (const cb of this.halls) cb();
     }
     /* the queue moved: the desk says where I stand, so ask it again */

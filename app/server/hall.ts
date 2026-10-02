@@ -4,7 +4,7 @@ import { freePersona, personaName, personaOf } from '@/game/data';
 import type { GameAction } from '@/game/actions';
 import type { SetupPayload } from '@/game/types';
 import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
-import type { Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableFilter, TableQuery, TableSeat, TableSummary, TablesPage, Tier } from '@/online/table';
+import type { Dispatch, Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableFilter, TableQuery, TableSeat, TableSummary, TablesPage, Tier } from '@/online/table';
 import { TABLE_FILTERS, normalizeQuery } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
@@ -302,6 +302,13 @@ export class Hall {
     };
     const list = searched.filter((t) => passes(t, query.filter)).sort(query.filter === 'live' ? byWatched : query.sort === 'fresh' ? (a, b) => b.updatedAt - a.updatedAt : byFilling);
     const offset = Math.min(query.offset, Math.max(0, list.length - 1));
+    /* the telegraph: the newest headlines of the tables in play */
+    const dispatches: Dispatch[] = [];
+    for (const room of this.rooms.values()) {
+      if (!room.game || room.game.over) continue;
+      for (const d of room.game.dispatches) dispatches.push({ ...d, code: room.table.code, table: room.table.name });
+    }
+    dispatches.sort((a, b) => b.at - a.at);
     return {
       query: { ...query, offset },
       tables: list.slice(offset, offset + query.limit),
@@ -310,6 +317,7 @@ export class Hall {
       mine: all.filter(seatedHere),
       friends: all.filter((t) => t.friend && !seatedHere(t)).sort(byWatched).slice(0, 3),
       live: all.filter((t) => t.status === 'playing').sort(byWatched).slice(0, 3),
+      dispatches: dispatches.slice(0, 10),
     };
   }
 

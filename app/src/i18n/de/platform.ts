@@ -143,6 +143,19 @@ const platform: typeof enPlatform = {
     discardConfirm: 'Partie löschen',
     eraCanal: 'Kanalzeit',
     eraRail: 'Eisenbahnzeit',
+    telegraph: {
+      title: "TELEGRAMME",
+      none: "Der Draht schweigt — er spricht, sobald irgendwo eine Runde gespielt wird.",
+    },
+    edition: {
+      title: "DER CLUB DIESE WOCHE",
+      games: "{n} Partien seit Montag",
+      best: "Die Partie der Woche",
+      bestLine: "„{table}“ — {name} gewinnt mit {vp} Punkten",
+      busiest: "Am fleißigsten: {name}, {n} Partien.",
+      none: "Der Club hat diese Woche noch nicht gespielt. Die erste Partie eröffnet die Ausgabe.",
+      signIn: "Tragen Sie sich ins Register ein, um die Ausgabe des Clubs zu lesen.",
+    },
     departures: {
       table: 'Tisch',
       seats: 'Plätze',
@@ -975,6 +988,11 @@ const platform: typeof enPlatform = {
     e39: "Einer nach dem anderen gehen die Kanäle der Midlands in die Hände der Eisenbahngesellschaften über.",
   },
   chronicle: {
+    club: {
+      0: "„{table}“ geht an {name}, {vp} Punkte, zu {n} am Tisch.",
+      1: "Bei „{table}“ gewinnt {name} mit {vp} Punkten; man wird im Buffet davon reden.",
+      2: "{name} hat sich „{table}“ geholt — {vp} Punkte bei der Zählung.",
+    },
     won: {
       0: "Man hört, Sie hätten „{table}“ mit {vp} Punkten gewonnen; die anderen Tische reden noch davon.",
       1: "Sieg bei „{table}“ — {vp} Punkte bei der Zählung. Der Tresen gratuliert, auf seine Art.",

@@ -141,6 +141,19 @@ const platform = {
     discardConfirm: 'Erase the game',
     eraCanal: 'Canal Era',
     eraRail: 'Rail Era',
+    telegraph: {
+      title: "TELEGRAPH DISPATCHES",
+      none: "The wire is quiet — it speaks as soon as a round is played somewhere.",
+    },
+    edition: {
+      title: "THE CLUB THIS WEEK",
+      games: "{n} games played since Monday",
+      best: "The game of the week",
+      bestLine: "“{table}” — {name} carried it with {vp} points",
+      busiest: "Most assiduous: {name}, {n} games.",
+      none: "The club has not played this week yet. The first game opens the edition.",
+      signIn: "Sign the register to read the club’s edition.",
+    },
     departures: {
       table: 'Table',
       seats: 'Seats',
@@ -973,6 +986,11 @@ const platform = {
     e39: "One by one, the Midlands canals pass into the hands of the railway companies.",
   },
   chronicle: {
+    club: {
+      0: "“{table}” goes to {name}, {vp} points, {n} at the table.",
+      1: "At “{table}”, {name} carried it with {vp} points; the buffet will hear of it.",
+      2: "{name} made off with “{table}” — {vp} points at the count.",
+    },
     won: {
       0: "We hear you carried “{table}” with {vp} points; the other tables still talk of it.",
       1: "A win at “{table}” — {vp} points at the count. The Counter congratulates you, after its fashion.",

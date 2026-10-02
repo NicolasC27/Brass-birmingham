@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
-import type { ChallengeBoard, Desk, Leaderboard, Me, TableQuery, TablesPage } from './table';
+import type { ChallengeBoard, Desk, Edition, Leaderboard, Me, TableQuery, TablesPage } from './table';
 import { normalizeQuery } from './table';
 
 /* ------------------------------------------------------------------ */
@@ -114,6 +114,20 @@ export function useChallengeBoard(week: number): ChallengeBoard | null {
     if (session) onlineWire()?.askChallenge(week);
   }, [session?.id, week]); // eslint-disable-line react-hooks/exhaustive-deps
   return board;
+}
+
+/** the club's edition of a week, asked for once signed in */
+export function useEdition(week: number): Edition | null {
+  const session = useSession();
+  const edition = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => onlineWire()?.editions.get(week) ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    if (session) onlineWire()?.askEdition(week);
+  }, [session?.id, week]); // eslint-disable-line react-hooks/exhaustive-deps
+  return edition;
 }
 
 /** an attempt at the notice, sent to the office when there is one to send to */

@@ -141,6 +141,19 @@ const platform = {
     discardConfirm: 'Effacer la partie',
     eraCanal: 'Ère du canal',
     eraRail: 'Ère du rail',
+    telegraph: {
+      title: "DÉPÊCHES DU TÉLÉGRAPHE",
+      none: "Le fil est silencieux — il parle dès qu’une manche se joue quelque part.",
+    },
+    edition: {
+      title: "LE CLUB CETTE SEMAINE",
+      games: "{n} parties jouées depuis lundi",
+      best: "La partie de la semaine",
+      bestLine: "« {table} » — {name} l’emporte avec {vp} points",
+      busiest: "Le plus assidu : {name}, {n} parties.",
+      none: "Le club n’a pas encore joué cette semaine. La première partie ouvre l’édition.",
+      signIn: "Signez le registre pour lire l’édition du club.",
+    },
     departures: {
       table: 'Table',
       seats: 'Sièges',
@@ -973,6 +986,11 @@ const platform = {
     e39: "Les canaux des Midlands passent un à un sous la coupe des compagnies de chemin de fer.",
   },
   chronicle: {
+    club: {
+      0: "« {table} » revient à {name}, {vp} points, à {n} autour de la table.",
+      1: "À « {table} », {name} l’emporte avec {vp} points ; on en reparlera au buffet.",
+      2: "{name} a fait main basse sur « {table} » — {vp} points au décompte.",
+    },
     won: {
       0: "On apprend que vous l’avez emporté à « {table} », avec {vp} points ; les autres tables en parlent encore.",
       1: "Victoire à « {table} » — {vp} points au décompte. Le Comptoir vous félicite, à sa manière.",

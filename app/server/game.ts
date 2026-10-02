@@ -3,6 +3,8 @@ import type { GameAction, UndoMark } from '@/game/actions';
 import { chooseBotAction } from '@/game/search';
 import { candleMinutes, newGame } from '@/game/engine';
 import { tallyGame } from '@/game/tally';
+import { headlinesFor } from '@/game/gazette';
+import type { Dispatch } from '@/online/table';
 import type { Tally } from '@/game/tally';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { GameView, Pause, Rollback } from '@/online/protocol';
@@ -94,6 +96,8 @@ export class TableGame {
   private closed = false;
   /** the host id, for the rollback — the first human seat when unknown */
   readonly hostId: string | null;
+  /** the Gazette's headlines on the rounds played here, the newest first, six at most */
+  dispatches: Omit<Dispatch, 'code' | 'table'>[] = [];
   pause: Pause | null = null;
   breaks: number[];
   rollback: Rollback | null = null;
@@ -396,6 +400,14 @@ export class TableGame {
     const at = before.actions.length;
     if (marked && before.phase === 'action' && !before.players[before.current].isBot) this.marks.push({ at, by: before.current });
     this.state = r.state;
+    /* a round closed: the Gazette reads it, and the hall may wire it */
+    if (before.phase === 'action' && (r.state.round !== before.round || r.state.era !== before.era)) {
+      const now = Date.now();
+      const fresh = headlinesFor(r.state, before.round, before.era)
+        .filter((h) => h.key !== 'quiet')
+        .map((h) => ({ at: now, era: before.era, round: before.round, key: h.key, vars: h.vars }));
+      this.dispatches = [...fresh, ...this.dispatches].slice(0, 6);
+    }
     if (this.state.current !== before.current || this.state.phase !== before.phase) {
       this.undos = 0;
       this.turnLitAt = Date.now();

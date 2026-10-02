@@ -5,7 +5,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { ChallengeBoard, ChallengeRow, Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Edition, Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
@@ -1043,6 +1043,38 @@ export class Store {
     const all: ChallengeRow[] = rows.map((r) => ({ id: r.id, name: r.name, color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, points: r.points, vp: r.vp, met: JSON.parse(r.met) as boolean[], at: r.at }));
     const at = all.findIndex((r) => r.id === meId);
     return { week, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };
+  }
+
+  /* --------------------------- the edition -------------------------- */
+
+  /** the club's week, from the games played out between two Mondays: the
+   *  game of the week is the one won with the most points at a table of
+   *  two humans at least; the most assiduous member sat at the most of them */
+  editionOf(week: number, from: number, to: number): Edition {
+    const rows = this.db
+      .prepare('select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.finishedAt >= ? and g.finishedAt < ? order by g.finishedAt desc')
+      .all(from, to) as { code: string; seats: string; finishedAt: number; result: string; name: string | null }[];
+    const games = rows
+      .map((r) => {
+        const result = JSON.parse(r.result) as Result;
+        const seatIds = JSON.parse(r.seats) as string[];
+        return { code: r.code, name: r.name ?? r.code, finishedAt: r.finishedAt, result, seatIds };
+      })
+      .filter((g) => !g.result.abandoned);
+    const humans = (g: (typeof games)[number]) => g.result.players.filter((p) => !p.bot).length;
+    const best = [...games].filter((g) => humans(g) >= 2).sort((a, b) => b.result.players[b.result.winner].vp - a.result.players[a.result.winner].vp)[0] ?? null;
+    const sat = new Map<string, number>();
+    for (const g of games) for (const id of g.seatIds) if (id) sat.set(id, (sat.get(id) ?? 0) + 1);
+    const top = [...sat.entries()].sort((a, b) => b[1] - a[1])[0];
+    const busiestName = top ? ((this.db.prepare('select name from accounts where id = ?').get(top[0]) as { name: string } | undefined)?.name ?? null) : null;
+    const line = (g: (typeof games)[number]) => ({ code: g.code, name: g.name, finishedAt: g.finishedAt, winner: g.result.players[g.result.winner]?.name ?? '—', vp: g.result.players[g.result.winner]?.vp ?? 0, players: g.result.players.length });
+    return {
+      week,
+      games: games.length,
+      best: best ? { ...line(best), players: best.result.players.map((p) => p.name) } : null,
+      busiest: top && busiestName ? { name: busiestName, games: top[1] } : null,
+      latest: games.slice(0, 6).map(line),
+    };
   }
 
   /* ----------------------------- the purse ------------------------- */

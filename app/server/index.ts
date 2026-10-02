@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { weekOf } from '@/platform/almanac';
+import { WEEK_MS, WEEK0, weekOf } from '@/platform/almanac';
 import type { ServerResponse } from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
@@ -632,6 +632,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'challenge':
         if (Number.isInteger(m.week) && m.week >= 0) send(c, { t: 'challenge', rid: m.rid, board: store.challengeBoard(m.week, who.id) });
         return;
+      case 'edition': {
+        if (!Number.isInteger(m.week) || m.week < 0 || m.week > weekOf()) return;
+        const from = WEEK0 + m.week * WEEK_MS;
+        send(c, { t: 'edition', rid: m.rid, edition: store.editionOf(m.week, from, from + WEEK_MS) });
+        return;
+      }
       case 'challenge.post': {
         /* an attempt of this week or the last, in figures a game can make */
         const week = weekOf();

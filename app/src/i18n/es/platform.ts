@@ -141,6 +141,19 @@ const platform = {
     discardConfirm: 'Borrar la partida',
     eraCanal: 'Era del canal',
     eraRail: 'Era del ferrocarril',
+    telegraph: {
+      title: "DESPACHOS DEL TELÉGRAFO",
+      none: "El hilo está en silencio — habla en cuanto se juega una ronda en algún sitio.",
+    },
+    edition: {
+      title: "EL CLUB ESTA SEMANA",
+      games: "{n} partidas jugadas desde el lunes",
+      best: "La partida de la semana",
+      bestLine: "«{table}» — {name} se la lleva con {vp} puntos",
+      busiest: "El más asiduo: {name}, {n} partidas.",
+      none: "El club aún no ha jugado esta semana. La primera partida abre la edición.",
+      signIn: "Firme el registro para leer la edición del club.",
+    },
     departures: {
       table: 'Mesa',
       seats: 'Asientos',
@@ -973,6 +986,11 @@ const platform = {
     e39: "Uno a uno, los canales de los Midlands pasan a manos de las compañías ferroviarias.",
   },
   chronicle: {
+    club: {
+      0: "«{table}» es para {name}, {vp} puntos, con {n} en la mesa.",
+      1: "En «{table}», {name} se la lleva con {vp} puntos; se hablará de ello en la cantina.",
+      2: "{name} se hizo con «{table}» — {vp} puntos al recuento.",
+    },
     won: {
       0: "Se sabe que ganó en «{table}» con {vp} puntos; las otras mesas aún hablan de ello.",
       1: "Victoria en «{table}» — {vp} puntos al recuento. El Mostrador le felicita, a su manera.",
