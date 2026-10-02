@@ -101,8 +101,15 @@ export function grantFromHistory(history: PastGame[], me: string): Patent[] {
 export function mergePatents(list: unknown[]): void {
   const have = readAll();
   const held = new Set(have.map((p) => p.id));
-  const fresh = list.filter((p): p is Patent => !!p && typeof p === 'object' && PATENT_IDS.includes((p as Patent).id) && typeof (p as Patent).at === 'number' && !held.has((p as Patent).id));
-  if (fresh.length) writeAll([...have, ...fresh.map((p) => ({ id: p.id, at: p.at, table: String(p.table ?? '') }))]);
+  const fresh: Patent[] = [];
+  for (const p of list) {
+    if (!p || typeof p !== 'object' || !PATENT_IDS.includes((p as Patent).id) || typeof (p as Patent).at !== 'number') continue;
+    const { id, at, table } = p as Patent;
+    if (held.has(id)) continue;
+    held.add(id);
+    fresh.push({ id, at, table: String(table ?? '') });
+  }
+  if (fresh.length) writeAll([...have, ...fresh]);
 }
 
 /** patents granted within the week: the front page mentions them */
