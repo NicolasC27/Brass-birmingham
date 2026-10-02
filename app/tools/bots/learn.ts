@@ -53,6 +53,17 @@ const STRENGTH = Number(process.env.STRENGTH ?? 0.6);
  *  is shown. Six hundred is where the dial starts looking a round ahead,
  *  and the record is worth about twice what it costs. */
 const PLAY_BUDGET = Number(process.env.PLAY_BUDGET ?? 600);
+/** whether the machines see every second rail the rules allow while filling
+ *  the record, or only those glued to the first link they lay.
+ *
+ *  The search offers the wide menu only above a budget of a second, and the
+ *  record is written at six hundred milliseconds, so the player who writes
+ *  it has been choosing from 44 of every 100 legal double rails — measured
+ *  over 2 400 rail-era positions. That is not a shallower search but a
+ *  blind spot in the moves themselves: the record simply never holds those
+ *  positions, so nothing learns to read them. It costs four per cent of the
+ *  time at this budget, the search being bounded by the clock either way. */
+const PLAY_WIDE = (process.env.PLAY_WIDE ?? '0') !== '0';
 /** rounds the machines look past their turn while filling the record */
 const PLAY_DEPTH = Number(process.env.PLAY_DEPTH ?? 1) as 0 | 1 | 2;
 const WORKERS = Number(process.env.WORKERS ?? Math.max(1, cpus().length - 1));
@@ -160,7 +171,7 @@ function playOne(seed: number, players: number): { rows: Float32Array; canal: nu
     for (let j = 0; j < players; j++) (s.era === 'canal' ? canal : rail).push({ x: features(s, j), seat: j });
     const seat = s.current;
     setWeights(styles[seat]);
-    const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: PLAY_DEPTH, budgetMs: PLAY_BUDGET, opening: openings[seat] ?? undefined }) ?? fallbackAction(s, seat);
+    const a = chooseBotAction(s, seat, { strength: STRENGTH, depth: PLAY_DEPTH, budgetMs: PLAY_BUDGET, wideSecond: PLAY_WIDE || undefined, opening: openings[seat] ?? undefined }) ?? fallbackAction(s, seat);
     s = applyAction(s, seat, a).state ?? applyAction(s, seat, fallbackAction(s, seat)).state!;
   }
   const lead = (scores: number[], j: number) => scores[j] - Math.max(...scores.filter((_, k) => k !== j));
@@ -669,6 +680,7 @@ async function main(): Promise<void> {
   const mode = process.argv[2] ?? 'loop';
   /* the mismatch that used to be silent: a record written by a player the
      app never fields teaches a reading the app can never use */
+  if (!PLAY_WIDE) log('note: the record is written from the narrow menu of second rails — about 44 in 100 of those the rules allow (PLAY_WIDE=1 offers them all, for four per cent of the time)');
   if (PLAY_BUDGET < YARDSTICK_BUDGET) log(`note: the record is written at ${PLAY_BUDGET} ms and depth ${PLAY_DEPTH}, the expert ships at ${YARDSTICK_BUDGET} ms — the network learns from a weaker player than the one it will serve`);
   const tag = (k: number) => String(Date.now() % 100000 + k);
   if (mode === 'play') await play(tag(0));
