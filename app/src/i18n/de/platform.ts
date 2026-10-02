@@ -1156,6 +1156,14 @@ const platform: typeof enPlatform = {
     thisWeek: "diese Woche",
     all: "Der ganze Almanach →",
   },
+  tableau: {
+    eyebrow: "Bahnhof Blackrail · Jahr {year}",
+    title: "Abfahrten",
+    colTrain: "Zug",
+    colSeats: "Plätze",
+    colState: "Stand",
+    colHost: "Zugführer",
+  },
 };
 
 export default platform;

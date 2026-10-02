@@ -14,6 +14,8 @@ import PlatformShell from "@/components/platform/PlatformShell";
 export default function Layout() {
   const { pathname } = useLocation();
   const isGame = pathname === "/game" || pathname.startsWith("/game/");
+  /* the departures board stands alone on its screen: no shell at all */
+  if (pathname === "/tableau") return <div className="platform-root"><Outlet /></div>;
 
   if (isGame) {
     return (

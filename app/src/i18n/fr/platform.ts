@@ -1154,6 +1154,14 @@ const platform = {
     thisWeek: "cette semaine",
     all: "Tout l’almanach →",
   },
+  tableau: {
+    eyebrow: "Gare de Blackrail · an {year}",
+    title: "Départs",
+    colTrain: "Convoi",
+    colSeats: "Places",
+    colState: "État",
+    colHost: "Chef de train",
+  },
 };
 
 export default platform;

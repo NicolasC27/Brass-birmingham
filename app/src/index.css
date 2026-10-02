@@ -1003,3 +1003,34 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   }
 }
 
+/* ================= The departures board =================
+   Flaps that turn when a letter changes, and the telegraph running
+   along the foot of the board. */
+.flap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.72em;
+  height: 1.3em;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1f2925 0%, #1f2925 49%, #121a16 51%, #121a16 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 2px rgba(0, 0, 0, 0.6);
+  transform-origin: 50% 50%;
+  animation: flap-in 220ms ease-out;
+}
+@keyframes flap-in {
+  from { transform: rotateX(90deg); }
+  to { transform: rotateX(0); }
+}
+.ticker-run {
+  animation: ticker-run 40s linear infinite;
+}
+@keyframes ticker-run {
+  from { transform: translateX(100%); }
+  to { transform: translateX(-100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .flap { animation: none; }
+  .ticker-run { animation: none; }
+}
+

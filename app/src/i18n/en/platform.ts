@@ -1154,6 +1154,14 @@ const platform = {
     thisWeek: "this week",
     all: "The whole almanac →",
   },
+  tableau: {
+    eyebrow: "Blackrail station · year {year}",
+    title: "Departures",
+    colTrain: "Train",
+    colSeats: "Seats",
+    colState: "State",
+    colHost: "Guard",
+  },
 };
 
 export default platform;
