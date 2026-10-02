@@ -1136,6 +1136,14 @@ const platform: typeof enPlatform = {
       refused: "Das Büro hat abgelehnt. Versuchen Sie es erneut.",
     },
   },
+  arrival: {
+    eyebrow: "ANKUNFT IM BAHNHOF",
+    line1: "Sie steigen in Birmingham aus, an einem Abend der Kanalzeit. Die Zeitung ist frisch, das Buffet offen.",
+    line2: "Hier baut man Hütten, legt Schienen und verkauft Baumwolle nach Gloucester — gegen Maschinen, die nie schlafen.",
+    line3: "Nehmen Sie zuerst den Abendkurs: eine kurze Lektion, ein Führer daneben. Oder treten Sie ein, wenn Sie das Haus schon kennen.",
+    course: "Der Abendkurs →",
+    enter: "In den Bahnhof →",
+  },
 };
 
 export default platform;

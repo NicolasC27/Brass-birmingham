@@ -10,6 +10,7 @@ import Button from './Button';
 import RankBadge from './RankBadge';
 import { usePresence } from './presence';
 import { ephemerisOf } from '@/platform/almanac';
+import Arrival from './Arrival';
 
 /** the club's Discord, when the build names one (VITE_DISCORD_URL); the rail shows it */
 const DISCORD_URL = String(import.meta.env.VITE_DISCORD_URL ?? '').trim();
@@ -349,6 +350,7 @@ export default function PlatformShell() {
       </main>
       <Colophon />
       <BottomTabBar />
+      <Arrival />
     </div>
   );
 }

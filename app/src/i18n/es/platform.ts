@@ -1134,6 +1134,14 @@ const platform = {
       refused: "La oficina rehusó. Inténtelo de nuevo.",
     },
   },
+  arrival: {
+    eyebrow: "LLEGADA A LA ESTACIÓN",
+    line1: "Se apea en Birmingham, una tarde de la era del canal. El diario está fresco, la cantina abierta.",
+    line2: "Aquí se levantan fraguas, se tienden raíles y se vende algodón a Gloucester — contra máquinas que nunca duermen.",
+    line3: "Tome primero el curso nocturno: una lección corta, una guía al lado. O entre, si ya conoce la casa.",
+    course: "El curso nocturno →",
+    enter: "Entrar en la estación →",
+  },
 };
 
 export default platform;

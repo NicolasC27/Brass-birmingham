@@ -1134,6 +1134,14 @@ const platform = {
       refused: "L’office a refusé. Réessayez.",
     },
   },
+  arrival: {
+    eyebrow: "ARRIVÉE EN GARE",
+    line1: "Vous descendez à Birmingham, un soir de l’ère du canal. Le journal est frais, le buffet ouvert.",
+    line2: "Ici l’on bâtit des forges, l’on pose des rails et l’on vend du coton à Gloucester — contre des machines qui ne dorment jamais.",
+    line3: "Prenez d’abord le cours du soir : une leçon courte, un guide à côté. Ou entrez, si vous connaissez déjà la maison.",
+    course: "Le cours du soir →",
+    enter: "Entrer dans la gare →",
+  },
 };
 
 export default platform;

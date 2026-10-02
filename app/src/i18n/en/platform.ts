@@ -1134,6 +1134,14 @@ const platform = {
       refused: "The office refused. Try again.",
     },
   },
+  arrival: {
+    eyebrow: "ARRIVAL AT THE STATION",
+    line1: "You alight at Birmingham, one evening of the canal era. The paper is fresh, the buffet open.",
+    line2: "Here one raises iron works, lays rails and sells cotton to Gloucester — against machines that never sleep.",
+    line3: "Take the evening course first: a short lesson, a guide beside you. Or walk in, if you already know the house.",
+    course: "The evening course →",
+    enter: "Into the station →",
+  },
 };
 
 export default platform;
