@@ -132,6 +132,25 @@ export function normalizeQuery(q: TableQuery = {}): Required<TableQuery> {
     limit,
   };
 }
+/** a company of the club: members band together under a name of the era,
+ *  and the honours rank the companies by their members' wins this season */
+export interface Company {
+  id: string;
+  name: string;
+  members: number;
+}
+export interface CompanyRow extends Company {
+  wins: number;
+  games: number;
+  createdAt: number;
+}
+export interface CompanyBoard {
+  season: Season;
+  rows: CompanyRow[];
+  /** the viewer's own company, if any */
+  mine: Company | null;
+}
+
 /** the club's week, as the office prints it on Monday: how many games were
  *  played out, the game of the week, the most assiduous member, the latest games */
 export interface Edition {
@@ -325,6 +344,8 @@ export interface Desk {
   hall: HallCounts;
   /** the queue I stand in, if any */
   queue: QueueState | null;
+  /** the company I belong to, if any */
+  company: Company | null;
 }
 
 export const MAX_SEATS = 4;

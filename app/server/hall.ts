@@ -229,6 +229,7 @@ export class Hall {
       purse: this.store.purse(accountId),
       hall: this.counts(),
       queue: this.queues.stateOf(accountId),
+      company: this.store.companyOf(accountId),
     };
   }
 

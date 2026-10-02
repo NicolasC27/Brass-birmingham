@@ -8,6 +8,7 @@ import Skeleton from '@/components/platform/Skeleton';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { isOnline } from '@/online/lobby';
 import { useDesk, useLeaderboard, useSession, useStranger } from '@/online/session';
+import CompaniesPanel from '@/components/platform/CompaniesPanel';
 import type { LeaderRow } from '@/online/table';
 import { rankOf, type RankView } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
@@ -216,6 +217,7 @@ export default function Classement() {
         </motion.section>
         <Ladder mine={mine} />
       </div>
+      <CompaniesPanel />
     </div>
   );
 }

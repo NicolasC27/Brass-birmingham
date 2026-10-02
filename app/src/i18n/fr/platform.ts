@@ -1110,6 +1110,30 @@ const platform = {
     chapter: "chapitre {n}, {title}",
     sheet: "La feuille de progrès",
   },
+  companies: {
+    title: "Palmarès des compagnies",
+    lede: "Les membres se groupent en compagnies, aux noms des vraies ou des leurs ; le palmarès les classe aux victoires de l’exercice.",
+    none: "Aucune compagnie fondée encore. La première porte le nom que vous lui donnez.",
+    mine: "MA COMPAGNIE",
+    name: "Raison sociale",
+    placeholder: "Grand Junction Railway",
+    found: "Fonder la compagnie →",
+    foundHint: "Trois lettres au moins, un nom libre ; vous en êtes le premier membre. On ne siège qu’à une compagnie.",
+    join: "Adhérer",
+    leave: "Quitter la compagnie",
+    members: "{n} membre(s)",
+    wins: "{n} victoires / {games}",
+    colMembers: "Membres",
+    colWins: "Victoires",
+    of: "Compagnie {name}",
+    errors: {
+      "in-company": "Vous siégez déjà à une compagnie.",
+      "name-taken": "Ce nom est déjà pris.",
+      "name-short": "Trois lettres au moins.",
+      "not-found": "Cette compagnie n’existe plus.",
+      refused: "L’office a refusé. Réessayez.",
+    },
+  },
 };
 
 export default platform;

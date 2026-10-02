@@ -1112,6 +1112,30 @@ const platform: typeof enPlatform = {
     chapter: "Kapitel {n}, {title}",
     sheet: "Das Fortschrittsblatt",
   },
+  companies: {
+    title: "Ehrentafel der Gesellschaften",
+    lede: "Die Mitglieder schließen sich zu Gesellschaften zusammen, unter den echten Namen oder ihren eigenen; die Ehrentafel reiht sie nach den Siegen der Saison.",
+    none: "Noch keine Gesellschaft gegründet. Die erste trägt den Namen, den Sie ihr geben.",
+    mine: "MEINE GESELLSCHAFT",
+    name: "Firma",
+    placeholder: "Grand Junction Railway",
+    found: "Gesellschaft gründen →",
+    foundHint: "Mindestens drei Buchstaben, ein freier Name; Sie sind ihr erstes Mitglied. Man gehört nur einer Gesellschaft an.",
+    join: "Beitreten",
+    leave: "Gesellschaft verlassen",
+    members: "{n} Mitglied(er)",
+    wins: "{n} Siege / {games}",
+    colMembers: "Mitglieder",
+    colWins: "Siege",
+    of: "Gesellschaft {name}",
+    errors: {
+      "in-company": "Sie gehören schon einer Gesellschaft an.",
+      "name-taken": "Dieser Name ist vergeben.",
+      "name-short": "Mindestens drei Buchstaben.",
+      "not-found": "Diese Gesellschaft gibt es nicht mehr.",
+      refused: "Das Büro hat abgelehnt. Versuchen Sie es erneut.",
+    },
+  },
 };
 
 export default platform;

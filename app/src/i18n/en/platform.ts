@@ -1110,6 +1110,30 @@ const platform = {
     chapter: "chapter {n}, {title}",
     sheet: "The sheet of progress",
   },
+  companies: {
+    title: "Honours of the companies",
+    lede: "Members band together in companies, under the real names or their own; the honours rank them by the season’s wins.",
+    none: "No company founded yet. The first bears the name you give it.",
+    mine: "MY COMPANY",
+    name: "Style of the firm",
+    placeholder: "Grand Junction Railway",
+    found: "Found the company →",
+    foundHint: "Three letters at least, a free name; you are its first member. One sits at one company only.",
+    join: "Join",
+    leave: "Leave the company",
+    members: "{n} member(s)",
+    wins: "{n} wins / {games}",
+    colMembers: "Members",
+    colWins: "Wins",
+    of: "{name} company",
+    errors: {
+      "in-company": "You already sit at a company.",
+      "name-taken": "That name is taken.",
+      "name-short": "Three letters at least.",
+      "not-found": "That company is no more.",
+      refused: "The office refused. Try again.",
+    },
+  },
 };
 
 export default platform;

@@ -1110,6 +1110,30 @@ const platform = {
     chapter: "capítulo {n}, {title}",
     sheet: "La hoja de progreso",
   },
+  companies: {
+    title: "Palmarés de las compañías",
+    lede: "Los socios se agrupan en compañías, con los nombres reales o los suyos; el palmarés las clasifica por las victorias de la temporada.",
+    none: "Ninguna compañía fundada aún. La primera lleva el nombre que usted le dé.",
+    mine: "MI COMPAÑÍA",
+    name: "Razón social",
+    placeholder: "Grand Junction Railway",
+    found: "Fundar la compañía →",
+    foundHint: "Tres letras al menos, un nombre libre; usted es su primer socio. Solo se pertenece a una compañía.",
+    join: "Adherirse",
+    leave: "Dejar la compañía",
+    members: "{n} socio(s)",
+    wins: "{n} victorias / {games}",
+    colMembers: "Socios",
+    colWins: "Victorias",
+    of: "Compañía {name}",
+    errors: {
+      "in-company": "Ya pertenece a una compañía.",
+      "name-taken": "Ese nombre ya está tomado.",
+      "name-short": "Tres letras al menos.",
+      "not-found": "Esa compañía ya no existe.",
+      refused: "La oficina rehusó. Inténtelo de nuevo.",
+    },
+  },
 };
 
 export default platform;

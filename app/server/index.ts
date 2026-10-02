@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { seasonAt } from './rating';
 import { WEEK_MS, WEEK0, weekOf } from '@/platform/almanac';
 import type { ServerResponse } from 'node:http';
 import type { IncomingMessage } from 'node:http';
@@ -632,6 +633,21 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'challenge':
         if (Number.isInteger(m.week) && m.week >= 0) send(c, { t: 'challenge', rid: m.rid, board: store.challengeBoard(m.week, who.id) });
         return;
+      case 'companies':
+        send(c, { t: 'companies', rid: m.rid, board: store.companies(seasonAt(), who.id) });
+        return;
+      case 'company.found':
+      case 'company.join':
+      case 'company.leave': {
+        const error = m.t === 'company.found' ? (typeof m.name === 'string' ? store.foundCompany(who.id, m.name) : 'refused') : m.t === 'company.join' ? (typeof m.id === 'string' ? store.joinCompany(who.id, m.id) : 'refused') : (store.leaveCompany(who.id), null);
+        if (error) {
+          send(c, { t: 'refused', rid: m.rid, error });
+          return;
+        }
+        send(c, { t: 'companies', rid: m.rid, board: store.companies(seasonAt(), who.id) });
+        for (const s of socketsOf(who.id)) pushDesk(s);
+        return;
+      }
       case 'edition': {
         if (!Number.isInteger(m.week) || m.week < 0 || m.week > weekOf()) return;
         const from = WEEK0 + m.week * WEEK_MS;

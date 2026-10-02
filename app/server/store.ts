@@ -5,8 +5,9 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { ChallengeBoard, ChallengeRow, Edition, Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
+import { randomId } from '@/online/table';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
 import { fresh, ratingOf, seasonAt, settle } from './rating';
@@ -204,6 +205,13 @@ create table if not exists purses (
   guineas   integer not null,
   owned     text not null
 );
+create table if not exists companies (
+  id        text primary key,
+  name      text not null,
+  folded    text not null unique,
+  founderId text not null,
+  createdAt integer not null
+);
 create table if not exists challenges (
   accountId text not null,
   week      integer not null,
@@ -218,6 +226,7 @@ create table if not exists challenges (
 
 /** columns added since the first register: an old file learns them on opening */
 const GROWTH: [table: string, column: string, ddl: string][] = [
+  ['accounts', 'companyId', 'text'],
   ['accounts', 'email', 'text'],
   ['accounts', 'emailFolded', 'text'],
   ['accounts', 'verifiedAt', 'integer'],
@@ -1043,6 +1052,55 @@ export class Store {
     const all: ChallengeRow[] = rows.map((r) => ({ id: r.id, name: r.name, color: COLORS.includes(r.color as PlayerColor) ? (r.color as PlayerColor) : null, points: r.points, vp: r.vp, met: JSON.parse(r.met) as boolean[], at: r.at }));
     const at = all.findIndex((r) => r.id === meId);
     return { week, players: all.length, rows: all.slice(0, limit), me: at < 0 ? null : { ...all[at], rank: at + 1 } };
+  }
+
+  /* -------------------------- the companies ------------------------- */
+
+  /** the company an account belongs to, with its head count */
+  companyOf(accountId: string): Company | null {
+    const row = this.db
+      .prepare('select c.id, c.name, (select count(*) from accounts a where a.companyId = c.id and a.closedAt is null) as members from companies c join accounts me on me.companyId = c.id where me.id = ?')
+      .get(accountId) as { id: string; name: string; members: number } | undefined;
+    return row ? { id: row.id, name: row.name, members: row.members } : null;
+  }
+
+  /** every company, ranked by its members' wins this season, then by size */
+  companies(season: Season, meId: string): CompanyBoard {
+    const rows = this.db
+      .prepare(
+        'select c.id, c.name, c.createdAt, (select count(*) from accounts a where a.companyId = c.id and a.closedAt is null) as members, coalesce((select sum(r.won) from ratings r join accounts a on a.id = r.accountId where a.companyId = c.id and r.season = ?), 0) as wins, coalesce((select sum(r.games) from ratings r join accounts a on a.id = r.accountId where a.companyId = c.id and r.season = ?), 0) as games from companies c order by wins desc, members desc, c.createdAt asc',
+      )
+      .all(season.id, season.id) as unknown as CompanyRow[];
+    return { season, rows: rows.map((r) => ({ id: r.id, name: r.name, members: r.members, wins: r.wins, games: r.games, createdAt: r.createdAt })), mine: this.companyOf(meId) };
+  }
+
+  /** found a company: the name must be free and three letters at least;
+   *  one belongs to one company at a time. Returns the refusal, if any */
+  foundCompany(accountId: string, name: string): string | null {
+    const clean = name.trim().replace(/\s+/g, ' ').slice(0, 40);
+    if (clean.length < 3) return 'name-short';
+    if (this.companyOf(accountId)) return 'in-company';
+    const folded = clean.toLowerCase();
+    if (this.db.prepare('select 1 from companies where folded = ?').get(folded)) return 'name-taken';
+    const id = randomId(6);
+    this.db.prepare('insert into companies (id, name, folded, founderId, createdAt) values (?, ?, ?, ?, ?)').run(id, clean, folded, accountId, Date.now());
+    this.db.prepare('update accounts set companyId = ? where id = ?').run(id, accountId);
+    return null;
+  }
+
+  joinCompany(accountId: string, id: string): string | null {
+    if (this.companyOf(accountId)) return 'in-company';
+    if (!this.db.prepare('select 1 from companies where id = ?').get(id)) return 'not-found';
+    this.db.prepare('update accounts set companyId = ? where id = ?').run(id, accountId);
+    return null;
+  }
+
+  /** leave one's company; a company left empty is struck off */
+  leaveCompany(accountId: string): void {
+    const c = this.companyOf(accountId);
+    if (!c) return;
+    this.db.prepare('update accounts set companyId = null where id = ?').run(accountId);
+    if (c.members <= 1) this.db.prepare('delete from companies where id = ?').run(c.id);
   }
 
   /* --------------------------- the edition -------------------------- */

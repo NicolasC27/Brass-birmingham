@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -40,6 +40,8 @@ export class Wire {
   challenges = new Map<number, ChallengeBoard>();
   /** the club's editions, by week: asked for, then kept */
   editions = new Map<number, Edition>();
+  /** the companies and their honours: asked for, then kept */
+  companies: CompanyBoard | null = null;
   /** the table the office just dealt me from a queue, until the page takes me there */
   dealt: string | null = null;
   private halls = new Set<() => void>();
@@ -115,6 +117,22 @@ export class Wire {
 
   askLeaderboard(): void {
     void this.ask((rid) => ({ t: 'leaderboard', rid })).catch(() => undefined);
+  }
+
+  askCompanies(): void {
+    void this.ask((rid) => ({ t: 'companies', rid })).catch(() => undefined);
+  }
+
+  async foundCompany(name: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'company.found', rid, name }));
+  }
+
+  async joinCompany(id: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'company.join', rid, id }));
+  }
+
+  async leaveCompany(): Promise<void> {
+    await this.ask((rid) => ({ t: 'company.leave', rid }));
   }
 
   askEdition(week: number): void {
@@ -321,6 +339,10 @@ export class Wire {
     }
     if (m.t === 'edition') {
       this.editions.set(m.edition.week, m.edition);
+      for (const cb of this.halls) cb();
+    }
+    if (m.t === 'companies') {
+      this.companies = m.board;
       for (const cb of this.halls) cb();
     }
     /* the queue moved: the desk says where I stand, so ask it again */

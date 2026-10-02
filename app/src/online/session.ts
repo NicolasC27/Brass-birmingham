@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
-import type { ChallengeBoard, Desk, Edition, Leaderboard, Me, TableQuery, TablesPage } from './table';
+import type { ChallengeBoard, CompanyBoard, Desk, Edition, Leaderboard, Me, TableQuery, TablesPage } from './table';
 import { normalizeQuery } from './table';
 
 /* ------------------------------------------------------------------ */
@@ -115,6 +115,23 @@ export function useChallengeBoard(week: number): ChallengeBoard | null {
   }, [session?.id, week]); // eslint-disable-line react-hooks/exhaustive-deps
   return board;
 }
+
+/** the companies of the club and their honours, asked for once signed in */
+export function useCompanies(): CompanyBoard | null {
+  const session = useSession();
+  const board = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => onlineWire()?.companies ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    if (session) onlineWire()?.askCompanies();
+  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return board;
+}
+export const foundCompany = (name: string): Promise<void> => wire().foundCompany(name);
+export const joinCompany = (id: string): Promise<void> => wire().joinCompany(id);
+export const leaveCompany = (): Promise<void> => wire().leaveCompany();
 
 /** the club's edition of a week, asked for once signed in */
 export function useEdition(week: number): Edition | null {

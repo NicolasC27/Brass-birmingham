@@ -132,7 +132,10 @@ function MemberHeader() {
           <p className="eyebrow-fell">{t('platform.desk.eyebrow')}</p>
           <h1 className="mt-1 truncate font-fraunces text-[28px] font-semibold leading-tight text-paper-100">{session.name}</h1>
           {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
-          <p className="micro-label mt-1 text-iron-400">{t('platform.desk.memberSince', { date: since })}</p>
+          <p className="micro-label mt-1 text-iron-400">
+            {t('platform.desk.memberSince', { date: since })}
+            {desk?.company && <span className="text-brass-300"> · {t('platform.companies.of', { name: desk.company.name })}</span>}
+          </p>
           <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             <RankBadge tier={rank.tier} division={rank.division} lp={rank.lp} placementDone={rank.placementDone ?? undefined} size={24} />
             {desk && <span className="micro-label rounded bg-enamel-700 px-1.5 py-0.5 text-iron-400">{t('platform.desk.season', { season: desk.season.name, days: daysUntil(desk.season.endsAt) })}</span>}
