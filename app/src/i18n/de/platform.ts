@@ -506,6 +506,7 @@ const platform: typeof enPlatform = {
       presenceOffline: 'Offline',
     },
     history: {
+      ticket: "Fahrkarte nachdrucken",
       result: 'ERGEBNIS',
       table: 'TISCH',
       players: 'SPIELER',

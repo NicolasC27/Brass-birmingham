@@ -504,6 +504,7 @@ const platform = {
       presenceOffline: 'Offline',
     },
     history: {
+      ticket: "Reprint the ticket",
       result: 'RESULT',
       table: 'TABLE',
       players: 'PLAYERS',

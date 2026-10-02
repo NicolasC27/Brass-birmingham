@@ -19,6 +19,8 @@ import { collectRewards, useWallet } from '@/platform/wallet';
 import { forgetLocalGame, listLocalGames } from '@/game/local';
 import ProgressCard from '@/components/desk/ProgressCard';
 import LinesMap from '@/components/desk/LinesMap';
+import Ticket from '@/components/results/Ticket';
+import type { FinalResult } from '@/components/results/types';
 import type { LocalTable } from '@/game/local';
 import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
@@ -705,9 +707,19 @@ function FriendsPanel({ friends, table, onToast }: { friends: Friend[]; table: T
 
 type HistoryFilter = 'all' | 'won' | 'lost' | 'abandoned';
 
+/** a past game of the office, as the ticket reads it */
+const resultOf = (game: PastGame): FinalResult => ({
+  players: game.players.map((p) => ({ name: p.name, color: p.color, vp: p.vp, income: 0, links: 0, industries: 0, bot: p.bot })),
+  eras: [],
+  winnerIndex: game.winner,
+  timeline: [],
+  history: [],
+});
+
 function HistoryRow({ game, me }: { game: PastGame; me: string }) {
   const t = useT();
   const lang = useLang();
+  const [ticket, setTicket] = useState(false);
   const mine = game.players.findIndex((p) => p.id === me);
   const won = game.winner === mine;
   const date = new Date(game.finishedAt).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short' });
@@ -743,6 +755,14 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
         <span className="data-text whitespace-nowrap text-[11px] text-iron-400">
           {date} · {time}
         </span>
+        {!game.abandoned && mine >= 0 && (
+          <button type="button" onClick={() => setTicket(true)} className="ml-3 whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+            {t('platform.desk.history.ticket')}
+          </button>
+        )}
+        <Modal open={ticket} onClose={() => setTicket(false)} title={t('results.ticket.heading')}>
+          {ticket && <Ticket result={resultOf(game)} me={mine} table={tableTitle(game.name, lang)} />}
+        </Modal>
       </td>
     </tr>
   );

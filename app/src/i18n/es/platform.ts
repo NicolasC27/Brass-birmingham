@@ -504,6 +504,7 @@ const platform = {
       presenceOffline: 'Desconectado',
     },
     history: {
+      ticket: "Reimprimir el billete",
       result: 'RESULTADO',
       table: 'MESA',
       players: 'JUGADORES',
