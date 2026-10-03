@@ -1,28 +1,38 @@
+import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate } from "react-router";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
-import Setup from "@/pages/Setup";
-import Game from "@/pages/Game";
-import Rules from "@/pages/Rules";
-import Results from "@/pages/Results";
-import Replay from "@/pages/Replay";
-import Review from "@/pages/Review";
-import Report from "@/pages/Report";
-import Online from "@/pages/Online";
-import Lobby from "@/pages/Lobby";
-import Account from "@/pages/Account";
-import Desk from "@/pages/Desk";
-import Profile from "@/pages/Profile";
-import Comptoir from "@/pages/Comptoir";
-import Classement from "@/pages/Classement";
-import Legal from "@/pages/Legal";
-import Cours from "@/pages/Cours";
-import Almanach from "@/pages/Almanach";
-import Defis from "@/pages/Defis";
-import Tableau from "@/pages/Tableau";
+
+/* the front page and the shell come with the paper; every other page is
+   fetched when first opened, so the journal opens light */
+const Setup = lazy(() => import("@/pages/Setup"));
+const Game = lazy(() => import("@/pages/Game"));
+const Rules = lazy(() => import("@/pages/Rules"));
+const Results = lazy(() => import("@/pages/Results"));
+const Replay = lazy(() => import("@/pages/Replay"));
+const Review = lazy(() => import("@/pages/Review"));
+const Report = lazy(() => import("@/pages/Report"));
+const Online = lazy(() => import("@/pages/Online"));
+const Lobby = lazy(() => import("@/pages/Lobby"));
+const Account = lazy(() => import("@/pages/Account"));
+const Desk = lazy(() => import("@/pages/Desk"));
+const Profile = lazy(() => import("@/pages/Profile"));
+const Comptoir = lazy(() => import("@/pages/Comptoir"));
+const Classement = lazy(() => import("@/pages/Classement"));
+const Legal = lazy(() => import("@/pages/Legal"));
+const Cours = lazy(() => import("@/pages/Cours"));
+const Almanach = lazy(() => import("@/pages/Almanach"));
+const Defis = lazy(() => import("@/pages/Defis"));
+const Tableau = lazy(() => import("@/pages/Tableau"));
+
+/* a line while a page is fetched */
+function Arriving() {
+  return <p className="mx-auto max-w-[1240px] px-8 py-16 text-center font-serif text-[14px] italic text-paper-300">…</p>;
+}
 
 export default function App() {
   return (
+    <Suspense fallback={<Arriving />}>
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Home />} />
@@ -58,5 +68,6 @@ export default function App() {
         <Route path="record" element={<Navigate to="/profile" replace />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }
