@@ -10,6 +10,16 @@
          Must mirror the resolution logic of src/platform/theme.ts. */
       (function () {
         var t = 'dark';
+        /* a link may name the register (?theme=light|dark) and skip the
+           arrival (?arrived): kept, so the choice holds on the next page */
+        try {
+          var q = new URLSearchParams(location.search);
+          var asked = q.get('theme');
+          if (asked === 'dark' || asked === 'light') localStorage.setItem('brassworks.theme.v1', asked);
+          if (q.has('arrived')) localStorage.setItem('brassworks.arrived.v1', '1');
+        } catch (e) {
+          /* private mode */
+        }
         try {
           var saved = localStorage.getItem('brassworks.theme.v1');
           if (saved === 'dark' || saved === 'light') t = saved;
