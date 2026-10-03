@@ -40,7 +40,10 @@ export default function GlossMark({ id, className }: { id: string; className?: s
         ?
       </button>
       {open && (
-        <span role="note" className="console console-ruled absolute left-0 top-6 z-40 w-[280px] p-4 text-left shadow-[0_8px_24px_var(--shadow-modal)]">
+        <span
+          role="note"
+          className="absolute left-0 top-6 z-40 block w-[280px] border border-[var(--gz-ink-soft)] bg-enamel-850 p-4 text-left font-normal normal-case tracking-normal shadow-[inset_0_0_0_3px_rgb(var(--enamel-850)),inset_0_0_0_4px_var(--gz-ink-faint),0_8px_24px_var(--shadow-modal)]"
+        >
           <span className="block font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
             {t(`platform.glossary.terms.${id}.name`)}
           </span>
