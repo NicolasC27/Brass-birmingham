@@ -9,7 +9,9 @@
          scoped to .platform-root, so /game and legacy overlays are inert.
          Must mirror the resolution logic of src/platform/theme.ts. */
       (function () {
-        var t = 'dark';
+        /* nothing asked: the lamps go by the hour — the night's from eight to seven */
+        var h = new Date().getHours();
+        var t = h >= 20 || h < 7 ? 'dark' : 'light';
         /* a link may name the register (?theme=light|dark) and skip the
            arrival (?arrived): kept, so the choice holds on the next page */
         try {
@@ -23,9 +25,8 @@
         try {
           var saved = localStorage.getItem('brassworks.theme.v1');
           if (saved === 'dark' || saved === 'light') t = saved;
-          else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
         } catch (e) {
-          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) t = 'light';
+          /* private mode: the hour decides */
         }
         document.documentElement.setAttribute('data-theme', t);
         /* the masthead waits for its face rather than jumping from the

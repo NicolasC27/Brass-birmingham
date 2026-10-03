@@ -1035,3 +1035,9 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   .ticker-run { animation: none; }
 }
 
+/* the lamps lit or put out by the hour: a short fade over the page */
+html.lamps .platform-root,
+html.lamps .platform-root * {
+  transition: background-color 700ms ease, color 700ms ease, border-color 700ms ease !important;
+}
+

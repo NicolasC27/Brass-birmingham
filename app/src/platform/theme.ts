@@ -20,11 +20,41 @@ function initialTheme(): Theme {
   } catch {
     /* private mode */
   }
-  /* the register of day is the house's dress: dark only when asked */
-  return 'light';
+  /* nothing asked: the lamps go by the hour */
+  return byTheHour();
 }
 
+/** the register the hour calls for: the night's from eight to seven */
+export function byTheHour(now = new Date()): Theme {
+  const h = now.getHours();
+  return h >= 20 || h < 7 ? 'dark' : 'light';
+}
+
+const hasPreference = (): boolean => {
+  try {
+    const saved = localStorage.getItem(KEY);
+    return saved === 'dark' || saved === 'light';
+  } catch {
+    return false;
+  }
+};
+
 let theme: Theme = initialTheme();
+
+/* every minute, while nobody has chosen, the lamps follow the hour — lit
+   or put out with a short fade */
+if (typeof window !== 'undefined') {
+  window.setInterval(() => {
+    if (hasPreference()) return;
+    const wanted = byTheHour();
+    if (wanted === theme) return;
+    document.documentElement.classList.add('lamps');
+    window.setTimeout(() => document.documentElement.classList.remove('lamps'), 900);
+    theme = wanted;
+    apply(wanted);
+    for (const f of listeners) f();
+  }, 60_000);
+}
 
 const listeners = new Set<() => void>();
 
