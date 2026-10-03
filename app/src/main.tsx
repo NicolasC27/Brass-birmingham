@@ -1,4 +1,9 @@
 import { createRoot } from 'react-dom/client'
+
+/* the porter: once built, the shell and the pictures are kept for the road */
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => void navigator.serviceWorker.register('/sw.js').catch(() => undefined))
+}
 import { BrowserRouter } from 'react-router'
 /* Platform typefaces (design.md §3) — latin + latin-ext subsets included by default.
    Weights only: Fraunces 500/600 (display), Inter 400/500/600 (UI), Plex Mono 400/500 (data). */
