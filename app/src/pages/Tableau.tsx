@@ -72,7 +72,8 @@ export default function Tableau() {
         </p>
       </header>
 
-      <table className="mt-6 w-full border-collapse font-mono text-[22px] leading-none">
+      <table className="mt-6 w-full border-collapse font-mono text-[22px] leading-none" aria-live="polite">
+        <caption className="sr-only">{t('platform.tableau.title')}</caption>
         <thead>
           <tr className="text-[12px] uppercase tracking-[0.3em] text-[#8b948c]">
             <th className="pb-3 text-left font-normal">{t('platform.tableau.colTrain')}</th>

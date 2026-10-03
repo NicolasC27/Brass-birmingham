@@ -1176,6 +1176,9 @@ const platform: typeof enPlatform = {
     open: "Anzeige annehmen →",
     archive: "Frühere Anzeigen →",
   },
+  a11y: {
+    skip: "Zum Inhalt",
+  },
 };
 
 export default platform;

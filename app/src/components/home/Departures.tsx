@@ -287,6 +287,7 @@ export default function Departures() {
   else
     body = (
       <table className="gz-timetable">
+        <caption className="sr-only">{t('platform.home.board.title')}</caption>
         <thead>
           <tr>
             <th>{t('platform.home.departures.table')}</th>

@@ -1174,6 +1174,9 @@ const platform = {
     open: "Relever l’avis →",
     archive: "Les avis passés →",
   },
+  a11y: {
+    skip: "Aller au contenu",
+  },
 };
 
 export default platform;

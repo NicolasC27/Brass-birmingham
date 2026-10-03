@@ -1174,6 +1174,9 @@ const platform = {
     open: "Aceptar el aviso →",
     archive: "Avisos pasados →",
   },
+  a11y: {
+    skip: "Ir al contenido",
+  },
 };
 
 export default platform;

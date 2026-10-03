@@ -1174,6 +1174,9 @@ const platform = {
     open: "Take the notice →",
     archive: "Past notices →",
   },
+  a11y: {
+    skip: "Skip to content",
+  },
 };
 
 export default platform;

@@ -111,6 +111,7 @@ function Timetable({ tables, groups, busy, onJoin, onResume, onWatch }: { tables
   let n = 0;
   return (
     <table className="gz-timetable">
+      <caption className="sr-only">{t('platform.play.tables.title')}</caption>
       <thead>
         <tr>
           <th>{t('platform.play.tables.colTable')}</th>
@@ -209,7 +210,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
 
   let body;
   if (stranger) {
-    body = <EmptyState className="mt-4" image="/empty-tables.png" title={t('platform.play.tables.signInTitle')} copy={t('platform.play.tables.signInCopy')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
+    body = <EmptyState className="mt-4" plate="tables" title={t('platform.play.tables.signInTitle')} copy={t('platform.play.tables.signInCopy')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
   } else if (page === null) {
     body = (
       <div className="mt-4 flex items-center justify-center gap-3 px-6 py-10">
@@ -218,9 +219,9 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
       </div>
     );
   } else if (page.counts.all === 0 && !q) {
-    body = <EmptyState className="mt-4" image="/empty-tables.png" title={t('platform.play.tables.noneTitle')} copy={t('platform.play.tables.noneCopy')} cta={{ label: t('platform.action.createTable'), to: '/setup', icon: <Plus size={16} aria-hidden /> }} />;
+    body = <EmptyState className="mt-4" plate="tables" title={t('platform.play.tables.noneTitle')} copy={t('platform.play.tables.noneCopy')} cta={{ label: t('platform.action.createTable'), to: '/setup', icon: <Plus size={16} aria-hidden /> }} />;
   } else if (rows.length === 0) {
-    body = <EmptyState className="mt-4" image="/empty-tables.png" title={t('platform.play.tables.emptyTitle')} copy={t('platform.play.tables.emptyCopy')} cta={{ label: t('platform.action.createTable'), to: '/setup', icon: <Plus size={16} aria-hidden /> }} />;
+    body = <EmptyState className="mt-4" plate="tables" title={t('platform.play.tables.emptyTitle')} copy={t('platform.play.tables.emptyCopy')} cta={{ label: t('platform.action.createTable'), to: '/setup', icon: <Plus size={16} aria-hidden /> }} />;
   } else {
     const from = page.query.offset + 1;
     const to = page.query.offset + rows.length;

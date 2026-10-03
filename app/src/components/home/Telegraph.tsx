@@ -27,7 +27,7 @@ export default function Telegraph() {
         <span className={dispatches.length ? 'animate-presence-dot h-1.5 w-1.5 rounded-full bg-signal-400' : 'h-1.5 w-1.5 rounded-full bg-iron-600'} aria-hidden />
         {t('platform.home.telegraph.title')}
       </p>
-      <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
+      <div className="mt-1 border-t border-[var(--gz-ink-soft)]" aria-live="polite">
         {dispatches.length === 0 ? (
           <p className="px-1 py-5 text-center font-serif text-[13.5px] italic text-paper-300">{t('platform.home.telegraph.none')}</p>
         ) : (

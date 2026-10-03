@@ -342,6 +342,7 @@ function BottomTabBar() {
 /* -------------------------------- Shell -------------------------------- */
 
 export default function PlatformShell() {
+  const t = useT();
   const session = useSession();
   /* signed in: the papers the office keeps are folded into this browser's */
   useEffect(() => {
@@ -350,9 +351,12 @@ export default function PlatformShell() {
   return (
     <div className="platform-root relative flex min-h-[100dvh] flex-col bg-lacquer-900 font-ui text-paper-100">
       <div aria-hidden className="tex-lacquer pointer-events-none fixed inset-0 opacity-60" />
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:bg-enamel-850 focus:px-3 focus:py-2 focus:font-ui focus:text-[12px] focus:uppercase focus:tracking-[0.14em] focus:text-paper-100">
+        {t('platform.a11y.skip')}
+      </a>
       <Masthead />
       <NavRail />
-      <main className="relative flex-1 pb-[60px] min-[900px]:pb-0">
+      <main id="main" tabIndex={-1} className="relative flex-1 pb-[60px] outline-none min-[900px]:pb-0">
         <Outlet />
       </main>
       <Colophon />
