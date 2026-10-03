@@ -20,3 +20,8 @@ Demande de Nicolas : que le site « ne pense pas que c'est un jeu ». Le hall es
 Les sons (`gl/sfx.ts`, synthétisés) : `stationBell()` quand l'office compose un train depuis la file, `steamWhistle()` au départ du quai et à la fin de l'arrivée. Sous l'interrupteur son du plateau.
 
 Le billet de la partie (`components/results/Ticket.tsx`) : un canvas dessiné avec les fontes de la page — talon, trajet des deux ères, voyageur, points, tampon « Vainqueur » — téléchargeable ; réimprimable pour toute partie passée depuis l'historique du bureau.
+
+## Le glossaire
+
+`components/platform/GlossMark.tsx` : un « ? » près d'un mot de gare ouvre une bulle (`platform.glossary.terms.<id>`), `/glossaire` les rassemble. Ajouter un terme : la clé dans les quatre dictionnaires, l'id dans `TERMS` de `Glossaire.tsx`, une marque près du mot.
+

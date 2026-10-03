@@ -13,8 +13,9 @@ Le serveur (`app/server/`), un socket par client, SQLite (`server/store.ts`). Aj
 | `company.found {name}` / `company.join {id}` / `company.leave` | `companies` + bureau | fonder, adhérer, quitter (rayée si vide) |
 | `papers` / `papers.put {kind, body}` | `papers` / `done` | les papiers du compte (≤ 64 k caractères) |
 | `profile {newsletter}` | `me` | l'édition du lundi par la poste |
+| `seasons` / `season {id}` | `seasons` / `season {review}` | les services connus, et le bilan de l'un (`store.seasonReview`) |
 
-`TablesPage.dispatches` : les dix dernières manchettes des tables en jeu — chaque salle (`TableGame.dispatches`) relit la manche close avec `headlinesFor` (game/gazette.ts).
+`Edition.machines` : ce que chaque machine a gagné et perdu dans la semaine (le portrait). `TablesPage.dispatches` : les dix dernières manchettes des tables en jeu — chaque salle (`TableGame.dispatches`) relit la manche close avec `headlinesFor` (game/gazette.ts).
 
 ## Tables ajoutées
 
