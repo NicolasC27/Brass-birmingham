@@ -295,7 +295,7 @@ const platform = {
       badgeHotseat: 'Hotseat',
       seats: 'ASIENTOS {filled}/{total}',
       localLine: 'Mesa local — la partida empieza en este dispositivo.',
-      cta: 'Empezar la partida',
+      cta: "Dar la salida",
       ctaHint: 'Hace falta al menos un rival.',
     },
     reassure: {

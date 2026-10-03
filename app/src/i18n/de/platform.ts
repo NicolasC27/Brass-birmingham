@@ -297,7 +297,7 @@ const platform: typeof enPlatform = {
       badgeHotseat: 'Hotseat',
       seats: 'PLÄTZE {filled}/{total}',
       localLine: 'Lokaler Tisch — die Partie startet auf diesem Gerät.',
-      cta: 'Partie starten',
+      cta: "Abfahrt geben",
       ctaHint: 'Du brauchst mindestens einen Gegner.',
     },
     reassure: {

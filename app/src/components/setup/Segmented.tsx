@@ -1,5 +1,3 @@
-import { useId } from "react";
-import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export interface SegmentedOption<T extends string> {
@@ -9,8 +7,9 @@ export interface SegmentedOption<T extends string> {
 }
 
 /**
- * Segmented brass toggle (setup.md): pill indicator slides between options
- * via a Framer Motion layout animation.
+ * A choice among a few words, set as headings on a rule: the chosen one in
+ * ink with a diamond under it, the others in iron. The journal's own way of
+ * a segmented control; props unchanged from the brass pill it replaces.
  */
 export default function Segmented<T extends string>({
   value,
@@ -25,16 +24,8 @@ export default function Segmented<T extends string>({
   ariaLabel: string;
   className?: string;
 }) {
-  const id = useId();
   return (
-    <div
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-full border border-brass-hairline bg-enamel-850 p-1",
-        className,
-      )}
-    >
+    <div role="radiogroup" aria-label={ariaLabel} className={cn("inline-flex items-center gap-4 border-b border-[var(--gz-ink-faint)]", className)}>
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -45,26 +36,9 @@ export default function Segmented<T extends string>({
             aria-checked={active}
             disabled={o.disabled}
             onClick={() => onChange(o.value)}
-            className={cn(
-              "relative rounded-full px-3 py-1.5 font-ui text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors duration-150",
-              active ? "text-[rgb(var(--ink-on-brass))]" : "text-iron-400 hover:text-paper-100",
-              o.disabled && "cursor-not-allowed opacity-40",
-            )}
+            className={cn("gz-nav-link !py-1.5 !text-[10.5px]", active && "is-active", o.disabled && "cursor-not-allowed opacity-40")}
           >
-            {active && (
-              <motion.span
-                layoutId={id}
-                transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                className="absolute inset-0 rounded-full border border-brass-600"
-                style={{
-                  background:
-                    "linear-gradient(180deg, #E7C97E 0%, #C9A24B 48%, #8F6B23 100%)",
-                  boxShadow:
-                    "inset 0 1px 0 rgba(237,230,214,0.45), inset 0 -1px 0 rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.4)",
-                }}
-              />
-            )}
-            <span className="relative z-10">{o.label}</span>
+            {o.label}
           </button>
         );
       })}

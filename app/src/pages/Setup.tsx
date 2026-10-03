@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { BookOpen, Bot, MonitorSmartphone, Play, Save, Users, X } from "lucide-react";
+import { BookOpen, Bot, MonitorSmartphone, Play, Save, Users } from "lucide-react";
 import { openLocalGame } from "@/game/local";
 import { pickTableName, tableTitle } from "@/online/tableNames";
 import { useLang, useT } from "@/i18n";
@@ -9,8 +9,7 @@ import SeatRow from "@/components/setup/SeatRow";
 import HouseRules from "@/components/setup/HouseRules";
 import ShutterWipe from "@/components/setup/ShutterWipe";
 import Tip from "@/components/setup/Tip";
-import Button from "@/components/platform/Button";
-import SeatToken from "@/components/platform/SeatToken";
+import TrainStrip from "@/components/online/TrainStrip";
 import {
   SETUP_STORAGE_KEY,
   dedupeNames,
@@ -41,12 +40,18 @@ const ease = "easeOut" as const;
 type LocalMode = "solo" | "hotseat";
 
 /** Section heading inside the settings sheet — the console's voice. */
+/** a clause of the waybill: small capitals over a double rule */
 function SheetHeading({ children }: { children: string }) {
-  return <h2 className="micro-label text-brass-300">{children}</h2>;
+  return (
+    <>
+      <h2 className="micro-label text-paper-100">{children}</h2>
+      <div aria-hidden className="gz-rule-double mt-2" />
+    </>
+  );
 }
 
 function Divider() {
-  return <div aria-hidden className="my-6 border-t border-[rgb(var(--paper-100)/.07)]" />;
+  return <div aria-hidden className="my-8" />;
 }
 
 export default function Setup() {
@@ -187,7 +192,7 @@ export default function Setup() {
     <div className="mx-auto max-w-[1240px] px-4 pt-10 pb-8 sm:px-8">
       {/* En-tête (create.md §Structure) */}
       <header>
-        <p className="micro-label text-brass-400">{t("platform.setup.eyebrow")}</p>
+        <p className="eyebrow-fell">{t("platform.setup.eyebrow")}</p>
         <h1 className="display-page mt-2">{t("platform.setup.title")}</h1>
         <p className="mt-2 font-serif text-[15px] italic text-paper-300">{t("platform.setup.tagline")}</p>
       </header>
@@ -200,28 +205,26 @@ export default function Setup() {
           transition={{ duration: 0.22, ease }}
           className="order-2 lg:order-1 lg:col-span-7"
         >
-          <div className="console p-6">
+          <div>
             {/* A1. Identité de la table */}
             <section aria-label={t("platform.setup.identity.heading")}>
               <SheetHeading>{t("platform.setup.identity.heading")}</SheetHeading>
-              <p className="mt-4 font-ui text-[13px] font-medium text-paper-300">{t("platform.setup.identity.nameLabel")}</p>
-              <p className="h2-section mt-1 truncate">{tableTitle(tableName, lang)}</p>
-              <p className="mt-1 font-ui text-[12px] text-iron-400">{t("platform.setup.identity.drawn")}</p>
+              <p className="micro-label mt-4 text-iron-400">{t("platform.setup.identity.nameLabel")}</p>
+              <p className="mt-1 truncate font-fraunces text-[26px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+                {tableTitle(tableName, lang)}
+              </p>
+              <p className="mt-1 font-serif text-[13px] italic text-iron-400">{t("platform.setup.identity.drawn")}</p>
 
-              {/* Visibilité : cette console crée des tables locales — présentation honnête. */}
-              <div className="mt-4 flex items-center gap-3 rounded-lg border border-brass-hairline bg-enamel-800 p-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-enamel-700 text-brass-300">
-                  <MonitorSmartphone size={18} aria-hidden />
-                </span>
+              {/* this sheet charters local trains: said plainly */}
+              <p className="mt-4 flex items-start gap-3 border-y border-[var(--gz-ink-faint)] py-3">
+                <MonitorSmartphone size={16} strokeWidth={1.5} aria-hidden className="mt-0.5 shrink-0 text-brass-300" />
                 <span className="min-w-0">
-                  <span className="block font-ui text-[14px] font-semibold text-paper-100">
+                  <span className="block font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
                     {t("platform.setup.identity.localTitle")}
                   </span>
-                  <span className="mt-0.5 block font-ui text-[13px] text-paper-300">
-                    {t("platform.setup.identity.localCopy")}
-                  </span>
+                  <span className="mt-0.5 block font-serif text-[13px] italic text-paper-300">{t("platform.setup.identity.localCopy")}</span>
                 </span>
-              </div>
+              </p>
             </section>
 
             <Divider />
@@ -229,11 +232,11 @@ export default function Setup() {
             {/* A2. Mode de jeu — solo / hotseat (contrat ?mode=) */}
             <section aria-label={t("platform.setup.mode.heading")}>
               <SheetHeading>{t("platform.setup.mode.heading")}</SheetHeading>
-              <div role="radiogroup" aria-label={t("platform.setup.mode.heading")} className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div role="radiogroup" aria-label={t("platform.setup.mode.heading")} className="mt-2 grid sm:grid-cols-2 sm:gap-8">
                 {(
                   [
-                    { id: "solo" as const, icon: Bot, title: t("platform.setup.mode.soloTitle"), copy: t("platform.setup.mode.soloCopy"), activeCls: "border-2 border-bottle-500 bg-enamel-800", iconCls: "bg-bottle-700/60 text-bottle-400" },
-                    { id: "hotseat" as const, icon: Users, title: t("platform.setup.mode.hotseatTitle"), copy: t("platform.setup.mode.hotseatCopy"), activeCls: "border-2 border-brass-500 bg-enamel-800", iconCls: "bg-[var(--brass-hairline)] text-brass-300" },
+                    { id: "solo" as const, icon: Bot, title: t("platform.setup.mode.soloTitle"), copy: t("platform.setup.mode.soloCopy") },
+                    { id: "hotseat" as const, icon: Users, title: t("platform.setup.mode.hotseatTitle"), copy: t("platform.setup.mode.hotseatCopy") },
                   ]
                 ).map((m) => {
                   const active = mode === m.id;
@@ -245,16 +248,17 @@ export default function Setup() {
                       aria-checked={active}
                       onClick={() => selectMode(m.id)}
                       className={cn(
-                        "flex h-[72px] items-center gap-3 console p-4 text-left transition-all duration-150 ease-out hover:bg-enamel-800",
-                        active ? m.activeCls : "hover:border-brass-hairline-strong",
+                        "group flex items-start gap-3 border-b border-[var(--gz-ink-faint)] py-3 text-left transition-colors duration-150 hover:bg-enamel-800",
+                        active ? "text-paper-100" : "text-paper-300",
                       )}
                     >
-                      <span className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-lg", m.iconCls)}>
-                        <m.icon size={18} aria-hidden />
-                      </span>
+                      <span className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rotate-45 border", active ? "border-brass-300 bg-brass-300" : "border-[var(--gz-ink-soft)]")} aria-hidden />
                       <span className="min-w-0">
-                        <span className="block font-ui text-[14px] font-semibold text-paper-100">{m.title}</span>
-                        <span className="mt-0.5 block font-ui text-[12px] leading-snug text-paper-300">{m.copy}</span>
+                        <span className="flex items-center gap-2 font-fraunces text-[16px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                          <m.icon size={15} strokeWidth={1.5} aria-hidden className="text-brass-300" />
+                          {m.title}
+                        </span>
+                        <span className="mt-0.5 block font-serif text-[13px] italic leading-snug text-paper-300">{m.copy}</span>
                       </span>
                     </button>
                   );
@@ -267,7 +271,7 @@ export default function Setup() {
             {/* A3. Sièges & bots */}
             <section aria-label={t("platform.setup.seats.heading")}>
               <SheetHeading>{t("platform.setup.seats.heading")}</SheetHeading>
-              <div className="mt-4 flex flex-col gap-3">
+              <div className="mt-2 flex flex-col">
                 {seats.map((seat, i) => (
                   <SeatRow
                     key={i}
@@ -282,14 +286,12 @@ export default function Setup() {
                   />
                 ))}
               </div>
-              <p className="mt-4 font-ui text-[12px] leading-relaxed text-iron-400">
-                {t("setup.seating.note")}
-              </p>
+              <p className="mt-4 font-serif text-[12.5px] italic leading-relaxed text-iron-400">{t("setup.seating.note")}</p>
             </section>
           </div>
 
           {/* A4. Options de la partie (house rules — props figées, partagé avec Lobby) */}
-          <div className="mt-6">
+          <div className="mt-10">
             <HouseRules options={options} onChange={(patch) => setOptions((o) => ({ ...o, ...patch }))} />
           </div>
         </motion.div>
@@ -302,61 +304,34 @@ export default function Setup() {
           aria-label={t("platform.setup.preview.label")}
           className="order-1 self-start lg:order-2 lg:col-span-5 lg:sticky lg:top-[88px]"
         >
-          <div className="relative overflow-hidden console p-5">
-            <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-60" />
+          <div className="gz-classified !items-stretch !p-6 !text-left">
             <div className="relative">
-              <p className="micro-label text-iron-400">{t("platform.setup.preview.label")}</p>
-              <p className="h2-section mt-2 truncate">{tableTitle(tableName, lang)}</p>
+              <p className="eyebrow-fell">{t("platform.setup.preview.label")}</p>
+              <p className="mt-2 truncate font-fraunces text-[22px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+                {tableTitle(tableName, lang)}
+              </p>
 
-              {/* Rangée de jetons dans leur état courant */}
-              <div className="mt-4 flex flex-wrap items-center gap-3">
-                {seats.map((s, i) =>
-                  s.type === "closed" ? (
-                    <span
-                      key={i}
-                      aria-hidden
-                      className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-dashed border-iron-600/60 text-iron-600"
-                    >
-                      <X size={16} />
-                    </span>
-                  ) : (
-                    <SeatToken
-                      key={`${i}-${s.type}-${s.color}`}
-                      size={44}
-                      index={i}
-                      seat={{
-                        name: s.name || "…",
-                        color: s.color,
-                        kind: s.type === "bot" ? "bot" : "human",
-                        you: i === 0,
-                        host: i === 0,
-                      }}
-                    />
-                  ),
-                )}
-                <span className="micro-label text-[10px] text-iron-400 tnums">
-                  {t("platform.setup.preview.seats", { filled: seated.length, total: seats.length })}
-                </span>
+              {/* the train as it stands: a carriage a seat */}
+              <div className="mt-4">
+                <TrainStrip seats={seats.map((s) => (s.type === "closed" ? null : { name: s.name || "…", color: s.color, kind: s.type === "bot" ? "bot" : "human" }))} />
               </div>
+              <p className="micro-label mt-2 text-iron-400 tnums">{t("platform.setup.preview.seats", { filled: seated.length, total: seats.length })}</p>
 
-              {/* Badges : mode, visibilité, options actives */}
-              <div className="mt-4 flex flex-wrap gap-1.5">
+              {/* the clauses: mode, the table's nature, the options in force */}
+              <ol className="mt-4 flex flex-col">
                 {[
                   mode === "solo" ? t("platform.setup.preview.badgeSolo") : t("platform.setup.preview.badgeHotseat"),
                   t("platform.setup.preview.badgeLocal"),
                   ...optionChips,
-                ].map((chip) => (
-                  <span
-                    key={chip}
-                    className="rounded-full border border-brass-hairline bg-enamel-800 px-2 py-0.5 font-ui text-[11px] font-semibold text-paper-300"
-                  >
-                    {chip}
-                  </span>
+                ].map((chip, i) => (
+                  <li key={chip} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5 last:border-b-0">
+                    <span className="data-text w-5 text-[11px] text-iron-600 tnums">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="font-serif text-[13.5px] text-paper-100">{chip}</span>
+                  </li>
                 ))}
-              </div>
+              </ol>
 
-              <div aria-hidden className="my-4 border-t border-[rgb(var(--paper-100)/.07)]" />
-              <p className="data-text text-[12px] text-iron-400">{t("platform.setup.preview.localLine")}</p>
+              <p className="mt-4 font-serif text-[12.5px] italic text-iron-400">{t("platform.setup.preview.localLine")}</p>
 
               {/* CTA final */}
               <motion.div
@@ -367,25 +342,16 @@ export default function Setup() {
                 className="mt-5 rounded-lg"
               >
                 {canStart ? (
-                  <Button
-                    variant="primary"
-                    onClick={start}
-                    disabled={starting !== null}
-                    icon={<Play size={16} aria-hidden />}
-                    className="!h-12 w-full"
-                  >
+                  <button type="button" onClick={start} disabled={starting !== null} className="gz-ticket gz-ticket-brass w-full justify-center !h-11">
+                    <Play aria-hidden />
                     {t("platform.setup.preview.cta")}
-                  </Button>
+                  </button>
                 ) : (
                   <Tip label={t("platform.setup.preview.ctaHint")} className="w-full">
-                    <Button
-                      variant="primary"
-                      disabled
-                      icon={<Play size={16} aria-hidden />}
-                      className="!h-12 w-full"
-                    >
+                    <button type="button" disabled className="gz-ticket w-full cursor-not-allowed justify-center !h-11 opacity-50">
+                      <Play aria-hidden />
                       {t("platform.setup.preview.cta")}
-                    </Button>
+                    </button>
                   </Tip>
                 )}
               </motion.div>

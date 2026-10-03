@@ -295,7 +295,7 @@ const platform = {
       badgeHotseat: 'Hotseat',
       seats: 'SIÈGES {filled}/{total}',
       localLine: 'Table locale — la partie démarre sur cet appareil.',
-      cta: 'Lancer la partie',
+      cta: "Donner le départ",
       ctaHint: 'Il faut au moins un adversaire.',
     },
     reassure: {

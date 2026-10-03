@@ -295,7 +295,7 @@ const platform = {
       badgeHotseat: 'Hotseat',
       seats: 'SEATS {filled}/{total}',
       localLine: 'Local table — the game starts on this device.',
-      cta: 'Start the game',
+      cta: "Give the off",
       ctaHint: 'You need at least one opponent.',
     },
     reassure: {
