@@ -410,7 +410,7 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
   for (const local of locals) sorted.push(localTable(local, me));
 
   if (sorted.length === 0) {
-    return <EmptyState image="/empty-tables.png" title={t('platform.desk.tables.emptyTitle')} copy={t('platform.desk.tables.emptyCopy')} cta={{ label: t('platform.desk.tables.emptyCta'), to: '/online' }} />;
+    return <EmptyState plate="tables" title={t('platform.desk.tables.emptyTitle')} copy={t('platform.desk.tables.emptyCopy')} cta={{ label: t('platform.desk.tables.emptyCta'), to: '/online' }} />;
   }
 
   const leave = () => {
@@ -790,7 +790,7 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
   ];
 
   if (history.length === 0) {
-    return <EmptyState image="/empty-tables.png" title={t('platform.desk.history.emptyTitle')} copy={t('platform.desk.history.emptyCopy')} cta={{ label: t('platform.desk.history.emptyCta'), to: '/online' }} />;
+    return <EmptyState plate="tables" title={t('platform.desk.history.emptyTitle')} copy={t('platform.desk.history.emptyCopy')} cta={{ label: t('platform.desk.history.emptyCta'), to: '/online' }} />;
   }
 
   return (

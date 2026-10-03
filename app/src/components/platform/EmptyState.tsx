@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import Button from './Button';
+import { useTheme } from '@/platform/theme';
+
+/** the two plates an empty state may print: a table nobody sits at, a platform nobody waits on */
+export type EmptyPlate = 'tables' | 'queue';
 
 /* ------------------------------------------------------------------ */
 /* EmptyState (design.md §7.8) — illustration + titre Fraunces 20px +  */
@@ -11,8 +15,8 @@ import Button from './Button';
 export interface EmptyStateProps {
   title: string;
   copy?: string;
-  /** illustration 240px — ex. /empty-tables.png */
-  image?: string;
+  /** the engraving printed above the words, in the register's own ink */
+  plate?: EmptyPlate;
   cta?: { label: string; to?: string; onClick?: () => void; icon?: ReactNode };
   /** colonne compacte : icône 20px + phrase 13px, pas d'illustration */
   mini?: boolean;
@@ -20,7 +24,8 @@ export interface EmptyStateProps {
   className?: string;
 }
 
-export default function EmptyState({ title, copy, image, cta, mini = false, icon, className }: EmptyStateProps) {
+export default function EmptyState({ title, copy, plate, cta, mini = false, icon, className }: EmptyStateProps) {
+  const theme = useTheme();
   if (mini) {
     return (
       <div className={cn('flex flex-col items-center gap-2 px-4 py-8 text-center', className)}>
@@ -30,10 +35,14 @@ export default function EmptyState({ title, copy, image, cta, mini = false, icon
     );
   }
   return (
-    <div className={cn('flex flex-col items-center gap-4 console px-6 py-10 text-center', className)}>
-      {image && <img src={image} alt="" className="w-60 rounded-lg border border-[rgb(var(--paper-100)/.07)]" width={240} />}
+    <div className={cn('flex flex-col items-center gap-4 px-6 py-8 text-center', className)}>
+      {plate && (
+        <div className="gz-engraving w-full max-w-[460px]">
+          <img src={`/empty-${plate}${theme === 'dark' ? '-night' : ''}.webp`} alt="" className="!aspect-[16/9]" />
+        </div>
+      )}
       <h3 className="font-fraunces text-[20px] font-medium text-paper-100">{title}</h3>
-      {copy && <p className="max-w-sm font-ui text-[13px] text-paper-300">{copy}</p>}
+      {copy && <p className="max-w-sm font-serif text-[13.5px] italic text-paper-300">{copy}</p>}
       {cta && (
         <Button variant="primary" to={cta.to} onClick={cta.onClick} icon={cta.icon}>
           {cta.label}

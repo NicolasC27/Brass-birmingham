@@ -13,6 +13,7 @@ import PatentsWall from './PatentsWall';
 import Telegraph from './Telegraph';
 import ClubEdition from './ClubEdition';
 import { storyOfGame, storyOfTable, winStreak } from '@/platform/chronicle';
+import { useTheme } from '@/platform/theme';
 
 /* ------------------------------------------------------------------ */
 /* Activité du club (home.md §S4) — mes dernières parties (gauche :    */
@@ -115,6 +116,7 @@ function LiveItem({ table }: { table: PublicTable }) {
 
 function LiveTables() {
   const t = useT();
+  const theme = useTheme();
   const stranger = useStranger();
   const line = useLine();
   /* the office names the most watched tables beside any page: one line asked, three tables back */
@@ -138,7 +140,9 @@ function LiveTables() {
         <Empty copy={line === 'online' ? t('platform.home.activity.loading') : t('platform.serverOffline')} />
       ) : live.length === 0 ? (
         <div className="flex flex-col items-center gap-3 px-6 py-6 text-center">
-          <img src="/empty-queue.png" alt="" width={200} className="w-[200px] border border-[var(--gz-ink-soft)] p-1" />
+          <div className="gz-engraving w-full max-w-[320px]">
+            <img src={`/empty-queue${theme === 'dark' ? '-night' : ''}.webp`} alt="" className="!aspect-[16/9]" />
+          </div>
           <p className="max-w-[260px] font-serif text-[14px] italic text-paper-300">{t('platform.home.activity.liveEmpty')}</p>
         </div>
       ) : (

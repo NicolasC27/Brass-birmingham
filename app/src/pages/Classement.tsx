@@ -210,7 +210,7 @@ export default function Classement() {
               ))}
             </div>
           ) : rows.length === 0 ? (
-            <EmptyState image="/empty-tables.png" title={t('platform.ranking.emptyTitle')} copy={t('platform.ranking.emptyCopy')} cta={{ label: t('platform.ranking.emptyCta'), to: '/online' }} />
+            <EmptyState plate="tables" title={t('platform.ranking.emptyTitle')} copy={t('platform.ranking.emptyCopy')} cta={{ label: t('platform.ranking.emptyCta'), to: '/online' }} />
           ) : (
             <HonourTable rows={rows} pinned={pinned} me={session.id} avatar={avatar} />
           )}
