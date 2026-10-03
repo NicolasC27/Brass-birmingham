@@ -18,6 +18,7 @@ import Classement from "@/pages/Classement";
 import Legal from "@/pages/Legal";
 import Cours from "@/pages/Cours";
 import Almanach from "@/pages/Almanach";
+import Defis from "@/pages/Defis";
 import Tableau from "@/pages/Tableau";
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="rules" element={<Rules />} />
         <Route path="cours" element={<Cours />} />
         <Route path="almanach" element={<Almanach />} />
+        <Route path="defis" element={<Defis />} />
         <Route path="tableau" element={<Tableau />} />
         <Route path="legal" element={<Legal />} />
         <Route path="results" element={<Results />} />

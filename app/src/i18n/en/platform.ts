@@ -1162,6 +1162,18 @@ const platform = {
     colState: "State",
     colHost: "Guard",
   },
+  defis: {
+    eyebrow: "PAST NOTICES",
+    title: "Archive of the challenges",
+    lede: "The notices of the past weeks, each week’s board and your best attempt — to see where you came close.",
+    week: "Notice no. {n}",
+    current: "running",
+    mine: "YOUR BEST ATTEMPT",
+    none: "No attempt that week.",
+    noBoard: "Nobody took that notice.",
+    open: "Take the notice →",
+    archive: "Past notices →",
+  },
 };
 
 export default platform;

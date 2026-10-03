@@ -1162,6 +1162,18 @@ const platform = {
     colState: "Estado",
     colHost: "Jefe de tren",
   },
+  defis: {
+    eyebrow: "AVISOS PASADOS",
+    title: "Archivo de los desafíos",
+    lede: "Los avisos de las semanas pasadas, la clasificación de cada una y su mejor intento — para ver dónde se quedó cerca.",
+    week: "Aviso n.º {n}",
+    current: "en curso",
+    mine: "SU MEJOR INTENTO",
+    none: "Ningún intento esa semana.",
+    noBoard: "Nadie aceptó ese aviso.",
+    open: "Aceptar el aviso →",
+    archive: "Avisos pasados →",
+  },
 };
 
 export default platform;

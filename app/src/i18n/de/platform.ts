@@ -1164,6 +1164,18 @@ const platform: typeof enPlatform = {
     colState: "Stand",
     colHost: "Zugführer",
   },
+  defis: {
+    eyebrow: "FRÜHERE ANZEIGEN",
+    title: "Archiv der Herausforderungen",
+    lede: "Die Anzeigen der vergangenen Wochen, die Tafel jeder Woche und Ihr bester Versuch — um zu sehen, wo Sie knapp dran waren.",
+    week: "Anzeige Nr. {n}",
+    current: "laufend",
+    mine: "IHR BESTER VERSUCH",
+    none: "Kein Versuch in jener Woche.",
+    noBoard: "Niemand hat diese Anzeige angenommen.",
+    open: "Anzeige annehmen →",
+    archive: "Frühere Anzeigen →",
+  },
 };
 
 export default platform;

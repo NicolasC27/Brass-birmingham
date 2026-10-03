@@ -1162,6 +1162,18 @@ const platform = {
     colState: "État",
     colHost: "Chef de train",
   },
+  defis: {
+    eyebrow: "LES AVIS PASSÉS",
+    title: "Archives des défis",
+    lede: "Les avis des semaines passées, le classement de chacune et votre meilleur essai — pour voir où vous avez manqué de peu.",
+    week: "Avis n° {n}",
+    current: "en cours",
+    mine: "VOTRE MEILLEUR ESSAI",
+    none: "Pas d’essai cette semaine-là.",
+    noBoard: "Personne n’a relevé cet avis.",
+    open: "Relever l’avis →",
+    archive: "Les avis passés →",
+  },
 };
 
 export default platform;

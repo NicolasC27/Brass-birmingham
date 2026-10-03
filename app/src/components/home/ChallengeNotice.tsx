@@ -72,8 +72,9 @@ export default function ChallengeNotice() {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ amount: 0.15, once: true }}
       transition={{ duration: 0.24, ease: 'easeOut' }}
+      id="defi"
       aria-label={t('platform.challenge.eyebrow')}
-      className="gz-classified !items-stretch !p-0 !text-left"
+      className="gz-classified scroll-mt-24 !items-stretch !p-0 !text-left"
     >
       <div className="grid gap-6 p-6 min-[900px]:grid-cols-12 min-[900px]:gap-8 min-[900px]:p-7">
         <div className="min-[900px]:col-span-5">
@@ -145,7 +146,12 @@ export default function ChallengeNotice() {
       <div className="border-t border-[var(--gz-ink-soft)] px-6 py-4 min-[900px]:px-7">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="micro-label text-paper-100">{t('platform.challenge.board.title')}</p>
-          {board && board.players > 0 && <p className="data-text text-[11px] text-iron-600 tnums">{t('platform.challenge.board.players', { n: board.players })}</p>}
+          <span className="flex items-baseline gap-4">
+            {board && board.players > 0 && <span className="data-text text-[11px] text-iron-600 tnums">{t('platform.challenge.board.players', { n: board.players })}</span>}
+            <Link to="/defis" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+              {t('platform.defis.archive')}
+            </Link>
+          </span>
         </div>
         {!session ? (
           <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.challenge.board.signIn')}</p>
