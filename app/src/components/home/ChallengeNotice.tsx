@@ -10,6 +10,7 @@ import { attemptsOf, challengeOf, openAttemptOf, startChallenge, type Rule } fro
 import { daysLeft } from '@/platform/almanac';
 import { lobby } from '@/online/lobby';
 import { postChallenge, useChallengeBoard, useSession } from '@/online/session';
+import { preloadGame } from '@/platform/preload';
 
 /* ------------------------------------------------------------------ */
 /* The notice of the week, printed on the front page: its number and   */
@@ -135,7 +136,7 @@ export default function ChallengeNotice() {
               {t('platform.challenge.resume')}
             </Link>
           ) : (
-            <button type="button" onClick={take} className="gz-ticket gz-ticket-brass self-start">
+            <button type="button" onClick={take} onMouseEnter={preloadGame} onFocus={preloadGame} className="gz-ticket gz-ticket-brass self-start">
               {t('platform.challenge.take')}
             </button>
           )}

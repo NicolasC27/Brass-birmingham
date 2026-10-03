@@ -10,6 +10,7 @@ import HouseRules from "@/components/setup/HouseRules";
 import ShutterWipe from "@/components/setup/ShutterWipe";
 import Tip from "@/components/setup/Tip";
 import TrainStrip from "@/components/online/TrainStrip";
+import { preloadGame } from "@/platform/preload";
 import {
   SETUP_STORAGE_KEY,
   dedupeNames,
@@ -342,7 +343,7 @@ export default function Setup() {
                 className="mt-5 rounded-lg"
               >
                 {canStart ? (
-                  <button type="button" onClick={start} disabled={starting !== null} className="gz-ticket gz-ticket-brass w-full justify-center !h-11">
+                  <button type="button" onClick={start} onMouseEnter={preloadGame} onFocus={preloadGame} disabled={starting !== null} className="gz-ticket gz-ticket-brass w-full justify-center !h-11">
                     <Play aria-hidden />
                     {t("platform.setup.preview.cta")}
                   </button>

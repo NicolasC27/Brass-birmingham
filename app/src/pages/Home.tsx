@@ -23,6 +23,7 @@ import { PLACEMENTS, rankOf } from '@/platform/rank';
 import { useTheme } from '@/platform/theme';
 import { ephemerisOf } from '@/platform/almanac';
 import { grantFromHistory } from '@/platform/patents';
+import { preloadGame } from '@/platform/preload';
 
 /* ------------------------------------------------------------------ */
 /* The front page. Under the masthead: the engraving of the day, then  */
@@ -51,14 +52,14 @@ function Ticket({ to, onClick, tone, icon, children }: { to?: string; onClick?: 
   const cls = cn('gz-ticket', tone === 'brass' && 'gz-ticket-brass', tone === 'signal' && 'gz-ticket-signal');
   if (to) {
     return (
-      <Link to={to} className={cls}>
+      <Link to={to} className={cls} onMouseEnter={preloadGame} onFocus={preloadGame}>
         {icon}
         {children}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={onClick} className={cls}>
+    <button type="button" onClick={onClick} className={cls} onMouseEnter={preloadGame} onFocus={preloadGame}>
       {icon}
       {children}
     </button>

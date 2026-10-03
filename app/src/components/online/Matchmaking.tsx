@@ -14,6 +14,7 @@ import { usePresence } from '@/components/platform/presence';
 import { getBoardOptions } from '@/components/game/boardOptions';
 import { stationBell } from '@/gl/sfx';
 import type { Notify } from './notify';
+import { preloadGame } from '@/platform/preload';
 
 /* ------------------------------------------------------------------ */
 /* The counters of the play hall — two windows, normal and ranked,     */
@@ -153,7 +154,7 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
               </button>
             </>
           ) : (
-            <button type="button" disabled={closed} onClick={() => select(mode)} className={cn('gz-ticket', !closed && 'gz-ticket-brass', closed && 'cursor-not-allowed opacity-60')}>
+            <button type="button" disabled={closed} onClick={() => select(mode)} onMouseEnter={preloadGame} onFocus={preloadGame} className={cn('gz-ticket', !closed && 'gz-ticket-brass', closed && 'cursor-not-allowed opacity-60')}>
               {t('platform.play.counter.take')}
             </button>
           )}
