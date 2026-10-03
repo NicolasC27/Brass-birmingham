@@ -828,6 +828,7 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   font-weight: 600;
   letter-spacing: 0.16em;
   color: rgb(var(--paper-100));
+  white-space: nowrap;
   border: 1px solid var(--gz-ink-soft);
   background: rgb(var(--enamel-850));
   transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
