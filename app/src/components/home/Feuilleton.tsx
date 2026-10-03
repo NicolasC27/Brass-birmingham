@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { momentAddress, readFeuilleton } from '@/platform/feuilleton';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The feuilleton on the front page: the last game at home in three    */
@@ -17,7 +18,10 @@ export default function Feuilleton() {
   const [episode] = useState(readFeuilleton);
   return (
     <section aria-label={t('platform.feuilleton.eyebrow')}>
-      <p className="micro-label text-paper-100">{t('platform.feuilleton.eyebrow')}</p>
+      <p className="micro-label text-paper-100">
+        {t('platform.feuilleton.eyebrow')}
+        <GlossMark id="feuilleton" />
+      </p>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
         {!episode ? (
           <p className="px-1 py-6 text-center font-serif text-[14px] italic text-paper-300">{t('platform.feuilleton.none')}</p>

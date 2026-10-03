@@ -3,6 +3,7 @@ import { useLang, useT } from '@/i18n';
 import { personaName } from '@/game/data';
 import { tableTitle } from '@/online/tableNames';
 import { letterKey, listLetters } from '@/platform/letters';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The post: the last letters the machines wrote after a game at home, */
@@ -17,7 +18,10 @@ export default function Post() {
   const [letters] = useState(() => listLetters().slice(0, SHOWN));
   return (
     <section aria-label={t('platform.letters.eyebrow')}>
-      <p className="micro-label text-paper-100">{t('platform.letters.eyebrow')}</p>
+      <p className="micro-label text-paper-100">
+        {t('platform.letters.eyebrow')}
+        <GlossMark id="courrier" />
+      </p>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
         {letters.length === 0 ? (
           <p className="px-1 py-6 text-center font-serif text-[14px] italic text-paper-300">{t('platform.letters.none')}</p>

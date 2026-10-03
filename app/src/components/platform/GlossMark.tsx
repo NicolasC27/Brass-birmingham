@@ -1,0 +1,55 @@
+import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router';
+import { cn } from '@/lib/utils';
+import { useT } from '@/i18n';
+
+/* ------------------------------------------------------------------ */
+/* A small « ? » beside a word of the station: pressed, a bubble says   */
+/* what the word means in the journal's voice, with the way to the     */
+/* whole glossary. Terms live in platform.glossary.terms.<id>.          */
+/* ------------------------------------------------------------------ */
+
+export default function GlossMark({ id, className }: { id: string; className?: string }) {
+  const t = useT();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', away);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('pointerdown', away);
+      document.removeEventListener('keydown', key);
+    };
+  }, [open]);
+  return (
+    <span ref={ref} className={cn('relative inline-block align-middle', className)}>
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={t('platform.glossary.what', { term: t(`platform.glossary.terms.${id}.name`) })}
+        onClick={() => setOpen((o) => !o)}
+        className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--gz-ink-soft)] font-ui text-[9px] font-semibold text-iron-400 transition-colors hover:border-brass-300 hover:text-paper-100"
+      >
+        ?
+      </button>
+      {open && (
+        <span role="note" className="console console-ruled absolute left-0 top-6 z-40 w-[280px] p-4 text-left shadow-[0_8px_24px_var(--shadow-modal)]">
+          <span className="block font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+            {t(`platform.glossary.terms.${id}.name`)}
+          </span>
+          <span className="mt-1 block font-serif text-[13px] italic leading-relaxed text-paper-300">{t(`platform.glossary.terms.${id}.def`)}</span>
+          <Link to="/glossaire" className="mt-2 inline-block font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+            {t('platform.glossary.all')}
+          </Link>
+        </span>
+      )}
+    </span>
+  );
+}

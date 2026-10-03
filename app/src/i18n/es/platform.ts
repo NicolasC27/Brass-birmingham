@@ -1177,6 +1177,31 @@ const platform = {
   a11y: {
     skip: "Ir al contenido",
   },
+  glossary: {
+    eyebrow: "EL JEFE DE ESTACIÓN EXPLICA",
+    title: "Glosario",
+    lede: "Las palabras de la estación y lo que significan en la mesa.",
+    all: "Todo el glosario →",
+    what: "¿Qué es «{term}»?",
+    terms: {
+      departs: { name: "Salidas", def: "Donde se encuentra una partida: las colas, las mesas abiertas y las que están en juego." },
+      quai: { name: "Los andenes", def: "Las colas. Andén 1, el ómnibus: la partida normal, las máquinas completan si hace falta. Andén 2, el expreso: la partida clasificada, solo entre humanos, que cuenta para la cota." },
+      billet: { name: "El billete", def: "El código de cuatro signos de una mesa; un amigo se lo da y abre su vagón." },
+      lettre: { name: "La carta de porte", def: "Donde se ajusta una partida en casa: los asientos, las máquinas, las reglas; luego se da la salida." },
+      chef: { name: "El jefe de estación", def: "Su oficina: sus mesas, invitaciones, amigos, historial, cota y el mapa de sus líneas." },
+      buffet: { name: "La cantina de la estación", def: "La tienda: lo que sus guineas, ganadas en las mesas, le compran." },
+      palmares: { name: "El palmarés", def: "La clasificación de la temporada, por la cota; y la de las compañías." },
+      registre: { name: "El registro", def: "Su cuenta. Se firma para tomar asiento en las mesas en línea." },
+      compagnie: { name: "Una compañía", def: "Un grupo de socios bajo un nombre de época; el palmarés las clasifica por las victorias de la temporada." },
+      avis: { name: "El aviso de la semana", def: "El desafío: una mano fijada para todos de lunes a domingo, condiciones que cumplir todas, puntos y guineas." },
+      depeches: { name: "Los despachos", def: "Lo que las mesas en juego acaban de hacer, releído en cada ronda a la manera de la Gaceta." },
+      ephemeride: { name: "La efeméride", def: "Cada semana es un año de la era, de 1770 a 1865; la efeméride dice lo que hicieron los Midlands aquel año." },
+      brevet: { name: "Una patente", def: "Una distinción concedida una vez por algo hecho en una mesa: cuatro cervecerías volteadas, una victoria sin préstamo…" },
+      feuilleton: { name: "El folletín", def: "Su última partida en casa en tres momentos, los que más movieron su ventaja; cada uno se reabre en el tablero." },
+      courrier: { name: "El correo", def: "Tras una partida en casa, la máquina que tiene algo que decir le escribe — tres líneas con su voz." },
+      edition: { name: "La edición del club", def: "La semana de todo el club: partidas jugadas, la partida de la semana, el más asiduo. Por correo cada lunes si la pide." },
+    },
+  },
 };
 
 export default platform;

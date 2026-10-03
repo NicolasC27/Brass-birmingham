@@ -2,6 +2,7 @@ import { useLang, useT, localeOf } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useTables } from '@/online/session';
 import type { Dispatch } from '@/online/table';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The telegraph: the latest headlines wired from the tables in play,  */
@@ -26,6 +27,7 @@ export default function Telegraph() {
       <p className="micro-label flex items-center gap-2 text-paper-100">
         <span className={dispatches.length ? 'animate-presence-dot h-1.5 w-1.5 rounded-full bg-signal-400' : 'h-1.5 w-1.5 rounded-full bg-iron-600'} aria-hidden />
         {t('platform.home.telegraph.title')}
+        <GlossMark id="depeches" />
       </p>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)]" aria-live="polite">
         {dispatches.length === 0 ? (

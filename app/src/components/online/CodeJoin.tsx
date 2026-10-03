@@ -6,6 +6,7 @@ import { lobby, normalizeCode } from '@/online/lobby';
 import { useSession } from '@/online/session';
 import CodeInput from '@/components/platform/CodeInput';
 import { lobbyErrorText } from './notify';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The code window of the play hall: four cells for a table's code,    */
@@ -41,7 +42,10 @@ export default function CodeJoin() {
 
   return (
     <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut', delay: 0.12 }} aria-label={t('platform.play.code.title')}>
-      <p className="micro-label text-paper-100">{t('platform.play.code.title')}</p>
+      <p className="micro-label text-paper-100">
+        {t('platform.play.code.title')}
+        <GlossMark id="billet" />
+      </p>
       <div className="gz-rule-double mt-2" aria-hidden />
       <p className="mt-4 font-serif text-[13.5px] italic leading-relaxed text-paper-300">{t('platform.play.code.copy')}</p>
       <CodeInput className="mt-4" onSubmit={(code) => void submit(code)} />

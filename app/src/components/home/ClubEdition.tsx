@@ -3,6 +3,7 @@ import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useEdition, useSession } from '@/online/session';
 import { weekOf } from '@/platform/almanac';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The club's edition: what the whole house played this week, as the   */
@@ -24,7 +25,10 @@ export default function ClubEdition() {
   const edition = useEdition(week);
   return (
     <section aria-label={t('platform.home.edition.title')}>
-      <p className="micro-label text-paper-100">{t('platform.home.edition.title')}</p>
+      <p className="micro-label text-paper-100">
+        {t('platform.home.edition.title')}
+        <GlossMark id="edition" />
+      </p>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
         {!session ? (
           <p className="px-1 py-5 text-center font-serif text-[13.5px] italic text-paper-300">{t('platform.home.edition.signIn')}</p>

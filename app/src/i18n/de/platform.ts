@@ -1179,6 +1179,31 @@ const platform: typeof enPlatform = {
   a11y: {
     skip: "Zum Inhalt",
   },
+  glossary: {
+    eyebrow: "DER BAHNHOFSVORSTEHER ERKLÄRT",
+    title: "Glossar",
+    lede: "Die Wörter des Bahnhofs, und was sie am Tisch bedeuten.",
+    all: "Das ganze Glossar →",
+    what: "Was ist „{term}“?",
+    terms: {
+      departs: { name: "Abfahrten", def: "Wo man eine Partie findet: die Schlangen, die offenen Tische und die laufenden." },
+      quai: { name: "Die Bahnsteige", def: "Die Warteschlangen. Gleis 1, der Personenzug: die normale Partie, Maschinen füllen bei Bedarf die Plätze. Gleis 2, der Schnellzug: die gewertete Partie, nur unter Menschen, die für die Wertung zählt." },
+      billet: { name: "Die Fahrkarte", def: "Der Code eines Tisches aus vier Zeichen; ein Freund gibt ihn Ihnen, er öffnet seinen Wagen." },
+      lettre: { name: "Der Frachtbrief", def: "Wo eine Partie zu Hause eingestellt wird: die Plätze, die Maschinen, die Regeln; dann wird die Abfahrt gegeben." },
+      chef: { name: "Der Bahnhofsvorsteher", def: "Ihr Büro: Ihre Tische, Einladungen, Freunde, Ihre Geschichte, Ihre Wertung und die Karte Ihrer Linien." },
+      buffet: { name: "Das Bahnhofsbuffet", def: "Der Laden: was Ihre an den Tischen verdienten Guineen Ihnen kaufen." },
+      palmares: { name: "Die Ehrentafel", def: "Die Rangliste der Saison nach der Wertung; und die der Gesellschaften." },
+      registre: { name: "Das Register", def: "Ihr Konto. Man trägt sich ein, um an den Online-Tischen Platz zu nehmen." },
+      compagnie: { name: "Eine Gesellschaft", def: "Ein Kreis von Mitgliedern unter einem Namen der Epoche; die Ehrentafel reiht sie nach den Siegen der Saison." },
+      avis: { name: "Die Anzeige der Woche", def: "Die Herausforderung: ein für alle festes Blatt von Montag bis Sonntag, Bedingungen, die alle zugleich gelten müssen, Punkte und Guineen." },
+      depeches: { name: "Die Telegramme", def: "Was die laufenden Tische gerade getan haben, jede Runde nach Art der Gazette gelesen." },
+      ephemeride: { name: "Die Ephemeride", def: "Jede Woche ist ein Jahr der Epoche, 1770 bis 1865; die Ephemeride sagt, was die Midlands in jenem Jahr taten." },
+      brevet: { name: "Ein Patent", def: "Eine einmal verliehene Auszeichnung für etwas am Tisch Getanes: vier umgedrehte Brauereien, ein Sieg ohne Kredit …" },
+      feuilleton: { name: "Die Fortsetzung", def: "Ihre letzte Partie zu Hause in drei Momenten, denen, die Ihren Vorsprung am meisten bewegten; jeder öffnet sich wieder auf dem Brett." },
+      courrier: { name: "Die Post", def: "Nach einer Partie zu Hause schreibt Ihnen die Maschine, die etwas zu sagen hat — drei Zeilen in ihrer Stimme." },
+      edition: { name: "Die Ausgabe des Clubs", def: "Die Woche des ganzen Clubs: gespielte Partien, die Partie der Woche, der Fleißigste. Jeden Montag per Post, wenn Sie es wünschen." },
+    },
+  },
 };
 
 export default platform;

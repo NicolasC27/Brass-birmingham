@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import { foundCompany, joinCompany, leaveCompany, useCompanies, useDesk } from '@/online/session';
 import Button from './Button';
+import GlossMark from './GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The companies: the honours rank them by their members' wins this   */
@@ -83,7 +84,10 @@ export default function CompaniesPanel() {
         </div>
 
         <aside className="gz-col-rule min-[1100px]:col-span-4">
-          <p className="micro-label text-paper-100">{t('platform.companies.mine')}</p>
+          <p className="micro-label text-paper-100">
+            {t('platform.companies.mine')}
+            <GlossMark id="compagnie" />
+          </p>
           <div className="gz-rule-double mt-2" aria-hidden />
           {mine ? (
             <div className="mt-4">

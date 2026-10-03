@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import { useT } from '@/i18n';
 import { ephemerisOf } from '@/platform/almanac';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* the almanac's line of the week: the year of the era in large figures,
    the thing that happened, in italic, under a rule */
@@ -11,7 +12,10 @@ export default function Ephemeris() {
   return (
     <section aria-label={t('platform.almanac.eyebrow')} className="border-y border-[var(--gz-ink-soft)] py-4">
       <p className="flex items-baseline justify-between gap-3">
-        <span className="micro-label text-paper-100">{t('platform.almanac.eyebrow')}</span>
+        <span className="micro-label text-paper-100">
+          {t('platform.almanac.eyebrow')}
+          <GlossMark id="ephemeride" />
+        </span>
         <Link to="/almanach" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
           {t('platform.almanach.all')}
         </Link>

@@ -11,6 +11,7 @@ import { daysLeft } from '@/platform/almanac';
 import { lobby } from '@/online/lobby';
 import { postChallenge, useChallengeBoard, useSession } from '@/online/session';
 import { preloadGame } from '@/platform/preload';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The notice of the week, printed on the front page: its number and   */
@@ -82,6 +83,7 @@ export default function ChallengeNotice() {
           <p className="eyebrow-fell flex items-center gap-2">
             <Flag size={13} aria-hidden />
             {t('platform.challenge.eyebrow')}
+            <GlossMark id="avis" />
           </p>
           <p className="micro-label mt-3 text-iron-400">
             {t('platform.challenge.number', { n: challenge.number })}

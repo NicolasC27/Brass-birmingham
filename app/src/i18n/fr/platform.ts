@@ -1177,6 +1177,31 @@ const platform = {
   a11y: {
     skip: "Aller au contenu",
   },
+  glossary: {
+    eyebrow: "LE CHEF DE GARE EXPLIQUE",
+    title: "Glossaire",
+    lede: "Les mots de la gare, et ce qu’ils veulent dire à la table.",
+    all: "Tout le glossaire →",
+    what: "Qu’est-ce que « {term} » ?",
+    terms: {
+      departs: { name: "Départs", def: "La page où l’on trouve une partie : les files, les tables ouvertes et celles en cours." },
+      quai: { name: "Les quais", def: "Les files d’attente. Quai 1, l’omnibus : la partie normale, des machines complètent au besoin. Quai 2, l’express : la partie classée, entre humains seulement, qui compte pour la cote." },
+      billet: { name: "Le billet", def: "Le code à quatre signes d’une table ; un ami vous le donne, il ouvre sa voiture." },
+      lettre: { name: "La lettre de voiture", def: "La page où l’on règle une partie à la maison : les sièges, les machines, les règles ; puis on donne le départ." },
+      chef: { name: "Le chef de gare", def: "Votre bureau : vos tables, vos invitations, vos amis, votre historique, votre cote et la carte de vos lignes." },
+      buffet: { name: "Le buffet de la gare", def: "La boutique : ce que vos guinées, gagnées aux tables, vous achètent." },
+      palmares: { name: "Le palmarès", def: "Le classement de la saison, par la cote ; et celui des compagnies." },
+      registre: { name: "Le registre", def: "Votre compte. On le signe pour prendre place aux tables en ligne." },
+      compagnie: { name: "Une compagnie", def: "Un groupe de membres sous un nom d’époque ; le palmarès les classe aux victoires de la saison." },
+      avis: { name: "L’avis de la semaine", def: "Le défi : une donne fixée pour tous du lundi au dimanche, des conditions à tenir toutes, des points et des guinées." },
+      depeches: { name: "Les dépêches", def: "Ce que les tables en jeu viennent de faire, relu à chaque manche à la manière de la Gazette." },
+      ephemeride: { name: "L’éphéméride", def: "Chaque semaine est une année de l’ère, de 1770 à 1865 ; l’éphéméride dit ce que les Midlands firent cette année-là." },
+      brevet: { name: "Un brevet", def: "Une distinction accordée une fois pour une chose faite à une table : quatre brasseries retournées, une victoire sans emprunt…" },
+      feuilleton: { name: "Le feuilleton", def: "Votre dernière partie à la maison en trois moments, ceux qui ont le plus bougé votre avance ; chacun se rouvre sur le plateau." },
+      courrier: { name: "Le courrier", def: "Après une partie à la maison, la machine qui a quelque chose à dire vous écrit — trois lignes dans sa voix." },
+      edition: { name: "L’édition du club", def: "La semaine de tout le club : parties jouées, la partie de la semaine, le plus assidu. Par la poste chaque lundi si vous la demandez." },
+    },
+  },
 };
 
 export default platform;

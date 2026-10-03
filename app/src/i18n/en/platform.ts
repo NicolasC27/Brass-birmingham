@@ -1177,6 +1177,31 @@ const platform = {
   a11y: {
     skip: "Skip to content",
   },
+  glossary: {
+    eyebrow: "THE STATIONMASTER EXPLAINS",
+    title: "Glossary",
+    lede: "The station’s words, and what they mean at the table.",
+    all: "The whole glossary →",
+    what: "What is “{term}”?",
+    terms: {
+      departs: { name: "Departures", def: "Where one finds a game: the lines, the open tables and those in play." },
+      quai: { name: "The platforms", def: "The queues. Platform 1, the stopping train: the normal game, machines fill the seats if need be. Platform 2, the express: the ranked game, humans only, which counts for the rating." },
+      billet: { name: "The ticket", def: "A table’s four-sign code; a friend gives it to you, it opens their carriage." },
+      lettre: { name: "The waybill", def: "Where a game at home is set: the seats, the machines, the rules; then the off is given." },
+      chef: { name: "The stationmaster", def: "Your desk: your tables, invitations, friends, history, rating and the map of your lines." },
+      buffet: { name: "The station buffet", def: "The shop: what your guineas, earned at the tables, buy you." },
+      palmares: { name: "The honours", def: "The season’s ranking by rating; and the companies’." },
+      registre: { name: "The register", def: "Your account. One signs it to take a seat at the online tables." },
+      compagnie: { name: "A company", def: "A band of members under a name of the era; the honours rank them by the season’s wins." },
+      avis: { name: "The notice of the week", def: "The challenge: one deal fixed for everyone from Monday to Sunday, conditions to hold all at once, points and guineas." },
+      depeches: { name: "The dispatches", def: "What the tables in play have just done, read at each round the Gazette’s way." },
+      ephemeride: { name: "The ephemeris", def: "Every week is a year of the era, 1770 to 1865; the ephemeris says what the Midlands did that year." },
+      brevet: { name: "A patent", def: "A distinction granted once for a thing done at a table: four breweries flipped, a win without a loan…" },
+      feuilleton: { name: "The serial", def: "Your last game at home in three moments, those that moved your lead the most; each reopens on the board." },
+      courrier: { name: "The post", def: "After a game at home, the machine with something to say writes to you — three lines in its voice." },
+      edition: { name: "The club’s edition", def: "The whole club’s week: games played, the game of the week, the most assiduous. By post every Monday if you ask." },
+    },
+  },
 };
 
 export default platform;

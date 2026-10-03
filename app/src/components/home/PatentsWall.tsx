@@ -3,6 +3,7 @@ import { ScrollText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT, localeOf } from '@/i18n';
 import { PATENT_IDS, listPatents } from '@/platform/patents';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The wall of patents: every distinction the house grants, the ones   */
@@ -16,7 +17,10 @@ export default function PatentsWall() {
   const [held] = useState(() => new Map(listPatents().map((p) => [p.id, p])));
   return (
     <section aria-label={t('platform.patents.eyebrow')}>
-      <p className="micro-label text-paper-100">{t('platform.patents.eyebrow')}</p>
+      <p className="micro-label text-paper-100">
+        {t('platform.patents.eyebrow')}
+        <GlossMark id="brevet" />
+      </p>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)] pt-3">
         {held.size === 0 && <p className="pb-2 font-serif text-[13.5px] italic text-paper-300">{t('platform.patents.none')}</p>}
         <ul className="grid grid-cols-3 gap-2">

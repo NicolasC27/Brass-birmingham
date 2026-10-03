@@ -281,6 +281,9 @@ function Colophon() {
           <Link to="/legal#privacy" className={link}>
             {t('platform.footer.privacy')}
           </Link>
+          <Link to="/glossaire" className={link}>
+            {t('platform.glossary.title')}
+          </Link>
         </div>
         <div className="mt-2 flex items-center justify-center gap-3" data-print="hide">
           <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-2">

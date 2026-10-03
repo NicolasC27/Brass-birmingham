@@ -15,6 +15,7 @@ import { getBoardOptions } from '@/components/game/boardOptions';
 import { stationBell } from '@/gl/sfx';
 import type { Notify } from './notify';
 import { preloadGame } from '@/platform/preload';
+import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The counters of the play hall — two windows, normal and ranked,     */
@@ -165,7 +166,10 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
 
   return (
     <section aria-label={t('platform.play.counter.title')}>
-      <p className="micro-label text-paper-100">{t('platform.play.counter.title')}</p>
+      <p className="micro-label text-paper-100">
+        {t('platform.play.counter.title')}
+        <GlossMark id="quai" />
+      </p>
       <div className="gz-rule-double mt-2" aria-hidden />
       <div className="mt-5 grid gap-5 min-[760px]:grid-cols-2">
         {counter('normal', 0)}
