@@ -21,6 +21,7 @@ import ProgressCard from '@/components/desk/ProgressCard';
 import { usePresence } from '@/components/platform/presence';
 import { PLACEMENTS, rankOf } from '@/platform/rank';
 import { useTheme } from '@/platform/theme';
+import { ephemerisOf } from '@/platform/almanac';
 import { grantFromHistory } from '@/platform/patents';
 
 /* ------------------------------------------------------------------ */
@@ -32,15 +33,18 @@ import { grantFromHistory } from '@/platform/patents';
 
 const ease = 'easeOut' as const;
 
-/* the plates the front page prints, one a day in turn: the Black Country
-   panorama, the canal, the rail — each with its night impression for the
-   dark register, the same scene engraved in pale ink on black */
+/* the plates the front page prints, by the almanac's year: the canal while
+   the century is young, the Black Country as the works rise, the rail once
+   the lines are laid — each with its night impression for the dark register */
 const PLATES = [
   { src: '/hero-diorama.webp', night: '/plate-night-country.webp', position: 'center 40%' },
   { src: '/era-canal-banner.webp', night: '/plate-night-canal.webp', position: 'center 50%' },
   { src: '/era-rail-banner.webp', night: '/plate-night-rail.webp', position: 'center 50%' },
 ];
-const plateOfTheDay = () => PLATES[Math.floor(Date.now() / 864e5) % PLATES.length];
+const plateOfTheEra = () => {
+  const year = ephemerisOf().year;
+  return year < 1800 ? PLATES[1] : year < 1830 ? PLATES[0] : PLATES[2];
+};
 
 /* a printed ticket: the front page's way of saying « go » */
 function Ticket({ to, onClick, tone, icon, children }: { to?: string; onClick?: () => void; tone?: 'brass' | 'signal'; icon: ReactNode; children: ReactNode }) {
@@ -228,7 +232,7 @@ export default function Home() {
     if (session && desk) grantFromHistory(desk.history, session.id);
   }, [session, desk]);
   const [codeOpen, setCodeOpen] = useState(false);
-  const [plate] = useState(plateOfTheDay);
+  const [plate] = useState(plateOfTheEra);
   const theme = useTheme();
 
   return (
