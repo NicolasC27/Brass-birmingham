@@ -3,7 +3,7 @@ import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { CompanyBoard, Paper, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -128,6 +128,9 @@ export type ClientMessage =
   | { t: 'challenge'; rid: number; week: number }
   /** the club's edition of a week: the games played out, the best of them */
   | { t: 'edition'; rid: number; week: number }
+  /** the services closed so far, and one service's review */
+  | { t: 'seasons'; rid: number }
+  | { t: 'season'; rid: number; id: string }
   /** the papers the office keeps for me, and one of them written */
   | { t: 'papers'; rid: number }
   | { t: 'papers.put'; rid: number; kind: string; body: unknown }
@@ -187,6 +190,8 @@ export type ServerMessage =
   | { t: 'leaderboard'; rid: number; board: Leaderboard }
   | { t: 'challenge'; rid?: number; board: ChallengeBoard }
   | { t: 'edition'; rid?: number; edition: Edition }
+  | { t: 'seasons'; rid: number; seasons: Season[] }
+  | { t: 'season'; rid?: number; review: SeasonReview }
   | { t: 'companies'; rid?: number; board: CompanyBoard }
   | { t: 'papers'; rid: number; papers: Record<string, Paper> }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */

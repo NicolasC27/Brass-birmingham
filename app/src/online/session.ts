@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import type { PlayerColor } from '@/components/setup/constants';
 import { leaveOnlineTable } from '@/game/store';
 import { onlineWire } from './net';
-import type { ChallengeBoard, CompanyBoard, Desk, Edition, Leaderboard, Me, TableQuery, TablesPage } from './table';
+import type { ChallengeBoard, CompanyBoard, Desk, Edition, Season, SeasonReview, Leaderboard, Me, TableQuery, TablesPage } from './table';
 import { normalizeQuery } from './table';
 
 /* ------------------------------------------------------------------ */
@@ -114,6 +114,34 @@ export function useChallengeBoard(week: number): ChallengeBoard | null {
     if (session) onlineWire()?.askChallenge(week);
   }, [session?.id, week]); // eslint-disable-line react-hooks/exhaustive-deps
   return board;
+}
+
+/** the services the cote has known, asked for once signed in */
+export function useSeasons(): Season[] | null {
+  const session = useSession();
+  const seasons = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => onlineWire()?.seasons ?? null,
+    () => null,
+  );
+  useEffect(() => {
+    if (session) onlineWire()?.askSeasons();
+  }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return seasons;
+}
+
+/** one service's review */
+export function useSeasonReview(id: string | null): SeasonReview | null {
+  const session = useSession();
+  const review = useSyncExternalStore(
+    (cb) => onlineWire()?.onHall(cb) ?? never(),
+    () => (id ? (onlineWire()?.reviews.get(id) ?? null) : null),
+    () => null,
+  );
+  useEffect(() => {
+    if (session && id) onlineWire()?.askSeason(id);
+  }, [session?.id, id]); // eslint-disable-line react-hooks/exhaustive-deps
+  return review;
 }
 
 /** the companies of the club and their honours, asked for once signed in */

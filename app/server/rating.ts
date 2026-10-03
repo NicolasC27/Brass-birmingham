@@ -39,14 +39,26 @@ export interface Standing {
 export const fresh = (): Standing => ({ rating: START, games: 0, won: 0, trend: [] });
 
 /** the season a moment falls in: one quarter, named in the house's own years */
+/** the service named by an id (« 2026-Q3 »), and when it ran */
+export function seasonById(id: string): { season: Season; from: number; to: number } | null {
+  const m = /^(\d{4})-Q([1-4])$/.exec(id);
+  if (!m) return null;
+  const year = Number(m[1]);
+  const quarter = Number(m[2]);
+  const from = Date.UTC(year, (quarter - 1) * 3, 1);
+  return { season: seasonAt(from), from, to: seasonAt(from).endsAt };
+}
+
 export function seasonAt(now = Date.now()): Season {
   const d = new Date(now);
   const year = d.getUTCFullYear();
   const quarter = Math.floor(d.getUTCMonth() / 3) + 1;
   const endsAt = quarter === 4 ? Date.UTC(year + 1, 0, 1) : Date.UTC(year, quarter * 3, 1);
-  /* the season is named for the service it runs, in the almanac's year */
+  /* the season is named for the service it runs, in the almanac's year as
+     the service opened — the name must not drift week by week */
   const service = ['d’hiver', 'de printemps', 'd’été', 'd’automne'][quarter - 1];
-  return { id: `${year}-Q${quarter}`, name: `Service ${service} ${ephemerisOf(weekOf(now)).year}`, endsAt };
+  const opened = Date.UTC(year, (quarter - 1) * 3, 1);
+  return { id: `${year}-Q${quarter}`, name: `Service ${service} ${ephemerisOf(weekOf(opened)).year}`, endsAt };
 }
 
 const expected = (mine: number, theirs: number): number => 1 / (1 + 10 ** ((theirs - mine) / 400));

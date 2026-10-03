@@ -171,6 +171,15 @@ export interface Edition {
   machines: { name: string; won: number; lost: number }[];
 }
 
+/** a service closed: its honours, as the office prints them */
+export interface SeasonReview {
+  season: Season;
+  games: number;
+  players: LeaderRow[];
+  companies: CompanyRow[];
+  best: Edition['best'];
+}
+
 /** a headline wired from a table in play: the round just played, told the
  *  Gazette's way (game/gazette.ts), with the table it came from */
 export interface Dispatch {

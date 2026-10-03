@@ -5,7 +5,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, Paper, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { randomId } from '@/online/table';
 import { emptyTally } from '@/game/tally';
@@ -1199,6 +1199,22 @@ export class Store {
       latest: games.slice(0, 6).map(line),
       machines: [...machines.entries()].map(([name, r]) => ({ name, ...r })),
     };
+  }
+
+  /* ---------------------------- the services -------------------------- */
+
+  /** every service the cote has known, the latest first */
+  seasons(): string[] {
+    return (this.db.prepare('select distinct season from ratings order by season desc').all() as { season: string }[]).map((r) => r.season);
+  }
+
+  /** a service's honours: the players by rating, the companies by wins, the
+   *  game of the service among those played out between its dates */
+  seasonReview(season: Season, from: number, to: number): SeasonReview {
+    const board = this.leaderboard(season, '', 10);
+    const companies = this.companies(season, '').rows.slice(0, 5);
+    const edition = this.editionOf(0, from, to);
+    return { season, games: edition.games, players: board.rows, companies, best: edition.best };
   }
 
   /* ----------------------------- the purse ------------------------- */

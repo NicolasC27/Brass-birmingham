@@ -25,6 +25,7 @@ const Almanach = lazy(() => import("@/pages/Almanach"));
 const Defis = lazy(() => import("@/pages/Defis"));
 const Tableau = lazy(() => import("@/pages/Tableau"));
 const Glossaire = lazy(() => import("@/pages/Glossaire"));
+const Services = lazy(() => import("@/pages/Services"));
 
 /* a line while a page is fetched */
 function Arriving() {
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="defis" element={<Defis />} />
         <Route path="tableau" element={<Tableau />} />
         <Route path="glossaire" element={<Glossaire />} />
+        <Route path="services" element={<Services />} />
         <Route path="legal" element={<Legal />} />
         <Route path="results" element={<Results />} />
         <Route path="replay" element={<Replay />} />

@@ -1,9 +1,9 @@
 import { createServer } from 'node:http';
-import { seasonAt } from './rating';
+import { seasonAt, seasonById } from './rating';
 import { WEEK_MS, WEEK0, weekOf } from '@/platform/almanac';
 import { telegraphFromEnv } from './discord';
 import type { Telegraph } from './discord';
-import { dispatchLine, editionText } from './edition';
+import { dispatchLine, editionText, seasonText } from './edition';
 import type { ServerResponse } from 'node:http';
 import type { IncomingMessage } from 'node:http';
 import { timingSafeEqual } from 'node:crypto';
@@ -675,6 +675,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         for (const s of socketsOf(who.id)) pushDesk(s);
         return;
       }
+      case 'seasons':
+        /* the running service is listed even before anyone is rated in it */
+        send(c, { t: 'seasons', rid: m.rid, seasons: [...new Set([seasonAt().id, ...store.seasons()])].map((id) => seasonById(id)?.season).filter((s): s is NonNullable<typeof s> => !!s) });
+        return;
+      case 'season': {
+        const found = typeof m.id === 'string' ? seasonById(m.id) : null;
+        if (!found) {
+          send(c, { t: 'refused', rid: m.rid, error: 'not-found' });
+          return;
+        }
+        send(c, { t: 'season', rid: m.rid, review: store.seasonReview(found.season, found.from, found.to) });
+        return;
+      }
       case 'edition': {
         if (!Number.isInteger(m.week) || m.week < 0 || m.week > weekOf()) return;
         const from = WEEK0 + m.week * WEEK_MS;
@@ -936,6 +949,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     const { subject, text } = editionText(store.editionOf(week - 1, from, from + WEEK_MS), store.challengeBoard(week - 1, ''), letter.appUrl);
     void telegraph.send(text);
     for (const s of store.subscribers()) void post.send({ to: s.email, subject, text: `${s.name},\n\n${text}` }).catch((e) => console.warn('edition: a letter did not leave', e instanceof Error ? e.message : e));
+    /* a service closed during that week: its review goes out once too */
+    const before = seasonAt(from - 1);
+    if (before.id !== seasonAt().id && store.claimMailing(`season:${before.id}`)) {
+      const span = seasonById(before.id);
+      if (span) {
+        const r = seasonText(store.seasonReview(span.season, span.from, span.to), letter.appUrl);
+        void telegraph.send(r.text);
+        for (const s of store.subscribers()) void post.send({ to: s.email, subject: r.subject, text: `${s.name},\n\n${r.text}` }).catch(() => undefined);
+      }
+    }
   };
   const editionEvery = options.editionEvery ?? 10 * 60 * 1000;
   const postman = editionEvery > 0 ? setInterval(monday, editionEvery) : null;

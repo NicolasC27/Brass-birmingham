@@ -8,7 +8,7 @@ import { CEILING, FLOOR, K_PLACING, K_SETTLED, fresh, ratingOf, seasonAt, settle
 describe('the cote', () => {
   it('names the season after the quarter, in the house\'s own years', () => {
     const s = seasonAt(Date.UTC(2026, 7, 15));
-    expect(s).toEqual({ id: '2026-Q3', name: `Service d’été ${ephemerisOf(weekOf(Date.UTC(2026, 7, 15))).year}`, endsAt: Date.UTC(2026, 9, 1) });
+    expect(s).toEqual({ id: '2026-Q3', name: `Service d’été ${ephemerisOf(weekOf(Date.UTC(2026, 6, 1))).year}`, endsAt: Date.UTC(2026, 9, 1) });
     expect(seasonAt(Date.UTC(2026, 11, 31, 23, 59)).endsAt).toBe(Date.UTC(2027, 0, 1));
     expect(seasonAt(Date.UTC(2027, 0, 1)).id).toBe('2027-Q1');
   });

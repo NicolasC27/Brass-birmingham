@@ -1,6 +1,6 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { CompanyBoard, Paper, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -40,6 +40,9 @@ export class Wire {
   challenges = new Map<number, ChallengeBoard>();
   /** the club's editions, by week: asked for, then kept */
   editions = new Map<number, Edition>();
+  /** the services closed so far, and each review asked for */
+  seasons: Season[] | null = null;
+  reviews = new Map<string, SeasonReview>();
   /** the companies and their honours: asked for, then kept */
   companies: CompanyBoard | null = null;
   /** the table the office just dealt me from a queue, until the page takes me there */
@@ -127,6 +130,14 @@ export class Wire {
 
   async putPaper(kind: string, body: unknown): Promise<void> {
     await this.ask((rid) => ({ t: 'papers.put', rid, kind, body }));
+  }
+
+  askSeasons(): void {
+    void this.ask((rid) => ({ t: 'seasons', rid })).catch(() => undefined);
+  }
+
+  askSeason(id: string): void {
+    void this.ask((rid) => ({ t: 'season', rid, id })).catch(() => undefined);
   }
 
   askCompanies(): void {
@@ -349,6 +360,14 @@ export class Wire {
     }
     if (m.t === 'edition') {
       this.editions.set(m.edition.week, m.edition);
+      for (const cb of this.halls) cb();
+    }
+    if (m.t === 'seasons') {
+      this.seasons = m.seasons;
+      for (const cb of this.halls) cb();
+    }
+    if (m.t === 'season') {
+      this.reviews.set(m.review.season.id, m.review);
       for (const cb of this.halls) cb();
     }
     if (m.t === 'companies') {

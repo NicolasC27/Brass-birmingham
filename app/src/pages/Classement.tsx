@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import EmptyState from '@/components/platform/EmptyState';
 import MemberAvatar from '@/components/platform/MemberAvatar';
@@ -191,6 +191,10 @@ export default function Classement() {
           <p className="data-text mt-2 text-[12px] tabular-nums text-iron-400">
             {board ? t('platform.ranking.players', { count: board.players }) : t('platform.ranking.loading')}
             {season && ` · ${t('platform.ranking.daysLeft', { days: daysUntil(season.endsAt) })}`}
+            {' · '}
+            <Link to="/services" className="text-brass-300 transition-colors hover:text-paper-100">
+              {t('platform.seasons.link')}
+            </Link>
           </p>
         </div>
         {board && (

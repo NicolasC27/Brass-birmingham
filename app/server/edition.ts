@@ -1,5 +1,5 @@
 import { fr } from '@/i18n/fr';
-import type { ChallengeBoard, Dispatch, Edition } from '@/online/table';
+import type { ChallengeBoard, Dispatch, Edition, SeasonReview } from '@/online/table';
 
 /* ------------------------------------------------------------------ */
 /* The Monday edition, as the house writes it out: the club's week in  */
@@ -16,6 +16,26 @@ export function dispatchLine(d: Dispatch): string {
   const industry = fr.game.log.industry as Record<string, string>;
   const goods = typeof d.vars.goods === 'string' && industry[d.vars.goods] ? industry[d.vars.goods] : '';
   return `« ${d.table} » — ${fill(gazette[d.key] ?? d.key, { ...d.vars, goods })}`;
+}
+
+/** a service's review, as lines */
+export function seasonText(r: SeasonReview, appUrl: string): { subject: string; text: string } {
+  const p = fr.platform;
+  const lines: string[] = [`BLACKRAIL — ${p.seasons.review.toLowerCase()} · ${r.season.name}`, ''];
+  lines.push(fill(p.seasons.games, { n: r.games }));
+  if (r.best) {
+    lines.push('', p.seasons.best.toUpperCase(), fill(p.home.edition.bestLine, { table: r.best.name, name: r.best.winner, vp: r.best.vp }));
+  }
+  if (r.players.length) {
+    lines.push('', p.seasons.players.toUpperCase());
+    for (const [i, row] of r.players.slice(0, 5).entries()) lines.push(`${i + 1}. ${row.name} — ${row.rating}`);
+  }
+  if (r.companies.length) {
+    lines.push('', p.companies.title.toUpperCase());
+    for (const [i, row] of r.companies.slice(0, 3).entries()) lines.push(`${i + 1}. ${row.name} — ${fill(p.companies.wins, { n: row.wins, games: row.games })}`);
+  }
+  lines.push('', appUrl, '', '— Le télégraphe de Blackrail');
+  return { subject: `Blackrail — ${p.seasons.review.toLowerCase()} · ${r.season.name}`, text: lines.join('\n') };
 }
 
 /** the edition of a week, as lines */
