@@ -167,6 +167,8 @@ export interface Edition {
   best: { code: string; name: string; finishedAt: number; winner: string; vp: number; players: string[] } | null;
   busiest: { name: string; games: number } | null;
   latest: { code: string; name: string; finishedAt: number; winner: string; vp: number; players: number }[];
+  /** what the machines made of the club this week, by their name */
+  machines: { name: string; won: number; lost: number }[];
 }
 
 /** a headline wired from a table in play: the round just played, told the

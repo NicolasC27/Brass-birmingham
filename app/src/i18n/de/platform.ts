@@ -1201,7 +1201,20 @@ const platform: typeof enPlatform = {
       brevet: { name: "Ein Patent", def: "Eine einmal verliehene Auszeichnung für etwas am Tisch Getanes: vier umgedrehte Brauereien, ein Sieg ohne Kredit …" },
       feuilleton: { name: "Die Fortsetzung", def: "Ihre letzte Partie zu Hause in drei Momenten, denen, die Ihren Vorsprung am meisten bewegten; jeder öffnet sich wieder auf dem Brett." },
       courrier: { name: "Die Post", def: "Nach einer Partie zu Hause schreibt Ihnen die Maschine, die etwas zu sagen hat — drei Zeilen in ihrer Stimme." },
+      portrait: { name: "Das Porträt der Woche", def: "Eine der vier Maschinen im Wechsel: ihr Leben der Epoche in drei Zeilen und ihre wirkliche Bilanz gegen den Club diese Woche." },
       edition: { name: "Die Ausgabe des Clubs", def: "Die Woche des ganzen Clubs: gespielte Partien, die Partie der Woche, der Fleißigste. Jeden Montag per Post, wenn Sie es wünschen." },
+    },
+  },
+  portrait: {
+    eyebrow: "DAS PORTRÄT DER WOCHE",
+    record: "Gegen den Club diese Woche: {won} Siege, {lost} Niederlagen.",
+    none: "Noch keine Partie gegen den Club diese Woche.",
+    signIn: "Tragen Sie sich ins Register ein, um seine Bilanz gegen den Club zu sehen.",
+    bio: {
+      boulton: "Fabrikant von Soho, Watts Partner, Münzpräger mit Dampf; kauft, verkauft und lässt bauen. Am Tisch gibt er viel aus und verkauft noch mehr.",
+      wedgwood: "Töpferin von Etruria, Meisterin der Glasuren und der Kanäle, die sie unzerbrochen tragen. Am Tisch dreht sie ihre Töpfereien im rechten Moment um und verzeiht keine Hast.",
+      arkwright: "Spinnerin von Cromford, das Wasserrad und die Stühle in Reihen. Am Tisch verkauft sie schneller, als man baut, und verdoppelt ihre Schienen ohne Vorwarnung.",
+      watt: "Ingenieur aus Glasgow, Birminghams geworden, der Mann der Drehbewegung. Am Tisch spielt er immer mit voller Kraft und liest jede Partie zweimal nach.",
     },
   },
 };

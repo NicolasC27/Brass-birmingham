@@ -1180,12 +1180,24 @@ export class Store {
     const top = [...sat.entries()].sort((a, b) => b[1] - a[1])[0];
     const busiestName = top ? ((this.db.prepare('select name from accounts where id = ?').get(top[0]) as { name: string } | undefined)?.name ?? null) : null;
     const line = (g: (typeof games)[number]) => ({ code: g.code, name: g.name, finishedAt: g.finishedAt, winner: g.result.players[g.result.winner]?.name ?? '—', vp: g.result.players[g.result.winner]?.vp ?? 0, players: g.result.players.length });
+    /* the machines' record: a win when a machine took the table, a loss otherwise */
+    const machines = new Map<string, { won: number; lost: number }>();
+    for (const g of games) {
+      g.result.players.forEach((p, i) => {
+        if (!p.bot) return;
+        const m = machines.get(p.name) ?? { won: 0, lost: 0 };
+        if (i === g.result.winner) m.won += 1;
+        else m.lost += 1;
+        machines.set(p.name, m);
+      });
+    }
     return {
       week,
       games: games.length,
       best: best ? { ...line(best), players: best.result.players.map((p) => p.name) } : null,
       busiest: top && busiestName ? { name: busiestName, games: top[1] } : null,
       latest: games.slice(0, 6).map(line),
+      machines: [...machines.entries()].map(([name, r]) => ({ name, ...r })),
     };
   }
 

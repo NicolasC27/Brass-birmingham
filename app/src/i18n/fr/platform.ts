@@ -1199,7 +1199,20 @@ const platform = {
       brevet: { name: "Un brevet", def: "Une distinction accordée une fois pour une chose faite à une table : quatre brasseries retournées, une victoire sans emprunt…" },
       feuilleton: { name: "Le feuilleton", def: "Votre dernière partie à la maison en trois moments, ceux qui ont le plus bougé votre avance ; chacun se rouvre sur le plateau." },
       courrier: { name: "Le courrier", def: "Après une partie à la maison, la machine qui a quelque chose à dire vous écrit — trois lignes dans sa voix." },
+      portrait: { name: "Le portrait de la semaine", def: "Un des quatre personnages mécaniques, à tour de rôle : sa vie d’époque en trois lignes, et son bilan réel contre le club cette semaine." },
       edition: { name: "L’édition du club", def: "La semaine de tout le club : parties jouées, la partie de la semaine, le plus assidu. Par la poste chaque lundi si vous la demandez." },
+    },
+  },
+  portrait: {
+    eyebrow: "LE PORTRAIT DE LA SEMAINE",
+    record: "Contre le club cette semaine : {won} victoires, {lost} défaites.",
+    none: "Pas encore de partie contre le club cette semaine.",
+    signIn: "Signez le registre pour voir son bilan contre le club.",
+    bio: {
+      boulton: "Manufacturier de Soho, associé de Watt, frappeur de monnaie à la vapeur ; achète, vend, et fait bâtir. À la table, il dépense large et vend plus large encore.",
+      wedgwood: "Potier d’Etruria, maître des glaçures et des canaux qui les portent sans casse. À la table, elle retourne ses poteries au bon moment et ne pardonne pas la hâte.",
+      arkwright: "Filateur de Cromford, la roue hydraulique et les métiers alignés. À la table, elle vend plus vite qu’on ne bâtit, et double ses rails sans prévenir.",
+      watt: "Ingénieur de Glasgow devenu de Birmingham, l’homme du mouvement rotatif. À la table, il joue à fond, toujours, et relit chaque partie deux fois.",
     },
   },
 };

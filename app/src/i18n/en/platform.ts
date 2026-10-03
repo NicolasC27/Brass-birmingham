@@ -1199,7 +1199,20 @@ const platform = {
       brevet: { name: "A patent", def: "A distinction granted once for a thing done at a table: four breweries flipped, a win without a loan…" },
       feuilleton: { name: "The serial", def: "Your last game at home in three moments, those that moved your lead the most; each reopens on the board." },
       courrier: { name: "The post", def: "After a game at home, the machine with something to say writes to you — three lines in its voice." },
+      portrait: { name: "Portrait of the week", def: "One of the four machines in turn: its life of the era in three lines, and its real record against the club this week." },
       edition: { name: "The club’s edition", def: "The whole club’s week: games played, the game of the week, the most assiduous. By post every Monday if you ask." },
+    },
+  },
+  portrait: {
+    eyebrow: "PORTRAIT OF THE WEEK",
+    record: "Against the club this week: {won} wins, {lost} losses.",
+    none: "No game against the club yet this week.",
+    signIn: "Sign the register to see its record against the club.",
+    bio: {
+      boulton: "Manufacturer of Soho, Watt’s partner, striker of coin by steam; buys, sells, and has things built. At the table he spends wide and sells wider.",
+      wedgwood: "Potter of Etruria, mistress of glazes and of the canals that carry them unbroken. At the table she flips her potteries at the right moment and forgives no haste.",
+      arkwright: "Spinner of Cromford, the water wheel and the frames in rows. At the table she sells faster than one builds, and doubles her rails without warning.",
+      watt: "Engineer of Glasgow become Birmingham’s, the man of rotary motion. At the table he plays flat out, always, and reads every game through twice.",
     },
   },
 };

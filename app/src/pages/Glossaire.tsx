@@ -3,7 +3,7 @@ import PageShell from '@/components/site/PageShell';
 
 /* /glossaire — the station's words, each with what it means in the game */
 
-const TERMS = ["departs", "quai", "billet", "lettre", "chef", "buffet", "palmares", "registre", "compagnie", "avis", "depeches", "ephemeride", "brevet", "feuilleton", "courrier", "edition"];
+const TERMS = ["departs", "quai", "billet", "lettre", "chef", "buffet", "palmares", "registre", "compagnie", "avis", "depeches", "ephemeride", "brevet", "feuilleton", "courrier", "edition", "portrait"];
 
 export default function Glossaire() {
   const t = useT();

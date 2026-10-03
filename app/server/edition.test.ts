@@ -6,7 +6,7 @@ import { dispatchLine, editionText } from './edition';
 describe('the Monday edition', () => {
   it('names the game of the week, the most assiduous and the board', () => {
     const { subject, text } = editionText(
-      { week: 35, games: 3, best: { code: 'A', name: 'Forge de Deritend', finishedAt: 1, winner: 'Ada', vp: 171, players: ['Ada', 'Brunel'] }, busiest: { name: 'Brunel', games: 3 }, latest: [] },
+      { week: 35, games: 3, best: { code: 'A', name: 'Forge de Deritend', finishedAt: 1, winner: 'Ada', vp: 171, players: ['Ada', 'Brunel'] }, busiest: { name: 'Brunel', games: 3 }, latest: [], machines: [] },
       { week: 35, players: 2, rows: [{ id: 'a', name: 'Ada', color: null, points: 210, vp: 150, met: [true, true, true], at: 1 }], me: null },
       'https://blackrail.example',
     );
@@ -20,7 +20,7 @@ describe('the Monday edition', () => {
   });
 
   it('says a quiet week plainly', () => {
-    const { text } = editionText({ week: 0, games: 0, best: null, busiest: null, latest: [] }, { week: 0, players: 0, rows: [], me: null }, 'x');
+    const { text } = editionText({ week: 0, games: 0, best: null, busiest: null, latest: [], machines: [] }, { week: 0, players: 0, rows: [], me: null }, 'x');
     expect(text).toContain('Le club n’a pas encore joué cette semaine.');
     expect(text).toContain('Personne n’a encore relevé l’avis.');
   });

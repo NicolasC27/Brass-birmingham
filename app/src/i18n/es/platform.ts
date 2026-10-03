@@ -1199,7 +1199,20 @@ const platform = {
       brevet: { name: "Una patente", def: "Una distinción concedida una vez por algo hecho en una mesa: cuatro cervecerías volteadas, una victoria sin préstamo…" },
       feuilleton: { name: "El folletín", def: "Su última partida en casa en tres momentos, los que más movieron su ventaja; cada uno se reabre en el tablero." },
       courrier: { name: "El correo", def: "Tras una partida en casa, la máquina que tiene algo que decir le escribe — tres líneas con su voz." },
+      portrait: { name: "El retrato de la semana", def: "Uno de los cuatro personajes mecánicos, por turno: su vida de época en tres líneas y su balance real contra el club esta semana." },
       edition: { name: "La edición del club", def: "La semana de todo el club: partidas jugadas, la partida de la semana, el más asiduo. Por correo cada lunes si la pide." },
+    },
+  },
+  portrait: {
+    eyebrow: "EL RETRATO DE LA SEMANA",
+    record: "Contra el club esta semana: {won} victorias, {lost} derrotas.",
+    none: "Aún sin partida contra el club esta semana.",
+    signIn: "Firme el registro para ver su balance contra el club.",
+    bio: {
+      boulton: "Fabricante de Soho, socio de Watt, acuñador de moneda a vapor; compra, vende y manda construir. En la mesa gasta mucho y vende más.",
+      wedgwood: "Alfarera de Etruria, maestra de esmaltes y de los canales que los llevan sin romperse. En la mesa voltea sus alfarerías en el momento justo y no perdona la prisa.",
+      arkwright: "Hilandera de Cromford, la rueda hidráulica y los telares en fila. En la mesa vende más rápido de lo que se construye y dobla sus raíles sin avisar.",
+      watt: "Ingeniero de Glasgow hecho de Birmingham, el hombre del movimiento rotativo. En la mesa juega a fondo, siempre, y relee cada partida dos veces.",
     },
   },
 };

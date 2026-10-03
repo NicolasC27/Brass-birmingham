@@ -12,6 +12,7 @@ import Feuilleton from './Feuilleton';
 import PatentsWall from './PatentsWall';
 import Telegraph from './Telegraph';
 import ClubEdition from './ClubEdition';
+import Portrait from './Portrait';
 import { storyOfGame, storyOfTable, winStreak } from '@/platform/chronicle';
 import { useTheme } from '@/platform/theme';
 
@@ -188,7 +189,10 @@ export default function ClubActivity() {
         viewport={{ amount: 0.15, once: true }}
         transition={{ duration: 0.22, ease: 'easeOut', delay: 0.08 }}
       >
-        <Telegraph />
+        <Portrait />
+        <div className="mt-8">
+          <Telegraph />
+        </div>
         <div className="mt-8">
           <ClubEdition />
         </div>
