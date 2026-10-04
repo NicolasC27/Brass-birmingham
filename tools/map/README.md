@@ -109,6 +109,14 @@ Before this there was one painting for all twenty-two towns, drawn at the
 width of the card block and faded to 62 %: it read as a grey smudge. A
 place is now wider than the cards it stands behind and drawn at 84 %.
 
+A town wears the trade it built: the first works to go up replaces its
+place with that industry's own drawing (`town-works-*.webp`, six of them),
+and it keeps whatever was built first. A second kind of works stands
+behind the first as an annex at three fifths of its size, and the place
+grows a tenth for every further works up to three, so a town with a mine,
+a forge and a mill reads as the larger place it has become. Farms neither
+trade nor grow.
+
 ## The three grounds
 
 Eight grounds were tried and dropped. Three are offered: **the English
@@ -140,9 +148,21 @@ last:
   in a disc around it, so no village ends up standing on a hillside.
 * Every link arrives as a pair of pale cart tracks, so a place reads as
   somewhere roads meet.
-* The place sprites themselves carry a cleared patch of earth and a
-  contact shadow thrown down and to the right, baked onto the drawing's own
-  footprint (`tools/assets/map/villages/place-*-anchored.png`).
+* The place sprites themselves carry a cleared patch of earth, laid at the
+  drawing's feet by `tools/assets/map/anchor-place.py` from the keyed cut
+  (`tools/assets/map/villages/*-cut.png`). No shadow is baked in.
+* The shadow is thrown at play time (`castShadow` in `paint.ts`): the
+  drawing's own soft silhouette (`*-shadow.webp`, made by the same script)
+  laid flat from its foot, flipped, squashed and leaning down and right,
+  the way a lamp throws a model's shadow across the table. How far it runs
+  is read off the terrain: `tools/map/place-ground.py` samples the relief
+  painting where each town's and merchant's shadow falls — lit from the
+  upper left, a slope falling away down and right reads dark, one climbing
+  reads light — and writes `app/src/gl/placeGround.ts`. Below zero the
+  shadow runs long down the slope; above, it bunches short and dense
+  against the rise. Only the English model carries this; the engraved and
+  inked grounds are level and every shadow on them is the same. Run the
+  script again when a drawing or the relief painting changes.
 
 ## The wharves
 
@@ -151,8 +171,13 @@ wharf of its own below it (`merchant-wharf-0..4.webp`): a warehouse with a
 hoist, a customs house with a clock, a timber staithe on piles, a transit
 shed with its lime kiln, an arcaded market hall. Drawn from the v3 tiles as
 reference like the places and the works, keyed off magenta, and given the
-same cleared ground and cast shadow so they sit on the map rather than
-hang over it.
+same cleared ground and play-time shadow so they sit on the map rather
+than hang over it.
+
+The sign itself no longer floats: it stands on two oak posts planted on
+the quay's deck, the board's shadow thrown across the deck and the ground
+beyond. Where the ground falls away the posts run longer to reach it and
+the shadow runs with them; against a rise both draw in.
 
 ## A second board
 

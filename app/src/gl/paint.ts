@@ -7,6 +7,7 @@ import { tr } from '@/i18n';
 import type { Era, GameState, IndustryType, LinkDef } from '@/game/types';
 import { RIBBON_FONT, RIBBON_H, TILE, TILE_HALF, townChrome } from '@/components/game/townChrome';
 import { HOUSES } from './houses';
+import { FEET, SHADE } from './placeGround';
 import { BUILT_FOR, CUT_FOR, FRONT_RANK, ICON_FOR, PARTNER, pairFile, pairKey, variantOf } from './faces';
 import type { ChipStyle, SlotArt, StockStyle, TileArt, TileVariant } from './faces';
 
@@ -93,8 +94,10 @@ export interface BoardScene {
   setTileLook: (look: TileLook) => void;
   /** swap painting variants per industry (alternate files fetched on first use) */
   setTileArt: (art: TileArt) => Promise<void>;
-  /** the village under each town: the painting, or the ink hamlet of the engraved map */
-  setVillages: (style: 'painted' | 'engraved') => void;
+  /** the village under each town: the painting, or the ink hamlet of the
+   *  engraved map; `ground` names the board whose relief shapes the shadows
+   *  (placeGround.ts), or nothing on a level ground */
+  setVillages: (style: 'painted' | 'engraved', ground?: string | null) => void;
 }
 
 /** every painting-derived texture for one tile style */
@@ -150,6 +153,8 @@ let worksTex: Partial<Record<IndustryType, Texture>> = {};
 /* and a wharf under every merchant's sign, so the edge of the map is a
    place of business rather than a picture hung in the air */
 let wharfTex: (Texture | null)[] = [];
+/** each drawing's soft silhouette, by served name: laid down as its shadow */
+let shadowTex: Record<string, Texture | null> = {};
 /* the engraved map lays an ink hamlet under each town instead (three, in turn) */
 let hamletTex: Texture[] = [];
 
@@ -421,6 +426,8 @@ export async function loadBoardAssets(): Promise<void> {
   placeTex = [loaded['/town-place-0.webp'], loaded['/town-place-1.webp'], loaded['/town-place-2.webp'], loaded['/town-place-3.webp']];
   worksTex = Object.fromEntries(works.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
   wharfTex = wharves;
+  const drawn = [0, 1, 2, 3].map((i) => `town-place-${i}`).concat(WORKS.map((i) => `town-works-${i}`), WHARVES.map((n) => `merchant-wharf-${n}`));
+  shadowTex = Object.fromEntries(await Promise.all(drawn.map(async (n) => [n, await Assets.load<Texture>(`/${n}-shadow.webp`).catch(() => null)] as const)));
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
@@ -630,6 +637,41 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     linkHit.set(def.id, hit);
   }
 
+  /* ----------------------------- shadows ----------------------------- */
+  /** the shadow a place throws: its own silhouette laid flat on the ground
+   *  from its foot, away from the light over the reader's left shoulder —
+   *  flipped over the foot, squashed and leaning down and right, the way a
+   *  lamp throws a model's shadow across the table. `shade` is the land
+   *  where it falls (placeGround.ts): below zero the ground drops away and
+   *  the shadow runs long down the slope; above, the ground climbs and it
+   *  bunches short and dense against the rise. (ox, oy) is the drawing's
+   *  top-left, `size` its side; a drawing shown mirrored leans the other
+   *  way in its own frame so the shadow still falls right on the board. */
+  const castShadow = (sp: Sprite, name: string, ox: number, oy: number, size: number, shade: number, mirrored = false) => {
+    const tex = shadowTex[name];
+    const foot = FEET[name];
+    if (!tex || !foot) {
+      sp.visible = false;
+      return;
+    }
+    const [fx, fy] = foot;
+    const down = Math.max(0, -shade);
+    const up = Math.max(0, shade);
+    const flip = mirrored ? -1 : 1;
+    const k = size / tex.width;
+    sp.visible = true;
+    if (sp.texture !== tex) sp.texture = tex;
+    sp.anchor.set(fx, fy);
+    sp.position.set(ox + fx * size, oy + fy * size);
+    sp.scale.set(k, -k * (0.55 + down * 0.75 - up * 0.3));
+    sp.skew.x = flip * (0.75 + down * 0.3);
+    sp.alpha = 0.5 - down * 0.1 + up * 0.18;
+  };
+  /* the wharves' shadows, recast when the ground changes */
+  const wharves: { g: Sprite; name: string; ox: number; oy: number; size: number; id: string }[] = [];
+  /* how the land lies under each place on the ground in play; empty on a level one */
+  let groundShade: Record<string, number> = {};
+
   /* ---------------------------- merchants ---------------------------- */
   /* The merchant houses: each one a painted SIGN — gilded frame, the quay
      at dusk, the name on a brass plate, a blank brass medallion — served as
@@ -660,7 +702,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
 
     /* the wharf the sign belongs to, standing on the map below it: the same
        hand as the towns' places, the same light, its own cleared ground */
-    const quay = wharfTex[MERCHANTS.indexOf(m) % Math.max(1, wharfTex.length)];
+    const qi = MERCHANTS.indexOf(m) % Math.max(1, wharfTex.length);
+    const quay = wharfTex[qi];
     if (quay) {
       const qw = W * 0.92;
       const q = new Sprite(quay);
@@ -670,7 +713,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       q.position.set(0, H * 0.52 + qw * 0.22);
       q.alpha = 0.94;
       q.eventMode = 'none';
-      plate.addChild(q);
+      const qShadow = new Sprite();
+      qShadow.eventMode = 'none';
+      plate.addChild(qShadow, q);
+      wharves.push({ g: qShadow, name: `merchant-wharf-${qi}`, ox: -qw / 2, oy: q.y - qw / 2, size: qw, id: m.id });
     }
     const shadow = new Graphics().roundRect(-W / 2 + 4, -H / 2 + 8, W, H, 6).fill({ color: 0x000000, alpha: 0.55 });
     shadow.eventMode = 'none';
@@ -779,7 +825,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   /* Painted village grounding each town cluster, BELOW the slot tiles   */
   /* (TownNode: deterministic mirror, 0.62 opacity — 0.55 for farms).    */
   /* Under the engraved map the same box holds an ink hamlet instead.    */
-  const villages: { box: Container; sprite: Sprite; town: (typeof TOWNS)[number]; farm: boolean; hamlet: number; place: number; h: number }[] = [];
+  /* The shadow is cast here, not baked (castShadow), so the land can     */
+  /* shape it; the annex holds a second trade behind the first.           */
+  type Village = { box: Container; sprite: Sprite; annex: Sprite; shadow: Sprite; annexShadow: Sprite; mirror: boolean; town: (typeof TOWNS)[number]; farm: boolean; hamlet: number; place: number; h: number };
+  const villages: Village[] = [];
   /* which family of places is in play, so a redraw knows whether to dress */
   let villageStyle: 'painted' | 'engraved' = 'painted';
   for (const town of TOWNS) {
@@ -790,14 +839,21 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     vBox.scale.x = mirror ? -1 : 1;
     vBox.alpha = town.farm ? 0.55 : 0.62;
     vBox.eventMode = 'none';
+    const shadow = new Sprite();
+    shadow.eventMode = 'none';
+    const annexShadow = new Sprite();
+    annexShadow.eventMode = 'none';
+    const annex = new Sprite();
+    annex.visible = false;
+    annex.eventMode = 'none';
     const v = new Sprite(villageTex);
     v.position.set(-c.villageH / 2, -c.villageH);
     v.width = c.villageH;
     v.height = c.villageH;
     v.eventMode = 'none';
-    vBox.addChild(v);
+    vBox.addChild(shadow, annexShadow, annex, v);
     townsLayer.addChild(vBox);
-    villages.push({ box: vBox, sprite: v, town, farm: !!town.farm, hamlet: (town.x * 3 + town.y * 5) % 3, place: (town.x * 5 + town.y * 11) % 4, h: c.villageH });
+    villages.push({ box: vBox, sprite: v, annex, shadow, annexShadow, mirror, town, farm: !!town.farm, hamlet: (town.x * 3 + town.y * 5) % 3, place: (town.x * 5 + town.y * 11) % 4, h: c.villageH });
   }
 
   /* ----------------------------- towns ------------------------------- */
@@ -1047,25 +1103,67 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     }
   };
 
-  /** the trade a town wears: the first of its built tiles in the order the
-   *  board reads them, so a place changes the moment the first works goes
-   *  up and settles on whatever was built first after that */
-  const tradeOf = (game: GameState, town: (typeof TOWNS)[number]): IndustryType | null => {
+  /** the trades a town wears: its built works in the order the board reads
+   *  them, each kind once — the first is the place itself, so it changes
+   *  the moment the first works goes up and settles on whatever was built
+   *  first after that; the second kind stands behind it as an annex */
+  const tradesOf = (game: GameState, town: (typeof TOWNS)[number]): IndustryType[] => {
+    const out: IndustryType[] = [];
     for (let si = 0; si < town.slots.length; si++) {
       const tile = game.tiles[tileKey(town.id, si)];
-      if (tile && worksTex[tile.industry]) return tile.industry;
+      if (tile && worksTex[tile.industry] && !out.includes(tile.industry)) out.push(tile.industry);
     }
-    return null;
+    return out;
+  };
+  const builtIn = (game: GameState, town: (typeof TOWNS)[number]): number => {
+    let n = 0;
+    for (let si = 0; si < town.slots.length; si++) if (game.tiles[tileKey(town.id, si)]) n++;
+    return n;
   };
 
-  /** lay the right place under each town: its works if it has one, else the
-   *  painted village its coordinates chose for it */
-  const dressVillages = (game: GameState | null) => {
-    if (villageStyle === 'engraved' || placeTex.length !== 4) return;
+  /** lay each town's place: the ink hamlet of the engraved map; else its
+   *  works if it has one — a tenth larger for every further works, three at
+   *  most, a second trade as an annex — else the painted village its
+   *  coordinates chose for it; and under all of these the shadow the land
+   *  gives it. Farms never grow and never trade. */
+  const layVillages = (game: GameState | null) => {
+    const engraved = villageStyle === 'engraved' && hamletTex.length === 3;
+    /* every other ground gets one of four painted places, a farm always the
+       hamlet of the four: the same picture under twenty-two towns read as
+       wallpaper, and at the painting's old size it read as nothing at all */
+    const placed = !engraved && placeTex.length === 4;
     for (const v of villages) {
-      const trade = game && !v.farm ? tradeOf(game, v.town) : null;
-      const tex = (trade && worksTex[trade]) || placeTex[v.farm ? 3 : v.place];
+      const trades = game && placed && !v.farm ? tradesOf(game, v.town) : [];
+      const built = game && placed && !v.farm ? builtIn(game, v.town) : 0;
+      const first = trades[0];
+      const name = first ? `town-works-${first}` : `town-place-${v.farm ? 3 : v.place}`;
+      const tex = engraved ? hamletTex[v.hamlet] : placed ? (first && worksTex[first]) || placeTex[v.farm ? 3 : v.place] : villageTex;
       if (v.sprite.texture !== tex) v.sprite.texture = tex;
+      /* the painting fits the card block; the hamlet is drawn wider, its
+         church above the cards and its wharf below the ribbon, so the
+         town shows around them. Farms have no hamlet. */
+      const grow = 1 + 0.1 * Math.min(3, Math.max(0, built - 1));
+      const size = (engraved ? v.h * 2.2 : placed ? v.h * 1.15 : v.h) * grow;
+      const lift = engraved ? v.h * 0.4 : placed ? v.h * 0.22 : 0;
+      v.sprite.width = size;
+      v.sprite.height = size;
+      v.sprite.position.set(-size / 2, -size + lift);
+      v.box.alpha = engraved ? (v.farm ? 0 : 0.85) : placed ? (v.farm ? 0.72 : 0.84) : v.farm ? 0.55 : 0.62;
+      const second = trades[1] ? worksTex[trades[1]] : undefined;
+      v.annex.visible = !!second;
+      const shade = groundShade[v.town.id] ?? 0;
+      if (second) {
+        if (v.annex.texture !== second) v.annex.texture = second;
+        const a = size * 0.62;
+        const ax = -size / 2 - a * 0.22;
+        const ay = -size + lift + size * 0.08;
+        v.annex.width = a;
+        v.annex.height = a;
+        v.annex.position.set(ax, ay);
+        castShadow(v.annexShadow, `town-works-${trades[1]}`, ax, ay, a, shade, v.mirror);
+      } else v.annexShadow.visible = false;
+      if (placed) castShadow(v.shadow, name, -size / 2, -size + lift, size, shade, v.mirror);
+      else v.shadow.visible = false;
     }
   };
 
@@ -1388,7 +1486,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       lastGame = game;
       drawLinks(game);
       drawTowns(game);
-      dressVillages(game);
+      layVillages(game);
       drawMerchants(game);
       applySpotlight(game);
     },
@@ -1437,25 +1535,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
         applySpotlight(lastGame);
       }
     },
-    setVillages(style) {
+    setVillages(style, ground) {
       villageStyle = style;
-      const engraved = style === 'engraved' && hamletTex.length === 3;
-      /* every other ground gets one of four painted places, a farm always the
-         hamlet of the four: the same picture under twenty-two towns read as
-         wallpaper, and at the painting's old size it read as nothing at all */
-      const placed = !engraved && placeTex.length === 4;
-      for (const v of villages) {
-        v.sprite.texture = engraved ? hamletTex[v.hamlet] : placed ? placeTex[v.farm ? 3 : v.place] : villageTex;
-        /* the painting fits the card block; the hamlet is drawn wider, its
-           church above the cards and its wharf below the ribbon, so the
-           town shows around them. Farms have no hamlet. */
-        const size = engraved ? v.h * 2.2 : placed ? v.h * 1.15 : v.h;
-        v.sprite.width = size;
-        v.sprite.height = size;
-        v.sprite.position.set(-size / 2, -size + (engraved ? v.h * 0.4 : placed ? v.h * 0.22 : 0));
-        v.box.alpha = engraved ? (v.farm ? 0 : 0.85) : placed ? (v.farm ? 0.72 : 0.84) : v.farm ? 0.55 : 0.62;
-      }
-      dressVillages(lastGame);
+      groundShade = (ground && SHADE[ground]) || {};
+      layVillages(lastGame);
+      for (const w of wharves) castShadow(w.g, w.name, w.ox, w.oy, w.size, groundShade[w.id] ?? 0);
     },
   };
 }
