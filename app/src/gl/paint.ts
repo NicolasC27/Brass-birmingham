@@ -1122,8 +1122,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
           g.stroke({ width: 15, color: col, cap: 'round', join: 'round' });
           tracePath(g, pts);
           g.stroke({ width: 6, color: shade(col, 0.45), alpha: 0.9, join: 'round' });
-          traceDashes(g, pts, 6, 9, 3);
-          g.stroke({ width: 1.6, color: tint(col, 0.6), alpha: 0.7 });
+          /* one unbroken sheen: dashes here read as sleepers, and a canal
+             in the owner's colour was taken for a railway */
+          tracePath(g, pts);
+          g.stroke({ width: 1.4, color: tint(col, 0.6), alpha: 0.6, cap: 'round', join: 'round' });
         }
         /* colour-blind mode: owner medallion seated mid-route (brass rim +
            colour + shape) — otherwise the owner's hue on the route is enough */
