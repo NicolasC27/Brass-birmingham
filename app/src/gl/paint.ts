@@ -667,8 +667,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     sp.skew.x = flip * (0.75 + down * 0.3);
     sp.alpha = 0.5 - down * 0.1 + up * 0.18;
   };
-  /* the wharves' shadows, recast when the ground changes */
+  /* the wharves' shadows and the signs' posts, recast when the ground changes */
   const wharves: { g: Sprite; name: string; ox: number; oy: number; size: number; id: string }[] = [];
+  const signPosts: { raise: (shade: number) => void; id: string }[] = [];
   /* how the land lies under each place on the ground in play; empty on a level one */
   let groundShade: Record<string, number> = {};
 
@@ -718,14 +719,40 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       plate.addChild(qShadow, q);
       wharves.push({ g: qShadow, name: `merchant-wharf-${qi}`, ox: -qw / 2, oy: q.y - qw / 2, size: qw, id: m.id });
     }
-    const shadow = new Graphics().roundRect(-W / 2 + 4, -H / 2 + 8, W, H, 6).fill({ color: 0x000000, alpha: 0.55 });
-    shadow.eventMode = 'none';
+    /* the sign stands on the quay: two oak posts from its lower corners down
+       to the deck, their feet planted, and the board's shadow thrown across
+       the deck and the ground beyond from the light over the reader's left
+       shoulder. Where the ground falls away the posts run longer to reach
+       it and the shadow runs with them; against a rise both draw in. */
+    const posts = new Graphics();
+    posts.eventMode = 'none';
+    const signShadow = new Graphics();
+    signShadow.eventMode = 'none';
+    const deck = quay ? H * 0.52 + W * 0.92 * 0.22 : H / 2 + 36;
+    const raise = (shade: number) => {
+      const down = Math.max(0, -shade);
+      const up = Math.max(0, shade);
+      const foot = H / 2 + (deck - H / 2) * (1 + down * 0.35 - up * 0.15);
+      const lean = 0.75 + down * 0.3;
+      const h = (foot + H / 2) * 0.5 * (1 + down * 0.75 - up * 0.3);
+      posts.clear();
+      signShadow.clear();
+      const [l, r] = [-W / 2 + 22, W / 2 - 22];
+      for (const px of [l, r]) {
+        posts.roundRect(px - 4, H / 2 - 10, 8, foot - H / 2 + 10, 2).fill(0x3e2a18);
+        posts.rect(px - 4, H / 2 - 10, 3, foot - H / 2 + 10).fill({ color: 0x8a6640, alpha: 0.7 });
+        posts.ellipse(px, foot, 9, 3.5).fill({ color: 0x1e160e, alpha: 0.35 });
+      }
+      signShadow.poly([l - 4, foot, r + 4, foot, r + 4 + lean * h, foot + h, l - 4 + lean * h, foot + h]).fill({ color: 0x1e160e, alpha: 0.3 - down * 0.06 + up * 0.1 });
+    };
+    raise(0);
+    signPosts.push({ raise, id: m.id });
     const sign = new Sprite(tex);
     sign.anchor.set(0.5);
     sign.width = W;
     sign.height = H;
     sign.eventMode = 'none';
-    plate.addChild(shadow, sign);
+    plate.addChild(signShadow, posts, sign);
 
     /* tile shelves (static): a faint recess where each merchant tile sits,
        low and left on the board, over the wharf's water */
@@ -1540,6 +1567,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
       groundShade = (ground && SHADE[ground]) || {};
       layVillages(lastGame);
       for (const w of wharves) castShadow(w.g, w.name, w.ox, w.oy, w.size, groundShade[w.id] ?? 0);
+      for (const p of signPosts) p.raise(groundShade[p.id] ?? 0);
     },
   };
 }
