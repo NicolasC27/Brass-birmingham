@@ -263,13 +263,12 @@ export default function HandDock() {
   const [hovered, setHovered] = useState(false);
   /* the card under the pointer comes forward, the cards after it slide aside */
   const [hoverCard, setHoverCard] = useState<number | null>(null);
-  /* pinned = never folds by itself; remembered across games, and the way
-     a hand starts: open, until the reader unpins it */
+  /* pinned = never folds by itself; remembered across games */
   const [pinned, setPinnedState] = useState(() => {
     try {
-      return localStorage.getItem(PIN_KEY) !== '0';
+      return localStorage.getItem(PIN_KEY) === '1';
     } catch {
-      return true;
+      return false;
     }
   });
   const setPinned = (fn: (v: boolean) => boolean) =>

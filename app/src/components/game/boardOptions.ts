@@ -218,7 +218,7 @@ let state: BoardOptions = {
   telegrams: read('telegrams', true),
   focus: read('focus', false),
   reviewLit: read('reviewLit', false),
-  vpTrack: read('vpTrack', true),
+  vpTrack: read('vpTrack', false),
   matStyle: read('matStyle', 'cards'),
   matCount: read('matCount', false),
   settingsOpen: false,
