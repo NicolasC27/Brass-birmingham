@@ -843,9 +843,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
 
     /* the name, legible at every zoom: a counter-scaled brass plate laid over
        the one painted on the sign's top band */
-    const box = makeNameplate(m.name.toUpperCase(), m.x, m.y - (south ? 34 : 0) - (H / 2 - H * 0.1) * 1.45);
-    ribbonsLayer.addChild(box);
-    ribbons.push(box);
+    if (!house.board) {
+      const box = makeNameplate(m.name.toUpperCase(), m.x, m.y - (south ? 34 : 0) - (H / 2 - H * 0.1) * 1.45);
+      ribbonsLayer.addChild(box);
+      ribbons.push(box);
+    }
   }
 
   /* ----------------------------- villages ---------------------------- */

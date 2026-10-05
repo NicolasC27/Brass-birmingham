@@ -174,6 +174,14 @@ reference like the places and the works, keyed off magenta, and given the
 same cleared ground and play-time shadow so they sit on the map rather
 than hang over it.
 
+The gilded frame is going: Oxford's sign is now a painted oak signboard
+(`tools/assets/fal-signboards.py`) — planks and iron straps, the name
+painted large on the top plank, the tiles resting on a slate panel, the
+bonus on a brass roundel — in the hand of the tiles and the places, and
+`houses.ts` marks it `board` so no brass nameplate is laid over it. The
+other four, and the Veneto's five, follow the same road when the fal
+balance allows.
+
 The sign itself no longer floats: it stands on two oak posts planted on
 the quay's deck, the board's shadow thrown across the deck and the ground
 beyond. Where the ground falls away the posts run longer to reach it and
