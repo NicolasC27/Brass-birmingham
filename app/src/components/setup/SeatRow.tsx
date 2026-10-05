@@ -76,9 +76,9 @@ export default function SeatRow({
   return (
     <motion.div
       layout="position"
-      initial={{ opacity: 0, height: 56 }}
-      animate={{ opacity: 1, height: "auto" }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
       className="border-b border-[var(--gz-ink-faint)] px-1 py-3 last:border-b-0"
     >
       <div className="flex min-h-[52px] flex-wrap items-center gap-x-3 gap-y-2">
@@ -163,59 +163,59 @@ export default function SeatRow({
                     onClick={() => onColorChange(c.id)}
                     className={cn(
                       "rounded-full p-0.5 transition-transform duration-150",
-                      active
-                        ? "ring-2 ring-brass-300 ring-offset-2 ring-offset-[rgb(var(--lacquer-900))]"
-                        : "opacity-55 hover:scale-110 hover:opacity-100",
+                      active ? "ring-2 ring-brass-300 ring-offset-2 ring-offset-[rgb(var(--lacquer-900))]" : "opacity-80 hover:scale-110 hover:opacity-100",
                     )}
                   >
-                    <PlayerToken color={c.id} size={20} />
+                    <PlayerToken color={c.id} size={22} />
                   </button>
                 </Tip>
               );
             })}
           </div>
 
-          {/* The characters a machine can be */}
+          {/* The characters a machine can be: a portrait medallion each, the
+              chosen one ringed in its own colour; the words for it below */}
           {seat.type === "bot" && (
-            <div className="relative flex flex-wrap items-center gap-1.5 overflow-visible">
-              {PERSONAS.map((d) => {
-                const active = seat.persona === d.id;
-                const hex = colorDef(d.color).hex;
-                return (
-                  <Tip key={d.id} label={t(d.id === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}>
-                    <button
-                      type="button"
-                      role="radio"
-                      aria-checked={active}
-                      aria-label={d.name}
-                      onClick={() => onPersonaChange(d.id)}
-                      style={{ borderColor: hex, color: active ? hex : undefined }}
-                      className={cn(
-                        "group relative inline-flex items-center gap-1.5 border-b-2 py-1 pr-1 font-ui text-[10.5px] font-semibold uppercase tracking-[0.12em] transition-all duration-150",
-                        active ? "text-paper-100" : "!border-transparent text-iron-400 hover:text-paper-100",
-                      )}
-                    >
-                      <img src={`/portrait-${d.id}.webp`} alt="" draggable={false} className="h-6 w-6 rounded-full object-cover" />
-                      {d.name}
-                      {/* the portrait in full, on hover */}
-                      <img
-                        src={`/portrait-${d.id}.webp`}
-                        alt=""
-                        draggable={false}
-                        className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden h-40 w-40 -translate-x-1/2 rounded-full object-cover shadow-[0_8px_30px_rgba(0,0,0,.6)] group-hover:block"
-                        style={{ boxShadow: `0 0 0 3px ${hex}` }}
-                      />
-                    </button>
-                  </Tip>
-                );
-              })}
-              <span className="font-ui text-[11px] text-iron-400">{t(seat.persona === EXPERT ? "setup.persona.expertShort" : "setup.persona.adaptive")}</span>
-              <Tip label={t("setup.seat.engineTip")}>
-                <span className="inline-flex cursor-help items-center gap-1 font-ui text-[10px] font-semibold uppercase tracking-[0.14em] text-rust-400">
-                  {t("setup.seat.beta")}
-                  <Info className="h-3 w-3" />
-                </span>
-              </Tip>
+            <div className="flex w-full flex-col gap-2">
+              <div role="radiogroup" aria-label={t("setup.seat.typeBot")} className="flex flex-wrap items-center gap-1">
+                {PERSONAS.map((d) => {
+                  const active = seat.persona === d.id;
+                  const hex = colorDef(d.color).hex;
+                  return (
+                    <Tip key={d.id} label={t(d.id === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}>
+                      <button
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        aria-label={d.name}
+                        onClick={() => onPersonaChange(d.id)}
+                        className={cn(
+                          "flex items-center gap-2 rounded-full py-1 pl-1 pr-3 transition-colors duration-150",
+                          active ? "bg-enamel-800 text-paper-100" : "text-iron-400 hover:bg-enamel-800/60 hover:text-paper-100",
+                        )}
+                      >
+                        <img
+                          src={`/portrait-${d.id}.webp`}
+                          alt=""
+                          draggable={false}
+                          className={cn("h-9 w-9 rounded-full object-cover transition-transform duration-150", active ? "scale-100" : "scale-90 saturate-[.7]")}
+                          style={{ boxShadow: active ? `0 0 0 2px ${hex}, 0 2px 6px rgba(0,0,0,.45)` : "0 1px 3px rgba(0,0,0,.35)" }}
+                        />
+                        <span className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.12em]">{d.name}</span>
+                      </button>
+                    </Tip>
+                  );
+                })}
+              </div>
+              <p className="flex flex-wrap items-center gap-x-3 font-serif text-[12.5px] italic leading-snug text-paper-300">
+                <span>{t(seat.persona === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}</span>
+                <Tip label={t("setup.seat.engineTip")}>
+                  <span className="inline-flex cursor-help items-center gap-1 font-ui text-[10px] font-semibold not-italic uppercase tracking-[0.14em] text-rust-400">
+                    {t("setup.seat.beta")}
+                    <Info className="h-3 w-3" />
+                  </span>
+                </Tip>
+              </p>
             </div>
           )}
         </motion.div>
