@@ -51,9 +51,10 @@ export default function SeatRow({
   if (seat.type === "closed") {
     return (
       <motion.div
-        initial={{ opacity: 0, height: 56 }}
-        animate={{ opacity: 1, height: 56 }}
-        className="flex items-center justify-between border border-dashed border-[var(--gz-ink-soft)] px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
+        className="mt-3 flex items-center justify-between border border-dashed border-[var(--gz-ink-soft)] px-4"
         style={{ height: 56 }}
       >
         <span className="font-ui text-[13px] tracking-wide text-iron-600">
@@ -75,7 +76,6 @@ export default function SeatRow({
 
   return (
     <motion.div
-      layout="position"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
