@@ -129,8 +129,10 @@ magick -size ${FW}x${FH} xc:none -fill none \
   -stroke "$W_DEEP" -strokewidth 11 -draw "$(cat "$T/canal.txt")" \
   -stroke "$W_SHEEN" -strokewidth 5 -draw "$(cat "$T/canal.txt")" \
   -stroke "$W_THREAD" -strokewidth 1.4 -draw "stroke-dasharray 3 26 $(cat "$T/canal.txt")" \
-  -stroke "$TOWPATH" -strokewidth 2.2 -draw "stroke-dasharray 12 10 $(cat "$T/towpath.txt")" \
   "$T/beds.png"
+magick -size ${FW}x${FH} xc:none -fill none \
+  -stroke "$TOWPATH" -strokewidth 2.2 -draw "stroke-dasharray 12 10 $(cat "$T/towpath.txt")" \
+  "$T/tow.png"
 # 5. rail-only lines: cart roads today, surveyed for rails tomorrow
 magick -size ${FW}x${FH} xc:none -fill none \
   -stroke "$LANE_UNDER" -strokewidth 7 -draw "$(cat "$T/road.txt")" \
@@ -146,7 +148,17 @@ magick -size ${FW}x${FH} xc:none -stroke none \
   -channel RGBA -blur 0x1.2 +channel "$T/village.png"
 magick -size ${FW}x${FH} xc:none -stroke none -fill "$BASIN" -draw "$(cat "$T/basin.txt")" -channel RGBA -blur 0x30 +channel \
   -fill none -stroke "$RIM" -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
-magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/beds.png" -compose over -composite \
+# the survey — cart roads and towpaths — is the one part of the engraving a
+# reader may hide (key C): ETCH=1 serves it as a layer of its own
+# (<stem>-etch.webp, transparent) instead of drawing it into the land. The
+# water stays: a canal bed is geography.
+if [[ ${ETCH:-0} == 1 ]]; then
+  magick "$T/roads.png" "$T/tow.png" -compose over -composite -quality 85 "app/public/$STEM-etch.webp"
+  cp "$T/graded.png" "$T/surveyed.png"
+else
+  magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/tow.png" -compose over -composite "$T/surveyed.png"
+fi
+magick "$T/surveyed.png" "$T/beds.png" -compose over -composite \
   "$T/patch.png" -compose over -composite "$T/village.png" -compose over -composite "$T/basin.png" -compose over -composite "$T/land.png"
 
 # 6b. the lie of the land: a height field of our own making, smooth and

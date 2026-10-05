@@ -68,6 +68,9 @@ export interface BoardScene {
   world: Container;
   bgCanal: Sprite;
   bgRail: Sprite;
+  /** the survey laid over each era's ground, hidden with the traces */
+  etchCanal: Sprite;
+  etchRail: Sprite;
   overlay: Container; // planning highlights, ghost lines, FX — above towns
   /** the one hover effect (a route lit under the pointer): its own layer,
    *  so a hover never rebuilds the overlay */
@@ -607,7 +610,7 @@ function makeNameplate(labelText: string, cx: number, cy: number): Container {
   return box;
 }
 
-export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
+export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Sprite, etchRail: Sprite): BoardScene {
   const world = new Container();
   const linksLayer = new Container();
   const hitLayer = new Container();
@@ -617,8 +620,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
   const overlay = new Container();
   const hoverLayer = new Container();
   hoverLayer.eventMode = 'none';
-  world.addChild(bgCanal, bgRail, linksLayer, merchantsLayer, townsLayer, hitLayer, ribbonsLayer, overlay, hoverLayer);
+  world.addChild(bgCanal, bgRail, etchCanal, etchRail, linksLayer, merchantsLayer, townsLayer, hitLayer, ribbonsLayer, overlay, hoverLayer);
   bgRail.alpha = 0;
+  etchRail.alpha = 0;
 
   /* ------------------------------ links ------------------------------ */
   const linkGfx = new Map<string, Graphics>();
@@ -1513,6 +1517,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     world,
     bgCanal,
     bgRail,
+    etchCanal,
+    etchRail,
     overlay,
     hoverLayer,
     linkGfx,
@@ -1538,6 +1544,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite): BoardScene {
     },
     setHideUnbuilt(hide: boolean) {
       hideUnbuilt = hide;
+      etchCanal.visible = !hide;
+      etchRail.visible = !hide;
       applySpotlight(lastGame); // re-applies both the hide and the spotlight dim
     },
     setBigChips(big: boolean) {

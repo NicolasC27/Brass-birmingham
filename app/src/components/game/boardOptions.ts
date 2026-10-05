@@ -33,11 +33,15 @@ export type IncomeSide = 'bottom' | 'left';
  *  painting bought at the counter is shown on, and a reader who owns one
  *  keeps it. */
 export type MapStyle = 'relief' | 'engraved' | 'inked' | 'etched';
-export const MAP_URL: Record<MapStyle, { canal: string; rail: string }> = {
+/** a ground's paintings per era, and for the relief model the survey — cart
+ *  roads, towpaths, the rail era's railways — served as a layer of its own
+ *  so hiding the traces (key C) hides it too; the water stays in the land */
+export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail: string } };
+export const MAP_URL: Record<MapStyle, MapSet> = {
   /* the country as a made thing: a painted plaster model of low English
      swells under a raking light, a shelf cut in it for every town, the rail
      era the same model gone grey with a century of smoke settled on it */
-  relief: { canal: '/map-relief-canal.webp', rail: '/map-relief-rail.webp' },
+  relief: { canal: '/map-relief-canal.webp', rail: '/map-relief-rail.webp', etch: { canal: '/map-relief-canal-etch.webp', rail: '/map-relief-rail-etch.webp' } },
   /* a period engraved map, drawn from the geometry and nothing else */
   engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
   /* an inked map: hill mounds and tiny trees drawn in sepia on parchment,
@@ -58,7 +62,7 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
   veneto: { canal: '/map-veneto-canal.webp', rail: '/map-veneto-rail.webp' },
 };
 
-export const mapUrls = (style: MapStyle, rail: RailPainting, board?: string): { canal: string; rail: string } => {
+export const mapUrls = (style: MapStyle, rail: RailPainting, board?: string): MapSet => {
   const other = board ? OTHER_BOARDS[board] : undefined;
   if (other) return other;
   return style === 'etched' && rail !== '1' ? { canal: MAP_URL.etched.canal, rail: `/map-era-rail-${rail}.webp` } : MAP_URL[style];

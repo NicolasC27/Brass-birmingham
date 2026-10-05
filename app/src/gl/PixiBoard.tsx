@@ -287,12 +287,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (!scene) return;
     let cancelled = false;
     void (async () => {
-      const { Assets } = await import('pixi.js');
+      const { Assets, Texture } = await import('pixi.js');
       const urls = mapUrls(mapStyle, railPainting, activeBoard().id);
-      const [canal, rail] = await Promise.all([Assets.load(urls.canal), Assets.load(urls.rail)]);
+      const [canal, rail, etchCanal, etchRail] = await Promise.all([
+        Assets.load(urls.canal),
+        Assets.load(urls.rail),
+        urls.etch ? Assets.load(urls.etch.canal) : Texture.EMPTY,
+        urls.etch ? Assets.load(urls.etch.rail) : Texture.EMPTY,
+      ]);
       if (cancelled) return;
       scene.setVillages(mapStyle === 'engraved' ? 'engraved' : 'painted', mapStyle === 'relief' ? activeBoard().id : null);
-      for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail]] as const) {
+      for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail], [scene.etchCanal, etchCanal], [scene.etchRail, etchRail]] as const) {
         sp.texture = tex;
         sp.width = WORLD_W + 2 * BLEED_X;
         sp.height = WORLD_H + 2 * BLEED_Y;
@@ -333,6 +338,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
       scene.bgCanal.filters = night ? [night] : null;
       scene.bgRail.filters = night ? [night] : null;
+      scene.etchCanal.filters = night ? [night] : null;
+      scene.etchRail.filters = night ? [night] : null;
       const ambiance = scene.world.children[3];
       if (ambiance && ambiance !== scene.overlay) ambiance.alpha = reading && !lit ? 0.25 : 1;
     }
@@ -448,18 +455,28 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const bootOpts = getBoardOptions();
       /* both paintings carry a bleed of countryside around the play area */
       const bgUrls = mapUrls(bootOpts.mapStyle, bootOpts.railPainting, activeBoard().id);
-      const [canalTex, railTex] = await Promise.all([Assets.load(bgUrls.canal), Assets.load(bgUrls.rail)]);
+      const [canalTex, railTex, etchCanalTex, etchRailTex] = await Promise.all([
+        Assets.load(bgUrls.canal),
+        Assets.load(bgUrls.rail),
+        bgUrls.etch ? Assets.load(bgUrls.etch.canal) : Texture.EMPTY,
+        bgUrls.etch ? Assets.load(bgUrls.etch.rail) : Texture.EMPTY,
+      ]);
       if (destroyed) return;
-      const bgCanal = new Sprite(canalTex);
-      bgCanal.width = WORLD_W + 2 * BLEED_X;
-      bgCanal.height = WORLD_H + 2 * BLEED_Y;
-      bgCanal.position.set(-BLEED_X, -BLEED_Y);
-      const bgRail = new Sprite(railTex);
-      bgRail.width = WORLD_W + 2 * BLEED_X;
-      bgRail.height = WORLD_H + 2 * BLEED_Y;
-      bgRail.position.set(-BLEED_X, -BLEED_Y);
+      const sheet = (tex: typeof canalTex) => {
+        const s = new Sprite(tex);
+        s.width = WORLD_W + 2 * BLEED_X;
+        s.height = WORLD_H + 2 * BLEED_Y;
+        s.position.set(-BLEED_X, -BLEED_Y);
+        return s;
+      };
+      const bgCanal = sheet(canalTex);
+      const bgRail = sheet(railTex);
+      const etchCanal = sheet(etchCanalTex);
+      const etchRail = sheet(etchRailTex);
+      etchCanal.eventMode = 'none';
+      etchRail.eventMode = 'none';
 
-      const scene = buildBoardScene(bgCanal, bgRail);
+      const scene = buildBoardScene(bgCanal, bgRail, etchCanal, etchRail);
       sceneRef.current = scene;
       scene.setHideUnbuilt(bootOpts.hideUnbuilt);
       scene.setBigChips(bootOpts.bigChips);
@@ -663,6 +680,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         /* era crossfade */
         scene.bgRail.alpha += (railAlphaTarget - scene.bgRail.alpha) * Math.min(1, t.deltaMS / 700);
+        scene.etchRail.alpha = scene.bgRail.alpha;
+        scene.etchCanal.alpha = 1 - scene.bgRail.alpha;
         /* spark-ring FX for the last confirmed action + a vehicle sailing
            the whole route when a link is built (boat on canals, train on
            rail, tinted with the owner's colour) */

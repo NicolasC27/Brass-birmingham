@@ -60,7 +60,14 @@ magick -size ${FW}x${FH} xc:none -fill none \
   -stroke "$RAIL_WIDE" -strokewidth 3.4 -draw "$DRAW" \
   -stroke "$RAIL_FINE" -strokewidth 1.6 -draw "$DRAW" \
   -channel RGBA -blur 0x0.4 +channel "$T/track.png"
-if [[ "${BEDS:-1}" == 0 ]]; then cp "$T/full.png" "$T/rails.png"; else magick "$T/full.png" "$T/bank.png" -compose over -composite "$T/track.png" -compose over -composite "$T/rails.png"; fi
+# ETCH=1 serves the railways as a layer of their own (<stem>-etch.webp,
+# transparent, graded like the land) so the board can hide them with its
+# own traces (key C); the land below is then served bare of them.
+if [[ "${BEDS:-1}" == 0 ]]; then cp "$T/full.png" "$T/rails.png";
+elif [[ "${ETCH:-0}" == 1 ]]; then
+  cp "$T/full.png" "$T/rails.png"
+  magick "$T/bank.png" "$T/track.png" -compose over -composite -modulate 84,112 -modulate ${TONE} -quality 85 "app/public/$STEM-etch.webp"
+else magick "$T/full.png" "$T/bank.png" -compose over -composite "$T/track.png" -compose over -composite "$T/rails.png"; fi
 # 3. mist past the play area only, so the far edges read as distance
 magick -size $((WW + 80))x$((WH + 80)) xc:black -gravity center -background white -extent ${FW}x${FH} -blur 0x110 -evaluate multiply 0.45 "$T/mask.png"
 magick -size ${FW}x${FH} xc:'rgb(150,170,160)' "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"
