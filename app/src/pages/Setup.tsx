@@ -307,6 +307,8 @@ export default function Setup() {
         >
           <div className="gz-classified !items-stretch !p-6 !text-left">
             <div className="relative">
+              {/* the train on the platform at dawn, painted in the tiles' own hand */}
+              <img src="/setup-station.webp" alt="" draggable={false} className="mb-5 -mt-1 w-full rounded-md object-cover shadow-[0_6px_18px_rgba(0,0,0,.35)]" style={{ aspectRatio: "21 / 9" }} />
               <p className="eyebrow-fell">{t("platform.setup.preview.label")}</p>
               <p className="mt-2 truncate font-fraunces text-[22px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
                 {tableTitle(tableName, lang)}
