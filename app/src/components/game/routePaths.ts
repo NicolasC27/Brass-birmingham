@@ -7,7 +7,10 @@ import { RAIL_ROUTES } from './railRoutes';
 /*                                                                     */
 /* Each link becomes ONE quadratic bézier between the two town anchor  */
 /* points with a perpendicular bulge derived from a hash of the link   */
-/* id (magnitude 6–14% of the segment length, alternating sides).      */
+/* id (magnitude 6–14% of the segment length, alternating sides), and  */
+/* over that arc a meander: a few gentle waves across the route,       */
+/* fading to nothing at either town, so a canal or a road wanders with */
+/* the land instead of describing an arc.                              */
 /*                                                                     */
 /* Town-avoidance rule: the candidate curve is sampled; if any sample  */
 /* comes within CLEARANCE px of a third node's anchor, the bulge side  */
@@ -20,6 +23,10 @@ import { RAIL_ROUTES } from './railRoutes';
 const CLEARANCE = 90;
 /** samples per curve for the avoidance probe */
 const SAMPLES = 64;
+/** the meander's reach across the route, as a share of its length */
+const MEANDER = 0.035;
+/** points along a finished route */
+const STEPS = 48;
 
 export interface Route {
   /** SVG path data (world coords) */
@@ -82,6 +89,44 @@ function bulged(ax: number, ay: number, bx: number, by: number, mag: number, sid
   };
 }
 
+/** the arc with its meander laid over it: two to four half-waves and two
+ *  finer ones on top, phased by the hash, under an envelope that is nothing
+ *  at the towns — the route straightens as it arrives */
+function meandered(q: Quad, h: number, amp: number): [number, number][] {
+  const len = Math.hypot(q.bx - q.ax, q.by - q.ay);
+  const p1 = ((h >>> 3) % 628) / 100;
+  const p2 = ((h >>> 9) % 628) / 100;
+  const p3 = ((h >>> 15) % 628) / 100;
+  const waves = 2 + ((h >>> 20) % 3);
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= STEPS; i++) {
+    const t = i / STEPS;
+    const [x, y] = quadPoint(q, t);
+    const u = 1 - t;
+    const tx = 2 * u * (q.cx - q.ax) + 2 * t * (q.bx - q.cx);
+    const ty = 2 * u * (q.cy - q.ay) + 2 * t * (q.by - q.cy);
+    const tl = Math.hypot(tx, ty) || 1;
+    const env = Math.sin(Math.PI * t);
+    const wave = Math.sin(waves * Math.PI * t + p1) * 0.6 + Math.sin((waves * 2 + 1) * Math.PI * t + p2) * 0.3 + Math.sin((waves * 4 + 1) * Math.PI * t + p3) * 0.12;
+    const off = amp * len * env * wave;
+    pts.push([x + (-ty / tl) * off, y + (tx / tl) * off]);
+  }
+  return pts;
+}
+
+/** min distance from a polyline to any third node's anchor */
+function clearanceOf(pts: [number, number][], a: string, b: string): number {
+  let best = Infinity;
+  for (const [id, [tx, ty]] of Object.entries(NODE_POS)) {
+    if (id === a || id === b) continue;
+    for (const [px, py] of pts) {
+      const d = Math.hypot(tx - px, ty - py);
+      if (d < best) best = d;
+    }
+  }
+  return best;
+}
+
 function buildRoute(def: LinkDef): Route {
   const [ax, ay] = NODE_POS[def.a];
   const [bx, by] = NODE_POS[def.b];
@@ -105,11 +150,14 @@ function buildRoute(def: LinkDef): Route {
     }
   }
 
+  /* the meander, drawn in until it too clears every third town */
+  let pts = meandered(q, h, MEANDER);
+  for (let amp = MEANDER / 2; clearanceOf(pts, def.a, def.b) < CLEARANCE && amp > MEANDER / 8; amp /= 2) pts = meandered(q, h, amp);
+  if (clearanceOf(pts, def.a, def.b) < CLEARANCE) pts = meandered(q, h, 0);
+
   const r = (n: number): number => Math.round(n * 10) / 10;
-  const d = `M${r(q.ax)},${r(q.ay)} Q${r(q.cx)},${r(q.cy)} ${r(q.bx)},${r(q.by)}`;
-  const pts: [number, number][] = [];
-  for (let i = 0; i <= 32; i++) pts.push(quadPoint(q, i / 32));
-  return { d, mid: quadPoint(q, 0.5), pts };
+  const d = `M${pts.map(([x, y]) => `${r(x)},${r(y)}`).join(' L')}`;
+  return { d, mid: pts[STEPS / 2], pts };
 }
 
 let ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
