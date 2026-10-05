@@ -49,21 +49,6 @@
       "port": 4173
     },
     {
-      "name": "brass-design",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev",
-        "--prefix",
-        "/tmp/claude-1000/-home-nicolas-Documents-Kimi-Agent-BRASS/20a87a28-27cb-47a9-a1d9-8446a65bfcfc/scratchpad/design/app",
-        "--",
-        "--port",
-        "4174",
-        "--strictPort"
-      ],
-      "port": 4174
-    },
-    {
       "name": "brass-bots",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
