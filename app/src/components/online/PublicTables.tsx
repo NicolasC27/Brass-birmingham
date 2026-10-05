@@ -27,22 +27,53 @@ import { lobbyErrorText, type Notify } from './notify';
 
 const FILTERS: TableFilter[] = ['all', 'seats', 'friends', 'ranked', 'rail', 'live'];
 
-/** four marks: the seats taken in their colours, the free ones hollow */
-function SeatDots({ table }: { table: CardTable }) {
+/** the table as a train on the board: the engine, then a carriage a seat —
+ *  painted in the passenger's colour once taken (a machine's paler), an
+ *  empty outline while free, the reader's own ringed in brass */
+function SeatTrain({ table }: { table: CardTable }) {
+  const t = useT();
+  const seats = table.seats;
+  const w = 22 + seats.length * 17;
   return (
-    <span className="flex items-center gap-1.5" aria-hidden>
-      {table.seats.map((s, i) =>
-        s ? (
-          <span key={i} className={cn('block h-2.5 w-2.5 rounded-full', s.kind === 'bot' && 'opacity-60', s.you && 'ring-2 ring-brass-300 ring-offset-1 ring-offset-[rgb(var(--enamel-850))]')} style={{ backgroundColor: PLAYER_COLORS[s.color]?.hex ?? '#C9A45C' }} title={s.name} />
-        ) : (
-          <span key={i} className="block h-2.5 w-2.5 rounded-full border border-[var(--gz-ink-soft)]" />
-        ),
-      )}
-    </span>
+    <svg viewBox={`0 0 ${w} 14`} width={w * 1.15} height={16} className="block shrink-0 overflow-visible" role="img" aria-label={seats.map((s) => (s ? s.name : t('platform.seat.free'))).join(', ')}>
+      {/* the engine, drawn as the rail's own */}
+      <g fill="currentColor" className="text-paper-100">
+        <rect x="0" y="6" width="5" height="4" />
+        <rect x="6" y="3" width="4" height="7" />
+        <rect x="9.5" y="5" width="10" height="5" rx="2" />
+        <rect x="16.5" y="1" width="2" height="5" />
+        <circle cx="8" cy="11.2" r="1.9" />
+        <circle cx="14.5" cy="11.6" r="1.4" />
+        <circle cx="18.5" cy="11.6" r="1.4" />
+      </g>
+      {seats.map((s, i) => {
+        const x = 22 + i * 17;
+        return (
+          <g key={i}>
+            {s ? (
+              <>
+                <title>{s.name}</title>
+                <rect x={x} y="4" width="15" height="6" rx="1" fill={PLAYER_COLORS[s.color]?.hex ?? '#C9A45C'} opacity={s.kind === 'bot' ? 0.6 : 1} />
+                {[x + 2.5, x + 6.5, x + 10.5].map((wx) => (
+                  <rect key={wx} x={wx} y="5.5" width="2" height="2.6" rx="0.4" fill="rgb(var(--lacquer-900))" opacity="0.7" />
+                ))}
+                {s.you && <rect x={x - 1} y="3" width="17" height="8" rx="1.5" fill="none" stroke="rgb(var(--brass-300))" strokeWidth="1" />}
+              </>
+            ) : (
+              <rect x={x} y="4" width="15" height="6" rx="1" fill="none" stroke="var(--gz-ink-soft)" strokeDasharray="1.5 1.5" />
+            )}
+            <circle cx={x + 3.5} cy="11.6" r="1.3" fill="currentColor" className="text-paper-100" opacity={s ? 1 : 0.3} />
+            <circle cx={x + 11.5} cy="11.6" r="1.3" fill="currentColor" className="text-paper-100" opacity={s ? 1 : 0.3} />
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
 const boarding = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap transition-colors disabled:opacity-50';
+/** the lamp beside a state: lit and breathing for a game in play */
+const LAMP: Record<string, string> = { live: 'bg-signal-400 shadow-[0_0_6px_rgb(var(--signal-400))] animate-pulse', open: 'bg-bottle-400', full: 'bg-iron-600' };
 
 function Row({ table, busy, i = 0, onJoin, onResume, onWatch }: { table: CardTable; busy: boolean; i?: number; onJoin: (t: CardTable) => void; onResume: (t: CardTable) => void; onWatch: (t: CardTable) => void }) {
   const t = useT();
@@ -51,15 +82,19 @@ function Row({ table, busy, i = 0, onJoin, onResume, onWatch }: { table: CardTab
     table.state === 'live'
       ? `${t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal')} · ${t('platform.play.tables.roundOf', { round: table.round ?? 1, total })}`
       : t('platform.play.tables.host', { name: table.hostName });
+  /* the ticket at the end of the line: brass to board, plain to watch */
   const action = table.mine
-    ? { label: t('platform.play.tables.resume'), go: () => onResume(table), tone: table.myTurn ? 'text-signal-400 hover:text-paper-100' : 'text-brass-300 hover:text-paper-100' }
+    ? { label: t('platform.play.tables.resume'), go: () => onResume(table), brass: true }
     : table.state === 'live'
-      ? { label: t('platform.play.tables.watch'), go: () => onWatch(table), tone: 'text-paper-300 hover:text-paper-100', icon: true }
+      ? { label: t('platform.play.tables.watch'), go: () => onWatch(table), brass: false, icon: true }
       : table.state === 'open' && table.mode !== 'ranked'
-        ? { label: t('platform.play.tables.join'), go: () => onJoin(table), tone: 'text-brass-300 hover:text-paper-100' }
+        ? { label: t('platform.play.tables.join'), go: () => onJoin(table), brass: true }
         : null;
   return (
     <motion.tr initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: 'easeOut', delay: 0.03 * i }} className={cn(table.mine && 'bg-brass-500/[.05]')}>
+      <td className="w-[36px] pr-0">
+        <span className="data-text text-[11px] text-iron-600 tnums">{String(i + 1).padStart(2, '0')}</span>
+      </td>
       <td className="max-w-0">
         <span className="flex items-center gap-2">
           <span className={cn('truncate font-fraunces text-[14px] font-medium', table.mine ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 48' }}>
@@ -72,12 +107,12 @@ function Row({ table, busy, i = 0, onJoin, onResume, onWatch }: { table: CardTab
           {table.watchers > 0 && ` · ${t('platform.play.tables.watchers', { count: table.watchers })}`}
         </span>
       </td>
-      <td className="w-[76px]">
-        <SeatDots table={table} />
+      <td className="w-[130px]">
+        <SeatTrain table={table} />
       </td>
-      <td className="w-[96px]">
-        <span className={cn('micro-label flex items-center gap-1.5', table.state === 'live' ? 'text-signal-400' : table.state === 'open' ? 'text-bottle-400' : 'text-iron-400')}>
-          {table.state === 'live' && <span className="h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />}
+      <td className="w-[110px]">
+        <span className={cn('micro-label flex items-center gap-2', table.state === 'live' ? 'text-signal-400' : table.state === 'open' ? 'text-bottle-400' : 'text-iron-400')}>
+          <span className={cn('h-2 w-2 shrink-0 rounded-full', LAMP[table.state] ?? 'bg-iron-600')} aria-hidden />
           {t(`platform.state.${table.state}`)}
         </span>
       </td>
@@ -86,10 +121,9 @@ function Row({ table, busy, i = 0, onJoin, onResume, onWatch }: { table: CardTab
       </td>
       <td className="w-px pr-2 text-right">
         {action ? (
-          <button type="button" disabled={busy} onClick={action.go} className={cn(boarding, action.tone, action.icon && 'inline-flex items-center gap-1')}>
-            {action.icon && <Eye size={12} aria-hidden />}
+          <button type="button" disabled={busy} onClick={action.go} className={cn('gz-ticket gz-ticket-sm', action.brass && 'gz-ticket-brass', table.mine && table.myTurn && 'gz-ticket-signal', busy && 'opacity-50')}>
+            {action.icon && <Eye aria-hidden />}
             {action.label}
-            {!action.icon && ' →'}
           </button>
         ) : table.state === 'open' ? (
           <span className={cn(boarding, 'text-iron-600')} title={t('platform.play.tables.viaQueueHint')}>
@@ -114,6 +148,7 @@ function Timetable({ tables, groups, busy, onJoin, onResume, onWatch }: { tables
       <caption className="sr-only">{t('platform.play.tables.title')}</caption>
       <thead>
         <tr>
+          <th className="pr-0" aria-hidden />
           <th>{t('platform.play.tables.colTable')}</th>
           <th>{t('platform.play.tables.colSeats')}</th>
           <th>{t('platform.play.tables.colState')}</th>
@@ -127,8 +162,11 @@ function Timetable({ tables, groups, busy, onJoin, onResume, onWatch }: { tables
           <tbody key={g.label}>
             {g.label && (
               <tr>
-                <th colSpan={5} className="!border-b-0 !pb-1 !pt-4 !text-paper-100">
-                  {g.label}
+                <th colSpan={6} className="!border-b-0 !pb-1 !pt-4 !text-paper-100">
+                  <span className="inline-flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rotate-45 bg-brass-300" aria-hidden />
+                    {g.label}
+                  </span>
                 </th>
               </tr>
             )}

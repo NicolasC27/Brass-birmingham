@@ -858,6 +858,29 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   background: #C9A24B;
   border-color: rgba(26, 20, 8, 0.45);
 }
+/* the small ticket of a timetable line */
+.gz-ticket-sm {
+  height: 28px;
+  padding: 0 11px 0 17px;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+.gz-ticket-sm::before {
+  left: 7px;
+  top: 4px;
+  bottom: 4px;
+}
+.gz-ticket-sm svg {
+  width: 12px;
+  height: 12px;
+}
+/* the reader's own move waiting: the ticket in the signal's colour */
+.gz-ticket-signal {
+  color: rgb(var(--paper-100));
+  background: rgb(var(--signal-400));
+  border-color: rgba(26, 20, 8, 0.45);
+}
 .gz-ticket-brass::before {
   border-left-color: rgba(26, 20, 8, 0.4);
 }
