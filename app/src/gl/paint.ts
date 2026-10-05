@@ -5,8 +5,7 @@ import { routeFor } from '@/components/game/routePaths';
 import { merchantOpen, tileKey } from '@/game/engine';
 import { tr } from '@/i18n';
 import type { Era, GameState, IndustryType, LinkDef } from '@/game/types';
-import { RIBBON_FONT, RIBBON_H, TILE, TILE_HALF, townChrome } from '@/components/game/townChrome';
-import { HOUSES } from './houses';
+import { RIBBON_FONT, RIBBON_GAP, RIBBON_H, TILE, TILE_HALF, ribbonWidth, townChrome } from '@/components/game/townChrome';
 import { FEET, SHADE } from './placeGround';
 import { BUILT_FOR, CUT_FOR, FRONT_RANK, ICON_FOR, PARTNER, pairFile, pairKey, variantOf } from './faces';
 import type { ChipStyle, SlotArt, StockStyle, TileArt, TileVariant } from './faces';
@@ -139,11 +138,6 @@ const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pai
 let tileSet: TileSet; // the set currently painted
 let tileArt: TileArt = {}; // the variant choices it was built from
 let barrelTex: Texture;
-/* one painting per merchant when /merchant-<id>.png exists (e.g. Gloucester
-   docks); the shared barge otherwise */
-const houseArt = new Map<string, Texture>();
-/* dev only: the signs' textures at hand in the console (a film's clock) */
-if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __houseArt?: typeof houseArt }).__houseArt = houseArt;
 let villageTex: Texture;
 /** the trades that have a works of their own to show */
 const WORKS: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
@@ -401,30 +395,6 @@ export async function loadBoardAssets(): Promise<void> {
   const wharves = await Promise.all(WHARVES.map((n) => Assets.load<Texture>(`/merchant-wharf-${n}.webp`).catch(() => null)));
   tileSet = await buildTileSet({});
   barrelTex = loaded['/beer-barrel.png'];
-  /* a house may come alive: a short looping film of its quay served beside
-     the still (smoke drifting, lamps flickering). The still stands in when
-     no film is served, when the reader has asked for less motion, or
-     under WebKit, whose video textures come up as static. */
-  const stillOnly = WEBKIT || (typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-  await Promise.all(
-    MERCHANTS.map(async (m) => {
-      const name = m.id.replace(/^m-/, '');
-      try {
-        let tex: Texture | null = null;
-        /* a house painted as a board has no film: the film shows the old sign */
-        if (!stillOnly && !HOUSES[name]?.board) {
-          const film = `/merchant-house-${name}.webm`;
-          const head = await fetch(film, { method: 'HEAD' }).catch(() => null);
-          if (head?.ok && (head.headers.get('content-type') ?? '').startsWith('video/')) {
-            tex = await Assets.load<Texture>({ src: film, data: { autoPlay: true, loop: true, muted: true, playsInline: true, preload: true } }).catch(() => null);
-          }
-        }
-        houseArt.set(m.id, tex ?? (await Assets.load(`/merchant-house-${name}.webp`)));
-      } catch {
-        /* no sign painted for this house: it is not drawn */
-      }
-    }),
-  );
   villageTex = loaded['/town-village.webp'];
   hamletTex = [loaded['/town-hamlet-0.webp'], loaded['/town-hamlet-1.webp'], loaded['/town-hamlet-2.webp']];
   placeTex = [loaded['/town-place-0.webp'], loaded['/town-place-1.webp'], loaded['/town-place-2.webp'], loaded['/town-place-3.webp']];
@@ -576,41 +546,6 @@ function makeRibbon(labelText: string, cx: number, cy: number, w: number, h: num
   return { box, plaque };
 }
 
-/** A brass nameplate, the kind screwed to a gallery frame: dark face,
- *  double brass fillet, a screw at each end, the name engraved in cream.
- *  It sits over the plate painted on the sign, so the name reads at every
- *  zoom: counter-scaled with the town ribbons. */
-function makeNameplate(labelText: string, cx: number, cy: number): Container {
-  const box = new Container();
-  box.position.set(cx, cy);
-  box.eventMode = 'none';
-  const style = { fontFamily: "'IM Fell English SC','Playfair Display',serif", fontSize: RIBBON_FONT + 1, letterSpacing: 2.2 };
-  const label = new Text({ text: labelText, style: { ...style, fill: 0xf4e6c2 } });
-  label.anchor.set(0.5);
-  const w = Math.ceil(label.width) + 34;
-  const h = 20;
-  const g = new Graphics();
-  g.roundRect(-w / 2 + 1.5, -h / 2 + 2.5, w, h, 3).fill({ color: 0x000000, alpha: 0.5 });
-  const brass = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
-  brass.addColorStop(0, '#E8CD8E').addColorStop(0.5, '#C9A45C').addColorStop(1, '#7E5F28');
-  g.roundRect(-w / 2, -h / 2, w, h, 3).fill(brass);
-  g.roundRect(-w / 2 + 2.2, -h / 2 + 2.2, w - 4.4, h - 4.4, 2).fill(0x1c150e).stroke({ width: 0.7, color: 0x5a4520, alpha: 0.9 });
-  g.moveTo(-w / 2 + 4, -h / 2 + 3.2).lineTo(w / 2 - 4, -h / 2 + 3.2).stroke({ width: 0.7, color: 0xfff3c8, alpha: 0.35 });
-  for (const sx of [-w / 2 + 7, w / 2 - 7]) {
-    g.circle(sx, 0, 2.2).fill(brass).stroke({ width: 0.6, color: 0x3a2a12 });
-    g.moveTo(sx - 1.4, -1).lineTo(sx + 1.4, 1).stroke({ width: 0.7, color: 0x3a2a12 });
-  }
-  g.eventMode = 'none';
-  const under = new Text({ text: labelText, style: { ...style, fill: 0x000000 } });
-  under.anchor.set(0.5);
-  under.position.set(0, 1);
-  under.alpha = 0.7;
-  under.eventMode = 'none';
-  label.eventMode = 'none';
-  box.addChild(g, under, label);
-  return box;
-}
-
 export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Sprite, etchRail: Sprite): BoardScene {
   const world = new Container();
   const linksLayer = new Container();
@@ -672,120 +607,97 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     sp.skew.x = flip * (0.75 + down * 0.3);
     sp.alpha = 0.5 - down * 0.1 + up * 0.18;
   };
-  /* the wharves' shadows and the signs' posts, recast when the ground changes */
-  const wharves: { g: Sprite; name: string; ox: number; oy: number; size: number; id: string }[] = [];
-  const signPosts: { raise: (shade: number) => void; id: string }[] = [];
+  /* the wharves' shadows, recast when the ground changes */
+  const wharves: { g: Sprite; q: Sprite; name: string; ox: number; oy: number; size: number; id: string }[] = [];
   /* how the land lies under each place on the ground in play; empty on a level one */
   let groundShade: Record<string, number> = {};
 
   /* ---------------------------- merchants ---------------------------- */
-  /* The merchant houses: each one a painted SIGN — gilded frame, the quay
-     at dusk, the name on a brass plate, a blank brass medallion — served as
-     one picture (tools/assets/build-houses.py). In front of the painting,
-     one physical tile per printed slot and the beer barrel at its foot; on
-     the medallion, the bonus engraved. Everything that changes (tiles,
-     barrels, claimed, closed) is redrawn in drawMerchants.               */
-  const SIGN_W = 236; // every sign the same width; its height follows the picture
+  /* A merchant is laid out like a town: its tiles in a row with the bonus
+     on a brass medallion beside them, the name on the towns' own ribbon
+     below — counter-scaled like theirs — and its wharf standing behind, in
+     the hand of the places. Nothing framed, nothing pictured. Everything
+     that changes (tiles, barrels, claimed, closed) is redrawn in
+     drawMerchants.                                                        */
   const MT = 46; // merchant tile size
   const MT_GAP = 10;
+  const MEDAL_R = 21;
   const merchantBeer = new Map<string, Container>();
   const merchantDyn = new Map<string, { plate: Container; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; tileTop: number }>();
   const ribbons: Container[] = [];
   for (const m of MERCHANTS) {
-    const id = m.id.replace(/^m-/, '');
-    const house = HOUSES[id];
-    const tex = houseArt.get(m.id);
-    if (!house || !tex) continue;
-    const W = SIGN_W;
-    const H = W / house.aspect;
     const plate = new Container();
     /* southern merchants (Oxford, Gloucester) sit on the map's bottom edge:
-       their sign rides 34 units above the node so the hand dock never hides it */
+       their row rides 34 units above the node so the hand dock never hides it */
     const south = m.y > 1500;
     plate.position.set(m.x, m.y - (south ? 34 : 0));
     plate.scale.set(1.45);
     plate.eventMode = 'none';
 
-    /* the wharf the sign belongs to, standing on the map below it: the same
-       hand as the towns' places, the same light, its own cleared ground */
+    /* the row: the tiles, a gap, the medallion; centred on the node */
+    const rowW = m.slots * MT + (m.slots - 1) * MT_GAP + 14 + MEDAL_R * 2;
+    const x0 = -rowW / 2 + MT / 2;
+    const tileTop = -MT / 2;
+    const slotX: number[] = [];
+    for (let i = 0; i < m.slots; i++) slotX.push(x0 + i * (MT + MT_GAP));
+    const medalX = rowW / 2 - MEDAL_R;
+    const medalY = 0;
+    const medalR = MEDAL_R;
+    const ribbonCy = MT / 2 + RIBBON_GAP + RIBBON_H / 2 + 2;
+
+    /* the wharf behind the row, its foot planted just under the ribbon —
+       the same hand as the towns' places, the same light, its own cleared
+       ground and its shadow cast by the land (castShadow) */
     const qi = MERCHANTS.indexOf(m) % Math.max(1, wharfTex.length);
     const quay = wharfTex[qi];
     if (quay) {
-      const qw = W * 0.92;
+      const qw = 210;
+      const foot = FEET[`merchant-wharf-${qi}`]?.[1] ?? 0.7;
       const q = new Sprite(quay);
       q.anchor.set(0.5);
       q.width = qw;
       q.height = qw;
-      q.position.set(0, H * 0.52 + qw * 0.22);
+      q.position.set(0, ribbonCy + 16 - (foot - 0.5) * qw);
       q.alpha = 0.94;
       q.eventMode = 'none';
       const qShadow = new Sprite();
       qShadow.eventMode = 'none';
       plate.addChild(qShadow, q);
-      wharves.push({ g: qShadow, name: `merchant-wharf-${qi}`, ox: -qw / 2, oy: q.y - qw / 2, size: qw, id: m.id });
+      wharves.push({ g: qShadow, q, name: `merchant-wharf-${qi}`, ox: -qw / 2, oy: q.y - qw / 2, size: qw, id: m.id });
     }
-    /* the sign stands on the quay: two oak posts from its lower corners down
-       to the deck, their feet planted, and the board's shadow thrown across
-       the deck and the ground beyond from the light over the reader's left
-       shoulder. Where the ground falls away the posts run longer to reach
-       it and the shadow runs with them; against a rise both draw in. */
-    const posts = new Graphics();
-    posts.eventMode = 'none';
-    const signShadow = new Graphics();
-    signShadow.eventMode = 'none';
-    const deck = quay ? H * 0.52 + W * 0.92 * 0.22 : H / 2 + 36;
-    const raise = (shade: number) => {
-      const down = Math.max(0, -shade);
-      const up = Math.max(0, shade);
-      const foot = H / 2 + (deck - H / 2) * (1 + down * 0.35 - up * 0.15);
-      const lean = 0.75 + down * 0.3;
-      const h = (foot + H / 2) * 0.5 * (1 + down * 0.75 - up * 0.3);
-      posts.clear();
-      signShadow.clear();
-      const [l, r] = [-W / 2 + 22, W / 2 - 22];
-      for (const px of [l, r]) {
-        posts.roundRect(px - 4, H / 2 - 10, 8, foot - H / 2 + 10, 2).fill(0x3e2a18);
-        posts.rect(px - 4, H / 2 - 10, 3, foot - H / 2 + 10).fill({ color: 0x8a6640, alpha: 0.7 });
-        posts.ellipse(px, foot, 9, 3.5).fill({ color: 0x1e160e, alpha: 0.35 });
-      }
-      signShadow.poly([l - 4, foot, r + 4, foot, r + 4 + lean * h, foot + h, l - 4 + lean * h, foot + h]).fill({ color: 0x1e160e, alpha: 0.3 - down * 0.06 + up * 0.1 });
-    };
-    raise(0);
-    signPosts.push({ raise, id: m.id });
-    const sign = new Sprite(tex);
-    sign.anchor.set(0.5);
-    sign.width = W;
-    sign.height = H;
-    sign.eventMode = 'none';
-    plate.addChild(signShadow, posts, sign);
 
-    /* tile shelves (static): a faint recess where each merchant tile sits,
-       low and left on the board, over the wharf's water */
-    const slotX: number[] = [];
-    const x0 = -W / 2 + W * 0.09 + MT / 2;
-    const tileTop = -H * 0.06;
+    /* the row's own shadow on the ground, then the shelves — a parchment
+       recess for each tile, like a town's empty card — and the medallion:
+       a brass disc with a beaded rim, seated on the ground */
+    const under = new Graphics();
+    under.eventMode = 'none';
+    under.roundRect(-rowW / 2 - 1, -MT / 2 + 1, rowW + 8, MT + 8, 8).fill({ color: 0x1e160e, alpha: 0.26 });
     const shelf = new Graphics();
     shelf.eventMode = 'none';
-    for (let i = 0; i < m.slots; i++) {
-      const x = x0 + i * (MT + MT_GAP);
-      slotX.push(x);
-      shelf.roundRect(x - MT / 2 - 2, tileTop - 2, MT + 4, MT + 4, 6).fill({ color: 0x000000, alpha: 0.4 }).stroke({ width: 0.8, color: 0xc9a45c, alpha: 0.35 });
+    for (const x of slotX) {
+      shelf.roundRect(x - MT / 2 - 2, tileTop - 2, MT + 4, MT + 4, 6).fill({ color: 0xe9dfc6, alpha: 0.5 }).stroke({ width: 0.9, color: 0x6b5232, alpha: 0.45 });
     }
-    plate.addChild(shelf);
+    const brass = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 1, y: 1 }, textureSpace: 'local' });
+    brass.addColorStop(0, '#F0D48E').addColorStop(0.45, '#C9A45C').addColorStop(1, '#7E5F28');
+    shelf.circle(medalX + 2, medalY + 3, medalR + 2).fill({ color: 0x1e160e, alpha: 0.4 });
+    shelf.circle(medalX, medalY, medalR + 2).fill(0x5a4520);
+    shelf.circle(medalX, medalY, medalR).fill(brass);
+    for (let k = 0; k < 28; k++) {
+      const a = (k / 28) * Math.PI * 2;
+      shelf.circle(medalX + Math.cos(a) * (medalR - 2.2), medalY + Math.sin(a) * (medalR - 2.2), 0.9).fill({ color: 0xfff3c8, alpha: 0.8 });
+    }
+    shelf.circle(medalX, medalY, medalR - 4.5).stroke({ width: 0.8, color: 0x5a4520, alpha: 0.6 });
+    plate.addChild(under, shelf);
 
-    /* the bonus, engraved on the sign's own medallion */
-    const medalX = (house.medal[0] - 0.5) * W;
-    const medalY = (house.medal[1] - 0.5) * H;
-    const medalR = house.medal[2] * W;
+    /* the word over the medallion, small caps in brass */
     const cap = new Text({
       text: tr('board.merchant.bonus').toUpperCase(),
-      style: { fontFamily: "'Archivo',sans-serif", fontSize: 6.5, fontWeight: '700', letterSpacing: 1.8, fill: 0xe8c87a },
+      style: { fontFamily: "'Archivo',sans-serif", fontSize: 6.5, fontWeight: '700', letterSpacing: 1.8, fill: 0x5a4520 },
     });
     cap.anchor.set(0.5);
-    cap.position.set(medalX, medalY + medalR + 7);
+    cap.position.set(medalX, medalY - medalR - 6);
     cap.eventMode = 'none';
-    /* only where it fits between the medallion and the frame's bottom band */
-    if (medalY + medalR + 12 < H / 2 - 8) plate.addChild(cap);
+    plate.addChild(cap);
 
     const slots = new Container();
     slots.eventMode = 'none';
@@ -826,7 +738,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     tick.position.set(medalX, medalY);
     claimed.addChild(wash, tick);
     claimed.visible = false;
-    /* closed at this player count: rust stamp across the painting */
+    /* closed at this player count: rust stamp across the row */
     const closed = new Container();
     closed.eventMode = 'none';
     const stamp = new Text({
@@ -837,7 +749,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     stamp.rotation = -0.12;
     const stampBox = new Graphics().roundRect(-stamp.width / 2 - 7, -stamp.height / 2 - 2, stamp.width + 14, stamp.height + 4, 3).stroke({ width: 1.8, color: 0xd05a48 });
     stampBox.rotation = -0.12;
-    closed.position.set(-W * 0.12, 0);
+    closed.position.set(0, 0);
     closed.addChild(stampBox, stamp);
     closed.visible = false;
     plate.addChild(slots, medal, claimed, closed);
@@ -846,13 +758,11 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     merchantBeer.set(m.id, slots);
     merchantDyn.set(m.id, { plate, slots, medal, claimed, closed, slotX, tileTop });
 
-    /* the name, legible at every zoom: a counter-scaled brass plate laid over
-       the one painted on the sign's top band */
-    if (!house.board) {
-      const box = makeNameplate(m.name.toUpperCase(), m.x, m.y - (south ? 34 : 0) - (H / 2 - H * 0.1) * 1.45);
-      ribbonsLayer.addChild(box);
-      ribbons.push(box);
-    }
+    /* the name, legible at every zoom: the towns' parchment ribbon, counter-scaled with theirs */
+    const label = m.name.toUpperCase();
+    const { box } = makeRibbon(label, m.x, plate.y + ribbonCy * 1.45, ribbonWidth(label), RIBBON_H);
+    ribbonsLayer.addChild(box);
+    ribbons.push(box);
   }
 
   /* ----------------------------- villages ---------------------------- */
@@ -1420,8 +1330,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       const TILE_TOP = dyn.tileTop;
       const card = (x: number) => {
         const g = new Graphics();
-        g.roundRect(x - MT / 2, TILE_TOP + 2, MT, MT, 5).fill(0x0b0806);
-        g.roundRect(x - MT / 2, TILE_TOP, MT, MT, 5).fill(0x1b1611).stroke({ width: 1, color: 0xc9a45c, alpha: 0.75 });
+        g.roundRect(x - MT / 2, TILE_TOP + 2, MT, MT, 5).fill(0x9c8a62);
+        g.roundRect(x - MT / 2, TILE_TOP, MT, MT, 5).fill(0xe6d9bb).stroke({ width: 1, color: 0x6b5232, alpha: 0.75 });
         g.eventMode = 'none';
         dyn.slots.addChild(g);
       };
@@ -1580,8 +1490,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       villageStyle = style;
       groundShade = (ground && SHADE[ground]) || {};
       layVillages(lastGame);
-      for (const w of wharves) castShadow(w.g, w.name, w.ox, w.oy, w.size, groundShade[w.id] ?? 0);
-      for (const p of signPosts) p.raise(groundShade[p.id] ?? 0);
+      /* an ink map keeps its own hand: no painted wharf on it */
+      for (const w of wharves) {
+        castShadow(w.g, w.name, w.ox, w.oy, w.size, groundShade[w.id] ?? 0);
+        w.q.visible = style !== 'engraved';
+        if (style === 'engraved') w.g.visible = false;
+      }
     },
   };
 }

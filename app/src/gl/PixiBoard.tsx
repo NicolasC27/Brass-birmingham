@@ -296,7 +296,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         urls.etch ? Assets.load(urls.etch.rail) : Texture.EMPTY,
       ]);
       if (cancelled) return;
-      scene.setVillages(mapStyle === 'engraved' ? 'engraved' : 'painted', mapStyle === 'relief' ? activeBoard().id : null);
+      scene.setVillages(mapStyle === 'engraved' || mapStyle === 'inked' ? 'engraved' : 'painted', mapStyle === 'relief' ? activeBoard().id : null);
       for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail], [scene.etchCanal, etchCanal], [scene.etchRail, etchRail]] as const) {
         sp.texture = tex;
         sp.width = WORLD_W + 2 * BLEED_X;
@@ -482,7 +482,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);
       scene.setStockStyle(bootOpts.stockStyle);
-      scene.setVillages(bootOpts.mapStyle === 'engraved' ? 'engraved' : 'painted', bootOpts.mapStyle === 'relief' ? activeBoard().id : null);
+      scene.setVillages(bootOpts.mapStyle === 'engraved' || bootOpts.mapStyle === 'inked' ? 'engraved' : 'painted', bootOpts.mapStyle === 'relief' ? activeBoard().id : null);
       if (Object.keys(bootOpts.tileArt).length) void scene.setTileArt(bootOpts.tileArt);
       scene.setTileLook({ slotArt: bootOpts.slotArt, colorBlind: bootOpts.colorBlind, sealTiles: bootOpts.sealTiles, sealLinks: bootOpts.sealLinks, cardGrain: bootOpts.cardGrain, chipStyle: bootOpts.chipStyle });
       a.stage.addChild(scene.world);
@@ -879,11 +879,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         return null;
       };
-      /* merchant plates (paint.ts): 1.15-scaled cards centred on the node, southern ones lifted 34 units */
+      /* merchant rows (paint.ts): tiles, a gap and the medallion, 1.45-scaled and centred on the node, southern ones lifted 34 units */
       const merchantAt = (wx: number, wy: number) => {
         for (const m of MERCHANTS) {
-          const w = (16 + m.slots * 40 + (m.slots - 1) * 12 + 18 + 40 + 16) * 1.15;
-          const h = 88 * 1.15;
+          const w = (m.slots * 46 + (m.slots - 1) * 10 + 14 + 42) * 1.45 + 16;
+          const h = (46 + 22 + 12) * 1.45;
           const cy = m.y - (m.y > 1500 ? 34 : 0);
           if (Math.abs(wx - m.x) <= w / 2 && Math.abs(wy - cy) <= h / 2) return m;
         }
