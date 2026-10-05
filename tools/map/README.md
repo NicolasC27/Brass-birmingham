@@ -134,14 +134,14 @@ them can be composed again; only their served WebP went.
 ### The survey, on its own layer
 
 Key C hides the board's unbuilt traces; on the English model the ground
-itself carried a survey — cart roads and towpaths in the canal era, the
-railways in the rail era — and a hidden trace still left its pale line on
-the land. `ETCH=1` on `compose-canal.sh` and `compose-rail.sh` now serves
-that survey as a transparent layer of its own (`map-relief-*-etch.webp`)
-over a land bare of it; the board lays it over each era's ground
-(`etchCanal`/`etchRail` in `PixiBoard.tsx`, listed in `MAP_URL`) and
-hides it with the traces. The canal beds stay in the land: water is
-geography, and an unbuilt canal's ribbon only dims when the traces go.
+itself carried the routes — canal beds, towpaths and cart roads in the
+canal era, the railways in the rail era — and a hidden trace still left
+its line on the land. `ETCH=1` on `compose-canal.sh` and `compose-rail.sh`
+now serves those routes as a transparent layer of their own
+(`map-relief-*-etch.webp`) over a land bare of them; the board lays it
+over each era's ground (`etchCanal`/`etchRail` in `PixiBoard.tsx`, listed
+in `MAP_URL`) and hides it with the traces, so C leaves nothing of a
+route but the country.
 
 ## Anchoring a place
 

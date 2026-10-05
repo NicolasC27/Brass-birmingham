@@ -941,9 +941,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
 
   /* ---------------------------- repaints ----------------------------- */
   let hideUnbuilt = false;
-  /* the unbuilt links drawn as water, which hiding only dims */
-  const water = new Set<string>();
-  const WATER_DIM = 0.45;
   let bigChips = false;
   let greyFreeMerchants = false;
   let stockStyle: StockStyle = 'counter';
@@ -1088,12 +1085,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
           tracePath(g, pts);
           g.stroke({ width: 1.2, color: 0x8fb8c4, alpha: 0.5, cap: 'round', join: 'round' });
         }
-        /* board option (key C): unbuilt traces hidden. Water is geography,
-           not a trace: an unbuilt canal keeps its ribbon, only dimmed, so
-           the country does not lose its rivers when the surveys go */
-        if (railStyle) water.delete(def.id);
-        else water.add(def.id);
-        if (hideUnbuilt) g.alpha = railStyle ? 0 : WATER_DIM;
+        /* board option (key C): every unbuilt trace hidden, water included —
+           the relief ground serves its routes on a layer hidden with them */
+        if (hideUnbuilt) g.alpha = 0;
       } else {
         const col = playerHex(game, built.owner);
         const shape = PLAYER_COLORS[game.players[built.owner].color]?.shape ?? 'circle';
@@ -1498,8 +1492,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     for (const def of LINKS) {
       const built = game.links[def.id];
       if (built) linkGfx.get(def.id)!.alpha = spotlight === null || built.owner === spotlight ? 1 : 0.3;
-      /* unbuilt traces soften under a spotlight too (unless hidden — water stays, dimmed) */
-      else linkGfx.get(def.id)!.alpha = hideUnbuilt ? (water.has(def.id) ? WATER_DIM : 0) : spotlight === null ? 1 : 0.45;
+      /* unbuilt traces soften under a spotlight too (unless fully hidden) */
+      else linkGfx.get(def.id)!.alpha = hideUnbuilt ? 0 : spotlight === null ? 1 : 0.45;
     }
     for (const town of TOWNS) {
       const view = towns.get(town.id)!;

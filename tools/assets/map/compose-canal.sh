@@ -148,17 +148,17 @@ magick -size ${FW}x${FH} xc:none -stroke none \
   -channel RGBA -blur 0x1.2 +channel "$T/village.png"
 magick -size ${FW}x${FH} xc:none -stroke none -fill "$BASIN" -draw "$(cat "$T/basin.txt")" -channel RGBA -blur 0x30 +channel \
   -fill none -stroke "$RIM" -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
-# the survey — cart roads and towpaths — is the one part of the engraving a
-# reader may hide (key C): ETCH=1 serves it as a layer of its own
-# (<stem>-etch.webp, transparent) instead of drawing it into the land. The
-# water stays: a canal bed is geography.
+# the routes — canal beds, towpaths, cart roads — are what a reader may
+# hide (key C): ETCH=1 serves them as a layer of their own (<stem>-etch.webp,
+# transparent) instead of drawing them into the land, which then carries
+# only the country, the village grounds and the merchant basins.
 if [[ ${ETCH:-0} == 1 ]]; then
-  magick "$T/roads.png" "$T/tow.png" -compose over -composite -quality 85 "app/public/$STEM-etch.webp"
-  cp "$T/graded.png" "$T/surveyed.png"
+  magick "$T/roads.png" "$T/beds.png" -compose over -composite "$T/tow.png" -compose over -composite -quality 85 "app/public/$STEM-etch.webp"
+  cp "$T/graded.png" "$T/routed.png"
 else
-  magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/tow.png" -compose over -composite "$T/surveyed.png"
+  magick "$T/graded.png" "$T/roads.png" -compose over -composite "$T/beds.png" -compose over -composite "$T/tow.png" -compose over -composite "$T/routed.png"
 fi
-magick "$T/surveyed.png" "$T/beds.png" -compose over -composite \
+magick "$T/routed.png" \
   "$T/patch.png" -compose over -composite "$T/village.png" -compose over -composite "$T/basin.png" -compose over -composite "$T/land.png"
 
 # 6b. the lie of the land: a height field of our own making, smooth and
