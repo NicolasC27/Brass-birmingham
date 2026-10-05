@@ -562,8 +562,17 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
 
   /* ------------------------------ links ------------------------------ */
   const linkGfx = new Map<string, Graphics>();
+  /* the same route as a surveyor's hairline — a thin dashed grey for a
+     railway, a thread of water for a canal — shown only while the traces
+     are hidden (key C), so the country still tells where a route may go */
+  const linkFaint = new Map<string, Graphics>();
   const linkHit = new Map<string, Graphics>();
   for (const def of LINKS) {
+    const f = new Graphics();
+    f.eventMode = 'none';
+    f.visible = false;
+    linksLayer.addChild(f);
+    linkFaint.set(def.id, f);
     const g = new Graphics();
     g.eventMode = 'none';
     linksLayer.addChild(g);
@@ -954,6 +963,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       const g = linkGfx.get(def.id)!;
       g.clear();
       g.alpha = 1;
+      const f = linkFaint.get(def.id)!;
+      f.clear();
+      f.visible = false;
       const pts = linkPoints(def, game.era);
       const built = game.links[def.id];
       if (!built) {
@@ -970,6 +982,17 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
         }
         if (furrow <= 0) continue;
         const railStyle = game.era === 'rail' ? def.rail : !def.canal;
+        /* the hairline behind the trace, for when the trace is hidden */
+        if (railStyle) {
+          traceDashes(f, pts, 5, 6);
+          f.stroke({ width: 1.3, color: 0x2e2620, alpha: 0.5 * Math.min(1, furrow / 0.5) });
+        } else {
+          tracePath(f, pts);
+          f.stroke({ width: 2.2, color: 0x1e3a44, alpha: 0.32 * Math.min(1, furrow / 0.5), cap: 'round', join: 'round' });
+          tracePath(f, pts);
+          f.stroke({ width: 0.8, color: 0x8fb8c4, alpha: 0.45 * Math.min(1, furrow / 0.5), cap: 'round', join: 'round' });
+        }
+        f.visible = hideUnbuilt;
         if (railStyle && game.era === 'rail') {
           /* the railway itself is painted into the rail-era map (ballast,
              sleepers, steel): the trace only lifts it — a faint dark bed
@@ -1403,7 +1426,10 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       const built = game.links[def.id];
       if (built) linkGfx.get(def.id)!.alpha = spotlight === null || built.owner === spotlight ? 1 : 0.3;
       /* unbuilt traces soften under a spotlight too (unless fully hidden) */
-      else linkGfx.get(def.id)!.alpha = hideUnbuilt ? 0 : spotlight === null ? 1 : 0.45;
+      else {
+        linkGfx.get(def.id)!.alpha = hideUnbuilt ? 0 : spotlight === null ? 1 : 0.45;
+        linkFaint.get(def.id)!.visible = hideUnbuilt;
+      }
     }
     for (const town of TOWNS) {
       const view = towns.get(town.id)!;
