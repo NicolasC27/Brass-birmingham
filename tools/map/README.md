@@ -176,28 +176,29 @@ last:
   inked grounds are level and every shadow on them is the same. Run the
   script again when a drawing or the relief painting changes.
 
-## The wharves
+## The merchants
 
-Each of the five edge merchants keeps its framed sign, and now stands on a
-wharf of its own below it (`merchant-wharf-0..4.webp`): a warehouse with a
-hoist, a customs house with a clock, a timber staithe on piles, a transit
-shed with its lime kiln, an arcaded market hall. Drawn from the v3 tiles as
-reference like the places and the works, keyed off magenta, and given the
-same cleared ground and play-time shadow so they sit on the map rather
-than hang over it.
+A merchant is laid out like a town, in `paint.ts` and nothing else: its
+tiles in a row on parchment shelves, the bonus engraved on a brass
+medallion drawn beside them, the name on the towns' own ribbon below
+(counter-scaled like theirs), and behind the row its wharf
+(`merchant-wharf-0..4.webp`): a warehouse with a hoist, a customs house
+with a clock, a timber staithe on piles, a transit shed with its lime
+kiln, an arcaded market hall — drawn from the v3 tiles as reference like
+the places and the works, keyed off magenta, given the same cleared
+ground and the same play-time shadow.
 
-The gilded frame is going: Oxford's sign is now a painted oak signboard
-(`tools/assets/fal-signboards.py`) — planks and iron straps, the name
-painted large on the top plank, the tiles resting on a slate panel, the
-bonus on a brass roundel — in the hand of the tiles and the places, and
-`houses.ts` marks it `board` so no brass nameplate is laid over it. The
-other four, and the Veneto's five, follow the same road when the fal
-balance allows.
+The framed signs went — first the gilded frame with its dusk painting
+(`tools/assets/fal-merchants.sh`), then the oak signboards
+(`tools/assets/fal-signboards.py`): a picture on the map read as a picture,
+its black surround with it, and five of the same board read as wallpaper.
+Their pictures stay served for the counter (`merchant-house-*.webp`).
+Nothing on a merchant is read off a picture any more, so a second board's
+merchants draw the same way with no table to fill.
 
-The sign itself no longer floats: it stands on two oak posts planted on
-the quay's deck, the board's shadow thrown across the deck and the ground
-beyond. Where the ground falls away the posts run longer to reach it and
-the shadow runs with them; against a rise both draw in.
+On the ink grounds — the engraved map and the inked map — the towns keep
+their ink hamlets and the merchants stand without a wharf: an ink map
+keeps its own hand, and a painted place on it read as a sticker.
 
 ## A second board
 
