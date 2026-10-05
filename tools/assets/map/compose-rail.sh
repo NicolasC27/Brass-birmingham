@@ -54,25 +54,33 @@ print('\n'.join(out))
 PY
 )
 # the routes carved into the model itself (see compose-canal.sh, 5b): a
-# groove along every railway, kept when the traces hide. FURROW=0 skips it.
+# shallow valley and a thin groove along every railway, kept when the
+# traces hide. FURROW=0 skips it.
 if [[ ${FURROW:-1} == 1 ]]; then
-  UL=$(python3 - "$GEO" "$BX" "$BY" -2.5 <<'PY2'
+  python3 - "$GEO" "$BX" "$BY" "$T" <<'PY2'
 import json, sys
-g = json.load(open(sys.argv[1])); bx, by, d = int(sys.argv[2]), int(sys.argv[3]), float(sys.argv[4])
-print('\n'.join('polyline ' + ' '.join(f'{x + bx + d:.1f},{y + by + d:.1f}' for x, y in (l.get('railPts') or l['pts'])) for l in g['links'] if l['rail']))
+g = json.load(open(sys.argv[1])); bx, by, t = int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
+def poly(pts, d=0): return 'polyline ' + ' '.join(f'{x + bx + d:.1f},{y + by + d:.1f}' for x, y in pts)
+routes = [l for l in g['links'] if l['rail']]
+for name, d in [('0', 0), ('u', -2), ('l', 2), ('vu', -9), ('vl', 9)]:
+    open(f'{t}/fur-{name}.txt', 'w').write('\n'.join(poly(l.get('railPts') or l['pts'], d) for l in routes))
 PY2
-)
-  LR=$(python3 - "$GEO" "$BX" "$BY" 2.5 <<'PY2'
-import json, sys
-g = json.load(open(sys.argv[1])); bx, by, d = int(sys.argv[2]), int(sys.argv[3]), float(sys.argv[4])
-print('\n'.join('polyline ' + ' '.join(f'{x + bx + d:.1f},{y + by + d:.1f}' for x, y in (l.get('railPts') or l['pts'])) for l in g['links'] if l['rail']))
-PY2
-)
+  # a soft valley — the slope up-left of the route lit, the one down-right
+  # shaded — and a thin groove along its floor; the whole layer then wobbled
+  # by a coarse plasma and let come and go along the way by another, so no
+  # line reads as ruled. FURROW_SEED changes the wobble.
   magick -size ${FW}x${FH} xc:none -fill none \
-    -stroke 'rgba(20,14,8,0.40)' -strokewidth 13 -draw "$DRAW" -blur 0x3 \
-    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(0,0,0,0.58)' -strokewidth 4 -draw "$UL" -blur 0x1.4 \) -compose over -composite \
-    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(255,245,220,0.42)' -strokewidth 4 -draw "$LR" -blur 0x1.6 \) -compose over -composite \
-    "$T/furrow.png"
+    -stroke 'rgba(255,246,222,0.26)' -strokewidth 18 -draw "$(cat "$T/fur-vu.txt")" -blur 0x7 \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(18,12,6,0.30)' -strokewidth 18 -draw "$(cat "$T/fur-vl.txt")" -blur 0x7 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(20,14,8,0.34)' -strokewidth 7 -draw "$(cat "$T/fur-0.txt")" -blur 0x2 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(0,0,0,0.5)' -strokewidth 2.4 -draw "$(cat "$T/fur-u.txt")" -blur 0x1.2 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(255,245,220,0.38)' -strokewidth 2.4 -draw "$(cat "$T/fur-l.txt")" -blur 0x1.4 \) -compose over -composite \
+    "$T/fur-raw.png"
+  magick -seed "${FURROW_SEED:-11}" -size $((FW/10))x$((FH/10)) plasma:fractal -resize ${FW}x${FH}! -blur 0x6 "$T/fur-disp.png"
+  magick "$T/fur-raw.png" "$T/fur-disp.png" -compose Displace -set option:compose:args 7x7 -composite "$T/fur-wob.png"
+  magick -seed "$(( ${FURROW_SEED:-11} + 3 ))" -size $((FW/20))x$((FH/20)) plasma:fractal -resize ${FW}x${FH}! -colorspace gray -auto-level -level 15%,100% "$T/fur-gain.png"
+  magick "$T/fur-wob.png" -alpha extract "$T/fur-gain.png" -compose Multiply -composite "$T/fur-a.png"
+  magick "$T/fur-wob.png" "$T/fur-a.png" -alpha off -compose CopyOpacity -composite "$T/furrow.png"
   magick "$T/full.png" "$T/furrow.png" -compose over -composite "$T/carved.png"
   mv "$T/carved.png" "$T/full.png"
 fi

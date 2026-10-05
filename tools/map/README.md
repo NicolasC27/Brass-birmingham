@@ -141,12 +141,14 @@ now serves those routes as a transparent layer of their own
 (`map-relief-*-etch.webp`) over a land bare of them; the board lays it
 over each era's ground (`etchCanal`/`etchRail` in `PixiBoard.tsx`, listed
 in `MAP_URL`) and hides it with the traces. What C leaves is carved into
-the model itself: `FURROW=1` (the default) on both composers cuts a
-groove along every route — its upper-left wall in shadow, its lower-right
-wall catching the light, the way a line scored into plaster reads under
-a raking lamp — canal-era routes on the canal ground, the railways on the
-rail one. The country then still tells where a route may go, and C still
-reads as a switch: rubans and survey on, grooves alone off.
+the model itself: `FURROW=1` (the default) on both composers lays a
+shallow valley along every route — the slope up-left of it lit, the one
+down-right shaded — with a thin groove on its floor; the whole layer is
+then wobbled by a coarse plasma and let come and go along the way by
+another (`FURROW_SEED`), so no route reads as ruled. Canal-era routes on
+the canal ground, the railways on the rail one. The country then still
+tells where a route may go, the way a hillside would, and C still reads
+as a switch: rubans and survey on, valleys alone off.
 
 ## Anchoring a place
 
