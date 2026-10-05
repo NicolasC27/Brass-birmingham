@@ -65,6 +65,8 @@ export interface TownView {
 
 export interface BoardScene {
   world: Container;
+  /** the sheet the links are drawn on; the ambiance goes right above it */
+  linksLayer: Container;
   bgCanal: Sprite;
   bgRail: Sprite;
   /** the survey laid over each era's ground, hidden with the traces */
@@ -1421,6 +1423,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
   let lastGame: GameState | null = null;
   return {
     world,
+    linksLayer,
     bgCanal,
     bgRail,
     etchCanal,

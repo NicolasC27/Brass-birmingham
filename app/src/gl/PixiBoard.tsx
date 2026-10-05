@@ -494,8 +494,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const ambiance = buildAmbiance(reduced);
       ambiance.setTraffic(bootOpts.traffic);
       ambianceRef.current = ambiance;
-      /* mist + halos under the towns, smoke + traffic above */
-      scene.world.addChildAt(ambiance.layer, 3);
+      /* mist + halos under the towns, smoke + traffic above: right over the
+         links, whatever sheets lie under them */
+      scene.world.addChildAt(ambiance.layer, scene.world.getChildIndex(scene.linksLayer) + 1);
 
       const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }));
       cameraRef.current = cam;
