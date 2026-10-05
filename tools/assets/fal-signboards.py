@@ -4,12 +4,12 @@
     tools/assets/fal-signboards.py <merchant id> [...]
 
 Asks fal-ai/nano-banana/edit (through tools/map/fal-run.mjs, FAL_KEY in
-.env.local) for one signboard per merchant, in the hand of the v3 tiles:
-weathered oak planks and iron straps, the name painted large on the top
-plank, a slate panel on the left where the tiles rest with a small dusk
-view of the place in its upper part, a blank brass roundel on the right for
-the bonus. References: the old gilded sign for the layout, the v3 goods
-sheet for the brush. The result is trimmed of its black surround, kept as
+.env.local) for one signboard per merchant: Shrewsbury's board painted
+again with another name and another dusk view, so every sign is the same
+board — weathered oak planks and iron straps, the name painted large on
+the top plank, the framed painting on the left where the tiles rest, a
+blank brass roundel on the right for the bonus. References: Shrewsbury's
+board for the pattern, the v3 goods sheet for the brush. The result is trimmed of its black surround, kept as
 tools/assets/merchants/signboard-<id>.png and served as
 app/public/merchant-house-<id>.webp (1024 wide); then read the roundel's
 centre and radius off it into app/src/gl/houses.ts, with `board: true`.
@@ -29,17 +29,16 @@ SCENE = {
     'bologna': 'red-brick towers and porticoes above a canal, wool barges at a covered quay',
     'ferrara': 'a Renaissance castle with its moat and towers, a river quay with moored boats',
 }
-REF = f'{R}/tools/assets/merchants/house-oxford.jpg'
+# Shrewsbury's board is the pattern: every other sign is the same board repainted
+REF = f'{R}/tools/assets/merchants/signboard-shrewsbury.png'
 STYLE = f'{R}/tools/assets/tiles-woodcut/v3-style.png' if os.path.exists(f'{R}/tools/assets/tiles-woodcut/v3-style.png') else f'{R}/brass/v3-style.png'
 for name in sys.argv[1:]:
     prompt = (
-        'Redesign this trading-house sign as a rustic painted wooden signboard, in exactly the style of the second image: the same chunky painted-model look, '
-        'the same warm light from the upper left, the same rich colours. Wide format, seen perfectly straight on, filling the frame edge to edge, black background outside the board. '
-        'The board is made of thick weathered oak planks bound by dark iron straps with round rivets, with a carved plank across the top bearing the word '
-        f'{name.upper()} in large cream painted serif capitals. '
-        'Keep the same three-part layout as the first image: at the top the name plank; on the left two thirds a recessed panel of dark slate, plain and empty, where goods tiles will rest, '
-        f'with a small painted view of {SCENE[name]} at dusk filling its upper part only; '
-        'on the right a large round brass roundel with a beaded rim, its face blank and empty, bolted to the wood. No other text, no people, no gilded frame, no gold leaf.')
+        'Paint this exact same wooden signboard again for another trading house, in exactly the style of the two images: the same chunky painted-model look, '
+        'the same warm light from the upper left, the same rich colours. Keep everything identical — the same weathered oak planks, the same dark iron straps and round rivets, '
+        'the same proportions, the same layout: the name plank across the top, the framed painting on the left, the blank brass roundel with its beaded rim on the right — '
+        f'and change only two things: the name on the top plank now reads {name.upper()} in the same cream painted serif capitals, and the painting now shows {SCENE[name]} at dusk. '
+        'Wide format, seen perfectly straight on, filling the frame edge to edge, black background outside the board. No other text, no people.')
     # the runner labels every file a PNG: hand it one
     ref = tempfile.mktemp(suffix='.png')
     subprocess.run(['magick', REF, '-resize', '1024x', ref], check=True)
