@@ -411,7 +411,8 @@ export async function loadBoardAssets(): Promise<void> {
       const name = m.id.replace(/^m-/, '');
       try {
         let tex: Texture | null = null;
-        if (!stillOnly) {
+        /* a house painted as a board has no film: the film shows the old sign */
+        if (!stillOnly && !HOUSES[name]?.board) {
           const film = `/merchant-house-${name}.webm`;
           const head = await fetch(film, { method: 'HEAD' }).catch(() => null);
           if (head?.ok && (head.headers.get('content-type') ?? '').startsWith('video/')) {

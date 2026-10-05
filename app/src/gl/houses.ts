@@ -6,7 +6,7 @@
 /* `board`: a painted oak signboard (tools/assets/merchants/signboard-<id>.png)
    whose name is painted large on its top plank — no brass nameplate over it */
 export const HOUSES: Record<string, { aspect: number; medal: [x: number, y: number, r: number]; board?: true }> = {
-  shrewsbury: { aspect: 2.5, medal: [0.866, 0.468, 0.09] },
+  shrewsbury: { aspect: 2.415, medal: [0.829, 0.523, 0.103], board: true },
   warrington: { aspect: 2.5, medal: [0.866, 0.468, 0.09] },
   nottingham: { aspect: 2.525, medal: [0.845, 0.49, 0.1] },
   oxford: { aspect: 1.672, medal: [0.761, 0.617, 0.165], board: true },

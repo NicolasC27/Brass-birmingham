@@ -40,8 +40,11 @@ for name in sys.argv[1:]:
         'Keep the same three-part layout as the first image: at the top the name plank; on the left two thirds a recessed panel of dark slate, plain and empty, where goods tiles will rest, '
         f'with a small painted view of {SCENE[name]} at dusk filling its upper part only; '
         'on the right a large round brass roundel with a beaded rim, its face blank and empty, bolted to the wood. No other text, no people, no gilded frame, no gold leaf.')
+    # the runner labels every file a PNG: hand it one
+    ref = tempfile.mktemp(suffix='.png')
+    subprocess.run(['magick', REF, '-resize', '1024x', ref], check=True)
     body = tempfile.mktemp(suffix='.json')
-    json.dump({'prompt': prompt, 'image_urls': [f'file://{REF}', f'file://{STYLE}'], 'num_images': 1, 'aspect_ratio': '21:9', 'output_format': 'png'}, open(body, 'w'))
+    json.dump({'prompt': prompt, 'image_urls': [f'file://{ref}', f'file://{STYLE}'], 'num_images': 1, 'aspect_ratio': '21:9', 'output_format': 'png'}, open(body, 'w'))
     raw = tempfile.mktemp(suffix='.png')
     subprocess.run(['node', f'{R}/tools/map/fal-run.mjs', 'fal-ai/nano-banana/edit', body, raw], check=True)
     src = f'{R}/tools/assets/merchants/signboard-{name}.png'
