@@ -24,7 +24,7 @@ const CLEARANCE = 90;
 /** samples per curve for the avoidance probe */
 const SAMPLES = 64;
 /** the meander's reach across the route, as a share of its length */
-const MEANDER = 0.035;
+const MEANDER = 0.06;
 /** points along a finished route */
 const STEPS = 48;
 
@@ -97,7 +97,7 @@ function meandered(q: Quad, h: number, amp: number): [number, number][] {
   const p1 = ((h >>> 3) % 628) / 100;
   const p2 = ((h >>> 9) % 628) / 100;
   const p3 = ((h >>> 15) % 628) / 100;
-  const waves = 2 + ((h >>> 20) % 3);
+  const waves = 2 + ((h >>> 20) % 2);
   const pts: [number, number][] = [];
   for (let i = 0; i <= STEPS; i++) {
     const t = i / STEPS;
@@ -107,7 +107,9 @@ function meandered(q: Quad, h: number, amp: number): [number, number][] {
     const ty = 2 * u * (q.cy - q.ay) + 2 * t * (q.by - q.cy);
     const tl = Math.hypot(tx, ty) || 1;
     const env = Math.sin(Math.PI * t);
-    const wave = Math.sin(waves * Math.PI * t + p1) * 0.6 + Math.sin((waves * 2 + 1) * Math.PI * t + p2) * 0.3 + Math.sin((waves * 4 + 1) * Math.PI * t + p3) * 0.12;
+    /* broad swings, a lighter second wave, and no fine wobble: a canal
+       bends with the valley, it does not shiver */
+    const wave = Math.sin(waves * Math.PI * t + p1) * 0.7 + Math.sin((waves * 2 + 1) * Math.PI * t + p2) * 0.2 + Math.sin((waves * 3 + 1) * Math.PI * t + p3) * 0.06;
     const off = amp * len * env * wave;
     pts.push([x + (-ty / tl) * off, y + (tx / tl) * off]);
   }
@@ -162,27 +164,30 @@ function buildRoute(def: LinkDef): Route {
 
 let ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
 
+/** a traced line carries the tracer's shiver: two passes of a three-point
+ *  mean, the ends held, leave the bends and take the shiver out */
+function smoothed(raw: [number, number][]): [number, number][] {
+  let pts = raw;
+  for (let pass = 0; pass < 2; pass++) {
+    pts = pts.map((p, i) => (i === 0 || i === pts.length - 1 ? p : [(pts[i - 1][0] + p[0] + pts[i + 1][0]) / 3, (pts[i - 1][1] + p[1] + pts[i + 1][1]) / 3]));
+  }
+  return pts;
+}
+
 /* the Rail Era's routes were traced on the relief of the rail-era painting
    (tools/map/rail-routes.py): the map engraves the very same lines, so a
    railway built on the board lies exactly on the one painted under it */
-let RAIL_ERA = new Map<string, Route>(
-  LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => {
-    const pts = RAIL_ROUTES[def.id];
-    const d = `M${pts.map(([x, y]) => `${x},${y}`).join(' L')}`;
-    return [def.id, { d, mid: pts[Math.floor(pts.length / 2)], pts }];
-  }),
-);
+const railRoute = (def: LinkDef): Route => {
+  const pts = smoothed(RAIL_ROUTES[def.id]);
+  const d = `M${pts.map(([x, y]) => `${x},${y}`).join(' L')}`;
+  return { d, mid: pts[Math.floor(pts.length / 2)], pts };
+};
+let RAIL_ERA = new Map<string, Route>(LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => [def.id, railRoute(def)]));
 
 /* another board draws another network: both tables are traced again */
 onBoardChange(() => {
   ROUTES = new Map<string, Route>(LINKS.map((def) => [def.id, buildRoute(def)]));
-  RAIL_ERA = new Map<string, Route>(
-    LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => {
-      const pts = RAIL_ROUTES[def.id];
-      const d = `M${pts.map(([x, y]) => `${x},${y}`).join(' L')}`;
-      return [def.id, { d, mid: pts[Math.floor(pts.length / 2)], pts }];
-    }),
-  );
+  RAIL_ERA = new Map<string, Route>(LINKS.filter((def) => RAIL_ROUTES[def.id]).map((def) => [def.id, railRoute(def)]));
 });
 
 /** winding route for a link (precomputed, deterministic); the Rail Era has
