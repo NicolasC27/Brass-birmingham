@@ -140,8 +140,13 @@ its line on the land. `ETCH=1` on `compose-canal.sh` and `compose-rail.sh`
 now serves those routes as a transparent layer of their own
 (`map-relief-*-etch.webp`) over a land bare of them; the board lays it
 over each era's ground (`etchCanal`/`etchRail` in `PixiBoard.tsx`, listed
-in `MAP_URL`) and hides it with the traces, so C leaves nothing of a
-route but the country.
+in `MAP_URL`) and hides it with the traces. What C leaves is carved into
+the model itself: `FURROW=1` (the default) on both composers cuts a
+groove along every route — its upper-left wall in shadow, its lower-right
+wall catching the light, the way a line scored into plaster reads under
+a raking lamp — canal-era routes on the canal ground, the railways on the
+rail one. The country then still tells where a route may go, and C still
+reads as a switch: rubans and survey on, grooves alone off.
 
 ## Anchoring a place
 

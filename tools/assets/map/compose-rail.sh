@@ -53,6 +53,29 @@ for l in g['links']:
 print('\n'.join(out))
 PY
 )
+# the routes carved into the model itself (see compose-canal.sh, 5b): a
+# groove along every railway, kept when the traces hide. FURROW=0 skips it.
+if [[ ${FURROW:-1} == 1 ]]; then
+  UL=$(python3 - "$GEO" "$BX" "$BY" -2.5 <<'PY2'
+import json, sys
+g = json.load(open(sys.argv[1])); bx, by, d = int(sys.argv[2]), int(sys.argv[3]), float(sys.argv[4])
+print('\n'.join('polyline ' + ' '.join(f'{x + bx + d:.1f},{y + by + d:.1f}' for x, y in (l.get('railPts') or l['pts'])) for l in g['links'] if l['rail']))
+PY2
+)
+  LR=$(python3 - "$GEO" "$BX" "$BY" 2.5 <<'PY2'
+import json, sys
+g = json.load(open(sys.argv[1])); bx, by, d = int(sys.argv[2]), int(sys.argv[3]), float(sys.argv[4])
+print('\n'.join('polyline ' + ' '.join(f'{x + bx + d:.1f},{y + by + d:.1f}' for x, y in (l.get('railPts') or l['pts'])) for l in g['links'] if l['rail']))
+PY2
+)
+  magick -size ${FW}x${FH} xc:none -fill none \
+    -stroke 'rgba(20,14,8,0.40)' -strokewidth 13 -draw "$DRAW" -blur 0x3 \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(0,0,0,0.58)' -strokewidth 4 -draw "$UL" -blur 0x1.4 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(255,245,220,0.42)' -strokewidth 4 -draw "$LR" -blur 0x1.6 \) -compose over -composite \
+    "$T/furrow.png"
+  magick "$T/full.png" "$T/furrow.png" -compose over -composite "$T/carved.png"
+  mv "$T/carved.png" "$T/full.png"
+fi
 magick -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(14,12,8,0.30)' -strokewidth 16 -draw "$DRAW" -channel RGBA -blur 0x4 +channel "$T/bank.png"
 magick -size ${FW}x${FH} xc:none -fill none \
   -stroke "$BALLAST" -strokewidth 7 -draw "$DRAW" \

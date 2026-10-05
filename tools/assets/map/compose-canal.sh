@@ -148,6 +148,29 @@ magick -size ${FW}x${FH} xc:none -stroke none \
   -channel RGBA -blur 0x1.2 +channel "$T/village.png"
 magick -size ${FW}x${FH} xc:none -stroke none -fill "$BASIN" -draw "$(cat "$T/basin.txt")" -channel RGBA -blur 0x30 +channel \
   -fill none -stroke "$RIM" -strokewidth 4 -draw "$(cat "$T/edge.txt")" "$T/basin.png"
+# 5b. the routes carved into the model itself: a groove cut along every
+#     canal-era route, its upper-left wall in shadow and its lower-right wall
+#     catching the light, so the land tells where a route may go even with
+#     the traces hidden (key C). FURROW=0 leaves the plaster smooth.
+if [[ ${FURROW:-1} == 1 ]]; then
+  python3 - "$GEO" "$BX" "$BY" "$T" <<'PY2'
+import json, sys
+g = json.load(open(sys.argv[1])); bx, by, t = int(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
+def poly(pts, dx=0, dy=0): return 'polyline ' + ' '.join(f'{x + bx + dx:.1f},{y + by + dy:.1f}' for x, y in pts)
+routes = [l for l in g['links'] if l['canal']]
+open(f'{t}/furrow.txt', 'w').write('\n'.join(poly(l['pts']) for l in routes))
+open(f'{t}/furrow-ul.txt', 'w').write('\n'.join(poly(l['pts'], -2.5, -2.5) for l in routes))
+open(f'{t}/furrow-lr.txt', 'w').write('\n'.join(poly(l['pts'], 2.5, 2.5) for l in routes))
+PY2
+  magick -size ${FW}x${FH} xc:none -fill none \
+    -stroke 'rgba(20,14,8,0.40)' -strokewidth 13 -draw "$(cat "$T/furrow.txt")" -blur 0x3 \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(0,0,0,0.58)' -strokewidth 4 -draw "$(cat "$T/furrow-ul.txt")" -blur 0x1.4 \) -compose over -composite \
+    \( -size ${FW}x${FH} xc:none -fill none -stroke 'rgba(255,245,220,0.42)' -strokewidth 4 -draw "$(cat "$T/furrow-lr.txt")" -blur 0x1.6 \) -compose over -composite \
+    "$T/furrow.png"
+  magick "$T/graded.png" "$T/furrow.png" -compose over -composite "$T/carved.png"
+  mv "$T/carved.png" "$T/graded.png"
+fi
+
 # the routes — canal beds, towpaths, cart roads — are what a reader may
 # hide (key C): ETCH=1 serves them as a layer of their own (<stem>-etch.webp,
 # transparent) instead of drawing them into the land, which then carries
