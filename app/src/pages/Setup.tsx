@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
-import { BookOpen, Bot, MonitorSmartphone, Play, Save, Users } from "lucide-react";
+import { BookOpen, Bot, Globe, MonitorSmartphone, Play, Save, Users } from "lucide-react";
 import { openLocalGame } from "@/game/local";
+import { isOnline, lobby } from "@/online/lobby";
+import { useSession, useStranger } from "@/online/session";
 import { pickTableName, tableTitle } from "@/online/tableNames";
 import { useLang, useT } from "@/i18n";
 import SeatRow from "@/components/setup/SeatRow";
@@ -63,6 +65,13 @@ export default function Setup() {
   const urlMode: LocalMode = params.get("mode") === "hotseat" ? "hotseat" : "solo";
 
   const [mode, setMode] = useState<LocalMode>(urlMode);
+  /* where the table stands: on this device, or at the club (an online table
+     whose seats are taken in its lobby) — the club only when there is one */
+  const session = useSession();
+  const stranger = useStranger();
+  const [where, setWhere] = useState<"local" | "online">(isOnline && params.get("where") === "online" ? "online" : "local");
+  const [opening, setOpening] = useState(false);
+  const [fault, setFault] = useState<string | null>(null);
   const [seats, setSeats] = useState<Seat[]>(() => {
     const stored = loadStoredSetup();
     return stored ? seatsFromStored(stored) : defaultSeats(urlMode);
@@ -107,7 +116,29 @@ export default function Setup() {
     setSeats(defaultSeats(m));
   };
 
+  /* the club's table: opened with the house rules and the head's colour,
+     then straight to its lobby, where the seats are taken and friends asked up */
+  const openAtClub = useCallback(async () => {
+    if (opening || starting) return;
+    if (!session) {
+      navigate("/account");
+      return;
+    }
+    setOpening(true);
+    setFault(null);
+    try {
+      const table = await lobby.create({ ...options }, seats[0].color);
+      navigate(`/online/${table.code}`);
+    } catch {
+      setFault(t("platform.setup.where.failed"));
+      setOpening(false);
+    }
+  }, [opening, starting, session, navigate, options, seats, t]);
   const start = useCallback(() => {
+    if (where === "online") {
+      void openAtClub();
+      return;
+    }
     if (!canStart || starting) return;
     const players = seats.filter((s) => s.type !== "closed");
     const names = dedupeNames(players.map((s) => s.name));
@@ -130,7 +161,7 @@ export default function Setup() {
     }
     /* a new table every time: the one before stays on the register, to come back to */
     setStarting(openLocalGame(payload).code);
-  }, [canStart, starting, seats, options, tableName]);
+  }, [where, openAtClub, canStart, starting, seats, options, tableName]);
 
   // Live-persist the seating draft (v10 hot-seat): edited player names and
   // house rules survive a round-trip and prefill the next visit, without
@@ -216,21 +247,52 @@ export default function Setup() {
               </p>
               <p className="mt-1 font-serif text-[13px] italic text-iron-400">{t("platform.setup.identity.drawn")}</p>
 
-              {/* this sheet charters local trains: said plainly */}
-              <p className="mt-4 flex items-start gap-3 border-y border-[var(--gz-ink-faint)] py-3">
-                <MonitorSmartphone size={16} strokeWidth={1.5} aria-hidden className="mt-0.5 shrink-0 text-brass-300" />
-                <span className="min-w-0">
-                  <span className="block font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
-                    {t("platform.setup.identity.localTitle")}
-                  </span>
-                  <span className="mt-0.5 block font-serif text-[13px] italic text-paper-300">{t("platform.setup.identity.localCopy")}</span>
-                </span>
-              </p>
             </section>
 
             <Divider />
 
-            {/* A2. Mode de jeu — solo / hotseat (contrat ?mode=) */}
+            {/* A1b. Where the table stands: this device, or the club */}
+            <section aria-label={t("platform.setup.where.heading")}>
+              <SheetHeading>{t("platform.setup.where.heading")}</SheetHeading>
+              <div role="radiogroup" aria-label={t("platform.setup.where.heading")} className="mt-2 grid sm:grid-cols-2 sm:gap-8">
+                {(
+                  [
+                    { id: "local" as const, icon: MonitorSmartphone, title: t("platform.setup.where.localTitle"), copy: t("platform.setup.where.localCopy"), off: false },
+                    { id: "online" as const, icon: Globe, title: t("platform.setup.where.onlineTitle"), copy: isOnline ? t("platform.setup.where.onlineCopy") : t("platform.setup.where.onlineOff"), off: !isOnline },
+                  ]
+                ).map((w) => {
+                  const active = where === w.id;
+                  return (
+                    <button
+                      key={w.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={active}
+                      disabled={w.off}
+                      onClick={() => setWhere(w.id)}
+                      className={cn(
+                        "group flex items-start gap-3 border-b border-[var(--gz-ink-faint)] py-3 text-left transition-colors duration-150 hover:bg-enamel-800 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent",
+                        active ? "text-paper-100" : "text-paper-300",
+                      )}
+                    >
+                      <span className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rotate-45 border", active ? "border-brass-300 bg-brass-300" : "border-[var(--gz-ink-soft)]")} aria-hidden />
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-2 font-fraunces text-[16px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                          <w.icon size={15} strokeWidth={1.5} aria-hidden className="text-brass-300" />
+                          {w.title}
+                        </span>
+                        <span className="mt-0.5 block font-serif text-[13px] italic leading-snug text-paper-300">{w.copy}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {where === "local" && <Divider />}
+
+            {/* A2. Mode de jeu — solo / hotseat (contrat ?mode=); at the club the seats are taken in the lobby */}
+            {where === "local" && (
             <section aria-label={t("platform.setup.mode.heading")}>
               <SheetHeading>{t("platform.setup.mode.heading")}</SheetHeading>
               <div role="radiogroup" aria-label={t("platform.setup.mode.heading")} className="mt-2 grid sm:grid-cols-2 sm:gap-8">
@@ -266,10 +328,12 @@ export default function Setup() {
                 })}
               </div>
             </section>
+            )}
 
-            <Divider />
+            {where === "local" && <Divider />}
 
             {/* A3. Sièges & bots */}
+            {where === "local" && (
             <section aria-label={t("platform.setup.seats.heading")}>
               <SheetHeading>{t("platform.setup.seats.heading")}</SheetHeading>
               <div className="mt-2 flex flex-col">
@@ -289,6 +353,7 @@ export default function Setup() {
               </div>
               <p className="mt-4 font-serif text-[12.5px] italic leading-relaxed text-iron-400">{t("setup.seating.note")}</p>
             </section>
+            )}
           </div>
 
           {/* A4. Options de la partie (house rules — props figées, partagé avec Lobby) */}
@@ -316,15 +381,20 @@ export default function Setup() {
 
               {/* the train as it stands: a carriage a seat */}
               <div className="mt-4">
-                <TrainStrip seats={seats.map((s) => (s.type === "closed" ? null : { name: s.name || "…", color: s.color, kind: s.type === "bot" ? "bot" : "human" }))} />
+                <TrainStrip
+                  seats={
+                    where === "online"
+                      ? [{ name: session?.name ?? seats[0].name ?? "…", color: seats[0].color, kind: "human" as const }, null, null, null]
+                      : seats.map((s) => (s.type === "closed" ? null : { name: s.name || "…", color: s.color, kind: s.type === "bot" ? "bot" : "human" }))
+                  }
+                />
               </div>
-              <p className="micro-label mt-2 text-iron-400 tnums">{t("platform.setup.preview.seats", { filled: seated.length, total: seats.length })}</p>
+              <p className="micro-label mt-2 text-iron-400 tnums">{t("platform.setup.preview.seats", { filled: where === "online" ? 1 : seated.length, total: seats.length })}</p>
 
               {/* the clauses: mode, the table's nature, the options in force */}
               <ol className="mt-4 flex flex-col">
                 {[
-                  mode === "solo" ? t("platform.setup.preview.badgeSolo") : t("platform.setup.preview.badgeHotseat"),
-                  t("platform.setup.preview.badgeLocal"),
+                  ...(where === "online" ? [t("platform.setup.where.badge")] : [mode === "solo" ? t("platform.setup.preview.badgeSolo") : t("platform.setup.preview.badgeHotseat"), t("platform.setup.preview.badgeLocal")]),
                   ...optionChips,
                 ].map((chip, i) => (
                   <li key={chip} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5 last:border-b-0">
@@ -334,7 +404,9 @@ export default function Setup() {
                 ))}
               </ol>
 
-              <p className="mt-4 font-serif text-[12.5px] italic text-iron-400">{t("platform.setup.preview.localLine")}</p>
+              <p className="mt-4 font-serif text-[12.5px] italic text-iron-400">{t(where === "online" ? "platform.setup.where.line" : "platform.setup.preview.localLine")}</p>
+              {where === "online" && stranger && <p className="mt-2 font-serif text-[12.5px] italic text-rust-400">{t("platform.setup.where.signIn")}</p>}
+              {fault && <p className="mt-2 font-serif text-[12.5px] italic text-rust-400">{fault}</p>}
 
               {/* CTA final */}
               <motion.div
@@ -344,7 +416,12 @@ export default function Setup() {
                 transition={{ duration: 0.6, ease }}
                 className="mt-5 rounded-lg"
               >
-                {canStart ? (
+                {where === "online" ? (
+                  <button type="button" onClick={() => void openAtClub()} disabled={opening} className="gz-ticket gz-ticket-brass w-full justify-center !h-11">
+                    <Globe aria-hidden />
+                    {t("platform.setup.where.cta")}
+                  </button>
+                ) : canStart ? (
                   <button type="button" onClick={start} onMouseEnter={preloadGame} onFocus={preloadGame} disabled={starting !== null} className="gz-ticket gz-ticket-brass w-full justify-center !h-11">
                     <Play aria-hidden />
                     {t("platform.setup.preview.cta")}
