@@ -1,6 +1,8 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { hydrateHome } from "@/game/home";
 import { hydratePapers } from "@/platform/papers";
+import { onlineWire } from "@/online/net";
+import Unreachable from "@/components/platform/Unreachable";
 import Boundary from "@/components/platform/Boundary";
 import { Routes, Route, Navigate } from "react-router";
 import Layout from "@/components/Layout";
@@ -39,15 +41,25 @@ export default function App() {
   /* the register of games at home and the papers that follow the account are
      the office's: both are read once, here, before any page asks what is on
      them. A browser that cannot reach the office simply has none */
-  const [read, setRead] = useState(false);
+  const [read, setRead] = useState<'reading' | 'ready' | 'unreachable'>('reading');
   useEffect(() => {
     /* the papers first: the lift inside `hydrateHome` sends up only the ones
        the office keeps none of, and must know what it keeps */
-    void hydratePapers()
-      .then(hydrateHome)
-      .finally(() => setRead(true));
+    const wire = onlineWire();
+    void (async () => {
+      /* the line first: an office that does not answer is said so in a few
+         seconds, rather than waited on until every request has timed out */
+      if (wire && !(await wire.ready())) {
+        setRead('unreachable');
+        return;
+      }
+      await hydratePapers();
+      await hydrateHome();
+      setRead('ready');
+    })();
   }, []);
-  if (!read) return <Arriving />;
+  if (read === 'reading') return <Arriving />;
+  if (read === 'unreachable') return <Unreachable />;
   return (
     <Boundary>
     <Suspense fallback={<Arriving />}>

@@ -213,6 +213,24 @@ export class Wire {
     this.send({ t: 'notes.put', code, body });
   }
 
+  /** the line is up — or it was not within `ms`, and the office is taken for
+   *  unreachable rather than waited on until every request has timed out */
+  ready(ms = 5000): Promise<boolean> {
+    if (this.status === 'online') return Promise.resolve(true);
+    return new Promise((ok) => {
+      const timer = window.setTimeout(() => {
+        off();
+        ok(false);
+      }, ms);
+      const off = this.onStatus(() => {
+        if (this.status !== 'online') return;
+        window.clearTimeout(timer);
+        off();
+        ok(true);
+      });
+    });
+  }
+
   /** the session as it settles, or null when the office does not answer */
   private settled(): Promise<Me | null> {
     if (this.session) return Promise.resolve(this.session);

@@ -405,7 +405,7 @@ const platform = {
     },
     offline: {
       title: 'Serveur hors ligne',
-      copy: 'Le club est momentanément fermé. Vous pouvez toujours jouer en local sur cet appareil.',
+      copy: "Le club est momentanément fermé. Vos parties y sont gardées : rien n'est perdu, et rien ne se joue tant qu'il ne répond pas.",
       localCta: 'Partie locale',
       retry: 'Réessayer la connexion',
       retryFailed: 'Le serveur ne répond toujours pas.',

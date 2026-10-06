@@ -407,7 +407,7 @@ const platform: typeof enPlatform = {
     },
     offline: {
       title: 'Server offline',
-      copy: 'Der Club ist vorübergehend geschlossen. Lokal auf diesem Gerät kannst du trotzdem spielen.',
+      copy: 'Der Club ist vorübergehend geschlossen. Deine Partien liegen dort — es geht nichts verloren, und es wird nichts gespielt, bis er antwortet.',
       localCta: 'Lokale Partie',
       retry: 'Verbindung erneut versuchen',
       retryFailed: 'Der Server antwortet immer noch nicht.',

@@ -405,7 +405,7 @@ const platform = {
     },
     offline: {
       title: 'Server offline',
-      copy: 'The club is momentarily closed. You can still play locally on this device.',
+      copy: 'The club is momentarily closed. Your games are kept there, so nothing is lost — and nothing is played until it answers.',
       localCta: 'Local game',
       retry: 'Retry the connection',
       retryFailed: 'The server is still not answering.',
