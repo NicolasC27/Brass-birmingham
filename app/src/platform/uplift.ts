@@ -31,6 +31,9 @@ const PINS_KEY = 'brassworks.pins.v1';
 const FINAL_KEY = 'brassworks.final.v1';
 /** the lift has been run in this browser */
 const DONE_KEY = 'brassworks.lifted.v1';
+/** the readings a browser kept of its own games: the office holds its own
+ *  now, and these were only ever a cache */
+const OLD_READINGS = 'brassworks.analysis.v1';
 /** the papers of a browser from before the office kept them, by kind */
 const OLD_PAPERS: Record<Kind, string> = {
   progress: 'brassworks.progress.v1',
@@ -115,7 +118,12 @@ function findOld(): Found[] {
 export function hasOldStuff(): boolean {
   if (read(DONE_KEY)) return false;
   if (read(INDEX_KEY) || read(RESUME_KEY) || read(OLD_WALLET)) return true;
-  return PAPER_KINDS.some((k) => !!read(OLD_PAPERS[k]));
+  if (PAPER_KINDS.some((k) => !!read(OLD_PAPERS[k]))) return true;
+  try {
+    return Object.keys(localStorage).some((k) => k.startsWith(OLD_READINGS));
+  } catch {
+    return false;
+  }
 }
 
 /** the papers this browser still holds, as the office will have them — only
@@ -174,6 +182,13 @@ export async function liftBrowser(): Promise<number> {
   drop(FINAL_KEY);
   for (const kind of PAPER_KINDS) drop(OLD_PAPERS[kind]);
   drop(OLD_WALLET);
+  /* the readings of games that have just moved: read again from the office,
+     or read afresh — either way these are no use to anyone now */
+  try {
+    for (const key of Object.keys(localStorage)) if (key.startsWith(OLD_READINGS)) drop(key);
+  } catch {
+    /* non-fatal */
+  }
   try {
     localStorage.setItem(DONE_KEY, '1');
   } catch {
