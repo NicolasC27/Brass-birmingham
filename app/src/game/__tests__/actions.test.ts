@@ -395,3 +395,37 @@ describe('the setup a state remembers', () => {
     expect(replay(setupOf(plain), plain.seed, []).assist).toBe(false);
   });
 });
+
+describe('payday at the end of a round', () => {
+  /* the last player of the round plays their last card with the deck empty: the round, and the era, end */
+  const lastRound = (era: 'canal' | 'rail') => {
+    const s = newGame(setup(4), 42);
+    s.era = era;
+    s.deck = [];
+    const me = s.current;
+    s.order = [...s.order.filter((i) => i !== me), me];
+    s.turnPos = s.order.length - 1;
+    for (const p of s.players) p.hand = [];
+    s.players[me].hand = [{ id: 'last-1', kind: 'wild-location' }];
+    s.actionsLeft = 1;
+    for (const p of s.players) {
+      p.income = 20; // level 5: £5 a payday
+      p.money = 10;
+    }
+    return { s, me };
+  };
+  it('is paid at the end of the canal era, its last round included', () => {
+    const { s, me } = lastRound('canal');
+    const r = applyAction(s, me, { kind: 'pass', card: 'last-1' });
+    expect(r.state?.phase).toBe('scoring-canal');
+    expect(r.state?.ledger.some((e) => e.key === 'payday')).toBe(true);
+    expect(r.state?.players[me].money).toBe(15);
+  });
+  it('is not paid at the end of the last round of the game', () => {
+    const { s, me } = lastRound('rail');
+    const r = applyAction(s, me, { kind: 'pass', card: 'last-1' });
+    expect(r.state?.phase).toBe('game-over');
+    expect(r.state?.ledger.some((e) => e.key === 'payday')).toBe(false);
+    expect(r.state?.players[me].money).toBe(10);
+  });
+});
