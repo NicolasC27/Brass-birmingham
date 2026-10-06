@@ -1,20 +1,22 @@
 # Les papiers
 
-Ce que le navigateur écrit à la fin d'une partie à la maison (`game/store.ts`, `noteHouse`) :
+Ce que l'office garde pour le compte, écrit à la fin d'une partie à la maison (`game/store.ts`, `noteHouse`). Depuis le 6 octobre ils ne vivent plus dans le navigateur : `platform/papers.ts` tient un miroir en mémoire, lu une fois à l'ouverture de l'application (`hydratePapers`) et réécrit à l'office (`papers.put`) dès qu'un papier bouge. La colonne « clé » ci-dessous est le *kind* de la ligne `papers`.
 
 | Papier | Module | Clé | Contenu |
 |---|---|---|---|
-| Brevets | `platform/patents.ts` | `brassworks.patents.v1` | 9 distinctions, accordées une fois ; depuis les deeds (local) ou le tally de l'office (historique) |
-| Courrier | `platform/letters.ts` | `brassworks.letters.v1` | la machine gagnante crâne ou la mieux placée rouspète ; 4 personnages × 2 × 2 variantes |
-| Feuilleton | `platform/feuilleton.ts` | `brassworks.feuilleton.v1` | la dernière partie en 3 moments (`swingsFor`), la partie dans le fragment `#g=…&at=N` |
-| Lignes | `platform/lines.ts` | `brassworks.lines.v1` | villes bâties (parties locales) ; l'office ajoute ses tallies à l'affichage |
-| Défi | `game/challenge.ts` | `brassworks.challenge.v1` | tables et essais |
+| Brevets | `platform/patents.ts` | `patents` | 9 distinctions, accordées une fois ; depuis les deeds (local) ou le tally de l'office (historique) |
+| Courrier | `platform/letters.ts` | `letters` | la machine gagnante crâne ou la mieux placée rouspète ; 4 personnages × 2 × 2 variantes |
+| Feuilleton | `platform/feuilleton.ts` | `feuilleton` | la dernière partie en 3 moments (`swingsFor`), la partie dans le fragment `#g=…&at=N` |
+| Lignes | `platform/lines.ts` | `lines` | villes bâties (parties locales) ; l'office ajoute ses tallies à l'affichage |
+| Défi | `game/challenge.ts` | `challenge` | tables et essais |
 | Cours | `platform/cours.ts` | `brassworks.tutorial.reached` (lecture) | leçons lues, motifs du juge → chapitres |
+
+S'y ajoutent `progress` (la feuille du juge, `game/progress.ts`), `form` (la forme des machines, `game/form.ts`) et `equipped` (la tenue, `platform/wallet.ts`).
 
 ## Suivre le compte
 
-`platform/papers.ts` : à la connexion (`PlatformShell`), `syncPapers()` lit les papiers gardés par l'office (message `papers`), les **replie** dans les locaux (union par id pour brevets et lettres, le plus récent pour le feuilleton) et renvoie le tout (`papers.put`). À chaque fin de partie, `pushPapers()`. Les papiers ne font que s'accumuler ; les lignes ne sont pas synchronisées (elles se recalculeraient en double).
+L'office décide : plus de repli d'une copie dans l'autre. `hydratePapers()` remplit l'étagère à l'ouverture et à chaque changement de session ; se déconnecter la vide (`clearPapers`), ces papiers n'ont jamais été ceux du navigateur. La reprise unique (`platform/uplift.ts`) monte les papiers d'un navigateur d'avant, mais seulement les *kinds* dont l'office ne tient rien.
 
-## Autres clés
+## Ce qui reste dans le navigateur
 
-`brassworks.theme.v1`, `brassworks.lang`, `brassworks.arrived.v1`, `brassworks.form.v1` (la forme des machines), `brassworks.progress.v1` (la feuille du juge), `brassworks.local.v1` (le registre des tables locales).
+Les réglages de l'appareil seulement : `brassworks.theme.v1`, `brassworks.lang`, `brassworks.keys.v1`, `brassworks.arrived.v1`, les options du plateau, la position du guide — plus `brassworks.setup.v1` (le formulaire de table, pas un enregistrement) et `brassworks.session.v1` (le jeton).

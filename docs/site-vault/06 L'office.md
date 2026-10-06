@@ -12,6 +12,12 @@ Le serveur (`app/server/`), un socket par client, SQLite (`server/store.ts`). Aj
 | `companies` | `companies {board}` | les compagnies et leurs victoires de la saison |
 | `company.found {name}` / `company.join {id}` / `company.leave` | `companies` + bureau | fonder, adhérer, quitter (rayée si vide) |
 | `papers` / `papers.put {kind, body}` | `papers` / `done` | les papiers du compte (≤ 64 k caractères) |
+| `guest` | `session` | un compte ouvert d'office pour un navigateur qui n'en a pas ; `signup` sur le même socket le promeut sans changer d'`accounts.id` |
+| `home.list` / `home.load {code}` | `home.register` / `home.save` | le registre des parties à la maison, et l'une d'elles entière (graine, donne, journal) |
+| `home.open {name, seed, setup}` | `home.dealt {table}` | l'office frappe le code et inscrit la donne |
+| `home.act {code, idx, action}` | *(rien)* ou `home.refused` | un coup relu par le moteur avant d'être écrit ; seul un refus revient |
+| `home.undo {code, at}` / `home.forget {code}` | `done` | un coup repris, une partie rangée |
+| `notes.get {code}` / `notes.put {code, body}` | `notes` / *(rien)* | les punaises et la page du lecteur, par compte et par partie |
 | `profile {newsletter}` | `me` | l'édition du lundi par la poste |
 | `seasons` / `season {id}` | `seasons` / `season {review}` | les services connus, et le bilan de l'un (`store.seasonReview`) |
 
@@ -19,7 +25,13 @@ Le serveur (`app/server/`), un socket par client, SQLite (`server/store.ts`). Aj
 
 ## Tables ajoutées
 
-`challenges`, `papers`, `mailings` (envois faits une fois), `companies`, colonnes `accounts.companyId` et `accounts.newsletter` (via `GROWTH`).
+`challenges`, `papers`, `mailings` (envois faits une fois), `companies`, `notes` (punaises et carnet, par compte et par partie), colonnes `accounts.companyId`, `accounts.newsletter`, `accounts.guest` et `games.home` / `name` / `ownerId` / `brief` / `updatedAt` (via `GROWTH`).
+
+## Les parties à la maison
+
+`server/home.ts` : le pendant allégé de `hall.ts` — pas de sièges, pas de chandelle. Il garde en mémoire l'état rejoué de chaque partie ouverte, **relit chaque coup avec `applyAction`** avant `appendHomeMove`, évince après une heure de silence et reconstruit par `replay`. À `game-over` c'est lui qui calcule les standings (`tallyGame`) : le navigateur n'est jamais cru sur parole. Le client pilote les machines, l'office ne juge pas la qualité d'un coup de machine — seulement sa légalité.
+
+Une partie à la maison entre dans `historyFor` (l'onglet Historique) mais sort de `statsFor` et de l'édition du lundi : elle fausserait toutes les moyennes. Elle part avec le compte à sa fermeture, et figure dans l'export RGPD. Le `brief` (ère, manche, sièges) est la seule chose dérivée gardée sur disque, pour que le registre se liste sans rejouer un coup.
 
 ## Le lundi et le télégraphe
 
