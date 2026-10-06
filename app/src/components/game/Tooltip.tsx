@@ -46,16 +46,21 @@ export default function Tooltip({
     setOpen(false);
   };
 
-  /* where the plate goes, from the anchor's box on the screen */
+  /* where the plate goes, from the anchor's box on the screen: pinned by
+     the edge that faces the anchor, centred on it with the motion's own
+     transform (a style transform would be overwritten by the fade) */
   const at = box
     ? side === 'top'
-      ? { left: box.x + box.w / 2, top: box.y - 8, transform: 'translate(-50%, -100%)' }
+      ? { left: box.x + box.w / 2, bottom: window.innerHeight - box.y + 8 }
       : side === 'bottom'
-        ? { left: box.x + box.w / 2, top: box.y + box.h + 8, transform: 'translate(-50%, 0)' }
+        ? { left: box.x + box.w / 2, top: box.y + box.h + 8 }
         : side === 'left'
-          ? { left: box.x - 8, top: box.y + box.h / 2, transform: 'translate(-100%, -50%)' }
-          : { left: box.x + box.w + 8, top: box.y + box.h / 2, transform: 'translate(0, -50%)' }
+          ? { right: window.innerWidth - box.x + 8, top: box.y + box.h / 2 }
+          : { left: box.x + box.w + 8, top: box.y + box.h / 2 }
     : null;
+  const vertical = side === 'top' || side === 'bottom';
+  const rest = vertical ? { x: '-50%', y: 0 } : { x: 0, y: '-50%' };
+  const from = vertical ? { x: '-50%', y: side === 'top' ? 4 : -4 } : { x: side === 'left' ? 4 : -4, y: '-50%' };
 
   return (
     <span
@@ -77,9 +82,9 @@ export default function Tooltip({
             {open && at && (
               <motion.span
                 role="tooltip"
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 4 }}
+                initial={{ opacity: 0, ...from }}
+                animate={{ opacity: 1, ...rest }}
+                exit={{ opacity: 0, ...from }}
                 transition={{ duration: 0.12 }}
                 className="pointer-events-none fixed z-[80] w-max max-w-[260px] rounded-lg border border-brass-700/70 bg-coal-900/95 p-3 text-left shadow-e3"
                 style={at}
