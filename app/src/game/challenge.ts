@@ -1,9 +1,9 @@
 import { SETUP_STORAGE_KEY, type StoredSetup } from '@/components/setup/constants';
 import { personaName, incomeLevel } from './data';
 import { deedsOf, type Deeds } from './plan';
-import { openLocalGame } from './local';
+import { openHomeGame } from './home';
 import { weekOf } from '@/platform/almanac';
-import type { BotPersona, GameState, IndustryType } from './types';
+import type { BotPersona, GameState, IndustryType, SetupPayload } from './types';
 
 /* ------------------------------------------------------------------ */
 /* The challenge of the week. One table, the same for everyone from    */
@@ -158,9 +158,9 @@ export function challengeFor(code: string): { week: number; id: string } | null 
   return e ? { week: e.week, id: e.id } : null;
 }
 
-/** dress the table of the notice and open it on the register — the caller
+/** dress the table of the notice and open it at the office — the caller
  *  then opens /game/local/<code> */
-export function startChallenge(c: Challenge, me: string): string {
+export async function startChallenge(c: Challenge, me: string): Promise<string> {
   const colors = ['brass', 'oxblood', 'verdigris', 'steel'] as const;
   const setup: StoredSetup = {
     players: [{ name: me, color: colors[0], type: 'human' }, ...c.rivals.map((p, i) => ({ name: personaName(p), color: colors[i + 1], type: 'bot' as const, persona: p }))],
@@ -172,11 +172,19 @@ export function startChallenge(c: Challenge, me: string): string {
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }
-  const table = openLocalGame(setup);
-  const r = readRegister();
-  r.tables[table.code] = { week: c.week, id: c.id, seed: c.seed };
-  writeRegister(r);
+  /* the deal the notice fixes goes to the office with the game; the code it
+     deals back is what the register keys on */
+  const table = await openHomeGame(c.seed, setup as unknown as SetupPayload);
+  noteChallengeTable(table.code, c);
   return table.code;
+}
+
+/** this table answers that notice: the register says so, and reads the
+ *  attempt at the close by the code */
+export function noteChallengeTable(code: string, c: Challenge): void {
+  const r = readRegister();
+  r.tables[code] = { week: c.week, id: c.id, seed: c.seed };
+  writeRegister(r);
 }
 
 /* ------------------------------ the verdict ------------------------------ */

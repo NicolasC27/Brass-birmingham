@@ -1,6 +1,8 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
-import type { CompanyBoard, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { GameAction } from '@/game/actions';
+import type { SetupPayload } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* The wire — one socket to the table server, kept alive.              */
@@ -47,6 +49,10 @@ export class Wire {
   companies: CompanyBoard | null = null;
   /** the table the office just dealt me from a queue, until the page takes me there */
   dealt: string | null = null;
+  /** the register of games played at home, as the office last told it */
+  home: HomeTable[] | null = null;
+  private homes = new Set<() => void>();
+  private refusals = new Set<(r: { code: string; at: number; error: string }) => void>();
   private halls = new Set<() => void>();
   private token: string | null = null;
   private socket: WebSocket | null = null;
@@ -130,6 +136,87 @@ export class Wire {
 
   async putPaper(kind: string, body: unknown): Promise<void> {
     await this.ask((rid) => ({ t: 'papers.put', rid, kind, body }));
+  }
+
+  /* ------------------------ games at home ------------------------ */
+
+  /** the register of games at home changed */
+  onHome(cb: () => void): () => void {
+    this.homes.add(cb);
+    return () => this.homes.delete(cb);
+  }
+
+  /** the office turned a move at home down */
+  onHomeRefused(cb: (r: { code: string; at: number; error: string }) => void): () => void {
+    this.refusals.add(cb);
+    return () => this.refusals.delete(cb);
+  }
+
+  /** an account to play under, whatever it takes: the one in hand, or one
+   *  the office opens for this browser so a first game has somewhere to go */
+  async need(): Promise<Me> {
+    if (this.session) return this.session;
+    /* a token is being presented: its answer is on its way */
+    if (this.token) {
+      const me = await this.settled();
+      if (me) return me;
+    }
+    const m = await this.ask((rid) => ({ t: 'guest', rid }), true);
+    if (m.t === 'session') return this.enter(m);
+    if (m.t === 'welcome') {
+      this.setSession(m.me);
+      return m.me;
+    }
+    throw new Error('offline');
+  }
+
+  /** the register of games at home */
+  async askHome(): Promise<HomeTable[]> {
+    const m = await this.ask((rid) => ({ t: 'home.list', rid }));
+    return m.t === 'home.register' ? m.games : [];
+  }
+
+  /** a new game at home: the office deals it its code */
+  async openHome(name: string, seed: number, setup: SetupPayload): Promise<HomeTable> {
+    await this.need();
+    const m = await this.ask((rid) => ({ t: 'home.open', rid, name, seed, setup }));
+    if (m.t !== 'home.dealt') throw new Error('refused');
+    return m.table;
+  }
+
+  /** one game at home whole, deal and log */
+  async loadHome(code: string): Promise<HomeSave | null> {
+    const m = await this.ask((rid) => ({ t: 'home.load', rid, code }));
+    return m.t === 'home.save' ? m.save : null;
+  }
+
+  /** one move, at its place in the log. Nothing comes back when it stands */
+  actHome(code: string, idx: number, action: GameAction): void {
+    this.send({ t: 'home.act', code, idx, action });
+  }
+
+  async undoHome(code: string, at: number): Promise<void> {
+    await this.ask((rid) => ({ t: 'home.undo', rid, code, at }));
+  }
+
+  async forgetHome(code: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'home.forget', rid, code }));
+  }
+
+  /** the session as it settles, or null when the office does not answer */
+  private settled(): Promise<Me | null> {
+    if (this.session) return Promise.resolve(this.session);
+    return new Promise((ok) => {
+      const timer = window.setTimeout(() => {
+        off();
+        ok(null);
+      }, ANSWER_MS);
+      const off = this.onSession(() => {
+        window.clearTimeout(timer);
+        off();
+        ok(this.session);
+      });
+    });
   }
 
   askSeasons(): void {
@@ -374,6 +461,13 @@ export class Wire {
       this.companies = m.board;
       for (const cb of this.halls) cb();
     }
+    /* the register of games at home: answered once, then pushed whenever it
+       moves — two tabs of one account never disagree about what was played */
+    if (m.t === 'home.register') {
+      this.home = m.games;
+      for (const cb of this.homes) cb();
+    }
+    if (m.t === 'home.refused') for (const cb of this.refusals) cb({ code: m.code, at: m.at, error: m.error });
     /* the queue moved: the desk says where I stand, so ask it again */
     if (m.t === 'queue' && this.desk) {
       this.desk = { ...this.desk, queue: m.state };
@@ -409,6 +503,8 @@ export class Wire {
     for (const code of this.watching) socket.send(encode({ t: 'watch', code }));
     /* the desk may have moved while the line was down */
     if (this.desk) socket.send(encode({ t: 'desk' }));
+    /* and so may the register of games at home — another tab plays too */
+    if (this.home) socket.send(encode({ t: 'home.list', rid: 0 }));
     this.drain();
   }
 

@@ -5,7 +5,7 @@ import { Check, Flag, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import { personaName } from '@/game/data';
-import { listLocalGames } from '@/game/local';
+import { listHomeGames } from '@/game/home';
 import { attemptsOf, challengeOf, openAttemptOf, startChallenge, type Rule } from '@/game/challenge';
 import { daysLeft } from '@/platform/almanac';
 import { lobby } from '@/online/lobby';
@@ -53,7 +53,7 @@ export default function ChallengeNotice() {
   const session = useSession();
   const [challenge] = useState(() => challengeOf());
   const [attempts] = useState(() => attemptsOf(challenge.week));
-  const [open] = useState(() => openAttemptOf(challenge.week, listLocalGames()));
+  const [open] = useState(() => openAttemptOf(challenge.week, listHomeGames()));
   const best = attempts[0] ?? null;
   const board = useChallengeBoard(challenge.week);
   /* my best attempt reaches the office once I am signed in — it keeps the best */
@@ -65,7 +65,7 @@ export default function ChallengeNotice() {
 
   const take = () => {
     const me = session?.name ?? lobby.me.name.trim() ?? '';
-    navigate(`/game/local/${startChallenge(challenge, me || t('setup.defaults.playerOne'))}`);
+    void startChallenge(challenge, me || t('setup.defaults.playerOne')).then((code) => navigate(`/game/local/${code}`));
   };
 
   return (

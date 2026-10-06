@@ -14,7 +14,7 @@ import Podium, { type PodiumEntry } from "@/components/results/Podium";
 import ScoringTable from "@/components/results/ScoringTable";
 import TimelineFrieze from "@/components/results/TimelineFrieze";
 import Ticket from "@/components/results/Ticket";
-import { localGame } from "@/game/local";
+import { homeGame } from "@/game/home";
 import ScoreCurves from "@/components/results/ScoreCurves";
 import EmberParticles from "@/components/results/EmberParticles";
 import {
@@ -133,7 +133,7 @@ export default function Results() {
   const local = useGame((s) => s.local);
   const table = useTable(code);
   /* the ticket names the table: the office's, or the register's at home */
-  const tableName = table?.name ?? (local ? (localGame(local)?.name ?? local) : "");
+  const tableName = table?.name ?? (local ? (homeGame(local)?.name ?? local) : "");
 
   const entries = useMemo(() => (result ? buildEntries(result) : []), [result]);
   const settled = phase >= 3;

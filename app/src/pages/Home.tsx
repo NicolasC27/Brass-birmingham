@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { BookOpen, Briefcase, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
-import { forgetLocalGame } from '@/game/local';
+import { forgetHomeGame, subscribeHome } from '@/game/home';
 import { readResume } from '@/game/quickplay';
 import Button from '@/components/platform/Button';
 import Modal from '@/components/platform/Modal';
@@ -72,7 +72,7 @@ function ResumeBanner() {
   const t = useT();
   const lang = useLang();
   const desk = useDesk();
-  const [local, setLocal] = useState(readResume);
+  const local = useSyncExternalStore(subscribeHome, readResume, readResume);
   const [discarding, setDiscarding] = useState(false);
 
   const table = desk?.tables.find((tb) => tb.myTurn && tb.status === 'playing');
@@ -86,9 +86,8 @@ function ResumeBanner() {
   const to = table ? `/game/${table.code}` : local ? `/game/local/${local.code}` : '/game';
 
   const discard = () => {
-    if (local) forgetLocalGame(local.code);
     /* the next game of the register, if any, takes the banner */
-    setLocal(readResume());
+    if (local) void forgetHomeGame(local.code);
     setDiscarding(false);
   };
 

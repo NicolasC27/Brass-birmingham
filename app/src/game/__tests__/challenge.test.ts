@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { newGame } from '../engine';
 import type { Deeds } from '../plan';
-import { CHALLENGES, POINTS_ALL, POINTS_PER_RULE, attemptsOf, challengeFor, challengeOf, challengeSeedFor, noteChallenge, ruleMet, startChallenge } from '../challenge';
+import { CHALLENGES, POINTS_ALL, POINTS_PER_RULE, attemptsOf, challengeFor, challengeOf, challengeSeedFor, noteChallenge, noteChallengeTable, ruleMet } from '../challenge';
 import type { GameState } from '../types';
 
 /* the notice of the week: the deal fixed by the week, the conditions read on the close */
@@ -71,7 +71,9 @@ describe('an attempt', () => {
 
   it('is dealt the week\'s seed and read at the close, points and all', () => {
     const c = challengeOf(36);
-    const code = startChallenge(c, 'Nicolas');
+    /* the office deals the code; the register is what this test is about */
+    const code = 'CH01';
+    noteChallengeTable(code, c);
     expect(challengeSeedFor(code)).toBe(c.seed);
     expect(challengeFor(code)).toEqual({ week: 36, id: c.id });
     expect(challengeSeedFor('NOPE')).toBeNull();

@@ -1,5 +1,5 @@
 import { setupOf } from '@/game/actions';
-import { localGame } from '@/game/local';
+import { homeGame } from '@/game/home';
 import { reviewGame, swingsFor } from '@/game/review';
 import { shareFragment } from '@/game/share';
 import type { Era, GameState } from '@/game/types';
@@ -50,7 +50,7 @@ export function noteFeuilleton(g: GameState, code: string): Episode | null {
     .sort((a, b) => a.at - b.at)
     .map((s) => ({ at: s.at, era: s.era, round: s.round, by: g.players[s.by]?.name ?? '', mine: s.by === me, shift: s.shift }));
   const scores = g.players.map((p, i) => ({ name: p.name, vp: p.vp, mine: i === me })).sort((a, b) => Number(b.mine) - Number(a.mine) || b.vp - a.vp);
-  const episode: Episode = { code, name: localGame(code)?.name ?? code, at: Date.now(), me: g.players[me].name, scores, moments, fragment: shareFragment(g) };
+  const episode: Episode = { code, name: homeGame(code)?.name ?? code, at: Date.now(), me: g.players[me].name, scores, moments, fragment: shareFragment(g) };
   try {
     localStorage.setItem(KEY, JSON.stringify(episode));
   } catch {

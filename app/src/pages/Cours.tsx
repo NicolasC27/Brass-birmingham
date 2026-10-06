@@ -48,7 +48,7 @@ export default function Cours() {
             })}
           </ol>
           <div className="mt-5 flex flex-wrap items-center gap-4">
-            <button type="button" onClick={() => navigate(`/game/local/${startTutorial()}`)} className="gz-ticket gz-ticket-brass">
+            <button type="button" onClick={() => void startTutorial().then((code) => navigate(`/game/local/${code}`))} className="gz-ticket gz-ticket-brass">
               <GraduationCap aria-hidden />
               {t(done ? 'platform.cours.again' : begun ? 'platform.cours.resume' : 'platform.cours.begin')}
             </button>

@@ -3,19 +3,20 @@ import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants
 import type { StoredSetup } from '@/components/setup/constants';
 import { personaName } from '@/game/data';
 import { tr } from '@/i18n';
-import { listLocalGames, openLocalGame } from './local';
-import type { LocalTable } from './local';
+import { listHomeGames, openHomeGame } from './home';
+import type { HomeTable } from './home';
+import type { SetupPayload } from './types';
 
 /* ------------------------------------------------------------------ */
 /* Quick play — the title screen's "play now". A visitor should be on  */
 /* the board in one click: the table is dressed here (you against two  */
-/* clockwork rivals), opened on the register of this device, and the   */
-/* game page reads it like any other setup.                            */
+/* clockwork rivals), opened at the office, which deals it its code,   */
+/* and the game page reads it like any other.                          */
 /* ------------------------------------------------------------------ */
 
-/** the game last touched on this device, if any — where it stands */
-export function readResume(): LocalTable | null {
-  return listLocalGames()[0] ?? null;
+/** the game last touched, if any — where it stands */
+export function readResume(): HomeTable | null {
+  return listHomeGames()[0] ?? null;
 }
 
 /** the table quick play dresses: a solo setup the player made earlier, else you and two rivals */
@@ -49,11 +50,11 @@ export function tutorialSetup(): StoredSetup {
 
 /** dress the guided table and open it on the register — the caller then opens
  *  /game/local/<code>, where the guide takes over */
-export function startTutorial(): string {
+export async function startTutorial(): Promise<string> {
   const setup = tutorialSetup();
   try {
     localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(setup));
-    localStorage.setItem(TUTORIAL_KEY, 'new');
+    localStorage.setItem(TUTORIAL_KEY, String(TUTORIAL_SEED));
     localStorage.removeItem('brassworks.tutorial.step');
     localStorage.removeItem('brassworks.tutorial.reached');
     /* a fold left over from a past run must not re-apply to a fresh one */
@@ -61,11 +62,11 @@ export function startTutorial(): string {
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }
-  return openLocalGame(setup).code;
+  return (await openHomeGame(TUTORIAL_SEED, setup as unknown as SetupPayload)).code;
 }
 
-/** dress the table and open it on the register — the caller then opens /game/local/<code> */
-export function startQuickGame(): string {
+/** dress the table and open it at the office — the caller then opens /game/local/<code> */
+export async function startQuickGame(): Promise<string> {
   const setup = quickSetup();
   try {
     localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(setup));
@@ -73,5 +74,5 @@ export function startQuickGame(): string {
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }
-  return openLocalGame(setup).code;
+  return (await openHomeGame(undefined, setup as unknown as SetupPayload)).code;
 }

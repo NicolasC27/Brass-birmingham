@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BarChart3, ChevronDown, Coins, GraduationCap, History, LayoutGrid, LogOut, Mail, MailOpen, MoreHorizontal, Send, UserX, Users, X } from 'lucide-react';
@@ -16,12 +16,12 @@ import type { RankTier } from '@/components/platform/RankBadge';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLACEMENTS, rankOf, type RankView } from '@/platform/rank';
 import { collectRewards, useWallet } from '@/platform/wallet';
-import { forgetLocalGame, listLocalGames } from '@/game/local';
+import { forgetHomeGame, homeSnapshot, subscribeHome } from '@/game/home';
 import ProgressCard from '@/components/desk/ProgressCard';
 import LinesMap from '@/components/desk/LinesMap';
 import Ticket from '@/components/results/Ticket';
 import type { FinalResult } from '@/components/results/types';
-import type { LocalTable } from '@/game/local';
+import type { HomeTable } from '@/game/home';
 import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
@@ -178,7 +178,7 @@ function TutorialStrip() {
       <Button
         variant="ghost"
         className="shrink-0"
-        onClick={() => navigate(`/game/local/${startTutorial()}`)}
+        onClick={() => void startTutorial().then((code) => navigate(`/game/local/${code}`))}
       >
         {t('platform.desk.tutorial.cta')}
       </Button>
@@ -262,7 +262,7 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
 type DeskTable = TableSummary & { local?: boolean };
 
 /** une partie de cet appareil, présentée comme une table : son code, son nom, ses sièges */
-function localTable(local: LocalTable, me: string): DeskTable {
+function localTable(local: HomeTable, me: string): DeskTable {
   let mine = false;
   return {
     code: local.code,
@@ -274,7 +274,9 @@ function localTable(local: LocalTable, me: string): DeskTable {
       if (you) mine = true;
       return { id: you ? me : `local-${i}`, name: s.name, color: s.color, kind: s.kind };
     }),
-    status: 'playing',
+    /* une partie jouée jusqu'au bout reste au bureau, marquée comme telle :
+       c'est le moment où elle devient intéressante à relire */
+    status: local.over ? 'over' : 'playing',
     era: local.era,
     round: local.round,
     myTurn: false,
@@ -403,8 +405,9 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
   const t = useT();
   const lang = useLang();
   const [leaving, setLeaving] = useState<DeskTable | null>(null);
-  /* les parties jouées sur cet appareil siègent au bureau comme les autres */
-  const [locals, setLocals] = useState(listLocalGames);
+  /* les parties jouées à la maison siègent au bureau comme les autres —
+     terminées comprises : c'est là qu'on revient les lire */
+  const locals = useSyncExternalStore(subscribeHome, homeSnapshot, homeSnapshot);
   const rank = (x: TableSummary) => (x.myTurn ? 0 : x.status === 'playing' ? 1 : x.status === 'open' ? 2 : 3);
   const sorted: DeskTable[] = [...tables].sort((a, b) => rank(a) - rank(b));
   for (const local of locals) sorted.push(localTable(local, me));
@@ -415,8 +418,7 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
 
   const leave = () => {
     if (leaving?.local) {
-      forgetLocalGame(leaving.code);
-      setLocals(listLocalGames());
+      void forgetHomeGame(leaving.code);
     } else if (leaving) lobby.leave(leaving.code);
     setLeaving(null);
   };

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { motion } from "framer-motion";
 import { BookOpen, Bot, Globe, MonitorSmartphone, Play, Save, Users } from "lucide-react";
-import { openLocalGame } from "@/game/local";
+import { openHomeGame } from "@/game/home";
+import type { SetupPayload } from "@/game/types";
 import { isOnline, lobby } from "@/online/lobby";
 import { useSession, useStranger } from "@/online/session";
 import { pickTableName, tableTitle } from "@/online/tableNames";
@@ -159,8 +160,9 @@ export default function Setup() {
     } catch {
       /* storage unavailable — the game page will fall back to defaults */
     }
-    /* a new table every time: the one before stays on the register, to come back to */
-    setStarting(openLocalGame(payload).code);
+    /* a new table every time: the one before stays on the register, to come
+       back to. The office deals the code */
+    void openHomeGame(undefined, payload as unknown as SetupPayload).then((table) => setStarting(table.code));
   }, [where, openAtClub, canStart, starting, seats, options, tableName]);
 
   // Live-persist the seating draft (v10 hot-seat): edited player names and

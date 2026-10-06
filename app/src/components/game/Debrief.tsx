@@ -12,7 +12,7 @@ import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { LINKS, MERCHANT_BY_ID, PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { useLang, useT } from '@/i18n';
-import { forkLocalGame } from '@/game/local';
+import { forkHomeGame } from '@/game/home';
 import { ledgerText } from '@/game/ledgerText';
 import { shareFragment } from '@/game/share';
 import { analysisKey, isWhole, readKept } from '@/game/analysisKeep';
@@ -574,13 +574,14 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).then(done, () => window.prompt(t('game.debrief.linkCopy'), url));
     else window.prompt(t('game.debrief.linkCopy'), url);
   };
-  /* the position on show becomes a table of this device: the reader plays
-     on from there, the machines with them */
+  /* the position on show becomes a game of its own at the office: the reader
+     plays on from there, the machines with them */
   const playFrom = () => {
     if (!shown || shown.phase !== 'action') return;
-    const code = forkLocalGame(shown);
-    setDebriefOpen(false);
-    navigate(`/game/local/${code}`);
+    void forkHomeGame(shown).then((table) => {
+      setDebriefOpen(false);
+      navigate(`/game/local/${table.code}`);
+    });
   };
   /* the pick joins the line and the machine answers until the reader's next
      turn; with no pick at a tip of theirs, the machine plays them too */

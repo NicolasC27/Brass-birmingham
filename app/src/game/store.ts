@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, defaultSetup, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, newGame, planIronFrom, scoreEra, sellTargets, tileKey, withIron } from './engine';
+import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, planIronFrom, scoreEra, sellTargets, tileKey, withIron } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
@@ -24,14 +24,13 @@ import type {
   FinalPayload,
   GameState,
   IndustryType,
-  SetupPayload,
   Verb,
   LedgerEntry,
 } from './types';
-import { PINS_KEY, SETUP_KEY } from './types';
+import { PINS_KEY } from './types';
 import { ledgerText } from './ledgerText';
-import { TUTORIAL_KEY, TUTORIAL_SEED } from './quickplay';
-import { localPinScope, openLocalGame, readLocalSave, saveLocalGame } from './local';
+import { TUTORIAL_KEY } from './quickplay';
+import { forkHomeGame, homePinScope, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
 import { challengeSeedFor, noteChallenge } from './challenge';
 import { grantFromGame } from '@/platform/patents';
 import { writeLetter } from '@/platform/letters';
@@ -55,8 +54,11 @@ interface GameStore {
   /* ---- the table, when the game is played over the wire ---- */
   /** the online table's code, null when the game is played in this browser */
   code: string | null;
-  /** the code of the game on this device's register, null online */
+  /** the code of the game at home the office holds, null online */
   local: string | null;
+  /** the office gave the game a code the address did not name (a game carried
+   *  in a link, a rematch): the page moves there. Null the rest of the time */
+  movedTo: string | null;
   /** my seat at that table (the engine's player index), null offline */
   seat: number | null;
   /** the state of the line, null offline */
@@ -206,7 +208,8 @@ interface GameStore {
   /** what is left of the turn candle right now, in ms (null: none burns) */
   msLeft: () => number | null;
   reset: () => void;
-  save: () => void;
+  /** one move written to the office's log, at its place in it */
+  record: (action: GameAction, at: number) => void;
 
   /* ---- interaction ---- */
   selectCard: (id: string | null) => void;
@@ -325,17 +328,87 @@ function noteHouse(g: GameState, local: string | null): void {
   pushPapers();
 }
 
-function readSetup(): SetupPayload {
-  try {
-    const raw = localStorage.getItem(SETUP_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as SetupPayload;
-      if (parsed.players?.length >= 2) return parsed;
+/** a game at home, asked of the office and put on the board.
+ *
+ *  Nothing is drawn until it arrives — the same bargain the online branch of
+ *  `init` makes. An address naming a game the office does not hold opens a
+ *  new one instead: a game carried in the link is written down as it stands,
+ *  and an empty link is a fresh deal. Either way the page is then sent to
+ *  the code the office gave, which is the only code that means anything. */
+async function fetchHome(code: string): Promise<void> {
+  /* a link that points at a move: the analysis opens on that very move,
+     which is the whole point of sending it */
+  const moment = sharedMoment(window.location.hash);
+  const carried = readShared(window.location.hash);
+  let at = code;
+  let game = await readHomeSave(code);
+  if (!game) {
+    try {
+      const table = carried ? await forkHomeGame(carried) : await openHomeGame();
+      at = table.code;
+      game = carried ?? (await readHomeSave(at));
+    } catch {
+      /* the office is not answering: the board stays empty and says so */
+      game = null;
     }
-  } catch {
-    /* fall through */
+    if (!game) {
+      if (useGame.getState().local === code) useGame.setState({ game: null, movedTo: null });
+      return;
+    }
   }
-  return defaultSetup();
+  /* the reader may have walked away while the office was answering */
+  if (useGame.getState().local !== code) return;
+  if (carried) window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  /* whatever road the game came by, the board it stands on goes in play
+     before anything is drawn on it */
+  setBoard(game.board);
+  /* the guided game: a fixed deal, remembered by its seed so a reload keeps
+     the guide — and never a table opened from the week's notice */
+  const wanted = (() => {
+    try {
+      return localStorage.getItem(TUTORIAL_KEY);
+    } catch {
+      return null;
+    }
+  })();
+  const tutorial = challengeSeedFor(at) === null && !!wanted && /^\d+$/.test(wanted) && game.seed === Number(wanted);
+  const coached = (() => {
+    try {
+      return localStorage.getItem('brassworks.coached.v1') === '1';
+    } catch {
+      return true;
+    }
+  })();
+  const humanMarks = (() => {
+    try {
+      return humanActionIndices(setupOf(game), game.seed, game.actions);
+    } catch {
+      return [];
+    }
+  })();
+  useGame.setState({
+    ...clearSelection,
+    ...freshTable,
+    game,
+    code: null,
+    local: at,
+    /* the office's code, when it is not the one the address named */
+    movedTo: at === code ? null : at,
+    seat: null,
+    line: null,
+    candle: null,
+    mood: NO_MOOD,
+    tutorial,
+    humanMarks,
+    pins: readPins(homePinScope(at)),
+    ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
+    /* a finished game reopened lands on its scores, the debrief a click away
+       — unless the link pointed at a move, and then the analysis opens on it */
+    gameOverOpen: game.phase === 'game-over' && moment === null,
+    debriefOpen: moment !== null && game.phase === 'game-over',
+    reviewAt: moment,
+    coachStep: coached || tutorial ? -1 : 0,
+  });
 }
 
 export function buildFinalPayload(g: GameState): FinalPayload {
@@ -416,6 +489,7 @@ const freshTable = {
 export const useGame = create<GameStore>((set, get) => ({
   game: null,
   code: null,
+  movedTo: null,
   local: null,
   seat: null,
   line: null,
@@ -453,81 +527,11 @@ export const useGame = create<GameStore>((set, get) => ({
       listen(code, wire);
       return;
     }
-    /* a game of this device: the one named, or a new table on the register */
-    const at = local ?? openLocalGame().code;
-    /* a game already on this device, or one carried here in the address */
-    const carried = readLocalSave(at) ? null : readShared(window.location.hash);
-    /* a link that points at a move: the game arrives with its analysis open
-       on that very move, which is the whole point of sending it */
-    const moment = sharedMoment(window.location.hash);
-    if (carried) {
-      saveLocalGame(at, carried);
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
-    const resumed = readLocalSave(at);
-    /* the guided game: a fixed deal, remembered by its seed so a reload keeps the guide */
-    const wanted = (() => {
-      try {
-        return localStorage.getItem(TUTORIAL_KEY);
-      } catch {
-        return null;
-      }
-    })();
-    const seedWanted = wanted === 'new' ? TUTORIAL_SEED : wanted && /^\d+$/.test(wanted) ? Number(wanted) : null;
-    /* the challenge of the week: the deal the notice fixes, no guide with it */
-    const challengeSeed = challengeSeedFor(at);
-    const game = resumed ?? (challengeSeed !== null ? newGame(readSetup(), challengeSeed) : seedWanted !== null ? newGame(readSetup(), seedWanted) : newGame(readSetup()));
-    /* whatever road the game came by — dealt here, resumed from the shelf,
-       handed over by the table — the board it stands on goes in play before
-       anything is drawn on it */
-    setBoard(game.board);
-    const tutorial = challengeSeed === null && seedWanted !== null && game.seed === seedWanted;
-    if (tutorial) {
-      try {
-        localStorage.setItem(TUTORIAL_KEY, String(game.seed));
-      } catch {
-        /* non-fatal */
-      }
-    }
-    /* the deal is kept at once: the table is on the desk from its first
-       minute, and a reload before the first move keeps the guide */
-    if (!resumed) saveLocalGame(at, game);
-    const coached = (() => {
-      try {
-        return localStorage.getItem('brassworks.coached.v1') === '1';
-      } catch {
-        return true;
-      }
-    })();
-    const humanMarks = (() => {
-      try {
-        return humanActionIndices(setupOf(game), game.seed, game.actions);
-      } catch {
-        return [];
-      }
-    })();
-    set({
-      ...clearSelection,
-      ...freshTable,
-      game,
-      code: null,
-      local: at,
-      seat: null,
-      line: null,
-      candle: null,
-      mood: NO_MOOD,
-      tutorial,
-      humanMarks,
-      /* a game resumed keeps its pins and notes; a new one starts clean */
-      pins: resumed ? readPins(localPinScope(at)) : {},
-      ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
-      /* a finished game resumed opens on its scores, the debrief a click away
-         — unless the link pointed at a move, and then the analysis opens on it */
-      gameOverOpen: game.phase === 'game-over' && moment === null,
-      debriefOpen: moment !== null && game.phase === 'game-over',
-      reviewAt: moment,
-      coachStep: coached || tutorial ? -1 : 0,
-    });
+    /* a game at home. The office holds it: the board waits, empty, until it
+       has been handed over — the very shape the online branch above takes */
+    set({ ...clearSelection, ...freshTable, game: null, code: null, local: local ?? null, movedTo: null, seat: null, line: null, candle: null, mood: NO_MOOD, tutorial: false, humanMarks: [], pins: {}, ceremony: null, gameOverOpen: false, debriefOpen: false, reviewAt: null, coachStep: -1 });
+    if (!local) return;
+    void fetchHome(local);
   },
 
   myTurn: () => {
@@ -554,20 +558,27 @@ export const useGame = create<GameStore>((set, get) => ({
   },
 
   reset: () => {
-    /* a rematch is a table's business, not a page's: online it does nothing */
-    const at = get().local;
-    if (get().code || !at) return;
-    const game = newGame(readSetup());
-    set({ ...clearSelection, ...freshTable, game, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {} });
-    writePins(localPinScope(at), {});
-    saveLocalGame(at, game);
+    /* a rematch is a table's business, not a page's: online it does nothing.
+       At home it is a new game, not the old one written over — the office
+       keeps a log, and a log is not begun twice under one code. The page
+       follows `movedTo` to the deal the office hands back */
+    if (get().code || !get().local) return;
+    set({ ...clearSelection, ...freshTable, game: null, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {}, movedTo: null });
+    void openHomeGame()
+      .then((table) => {
+        set({ local: table.code, movedTo: table.code });
+        return fetchHome(table.code);
+      })
+      .catch(() => set({ game: null }));
   },
 
-  save: () => {
-    const { game: g, code, local } = get();
-    /* a filtered state is nobody's save: it would resume a crippled game */
-    if (!g || code || !local) return;
-    saveLocalGame(local, g);
+  /** the game moved at home: the office is told the move and where in the
+   *  log it goes. Online the table keeps the log itself, and nothing here
+   *  has anything to send */
+  record: (action, at) => {
+    const { code, local } = get();
+    if (code || !local) return;
+    recordMove(local, at, action);
   },
 
   /* ------------------------- selection ------------------------- */
@@ -979,7 +990,7 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a vote, or a chair handed over, is not a turn: nothing to take back */
     const human = action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && !g.players[g.current].isBot;
     set({ ...clearSelection, game: mut, ceremony, gameOverOpen: mut.phase === 'game-over', humanMarks: human ? [...get().humanMarks, { at: g.actions.length, by: g.current }] : get().humanMarks });
-    get().save();
+    get().record(action, g.actions.length);
     if (mut.phase === 'game-over' && !get().code) noteHouse(mut, get().local);
     if (human) botBanter(mut, g.current, action);
     /* the coach, behind the aid and at home only: the move just made, read
@@ -1023,7 +1034,9 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     if (!back) return false;
     set({ ...clearSelection, game: back, humanMarks: marks.slice(0, -1), ceremony: back.phase === 'scoring-canal' ? 'canal-end' : null, gameOverOpen: false });
-    get().save();
+    /* the office cuts its log where the board now stands */
+    const at = get().local;
+    if (at) void recordUndo(at, back.actions.length).catch(() => undefined);
     return true;
   },
 
@@ -1037,7 +1050,7 @@ export const useGame = create<GameStore>((set, get) => ({
     const r = applyAction(g, g.current, { kind: 'begin-rail' });
     if (!r.state) return;
     set({ game: r.state, ceremony: null, gameOverOpen: r.state.phase === 'game-over' });
-    get().save();
+    get().record({ kind: 'begin-rail' }, g.actions.length);
     if (r.state.phase === 'game-over') noteForm(r.state);
   },
 
@@ -1628,7 +1641,7 @@ export function describeAction(a: GameAction): string {
 /* ------------------------------ the pins ------------------------------ */
 
 /** where a table's pins are kept: the code online, the register's scope at home */
-const pinScope = (st: { code: string | null; local: string | null }): string | null => st.code ?? (st.local ? localPinScope(st.local) : null);
+const pinScope = (st: { code: string | null; local: string | null }): string | null => st.code ?? (st.local ? homePinScope(st.local) : null);
 /** each table keeps its own pins: the code online, the home table otherwise */
 const pinsKey = (code: string | null): string => (code ? `${PINS_KEY}:${code}` : PINS_KEY);
 /** the reader's pinned towns and notes, kept across reloads of the same table */

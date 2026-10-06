@@ -44,7 +44,7 @@ import { routeFor } from '@/components/game/routePaths';
 import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withIron } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
-import { listLocalGames, openLocalGame } from '@/game/local';
+import { listHomeGames, openHomeGame } from '@/game/home';
 import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame, describeAction } from '@/game/store';
 import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
@@ -222,9 +222,11 @@ export default function Game() {
   /* ------------------------- lifecycle ------------------------- */
   useEffect(() => {
     if (!tableCode && !localCode) {
-      /* the old address of the game at home: the one last touched, else a new deal */
-      const at = listLocalGames()[0] ?? openLocalGame();
-      navigate(`/game/local/${at.code}`, { replace: true });
+      /* the old address of the game at home: the one last touched, else a
+         new deal — and the office is the one that names it */
+      const last = listHomeGames()[0];
+      if (last) navigate(`/game/local/${last.code}`, { replace: true });
+      else void openHomeGame().then((at) => navigate(`/game/local/${at.code}`, { replace: true })).catch(() => undefined);
       return;
     }
     init(tableCode, localCode);
@@ -233,6 +235,13 @@ export default function Game() {
       if (tableCode) leaveOnlineTable();
     };
   }, [init, tableCode, localCode, navigate]);
+  /* the office named the game something else than the address did — a game
+     carried in a link, or a rematch: the address follows the office, which
+     is the only place the code means anything */
+  const movedTo = useGame((s) => s.movedTo);
+  useEffect(() => {
+    if (movedTo && movedTo !== localCode) navigate(`/game/local/${movedTo}`, { replace: true });
+  }, [movedTo, localCode, navigate]);
   /* a table on the server is no place for a stranger: the office signs
      you in first, the code travelling along */
   const stranger = useStranger();

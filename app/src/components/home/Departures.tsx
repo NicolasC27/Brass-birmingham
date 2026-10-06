@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { Eye, RefreshCw } from 'lucide-react';
@@ -7,7 +7,7 @@ import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { isOnline } from '@/online/lobby';
 import { onlineWire } from '@/online/net';
-import { listLocalGames, type LocalTable } from '@/game/local';
+import { listHomeGames, subscribeHome, type HomeTable } from '@/game/home';
 import { startQuickGame } from '@/game/quickplay';
 import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
 import { colorDef } from '@/components/setup/constants';
@@ -132,7 +132,7 @@ function Row({ table, i }: { table: CardTable; i: number }) {
 }
 
 /* the local edition: one line a saved game of this device */
-function LocalRow({ table, i }: { table: LocalTable; i: number }) {
+function LocalRow({ table, i }: { table: HomeTable; i: number }) {
   const t = useT();
   const lang = useLang();
   return (
@@ -167,7 +167,7 @@ function LocalRow({ table, i }: { table: LocalTable; i: number }) {
 function LocalEdition() {
   const t = useT();
   const navigate = useNavigate();
-  const [games] = useState(() => listLocalGames().filter((g) => !g.over));
+  const games = useSyncExternalStore(subscribeHome, listHomeGames, listHomeGames);
   return (
     <>
       {games.length === 0 ? (
@@ -191,7 +191,7 @@ function LocalEdition() {
       )}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
         <span className="font-serif text-[13px] italic text-paper-300">{t('platform.serverOffline')}</span>
-        <button type="button" onClick={() => navigate(`/game/local/${startQuickGame()}`)} className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+        <button type="button" onClick={() => void startQuickGame().then((code) => navigate(`/game/local/${code}`))} className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
           {t('platform.home.departures.machines')}
         </button>
       </div>

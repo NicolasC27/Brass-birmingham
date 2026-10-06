@@ -1,4 +1,5 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
+import { hydrateHome } from "@/game/home";
 import { Routes, Route, Navigate } from "react-router";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
@@ -33,6 +34,14 @@ function Arriving() {
 }
 
 export default function App() {
+  /* the register of games at home is the office's: it is read once, here,
+     before any page asks what is on it — from then on it keeps arriving on
+     its own. A browser that cannot reach the office simply has none */
+  const [read, setRead] = useState(false);
+  useEffect(() => {
+    void hydrateHome().finally(() => setRead(true));
+  }, []);
+  if (!read) return <Arriving />;
   return (
     <Suspense fallback={<Arriving />}>
     <Routes>
