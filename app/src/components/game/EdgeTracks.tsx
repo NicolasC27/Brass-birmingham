@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, loanLanding } from '@/game/data';
+import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, levelTopSpace, loanLanding } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
 import { useT } from '@/i18n';
 import Tooltip from './Tooltip';
@@ -181,6 +181,11 @@ function Pawn({
   const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
   const pay = fmtPay(INCOME_PAYOUT[p.income]);
   const after = loanLanding(p.income) ?? p.income;
+  /* the climb ahead: how many spaces the pawn still has to cross before
+     the next level pays, or the ceiling */
+  const lvl = incomeLevel(p.income);
+  const toNext = lvl >= 30 ? 0 : levelTopSpace(lvl) + 1 - p.income;
+  const nextPay = fmtPay(INCOME_PAYOUT[Math.min(INCOME_MAX, levelTopSpace(lvl) + 1)]);
   const fan = (fanIndex - (fanSize - 1) / 2) * 10;
   const zig = fanSize > 1 ? (fanIndex % 2 ? 4 : -4) : 0;
   const label = kind === 'vp' ? String(p.vp) : pay;
@@ -200,9 +205,14 @@ function Pawn({
         className="pointer-events-auto items-center"
         title={kind === 'vp' ? t('game.frame.vpPawnTitle', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnTitle', { name: p.name, lvl: incomeLevel(p.income), pay })}
         content={
-          kind === 'vp'
-            ? t('game.frame.vpPawnHint', { money: p.money, built: p.stats.built, links: p.stats.links })
-            : t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after: incomeLevel(after), pay: fmtPay(INCOME_PAYOUT[after]) })
+          kind === 'vp' ? (
+            t('game.frame.vpPawnHint', { money: p.money, built: p.stats.built, links: p.stats.links })
+          ) : (
+            <>
+              <span className="block font-semibold text-cream-100">{toNext > 0 ? t('game.incomeRail.pawnNext', { n: toNext, lvl: lvl + 1, pay: nextPay }) : t('game.incomeRail.pawnTop')}</span>
+              <span className="mt-1 block">{t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after: incomeLevel(after), pay: fmtPay(INCOME_PAYOUT[after]) })}</span>
+            </>
+          )
         }
       >
         <motion.button
