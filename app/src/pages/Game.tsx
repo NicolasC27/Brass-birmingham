@@ -470,10 +470,20 @@ export default function Game() {
     () => (planGame && planActor >= 0 && verb === 'build' && selectedCard ? buildTargets(planGame, planActor, selectedCard) : []),
     [planGame, planActor, verb, selectedCard],
   );
-  const linkTargetsList = useMemo(
-    () => (planGame && planActor >= 0 && verb === 'network' ? linkTargets(planGame, planActor) : []),
-    [planGame, planActor, verb],
-  );
+  /* the links as the board may take them: on their own until a first is
+     picked in the rail era, then every other free rail read as the
+     double's second — touching the network, or the first's own ends —
+     with the double's price and the engine's reason when it cannot be */
+  const linkTargetsList = useMemo(() => {
+    if (!planGame || planActor < 0 || verb !== 'network') return [];
+    const list = linkTargets(planGame, planActor);
+    if (!linkPick || planGame.era !== 'rail') return list;
+    return list.map((t) => {
+      if (t.link.id === linkPick.link.id) return t;
+      const dbl = doubleLinkPlan(planGame, planActor, linkPick, t.link, linkBeer);
+      return { ...t, valid: dbl.valid, reason: dbl.reason, total: dbl.total, coalPlan: dbl.coal2 };
+    });
+  }, [planGame, planActor, verb, linkPick, linkBeer]);
   const sellTargetsList = useMemo(
     () => (planGame && planActor >= 0 && verb === 'sell' ? sellTargets(planGame, planActor) : []),
     [planGame, planActor, verb],
