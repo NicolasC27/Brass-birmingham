@@ -6,6 +6,7 @@ import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react
 import NotebookButton from '@/components/game/Notebook';
 import LessonHalo from '@/components/game/LessonHalo';
 import Debrief from '@/components/game/Debrief';
+import Boundary from '@/components/platform/Boundary';
 import ReviewHand from '@/components/game/ReviewHand';
 import AskGuide from '@/components/game/AskGuide';
 import { readable } from '@/game/analysis';
@@ -890,7 +891,14 @@ export default function Game() {
           </div>
         </div>
       )}
-      {debriefOpen && readable(game) && reviewSeat >= 0 && <Debrief key={`${reviewTable}:${game.seed}`} game={game} me={reviewSeat} />}
+      {/* the analysis is the one panel that reads a whole game at once: a
+          throw in it used to take the board with it, and the game with the
+          board. It takes only itself now, and the way out closes it */}
+      {debriefOpen && readable(game) && reviewSeat >= 0 && (
+        <Boundary onQuit={leaveReview} quitLabel={t('game.debrief.close')}>
+          <Debrief key={`${reviewTable}:${game.seed}`} game={game} me={reviewSeat} />
+        </Boundary>
+      )}
       {/* the guide and the analysis share the right lane: while a game is
           being read, the analysis has it */}
       {!analysisPane && <Guide dock={dock} />}

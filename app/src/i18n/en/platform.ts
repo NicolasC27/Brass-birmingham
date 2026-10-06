@@ -3,6 +3,13 @@
 /* French is the reference language of the redesign; English mirrors.  */
 /* ------------------------------------------------------------------ */
 const platform = {
+  boundary: {
+    title: 'Something jammed',
+    copy: 'The page stopped short. What was played is kept at the office, not in this browser — nothing of the game is lost.',
+    reload: 'Reload the page',
+    home: 'Back to the station',
+    detail: 'What the machine said',
+  },
   nav: {
     play: "Departures",
     tables: "Timetable",

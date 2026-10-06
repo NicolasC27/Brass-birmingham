@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { hydrateHome } from "@/game/home";
+import Boundary from "@/components/platform/Boundary";
 import { Routes, Route, Navigate } from "react-router";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
@@ -43,6 +44,7 @@ export default function App() {
   }, []);
   if (!read) return <Arriving />;
   return (
+    <Boundary>
     <Suspense fallback={<Arriving />}>
     <Routes>
       <Route element={<Layout />}>
@@ -82,5 +84,6 @@ export default function App() {
       </Route>
     </Routes>
     </Suspense>
+    </Boundary>
   );
 }

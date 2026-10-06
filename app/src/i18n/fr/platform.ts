@@ -3,6 +3,13 @@
 /* Le français est la langue de référence de la refonte.               */
 /* ------------------------------------------------------------------ */
 const platform = {
+  boundary: {
+    title: 'Un rouage a cassé',
+    copy: "La page s'est arrêtée net. Ce qui a été joué est gardé à l'office, pas dans ce navigateur : rien de la partie n'est perdu.",
+    reload: 'Recharger la page',
+    home: 'Retour en gare',
+    detail: 'Ce que la machine a dit',
+  },
   nav: {
     play: "Départs",
     tables: "Horaires",

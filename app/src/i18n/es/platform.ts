@@ -3,6 +3,13 @@
 /* El francés es la lengua de referencia del rediseño; el español la sigue. */
 /* ------------------------------------------------------------------ */
 const platform = {
+  boundary: {
+    title: 'Se ha atascado un engranaje',
+    copy: 'La página se ha detenido en seco. Lo jugado se guarda en la oficina, no en este navegador: no se pierde nada de la partida.',
+    reload: 'Recargar la página',
+    home: 'Volver a la estación',
+    detail: 'Lo que dijo la máquina',
+  },
   nav: {
     play: "Salidas",
     tables: "Horarios",

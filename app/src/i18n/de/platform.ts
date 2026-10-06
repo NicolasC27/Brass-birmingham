@@ -5,6 +5,13 @@
 import enPlatform from '../en/platform';
 
 const platform: typeof enPlatform = {
+  boundary: {
+    title: 'Ein Zahnrad ist gebrochen',
+    copy: 'Die Seite ist stehen geblieben. Das Gespielte liegt im Kontor, nicht in diesem Browser — von der Partie geht nichts verloren.',
+    reload: 'Seite neu laden',
+    home: 'Zurück zum Bahnhof',
+    detail: 'Was die Maschine sagte',
+  },
   nav: {
     play: "Abfahrten",
     tables: "Fahrplan",
