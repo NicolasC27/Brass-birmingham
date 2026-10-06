@@ -1,48 +1,67 @@
 import { onlineWire } from '@/online/net';
-import { listPatents, mergePatents } from './patents';
-import { listLetters, mergeLetters } from './letters';
-import { mergeFeuilleton, readFeuilleton } from './feuilleton';
 
 /* ------------------------------------------------------------------ */
-/* The papers that follow the account. The patents, the machines'     */
-/* letters and the feuilleton are written in this browser; once signed */
-/* in, the office keeps a copy, and another browser signing in with    */
-/* the same name reads it back and folds it into its own. Nothing is   */
-/* ever taken away by a sync: papers only gather.                      */
+/* The papers that follow the account.                                 */
+/*                                                                     */
+/* The judge's sheet, the feuilleton, the patents, the machines'       */
+/* letters, the towns built, the form and the week's notice: none of   */
+/* them is a game, and all of them are a record of having played. The  */
+/* office keeps them, one row an account and a kind, and this browser  */
+/* keeps a mirror — read once as the application opens, so a page may  */
+/* still ask for a paper without waiting, and written through to the   */
+/* office the moment it changes.                                       */
+/*                                                                     */
+/* The office decides. There is no folding of one copy into another    */
+/* any more: what the office hands over is what the papers are.        */
 /* ------------------------------------------------------------------ */
 
-const KINDS = ['patents', 'letters', 'feuilleton'] as const;
-type Kind = (typeof KINDS)[number];
+export const PAPER_KINDS = ['progress', 'feuilleton', 'patents', 'letters', 'lines', 'form', 'challenge'] as const;
+export type Kind = (typeof PAPER_KINDS)[number];
 
-const local = (kind: Kind): unknown => (kind === 'patents' ? listPatents() : kind === 'letters' ? listLetters() : readFeuilleton());
+const shelf = new Map<Kind, unknown>();
 
-/** what the office keeps, folded into what this browser holds, and the
- *  result handed back to the office */
-export async function syncPapers(): Promise<void> {
+/** what the office keeps under this kind, or `fallback` when it keeps none */
+export function paper<T>(kind: Kind, fallback: T): T {
+  const body = shelf.get(kind);
+  return body === undefined || body === null ? fallback : (body as T);
+}
+
+/** a paper written: kept here at once, so what wrote it reads it back, and
+ *  handed to the office, which is where it lives */
+export function writePaper(kind: Kind, body: unknown): void {
+  shelf.set(kind, body);
+  void onlineWire()?.putPaper(kind, body).catch(() => undefined);
+}
+
+/** the shelf emptied: another account's papers are not this one's, and a
+ *  test starts from a browser that has none */
+export function clearPapers(): void {
+  shelf.clear();
+}
+
+/** the papers as the office keeps them. A browser that cannot reach it has
+ *  none, which is the honest answer: they are not kept here any more */
+export async function hydratePapers(): Promise<void> {
   const wire = onlineWire();
-  if (!wire?.session) return;
-  let remote: Record<string, { body: unknown; updatedAt: number }>;
+  if (!wire || wire.stranger) return;
+  let held: Record<string, { body: unknown }>;
   try {
-    remote = await wire.askPapers();
+    held = await wire.askPapers();
   } catch {
     return;
   }
-  const patents = remote.patents?.body;
-  if (Array.isArray(patents)) mergePatents(patents);
-  const letters = remote.letters?.body;
-  if (Array.isArray(letters)) mergeLetters(letters);
-  const feuilleton = remote.feuilleton?.body;
-  if (feuilleton && typeof feuilleton === 'object') mergeFeuilleton(feuilleton as Parameters<typeof mergeFeuilleton>[0]);
-  pushPapers();
+  for (const kind of PAPER_KINDS) {
+    const body = held[kind]?.body;
+    if (body !== undefined) shelf.set(kind, body);
+  }
 }
 
-/** this browser's papers, handed to the office when there is one on the line */
-export function pushPapers(): void {
-  const wire = onlineWire();
-  if (!wire?.session) return;
-  for (const kind of KINDS) {
-    const body = local(kind);
-    if (body === null || (Array.isArray(body) && body.length === 0)) continue;
-    void wire.putPaper(kind, body).catch(() => undefined);
+/** the papers of a browser from before the office kept them, put up as they
+ *  are — only the kinds the office holds nothing of */
+export function liftPapers(found: Partial<Record<Kind, unknown>>): void {
+  for (const kind of PAPER_KINDS) {
+    const body = found[kind];
+    if (body === undefined || shelf.has(kind)) continue;
+    writePaper(kind, body);
   }
 }

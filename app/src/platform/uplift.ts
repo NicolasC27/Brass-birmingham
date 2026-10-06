@@ -4,6 +4,8 @@ import { readShared } from '@/game/share';
 import { setupOf } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { onlineWire } from '@/online/net';
+import { PAPER_KINDS, liftPapers } from './papers';
+import type { Kind } from './papers';
 
 /* ------------------------------------------------------------------ */
 /* The lift.                                                           */
@@ -14,7 +16,9 @@ import { onlineWire } from '@/online/net';
 /* feuilleton carries in its link, which is often the only thing left  */
 /* of a game whose save was swept away. Each is opened under its own   */
 /* code and its log written out, so it lands on the register like any  */
-/* other; then the old keys go.                                        */
+/* other. The papers go up with them — but only the kinds the office   */
+/* keeps none of, so a fuller set kept there is never written over by  */
+/* an old browser's copy. Then the old keys go.                        */
 /*                                                                     */
 /* This runs once in the life of a browser. A game it cannot make      */
 /* sense of is left where it is rather than thrown away.               */
@@ -27,6 +31,16 @@ const PINS_KEY = 'brassworks.pins.v1';
 const FINAL_KEY = 'brassworks.final.v1';
 /** the lift has been run in this browser */
 const DONE_KEY = 'brassworks.lifted.v1';
+/** the papers of a browser from before the office kept them, by kind */
+const OLD_PAPERS: Record<Kind, string> = {
+  progress: 'brassworks.progress.v1',
+  feuilleton: FEUILLETON_KEY,
+  patents: 'brassworks.patents.v1',
+  letters: 'brassworks.letters.v1',
+  lines: 'brassworks.lines.v1',
+  form: 'brassworks.form.v1',
+  challenge: 'brassworks.challenge.v1',
+};
 
 const read = (key: string): string | null => {
   try {
@@ -95,33 +109,44 @@ function findOld(): Found[] {
 }
 
 /** is there anything in this browser still to carry up? */
-export function hasOldGames(): boolean {
+export function hasOldStuff(): boolean {
   if (read(DONE_KEY)) return false;
-  return !!read(INDEX_KEY) || !!read(RESUME_KEY) || !!read(FEUILLETON_KEY);
+  if (read(INDEX_KEY) || read(RESUME_KEY)) return true;
+  return PAPER_KINDS.some((k) => !!read(OLD_PAPERS[k]));
 }
 
-/** the games left in this browser, carried up to the office. The number of
- *  them that made it — nothing is dropped until it is up */
-export async function liftOldGames(): Promise<number> {
-  if (!hasOldGames()) return 0;
+/** the papers this browser still holds, as the office will have them — only
+ *  the kinds it keeps none of, so a fuller set kept there is never written
+ *  over by an old browser's copy */
+function liftOldPapers(): void {
+  const found: Partial<Record<Kind, unknown>> = {};
+  for (const kind of PAPER_KINDS) {
+    const raw = read(OLD_PAPERS[kind]);
+    if (!raw) continue;
+    try {
+      found[kind] = JSON.parse(raw) as unknown;
+    } catch {
+      /* a paper this browser cannot read is a paper it does not send */
+    }
+  }
+  liftPapers(found);
+}
+
+/** everything left in this browser, carried up to the office. The number of
+ *  games that made it — nothing is dropped until it is up */
+export async function liftBrowser(): Promise<number> {
+  if (!hasOldStuff()) return 0;
   const wire = onlineWire();
   if (!wire) return 0;
   const found = findOld();
-  if (!found.length) {
-    try {
-      localStorage.setItem(DONE_KEY, '1');
-    } catch {
-      /* non-fatal */
-    }
-    return 0;
-  }
-  /* a browser that never signed the register still gets an account: its
-     games are the reason the account exists */
+  /* a browser that never signed the register still gets an account: what it
+     has played is the reason the account exists */
   try {
     await wire.need();
   } catch {
     return 0;
   }
+  liftOldPapers();
   let up = 0;
   for (const f of found) {
     try {
@@ -136,6 +161,7 @@ export async function liftOldGames(): Promise<number> {
   }
   drop(INDEX_KEY);
   drop(FINAL_KEY);
+  for (const kind of PAPER_KINDS) drop(OLD_PAPERS[kind]);
   try {
     localStorage.setItem(DONE_KEY, '1');
   } catch {

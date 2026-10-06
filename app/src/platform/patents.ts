@@ -3,16 +3,17 @@ import { deedsOf, type Deeds } from '@/game/plan';
 import type { Tally } from '@/game/tally';
 import type { GameState } from '@/game/types';
 import type { PastGame } from '@/online/table';
+import { paper, writePaper } from './papers';
 
 /* ------------------------------------------------------------------ */
 /* The patents. Distinctions granted for a thing done at a table, and   */
 /* printed like letters patent: the brewer's, the ironmaster's, the    */
 /* one for winning without the bank. A patent is granted once. A game  */
 /* at home is read from its deeds; a game of the office from the tally */
-/* it sends with the history. The wall lives in this browser.          */
+/* it sends with the history. The wall is one of the office's papers.  */
 /* ------------------------------------------------------------------ */
 
-const KEY = 'brassworks.patents.v1';
+
 
 export type PatentId = 'brewer' | 'ironmaster' | 'noBanker' | 'network' | 'centenary' | 'spinner' | 'potter' | 'doubleRail' | 'rentier';
 export const PATENT_IDS: PatentId[] = ['brewer', 'ironmaster', 'noBanker', 'network', 'centenary', 'spinner', 'potter', 'doubleRail', 'rentier'];
@@ -47,21 +48,10 @@ export interface Patent {
 }
 
 const readAll = (): Patent[] => {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const v = raw ? (JSON.parse(raw) as unknown) : null;
-    return Array.isArray(v) ? v.filter((p): p is Patent => !!p && PATENT_IDS.includes(p.id)) : [];
-  } catch {
-    return [];
-  }
+  const v = paper<unknown>('patents', null);
+  return Array.isArray(v) ? v.filter((p): p is Patent => !!p && PATENT_IDS.includes(p.id)) : [];
 };
-const writeAll = (list: Patent[]): void => {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list));
-  } catch {
-    /* non-fatal */
-  }
-};
+const writeAll = (list: Patent[]): void => writePaper('patents', list);
 
 /** the wall, the latest grant first */
 export const listPatents = (): Patent[] => readAll().sort((a, b) => b.at - a.at);

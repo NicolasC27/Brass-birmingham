@@ -36,7 +36,6 @@ import { grantFromGame } from '@/platform/patents';
 import { writeLetter } from '@/platform/letters';
 import { noteFeuilleton } from '@/platform/feuilleton';
 import { noteLines } from '@/platform/lines';
-import { pushPapers } from '@/platform/papers';
 import { readShared, sharedMoment } from './share';
 import { coachMove } from './coach';
 import type { Coached } from './coach';
@@ -325,7 +324,6 @@ function noteHouse(g: GameState, local: string | null): void {
   writeLetter(g, local);
   noteFeuilleton(g, local);
   noteLines(g);
-  pushPapers();
 }
 
 /** a game at home, asked of the office and put on the board.

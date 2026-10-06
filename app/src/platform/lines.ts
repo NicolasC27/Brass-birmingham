@@ -1,4 +1,5 @@
 import { setupOf } from '@/game/actions';
+import { paper, writePaper } from './papers';
 import { tallyGame } from '@/game/tally';
 import type { GameState } from '@/game/types';
 import type { PastGame } from '@/online/table';
@@ -9,8 +10,6 @@ import type { PastGame } from '@/online/table';
 /* adds its own here as it ends. The desk draws it on the map.         */
 /* ------------------------------------------------------------------ */
 
-const KEY = 'brassworks.lines.v1';
-
 export interface Lines {
   /** tiles laid, by town */
   towns: Record<string, number>;
@@ -20,13 +19,8 @@ export interface Lines {
 const empty = (): Lines => ({ towns: {}, games: 0 });
 
 function readLocal(): Lines {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const v = raw ? (JSON.parse(raw) as Partial<Lines>) : null;
-    return v && v.towns && typeof v.towns === 'object' ? { towns: v.towns, games: v.games ?? 0 } : empty();
-  } catch {
-    return empty();
-  }
+  const v = paper<Partial<Lines> | null>('lines', null);
+  return v && v.towns && typeof v.towns === 'object' ? { towns: v.towns, games: v.games ?? 0 } : empty();
 }
 
 /** a game at home is over: the human seat's towns are added to the lines */
@@ -39,11 +33,7 @@ export function noteLines(g: GameState): void {
   const lines = readLocal();
   for (const [town, n] of Object.entries(tally.towns)) lines.towns[town] = (lines.towns[town] ?? 0) + n;
   lines.games += 1;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(lines));
-  } catch {
-    /* non-fatal */
-  }
+  writePaper('lines', lines);
 }
 
 /** every line the member drew: the office's games and the games at home */

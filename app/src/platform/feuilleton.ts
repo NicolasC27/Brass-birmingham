@@ -3,16 +3,16 @@ import { homeGame } from '@/game/home';
 import { reviewGame, swingsFor } from '@/game/review';
 import { shareFragment } from '@/game/share';
 import type { Era, GameState } from '@/game/types';
+import { paper, writePaper } from './papers';
 
 /* ------------------------------------------------------------------ */
 /* The feuilleton: the last game played out at home, told in three     */
 /* moments — the moves that swung the lead the most, read off the      */
 /* positions alone — each a link that opens the table at that move.    */
 /* The game travels in the link (share.ts), so the episode stands even */
-/* after the register has pruned the save. Kept in this browser.       */
+/* after the register has pruned the save. One of the office's papers. */
 /* ------------------------------------------------------------------ */
 
-const KEY = 'brassworks.feuilleton.v1';
 const MOMENTS = 3;
 
 export interface Moment {
@@ -51,23 +51,14 @@ export function noteFeuilleton(g: GameState, code: string): Episode | null {
     .map((s) => ({ at: s.at, era: s.era, round: s.round, by: g.players[s.by]?.name ?? '', mine: s.by === me, shift: s.shift }));
   const scores = g.players.map((p, i) => ({ name: p.name, vp: p.vp, mine: i === me })).sort((a, b) => Number(b.mine) - Number(a.mine) || b.vp - a.vp);
   const episode: Episode = { code, name: homeGame(code)?.name ?? code, at: Date.now(), me: g.players[me].name, scores, moments, fragment: shareFragment(g) };
-  try {
-    localStorage.setItem(KEY, JSON.stringify(episode));
-  } catch {
-    /* the shelf is full: no episode this time */
-  }
+  writePaper('feuilleton', episode);
   return episode;
 }
 
 /** the episode on the shelf, if any */
 export function readFeuilleton(): Episode | null {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const e = raw ? (JSON.parse(raw) as Episode) : null;
-    return e && Array.isArray(e.moments) && typeof e.fragment === 'string' ? e : null;
-  } catch {
-    return null;
-  }
+  const e = paper<Episode | null>('feuilleton', null);
+  return e && Array.isArray(e.moments) && typeof e.fragment === 'string' ? e : null;
 }
 
 /** an episode kept elsewhere, folded in: the later of the two stays */
@@ -75,11 +66,7 @@ export function mergeFeuilleton(e: Episode): void {
   const mine = readFeuilleton();
   if (!Array.isArray(e.moments) || typeof e.fragment !== 'string' || typeof e.at !== 'number') return;
   if (mine && mine.at >= e.at) return;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(e));
-  } catch {
-    /* non-fatal */
-  }
+  writePaper('feuilleton', e);
 }
 
 /** the address of a moment: the table, the game in its fragment, the move */

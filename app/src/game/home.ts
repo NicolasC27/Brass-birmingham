@@ -1,5 +1,5 @@
 import { onlineWire } from '@/online/net';
-import { hasOldGames, liftOldGames } from '@/platform/uplift';
+import { hasOldStuff, liftBrowser } from '@/platform/uplift';
 import { pickTableName } from '@/online/tableNames';
 import type { HomeSave, HomeTable } from '@/online/table';
 import { replay, setupOf } from './actions';
@@ -78,7 +78,7 @@ export async function hydrateHome(): Promise<void> {
   wire.onHome(() => settle(wire.home ?? []));
   /* games written in this browser before the office kept them are carried
      up first, so they are on the register the moment it is read */
-  if (hasOldGames()) await liftOldGames().catch(() => 0);
+  if (hasOldStuff()) await liftBrowser().catch(() => 0);
   /* nobody has signed in, no session is waiting and nothing was carried up:
      this browser has played nothing, and no account is opened to say so */
   if (wire.stranger) return;

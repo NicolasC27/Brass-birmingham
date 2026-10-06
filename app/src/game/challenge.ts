@@ -2,6 +2,7 @@ import { SETUP_STORAGE_KEY, type StoredSetup } from '@/components/setup/constant
 import { personaName, incomeLevel } from './data';
 import { deedsOf, type Deeds } from './plan';
 import { openHomeGame } from './home';
+import { paper, writePaper } from '@/platform/papers';
 import { weekOf } from '@/platform/almanac';
 import type { BotPersona, GameState, IndustryType, SetupPayload } from './types';
 
@@ -13,11 +14,10 @@ import type { BotPersona, GameState, IndustryType, SetupPayload } from './types'
 /* journal prints it as a notice; a game opened from it is a local     */
 /* table like any other, remembered here by its code so the deal and   */
 /* the verdict find each other. Points: the victory points, fifteen a  */
-/* condition met, twenty-five more when every one is. Kept in this     */
-/* browser; the office will keep the week's table when it learns to.   */
+/* condition met, twenty-five more when every one is. One of the       */
+/* office's papers.                                                    */
 /* ------------------------------------------------------------------ */
 
-const KEY = 'brassworks.challenge.v1';
 export const POINTS_PER_RULE = 15;
 export const POINTS_ALL = 25;
 
@@ -131,21 +131,10 @@ interface Register {
 }
 
 const readRegister = (): Register => {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const v = raw ? (JSON.parse(raw) as Partial<Register>) : null;
-    return { tables: v?.tables && typeof v.tables === 'object' ? v.tables : {}, attempts: Array.isArray(v?.attempts) ? v.attempts : [] };
-  } catch {
-    return { tables: {}, attempts: [] };
-  }
+  const v = paper<Partial<Register> | null>('challenge', null);
+  return { tables: v?.tables && typeof v.tables === 'object' ? v.tables : {}, attempts: Array.isArray(v?.attempts) ? v.attempts : [] };
 };
-const writeRegister = (r: Register): void => {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(r));
-  } catch {
-    /* the shelf is full: the attempt is lost to the register, not to the player */
-  }
-};
+const writeRegister = (r: Register): void => writePaper('challenge', r);
 
 /** the deal a local table was opened with, when it came from a notice */
 export function challengeSeedFor(code: string): number | null {

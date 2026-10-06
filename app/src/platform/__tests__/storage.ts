@@ -1,4 +1,7 @@
-/* a register for the tests: the browser's localStorage, kept in a map */
+import { clearPapers } from '../papers';
+
+/* a register for the tests: the browser's localStorage kept in a map, and
+   the shelf of papers emptied — a browser that has played nothing */
 export function stubStorage(): Map<string, string> {
   const store = new Map<string, string>();
   const storage = {
@@ -12,5 +15,6 @@ export function stubStorage(): Map<string, string> {
     },
   };
   Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true });
+  clearPapers();
   return store;
 }

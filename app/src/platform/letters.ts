@@ -1,4 +1,5 @@
 import type { BotPersona, GameState } from '@/game/types';
+import { paper, writePaper } from './papers';
 
 /* ------------------------------------------------------------------ */
 /* The post. When a game at home ends, one of the machines writes to   */
@@ -6,10 +7,9 @@ import type { BotPersona, GameState } from '@/game/types';
 /* to grumble — three lines in its own voice, printed in the journal's */
 /* courrier. The lines live in the dictionaries under                  */
 /* platform.letters.<persona>.<won|lost>.<n>; the last few letters     */
-/* are kept in this browser.                                           */
+/* are one of the office's papers.                                     */
 /* ------------------------------------------------------------------ */
 
-const KEY = 'brassworks.letters.v1';
 const KEPT = 5;
 const VARIANTS = 2;
 
@@ -29,13 +29,8 @@ export interface Letter {
 }
 
 const readAll = (): Letter[] => {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const v = raw ? (JSON.parse(raw) as unknown) : null;
-    return Array.isArray(v) ? (v as Letter[]) : [];
-  } catch {
-    return [];
-  }
+  const v = paper<unknown>('letters', null);
+  return Array.isArray(v) ? (v as Letter[]) : [];
 };
 
 /** the letters received, the latest first */
@@ -47,11 +42,7 @@ export function mergeLetters(list: unknown[]): void {
   const ids = new Set(have.map((l) => l.id));
   const fresh = list.filter((l): l is Letter => !!l && typeof l === 'object' && typeof (l as Letter).id === 'string' && typeof (l as Letter).at === 'number' && !ids.has((l as Letter).id));
   if (!fresh.length) return;
-  try {
-    localStorage.setItem(KEY, JSON.stringify([...have, ...fresh].sort((a, b) => b.at - a.at).slice(0, KEPT)));
-  } catch {
-    /* non-fatal */
-  }
+  writePaper('letters', [...have, ...fresh].sort((a, b) => b.at - a.at).slice(0, KEPT));
 }
 
 /** the key of a letter's text */
@@ -77,10 +68,6 @@ export function writeLetter(g: GameState, table: string): Letter | null {
     theirs: best.p.vp,
     me: g.players[me].name,
   };
-  try {
-    localStorage.setItem(KEY, JSON.stringify([letter, ...readAll().filter((l) => l.id !== letter.id)].slice(0, KEPT)));
-  } catch {
-    /* non-fatal */
-  }
+  writePaper('letters', [letter, ...readAll().filter((l) => l.id !== letter.id)].slice(0, KEPT));
   return letter;
 }

@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, useState } from "react";
 import { hydrateHome } from "@/game/home";
+import { hydratePapers } from "@/platform/papers";
 import Boundary from "@/components/platform/Boundary";
 import { Routes, Route, Navigate } from "react-router";
 import Layout from "@/components/Layout";
@@ -35,12 +36,16 @@ function Arriving() {
 }
 
 export default function App() {
-  /* the register of games at home is the office's: it is read once, here,
-     before any page asks what is on it — from then on it keeps arriving on
-     its own. A browser that cannot reach the office simply has none */
+  /* the register of games at home and the papers that follow the account are
+     the office's: both are read once, here, before any page asks what is on
+     them. A browser that cannot reach the office simply has none */
   const [read, setRead] = useState(false);
   useEffect(() => {
-    void hydrateHome().finally(() => setRead(true));
+    /* the papers first: the lift inside `hydrateHome` sends up only the ones
+       the office keeps none of, and must know what it keeps */
+    void hydratePapers()
+      .then(hydrateHome)
+      .finally(() => setRead(true));
   }, []);
   if (!read) return <Arriving />;
   return (

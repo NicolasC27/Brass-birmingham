@@ -5,6 +5,7 @@ import { PLAN_FAINT, planOf } from './plan';
 import type { PlanId } from './plan';
 import type { Grade } from './review';
 import type { GameState } from './types';
+import { paper, writePaper } from '@/platform/papers';
 
 /* ------------------------------------------------------------------ */
 /* The sheet of progress. Every game the judge has read through leaves */
@@ -15,7 +16,6 @@ import type { GameState } from './types';
 /* coming back. Kept in this browser, a hundred games at most.         */
 /* ------------------------------------------------------------------ */
 
-const KEY = 'brassworks.progress.v1';
 const MOST = 100;
 
 /** the motifs a miss may fall under: what was played against what was better */
@@ -76,13 +76,8 @@ export function motifsOf(game: GameState, verdicts: Record<number, Verdict>): Pa
 }
 
 const readAll = (): Played[] => {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const list = raw ? (JSON.parse(raw) as Played[]) : [];
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
+  const list = paper<unknown>('progress', null);
+  return Array.isArray(list) ? (list as Played[]) : [];
 };
 
 /** the games on the sheet, the latest first */
@@ -121,11 +116,7 @@ export function recordProgress(game: GameState, table: string, seat: number, ver
   const kept = readAll().filter((p) => p.id !== line.id);
   kept.push(line);
   kept.sort((a, b) => b.at - a.at);
-  try {
-    localStorage.setItem(KEY, JSON.stringify(kept.slice(0, MOST)));
-  } catch {
-    /* the shelf is full: the sheet waits for the next game */
-  }
+  writePaper('progress', kept.slice(0, MOST));
   return line;
 }
 

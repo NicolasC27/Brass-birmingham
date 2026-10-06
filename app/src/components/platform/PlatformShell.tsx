@@ -12,7 +12,7 @@ import { usePresence } from './presence';
 import { ephemerisOf } from '@/platform/almanac';
 import Arrival from './Arrival';
 import { useEffect } from 'react';
-import { syncPapers } from '@/platform/papers';
+import { clearPapers, hydratePapers } from '@/platform/papers';
 
 /** the club's Discord, when the build names one (VITE_DISCORD_URL); the rail shows it */
 const DISCORD_URL = String(import.meta.env.VITE_DISCORD_URL ?? '').trim();
@@ -349,7 +349,10 @@ export default function PlatformShell() {
   const session = useSession();
   /* signed in: the papers the office keeps are folded into this browser's */
   useEffect(() => {
-    if (session) void syncPapers();
+    /* signing in changes whose papers these are: they are read again, and
+       signing out leaves none — they were never this browser's */
+    if (session) void hydratePapers();
+    else clearPapers();
   }, [session?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <div className="platform-root relative flex min-h-[100dvh] flex-col bg-lacquer-900 font-ui text-paper-100">
