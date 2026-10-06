@@ -328,6 +328,29 @@ describe('the beer of a double rail', () => {
   });
 });
 
+describe('a merchant barrel belongs to its tile', () => {
+  it('lets a cotton sale drink the cotton tile\'s barrel, never the goods tile\'s', () => {
+    const s = newGame(setup(4), 42);
+    const me = s.current;
+    s.tiles['redditch:0'] = { owner: me, industry: 'cotton', level: 1, flipped: false, cubes: 0 };
+    s.links['redditch--m-oxford'] = { owner: me, era: 'canal' };
+    /* Oxford buys cotton at one tile and goods at the other; only the goods tile keeps its barrel */
+    s.merchantTiles['m-oxford'] = ['cotton', 'manufacturer'];
+    s.merchantBeer = { 'm-oxford:1': 1 };
+    for (const k of Object.keys(s.tiles)) if (s.tiles[k].industry === 'brewery') delete s.tiles[k];
+    s.players[me].hand = [{ id: 'any-1', kind: 'wild-location' }];
+    expect(saleBeerSources(s, me, 'redditch', 'm-oxford', 'cotton')).toEqual([]);
+    const offer = sellTargets(s, me).find((t) => t.town === 'redditch' && t.merchant === 'm-oxford');
+    expect(offer?.valid).toBe(false);
+    /* the barrel moves beside the cotton tile: the sale drinks it and takes the bonus */
+    s.merchantBeer = { 'm-oxford:0': 1 };
+    expect(saleBeerSources(s, me, 'redditch', 'm-oxford', 'cotton').map((b) => b.key)).toEqual(['merchant:0']);
+    const sold = applyAction(s, me, { kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] });
+    expect(sold.state!.merchantBeer['m-oxford:0']).toBe(0);
+    expect(sold.state!.merchantBonusTaken['m-oxford']).toBe(true);
+  });
+});
+
 describe('the merchant and the beer of a sale', () => {
   it('sells where the player says and drinks what they name, the merchant barrel by default', () => {
     const s = newGame(setup(4), 42);
@@ -338,24 +361,23 @@ describe('the merchant and the beer of a sale', () => {
     s.links['redditch--m-gloucester'] = { owner: me, era: 'canal' };
     s.merchantTiles['m-oxford'] = ['cotton'];
     s.merchantTiles['m-gloucester'] = ['all'];
-    s.merchantBeer['m-oxford'] = 1;
-    s.merchantBeer['m-gloucester'] = 1;
+    s.merchantBeer = { 'm-oxford:0': 1, 'm-gloucester:0': 1 };
     s.tiles['stone:0'] = { owner: me, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
     s.players[me].hand = [{ id: 'any-1', kind: 'wild-location' }];
     const offers = sellTargets(s, me).filter((t) => t.valid && t.town === 'redditch');
     expect(offers.map((t) => t.merchant).sort()).toEqual(['m-gloucester', 'm-oxford']);
     /* what the sale may drink: the merchant's barrel first, then my brewery */
-    expect(saleBeerSources(s, me, 'redditch', 'm-gloucester').map((b) => b.key)).toEqual(['merchant', 'stone:0']);
+    expect(saleBeerSources(s, me, 'redditch', 'm-gloucester', 'cotton').map((b) => b.key)).toEqual(['merchant:0', 'stone:0']);
     /* Gloucester, on my own beer: the barrel and its bonus stay for another day */
     const kept = applyAction(s, me, { kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-gloucester', beerFrom: ['stone:0'] }] });
     expect(kept.state).not.toBeNull();
     expect(kept.state!.tiles['redditch:0'].flipped).toBe(true);
     expect(kept.state!.tiles['stone:0']).toMatchObject({ cubes: 0, flipped: true });
-    expect(kept.state!.merchantBeer['m-gloucester']).toBe(1);
+    expect(kept.state!.merchantBeer['m-gloucester:0']).toBe(1);
     expect(kept.state!.merchantBonusTaken['m-gloucester']).toBeFalsy();
     /* nothing named: the barrel is drunk and the bonus taken */
     const bonus = applyAction(s, me, { kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] });
-    expect(bonus.state!.merchantBeer['m-oxford']).toBe(0);
+    expect(bonus.state!.merchantBeer['m-oxford:0']).toBe(0);
     expect(bonus.state!.merchantBonusTaken['m-oxford']).toBe(true);
     expect(bonus.state!.tiles['stone:0'].cubes).toBe(1);
   });

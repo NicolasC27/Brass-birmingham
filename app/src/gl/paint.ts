@@ -1,5 +1,6 @@
 import { Assets, Container, FillGradient, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { INDUSTRIES, LINKS, MERCHANTS, PLAYER_COLORS, TOWNS } from '@/game/data';
+import { barrelKey } from '@/game/engine';
 import { townColor } from '@/game/townColors';
 import { routeFor } from '@/components/game/routePaths';
 import { merchantOpen, tileKey } from '@/game/engine';
@@ -1326,8 +1327,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       for (const child of dyn.slots.removeChildren()) child.destroy();
       if (!open) continue;
       const tiles = game.merchantTiles[m.id] ?? [];
-      const beer = game.merchantBeer[m.id] ?? 0;
-      let barrelIdx = 0;
       /* a physical tile: dark card with a bottom-edge thickness, brass hairline,
          the painted industry face inside */
       const TILE_TOP = dyn.tileTop;
@@ -1374,7 +1373,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
            marks the empty spot */
         const bx = x + MT / 2 - 6;
         const by = TILE_TOP + MT + 2;
-        if (barrelIdx < beer) {
+        if ((game.merchantBeer[barrelKey(m.id, i)] ?? 0) > 0) {
           const sh = new Graphics().ellipse(bx, by + 10, 11, 4).fill({ color: 0x000000, alpha: 0.5 });
           sh.eventMode = 'none';
           const b = new Sprite(barrelTex);
@@ -1392,7 +1391,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
           g.eventMode = 'none';
           dyn.slots.addChild(g);
         }
-        barrelIdx += 1;
       });
     }
   };

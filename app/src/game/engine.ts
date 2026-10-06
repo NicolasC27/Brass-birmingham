@@ -56,7 +56,7 @@ import type {
   TileState,
 } from './types';
 
-export const ENGINE_VERSION = 5;
+export const ENGINE_VERSION = 6;
 export { eraRounds };
 
 /* ============================ setup ================================ */
@@ -111,7 +111,10 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
   for (const m of MERCHANTS) {
     if (n < m.minPlayers) continue;
     merchantTiles[m.id] = pool.splice(0, m.slots);
-    merchantBeer[m.id] = merchantTiles[m.id].filter((t) => t !== 'blank').length;
+    /* a barrel beside every tile that is not blank: it belongs to that tile */
+    merchantTiles[m.id].forEach((t, i) => {
+      if (t !== 'blank') merchantBeer[`${m.id}:${i}`] = 1;
+    });
   }
 
   /* character tiles shuffled → opening turn order */
@@ -190,6 +193,21 @@ export function merchantDemand(s: GameState, merchantId: string): IndustryType[]
 /** beer barrel slots printed next to a merchant = its non-blank tiles */
 export function merchantBarrelSlots(s: GameState, merchantId: string): number {
   return (s.merchantTiles[merchantId] ?? []).filter((t) => t !== 'blank').length;
+}
+/** the barrel's key in the state: it stands beside one merchant tile */
+export const barrelKey = (merchantId: string, slot: number): string => `${merchantId}:${slot}`;
+/** the slots of a merchant whose tile buys `industry` (any tile, when none is
+ *  named) and still keep their barrel — a barrel is drunk only by a sale to
+ *  the tile it stands beside */
+export function merchantBarrelsFor(s: GameState, merchantId: string, industry?: IndustryType): number[] {
+  return (s.merchantTiles[merchantId] ?? [])
+    .map((t, i) => ({ t, i }))
+    .filter(({ t, i }) => t !== 'blank' && (industry === undefined || t === 'all' || (t as string) === industry) && (s.merchantBeer[barrelKey(merchantId, i)] ?? 0) > 0)
+    .map(({ i }) => i);
+}
+/** the barrels still standing at a merchant, over all its tiles */
+export function merchantBeerLeft(s: GameState, merchantId: string): number {
+  return (s.merchantTiles[merchantId] ?? []).reduce((n, _, i) => n + (s.merchantBeer[barrelKey(merchantId, i)] ?? 0), 0);
 }
 
 export const merchantOpen = (s: GameState, merchantId: string) => merchantId in s.merchantTiles;
@@ -385,14 +403,16 @@ export function planBeer(
   needed: number,
   extra: LinkDef[] = [],
   reserved: Map<string, number> = new Map(),
+  industry?: IndustryType,
 ): { sources: BeerSource[]; shortage: number } {
   const sources: BeerSource[] = [];
   let left = needed;
   if (merchantId) {
-    let avail = (s.merchantBeer[merchantId] ?? 0) - (reserved.get(`beer:${merchantId}`) ?? 0);
-    while (left > 0 && avail > 0) {
-      sources.push({ kind: 'merchant', merchant: merchantId });
-      avail -= 1;
+    /* the merchant's barrels: only those beside a tile that buys what is sold */
+    for (const slot of merchantBarrelsFor(s, merchantId, industry)) {
+      if (left <= 0) break;
+      if ((reserved.get(`beer:${barrelKey(merchantId, slot)}`) ?? 0) > 0) continue;
+      sources.push({ kind: 'merchant', merchant: merchantId, slot });
       left -= 1;
     }
   }
@@ -622,7 +642,7 @@ export function sellTargets(s: GameState, playerIdx: number): SellTarget[] {
     for (const m of MERCHANTS) {
       if (!merchantOpen(s, m.id) || !reach.has(m.id)) continue;
       if (!merchantDemand(s, m.id).includes(tile.industry)) continue;
-      const beer = planBeer(s, playerIdx, town, m.id, lv.beerToSell);
+      const beer = planBeer(s, playerIdx, town, m.id, lv.beerToSell, [], new Map(), tile.industry);
       out.push({
         town, slot, tile, merchant: m.id, beer: beer.sources,
         valid: beer.shortage === 0,
@@ -725,8 +745,8 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]) {
       }
     } else {
       const mid = b.merchant!;
-      s.merchantBeer[mid] = Math.max(0, (s.merchantBeer[mid] ?? 0) - 1);
-      if (s.merchantBeer[mid] === 0) s.merchantBonusTaken[mid] = true;
+      s.merchantBeer[barrelKey(mid, b.slot!)] = 0;
+      if (merchantBeerLeft(s, mid) === 0) s.merchantBonusTaken[mid] = true;
       const bn = MERCHANT_BY_ID[mid].bonus;
       if (bn.vp) { p.vp += bn.vp; bonus += ` · +${bn.vp} VP`; }
       if (bn.income) { advanceIncome(s, playerIdx, bn.income); bonus += ` · +${bn.income} income`; }
@@ -977,10 +997,9 @@ export function applyDevelop(s: GameState, playerIdx: number, card: Card, indust
 /** the beer a sale at `town` through `merchantId` may drink: the merchant's own
  *  barrel (its bonus with it), the player's breweries anywhere, another's
  *  the tile is connected to */
-export function saleBeerSources(s: GameState, playerIdx: number, town: string, merchantId: string): { key: string; kind: 'merchant' | 'brewery'; town?: string; slot?: number; owner?: number; cubes: number }[] {
+export function saleBeerSources(s: GameState, playerIdx: number, town: string, merchantId: string, industry: IndustryType): { key: string; kind: 'merchant' | 'brewery'; town?: string; slot?: number; owner?: number; cubes: number }[] {
   const out: ReturnType<typeof saleBeerSources> = [];
-  const barrel = s.merchantBeer[merchantId] ?? 0;
-  if (barrel > 0) out.push({ key: 'merchant', kind: 'merchant', cubes: barrel });
+  for (const slot of merchantBarrelsFor(s, merchantId, industry)) out.push({ key: `merchant:${slot}`, kind: 'merchant', slot, cubes: 1 });
   const reach = reachable(s, town, s.era, null);
   for (const [key, t] of Object.entries(s.tiles)) {
     if (t.industry !== 'brewery' || t.flipped || t.cubes <= 0) continue;
@@ -993,21 +1012,21 @@ export function saleBeerSources(s: GameState, playerIdx: number, town: string, m
 
 /** the beer plan of a sale with the sources the player named, each checked
  *  against what the rules allow; whatever is left unnamed the engine fills */
-export function planSaleBeer(s: GameState, playerIdx: number, town: string, merchantId: string, needed: number, beerFrom: (string | null)[] = []): { sources: BeerSource[]; shortage: number } {
-  const allowed = new Map(saleBeerSources(s, playerIdx, town, merchantId).map((b) => [b.key, b]));
+export function planSaleBeer(s: GameState, playerIdx: number, town: string, merchantId: string, industry: IndustryType, needed: number, beerFrom: (string | null)[] = []): { sources: BeerSource[]; shortage: number } {
+  const allowed = new Map(saleBeerSources(s, playerIdx, town, merchantId, industry).map((b) => [b.key, b]));
   const reserved = new Map<string, number>();
   const sources: BeerSource[] = [];
   for (let k = 0; k < needed; k++) {
     const name = beerFrom[k];
     const b = name ? allowed.get(name) : undefined;
     if (!b) continue;
-    const tag = b.kind === 'merchant' ? `beer:${merchantId}` : b.key;
+    const tag = b.kind === 'merchant' ? `beer:${barrelKey(merchantId, b.slot!)}` : b.key;
     if (b.cubes - (reserved.get(tag) ?? 0) <= 0) continue;
     reserved.set(tag, (reserved.get(tag) ?? 0) + 1);
-    sources.push(b.kind === 'merchant' ? { kind: 'merchant', merchant: merchantId } : { kind: 'brewery', town: b.town, slot: b.slot });
+    sources.push(b.kind === 'merchant' ? { kind: 'merchant', merchant: merchantId, slot: b.slot } : { kind: 'brewery', town: b.town, slot: b.slot });
   }
   if (sources.length >= needed) return { sources, shortage: 0 };
-  const rest = planBeer(s, playerIdx, town, merchantId, needed - sources.length, [], reserved);
+  const rest = planBeer(s, playerIdx, town, merchantId, needed - sources.length, [], reserved, industry);
   return { sources: [...sources, ...rest.sources], shortage: rest.shortage };
 }
 
@@ -1019,7 +1038,7 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (st
   const lv = INDUSTRIES[tile.industry][tile.level - 1];
   if (!merchantOpen(s, target.merchant) || !merchantDemand(s, target.merchant).includes(tile.industry)) return false;
   if (!reachable(s, target.town, s.era, null).has(target.merchant)) return false;
-  const beer = planSaleBeer(s, playerIdx, target.town, target.merchant, lv.beerToSell, named);
+  const beer = planSaleBeer(s, playerIdx, target.town, target.merchant, target.tile.industry, lv.beerToSell, named);
   if (beer.shortage > 0) return false;
   const vpBefore = p.vp;
   const moneyBefore = p.money;
@@ -1274,8 +1293,9 @@ export function beginRailEra(s: GameState) {
       removed += 1;
     }
   }
-  // merchants re-arm one barrel per non-blank tile
-  for (const id of Object.keys(s.merchantTiles)) s.merchantBeer[id] = merchantBarrelSlots(s, id);
+  // merchants re-arm one barrel beside every tile that is not blank
+  s.merchantBeer = {};
+  for (const [id, tiles] of Object.entries(s.merchantTiles)) tiles.forEach((t, i) => { if (t !== 'blank') s.merchantBeer[barrelKey(id, i)] = 1; });
   s.merchantBonusTaken = {};
   // every discard (face-down openers included) becomes the rail deck
   const all = [...s.deck, ...s.discard];
@@ -1402,6 +1422,22 @@ export function serialize(s: GameState): string {
 export function deserialize(raw: string): GameState | null {
   try {
     const s = JSON.parse(raw) as GameState;
+    /* v5 kept one count of barrels a merchant; v6 stands each beside its
+       tile. An old register is read on: the barrels left go to the first
+       tiles that are not blank */
+    if (s.version === 5 && s.merchantTiles && s.merchantBeer) {
+      const beer: Record<string, number> = {};
+      for (const [id, tiles] of Object.entries(s.merchantTiles as Record<string, MerchantTile[]>)) {
+        let left = Number((s.merchantBeer as Record<string, number>)[id] ?? 0);
+        tiles.forEach((t, i) => {
+          if (t === 'blank') return;
+          beer[barrelKey(id, i)] = left > 0 ? 1 : 0;
+          left -= 1;
+        });
+      }
+      s.merchantBeer = beer;
+      s.version = 6;
+    }
     if (!s.players || !s.tiles || !s.ledger || s.version !== ENGINE_VERSION) return null;
     /* a game read off the shelf stands where it was played, not where the
        last game happened to leave the module */

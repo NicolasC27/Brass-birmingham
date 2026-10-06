@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Application, Assets, ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { activeBoard, INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
-import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
+import { merchantBarrelSlots, merchantBeerLeft, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { Era, GameState } from '@/game/types';
@@ -1876,7 +1876,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
                 <span className="text-cream-100">{merchantDemand(game, hoverMerchantDef.id).map((x) => INDUSTRY_LABEL[x]).join(', ') || t('board.merchant.buysNothing')}</span>
               </div>
               <div>
-                {t('board.merchant.barrels', { left: game.merchantBeer[hoverMerchantDef.id] ?? 0, total: merchantBarrelSlots(game, hoverMerchantDef.id) })}
+                {t('board.merchant.barrels', { left: merchantBeerLeft(game, hoverMerchantDef.id), total: merchantBarrelSlots(game, hoverMerchantDef.id) })}
                 {' · '}
                 {t('board.merchant.bonusIs', { bonus: hoverMerchantDef.bonusLabel })}
               </div>

@@ -688,7 +688,7 @@ export default function HandDock() {
                     const key = tileKey(pick.town, pick.slot);
                     const buyers = all.filter((x) => tileKey(x.town, x.slot) === key && x.valid);
                     const need = INDUSTRIES[pick.tile.industry][pick.tile.level - 1].beerToSell;
-                    const sources = saleBeerSources(planGame, actor, pick.town, pick.merchant);
+                    const sources = saleBeerSources(planGame, actor, pick.town, pick.merchant, pick.tile.industry);
                     const named = sellBeer[key] ?? [];
                     return (
                       <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[10px] text-ink-900/80">
