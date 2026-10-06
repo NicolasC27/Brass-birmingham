@@ -406,7 +406,6 @@ const platform = {
     offline: {
       title: 'Servidor fuera de línea',
       copy: 'El club está cerrado por el momento. Sus partidas se guardan allí: no se pierde nada, y nada se juega hasta que responda.',
-      localCta: 'Partida local',
       retry: 'Reintentar la conexión',
       retryFailed: 'El servidor sigue sin responder.',
     },

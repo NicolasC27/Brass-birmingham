@@ -48,8 +48,10 @@ export default function App() {
     const wire = onlineWire();
     void (async () => {
       /* the line first: an office that does not answer is said so in a few
-         seconds, rather than waited on until every request has timed out */
-      if (wire && !(await wire.ready())) {
+         seconds, rather than waited on until every request has timed out.
+         No office configured at all is the same answer — the games are kept
+         there, and a build that cannot reach one cannot play */
+      if (!wire || !(await wire.ready())) {
         setRead('unreachable');
         return;
       }
