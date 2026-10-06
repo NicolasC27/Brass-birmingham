@@ -32,12 +32,21 @@ process.on('warning', (w) => {
   if (quiet.length === 0) console.warn(w.stack ?? w.message);
 });
 
-/* an error nobody caught must not close the house on every table at once:
-   it is logged, and the process goes on */
-process.on('uncaughtException', (e) => console.error('uncaught:', e));
 process.on('unhandledRejection', (e) => console.error('unhandled:', e));
 
 const port = Number(process.env.PORT ?? 8787);
+
+/* an error nobody caught must not close the house on every table at once:
+   it is logged, and the process goes on. A house that could not open at
+   all is the exception — it holds nothing, and lingering as a live process
+   only hides the reason and keeps the port's real holder out of sight */
+process.on('uncaughtException', (e) => {
+  if ((e as NodeJS.ErrnoException).code === 'EADDRINUSE') {
+    console.error(`blackrail: port ${port} is taken — another table server is already listening. Stop it, or set PORT.`);
+    process.exit(1);
+  }
+  console.error('uncaught:', e);
+});
 const host = process.env.HOST ?? '0.0.0.0';
 const file = process.env.BLACKRAIL_DB ?? 'brassworks.db';
 
