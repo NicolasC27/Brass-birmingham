@@ -15,10 +15,21 @@ import { onlineWire } from '@/online/net';
 /* any more: what the office hands over is what the papers are.        */
 /* ------------------------------------------------------------------ */
 
-export const PAPER_KINDS = ['progress', 'feuilleton', 'patents', 'letters', 'lines', 'form', 'challenge'] as const;
+export const PAPER_KINDS = ['progress', 'feuilleton', 'patents', 'letters', 'lines', 'form', 'challenge', 'equipped'] as const;
 export type Kind = (typeof PAPER_KINDS)[number];
 
 const shelf = new Map<Kind, unknown>();
+const watchers = new Set<() => void>();
+
+const told = (): void => {
+  for (const cb of watchers) cb();
+};
+
+/** a paper changed, or the whole shelf did */
+export function subscribePapers(cb: () => void): () => void {
+  watchers.add(cb);
+  return () => watchers.delete(cb);
+}
 
 /** what the office keeps under this kind, or `fallback` when it keeps none */
 export function paper<T>(kind: Kind, fallback: T): T {
@@ -30,6 +41,7 @@ export function paper<T>(kind: Kind, fallback: T): T {
  *  handed to the office, which is where it lives */
 export function writePaper(kind: Kind, body: unknown): void {
   shelf.set(kind, body);
+  told();
   void onlineWire()?.putPaper(kind, body).catch(() => undefined);
 }
 
@@ -37,6 +49,7 @@ export function writePaper(kind: Kind, body: unknown): void {
  *  test starts from a browser that has none */
 export function clearPapers(): void {
   shelf.clear();
+  told();
 }
 
 /** the papers as the office keeps them. A browser that cannot reach it has
@@ -54,6 +67,7 @@ export async function hydratePapers(): Promise<void> {
     const body = held[kind]?.body;
     if (body !== undefined) shelf.set(kind, body);
   }
+  told();
 }
 
 /** the papers of a browser from before the office kept them, put up as they

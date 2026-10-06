@@ -30,7 +30,7 @@ import type {
 
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY } from './quickplay';
-import { forkHomeGame, homePinScope, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
+import { forkHomeGame, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
 import { readNotes, writeNotes } from '@/platform/notes';
 import { challengeSeedFor, noteChallenge } from './challenge';
 import { grantFromGame } from '@/platform/patents';
@@ -413,7 +413,7 @@ async function fetchHome(code: string): Promise<void> {
     coachStep: coached || tutorial ? -1 : 0,
   });
   /* the towns pinned and the page kept beside this game come back with it */
-  const notes = await readNotes(homePinScope(at));
+  const notes = await readNotes(at);
   if (useGame.getState().local === at) useGame.setState({ pins: notes.pins, notebook: notes.page });
 }
 
@@ -1655,8 +1655,10 @@ export function describeAction(a: GameAction): string {
 
 /* ------------------------------ the pins ------------------------------ */
 
-/** where a table's pins are kept: the code online, the register's scope at home */
-const pinScope = (st: { code: string | null; local: string | null }): string | null => st.code ?? (st.local ? homePinScope(st.local) : null);
+/** the game a reader's pins and page belong to: the table online, the game
+ *  at home otherwise. One code names one game at the office, so nothing
+ *  needs telling apart any more */
+const pinScope = (st: { code: string | null; local: string | null }): string | null => st.code ?? st.local;
 /** the pins and the page as they now stand, handed to the office */
 function keepNotes(code: string | null, pins: Record<string, string>, page: string): void {
   if (code) writeNotes(code, { pins, page });

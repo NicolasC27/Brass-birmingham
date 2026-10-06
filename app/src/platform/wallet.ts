@@ -1,19 +1,17 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import { onlineWire } from '@/online/net';
 import { DEFAULT_EQUIPPED, DEFAULT_OWNED, ITEM_BY_ID, isItem, type Category } from './catalog';
+import { paper, subscribePapers, writePaper } from './papers';
 
 /* ------------------------------------------------------------------ */
 /* Le Comptoir — ce que le membre porte.                               */
 /* La bourse est au bureau : les guinées se gagnent aux tables, le     */
 /* serveur les paie et les débite lui-même (desk.purse). Ici ne reste  */
-/* qu'une préférence personnelle, l'objet équipé par catégorie, dans   */
-/* localStorage `brassworks.equipped.v1`. Le bureau est lu, jamais     */
-/* écrit : les achats passent par online/session buyItem.              */
+/* qu'un choix : l'objet équipé par catégorie, gardé par le bureau      */
+/* comme les autres papiers du compte, si bien qu'on se retrouve vêtu   */
+/* pareil d'une machine à l'autre. Le bureau est lu, jamais écrit :     */
+/* les achats passent par online/session buyItem.                       */
 /* ------------------------------------------------------------------ */
-
-const KEY = 'brassworks.equipped.v1';
-/** la bourse locale d'avant : on n'en garde que le choix équipé */
-const LEGACY_KEY = 'brassworks.wallet.v1';
 
 export type Equipped = Record<Category, string>;
 
@@ -45,35 +43,26 @@ function sanitize(raw: unknown): Equipped {
   return e;
 }
 
-let equippedNow: Equipped = (() => {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) return sanitize(JSON.parse(raw));
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) return sanitize((JSON.parse(legacy) as { equipped?: unknown }).equipped);
-  } catch {
-    /* private mode ou registre corrompu : tenue par défaut */
-  }
-  return { ...DEFAULT_EQUIPPED };
-})();
+/* la tenue telle que le bureau la garde — un objet stable tant qu'elle
+   ne bouge pas, pour que `useSyncExternalStore` s'y tienne */
+let equippedNow: Equipped = { ...DEFAULT_EQUIPPED };
+let equippedFrom: unknown;
 
-const listeners = new Set<() => void>();
+function readEquipped(): Equipped {
+  const raw = paper<unknown>('equipped', null);
+  if (raw !== equippedFrom) {
+    equippedFrom = raw;
+    equippedNow = sanitize(raw);
+  }
+  return equippedNow;
+}
 
 function update(next: Equipped): void {
-  equippedNow = next;
-  try {
-    localStorage.setItem(KEY, JSON.stringify(next));
-  } catch {
-    /* non-fatal */
-  }
-  for (const f of listeners) f();
+  writePaper('equipped', next);
 }
 
 /** subscribe sans React (retourne l'unsubscribe). */
-export function subscribe(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
+export const subscribe = subscribePapers;
 
 const never = () => () => {};
 
@@ -84,12 +73,12 @@ function purseNow(): { guineas: number; owned: string[] } | null {
 /** Instantané pour le code non-React : la bourse du bureau et la tenue. */
 export function getWallet(): Wallet {
   const purse = purseNow();
-  return { balance: purse?.guineas ?? 0, owned: purse?.owned ?? DEFAULT_OWNED, equipped: equippedNow };
+  return { balance: purse?.guineas ?? 0, owned: purse?.owned ?? DEFAULT_OWNED, equipped: readEquipped() };
 }
 
 /** Hook React : re-rend quand la tenue change ou que le bureau renvoie la bourse. */
 export function useWallet(): Wallet {
-  const equipped = useSyncExternalStore(subscribe, () => equippedNow, () => equippedNow);
+  const equipped = useSyncExternalStore(subscribe, readEquipped, readEquipped);
   const purse = useSyncExternalStore(
     (cb) => onlineWire()?.onDesk(cb) ?? never(),
     () => purseNow(),

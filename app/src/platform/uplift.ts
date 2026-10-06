@@ -40,7 +40,10 @@ const OLD_PAPERS: Record<Kind, string> = {
   lines: 'brassworks.lines.v1',
   form: 'brassworks.form.v1',
   challenge: 'brassworks.challenge.v1',
+  equipped: 'brassworks.equipped.v1',
 };
+/** the purse of before the office kept it: only the outfit is worth taking */
+const OLD_WALLET = 'brassworks.wallet.v1';
 
 const read = (key: string): string | null => {
   try {
@@ -91,7 +94,7 @@ function findOld(): Found[] {
   for (const t of index) {
     const key = `${INDEX_KEY}:${t.code}`;
     const raw = read(key);
-    if (raw) keep(typeof t.name === 'string' ? t.name : t.code, deserialize(raw), [key, `${PINS_KEY}:local:${t.code}`]);
+    if (raw) keep(typeof t.name === 'string' ? t.name : t.code, deserialize(raw), [key, `${PINS_KEY}:local:${t.code}`, `brassworks.notebook.v1:${t.code}`]);
   }
 
   const resume = read(RESUME_KEY);
@@ -111,7 +114,7 @@ function findOld(): Found[] {
 /** is there anything in this browser still to carry up? */
 export function hasOldStuff(): boolean {
   if (read(DONE_KEY)) return false;
-  if (read(INDEX_KEY) || read(RESUME_KEY)) return true;
+  if (read(INDEX_KEY) || read(RESUME_KEY) || read(OLD_WALLET)) return true;
   return PAPER_KINDS.some((k) => !!read(OLD_PAPERS[k]));
 }
 
@@ -127,6 +130,14 @@ function liftOldPapers(): void {
       found[kind] = JSON.parse(raw) as unknown;
     } catch {
       /* a paper this browser cannot read is a paper it does not send */
+    }
+  }
+  /* the outfit of a browser from before it had its own key */
+  if (found.equipped === undefined) {
+    try {
+      found.equipped = (JSON.parse(read(OLD_WALLET) ?? 'null') as { equipped?: unknown } | null)?.equipped;
+    } catch {
+      /* no outfit worth taking */
     }
   }
   liftPapers(found);
@@ -162,6 +173,7 @@ export async function liftBrowser(): Promise<number> {
   drop(INDEX_KEY);
   drop(FINAL_KEY);
   for (const kind of PAPER_KINDS) drop(OLD_PAPERS[kind]);
+  drop(OLD_WALLET);
   try {
     localStorage.setItem(DONE_KEY, '1');
   } catch {

@@ -50,9 +50,6 @@ export const listHomeGames = (): HomeTable[] => register.filter((t) => !t.over);
 
 export const homeGame = (code: string): HomeTable | null => register.find((t) => t.code === code) ?? null;
 
-/** the pins of a game at home are kept apart from an online table's of the same code */
-export const homePinScope = (code: string): string => `local:${code}`;
-
 /** the setup the last table was dealt from — the form this browser filled in,
  *  which is a preference of this device and not a record of play */
 export function readSetup(): SetupPayload {
