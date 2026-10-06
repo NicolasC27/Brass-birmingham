@@ -3,7 +3,7 @@ import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
-import type { CompanyBoard, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -59,6 +59,10 @@ export type ClientMessage =
   /** open an account, and be signed in with it — the letter leaves at once */
   | { t: 'signup'; rid: number; name: string; email: string; password: string; accept: boolean }
   | { t: 'signin'; rid: number; name: string; password: string }
+  /** no session in this browser: the office opens an account by itself, so a
+      first game has somewhere to be written. A later `signup` on the same
+      socket gives that very account its name and address */
+  | { t: 'guest'; rid: number }
   /** first frame of a socket that already holds a session */
   | { t: 'auth'; rid?: number; token: string }
   /** forget this session for good */
@@ -134,6 +138,22 @@ export type ClientMessage =
   /** the papers the office keeps for me, and one of them written */
   | { t: 'papers'; rid: number }
   | { t: 'papers.put'; rid: number; kind: string; body: unknown }
+  /* the games played at home. They belong to no table, but they are the
+     office's all the same: it deals the code, reads every move with the
+     engine, and keeps the log. */
+  /** my register of games at home */
+  | { t: 'home.list'; rid: number }
+  /** one of them whole — the deal and the log, to play it on */
+  | { t: 'home.load'; rid: number; code: string }
+  /** a new game at home: the office deals it its code */
+  | { t: 'home.open'; rid: number; name: string; seed: number; setup: SetupPayload }
+  /** one move, at its place in the log. No `rid`: the office answers only
+      when it refuses, and the game is then read back */
+  | { t: 'home.act'; code: string; idx: number; action: GameAction }
+  /** a move taken back, and the log cut there */
+  | { t: 'home.undo'; rid: number; code: string; at: number }
+  /** a game at home put away for good */
+  | { t: 'home.forget'; rid: number; code: string }
   /** the companies of the club and their honours */
   | { t: 'companies'; rid: number }
   /** found a company under a name, and be its first member */
@@ -194,6 +214,14 @@ export type ServerMessage =
   | { t: 'season'; rid?: number; review: SeasonReview }
   | { t: 'companies'; rid?: number; board: CompanyBoard }
   | { t: 'papers'; rid: number; papers: Record<string, Paper> }
+  /** my register of games at home — answered, and pushed whenever it moves */
+  | { t: 'home.register'; rid?: number; games: HomeTable[] }
+  /** one game at home whole (null: the office holds no such game of mine) */
+  | { t: 'home.save'; rid: number; save: HomeSave | null }
+  /** a game at home just dealt, with the code the office gave it */
+  | { t: 'home.dealt'; rid: number; table: HomeTable }
+  /** the office turned a move at home down: the browser reads the game back */
+  | { t: 'home.refused'; code: string; at: number; error: string }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
   | { t: 'pong' };

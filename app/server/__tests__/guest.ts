@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { decode, encode } from '@/online/protocol';
 import type { ClientMessage, GameView, ServerMessage } from '@/online/protocol';
-import type { Desk, Leaderboard, Me, PublicTable, QueueState, Table, TablesPage } from '@/online/table';
+import type { Desk, HomeSave, HomeTable, Leaderboard, Me, PublicTable, QueueState, Table, TablesPage } from '@/online/table';
 import type { Mail, Mailer } from '../mail';
 
 /* ------------------------------------------------------------------ */
@@ -46,6 +46,13 @@ export class Guest {
   closedWith: number | null = null;
   /** every view ever received — the secrecy audit reads them all */
   seen: GameView[] = [];
+  /** the register of games at home, as last told */
+  register: HomeTable[] | null = null;
+  /** the last game at home handed over whole, and the last one dealt */
+  save: HomeSave | null = null;
+  dealt: HomeTable | null = null;
+  /** the moves at home the office turned down */
+  homeRefused: { code: string; at: number; error: string }[] = [];
   /** the tags of the frames as they arrived, in order */
   trace: string[] = [];
 
@@ -91,6 +98,10 @@ export class Guest {
         this.view = m.view;
         this.seen.push(m.view);
       }
+      if (m.t === 'home.register') this.register = m.games;
+      if (m.t === 'home.save') this.save = m.save;
+      if (m.t === 'home.dealt') this.dealt = m.table;
+      if (m.t === 'home.refused') this.homeRefused.push({ code: m.code, at: m.at, error: m.error });
       if (m.t === 'rejected' || m.t === 'refused') this.rejected.push(m.error);
     });
   }
@@ -107,6 +118,13 @@ export class Guest {
     await this.until('the letter', () => letters.has(this.email));
     this.send({ t: 'verify', rid: ++this.rid, token: tokenIn(letters.get(this.email), 'verify') });
     await this.until('the address to be verified', () => this.me?.verified === true);
+  }
+
+  /** no account, no letter: the office opens one so a first game has
+   *  somewhere to be written */
+  async asGuest(): Promise<void> {
+    this.send({ t: 'guest', rid: ++this.rid });
+    await this.until('a session', () => !!this.id);
   }
 
   /** come back with a token already in hand */

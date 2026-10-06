@@ -1,7 +1,8 @@
 import type { BotPersona, PlayerColor, SetupOptions, StoredSetup } from '@/components/setup/constants';
 import { personaFor } from '@/game/data';
+import type { GameAction } from '@/game/actions';
 import type { Tally } from '@/game/tally';
-import type { Era } from '@/game/types';
+import type { Era, SetupPayload } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* The table model — seats, colours, readiness. Deliberately free of   */
@@ -71,6 +72,10 @@ export interface Me extends Identity {
   createdAt: number;
   /** the Monday edition by post, asked for */
   newsletter: boolean;
+  /** an account the office opened by itself so a first game had somewhere to
+   *  be written: it plays and it keeps, and it becomes a member when its
+   *  owner gives it a name and an address */
+  guest: boolean;
 }
 
 /** a paper the office keeps for an account: what the browser wrote, as it wrote it */
@@ -318,6 +323,30 @@ export interface PastGame {
   winner: number;
   /** the game ended by the table's own vote */
   abandoned: boolean;
+  /** played at home against the machines: on the record, but out of the figures */
+  home?: boolean;
+}
+
+/** a game played at home, as the register lists it — enough to show a line
+ *  without replaying a single move */
+export interface HomeTable {
+  code: string;
+  name: string;
+  startedAt: number;
+  updatedAt: number;
+  era: Era;
+  round: number;
+  seats: { name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
+  /** played out: kept on the record, never resumed */
+  over?: boolean;
+}
+
+/** a game at home as the office keeps it: the line of the register, the deal
+ *  it was dealt from, and the log that replays it */
+export interface HomeSave extends HomeTable {
+  seed: number;
+  setup: SetupPayload;
+  actions: GameAction[];
 }
 
 export interface Stats {

@@ -23,6 +23,7 @@ import type { Facts } from '@/game/analysisMerge';
 import { Readings, isJudge, isVersion } from './analysis';
 import type { Id } from './analysis';
 import { Hall, STALE_MS } from './hall';
+import { Home } from './home';
 import { DEFAULT_PACE } from './game';
 import type { Pace } from './game';
 import type { Waits } from './queue';
@@ -93,7 +94,7 @@ const WORDS = { size: 30, perSecond: 6 };
 /** the verbs that cost a key derivation or a letter: five a minute a socket, twenty an address */
 const CLAIMS = { size: 5, perSecond: 5 / 60 };
 const CLAIMS_PER_IP = { size: 20, perSecond: 20 / 60 };
-const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'signup' || t === 'forgot' || t === 'reset' || t === 'resend';
+const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'signup' || t === 'guest' || t === 'forgot' || t === 'reset' || t === 'resend';
 /** after this many refusals the socket is simply closed */
 const PATIENCE = 60;
 /** ideas and bugs: five an hour an account */
@@ -205,9 +206,17 @@ const noteText = (n: { name: string; page: string; kind: string; text: string; c
 /** a name as the register folds it, to count the tries on it */
 const foldName = (name: string): string => name.trim().toLowerCase().replace(/\s+/g, ' ');
 
+/** a table's name is a name, not a paragraph */
+const MAX_TABLE_NAME = 60;
+/** games at home one account may keep on the register at once */
+const HOME_CAP = 200;
+
 export function serve(options: ServeOptions = {}): Promise<Serving> {
   const store = new Store(options.file ?? 'brassworks.db');
   const hall = new Hall(store, options.pace ?? DEFAULT_PACE, { now: options.clock, waits: options.waits });
+  /* the games played at home: no table, no seats, but the same log and the
+     same engine reading every move before it is written */
+  const home = new Home(store);
   /* the office's copy of what the tables have read of their games */
   const readings = new Readings(store, options.clock);
   let marks = 0;
@@ -217,7 +226,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, portrait: a.portrait, createdAt: a.createdAt, newsletter: a.newsletter });
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, portrait: a.portrait, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest });
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
@@ -360,6 +369,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     desk.friends = desk.friends.map((f) => ({ ...f, online: socketsOf(f.account.id).length > 0, playing: hall.playingOf(f.account.id) }));
     send(c, { t: 'desk', rid, desk });
   };
+  /** the register of games at home moved: every browser of this account
+   *  hears it, so two tabs never disagree about what has been played */
+  const tellHome = (accountId: string) => {
+    const games = home.list(accountId);
+    for (const s of socketsOf(accountId)) send(s, { t: 'home.register', games });
+  };
   /** this account came or went: its friends' desks show it */
   const tellFriends = (accountId: string) => {
     for (const id of hall.friendsToTell(accountId)) for (const c of socketsOf(id)) pushDesk(c);
@@ -501,13 +516,25 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'must-accept' });
           return;
         }
-        const made = await store.signUpAsync(m.name, m.email, m.password, { ip: c.ip, accepted: true });
+        /* a guest signing up is not a second account: the one it has been
+           playing under takes the name and the address, and keeps its games */
+        const made = c.me?.guest ? store.promoteGuest(c.me.id, m.name, m.email, m.password, { ip: c.ip, accepted: true }) : await store.signUpAsync(m.name, m.email, m.password, { ip: c.ip, accepted: true });
         if ('error' in made) {
           send(c, { t: 'refused', rid: m.rid, error: made.error });
           return;
         }
         mail('verify', made.account);
         open(c, made.account, m.rid);
+        return;
+      }
+      /* a browser with no session of its own: the office opens one, so the
+         very first game has an account to be written under */
+      case 'guest': {
+        if (c.me) {
+          send(c, { t: 'welcome', rid: m.rid, me: c.me });
+          return;
+        }
+        open(c, store.enrolGuest({ ip: c.ip }), m.rid);
         return;
       }
       case 'signin': {
@@ -673,6 +700,65 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'papers.put':
         if (typeof m.kind === 'string' && store.putPaper(who.id, m.kind, m.body)) send(c, { t: 'done', rid: m.rid });
         else send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+        return;
+
+      /* ---------------------- the games at home ---------------------- */
+      case 'home.list':
+        send(c, { t: 'home.register', rid: m.rid, games: home.list(who.id) });
+        return;
+      case 'home.load':
+        send(c, { t: 'home.save', rid: m.rid, save: typeof m.code === 'string' ? home.save(who.id, normalizeCode(m.code)) : null });
+        return;
+      case 'home.open': {
+        const name = typeof m.name === 'string' ? m.name.trim().slice(0, MAX_TABLE_NAME) : '';
+        if (!name || !Number.isInteger(m.seed) || m.seed < 0 || !m.setup) {
+          send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+          return;
+        }
+        if (home.list(who.id).length >= HOME_CAP) {
+          send(c, { t: 'refused', rid: m.rid, error: 'too-many-games' });
+          return;
+        }
+        let table;
+        try {
+          table = home.deal(who.id, name, m.setup, m.seed);
+        } catch (e) {
+          /* a deal the engine will not have: nothing is written */
+          send(c, { t: 'refused', rid: m.rid, error: (e as Error).message });
+          return;
+        }
+        send(c, { t: 'home.dealt', rid: m.rid, table });
+        tellHome(who.id);
+        return;
+      }
+      case 'home.act': {
+        const code = typeof m.code === 'string' ? normalizeCode(m.code) : '';
+        const r = code && Number.isInteger(m.idx) && m.idx >= 0 && m.action ? home.act(who.id, code, m.idx, m.action) : ({ ok: false, error: 'refused' } as const);
+        /* a move that stands says nothing back: the browser already has the
+           position it played. Only a refusal is worth a frame */
+        if (!r.ok) send(c, { t: 'home.refused', code, at: Number(m.idx), error: r.error });
+        else if (r.over) {
+          tellHome(who.id);
+          /* a game played out is one more line of the history */
+          for (const s of socketsOf(who.id)) pushDesk(s);
+        }
+        return;
+      }
+      case 'home.undo': {
+        const code = typeof m.code === 'string' ? normalizeCode(m.code) : '';
+        const r = code && Number.isInteger(m.at) ? home.undo(who.id, code, m.at) : ({ ok: false, error: 'refused' } as const);
+        if (!r.ok) send(c, { t: 'refused', rid: m.rid, error: r.error });
+        else {
+          send(c, { t: 'done', rid: m.rid });
+          tellHome(who.id);
+        }
+        return;
+      }
+      case 'home.forget':
+        if (typeof m.code === 'string') home.forget(who.id, normalizeCode(m.code));
+        send(c, { t: 'done', rid: m.rid });
+        tellHome(who.id);
+        for (const s of socketsOf(who.id)) pushDesk(s);
         return;
       case 'companies':
         send(c, { t: 'companies', rid: m.rid, board: store.companies(seasonAt(), who.id) });
@@ -949,7 +1035,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     every > 0
       ? setInterval(() => {
           hall.sweep(STALE_MS);
+          home.sweep();
           store.sweepPrivacy();
+          store.sweepGuests();
           readings.sweep();
         }, every)
       : null;

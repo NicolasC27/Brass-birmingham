@@ -5,7 +5,7 @@ import type { PlayerColor } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { Held } from '@/game/analysisMerge';
-import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
+import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, HomeSave, HomeTable, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { randomId } from '@/online/table';
 import { emptyTally } from '@/game/tally';
@@ -101,7 +101,10 @@ create table if not exists accounts (
   emailFolded   text unique,
   verifiedAt    integer,
   motto         text not null default '',
-  favoriteColor text
+  favoriteColor text,
+  /* opened by the office itself, so a first game has somewhere to be
+     written: no address, no password, and a name until one is chosen */
+  guest         integer not null default 0
 );
 create table if not exists departed (
   accountId text primary key,
@@ -146,7 +149,15 @@ create table if not exists games (
   seats      text not null,
   startedAt  integer not null,
   finishedAt integer,
-  result     text
+  result     text,
+  /* a game played at home has no table of its own: it carries its name,
+     the account that played it, and what the register needs to list it
+     without replaying the log */
+  home       integer not null default 0,
+  name       text,
+  ownerId    text,
+  brief      text,
+  updatedAt  integer
 );
 create table if not exists friends (
   id         text primary key,
@@ -203,6 +214,13 @@ create table if not exists analyses (
   updatedAt integer not null,
   primary key (code, seed, judge, v)
 );
+create table if not exists notes (
+  accountId text not null,
+  code      text not null,
+  body      text not null,
+  updatedAt integer not null,
+  primary key (accountId, code)
+);
 create table if not exists purses (
   accountId text primary key,
   guineas   integer not null,
@@ -251,7 +269,13 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['accounts', 'portrait', 'text'],
   ['accounts', 'acceptedAt', 'integer'],
   ['accounts', 'closedAt', 'integer'],
+  ['accounts', 'guest', 'integer not null default 0'],
   ['games', 'result', 'text'],
+  ['games', 'home', 'integer not null default 0'],
+  ['games', 'name', 'text'],
+  ['games', 'ownerId', 'text'],
+  ['games', 'brief', 'text'],
+  ['games', 'updatedAt', 'integer'],
   ['tables', 'ranked', 'integer not null default 0'],
 ];
 
@@ -318,6 +342,7 @@ interface AccountRow {
   acceptedAt: number | null;
   closedAt: number | null;
   newsletter: number | null;
+  guest: number | null;
 }
 
 /** where an account was opened from, and whether the charter was accepted */
@@ -327,7 +352,7 @@ export interface Origin {
 }
 
 const COLORS: PlayerColor[] = ['brass', 'oxblood', 'verdigris', 'steel'];
-const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter, portrait';
+const ACCOUNT_COLUMNS = 'id, name, createdAt, email, verifiedAt, motto, favoriteColor, acceptedAt, closedAt, newsletter, portrait, guest';
 
 function accountOf(r: AccountRow): Account {
   return {
@@ -342,6 +367,7 @@ function accountOf(r: AccountRow): Account {
     acceptedAt: r.acceptedAt,
     closedAt: r.closedAt,
     newsletter: r.newsletter === 1,
+    guest: r.guest === 1,
   };
 }
 
@@ -350,6 +376,53 @@ interface Result {
   players: { name: string; color: PlayerColor; vp: number; bot: boolean; resigned?: boolean; tally?: Tally }[];
   winner: number;
   abandoned: boolean;
+}
+
+/** what the register needs to list a game at home without replaying it */
+export type Brief = Pick<HomeTable, 'era' | 'round' | 'seats'>;
+
+/** a `games` row of a game played at home, as SQLite hands it over */
+interface HomeRow {
+  code: string;
+  seed: number;
+  setup: string;
+  seats: string;
+  startedAt: number;
+  finishedAt: number | null;
+  name: string | null;
+  brief: string | null;
+  updatedAt: number | null;
+}
+
+/** the line of the register a stored game carries — nothing when its brief
+ *  will not parse: a row the register cannot describe, it does not list */
+function briefOf(r: HomeRow): HomeTable | null {
+  let brief: Brief | null = null;
+  try {
+    brief = JSON.parse(r.brief ?? 'null') as Brief | null;
+  } catch {
+    return null;
+  }
+  if (!brief || !Array.isArray(brief.seats)) return null;
+  return {
+    code: r.code,
+    name: r.name ?? r.code,
+    startedAt: r.startedAt,
+    updatedAt: r.updatedAt ?? r.startedAt,
+    era: brief.era,
+    round: brief.round,
+    seats: brief.seats,
+    ...(r.finishedAt !== null ? { over: true } : {}),
+  };
+}
+
+/** the standings as the record keeps them, read off the final position */
+function resultOf(state: GameState, tallies?: Tally[]): Result {
+  return {
+    players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot && !p.resigned, ...(p.resigned ? { resigned: true } : {}), ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
+    winner: state.winner ?? 0,
+    abandoned: !!state.abandoned,
+  };
 }
 
 export class Store {
@@ -417,6 +490,58 @@ export class Store {
       return { error: this.db.prepare('select 1 from accounts where folded = ?').get(fold(clean)) ? 'name-taken' : 'email-taken' };
     }
     return { account: this.account(id)! };
+  }
+
+  /** an account the office opens by itself, so that a first game played at
+   *  home has somewhere to be written. No address and no password: nobody
+   *  signs in to it, the browser holds its session and that is all. It
+   *  becomes a member the day its owner gives it a name and an address */
+  enrolGuest(from: Origin = {}): Account {
+    const id = 'a-' + randomBytes(8).toString('hex');
+    const now = Date.now();
+    /* a name of the same shape as anyone's, and free */
+    let name = '';
+    for (let tries = 0; tries < 20 && !name; tries++) {
+      const tried = `Invité ${randomId(4)}`;
+      if (!this.db.prepare('select 1 from accounts where folded = ?').get(fold(tried))) name = tried;
+    }
+    if (!name) name = `Invité ${randomBytes(4).toString('hex').toUpperCase()}`;
+    this.db
+      .prepare("insert into accounts (id, name, folded, secret, createdAt, email, emailFolded, verifiedAt, motto, favoriteColor, createdIp, acceptedAt, guest) values (?, ?, ?, ?, ?, null, null, null, '', null, ?, ?, 1)")
+      .run(id, name, fold(name), seal(randomBytes(32).toString('hex')), now, from.ip ?? null, from.accepted ? now : null);
+    return this.account(id)!;
+  }
+
+  /** a guest becomes a member: the same account, now with a name of its
+   *  owner's choosing, an address and a password. Everything it played
+   *  stays under it — the register only ever knew its id */
+  promoteGuest(accountId: string, name: string, email: string, password: string, from: Origin = {}): { account: Account } | { error: SignUpError } {
+    const row = this.db.prepare('select guest from accounts where id = ? and closedAt is null').get(accountId) as { guest: number | null } | undefined;
+    if (!row || row.guest !== 1) return { error: 'name-taken' };
+    const a = this.application(name, email, password);
+    if ('error' in a) return a;
+    const now = Date.now();
+    try {
+      this.db
+        .prepare('update accounts set name = ?, folded = ?, secret = ?, email = ?, emailFolded = ?, verifiedAt = null, createdIp = coalesce(createdIp, ?), acceptedAt = coalesce(acceptedAt, ?), guest = 0 where id = ?')
+        .run(a.clean, fold(a.clean), seal(password), a.address, foldEmail(a.address), from.ip ?? null, from.accepted ? now : null, accountId);
+    } catch {
+      return { error: this.db.prepare('select 1 from accounts where folded = ?').get(fold(a.clean)) ? 'name-taken' : 'email-taken' };
+    }
+    return { account: this.account(accountId)! };
+  }
+
+  /** guests that never played and have gone quiet: an account the office
+   *  opened and nobody used is an account the office may forget */
+  sweepGuests(olderThan = 30 * 24 * 60 * 60 * 1000, now = Date.now()): number {
+    const stale = this.db
+      .prepare('select id from accounts where guest = 1 and createdAt < ? and not exists (select 1 from game_players p where p.accountId = accounts.id)')
+      .all(now - olderThan) as { id: string }[];
+    for (const { id } of stale) {
+      for (const table of ['sessions', 'letters', 'purses', 'papers', 'notes']) this.db.prepare(`delete from ${table} where accountId = ?`).run(id);
+      this.db.prepare('delete from accounts where id = ?').run(id);
+    }
+    return stale.length;
   }
 
   /** open an account, or say why it cannot be opened */
@@ -584,9 +709,11 @@ export class Store {
       sessions: this.sessionsOf(accountId),
       friends: rows('select f.createdAt, f.acceptedAt, a.name from friends f join accounts a on a.id = (case when f.aId = ?1 then f.bId else f.aId end) where f.aId = ?1 or f.bId = ?1'),
       feedback: rows('select page, kind, text, createdAt from feedback where accountId = ?'),
-      games: rows('select g.code, g.startedAt, g.finishedAt, g.result from games g join game_players p on p.code = g.code where p.accountId = ?1'),
+      games: rows('select g.code, g.name, g.home, g.startedAt, g.finishedAt, g.result from games g join game_players p on p.code = g.code where p.accountId = ?1'),
       ratings: rows('select season, rating, games, won, updatedAt from ratings where accountId = ?'),
       purse: this.db.prepare('select guineas, owned from purses where accountId = ?').get(accountId) ?? null,
+      papers: rows('select kind, body, updatedAt from papers where accountId = ?'),
+      notes: rows('select code, body, updatedAt from notes where accountId = ?'),
       flags: rows('select kind, detail, code, at from flags where accountId = ?'),
     };
   }
@@ -608,12 +735,21 @@ export class Store {
       this.db
         .prepare("update accounts set name = ?, folded = ?, email = null, emailFolded = null, secret = ?, motto = '', favoriteColor = null, portrait = null, createdIp = null, closedAt = ? where id = ?")
         .run(gone, fold(gone), seal(randomBytes(32).toString('hex')), now, accountId);
-      for (const table of ['sessions', 'letters', 'feedback', 'purses']) {
+      for (const table of ['sessions', 'letters', 'feedback', 'purses', 'papers', 'notes']) {
         try {
           this.db.prepare(`delete from ${table} where accountId = ?`).run(accountId);
         } catch {
           /* a table this register does not have */
         }
+      }
+      /* the games at the tables stay under the number, so the other players'
+         records still read; the games played at home were nobody else's and
+         go with their papers */
+      for (const { code } of this.db.prepare('select code from games where home = 1 and ownerId = ?').all(accountId) as { code: string }[]) {
+        this.db.prepare('delete from games where code = ?').run(code);
+        this.db.prepare('delete from moves where code = ?').run(code);
+        this.db.prepare('delete from game_players where code = ?').run(code);
+        this.db.prepare('delete from analyses where code = ?').run(code);
       }
       this.db.prepare('delete from friends where aId = ? or bId = ?').run(accountId, accountId);
       this.db.prepare('delete from invitations where fromId = ? or toId = ?').run(accountId, accountId);
@@ -823,13 +959,7 @@ export class Store {
   /** the game is over: the standings go on the record, the humans are
    *  paid, and at a ranked table their cotes move */
   finishGame(code: string, state?: GameState, tallies?: Tally[], ranked = false): void {
-    const result: Result | null = state
-      ? {
-          players: state.players.map((p, i) => ({ name: p.name, color: p.color as PlayerColor, vp: p.vp, bot: !!p.isBot && !p.resigned, ...(p.resigned ? { resigned: true } : {}), ...(tallies?.[i] ? { tally: tallies[i] } : {}) })),
-          winner: state.winner ?? 0,
-          abandoned: !!state.abandoned,
-        }
-      : null;
+    const result: Result | null = state ? resultOf(state, tallies) : null;
     this.db.prepare('update games set finishedAt = ?, result = ? where code = ?').run(Date.now(), result ? JSON.stringify(result) : null, code);
     /* a game the table voted away pays nothing and moves no cote */
     if (!state || state.abandoned) return;
@@ -867,6 +997,94 @@ export class Store {
     return row.n;
   }
 
+  /* ---------------------------- games at home ---------------------------- */
+  /* A game against the machines is a game like any other: a seed and a log,  */
+  /* kept under the account that played it. It has no table of its own, so it */
+  /* carries its own name and a brief — era, round, seats — the register      */
+  /* lists without replaying a move. The brief is the only thing derived kept */
+  /* on disk, and the log remains what decides.                               */
+
+  /** a code no game holds yet */
+  private freeGameCode(): string {
+    let code = randomId(4);
+    while (this.db.prepare('select 1 from games where code = ?').get(code)) code = randomId(4);
+    return code;
+  }
+
+  /** a game begins at home: its line, its deal, and the account it belongs to */
+  openHomeGame(ownerId: string, name: string, seed: number, setup: SetupPayload, brief: Brief): HomeTable {
+    const code = this.freeGameCode();
+    const now = Date.now();
+    /* a chair a person sits in is the owner's, whoever their name says they
+       are — several people round one screen still play under one account */
+    const seatIds = brief.seats.map((s, i) => (s.kind === 'human' ? ownerId : `bot-${i}`));
+    this.db
+      .prepare('insert into games (code, seed, setup, seats, startedAt, finishedAt, result, home, name, ownerId, brief, updatedAt) values (?, ?, ?, ?, ?, null, null, 1, ?, ?, ?, ?)')
+      .run(code, seed, JSON.stringify(setup), JSON.stringify(seatIds), now, name, ownerId, JSON.stringify(brief), now);
+    this.db.prepare('insert or ignore into game_players (code, accountId) values (?, ?)').run(code, ownerId);
+    return { code, name, startedAt: now, updatedAt: now, ...brief };
+  }
+
+  /** this account's game at that code, or nothing — another account's game is
+   *  nothing to it */
+  private homeRow(ownerId: string, code: string): HomeRow | null {
+    const row = this.db.prepare('select * from games where code = ? and home = 1 and ownerId = ?').get(code, ownerId) as HomeRow | undefined;
+    return row ?? null;
+  }
+
+  /** one accepted action of a game at home, and the brief it leaves behind */
+  appendHomeMove(ownerId: string, code: string, idx: number, action: GameAction, brief: Brief): boolean {
+    if (!this.homeRow(ownerId, code)) return false;
+    this.appendMove(code, idx, action);
+    this.db.prepare('update games set brief = ?, updatedAt = ? where code = ?').run(JSON.stringify(brief), Date.now(), code);
+    return true;
+  }
+
+  /** a move taken back at home, and everything after it */
+  dropHomeMoves(ownerId: string, code: string, idx: number, brief: Brief): boolean {
+    if (!this.homeRow(ownerId, code)) return false;
+    this.dropMove(code, idx);
+    this.db.prepare('update games set brief = ?, updatedAt = ? where code = ?').run(JSON.stringify(brief), Date.now(), code);
+    return true;
+  }
+
+  /** a game at home played out: the standings go on the record. Nothing is
+   *  paid and no cote moves — the machines are not an opponent one earns
+   *  against */
+  finishHomeGame(ownerId: string, code: string, state: GameState, tallies?: Tally[]): void {
+    if (!this.homeRow(ownerId, code)) return;
+    this.db.prepare('update games set finishedAt = ?, result = ?, updatedAt = ? where code = ?').run(Date.now(), JSON.stringify(resultOf(state, tallies)), Date.now(), code);
+  }
+
+  /** this account's games at home, the last touched first */
+  homeGames(ownerId: string): HomeTable[] {
+    const rows = this.db.prepare('select * from games where home = 1 and ownerId = ? order by coalesce(updatedAt, startedAt) desc').all(ownerId) as unknown as HomeRow[];
+    return rows.map((r) => briefOf(r)).filter((t): t is HomeTable => t !== null);
+  }
+
+  /** one game at home, whole: its line, its deal and its log */
+  homeSave(ownerId: string, code: string): HomeSave | null {
+    const row = this.homeRow(ownerId, code);
+    const line = row && briefOf(row);
+    if (!row || !line) return null;
+    return {
+      ...line,
+      seed: row.seed,
+      setup: JSON.parse(row.setup) as SetupPayload,
+      actions: (this.db.prepare('select action from moves where code = ? order by idx').all(code) as { action: string }[]).map((m) => JSON.parse(m.action) as GameAction),
+    };
+  }
+
+  /** a game at home put away for good */
+  forgetHomeGame(ownerId: string, code: string): void {
+    if (!this.homeRow(ownerId, code)) return;
+    this.db.prepare('delete from games where code = ?').run(code);
+    this.db.prepare('delete from moves where code = ?').run(code);
+    this.db.prepare('delete from game_players where code = ?').run(code);
+    this.db.prepare('delete from notes where code = ?').run(code);
+    this.dropAnalyses(code);
+  }
+
   /* ------------------------------- the watch ------------------------------ */
 
   /** a mark against an account: what the watch saw, where */
@@ -881,8 +1099,10 @@ export class Store {
     return this.db.prepare('select f.*, a.name from flags f left join accounts a on a.id = f.accountId order by f.at desc').all() as unknown as (Flag & { name: string })[];
   }
 
+  /** the games of the tables — a game played at home belongs to no table and
+   *  the hall has nothing to reopen for it */
   games(): StoredGame[] {
-    const rows = this.db.prepare('select * from games').all() as {
+    const rows = this.db.prepare('select * from games where home = 0').all() as {
       code: string;
       seed: number;
       setup: string;
@@ -949,9 +1169,9 @@ export class Store {
   historyFor(accountId: string, limit = 20): PastGame[] {
     const rows = this.db
       .prepare(
-        'select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.code in (select code from game_players where accountId = ?) order by g.finishedAt desc, g.rowid desc limit ?',
+        'select g.code, g.seats, g.finishedAt, g.result, g.home, coalesce(t.name, g.name) as name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.code in (select code from game_players where accountId = ?) order by g.finishedAt desc, g.rowid desc limit ?',
       )
-      .all(accountId, limit) as { code: string; seats: string; finishedAt: number; result: string; name: string | null }[];
+      .all(accountId, limit) as { code: string; seats: string; finishedAt: number; result: string; name: string | null; home: number }[];
     return rows.map((r) => {
       const seatIds = JSON.parse(r.seats) as string[];
       const result = JSON.parse(r.result) as Result;
@@ -962,12 +1182,15 @@ export class Store {
         players: result.players.map((p, i) => ({ id: seatIds[i] ?? '', ...p })),
         winner: result.winner,
         abandoned: result.abandoned,
+        ...(r.home ? { home: true } : {}),
       };
     });
   }
 
   statsFor(accountId: string): Stats {
-    const games = this.historyFor(accountId, 10_000);
+    /* the figures are of the tables: a game against the machines is on the
+       record, and out of them — it would flatter every average it touched */
+    const games = this.historyFor(accountId, 10_000).filter((g) => !g.home);
     /* a game the table voted away was never played out: it counts for nothing */
     const mine = games.filter((g) => !g.abandoned).map((g) => ({ vp: g.players[g.players.findIndex((p) => p.id === accountId)]?.vp ?? 0, won: g.players[g.winner]?.id === accountId }));
     const played = mine.length;
@@ -1176,7 +1399,7 @@ export class Store {
    *  two humans at least; the most assiduous member sat at the most of them */
   editionOf(week: number, from: number, to: number): Edition {
     const rows = this.db
-      .prepare('select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.finishedAt is not null and g.result is not null and g.finishedAt >= ? and g.finishedAt < ? order by g.finishedAt desc')
+      .prepare('select g.code, g.seats, g.finishedAt, g.result, t.name from games g left join tables t on t.code = g.code where g.home = 0 and g.finishedAt is not null and g.result is not null and g.finishedAt >= ? and g.finishedAt < ? order by g.finishedAt desc')
       .all(from, to) as { code: string; seats: string; finishedAt: number; result: string; name: string | null }[];
     const games = rows
       .map((r) => {
