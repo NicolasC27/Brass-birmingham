@@ -369,20 +369,45 @@ function IdentitySettings() {
   const session = useSession();
   const [motto, setMotto] = useState<string | null>(null);
   const [color, setColor] = useState<PlayerColor | null | undefined>(undefined);
+  const [portrait, setPortrait] = useState<string | null | undefined>(undefined);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!session) return null;
 
   const mottoValue = motto ?? session.motto;
   const colorValue = color === undefined ? session.favoriteColor : color;
-  const dirty = mottoValue !== session.motto || colorValue !== session.favoriteColor;
+  const portraitValue = portrait === undefined ? session.portrait : portrait;
+  const dirty = mottoValue !== session.motto || colorValue !== session.favoriteColor || portraitValue !== session.portrait;
+
+  /* the picture is cut square and shrunk here, before it travels: 160 px
+     of WebP, a few thousand characters, whatever the file was */
+  const pick = (file: File) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const S = 160;
+      const c = document.createElement('canvas');
+      c.width = S;
+      c.height = S;
+      const g = c.getContext('2d');
+      if (g) {
+        const side = Math.min(img.naturalWidth, img.naturalHeight);
+        g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, S, S);
+        const webp = c.toDataURL('image/webp', 0.82);
+        setPortrait(webp.startsWith('data:image/webp') ? webp : c.toDataURL('image/jpeg', 0.82));
+      }
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
 
   const save = async () => {
     setError(null);
     try {
-      await updateProfile({ motto: mottoValue, favoriteColor: colorValue });
+      await updateProfile({ motto: mottoValue, favoriteColor: colorValue, ...(portraitValue !== session.portrait ? { portrait: portraitValue } : {}) });
       setMotto(null);
       setColor(undefined);
+      setPortrait(undefined);
       setSaved(true);
       window.setTimeout(() => setSaved(false), 2000);
     } catch (e) {
@@ -393,6 +418,24 @@ function IdentitySettings() {
   return (
     <Panel title={t('platform.profile.settings.identity')}>
       <div className="grid gap-5">
+        <div>
+          <p className="micro-label text-brass-300/90">{t('platform.profile.settings.portrait')}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-4">
+            <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-brass-hairline-strong bg-enamel-700 font-ui text-[24px] font-semibold text-paper-100">
+              {portraitValue ? <img src={portraitValue} alt="" draggable={false} className="h-full w-full object-cover" /> : session.name.charAt(0).toUpperCase()}
+            </span>
+            <label className="gz-ticket gz-ticket-sm cursor-pointer">
+              {t('platform.profile.settings.portraitPick')}
+              <input type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])} />
+            </label>
+            {portraitValue && (
+              <button type="button" onClick={() => setPortrait(null)} className="micro-label text-iron-400 transition-colors duration-150 hover:text-paper-100">
+                {t('platform.profile.settings.portraitRemove')}
+              </button>
+            )}
+          </div>
+          <p className="mt-2 font-serif text-[12.5px] italic text-iron-400">{t('platform.profile.settings.portraitHint')}</p>
+        </div>
         <Field id="profile-motto" label={t('platform.profile.settings.motto')} hint={t('platform.profile.settings.mottoHint')}>
           <input id="profile-motto" value={mottoValue} onChange={(e) => setMotto(e.target.value)} maxLength={80} placeholder={t('platform.profile.settings.mottoPlaceholder')} className={inputClass} />
         </Field>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Check, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,8 @@ export interface SeatTokenProps {
     ready?: boolean;
     host?: boolean;
     you?: boolean;
+    /** the member's likeness, if the office serves one; the initial otherwise */
+    portrait?: string | null;
   } | null;
   /** 36px par défaut, 44 dans le lobby */
   size?: number;
@@ -30,6 +33,8 @@ const spring = { type: 'spring', stiffness: 260, damping: 24 } as const;
 
 export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps) {
   const t = useT();
+  /* a likeness that does not come back leaves the initial in its place */
+  const [broken, setBroken] = useState<string | null>(null);
 
   if (!seat) {
     return (
@@ -75,7 +80,7 @@ export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps
     >
       <div
         className={cn(
-          'flex items-center justify-center rounded-full bg-enamel-700 font-ui font-semibold text-paper-100',
+          'flex items-center justify-center overflow-hidden rounded-full bg-enamel-700 font-ui font-semibold text-paper-100',
           seat.ready && 'ring-2 ring-bottle-500',
           seat.you && 'shadow-[0_0_0_2px_rgb(var(--lacquer-900)),0_0_0_4px_rgb(var(--paper-100))]',
         )}
@@ -83,6 +88,8 @@ export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps
       >
         {seat.kind === 'bot' ? (
           <Bot className="text-iron-400" style={{ width: size * 0.5, height: size * 0.5 }} aria-hidden />
+        ) : seat.portrait && broken !== seat.portrait ? (
+          <img src={seat.portrait} alt="" draggable={false} onError={() => setBroken(seat.portrait ?? null)} className="h-full w-full object-cover" />
         ) : (
           seat.name.charAt(0).toUpperCase()
         )}

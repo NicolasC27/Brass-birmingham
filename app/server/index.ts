@@ -217,7 +217,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, createdAt: a.createdAt, newsletter: a.newsletter });
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, portrait: a.portrait, createdAt: a.createdAt, newsletter: a.newsletter });
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
@@ -262,6 +262,20 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const http = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://blackrail');
     const own = dev && loopback(req);
+    /* a member's likeness, by account id: the picture itself, or nothing */
+    if (url.pathname.startsWith('/portrait/')) {
+      const id = decodeURIComponent(url.pathname.slice('/portrait/'.length));
+      const data = store.account(id)?.portrait ?? null;
+      const m = data && /^data:(image\/[a-z]+);base64,(.+)$/.exec(data);
+      if (!m) {
+        headed(res, 404, 'text/plain');
+        res.end('Not found\n');
+        return;
+      }
+      res.writeHead(200, { 'content-type': m[1], 'cache-control': 'public, max-age=120', 'access-control-allow-origin': '*' });
+      res.end(Buffer.from(m[2], 'base64'));
+      return;
+    }
     /* the counter: with no real post, the letters can be read here */
     if (url.pathname === '/letters') {
       if (!own || !post.kept) {
@@ -590,7 +604,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         return;
       }
       case 'profile': {
-        store.setProfile(who.id, { motto: m.motto, favoriteColor: m.favoriteColor, newsletter: typeof m.newsletter === 'boolean' ? m.newsletter : undefined });
+        store.setProfile(who.id, { motto: m.motto, favoriteColor: m.favoriteColor, newsletter: typeof m.newsletter === 'boolean' ? m.newsletter : undefined, portrait: typeof m.portrait === 'string' || m.portrait === null ? m.portrait : undefined });
         pushMe(who.id, m.rid, c);
         return;
       }

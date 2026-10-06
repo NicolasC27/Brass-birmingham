@@ -71,7 +71,7 @@ export type ClientMessage =
   | { t: 'forgot'; rid: number; email: string }
   | { t: 'reset'; rid: number; token: string; password: string }
   /** the profile, as its owner would have it */
-  | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean }
+  | { t: 'profile'; rid: number; motto?: string; favoriteColor?: PlayerColor | null; newsletter?: boolean; portrait?: string | null }
   | { t: 'password'; rid: number; current: string; next: string }
   /** everything the register holds under my name, to take away */
   | { t: 'export'; rid: number }

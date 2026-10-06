@@ -11,6 +11,8 @@ import { useHudInsets, narrowRailTop } from './useHudInsets';
 import { TelegramPlaque } from './Telegrams';
 import { useNarrow } from '@/hooks/use-narrow';
 import { useT } from '@/i18n';
+import { useTable } from '@/online/lobby';
+import { portraitUrl } from '@/online/session';
 import type { PlayerState } from '@/game/types';
 import { cn } from '@/lib/utils';
 
@@ -63,8 +65,17 @@ import { portraitFor } from './portraits';
 
 /** circular portrait medallion with a player-colour rim (Steam reference);
  *  the active player gets a glowing ring. */
+/** a machine wears its character, a member their own likeness when the
+ *  office serves one (an online table's seat knows their account), and
+ *  anyone else one of the house's oil portraits */
 export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; index: number; active: boolean; size: number }) {
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
+  const code = useGame((st) => st.code);
+  const table = useTable(code);
+  const seatId = table?.seats[index]?.kind === 'human' ? table.seats[index].id : null;
+  const likeness = !p.isBot && seatId ? portraitUrl(seatId) : null;
+  const [broken, setBroken] = useState<string | null>(null);
+  const src = likeness && broken !== likeness ? likeness : portraitFor(p, index);
   return (
     <span
       className={cn('relative inline-block shrink-0 rounded-full', active && 'animate-pulse')}
@@ -78,9 +89,10 @@ export function PortraitMedallion({ p, index, active, size }: { p: PlayerState; 
       aria-hidden
     >
       <img
-        src={portraitFor(p, index)}
+        src={src}
         alt=""
         draggable={false}
+        onError={() => likeness && setBroken(likeness)}
         className="h-full w-full rounded-full object-cover"
         style={{ filter: 'saturate(.92) brightness(.96)' }}
       />

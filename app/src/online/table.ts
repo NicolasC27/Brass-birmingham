@@ -66,6 +66,8 @@ export interface Me extends Identity {
   verified: boolean;
   motto: string;
   favoriteColor: PlayerColor | null;
+  /** the member's own likeness, a small square picture kept at the office (a data URL), or none */
+  portrait: string | null;
   createdAt: number;
   /** the Monday edition by post, asked for */
   newsletter: boolean;
