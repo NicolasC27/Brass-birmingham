@@ -1,12 +1,12 @@
 /**
- * Final-ledger storage contract (brassworks.final.v1), written by the game
- * engine at the end of the last era and read by the /results ceremony.
+ * The final ledger as the ceremony reads it: the board leaves it in memory
+ * at the end of the last era (game/final.ts), and /results shapes it here.
  */
 
 import { PLAYER_COLORS, type PlayerColor } from "@/components/setup/constants";
+import { heldFinal } from "@/game/final";
 import { tr } from "@/i18n";
 
-export const FINAL_STORAGE_KEY = "brassworks.final.v1";
 
 export interface FinalPlayer {
   name: string;
@@ -48,10 +48,8 @@ function isPlayerColor(c: unknown): c is PlayerColor {
 /** Parse the stored final ledger; null when absent or malformed. */
 export function readFinalResult(): FinalResult | null {
   try {
-    const raw = localStorage.getItem(FINAL_STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as Partial<FinalResult>;
-    if (!Array.isArray(data.players) || data.players.length === 0) return null;
+    const data = heldFinal() as Partial<FinalResult> | null;
+    if (!data || !Array.isArray(data.players) || data.players.length === 0) return null;
 
     const players: FinalPlayer[] = data.players.map((p) => ({
       name: typeof p?.name === "string" && p.name.trim() ? p.name : tr("results.nameless"),

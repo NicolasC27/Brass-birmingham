@@ -27,10 +27,11 @@ import type {
   Verb,
   LedgerEntry,
 } from './types';
-import { PINS_KEY } from './types';
+
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY } from './quickplay';
 import { forkHomeGame, homePinScope, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
+import { readNotes, writeNotes } from '@/platform/notes';
 import { challengeSeedFor, noteChallenge } from './challenge';
 import { grantFromGame } from '@/platform/patents';
 import { writeLetter } from '@/platform/letters';
@@ -150,6 +151,9 @@ interface GameStore {
   planGame: () => GameState | null;
   /* ---- pins: towns the reader watches, each with a note of their own ---- */
   pins: Record<string, string>;
+  /** the page kept beside this game — the notebook's, one per table */
+  notebook: string;
+  setNotebook: (text: string) => void;
   /** pin a town (with an empty note) or drop the pin */
   pinTown: (town: string, on: boolean) => void;
   setPinNote: (town: string, note: string) => void;
@@ -398,7 +402,8 @@ async function fetchHome(code: string): Promise<void> {
     mood: NO_MOOD,
     tutorial,
     humanMarks,
-    pins: readPins(homePinScope(at)),
+    pins: {},
+    notebook: '',
     ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
     /* a finished game reopened lands on its scores, the debrief a click away
        — unless the link pointed at a move, and then the analysis opens on it */
@@ -407,6 +412,9 @@ async function fetchHome(code: string): Promise<void> {
     reviewAt: moment,
     coachStep: coached || tutorial ? -1 : 0,
   });
+  /* the towns pinned and the page kept beside this game come back with it */
+  const notes = await readNotes(homePinScope(at));
+  if (useGame.getState().local === at) useGame.setState({ pins: notes.pins, notebook: notes.page });
 }
 
 export function buildFinalPayload(g: GameState): FinalPayload {
@@ -477,6 +485,7 @@ const freshTable = {
   markWarning: null as 'warned' | 'muted' | null,
   toasts: [] as number[],
   pins: {} as Record<string, string>,
+  notebook: '',
   preparing: false,
   queued: [] as Prepared[],
   previewQueue: false,
@@ -521,8 +530,12 @@ export const useGame = create<GameStore>((set, get) => ({
     const wire = code ? onlineWire() : null;
     if (code && wire) {
       /* the table's pins and notes come back with the table */
-      set({ ...clearSelection, ...freshTable, game: null, code, local: null, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1, pins: readPins(code) });
+      set({ ...clearSelection, ...freshTable, game: null, code, local: null, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1, pins: {}, notebook: '' });
       listen(code, wire);
+      void readNotes(code).then((n) => {
+        /* the reader may have left the table while the office was answering */
+        if (get().code === code) set({ pins: n.pins, notebook: n.page });
+      });
       return;
     }
     /* a game at home. The office holds it: the board waits, empty, until it
@@ -561,7 +574,7 @@ export const useGame = create<GameStore>((set, get) => ({
        keeps a log, and a log is not begun twice under one code. The page
        follows `movedTo` to the deal the office hands back */
     if (get().code || !get().local) return;
-    set({ ...clearSelection, ...freshTable, game: null, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {}, movedTo: null });
+    set({ ...clearSelection, ...freshTable, game: null, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {}, notebook: '', movedTo: null });
     void openHomeGame()
       .then((table) => {
         set({ local: table.code, movedTo: table.code });
@@ -813,13 +826,17 @@ export const useGame = create<GameStore>((set, get) => ({
     if (on) pins[town] = pins[town] ?? '';
     else delete pins[town];
     set({ pins });
-    writePins(pinScope(get()), pins);
+    keepNotes(pinScope(get()), pins, get().notebook);
   },
   setPinNote: (town, note) => {
     /* a word on a town pins it; an emptied note leaves the pin standing */
     const pins = { ...get().pins, [town]: note };
     set({ pins });
-    writePins(pinScope(get()), pins);
+    keepNotes(pinScope(get()), pins, get().notebook);
+  },
+  setNotebook: (text) => {
+    set({ notebook: text });
+    keepNotes(pinScope(get()), get().pins, text);
   },
   sendToast: () => {
     const st = get();
@@ -1640,24 +1657,9 @@ export function describeAction(a: GameAction): string {
 
 /** where a table's pins are kept: the code online, the register's scope at home */
 const pinScope = (st: { code: string | null; local: string | null }): string | null => st.code ?? (st.local ? homePinScope(st.local) : null);
-/** each table keeps its own pins: the code online, the home table otherwise */
-const pinsKey = (code: string | null): string => (code ? `${PINS_KEY}:${code}` : PINS_KEY);
-/** the reader's pinned towns and notes, kept across reloads of the same table */
-function readPins(code: string | null): Record<string, string> {
-  try {
-    const raw = localStorage.getItem(pinsKey(code));
-    const v = raw ? (JSON.parse(raw) as unknown) : null;
-    return v && typeof v === 'object' ? (v as Record<string, string>) : {};
-  } catch {
-    return {};
-  }
-}
-function writePins(code: string | null, pins: Record<string, string>): void {
-  try {
-    localStorage.setItem(pinsKey(code), JSON.stringify(pins));
-  } catch {
-    /* non-fatal */
-  }
+/** the pins and the page as they now stand, handed to the office */
+function keepNotes(code: string | null, pins: Record<string, string>, page: string): void {
+  if (code) writeNotes(code, { pins, page });
 }
 
 /* ------------------------- the bots' banter ------------------------- */

@@ -5,7 +5,7 @@ import { applyAction } from '@/game/actions';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
 import { newGame } from '@/game/engine';
 import type { FinalPayload, GameState } from '@/game/types';
-import { FINAL_KEY } from '@/game/types';
+import { heldFinal as readFinal } from '@/game/final';
 import { useT } from '@/i18n';
 import { ledgerText } from '@/game/ledgerText';
 import { useGame } from '@/game/store';
@@ -25,14 +25,6 @@ const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
 const SPEEDS = [1, 2, 4] as const;
 
-function readFinal(): FinalPayload | null {
-  try {
-    const raw = localStorage.getItem(FINAL_KEY);
-    return raw ? (JSON.parse(raw) as FinalPayload) : null;
-  } catch {
-    return null;
-  }
-}
 
 /** every state of the game, from the set table to the last action */
 function rebuild(final: FinalPayload): GameState[] | null {

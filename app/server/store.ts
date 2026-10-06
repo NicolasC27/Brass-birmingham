@@ -85,6 +85,8 @@ export const MAX_MOTTO = 80;
 /** a likeness travels as a data URL: 160 px square in WebP is ten to twenty thousand characters */
 export const MAX_PORTRAIT = 64_000;
 const PORTRAIT_DATA = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/]+=*$/;
+/** a page of notes beside one game, and no more */
+export const MAX_NOTES = 32_000;
 /** a session lasts a month of silence */
 export const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 /** a letter is good for an hour */
@@ -1083,6 +1085,32 @@ export class Store {
     this.db.prepare('delete from game_players where code = ?').run(code);
     this.db.prepare('delete from notes where code = ?').run(code);
     this.dropAnalyses(code);
+  }
+
+  /* -------------------------- marks and notes --------------------------- */
+  /* What a reader wrote beside a game of theirs: the towns they pinned and  */
+  /* the page they kept. One row an account and a game, so two people at one */
+  /* table never read each other's notes.                                    */
+
+  /** the notes this account keeps beside that game, as they wrote them */
+  notes(accountId: string, code: string): unknown {
+    const row = this.db.prepare('select body from notes where accountId = ? and code = ?').get(accountId, code) as { body: string } | undefined;
+    if (!row) return null;
+    try {
+      return JSON.parse(row.body) as unknown;
+    } catch {
+      return null;
+    }
+  }
+
+  /** the notes as they now stand — false when they are more than a page */
+  putNotes(accountId: string, code: string, body: unknown): boolean {
+    const text = JSON.stringify(body ?? null);
+    if (text.length > MAX_NOTES) return false;
+    this.db
+      .prepare('insert into notes (accountId, code, body, updatedAt) values (?, ?, ?, ?) on conflict (accountId, code) do update set body = excluded.body, updatedAt = excluded.updatedAt')
+      .run(accountId, code, text, Date.now());
+    return true;
   }
 
   /* ------------------------------- the watch ------------------------------ */

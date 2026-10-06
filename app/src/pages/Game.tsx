@@ -50,7 +50,7 @@ import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, proj
 import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
 import { useStranger } from '@/online/session';
-import { FINAL_KEY } from '@/game/types';
+import { keepFinal } from '@/game/final';
 import type { Resource } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -333,11 +333,7 @@ export default function Game() {
        pull them out of it */
     if (debriefOpen || review) return;
     finalWritten.current = true;
-    try {
-      localStorage.setItem(FINAL_KEY, JSON.stringify(buildFinalPayload(game)));
-    } catch {
-      /* non-fatal */
-    }
+    keepFinal(buildFinalPayload(game));
     const t = window.setTimeout(() => navigate('/results'), 9000);
     return () => window.clearTimeout(t);
   }, [game, gameOverOpen, debriefOpen, review, navigate]);

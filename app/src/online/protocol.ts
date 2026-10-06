@@ -154,6 +154,9 @@ export type ClientMessage =
   | { t: 'home.undo'; rid: number; code: string; at: number }
   /** a game at home put away for good */
   | { t: 'home.forget'; rid: number; code: string }
+  /** what I wrote beside a game of mine: the towns pinned and the page kept */
+  | { t: 'notes.get'; rid: number; code: string }
+  | { t: 'notes.put'; code: string; body: unknown }
   /** the companies of the club and their honours */
   | { t: 'companies'; rid: number }
   /** found a company under a name, and be its first member */
@@ -222,6 +225,8 @@ export type ServerMessage =
   | { t: 'home.dealt'; rid: number; table: HomeTable }
   /** the office turned a move at home down: the browser reads the game back */
   | { t: 'home.refused'; code: string; at: number; error: string }
+  /** my notes beside a game (null: I kept none) */
+  | { t: 'notes'; rid: number; code: string; body: unknown }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
   | { t: 'pong' };

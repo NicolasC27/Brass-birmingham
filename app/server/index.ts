@@ -754,6 +754,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         return;
       }
+      case 'notes.get':
+        send(c, { t: 'notes', rid: m.rid, code: typeof m.code === 'string' ? m.code : '', body: typeof m.code === 'string' ? store.notes(who.id, normalizeCode(m.code)) : null });
+        return;
+      case 'notes.put':
+        /* nothing comes back: a page written is the writer's own business */
+        if (typeof m.code === 'string') store.putNotes(who.id, normalizeCode(m.code), m.body);
+        return;
       case 'home.forget':
         if (typeof m.code === 'string') home.forget(who.id, normalizeCode(m.code));
         send(c, { t: 'done', rid: m.rid });

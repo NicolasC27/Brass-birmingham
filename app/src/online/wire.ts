@@ -203,6 +203,16 @@ export class Wire {
     await this.ask((rid) => ({ t: 'home.forget', rid, code }));
   }
 
+  /** what I wrote beside a game of mine */
+  async askNotes(code: string): Promise<unknown> {
+    const m = await this.ask((rid) => ({ t: 'notes.get', rid, code }));
+    return m.t === 'notes' ? m.body : null;
+  }
+
+  putNotes(code: string, body: unknown): void {
+    this.send({ t: 'notes.put', code, body });
+  }
+
   /** the session as it settles, or null when the office does not answer */
   private settled(): Promise<Me | null> {
     if (this.session) return Promise.resolve(this.session);

@@ -9,8 +9,7 @@ import type { Grade, Idle, Review as GameReview, SeatReview } from '@/game/revie
 import ReviewCurve from '@/components/results/ReviewCurve';
 import type { Mark } from '@/components/results/ReviewCurve';
 import type { Note, Second } from '@/game/reviewWorker';
-import { FINAL_KEY } from '@/game/types';
-import type { FinalPayload } from '@/game/types';
+import { heldFinal as readFinal } from '@/game/final';
 import { ShapeChip } from '@/components/game/TownInspector';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -44,14 +43,6 @@ type Depth = keyof typeof THINK;
 /** whose moves the reading goes through: one place, or every one of them */
 type Scope = 'seat' | 'table';
 
-function readFinal(): FinalPayload | null {
-  try {
-    const raw = localStorage.getItem(FINAL_KEY);
-    return raw ? (JSON.parse(raw) as FinalPayload) : null;
-  } catch {
-    return null;
-  }
-}
 
 const hexOf = (color: string | undefined): string => (color && PLAYER_COLORS[color]?.hex) || '#C9A45C';
 

@@ -8,44 +8,26 @@ import { cn } from '@/lib/utils';
 /* ------------------------------------------------------------------ */
 /* The notebook: a page of the reader's own for the whole game — plans,  */
 /* things to remember, what a rival seems to be after. One page per     */
-/* table (the code online, the home table otherwise), kept on this      */
-/* device and back at the next reload. The pins carry a word per town;  */
-/* this carries the rest.                                               */
+/* table, kept at the office beside the towns the reader pinned, so it  */
+/* comes back on another machine and no one else ever reads it.         */
 /* ------------------------------------------------------------------ */
-
-const KEY = 'brassworks.notebook.v1';
-const keyFor = (code: string | null) => (code ? `${KEY}:${code}` : KEY);
-const read = (code: string | null): string => {
-  try {
-    return localStorage.getItem(keyFor(code)) ?? '';
-  } catch {
-    return '';
-  }
-};
-const write = (code: string | null, text: string) => {
-  try {
-    if (text) localStorage.setItem(keyFor(code), text);
-    else localStorage.removeItem(keyFor(code));
-  } catch {
-    /* not kept, still on screen */
-  }
-};
 
 export default function NotebookButton({ className }: { className?: string }) {
   const t = useT();
-  const code = useGame((s) => s.code);
   const [open, setOpen] = useState(false);
-  /* the page belongs to the table: another table, another page */
-  const [page, setPage] = useState(() => ({ code, text: read(code) }));
-  if (page.code !== code) setPage({ code, text: read(code) });
-  const text = page.text;
-  const setText = (next: string) => setPage({ code, text: next });
+  /* the page belongs to the table, and travels with it */
+  const text = useGame((s) => s.notebook);
+  const setNotebook = useGame((s) => s.setNotebook);
+  /* what is typed shows at once; the office hears a beat after the pen stops */
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? text;
+  const setText = (next: string) => setDraft(next);
   const box = useRef<HTMLTextAreaElement>(null);
-  /* the page is written a beat after the pen stops */
   useEffect(() => {
-    const id = window.setTimeout(() => write(code, text), 300);
+    if (draft === null || draft === text) return;
+    const id = window.setTimeout(() => setNotebook(draft), 300);
     return () => window.clearTimeout(id);
-  }, [code, text]);
+  }, [draft, text, setNotebook]);
   useEffect(() => {
     if (!open) return;
     box.current?.focus();
@@ -53,7 +35,7 @@ export default function NotebookButton({ className }: { className?: string }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
-  const filled = text.trim().length > 0;
+  const filled = shown.trim().length > 0;
   return (
     <>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-pressed={open} title={t('board.notebook.open')} aria-label={t('board.notebook.open')} className={cn(className, open && '!border-brass-400 !opacity-100')}>
@@ -81,7 +63,7 @@ export default function NotebookButton({ className }: { className?: string }) {
             </div>
             <textarea
               ref={box}
-              value={text}
+              value={shown}
               onChange={(e) => setText(e.target.value.slice(0, 4000))}
               placeholder={t('board.notebook.placeholder')}
               aria-label={t('board.notebook.title')}
