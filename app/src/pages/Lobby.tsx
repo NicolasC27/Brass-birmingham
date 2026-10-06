@@ -11,7 +11,7 @@ import { freePersona, personaName } from '@/game/data';
 import { EXPERT } from '@/game/search';
 import type { BotPersona, PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS, canStart, freeColor, isOnline, lobby, setupFromTable, useTable } from '@/online/lobby';
-import { invite, useDesk, useStranger } from '@/online/session';
+import { invite, portraitUrl, useDesk, useStranger } from '@/online/session';
 import type { Table, TableSeat } from '@/online/lobby';
 import Button from '@/components/platform/Button';
 import SeatToken from '@/components/platform/SeatToken';
@@ -181,15 +181,16 @@ function SeatSlot({
         aria-haspopup={hasControls ? 'dialog' : undefined}
         className={cn('relative rounded-full', isMe && !ready && 'shadow-[0_0_0_3px_var(--brass-hairline-strong)]')}
       >
-        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe }} size={64} index={index} />
+        <SeatToken seat={{ name: slot.name || '…', color: slot.color, kind: slot.kind, ready, host: isHostSeat, you: isMe, portrait: bot ? null : portraitUrl(slot.id) }} size={64} index={index} />
       </button>
       {/* la plaque : pseudo + sous-ligne d'état */}
-      <div className="mt-2 flex h-[52px] w-full flex-col items-center">
-        <span className="max-w-full truncate font-ui text-[14px] font-semibold text-paper-100">
+      {/* the plate grows with a long sub-line; the name never yields its height */}
+      <div className="mt-2 flex min-h-[52px] w-full flex-col items-center">
+        <span className="max-w-full shrink-0 truncate font-ui text-[14px] font-semibold text-paper-100">
           {slot.name || '…'}
           {isMe && <span className="micro-label ml-1.5 text-[9px] text-brass-300">{t('platform.seat.you')}</span>}
         </span>
-        <span className={cn('data-text mt-0.5 text-[11px] uppercase', ready ? 'text-bottle-400' : 'text-iron-400')}>{subLine}</span>
+        <span className={cn('data-text mt-0.5 line-clamp-2 text-center text-[11px] uppercase leading-tight', ready ? 'text-bottle-400' : 'text-iron-400')}>{subLine}</span>
       </div>
 
       {/* le pupitre du siège : couleur, tempo mécanique, chandelle, renvoi */}
