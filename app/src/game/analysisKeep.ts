@@ -1,4 +1,3 @@
-import { ANALYSIS_VERSION } from './analysis';
 import type { JudgeId, Reading, Verdict, Weighed } from './analysis';
 
 /* ------------------------------------------------------------------ */
@@ -6,10 +5,14 @@ import type { JudgeId, Reading, Verdict, Weighed } from './analysis';
 /*                                                                     */
 /* Reading a game through is a minute of a worker's thinking, and the  */
 /* panel is opened again and again — the same game, the same seat, the */
-/* same figures. So they are kept in this browser, one entry per game, */
-/* stamped with the judge that wrote them: change a judge, a scale or  */
-/* the passes, ANALYSIS_VERSION moves and every old entry is thrown    */
-/* away rather than shown on a scale it was not read on.               */
+/* same figures. So they are held for the length of a visit, one entry */
+/* per game and judge — a reading by another judge is another reading, */
+/* on another scale, and the two never mix.                            */
+/*                                                                     */
+/* Nothing of this is written down. What keeps a reading from one day  */
+/* to the next is the office, which holds one per game and hands it    */
+/* back when the panel opens (analysisShare.ts); this is the memory of */
+/* a visit, so that closing the panel and opening it again is free.    */
 /*                                                                     */
 /* A position is read for the whole table at once — the machine plays  */
 /* every seat on, so one continuation gives every seat its chance — so */
@@ -20,9 +23,12 @@ import type { JudgeId, Reading, Verdict, Weighed } from './analysis';
 /* heavy, and the engine plays the game again from its deal in no time.*/
 /* ------------------------------------------------------------------ */
 
-const PREFIX = 'brassworks.analysis.v1';
-/** how many readings this browser keeps; the least recently read goes first */
+const PREFIX = 'analysis';
+/** how many readings are held at once; the least recently read goes first */
 const KEEP = 8;
+
+/** the readings of this visit, by key */
+const held = new Map<string, Entry>();
 
 /** everything a reading of a game holds, as the panel keeps it */
 export interface Kept {
@@ -41,10 +47,9 @@ export interface Kept {
   moves: number;
 }
 
-/** what is written: the reading, the judge that wrote it, and the game it
-    was read from — the moves' count guards against a table that has moved on */
+/** a reading held, and when it was last written — the moves' count guards
+    against a game that has moved on since */
 interface Entry extends Kept {
-  v: number;
   read: number;
 }
 
@@ -68,20 +73,9 @@ const numbered = <T,>(o: Record<number, T>, f: (x: T) => T): Record<number, T> =
     was played after, so the first half of a game keeps its worth when the
     second is added to it */
 export function readKept(key: string, moves: number): Kept | null {
-  let raw: string | null = null;
-  try {
-    raw = localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  try {
-    const e = JSON.parse(raw) as Entry;
-    if (!e || e.v !== ANALYSIS_VERSION || !e.seats || e.moves > moves) return null;
-    return { seats: e.seats, verdicts: e.verdicts ?? {}, roads: e.roads ?? {}, total: e.total ?? 0, done: e.done ?? 0, moves: e.moves };
-  } catch {
-    return null;
-  }
+  const e = held.get(key);
+  if (!e || !e.seats || e.moves > moves) return null;
+  return { seats: e.seats, verdicts: e.verdicts ?? {}, roads: e.roads ?? {}, total: e.total ?? 0, done: e.done ?? 0, moves: e.moves };
 }
 
 /** a reading is whole when every figure it set out to make has landed */
@@ -90,7 +84,6 @@ export const isWhole = (k: Kept | null, moves: number): boolean => !!k && k.move
 /** the reading of this game, written down */
 export function keepAnalysis(key: string, moves: number, kept: Omit<Kept, 'moves'>): void {
   const entry: Entry = {
-    v: ANALYSIS_VERSION,
     moves,
     read: Date.now(),
     seats: numbered(kept.seats, (list) => list.map(trimReading)),
@@ -99,50 +92,12 @@ export function keepAnalysis(key: string, moves: number, kept: Omit<Kept, 'moves
     total: kept.total,
     done: kept.done,
   };
-  try {
-    localStorage.setItem(key, JSON.stringify(entry));
-  } catch {
-    /* the shelf is full: the oldest readings go, then this one is tried once more */
-    sweep(0);
-    try {
-      localStorage.setItem(key, JSON.stringify(entry));
-    } catch {
-      /* still no room: the panel reads the game again next time, no worse */
-      return;
-    }
-  }
+  held.set(key, entry);
   sweep(KEEP);
-}
-
-/** the readings of this browser, oldest first */
-function entries(): { key: string; read: number }[] {
-  const out: { key: string; read: number }[] = [];
-  try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (!key || !key.startsWith(`${PREFIX}:`)) continue;
-      let read = 0;
-      try {
-        read = (JSON.parse(localStorage.getItem(key) ?? '{}') as Entry).read ?? 0;
-      } catch {
-        /* an entry that no longer parses: the oldest there is */
-      }
-      out.push({ key, read });
-    }
-  } catch {
-    return [];
-  }
-  return out.sort((a, b) => a.read - b.read);
 }
 
 /** keep at most `most` readings, the least recently written dropped */
 export function sweep(most: number): void {
-  const list = entries();
-  for (const { key } of list.slice(0, Math.max(0, list.length - most))) {
-    try {
-      localStorage.removeItem(key);
-    } catch {
-      /* non-fatal */
-    }
-  }
+  const list = [...held.entries()].sort((a, b) => a[1].read - b[1].read);
+  for (const [key] of list.slice(0, Math.max(0, list.length - most))) held.delete(key);
 }

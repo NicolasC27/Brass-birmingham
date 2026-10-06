@@ -1058,6 +1058,13 @@ export class Store {
     this.db.prepare('update games set finishedAt = ?, result = ?, updatedAt = ? where code = ?').run(Date.now(), JSON.stringify(resultOf(state, tallies)), Date.now(), code);
   }
 
+  /** the account a game at home belongs to, or nothing when no game at home
+   *  goes by that code */
+  homeOwner(code: string): string | null {
+    const row = this.db.prepare('select ownerId from games where code = ? and home = 1').get(code) as { ownerId: string | null } | undefined;
+    return row?.ownerId ?? null;
+  }
+
   /** this account's games at home, the last touched first */
   homeGames(ownerId: string): HomeTable[] {
     const rows = this.db.prepare('select * from games where home = 1 and ownerId = ? order by coalesce(updatedAt, startedAt) desc').all(ownerId) as unknown as HomeRow[];

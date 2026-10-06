@@ -53,6 +53,8 @@ export class Guest {
   dealt: HomeTable | null = null;
   /** the moves at home the office turned down */
   homeRefused: { code: string; at: number; error: string }[] = [];
+  /** the stretch of a game the office last handed this reader */
+  slice: { lo: number; hi: number } | null = null;
   /** the tags of the frames as they arrived, in order */
   trace: string[] = [];
 
@@ -98,6 +100,7 @@ export class Guest {
         this.view = m.view;
         this.seen.push(m.view);
       }
+      if (m.t === 'analysis.slice') this.slice = { lo: m.lo, hi: m.hi };
       if (m.t === 'home.register') this.register = m.games;
       if (m.t === 'home.save') this.save = m.save;
       if (m.t === 'home.dealt') this.dealt = m.table;

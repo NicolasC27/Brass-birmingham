@@ -1,30 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ANALYSIS_VERSION } from '../analysis';
 import type { Kept } from '../analysisKeep';
-import { analysisKey, isWhole, keepAnalysis, readKept } from '../analysisKeep';
-
-/* a shelf of this browser's own, since the tests run outside one */
-class Shelf {
-  map = new Map<string, string>();
-  get length(): number {
-    return this.map.size;
-  }
-  key(i: number): string | null {
-    return [...this.map.keys()][i] ?? null;
-  }
-  getItem(k: string): string | null {
-    return this.map.get(k) ?? null;
-  }
-  setItem(k: string, v: string): void {
-    this.map.set(k, v);
-  }
-  removeItem(k: string): void {
-    this.map.delete(k);
-  }
-}
-
-const shelf = new Shelf();
-Object.defineProperty(globalThis, 'localStorage', { value: shelf, configurable: true });
+import { analysisKey, isWhole, keepAnalysis, readKept, sweep } from '../analysisKeep';
 
 const reading = (c: number) => ({ chance: c, low: c - 0.02, high: c + 0.02, passes: 3 });
 const kept = (): Omit<Kept, 'moves'> => ({
@@ -36,7 +12,7 @@ const kept = (): Omit<Kept, 'moves'> => ({
 });
 
 describe('an analysis kept', () => {
-  beforeEach(() => shelf.map.clear());
+  beforeEach(() => sweep(0));
 
   it('comes back as it was written, to the point it is shown at', () => {
     const key = analysisKey('abcd', 7);
@@ -59,7 +35,7 @@ describe('an analysis kept', () => {
     expect(readKept(analysisKey('abcd', 8), 30)).toBeNull();
   });
 
-  it('is thrown away when the judge changed, and serves a longer game', () => {
+  it('serves a longer game, never a shorter one, and never another judge', () => {
     const key = analysisKey('abcd', 7);
     keepAnalysis(key, 30, kept());
     /* a reading of the first thirty moves still reads the first thirty moves
@@ -67,19 +43,16 @@ describe('an analysis kept', () => {
     expect(readKept(key, 31)?.moves).toBe(30);
     /* but never a game shorter than what was read */
     expect(readKept(key, 29)).toBeNull();
-    const raw = JSON.parse(shelf.getItem(key)!);
-    expect(raw.v).toBe(ANALYSIS_VERSION);
-    shelf.setItem(key, JSON.stringify({ ...raw, v: ANALYSIS_VERSION + 1 }));
-    expect(readKept(key, 30)).toBeNull();
-    shelf.setItem(key, 'not a reading at all');
-    expect(readKept(key, 30)).toBeNull();
+    /* another judge reads on another scale: another entry entirely */
+    expect(readKept(analysisKey('abcd', 7, 'quick'), 30)).toBeNull();
   });
 
-  it('keeps a handful of games, the least recently read going first', () => {
+  it('holds a handful of games, the least recently read going first', () => {
     for (let g = 0; g < 12; g++) keepAnalysis(analysisKey(`t${g}`, 1), 30, kept());
-    expect(shelf.length).toBe(8);
-    /* the last games written are the ones still there */
+    /* the last eight written are the ones still held */
     expect(readKept(analysisKey('t11', 1), 30)).not.toBeNull();
+    expect(readKept(analysisKey('t4', 1), 30)).not.toBeNull();
+    expect(readKept(analysisKey('t3', 1), 30)).toBeNull();
     expect(readKept(analysisKey('t0', 1), 30)).toBeNull();
   });
 });

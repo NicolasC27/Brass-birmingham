@@ -754,6 +754,33 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         }
         return;
       }
+      case 'analysis.get': {
+        /* the reading the office keeps of this table, for anyone who may see
+           it — a player at it or a spectator following it */
+        const one = reading(c, m);
+        send(c, { t: 'analysis', rid: m.rid, code: normalizeCode(m.code), v: m.v, judge: m.judge, reading: one ? readings.read(one.id) : null, readers: one ? readings.readers(one.id) : 0 });
+        return;
+      }
+      case 'analysis.post': {
+        /* figures read in a browser: checked against the game the office
+           itself holds, folded into its copy, then passed round the table */
+        const one = reading(c, m);
+        if (!one) return;
+        const part = readings.add(one.id, c.mark, m.part, one.facts);
+        if (!part) return;
+        const readers = readings.readers(one.id);
+        for (const w of watchers(one.id.code)) if (w !== c) send(w, { t: 'analysis.add', code: one.id.code, v: one.id.v, judge: one.id.judge, part, readers });
+        return;
+      }
+      case 'analysis.claim': {
+        /* a stretch of the game to read: the office hands out what nobody
+           else is reading, so several readers never read the same positions */
+        const one = reading(c, m);
+        const slice = one ? readings.claim(one.id, c.mark, m.want, one.facts) : { lo: 0, hi: 0 };
+        send(c, { t: 'analysis.slice', rid: m.rid, code: normalizeCode(m.code), v: m.v, judge: m.judge, lo: slice.lo, hi: slice.hi, readers: one ? readings.readers(one.id) : 0 });
+        return;
+      }
+
       case 'notes.get':
         send(c, { t: 'notes', rid: m.rid, code: typeof m.code === 'string' ? m.code : '', body: typeof m.code === 'string' ? store.notes(who.id, normalizeCode(m.code)) : null });
         return;
@@ -989,32 +1016,6 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         for (const w of watchers(m.code)) send(w, { t: 'review', code: m.code, from, at, ...(look ? { look } : {}), ...(cursor !== undefined ? { cursor } : {}), ...(seat !== undefined ? { seat } : {}), ...(line !== undefined ? { line } : {}) });
         return;
       }
-      case 'analysis.get': {
-        /* the reading the office keeps of this table, for anyone who may see
-           it — a player at it or a spectator following it */
-        const one = reading(c, m);
-        send(c, { t: 'analysis', rid: m.rid, code: normalizeCode(m.code), v: m.v, judge: m.judge, reading: one ? readings.read(one.id) : null, readers: one ? readings.readers(one.id) : 0 });
-        return;
-      }
-      case 'analysis.post': {
-        /* figures read in a browser: checked against the game the office
-           itself holds, folded into its copy, then passed round the table */
-        const one = reading(c, m);
-        if (!one) return;
-        const part = readings.add(one.id, c.mark, m.part, one.facts);
-        if (!part) return;
-        const readers = readings.readers(one.id);
-        for (const w of watchers(one.id.code)) if (w !== c) send(w, { t: 'analysis.add', code: one.id.code, v: one.id.v, judge: one.id.judge, part, readers });
-        return;
-      }
-      case 'analysis.claim': {
-        /* a stretch of the game to read: the office hands out what nobody
-           else is reading, so several readers never read the same positions */
-        const one = reading(c, m);
-        const slice = one ? readings.claim(one.id, c.mark, m.want, one.facts) : { lo: 0, hi: 0 };
-        send(c, { t: 'analysis.slice', rid: m.rid, code: normalizeCode(m.code), v: m.v, judge: m.judge, lo: slice.lo, hi: slice.hi, readers: one ? readings.readers(one.id) : 0 });
-        return;
-      }
     }
   }
 
@@ -1022,7 +1023,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
    *  out at it — and null when this socket has no business reading it */
   function reading(c: Client, m: { code: string; v: number; judge: JudgeId }): { id: Id; facts: Facts } | null {
     const code = normalizeCode(m.code);
-    if (!c.watching.has(code) || !isJudge(m.judge) || !isVersion(m.v)) return null;
+    if (!isJudge(m.judge) || !isVersion(m.v)) return null;
+    /* a table this socket follows, or a game of its own played at home */
+    if (!c.watching.has(code) && (!c.me || store.homeOwner(code) !== c.me.id)) return null;
     const game = hall.game(code);
     const facts = game ? { seed: game.seed, moves: game.state.actions.length, seats: game.state.players.length } : store.gameFacts(code);
     if (!facts || facts.moves < 1 || facts.moves > CAPS.moves || facts.seats < 2) return null;

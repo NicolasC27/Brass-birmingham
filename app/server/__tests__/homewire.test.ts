@@ -3,6 +3,7 @@ import { replay } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { newGame } from '@/game/engine';
 import { legalActions } from '@/game/search';
+import { ANALYSIS_VERSION } from '@/game/analysis';
 import type { GameState, SetupPayload } from '@/game/types';
 import { serve } from '../index';
 import type { Serving } from '../index';
@@ -144,6 +145,35 @@ describe('a game at home', () => {
     ada.send({ t: 'home.list', rid: 30 });
     await ada.until('the register', () => ada.register?.length === 1);
     expect(ada.register![0].code).toBe(code);
+  });
+
+  it('keeps the judge\'s reading of a game at home, and of nobody else\'s', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    await ada.asGuest();
+    ada.send({ t: 'home.open', rid: 10, name: 'Cromford Mill', seed: SEED, setup: SETUP });
+    await ada.until('the deal', () => !!ada.dealt);
+    const code = ada.dealt!.code;
+    let state = newGame(SETUP, SEED);
+    const played: GameAction[] = [];
+    for (let i = 0; i < 6; i++) {
+      const move = plainMove(state);
+      ada.send({ t: 'home.act', code, idx: i, action: move });
+      played.push(move);
+      state = replay(SETUP, SEED, played);
+    }
+
+    /* the office hands its owner a stretch of the game to read */
+    ada.send({ t: 'analysis.claim', rid: 40, code, v: ANALYSIS_VERSION, judge: 'long', want: 4 });
+    await ada.until('a stretch to read', () => !!ada.slice);
+    expect(ada.slice!.hi).toBeGreaterThan(ada.slice!.lo);
+
+    /* another account is handed nothing at all of it */
+    const bob = await arrive('Bob');
+    await bob.asGuest();
+    bob.send({ t: 'analysis.claim', rid: 1, code, v: ANALYSIS_VERSION, judge: 'long', want: 4 });
+    await bob.until('the answer', () => !!bob.frames.some((f) => f.t === 'analysis.slice'));
+    expect(bob.slice).toEqual({ lo: 0, hi: 0 });
   });
 
   it('puts a game away when it is asked to', async () => {
