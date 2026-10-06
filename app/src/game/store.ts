@@ -913,7 +913,19 @@ export const useGame = create<GameStore>((set, get) => ({
         if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry, ...(st.buildIron ? { ironFrom: st.buildIron } : {}) };
         break;
       case 'network':
-        if (card && st.linkPick?.valid) action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id, ...(st.secondLinkPick && st.linkBeer ? { beerFrom: st.linkBeer } : {}) };
+        if (card && st.linkPick?.valid) {
+          /* a double rail is read again as it stands now — the beer named,
+             the coal reserved — and refused here, in words, rather than
+             handed to the engine to refuse in silence */
+          if (st.secondLinkPick) {
+            const dbl = doubleLinkPlan(g, actor, st.linkPick, st.secondLinkPick.link, st.linkBeer);
+            if (!dbl.valid) {
+              set({ shake: { key: st.secondLinkPick.link.id, reason: dbl.reason ?? '', at: Date.now() } });
+              return;
+            }
+          }
+          action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id, ...(st.secondLinkPick && st.linkBeer ? { beerFrom: st.linkBeer } : {}) };
+        }
         break;
       case 'develop':
         if (card && st.developPick.length > 0) action = { kind: 'develop', card: card.id, industries: st.developPick, ironFrom: st.developIron };
@@ -955,7 +967,13 @@ export const useGame = create<GameStore>((set, get) => ({
       return true;
     }
     const r = applyAction(g, actorOf(g, action), action);
-    if (!r.state) return false;
+    if (!r.state) {
+      /* the engine's refusal, said where it applies: at the link, the
+         slot, or nowhere in particular */
+      const key = action.kind === 'network' ? (action.second ?? action.link) : action.kind === 'build' ? tileKey(action.town, action.slot) : '';
+      set({ shake: { key, reason: r.error ?? '', at: Date.now() } });
+      return false;
+    }
     const mut = r.state;
     const ceremony = mut.phase === 'scoring-canal' ? ('canal-end' as const) : null;
     /* a vote, or a chair handed over, is not a turn: nothing to take back */
@@ -1162,7 +1180,7 @@ export const useGame = create<GameStore>((set, get) => ({
     return list.map((t) => {
       if (t.link.id === first.link.id) return t;
       const ends = [first.link.a, first.link.b, first.link.alsoConnects].filter(Boolean);
-      const touches = ends.includes(t.link.a) || ends.includes(t.link.b);
+      const touches = ends.includes(t.link.a) || ends.includes(t.link.b) || (!!t.link.alsoConnects && ends.includes(t.link.alsoConnects));
       if (!touches) return t;
       const dbl = doubleLinkPlan(g, actor, first, t.link);
       return { ...t, valid: dbl.valid, reason: dbl.reason, total: dbl.total, coalPlan: dbl.coal2 };

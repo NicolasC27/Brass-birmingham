@@ -5,7 +5,7 @@ import { activeBoard, INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_C
 import { merchantBarrelSlots, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
-import type { Era, GameState, LinkDef } from '@/game/types';
+import type { Era, GameState } from '@/game/types';
 import { lastActionOf, useGame, verbsForCard } from '@/game/store';
 import { onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
@@ -179,14 +179,6 @@ function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [num
   const len = Math.hypot(gx - sx, gy - sy) || 1;
   const back = TILE_R + 13;
   return { end: [gx - ((gx - sx) / len) * back, gy - ((gy - sy) / len) * back], head: arrowHead(sx, sy, gx, gy, TILE_R + 3) };
-}
-
-/** in the rail era, once a first link is picked, a second may be any free
- *  rail touching that link's ends — the network as it will stand */
-function withinFirst(first: LinkTarget | null, link: LinkDef, era: Era | undefined): boolean {
-  if (!first || era !== 'rail' || link.id === first.link.id || !link.rail) return false;
-  const ends = [first.link.a, first.link.b, first.link.alsoConnects].filter(Boolean);
-  return ends.includes(link.a) || ends.includes(link.b) || (!!link.alsoConnects && ends.includes(link.alsoConnects));
 }
 
 export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null, preview = null }: Props) {
@@ -1092,9 +1084,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
              era-ok unbuilt links report the engine's reason when invalid */
           if (!linkClickable(def)) return;
           const t = p.linkTargetsList.find((x) => x.link.id === def.id)!;
-          /* a rail-era double: the second link may be one the first brings
-             within reach, invalid on its own as it is */
-          if (t.valid || withinFirst(st().linkPick, t.link, st().game?.era)) st().pickLink(t);
+          /* the list already reads a link as the double's second once a
+             first is picked (store.currentLinks), reason and all */
+          if (t.valid) st().pickLink(t);
           else p.onInvalid(def.id, t.reason ?? tr('board.invalid.cannotBuild'));
           return;
         }
@@ -1314,7 +1306,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
     if (verb === 'network' && selectedCardId) {
       for (const t of linkTargetsList) {
-        if (!t.valid && !withinFirst(linkPick, t.link, game.era)) continue;
+        if (!t.valid) continue;
         const def = t.link;
         const pts = routeFor(def, game.era).pts;
         const g = new Graphics();
