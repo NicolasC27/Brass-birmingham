@@ -72,7 +72,7 @@ export function Panel({ title, meta, children, className, tone = 'plate' }: { ti
 export function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className="micro-label block text-brass-300/90">
+      <label htmlFor={id} className="micro-label block text-brass-300">
         {label}
       </label>
       <div className="mt-1.5">{children}</div>
@@ -81,8 +81,12 @@ export function Field({ id, label, hint, children }: { id: string; label: string
   );
 }
 
+/* the field: no `focus:outline-none` — the utility landed after the shell's
+   own `:focus-visible` at equal weight and took the ring off every input on
+   the club's pages. The disabled field is painted from the register's off
+   tokens rather than halved by opacity. */
 export const inputClass =
-  'w-full rounded-lg border border-brass-hairline-strong bg-lacquer-950/70 px-3 py-2 font-ui text-[13px] text-paper-100 transition-colors duration-150 placeholder:text-iron-600 focus:border-brass-500 focus:outline-none disabled:opacity-50';
+  'w-full rounded-lg border border-brass-hairline-strong bg-lacquer-950/70 px-3 py-2 font-ui text-[13px] text-paper-100 transition-colors duration-150 placeholder:text-iron-400 focus:border-brass-500 disabled:border-[var(--gz-ink-faint)] disabled:bg-[rgb(var(--state-off-bg))] disabled:text-[rgb(var(--state-off-ink))]';
 
 /** the office's own words for a refusal */
 export function Refusal({ text }: { text: string | null }) {

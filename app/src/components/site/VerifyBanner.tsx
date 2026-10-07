@@ -36,7 +36,7 @@ export default function VerifyBanner() {
         <MailWarning className="mt-0.5 h-5 w-5 shrink-0 text-brass-300" aria-hidden />
         <div className="min-w-0 flex-1">
           <p className="font-ui text-[14px] leading-snug text-paper-100">{session.email ? t('site.verify.banner', { email: session.email }) : t('site.verify.bannerNoEmail')}</p>
-          {sent && <p className="mt-1 font-ui text-[12px] font-semibold text-bottle-400">{t('site.verify.sent')}</p>}
+          {sent && <p className="mt-1 font-ui text-[12.5px] font-semibold text-bottle-ink">{t('site.verify.sent')}</p>}
           {changing ? (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t('site.verify.newEmail')} autoComplete="email" className={inputClass + ' max-w-xs'} />

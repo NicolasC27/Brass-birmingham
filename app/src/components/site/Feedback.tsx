@@ -67,7 +67,7 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
             <div className="relative">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="eyebrow !text-[10px]">{t('site.feedback.eyebrow')}</p>
+                  <p className="eyebrow !text-[10.5px]">{t('site.feedback.eyebrow')}</p>
                   <h2 className="mt-1 font-display text-[22px] font-bold text-cream-100">{t('site.feedback.title')}</h2>
                 </div>
                 <button type="button" onClick={onClose} aria-label={t('game.hand.cancel')} className="rounded-full p-1 text-cream-100/50 hover:text-brass-400">
@@ -99,17 +99,17 @@ export function FeedbackDialog({ open, onClose }: { open: boolean; onClose: () =
                 placeholder={t(`site.feedback.placeholder.${kind}`)}
                 className="mt-3 w-full resize-y rounded-md border border-brass-700/60 bg-coal-950/70 px-3 py-2 font-serif text-[14px] leading-relaxed text-cream-100 placeholder:text-cream-100/30 focus:border-brass-400 focus:outline-none"
               />
-              <p className="mt-1.5 font-sans text-[11px] text-cream-100/45">{t(canSend ? 'site.feedback.hintOnline' : isOnline ? 'site.feedback.hintSignIn' : MAIL_TO ? 'site.feedback.hintMail' : 'site.feedback.hintNone')}</p>
-              {state === 'sent' && <p className="mt-2 font-sans text-[12px] font-semibold text-bottle-600 brightness-150">{t('site.feedback.sent')}</p>}
-              {state === 'failed' && <p className="mt-2 font-sans text-[12px] font-semibold text-rust-500 brightness-150">{t('site.feedback.failed')}</p>}
+              <p className="mt-1.5 font-sans text-[10.5px] text-cream-100/45">{t(canSend ? 'site.feedback.hintOnline' : isOnline ? 'site.feedback.hintSignIn' : MAIL_TO ? 'site.feedback.hintMail' : 'site.feedback.hintNone')}</p>
+              {state === 'sent' && <p className="mt-2 font-sans text-[12.5px] font-semibold text-bottle-600 brightness-150">{t('site.feedback.sent')}</p>}
+              {state === 'failed' && <p className="mt-2 font-sans text-[12.5px] font-semibold text-rust-500 brightness-150">{t('site.feedback.failed')}</p>}
               <div className="mt-4 flex flex-wrap items-center gap-3">
                 {canSend ? (
-                  <button type="button" onClick={send} disabled={!text.trim()} className="btn-strike !min-h-[38px] !px-4 !py-1.5 !text-[11px] disabled:cursor-not-allowed disabled:opacity-40">
+                  <button type="button" onClick={send} disabled={!text.trim()} className="btn-strike !min-h-[38px] !px-4 !py-1.5 !text-[10.5px] disabled:cursor-not-allowed disabled:opacity-40">
                     {t('site.feedback.send')}
                   </button>
                 ) : (
                   !isOnline && MAIL_TO && (
-                    <a href={mailUrl} className={cn('btn-strike !min-h-[38px] !px-4 !py-1.5 !text-[11px]', !text.trim() && 'pointer-events-none opacity-40')}>
+                    <a href={mailUrl} className={cn('btn-strike !min-h-[38px] !px-4 !py-1.5 !text-[10.5px]', !text.trim() && 'pointer-events-none opacity-40')}>
                       {t('site.feedback.mail')}
                     </a>
                   )
