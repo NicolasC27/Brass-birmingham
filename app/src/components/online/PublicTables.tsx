@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Armchair, Bot, ChevronDown, ChevronLeft, ChevronRight, Copy, Crown, Eye, Loader2, Plus, Search } from 'lucide-react';
+import { Armchair, Bot, ChevronDown, ChevronLeft, ChevronRight, Copy, Crown, Eye, Link2, Loader2, Plus, Search, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { lobby } from '@/online/lobby';
-import { portraitUrl, useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
+import { invite, portraitUrl, useDesk, useLine, useSession, useStranger, useTables } from '@/online/session';
 import { TABLE_PAGE, type TableFilter, type TableSort } from '@/online/table';
-import { PLAYER_COLORS } from '@/game/data';
+import { LINKS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID, activeBoard } from '@/game/data';
+import { MAP_URL, getBoardOptions } from '@/components/game/boardOptions';
+import { WORLD_H, WORLD_W } from '@/components/game/boardView';
+import { stationBell } from '@/gl/sfx';
 import { toCard, toCards, type CardSeat, type CardTable } from '@/platform/tables';
+import type { Friend } from '@/online/table';
 import EmptyState from '@/components/platform/EmptyState';
 import { ago } from '@/components/platform/ago';
 import { lobbyErrorText, type Notify } from './notify';
@@ -32,6 +36,27 @@ import { lobbyErrorText, type Notify } from './notify';
 const FILTERS: TableFilter[] = ['all', 'seats', 'friends', 'ranked', 'rail', 'live'];
 /** the most watched games get a group of their own once the house holds this many tables */
 const BUSY_HOUSE = 6;
+/** the filter and the order the reader left the board on */
+const BOARD_KEY = 'brassworks.tables.v1';
+const readBoard = (): { filter: TableFilter; sort: TableSort } => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(BOARD_KEY) ?? 'null') as { filter?: string; sort?: string } | null;
+    const filter = FILTERS.find((f) => f === raw?.filter) ?? 'all';
+    const sort: TableSort = raw?.sort === 'fresh' ? 'fresh' : 'filling';
+    return { filter, sort };
+  } catch {
+    return { filter: 'all', sort: 'filling' };
+  }
+};
+const keepBoard = (v: { filter: TableFilter; sort: TableSort }) => {
+  try {
+    localStorage.setItem(BOARD_KEY, JSON.stringify(v));
+  } catch {
+    /* a browser that keeps nothing */
+  }
+};
+/** the invitation, as a link: the register is signed, then the seat taken */
+const inviteLink = (code: string) => `${window.location.origin}/online?table=${code}`;
 
 /* ------------------------------- the train ------------------------------- */
 
@@ -127,10 +152,90 @@ function RoundTrack({ round, rounds }: { round: number; rounds: number }) {
 
 const boarding = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap transition-colors disabled:opacity-50';
 
-type Hands = { busy: boolean; onJoin: (t: CardTable) => void; onResume: (t: CardTable) => void; onWatch: (t: CardTable) => void; onCopy: (code: string) => void };
+type Hands = {
+  busy: boolean;
+  onJoin: (t: CardTable) => void;
+  onResume: (t: CardTable) => void;
+  onWatch: (t: CardTable) => void;
+  onCopy: (code: string) => void;
+  onLink: (code: string) => void;
+  onInvite: (code: string, name: string) => Promise<boolean>;
+};
 
-/** the particulars under a line: who sits where, and what the table was chartered as */
-function Detail({ table, onCopy }: { table: CardTable; onCopy: (code: string) => void }) {
+/** the board in a few strokes: every town a faint dot, the held ones in their
+ *  holder's colour, the links laid as strokes — the run seen from above */
+function SketchPlate({ table }: { table: CardTable }) {
+  const t = useT();
+  const sk = table.sketch;
+  if (!sk || (sk.board ?? activeBoard().id) !== activeBoard().id) return null;
+  const colorOf = (owner: number) => PLAYER_COLORS[table.seats[owner]?.color ?? '']?.vivid ?? '#C9A45C';
+  const held = new Map<string, string>();
+  for (const [town, owner] of sk.towns) if (!held.has(town)) held.set(town, colorOf(owner));
+  const maps = MAP_URL.relief;
+  return (
+    <figure className="gz-engraving w-[300px] max-w-full shrink-0" aria-label={t('platform.play.tables.sketch')}>
+      <svg viewBox={`0 0 ${WORLD_W} ${WORLD_H}`} className="block h-auto w-full" style={{ padding: 5 }}>
+        <image href={table.era === 'rail' ? maps.rail : maps.canal} width={WORLD_W} height={WORLD_H} preserveAspectRatio="none" opacity="0.92" />
+        {sk.links.map(([id, owner]) => {
+          const def = LINKS.find((l) => l.id === id);
+          const a = def && (TOWN_BY_ID[def.a] ?? MERCHANT_BY_ID[def.a]);
+          const b = def && (TOWN_BY_ID[def.b] ?? MERCHANT_BY_ID[def.b]);
+          if (!a || !b) return null;
+          return (
+            <g key={id}>
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#100D0B" strokeWidth={54} strokeOpacity={0.7} strokeLinecap="round" />
+              <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={colorOf(owner)} strokeWidth={34} strokeLinecap="round" />
+            </g>
+          );
+        })}
+        {TOWNS.map((town) => {
+          const c = held.get(town.id);
+          return <circle key={town.id} cx={town.x} cy={town.y} r={c ? 62 : 26} fill={c ?? '#5b524a'} fillOpacity={c ? 1 : 0.55} stroke={c ? '#100D0B' : 'none'} strokeWidth={14} />;
+        })}
+      </svg>
+    </figure>
+  );
+}
+
+/** the friends who could be fetched: those online and not already aboard */
+function InviteList({ table, onInvite }: { table: CardTable; onInvite: (code: string, name: string) => Promise<boolean> }) {
+  const t = useT();
+  const desk = useDesk();
+  const [sent, setSent] = useState<Record<string, true>>({});
+  const aboard = new Set(table.seats.filter((s): s is CardSeat => !!s).map((s) => s.id));
+  const friends = (desk?.friends ?? []).filter((f: Friend) => f.status === 'friends' && f.online && !aboard.has(f.account.id));
+  return (
+    <div>
+      <p className="micro-label text-iron-400">{t('platform.play.tables.friendsOnline')}</p>
+      {friends.length === 0 ? (
+        <p className="mt-2 font-serif text-[13px] italic text-iron-400">{t('platform.play.tables.noFriendsOnline')}</p>
+      ) : (
+        <ul className="mt-2 space-y-1.5">
+          {friends.map((f) => (
+            <li key={f.id} className="flex items-center gap-2.5">
+              <Carriage seat={{ id: f.account.id, name: f.account.name, color: 'brass', kind: 'human' }} size={24} />
+              <span className="font-fraunces text-[14px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                {f.account.name}
+              </span>
+              <button
+                type="button"
+                disabled={!!sent[f.id]}
+                onClick={() => void onInvite(table.code, f.account.name).then((ok) => ok && setSent((m) => ({ ...m, [f.id]: true })))}
+                className={cn(boarding, 'ml-auto inline-flex items-center gap-1', sent[f.id] ? 'text-bottle-400' : 'text-brass-300 hover:text-paper-100')}
+              >
+                <UserPlus size={12} aria-hidden />
+                {sent[f.id] ? t('platform.lobby.invitedTag') : t('platform.lobby.inviteSend')}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** the particulars under a line: who sits where, what the table was chartered as, the board while in play */
+function Detail({ table, onCopy, onLink, onInvite }: { table: CardTable } & Pick<Hands, 'onCopy' | 'onLink' | 'onInvite'>) {
   const t = useT();
   const lang = useLang();
   const seated = table.seats.filter((s): s is CardSeat => !!s);
@@ -140,9 +245,10 @@ function Detail({ table, onCopy }: { table: CardTable; onCopy: (code: string) =>
     [t('platform.play.tables.lastMove'), ago(t, lang, table.updatedAt)],
     [t('platform.play.tables.present'), String(table.watchers)],
   ];
+  const canInvite = table.mine && table.state === 'open';
   return (
-    <div className="grid gap-x-8 gap-y-3 px-[54px] py-4 min-[760px]:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <div>
+    <div className="flex flex-wrap gap-x-8 gap-y-4 px-[54px] py-4">
+      <div className="min-w-[180px]">
         <p className="micro-label text-iron-400">{t('platform.play.tables.aboard')}</p>
         <ul className="mt-2 space-y-1.5">
           {seated.map((s, i) => (
@@ -164,7 +270,7 @@ function Detail({ table, onCopy }: { table: CardTable; onCopy: (code: string) =>
           )}
         </ul>
       </div>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 self-start">
+      <dl className="grid min-w-[240px] grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 self-start">
         <dt className="micro-label text-iron-400">{t('platform.play.tables.modeLabel')}</dt>
         <dd className="data-text text-[12px] text-paper-100">{t(`platform.mode.${table.mode}`)}</dd>
         {facts.map(([k, v]) => (
@@ -174,22 +280,48 @@ function Detail({ table, onCopy }: { table: CardTable; onCopy: (code: string) =>
           </div>
         ))}
         <dt className="micro-label text-iron-400">{t('platform.play.tables.code')}</dt>
-        <dd className="flex items-center gap-2">
+        <dd className="flex items-center gap-3">
           <span className="room-code !text-[14px] !tracking-[0.22em] text-paper-100">{table.code}</span>
           <button type="button" onClick={() => onCopy(table.code)} className="inline-flex items-center gap-1 text-iron-400 transition-colors hover:text-brass-300" title={t('platform.play.tables.copy')}>
             <Copy size={12} aria-hidden />
             <span className="micro-label text-[9px]">{t('platform.play.tables.copy')}</span>
           </button>
+          {canInvite && (
+            <button type="button" onClick={() => onLink(table.code)} className="inline-flex items-center gap-1 text-iron-400 transition-colors hover:text-brass-300" title={t('platform.play.tables.inviteLink')}>
+              <Link2 size={12} aria-hidden />
+              <span className="micro-label text-[9px]">{t('platform.play.tables.inviteLink')}</span>
+            </button>
+          )}
         </dd>
       </dl>
+      {canInvite && (
+        <div className="min-w-[200px]">
+          <InviteList table={table} onInvite={onInvite} />
+        </div>
+      )}
+      {table.state === 'live' && <SketchPlate table={table} />}
     </div>
   );
 }
 
-function Line({ table, i, busy, onJoin, onResume, onWatch, onCopy }: { table: CardTable; i: number } & Hands) {
+function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink, onInvite }: { table: CardTable; i: number; fresh: boolean } & Hands) {
   const t = useT();
   const lang = useLang();
   const [open, setOpen] = useState(false);
+  /* a departure that just changed flashes once */
+  const [wasState, setWasState] = useState(table.state);
+  const [flashes, setFlashes] = useState(0);
+  const [doused, setDoused] = useState(0);
+  if (wasState !== table.state) {
+    setWasState(table.state);
+    setFlashes((n) => n + 1);
+  }
+  useEffect(() => {
+    if (flashes === 0) return;
+    const id = window.setTimeout(() => setDoused(flashes), 1100);
+    return () => window.clearTimeout(id);
+  }, [flashes]);
+  const flash = flashes > doused;
   const seated = table.seats.filter(Boolean).length;
   const free = table.seats.length - seated;
   const rounds = table.rounds ?? 10;
@@ -211,8 +343,8 @@ function Line({ table, i, busy, onJoin, onResume, onWatch, onCopy }: { table: Ca
           ? t('platform.play.tables.freeSeatOne')
           : t('platform.play.tables.freeSeatsCount', { count: free });
   return (
-    <motion.li initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: 'easeOut', delay: 0.03 * i }} className="gz-board-line">
-      <div className={cn('gz-board-row', table.mine && 'is-mine', open && 'is-open')}>
+    <motion.li initial={fresh ? { opacity: 0, y: -18 } : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: fresh ? 0.36 : 0.2, ease: 'easeOut', delay: fresh ? 0 : 0.03 * i }} className="gz-board-line">
+      <div className={cn('gz-board-row', table.mine && 'is-mine', open && 'is-open', (flash || fresh) && 'is-flash')}>
         <span className="data-text text-[13px] text-iron-600 tnums">{String(i + 1).padStart(2, '0')}</span>
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="min-w-0 text-left" title={t('platform.play.tables.details')}>
           <span className="flex items-center gap-2">
@@ -237,7 +369,13 @@ function Line({ table, i, busy, onJoin, onResume, onWatch, onCopy }: { table: Ca
             <Flap text={progress} />
           </span>
         </span>
-        <span className="justify-self-end">
+        <span className="flex items-center gap-2 justify-self-end">
+          {table.mine && table.state === 'open' && (
+            <button type="button" onClick={() => onLink(table.code)} className="gz-ticket gz-ticket-sm" title={t('platform.play.tables.inviteLink')}>
+              <Link2 aria-hidden />
+              {t('platform.lobby.inviteSend')}
+            </button>
+          )}
           {action ? (
             <button type="button" disabled={busy} onClick={action.go} className={cn('gz-ticket gz-ticket-sm', action.brass && 'gz-ticket-brass', table.mine && table.myTurn && 'gz-ticket-signal', busy && 'opacity-50')}>
               {action.icon && <Eye aria-hidden />}
@@ -253,7 +391,7 @@ function Line({ table, i, busy, onJoin, onResume, onWatch, onCopy }: { table: Ca
       <AnimatePresence initial={false}>
         {open && (
           <motion.div key="detail" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }} className="gz-board-detail">
-            <Detail table={table} onCopy={onCopy} />
+            <Detail table={table} onCopy={onCopy} onLink={onLink} onInvite={onInvite} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -261,10 +399,25 @@ function Line({ table, i, busy, onJoin, onResume, onWatch, onCopy }: { table: Ca
   );
 }
 
-/** the board: the lines given under the column heads, in groups each under a heading when there are several */
-function Board({ groups, ...hands }: { groups: { label: string; tables: CardTable[] }[] } & Hands) {
+/** the board: the lines given under the column heads, in groups each under a
+ *  heading when there are several. A line that was not on the board a moment
+ *  ago drops in from above, with the station's bell when the reader keeps the
+ *  sounds on; a page turned or a filter changed is a new board, nothing drops. */
+function Board({ groups, pageKey, ...hands }: { groups: { label: string; tables: CardTable[] }[]; pageKey: string } & Hands) {
   const t = useT();
   const parts = groups.filter((g) => g.tables.length > 0);
+  const seen = useRef<{ key: string; codes: Set<string> } | null>(null);
+  const codes = new Set(parts.flatMap((g) => g.tables.map((x) => x.code)));
+  const known = seen.current && seen.current.key === pageKey ? seen.current.codes : null;
+  const fresh = new Set(known ? [...codes].filter((c) => !known.has(c)) : []);
+  const rang = useRef(0);
+  useEffect(() => {
+    seen.current = { key: pageKey, codes };
+    if (fresh.size > 0 && getBoardOptions().sound && Date.now() - rang.current > 5000) {
+      rang.current = Date.now();
+      stationBell();
+    }
+  });
   let n = 0;
   return (
     <div className="gz-board">
@@ -281,12 +434,40 @@ function Board({ groups, ...hands }: { groups: { label: string; tables: CardTabl
           {g.label && parts.length > 1 && <p className="gz-board-group">{g.label}</p>}
           <ul>
             {g.tables.map((table) => (
-              <Line key={table.code} table={table} i={n++} {...hands} />
+              <Line key={table.code} table={table} i={n++} fresh={fresh.has(table.code)} {...hands} />
             ))}
           </ul>
         </section>
       ))}
     </div>
+  );
+}
+
+/** the poster over the board: the open table nearest to leaving, in large type */
+function NextDeparture({ table, busy, onJoin }: { table: CardTable; busy: boolean; onJoin: (t: CardTable) => void }) {
+  const t = useT();
+  const lang = useLang();
+  const free = table.seats.filter((s) => !s).length;
+  return (
+    <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut' }} className="gz-poster mt-5">
+      <div className="min-w-0">
+        <p className="eyebrow-fell">{t('platform.play.tables.nextDeparture')}</p>
+        <p className="mt-1 truncate font-fraunces text-[28px] font-normal leading-none text-paper-100" style={{ fontVariationSettings: '"opsz" 144' }}>
+          {table.name}
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <SeatTrain table={table} size={30} />
+          <span className="data-text text-[11px] text-iron-400">
+            {t(`platform.mode.${table.mode}`)} · {t('platform.play.tables.host', { name: table.hostName })} · {ago(t, lang, table.updatedAt)}
+          </span>
+        </div>
+        <p className="mt-2 font-serif text-[13px] italic text-paper-300">{free === 1 ? t('platform.play.tables.nextDepartureOne') : t('platform.play.tables.nextDepartureHint', { count: free })}</p>
+      </div>
+      <button type="button" disabled={busy} onClick={() => onJoin(table)} className={cn('gz-ticket gz-ticket-brass', busy && 'opacity-50')}>
+        <Armchair aria-hidden />
+        {t('platform.play.tables.board')}
+      </button>
+    </motion.div>
   );
 }
 
@@ -300,12 +481,14 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   const desk = useDesk();
   const line = useLine();
   const stranger = useStranger();
-  const [filter, setFilter] = useState<TableFilter>('all');
-  const [sort, setSort] = useState<TableSort>('filling');
+  const [board, setBoard] = useState(readBoard);
+  const { filter, sort } = board;
   const [typed, setTyped] = useState('');
   const [q, setQ] = useState('');
   const [offset, setOffset] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  const search = useRef<HTMLInputElement>(null);
+  useEffect(() => keepBoard(board), [board]);
 
   /* the search reaches the office a beat after the pen stops */
   useEffect(() => {
@@ -316,6 +499,21 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     return () => window.clearTimeout(id);
   }, [typed]);
 
+  /* the slash brings the pen to the search; escape clears it */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      const typing = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || (el instanceof HTMLElement && el.isContentEditable);
+      if (e.key === '/' && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        search.current?.focus();
+        search.current?.select();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   const page = useTables({ filter, q, sort, offset, limit: TABLE_PAGE });
   const mine = useMemo(() => (page ? page.mine.map((x) => toCard(x, desk?.tables.find((m) => m.code === x.code), session?.name, lang)) : []), [page, desk?.tables, session?.name, lang]);
   /* the reader's tables are pinned at the head: the register does not list them again */
@@ -323,6 +521,13 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   const rows = useMemo(() => (page ? toCards(page.tables, desk?.tables, session?.name, lang).filter((x) => !pinned.has(x.code)) : []), [page, desk?.tables, session?.name, lang, pinned]);
   const friends = useMemo(() => (page ? toCards(page.friends, desk?.tables, session?.name, lang).filter((x) => !pinned.has(x.code)) : []), [page, desk?.tables, session?.name, lang, pinned]);
   const live = useMemo(() => (page && page.counts.all >= BUSY_HOUSE ? toCards(page.live, desk?.tables, session?.name, lang).filter((x) => !pinned.has(x.code)) : []), [page, desk?.tables, session?.name, lang, pinned]);
+  /* the next train out: the open table with the most aboard, the oldest first, on the board's first page */
+  const next = useMemo(() => {
+    if (!page || filter !== 'all' || offset !== 0 || q) return null;
+    const open = [...friends, ...rows].filter((x) => x.state === 'open' && x.mode === 'normal' && !x.mine && x.seats.some(Boolean) && x.seats.some((s) => !s));
+    open.sort((a, b) => b.seats.filter(Boolean).length - a.seats.filter(Boolean).length || a.updatedAt - b.updatedAt);
+    return open[0] ?? null;
+  }, [page, filter, offset, q, friends, rows]);
 
   const join = async (table: CardTable) => {
     if (busy) return;
@@ -354,10 +559,28 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   };
   const resume = (table: CardTable) => navigate(table.state === 'live' ? `/game/${table.code}` : `/online/${table.code}`);
   const watch = (table: CardTable) => navigate(`/game/${table.code}`);
-  const copy = (code: string) => {
-    void navigator.clipboard?.writeText(code).then(() => onToast({ message: t('platform.toast.copied'), kind: 'info' }));
+  const copy = (text: string, done: string) => {
+    void navigator.clipboard?.writeText(text).then(() => onToast({ message: done, kind: 'info' }));
   };
-  const hands: Hands = { busy: busy !== null, onJoin: (tb) => void join(tb), onResume: resume, onWatch: watch, onCopy: copy };
+  const send = async (code: string, name: string) => {
+    try {
+      await invite(code, name);
+      onToast({ message: t('site.room.invited', { name }), kind: 'info' });
+      return true;
+    } catch (e) {
+      onToast({ message: t(`site.desk.error.${(e as Error).message}`), kind: 'error' });
+      return false;
+    }
+  };
+  const hands: Hands = {
+    busy: busy !== null,
+    onJoin: (tb) => void join(tb),
+    onResume: resume,
+    onWatch: watch,
+    onCopy: (code) => copy(code, t('platform.toast.copied')),
+    onLink: (code) => copy(inviteLink(code), t('platform.play.tables.linkCopied')),
+    onInvite: send,
+  };
 
   const chips = FILTERS.map((id) => ({
     id,
@@ -385,6 +608,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     body = (
       <div className="mt-4">
         <Board
+          pageKey={JSON.stringify(page.query)}
           groups={[
             { label: t('platform.play.tables.mine'), tables: mine },
             { label: t('platform.play.tables.friendsTitle'), tables: friends.slice(0, 3) },
@@ -423,6 +647,9 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
         )}
       </div>
 
+      {/* the poster: the next train out, when one is filling */}
+      {!stranger && next && <NextDeparture table={next} busy={busy !== null} onJoin={hands.onJoin} />}
+
       {/* the register's controls: filters, the search, the order */}
       {!stranger && (
         <div className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-2 border-y border-[var(--gz-ink-soft)] py-2">
@@ -432,7 +659,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
               type="button"
               aria-pressed={filter === chip.id}
               onClick={() => {
-                setFilter(chip.id);
+                setBoard((b) => ({ ...b, filter: chip.id }));
                 setOffset(0);
               }}
               className={cn('gz-nav-link !py-1.5 !text-[10.5px]', filter === chip.id && 'is-active')}
@@ -442,15 +669,25 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
             </button>
           ))}
           <span className="flex-1" />
-          <label className="relative">
+          <label className="relative" title={t('platform.play.tables.searchKey')}>
             <Search size={14} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-iron-400" />
             <input
+              ref={search}
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setTyped('');
+                  e.currentTarget.blur();
+                }
+              }}
               placeholder={t('platform.play.tables.search')}
               aria-label={t('platform.play.tables.search')}
-              className="h-8 w-[220px] border-b border-[var(--gz-ink-soft)] bg-transparent pl-7 pr-2 font-serif text-[13px] italic text-paper-100 placeholder:text-iron-600 focus:border-brass-300 focus:outline-none"
+              className="h-8 w-[220px] border-b border-[var(--gz-ink-soft)] bg-transparent pl-7 pr-7 font-serif text-[13px] italic text-paper-100 placeholder:text-iron-600 focus:border-brass-300 focus:outline-none"
             />
+            <kbd aria-hidden className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 border border-[var(--gz-ink-faint)] px-1 font-mono text-[10px] leading-4 text-iron-600">
+              /
+            </kbd>
           </label>
           <span role="group" aria-label={t('platform.play.tables.sortFilling')} className="flex items-center gap-1 border-l border-[var(--gz-ink-faint)] pl-2">
             {(['filling', 'fresh'] as const).map((id) => (
@@ -459,7 +696,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
                 type="button"
                 aria-pressed={sort === id}
                 onClick={() => {
-                  setSort(id);
+                  setBoard((b) => ({ ...b, sort: id }));
                   setOffset(0);
                 }}
                 className={cn('gz-nav-link !py-1.5 !text-[10.5px]', sort === id && 'is-active')}
