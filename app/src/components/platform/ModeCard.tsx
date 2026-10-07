@@ -66,8 +66,10 @@ export default function ModeCard({
         'group flex w-full items-center gap-4 border bg-enamel-850 p-4 text-left transition-all duration-150 ease-out',
         ranked ? 'hover:border-rust-600' : 'hover:border-bottle-500',
         active && (ranked ? 'border-2 border-rust-600 bg-enamel-800' : 'border-2 border-bottle-500 bg-enamel-800'),
-        !active && 'border-brass-hairline hover:bg-enamel-800',
-        disabled && 'cursor-not-allowed opacity-55 hover:border-brass-hairline hover:bg-enamel-850',
+        !active && 'border-[var(--gz-line-control)] hover:bg-enamel-800',
+        /* the card is a command, so the rule around it is a command's rule; put
+           out, it is painted from the register's off plate and not veiled */
+        disabled && 'is-off',
         compact && 'h-[76px]',
         className,
       )}
@@ -75,17 +77,18 @@ export default function ModeCard({
       <span
         className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-full border transition-transform duration-150 group-hover:translate-x-0.5',
-          ranked ? 'border-rust-400/50 text-rust-400' : 'border-bottle-400/50 text-bottle-400',
+          ranked ? 'border-rust-400/50 text-rust-400' : 'border-bottle-400/50 text-bottle-ink',
+          'group-disabled:border-[var(--gz-ink-faint)] group-disabled:text-[rgb(var(--state-off-ink))]',
         )}
       >
         <Icon size={18} strokeWidth={1.5} aria-hidden />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="title-card">{title}</span>
+          <span className="title-card group-disabled:text-[rgb(var(--state-off-ink))]">{title}</span>
           {ranked && rank && <RankBadge tier={rank.tier} division={rank.division} size={20} compact />}
         </span>
-        <span className="mt-0.5 block truncate font-ui text-[12.5px] text-paper-300">{disabled ? reason : copy}</span>
+        <span className="mt-0.5 block truncate font-ui text-[12.5px] text-paper-300 group-disabled:text-[rgb(var(--state-off-ink))]">{disabled ? reason : copy}</span>
       </span>
     </button>
   );

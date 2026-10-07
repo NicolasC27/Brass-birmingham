@@ -19,7 +19,7 @@ export default function StatTile({ value, label, delta, className }: StatTilePro
       <div className="flex items-baseline gap-2">
         <span className="font-fraunces text-[26px] font-normal leading-none text-paper-100 tnums">{value}</span>
         {delta !== undefined && delta !== 0 && (
-          <span className={cn('data-text text-[12px]', delta > 0 ? 'text-bottle-400' : 'text-rust-400')}>
+          <span className={cn('data-text text-[12px]', delta > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
             {delta > 0 ? `+${delta}` : delta}
           </span>
         )}

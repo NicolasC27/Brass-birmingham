@@ -37,6 +37,8 @@ export default function CompaniesPanel() {
   };
 
   const rows = board?.rows ?? [];
+  /* the ticket cannot be handed in yet: it is put out, not faded */
+  const notEnough = busy || name.trim().length < 3;
   return (
     <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut', delay: 0.12 }} className="mt-12" aria-label={t('platform.companies.title')}>
       <h2 className="gz-head h2-section">{t('platform.companies.title')}</h2>
@@ -61,9 +63,9 @@ export default function CompaniesPanel() {
               <tbody>
                 {rows.map((row, i) => (
                   <tr key={row.id} className={cn(mine?.id === row.id && 'bg-brass-500/[.06]')}>
-                    <td className="data-text text-[11px] text-iron-600 tnums">{i + 1}.</td>
+                    <td className="data-text text-[11px] text-iron-400 tnums">{i + 1}.</td>
                     <td>
-                      <span className={cn('font-fraunces text-[15px] font-medium', mine?.id === row.id ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 48' }}>
+                      <span className={cn('font-fraunces text-[15px] font-medium', mine?.id === row.id ? 'text-brass-300' : 'text-paper-100')}>
                         {row.name}
                       </span>
                     </td>
@@ -71,7 +73,7 @@ export default function CompaniesPanel() {
                     <td className="data-text text-[12px] text-paper-300 tnums">{t('platform.companies.wins', { n: row.wins, games: row.games })}</td>
                     <td className="w-px pr-2 text-right">
                       {!mine && (
-                        <button type="button" disabled={busy} onClick={() => void run(() => joinCompany(row.id))} className="whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100 disabled:opacity-50">
+                        <button type="button" disabled={busy} onClick={() => void run(() => joinCompany(row.id))} className="whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100 disabled:text-[rgb(var(--state-off-ink))]">
                           {t('platform.companies.join')} →
                         </button>
                       )}
@@ -91,7 +93,7 @@ export default function CompaniesPanel() {
           <div className="gz-rule-double mt-2" aria-hidden />
           {mine ? (
             <div className="mt-4">
-              <p className="font-fraunces text-[22px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+              <p className="font-fraunces text-[22px] font-medium leading-tight text-paper-100">
                 {mine.name}
               </p>
               <p className="data-text mt-1 text-[11px] text-iron-400 tnums">{t('platform.companies.members', { n: mine.members })}</p>
@@ -117,10 +119,10 @@ export default function CompaniesPanel() {
                 onChange={(e) => setName(e.target.value)}
                 maxLength={40}
                 placeholder={t('platform.companies.placeholder')}
-                className="mt-1.5 w-full border-b border-[var(--gz-ink-soft)] bg-transparent py-2 font-fraunces text-[18px] text-paper-100 placeholder:text-iron-600 focus:border-brass-300 focus:outline-none"
+                className="mt-1.5 w-full border-b border-[var(--gz-ink-soft)] bg-transparent py-2 font-fraunces text-[18px] text-paper-100 placeholder:text-iron-400 focus:border-brass-300"
               />
-              <button type="submit" disabled={busy || name.trim().length < 3} className="gz-ticket gz-ticket-brass mt-4 disabled:cursor-not-allowed disabled:opacity-50">
-                {t('platform.companies.found')}
+              <button type="submit" disabled={notEnough} className={cn('gz-ticket gz-ticket-brass mt-4', notEnough && 'is-off')}>
+                {t('platform.companies.found')} →
               </button>
             </form>
           )}

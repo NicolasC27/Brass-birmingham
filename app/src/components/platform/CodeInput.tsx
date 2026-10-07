@@ -103,8 +103,8 @@ export default function CodeInput({ length = 4, onSubmit, className }: CodeInput
               fill(e.clipboardData.getData('text'));
             }}
             className={cn(
-              'h-[52px] w-11 rounded-lg border bg-enamel-850 text-center font-mono text-[22px] font-medium uppercase text-paper-100 caret-signal-400',
-              error ? 'border-rust-600' : cursor === i ? 'border-brass-400' : 'border-brass-hairline',
+              'h-[52px] w-11 rounded-lg border bg-enamel-850 text-center font-mono text-[22px] font-medium uppercase text-paper-100 caret-signal-ink',
+              error ? 'border-rust-600' : cursor === i ? 'border-brass-400' : 'border-[var(--gz-line-control)]',
               c && !error && 'border-bottle-500',
             )}
           />

@@ -6,7 +6,13 @@ import { cn } from '@/lib/utils';
 /* lauriers) posés autour de l'avatar — aucune image.                  */
 /* ------------------------------------------------------------------ */
 
-const BRASS = '#C9A24B';
+/* The plate itself is the register's, so a frame struck by day is not the one
+   struck by night: `fill` and `stroke` are CSS properties even when written as
+   SVG attributes, and take a var() like any other. The highlight and the shade
+   stay fixed — they are not a colour but the modelling of the metal, the light
+   caught on the rim and the shadow under it, and they must sit either side of
+   the plate in both registers. */
+const BRASS = 'rgb(var(--brass-plate, 201 162 75))';
 const BRASS_HI = '#E7C97E';
 const BRASS_LO = '#8F6B23';
 

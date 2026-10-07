@@ -49,7 +49,7 @@ export function Toast({ toast, onDismiss }: { toast: ToastData | null; onDismiss
                 <Icon
                   size={16}
                   aria-hidden
-                  className={cn(toast.kind === 'success' && 'text-bottle-400', toast.kind === 'error' && 'text-rust-400', (!toast.kind || toast.kind === 'info') && 'text-brass-300')}
+                  className={cn(toast.kind === 'success' && 'text-bottle-ink', toast.kind === 'error' && 'text-rust-400', (!toast.kind || toast.kind === 'info') && 'text-brass-300')}
                 />
               );
             })()}

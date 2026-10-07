@@ -73,7 +73,7 @@ export default function QueuePanel({ mode, since, waiting, estimate, onCancel, c
           <p className="micro-label text-iron-400">{t(`platform.mode.${mode}`)}</p>
           <h3 className="title-card mt-1">{t('platform.queue.searching')}</h3>
         </div>
-        <span className="data-text tnums text-signal-400">{formatElapsed(since, now)}</span>
+        <span className="data-text tnums text-signal-ink">{formatElapsed(since, now)}</span>
       </div>
 
       <div className="mt-4">

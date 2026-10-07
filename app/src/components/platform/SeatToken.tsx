@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Bot, Check, Crown, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { colorDef, type PlayerColor } from '@/components/setup/constants';
+import { colorDef, type PlayerColor, type PlayerShape } from '@/components/setup/constants';
 import { useT } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
@@ -31,6 +31,29 @@ export interface SeatTokenProps {
 
 const spring = { type: 'spring', stiffness: 260, damping: 24 } as const;
 
+/* The colour's shape, notched into the rim of the disc. The register has
+   carried a shape for every player since the first plan (design.md §8) and
+   drew it in one place only; here the seat says it too, so the four seats
+   are told apart by a mark and not by a hue alone. */
+function ShapeNotch({ shape, ring, size }: { shape: PlayerShape; ring: string; size: number }) {
+  const box = Math.max(11, Math.round(size * 0.34));
+  const glyph = Math.round(box * 0.7);
+  return (
+    <span
+      aria-hidden
+      className="absolute -bottom-0.5 -left-0.5 flex items-center justify-center rounded-full bg-lacquer-900"
+      style={{ width: box, height: box }}
+    >
+      <svg viewBox="0 0 12 12" style={{ width: glyph, height: glyph }} fill={ring}>
+        {shape === 'circle' && <circle cx="6" cy="6" r="4.6" />}
+        {shape === 'square' && <rect x="1.7" y="1.7" width="8.6" height="8.6" />}
+        {shape === 'diamond' && <polygon points="6,0.8 11.2,6 6,11.2 0.8,6" />}
+        {shape === 'triangle' && <polygon points="6,1.2 11.3,10.4 0.7,10.4" />}
+      </svg>
+    </span>
+  );
+}
+
 export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps) {
   const t = useT();
   /* a likeness that does not come back leaves the initial in its place */
@@ -53,12 +76,12 @@ export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps
         >
           <UserPlus className="text-iron-600" style={{ width: size * 0.42, height: size * 0.42 }} aria-hidden />
         </div>
-        <span className="micro-label text-[9px] text-iron-600">{t('platform.seat.free')}</span>
+        <span className="micro-label text-[9px] text-iron-400">{t('platform.seat.free')}</span>
       </motion.div>
     );
   }
 
-  const hex = colorDef(seat.color).hex;
+  const { ring, shape } = colorDef(seat.color);
   const stateLabel = seat.you
     ? t('platform.seat.you')
     : seat.kind === 'bot'
@@ -84,7 +107,7 @@ export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps
           seat.ready && 'ring-2 ring-bottle-500',
           seat.you && 'shadow-[0_0_0_2px_rgb(var(--lacquer-900)),0_0_0_4px_rgb(var(--paper-100))]',
         )}
-        style={{ width: size, height: size, border: `2px solid ${hex}`, fontSize: size * 0.38 }}
+        style={{ width: size, height: size, border: `2px solid ${ring}`, fontSize: size * 0.38 }}
       >
         {seat.kind === 'bot' ? (
           <Bot className="text-iron-400" style={{ width: size * 0.5, height: size * 0.5 }} aria-hidden />
@@ -94,6 +117,7 @@ export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps
           seat.name.charAt(0).toUpperCase()
         )}
       </div>
+      <ShapeNotch shape={shape} ring={ring} size={size} />
       {seat.ready && !seat.you && (
         <span
           className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-bottle-400"

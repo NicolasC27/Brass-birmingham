@@ -18,8 +18,8 @@ const spring = { type: 'spring', stiffness: 260, damping: 24 } as const;
 function StateRibbon({ state, pulse }: { state: TableState; pulse: boolean }) {
   const t = useT();
   const styles: Record<TableState, string> = {
-    open: 'bg-bottle-700/60 text-bottle-400',
-    live: 'bg-[rgb(var(--signal-400)/.12)] text-signal-400',
+    open: 'bg-bottle-700/60 text-paper-100',
+    live: 'bg-[rgb(var(--signal-400)/.12)] text-signal-ink',
     full: 'bg-enamel-700 text-iron-400',
   };
   return (
@@ -38,7 +38,7 @@ function ModeBadge({ mode }: { mode: TableMode }) {
     <span
       className={cn(
         'micro-label rounded px-1.5 py-0.5',
-        mode === 'ranked' ? 'bg-rust-700/50 text-rust-400' : 'bg-bottle-700/60 text-bottle-400',
+        mode === 'ranked' ? 'bg-rust-700/50 text-rust-400' : 'bg-bottle-700/60 text-paper-100',
       )}
     >
       {t(`platform.mode.${mode}`)}
@@ -130,9 +130,9 @@ export default function TableCard({ table, pulse = true, onJoin, onResume, onWat
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-[rgb(var(--paper-100)/.07)] pt-3">
         <div className="flex min-w-0 items-center gap-1.5">
           <ModeBadge mode={table.mode} />
-          <span className="data-text ml-1 truncate text-[11px] text-iron-600 tnums">{line.filter(Boolean).join(' · ')}</span>
+          <span className="data-text ml-1 truncate text-[11px] text-iron-400 tnums">{line.filter(Boolean).join(' · ')}</span>
           {table.state === 'live' && table.watchers > 0 && (
-            <span className="data-text flex shrink-0 items-center gap-1 text-[11px] text-iron-600 tnums" title={t('platform.play.tables.watchers', { count: table.watchers })}>
+            <span className="data-text flex shrink-0 items-center gap-1 text-[11px] text-iron-400 tnums" title={t('platform.play.tables.watchers', { count: table.watchers })}>
               <Eye size={12} aria-hidden />
               {table.watchers}
             </span>

@@ -44,9 +44,9 @@ export default function ActivityFeedItem({ kind, vars, at, textKey, onClick, cla
         className,
       )}
     >
-      <Icon size={13} strokeWidth={1.75} aria-hidden className={cn('shrink-0', kind === 'tableLive' ? 'text-signal-400' : 'text-brass-300')} />
+      <Icon size={13} strokeWidth={1.75} aria-hidden className={cn('shrink-0', kind === 'tableLive' ? 'text-signal-ink' : 'text-brass-300')} />
       <span className="min-w-0 flex-1 truncate font-serif text-[13.5px] text-paper-100">{t(textKey ?? `platform.home.feed.${kind}`, vars)}</span>
-      <span className="data-text shrink-0 text-[11px] text-iron-600 tnums">{ago(t, lang, at)}</span>
+      <span className="data-text shrink-0 text-[11px] text-iron-400 tnums">{ago(t, lang, at)}</span>
     </button>
   );
 }

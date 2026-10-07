@@ -7,7 +7,7 @@ import { useTheme } from '@/platform/theme';
 export type EmptyPlate = 'tables' | 'queue';
 
 /* ------------------------------------------------------------------ */
-/* EmptyState (design.md §7.8) — illustration + titre Fraunces 20px +  */
+/* EmptyState (design.md §7.8) — illustration + titre de carte (15px,  */
 /* phrase + CTA primaire. Jamais de panneau vide muet. Variante `mini` */
 /* pour les colonnes du tableau des tables (icône seule, home.md §S2). */
 /* ------------------------------------------------------------------ */
@@ -41,7 +41,7 @@ export default function EmptyState({ title, copy, plate, cta, mini = false, icon
           <img src={`/empty-${plate}${theme === 'dark' ? '-night' : ''}.webp`} alt="" className="!aspect-[16/9]" />
         </div>
       )}
-      <h3 className="font-fraunces text-[20px] font-medium text-paper-100">{title}</h3>
+      <p className="title-card">{title}</p>
       {copy && <p className="max-w-sm font-serif text-[13.5px] italic text-paper-300">{copy}</p>}
       {cta && (
         <Button variant="primary" to={cta.to} onClick={cta.onClick} icon={cta.icon}>

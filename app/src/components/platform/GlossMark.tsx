@@ -44,12 +44,12 @@ export default function GlossMark({ id, className }: { id: string; className?: s
           role="note"
           className="absolute left-0 top-6 z-40 block w-[280px] border border-[var(--gz-ink-soft)] bg-enamel-850 p-4 text-left font-normal normal-case tracking-normal shadow-[inset_0_0_0_3px_rgb(var(--enamel-850)),inset_0_0_0_4px_var(--gz-ink-faint),0_8px_24px_var(--shadow-modal)]"
         >
-          <span className="block font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+          <span className="block font-fraunces text-[15px] font-medium text-paper-100">
             {t(`platform.glossary.terms.${id}.name`)}
           </span>
           <span className="mt-1 block font-serif text-[13px] italic leading-relaxed text-paper-300">{t(`platform.glossary.terms.${id}.def`)}</span>
           <Link to="/glossaire" className="mt-2 inline-block font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-            {t('platform.glossary.all')}
+            {t('platform.glossary.all')} →
           </Link>
         </span>
       )}
