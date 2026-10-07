@@ -27,8 +27,9 @@ import { grantFromHistory } from '@/platform/patents';
 import { preloadGame } from '@/platform/preload';
 
 /* ------------------------------------------------------------------ */
-/* The front page. Under the masthead: the engraving of the day, then  */
-/* the leader — the headline, what waits for me, the tickets — beside  */
+/* The front page. Under the masthead: the engraving of the day, the   */
+/* notice board when one is posted, then the leader — the headline,    */
+/* what waits for me, the tickets — beside                             */
 /* the departures; below, the queues and my standing, the club's news  */
 /* in two columns, and the classifieds. Framer Motion only.            */
 /* ------------------------------------------------------------------ */
@@ -243,6 +244,11 @@ export default function Home() {
         <img src={theme === 'dark' ? plate.night : plate.src} alt="" style={{ objectPosition: plate.position }} />
       </motion.figure>
 
+      {/* the notice board: what is being built, before the day's news */}
+      <div className="mt-6">
+        <NoticeBoard />
+      </div>
+
       {/* the leader beside the departures */}
       <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">
         <section className="flex flex-col gap-5 min-[1100px]:col-span-7">
@@ -287,10 +293,6 @@ export default function Home() {
             <Ephemeris />
           </div>
         </aside>
-      </div>
-
-      <div className="mt-10">
-        <NoticeBoard />
       </div>
 
       <div className="mt-10">
