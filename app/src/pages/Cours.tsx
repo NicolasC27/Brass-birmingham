@@ -36,11 +36,11 @@ export default function Cours() {
               const read = i < reached;
               return (
                 <li key={id} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2">
-                  <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center self-center rounded-full border', read ? 'border-bottle-400 text-bottle-400' : 'border-[var(--gz-ink-soft)]')}>
+                  <span className={cn('flex h-4 w-4 shrink-0 items-center justify-center self-center rounded-full border', read ? 'border-bottle-400 text-bottle-ink' : 'border-[var(--gz-ink-soft)]')}>
                     {read && <Check size={10} strokeWidth={3} aria-hidden />}
                   </span>
-                  <span className="data-text w-6 text-[11px] text-iron-600 tnums">{String(i + 1).padStart(2, '0')}</span>
-                  <span className={cn('font-fraunces text-[14px] font-medium', read ? 'text-paper-100' : 'text-paper-300')} style={{ fontVariationSettings: '"opsz" 48' }}>
+                  <span className="data-text w-6 text-[10.5px] text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
+                  <span className={cn('font-fraunces text-[14px] font-medium', read ? 'text-paper-100' : 'text-paper-300')}>
                     {t(`game.guide.steps.${id}.title`, { bot: personaName('wedgwood') })}
                   </span>
                 </li>
@@ -52,7 +52,7 @@ export default function Cours() {
               <GraduationCap aria-hidden />
               {t(done ? 'platform.cours.again' : begun ? 'platform.cours.resume' : 'platform.cours.begin')}
             </button>
-            <span className="data-text text-[11px] text-iron-400 tnums">{t('platform.cours.reached', { done: reached, total: LESSONS.length })}</span>
+            <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.cours.reached', { done: reached, total: LESSONS.length })}</span>
           </div>
         </section>
 
@@ -63,11 +63,11 @@ export default function Cours() {
             {CHAPTERS.map((id, i) => (
               <li key={id}>
                 <Link to={`/rules#${id}`} className="group flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2 transition-colors hover:bg-enamel-800">
-                  <span className="data-text w-6 text-[11px] text-iron-600 tnums">{String(i + 1).padStart(2, '0')}</span>
-                  <span className="flex-1 font-fraunces text-[14px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                  <span className="data-text w-6 text-[10.5px] text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
+                  <span className="flex-1 font-fraunces text-[14px] font-medium text-paper-100">
                     {t(`rules.chapters.${id}`)}
                   </span>
-                  <span className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-iron-600 transition-colors group-hover:text-brass-300">{t('platform.cours.read')} →</span>
+                  <span className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-iron-400 transition-colors group-hover:text-brass-300">{t('platform.cours.read')} →</span>
                 </Link>
               </li>
             ))}
@@ -77,17 +77,17 @@ export default function Cours() {
             <p className="micro-label text-paper-100">{t('platform.cours.redo')}</p>
             <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
               {redo.length === 0 ? (
-                <p className="py-4 font-serif text-[13.5px] italic text-paper-300">{t('platform.cours.redoNone')}</p>
+                <p className="py-4 font-serif text-[13px] italic text-paper-300">{t('platform.cours.redoNone')}</p>
               ) : (
                 redo.map((r) => (
                   <Link key={r.motif} to={`/rules#${r.chapter}`} className="group flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2.5 last:border-b-0">
                     <span className="min-w-0 flex-1">
-                      <span className="block font-serif text-[13.5px] leading-snug text-paper-100">{t(`game.debrief.motifs.${r.motif}`)}</span>
-                      <span className="data-text text-[11px] text-iron-600 tnums">
+                      <span className="block font-serif text-[13px] leading-snug text-paper-100">{t(`game.debrief.motifs.${r.motif}`)}</span>
+                      <span className="data-text text-[10.5px] text-iron-400 tnums">
                         {t('platform.cours.redoMeta', { games: r.games, times: r.times })} · {t('platform.cours.chapter', { n: String(CHAPTERS.indexOf(r.chapter) + 1).padStart(2, '0'), title: t(`rules.chapters.${r.chapter}`) })}
                       </span>
                     </span>
-                    <span className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors group-hover:text-paper-100">{t('platform.cours.read')} →</span>
+                    <span className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors group-hover:text-paper-100">{t('platform.cours.read')} →</span>
                   </Link>
                 ))
               )}

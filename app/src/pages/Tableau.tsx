@@ -60,10 +60,13 @@ export default function Tableau() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-[#0a0e0c] px-8 py-6 text-[#ede6d6]">
+      {/* the board is a black plate in both registers, lit like the hall's own:
+          the brass is measured on its own ground (#C9A24B on #0A0E0C, 8.10) and
+          stays put where the page tokens would turn it to paper */}
       <header className="flex items-end justify-between border-b-2 border-[#C9A24B] pb-3">
         <div>
           <p className="font-fell text-[14px] uppercase tracking-[0.3em] text-[#C9A24B]">{t('platform.tableau.eyebrow', { year })}</p>
-          <h1 className="font-fraunces text-[44px] font-medium uppercase leading-none tracking-[0.2em]" style={{ fontVariationSettings: '"opsz" 144' }}>
+          <h1 className="font-fraunces text-[44px] font-medium uppercase leading-none tracking-[0.2em]">
             {t('platform.tableau.title')}
           </h1>
         </div>
@@ -75,7 +78,7 @@ export default function Tableau() {
       <table className="mt-6 w-full border-collapse font-mono text-[22px] leading-none" aria-live="polite">
         <caption className="sr-only">{t('platform.tableau.title')}</caption>
         <thead>
-          <tr className="text-[12px] uppercase tracking-[0.3em] text-[#8b948c]">
+          <tr className="text-[12.5px] uppercase tracking-[0.3em] text-[#8b948c]">
             <th className="pb-3 text-left font-normal">{t('platform.tableau.colTrain')}</th>
             <th className="pb-3 text-left font-normal">{t('platform.tableau.colSeats')}</th>
             <th className="pb-3 text-left font-normal">{t('platform.tableau.colState')}</th>
@@ -109,14 +112,16 @@ export default function Tableau() {
 
       <footer className="mt-auto border-t border-[#1c2521] pt-4">
         <div className="flex items-center gap-4 overflow-hidden whitespace-nowrap font-serif text-[18px] italic text-[#c8bfac]">
-          <span className="shrink-0 font-ui text-[11px] not-italic uppercase tracking-[0.3em] text-[#C9A24B]">{t('platform.home.telegraph.title')}</span>
+          <span className="shrink-0 font-ui text-[10.5px] not-italic uppercase tracking-[0.3em] text-[#C9A24B]">{t('platform.home.telegraph.title')}</span>
           <div className="min-w-0 flex-1 overflow-hidden">
             <div className={cn('inline-block', dispatches.length > 0 && 'ticker-run')}>
               {dispatches.length === 0 ? t('platform.home.telegraph.none') : dispatches.map((d, i) => <span key={`${d.code}:${d.at}:${i}`} className="mr-16">« {tableTitle(d.table, lang)} » — {say(d)}</span>)}
             </div>
           </div>
         </div>
-        <p className="mt-3 font-ui text-[10px] uppercase tracking-[0.3em] text-[#5a635c]">
+        {/* the board's own iron: #5A635C measured 3.12 on this plate, #8B948C
+            holds 6.21 — the one ink on the board that was under the line */}
+        <p className="mt-3 font-ui text-[10.5px] uppercase tracking-[0.3em] text-[#8b948c]">
           <Link to="/" className="hover:text-[#ede6d6]">
             Blackrail
           </Link>

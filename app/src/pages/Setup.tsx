@@ -244,7 +244,7 @@ export default function Setup() {
             <section aria-label={t("platform.setup.identity.heading")}>
               <SheetHeading>{t("platform.setup.identity.heading")}</SheetHeading>
               <p className="micro-label mt-4 text-iron-400">{t("platform.setup.identity.nameLabel")}</p>
-              <p className="mt-1 truncate font-fraunces text-[26px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+              <p className="mt-1 truncate font-fraunces text-[26px] font-medium leading-tight text-paper-100">
                 {tableTitle(tableName, lang)}
               </p>
               <p className="mt-1 font-serif text-[13px] italic text-iron-400">{t("platform.setup.identity.drawn")}</p>
@@ -279,7 +279,7 @@ export default function Setup() {
                     >
                       <span className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rotate-45 border", active ? "border-brass-300 bg-brass-300" : "border-[var(--gz-ink-soft)]")} aria-hidden />
                       <span className="min-w-0">
-                        <span className="flex items-center gap-2 font-fraunces text-[16px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                        <span className="flex items-center gap-2 font-fraunces text-[15px] font-medium text-paper-100">
                           <w.icon size={15} strokeWidth={1.5} aria-hidden className="text-brass-300" />
                           {w.title}
                         </span>
@@ -319,7 +319,7 @@ export default function Setup() {
                     >
                       <span className={cn("mt-1.5 h-2.5 w-2.5 shrink-0 rotate-45 border", active ? "border-brass-300 bg-brass-300" : "border-[var(--gz-ink-soft)]")} aria-hidden />
                       <span className="min-w-0">
-                        <span className="flex items-center gap-2 font-fraunces text-[16px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                        <span className="flex items-center gap-2 font-fraunces text-[15px] font-medium text-paper-100">
                           <m.icon size={15} strokeWidth={1.5} aria-hidden className="text-brass-300" />
                           {m.title}
                         </span>
@@ -377,7 +377,7 @@ export default function Setup() {
               {/* the train on the platform at dawn, painted in the tiles' own hand */}
               <img src="/setup-station.webp" alt="" draggable={false} className="mb-5 -mt-1 w-full rounded-md object-cover shadow-[0_6px_18px_rgba(0,0,0,.35)]" style={{ aspectRatio: "21 / 9" }} />
               <p className="eyebrow-fell">{t("platform.setup.preview.label")}</p>
-              <p className="mt-2 truncate font-fraunces text-[22px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+              <p className="mt-2 truncate font-fraunces text-[22px] font-medium leading-tight text-paper-100">
                 {tableTitle(tableName, lang)}
               </p>
 
@@ -400,8 +400,8 @@ export default function Setup() {
                   ...optionChips,
                 ].map((chip, i) => (
                   <li key={chip} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5 last:border-b-0">
-                    <span className="data-text w-5 text-[11px] text-iron-600 tnums">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="font-serif text-[13.5px] text-paper-100">{chip}</span>
+                    <span className="data-text w-5 text-[10.5px] text-iron-400 tnums">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="font-serif text-[13px] text-paper-100">{chip}</span>
                   </li>
                 ))}
               </ol>
@@ -452,7 +452,7 @@ export default function Setup() {
           const inner = (
             <>
               <item.icon size={16} className="shrink-0 text-brass-400" aria-hidden />
-              <span className="font-ui text-[12px] text-iron-400">{item.text}</span>
+              <span className="font-ui text-[12.5px] text-iron-400">{item.text}</span>
             </>
           );
           return (

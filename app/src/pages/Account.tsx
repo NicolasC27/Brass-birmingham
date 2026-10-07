@@ -4,10 +4,10 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, MailWarning } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import Button from '@/components/platform/Button';
+import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import { forgotPassword, resetPassword, signIn, signUp, useSession, useStranger, verifyEmail } from '@/online/session';
 import { useT } from '@/i18n';
-import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* Le registre « Club Industriel » — signin / signup / forgot, plus    */
@@ -139,7 +139,7 @@ export default function Account() {
       >
         {verdict !== 'pending' && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2, ease: 'easeOut' }} className="flex items-center gap-4">
-            {ok ? <CheckCircle2 className="h-8 w-8 text-bottle-400" aria-hidden /> : <MailWarning className="h-8 w-8 text-rust-400" aria-hidden />}
+            {ok ? <CheckCircle2 className="h-8 w-8 text-bottle-ink" aria-hidden /> : <MailWarning className="h-8 w-8 text-rust-400" aria-hidden />}
             <Button variant="primary" to="/desk">
               {t('platform.account.verifiedCta')}
             </Button>
@@ -183,22 +183,21 @@ export default function Account() {
     >
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
         <Panel>
+          {/* the rail is the platform's, so the register keeps the bargain the
+              word « onglets » makes: a tablist, an id per heading, and a sheet
+              that names the heading it was opened by */}
           {mode !== 'forgot' && (
-            <div role="tablist" className="mb-5 flex gap-1 border-b border-[rgb(var(--paper-100)/.07)]">
-              {(['in', 'up'] as const).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === m}
-                  className={cn('relative flex-1 px-2 pb-2.5 pt-1 font-ui text-[13px] font-semibold transition-colors duration-150', mode === m ? 'text-paper-100' : 'text-iron-400 hover:text-paper-100')}
-                  onClick={() => setMode(m)}
-                >
-                  {m === 'in' ? t('platform.account.tabIn') : t('platform.account.tabUp')}
-                  {mode === m && <motion.span layoutId="account-tab-filet" className="absolute inset-x-2 -bottom-px h-0.5 bg-brass-500" transition={{ type: 'spring', stiffness: 260, damping: 24 }} />}
-                </button>
-              ))}
-            </div>
+            <Tabs
+              groupId="account"
+              className="mb-5"
+              ariaLabel={t('platform.account.eyebrow')}
+              active={mode}
+              onChange={(id) => setMode(id as Mode)}
+              tabs={[
+                { id: 'in', label: t('platform.account.tabIn') },
+                { id: 'up', label: t('platform.account.tabUp') },
+              ]}
+            />
           )}
 
           {mode === 'forgot' ? (
@@ -226,7 +225,7 @@ export default function Account() {
               </div>
             )
           ) : (
-            <div className="grid gap-4">
+            <TabPanel groupId="account" id={mode} className="grid gap-4">
               <Field id="acc-name" label={mode === 'in' ? t('platform.account.nameOrEmail') : t('platform.account.name')} hint={mode === 'up' ? t('platform.account.nameHint') : undefined}>
                 <input id="acc-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={mode === 'up' ? 20 : 120} placeholder={t('platform.account.namePlaceholder')} autoComplete="username" disabled={waiting} className={inputClass} />
               </Field>
@@ -272,7 +271,7 @@ export default function Account() {
                   </button>
                 )}
               </div>
-            </div>
+            </TabPanel>
           )}
         </Panel>
       </motion.div>

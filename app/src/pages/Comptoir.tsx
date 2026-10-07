@@ -32,8 +32,8 @@ const ease = 'easeOut' as const;
 
 const RARITY_STYLE: Record<Rarity, string> = {
   common: 'text-brass-300',
-  rare: 'text-bottle-400',
-  prestige: 'text-signal-400',
+  rare: 'text-bottle-ink',
+  prestige: 'text-signal-ink',
 };
 
 /** les objets en image, comme au comptoir du hall */
@@ -108,14 +108,14 @@ function Header({ wallet, signedIn }: { wallet: Wallet; signedIn: boolean }) {
               {wallet.balance}
             </motion.span>
           </div>
-          <p className="data-text text-[11px] text-iron-400">{t('platform.comptoir.hint', { sitting: GUINEAS.sitting, win: GUINEAS.win })}</p>
+          <p className="data-text text-[10.5px] text-iron-400">{t('platform.comptoir.hint', { sitting: GUINEAS.sitting, win: GUINEAS.win })}</p>
         </motion.div>
       </div>
 
       {!signedIn && (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="micro-label rounded bg-rust-700/50 px-1.5 py-0.5 text-rust-400">{t('platform.comptoir.signedOutBadge')}</span>
-          <span className="font-ui text-[12px] text-iron-400">{t('platform.comptoir.signedOutNote')}</span>
+          <span className="font-ui text-[12.5px] text-iron-400">{t('platform.comptoir.signedOutNote')}</span>
         </div>
       )}
     </header>
@@ -193,7 +193,7 @@ function ShopItemCard({
       <div className="text-center">
         <h3 className="title-card">{name}</h3>
         <p className={cn('micro-label mt-1', RARITY_STYLE[item.rarity])}>{t(`platform.comptoir.rarity.${item.rarity}`)}</p>
-        {WITH_BLURB.has(item.category) && <p className="mt-2 font-ui text-[12px] leading-relaxed text-paper-300">{t(`platform.comptoir.blurbs.${item.id}`)}</p>}
+        {WITH_BLURB.has(item.category) && <p className="mt-2 font-ui text-[12.5px] leading-relaxed text-paper-300">{t(`platform.comptoir.blurbs.${item.id}`)}</p>}
       </div>
 
       {COUNTER_OPEN && (
@@ -205,7 +205,7 @@ function ShopItemCard({
 
       <div className="mt-auto flex justify-center">
         {equipped ? (
-          <span className="inline-flex h-10 items-center gap-2 rounded-lg bg-bottle-700/50 px-4 font-ui text-[14px] font-semibold text-bottle-400" aria-current="true">
+          <span className="inline-flex h-10 items-center gap-2 rounded-lg bg-bottle-700/50 px-4 font-ui text-[14px] font-semibold text-bottle-ink" aria-current="true">
             <Check size={16} aria-hidden />
             {t('platform.comptoir.equipped')}
           </span>
@@ -307,12 +307,12 @@ function Earnings() {
         <ul className="grid gap-2">
           {rows.map((r) => (
             <li key={r.label} className="flex items-baseline gap-3">
-              <span className="data-text w-14 shrink-0 text-right text-[13px] font-medium text-bottle-400">{r.value}</span>
+              <span className="data-text w-14 shrink-0 text-right text-[13px] font-medium text-bottle-ink">{r.value}</span>
               <span className="min-w-0 flex-1 font-ui text-[13px] text-paper-300">{r.label}</span>
             </li>
           ))}
         </ul>
-        <p className="mt-3 font-ui text-[12px] text-iron-400">{t('platform.comptoir.earn.note')}</p>
+        <p className="mt-3 font-ui text-[12.5px] text-iron-400">{t('platform.comptoir.earn.note')}</p>
       </div>
     </section>
   );

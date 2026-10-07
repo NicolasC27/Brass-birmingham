@@ -92,15 +92,15 @@ export default function Report() {
           {game.players.map((p, i) => (
             <button key={i} type="button" onClick={() => setSeat(i)} className={`flex items-center gap-2 rounded-md border px-2.5 py-1 font-ui text-[13px] ${shown === i ? 'border-brass-500 bg-brass-500/10 text-brass-300' : 'border-brass-hairline text-paper-300 hover:border-brass-500'}`}>
               <span aria-hidden className="h-2.5 w-2.5 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }} />
-              {p.name} <span className="data-text text-[11px] opacity-70">{p.vp} PV</span>
+              {p.name} <span className="data-text text-[10.5px] opacity-70">{p.vp} PV</span>
             </button>
           ))}
-          {progress && <span className="data-text ml-auto text-[11px] text-iron-400">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>}
+          {progress && <span className="data-text ml-auto text-[10.5px] text-iron-400">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>}
         </div>
         <div className="mt-3 rounded-md bg-coal-950 p-2">
           <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={mine} vary={null} color={PLAYER_COLORS[game.players[shown]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t('game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={160} onPick={setAt} />
         </div>
-        <p className="mt-2 data-text text-[11px] text-iron-400">{at === 0 ? t('game.debrief.start') : `${at}/${positions.length - 1} · ${describeAction(game.actions[at - 1])}`}</p>
+        <p className="mt-2 data-text text-[10.5px] text-iron-400">{at === 0 ? t('game.debrief.start') : `${at}/${positions.length - 1} · ${describeAction(game.actions[at - 1])}`}</p>
       </div>
 
       <div className="mt-6 grid gap-6 min-[760px]:grid-cols-2">
@@ -108,7 +108,7 @@ export default function Report() {
           <h2 className="font-ui text-[13px] font-semibold text-paper-100">{t('game.debrief.standings.title')}</h2>
           <table className="mt-2 w-full font-ui text-[13px] text-paper-300">
             <thead>
-              <tr className="data-text text-[10px] uppercase tracking-[0.14em] text-iron-400">
+              <tr className="data-text text-[10.5px] uppercase tracking-label text-iron-400">
                 <th className="py-1 text-left font-normal">{t('game.debrief.standings.seat')}</th>
                 <th className="py-1 text-right font-normal">{t('game.debrief.standings.vp')}</th>
                 <th className="py-1 text-right font-normal" title={t('game.debrief.standings.perActionTip')}>{t('game.debrief.standings.perAction')}</th>
@@ -136,9 +136,9 @@ export default function Report() {
               <li key={d.k}>
                 <button type="button" onClick={() => setAt(d.k)} className="flex w-full items-center gap-2 rounded px-1 py-0.5 text-left hover:bg-enamel-700/60">
                   <span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[d.seat]?.color]?.hex ?? '#C9A45C' }} />
-                  <span className="data-text text-[11px] text-iron-400">{t('game.debrief.roundShort', { round: positions[d.k - 1].round })}</span>
+                  <span className="data-text text-[10.5px] text-iron-400">{t('game.debrief.roundShort', { round: positions[d.k - 1].round })}</span>
                   <span className="min-w-0 flex-1 truncate">{game.players[d.seat]?.name} · {describeAction(game.actions[d.k - 1])}</span>
-                  <span className="data-text text-[11px] text-rust-400">−{Math.round(d.drop * 100)} %</span>
+                  <span className="data-text text-[10.5px] text-rust-400">−{Math.round(d.drop * 100)} %</span>
                 </button>
               </li>
             ))}

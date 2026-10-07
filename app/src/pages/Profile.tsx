@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { BadgeCheck, Coins, Download, LogOut, MailWarning, UserX } from 'lucide-react';
 import { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
@@ -20,6 +20,7 @@ import { useWallet } from '@/platform/wallet';
 import { changePassword, closeAccount, exportData, signOut, updateProfile, useDesk, useSession, useStranger } from '@/online/session';
 import { HistoryLedger } from '@/pages/Desk';
 import { localeOf, useLang, useT } from '@/i18n';
+import { memberSince } from '@/components/site/memberSince';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -45,7 +46,7 @@ function MemberCard() {
   const desk = useDesk();
   const wallet = useWallet();
   if (!session) return null;
-  const since = new Date(session.createdAt).toLocaleDateString(locale(lang), { day: 'numeric', month: 'long', year: 'numeric' });
+  const since = memberSince(session.createdAt, lang);
   const rank = rankOf(desk?.rating);
   const season = desk?.season.name ?? '';
 
@@ -65,7 +66,7 @@ function MemberCard() {
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.06 }} className="min-w-0 flex-1">
           <p className="eyebrow-fell">{t('platform.profile.eyebrow')}</p>
-          <h1 className="mt-1 truncate font-fraunces text-[36px] font-semibold leading-tight text-paper-100">{session.name}</h1>
+          <h1 className="display-hero mt-1 truncate">{session.name}</h1>
           {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
           <p className="micro-label mt-1.5 text-iron-400">{t('platform.profile.memberSince', { date: since })}</p>
           {session.motto && <p className="mt-2.5 font-ui text-[14px] text-paper-300">« {session.motto} »</p>}
@@ -77,7 +78,7 @@ function MemberCard() {
             {rank.tier === 'placement' ? (
               <>
                 <p className="font-fraunces text-[24px] font-semibold leading-none text-paper-100 tnums">{rank.rating !== null ? rank.rating.toLocaleString(locale(lang)) : '—'}</p>
-                <p className="data-text mt-1.5 text-[12px] tabular-nums text-iron-400">
+                <p className="data-text mt-1.5 tabular-nums text-iron-400">
                   {rank.rating !== null ? t('platform.profile.placements', { done: rank.placementDone ?? 0, total: PLACEMENTS, season }) : t('platform.profile.unranked', { season })}
                 </p>
               </>
@@ -87,7 +88,7 @@ function MemberCard() {
                   {t(`platform.rank.${rank.tier}`)}
                   {rank.division ? ` ${rank.division}` : ''}
                 </p>
-                <p className="data-text mt-1.5 text-[12px] tabular-nums text-iron-400">{t('platform.profile.season', { lp: rank.lp ?? 0, season })}</p>
+                <p className="data-text mt-1.5 tabular-nums text-iron-400">{t('platform.profile.season', { lp: rank.lp ?? 0, season })}</p>
                 <p className="micro-label mt-1.5 text-brass-300">{t('platform.profile.cote', { rating: (rank.rating ?? 0).toLocaleString(locale(lang)) })}</p>
               </>
             )}
@@ -174,13 +175,13 @@ function StatsAndRanks() {
               >
                 <img src={`/rank-${tier}.svg`} alt="" width={24} height={24} className="h-6 w-6" />
                 <span className={cn('font-ui text-[13px] font-semibold', current ? 'text-paper-100' : 'text-iron-400')}>{t(`platform.rank.${tier}`)}</span>
-                <span className="data-text ml-auto text-[12px] tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
+                <span className="data-text ml-auto tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
                 {current && rank.lp !== undefined && <span className="micro-label text-brass-300">{t('platform.rank.lp', { lp: rank.lp })}</span>}
               </motion.li>
             );
           })}
         </ul>
-        <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12px] leading-snug text-iron-400">{t('platform.profile.ranksFoot')}</p>
+        <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12.5px] leading-snug text-iron-400">{t('platform.profile.ranksFoot')}</p>
       </motion.aside>
     </div>
   );
@@ -225,7 +226,7 @@ function TrendPanel({ rating }: { rating: Rating | null }) {
     <>
       {t('platform.profile.cote', { rating: rating.rating.toLocaleString(locale(lang)) })}
       {delta !== 0 && (
-        <span className={cn('ml-2', delta > 0 ? 'text-bottle-400' : 'text-rust-400')}>
+        <span className={cn('ml-2', delta > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
           {delta > 0 ? `+${delta}` : delta} · {t('platform.profile.trend.lastGame')}
         </span>
       )}
@@ -280,6 +281,9 @@ function MannerPanel({ stats }: { stats: Stats }) {
 function IndustriesPanel({ stats }: { stats: Stats }) {
   const t = useT();
   const lang = useLang();
+  /* the shell asks framer for the reader's own setting, but a width is neither
+     a transform nor a layout: it fills on regardless, so the bar is told here */
+  const reduced = useReducedMotion();
   const tally = stats.tally;
   if (!tally) return null;
   const per = perGame(stats, lang);
@@ -295,9 +299,9 @@ function IndustriesPanel({ stats }: { stats: Stats }) {
           <li key={k} className="grid grid-cols-[minmax(0,7.5rem)_1fr_2.75rem] items-center gap-3">
             <span className="truncate font-ui text-[12.5px] text-paper-300">{t(`game.settings.industry.${k}`)}</span>
             <span className="h-1.5 overflow-hidden rounded-full bg-enamel-700">
-              <motion.span initial={{ width: 0 }} whileInView={{ width: `${Math.round((v / most) * 100)}%` }} viewport={{ once: true }} transition={{ duration: 0.45, ease }} className="block h-full rounded-full bg-brass-500" />
+              <motion.span initial={reduced ? false : { width: 0 }} whileInView={{ width: `${Math.round((v / most) * 100)}%` }} viewport={{ once: true }} transition={{ duration: 0.45, ease }} className="block h-full rounded-full bg-brass-500" />
             </span>
-            <span className="data-text text-right text-[12px] tabular-nums text-paper-100">{per(v)}</span>
+            <span className="data-text text-right tabular-nums text-paper-100">{per(v)}</span>
           </li>
         ))}
       </ul>
@@ -306,8 +310,8 @@ function IndustriesPanel({ stats }: { stats: Stats }) {
           <p className="micro-label mt-5 text-iron-400">{t('platform.profile.industries.towns')}</p>
           <ul className="mt-2 flex flex-wrap gap-2">
             {towns.map(([id, v]) => (
-              <li key={id} className="rounded-full border border-brass-hairline bg-enamel-800 px-2.5 py-1 font-ui text-[12px] font-semibold text-paper-100">
-                {TOWN_BY_ID[id]?.name ?? id} <span className="data-text text-[11px] font-normal text-iron-400">×{v}</span>
+              <li key={id} className="rounded-full border border-brass-hairline bg-enamel-800 px-2.5 py-1 font-ui text-[12.5px] font-semibold text-paper-100">
+                {TOWN_BY_ID[id]?.name ?? id} <span className="data-text text-[10.5px] font-normal text-iron-400">×{v}</span>
               </li>
             ))}
           </ul>
@@ -327,14 +331,14 @@ function RivalsPanel({ stats }: { stats: Stats }) {
         <ul className="grid gap-1.5">
           {stats.rivals.slice(0, 8).map((r) => (
             <li key={r.id} className="flex items-center gap-3 rounded-lg border border-brass-hairline bg-enamel-800 px-3 py-2">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700 font-ui text-[12px] font-semibold text-paper-100" aria-hidden>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700 font-ui text-[12.5px] font-semibold text-paper-100" aria-hidden>
                 {r.name.charAt(0).toUpperCase()}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-ui text-[13px] font-semibold text-paper-100">{r.name}</span>
-                <span className="data-text text-[11px] text-iron-400">{r.played === 1 ? t('platform.profile.rivals.games.one') : t('platform.profile.rivals.games.many', { n: r.played })}</span>
+                <span className="data-text text-[10.5px] text-iron-400">{r.played === 1 ? t('platform.profile.rivals.games.one') : t('platform.profile.rivals.games.many', { n: r.played })}</span>
               </span>
-              <span className={cn('data-text text-[14px] font-semibold tabular-nums', r.won > r.lost ? 'text-bottle-400' : r.won < r.lost ? 'text-rust-400' : 'text-paper-300')}>
+              <span className={cn('data-text text-[14px] font-semibold tabular-nums', r.won > r.lost ? 'text-bottle-ink' : r.won < r.lost ? 'text-rust-400' : 'text-paper-300')}>
                 {r.won} – {r.lost}
               </span>
             </li>
@@ -419,7 +423,7 @@ function IdentitySettings() {
     <Panel title={t('platform.profile.settings.identity')}>
       <div className="grid gap-5">
         <div>
-          <p className="micro-label text-brass-300/90">{t('platform.profile.settings.portrait')}</p>
+          <p className="micro-label text-brass-300">{t('platform.profile.settings.portrait')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-4">
             <span className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-brass-hairline-strong bg-enamel-700 font-ui text-[24px] font-semibold text-paper-100">
               {portraitValue ? <img src={portraitValue} alt="" draggable={false} className="h-full w-full object-cover" /> : session.name.charAt(0).toUpperCase()}
@@ -440,7 +444,7 @@ function IdentitySettings() {
           <input id="profile-motto" value={mottoValue} onChange={(e) => setMotto(e.target.value)} maxLength={80} placeholder={t('platform.profile.settings.mottoPlaceholder')} className={inputClass} />
         </Field>
         <div>
-          <p className="micro-label text-brass-300/90">{t('platform.profile.settings.color')}</p>
+          <p className="micro-label text-brass-300">{t('platform.profile.settings.color')}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2.5">
             {PLAYER_COLORS.map((c) => (
               <button
@@ -454,21 +458,21 @@ function IdentitySettings() {
                 )}
               >
                 <PlayerToken color={c.id} size={22} />
-                <span className="font-ui text-[12px] font-semibold text-paper-100">{t(`setup.colors.${c.id}`)}</span>
+                <span className="font-ui text-[12.5px] font-semibold text-paper-100">{t(`setup.colors.${c.id}`)}</span>
               </button>
             ))}
             <button type="button" onClick={() => setColor(null)} className={cn('micro-label transition-colors duration-150', colorValue === null ? 'text-brass-300' : 'text-iron-400 hover:text-paper-100')}>
               {t('platform.profile.settings.none')}
             </button>
           </div>
-          <p className="mt-1.5 font-ui text-[12px] text-iron-400">{t('platform.profile.settings.colorHint')}</p>
+          <p className="mt-1.5 font-ui text-[12.5px] text-iron-400">{t('platform.profile.settings.colorHint')}</p>
         </div>
         <Refusal text={error} />
         <div className="flex items-center gap-3">
           <Button variant="primary" onClick={save} disabled={!dirty}>
             {t('platform.profile.settings.save')}
           </Button>
-          {saved && <span className="micro-label text-bottle-400">{t('platform.profile.settings.saved')}</span>}
+          {saved && <span className="micro-label text-bottle-ink">{t('platform.profile.settings.saved')}</span>}
         </div>
       </div>
     </Panel>
@@ -495,12 +499,12 @@ function PostSettings() {
   };
   return (
     <Panel title={t('platform.profile.settings.post')}>
-      <p className="font-serif text-[13.5px] italic leading-relaxed text-paper-300">{t('platform.profile.settings.postCopy')}</p>
+      <p className="font-serif text-[13px] italic leading-relaxed text-paper-300">{t('platform.profile.settings.postCopy')}</p>
       <label className="mt-4 flex cursor-pointer items-center gap-3">
-        <input type="checkbox" checked={session.newsletter} onChange={() => void toggle()} disabled={busy || !session.verified} className="h-4 w-4 accent-[#C9A24B]" />
+        <input type="checkbox" checked={session.newsletter} onChange={() => void toggle()} disabled={busy || !session.verified} className="h-4 w-4 accent-[rgb(var(--brass-plate))]" />
         <span className="font-ui text-[13px] text-paper-100">{t('platform.profile.settings.postOn')}</span>
       </label>
-      {!session.verified && <p className="mt-2 font-ui text-[12px] text-iron-400">{t('platform.profile.settings.postVerify')}</p>}
+      {!session.verified && <p className="mt-2 font-ui text-[12.5px] text-iron-400">{t('platform.profile.settings.postVerify')}</p>}
     </Panel>
   );
 }
@@ -533,10 +537,10 @@ function SecuritySettings() {
     <Panel title={t('platform.profile.settings.security')}>
       <div className="grid gap-5">
         <div>
-          <p className="micro-label text-brass-300/90">{t('platform.profile.settings.email')}</p>
+          <p className="micro-label text-brass-300">{t('platform.profile.settings.email')}</p>
           <p className="mt-2 flex flex-wrap items-center gap-2">
             <span className="data-text text-[13px] text-paper-100">{session.email ?? '—'}</span>
-            <span className={cn('micro-label inline-flex items-center gap-1 rounded px-1.5 py-0.5', session.verified ? 'bg-bottle-700/60 text-bottle-400' : 'bg-rust-700/50 text-rust-400')}>
+            <span className={cn('micro-label inline-flex items-center gap-1 rounded px-1.5 py-0.5', session.verified ? 'bg-bottle-700/60 text-paper-100' : 'bg-rust-700/50 text-paper-100')}>
               {session.verified ? <BadgeCheck size={12} aria-hidden /> : <MailWarning size={12} aria-hidden />}
               {session.verified ? t('platform.profile.settings.verified') : t('platform.profile.settings.unverified')}
             </span>
@@ -556,7 +560,7 @@ function SecuritySettings() {
           <Button variant="primary" onClick={change} disabled={!current || next.length < 8}>
             {t('platform.profile.settings.change')}
           </Button>
-          {changed && <span className="micro-label text-bottle-400">{t('platform.profile.settings.changed')}</span>}
+          {changed && <span className="micro-label text-bottle-ink">{t('platform.profile.settings.changed')}</span>}
         </div>
 
         <div className="border-t border-[rgb(var(--paper-100)/.07)] pt-5">
@@ -632,7 +636,7 @@ function DataSettings() {
             <Button variant="ghost" icon={<Download size={16} aria-hidden />} onClick={take} disabled={busy}>
               {t('platform.profile.settings.export')}
             </Button>
-            {taken && <span className="micro-label text-bottle-400">{t('platform.profile.settings.exported')}</span>}
+            {taken && <span className="micro-label text-bottle-ink">{t('platform.profile.settings.exported')}</span>}
           </div>
         </div>
         <div className="border-t border-[rgb(var(--paper-100)/.07)] pt-5">
@@ -680,7 +684,7 @@ export default function Profile() {
   if (!session) return null;
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-10 sm:px-8">
+    <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
       <MemberCard />
       <div className="mt-4">
         <VerifyBanner />

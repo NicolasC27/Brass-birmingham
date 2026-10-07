@@ -100,7 +100,9 @@ export default function Replay() {
   if (!final || !states) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="font-fell text-lg text-cream-100/80">{t('results.page.replayMissing')}</p>
+        {/* no felt under this one: it is said on the register's own paper,
+            so it takes the register's ink and not the room's */}
+        <p className="font-fell text-lg text-paper-300">{t('results.page.replayMissing')}</p>
         <Link to={backTo} className="btn-ledger">
           {from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
         </Link>
@@ -129,28 +131,28 @@ export default function Replay() {
           return (
             <div key={k} className={cn('flex items-center gap-2 rounded-md border bg-coal-900/85 px-2 py-1 backdrop-blur-md', toAct ? 'border-brass-400' : 'border-brass-700/40')}>
               <ShapeChip color={p.color} size={11} />
-              <span className="font-fell text-[12px] tracking-wide text-cream-100">{p.name}</span>
-              <span className="font-mono text-[10px]" style={{ color: col }}>
+              <span className="font-fell text-[12.5px] tracking-wide text-cream-100">{p.name}</span>
+              <span className="font-mono text-[10.5px]" style={{ color: col }}>
                 £{p.money}
               </span>
-              <span className="font-mono text-[10px] text-bottle-600 brightness-150">
+              <span className="font-mono text-[10.5px] text-bottle-600 brightness-150">
                 ↗ {incomeLevel(p.income)} ({fmtPay(INCOME_PAYOUT[p.income])})
               </span>
-              <span className="font-mono text-[10px] text-cream-100/75">{p.vp} VP</span>
+              <span className="font-mono text-[10.5px] text-cream-100/75">{p.vp} VP</span>
             </div>
           );
         })}
       </div>
 
       {/* back */}
-      <Link to={backTo} className="plate fixed right-3 top-3 z-[64] flex items-center gap-1.5 px-3 py-1.5 font-sans text-[10px] font-semibold uppercase tracking-wider text-cream-100/75 hover:text-brass-400">
+      <Link to={backTo} className="plate fixed right-3 top-3 z-[64] flex items-center gap-1.5 px-3 py-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-wider text-cream-100/75 hover:text-brass-400">
         <ArrowLeft className="h-3 w-3" /> {from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
       </Link>
 
       {/* the reel: what just happened, the scrubber, transport */}
       <div className="plate fixed bottom-4 left-1/2 z-[64] flex w-[min(760px,94vw)] -translate-x-1/2 flex-col gap-2 px-4 py-3" role="region" aria-label={t('results.page.replayAria')}>
         <div className="flex items-baseline gap-3">
-          <span className="shrink-0 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400">
+          <span className="shrink-0 font-sans text-[10.5px] font-semibold uppercase tracking-label text-brass-400">
             {t('results.page.replayStep', { i, n })}
             <span className="ml-2 text-cream-100/45">
               {game.era === 'canal' ? 'Canal' : 'Rail'} · R{game.round}
@@ -192,14 +194,14 @@ export default function Replay() {
                 type="button"
                 aria-pressed={speed === sp}
                 onClick={() => setSpeed(sp)}
-                className={cn('px-2 py-0.5 font-mono text-[10px] font-bold', speed === sp ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400')}
+                className={cn('px-2 py-0.5 font-mono text-[10.5px] font-bold', speed === sp ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400')}
               >
                 ×{sp}
               </button>
             ))}
           </div>
         </div>
-        <div className="font-sans text-[8.5px] uppercase tracking-[0.14em] text-cream-100/35">{t('results.page.replayKeys')}</div>
+        <div className="font-sans text-[8.5px] uppercase tracking-label text-cream-100/35">{t('results.page.replayKeys')}</div>
       </div>
     </div>
   );

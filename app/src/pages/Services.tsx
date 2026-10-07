@@ -34,10 +34,10 @@ export default function Services() {
               {(seasons ?? []).map((s) => (
                 <li key={s.id}>
                   <button type="button" onClick={() => setChosen(s.id)} className={cn('flex w-full items-baseline justify-between gap-3 border-b border-[var(--gz-ink-faint)] py-2 text-left transition-colors hover:bg-enamel-800', id === s.id ? 'text-brass-300' : 'text-paper-100')}>
-                    <span className="font-fraunces text-[15px] font-medium" style={{ fontVariationSettings: '"opsz" 48' }}>
+                    <span className="font-fraunces text-[15px] font-medium">
                       {s.name}
                     </span>
-                    {s.id === current && <span className="micro-label text-iron-600">{t('platform.seasons.current')}</span>}
+                    {s.id === current && <span className="micro-label text-iron-400">{t('platform.seasons.current')}</span>}
                   </button>
                 </li>
               ))}
@@ -54,7 +54,7 @@ export default function Services() {
                 {review.best && (
                   <div className="mt-6 text-center">
                     <p className="micro-label text-brass-300">{t('platform.seasons.best')}</p>
-                    <p className="mt-1 font-fraunces text-[20px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+                    <p className="mt-1 font-fraunces text-[20px] font-medium text-paper-100">
                       {t('platform.home.edition.bestLine', { table: tableTitle(review.best.name, lang), name: review.best.winner, vp: review.best.vp })}
                     </p>
                   </div>
@@ -66,11 +66,11 @@ export default function Services() {
                     <ol className="flex flex-col">
                       {review.players.map((row, i) => (
                         <li key={row.id} className={cn('flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2', row.id === session.id && 'text-brass-300')}>
-                          <span className="data-text w-5 text-[11px] text-iron-600 tnums">{i + 1}.</span>
-                          <span className="min-w-0 flex-1 truncate font-fraunces text-[15px] font-medium" style={{ fontVariationSettings: '"opsz" 48' }}>
+                          <span className="data-text w-5 text-[10.5px] text-iron-400 tnums">{i + 1}.</span>
+                          <span className="min-w-0 flex-1 truncate font-fraunces text-[15px] font-medium">
                             {row.name}
                           </span>
-                          <span className="data-text text-[12px] text-paper-300 tnums">{row.rating}</span>
+                          <span className="data-text text-paper-300 tnums">{row.rating}</span>
                         </li>
                       ))}
                       {review.players.length === 0 && <li className="py-3 font-serif text-[13px] italic text-paper-300">{t('platform.seasons.nobody')}</li>}
@@ -82,11 +82,11 @@ export default function Services() {
                     <ol className="flex flex-col">
                       {review.companies.map((row, i) => (
                         <li key={row.id} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2">
-                          <span className="data-text w-5 text-[11px] text-iron-600 tnums">{i + 1}.</span>
-                          <span className="min-w-0 flex-1 truncate font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                          <span className="data-text w-5 text-[10.5px] text-iron-400 tnums">{i + 1}.</span>
+                          <span className="min-w-0 flex-1 truncate font-fraunces text-[15px] font-medium text-paper-100">
                             {row.name}
                           </span>
-                          <span className="data-text text-[12px] text-paper-300 tnums">{t('platform.companies.wins', { n: row.wins, games: row.games })}</span>
+                          <span className="data-text text-paper-300 tnums">{t('platform.companies.wins', { n: row.wins, games: row.games })}</span>
                         </li>
                       ))}
                       {review.companies.length === 0 && <li className="py-3 font-serif text-[13px] italic text-paper-300">{t('platform.companies.none')}</li>}

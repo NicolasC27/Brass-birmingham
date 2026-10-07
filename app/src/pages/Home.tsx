@@ -1,8 +1,7 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Briefcase, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { tableTitle } from '@/online/tableNames';
 import { useDesk, useSession } from '@/online/session';
@@ -32,6 +31,10 @@ import { preloadGame } from '@/platform/preload';
 /* what waits for me, the tickets — beside                             */
 /* the departures; below, the queues and my standing, the club's news  */
 /* in two columns, and the classifieds. Framer Motion only.            */
+/*                                                                     */
+/* Spectral is the standfirst's hand: the italic belongs to the line   */
+/* that introduces a block and nowhere else. Set on every empty state, */
+/* note and caption it marked nothing at all, so those are roman now.  */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
@@ -50,21 +53,20 @@ const plateOfTheEra = () => {
 };
 
 /* a printed ticket: the front page's way of saying « go » */
+/* the front page's ticket is the platform's ticket, with the game warmed up
+   under the hand; the tone is the only thing this page still says itself */
 function Ticket({ to, onClick, tone, icon, children }: { to?: string; onClick?: () => void; tone?: 'brass' | 'signal'; icon: ReactNode; children: ReactNode }) {
-  const cls = cn('gz-ticket', tone === 'brass' && 'gz-ticket-brass', tone === 'signal' && 'gz-ticket-signal');
-  if (to) {
-    return (
-      <Link to={to} className={cls} onMouseEnter={preloadGame} onFocus={preloadGame}>
-        {icon}
-        {children}
-      </Link>
-    );
-  }
-  return (
-    <button type="button" onClick={onClick} className={cls} onMouseEnter={preloadGame} onFocus={preloadGame}>
-      {icon}
+  const warm = { onMouseEnter: preloadGame, onFocus: preloadGame };
+  const variant = tone === 'brass' ? 'ticket-brass' : 'ticket';
+  const cls = tone === 'signal' ? 'gz-ticket-signal' : undefined;
+  return to ? (
+    <Button variant={variant} to={to} icon={icon} className={cls} {...warm}>
       {children}
-    </button>
+    </Button>
+  ) : (
+    <Button variant={variant} onClick={onClick} icon={icon} className={cls} {...warm}>
+      {children}
+    </Button>
   );
 }
 
@@ -100,12 +102,12 @@ function ResumeBanner() {
       transition={{ duration: 0.26, ease, delay: 0.1 }}
       className="flex items-center gap-3 border-y border-[var(--gz-ink-soft)] py-3"
     >
-      <RotateCcw size={15} className="animate-pulse-signal shrink-0 text-signal-400" aria-hidden />
+      <RotateCcw size={15} className="animate-pulse-signal shrink-0 text-signal-ink" aria-hidden />
       <div className="min-w-0 flex-1">
-        <p className="truncate font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+        <p className="truncate font-fraunces text-[15px] font-medium text-paper-100">
           {text}
         </p>
-        <p className="data-text text-[11px] text-iron-400 tnums">{meta}</p>
+        <p className="data-text text-[10.5px] text-iron-400 tnums">{meta}</p>
       </div>
       {!table && (
         <button type="button" aria-label={t('platform.home.discard')} title={t('platform.home.discard')} onClick={() => setDiscarding(true)} className="text-iron-400 transition-colors hover:text-rust-400">
@@ -138,6 +140,9 @@ function QueueRankStrip() {
   const session = useSession();
   const desk = useDesk();
   const presence = usePresence();
+  /* a width is neither a transform nor a layout: framer's own reduced-motion
+     setting lets it through, so the bar is told here */
+  const reduced = useReducedMotion();
   const offline = !presence.online;
   const rank = rankOf(desk?.rating);
   const badge = rank.tier === 'placement' ? undefined : { tier: rank.tier, division: rank.division };
@@ -172,13 +177,13 @@ function QueueRankStrip() {
                     : t('platform.home.rating.valueTop', { tier: t(`platform.rank.${rank.tier}`), lp: rank.lp ?? 0 })}
               </p>
               <div className="mt-2 h-px overflow-hidden bg-[var(--gz-ink-faint)]">
-                <motion.div initial={{ width: 0 }} whileInView={{ width: `${rank.progress}%` }} viewport={{ once: true }} transition={{ duration: 0.6, ease }} className="h-full bg-brass-300" />
+                <motion.div initial={reduced ? false : { width: 0 }} whileInView={{ width: `${rank.progress}%` }} viewport={{ once: true }} transition={{ duration: 0.6, ease }} className="h-full bg-brass-300" />
               </div>
             </div>
           </div>
         ) : (
           <div className="flex h-[76px] items-center justify-between gap-3 border border-dashed border-[var(--gz-ink-soft)] p-4">
-            <p className="font-serif text-[13px] italic text-paper-300">{t('platform.home.rating.signIn')}</p>
+            <p className="font-serif text-[13px] text-paper-300">{t('platform.home.rating.signIn')}</p>
             <Button variant="ghost" className="!h-8 shrink-0" to="/account">
               {t('platform.action.signIn')}
             </Button>
@@ -258,7 +263,6 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.24, ease, delay: 0.06 }}
             className="-mt-2 max-w-[560px] font-fraunces text-[30px] font-normal italic leading-[1.15] text-paper-100 min-[900px]:text-[36px]"
-            style={{ fontVariationSettings: '"opsz" 144' }}
           >
             {t('platform.home.tagline')}
           </motion.h1>

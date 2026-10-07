@@ -26,7 +26,9 @@ import {
 
 const STATUS_STYLES: Record<Fidelity, string> = {
   faithful: "border-bottle-500/60 bg-bottle-700 text-paper-100",
-  approximate: "border-brass-500/60 bg-brass-500/10 text-brass-300",
+  /* the ticket keeps its brass rule, but the ink is the page's: brass on this
+     wash measured 3.79 by day, where paper-100 holds 11.31 and 12.30 */
+  approximate: "border-brass-500/60 bg-brass-500/10 text-paper-100",
   planned: "border-rust-600/60 bg-transparent text-rust-400",
 };
 
@@ -62,7 +64,7 @@ function MarketTrayMock() {
                 : "flex h-11 w-11 flex-col items-center justify-center rounded border border-brass-hairline bg-enamel-800 shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]"
             }
           >
-            <span className="tnums font-mono text-[9.5px] text-brass-500">£{i + 1}</span>
+            <span className="tnums font-mono text-[10.5px] text-brass-500">£{i + 1}</span>
             {i >= 2 ? (
               <span className="mt-0.5 h-3 w-3 rounded-full bg-ink-900 ring-1 ring-paper-100/40" />
             ) : (
@@ -70,11 +72,13 @@ function MarketTrayMock() {
             )}
           </div>
         ))}
-        <span className="ml-2 rounded bg-brass-500 px-2 py-1 font-mono text-[11px] font-semibold text-ink-900">
+        {/* the plate and the ink that was cut for it: 4.90 by day, 7.63 by
+            night, where brass-500 under ink-900 measured 2.59 */}
+        <span className="ml-2 rounded bg-[rgb(var(--brass-plate))] px-2 py-1 font-mono text-[10.5px] font-semibold text-[rgb(var(--ink-on-brass))]">
           {t("rules.marketTray.buy")}
         </span>
       </div>
-      <p className="mt-2 font-ui text-[11px] text-iron-400">{t("rules.marketTray.caption")}</p>
+      <p className="mt-2 font-ui text-[10.5px] text-iron-400">{t("rules.marketTray.caption")}</p>
     </div>
   );
 }
@@ -89,11 +93,11 @@ function ScoringSketch() {
       role="img"
       aria-label={t("rules.scoringSketch.aria")}
     >
-      <circle cx={60} cy={56} r={26} fill="rgb(var(--enamel-800))" stroke="#8F6B23" strokeWidth={1.5} />
+      <circle cx={60} cy={56} r={26} fill="rgb(var(--enamel-800))" stroke="var(--rd-brass, #8F6B23)" strokeWidth={1.5} />
       <text x={60} y={60} textAnchor="middle" fontSize={11} fill="rgb(var(--paper-100))" fontFamily="Inter, sans-serif">
         Dudley
       </text>
-      <circle cx={250} cy={56} r={26} fill="rgb(var(--enamel-800))" stroke="#8F6B23" strokeWidth={1.5} />
+      <circle cx={250} cy={56} r={26} fill="rgb(var(--enamel-800))" stroke="var(--rd-brass, #8F6B23)" strokeWidth={1.5} />
       <text x={250} y={60} textAnchor="middle" fontSize={11} fill="rgb(var(--paper-100))" fontFamily="Inter, sans-serif">
         B’ham
       </text>
@@ -105,8 +109,8 @@ function ScoringSketch() {
         <text x={193} y={82} textAnchor="middle" fontSize={11} fill="rgb(var(--rust-400))" fontFamily="'IBM Plex Mono', monospace">5</text>
       </g>
       {/* the link */}
-      <path d="M 86 56 C 140 40, 180 72, 224 58" fill="none" stroke="#C9A45C" strokeWidth={2.5} strokeLinecap="round" />
-      <rect x={140} y={10} width={52} height={18} rx={4} fill="rgb(var(--enamel-850))" stroke="#C9A45C" />
+      <path d="M 86 56 C 140 40, 180 72, 224 58" fill="none" stroke="var(--rd-brass, #C9A45C)" strokeWidth={2.5} strokeLinecap="round" />
+      <rect x={140} y={10} width={52} height={18} rx={4} fill="rgb(var(--enamel-850))" stroke="var(--rd-brass, #C9A45C)" />
       <text x={166} y={23} textAnchor="middle" fontSize={10} fill="var(--rd-brass, #C9A45C)" fontFamily="'IBM Plex Mono', monospace">{t("rules.scoringSketch.link")}</text>
       <text x={320} y={60} textAnchor="middle" fontSize={13} fill="rgb(var(--paper-100))" fontFamily="'IBM Plex Mono', monospace">
         = 10
@@ -124,7 +128,7 @@ function WorkedExampleCaption() {
   const expr = t("rules.scoring.expr");
   const [before, after = ""] = t("rules.scoring.exampleBody", { expr }).split(expr);
   return (
-    <p className="mt-2 font-ui text-[12px] leading-relaxed text-paper-300">
+    <p className="mt-2 font-ui text-[12.5px] leading-relaxed text-paper-300">
       {before}
       <span className="tnums font-mono text-brass-300">{expr}</span>
       {after}
@@ -255,7 +259,7 @@ export default function Rules() {
         {/* --------------------- En-tête du registre --------------------- */}
         <header className="flex flex-col gap-6 min-[900px]:flex-row min-[900px]:items-end min-[900px]:justify-between">
           <div>
-            <motion.p {...headerReveal(0)} className="micro-label text-brass-400">
+            <motion.p {...headerReveal(0)} className="micro-label text-brass-300">
               {t("platform.rules.eyebrow")}
             </motion.p>
             <motion.h1 {...headerReveal(1)} className="display-page mt-2">
@@ -274,7 +278,7 @@ export default function Rules() {
                 onChange={(e) => onSearch(e.target.value)}
                 placeholder={t("platform.rules.searchPlaceholder")}
                 aria-label={t("platform.rules.searchAria")}
-                className="h-10 w-full rounded-lg border border-brass-hairline bg-enamel-850 pl-9 pr-3 font-ui text-[14px] text-paper-100 placeholder:text-iron-600 focus-visible:outline-2 focus-visible:outline-signal-400"
+                className="h-10 w-full rounded-lg border border-brass-hairline bg-enamel-850 pl-9 pr-3 font-ui text-[14px] text-paper-100 placeholder:text-iron-400 focus-visible:outline-2 focus-visible:outline-signal-400"
               />
             </label>
             <Button variant="ghost" to="/online" icon={<Play size={16} aria-hidden />}>
@@ -308,7 +312,7 @@ export default function Rules() {
                       key={s.title}
                       className="flex gap-3 rounded-lg border border-brass-hairline bg-enamel-800 p-4"
                     >
-                      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brass-600 bg-gradient-to-br from-brass-300 via-brass-500 to-brass-600 text-ink-900">
+                      <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brass-600 bg-[rgb(var(--brass-plate))] text-[rgb(var(--ink-on-brass))]">
                         <RulesIcon icon={s.icon} className="h-[18px] w-[18px]" />
                         <span className="tnums absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-lacquer-950 font-mono text-[9px] font-semibold text-paper-100 ring-1 ring-brass-hairline">
                           {i + 1}
@@ -337,7 +341,7 @@ export default function Rules() {
                   <div className="overflow-hidden rounded-lg border border-brass-hairline">
                     <img src="/era-canal-banner.webp" alt={t("rules.eras.canalAlt")} className="block h-16 w-full object-cover md:h-20" />
                   </div>
-                  <h3 className="mt-3 font-ui text-[15px] font-semibold text-bottle-400">
+                  <h3 className="mt-3 font-ui text-[15px] font-semibold text-bottle-ink">
                     {t("rules.eras.canalTitle")}
                   </h3>
                   <p className="mt-1">{t("rules.eras.canalBody")}</p>
@@ -356,7 +360,7 @@ export default function Rules() {
                 </div>
 
                 <div className="rounded-lg border-l-[3px] border-rust-600/70 bg-lacquer-950 p-4">
-                  <p className="font-ui text-[11px] font-semibold uppercase tracking-[0.18em] text-rust-400">
+                  <p className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.18em] text-rust-400">
                     {t("rules.eras.betweenTitle")}
                   </p>
                   <p className="mt-1 font-ui text-[14px] text-paper-300">
@@ -381,15 +385,15 @@ export default function Rules() {
               <ChapterSection id="network" numeral="05" title={t("rules.chapters.network")} onCopyAnchor={onCopyAnchor}>
                 <p>{t("rules.network.intro")}</p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-md border border-bottle-500/40 bg-bottle-500/10 px-3 py-2 font-mono text-[12px] text-paper-100">
+                  <span className="inline-flex items-center gap-2 rounded-md border border-bottle-500/40 bg-bottle-500/10 px-3 py-2 font-mono text-[12.5px] text-paper-100">
                     <img src="/icon-canal.svg" alt="" className="h-4 w-4 [filter:brightness(0)_invert(0.85)]" />
                     {t("rules.network.canalChip")}
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-md border border-rust-600/40 bg-rust-600/10 px-3 py-2 font-mono text-[12px] text-paper-100">
+                  <span className="inline-flex items-center gap-2 rounded-md border border-rust-600/40 bg-rust-600/10 px-3 py-2 font-mono text-[12.5px] text-paper-100">
                     <img src="/icon-rail.svg" alt="" className="h-4 w-4 [filter:brightness(0)_invert(0.85)]" />
                     {t("rules.network.railChip")}
                   </span>
-                  <span className="inline-flex items-center gap-2 rounded-md border border-rust-600/40 bg-rust-600/10 px-3 py-2 font-mono text-[12px] text-paper-100">
+                  <span className="inline-flex items-center gap-2 rounded-md border border-rust-600/40 bg-rust-600/10 px-3 py-2 font-mono text-[12.5px] text-paper-100">
                     {t("rules.network.doubleRailChip")}
                   </span>
                 </div>
@@ -452,7 +456,7 @@ export default function Rules() {
                       <th scope="col" className="micro-label px-2 pb-2 text-brass-500">{t("rules.scoring.thWhen")}</th>
                     </tr>
                   </thead>
-                  <tbody className="font-ui text-[13.5px] text-paper-300">
+                  <tbody className="font-ui text-[13px] text-paper-300">
                     <tr className="border-b border-[rgb(var(--paper-100)/.08)]">
                       <td className="px-2 py-2 font-ui text-[14px] font-semibold text-paper-100">{t("rules.scoring.r1s")}</td>
                       <td className="tnums px-2 py-2 font-mono text-[12.5px]">{t("rules.scoring.r1c")}</td>
@@ -497,7 +501,7 @@ export default function Rules() {
                     {approximations.map((a) => (
                       <li key={a.area} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
                         <span
-                          className={`inline-flex w-fit shrink-0 items-center rounded-sm border px-2 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-[0.14em] ${STATUS_STYLES[a.status]}`}
+                          className={`inline-flex w-fit shrink-0 items-center rounded-sm border px-2 py-0.5 font-ui text-[10.5px] font-semibold uppercase tracking-label ${STATUS_STYLES[a.status]}`}
                         >
                           {statusLabels[a.status]}
                         </span>
@@ -516,7 +520,7 @@ export default function Rules() {
                   <h3 className="font-ui text-[15px] font-semibold text-paper-100">
                     {t("rules.approx.botsTitle")}
                   </h3>
-                  <p className="mt-1 font-ui text-[13.5px] leading-relaxed text-paper-300">
+                  <p className="mt-1 font-ui text-[13px] leading-relaxed text-paper-300">
                     {t("rules.approx.botsBody1")}
                     <strong className="text-paper-100">{t("setup.persona.boulton.label")}</strong>
                     {t("rules.approx.botsBody2")}

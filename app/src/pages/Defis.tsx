@@ -27,14 +27,14 @@ function WeekBoard({ challenge }: { challenge: Challenge }) {
     <ol className="flex flex-col">
       {board.rows.slice(0, 3).map((row, i) => (
         <li key={row.id} className={cn('flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1 last:border-b-0', row.id === session.id && 'text-brass-300')}>
-          <span className="data-text w-4 text-[11px] text-iron-600 tnums">{i + 1}.</span>
-          <span className="min-w-0 flex-1 truncate font-fraunces text-[14px] font-medium" style={{ fontVariationSettings: '"opsz" 48' }}>
+          <span className="data-text w-4 text-[10.5px] text-iron-400 tnums">{i + 1}.</span>
+          <span className="min-w-0 flex-1 truncate font-fraunces text-[14px] font-medium">
             {row.name}
           </span>
           <span className="font-fraunces text-[15px] font-medium tnums">{row.points}</span>
         </li>
       ))}
-      {board.me && board.me.rank > 3 && <li className="data-text pt-1 text-[11px] text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</li>}
+      {board.me && board.me.rank > 3 && <li className="data-text pt-1 text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</li>}
     </ol>
   );
 }
@@ -58,18 +58,18 @@ export default function Defis() {
                   {t('platform.defis.week', { n: c.number })}
                   {current && <span className="ml-2 text-brass-300">{t('platform.defis.current')}</span>}
                 </p>
-                <h2 className="mt-1 font-fraunces text-[22px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+                <h2 className="mt-1 font-fraunces text-[22px] font-medium leading-tight text-paper-100">
                   {t(`platform.challenge.titles.${c.id}`)}
                 </h2>
-                <p className="mt-2 font-serif text-[13.5px] italic leading-relaxed text-paper-300">{t(`platform.challenge.stories.${c.id}`)}</p>
-                <p className="data-text mt-2 text-[11px] text-iron-600">{t('platform.challenge.rivals', { names: c.rivals.map(personaName).join(', ') })}</p>
+                <p className="mt-2 font-serif text-[13px] italic leading-relaxed text-paper-300">{t(`platform.challenge.stories.${c.id}`)}</p>
+                <p className="data-text mt-2 text-[10.5px] text-iron-400">{t('platform.challenge.rivals', { names: c.rivals.map(personaName).join(', ') })}</p>
               </div>
               <div className="min-[900px]:col-span-3">
                 <p className="micro-label text-paper-100">{t('platform.defis.mine')}</p>
                 {best ? (
                   <>
                     <p className="mt-1 font-fraunces text-[30px] font-normal leading-none text-paper-100 tnums">{best.points}</p>
-                    <p className="data-text mt-1 text-[11px] text-iron-400 tnums">
+                    <p className="data-text mt-1 text-[10.5px] text-iron-400 tnums">
                       {t('platform.challenge.board.met', { done: best.met.filter(Boolean).length, total: best.met.length })} · {best.vp} PV
                     </p>
                   </>
@@ -77,8 +77,8 @@ export default function Defis() {
                   <p className="mt-1 font-serif text-[13px] italic text-paper-300">{t('platform.defis.none')}</p>
                 )}
                 {current && (
-                  <Link to="/#defi" className="mt-3 inline-block font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-                    {t('platform.defis.open')}
+                  <Link to="/#defi" className="mt-3 inline-block font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+                    {t('platform.defis.open')} →
                   </Link>
                 )}
               </div>

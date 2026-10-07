@@ -13,7 +13,7 @@ export default function Glossaire() {
       <dl className="grid gap-x-10 min-[900px]:grid-cols-2">
         {TERMS.map((id) => (
           <div key={id} className="border-b border-[var(--gz-ink-faint)] py-4">
-            <dt className="font-fraunces text-[18px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+            <dt className="font-fraunces text-[18px] font-medium text-paper-100">
               {t(`platform.glossary.terms.${id}.name`)}
             </dt>
             <dd className="mt-1 font-serif text-[14px] italic leading-relaxed text-paper-300">{t(`platform.glossary.terms.${id}.def`)}</dd>

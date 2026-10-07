@@ -20,7 +20,7 @@ export default function Almanach() {
           const current = i === now.index;
           return (
             <li key={year} className={cn('flex items-start gap-5 border-b border-[var(--gz-ink-faint)] py-4', current && 'bg-brass-500/[.06]')}>
-              <span className={cn('w-[72px] shrink-0 font-fraunces text-[30px] font-normal leading-none tnums', current ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 144' }}>
+              <span className={cn('w-[72px] shrink-0 font-fraunces text-[30px] font-normal leading-none tnums', current ? 'text-brass-300' : 'text-paper-100')}>
                 {year}
               </span>
               <span className="min-w-0 flex-1">

@@ -84,13 +84,13 @@ function EmptyState() {
         }}
       />
       <div className="plaque plaque-rivets relative max-w-[560px] px-8 py-12 text-center sm:px-12">
-        <p className="font-sans text-xs font-semibold uppercase tracking-[0.3em] text-ink-900/70">
+        <p className="font-sans text-xs font-semibold uppercase tracking-[0.3em] text-cream-100/70">
           {t("results.empty.eyebrow")}
         </p>
         <h1 className="engraved-brass mt-4 font-display text-4xl font-black">
           {t("results.empty.title")}
         </h1>
-        <p className="mx-auto mt-4 max-w-sm font-sans text-sm leading-relaxed text-ink-900/85">
+        <p className="mx-auto mt-4 max-w-sm font-sans text-sm leading-relaxed text-cream-100/85">
           {t("results.empty.body")}
         </p>
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -238,7 +238,7 @@ export default function Results() {
             className="divider-brass mt-4 max-w-md"
           />
           {!settled && (
-            <p className="mt-3 font-sans text-[11px] uppercase tracking-[0.2em] text-cream-100/40">
+            <p className="mt-3 font-sans text-[10.5px] uppercase tracking-[0.2em] text-cream-100/40">
               {t("results.page.skip")}
             </p>
           )}
@@ -345,13 +345,13 @@ export default function Results() {
           if (!rows.some((r) => r.title || r.raised || r.record)) return null;
           return (
             <motion.div initial={false} animate={{ opacity: settled ? 1 : 0 }} transition={{ duration: 0.3 }} className="plaque mx-auto mt-10 w-[min(560px,92vw)] rounded-md px-4 py-3">
-              <p className="engraved-brass mb-2 text-center font-fell text-[12px] uppercase tracking-[0.14em]">{t("results.titles.heading")}</p>
+              <p className="engraved-brass mb-2 text-center font-fell text-[12.5px] uppercase tracking-label">{t("results.titles.heading")}</p>
               <ul className="flex flex-col gap-1">
                 {rows.map((r) => (
                   <li key={r.index} className="flex items-center gap-3 font-sans text-[13px] text-cream-100/85">
                     <span className="font-fell text-[14px]" style={{ color: PLAYER_COLORS[r.player.color]?.hex }}>{r.player.name}</span>
                     {r.title && <span className="rounded-sm border border-brass-700/60 px-1.5 py-px font-fell text-[11.5px] tracking-wide text-brass-400">{t(`results.titles.${r.title}`)}</span>}
-                    {r.record && <span className="font-mono text-[11px] text-cream-100/55">{r.record}</span>}
+                    {r.record && <span className="font-mono text-[10.5px] text-cream-100/55">{r.record}</span>}
                     {r.raised && (
                       <span className="ml-auto flex items-center gap-1 text-brass-400" title={t("results.toast.raised", { name: r.player.name })} aria-label={t("results.toast.raised", { name: r.player.name })}>
                         <Beer className={cn("h-4 w-4", clinked && "animate-bounce")} />
@@ -360,7 +360,7 @@ export default function Results() {
                   </li>
                 ))}
               </ul>
-              {clinked && <p className="mt-2 text-center font-fell text-[12px] italic text-brass-400/85">{t("results.toast.clink")}</p>}
+              {clinked && <p className="mt-2 text-center font-fell text-[12.5px] italic text-brass-400">{t("results.toast.clink")}</p>}
             </motion.div>
           );
         })()}

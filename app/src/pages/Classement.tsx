@@ -51,29 +51,29 @@ function HonourRow({ row, mine, avatar }: { row: Ranked; mine: boolean; avatar: 
           {mine ? (
             <MemberAvatar avatar={avatar.avatar} frame={avatar.frame} size={28} />
           ) : (
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700 font-ui text-[12px] font-semibold text-paper-100" aria-hidden>
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-brass-hairline bg-enamel-700 font-ui text-[12.5px] font-semibold text-paper-100" aria-hidden>
               {row.name.charAt(0).toUpperCase()}
             </span>
           )}
           <span className="truncate font-ui text-[13px] font-semibold text-paper-100">{row.name}</span>
           {row.color && <PlayerToken color={row.color} size={12} />}
-          {mine && <span className="micro-label rounded bg-[rgb(var(--signal-400)/.14)] px-1.5 py-0.5 text-signal-400">{t('platform.ranking.you')}</span>}
+          {mine && <span className="micro-label rounded bg-[rgb(var(--signal-400)/.14)] px-1.5 py-0.5 text-signal-ink">{t('platform.ranking.you')}</span>}
         </span>
       </td>
       <td className="py-2.5 pr-3">
         <RankBadge tier={rank.tier} division={rank.division} size={22} />
       </td>
       <td className="py-2.5 pr-3 text-right">
-        <span className="tnums font-fraunces text-[16px] font-semibold text-paper-100">{row.rating.toLocaleString(locale(lang))}</span>
+        <span className="tnums font-fraunces text-[15px] font-semibold text-paper-100">{row.rating.toLocaleString(locale(lang))}</span>
       </td>
       <td className="py-2.5 pr-3">
         <Sparkline values={row.trend} />
       </td>
       <td className="py-2.5 pr-3 text-right">
-        <span className="data-text text-[12px] tabular-nums text-paper-300">{row.games}</span>
+        <span className="data-text tabular-nums text-paper-300">{row.games}</span>
       </td>
       <td className="py-2.5 pr-3 text-right">
-        <span className={cn('data-text text-[12px] tabular-nums', pct !== null && pct >= 50 ? 'text-bottle-400' : 'text-paper-300')}>{pct === null ? '—' : `${pct} %`}</span>
+        <span className={cn('data-text tabular-nums', pct !== null && pct >= 50 ? 'text-bottle-ink' : 'text-paper-300')}>{pct === null ? '—' : `${pct} %`}</span>
       </td>
     </tr>
   );
@@ -103,7 +103,7 @@ function HonourTable({ rows, pinned, me, avatar }: { rows: Ranked[]; pinned: Ran
           {pinned && (
             <>
               <tr aria-hidden>
-                <td colSpan={cols.length} className="data-text py-1 text-center text-[13px] leading-none text-iron-600">
+                <td colSpan={cols.length} className="data-text py-1 text-center text-[13px] leading-none text-iron-400">
                   …
                 </td>
               </tr>
@@ -143,13 +143,13 @@ function Ladder({ mine }: { mine: RankView }) {
             >
               <img src={`/rank-${tier}.svg`} alt="" width={24} height={24} className="h-6 w-6" />
               <span className={cn('font-ui text-[13px] font-semibold', here ? 'text-paper-100' : 'text-iron-400')}>{t(`platform.rank.${tier}`)}</span>
-              <span className="data-text ml-auto text-[12px] tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
+              <span className="data-text ml-auto tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
               {here && <span className="micro-label text-brass-300">{t('platform.ranking.ladder.you')}</span>}
             </motion.li>
           );
         })}
       </ul>
-      <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12px] leading-snug text-iron-400">{t('platform.ranking.ladder.reward')}</p>
+      <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12.5px] leading-snug text-iron-400">{t('platform.ranking.ladder.reward')}</p>
     </motion.aside>
   );
 }
@@ -188,19 +188,19 @@ export default function Classement() {
             {t('platform.ranking.title')}
             {season && <span className="text-iron-400"> · {season.name}</span>}
           </h1>
-          <p className="data-text mt-2 text-[12px] tabular-nums text-iron-400">
+          <p className="data-text mt-2 tabular-nums text-iron-400">
             {board ? t('platform.ranking.players', { count: board.players }) : t('platform.ranking.loading')}
             {season && ` · ${t('platform.ranking.daysLeft', { days: daysUntil(season.endsAt) })}`}
             {' · '}
             <Link to="/services" className="text-brass-300 transition-colors hover:text-paper-100">
-              {t('platform.seasons.link')}
+              {t('platform.seasons.link')} →
             </Link>
           </p>
         </div>
         {board && (
           <div className="flex flex-wrap items-center gap-3 console px-4 py-3">
             <RankBadge tier={mine.tier} division={mine.division} lp={mine.lp} placementDone={mine.placementDone ?? undefined} size={32} />
-            <span className="data-text text-[12px] tabular-nums text-iron-400">{me ? t('platform.ranking.myRank', { rank: me.rank, count: board.players }) : t('platform.ranking.unranked')}</span>
+            <span className="data-text tabular-nums text-iron-400">{me ? t('platform.ranking.myRank', { rank: me.rank, count: board.players }) : t('platform.ranking.unranked')}</span>
           </div>
         )}
       </motion.header>

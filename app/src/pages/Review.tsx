@@ -30,8 +30,8 @@ const BAR = 5;
 /** the grades, from the move the machine would have played to the worst */
 const GRADE_ORDER: Grade[] = ['top', 'good', 'inaccuracy', 'mistake', 'blunder'];
 const GRADE_TONE: Record<Grade, string> = {
-  top: 'border-bottle-600/70 text-bottle-400',
-  good: 'border-bottle-600/40 text-bottle-400/80',
+  top: 'border-bottle-600/70 text-bottle-ink',
+  good: 'border-bottle-600/40 text-bottle-ink',
   inaccuracy: 'border-brass-400/60 text-brass-400',
   mistake: 'border-copper-500/70 text-copper-500',
   blunder: 'border-rust-500/70 text-rust-400',
@@ -136,7 +136,10 @@ export default function Review() {
   if (!review || !final) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="font-fell text-lg text-cream-100/80">{t('results.review.missing')}</p>
+        {/* no felt is laid for this one: the notice stands on the club's own
+            page, so it takes the page's ink — cream measured 1.02 on the day's
+            paper, and the sentence simply was not there */}
+        <p className="font-fell text-lg text-paper-100">{t('results.review.missing')}</p>
         <Link to="/results" className="btn-ledger">
           {t('results.review.back')}
         </Link>
@@ -299,7 +302,7 @@ export default function Review() {
                   <p className="flex items-center gap-1.5 font-fell text-[14px] text-cream-100">
                     <ShapeChip color={colors[s.seat]} size={10} />
                     {s.name}
-                    <span className="ml-auto font-mono text-[12px] tnums" style={{ color: hexOf(colors[s.seat]) }}>
+                    <span className="ml-auto font-mono text-[12.5px] tnums" style={{ color: hexOf(colors[s.seat]) }}>
                       {t('results.review.vp', { vp: s.vp })}
                     </span>
                   </p>
@@ -320,7 +323,7 @@ export default function Review() {
           <ul className="flex flex-col gap-2.5">
             {seats.map((s) => (
               <li key={s.seat}>
-                <p className="flex items-center gap-1.5 font-fell text-[13.5px] text-cream-100/90">
+                <p className="flex items-center gap-1.5 font-fell text-[13px] text-cream-100/90">
                   <ShapeChip color={colors[s.seat]} size={10} />
                   {s.name}
                   <span className="ml-auto font-mono text-[11.5px] text-cream-100/60 tnums">
@@ -328,10 +331,10 @@ export default function Review() {
                   </span>
                 </p>
                 {s.idle.length > 0 && (
-                  <p className="mt-0.5 font-mono text-[11px] leading-relaxed text-cream-100/50">{s.idle.map(tileName).join(' · ')}</p>
+                  <p className="mt-0.5 font-mono text-[10.5px] leading-relaxed text-cream-100/50">{s.idle.map(tileName).join(' · ')}</p>
                 )}
                 {s.sweptVp > 0 && (
-                  <p className="mt-0.5 font-sans text-[11.5px] text-rust-400/90">{t('results.review.swept', { n: s.swept.length, vp: s.sweptVp })}</p>
+                  <p className="mt-0.5 font-sans text-[11.5px] text-rust-400">{t('results.review.swept', { n: s.swept.length, vp: s.sweptVp })}</p>
                 )}
               </li>
             ))}
@@ -354,18 +357,18 @@ export default function Review() {
             <table className="w-full min-w-[420px] border-collapse font-mono text-[11.5px] tnums">
               <thead>
                 <tr className="text-cream-100/45">
-                  <th className="border-b border-brass-700/40 py-1 text-left font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colRound')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colVp')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400">{t('results.review.colProj')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colIncome')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colPurse')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10px] font-semibold uppercase tracking-[0.14em]">{t('results.review.colSpent')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-left font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colRound')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colVp')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label text-brass-400">{t('results.review.colProj')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colIncome')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colPurse')}</th>
+                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colSpent')}</th>
                 </tr>
               </thead>
               <tbody>
                 {review.rounds.map((r, i) => (
                   <tr key={`${r.era}-${r.round}-${i}`} className="text-cream-100/80">
-                    <td className="border-b border-brass-700/15 py-1 text-left font-sans text-[11px] text-cream-100/60">
+                    <td className="border-b border-brass-700/15 py-1 text-left font-sans text-[10.5px] text-cream-100/60">
                       {t(r.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: r.round })}
                     </td>
                     <td className="border-b border-brass-700/15 py-1 text-right">{r.vp[mineSeat] ?? 0}</td>
@@ -376,7 +379,7 @@ export default function Review() {
                   </tr>
                 ))}
                 <tr className="font-semibold text-cream-100">
-                  <td className="py-1.5 text-left font-sans text-[11px] uppercase tracking-[0.12em] text-brass-400">{t('results.review.colClose')}</td>
+                  <td className="py-1.5 text-left font-sans text-[10.5px] uppercase tracking-[0.12em] text-brass-400">{t('results.review.colClose')}</td>
                   <td className="py-1.5 text-right">{mine.vp}</td>
                   <td className="py-1.5 text-right text-brass-400">{mine.vp}</td>
                   <td className="py-1.5 text-right">{mine.income}</td>
@@ -391,7 +394,7 @@ export default function Review() {
         {/* the machine's own reading, asked for by hand */}
         <Section title={t('results.review.machine')} lead={t('results.review.machineLead')}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-sans text-[11px] uppercase tracking-[0.14em] text-cream-100/45">{t('results.review.whichSeat')}</span>
+            <span className="font-sans text-[10.5px] uppercase tracking-label text-cream-100/45">{t('results.review.whichSeat')}</span>
             {review.seats.map((s) => (
               <button
                 key={s.seat}
@@ -411,7 +414,7 @@ export default function Review() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="font-sans text-[11px] uppercase tracking-[0.14em] text-cream-100/45">{t('results.review.howLong')}</span>
+            <span className="font-sans text-[10.5px] uppercase tracking-label text-cream-100/45">{t('results.review.howLong')}</span>
             <div className="flex overflow-hidden rounded-md border border-brass-700/60">
               {(Object.keys(THINK) as Depth[]).map((d) => (
                 <button
@@ -438,7 +441,7 @@ export default function Review() {
                 </button>
               ))}
             </div>
-            <button type="button" onClick={ask} disabled={busy} className="btn-strike !h-9 !px-4 !text-[11px] disabled:opacity-50">
+            <button type="button" onClick={ask} disabled={busy} className="btn-strike !h-9 !px-4 !text-[10.5px] disabled:opacity-50">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {busy ? t('results.review.machineBusy') : scope === 'table' ? t('results.review.machineAskAll') : t('results.review.machineAsk', { name: mine.name })}
             </button>
@@ -452,7 +455,7 @@ export default function Review() {
                   style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 4}%` }}
                 />
               </span>
-              <span className="font-mono text-[11px] text-cream-100/55 tnums">
+              <span className="font-mono text-[10.5px] text-cream-100/55 tnums">
                 {t('results.review.machineRead', { done: progress.done, total: progress.total })}
                 {progress.left > 0 ? ` · ${t('results.review.machineLeft', { s: progress.left })}` : ''}
               </span>
@@ -467,13 +470,13 @@ export default function Review() {
               <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3 border-t border-brass-700/30 pt-4">
                 <p className="flex flex-col">
                   <span className="font-fell text-[30px] leading-none text-brass-400 tnums">{rightness}%</span>
-                  <span className="mt-1 font-sans text-[10.5px] uppercase tracking-[0.14em] text-cream-100/50">{t('results.review.rightness')}</span>
+                  <span className="mt-1 font-sans text-[10.5px] uppercase tracking-label text-cream-100/50">{t('results.review.rightness')}</span>
                 </p>
                 <ul className="flex flex-wrap items-center gap-1.5">
                   {counts.map((x) => (
                     <li
                       key={x.grade}
-                      className={cn('rounded-md border px-2 py-1 font-sans text-[11px]', GRADE_TONE[x.grade], x.n === 0 && 'opacity-35')}
+                      className={cn('rounded-md border px-2 py-1 font-sans text-[10.5px]', GRADE_TONE[x.grade], x.n === 0 && 'opacity-35')}
                     >
                       <span className="font-mono font-bold tnums">{x.n}</span> {t(`results.review.grade.${x.grade}`)}
                     </li>
@@ -484,7 +487,7 @@ export default function Review() {
 
               {readSeats.length > 1 && (
                 <div className="mt-4 border-t border-brass-700/30 pt-3">
-                  <p className="mb-2 font-sans text-[10.5px] uppercase tracking-[0.14em] text-cream-100/45">{t('results.review.everySeat')}</p>
+                  <p className="mb-2 font-sans text-[10.5px] uppercase tracking-label text-cream-100/45">{t('results.review.everySeat')}</p>
                   <ul className="flex flex-col gap-1.5">
                     {[...readSeats]
                       .sort((a, b) => soundness(reading[b.seat] ?? []) - soundness(reading[a.seat] ?? []))
@@ -524,7 +527,7 @@ export default function Review() {
                   <ol className="mt-2 flex flex-col gap-2">
                     {worst.map((m) => (
                       <li key={m.at} className="rounded-md border border-brass-700/40 bg-coal-900/50 px-3 py-2">
-                        <p className="flex flex-wrap items-center gap-2 font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">
+                        <p className="flex flex-wrap items-center gap-2 font-sans text-[10.5px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">
                           {t(m.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: m.round })}
                           <span className={cn('rounded-sm border px-1.5 py-px tracking-[0.1em]', GRADE_TONE[m.grade])}>{t(`results.review.grade.${m.grade}`)}</span>
                           <button type="button" onClick={() => board(m.at)} className="ml-auto flex items-center gap-1 tracking-[0.1em] text-cream-100/45 hover:text-brass-400">
@@ -551,7 +554,7 @@ export default function Review() {
             <ol className="flex flex-col gap-2">
               {turns.map((x) => (
                 <li key={x.at} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-brass-700/20 pb-2 last:border-0 last:pb-0">
-                  <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">
+                  <span className="font-sans text-[10.5px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">
                     {t(x.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: x.round })}
                   </span>
                   <span className="flex items-center gap-1.5 font-fell text-[13px] text-cream-100/90">
@@ -559,11 +562,11 @@ export default function Review() {
                     {review.seats[x.by]?.name}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-cream-100/70">{moveOf(x.at)}</span>
-                  <span className={cn('font-mono text-[12px] font-bold tnums', x.shift > 0 ? 'text-bottle-400' : 'text-rust-400')}>
+                  <span className={cn('font-mono text-[12.5px] font-bold tnums', x.shift > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
                     {x.shift > 0 ? '+' : ''}
                     {x.shift}
                   </span>
-                  <button type="button" onClick={() => board(x.at)} className="font-sans text-[10px] uppercase tracking-[0.12em] text-cream-100/40 hover:text-brass-400">
+                  <button type="button" onClick={() => board(x.at)} className="font-sans text-[10.5px] uppercase tracking-[0.12em] text-cream-100/40 hover:text-brass-400">
                     {t('results.review.onTheBoard')}
                   </button>
                 </li>

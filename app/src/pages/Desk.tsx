@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate } from 'react-router';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BarChart3, ChevronDown, Coins, GraduationCap, History, LayoutGrid, LogOut, Mail, MailOpen, MoreHorizontal, Send, UserX, Users, X } from 'lucide-react';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import { Refusal, inputClass } from '@/components/site/PageShell';
@@ -9,6 +9,7 @@ import SeatToken from '@/components/platform/SeatToken';
 import RankBadge from '@/components/platform/RankBadge';
 import StatTile from '@/components/platform/StatTile';
 import EmptyState from '@/components/platform/EmptyState';
+import Skeleton from '@/components/platform/Skeleton';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import Modal from '@/components/platform/Modal';
 import Toast, { type ToastData } from '@/components/platform/Toast';
@@ -27,6 +28,7 @@ import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
 import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
 import { localeOf, useLang, useT, tr } from '@/i18n';
+import { memberSince } from '@/components/site/memberSince';
 import { tableTitle } from '@/online/tableNames';
 import { cn } from '@/lib/utils';
 
@@ -42,6 +44,15 @@ const ease = 'easeOut' as const;
 const TABS = ['tables', 'invitations', 'amis', 'historique', 'stats'] as const;
 type TabId = (typeof TABS)[number];
 const TAB_IDS: Record<TabId, string> = { tables: 'tables', invitations: 'invitations', amis: 'amis', historique: 'historique', stats: 'stats' };
+/* the drawer's own name, for the outline: the rail labels it on screen, the
+   panel needs it written down all the same */
+const TAB_HEAD: Record<TabId, string> = {
+  tables: 'platform.desk.tabs.tables',
+  invitations: 'platform.desk.tabs.invitations',
+  amis: 'platform.desk.tabs.friends',
+  historique: 'platform.desk.tabs.history',
+  stats: 'platform.desk.tabs.stats',
+};
 
 function isTab(hash: string): hash is TabId {
   return (TABS as readonly string[]).includes(hash);
@@ -77,7 +88,7 @@ function nextOf(rank: RankView): { tier: RankTier; division: string } | null {
 
 /** La tendance d'une cote en une ligne — le bureau et le classement s'en servent. */
 export function Sparkline({ values, width = 72, height = 20, className }: { values: number[]; width?: number; height?: number; className?: string }) {
-  if (values.length < 2) return <span className={cn('data-text text-[11px] text-iron-600', className)}>—</span>;
+  if (values.length < 2) return <span className={cn('data-text text-[10.5px] text-iron-400', className)}>—</span>;
   const min = Math.min(...values);
   const span = Math.max(1, Math.max(...values) - min);
   const pts = values.map((v, i) => `${1 + (i / (values.length - 1)) * (width - 2)},${height - 1 - ((v - min) / span) * (height - 2)}`);
@@ -90,7 +101,7 @@ export function Sparkline({ values, width = 72, height = 20, className }: { valu
       viewBox={`0 0 ${width} ${height}`}
       role="img"
       aria-label={`${values[0]} → ${values[values.length - 1]}`}
-      className={cn('shrink-0 overflow-visible', delta > 0 ? 'text-bottle-400' : delta < 0 ? 'text-rust-400' : 'text-iron-400', className)}
+      className={cn('shrink-0 overflow-visible', delta > 0 ? 'text-bottle-ink' : delta < 0 ? 'text-rust-400' : 'text-iron-400', className)}
     >
       <polyline points={pts.join(' ')} fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
       <circle cx={lx} cy={ly} r={2} fill="currentColor" />
@@ -109,7 +120,7 @@ function MemberHeader() {
   if (!session) return null;
   const stats = desk?.stats;
   const rank = rankOf(desk?.rating);
-  const since = new Date(session.createdAt).toLocaleDateString(localeOf(lang), { month: 'long', year: 'numeric' });
+  const since = memberSince(session.createdAt, lang);
   const rate = stats && stats.played ? `${Math.round((stats.won / stats.played) * 100)} %` : '—';
 
   return (
@@ -132,7 +143,7 @@ function MemberHeader() {
 
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.06 }} className="min-w-0 flex-1">
           <p className="eyebrow-fell">{t('platform.desk.eyebrow')}</p>
-          <h1 className="mt-1 truncate font-fraunces text-[28px] font-semibold leading-tight text-paper-100">{session.name}</h1>
+          <h1 className="display-page mt-1 truncate">{session.name}</h1>
           {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
           <p className="micro-label mt-1 text-iron-400">
             {t('platform.desk.memberSince', { date: since })}
@@ -145,9 +156,9 @@ function MemberHeader() {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.12 }} className="hidden gap-3 min-[900px]:flex">
-          <StatTile value={stats?.won ?? 0} label={t('platform.desk.stats.won')} className="!p-3 [&_.micro-label]:!text-[10px]" />
-          <StatTile value={rate} label={t('platform.desk.stats.rate')} className="!p-3 [&_.micro-label]:!text-[10px]" />
-          <StatTile value={stats?.played ?? 0} label={t('platform.desk.stats.played')} className="!p-3 [&_.micro-label]:!text-[10px]" />
+          <StatTile value={stats?.won ?? 0} label={t('platform.desk.stats.won')} className="!p-3" />
+          <StatTile value={rate} label={t('platform.desk.stats.rate')} className="!p-3" />
+          <StatTile value={stats?.played ?? 0} label={t('platform.desk.stats.played')} className="!p-3" />
         </motion.div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -173,7 +184,7 @@ function TutorialStrip() {
       <GraduationCap size={20} aria-hidden className="shrink-0 text-brass-300" />
       <div className="min-w-0 flex-1">
         <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.tutorial.title')}</p>
-        <p className="mt-0.5 font-ui text-[12px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
+        <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
       </div>
       <Button
         variant="ghost"
@@ -200,9 +211,15 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
 
   const badge = (n?: number, signal = false) =>
     n !== undefined && (
-      <span className={cn('data-text ml-auto rounded-full px-1.5 py-px text-[11px] tabular-nums', signal ? 'animate-pulse-signal bg-[rgb(var(--signal-400)/.14)] text-signal-400' : 'bg-enamel-700 text-iron-400')}>{n}</span>
+      <span className={cn('data-text ml-auto rounded-full px-1.5 py-px text-[10.5px] tabular-nums', signal ? 'animate-pulse-signal bg-signal-400 text-[rgb(var(--ink-on-signal))]' : 'bg-enamel-700 text-iron-400')}>{n}</span>
     );
 
+  /* Two rails, one panel, and the drawers carry deep links (/desk#historique):
+     that is navigation, not a tablist — a tablist would have to own the panel,
+     and only one of the two rails can. So each rail is a nav landmark and the
+     open drawer is the current one; the panel keeps its own heading and the id
+     the links aim at. `role="tab"` on a button inside a <nav>, with no tablist,
+     no aria-controls and no tabpanel, promised a rail it never built. */
   return (
     <>
       {/* rail latéral desktop */}
@@ -213,8 +230,7 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
             <button
               key={id}
               type="button"
-              role="tab"
-              aria-selected={isActive}
+              aria-current={isActive || undefined}
               onClick={() => onChange(id)}
               className={cn(
                 'relative flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left font-ui text-[13px] font-semibold transition-colors duration-150',
@@ -222,36 +238,35 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
               )}
             >
               {isActive && <motion.span layoutId="desk-rail-filet" className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-brass-500" transition={{ type: 'spring', stiffness: 260, damping: 24 }} />}
-              <Icon size={16} aria-hidden className={cn('shrink-0', isActive ? 'text-brass-300' : 'text-iron-600')} />
+              <Icon size={16} aria-hidden className={cn('shrink-0', isActive ? 'text-brass-300' : 'text-iron-400')} />
               <span className="truncate">{label}</span>
               {badge(n, id === 'tables' || id === 'invitations')}
-              {note && !n && <span className="data-text ml-auto whitespace-nowrap text-[11px] text-iron-600">{note}</span>}
+              {note && !n && <span className="data-text ml-auto whitespace-nowrap text-[10.5px] text-iron-400">{note}</span>}
             </button>
           );
         })}
       </nav>
 
       {/* onglets horizontaux mobile */}
-      <div role="tablist" className="scroll-thin -mx-4 flex gap-1 overflow-x-auto border-b border-[rgb(var(--paper-100)/.07)] px-4 min-[900px]:hidden">
+      <nav aria-label={t('platform.nav.desk')} className="scroll-thin -mx-4 flex gap-1 overflow-x-auto border-b border-[rgb(var(--paper-100)/.07)] px-4 min-[900px]:hidden">
         {items.map(({ id, icon: Icon, label, badge: n }) => {
           const isActive = id === active;
           return (
             <button
               key={id}
               type="button"
-              role="tab"
-              aria-selected={isActive}
+              aria-current={isActive || undefined}
               onClick={() => onChange(id)}
               className={cn('relative flex shrink-0 items-center gap-2 whitespace-nowrap px-3 pb-2.5 pt-1 font-ui text-[13px] font-semibold transition-colors duration-150', isActive ? 'text-paper-100' : 'text-iron-400 hover:text-paper-100')}
             >
-              <Icon size={16} aria-hidden className={isActive ? 'text-brass-300' : 'text-iron-600'} />
+              <Icon size={16} aria-hidden className={isActive ? 'text-brass-300' : 'text-iron-400'} />
               {label}
-              {n !== undefined && <span className={cn('data-text rounded-full px-1.5 py-px text-[11px] tabular-nums', id === 'tables' || id === 'invitations' ? 'bg-[rgb(var(--signal-400)/.14)] text-signal-400' : 'bg-enamel-700 text-iron-400')}>{n}</span>}
+              {n !== undefined && <span className={cn('data-text rounded-full px-1.5 py-px text-[10.5px] tabular-nums', id === 'tables' || id === 'invitations' ? 'bg-[rgb(var(--signal-400)/.14)] text-signal-ink' : 'bg-enamel-700 text-iron-400')}>{n}</span>}
               {isActive && <motion.span layoutId="desk-tab-filet" className="absolute inset-x-2 -bottom-px h-0.5 bg-brass-500" transition={{ type: 'spring', stiffness: 260, damping: 24 }} />}
             </button>
           );
         })}
-      </div>
+      </nav>
     </>
   );
 }
@@ -288,19 +303,21 @@ function localTable(local: HomeTable, me: string): DeskTable {
 function TableRibbon({ table, pulse }: { table: DeskTable; pulse: boolean }) {
   const t = useT();
   if (table.local) {
-    return <span className="micro-label flex h-[22px] shrink-0 items-center rounded-full bg-enamel-700 px-2.5 text-brass-300">{t('platform.desk.tables.local')}</span>;
+    /* the badge sits on the row's own hover ground, where brass-300 fell to
+       4.08 by day; brass-500 is the brass cut for ink and holds 4.69 there */
+    return <span className="micro-label flex h-[22px] shrink-0 items-center rounded-full bg-enamel-700 px-2.5 text-brass-500">{t('platform.desk.tables.local')}</span>;
   }
   if (table.myTurn) {
     return (
-      <span className="micro-label flex h-[22px] shrink-0 items-center gap-1.5 rounded-full bg-[rgb(var(--signal-400)/.12)] px-2.5 text-signal-400">
+      <span className="micro-label flex h-[22px] shrink-0 items-center gap-1.5 rounded-full bg-[rgb(var(--signal-400)/.12)] px-2.5 text-signal-ink">
         <span className={cn('h-1.5 w-1.5 rounded-full bg-signal-400', pulse && 'animate-pulse-signal')} aria-hidden />
         {t('platform.desk.tables.yourTurn')}
       </span>
     );
   }
   const styles: Record<TableSummary['status'], string> = {
-    playing: 'bg-[rgb(var(--signal-400)/.12)] text-signal-400',
-    open: 'bg-bottle-700/60 text-bottle-400',
+    playing: 'bg-[rgb(var(--signal-400)/.12)] text-signal-ink',
+    open: 'bg-bottle-700/60 text-paper-100',
     over: 'bg-enamel-700 text-iron-400',
   };
   const labels: Record<TableSummary['status'], string> = {
@@ -342,9 +359,9 @@ function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string;
             <h3 className="title-card truncate">{tableTitle(table.name, lang)}</h3>
             <TableRibbon table={table} pulse={pulse} />
           </div>
-          <p className="data-text mt-1.5 text-[11px] text-iron-400">
+          <p className="data-text mt-1.5 text-[10.5px] text-iron-400">
             <span className="tracking-[0.28em] text-brass-300">{table.code}</span>
-            {meta.length > 0 && <span className="text-iron-600"> · {meta.join(' · ')}</span>}
+            {meta.length > 0 && <span className="text-iron-400"> · {meta.join(' · ')}</span>}
           </p>
           <div className="mt-3 flex items-end gap-2">
             {table.seats.map((s, i) => (
@@ -456,7 +473,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
   if (invitations.length === 0 && sent.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 console px-6 py-12 text-center">
-        <MailOpen size={28} aria-hidden className="text-iron-600" />
+        <MailOpen size={28} aria-hidden className="text-iron-400" />
         <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.invitations.emptyTitle')}</p>
         <p className="max-w-sm font-ui text-[13px] text-iron-400">{t('platform.desk.invitations.emptyCopy')}</p>
       </div>
@@ -482,9 +499,9 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
                   {i.from.name.charAt(0).toUpperCase()}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="micro-label text-signal-400">{t('platform.nav.invitations')}</p>
+                  <p className="micro-label text-signal-ink">{t('platform.nav.invitations')}</p>
                   <p className="mt-0.5 truncate font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.invitations.invitedBy', { from: i.from.name, table: tableTitle(i.tableName, lang) })}</p>
-                  <p className="data-text mt-0.5 text-[11px] text-iron-400">{ago(i.createdAt)}</p>
+                  <p className="data-text mt-0.5 text-[10.5px] text-iron-400">{ago(i.createdAt)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Button variant="live" className="!h-9 text-[13px]" onClick={() => onAnswer(i.id, true)}>
@@ -505,13 +522,13 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
           <button type="button" onClick={() => setShowSent((s) => !s)} aria-expanded={showSent} className="flex w-full items-center gap-2 px-4 py-3 font-ui text-[13px] font-semibold text-iron-400 transition-colors duration-150 hover:text-paper-100">
             <ChevronDown size={16} aria-hidden className={cn('transition-transform duration-200', showSent && 'rotate-180')} />
             {t('platform.desk.invitations.sentTitle')}
-            <span className="data-text ml-auto text-[11px] tabular-nums text-iron-600">{sent.length}</span>
+            <span className="data-text ml-auto text-[10.5px] tabular-nums text-iron-400">{sent.length}</span>
           </button>
           <motion.div initial={false} animate={{ height: showSent ? 'auto' : 0, opacity: showSent ? 1 : 0 }} transition={{ duration: 0.22, ease }} className="overflow-hidden">
             <ul className="grid gap-1.5 px-4 pb-4">
               {sent.map((i) => (
                 <li key={i.id} className="flex items-center gap-2 font-ui text-[13px] text-paper-300">
-                  <Send size={12} aria-hidden className="shrink-0 text-brass-300/70" />
+                  <Send size={12} aria-hidden className="shrink-0 text-brass-300" />
                   <span className="truncate">{t('platform.desk.invitations.sentTo', { to: i.to.name, table: tableTitle(i.tableName, lang) })}</span>
                   <span className="micro-label ml-auto shrink-0 rounded bg-enamel-700 px-1.5 py-0.5 text-iron-400">{t('platform.desk.invitations.pending')}</span>
                 </li>
@@ -537,20 +554,20 @@ function FriendRow({ friend, table, sent, onInvite, onRemove, onAccept }: { frie
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-ui text-[13px] font-semibold text-paper-100">{friend.account.name}</p>
-        <p className="data-text text-[11px] text-iron-400">
+        <p className="data-text text-[10.5px] text-iron-400">
           {friend.status === 'asks' ? t('platform.desk.friends.asks') : friend.status === 'asked' ? t('platform.desk.friends.asked') : t(friend.online ? 'platform.desk.friends.presenceOnline' : 'platform.desk.friends.presenceOffline')}
         </p>
       </div>
       <span className="flex shrink-0 items-center gap-1.5">
         {friend.status === 'asks' && (
-          <Button variant="primary" className="!h-8 px-3 text-[12px]" onClick={onAccept}>
+          <Button variant="primary" className="!h-8 px-3 text-[12.5px]" onClick={onAccept}>
             {t('platform.desk.friends.accept')}
           </Button>
         )}
         {friend.status === 'friends' && (
           <Button
             variant="ghost"
-            className="!h-8 px-3 text-[12px]"
+            className="!h-8 px-3 text-[12.5px]"
             disabled={!table || sent}
             title={!table ? t('platform.desk.friends.inviteDisabled') : undefined}
             onClick={onInvite}
@@ -682,7 +699,7 @@ function FriendsPanel({ friends, table, onToast }: { friends: Friend[]; table: T
           </FriendGroup>
         </div>
       )}
-      {friends.some((f) => f.status === 'friends') && !table && <p className="font-ui text-[12px] text-iron-400">{t('platform.desk.friends.noTable')}</p>}
+      {friends.some((f) => f.status === 'friends') && !table && <p className="font-ui text-[12.5px] text-iron-400">{t('platform.desk.friends.noTable')}</p>}
 
       <Modal open={removing !== null} onClose={() => setRemoving(null)} title={removing ? t('platform.desk.friends.removeTitle', { name: removing.account.name }) : undefined}>
         <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.desk.friends.removeCopy')}</p>
@@ -729,36 +746,36 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
   const pastille = game.abandoned
     ? { letter: 'A', label: t('platform.desk.history.abandonedGame'), cls: 'border-iron-600 text-iron-400' }
     : won
-      ? { letter: 'V', label: t('platform.desk.history.won'), cls: 'border-bottle-500 bg-bottle-700/40 text-bottle-400' }
+      ? { letter: 'V', label: t('platform.desk.history.won'), cls: 'border-bottle-500 bg-bottle-700/40 text-bottle-ink' }
       : { letter: 'D', label: t('platform.desk.history.lost'), cls: 'border-rust-600/70 bg-rust-700/25 text-rust-400' };
 
   return (
     <tr className="border-b border-[rgb(var(--paper-100)/.06)] transition-colors duration-150 last:border-b-0 hover:bg-enamel-700/50">
       <td className="py-2.5 pl-2 pr-3">
-        <span title={pastille.label} className={cn('flex h-6 w-6 items-center justify-center rounded-full border font-ui text-[12px] font-semibold', pastille.cls)}>
+        <span title={pastille.label} className={cn('flex h-6 w-6 items-center justify-center rounded-full border font-ui text-[12.5px] font-semibold', pastille.cls)}>
           {pastille.letter}
         </span>
       </td>
       <td className="py-2.5 pr-3">
         <span className="font-ui text-[13px] font-semibold text-paper-100">{tableTitle(game.name, lang)}</span>
-        <span className="data-text ml-2 text-[10px] uppercase tracking-[0.2em] text-iron-600">{game.code}</span>
+        <span className="data-text ml-2 text-[10.5px] uppercase tracking-[0.2em] text-iron-400">{game.code}</span>
       </td>
       <td className="py-2.5 pr-3">
         <ul className="flex flex-wrap gap-x-3 gap-y-1">
           {game.players.map((p, i) => (
-            <li key={i} className={cn('inline-flex items-center gap-1 font-ui text-[12px]', i === game.winner ? 'text-brass-300' : 'text-paper-300/80')}>
+            <li key={i} className={cn('inline-flex items-center gap-1 font-ui text-[12.5px]', i === game.winner ? 'text-brass-300' : 'text-iron-400')}>
               <PlayerToken color={p.color} size={12} />
-              {p.name} <span className="data-text text-[10px] opacity-70">{t('platform.desk.history.vp', { vp: p.vp })}</span>
+              {p.name} <span className="data-text text-[10.5px] text-iron-400">{t('platform.desk.history.vp', { vp: p.vp })}</span>
             </li>
           ))}
         </ul>
       </td>
       <td className="py-2.5 pr-2 text-right">
-        <span className="data-text whitespace-nowrap text-[11px] text-iron-400">
+        <span className="data-text whitespace-nowrap text-[10.5px] text-iron-400">
           {date} · {time}
         </span>
         {!game.abandoned && mine >= 0 && (
-          <button type="button" onClick={() => setTicket(true)} className="ml-3 whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+          <button type="button" onClick={() => setTicket(true)} className="ml-3 whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
             {t('platform.desk.history.ticket')}
           </button>
         )}
@@ -808,7 +825,7 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
               setShown(pageSize);
             }}
             className={cn(
-              'rounded-full border px-3 py-1 font-ui text-[12px] font-semibold transition-colors duration-150',
+              'rounded-full border px-3 py-1 font-ui text-[12.5px] font-semibold transition-colors duration-150',
               filter === c.id ? 'border-brass-500 bg-brass-500/10 text-brass-300' : 'border-[rgb(var(--paper-100)/.14)] text-iron-400 hover:border-[rgb(var(--paper-100)/.3)] hover:text-paper-100',
             )}
           >
@@ -855,12 +872,15 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
 function RatingCard({ rating, season }: { rating: Rating | null; season: Season | null }) {
   const t = useT();
   const lang = useLang();
+  /* a width is neither a transform nor a layout: framer's own reduced-motion
+     setting lets it through, so the bar is told here */
+  const reduced = useReducedMotion();
   const rank = rankOf(rating);
   const head = (
     <>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h3 className="title-card">{t('platform.desk.rating.title')}</h3>
-        {season && <span className="data-text text-[12px] tabular-nums text-iron-400">{t('platform.desk.rating.season', { season: season.name, days: daysUntil(season.endsAt) })}</span>}
+        {season && <span className="data-text tabular-nums text-iron-400">{t('platform.desk.rating.season', { season: season.name, days: daysUntil(season.endsAt) })}</span>}
       </div>
       <div className="mt-3 h-px bg-brass-hairline" />
     </>
@@ -889,8 +909,8 @@ function RatingCard({ rating, season }: { rating: Rating | null; season: Season 
           <p className="mt-1 flex items-baseline gap-2">
             <span className="font-fraunces text-[40px] font-semibold leading-none text-paper-100 tnums">{cote(rating.rating, lang)}</span>
             {delta !== 0 && (
-              <span className={cn('data-text text-[13px]', delta > 0 ? 'text-bottle-400' : 'text-rust-400')}>
-                {delta > 0 ? `+${delta}` : delta} <span className="text-iron-600">· {t('platform.desk.rating.lastGame')}</span>
+              <span className={cn('data-text text-[13px]', delta > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
+                {delta > 0 ? `+${delta}` : delta} <span className="text-iron-400">· {t('platform.desk.rating.lastGame')}</span>
               </span>
             )}
           </p>
@@ -906,7 +926,7 @@ function RatingCard({ rating, season }: { rating: Rating | null; season: Season 
                 {rank.division ? ` ${rank.division}` : ''}
               </p>
             )}
-            <p className="data-text mt-1.5 text-[12px] text-iron-400">
+            <p className="data-text mt-1.5 text-iron-400">
               {placing ? t('platform.desk.rating.placements', { done: rank.placementDone ?? 0, total: PLACEMENTS }) : t('platform.desk.rating.firm', { won: rating.won, games: rating.games })}
             </p>
           </div>
@@ -921,10 +941,10 @@ function RatingCard({ rating, season }: { rating: Rating | null; season: Season 
           <span className="micro-label text-iron-400">
             {placing ? t('platform.rank.placement', { done: rank.placementDone ?? 0, total: PLACEMENTS }) : next ? t('platform.desk.rating.toNext', { tier: t(`platform.rank.${next.tier}`), division: next.division }) : t('platform.desk.rating.top')}
           </span>
-          {rank.lp !== undefined && <span className="data-text text-[12px] tabular-nums text-iron-400">{t('platform.rank.lp', { lp: rank.lp })}</span>}
+          {rank.lp !== undefined && <span className="data-text tabular-nums text-iron-400">{t('platform.rank.lp', { lp: rank.lp })}</span>}
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-enamel-700">
-          <motion.div initial={{ width: 0 }} animate={{ width: `${rank.progress}%` }} transition={{ duration: 0.5, ease }} className="h-full rounded-full bg-brass-500" />
+          <motion.div initial={reduced ? false : { width: 0 }} animate={{ width: `${rank.progress}%` }} transition={{ duration: 0.5, ease }} className="h-full rounded-full bg-brass-500" />
         </div>
       </div>
     </div>
@@ -1028,7 +1048,7 @@ export default function Desk() {
     return (
       <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 console px-8 py-12 text-center">
-          <UserX size={32} aria-hidden className="text-iron-600" />
+          <UserX size={32} aria-hidden className="text-iron-400" />
           <h1 className="h2-section">{t('platform.desk.stranger.title')}</h1>
           <p className="font-ui text-[13px] text-paper-300">{t('platform.desk.stranger.copy')}</p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
@@ -1073,8 +1093,25 @@ export default function Desk() {
         <TabRail active={active} onChange={setActive} turnCount={turnCount} inviteCount={inviteCount} onlineCount={onlineCount} />
         <div className="min-w-0 flex-1">
           <AnimatePresence mode="wait">
-            <motion.section key={active} id={TAB_IDS[active]} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.18, ease }} className="scroll-mt-24">
-              {panels[active]}
+            <motion.section
+              key={active}
+              id={TAB_IDS[active]}
+              aria-labelledby={`${TAB_IDS[active]}-head`}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18, ease }}
+              className="scroll-mt-24"
+            >
+              {/* the rail names the drawer on screen; the panel says it again for
+                  the outline, so the desk reads h1 then h2 like a page and not
+                  like a heap of cards */}
+              <h2 id={`${TAB_IDS[active]}-head`} className="sr-only">
+                {t(TAB_HEAD[active])}
+              </h2>
+              {/* the office has not answered yet: a wait is not an absence, and
+                  the drawer must not print an emptiness it will contradict */}
+              {desk === null && active !== 'stats' ? <Skeleton shape="card" rows={3} label={t('platform.home.activity.loading')} /> : panels[active]}
             </motion.section>
           </AnimatePresence>
         </div>

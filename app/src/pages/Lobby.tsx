@@ -76,7 +76,7 @@ function ReadyMedallion({ ready, allReady }: { ready: number; allReady: boolean 
           cy="60"
           r={r}
           fill="none"
-          stroke="#C9A24B"
+          stroke="rgb(var(--brass-plate))"
           strokeWidth="3"
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -87,7 +87,7 @@ function ReadyMedallion({ ready, allReady }: { ready: number; allReady: boolean 
       </svg>
       <div className="relative flex flex-col items-center gap-1">
         <Factory size={32} className="text-brass-500" aria-hidden />
-        <span className="data-text tnums text-[12px] text-paper-300">{t('platform.lobby.readyCount', { ready, total: MAX_SEATS })}</span>
+        <span className="data-text tnums text-paper-300">{t('platform.lobby.readyCount', { ready, total: MAX_SEATS })}</span>
       </div>
     </motion.div>
   );
@@ -138,12 +138,12 @@ function SeatSlot({
       >
         <SeatToken seat={null} size={64} index={index} />
         <div className="mt-2 flex h-[52px] flex-col items-center justify-start gap-1.5">
-          <span className="micro-label text-[10px] text-iron-600">{t('platform.lobby.emptySeat')}</span>
+          <span className="micro-label text-iron-400">{t('platform.lobby.emptySeat')}</span>
           {iAmHost && (
             <button
               type="button"
               onClick={onAddBot}
-              className="inline-flex items-center gap-1 rounded-full border border-bottle-500/70 bg-bottle-700/40 px-2.5 py-1 font-ui text-[10px] font-semibold uppercase tracking-[0.1em] text-bottle-400 transition-colors hover:border-bottle-400 hover:text-paper-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+              className="inline-flex items-center gap-1 rounded-full border border-bottle-500/70 bg-bottle-700/40 px-2.5 py-1 font-ui text-[10.5px] font-semibold uppercase tracking-[0.1em] text-bottle-ink transition-colors hover:border-bottle-400 hover:text-paper-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
             >
               <Bot size={12} aria-hidden /> {t('platform.lobby.addBot')}
             </button>
@@ -190,7 +190,7 @@ function SeatSlot({
           {slot.name || '…'}
           {isMe && <span className="micro-label ml-1.5 text-[9px] text-brass-300">{t('platform.seat.you')}</span>}
         </span>
-        <span className={cn('data-text mt-0.5 line-clamp-2 text-center text-[11px] uppercase leading-tight', ready ? 'text-bottle-400' : 'text-iron-400')}>{subLine}</span>
+        <span className={cn('data-text mt-0.5 line-clamp-2 text-center text-[10.5px] uppercase leading-tight', ready ? 'text-bottle-ink' : 'text-iron-400')}>{subLine}</span>
       </div>
 
       {/* le pupitre du siège : couleur, tempo mécanique, chandelle, renvoi */}
@@ -243,7 +243,7 @@ function SeatSlot({
             {/* this seat's candle: the table's, none, or its own minutes */}
             {!bot && (
               <div className={cn('flex flex-wrap items-center justify-center gap-1', (canColor || (bot && iAmHost)) && 'mt-2.5')}>
-                <span className="micro-label mr-1 text-[9px] text-iron-600">{t('site.room.candle')}</span>
+                <span className="micro-label mr-1 text-[9px] text-iron-400">{t('site.room.candle')}</span>
                 {iAmHost ? (
                   ([undefined, null, 3, 5, 10] as const).map((m) => {
                     const on = slot.minutes === m;
@@ -263,7 +263,7 @@ function SeatSlot({
                     );
                   })
                 ) : (
-                  <span className="font-ui text-[11px] text-paper-300">
+                  <span className="font-ui text-[10.5px] text-paper-300">
                     {slot.minutes === undefined ? t('site.room.candleTable') : slot.minutes === null ? t('site.room.candleNone') : t('site.room.candleMin', { n: slot.minutes })}
                   </span>
                 )}
@@ -273,7 +273,7 @@ function SeatSlot({
               <button
                 type="button"
                 onClick={onRemove}
-                className="mx-auto mt-2.5 flex items-center gap-1 rounded border border-[rgb(var(--rust-400)/.4)] px-2 py-1 font-ui text-[10px] font-semibold uppercase tracking-[0.1em] text-rust-400 transition-colors hover:border-rust-400"
+                className="mx-auto mt-2.5 flex items-center gap-1 rounded border border-[rgb(var(--rust-400)/.4)] px-2 py-1 font-ui text-[10.5px] font-semibold uppercase tracking-[0.1em] text-rust-400 transition-colors hover:border-rust-400"
               >
                 <X size={12} aria-hidden /> {t('online.room.remove')}
               </button>
@@ -326,9 +326,9 @@ function InvitePanel({ code, seated }: { code: string; seated: string[] }) {
 
   return (
     <section aria-label={t('platform.lobby.inviteTitle')}>
-      <p className="micro-label text-brass-300/80">{t('platform.lobby.inviteTitle')}</p>
+      <p className="micro-label text-brass-300">{t('platform.lobby.inviteTitle')}</p>
       <div className="relative mt-2.5">
-        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-iron-600" aria-hidden />
+        <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-iron-400" aria-hidden />
         <input
           value={name}
           onChange={(e) => {
@@ -338,7 +338,7 @@ function InvitePanel({ code, seated }: { code: string; seated: string[] }) {
           onKeyDown={(e) => e.key === 'Enter' && send()}
           maxLength={20}
           placeholder={t('platform.lobby.inviteSearch')}
-          className="h-10 w-full rounded-lg border border-brass-hairline bg-lacquer-950 pl-9 pr-3 font-ui text-[13px] text-paper-100 placeholder:text-iron-600 focus:border-brass-500 focus:outline-none"
+          className="h-10 w-full rounded-lg border border-brass-hairline bg-lacquer-950 pl-9 pr-3 font-ui text-[13px] text-paper-100 placeholder:text-iron-400 focus:border-brass-500 focus:outline-none"
         />
       </div>
       <div className="mt-2 flex flex-col gap-1">
@@ -357,7 +357,7 @@ function InvitePanel({ code, seated }: { code: string; seated: string[] }) {
                 <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', f.online ? 'bg-bottle-400' : 'bg-iron-600')} aria-hidden />
                 <span className="min-w-0 flex-1 truncate font-ui text-[13px] font-medium text-paper-100">{f.account.name}</span>
                 {sent ? (
-                  <span className="inline-flex items-center gap-1 font-ui text-[11px] font-semibold uppercase tracking-[0.08em] text-bottle-400">
+                  <span className="inline-flex items-center gap-1 font-ui text-[10.5px] font-semibold uppercase tracking-[0.08em] text-bottle-ink">
                     <Check size={13} aria-hidden /> {t('platform.lobby.invitedTag')}
                   </span>
                 ) : (
@@ -367,17 +367,17 @@ function InvitePanel({ code, seated }: { code: string; seated: string[] }) {
             );
           })}
         </AnimatePresence>
-        {friends.length === 0 && <p className="px-2 py-1 font-ui text-[12px] text-iron-400">{t('platform.lobby.noFriends')}</p>}
+        {friends.length === 0 && <p className="px-2 py-1 font-ui text-[12.5px] text-iron-400">{t('platform.lobby.noFriends')}</p>}
       </div>
       {filter && (
         <div className="mt-1.5 flex items-center justify-between gap-2">
-          <span className="truncate font-ui text-[12px] text-iron-400">{name.trim()}</span>
-          <Button variant="ghost" className="!h-8 shrink-0 !px-3 !text-[12px]" disabled={!name.trim()} onClick={() => send()} icon={<Send size={13} aria-hidden />}>
+          <span className="truncate font-ui text-[12.5px] text-iron-400">{name.trim()}</span>
+          <Button variant="ghost" className="!h-8 shrink-0 !px-3 !text-[12.5px]" disabled={!name.trim()} onClick={() => send()} icon={<Send size={13} aria-hidden />}>
             {t('platform.lobby.inviteSend')}
           </Button>
         </div>
       )}
-      {note && <p className={cn('mt-2 font-ui text-[12px]', note.ok ? 'text-bottle-400' : 'text-rust-400')}>{note.text}</p>}
+      {note && <p className={cn('mt-2 font-ui text-[12.5px]', note.ok ? 'text-bottle-ink' : 'text-rust-400')}>{note.text}</p>}
     </section>
   );
 }
@@ -392,6 +392,15 @@ export default function Lobby() {
   const stranger = useStranger();
   const table = useTable(code);
   const me = lobby.me;
+
+  /* the running head. The shell names every sheet from its address, but an
+     address with a code behind it has no name of its own until the office
+     answers: ten rooms went to the tabs and the history under one generic
+     line. The moment the table has a name, the head takes it. */
+  const head = table ? tableTitle(table.name, lang) : null;
+  useEffect(() => {
+    if (head) document.title = `${head} · ${t('platform.home.title')}`;
+  }, [head, t]);
 
   /* a room is no place for a stranger: the office signs you in first.
      A session on its way back is not a stranger — we wait for it. The code
@@ -465,7 +474,7 @@ export default function Lobby() {
   if (!table) {
     return (
       <div className="flex min-h-[calc(100vh-88px)] flex-col items-center justify-center gap-5 px-6 text-center">
-        <p className="display-page">{t('online.room.notFound')}</p>
+        <h1 className="display-page">{t('online.room.notFound')}</h1>
         <Button variant="ghost" to="/online">
           {t('online.room.back')}
         </Button>
@@ -534,21 +543,21 @@ export default function Lobby() {
         <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
-              <Link to={isOnline ? '/desk' : '/online'} className="mb-3 inline-flex items-center gap-1.5 font-ui text-[12px] font-semibold uppercase tracking-[0.12em] text-iron-400 transition-colors hover:text-brass-300">
+              <Link to={isOnline ? '/desk' : '/online'} className="mb-3 inline-flex items-center gap-1.5 font-ui text-[12.5px] font-semibold uppercase tracking-[0.12em] text-iron-400 transition-colors hover:text-brass-300">
                 <ArrowLeft size={14} aria-hidden />
                 {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
               </Link>
               <div className="flex items-center gap-3">
                 <p className="eyebrow-fell">{t('platform.lobby.eyebrow')}</p>
-                <span className="rounded-full bg-bottle-700 px-2.5 py-0.5 font-ui text-[10px] font-semibold uppercase tracking-[0.12em] text-paper-100">{t('platform.state.open')}</span>
+                <span className="rounded-full bg-bottle-700 px-2.5 py-0.5 font-ui text-[10.5px] font-semibold uppercase tracking-[0.12em] text-paper-100">{t('platform.state.open')}</span>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.06 }}>
-              <h1 className="mt-2 font-fraunces text-[32px] font-semibold leading-[1.15] tracking-[-0.015em] text-paper-100">{tableTitle(table.name, lang)}</h1>
+              <h1 className="display-page mt-2">{tableTitle(table.name, lang)}</h1>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.12 }} className="mt-3 flex flex-wrap items-center gap-1.5">
               {optionChips.map((chip) => (
-                <span key={chip} className="rounded border border-brass-hairline bg-enamel-800 px-2 py-0.5 font-ui text-[11px] font-medium text-paper-300">
+                <span key={chip} className="rounded border border-brass-hairline bg-enamel-800 px-2 py-0.5 font-ui text-[10.5px] font-medium text-paper-300">
                   {chip}
                 </span>
               ))}
@@ -564,7 +573,7 @@ export default function Lobby() {
         {/* code de salle en tête sur mobile */}
         <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-brass-hairline bg-lacquer-950 px-4 py-3 lg:hidden">
           <span className="room-code text-paper-100">{table.code}</span>
-          <Button variant="ghost" className="!h-9 !px-3 !text-[12px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
+          <Button variant="ghost" className="!h-9 !px-3 !text-[12.5px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
             {t('platform.lobby.copy')}
           </Button>
         </div>
@@ -631,14 +640,14 @@ export default function Lobby() {
               <div className="console p-5">
                 {/* 3a — code de salle */}
                 <section className="max-lg:hidden">
-                  <p className="micro-label text-brass-300/80">{t('platform.lobby.codeLabel')}</p>
+                  <p className="micro-label text-brass-300">{t('platform.lobby.codeLabel')}</p>
                   <div className="mt-2.5 flex h-14 items-center justify-center rounded-lg border border-brass-hairline bg-lacquer-950">
                     <span className="room-code text-paper-100">{table.code}</span>
                   </div>
                   <Button variant="ghost" className="mt-2.5 !h-9 w-full !text-[13px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
                     {t('platform.lobby.copy')}
                   </Button>
-                  <p className="mt-2 font-ui text-[12px] text-iron-400">{t('platform.lobby.shareHint')}</p>
+                  <p className="mt-2 font-ui text-[12.5px] text-iron-400">{t('platform.lobby.shareHint')}</p>
                 </section>
 
                 {/* 3b — invitations */}
@@ -674,7 +683,7 @@ export default function Lobby() {
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ opacity: 0 }}
                           transition={{ duration: 0.25, ease: 'easeOut' }}
-                          className="tnums font-fraunces text-[48px] font-semibold leading-none text-signal-400"
+                          className="tnums font-fraunces text-[48px] font-semibold leading-none text-signal-ink"
                         >
                           {countdown}
                         </motion.span>
@@ -695,12 +704,12 @@ export default function Lobby() {
                           >
                             {t('platform.lobby.start')}
                           </Button>
-                          {!startable && <p className="text-center font-ui text-[12px] text-iron-400">{t('online.room.startHint', { n: humansWaiting, min: 2 })}</p>}
+                          {!startable && <p className="text-center font-ui text-[12.5px] text-iron-400">{t('online.room.startHint', { n: humansWaiting, min: 2 })}</p>}
                         </>
                       ) : (
                         <>
                           {mySeat.ready ? (
-                            <Button variant="ghost" className="!h-12 w-full border-bottle-500/70 !text-bottle-400 hover:!border-bottle-400" onClick={toggleReady} icon={<Check size={16} aria-hidden />}>
+                            <Button variant="ghost" className="!h-12 w-full border-bottle-500/70 !text-bottle-ink hover:!border-bottle-400" onClick={toggleReady} icon={<Check size={16} aria-hidden />}>
                               {t('platform.lobby.unready')}
                             </Button>
                           ) : (
@@ -708,7 +717,7 @@ export default function Lobby() {
                               {t('platform.lobby.ready')}
                             </Button>
                           )}
-                          <p className="text-center font-ui text-[12px] text-iron-400">{t('online.room.waitingHost')}</p>
+                          <p className="text-center font-ui text-[12.5px] text-iron-400">{t('online.room.waitingHost')}</p>
                         </>
                       )}
                     </div>
@@ -716,14 +725,17 @@ export default function Lobby() {
                 </div>
               </div>
 
-              {/* les règles de la maison : la plume de l'hôte, les yeux de tous */}
-              <div className="relative">
-                <HouseRules options={table.options} onChange={(patch) => iAmHost && edit((tb) => ({ ...tb, options: { ...tb.options, ...patch } }))} />
-                {!iAmHost && (
-                  <div className="pointer-events-none absolute inset-0 rounded-[8px]" aria-hidden>
-                    <span className="absolute right-4 top-4 rounded border border-brass-hairline bg-enamel-800 px-2 py-1 font-ui text-[9px] font-semibold uppercase tracking-[0.14em] text-brass-300/80">{t('online.room.hostSets')}</span>
-                  </div>
-                )}
+              {/* les règles de la maison : la plume de l'hôte, les yeux de tous.
+                  At a guest's seat the panel is put out rather than glazed over:
+                  a pane that took the hand but not the tab left ten commands and
+                  a lever answering to the eye and doing nothing, and the reason
+                  printed on it was hidden from the readers who needed it most. */}
+              <div>
+                <HouseRules
+                  options={table.options}
+                  readOnly={!iAmHost}
+                  onChange={(patch) => iAmHost && edit((tb) => ({ ...tb, options: { ...tb.options, ...patch } }))}
+                />
               </div>
             </div>
           </motion.aside>
