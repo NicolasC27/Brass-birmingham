@@ -12,11 +12,23 @@ describe('the Monday edition', () => {
     );
     expect(subject).toContain('Blackrail');
     expect(text).toContain('semaine 36');
-    expect(text).toContain('« Forge de Deritend » — Ada l’emporte avec 171 points');
+    expect(text).toContain('« Forge de Deritend » — Ada l’emporte avec 171 points');
+    expect(text).toContain('3 parties jouées depuis lundi');
     expect(text).toContain('Brunel, 3 parties');
     expect(text).toContain('1. Ada — 210');
     expect(text).toContain('(3/3)');
     expect(text).toContain('https://blackrail.example');
+  });
+
+  it('agrees its counts instead of printing the marker', () => {
+    const { text } = editionText(
+      { week: 0, games: 1, best: null, busiest: { name: 'Ada', games: 1 }, latest: [], machines: [] },
+      { week: 0, players: 0, rows: [], me: null },
+      'x',
+    );
+    expect(text).toContain('1 partie jouée depuis lundi');
+    expect(text).toContain('Ada, 1 partie.');
+    expect(text).not.toMatch(/\[\w+\|/);
   });
 
   it('says a quiet week plainly', () => {
@@ -28,7 +40,7 @@ describe('the Monday edition', () => {
 
 describe('a dispatch', () => {
   it('reads the goods in the club\'s own words', () => {
-    expect(dispatchLine({ code: 'X', table: 'Forge', at: 1, era: 'canal', round: 3, key: 'sells', vars: { name: 'Mrs Wedgwood', n: 1, merchant: 'Gloucester', goods: 'cotton' } })).toBe('« Forge » — Mrs Wedgwood écoule sa filature chez Gloucester');
-    expect(dispatchLine({ code: 'X', table: 'Forge', at: 1, era: 'rail', round: 1, key: 'unknownKey', vars: {} })).toBe('« Forge » — unknownKey');
+    expect(dispatchLine({ code: 'X', table: 'Forge', at: 1, era: 'canal', round: 3, key: 'sells', vars: { name: 'Mrs Wedgwood', n: 1, merchant: 'Gloucester', goods: 'cotton' } })).toBe('« Forge » — Mrs Wedgwood écoule sa filature chez Gloucester');
+    expect(dispatchLine({ code: 'X', table: 'Forge', at: 1, era: 'rail', round: 1, key: 'unknownKey', vars: {} })).toBe('« Forge » — unknownKey');
   });
 });

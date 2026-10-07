@@ -12,7 +12,7 @@ const fr: typeof ensetup = {
   summary: {
     botName: "{name} ({difficulty})",
   },
-  begin: "Lancer l'ère canal",
+  begin: "Lancer l’ère canal",
   beginHint: "Placez au moins deux joueurs — humains ou mécaniques — avant que la première carte ne soit tirée.",
   houseRules: {
     ariaLabel: "Règles maison",
@@ -22,19 +22,19 @@ const fr: typeof ensetup = {
       ariaLabel: "Le plateau",
       midlands: "Midlands",
       veneto: "Vénétie",
-      midlandsHint: "Birmingham et le Pays noir : les canaux de 1770, les rails de 1830.",
-      venetoHint: "De la lagune aux Dolomites : le Brenta, la Piave, et la ligne de Vérone à Venise.",
+      midlandsHint: "Birmingham et le Pays noir : les canaux de 1770, les rails de 1830.",
+      venetoHint: "De la lagune aux Dolomites : le Brenta, la Piave, et la ligne de Vérone à Venise.",
     },
     eraLength: {
       label: "Durée de la partie",
-      hint: "Une partie courte se termine et est comptée après l'ère canal.",
+      hint: "Une partie courte se termine et est comptée après l’ère canal.",
       ariaLabel: "Durée de la partie",
       full: "Partie complète",
       canalOnly: "Canal seul",
     },
     marketTemper: {
       label: "Humeur du marché",
-      hint: "Stock d'ouverture seulement : standard = les 13 charbons / 8 fers imprimés, calme ouvre les deux marchés pleins, volatil les ouvre presque vides. Les marchés ne se réapprovisionnent jamais seuls — seule une nouvelle mine ou forge les remplit.",
+      hint: "Stock d’ouverture seulement : standard = les 13 charbons / 8 fers imprimés, calme ouvre les deux marchés pleins, volatil les ouvre presque vides. Les marchés ne se réapprovisionnent jamais seuls — seule une nouvelle mine ou forge les remplit.",
       ariaLabel: "Humeur du marché",
       calm: "Calme",
       standard: "Standard",
@@ -43,20 +43,20 @@ const fr: typeof ensetup = {
     },
     assist: {
       label: "Assistance débutant",
-      hint: "Pour toute la table : emplacements jouables allumés, prix détaillés, conseils au fil de la partie. Se règle ici pour une table en ligne ; chez soi, c’est aussi un réglage du plateau.",
+      hint: "Pour toute la table : emplacements jouables allumés, prix détaillés, conseils au fil de la partie. Se règle ici pour une table en ligne ; chez soi, c’est aussi un réglage du plateau.",
       on: "Activée",
       off: "Désactivée",
     },
     timer: {
       label: "Chronomètre de tour",
-      hint: "Quand il est réglé, le plateau affiche une petite plaque de laiton avec un compte à rebours pour chaque tour — idéal autour d'une même table.",
+      hint: "Quand il est réglé, le plateau affiche une petite plaque de laiton avec un compte à rebours pour chaque tour — idéal autour d’une même table.",
       ariaLabel: "Chronomètre de tour",
       off: "Sans",
       min: "{n} min",
     },
     fidelity: {
       label: "Fidélité des règles",
-      faithful: "Règles de base : fidèles",
+      faithful: "Règles de base : fidèles",
       seeApproximations: "Voir les approximations",
     },
   },
@@ -75,7 +75,7 @@ const fr: typeof ensetup = {
     colorAria: "Couleur de la place {n}",
     colorStealTip: "{color} — prise à qui la détient.",
     beta: "Bêta",
-    engineTip: "Les machines jouent tout leur tour avant de choisir. Des approximations s'appliquent — voir le Codex des règles.",
+    engineTip: "Les machines jouent tout leur tour avant de choisir. Des approximations s’appliquent — voir le Codex des règles.",
   },
   token: {
     ariaLabel: "Pion {color}",
@@ -101,10 +101,10 @@ const fr: typeof ensetup = {
     },
     short: "Joue à votre niveau",
     expert:
-      "L'expert — joue à fond et ne se relâche jamais, qui que soit en face.",
+      "L’expert — joue à fond et ne se relâche jamais, qui que soit en face.",
     expertShort: "Joue à fond",
     adaptive:
-      "Joue à votre niveau — plus affûté quand vous gagnez, plus doux quand vous perdez, jamais au point de s'envoler.",
+      "Joue à votre niveau — plus affûté quand vous gagnez, plus doux quand vous perdez, jamais au point de s’envoler.",
   },
   defaults: {
     playerOne: "Joueur un",

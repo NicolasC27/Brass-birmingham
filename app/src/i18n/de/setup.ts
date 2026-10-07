@@ -13,7 +13,7 @@ const de: typeof ensetup = {
     botName: "{name} ({difficulty})",
   },
   begin: "Die Kanalzeit beginnen",
-  beginHint: "Setze mindestens zwei Spieler an den Tisch — Menschen oder Maschinen —, bevor die erste Karte gezogen wird.",
+  beginHint: "Setzen Sie mindestens zwei Spieler an den Tisch — Menschen oder Maschinen —, bevor die erste Karte gezogen wird.",
   houseRules: {
     ariaLabel: "Hausregeln",
     heading: "Hausregeln",
@@ -65,12 +65,12 @@ const de: typeof ensetup = {
     seatAnother: "Einen weiteren Spieler an den Tisch setzen.",
     openAria: "Platz {n} öffnen",
     botPortraitAlt: "Porträt des mechanischen Rivalen",
-    namePlaceholder: "Gib diesem Industriellen einen Namen",
+    namePlaceholder: "Geben Sie diesem Industriellen einen Namen",
     nameAria: "Name von Platz {n}",
     typeHuman: "Mensch",
     typeBot: "Maschine",
     typeClosed: "Geschlossen",
-    headBadge: "Mensch · Du",
+    headBadge: "Mensch · Sie",
     typeAria: "Typ von Platz {n}",
     colorAria: "Farbe von Platz {n}",
     colorStealTip: "{color} — wird dem abgenommen, der sie hat.",
@@ -99,12 +99,12 @@ const de: typeof ensetup = {
     arkwright: {
       label: "Miss Arkwright",
     },
-    short: "Spielt auf deinem Niveau",
+    short: "Spielt auf Ihrem Niveau",
     expert:
       "Der Experte — spielt mit voller Kraft und lässt nie nach, wer auch immer gegenübersitzt.",
     expertShort: "Spielt mit voller Kraft",
     adaptive:
-      "Spielt auf deinem Niveau — schärfer, wenn du gewinnst, sanfter, wenn du verlierst, nie so, dass eine Partie davonläuft.",
+      "Spielt auf Ihrem Niveau — schärfer, wenn Sie gewinnen, sanfter, wenn Sie verlieren, nie so, dass eine Partie davonläuft.",
   },
   defaults: {
     playerOne: "Spieler eins",

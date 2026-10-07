@@ -8,7 +8,7 @@ const home = {
     tagline: 'Canals, coal and iron. Build the empire that built the world.',
     quick: 'Play now',
     desk: 'To my desk, {name}',
-    online: 'Sign in and play',
+    online: 'Sign the register and play',
     onlineNote: 'Open a table, ask your friends by name, ring the bell. Your games wait for you on the desk.',
     practice: 'Practise vs the machine',
     tutorial: 'New here? A guided first game',
@@ -34,8 +34,8 @@ const home = {
     aria: 'Inside the box',
     eyebrow: 'Inside the Box',
     title: 'What makes the game tick',
-    allRules: 'Read the rules →',
-    learnMore: 'Learn more →',
+    allRules: 'Read the rules',
+    learnMore: 'Learn more',
     market: {
       coal: 'Coal',
       iron: 'Iron',
@@ -49,7 +49,6 @@ const home = {
     },
     map: {
       aria: 'Map excerpt: three towns, a canal link tracing itself, and a dashed supply line to the market',
-      market: 'MARKET',
     },
     rows: {
       market: {
@@ -73,7 +72,7 @@ const home = {
     aria: 'How it plays',
     eyebrow: 'How it plays',
     title: 'A turn, a card, an action',
-    rules: 'Read the rules →',
+    rules: 'Read the rules',
     step: 'Step {n}',
     card: { title: 'Play a card', body: 'A location or an industry card opens the action: build, network, develop, sell, borrow or scout. Two actions a turn.' },
     build: { title: 'Build and link', body: 'Lay your works in the towns, draw canals and later rails between them. Coal and iron travel along your network, or cost dear at the market.' },

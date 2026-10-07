@@ -15,7 +15,7 @@ const common: typeof enCommon = {
     language: 'Idioma / Language',
   },
   footer: {
-    tagline: 'Una revolución industrial en tu mesa.',
+    tagline: 'Una revolución industrial en su mesa.',
   },
 };
 export default common;

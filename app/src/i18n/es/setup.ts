@@ -70,7 +70,7 @@ const es: typeof ensetup = {
     typeHuman: "Humano",
     typeBot: "Mecánico",
     typeClosed: "Cerrado",
-    headBadge: "Humano · Tú",
+    headBadge: "Humano · Usted",
     typeAria: "Tipo del asiento {n}",
     colorAria: "Color del asiento {n}",
     colorStealTip: "{color} — se le quita a quien lo tenga.",
@@ -99,12 +99,12 @@ const es: typeof ensetup = {
     arkwright: {
       label: "Miss Arkwright",
     },
-    short: "Juega a tu nivel",
+    short: "Juega a su nivel",
     expert:
       "El experto — juega a fondo y nunca afloja, sea quien sea el rival.",
     expertShort: "Juega a fondo",
     adaptive:
-      "Juega a tu nivel — más afilado cuando ganas, más suave cuando pierdes, nunca hasta escaparse con la partida.",
+      "Juega a su nivel — más afilado cuando usted gana, más suave cuando pierde, nunca hasta escaparse con la partida.",
   },
   defaults: {
     playerOne: "Jugador uno",

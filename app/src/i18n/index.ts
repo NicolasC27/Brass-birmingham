@@ -35,6 +35,18 @@ let lang: Lang = (() => {
   return (LANGS as readonly string[]).includes(spoken) ? (spoken as Lang) : 'en';
 })();
 
+/* the sheet says which language it is set in: hyphenation, quotation
+   marks and the voice of a screen reader all read this attribute */
+function proclaim(l: Lang): void {
+  /* the office runs this file too, and an office has no sheet to mark:
+     the page is reached through globalThis so the server build, which
+     carries no DOM types, still compiles */
+  const sheet = (globalThis as { document?: { documentElement: { lang: string } } }).document;
+  if (sheet) sheet.documentElement.lang = l;
+}
+
+proclaim(lang);
+
 const listeners = new Set<() => void>();
 
 export function getLang(): Lang {
@@ -43,6 +55,7 @@ export function getLang(): Lang {
 
 export function setLang(l: Lang): void {
   lang = l;
+  proclaim(l);
   try {
     localStorage.setItem(KEY, l);
   } catch {

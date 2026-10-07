@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { LANGS, setLang, tr } from '../index';
+import type { Lang } from '../index';
 import { de } from '../de';
 import { en } from '../en';
 import { es } from '../es';
@@ -45,6 +46,66 @@ describe('a counted word', () => {
       const loose = strings(DICTS[lang]).filter((x) => /\w\(s\)/.test(x.text));
       expect(loose.map((x) => `${lang}:${x.key}`)).toEqual([]);
     }
+  });
+
+  /* ------------------------------------------------------------------ */
+  /* A count sets the word behind it. These are the only words allowed  */
+  /* to stand there bare: units, which never take a plural; the         */
+  /* function words that open a phrase instead of naming a thing; and   */
+  /* the handful of uncountables the board deals in. Written out rather */
+  /* than caught by a wide expression, so the next omission falls.      */
+  /* ------------------------------------------------------------------ */
+  const BARE: Record<Lang, readonly string[]> = {
+    fr: [
+      'min', 'h', 'j', 'PV', 'pts',
+      'de', 'des', 'du', 'dans', 'en', 'sur', 'à', 'au', 'aux', 'ou', 'et', 'par', 'pour', 'autour', 'encore', 'plus',
+      'charbon', 'fer', 'bière', 'revenu',
+      /* une fois, trois fois — the word does not move */
+      'fois',
+    ],
+    en: [
+      'min', 'h', 'd', 'VP', 'pts',
+      'of', 'in', 'at', 'on', 'or', 'and', 'to', 'from', 'for', 'with', 'still', 'more', 'left', 'open', 'possible',
+      'waiting', 'watching', 'online', 'ranked', 'lost', 'best', 'good',
+      'coal', 'iron', 'beer', 'income',
+      /* a works, two works — the word does not move */
+      'works',
+    ],
+    es: [
+      'min', 'h', 'd', 'PV', 'pts',
+      'de', 'del', 'en', 'sobre', 'a', 'al', 'o', 'y', 'por', 'para', 'aún', 'más', 'mirando', 'esperando',
+      'carbón', 'hierro', 'cerveza', 'ingresos',
+    ],
+    de: [
+      'Min', 'Std', 'T', 'SP', 'Pkt',
+      'von', 'in', 'am', 'auf', 'aus', 'oder', 'und', 'mit', 'für', 'noch', 'mehr', 'übrig', 'offen', 'online',
+      'gewertet', 'verloren', 'ausgegeben', 'möglich', 'deiner', 'deine',
+      'Kohle', 'Eisen', 'Bier', 'Einkommen',
+      /* der Spieler, die Spieler — the same word on either side of one */
+      'Spieler', 'Würfel',
+    ],
+  };
+
+  /* keys where the number orders rather than counts: seat two, not two seats */
+  const ORDINAL: readonly string[] = ['setup.seat.openAria', 'setup.seat.nameAria', 'setup.seat.typeAria', 'setup.seat.colorAria'];
+
+  it('sets the word standing behind a count', () => {
+    const loose: string[] = [];
+    for (const lang of LANGS) {
+      for (const { key, text } of strings(DICTS[lang])) {
+        if (ORDINAL.includes(key)) continue;
+        for (const m of text.matchAll(/\{(count|n)\}[\s\u00a0\u202f]+([^\s\u00a0\u202f[{<]+)/g)) {
+          /* the string already names its own form: nothing to settle */
+          if (new RegExp(`\\[${m[1]}\\|`).test(text)) continue;
+          const word = m[2].replace(/[.,:;!?)\u2026"\u2019\u00bb]+$/u, '');
+          /* a symbol or a figure — ×, ·, £, an arrow — never takes a plural */
+          if (!/\p{L}/u.test(word)) continue;
+          if (BARE[lang].includes(word)) continue;
+          loose.push(`${lang}:${key} → "{${m[1]}} ${word}"`);
+        }
+      }
+    }
+    expect(loose).toEqual([]);
   });
 
   it('names a count the string carries', () => {
