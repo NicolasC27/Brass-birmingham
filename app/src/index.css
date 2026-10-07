@@ -130,17 +130,11 @@
   }
 
   /* ---------- Brass Plaque family (design.md §6.2) ---------- */
-  .plaque {
-    position: relative;
-    border-radius: 8px;
-    border: 1px solid var(--brass-700);
-    background: linear-gradient(160deg, var(--brass-400), var(--brass-500) 45%, var(--brass-700));
-    box-shadow:
-      inset 0 1px 0 rgba(242, 234, 214, 0.5),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
-      0 3px 6px rgba(0, 0, 0, 0.45),
-      0 10px 24px rgba(0, 0, 0, 0.25);
-  }
+  /* the brass plaque itself is gone: a second `.plaque` further down —
+     the HUD's dark translucent one — carried the same name and won the
+     cascade, so this one was never printed. Its only reader outside the
+     board was the empty results page, which wrote a dark ink on it and
+     held 1.08. The rivets below still ride the dark plaque. */
   .plaque-rivets::before,
   .plaque-rivets::after {
     content: "";
@@ -408,38 +402,43 @@
     background-size: 512px;
   }
 
-  /* Typography scale — the engraved register: Fraunces at book weight,
-     optical size wide open, sized like a title page rather than a poster;
-     the labels are set small and letterspaced, the way a ledger's are */
+  /* Typography scale — the engraved register: Fraunces at book weight, sized
+     like a title page rather than a poster; the labels are set small and
+     letterspaced, the way a ledger's are.
+     No optical size is asked for here. The press carries Fraunces as static
+     instances (@fontsource/fraunces), which have no `opsz` axis to turn: the
+     settings that once stood on these five rules drove nothing and only
+     promised a dial that was never fitted. */
   .display-hero {
     @apply font-fraunces font-normal text-paper-100;
     font-size: 36px;
     line-height: 1.05;
     letter-spacing: -0.005em;
-    font-variation-settings: "opsz" 144;
   }
   .display-page {
     @apply font-fraunces font-normal text-paper-100;
     font-size: 28px;
     line-height: 1.15;
-    font-variation-settings: "opsz" 144;
   }
   .h2-section {
     @apply font-fraunces font-medium text-paper-100;
     font-size: 20px;
     line-height: 1.25;
-    font-variation-settings: "opsz" 96;
   }
   .title-card {
     @apply font-fraunces font-medium text-paper-100;
     font-size: 15px;
     line-height: 1.3;
-    font-variation-settings: "opsz" 48;
   }
   .micro-label {
     @apply font-ui font-medium uppercase;
     font-size: 10.5px;
     line-height: 1.45;
+    letter-spacing: 0.16em;
+  }
+  /* the label's letterspacing on its own, for the words that want the
+     ledger's spacing without its size or its capitals */
+  .tracking-label {
     letter-spacing: 0.16em;
   }
   /* the eyebrow over a page title: Fell's small capitals, a printer's voice */
@@ -474,14 +473,15 @@
   }
 
   /* Brass CTA — flat brass with a dark rule, the way a plate is let into
-     wood; it brightens on hover rather than rising */
+     wood; under the hand it moves away from the ground rather than rising:
+     brighter at night, darker by day, the plate taken from the register */
   .cta-brass {
-    background-color: #C9A24B;
+    background-color: rgb(var(--brass-plate, 201 162 75));
     box-shadow: inset 0 0 0 1px rgba(26, 20, 8, 0.28), inset 0 1px 0 rgba(255, 244, 214, 0.35);
     transition: background-color 150ms ease-out;
   }
   .cta-brass:hover {
-    background-color: #D9B45E;
+    background-color: rgb(var(--brass-plate-hover, 217 180 94));
   }
 
   /* The console: the platform's one panel. A sheet on the register with a
@@ -514,6 +514,18 @@
     transform: translate(-50%, -50%) rotate(45deg);
     background: rgb(var(--brass-300, 231 201 126));
     box-shadow: 0 0 0 3px rgb(var(--lacquer-900, 14 19 16));
+  }
+
+  /* A command put out. Opacity halves the plate and the ink together, so
+     the disabled button drifts towards the hover ground; this paints the
+     state instead: the register's own off surface, its off ink, a faint
+     rule, and no inner shadow left to suggest a plate. */
+  .is-off {
+    background-color: rgb(var(--state-off-bg, 32 42 36)) !important;
+    color: rgb(var(--state-off-ink, 139 148 140)) !important;
+    border-color: var(--gz-ink-faint, rgba(237, 230, 214, 0.14)) !important;
+    box-shadow: none !important;
+    cursor: default;
   }
 
   /* Fine 4px column scrollbar (home.md §S2) — theme-driven (enamel-700) */
@@ -551,6 +563,9 @@
   /* corners: the register is printed, not moulded — rounded-xl lands at 3px,
      rounded-lg and below at nothing; pills (rounded-full) keep their shape */
   --radius: 0px;
+  /* the night is a dark page, so the native chrome is told as much: the
+     checkbox, the scrollbars and the caret are drawn from the register */
+  color-scheme: dark;
   /* surfaces — lacquer & enamel (dark = design.md §2.1, exact) */
   --lacquer-950: 10 14 12;
   --lacquer-900: 14 19 16;
@@ -560,12 +575,21 @@
   --enamel-line: 38 49 42;
   /* metal — brass (§2.2) */
   --brass-300: 231 201 126;
+  --brass-400: 221 190 126; /* #DDBE7E — 10.49 on lacquer-900 */
+  --brass-500: 201 164 92; /* #C9A45C — 7.99 on lacquer-900 */
+  --brass-plate: 201 162 75; /* #C9A24B the plate — 7.82 off the ground, ink-on-brass 7.63 */
+  --brass-plate-hover: 217 180 94; /* #D9B45E — the night's plate brightens under the hand: 9.51 off the ground */
   --brass-hairline: rgba(201, 162, 75, 0.14);
   --brass-hairline-strong: rgba(201, 162, 75, 0.32);
   /* mode & state (§2.3) */
   --signal-400: 240 169 46;
+  --signal-ink: 240 169 46; /* the signal written: 9.31 on lacquer-900, so the surface serves as ink too */
+  --focus-ring: 240 169 46; /* 9.31 — well past the 3:1 a ring is asked for */
   --signal-glow: rgba(240, 169, 46, 0.35);
   --bottle-400: 62 138 102;
+  /* the lamp above is a mark on a dark ground and holds; told as a word it
+     fell to 4.27 on enamel — the ink is its own token, one shade nearer day */
+  --bottle-ink: 76 168 124; /* #4CA87C — 6.11 on enamel-850, 5.08 on enamel-700 */
   --bottle-500: 46 107 79;
   --bottle-700: 30 77 59;
   --rust-400: 208 112 78;
@@ -576,9 +600,18 @@
   --paper-300: 200 191 172;
   --iron-400: 139 148 140;
   --iron-600: 90 99 92;
+  /* the four seats, read on their own disc (enamel-700): brass 6.31, oxblood
+     3.26, verdigris 3.27, steel 3.25 — the night wears the plates unchanged */
+  --player-brass: 201 164 92; /* #C9A45C */
+  --player-oxblood: 198 80 66; /* #C65042 */
+  --player-verdigris: 68 131 91; /* #44835B */
+  --player-steel: 86 121 156; /* #56799C */
   /* ink on metal/signal — theme-independent (§2.2/§7.7) */
   --ink-on-brass: 26 20 8;
   --ink-on-signal: 35 22 3;
+  /* a command put out is painted, not diluted */
+  --state-off-bg: 32 42 36; /* enamel-700 */
+  --state-off-ink: 139 148 140; /* iron-400 — 4.73 on the ground above */
   /* elevation & halos (§2.5) */
   --shadow-modal: rgba(0, 0, 0, 0.45);
   --halo-signal-ring: rgba(240, 169, 46, 0.5);
@@ -589,51 +622,74 @@
 }
 
 html[data-theme="light"] .platform-root {
-  /* surfaces — papier de registre */
-  --lacquer-950: 244 238 225; /* #F4EEE1 fond app */
+  /* the day is a light page, so the native chrome is told as much */
+  color-scheme: light;
+  /* surfaces — the register's paper */
+  --lacquer-950: 244 238 225; /* #F4EEE1 the page's ground */
   --lacquer-900: 239 232 214; /* #EFE8D6 */
-  --enamel-850: 251 247 236; /* #FBF7EC panneaux */
+  --enamel-850: 251 247 236; /* #FBF7EC panels */
   --enamel-800: 253 250 243; /* #FDFAF3 */
-  --enamel-700: 240 233 214; /* #F0E9D6 hover */
+  --enamel-700: 228 220 198; /* #E4DCC6 hover — 1.12 off lacquer-900, the step the night holds; at #F0E9D6 it was 1.01 and the switch lost its rail */
   --enamel-line: 226 216 190; /* #E2D8BE */
-  /* metal — laiton assombri pour le contraste sur papier */
-  --brass-300: 168 127 42; /* #A87F2A */
+  /* metal — brass darkened until it holds on paper */
+  --brass-300: 125 92 23; /* #7D5C17 ink — 5.03 on lacquer-900, 4.64 on the tinted rows of the almanack */
+  --brass-400: 143 107 35; /* #8F6B23 ornament — 4.00 on lacquer-900, 3.57 on enamel-700 */
+  --brass-500: 122 89 26; /* #7A591A ink — 5.25 on lacquer-900, 4.69 on enamel-700 */
+  --brass-plate: 163 127 38; /* #A37F26 the plate itself — 3.06 off the paper, and ink-on-brass holds 4.90 on it */
+  --brass-plate-hover: 160 122 36; /* #A07A24 — the day's plate darkens under the hand: 3.24 off the paper, ink-on-brass 4.62 */
   --brass-hairline: rgba(143, 107, 35, 0.28);
   --brass-hairline-strong: rgba(143, 107, 35, 0.5);
   /* mode & state */
-  --signal-400: 185 122 15; /* #B97A0F — AA en texte sur clair */
+  --signal-400: 185 122 15; /* #B97A0F — a surface, never an ink: set as text it measures 2.94 on lacquer-900 */
+  --signal-ink: 143 93 8; /* #8F5D08 — the signal written rather than painted: 4.60 on lacquer-900 */
+  --focus-ring: 143 93 8; /* #8F5D08 — 4.60; the ring is asked for 3:1 and signal-400 gave 2.94 */
   --signal-glow: rgba(185, 122, 15, 0.25);
   --bottle-400: 46 107 79; /* #2E6B4F */
+  --bottle-ink: 46 107 79; /* the day green already holds 5.16 on the page */
   --bottle-500: 38 90 66; /* #265A42 */
-  --bottle-700: 223 233 221; /* #DFE9DD badge Normal */
+  --bottle-700: 223 233 221; /* #DFE9DD the plain-queue badge */
   --rust-400: 168 73 47; /* #A8492F */
   --rust-600: 172 74 46; /* #AC4A2E */
-  --rust-700: 242 220 208; /* #F2DCD0 badge Classé */
-  /* texte — encre ferro-gallique */
-  --paper-100: 36 29 18; /* #241D12 texte principal */
+  --rust-700: 242 220 208; /* #F2DCD0 the ranked badge */
+  /* text — iron-gall ink */
+  --paper-100: 36 29 18; /* #241D12 the body */
   --paper-300: 74 65 50; /* #4A4132 */
-  --iron-400: 110 116 104; /* #6E7468 */
-  --iron-600: 154 148 132; /* #9A9484 */
-  /* encre sur métal/signal : inchangée (fonds laiton/signal identiques) */
+  --iron-400: 90 95 84; /* #5A5F54 — 5.37 on lacquer-900 and 4.80 on enamel-700, where #5F6459 held the page at 4.98 but fell to 4.44 the moment the hand lifted a row */
+  --iron-600: 126 121 105; /* #7E7969 — 3.56 on lacquer-900, where #9A9484 gave 2.47; a figure's ink, not body copy */
+  /* the four seats, told to the register rather than to the board. Each ring
+     is read on its own disc (enamel-700): brass 3.69, oxblood 4.92, verdigris
+     3.72, steel 3.89 — where the board's own brass measured 1.72 on paper and
+     left the first seat with no rim at all. The three darker plates the board
+     already cuts hold on paper as they are; only the metal is tempered. */
+  --player-brass: 138 106 30; /* #8A6A1E */
+  --player-oxblood: 158 59 48; /* #9E3B30 */
+  --player-verdigris: 63 122 85; /* #3F7A55 */
+  --player-steel: 78 110 142; /* #4E6E8E */
+  /* ink on metal and on signal: unchanged, those grounds are the same in both registers */
   --ink-on-brass: 26 20 8;
   --ink-on-signal: 35 22 3;
-  /* ombres adoucies, halo signal atténué */
+  /* a command put out is painted, not diluted */
+  --state-off-bg: 228 220 198; /* enamel-700 */
+  --state-off-ink: 90 95 84; /* iron-400 — 4.80 on the ground above */
+  /* shadows softened, the signal's halo damped */
   --shadow-modal: rgba(60, 45, 20, 0.18);
   --halo-signal-ring: rgba(185, 122, 15, 0.45);
   --halo-signal-glow: rgba(185, 122, 15, 0.18);
-  /* textures désactivées : papier uni (plus net que l'inversion) */
+  /* textures off: plain paper reads cleaner than an inverted plate */
   --tex-lacquer-image: none;
   --tex-ledger-image: none;
-  /* ornements « registre » (diagrammes des règles : traits et cartes) */
-  --rd-ink: #6E7468; /* iron-400 clair — linework */
-  --rd-brass: #A87F2A; /* laiton assombri — traits/points */
-  --rd-rust: #A8492F; /* rust-400 clair */
-  --rd-cream: #FFFFFF; /* cartes/jetons papier sur le registre */
+  /* the register's ornaments (the rules diagrams: linework and cards) */
+  --rd-ink: #5A5F54; /* the day's iron-400 — linework */
+  --rd-brass: #856219; /* the day's brass-300 — rules and points */
+  --rd-rust: #A8492F; /* the day's rust-400 */
+  --rd-cream: #FFFFFF; /* paper cards and counters on the register */
 }
 
-/* Platform focus ring (design.md §2.5) — scoped so the game shell keeps its own */
+/* Platform focus ring (design.md §2.5) — scoped so the game shell keeps its
+   own. The ring has its own ink: the signal is a plate by day, too pale to
+   be a rule, so --focus-ring carries the darker one. */
 .platform-root :focus-visible {
-  outline: 2px solid rgb(var(--signal-400, 240 169 46));
+  outline: 2px solid rgb(var(--focus-ring, 240 169 46));
   outline-offset: 2px;
 }
 
@@ -720,6 +776,11 @@ html[data-theme="light"] .platform-root {
   --gz-ink: rgb(var(--paper-100) / 0.72);
   --gz-ink-soft: rgb(var(--paper-100) / 0.32);
   --gz-ink-faint: rgb(var(--paper-100) / 0.14);
+  /* a rule that bounds a command is printed blacker than one that merely
+     parts two columns: 0.32 measures 1.96 by day, and the ticket has no
+     ground of its own to be read by. 0.52 lands at 3.16-3.42 by day and
+     4.35-4.78 by night, over every surface of the register. */
+  --gz-line-control: rgb(var(--paper-100) / 0.52);
 }
 /* two thin rules, a printer's border */
 .gz-rule-double {
@@ -749,7 +810,6 @@ html[data-theme="light"] .platform-root {
   line-height: 1;
   letter-spacing: 0.26em;
   text-indent: 0.26em;
-  font-variation-settings: "opsz" 144;
 }
 html:not(.fonts-ready) .gz-wordmark {
   opacity: 0;
@@ -832,7 +892,7 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   letter-spacing: 0.16em;
   color: rgb(var(--paper-100));
   white-space: nowrap;
-  border: 1px solid var(--gz-ink-soft);
+  border: 1px solid var(--gz-line-control);
   background: rgb(var(--enamel-850));
   transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
 }
@@ -858,7 +918,7 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
 }
 .gz-ticket-brass {
   color: rgb(var(--ink-on-brass));
-  background: #C9A24B;
+  background: rgb(var(--brass-plate, 201 162 75));
   border-color: rgba(26, 20, 8, 0.45);
 }
 /* the small ticket of a timetable line */
@@ -878,19 +938,14 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   width: 12px;
   height: 12px;
 }
-/* the reader's own move waiting: the ticket in the signal's colour */
-.gz-ticket-signal {
-  color: rgb(var(--paper-100));
-  background: rgb(var(--signal-400));
-  border-color: rgba(26, 20, 8, 0.45);
-}
 .gz-ticket-brass::before {
   border-left-color: rgba(26, 20, 8, 0.4);
 }
 .gz-ticket-brass:hover {
-  background: #D9B45E;
+  background: rgb(var(--brass-plate-hover, 217 180 94));
   border-color: rgba(26, 20, 8, 0.6);
 }
+/* the reader's own move waiting: the ticket in the signal's colour */
 .gz-ticket-signal {
   color: rgb(var(--ink-on-signal));
   background: rgb(var(--signal-400));
@@ -931,17 +986,25 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   background: rgb(var(--enamel-800));
 }
 /* the departures board: an enamelled panel in a hairline frame, the lines
-   set on it as on a station's board — a column a fact, a rule a line */
+   set on it as on a station's board — a column a fact, a rule a line.
+   The tracks are cut once, on the board, and every line and the head are
+   ruled to them: left to each line, the last track sized itself on that
+   line's own tickets and the head named columns that were not there.
+   The last track is therefore fixed and the fixed ones are compressible,
+   so a narrow window takes width from the facts that repeat and not from
+   the name of the table and its host. */
 .gz-board {
-  --board-cols: 40px minmax(0, 1fr) 156px 128px auto;
+  --board-cols: 40px minmax(180px, 2fr) minmax(0, 156px) minmax(0, 128px) 210px;
   border: 1px solid var(--gz-ink-soft);
   box-shadow: inset 0 0 0 4px rgb(var(--lacquer-900)), inset 0 0 0 5px var(--gz-ink);
   background: rgb(var(--enamel-850));
   padding: 5px;
 }
-@media (min-width: 900px) {
+/* the run of the journey is held back until the board is wide enough to
+   carry it without eating the destination */
+@media (min-width: 1100px) {
   .gz-board {
-    --board-cols: 40px minmax(0, 1fr) 156px 128px 190px auto;
+    --board-cols: 40px minmax(220px, 2fr) minmax(0, 156px) minmax(0, 128px) minmax(0, 190px) 210px;
   }
 }
 .gz-board-head,
@@ -998,7 +1061,7 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
 .gz-board-col-progress {
   display: none;
 }
-@media (min-width: 900px) {
+@media (min-width: 1100px) {
   .gz-board-col-progress {
     display: block;
   }
@@ -1053,9 +1116,19 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
   background: rgb(var(--enamel-850));
   box-shadow: inset 0 0 0 3px rgb(var(--enamel-850)), inset 0 0 0 4px var(--gz-ink-soft);
 }
-/* a text column beside another: a rule parts them, as on a page */
-@media (min-width: 900px) {
+/* a text column beside another: a rule parts them, as on a page. The rule
+   is lit at the width its grid parts at, never before — struck early it
+   ran down the middle of a single column and pushed the page's margin in
+   by its own indent. Most grids part at 1100px; `.gz-col-rule-900` is the
+   same rule for the one that parts at 900. */
+@media (min-width: 1100px) {
   .gz-col-rule {
+    border-left: 1px solid var(--gz-ink-soft);
+    padding-left: 28px;
+  }
+}
+@media (min-width: 900px) {
+  .gz-col-rule-900 {
     border-left: 1px solid var(--gz-ink-soft);
     padding-left: 28px;
   }
@@ -1067,46 +1140,67 @@ html[data-theme="dark"] .platform-root .gz-engraving img {
    columns kept, and nothing that moves. */
 @media print {
   .platform-root {
-  /* surfaces — papier de registre */
-  --lacquer-950: 244 238 225; /* #F4EEE1 fond app */
+  /* the day is a light page, so the native chrome is told as much */
+  color-scheme: light;
+  /* surfaces — the register's paper */
+  --lacquer-950: 244 238 225; /* #F4EEE1 the page's ground */
   --lacquer-900: 239 232 214; /* #EFE8D6 */
-  --enamel-850: 251 247 236; /* #FBF7EC panneaux */
+  --enamel-850: 251 247 236; /* #FBF7EC panels */
   --enamel-800: 253 250 243; /* #FDFAF3 */
-  --enamel-700: 240 233 214; /* #F0E9D6 hover */
+  --enamel-700: 228 220 198; /* #E4DCC6 hover — 1.12 off lacquer-900, the step the night holds; at #F0E9D6 it was 1.01 and the switch lost its rail */
   --enamel-line: 226 216 190; /* #E2D8BE */
-  /* metal — laiton assombri pour le contraste sur papier */
-  --brass-300: 168 127 42; /* #A87F2A */
+  /* metal — brass darkened until it holds on paper */
+  --brass-300: 125 92 23; /* #7D5C17 ink — 5.03 on lacquer-900, 4.64 on the tinted rows of the almanack */
+  --brass-400: 143 107 35; /* #8F6B23 ornament — 4.00 on lacquer-900, 3.57 on enamel-700 */
+  --brass-500: 122 89 26; /* #7A591A ink — 5.25 on lacquer-900, 4.69 on enamel-700 */
+  --brass-plate: 163 127 38; /* #A37F26 the plate itself — 3.06 off the paper, and ink-on-brass holds 4.90 on it */
+  --brass-plate-hover: 160 122 36; /* #A07A24 — the day's plate darkens under the hand: 3.24 off the paper, ink-on-brass 4.62 */
   --brass-hairline: rgba(143, 107, 35, 0.28);
   --brass-hairline-strong: rgba(143, 107, 35, 0.5);
   /* mode & state */
-  --signal-400: 185 122 15; /* #B97A0F — AA en texte sur clair */
+  --signal-400: 185 122 15; /* #B97A0F — a surface, never an ink: set as text it measures 2.94 on lacquer-900 */
+  --signal-ink: 143 93 8; /* #8F5D08 — the signal written rather than painted: 4.60 on lacquer-900 */
+  --focus-ring: 143 93 8; /* #8F5D08 — 4.60; the ring is asked for 3:1 and signal-400 gave 2.94 */
   --signal-glow: rgba(185, 122, 15, 0.25);
   --bottle-400: 46 107 79; /* #2E6B4F */
+  --bottle-ink: 46 107 79; /* the day green already holds 5.16 on the page */
   --bottle-500: 38 90 66; /* #265A42 */
-  --bottle-700: 223 233 221; /* #DFE9DD badge Normal */
+  --bottle-700: 223 233 221; /* #DFE9DD the plain-queue badge */
   --rust-400: 168 73 47; /* #A8492F */
   --rust-600: 172 74 46; /* #AC4A2E */
-  --rust-700: 242 220 208; /* #F2DCD0 badge Classé */
-  /* texte — encre ferro-gallique */
-  --paper-100: 36 29 18; /* #241D12 texte principal */
+  --rust-700: 242 220 208; /* #F2DCD0 the ranked badge */
+  /* text — iron-gall ink */
+  --paper-100: 36 29 18; /* #241D12 the body */
   --paper-300: 74 65 50; /* #4A4132 */
-  --iron-400: 110 116 104; /* #6E7468 */
-  --iron-600: 154 148 132; /* #9A9484 */
-  /* encre sur métal/signal : inchangée (fonds laiton/signal identiques) */
+  --iron-400: 90 95 84; /* #5A5F54 — 5.37 on lacquer-900 and 4.80 on enamel-700, where #5F6459 held the page at 4.98 but fell to 4.44 the moment the hand lifted a row */
+  --iron-600: 126 121 105; /* #7E7969 — 3.56 on lacquer-900, where #9A9484 gave 2.47; a figure's ink, not body copy */
+  /* the four seats, told to the register rather than to the board. Each ring
+     is read on its own disc (enamel-700): brass 3.69, oxblood 4.92, verdigris
+     3.72, steel 3.89 — where the board's own brass measured 1.72 on paper and
+     left the first seat with no rim at all. The three darker plates the board
+     already cuts hold on paper as they are; only the metal is tempered. */
+  --player-brass: 138 106 30; /* #8A6A1E */
+  --player-oxblood: 158 59 48; /* #9E3B30 */
+  --player-verdigris: 63 122 85; /* #3F7A55 */
+  --player-steel: 78 110 142; /* #4E6E8E */
+  /* ink on metal and on signal: unchanged, those grounds are the same in both registers */
   --ink-on-brass: 26 20 8;
   --ink-on-signal: 35 22 3;
-  /* ombres adoucies, halo signal atténué */
+  /* a command put out is painted, not diluted */
+  --state-off-bg: 228 220 198; /* enamel-700 */
+  --state-off-ink: 90 95 84; /* iron-400 — 4.80 on the ground above */
+  /* shadows softened, the signal's halo damped */
   --shadow-modal: rgba(60, 45, 20, 0.18);
   --halo-signal-ring: rgba(185, 122, 15, 0.45);
   --halo-signal-glow: rgba(185, 122, 15, 0.18);
-  /* textures désactivées : papier uni (plus net que l'inversion) */
+  /* textures off: plain paper reads cleaner than an inverted plate */
   --tex-lacquer-image: none;
   --tex-ledger-image: none;
-  /* ornements « registre » (diagrammes des règles : traits et cartes) */
-  --rd-ink: #6E7468; /* iron-400 clair — linework */
-  --rd-brass: #A87F2A; /* laiton assombri — traits/points */
-  --rd-rust: #A8492F; /* rust-400 clair */
-  --rd-cream: #FFFFFF; /* cartes/jetons papier sur le registre */
+  /* the register's ornaments (the rules diagrams: linework and cards) */
+  --rd-ink: #5A5F54; /* the day's iron-400 — linework */
+  --rd-brass: #856219; /* the day's brass-300 — rules and points */
+  --rd-rust: #A8492F; /* the day's rust-400 */
+  --rd-cream: #FFFFFF; /* paper cards and counters on the register */
   }
   .platform-root {
     background: #f4eee1 !important;

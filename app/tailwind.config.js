@@ -37,6 +37,8 @@ module.exports = {
           // platform additions (design.md §2.3): 400/500/700 (theme-driven);
           // 600/800 legacy, untouched
           400: "rgb(var(--bottle-400, 62 138 102) / <alpha-value>)",
+          // the green as a word, a shade nearer day than the lamp
+          ink: "rgb(var(--bottle-ink, 76 168 124) / <alpha-value>)",
           500: "rgb(var(--bottle-500, 46 107 79) / <alpha-value>)",
           600: "#2E5540",
           700: "rgb(var(--bottle-700, 30 77 59) / <alpha-value>)",
@@ -69,7 +71,11 @@ module.exports = {
           line: "rgb(var(--enamel-line, 38 49 42) / <alpha-value>)",
         },
         signal: {
+          // 400 is the SURFACE — the plate, the pastille. Set as text on the
+          // day's paper it measures 2.94, so the signal written down takes
+          // `ink` instead (the night's ink is 400, which holds 9.31).
           400: "rgb(var(--signal-400, 240 169 46) / <alpha-value>)",
+          ink: "rgb(var(--signal-ink, 240 169 46) / <alpha-value>)",
           glow: "var(--signal-glow, rgba(240,169,46,.35))",
         },
         paper: {
@@ -83,11 +89,13 @@ module.exports = {
         ink: {
           900: "#241D14",
         },
+        // the four seats, theme-driven like the rest of the register: the day
+        // tempers the metal that the night wears bright. Fallbacks = the night.
         player: {
-          brass: "#C9A45C",
-          oxblood: "#9E3B30",
-          verdigris: "#3F7A55",
-          steel: "#4E6E8E",
+          brass: "rgb(var(--player-brass, 201 164 92) / <alpha-value>)",
+          oxblood: "rgb(var(--player-oxblood, 198 80 66) / <alpha-value>)",
+          verdigris: "rgb(var(--player-verdigris, 68 131 91) / <alpha-value>)",
+          steel: "rgb(var(--player-steel, 86 121 156) / <alpha-value>)",
         },
         // shadcn token aliases (kept for ui/ primitives)
         border: "hsl(var(--border))",
@@ -146,6 +154,10 @@ module.exports = {
         serif: ['Spectral', 'Georgia', 'serif'],
       },
       borderRadius: {
+        // a bare `rounded` fell back to Tailwind's 4px and slipped the
+        // register's square corner — the outline follows the radius, so it
+        // showed at the keyboard
+        DEFAULT: "var(--radius)",
         xl: "calc(var(--radius) + 4px)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
