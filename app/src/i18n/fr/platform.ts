@@ -137,7 +137,7 @@ const platform = {
   home: {
     eyebrow: "HALL DE LA GARE",
     title: 'Blackrail',
-    tagline: 'La plateforme du jeu. Trouvez une table, lancez la machine.',
+    tagline: 'Le hall est ouvert. Trouvez une table, lancez la machine.',
     resumeBanner: 'Table « {name} » — c’est votre tour',
     resumeMeta: 'tour {round} · {opponents} adversaires',
     resumeSaveMeta: '{era}, tour {round}',

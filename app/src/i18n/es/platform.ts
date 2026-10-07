@@ -137,7 +137,7 @@ const platform = {
   home: {
     eyebrow: "VESTÍBULO DE LA ESTACIÓN",
     title: 'Blackrail',
-    tagline: 'La plataforma del juego. Encuentra una mesa, arranca la máquina.',
+    tagline: 'El vestíbulo está abierto. Encuentra una mesa, arranca la máquina.',
     resumeBanner: 'Mesa « {name} » — te toca',
     resumeMeta: 'ronda {round} · {opponents} rivales',
     resumeSaveMeta: '{era}, ronda {round}',

@@ -139,7 +139,7 @@ const platform: typeof enPlatform = {
   home: {
     eyebrow: "BAHNHOFSHALLE",
     title: 'Blackrail',
-    tagline: 'Die Plattform zum Spiel. Finde einen Tisch, wirf die Maschine an.',
+    tagline: 'Die Halle ist offen. Finde einen Tisch, wirf die Maschine an.',
     resumeBanner: 'Tisch „{name}“ — du bist am Zug',
     resumeMeta: 'Runde {round} · {opponents} Gegner',
     resumeSaveMeta: '{era}, Runde {round}',

@@ -137,7 +137,7 @@ const platform = {
   home: {
     eyebrow: "THE STATION HALL",
     title: 'Blackrail',
-    tagline: "The game's platform. Find a table, start the machine.",
+    tagline: "The hall is open. Find a table, start the machine.",
     resumeBanner: 'Table "{name}" — your turn',
     resumeMeta: 'round {round} · {opponents} opponents',
     resumeSaveMeta: '{era}, round {round}',
