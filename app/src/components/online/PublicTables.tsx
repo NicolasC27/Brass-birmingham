@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Armchair, Bot, ChevronDown, ChevronLeft, ChevronRight, Copy, Crown, Eye, Link2, Loader2, Plus, Search, UserPlus } from 'lucide-react';
+import { Armchair, Bot, ChevronDown, ChevronLeft, ChevronRight, Copy, Crown, Eye, Link2, Plus, Search, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang, useT } from '@/i18n';
 import { lobby } from '@/online/lobby';
@@ -14,6 +14,7 @@ import { stationBell } from '@/gl/sfx';
 import { toCard, toCards, type CardSeat, type CardTable } from '@/platform/tables';
 import type { Friend } from '@/online/table';
 import EmptyState from '@/components/platform/EmptyState';
+import Skeleton from '@/components/platform/Skeleton';
 import { ago } from '@/components/platform/ago';
 import { lobbyErrorText, type Notify } from './notify';
 
@@ -79,8 +80,9 @@ function Engine({ size }: { size: number }) {
 
 /** a seat as a carriage: a medallion ringed in the passenger's colour, the
  *  likeness inside when the office serves one, the initial otherwise; a
- *  machine paler with its gear; a free chair a dashed outline; the reader's
- *  own ringed once more in brass */
+ *  machine told by its gear, drawn in the register's off ink rather than
+ *  dimmed — opacity halves the ring and the ground together; a free chair a
+ *  dashed outline; the reader's own ringed once more in brass */
 function Carriage({ seat, size = 24, title }: { seat: CardSeat | null; size?: number; title?: string }) {
   const [broken, setBroken] = useState(false);
   if (!seat) {
@@ -91,14 +93,14 @@ function Carriage({ seat, size = 24, title }: { seat: CardSeat | null; size?: nu
   return (
     <span
       className={cn('relative block shrink-0 overflow-hidden rounded-full bg-enamel-700', seat.you && 'ring-2 ring-brass-300 ring-offset-1 ring-offset-enamel-850')}
-      style={{ width: size, height: size, boxShadow: `inset 0 0 0 2px ${hex}`, opacity: seat.kind === 'bot' ? 0.75 : 1 }}
+      style={{ width: size, height: size, boxShadow: `inset 0 0 0 2px ${hex}` }}
       title={title ?? seat.name}
     >
       {likeness ? (
         <img src={likeness} alt="" onError={() => setBroken(true)} className="h-full w-full object-cover" style={{ padding: 2, borderRadius: '50%' }} />
       ) : (
-        <span className="flex h-full w-full items-center justify-center font-fraunces text-[11px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
-          {seat.kind === 'bot' ? <Bot size={size * 0.5} className="text-iron-400" aria-hidden /> : seat.name.slice(0, 1).toUpperCase()}
+        <span className="flex h-full w-full items-center justify-center font-fraunces text-[10.5px] font-medium text-paper-100">
+          {seat.kind === 'bot' ? <Bot size={size * 0.5} className="text-[rgb(var(--state-off-ink))]" aria-hidden /> : seat.name.slice(0, 1).toUpperCase()}
         </span>
       )}
     </span>
@@ -137,7 +139,7 @@ function Flap({ text, className }: { text: string; className?: string }) {
 
 /** the lamp beside a departure: lit and breathing for a game in play */
 const LAMP: Record<string, string> = { live: 'bg-signal-400 shadow-[0_0_6px_rgb(var(--signal-400))] animate-pulse', open: 'bg-bottle-400', full: 'bg-iron-600' };
-const LAMP_TEXT: Record<string, string> = { live: 'text-signal-400', open: 'text-bottle-400', full: 'text-iron-400' };
+const LAMP_TEXT: Record<string, string> = { live: 'text-signal-ink', open: 'text-bottle-ink', full: 'text-iron-400' };
 
 /** the notches of an era, the rounds played filled in */
 function RoundTrack({ round, rounds }: { round: number; rounds: number }) {
@@ -150,7 +152,9 @@ function RoundTrack({ round, rounds }: { round: number; rounds: number }) {
   );
 }
 
-const boarding = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap transition-colors disabled:opacity-50';
+/* put out, the word is painted from the register's off ink rather than halved:
+   opacity dims plate and ink together and the state stops reading */
+const boarding = 'font-ui text-[10.5px] font-semibold uppercase tracking-label whitespace-nowrap transition-colors disabled:text-[rgb(var(--state-off-ink))]';
 
 type Hands = {
   busy: boolean;
@@ -214,14 +218,14 @@ function InviteList({ table, onInvite }: { table: CardTable; onInvite: (code: st
           {friends.map((f) => (
             <li key={f.id} className="flex items-center gap-2.5">
               <Carriage seat={{ id: f.account.id, name: f.account.name, color: 'brass', kind: 'human' }} size={24} />
-              <span className="font-fraunces text-[14px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+              <span className="font-fraunces text-[14px] font-medium text-paper-100">
                 {f.account.name}
               </span>
               <button
                 type="button"
                 disabled={!!sent[f.id]}
                 onClick={() => void onInvite(table.code, f.account.name).then((ok) => ok && setSent((m) => ({ ...m, [f.id]: true })))}
-                className={cn(boarding, 'ml-auto inline-flex items-center gap-1', sent[f.id] ? 'text-bottle-400' : 'text-brass-300 hover:text-paper-100')}
+                className={cn(boarding, 'ml-auto inline-flex items-center gap-1', sent[f.id] ? 'text-bottle-ink' : 'text-brass-300 hover:text-paper-100')}
               >
                 <UserPlus size={12} aria-hidden />
                 {sent[f.id] ? t('platform.lobby.invitedTag') : t('platform.lobby.inviteSend')}
@@ -254,12 +258,12 @@ function Detail({ table, onCopy, onLink, onInvite }: { table: CardTable } & Pick
           {seated.map((s, i) => (
             <li key={i} className="flex items-center gap-2.5">
               <Carriage seat={s} size={28} />
-              <span className={cn('font-fraunces text-[14px] font-medium', s.you ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 48' }}>
+              <span className={cn('font-fraunces text-[14px] font-medium', s.you ? 'text-brass-300' : 'text-paper-100')}>
                 {s.name}
               </span>
               {s.host && <Crown size={12} className="text-brass-300" aria-label={t('platform.seat.host')} />}
-              {s.kind === 'bot' && <span className="micro-label text-[9px] text-iron-600">{t('platform.seat.bot')}</span>}
-              {table.toAct === s && <span className="micro-label text-[9px] text-signal-400">{t('platform.play.tables.playing')}</span>}
+              {s.kind === 'bot' && <span className="micro-label text-[9px] text-iron-400">{t('platform.seat.bot')}</span>}
+              {table.toAct === s && <span className="micro-label text-[9px] text-signal-ink">{t('platform.play.tables.playing')}</span>}
             </li>
           ))}
           {free > 0 && (
@@ -272,11 +276,11 @@ function Detail({ table, onCopy, onLink, onInvite }: { table: CardTable } & Pick
       </div>
       <dl className="grid min-w-[240px] grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 self-start">
         <dt className="micro-label text-iron-400">{t('platform.play.tables.modeLabel')}</dt>
-        <dd className="data-text text-[12px] text-paper-100">{t(`platform.mode.${table.mode}`)}</dd>
+        <dd className="data-text text-paper-100">{t(`platform.mode.${table.mode}`)}</dd>
         {facts.map(([k, v]) => (
           <div key={k} className="contents">
             <dt className="micro-label text-iron-400">{k}</dt>
-            <dd className="data-text text-[12px] text-paper-100 tnums">{v}</dd>
+            <dd className="data-text text-paper-100 tnums">{v}</dd>
           </div>
         ))}
         <dt className="micro-label text-iron-400">{t('platform.play.tables.code')}</dt>
@@ -345,16 +349,16 @@ function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink
   return (
     <motion.li initial={fresh ? { opacity: 0, y: -18 } : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: fresh ? 0.36 : 0.2, ease: 'easeOut', delay: fresh ? 0 : 0.03 * i }} className="gz-board-line">
       <div className={cn('gz-board-row', table.mine && 'is-mine', open && 'is-open', (flash || fresh) && 'is-flash')}>
-        <span className="data-text text-[13px] text-iron-600 tnums">{String(i + 1).padStart(2, '0')}</span>
+        <span className="data-text text-[13px] text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="min-w-0 text-left" title={t('platform.play.tables.details')}>
           <span className="flex items-center gap-2">
-            <span className={cn('truncate font-fraunces text-[17px] font-medium leading-tight', table.mine ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 48' }}>
+            <span className={cn('truncate font-fraunces text-[17px] font-medium leading-tight', table.mine ? 'text-brass-300' : 'text-paper-100')}>
               {table.name}
             </span>
-            {table.myTurn && <span className="micro-label shrink-0 text-signal-400">{t('platform.play.tables.yourTurn')}</span>}
-            <ChevronDown size={12} className={cn('shrink-0 text-iron-600 transition-transform', open && 'rotate-180')} aria-hidden />
+            {table.myTurn && <span className="micro-label shrink-0 text-signal-ink">{t('platform.play.tables.yourTurn')}</span>}
+            <ChevronDown size={12} className={cn('shrink-0 text-iron-400 transition-transform', open && 'rotate-180')} aria-hidden />
           </span>
-          <span className="data-text mt-0.5 block truncate text-[11px] text-iron-400">
+          <span className="data-text mt-0.5 block truncate text-[10.5px] text-iron-400">
             {t(`platform.mode.${table.mode}`)} · {t('platform.play.tables.host', { name: table.hostName })} · {ago(t, lang, table.updatedAt)}
           </span>
         </button>
@@ -365,7 +369,7 @@ function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink
         </span>
         <span className="gz-board-col-progress">
           {table.state === 'live' && <RoundTrack round={round} rounds={rounds} />}
-          <span className={cn('data-text block truncate text-[11px] tnums', table.state === 'live' ? 'mt-1 text-iron-400' : 'text-paper-100')}>
+          <span className={cn('data-text block truncate text-[10.5px] tnums', table.state === 'live' ? 'mt-1 text-iron-400' : 'text-paper-100')}>
             <Flap text={progress} />
           </span>
         </span>
@@ -377,12 +381,12 @@ function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink
             </button>
           )}
           {action ? (
-            <button type="button" disabled={busy} onClick={action.go} className={cn('gz-ticket gz-ticket-sm', action.brass && 'gz-ticket-brass', table.mine && table.myTurn && 'gz-ticket-signal', busy && 'opacity-50')}>
+            <button type="button" disabled={busy} onClick={action.go} className={cn('gz-ticket gz-ticket-sm', action.brass && 'gz-ticket-brass', table.mine && table.myTurn && 'gz-ticket-signal', busy && 'is-off')}>
               {action.icon && <Eye aria-hidden />}
               {action.label}
             </button>
           ) : table.state === 'open' ? (
-            <span className={cn(boarding, 'text-iron-600')} title={t('platform.play.tables.viaQueueHint')}>
+            <span className={cn(boarding, 'text-iron-400')} title={t('platform.play.tables.viaQueueHint')}>
               {t('platform.play.tables.viaQueue')}
             </span>
           ) : null}
@@ -452,18 +456,18 @@ function NextDeparture({ table, busy, onJoin }: { table: CardTable; busy: boolea
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut' }} className="gz-poster mt-5">
       <div className="min-w-0">
         <p className="eyebrow-fell">{t('platform.play.tables.nextDeparture')}</p>
-        <p className="mt-1 truncate font-fraunces text-[28px] font-normal leading-none text-paper-100" style={{ fontVariationSettings: '"opsz" 144' }}>
+        <p className="mt-1 truncate font-fraunces text-[28px] font-normal leading-none text-paper-100">
           {table.name}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
           <SeatTrain table={table} size={30} />
-          <span className="data-text text-[11px] text-iron-400">
+          <span className="data-text text-[10.5px] text-iron-400">
             {t(`platform.mode.${table.mode}`)} · {t('platform.play.tables.host', { name: table.hostName })} · {ago(t, lang, table.updatedAt)}
           </span>
         </div>
         <p className="mt-2 font-serif text-[13px] italic text-paper-300">{free === 1 ? t('platform.play.tables.nextDepartureOne') : t('platform.play.tables.nextDepartureHint', { count: free })}</p>
       </div>
-      <button type="button" disabled={busy} onClick={() => onJoin(table)} className={cn('gz-ticket gz-ticket-brass', busy && 'opacity-50')}>
+      <button type="button" disabled={busy} onClick={() => onJoin(table)} className={cn('gz-ticket gz-ticket-brass', busy && 'is-off')}>
         <Armchair aria-hidden />
         {t('platform.play.tables.board')}
       </button>
@@ -514,7 +518,15 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  const page = useTables({ filter, q, sort, offset, limit: TABLE_PAGE });
+  const fresh = useTables({ filter, q, sort, offset, limit: TABLE_PAGE });
+  /* the board holds the page it is printing while the office answers the next
+     asking. Letting it fall back to the ruled blank shortens the sheet by the
+     height of every row, the browser clamps the scroll to what is left, and
+     the reader is dragged back to the top for having changed the order */
+  const [held, setHeld] = useState<typeof fresh>(null);
+  if (fresh && fresh !== held) setHeld(fresh);
+  const page = fresh ?? held;
+  const settling = fresh === null && held !== null;
   const mine = useMemo(() => (page ? page.mine.map((x) => toCard(x, desk?.tables.find((m) => m.code === x.code), session?.name, lang)) : []), [page, desk?.tables, session?.name, lang]);
   /* the reader's tables are pinned at the head: the register does not list them again */
   const pinned = useMemo(() => new Set(mine.map((x) => x.code)), [mine]);
@@ -592,12 +604,9 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   if (stranger) {
     body = <EmptyState className="mt-4" plate="tables" title={t('platform.play.tables.signInTitle')} copy={t('platform.play.tables.signInCopy')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
   } else if (page === null) {
-    body = (
-      <div className="mt-4 flex items-center justify-center gap-3 px-6 py-10">
-        <Loader2 size={16} className="animate-spin text-brass-300" aria-hidden />
-        <p className="font-serif text-[14px] italic text-paper-300">{line === 'online' ? t('platform.play.tables.loading') : t('platform.play.tables.waitingLine')}</p>
-      </div>
-    );
+    /* the office has not answered yet: the board is ruled but blank, and it
+       says so politely instead of printing an emptiness it cannot vouch for */
+    body = <Skeleton className="mt-4" shape="table" rows={5} label={line === 'online' ? t('platform.play.tables.loading') : t('platform.play.tables.waitingLine')} />;
   } else if (page.counts.all === 0 && !q) {
     body = <EmptyState className="mt-4" plate="tables" title={t('platform.play.tables.noneTitle')} copy={t('platform.play.tables.noneCopy')} cta={{ label: t('platform.action.createTable'), to: '/setup', icon: <Plus size={16} aria-hidden /> }} />;
   } else if (rows.length === 0 && mine.length === 0 && friends.length === 0) {
@@ -606,7 +615,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
     const from = page.query.offset + 1;
     const to = page.query.offset + page.tables.length;
     body = (
-      <div className="mt-4">
+      <div className="mt-4" aria-busy={settling || undefined}>
         <Board
           pageKey={JSON.stringify(page.query)}
           groups={[
@@ -618,7 +627,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
           {...hands}
         />
         <div className="flex items-center justify-between gap-3 px-2 py-2">
-          <span className="data-text text-[11px] text-iron-400 tnums">{t('platform.play.tables.pageOf', { from, to, total: page.total })}</span>
+          <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.play.tables.pageOf', { from, to, total: page.total })}</span>
           <span className="flex items-center gap-4">
             <button type="button" disabled={page.query.offset === 0} onClick={() => setOffset(Math.max(0, page.query.offset - TABLE_PAGE))} className={cn(boarding, 'inline-flex items-center gap-1 text-brass-300 hover:text-paper-100')}>
               <ChevronLeft size={12} aria-hidden />
@@ -635,10 +644,10 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   }
 
   return (
-    <section id="tables" aria-label={t('platform.play.tables.title')} className="mt-12 scroll-mt-28 pb-10">
+    <section id="tables" aria-label={t('platform.play.tables.title')} className="mt-12 scroll-mt-28 pb-24">
       <h2 className="gz-head h2-section">{t('platform.play.tables.title')}</h2>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <p className="data-text text-[12px] text-iron-400 tnums">{page ? t('platform.play.tables.count', { count: page.counts.all - page.counts.live, live: page.counts.live }) : ' '}</p>
+        <p className="data-text text-iron-400 tnums">{page ? t('platform.play.tables.count', { count: page.counts.all - page.counts.live, live: page.counts.live }) : ' '}</p>
         {session && !stranger && (
           <button type="button" onClick={() => void seatMe()} disabled={busy !== null} title={t('platform.play.tables.seatMeHint')} className="gz-ticket gz-ticket-brass">
             <Armchair aria-hidden />
@@ -665,7 +674,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
               className={cn('gz-nav-link !py-1.5 !text-[10.5px]', filter === chip.id && 'is-active')}
             >
               {chip.label}
-              {chip.count !== undefined && <span className="data-text ml-1.5 text-[10px] normal-case tracking-normal text-iron-600 tnums">{chip.count}</span>}
+              {chip.count !== undefined && <span className="data-text ml-1.5 text-[10.5px] normal-case tracking-normal text-iron-400 tnums">{chip.count}</span>}
             </button>
           ))}
           <span className="flex-1" />
@@ -683,9 +692,9 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
               }}
               placeholder={t('platform.play.tables.search')}
               aria-label={t('platform.play.tables.search')}
-              className="h-8 w-[220px] border-b border-[var(--gz-ink-soft)] bg-transparent pl-7 pr-7 font-serif text-[13px] italic text-paper-100 placeholder:text-iron-600 focus:border-brass-300 focus:outline-none"
+              className="h-8 w-[220px] border-b border-[var(--gz-ink-soft)] bg-transparent pl-7 pr-7 font-serif text-[13px] italic text-paper-100 placeholder:text-iron-400 focus:border-brass-300 focus:outline-none"
             />
-            <kbd aria-hidden className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 border border-[var(--gz-ink-faint)] px-1 font-mono text-[10px] leading-4 text-iron-600">
+            <kbd aria-hidden className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 border border-[var(--gz-ink-faint)] px-1 font-mono text-[10.5px] leading-4 text-iron-400">
               /
             </kbd>
           </label>

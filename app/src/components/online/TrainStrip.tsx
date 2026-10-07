@@ -57,7 +57,7 @@ export default function TrainStrip({ seats, counting }: { seats: (Carriage | nul
               <circle cx="12" cy="15.5" r="2" fill="currentColor" className="text-paper-100" opacity={c ? 1 : 0.3} />
               <circle cx="48" cy="15.5" r="2" fill="currentColor" className="text-paper-100" opacity={c ? 1 : 0.3} />
             </svg>
-            <span className={cn('max-w-full truncate font-ui text-[10.5px] uppercase tracking-[0.12em]', c ? 'text-paper-100' : 'text-iron-600')}>{c ? c.name : t('platform.seat.free')}</span>
+            <span className={cn('max-w-full truncate font-ui text-[10.5px] uppercase tracking-[0.12em]', c ? 'text-paper-100' : 'text-iron-400')}>{c ? c.name : t('platform.seat.free')}</span>
           </motion.div>
         ))}
       </div>

@@ -127,17 +127,17 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.24, ease, delay: 0.06 + i * 0.06 }}
-        className={cn('gz-classified scroll-mt-28 !items-stretch !p-5 !text-left', active && 'halo-signal !border-[rgb(var(--signal-400)/.6)]', closed && 'opacity-70')}
+        className={cn('gz-classified scroll-mt-28 !items-stretch !p-5 !text-left', active && 'halo-signal !border-[rgb(var(--signal-400)/.6)]', closed && 'bg-[rgb(var(--state-off-bg))]')}
       >
         <div className="flex items-baseline justify-between gap-3">
-          <span className="micro-label text-paper-100">{t(`platform.play.counter.${mode}`)}</span>
+          <h3 className="micro-label text-paper-100">{t(`platform.play.counter.${mode}`)}</h3>
           {ranked && rank && rank.tier !== 'placement' && <RankBadge tier={rank.tier} division={rank.division} size={18} compact />}
         </div>
         <div className="mt-3 flex items-end gap-3">
-          <span className="font-fraunces text-[44px] font-normal leading-none text-paper-100 tnums" style={{ fontVariationSettings: '"opsz" 144' }}>
+          <span className="font-fraunces text-[44px] font-normal leading-none text-paper-100 tnums">
             {snap.count}
           </span>
-          <span className="data-text pb-1.5 text-[11px] text-iron-400 tnums">
+          <span className="data-text pb-1.5 text-[10.5px] text-iron-400 tnums">
             {t('platform.queue.playersWaiting', { count: snap.count })} · {estimateFor(mode)}
           </span>
         </div>
@@ -145,18 +145,18 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
         <div className="mt-4 flex items-center justify-between gap-3">
           {active && queue ? (
             <>
-              <span className="flex items-center gap-2 font-ui text-[12px] font-semibold text-signal-400">
+              <span className="flex items-center gap-2 font-ui text-[12.5px] font-semibold text-signal-ink">
                 <span className="animate-pulse-signal h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
                 {t('platform.queue.searching')}
-                <span className="data-text text-[12px] text-paper-100 tnums">{mmss(now - queue.since)}</span>
+                <span className="data-text text-paper-100 tnums">{mmss(now - queue.since)}</span>
               </span>
-              <button type="button" onClick={cancel} className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-rust-400 transition-colors hover:text-paper-100">
-                {t('platform.play.counter.leave')}
+              <button type="button" onClick={cancel} className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-rust-400 transition-colors hover:text-paper-100">
+                {t('platform.play.counter.leave')} →
               </button>
             </>
           ) : (
-            <button type="button" disabled={closed} onClick={() => select(mode)} onMouseEnter={preloadGame} onFocus={preloadGame} className={cn('gz-ticket', !closed && 'gz-ticket-brass', closed && 'cursor-not-allowed opacity-60')}>
-              {t('platform.play.counter.take')}
+            <button type="button" disabled={closed} onClick={() => select(mode)} onMouseEnter={preloadGame} onFocus={preloadGame} className={cn('gz-ticket', !closed && 'gz-ticket-brass', closed && 'cursor-not-allowed is-off')}>
+              {t('platform.play.counter.take')} →
             </button>
           )}
         </div>
@@ -166,10 +166,10 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
 
   return (
     <section aria-label={t('platform.play.counter.title')}>
-      <p className="micro-label text-paper-100">
+      <h2 className="micro-label text-paper-100">
         {t('platform.play.counter.title')}
         <GlossMark id="quai" />
-      </p>
+      </h2>
       <div className="gz-rule-double mt-2" aria-hidden />
       <div className="mt-5 grid gap-5 min-[760px]:grid-cols-2">
         {counter('normal', 0)}

@@ -42,12 +42,12 @@ export default function CodeJoin() {
 
   return (
     <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut', delay: 0.12 }} aria-label={t('platform.play.code.title')}>
-      <p className="micro-label text-paper-100">
+      <h2 className="micro-label text-paper-100">
         {t('platform.play.code.title')}
         <GlossMark id="billet" />
-      </p>
+      </h2>
       <div className="gz-rule-double mt-2" aria-hidden />
-      <p className="mt-4 font-serif text-[13.5px] italic leading-relaxed text-paper-300">{t('platform.play.code.copy')}</p>
+      <p className="mt-4 font-serif text-[13px] italic leading-relaxed text-paper-300">{t('platform.play.code.copy')}</p>
       <CodeInput className="mt-4" onSubmit={(code) => void submit(code)} />
       {error && (
         <p role="alert" className="mt-3 font-serif text-[13px] italic text-rust-400">
