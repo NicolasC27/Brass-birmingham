@@ -718,6 +718,24 @@ const platform: typeof enPlatform = {
     localCta: 'Lokal spielen',
   },
   // --- comptoir ---
+  notices: {
+    eyebrow: 'BEKANNTMACHUNG',
+    serviceLabel: 'INBETRIEBNAHME',
+    noDate: 'Demnächst',
+    dismiss: 'Aushang abnehmen',
+    stage: {
+      study: 'TRASSE IN PRÜFUNG',
+      works: 'STRECKE IM BAU',
+      open: 'STRECKE OFFEN',
+    },
+    items: {
+      companies: {
+        title: 'Die Gesellschaften',
+        copy: 'Eine Gesellschaft gründen, Spieler auf Einladung aufnehmen, ihre Farben tragen und für sie spielen. Die Trasse steht fest; das Gleis liegt noch nicht.',
+        studying: 'Der Maßstab wird noch geprüft: was eine Begegnung einbringt, wie viele Mitglieder eine Gesellschaft fassen darf, und wie ein Auftrag erfüllt wird, ohne dass jemand den ganzen Tag daran sitzen kann. Daran entscheidet sich alles — besser vor der Eröffnung geklärt als danach.',
+      },
+    },
+  },
   comptoir: {
     nav: 'Ladentisch',
     eyebrow: "DAS BAHNHOFSBUFFET",

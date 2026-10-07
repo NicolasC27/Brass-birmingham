@@ -716,6 +716,24 @@ const platform = {
     localCta: 'Jugar en local',
   },
   // --- comptoir ---
+  notices: {
+    eyebrow: 'AVISO AL PÚBLICO',
+    serviceLabel: 'PUESTA EN SERVICIO',
+    noDate: 'Próximamente',
+    dismiss: 'Retirar el aviso',
+    stage: {
+      study: 'TRAZADO EN ESTUDIO',
+      works: 'LÍNEA EN OBRAS',
+      open: 'LÍNEA ABIERTA',
+    },
+    items: {
+      companies: {
+        title: 'Las compañías',
+        copy: 'Fundar una compañía, hacer entrar en ella a los jugadores por invitación, llevar sus colores y jugar por ella. El trazado está decidido; la vía aún no está puesta.',
+        studying: 'El baremo está en estudio: lo que paga un encuentro, cuántos miembros puede tener una compañía, y cómo se cumple un encargo sin que nadie pueda dedicarle el día entero. Ahí se juega todo — mejor resolverlo antes de abrir que después.',
+      },
+    },
+  },
   comptoir: {
     nav: 'Mostrador',
     eyebrow: "LA CANTINA DE LA ESTACIÓN",

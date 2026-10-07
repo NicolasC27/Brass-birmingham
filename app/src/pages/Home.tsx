@@ -15,6 +15,7 @@ import ModeCard from '@/components/platform/ModeCard';
 import RankBadge from '@/components/platform/RankBadge';
 import Departures from '@/components/home/Departures';
 import ChallengeNotice from '@/components/home/ChallengeNotice';
+import NoticeBoard from '@/components/home/NoticeBoard';
 import Ephemeris from '@/components/home/Ephemeris';
 import ClubActivity from '@/components/home/ClubActivity';
 import ProgressCard from '@/components/desk/ProgressCard';
@@ -286,6 +287,10 @@ export default function Home() {
             <Ephemeris />
           </div>
         </aside>
+      </div>
+
+      <div className="mt-10">
+        <NoticeBoard />
       </div>
 
       <div className="mt-10">

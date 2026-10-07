@@ -716,6 +716,24 @@ const platform = {
     localCta: 'Jouer en local',
   },
   // --- comptoir ---
+  notices: {
+    eyebrow: 'AVIS AU PUBLIC',
+    serviceLabel: 'MISE EN SERVICE',
+    noDate: 'Prochainement',
+    dismiss: 'Décrocher l’avis',
+    stage: {
+      study: 'TRACÉ À L’ÉTUDE',
+      works: 'LIGNE EN TRAVAUX',
+      open: 'LIGNE OUVERTE',
+    },
+    items: {
+      companies: {
+        title: 'Les compagnies',
+        copy: 'Fonder une compagnie, y faire entrer ses joueurs sur invitation, en porter les couleurs et jouer pour elle. Le tracé est arrêté ; la voie n’est pas encore posée.',
+        studying: 'Le barème est à l’étude : ce que rapporte une rencontre, combien de membres une compagnie peut tenir, et comment une commande se remplit sans qu’on puisse y passer ses journées. C’est là-dessus que tout se joue — mieux vaut le régler avant l’ouverture qu’après.',
+      },
+    },
+  },
   comptoir: {
     nav: 'Comptoir',
     eyebrow: "LE BUFFET DE LA GARE",

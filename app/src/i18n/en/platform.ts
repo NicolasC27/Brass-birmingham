@@ -716,6 +716,24 @@ const platform = {
     localCta: 'Play locally instead',
   },
   // --- comptoir ---
+  notices: {
+    eyebrow: 'NOTICE TO THE PUBLIC',
+    serviceLabel: 'ENTRY INTO SERVICE',
+    noDate: 'Soon',
+    dismiss: 'Take the notice down',
+    stage: {
+      study: 'ROUTE UNDER STUDY',
+      works: 'LINE UNDER CONSTRUCTION',
+      open: 'LINE OPEN',
+    },
+    items: {
+      companies: {
+        title: 'The companies',
+        copy: 'Found a company, bring players in by invitation, carry its colours and play for it. The route is settled; the track is not yet laid.',
+        studying: 'The scale of it is under study: what a match pays, how many members a company may hold, and how an order is filled without anyone being able to spend the day at it. That is where the whole thing is decided — better settled before opening than after.',
+      },
+    },
+  },
   comptoir: {
     nav: 'Counter',
     eyebrow: "THE STATION BUFFET",
