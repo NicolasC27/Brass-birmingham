@@ -702,6 +702,9 @@ const platform: typeof enPlatform = {
     signedOutNote: 'Melde dich an: Das Kontor führt die Börse und verbucht die Käufe.',
     free: 'Geschenkt',
     owned: 'Erworben',
+    soon: 'Demnächst',
+    standbyBadge: 'KONTOR RUHT',
+    standbyNote: 'Der Laden hat noch nicht geöffnet. Gemälde, Porträts und Plättchen bleiben im Schaufenster: ansehen ja, verkauft wird nichts. Die Guineen sammeln sich unterdessen weiter.',
     tabs: {
       avatar: 'Avatare',
       frame: 'Rahmen',

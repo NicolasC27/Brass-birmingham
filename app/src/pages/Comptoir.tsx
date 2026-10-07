@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BadgeCheck, Check, Coins } from 'lucide-react';
+import { BadgeCheck, Check, Clock, Coins } from 'lucide-react';
 import Button from '@/components/platform/Button';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import Modal from '@/components/platform/Modal';
@@ -8,7 +8,7 @@ import Tabs from '@/components/platform/Tabs';
 import Toast, { type ToastData } from '@/components/platform/Toast';
 import { setBoardOption, useBoardOptions, type BoardOptions, type RailPainting } from '@/components/game/boardOptions';
 import type { SlotArt } from '@/gl/faces';
-import { CATALOG, CATEGORIES, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
+import { CATALOG, COUNTER_OPEN, SHOWN_CATEGORIES, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
 import { equip, useWallet, type Wallet } from '@/platform/wallet';
 import { GUINEAS } from '@/online/counter';
 import { deskErrorKey } from '@/online/errors';
@@ -22,6 +22,10 @@ import { cn } from '@/lib/utils';
 /* et le bureau tient la bourse (desk.purse) : ici on lit, on demande  */
 /* un achat, et on garde pour soi ce qu'on porte. Cosmétique           */
 /* uniquement : zéro impact sur le jeu.                                */
+/*                                                                     */
+/* Le comptoir est en veille (catalog.COUNTER_OPEN) : seuls les rayons */
+/* dont les images sont prêtes restent en vitrine, et rien ne s'achète */
+/* — un objet qu'on ne possède pas s'annonce « bientôt ».              */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
@@ -192,37 +196,46 @@ function ShopItemCard({
         {WITH_BLURB.has(item.category) && <p className="mt-2 font-ui text-[12px] leading-relaxed text-paper-300">{t(`platform.comptoir.blurbs.${item.id}`)}</p>}
       </div>
 
-      <p className={cn('data-text mt-auto flex items-center gap-1.5 text-[13px]', short ? 'text-rust-400' : 'text-paper-100')}>
-        <Coins size={14} aria-hidden className={short ? 'text-rust-400' : 'text-brass-300'} />
-        {item.price === 0 ? t('platform.comptoir.free') : item.price}
-      </p>
+      {COUNTER_OPEN && (
+        <p className={cn('data-text flex items-center gap-1.5 text-[13px]', short ? 'text-rust-400' : 'text-paper-100')}>
+          <Coins size={14} aria-hidden className={short ? 'text-rust-400' : 'text-brass-300'} />
+          {item.price === 0 ? t('platform.comptoir.free') : item.price}
+        </p>
+      )}
 
-      {equipped ? (
-        <span className="inline-flex h-10 items-center gap-2 rounded-lg bg-bottle-700/50 px-4 font-ui text-[14px] font-semibold text-bottle-400" aria-current="true">
-          <Check size={16} aria-hidden />
-          {t('platform.comptoir.equipped')}
-        </span>
-      ) : owned ? (
-        wearable ? (
-          <Button variant="ghost" onClick={() => onEquip(item)}>
-            {t('platform.comptoir.equip')}
+      <div className="mt-auto flex justify-center">
+        {equipped ? (
+          <span className="inline-flex h-10 items-center gap-2 rounded-lg bg-bottle-700/50 px-4 font-ui text-[14px] font-semibold text-bottle-400" aria-current="true">
+            <Check size={16} aria-hidden />
+            {t('platform.comptoir.equipped')}
+          </span>
+        ) : owned ? (
+          wearable ? (
+            <Button variant="ghost" onClick={() => onEquip(item)}>
+              {t('platform.comptoir.equip')}
+            </Button>
+          ) : (
+            <span className="inline-flex h-10 items-center gap-2 rounded-lg border border-brass-hairline px-4 font-ui text-[14px] font-semibold text-paper-300">
+              <BadgeCheck size={16} aria-hidden className="text-brass-300" />
+              {t('platform.comptoir.owned')}
+            </span>
+          )
+        ) : COUNTER_OPEN ? (
+          <Button
+            variant="primary"
+            disabled={!canBuy || !affordable}
+            title={!canBuy ? t('platform.comptoir.signedOutNote') : !affordable ? t('platform.comptoir.insufficient') : undefined}
+            onClick={() => onBuy(item)}
+          >
+            {t('platform.comptoir.buy')}
           </Button>
         ) : (
-          <span className="inline-flex h-10 items-center gap-2 rounded-lg border border-brass-hairline px-4 font-ui text-[14px] font-semibold text-paper-300">
-            <BadgeCheck size={16} aria-hidden className="text-brass-300" />
-            {t('platform.comptoir.owned')}
+          <span className="inline-flex h-10 items-center gap-2 rounded-lg border border-dashed border-brass-hairline px-4 font-ui text-[14px] font-semibold text-iron-400">
+            <Clock size={16} aria-hidden className="text-brass-300" />
+            {t('platform.comptoir.soon')}
           </span>
-        )
-      ) : (
-        <Button
-          variant="primary"
-          disabled={!canBuy || !affordable}
-          title={!canBuy ? t('platform.comptoir.signedOutNote') : !affordable ? t('platform.comptoir.insufficient') : undefined}
-          onClick={() => onBuy(item)}
-        >
-          {t('platform.comptoir.buy')}
-        </Button>
-      )}
+        )}
+      </div>
     </motion.article>
   );
 }
@@ -312,7 +325,7 @@ export default function Comptoir() {
   const wallet = useWallet();
   const session = useSession();
   const opts = useBoardOptions();
-  const [tab, setTab] = useState<Category>('avatar');
+  const [tab, setTab] = useState<Category>(SHOWN_CATEGORIES[0]);
   const [buying, setBuying] = useState<ShopItem | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
@@ -368,9 +381,17 @@ export default function Comptoir() {
         <div aria-hidden className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgb(var(--lacquer-900)/.18) 0%, rgb(var(--lacquer-900)/.55) 62%, rgb(var(--lacquer-900)/.92) 100%)' }} />
       </motion.div>
 
+      {!COUNTER_OPEN && (
+        <div role="status" className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-brass-hairline bg-enamel-850 px-4 py-3">
+          <Clock size={16} aria-hidden className="shrink-0 text-brass-300" />
+          <span className="micro-label text-brass-300">{t('platform.comptoir.standbyBadge')}</span>
+          <span className="min-w-0 flex-1 font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.comptoir.standbyNote')}</span>
+        </div>
+      )}
+
       <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12">
         <div className="min-w-0 min-[1100px]:col-span-8">
-          <Tabs groupId="comptoir" active={tab} onChange={(id) => setTab(id as Category)} tabs={CATEGORIES.map((c) => ({ id: c, label: t(`platform.comptoir.tabs.${c}`) }))} />
+          <Tabs groupId="comptoir" active={tab} onChange={(id) => setTab(id as Category)} tabs={SHOWN_CATEGORIES.map((c) => ({ id: c, label: t(`platform.comptoir.tabs.${c}`) }))} />
           <div key={tab} className="mt-6 grid gap-4 min-[640px]:grid-cols-2 min-[1100px]:grid-cols-3">
             {items.map((item, i) => (
               <ShopItemCard key={item.id} item={item} index={i} wallet={wallet} opts={opts} canBuy={session !== null} onBuy={setBuying} onEquip={doEquip} />
@@ -379,7 +400,7 @@ export default function Comptoir() {
         </div>
 
         <div className="grid content-start gap-6 min-[1100px]:col-span-4">
-          <MemberPreview wallet={wallet} />
+          {COUNTER_OPEN && <MemberPreview wallet={wallet} />}
           <Earnings />
         </div>
       </div>

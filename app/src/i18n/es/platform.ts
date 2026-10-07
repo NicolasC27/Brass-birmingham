@@ -700,6 +700,9 @@ const platform = {
     signedOutNote: 'Inicia sesión: es la oficina la que guarda la bolsa y cobra las compras.',
     free: 'Regalo',
     owned: 'Adquirido',
+    soon: 'Próximamente',
+    standbyBadge: 'MOSTRADOR EN ESPERA',
+    standbyNote: 'La tienda aún no abre. Las pinturas, los retratos y las baldosas siguen en el escaparate: se miran, no se venden. Las guineas, en cambio, siguen acumulándose.',
     tabs: {
       avatar: 'Avatares',
       frame: 'Marcos',

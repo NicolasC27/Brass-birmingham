@@ -700,6 +700,9 @@ const platform = {
     signedOutNote: 'Sign in: the office keeps the purse and takes the purchases.',
     free: 'Free',
     owned: 'Owned',
+    soon: 'Coming soon',
+    standbyBadge: 'COUNTER ON STANDBY',
+    standbyNote: 'The shop is not open yet. Paintings, portraits and tiles stay in the window — look all you like, nothing is for sale. The guineas keep adding up all the same.',
     tabs: {
       avatar: 'Avatars',
       frame: 'Frames',

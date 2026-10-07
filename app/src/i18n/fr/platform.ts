@@ -700,6 +700,9 @@ const platform = {
     signedOutNote: 'Connectez-vous : c’est le bureau qui tient la bourse et encaisse les achats.',
     free: 'Offert',
     owned: 'Acquis',
+    soon: 'Bientôt',
+    standbyBadge: 'COMPTOIR EN VEILLE',
+    standbyNote: 'La boutique n’ouvre pas encore. Les peintures, les portraits et les tuiles restent en vitrine : on les regarde, rien ne se vend. Les guinées, elles, continuent de s’accumuler.',
     tabs: {
       avatar: 'Avatars',
       frame: 'Cadres',

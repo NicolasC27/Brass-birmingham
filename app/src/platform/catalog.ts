@@ -19,6 +19,21 @@ export interface ShopItem {
 
 export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'painting', 'portrait', 'tiles'];
 
+/* ------------------------------------------------------------------ */
+/* Le comptoir est en veille : rien ne se vend encore. Les trois       */
+/* rayons dont les images sont prêtes restent en vitrine — on les      */
+/* regarde, on ne les achète pas. Ouvrir la boutique, c'est passer     */
+/* COUNTER_OPEN à true.                                                */
+/* ------------------------------------------------------------------ */
+
+export const COUNTER_OPEN: boolean = false;
+
+/** les rayons montrés tant que le comptoir est en veille */
+export const PREVIEW_CATEGORIES: Category[] = ['painting', 'portrait', 'tiles'];
+
+/** les rayons visibles, boutique ouverte ou non */
+export const SHOWN_CATEGORIES: Category[] = COUNTER_OPEN ? CATEGORIES : PREVIEW_CATEGORIES;
+
 /* les raretés annoncées à l'ouverture du comptoir, gardées telles quelles */
 const RARITY_OVERRIDE: Record<string, Rarity> = {
   'frame-gear': 'rare',
