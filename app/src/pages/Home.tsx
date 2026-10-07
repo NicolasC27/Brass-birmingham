@@ -27,8 +27,8 @@ import { grantFromHistory } from '@/platform/patents';
 import { preloadGame } from '@/platform/preload';
 
 /* ------------------------------------------------------------------ */
-/* The front page. Under the masthead: the engraving of the day, the   */
-/* notice board when one is posted, then the leader — the headline,    */
+/* The front page. Under the masthead: the notice board when one is    */
+/* posted, the engraving of the day, then the leader — the headline,   */
 /* what waits for me, the tickets — beside                             */
 /* the departures; below, the queues and my standing, the club's news  */
 /* in two columns, and the classifieds. Framer Motion only.            */
@@ -239,15 +239,13 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+      {/* the notice board, placarded at the door before anything else */}
+      <NoticeBoard />
+
       {/* the engraving of the day */}
       <motion.figure initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, ease }} className="gz-engraving mt-6 h-[180px] min-[900px]:h-[300px]">
         <img src={theme === 'dark' ? plate.night : plate.src} alt="" style={{ objectPosition: plate.position }} />
       </motion.figure>
-
-      {/* the notice board: what is being built, before the day's news */}
-      <div className="mt-6">
-        <NoticeBoard />
-      </div>
 
       {/* the leader beside the departures */}
       <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">

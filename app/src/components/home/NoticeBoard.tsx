@@ -29,7 +29,7 @@ export default function NoticeBoard() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease: 'easeOut' }}
       aria-label={t('platform.notices.eyebrow')}
-      className="gz-classified !items-stretch !p-0 !text-left"
+      className="gz-classified mt-6 !items-stretch !p-0 !text-left"
     >
       <div className="grid gap-6 p-6 min-[900px]:grid-cols-12 min-[900px]:gap-8 min-[900px]:p-7">
         <div className="min-[900px]:col-span-8">
