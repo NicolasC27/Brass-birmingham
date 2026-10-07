@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from "react-router";
 import Navbar from "@/components/Navbar";
 import PlatformShell from "@/components/platform/PlatformShell";
+import { usePageTitle } from "@/platform/title";
 
 /**
  * App shell — nested-route (Outlet) pattern, matched by App.tsx.
@@ -13,6 +14,8 @@ import PlatformShell from "@/components/platform/PlatformShell";
  */
 export default function Layout() {
   const { pathname } = useLocation();
+  /* every address answers to its own name in the tab, the board included */
+  usePageTitle();
   const isGame = pathname === "/game" || pathname.startsWith("/game/");
   /* the departures board stands alone on its screen: no shell at all */
   if (pathname === "/tableau") return <div className="platform-root"><Outlet /></div>;

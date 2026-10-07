@@ -6,7 +6,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
 }
 import { BrowserRouter } from 'react-router'
 /* Platform typefaces (design.md §3) — latin + latin-ext subsets included by default.
-   Weights only: Fraunces 500/600 (display), Inter 400/500/600 (UI), Plex Mono 400/500 (data). */
+   Weights only: Fraunces 500/600 (display), Inter 400/500/600 (UI), Plex Mono 400/500/600
+   (data — the 600 was drawn from the Google sheet, which asked for a face already held here). */
 import '@fontsource/fraunces/300.css'
 import '@fontsource/fraunces/400.css'
 import '@fontsource/fraunces/400-italic.css'
@@ -18,6 +19,7 @@ import '@fontsource/inter/500.css'
 import '@fontsource/inter/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
+import '@fontsource/ibm-plex-mono/600.css'
 import './index.css'
 import App from './App.tsx'
 import { installDesktopZoom } from './desktop/zoom'

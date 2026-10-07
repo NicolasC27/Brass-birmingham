@@ -154,16 +154,19 @@ function Figures() {
   }
   return (
     <>
-      <Link to="/online" className="flex items-center gap-2 transition-colors hover:text-paper-100">
+      <Link to="/online" className="flex shrink-0 items-center gap-2 transition-colors hover:text-paper-100">
         <span className="animate-presence-dot h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
         <span className="tnums">{t('platform.status.playersOnline', { count: p.playersOnline })}</span>
       </Link>
-      <span aria-hidden>·</span>
-      <Link to="/online#tables" className="tnums transition-colors hover:text-paper-100">
+      <span aria-hidden className="shrink-0">·</span>
+      <Link to="/online#tables" className="tnums min-w-0 truncate transition-colors hover:text-paper-100">
         {t('platform.status.playing', { count: p.playing })}
       </Link>
-      <span aria-hidden className="hidden min-[1100px]:inline">·</span>
-      <Link to="/online#file-normale" className="tnums hidden transition-colors hover:text-paper-100 min-[1100px]:inline">
+      {/* the third figure is printed only where the ear line has its full
+          measure: under 1240px the line is still growing with the window, and
+          the queue is the figure the reader can best do without */}
+      <span aria-hidden className="hidden shrink-0 min-[1240px]:inline">·</span>
+      <Link to="/online#file-normale" className="tnums hidden min-w-0 truncate transition-colors hover:text-paper-100 min-[1240px]:inline">
         {t('platform.status.normalQueue', { count: p.normalQueue.count, minutes: p.normalQueue.estimateMin })}
       </Link>
     </>
@@ -181,19 +184,24 @@ function Masthead() {
     <header className="relative border-b border-[var(--gz-ink-faint)]">
       {/* the ear line: the edition on the left, the figures, the tools on the right */}
       <div className="border-b border-[var(--gz-ink-faint)]">
-        <div className="mx-auto flex h-9 max-w-[1240px] items-center gap-4 px-4 font-mono text-[11px] text-iron-400 sm:px-8">
+        {/* the ear line stops growing at 1176px of measure, so the room the
+            figures want is taken from the tools, not from the window: the
+            blocks stand a hair closer, and the plate carries less air */}
+        <div className="mx-auto flex h-9 max-w-[1240px] items-center gap-3 px-4 font-mono text-[11px] text-iron-400 sm:px-8">
           <span className="hidden whitespace-nowrap min-[900px]:inline">{t('platform.masthead.edition', { date })}</span>
           <span aria-hidden className="hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
-          <span className="flex min-w-0 items-center gap-2 truncate">
+          {/* the line is cut at its own end, not in the middle of a glyph:
+              an ellipsis only obeys the child that carries the words */}
+          <span className="flex min-w-0 items-center gap-2 overflow-hidden">
             <Figures />
           </span>
-          <span className="ml-auto flex shrink-0 items-center gap-2" data-print="hide">
+          <span className="ml-auto flex shrink-0 items-center gap-1.5" data-print="hide">
             <WalletChip />
             <InvitationBell />
             <ThemeToggle />
-            <span aria-hidden className="mx-1 hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
+            <span aria-hidden className="mx-0.5 hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
             <PlayerToken />
-            <Button variant="primary" className="!h-7 hidden px-3 !text-[10.5px] min-[1100px]:inline-flex" to="/setup" icon={<Plus size={13} aria-hidden />}>
+            <Button variant="primary" className="!h-7 hidden px-2.5 !text-[10.5px] min-[1100px]:inline-flex" to="/setup" icon={<Plus size={13} aria-hidden />}>
               {t('platform.nav.createTable')}
             </Button>
           </span>
@@ -221,17 +229,14 @@ function NavRail() {
   const t = useT();
   return (
     <div className="sticky top-0 z-50 hidden overflow-x-clip bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block" data-print="hide">
-      <div className="gz-rule-double mx-auto max-w-[1240px]" aria-hidden />
-      <div className="mx-auto max-w-[1240px] px-8">
+      <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+        <div className="gz-rule-double" aria-hidden />
         <nav aria-label="Primary" className="flex items-center justify-center gap-7 min-[1100px]:gap-10">
           <NavLink to="/online" className={rail}>
             {t('platform.nav.play')}
           </NavLink>
           <NavLink to="/comptoir" className={rail}>
             {t('platform.nav.comptoir')}
-          </NavLink>
-          <NavLink to="/online#tables" className={() => rail({ isActive: false })}>
-            {t('platform.nav.tables')}
           </NavLink>
           <NavLink to="/classement" className={rail}>
             {t('platform.nav.ranking')}
@@ -249,7 +254,7 @@ function NavRail() {
           </NavLink>
         </nav>
       </div>
-      <div className="relative mx-auto max-w-[1240px]">
+      <div className="relative mx-auto max-w-[1240px] px-4 sm:px-8">
         <div className="h-px bg-[var(--gz-ink)]" aria-hidden />
         <RailEngine />
       </div>
@@ -293,14 +298,14 @@ function Colophon() {
                 type="button"
                 aria-pressed={lang === l}
                 onClick={() => setLang(l)}
-                className={cn('micro-label transition-colors', lang === l ? 'text-brass-300' : 'text-iron-600 hover:text-iron-400')}
+                className={cn('micro-label transition-colors', lang === l ? 'text-brass-300' : 'text-iron-400 hover:text-paper-100')}
               >
                 {l.toUpperCase()}
               </button>
             ))}
           </span>
           <span aria-hidden className="h-3 w-px bg-[var(--gz-ink-soft)]" />
-          <span className="micro-label text-iron-600">{t('platform.footer.version')}</span>
+          <span className="micro-label text-iron-400">{t('platform.footer.version')}</span>
         </div>
       </div>
     </footer>
@@ -314,7 +319,7 @@ function BottomTabBar() {
   const session = useSession();
   const desk = useDesk();
   const invites = session ? (desk?.invitations.length ?? 0) : 0;
-  const { pathname } = useLocation();
+  const { pathname, hash } = useLocation();
 
   const tabs = [
     { to: '/online', label: t('platform.tabs.play'), icon: Play },
@@ -323,10 +328,15 @@ function BottomTabBar() {
     { to: '/profile', label: t('platform.tabs.profile'), icon: User },
   ];
 
+  /* one tab is current, never two: /online and /online#tables are the same
+     road, and only the heading asked for is marked */
+  const current = tabs.find((x) => x.to === pathname + hash) ?? tabs.find((x) => x.to === pathname);
+
   return (
     <nav aria-label="Tabs" className="fixed inset-x-0 bottom-0 z-50 flex h-[60px] border-t border-brass-hairline bg-[rgb(var(--lacquer-950)/.92)] backdrop-blur-[12px] min-[900px]:hidden">
-      {tabs.map(({ to, label, icon: Icon, badge }) => {
-        const active = pathname === to.split('#')[0];
+      {tabs.map((tab) => {
+        const { to, label, icon: Icon, badge } = tab;
+        const active = tab === current;
         return (
           <Link key={label} to={to} className="relative flex flex-1 flex-col items-center justify-center gap-0.5" aria-current={active ? 'page' : undefined}>
             {active && <span className="absolute top-0 h-0.5 w-8 bg-brass-500" aria-hidden />}

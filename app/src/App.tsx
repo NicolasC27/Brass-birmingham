@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { MotionConfig } from "framer-motion";
 import { hydrateHome } from "@/game/home";
 import { hydratePapers } from "@/platform/papers";
 import { onlineWire } from "@/online/net";
@@ -63,6 +64,9 @@ export default function App() {
   if (read === 'reading') return <Arriving />;
   if (read === 'unreachable') return <Unreachable />;
   return (
+    /* a reader who has asked for stillness gets it everywhere: the stylesheet
+       can only quiet what CSS animates, never the frames Framer writes itself */
+    <MotionConfig reducedMotion="user">
     <Boundary>
     <Suspense fallback={<Arriving />}>
     <Routes>
@@ -104,5 +108,6 @@ export default function App() {
     </Routes>
     </Suspense>
     </Boundary>
+    </MotionConfig>
   );
 }

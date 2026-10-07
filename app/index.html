@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -29,6 +29,18 @@
           /* private mode: the hour decides */
         }
         document.documentElement.setAttribute('data-theme', t);
+        /* the sheet is set in the reader's language before the first line is
+           printed — the choice kept, else the tongue the browser speaks.
+           Must mirror the resolution logic of src/i18n/index.ts. */
+        var langs = ['fr', 'en', 'es', 'de'];
+        var lg = '';
+        try {
+          lg = localStorage.getItem('brassworks.lang') || '';
+        } catch (e) {
+          /* private mode: the browser decides */
+        }
+        if (langs.indexOf(lg) < 0) lg = (navigator.language || 'en').slice(0, 2).toLowerCase();
+        document.documentElement.lang = langs.indexOf(lg) < 0 ? 'en' : lg;
         /* the masthead waits for its face rather than jumping from the
            fallback: the wordmark fades in once the fonts are there */
         if (document.fonts && document.fonts.ready) {
@@ -42,10 +54,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,900&family=IM+Fell+English+SC&family=Archivo:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IM+Fell+English+SC&family=Archivo:wght@400;500;600;700&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap"
       rel="stylesheet"
     />
-    <title>BLACKRAIL — A Midlands Industrial Game</title>
+    <title>Blackrail — Journal des Midlands</title>
     <meta
       name="description"
       content="Canals, coal and iron. A playable browser adaptation of a Brass: Birmingham–style industrial network game, 1770–1850."
