@@ -108,8 +108,10 @@ export interface PublicTable {
   code: string;
   name: string;
   hostName: string;
-  seats: { name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
+  /** the account id names the likeness the office serves */
+  seats: { id: string; name: string; color: PlayerColor; kind: 'human' | 'bot' }[];
   status: 'open' | 'playing';
+  eraLength: 'short' | 'standard';
   era?: Era;
   round?: number;
   /** the seat to act */

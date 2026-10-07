@@ -15,6 +15,8 @@ export type TableMode = 'normal' | 'ranked';
 export type TableState = 'open' | 'live' | 'full';
 
 export interface CardSeat {
+  /** the account's id (a machine's is its own); names the likeness the office serves */
+  id: string;
   name: string;
   color: PlayerColor;
   kind: 'human' | 'bot';
@@ -32,6 +34,7 @@ export interface CardTable {
   /** null = a free seat */
   seats: (CardSeat | null)[];
   state: TableState;
+  eraLength: 'short' | 'standard';
   era?: Era;
   /** the round in play, and how many the era holds */
   round?: number;
@@ -49,6 +52,7 @@ export interface CardTable {
 
 export function toCard(x: PublicTable, mine?: TableSummary, myName?: string, lang = 'en'): CardTable {
   const seats: (CardSeat | null)[] = x.seats.map((s) => ({
+    id: s.id,
     name: s.name,
     color: s.color,
     kind: s.kind,
@@ -66,6 +70,7 @@ export function toCard(x: PublicTable, mine?: TableSummary, myName?: string, lan
     hostName: x.hostName,
     seats,
     state: playing ? 'live' : x.seats.length >= MAX_SEATS ? 'full' : 'open',
+    eraLength: x.eraLength,
     era: playing ? x.era : undefined,
     round: playing ? x.round : undefined,
     rounds: playing ? eraRounds(x.seats.length) : undefined,

@@ -281,10 +281,10 @@ describe('the hall', () => {
     passer.send({ t: 'tables', rid: 20 });
     await passer.until('the register', () => !!passer.tables);
     expect(passer.tables).toHaveLength(1);
-    expect(passer.tables![0]).toMatchObject({ code, name: ada.table!.name, hostName: 'Ada', status: 'playing', ranked: false, watchers: 3, era: 'canal', round: 1, current: expect.any(Number) });
+    expect(passer.tables![0]).toMatchObject({ code, name: ada.table!.name, hostName: 'Ada', status: 'playing', ranked: false, watchers: 3, era: 'canal', round: 1, current: expect.any(Number), eraLength: 'short' });
     expect(passer.tables![0].seats).toEqual([
-      { name: 'Ada', color: 'brass', kind: 'human' },
-      { name: 'Bob', color: 'oxblood', kind: 'human' },
+      { id: ada.id, name: 'Ada', color: 'brass', kind: 'human' },
+      { id: bob.id, name: 'Bob', color: 'oxblood', kind: 'human' },
     ]);
     /* having asked, the passer is told of the next table without asking again */
     ada.send({ t: 'create', rid: 12, options: OPTIONS });
