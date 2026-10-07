@@ -85,7 +85,7 @@ export default function TimelineFrieze({
                 )}
                 <p
                   className={cn(
-                    "mt-2 max-h-16 overflow-hidden text-center font-sans text-[11px] leading-snug text-cream-100/60",
+                    "mt-2 max-h-16 overflow-hidden text-center font-sans text-[10.5px] leading-snug text-cream-100/60",
                     inRailEra && "text-cream-100/50",
                   )}
                 >

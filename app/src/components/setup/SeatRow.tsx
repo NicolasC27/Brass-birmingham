@@ -57,7 +57,7 @@ export default function SeatRow({
         className="mt-3 flex items-center justify-between border border-dashed border-[var(--gz-ink-soft)] px-4"
         style={{ height: 56 }}
       >
-        <span className="font-ui text-[13px] tracking-wide text-iron-600">
+        <span className="font-ui text-[13px] tracking-wide text-iron-400">
           {t("setup.seat.empty")}
         </span>
         <Tip label={t("setup.seat.seatAnother")} side="top">
@@ -117,7 +117,7 @@ export default function SeatRow({
           placeholder={t("setup.seat.namePlaceholder")}
           maxLength={24}
           aria-label={t("setup.seat.nameAria", { n: index + 1 })}
-          className="h-9 min-w-0 flex-1 border-b border-[var(--gz-ink-soft)] bg-transparent px-1 font-fraunces text-[16px] font-medium text-paper-100 placeholder:text-iron-600 focus:border-brass-300 focus:outline-none"
+          className="h-9 min-w-0 flex-1 border-b border-[var(--gz-ink-soft)] bg-transparent px-1 font-fraunces text-[15px] font-medium text-paper-100 placeholder:text-iron-400 focus:border-brass-300 focus:outline-none"
         />
 
         {/* Type selector */}
@@ -210,7 +210,7 @@ export default function SeatRow({
               <p className="flex flex-wrap items-center gap-x-3 font-serif text-[12.5px] italic leading-snug text-paper-300">
                 <span>{t(seat.persona === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}</span>
                 <Tip label={t("setup.seat.engineTip")}>
-                  <span className="inline-flex cursor-help items-center gap-1 font-ui text-[10px] font-semibold not-italic uppercase tracking-[0.14em] text-rust-400">
+                  <span className="inline-flex cursor-help items-center gap-1 font-ui text-[10.5px] font-semibold not-italic uppercase tracking-label text-rust-400">
                     {t("setup.seat.beta")}
                     <Info className="h-3 w-3" />
                   </span>

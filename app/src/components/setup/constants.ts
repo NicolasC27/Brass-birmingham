@@ -52,17 +52,30 @@ export interface StoredSetup {
   name?: string;
 }
 
-/** Player colors paired with shapes (design.md §8 accessibility pairing). */
+/**
+ * Player colors paired with shapes (design.md §8 accessibility pairing).
+ *
+ * `hex` is the plate on the board, where the ground is the map's own. `ring`
+ * is the same colour told to the register: on a seat's enamel disc the four
+ * plates fall under the 3:1 a ring is asked for — brass 1.72 by day, oxblood
+ * 2.20, steel 2.78 and verdigris 2.91 by night — so the ring reads its value
+ * from a `--player-*` token each register sets for itself. The fallback is
+ * the night's value, the night being the default register.
+ */
+export type PlayerShape = "circle" | "square" | "diamond" | "triangle";
+
 export const PLAYER_COLORS: {
   id: PlayerColor;
   label: string;
   hex: string;
-  shape: "circle" | "square" | "diamond" | "triangle";
+  /** the ring on an enamel disc, themed; falls back to the night's value */
+  ring: string;
+  shape: PlayerShape;
 }[] = [
-  { id: "brass", label: "Brass", hex: "#C9A45C", shape: "circle" },
-  { id: "oxblood", label: "Oxblood", hex: "#9E3B30", shape: "square" },
-  { id: "verdigris", label: "Verdigris", hex: "#3F7A55", shape: "diamond" },
-  { id: "steel", label: "Steel Blue", hex: "#4E6E8E", shape: "triangle" },
+  { id: "brass", label: "Brass", hex: "#C9A45C", ring: "rgb(var(--player-brass, 201 164 92))", shape: "circle" },
+  { id: "oxblood", label: "Oxblood", hex: "#9E3B30", ring: "rgb(var(--player-oxblood, 198 80 66))", shape: "square" },
+  { id: "verdigris", label: "Verdigris", hex: "#3F7A55", ring: "rgb(var(--player-verdigris, 68 131 91))", shape: "diamond" },
+  { id: "steel", label: "Steel Blue", hex: "#4E6E8E", ring: "rgb(var(--player-steel, 86 121 156))", shape: "triangle" },
 ];
 
 export function colorDef(color: PlayerColor) {

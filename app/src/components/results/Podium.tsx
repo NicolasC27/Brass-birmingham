@@ -200,7 +200,7 @@ export default function Podium({
             <p className="mt-3 max-w-[150px] truncate text-center font-display text-base font-bold text-cream-100">
               {e.name}
             </p>
-            <p className="mt-0.5 text-center font-fell text-[12px] tracking-wide text-cream-100/55">
+            <p className="mt-0.5 text-center font-fell text-[12.5px] tracking-wide text-cream-100/55">
               {first
                 ? e.isHuman
                   ? t("results.podium.winnerHuman")
@@ -219,7 +219,7 @@ export default function Podium({
                   "linear-gradient(180deg, rgba(44,37,29,1), rgba(33,28,23,1))",
               }}
             >
-              <span className="font-fell text-[11px] uppercase tracking-[0.14em] text-brass-500">
+              <span className="font-fell text-[10.5px] uppercase tracking-label text-brass-500">
                 {t(`results.podium.places.${e.rank - 1}`)}
               </span>
               <Counter
@@ -230,7 +230,7 @@ export default function Podium({
                   first ? "text-[40px] leading-none" : "text-[32px] leading-none",
                 )}
               />
-              <span className="mt-1 font-sans text-[10px] uppercase tracking-[0.16em] text-cream-100/50">
+              <span className="mt-1 font-sans text-[10.5px] uppercase tracking-[0.16em] text-cream-100/50">
                 {t("results.podium.victoryPoints")}
               </span>
             </div>

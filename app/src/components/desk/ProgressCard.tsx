@@ -32,9 +32,9 @@ export default function ProgressCard({ quiet = false }: { quiet?: boolean }) {
     <div className="console p-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="font-ui text-[13px] font-semibold text-paper-100">{t('platform.desk.progress.title')}</p>
-        <p className="data-text text-[11px] text-iron-400">{t('platform.desk.progress.games', { n: sheet.length })}</p>
+        <p className="data-text text-[10.5px] text-iron-400">{t('platform.desk.progress.games', { n: sheet.length })}</p>
       </div>
-      <p className="mt-0.5 font-ui text-[12px] text-iron-400">{t('platform.desk.progress.lede')}</p>
+      <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.progress.lede')}</p>
       <div className="mt-3 overflow-x-auto">
         <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={t('platform.desk.progress.curve')} className="h-24 w-full min-w-[320px]">
           <line x1={8} x2={W - 8} y1={y(mean)} y2={y(mean)} stroke="rgb(var(--paper-100) / .25)" strokeWidth={1} strokeDasharray="3 3" />
@@ -54,10 +54,10 @@ export default function ProgressCard({ quiet = false }: { quiet?: boolean }) {
       </div>
       {back.length > 0 && (
         <div className="mt-3">
-          <p className="font-ui text-[12px] font-semibold text-paper-100">{t('platform.desk.progress.back')}</p>
-          <ul className="mt-1 flex flex-col gap-0.5 font-ui text-[12px] text-paper-300/85">
+          <p className="font-ui text-[12.5px] font-semibold text-paper-100">{t('platform.desk.progress.back')}</p>
+          <ul className="mt-1 flex flex-col gap-0.5 font-ui text-[12.5px] text-iron-400">
             {back.map((r) => (
-              <li key={r.motif}><span className="data-text text-[11px] text-copper-500">×{r.times}</span> {t(`game.debrief.motifs.${r.motif}`)}</li>
+              <li key={r.motif}><span className="data-text text-[10.5px] text-copper-500">×{r.times}</span> {t(`game.debrief.motifs.${r.motif}`)}</li>
             ))}
           </ul>
         </div>

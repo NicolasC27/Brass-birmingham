@@ -29,7 +29,7 @@ function RuleRow({
       className="flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-[var(--gz-ink-faint)] py-3 last:border-b-0"
     >
       <Tip label={hint} side="top">
-        <span className="cursor-help font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+        <span className="cursor-help font-fraunces text-[15px] font-medium text-paper-100">
           {label}
         </span>
       </Tip>
@@ -44,13 +44,21 @@ function RuleRow({
  * Rules Codex approximations. PROPS/API FIGÉES — aussi consommé par Lobby ;
  * restyle « Club Industriel » uniquement (enamel-850, filets hairline,
  * interrupteur laiton).
+ *
+ * At a guest's seat the panel is a notice, not a desk: pass `readOnly` and
+ * every command is put out rather than left to answer the hand and the tab
+ * and change nothing. The reason is printed under the heading, in the run of
+ * the page, where a reader and a screen reader both meet it.
  */
 export default function HouseRules({
   options,
   onChange,
+  readOnly = false,
 }: {
   options: SetupOptions;
   onChange: (patch: Partial<SetupOptions>) => void;
+  /** the rules are the host's to set: show them, do not offer them */
+  readOnly?: boolean;
 }) {
   const t = useT();
   return (
@@ -61,6 +69,9 @@ export default function HouseRules({
       <header>
         <h2 className="micro-label text-paper-100">{t("setup.houseRules.heading")}</h2>
         <div aria-hidden className="gz-rule-double mt-2" />
+        {readOnly && (
+          <p className="mt-2 font-ui text-[12px] leading-snug text-paper-300">{t("online.room.hostSets")}</p>
+        )}
       </header>
 
       <div className="mt-2">
@@ -71,6 +82,7 @@ export default function HouseRules({
             hint={t(`setup.houseRules.map.${options.map ?? DEFAULT_BOARD}Hint`)}
           >
             <Segmented<string>
+              readOnly={readOnly}
               ariaLabel={t("setup.houseRules.map.ariaLabel")}
               value={options.map ?? DEFAULT_BOARD}
               onChange={(map) => onChange({ map })}
@@ -84,6 +96,7 @@ export default function HouseRules({
           hint={t("setup.houseRules.eraLength.hint")}
         >
           <Segmented<EraLength>
+            readOnly={readOnly}
             ariaLabel={t("setup.houseRules.eraLength.ariaLabel")}
             value={options.eraLength}
             onChange={(eraLength) => onChange({ eraLength })}
@@ -101,6 +114,7 @@ export default function HouseRules({
         >
           <div className="relative">
             <Segmented<MarketTemper>
+              readOnly={readOnly}
               ariaLabel={t("setup.houseRules.marketTemper.ariaLabel")}
               value={options.marketTemper}
               onChange={(marketTemper) => onChange({ marketTemper })}
@@ -124,6 +138,7 @@ export default function HouseRules({
           hint={t("setup.houseRules.timer.hint")}
         >
           <Segmented
+            readOnly={readOnly}
             ariaLabel={t("setup.houseRules.timer.ariaLabel")}
             value={options.timerMinutes === null ? "off" : String(options.timerMinutes)}
             onChange={(v) => onChange({ timerMinutes: v === "off" ? null : Number(v) })}
@@ -144,14 +159,18 @@ export default function HouseRules({
             type="button"
             role="switch"
             aria-checked={!!options.assist}
+            disabled={readOnly}
+            aria-disabled={readOnly || undefined}
             onClick={() => onChange({ assist: !options.assist })}
-            className="inline-flex items-center gap-2.5"
+            className={cn("inline-flex items-center gap-2.5", readOnly && "cursor-default")}
           >
             <span
               aria-hidden
               className={cn(
                 "relative h-6 w-11 rounded-full transition-colors duration-[180ms]",
                 options.assist ? "bg-bottle-500" : "bg-enamel-700",
+                /* the lever put out: the register's own off surface, no plate */
+                readOnly && "!bg-[rgb(var(--state-off-bg))]",
               )}
             >
               <span
@@ -159,16 +178,24 @@ export default function HouseRules({
                   "absolute top-0.5 h-5 w-5 rounded-full transition-transform duration-[180ms]",
                   options.assist ? "translate-x-[22px]" : "translate-x-0.5",
                 )}
-                style={{
-                  background: "linear-gradient(180deg, #E7C97E 0%, #C9A24B 48%, #8F6B23 100%)",
-                  boxShadow: "0 1px 3px rgba(0,0,0,.5)",
-                }}
+                style={
+                  readOnly
+                    ? { background: "rgb(var(--state-off-ink))", boxShadow: "none" }
+                    : {
+                        /* the lever is cut from the register's own plate, lit
+                           at the crown and shaded at the foot, so the bevel
+                           survives the change of register */
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,0) 48%, rgba(0,0,0,.28) 100%), rgb(var(--brass-plate))",
+                        boxShadow: "0 1px 3px rgba(0,0,0,.5)",
+                      }
+                }
               />
             </span>
             <span
               className={cn(
                 "font-ui text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors",
-                options.assist ? "text-brass-300" : "text-iron-400",
+                !readOnly && options.assist ? "text-brass-300" : "text-iron-400",
               )}
             >
               {options.assist ? t("setup.houseRules.assist.on") : t("setup.houseRules.assist.off")}
@@ -183,7 +210,7 @@ export default function HouseRules({
           transition={{ delay: 0.15 + 4 * 0.06, duration: 0.35, ease: "easeOut" }}
           className="flex min-h-[56px] flex-wrap items-center justify-between gap-x-4 gap-y-2 py-3"
         >
-          <span className="font-fraunces text-[15px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+          <span className="font-fraunces text-[15px] font-medium text-paper-100">
             {t("setup.houseRules.fidelity.label")}
           </span>
           <div className="flex items-center gap-3">
@@ -192,7 +219,7 @@ export default function HouseRules({
               transition={{ duration: 5, repeat: 1, ease: "easeInOut" }}
               className="inline-flex items-center gap-1.5 font-ui text-[11px] font-semibold uppercase tracking-[0.1em] text-paper-100"
             >
-              <BadgeCheck className="h-3.5 w-3.5 text-bottle-400" />
+              <BadgeCheck className="h-3.5 w-3.5 text-bottle-ink" />
               {t("setup.houseRules.fidelity.faithful")}
             </motion.span>
             <Link

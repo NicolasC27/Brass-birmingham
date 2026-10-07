@@ -34,7 +34,7 @@ function Chart({ result, series, title, reveal }: { result: FinalResult; series:
 
   return (
     <figure className="min-w-0">
-      <figcaption className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-cream-100/70">{title}</figcaption>
+      <figcaption className="mb-2 font-sans text-[10.5px] font-semibold uppercase tracking-label text-cream-100/70">{title}</figcaption>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={title}>
         <defs>
           <clipPath id={`${id}-clip`}>
@@ -122,7 +122,7 @@ export default function ScoreCurves({ result, reveal }: { result: FinalResult; r
       <Chart result={result} series={(r) => r.income} title={t("results.page.curvesIncome")} reveal={reveal} />
       <Chart result={result} series={(r) => r.money} title={t("results.page.curvesMoney")} reveal={reveal} />
       {/* legend */}
-      <ul className="col-span-full flex flex-wrap gap-x-5 gap-y-1.5 font-sans text-[12px] text-cream-100/80">
+      <ul className="col-span-full flex flex-wrap gap-x-5 gap-y-1.5 font-sans text-[12.5px] text-cream-100/80">
         {result.players.map((p, i) => (
           <li key={i} className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: PLAYER_COLORS[p.color]?.hex ?? "#C9A45C" }} />
