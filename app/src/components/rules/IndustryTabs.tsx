@@ -60,9 +60,9 @@ function IndustryTable({ industry }: { industry: Industry }) {
               <td className="tnums px-2 py-3 font-mono text-[12.5px] text-paper-300">
                 {lv.beer > 0 ? t("rules.industries.beer.count", { n: lv.beer }) : t("rules.industries.beer.onEmpty")}
               </td>
-              <td className="tnums px-2 py-3 font-mono text-[13px] font-semibold text-bottle-400">+{lv.income}</td>
+              <td className="tnums px-2 py-3 font-mono text-[13px] font-semibold text-bottle-ink">+{lv.income}</td>
               <td className="tnums px-2 py-3 font-mono text-[13px] font-semibold text-brass-300">{lv.vp}</td>
-              <td className="px-2 py-3 font-ui text-[12px] leading-snug text-paper-300/80">{lv.note}</td>
+              <td className="px-2 py-3 font-ui text-[12.5px] leading-snug text-iron-400">{lv.note}</td>
             </tr>
           ))}
         </tbody>
@@ -82,7 +82,7 @@ export default function IndustryTabs() {
   return (
     <div>
       <p className="mb-3 flex items-center gap-2 rounded border-l-[3px] border-rust-600/70 bg-lacquer-950 px-3 py-2 font-ui text-[11.5px] leading-snug text-paper-300">
-        <span className="font-semibold uppercase tracking-[0.14em]">{t("rules.industries.tuningTag")}</span>
+        <span className="font-semibold uppercase tracking-label">{t("rules.industries.tuningTag")}</span>
         <span>
           {t("rules.industries.tuningNote")}
         </span>
@@ -93,7 +93,7 @@ export default function IndustryTabs() {
             <TabsTrigger
               key={ind.id}
               value={ind.id}
-              className="group relative flex h-10 flex-none items-center gap-2 rounded-full border border-brass-hairline bg-transparent px-4 font-ui text-[13px] font-semibold text-paper-300 transition-[background-color,border-color,color] duration-150 hover:border-brass-hairline-strong hover:text-paper-100 data-[state=active]:border-brass-500 data-[state=active]:bg-gradient-to-b data-[state=active]:from-brass-300 data-[state=active]:via-brass-500 data-[state=active]:to-brass-600 data-[state=active]:text-ink-900"
+              className="group relative flex h-10 flex-none items-center gap-2 rounded-full border border-brass-hairline bg-transparent px-4 font-ui text-[13px] font-semibold text-paper-300 transition-[background-color,border-color,color] duration-150 hover:border-brass-hairline-strong hover:text-paper-100 data-[state=active]:border-brass-500 data-[state=active]:bg-[rgb(var(--brass-plate))] data-[state=active]:text-[rgb(var(--ink-on-brass))]"
             >
               <RulesIcon icon={ind.icon} className="h-4 w-4" />
               {ind.name}

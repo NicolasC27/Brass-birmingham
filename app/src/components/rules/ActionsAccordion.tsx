@@ -121,30 +121,30 @@ export default function ActionsAccordion() {
         >
           <AccordionTrigger className="px-4 py-3 hover:no-underline [&>svg]:text-brass-500">
             <span className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass-600 bg-gradient-to-br from-brass-300 via-brass-500 to-brass-600 text-ink-900">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brass-600 bg-[rgb(var(--brass-plate))] text-[rgb(var(--ink-on-brass))]">
                 <RulesIcon icon={a.icon} className="h-4 w-4" />
               </span>
               <span className="text-left">
                 <span className="block font-ui text-[15px] font-semibold text-paper-100">
                   {a.name}
                 </span>
-                <span className="block font-mono text-[11px] text-brass-500">{a.cost}</span>
+                <span className="block font-mono text-[10.5px] text-brass-500">{a.cost}</span>
               </span>
             </span>
           </AccordionTrigger>
           <AccordionContent className="px-4">
             <div className="grid gap-4 border-t border-brass-hairline pt-4 md:grid-cols-[1fr_auto]">
               <div>
-                <ol className="list-decimal space-y-1.5 pl-5 font-ui text-[13.5px] leading-relaxed text-paper-300">
+                <ol className="list-decimal space-y-1.5 pl-5 font-ui text-[13px] leading-relaxed text-paper-300">
                   {a.steps.map((s, i) => (
                     <li key={i}>{s}</li>
                   ))}
                 </ol>
                 <div className="mt-3 rounded border-l-[3px] border-rust-600/70 bg-lacquer-950 px-3 py-2">
-                  <p className="font-ui text-[10px] font-semibold uppercase tracking-[0.18em] text-rust-400">
+                  <p className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.18em] text-rust-400">
                     {t("rules.actionsUi.edgeCases")}
                   </p>
-                  <ul className="mt-1 list-disc space-y-1 pl-4 font-ui text-[12.5px] leading-relaxed text-paper-300/80">
+                  <ul className="mt-1 list-disc space-y-1 pl-4 font-ui text-[12.5px] leading-relaxed text-iron-400">
                     {a.edges.map((e, i) => (
                       <li key={i}>{e}</li>
                     ))}

@@ -5,12 +5,20 @@ import { useT } from "@/i18n";
 
 type Mode = "mine" | "market" | "none";
 
-const INK = "#241D14";
-const CREAM = "#F2EAD6";
-const BRASS = "#C9A45C";
-const BRASS_DIM = "#8A6B33";
-const COPPER = "#A6562B";
-const RUST = "#8E3B2F";
+/* The plate is set in the register it is read in: the ground is the page's
+   own (--lacquer-950), and every ink on it is a --rd-* token, so the plate
+   and what is engraved on it turn over together instead of leaving a day
+   ink on a night ground. The fallbacks carry the night, which has no --rd-*
+   block of its own.
+   INK is the one colour that stays put: it is only ever laid on a counter,
+   and the counters are cut from pale card in both registers. */
+const INK = "#241D14";                              /* on a counter: 16.66 by day, 13.89 by night */
+const CREAM = "var(--rd-cream, #F2EAD6)";           /* the counters and cards */
+const PLATE_INK = "var(--rd-ink, #C8BFAC)";         /* free lettering and linework: 5.68 / 10.64 */
+const BRASS = "var(--rd-brass, #C9A45C)";           /* 4.83 on paper, 8.28 on lacquer */
+const BRASS_DIM = "var(--rd-brass, #8A6B33)";       /* rims and frames: 4.83 / 3.91 */
+const COPPER = "var(--rd-rust, #A6562B)";           /* 4.96 / 5.65 */
+const RUST = "var(--rd-rust, #D0704E)";             /* 4.96 / 5.65 */
 
 const FELL = "'IM Fell English SC', Georgia, serif";
 const MONO = "'IBM Plex Mono', monospace";
@@ -36,8 +44,8 @@ function SvgChip({
   const w = text.length * 6.4 + 18;
   return (
     <g transform={`translate(${x - w / 2}, ${y})`}>
-      <rect width={w} height={22} rx={5} fill="#171310" stroke={color} strokeWidth={1.2} />
-      <text x={w / 2} y={15} textAnchor="middle" fontSize={11} fill={CREAM} fontFamily={MONO}>
+      <rect width={w} height={22} rx={5} fill={CREAM} stroke={color} strokeWidth={1.2} />
+      <text x={w / 2} y={15} textAnchor="middle" fontSize={11} fill={INK} fontFamily={MONO}>
         {text}
       </text>
     </g>
@@ -195,9 +203,9 @@ export default function SupplyDiagram() {
 
   return (
     <div ref={root}>
-      {/* Engraved plate inset into the ledger — deliberately stays dark in
-          both themes (self-contained artwork; #0A0E0C = lacquer-950 dark) */}
-      <div className="relative overflow-hidden rounded-lg border border-brass-hairline bg-[#0A0E0C]">
+      {/* Engraved plate inset into the ledger — it takes the register's own
+          ground, so the plate and its engraving turn over together */}
+      <div className="relative overflow-hidden rounded-lg border border-brass-hairline bg-lacquer-950">
         <div aria-hidden className="tex-lacquer pointer-events-none absolute inset-0 opacity-40" />
         <svg
           viewBox="0 0 720 320"
@@ -210,37 +218,37 @@ export default function SupplyDiagram() {
 
           {/* standing network (engraved, faint) */}
           {mode !== "none" && (
-            <path d="M 103 229 C 130 180, 132 150, 141 114" fill="none" stroke={CREAM} strokeOpacity={0.25} strokeWidth={2} />
+            <path d="M 103 229 C 130 180, 132 150, 141 114" fill="none" stroke={PLATE_INK} strokeOpacity={0.45} strokeWidth={2} />
           )}
-          <path d="M 177 82 C 240 60, 360 62, 403 82" fill="none" stroke={CREAM} strokeOpacity={0.25} strokeWidth={2} />
+          <path d="M 177 82 C 240 60, 360 62, 403 82" fill="none" stroke={PLATE_INK} strokeOpacity={0.45} strokeWidth={2} />
 
           {/* coal mine */}
           <g>
             <circle cx={95} cy={250} r={30} fill={BRASS} className="rules-mine-pulse" />
             <circle cx={95} cy={250} r={24} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1.5} />
             <image href="/icon-coal.svg" x={78} y={233} width={34} height={34} />
-            <text x={95} y={292} textAnchor="middle" fontSize={11} fill={CREAM} fillOpacity={0.8} fontFamily={FELL}>
+            <text x={95} y={292} textAnchor="middle" fontSize={11} fill={PLATE_INK} fontFamily={FELL}>
               {t("rules.supply.yourMine")}
             </text>
           </g>
 
           {/* town A */}
           <g>
-            <circle cx={150} cy={85} r={26} fill="#211C17" stroke={BRASS_DIM} strokeWidth={1.5} />
-            <text x={150} y={90} textAnchor="middle" fontSize={12} fill={CREAM} fontFamily={FELL}>Dudley</text>
+            <circle cx={150} cy={85} r={26} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1.5} />
+            <text x={150} y={90} textAnchor="middle" fontSize={12} fill={INK} fontFamily={FELL}>Dudley</text>
           </g>
 
           {/* town B */}
           <g>
-            <circle cx={430} cy={85} r={26} fill="#211C17" stroke={BRASS_DIM} strokeWidth={1.5} />
-            <text x={430} y={90} textAnchor="middle" fontSize={12} fill={CREAM} fontFamily={FELL}>B’ham</text>
+            <circle cx={430} cy={85} r={26} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1.5} />
+            <text x={430} y={90} textAnchor="middle" fontSize={12} fill={INK} fontFamily={FELL}>B’ham</text>
           </g>
 
           {/* build slot */}
           {mode !== "none" && (
             <g>
               <rect x={468} y={62} width={54} height={46} rx={4} fill="none" stroke={BRASS} strokeWidth={1.6} strokeDasharray="5 4" />
-              <text x={495} y={128} textAnchor="middle" fontSize={10.5} fill={BRASS} fontFamily={MONO}>
+              <text x={495} y={128} textAnchor="middle" fontSize={10.5} fill={PLATE_INK} fontFamily={MONO}>
                 {t("rules.supply.buildSlot")}
               </text>
             </g>
@@ -248,8 +256,8 @@ export default function SupplyDiagram() {
 
           {/* market tray */}
           <g>
-            <rect x={430} y={244} width={262} height={46} rx={7} fill="#100D0B" stroke={BRASS_DIM} strokeOpacity={0.7} />
-            <text x={561} y={236} textAnchor="middle" fontSize={11} fill={CREAM} fillOpacity={0.7} fontFamily={FELL}>
+            <rect x={430} y={244} width={262} height={46} rx={7} fill={PLATE_INK} fillOpacity={0.1} stroke={BRASS_DIM} strokeOpacity={0.7} />
+            <text x={561} y={236} textAnchor="middle" fontSize={11} fill={PLATE_INK} fontFamily={FELL}>
               {t("rules.supply.marketLabel")}
             </text>
             {Array.from({ length: 7 }).map((_, i) => (
@@ -260,14 +268,14 @@ export default function SupplyDiagram() {
                   width={32}
                   height={32}
                   rx={3}
-                  fill="#211C17"
+                  fill={CREAM}
                   stroke={BRASS_DIM}
                   strokeOpacity={0.5}
                 />
-                <text x={460 + i * 35} y={264} textAnchor="middle" fontSize={9} fill={BRASS} fontFamily={MONO}>
+                <text x={460 + i * 35} y={264} textAnchor="middle" fontSize={9} fill={INK} fontFamily={MONO}>
                   £{i + 1}
                 </text>
-                {i >= 2 && <circle cx={460 + i * 35} cy={275} r={6} fill={INK} stroke={CREAM} strokeOpacity={0.5} strokeWidth={1} />}
+                {i >= 2 && <circle cx={460 + i * 35} cy={275} r={6} fill={INK} />}
               </g>
             ))}
           </g>
@@ -293,7 +301,7 @@ export default function SupplyDiagram() {
             className={cn(
               "min-h-[48px] flex-1 basis-40 rounded-lg border px-4 py-2 font-ui text-[13px] font-semibold uppercase tracking-[0.08em] transition-[background-color,border-color,color] duration-150",
               mode === m.id
-                ? "border-brass-500 bg-gradient-to-b from-brass-300 via-brass-500 to-brass-600 text-ink-900"
+                ? "border-brass-500 bg-[rgb(var(--brass-plate))] text-[rgb(var(--ink-on-brass))]"
                 : "border-brass-hairline bg-transparent text-paper-300 hover:border-brass-hairline-strong hover:bg-enamel-800 hover:text-paper-100",
             )}
           >

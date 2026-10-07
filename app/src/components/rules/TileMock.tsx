@@ -34,7 +34,7 @@ export default function TileMock({ icon, level, income, vp, className }: TileMoc
       </span>
       <img src={icon} alt="" className="absolute left-1/2 top-[46%] h-6 w-6 -translate-x-1/2 -translate-y-1/2 text-ink-900" />
       {/* chips */}
-      <span className="absolute -bottom-[7px] left-1 rounded-sm border border-brass-700 bg-gradient-to-b from-brass-400 to-brass-500 px-1 font-mono text-[8.5px] font-semibold leading-[13px] text-ink-900">
+      <span className="absolute -bottom-[7px] left-1 rounded-sm border border-brass-700 bg-[rgb(var(--brass-plate))] px-1 font-mono text-[8.5px] font-semibold leading-[13px] text-[rgb(var(--ink-on-brass))]">
         +{income}
       </span>
       <span className="absolute -bottom-[7px] right-1 rounded-sm border border-ink-900/40 bg-cream-300 px-1 font-mono text-[8.5px] font-semibold leading-[13px] text-ink-900">

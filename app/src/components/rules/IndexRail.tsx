@@ -62,8 +62,8 @@ function ChapterList({
               <span
                 aria-hidden
                 className={cn(
-                  "shrink-0 font-mono text-[11px] transition-colors duration-150",
-                  active ? "text-brass-500" : "text-iron-600",
+                  "shrink-0 font-mono text-[10.5px] transition-colors duration-150",
+                  active ? "text-brass-500" : "text-iron-400",
                 )}
               >
                 {c.num}

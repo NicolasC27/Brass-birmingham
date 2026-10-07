@@ -120,14 +120,14 @@ const RULES_CSS = `
   top: 0.62em;
   width: 4px;
   height: 4px;
-  background: #C9A24B;
+  background: rgb(var(--brass-300));
   transform: rotate(45deg);
 }
 
 /* Search hit — brass wash on the matched paragraph, fading over 1.6s. */
 @keyframes rules-hit-fade {
-  0%   { background-color: rgba(201,162,75,.16); }
-  30%  { background-color: rgba(201,162,75,.08); }
+  0%   { background-color: rgb(var(--brass-300) / .16); }
+  30%  { background-color: rgb(var(--brass-300) / .08); }
   100% { background-color: transparent; }
 }
 .rules-hit {
