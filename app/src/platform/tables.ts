@@ -1,7 +1,7 @@
 import type { PlayerColor } from '@/components/setup/constants';
 import { eraRounds } from '@/game/data';
 import type { Era } from '@/game/types';
-import { MAX_SEATS, type PublicTable, type TableSummary } from '@/online/table';
+import { MAX_SEATS, type PublicTable, type Sketch, type TableSummary } from '@/online/table';
 import { tableTitle } from '@/online/tableNames';
 
 /* ------------------------------------------------------------------ */
@@ -41,6 +41,8 @@ export interface CardTable {
   rounds?: number;
   /** the seat to act, while in play */
   toAct?: CardSeat;
+  /** the board in a few strokes, while in play */
+  sketch?: Sketch;
   /** sockets at the table right now, the seated ones included */
   watchers: number;
   /** I sit at this table */
@@ -75,6 +77,7 @@ export function toCard(x: PublicTable, mine?: TableSummary, myName?: string, lan
     round: playing ? x.round : undefined,
     rounds: playing ? eraRounds(x.seats.length) : undefined,
     toAct,
+    ...(x.sketch ? { sketch: x.sketch } : {}),
     watchers: x.watchers,
     mine: !!mine,
     myTurn: !!mine?.myTurn,

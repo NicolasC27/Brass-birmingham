@@ -282,6 +282,7 @@ describe('the hall', () => {
     await passer.until('the register', () => !!passer.tables);
     expect(passer.tables).toHaveLength(1);
     expect(passer.tables![0]).toMatchObject({ code, name: ada.table!.name, hostName: 'Ada', status: 'playing', ranked: false, watchers: 3, era: 'canal', round: 1, current: expect.any(Number), eraLength: 'short' });
+    expect(passer.tables![0].sketch).toEqual({ board: 'midlands', towns: [], links: [] });
     expect(passer.tables![0].seats).toEqual([
       { id: ada.id, name: 'Ada', color: 'brass', kind: 'human' },
       { id: bob.id, name: 'Bob', color: 'oxblood', kind: 'human' },

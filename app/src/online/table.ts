@@ -103,6 +103,13 @@ export interface TableSummary {
 
 /* ------------------------- the hall, the cote, the counter ------------------------- */
 
+/** a game's shape in a few strokes: the towns held (a town once per holder) and the links laid, each by the seat's index */
+export interface Sketch {
+  board?: string;
+  towns: [town: string, owner: number][];
+  links: [link: string, owner: number][];
+}
+
 /** a table anyone may look at: the register of what is being played */
 export interface PublicTable {
   code: string;
@@ -116,6 +123,8 @@ export interface PublicTable {
   round?: number;
   /** the seat to act */
   current?: number;
+  /** the board in a few strokes, while in play */
+  sketch?: Sketch;
   ranked: boolean;
   /** sockets watching the table right now, the seated ones included */
   watchers: number;

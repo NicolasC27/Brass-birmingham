@@ -2,9 +2,9 @@ import { randomBytes, randomInt } from 'node:crypto';
 import type { BotPersona, PlayerColor, SetupOptions } from '@/components/setup/constants';
 import { freePersona, personaName, personaOf } from '@/game/data';
 import type { GameAction } from '@/game/actions';
-import type { SetupPayload } from '@/game/types';
+import type { GameState, SetupPayload } from '@/game/types';
 import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
-import type { Dispatch, Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Table, TableFilter, TableQuery, TableSeat, TableSummary, TablesPage, Tier } from '@/online/table';
+import type { Dispatch, Desk, HallCounts, Identity, Invitation, Leaderboard, LobbyError, PublicTable, QueueState, Sketch, Table, TableFilter, TableQuery, TableSeat, TableSummary, TablesPage, Tier } from '@/online/table';
 import { TABLE_FILTERS, normalizeQuery } from '@/online/table';
 import { DEFAULT_PACE, TableGame } from './game';
 import type { Pace } from './game';
@@ -197,7 +197,7 @@ export class Hall {
         hostId: room.table.hostId,
         seats: room.table.seats.map((s) => ({ id: s.id, name: s.name, color: s.color, kind: s.kind })),
         status: g ? (g.over ? 'over' : 'playing') : this.ended.has(room.table.code) ? 'over' : 'open',
-        ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current } : {}),
+        ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current, sketch: sketch(g.state) } : {}),
         myTurn: !!g && !g.over && g.state.phase === 'action' && g.seatOf(accountId) === g.state.current,
         ...(room.table.ranked ? { ranked: true } : {}),
         updatedAt: room.table.updatedAt,
@@ -257,7 +257,7 @@ export class Hall {
         seats: room.table.seats.map((s) => ({ id: s.id, name: s.name, color: s.color, kind: s.kind })),
         status: g ? 'playing' : 'open',
         eraLength: room.table.options.eraLength,
-        ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current } : {}),
+        ...(g ? { era: g.state.era, round: g.state.round, current: g.state.current, sketch: sketch(g.state) } : {}),
         ranked: !!room.table.ranked,
         watchers: this.who.watchers(room.table.code),
         updatedAt: room.table.updatedAt,
@@ -685,6 +685,20 @@ export class Hall {
     room.table = { ...room.table, updatedAt: Date.now() };
     this.store.saveTable(room.table);
   }
+}
+
+/** the game in a few strokes for the register: a town once per holder, every link laid */
+function sketch(s: GameState): Sketch {
+  const towns: [string, number][] = [];
+  const seen = new Set<string>();
+  for (const [key, tile] of Object.entries(s.tiles)) {
+    const town = key.slice(0, key.indexOf(':'));
+    if (seen.has(`${town}:${tile.owner}`)) continue;
+    seen.add(`${town}:${tile.owner}`);
+    towns.push([town, tile.owner]);
+  }
+  const links: [string, number][] = Object.entries(s.links).map(([id, l]) => [id, l.owner]);
+  return { ...(s.board ? { board: s.board } : {}), towns, links };
 }
 
 function seatFor(me: Identity, table: Pick<Table, 'seats'>, color?: PlayerColor): TableSeat {
