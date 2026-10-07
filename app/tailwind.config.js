@@ -13,14 +13,17 @@ module.exports = {
           700: "#2C251D",
         },
         brass: {
-          // platform "Club Industriel" additions (design.md §2.2) — additive:
-          // 400/500/700 below keep their legacy values (game shell depends on them);
-          // the platform's "laiton principal" (#C9A24B) maps to brass-500 (#C9A45C).
-          // 300 + hairlines are platform-only and theme-driven (CSS vars scoped
-          // to .platform-root in index.css; fallbacks = dark theme values).
+          // platform "Club Industriel" additions (design.md §2.2) — additive.
+          // 300/400/500 + hairlines are theme-driven (CSS vars scoped to
+          // .platform-root in index.css). Outside it the table reads the
+          // triplets on :root — written there as hexadecimals, every brass
+          // utility of the game was invalid at computed time and thrown
+          // away. 600/700 are legacy and stay flat.
+          // The platform's plate is its own token, --brass-plate: it is not
+          // brass-500 (#C9A24B against #C9A45C is ΔE76 7.5, two colours).
           300: "rgb(var(--brass-300, 231 201 126) / <alpha-value>)",
-          400: "#DDBE7E",
-          500: "#C9A45C",
+          400: "rgb(var(--brass-400, 221 190 126) / <alpha-value>)",
+          500: "rgb(var(--brass-500, 201 164 92) / <alpha-value>)",
           600: "#8F6B23",
           700: "#8A6B33",
           hairline: "var(--brass-hairline, rgba(201,162,75,.14))",

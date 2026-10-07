@@ -9,8 +9,11 @@
     --coal-900: #171310;
     --coal-800: #211C17;
     --coal-700: #2C251D;
-    --brass-400: #DDBE7E;
-    --brass-500: #C9A45C;
+    /* read as an rgb triplet, the way tailwind.config.js consumes them:
+       written as a hexadecimal here, `rgb(var(--brass-400))` is invalid at
+       computed time and every brass utility on the table is thrown away */
+    --brass-400: 221 190 126;
+    --brass-500: 201 164 92;
     --brass-700: #8A6B33;
     --copper-500: #A6562B;
     --copper-700: #7C3E1F;
@@ -75,7 +78,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--brass-400);
+    outline: 2px solid rgb(var(--brass-400));
     outline-offset: 2px;
   }
 }
@@ -145,7 +148,7 @@
     width: 5px;
     height: 5px;
     border-radius: 999px;
-    background: radial-gradient(circle at 35% 30%, var(--brass-400), var(--brass-700));
+    background: radial-gradient(circle at 35% 30%, rgb(var(--brass-400)), var(--brass-700));
     box-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
   }
   .plaque-rivets::before {
@@ -282,7 +285,7 @@
     letter-spacing: 0.08em;
     border-radius: 999px;
     border: 1px solid var(--brass-700);
-    background: linear-gradient(160deg, var(--brass-400), var(--brass-500) 45%, var(--brass-700));
+    background: linear-gradient(160deg, rgb(var(--brass-400)), rgb(var(--brass-500)) 45%, var(--brass-700));
     box-shadow:
       inset 0 1px 0 rgba(242, 234, 214, 0.55),
       inset 0 -1px 0 rgba(0, 0, 0, 0.3),
@@ -332,7 +335,7 @@
   }
   .btn-ledger:hover {
     background: rgba(201, 164, 92, 0.12);
-    border-color: var(--brass-500);
+    border-color: rgb(var(--brass-500));
     transform: translateY(-2px);
   }
 
@@ -382,7 +385,7 @@
     width: 7px;
     height: 7px;
     transform: translate(-50%, -50%) rotate(45deg);
-    background: var(--brass-500);
+    background: rgb(var(--brass-500));
     box-shadow: 0 0 0 3px var(--coal-900);
   }
 }

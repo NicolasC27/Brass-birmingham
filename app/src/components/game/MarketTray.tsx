@@ -235,7 +235,7 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
       aria-label={t('game.market.sectionAria')}
       className={cn(
         'plate relative overflow-hidden p-3 transition-shadow',
-        marketFocus && 'shadow-[0_0_0_2px_var(--brass-400),0_10px_24px_rgba(0,0,0,.35)]',
+        marketFocus && 'shadow-[0_0_0_2px_rgb(var(--brass-400)),0_10px_24px_rgba(0,0,0,.35)]',
       )}
     >
       {/* soot-dark brick behind WARM mahogany panelling */}

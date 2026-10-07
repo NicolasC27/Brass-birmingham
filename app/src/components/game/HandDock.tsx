@@ -112,7 +112,7 @@ function GameCard({
       transition={{ type: 'spring', stiffness: 180, damping: 20 }}
       className={cn(
         'relative h-[120px] w-[84px] shrink-0 overflow-hidden rounded-md border border-[#A8843F] text-left shadow-e3',
-        selected && 'shadow-[0_0_0_2px_var(--brass-500),0_18px_34px_rgba(0,0,0,.55)]',
+        selected && 'shadow-[0_0_0_2px_rgb(var(--brass-500)),0_18px_34px_rgba(0,0,0,.55)]',
         scoutMarked && 'brightness-[.55] saturate-50 shadow-[0_0_0_2px_#B5412F,0_10px_20px_rgba(0,0,0,.5)]',
       )}
       style={{ zIndex: selected ? 10 : scoutMarked ? 9 : index }}
