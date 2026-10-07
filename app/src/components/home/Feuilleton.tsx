@@ -18,33 +18,33 @@ export default function Feuilleton() {
   const [episode] = useState(readFeuilleton);
   return (
     <section aria-label={t('platform.feuilleton.eyebrow')}>
-      <p className="micro-label text-paper-100">
+      <h2 className="micro-label text-paper-100">
         {t('platform.feuilleton.eyebrow')}
         <GlossMark id="feuilleton" />
-      </p>
+      </h2>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
         {!episode ? (
-          <p className="px-1 py-6 text-center font-serif text-[14px] italic text-paper-300">{t('platform.feuilleton.none')}</p>
+          <p className="px-1 py-6 text-center font-serif text-[14px] text-paper-300">{t('platform.feuilleton.none')}</p>
         ) : (
           <article className="px-1 py-4">
-            <h3 className="font-fraunces text-[18px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+            <h3 className="font-fraunces text-[18px] font-medium leading-tight text-paper-100">
               {t('platform.feuilleton.title', { table: tableTitle(episode.name, lang) })}
             </h3>
-            <p className="data-text mt-1 text-[11px] text-iron-400 tnums">{episode.scores.map((s) => `${s.name} ${s.vp}`).join(' · ')}</p>
+            <p className="data-text mt-1 text-[10.5px] text-iron-400 tnums">{episode.scores.map((s) => `${s.name} ${s.vp}`).join(' · ')}</p>
             <ol className="mt-3 flex flex-col">
               {episode.moments.map((m, i) => (
                 <li key={m.at} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2.5 last:border-b-0">
-                  <span className="brass-roundel h-5 w-5 shrink-0 font-ui text-[10px] font-bold">{i + 1}</span>
+                  <span className="brass-roundel h-5 w-5 shrink-0 font-ui text-[10.5px] font-bold">{i + 1}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-serif text-[13.5px] leading-snug text-paper-100">
+                    <span className="block font-serif text-[13px] leading-snug text-paper-100">
                       {t(m.mine ? 'platform.feuilleton.mine' : 'platform.feuilleton.theirs', { round: m.round, era: t(`platform.challenge.era.${m.era}`), name: m.by })}
                     </span>
-                    <span className={cn('data-text text-[11px] tnums', m.shift >= 0 ? 'text-bottle-400' : 'text-rust-400')}>
+                    <span className={cn('data-text text-[10.5px] tnums', m.shift >= 0 ? 'text-bottle-ink' : 'text-rust-400')}>
                       {t('platform.feuilleton.shift', { n: `${m.shift > 0 ? '+' : ''}${m.shift}` })}
                     </span>
                   </span>
-                  <Link to={momentAddress(episode, m)} className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-                    {t('platform.feuilleton.open')}
+                  <Link to={momentAddress(episode, m)} className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+                    {t('platform.feuilleton.open')} →
                   </Link>
                 </li>
               ))}

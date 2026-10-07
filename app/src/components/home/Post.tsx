@@ -18,21 +18,21 @@ export default function Post() {
   const [letters] = useState(() => listLetters().slice(0, SHOWN));
   return (
     <section aria-label={t('platform.letters.eyebrow')}>
-      <p className="micro-label text-paper-100">
+      <h2 className="micro-label text-paper-100">
         {t('platform.letters.eyebrow')}
         <GlossMark id="courrier" />
-      </p>
+      </h2>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
         {letters.length === 0 ? (
-          <p className="px-1 py-6 text-center font-serif text-[14px] italic text-paper-300">{t('platform.letters.none')}</p>
+          <p className="px-1 py-6 text-center font-serif text-[14px] text-paper-300">{t('platform.letters.none')}</p>
         ) : (
           letters.map((l) => (
             <article key={l.id} className="border-b border-[var(--gz-ink-faint)] px-1 py-4 last:border-b-0">
               <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                <span className="font-fraunces text-[14px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                <span className="font-fraunces text-[14px] font-medium text-paper-100">
                   {t('platform.letters.from', { name: personaName(l.persona) })}
                 </span>
-                <span className="data-text text-[11px] text-iron-600">{t('platform.letters.re', { table: tableTitle(l.table, lang) })}</span>
+                <span className="data-text text-[10.5px] text-iron-400">{t('platform.letters.re', { table: tableTitle(l.table, lang) })}</span>
               </p>
               <p className="mt-2 font-serif text-[14px] leading-relaxed text-paper-300">
                 {t(letterKey(l), { me: l.me, table: tableTitle(l.table, lang), vp: l.vp, theirs: l.theirs })}

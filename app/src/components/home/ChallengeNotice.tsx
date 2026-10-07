@@ -87,13 +87,14 @@ export default function ChallengeNotice() {
           </p>
           <p className="micro-label mt-3 text-iron-400">
             {t('platform.challenge.number', { n: challenge.number })}
-            {options && <span className="text-iron-600"> · {options}</span>}
+            {options && <span className="text-iron-400"> · {options}</span>}
           </p>
-          <h2 className="mt-1 font-fraunces text-[26px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+          <h2 className="mt-1 font-fraunces text-[26px] font-medium leading-tight text-paper-100">
             {t(`platform.challenge.titles.${challenge.id}`)}
           </h2>
-          <p className="mt-3 max-w-[440px] font-serif text-[14.5px] italic leading-relaxed text-paper-300">{t(`platform.challenge.stories.${challenge.id}`)}</p>
-          <p className="data-text mt-3 text-[11px] text-iron-400">{t('platform.challenge.rivals', { names: rivals })}</p>
+          <p className="mt-3 max-w-[440px] font-serif text-[15px] italic leading-relaxed text-paper-300">{t(`platform.challenge.stories.${challenge.id}`)}</p>
+          {/* the machines' names are names, not figures: the ledger's mono is kept for what counts */}
+          <p className="mt-3 font-ui text-[10.5px] text-iron-400">{t('platform.challenge.rivals', { names: rivals })}</p>
         </div>
 
         <div className="min-[900px]:col-span-4 min-[900px]:border-l min-[900px]:border-[var(--gz-ink-soft)] min-[900px]:pl-8">
@@ -105,7 +106,7 @@ export default function ChallengeNotice() {
                   <span
                     className={cn(
                       'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                      met === null ? 'border-[var(--gz-ink-soft)]' : met ? 'border-bottle-400 text-bottle-400' : 'border-rust-400 text-rust-400',
+                      met === null ? 'border-[var(--gz-ink-soft)]' : met ? 'border-bottle-400 text-bottle-ink' : 'border-rust-400 text-rust-400',
                     )}
                     aria-label={met === null ? undefined : t(met ? 'platform.challenge.met' : 'platform.challenge.missed')}
                   >
@@ -117,7 +118,7 @@ export default function ChallengeNotice() {
               );
             })}
           </ul>
-          <p className="mt-3 font-serif text-[12px] italic leading-snug text-iron-400">{t('platform.challenge.scoring')}</p>
+          <p className="mt-3 font-serif text-[12.5px] leading-snug text-iron-400">{t('platform.challenge.scoring')}</p>
         </div>
 
         <div className="flex flex-col justify-between gap-4 min-[900px]:col-span-3 min-[900px]:border-l min-[900px]:border-[var(--gz-ink-soft)] min-[900px]:pl-8">
@@ -127,19 +128,19 @@ export default function ChallengeNotice() {
               <>
                 <p className="mt-2 font-fraunces text-[34px] font-normal leading-none text-paper-100 tnums">{best.points}</p>
                 <p className="micro-label mt-1 text-paper-300">{t(best.met.every(Boolean) ? 'platform.challenge.verdictWon' : 'platform.challenge.verdictLost', { n: best.points })}</p>
-                <p className="data-text mt-1 text-[11px] text-iron-600">{t('platform.challenge.attempts', { n: attempts.length })}</p>
+                <p className="data-text mt-1 text-[10.5px] text-iron-400">{t('platform.challenge.attempts', { n: attempts.length })}</p>
               </>
             ) : (
-              <p className="mt-2 font-serif text-[13.5px] italic text-paper-300">{t('platform.challenge.none')}</p>
+              <p className="mt-2 font-serif text-[13px] text-paper-300">{t('platform.challenge.none')}</p>
             )}
           </div>
           {open ? (
             <Link to={`/game/local/${open}`} className="gz-ticket gz-ticket-signal self-start">
-              {t('platform.challenge.resume')}
+              {t('platform.challenge.resume')} →
             </Link>
           ) : (
             <button type="button" onClick={take} onMouseEnter={preloadGame} onFocus={preloadGame} className="gz-ticket gz-ticket-brass self-start">
-              {t('platform.challenge.take')}
+              {t('platform.challenge.take')} →
             </button>
           )}
         </div>
@@ -148,35 +149,35 @@ export default function ChallengeNotice() {
       {/* the week's board, as the office keeps it */}
       <div className="border-t border-[var(--gz-ink-soft)] px-6 py-4 min-[900px]:px-7">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="micro-label text-paper-100">{t('platform.challenge.board.title')}</p>
+          <h3 className="micro-label text-paper-100">{t('platform.challenge.board.title')}</h3>
           <span className="flex items-baseline gap-4">
-            {board && board.players > 0 && <span className="data-text text-[11px] text-iron-600 tnums">{t('platform.challenge.board.players', { n: board.players })}</span>}
-            <Link to="/defis" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-              {t('platform.defis.archive')}
+            {board && board.players > 0 && <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.players', { n: board.players })}</span>}
+            <Link to="/defis" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+              {t('platform.defis.archive')} →
             </Link>
           </span>
         </div>
         {!session ? (
-          <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.challenge.board.signIn')}</p>
+          <p className="mt-2 font-serif text-[13px] text-paper-300">{t('platform.challenge.board.signIn')}</p>
         ) : !board || board.players === 0 ? (
-          <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.challenge.board.empty')}</p>
+          <p className="mt-2 font-serif text-[13px] text-paper-300">{t('platform.challenge.board.empty')}</p>
         ) : (
           <ol className="mt-2 grid gap-x-8 gap-y-1 min-[900px]:grid-cols-2">
             {board.rows.slice(0, 6).map((row, i) => (
               <li key={row.id} className={cn('flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5', row.id === session.id && 'text-brass-300')}>
-                <span className="data-text w-5 text-[11px] text-iron-600 tnums">{i + 1}.</span>
-                <span className="min-w-0 flex-1 truncate font-fraunces text-[14px] font-medium" style={{ fontVariationSettings: '"opsz" 48' }}>
+                <span className="data-text w-5 text-[10.5px] text-iron-400 tnums">{i + 1}.</span>
+                <span className="min-w-0 flex-1 truncate font-fraunces text-[14px] font-medium">
                   {row.name}
-                  {row.id === session.id && <span className="micro-label ml-2 text-iron-600">{t('platform.challenge.board.you')}</span>}
+                  {row.id === session.id && <span className="micro-label ml-2 text-iron-400">{t('platform.challenge.board.you')}</span>}
                 </span>
-                <span className="data-text text-[11px] text-iron-400 tnums">{t('platform.challenge.board.met', { done: row.met.filter(Boolean).length, total: row.met.length })}</span>
+                <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.met', { done: row.met.filter(Boolean).length, total: row.met.length })}</span>
                 <span className="font-fraunces text-[15px] font-medium tnums">{row.points}</span>
               </li>
             ))}
           </ol>
         )}
         {board?.me && board.me.rank > 6 && (
-          <p className="data-text mt-2 text-[11px] text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</p>
+          <p className="data-text mt-2 text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</p>
         )}
       </div>
     </motion.section>

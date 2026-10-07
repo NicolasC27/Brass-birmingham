@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import { PERSONAS, personaName } from '@/game/data';
 import { useEdition, useSession } from '@/online/session';
@@ -20,22 +21,24 @@ export default function Portrait() {
   const record = edition?.machines.find((m) => m.name === persona.name) ?? null;
   return (
     <section aria-label={t('platform.portrait.eyebrow')} className="gz-classified !items-start !p-5 !text-left">
-      <p className="micro-label text-paper-100">
+      <h2 className="micro-label text-paper-100">
         {t('platform.portrait.eyebrow')}
         <GlossMark id="portrait" />
-      </p>
+      </h2>
       <div className="mt-3 flex gap-4">
         <div className="gz-engraving h-[92px] w-[92px] shrink-0">
           <img src={`/portrait-${persona.id}.webp`} alt="" className="!aspect-square" />
         </div>
         <div className="min-w-0">
-          <p className="font-fraunces text-[20px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 96' }}>
+          <p className="font-fraunces text-[20px] font-medium leading-tight text-paper-100">
             {personaName(persona.id)}
           </p>
           <p className="mt-1 font-serif text-[13px] italic leading-relaxed text-paper-300">{t(`platform.portrait.bio.${persona.id}`)}</p>
         </div>
       </div>
-      <p className="data-text mt-3 text-[11px] text-iron-400 tnums">
+      {/* the record is a tally and takes the ledger's mono; the invitation to
+          sign is a sentence and takes the house's own */}
+      <p className={cn('mt-3 text-[10.5px] text-iron-400', record ? 'data-text tnums' : 'font-ui')}>
         {!session ? t('platform.portrait.signIn') : record ? t('platform.portrait.record', { won: record.won, lost: record.lost }) : t('platform.portrait.none')}
       </p>
     </section>

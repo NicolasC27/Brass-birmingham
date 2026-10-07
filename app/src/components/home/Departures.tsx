@@ -13,6 +13,7 @@ import { useDesk, useLine, useSession, useStranger, useTables } from '@/online/s
 import { colorDef } from '@/components/setup/constants';
 import { toCards, type CardTable } from '@/platform/tables';
 import Button from '@/components/platform/Button';
+import Skeleton from '@/components/platform/Skeleton';
 
 /* ------------------------------------------------------------------ */
 /* The departures: the register of tables printed as a timetable —    */
@@ -65,18 +66,18 @@ function Seats({ table }: { table: CardTable }) {
 function Boarding({ table }: { table: CardTable }) {
   const t = useT();
   const navigate = useNavigate();
-  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] whitespace-nowrap transition-colors';
+  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-label whitespace-nowrap transition-colors';
   if (table.mine) {
     const to = table.state === 'live' ? `/game/${table.code}` : `/online/${table.code}`;
     return (
-      <Link to={to} className={cn(link, table.myTurn ? 'text-signal-400 hover:text-paper-100' : 'text-brass-300 hover:text-paper-100')}>
-        {table.state === 'live' ? (table.myTurn ? t('platform.play.tables.yourTurn') : t('platform.action.resume')) : t('platform.action.enterLobby')} →
+      <Link to={to} className={cn(link, table.myTurn ? 'text-signal-ink hover:text-paper-100' : 'text-brass-300 hover:text-paper-100')}>
+        {table.state === 'live' ? (table.myTurn ? t('platform.play.tables.yourTurn') : t('platform.action.resume')) : t('platform.action.lobbyShort')} →
       </Link>
     );
   }
   if (table.state === 'open') {
     return table.mode === 'ranked' ? (
-      <span className={cn(link, 'text-iron-600')} title={t('platform.play.tables.viaQueueHint')}>
+      <span className={cn(link, 'text-iron-400')} title={t('platform.play.tables.viaQueueHint')}>
         {t('platform.play.tables.viaQueue')}
       </span>
     ) : (
@@ -93,7 +94,7 @@ function Boarding({ table }: { table: CardTable }) {
       </button>
     );
   }
-  return <span className={cn(link, 'text-iron-600')}>{t('platform.action.full')}</span>;
+  return <span className={cn(link, 'text-iron-400')}>{t('platform.action.full')}</span>;
 }
 
 function Row({ table, i }: { table: CardTable; i: number }) {
@@ -107,11 +108,11 @@ function Row({ table, i }: { table: CardTable; i: number }) {
       : [t('platform.play.tables.host', { name: table.hostName })];
   return (
     <motion.tr initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.04 * i }}>
-      <td className="max-w-0">
-        <span className={cn('block truncate font-fraunces text-[14px] font-medium', table.mine ? 'text-brass-300' : 'text-paper-100')} style={{ fontVariationSettings: '"opsz" 48' }}>
+      <td className="w-full max-w-0">
+        <span className={cn('block truncate font-fraunces text-[14px] font-medium', table.mine ? 'text-brass-300' : 'text-paper-100')}>
           {table.name}
         </span>
-        <span className="data-text block truncate text-[11px] text-iron-600">
+        <span className="data-text block truncate text-[10.5px] text-iron-400">
           {[t(`platform.mode.${table.mode}`), ...detail].filter(Boolean).join(' · ')}
         </span>
       </td>
@@ -119,7 +120,7 @@ function Row({ table, i }: { table: CardTable; i: number }) {
         <Seats table={table} />
       </td>
       <td className="w-[88px]">
-        <span className={cn('micro-label flex items-center gap-1.5', table.state === 'live' ? 'text-signal-400' : table.state === 'open' ? 'text-bottle-400' : 'text-iron-400')}>
+        <span className={cn('micro-label flex items-center gap-1.5', table.state === 'live' ? 'text-signal-ink' : table.state === 'open' ? 'text-bottle-ink' : 'text-iron-400')}>
           {table.state === 'live' && <span className={cn('h-1.5 w-1.5 rounded-full bg-signal-400', i < 3 && 'animate-pulse-signal')} aria-hidden />}
           {t(`platform.state.${table.state}`)}
         </span>
@@ -137,26 +138,33 @@ function LocalRow({ table, i }: { table: HomeTable; i: number }) {
   const lang = useLang();
   return (
     <motion.tr initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.04 * i }}>
-      <td className="max-w-0">
-        <span className="block truncate font-fraunces text-[14px] font-medium text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+      <td className="w-full max-w-0">
+        <span className="block truncate font-fraunces text-[14px] font-medium text-paper-100">
           {tableTitle(table.name, lang)}
         </span>
-        <span className="data-text block truncate text-[11px] text-iron-600">
+        <span className="data-text block truncate text-[10.5px] text-iron-400">
           {[t('platform.action.localGame'), t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal'), t('platform.state.turn', { round: table.round })].join(' · ')}
         </span>
       </td>
       <td className="w-[76px]">
         <span className="flex items-center gap-1.5">
           {table.seats.map((s, j) => (
-            <span key={j} title={s.name} className={cn('block h-2.5 w-2.5 rounded-full', s.kind === 'bot' && 'opacity-60')} style={{ background: colorDef(s.color).hex }} />
+            <span
+              key={j}
+              title={s.name}
+              className="block h-2.5 w-2.5 rounded-full"
+              /* a machine rides hollow, a passenger filled — the mark is drawn,
+                 not dimmed; opacity only shifts the colour against the paper */
+              style={s.kind === 'bot' ? { boxShadow: `inset 0 0 0 2px ${colorDef(s.color).hex}` } : { background: colorDef(s.color).hex }}
+            />
           ))}
         </span>
       </td>
       <td className="w-[88px]">
-        <span className="micro-label text-bottle-400">{t('platform.state.open')}</span>
+        <span className="micro-label text-bottle-ink">{t('platform.state.open')}</span>
       </td>
       <td className="w-px pr-2 text-right">
-        <Link to={`/game/local/${table.code}`} className="whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+        <Link to={`/game/local/${table.code}`} className="whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
           {t('platform.action.resume')} →
         </Link>
       </td>
@@ -190,9 +198,9 @@ function LocalEdition() {
         </table>
       )}
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
-        <span className="font-serif text-[13px] italic text-paper-300">{t('platform.serverOffline')}</span>
-        <button type="button" onClick={() => void startQuickGame().then((code) => navigate(`/game/local/${code}`))} className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-          {t('platform.home.departures.machines')}
+        <span className="font-serif text-[13px] text-paper-300">{t('platform.serverOffline')}</span>
+        <button type="button" onClick={() => void startQuickGame().then((code) => navigate(`/game/local/${code}`))} className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+          {t('platform.home.departures.machines')} →
         </button>
       </div>
     </>
@@ -203,7 +211,7 @@ function LocalEdition() {
 function Notice({ text, cta }: { text: string; cta?: { label: string; to: string } }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-      <p className="max-w-[300px] font-serif text-[14px] italic text-paper-300">{text}</p>
+      <p className="max-w-[300px] font-serif text-[14px] text-paper-300">{text}</p>
       {cta && (
         <Button variant="ghost" className="!h-8 px-3" to={cta.to}>
           {cta.label}
@@ -220,18 +228,18 @@ function MyQueue() {
   const desk = useDesk();
   const queue = desk?.queue ?? null;
   const now = useNow(queue !== null);
-  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100';
+  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100';
 
   if (!session) return null;
   if (!queue) {
     return (
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
-        <span className="font-serif text-[13px] italic text-paper-300">
+        <span className="font-serif text-[13px] text-paper-300">
           {t('platform.home.departures.queueNone')}
-          {desk && desk.hall.queued > 0 && <span className="data-text ml-2 text-[11px] not-italic text-iron-600 tnums">{t('platform.home.board.queue.house', { count: desk.hall.queued })}</span>}
+          {desk && desk.hall.queued > 0 && <span className="data-text ml-2 text-[10.5px] not-italic text-iron-400 tnums">{t('platform.home.board.queue.house', { count: desk.hall.queued })}</span>}
         </span>
         <Link to="/online" className={link}>
-          {t('platform.home.departures.enter')}
+          {t('platform.home.departures.enter')} →
         </Link>
       </div>
     );
@@ -242,13 +250,13 @@ function MyQueue() {
       <span className="flex items-center gap-2 font-ui text-[12.5px] text-paper-100">
         <span className={cn('h-1.5 w-1.5 animate-pulse-signal rounded-full', mode === 'ranked' ? 'bg-rust-600' : 'bg-bottle-500')} aria-hidden />
         {t('platform.home.board.queue.mine', { mode: t(`platform.mode.${mode}`) })}
-        <span className="data-text text-[12px] text-brass-300 tnums">{mmss(now - queue.since)}</span>
-        <span className="data-text text-[11px] text-iron-600">
+        <span className="data-text text-brass-300 tnums">{mmss(now - queue.since)}</span>
+        <span className="data-text text-[10.5px] text-iron-400">
           {queue.waiting <= 1 ? t('platform.home.board.queue.alone') : t('platform.home.board.queue.others', { count: queue.waiting - 1 })}
         </span>
       </span>
       <Link to="/online" className={link}>
-        {t('platform.home.board.queue.see')}
+        {t('platform.home.board.queue.see')} →
       </Link>
     </div>
   );
@@ -282,7 +290,9 @@ export default function Departures() {
   let body: React.ReactNode;
   if (local) body = <LocalEdition />;
   else if (stranger) body = <Notice text={t('platform.home.board.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
-    else if (waiting) body = <Notice text={t('platform.home.board.loading')} />;
+  /* the wait has its own drawing and says so once: the counts stay silent
+     while the board is still being set */
+  else if (waiting) body = <Skeleton shape="table" rows={4} className="px-2 py-2" label={t('platform.home.board.loading')} />;
   else if (cards.length === 0) body = <Notice text={t('platform.home.departures.none')} cta={{ label: t('platform.action.createTable'), to: '/setup' }} />;
   else
     body = (
@@ -312,19 +322,19 @@ export default function Departures() {
       aria-label={t('platform.home.board.title')}
     >
       <div className="flex items-center justify-between gap-3">
-        <span className="micro-label flex items-center gap-2 text-paper-100">
+        <h2 className="micro-label flex items-center gap-2 text-paper-100">
           <span className={cn('h-1.5 w-1.5 rounded-full', tables ? 'animate-presence-dot bg-signal-400' : 'bg-iron-600')} aria-hidden />
           {t('platform.home.board.title')}
-        </span>
+        </h2>
         <span className="flex items-center gap-3">
-          <span className="data-text text-[11px] text-iron-400 tnums">{local ? t('platform.status.localMode') : waiting ? t('platform.home.board.loading') : stranger ? '' : t('platform.home.board.counts', { open, live })}</span>
+          <span className="data-text text-[10.5px] text-iron-400 tnums">{local ? t('platform.status.localMode') : waiting || stranger ? '' : t('platform.home.board.counts', { open, live })}</span>
           <button type="button" aria-label={t('platform.home.board.refresh')} onClick={refresh} className="text-iron-400 transition-colors hover:text-paper-100">
             <motion.span animate={{ rotate: spin * 360 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="flex">
               <RefreshCw size={13} aria-hidden />
             </motion.span>
           </button>
-          <Link to="/online#tables" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-            {t('platform.home.board.seeAll')}
+          <Link to="/online#tables" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+            {t('platform.home.board.seeAll')} →
           </Link>
         </span>
       </div>

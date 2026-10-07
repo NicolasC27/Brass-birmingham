@@ -11,17 +11,17 @@ export default function Ephemeris() {
   const [e] = useState(() => ephemerisOf());
   return (
     <section aria-label={t('platform.almanac.eyebrow')} className="border-y border-[var(--gz-ink-soft)] py-4">
-      <p className="flex items-baseline justify-between gap-3">
-        <span className="micro-label text-paper-100">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="micro-label text-paper-100">
           {t('platform.almanac.eyebrow')}
           <GlossMark id="ephemeride" />
-        </span>
-        <Link to="/almanach" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-          {t('platform.almanach.all')}
+        </h2>
+        <Link to="/almanach" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+          {t('platform.almanach.all')} →
         </Link>
-      </p>
+      </div>
       <div className="mt-2 flex items-start gap-4">
-        <span className="font-fraunces text-[34px] font-normal leading-none text-brass-300 tnums" style={{ fontVariationSettings: '"opsz" 144' }}>
+        <span className="font-fraunces text-[34px] font-normal leading-none text-brass-300 tnums">
           {e.year}
         </span>
         <p className="font-serif text-[14px] italic leading-relaxed text-paper-300">{t(e.key)}</p>

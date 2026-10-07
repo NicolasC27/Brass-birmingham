@@ -39,7 +39,7 @@ export default function NoticeBoard() {
         <button type="button" onClick={() => setOpen(true)} className="group flex min-w-0 flex-1 items-center gap-2.5 text-left" aria-label={`${t('platform.notices.eyebrow')} — ${title}`}>
           <Megaphone size={14} aria-hidden className="shrink-0 text-brass-300" />
           <span className="micro-label shrink-0 text-brass-300">{t('platform.notices.eyebrow')}</span>
-          <span className="truncate font-serif text-[13.5px] italic text-paper-300 transition-colors group-hover:text-paper-100">{title}</span>
+          <span className="truncate font-serif text-[13px] text-paper-300 transition-colors group-hover:text-paper-100">{title}</span>
           <span className="micro-label hidden shrink-0 text-iron-400 min-[760px]:inline">· {t(`platform.notices.stage.${notice.stage}`)}</span>
           <ChevronRight size={14} aria-hidden className="shrink-0 text-iron-400 transition-transform group-hover:translate-x-0.5" />
         </button>
@@ -51,9 +51,9 @@ export default function NoticeBoard() {
       <Modal open={open} onClose={() => setOpen(false)} title={title}>
         <p className="micro-label text-iron-400">
           {t(`platform.notices.stage.${notice.stage}`)}
-          <span className="text-iron-600"> · {posted}</span>
+          <span className="text-iron-400"> · {posted}</span>
         </p>
-        <p className="mt-3 font-serif text-[14.5px] italic leading-relaxed text-paper-300">{t(`platform.notices.items.${notice.id}.copy`)}</p>
+        <p className="mt-3 font-serif text-[15px] italic leading-relaxed text-paper-300">{t(`platform.notices.items.${notice.id}.copy`)}</p>
 
         <div className="mt-5 rounded-lg border border-[rgb(var(--paper-100)/.07)] bg-enamel-850 p-4">
           <p className="micro-label text-iron-400">{t('platform.notices.serviceLabel')}</p>

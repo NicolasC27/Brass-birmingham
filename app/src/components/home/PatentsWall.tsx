@@ -17,12 +17,12 @@ export default function PatentsWall() {
   const [held] = useState(() => new Map(listPatents().map((p) => [p.id, p])));
   return (
     <section aria-label={t('platform.patents.eyebrow')}>
-      <p className="micro-label text-paper-100">
+      <h2 className="micro-label text-paper-100">
         {t('platform.patents.eyebrow')}
         <GlossMark id="brevet" />
-      </p>
+      </h2>
       <div className="mt-1 border-t border-[var(--gz-ink-soft)] pt-3">
-        {held.size === 0 && <p className="pb-2 font-serif text-[13.5px] italic text-paper-300">{t('platform.patents.none')}</p>}
+        {held.size === 0 && <p className="pb-2 font-serif text-[13px] text-paper-300">{t('platform.patents.none')}</p>}
         <ul className="grid grid-cols-3 gap-2">
           {PATENT_IDS.map((id) => {
             const p = held.get(id);
@@ -35,11 +35,11 @@ export default function PatentsWall() {
                   p ? 'border-[var(--gz-ink-soft)] bg-enamel-850 shadow-[inset_0_0_0_3px_rgb(var(--enamel-850)),inset_0_0_0_4px_var(--gz-ink-faint)]' : 'border-dashed border-[var(--gz-ink-faint)] opacity-55',
                 )}
               >
-                <ScrollText size={14} strokeWidth={1.5} aria-hidden className={p ? 'text-brass-300' : 'text-iron-600'} />
-                <span className="font-fraunces text-[12px] font-medium leading-tight text-paper-100" style={{ fontVariationSettings: '"opsz" 48' }}>
+                <ScrollText size={14} strokeWidth={1.5} aria-hidden className={p ? 'text-brass-300' : 'text-iron-400'} />
+                <span className="font-fraunces text-[12.5px] font-medium leading-tight text-paper-100">
                   {t(`platform.patents.names.${id}`)}
                 </span>
-                {p && <span className="data-text text-[10px] text-iron-600">{new Date(p.at).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
+                {p && <span className="data-text text-[10.5px] text-iron-400">{new Date(p.at).toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'short', year: 'numeric' })}</span>}
               </li>
             );
           })}

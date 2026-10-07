@@ -46,9 +46,11 @@ function Reveal({ i, children, className }: { i: number; children: ReactNode; cl
 function Empty({ copy, cta }: { copy: string; cta?: { label: string; to: string } }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-8 text-center">
-      <p className="max-w-[280px] font-serif text-[14px] italic text-paper-300">{copy}</p>
+      <p className="max-w-[280px] font-serif text-[14px] text-paper-300">{copy}</p>
+      {/* the same errand is the same brick: the front page prints this
+          departure on a perforated ticket, and so does the column beside it */}
       {cta && (
-        <Button variant="ghost" className="!h-8 px-3 text-[12px]" to={cta.to}>
+        <Button variant="ticket" className="gz-ticket-sm" to={cta.to}>
           {cta.label}
         </Button>
       )}
@@ -121,15 +123,17 @@ function LiveTables() {
   const stranger = useStranger();
   const line = useLine();
   /* the office names the most watched tables beside any page: one line asked, three tables back */
-  const tables = useTables({ limit: 1 });
+  /* the office keeps one register at a time: every reader on this page
+     asks for the same page, or the last asking blanks the others */
+  const tables = useTables({ limit: 12 });
   const live = tables?.live ?? [];
 
   return (
     <div aria-label={t('platform.home.activity.liveTitle')}>
       <div className="flex items-center justify-between gap-3 pb-2">
-        <span className="micro-label text-paper-100">{t('platform.home.activity.liveTitle')}</span>
+        <h2 className="micro-label text-paper-100">{t('platform.home.activity.liveTitle')}</h2>
         {live.length > 0 && (
-          <span className="micro-label flex items-center gap-1.5 text-signal-400">
+          <span className="micro-label flex items-center gap-1.5 text-signal-ink">
             <span className="animate-pulse-signal h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
             {t('platform.home.activity.live')}
           </span>
@@ -144,7 +148,7 @@ function LiveTables() {
           <div className="gz-engraving w-full max-w-[320px]">
             <img src={`/empty-queue${theme === 'dark' ? '-night' : ''}.webp`} alt="" className="!aspect-[16/9]" />
           </div>
-          <p className="max-w-[260px] font-serif text-[14px] italic text-paper-300">{t('platform.home.activity.liveEmpty')}</p>
+          <p className="max-w-[260px] font-serif text-[14px] text-paper-300">{t('platform.home.activity.liveEmpty')}</p>
         </div>
       ) : (
         live.slice(0, LIVE).map((x, i) => (
@@ -165,14 +169,14 @@ export default function ClubActivity() {
       <section className="min-[900px]:col-span-7" aria-label={t('platform.home.activity.title')}>
         <Reveal i={0}>
           <h2 className="gz-head h2-section">{t('platform.home.activity.title')}</h2>
-          <p className="micro-label mt-3 text-paper-100">{t('platform.home.activity.mine')}</p>
+          <h3 className="micro-label mt-3 text-paper-100">{t('platform.home.activity.mine')}</h3>
         </Reveal>
         <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
           <MyGames />
         </div>
         <Reveal i={FEED + 1} className="mt-3">
-          <Link to="/desk#historique" className="font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
-            {t('platform.home.activity.seeHistory')}
+          <Link to="/desk#historique" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+            {t('platform.home.activity.seeHistory')} →
           </Link>
         </Reveal>
         <div className="mt-8">
@@ -183,7 +187,7 @@ export default function ClubActivity() {
         </div>
       </section>
       <motion.section
-        className="gz-col-rule min-[900px]:col-span-5 min-[900px]:pt-[52px]"
+        className="gz-col-rule-900 min-[900px]:col-span-5 min-[900px]:pt-[52px]"
         initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ amount: 0.15, once: true }}
