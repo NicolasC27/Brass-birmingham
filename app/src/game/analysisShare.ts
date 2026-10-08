@@ -7,15 +7,16 @@ import type { Held, ReadingPart } from './analysisMerge';
 /* ------------------------------------------------------------------ */
 /* The panel's end of a shared reading.                                */
 /*                                                                     */
-/* At a table of the club the reading is the office's, not this        */
-/* browser's: what it holds is asked for before a single figure is     */
-/* read again, a stretch of the game is taken so two players never     */
-/* read the same positions, and everything that lands here goes back   */
-/* up as it goes — in batches, not a frame per figure.                 */
+/* At a table of the club, and for a game on the home register, the    */
+/* reading is the office's, not this browser's: what it holds is asked */
+/* for before a single figure is read again, a stretch of the game is  */
+/* taken so two readers never read the same positions, and everything  */
+/* that lands here goes back up as it goes — in batches, not a frame   */
+/* per figure.                                                         */
 /*                                                                     */
-/* Nothing of this is needed at home: without a server, or for a game  */
-/* of this device, there is no share and the panel reads as it always  */
-/* did, on its own, off the shelf in localStorage.                     */
+/* Without a server, or for a game the office never held — a report    */
+/* opened from a link — there is no share and the panel reads on its   */
+/* own, off the shelf of the visit (analysisKeep.ts).                  */
 /* ------------------------------------------------------------------ */
 
 /** how many positions a reader takes at a time */

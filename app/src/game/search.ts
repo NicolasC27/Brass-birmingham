@@ -34,9 +34,9 @@ import { applyAction, botAction, fallbackAction } from './actions';
 import { chainSurplus } from './chains';
 import { cloneState } from './clone';
 import type { GameAction } from './actions';
-import { chooseBotMove } from './bot';
+import { chooseBotMove, reachOf } from './bot';
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, LINKS, MERCHANTS, MERCHANT_BY_ID, TOWNS, incomeLevel } from './data';
-import { beerSources, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable, sellTargets } from './engine';
+import { salesThatStand, beerSources, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, ironSources, isWild, linkTargets, merchantDemand, merchantOpen, networkTowns, projectEraScores, sellTargets } from './engine';
 import type { BuildTarget, SellTarget } from './engine';
 import type { BotPersona, Card, GameState, IndustryType } from './types';
 import { FEATURES, activeNet, features, think } from './net';
@@ -160,6 +160,27 @@ function cardWorth(card: Card, uses: Map<string, BuildTarget[]>, later: Map<stri
 /** a build this card names that only the purse forbids */
 const onlyMoney = (t: BuildTarget): boolean => !t.valid && !!t.reason?.startsWith('Needs £');
 
+/* A few moves can only be offered once the engine has played them — a
+   naming of one's own works, a double rail drinking from one's own brewery,
+   a development taken twice — and the table the engine hands back was
+   thrown away, only for the search to ask for the very same table a moment
+   later: two thirds of the cost of listing a position of the rail era. So
+   the table is kept with the move, against the position and the seat it was
+   played from, and handed over once to whoever plays that move there next.
+   A move nobody plays takes its table with it when it goes. */
+const proofs = new WeakMap<GameAction, { from: GameState; seat: number; after: GameState }>();
+
+/** the table after `action`, as the engine plays it — the one already
+ *  played when the move was listed, if it was, handed over once */
+export function playListed(s: GameState, i: number, action: GameAction): GameState | null {
+  const kept = proofs.get(action);
+  if (kept && kept.from === s && kept.seat === i) {
+    proofs.delete(action);
+    return kept.after;
+  }
+  return applyAction(s, i, action).state;
+}
+
 /** every action worth trying for the player to act: each build once, with
  *  the card best spared for it; every link, single or double; the sales,
  *  all at once and one by one; the developments; a loan, a scout, a pass */
@@ -168,6 +189,13 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
   const w = weights;
   if (s.phase !== 'action' || s.current !== i || !p.hand.length) return [];
   const out: GameAction[] = [];
+  /* a move only the engine can vouch for: played once, its table kept */
+  const holds = (action: GameAction): boolean => {
+    const after = applyAction(s, i, action).state;
+    if (!after) return false;
+    proofs.set(action, { from: s, seat: i, after });
+    return true;
+  };
   const uses = new Map<string, BuildTarget[]>();
   const later = new Map<string, number>();
   for (const card of p.hand) {
@@ -199,7 +227,7 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
     for (const w of ownWorksToFlip) {
       if (w.cubes !== wanted) continue;
       const named = { kind: 'build' as const, card: card.id, town: t.town, slot: t.slot, industry: t.industry, ironFrom: w.key };
-      if (applyAction(s, i, named).state) out.push(named);
+      if (holds(named)) out.push(named);
     }
   }
 
@@ -232,7 +260,7 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
       for (const b of beerSources(s, i, first.link, def)) {
         if (!b.own || b.cubes !== 1) continue;
         const named: GameAction = { kind: 'network', card: spare.id, link: first.link.id, second: def.id, beerFrom: b.key };
-        if (applyAction(s, i, named).state) out.push(named);
+        if (holds(named)) out.push(named);
       }
     }
   }
@@ -248,7 +276,10 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
       const cur = byTile.get(key);
       if (!cur || barrel(t) > barrel(cur)) byTile.set(key, t);
     }
-    const all = [...byTile.values()];
+    /* a sale of several tiles stands whole or not at all: the beer each
+       tile drinks is gone for the next, so only the run of tiles the beer
+       reaches together is offered as one sale */
+    const all = [...byTile.values()].slice(0, Math.max(1, salesThatStand(s, i, [...byTile.values()])));
     out.push({ kind: 'sell', card: spare.id, sales: all.map((t) => ({ town: t.town, slot: t.slot, merchant: t.merchant })) });
     if (all.length > 1 || sales.length > 1) {
       for (const t of sales) out.push({ kind: 'sell', card: spare.id, sales: [{ town: t.town, slot: t.slot, merchant: t.merchant }] });
@@ -266,11 +297,11 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
     /* the second tile wants a second iron, whose price only the engine knows */
     if (!developTwice(s, i, d.industry)) continue;
     const twice: GameAction = { kind: 'develop', card: spare.id, industries: [d.industry, d.industry] };
-    if (applyAction(s, i, twice).state) out.push(twice);
+    if (holds(twice)) out.push(twice);
     for (const w of ownWorks) {
       if (w.cubes < 2) continue;
       const own: GameAction = { kind: 'develop', card: spare.id, industries: [d.industry, d.industry], ironFrom: [w.key, w.key] };
-      if (applyAction(s, i, own).state) out.push(own);
+      if (holds(own)) out.push(own);
     }
   }
 
@@ -335,16 +366,16 @@ function roundsTotal(s: GameState): number {
 
 /** is there an open merchant buying `industry` reachable from `town`? */
 function served(s: GameState, town: string, industry: IndustryType): boolean {
-  const reach = reachable(s, town, s.era, null);
+  const reach = reachOf(s, town);
   return MERCHANTS.some((m) => merchantOpen(s, m.id) && reach.has(m.id) && merchantDemand(s, m.id).includes(industry));
 }
 
 /** does any merchant lie on the network `town` belongs to? */
-const merchantLinked = (s: GameState, town: string): boolean => [...reachable(s, town, s.era, null)].some((n) => !!MERCHANT_BY_ID[n]);
+const merchantLinked = (s: GameState, town: string): boolean => [...reachOf(s, town)].some((n) => !!MERCHANT_BY_ID[n]);
 
 /** the same, one unbuilt link away */
 function nearlyServed(s: GameState, town: string, industry: IndustryType): boolean {
-  const reach = reachable(s, town, s.era, null);
+  const reach = reachOf(s, town);
   return LINKS.some((d) => {
     if (s.links[d.id] || !(s.era === 'canal' ? d.canal : d.rail)) return false;
     const [m, other] = MERCHANT_BY_ID[d.a] ? [d.a, d.b] : MERCHANT_BY_ID[d.b] ? [d.b, d.a] : [null, null];
@@ -390,7 +421,7 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
     if (lv.beerToSell > 0) chance = served(s, town, t.industry) ? (beerAround ? w.goodsServed : w.goodsNoBeer) : nearlyServed(s, town, t.industry) ? w.goodsNearly : w.goodsFar;
     else if (t.industry === 'brewery') {
       /* barrels go with sales: one's own goods anywhere, anyone's goods on this network */
-      const reach = reachable(s, town, s.era, null);
+      const reach = reachOf(s, town);
       const near = Object.entries(s.tiles).filter(([k, x]) => x.owner !== j && goodsTile(x) && reach.has(k.split(':')[0])).length;
       chance = Math.min(0.75, w.breweryBase + w.breweryOwnGoods * Math.min(2, ownGoods) + w.breweryNear * Math.min(3, near)) * (ownBreweries > 1 ? w.brewerySecond : 1);
     }
@@ -420,7 +451,7 @@ function worth(s: GameState, j: number, proj: ReturnType<typeof projectEraScores
   /* room to move: the towns one may build in, and a market for goods */
   const towns = networkTowns(s, j);
   v += towns.size * w.towns * frac;
-  const market = [...towns].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
+  const market = [...towns].some((n) => [...reachOf(s, n)].some((x) => merchantOpen(s, x)));
   if (!market) v -= w.noMarket * frac;
   /* what a line of play would still pay, less the actions it still costs.
      A summand, never a command: every legal move is still generated, applied
@@ -565,11 +596,11 @@ function greedyTurn(s: GameState, i: number): { state: GameState; nodes: number 
   for (let k = 0; k < 2 && cur.phase === 'action' && cur.current === i; k++) {
     let best: Candidate | null = null;
     for (const action of legalActions(cur, i)) {
-      const r = applyAction(cur, i, action);
-      if (!r.state) continue;
+      const after = playListed(cur, i, action);
+      if (!after) continue;
       nodes += 1;
-      const score = evaluate(r.state, i);
-      if (!best || score > best.score) best = { action, state: r.state, score };
+      const score = evaluate(after, i);
+      if (!best || score > best.score) best = { action, state: after, score };
     }
     if (!best) break;
     cur = best.state;
@@ -610,10 +641,10 @@ function plannedTurn(s: GameState, i: number, beam: number): { state: GameState;
   let nodes = 0;
   const firsts: Candidate[] = [];
   for (const action of legalActions(s, i)) {
-    const r = applyAction(s, i, action);
-    if (!r.state) continue;
+    const after = playListed(s, i, action);
+    if (!after) continue;
     nodes += 1;
-    firsts.push({ action, state: r.state, score: evaluate(r.state, i) });
+    firsts.push({ action, state: after, score: evaluate(after, i) });
   }
   if (!firsts.length) return { state: s, nodes };
   firsts.sort((a, b) => b.score - a.score);
@@ -626,11 +657,11 @@ function plannedTurn(s: GameState, i: number, beam: number): { state: GameState;
     }
     let pair = first;
     for (const action of legalActions(s1, i)) {
-      const r = applyAction(s1, i, action);
-      if (!r.state) continue;
+      const after = playListed(s1, i, action);
+      if (!after) continue;
       nodes += 1;
-      const score = evaluate(r.state, i);
-      if (score > pair.score) pair = { action: first.action, state: r.state, score };
+      const score = evaluate(after, i);
+      if (score > pair.score) pair = { action: first.action, state: after, score };
     }
     if (pair.score > best.score) best = pair;
   }
@@ -661,12 +692,12 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
   const firsts: Candidate[] = [];
   const ranked: { action: GameAction; score: number }[] | undefined = o.rank ? [] : undefined;
   for (const action of worthTrying(s, i, o.guided, o)) {
-    const r = applyAction(s, i, action);
-    if (!r.state) continue;
+    const after = playListed(s, i, action);
+    if (!after) continue;
     nodes += 1;
-    const clean = evaluate(r.state, i);
+    const clean = evaluate(after, i);
     ranked?.push({ action, score: clean });
-    firsts.push({ action, state: r.state, score: clean + dial.noise * blur() });
+    firsts.push({ action, state: after, score: clean + dial.noise * blur() });
   }
   if (!firsts.length) return null;
   firsts.sort((a, b) => b.score - a.score);
@@ -693,11 +724,11 @@ export function searchTurn(full: GameState, i: number, o: SearchOptions = {}): S
     const s1 = first.state;
     if (s1.phase === 'action' && s1.current === i) {
       for (const action of worthTrying(s1, i, o.guidedPairs !== undefined && !o.guidedPairs ? 0 : o.guided, o)) {
-        const r = applyAction(s1, i, action);
-        if (!r.state) continue;
+        const after = playListed(s1, i, action);
+        if (!after) continue;
         nodes += 1;
-        const score = evaluate(r.state, i) + dial.noise * blur();
-        if (score > turn.score) turn = { first: first.action, after: r.state, score };
+        const score = evaluate(after, i) + dial.noise * blur();
+        if (score > turn.score) turn = { first: first.action, after, score };
       }
     }
     turns.push(turn);
@@ -767,7 +798,9 @@ export function adaptiveStrength(s: GameState, i: number, base: number): number 
 
 /** the action a machine plays at seat `i`, at the strength the table calls
  *  for; the heuristic stands in when the search finds nothing or fails
- *  (null = nothing playable at all) */
+ *  (null = nothing playable at all). For a seat that really plays, and for
+ *  nothing else: the strength it plays at bends to who sits at the table,
+ *  so the guide and the judge ask searchTurn at the strength they name */
 export function chooseBotAction(s: GameState, i: number, o: SearchOptions = {}): GameAction | null {
   /* the expert plays flat out, whoever sits across the table */
   const strength = isExpert(s, i) ? 1 : adaptiveStrength(s, i, o.strength ?? 1);

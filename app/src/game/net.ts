@@ -13,7 +13,8 @@
 /* ------------------------------------------------------------------ */
 
 import { INDUSTRIES, LINKS, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, marketSellPrice } from './data';
-import { merchantDemand, merchantOpen, networkTowns, projectEraScores, reachable } from './engine';
+import { reachOf } from './bot';
+import { merchantDemand, merchantOpen, networkTowns, projectEraScores } from './engine';
 import { NET_B64 } from './net-weights';
 import type { GameState, IndustryType } from './types';
 
@@ -35,7 +36,7 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
   const towns = networkTowns(s, j);
   let market = 0;
   for (const n of towns) {
-    if ([...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x))) {
+    if ([...reachOf(s, n)].some((x) => merchantOpen(s, x))) {
       market = 1;
       break;
     }
@@ -67,7 +68,7 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
       else if (t.industry === 'brewery') beer += t.cubes;
       else {
         const town = key.split(':')[0];
-        const reach = reachable(s, town, s.era, null);
+        const reach = reachOf(s, town);
         if (MERCHANTS.some((m) => merchantOpen(s, m.id) && reach.has(m.id) && merchantDemand(s, m.id).includes(t.industry))) served += 1;
         else if (MERCHANTS.some((m) => merchantOpen(s, m.id) && merchantDemand(s, m.id).includes(t.industry) && [...reach].some((n) => !MERCHANT_BY_ID[n]))) nearly += 1;
       }
@@ -144,7 +145,7 @@ function seatBlock(s: GameState, j: number, proj: ReturnType<typeof projectEraSc
   out[at + 48] = beerRoom / 4;
   /* buyers on one's network: merchants taking cotton, goods and pottery */
   const seen = new Set<string>();
-  for (const town of towns) for (const n of reachable(s, town, s.era, null)) if (MERCHANT_BY_ID[n] && merchantOpen(s, n)) seen.add(n);
+  for (const town of towns) for (const n of reachOf(s, town)) if (MERCHANT_BY_ID[n] && merchantOpen(s, n)) seen.add(n);
   let cottonBuyers = 0;
   let goodsBuyers = 0;
   let potteryBuyers = 0;

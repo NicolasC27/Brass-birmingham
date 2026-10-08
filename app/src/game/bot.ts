@@ -7,7 +7,7 @@
 /* ------------------------------------------------------------------ */
 
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, INDUSTRY_LABEL, LINKS, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, marketSellPrice } from './data';
-import {
+import { salesThatStand,
   buildTargets,
   canLoan,
   canScout,
@@ -17,12 +17,77 @@ import {
   merchantDemand,
   merchantOpen,
   networkTowns,
-  reachable,
   sellTargets,
   townConnectedToPlayer,
 } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget } from './engine';
-import type { Card, GameState, IndustryType } from './types';
+import type { Card, Era, GameState, IndustryType, LinkDef } from './types';
+
+/* ---------------------------- the lines ---------------------------- */
+
+/* Where a town's goods can travel is the stretch of built line it stands
+   on, and that stretch is the same from every town along it, for every seat
+   and every industry. The readings of the board asked the engine for it once
+   a tile, a town and a buyer — some thirty walks of the network for one
+   evaluation of a four-seat table, a third of the cost of reading it. So a
+   position's stretches are walked once, the first time one is asked for,
+   and kept with the links they were read off: a table played on is a new
+   copy of its links, and a copy nobody has asked about costs nothing. */
+interface Stretches {
+  era: Era;
+  /** the links counted when the stretches were walked: a table laid by hand,
+      a link added in place, is walked again rather than read stale */
+  count: number;
+  /** the board the stretches were walked on */
+  board: LinkDef[];
+  adj: Map<string, string[]>;
+  of: Map<string, ReadonlySet<string>>;
+}
+const stretches = new WeakMap<GameState['links'], Stretches>();
+
+/** every place joined to `town` by built line, any owner's — the engine's
+ *  `reachable(s, town, s.era, null)`, walked once a position. The set is
+ *  shared: read it, never change it */
+export function reachOf(s: GameState, town: string): ReadonlySet<string> {
+  const count = Object.keys(s.links).length;
+  let st = stretches.get(s.links);
+  if (!st || st.era !== s.era || st.count !== count || st.board !== LINKS) {
+    const adj = new Map<string, string[]>();
+    const add = (a: string, b: string): void => {
+      const list = adj.get(a);
+      if (list) list.push(b);
+      else adj.set(a, [b]);
+    };
+    for (const def of LINKS) {
+      if (!s.links[def.id] || !(s.era === 'canal' ? def.canal : def.rail)) continue;
+      add(def.a, def.b);
+      add(def.b, def.a);
+      /* the farm brewery: the one link that joins three places */
+      if (def.alsoConnects) {
+        add(def.a, def.alsoConnects);
+        add(def.alsoConnects, def.a);
+        add(def.b, def.alsoConnects);
+        add(def.alsoConnects, def.b);
+      }
+    }
+    st = { era: s.era, count, board: LINKS, adj, of: new Map() };
+    stretches.set(s.links, st);
+  }
+  const known = st.of.get(town);
+  if (known) return known;
+  const seen = new Set<string>([town]);
+  const queue = [town];
+  for (let k = 0; k < queue.length; k++) {
+    for (const m of st.adj.get(queue[k]) ?? []) {
+      if (seen.has(m)) continue;
+      seen.add(m);
+      queue.push(m);
+    }
+  }
+  /* one walk serves every place on the stretch */
+  for (const n of seen) st.of.set(n, seen);
+  return seen;
+}
 
 export interface BotMove {
   kind: 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
@@ -72,17 +137,17 @@ function marketCash(s: GameState, industry: IndustryType, cubes: number): { cash
   return { cash, sold };
 }
 
-const merchantLinked = (s: GameState, town: string): boolean => [...reachable(s, town, s.era, null)].some((n) => !!MERCHANT_BY_ID[n]);
+const merchantLinked = (s: GameState, town: string): boolean => [...reachOf(s, town)].some((n) => !!MERCHANT_BY_ID[n]);
 
 /** is there an open merchant buying `industry` reachable from `town`? */
 function served(s: GameState, town: string, industry: IndustryType): boolean {
-  const reach = reachable(s, town, s.era, null);
+  const reach = reachOf(s, town);
   return MERCHANTS.some((m) => merchantOpen(s, m.id) && reach.has(m.id) && merchantDemand(s, m.id).includes(industry));
 }
 
 /** an open merchant buying `industry` one unbuilt link away from what `town` reaches */
 function nearlyServed(s: GameState, town: string, industry: IndustryType): boolean {
-  const reach = reachable(s, town, s.era, null);
+  const reach = reachOf(s, town);
   return LINKS.some((d) => {
     if (s.links[d.id] || !(s.era === 'canal' ? d.canal : d.rail)) return false;
     const [m, other] = MERCHANT_BY_ID[d.a] ? [d.a, d.b] : MERCHANT_BY_ID[d.b] ? [d.b, d.a] : [null, null];
@@ -102,7 +167,7 @@ function flipsPending(s: GameState, i: number): number {
 /** can any open merchant be reached from the player's network? */
 function merchantAccess(s: GameState, i: number): boolean {
   const nt = networkTowns(s, i);
-  return [...nt].some((n) => [...reachable(s, n, s.era, null)].some((x) => merchantOpen(s, x)));
+  return [...nt].some((n) => [...reachOf(s, n)].some((x) => merchantOpen(s, x)));
 }
 
 /** link icons a Link tile at `node` would score right now */
@@ -192,8 +257,8 @@ function scoreLink(s: GameState, i: number, t: LinkTarget, rand: () => number, s
     if (merch && merchantOpen(s, merch.id)) {
       // does this open a market for goods we hold?
       const demand = merchantDemand(s, merch.id);
-      const opens = unsold.some(([key, x]) => demand.includes(x.industry) && !reachable(s, key.split(':')[0], s.era, null).has(merch.id));
-      const first = !MERCHANTS.some((m) => merchantOpen(s, m.id) && [...nt].some((n) => reachable(s, n, s.era, null).has(m.id)));
+      const opens = unsold.some(([key, x]) => demand.includes(x.industry) && !reachOf(s, key.split(':')[0]).has(merch.id));
+      const first = !MERCHANTS.some((m) => merchantOpen(s, m.id) && [...nt].some((n) => reachOf(s, n).has(m.id)));
       v += opens ? 9 * sk.sellUrgency : first ? 6 : 2;
     }
     const town = TOWN_BY_ID[node];
@@ -226,7 +291,8 @@ export function chooseBotMove(s: GameState, i: number, sk: BotSkill = BOT_SKILL.
       const cur = byTile.get(key);
       if (!cur || bonus(t) > bonus(cur)) byTile.set(key, t);
     }
-    const picks = [...byTile.values()];
+    /* the tiles are sold together only as far as the beer reaches them all */
+    const picks = [...byTile.values()].slice(0, Math.max(1, salesThatStand(s, i, [...byTile.values()])));
     return { kind: 'sell', card: spareCard(s, i, p.hand)!, sell: picks, note: `${p.name} ships goods to ${MERCHANT_BY_ID[picks[0].merchant].name}` };
   }
 

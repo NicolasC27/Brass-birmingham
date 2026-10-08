@@ -1,7 +1,7 @@
 import { applyAction, fallbackAction, setupOf } from './actions';
 import { eraRounds, newGame } from './engine';
 import type { GameAction } from './actions';
-import { chooseBotAction, evaluate, searchTurn, worthTrying } from './search';
+import { evaluate, playListed, searchTurn, worthTrying } from './search';
 import type { Era, GameState } from './types';
 import type { Grade } from './review';
 
@@ -37,6 +37,19 @@ export function edgeOf(s: GameState, me: number): number {
     if (i !== me) best = Math.max(best, evaluate(s, i));
   });
   return best === -Infinity ? 0 : mine - best;
+}
+
+/** every seat's edge at once: the table read once a seat, where asking
+    edgeOf of each seat in turn reads it once a seat for every seat */
+export function edgesOf(s: GameState): number[] {
+  const read = s.players.map((_, i) => evaluate(s, i));
+  return read.map((mine, me) => {
+    let best = -Infinity;
+    read.forEach((v, i) => {
+      if (i !== me) best = Math.max(best, v);
+    });
+    return best === -Infinity ? 0 : mine - best;
+  });
 }
 
 /** the rounds still to be played after this one, both eras counted */
@@ -86,6 +99,13 @@ export function winChance(s: GameState, me: number): number {
   return chanceOf(edgeOf(s, me), roundsLeft(s), s.players.length, SHORT_SCALE);
 }
 
+/** every seat's chance here at once, the table read once a seat */
+export function winChances(s: GameState): number[] {
+  if (s.phase === 'game-over') return s.players.map((_, i) => winChance(s, i));
+  const left = roundsLeft(s);
+  return edgesOf(s).map((edge) => chanceOf(edge, left, s.players.length, SHORT_SCALE));
+}
+
 
 export interface Road {
   action: GameAction;
@@ -104,7 +124,7 @@ export function roadsFrom(s: GameState, me: number, keep = 8, played?: GameActio
   for (const action of worthTrying(s, me)) {
     const key = sameRoad(action);
     if (seen.has(key)) continue;
-    const after = applyAction(s, me, action).state;
+    const after = playListed(s, me, action);
     if (after) seen.set(key, { action, after, chance: winChance(after, me) });
   }
   const roads = [...seen.values()].sort((a, b) => b.chance - a.chance);
@@ -164,7 +184,7 @@ export function followToTurn(s: GameState, me: number, budgetMs = 40, most = 16)
     /* a new turn of the reader's: not the one the branch left them in */
     if (played.length > 0 && cur.phase === 'action' && cur.current === me && (cur.round !== s.round || cur.turnPos !== s.turnPos || cur.era !== s.era)) break;
     const seat = cur.current;
-    const action = chooseBotAction(cur, seat, { strength: 0.8, budgetMs }) ?? fallbackAction(cur, seat);
+    const action = readerMove(cur, seat, 0.8, budgetMs);
     const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
     if (!next) break;
     played.push({ seat, action, after: next });
@@ -266,14 +286,16 @@ export function deepEdge(s: GameState, me: number, judge: Judge, pass: Pass = BE
     machine plays them all — so one reading serves the whole table, and the
     panel changes seats without the judge thinking again. */
 export function deepChances(s: GameState, judge: Judge = LONG_JUDGE, pass: Pass = BEST): number[] {
-  const all = (at: GameState) => at.players.map((_, i) => winChance(at, i));
-  if (s.phase === 'game-over') return all(s);
+  if (s.phase === 'game-over') return winChances(s);
   const path = lookAhead(s, judge, pass);
-  if (!path.length) return all(s);
+  if (!path.length) return winChances(s);
   const last = path[path.length - 1];
-  if (last.phase === 'game-over') return all(last);
+  if (last.phase === 'game-over') return winChances(last);
   const left = roundsLeft(s);
-  return s.players.map((_, i) => chanceOf(path.reduce((sum, p) => sum + edgeOf(p, i), 0) / path.length, left, s.players.length, judge.scale));
+  /* each table of the continuation read once for the whole table */
+  const sums = s.players.map(() => 0);
+  for (const p of path) edgesOf(p).forEach((e, i) => (sums[i] += e));
+  return sums.map((sum) => chanceOf(sum / path.length, left, s.players.length, judge.scale));
 }
 
 /** the chance of winning from here, read after the replies, on the judge's own scale */
@@ -474,7 +496,7 @@ export function playOut(s: GameState, budgetMs = 15, most = 400): GameState {
       continue;
     }
     const seat = cur.current;
-    const action = chooseBotAction(cur, seat, { strength: 1, budgetMs }) ?? fallbackAction(cur, seat);
+    const action = readerMove(cur, seat, 1, budgetMs);
     const next = applyAction(cur, seat, action).state ?? applyAction(cur, seat, fallbackAction(cur, seat)).state;
     if (!next) break;
     cur = next;
@@ -519,6 +541,6 @@ export const ANALYSIS_VERSION = 6;
 
 /** when a game may be read again: once it is played out, and not before. A
     reading of a game still being played is a decision aid, whatever it is
-    called — the judge may think ahead of time (analysisAhead.ts warms the
-    shelf at the turn of the eras), but nothing of it is shown until the end. */
+    called — the judge may think ahead of time (the board sets the reading
+    going at the turn of the eras), but nothing of it is shown until the end. */
 export const readable = (g: GameState | null | undefined): boolean => !!g && g.phase === 'game-over';

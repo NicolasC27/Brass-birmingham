@@ -8,6 +8,7 @@ import type { Held, ReadingPart } from './analysisMerge';
 import { SLICE, shareOf } from './analysisShare';
 import type { Share } from './analysisShare';
 import type { Ask, Note } from './analysisWorker';
+import { homeGame } from './home';
 import { recordProgress } from './progress';
 import type { GameState } from './types';
 
@@ -21,13 +22,16 @@ import type { GameState } from './types';
 /* shows what has landed and waits for the rest.                       */
 /*                                                                     */
 /* What is read goes on the shelf as it goes, not only at the end, so  */
-/* a page reloaded halfway through picks the reading up where it was.  */
+/* a panel closed and opened again halfway through picks the reading   */
+/* up where it was. The shelf is the memory of a visit and no more.    */
 /*                                                                     */
-/* At a table of the club the shelf is not the only copy: the office   */
-/* keeps one for the whole table. It is asked for before anything is   */
+/* What outlives the visit is the office's copy, kept for every game   */
+/* it holds: a table of the club, and a game played at home, which is  */
+/* the office's as much as any. It is asked for before anything is     */
 /* read again, the game is shared out a stretch at a time so two       */
-/* players never read the same positions, and what lands here goes     */
-/* back up as it goes — so the last to open the panel pays nothing.    */
+/* readers never read the same positions, and what lands here goes     */
+/* back up as it goes — so a page reloaded, or the last to open the    */
+/* panel, pays for nothing already read.                               */
 /* ------------------------------------------------------------------ */
 
 /** a reading as it stands, for the panel to draw */
@@ -223,8 +227,8 @@ function run(asks: Ask[], seat: number): Promise<void> {
       tell();
       return;
     }
-    /* the shelf is written as the reading goes: a page reloaded halfway
-       through finds the figures already read */
+    /* the shelf is written as the reading goes: a panel opened again
+       halfway through finds the figures already read */
     if (snap.done - written >= 40) {
       written = snap.done;
       keep();
@@ -398,9 +402,12 @@ async function shareRead(game: GameState, table: string, seat: number, ask: Ask,
 
 /** read this game for this seat, and keep the figures as they land. Starts
  *  nothing when the same reading is already under way, or when the shelf
- *  already holds it whole. `online` says the game is a table's: its reading
- *  is the office's, shared with everyone else at it. */
-export function readGame(game: GameState, table: string, seat: number, judge: JudgeId = 'long', online = false): Snapshot {
+ *  already holds it whole. `atTable` says the game is a table's: its reading
+ *  is the office's, shared with everyone else at it. A game on the home
+ *  register is the office's too, and its reading is kept there the same
+ *  way, for the one player who sat at it. */
+export function readGame(game: GameState, table: string, seat: number, judge: JudgeId = 'long', atTable = false): Snapshot {
+  const online = atTable || !!homeGame(table);
   if (seat < 0 || !game.actions.length) return snap;
   const key = analysisKey(table, game.seed, judge);
   const moves = game.actions.length;
@@ -493,3 +500,14 @@ export function keepRoads(key: string, seat: number, line: string, roads: Weighe
 }
 
 export type { Kept, Reading, Verdict, Weighed };
+
+/* a tab closed or a page left: what was read and not yet posted goes up to
+   the office before the line drops, and the workers go with the page. A
+   page kept whole in the browser's back-forward memory keeps its reading */
+if (typeof window !== 'undefined') {
+  window.addEventListener('pagehide', (e) => {
+    if (!snap.running) return;
+    flush();
+    if (!e.persisted) stopReading();
+  });
+}
