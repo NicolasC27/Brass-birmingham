@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Application, Assets, ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
-import { activeBoard, INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
+import { activeBoard, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
 import { merchantBarrelSlots, merchantBeerLeft, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { Era, GameState } from '@/game/types';
 import { lastActionOf, useGame, verbsForCard } from '@/game/store';
-import { onLangChange, reasonText, tr, useT } from '@/i18n';
+import { money, onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, placeAnchor, ribbonLabelScale, screenToWorld, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
+import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, placeAnchor, ribbonLabelScale, screenToWorld, subscribeFitReserve, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
 import type { AnchorRegistry, MapAnchor, View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -27,7 +27,8 @@ import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
 import { flooredScale } from './floor';
-import { isKey } from '@/components/game/keybindings';
+import { isKey, typing } from '@/components/game/keybindings';
+import { HOVERED, stateInk } from '@/components/game/stateInks';
 import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
@@ -42,9 +43,6 @@ const TABLE_AREA = new Rectangle(-BLEED_X, -BLEED_Y, WORLD_W + 2 * BLEED_X, WORL
  *  that pace is (GLIMPSE_MS, the store's own clock for the glimpse) */
 const GLIMPSE_VEIL_MS = Math.min(1400, GLIMPSE_MS);
 const GLIMPSE_FADE_MS = 500;
-/* the green of a place open to you: a slot or a link you may build on now */
-const BUILDABLE = 0x7fe08f;
-const BUILDABLE_PICK = 0xc4ffcc;
 
 /* a refusal, as a small ledger note: a rust seal, the word in small caps,
    the sentence in the book's hand; a notch points at the place refused */
@@ -150,6 +148,81 @@ function dashPath(g: Graphics, pts: number[][], dash: number, gap: number, offse
       }
     }
   }
+}
+
+/* ------------- the planning marks: one grammar of state ------------- */
+/* stateInks.ts: a candidate wears the state ink faint, the one picked the
+   same ink pale and full, the one under the pointer a thin cream edge —
+   the same for a place to build, a link to lay and a works to sell from */
+
+/** a dark £-plaque centred at (cx, cy) */
+function priceTag(cx: number, cy: number, w: number, h: number, label: string): [Graphics, Text] {
+  const g = new Graphics().roundRect(-w / 2, -h / 2, w, h, 3).fill(0x2c251d).stroke({ width: 1, color: 0xc9a45c });
+  g.position.set(cx, cy);
+  g.eventMode = 'none';
+  const txt = new Text({ text: label, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, fill: 0xc9a45c } });
+  txt.anchor.set(0.5);
+  txt.position.set(cx, cy);
+  txt.eventMode = 'none';
+  return [g, txt];
+}
+
+/** a slot in the state grammar: a soft halo outside, a firm ring on the
+ *  tile's edge, and (for an empty place) a tint inside */
+function slotMark(x: number, y: number, picked: boolean, tint: boolean): Graphics {
+  const ink = stateInk(picked);
+  const g = new Graphics()
+    .roundRect(x - TILE_R - 5, y - TILE_R - 5, TILE_R * 2 + 10, TILE_R * 2 + 10, 13)
+    .stroke({ width: 8, color: ink.color, alpha: ink.halo })
+    .roundRect(x - TILE_R, y - TILE_R, TILE_R * 2, TILE_R * 2, 9);
+  if (tint) g.fill({ color: ink.color, alpha: ink.fill });
+  g.stroke({ width: ink.width, color: ink.color });
+  g.eventMode = 'none';
+  return g;
+}
+
+/** the cream edge of the slot under the pointer, just outside its ring */
+function slotHoverEdge(x: number, y: number, picked: boolean): Graphics {
+  const r = TILE_R + stateInk(picked).width / 2 + HOVERED.width / 2;
+  const g = new Graphics().roundRect(x - r, y - r, r * 2, r * 2, 10).stroke({ width: HOVERED.width, color: HOVERED.color, alpha: HOVERED.alpha });
+  g.eventMode = 'none';
+  return g;
+}
+
+/** a link's core width in the state grammar (a route reads a notch wider than a ring) */
+const linkCore = (picked: boolean): number => stateInk(picked).width + 1;
+
+/** a link in the state grammar: a wide soft halo, the ink along the route */
+function linkMark(pts: number[][], picked: boolean): Graphics {
+  const ink = stateInk(picked);
+  const g = new Graphics();
+  trace(g, pts);
+  g.stroke({ width: linkCore(picked) * 2 + 2, color: ink.color, alpha: ink.halo, cap: 'round', join: 'round' });
+  trace(g, pts);
+  g.stroke({ width: linkCore(picked), color: ink.color, cap: 'round', join: 'round' });
+  g.eventMode = 'none';
+  return g;
+}
+
+/** the link under the pointer: its ink again, edged in cream on both sides */
+function linkHoverEdge(pts: number[][], picked: boolean): Graphics {
+  const ink = stateInk(picked);
+  const g = new Graphics();
+  trace(g, pts);
+  g.stroke({ width: linkCore(picked) + HOVERED.width * 2, color: HOVERED.color, alpha: HOVERED.alpha, cap: 'round', join: 'round' });
+  trace(g, pts);
+  g.stroke({ width: linkCore(picked), color: ink.color, cap: 'round', join: 'round' });
+  g.eventMode = 'none';
+  return g;
+}
+
+/** the flowing dashes of a link picked or under the pointer */
+function linkDashes(pts: number[][]): Graphics {
+  const d = new Graphics();
+  dashPath(d, pts, 7, 6);
+  d.stroke({ width: 2.4, color: 0xddbe7e, cap: 'round', join: 'round' });
+  d.eventMode = 'none';
+  return d;
 }
 
 /** a supply line from the exchange to the works being planned: the
@@ -273,6 +346,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const overlayRef = useRef<Container | null>(null);
   const fxLayerRef = useRef<Container | null>(null);
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
+  /* the hover layer's own pulses: a hover redraws them without touching the overlay's */
+  const hoverPulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
   const marchRef = useRef<March[]>([]);
   const propsRef = useRef({ targets, linkTargetsList, sellTargetsList, onInvalid });
   propsRef.current = { targets, linkTargetsList, sellTargetsList, onInvalid };
@@ -569,6 +644,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }));
       cameraRef.current = cam;
       cam.onCommit = (v) => setView(v);
+      setView({ ...cam.view });
 
       /* dev-only test hook: lets Playwright probes resolve screen coords of
          board elements and assert store state (never shipped in prod) */
@@ -648,10 +724,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const pressed = new Set<string>();
       let wasMoving = true;
       const arrows = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']);
-      const typing = (ev: KeyboardEvent) => {
-        const tag = (ev.target as HTMLElement | null)?.tagName;
-        return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (ev.target as HTMLElement | null)?.isContentEditable === true;
-      };
       const onKeyDown = (ev: KeyboardEvent) => {
         if (!arrows.has(ev.key) || typing(ev) || ev.metaKey || ev.ctrlKey || ev.altKey) return;
         /* a game being read: the arrows step the moves, and the map stays put */
@@ -731,6 +803,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         /* pulses (planning highlights, hover rings) */
         const osc = 0.55 + 0.35 * Math.sin(clock * 4.5);
         for (const p of pulsesRef.current) p.g.alpha = p.base * osc;
+        for (const p of hoverPulsesRef.current) p.g.alpha = p.base * osc;
         /* supply lines from the exchange march toward the works being
            planned — from the tray's own place on screen (the drawer's coal
            or iron row, or the folded pill), turned into world coordinates */
@@ -1279,10 +1352,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       el.addEventListener('dblclick', onDbl);
       cleanups.push(() => el.removeEventListener('dblclick', onDbl));
 
-      /* keyboard: + / − / 0 (the arrows pan the map, see the ticker) */
+      /* keyboard: + / − / 0 (the arrows pan the map, see the ticker). The
+         listener is always there and asks the prop at each key, so a table
+         that leaves a reading gets its keys back */
       const onKey = (e: KeyboardEvent) => {
-        const t = e.target as HTMLElement | null;
-        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (!keyboardRef.current || typing(e) || e.ctrlKey || e.metaKey || e.altKey) return;
         if (e.key === '+' || e.key === '=') cam.zoomStep(1.35);
         else if (e.key === '-' || e.key === '_') cam.zoomStep(1 / 1.35);
         else if (isKey(e, 'fit')) cam.fit();
@@ -1291,22 +1365,25 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         else return;
         e.preventDefault();
       };
-      if (keyboardRef.current) {
-        window.addEventListener('keydown', onKey);
-        cleanups.push(() => window.removeEventListener('keydown', onKey));
-      }
+      window.addEventListener('keydown', onKey);
+      cleanups.push(() => window.removeEventListener('keydown', onKey));
 
       /* container size for React overlays — and the canvas itself: Pixi's
          resizeTo only listens to the window, not to the lane the guide
          takes or gives back at the right edge */
       const ro = new ResizeObserver(() => {
         a.resize();
+        /* a wider frame narrows the room to pan: the camera is held back
+           at once, or the table's black would show past the bleed */
+        cam.reclamp(true);
         setSize({ w: el.clientWidth, h: el.clientHeight });
       });
       ro.observe(el);
       setSize({ w: el.clientWidth, h: el.clientHeight });
       setSceneSeq((n) => n + 1);
       cleanups.push(() => ro.disconnect());
+      /* the hand comes or goes: the frame follows the room it leaves */
+      cleanups.push(subscribeFitReserve(() => cam.reclamp()));
     };
 
     void boot();
@@ -1337,17 +1414,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       overlay.addChild(g);
       pulsesRef.current.push({ g, base });
     };
-    /* dark £-plaque centred at (cx, cy) — same chrome as the SVG tags */
-    const priceTag = (cx: number, cy: number, w: number, h: number, label: string) => {
-      const g = new Graphics().roundRect(-w / 2, -h / 2, w, h, 3).fill(0x2c251d).stroke({ width: 1, color: 0xc9a45c });
-      g.position.set(cx, cy);
-      g.eventMode = 'none';
-      const txt = new Text({ text: label, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, fill: 0xc9a45c } });
-      txt.anchor.set(0.5);
-      txt.position.set(cx, cy);
-      txt.eventMode = 'none';
-      overlay.addChild(g, txt);
-    };
+    const tag = (cx: number, cy: number, w: number, h: number, label: string) => overlay.addChild(...priceTag(cx, cy, w, h, label));
 
     if (verb === 'build' && selectedCardId) {
       const seen = new Set<string>();
@@ -1355,37 +1422,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const key = tileKey(t.town, t.slot);
         if (!t.valid || seen.has(key)) continue;
         seen.add(key);
-        const town = TOWN_BY_ID[t.town];
-        const c = townChrome(town);
-        const pos = c.slots[t.slot];
-        const picked = buildPick && tileKey(buildPick.town, buildPick.slot) === key;
-        /* a place you may build on is lit green; the one picked, brighter */
-        const g = new Graphics()
-          /* a soft green halo outside, a tint inside, a firm ring between */
-          .roundRect(pos.x - TILE_R - 5, pos.y - TILE_R - 5, TILE_R * 2 + 10, TILE_R * 2 + 10, 13)
-          .stroke({ width: 8, color: BUILDABLE, alpha: picked ? 0.35 : 0.22 })
-          .roundRect(pos.x - TILE_R, pos.y - TILE_R, TILE_R * 2, TILE_R * 2, 9)
-          .fill({ color: BUILDABLE, alpha: picked ? 0.16 : 0.1 })
-          .stroke({ width: picked ? 5 : 4, color: picked ? BUILDABLE_PICK : BUILDABLE });
-        g.eventMode = 'none';
-        if (picked) {
-          overlay.addChild(g);
-        } else pulse(g, 0.8);
-      }
-      /* price tag above the hovered valid slot (Board: TownNode £-plaque);
-         the beginner aid itemises it: tile + market coal + market iron */
-      if (hoverKey) {
-        const t = targets.filter((x) => tileKey(x.town, x.slot) === hoverKey).find((x) => x.valid);
-        if (t) {
-          const pos = townChrome(TOWN_BY_ID[t.town]).slots[t.slot];
-          const coal = t.coalPlan.totalCost;
-          const iron = t.ironPlan.totalCost;
-          const label =
-            aidOn(game.assist, useGame.getState().code !== null) && coal + iron > 0
-              ? `£${t.total} = ${t.cost}${coal ? ` + ${coal} ${tr('board.aid.coal')}` : ''}${iron ? ` + ${iron} ${tr('board.aid.iron')}` : ''}`
-              : `£${t.total}`;
-          priceTag(pos.x, pos.y - TILE_R - 13.5, Math.max(52, label.length * 6.2 + 12), 15, label);
-        }
+        const pos = townChrome(TOWN_BY_ID[t.town]).slots[t.slot];
+        const picked = !!buildPick && tileKey(buildPick.town, buildPick.slot) === key;
+        /* a place you may build on wears the state ink; the one picked, pale and full */
+        const g = slotMark(pos.x, pos.y, picked, true);
+        if (picked) overlay.addChild(g);
+        else pulse(g, 0.8);
       }
     }
 
@@ -1394,24 +1436,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         if (!t.valid) continue;
         const def = t.link;
         const pts = routeFor(def, game.era).pts;
-        const g = new Graphics();
-        trace(g, pts);
         const picked = linkPick?.link.id === def.id || secondLinkPick?.link.id === def.id;
-        g.stroke({ width: picked ? 14 : 12, color: BUILDABLE, alpha: picked ? 0.3 : 0.2, cap: 'round', join: 'round' });
-        trace(g, pts);
-        g.stroke({ width: picked ? 6 : 5, color: picked ? BUILDABLE_PICK : BUILDABLE, cap: 'round', join: 'round' });
-        g.eventMode = 'none';
+        const g = linkMark(pts, picked);
         if (picked) overlay.addChild(g);
         else pulse(g, 0.55);
-        /* hovered / picked valid link: flowing dashes + £-plaque at mid-route */
-        if (hoverKey === def.id || picked) {
-          const d = new Graphics();
-          dashPath(d, pts, 7, 6);
-          d.stroke({ width: 2.4, color: 0xddbe7e, cap: 'round', join: 'round' });
-          d.eventMode = 'none';
-          pulse(d, 0.95); // alpha-pulsed stand-in for the SVG dash-flow
+        /* the picked link: flowing dashes and its £-plaque at mid-route (a
+           hovered one gets the same on the hover layer) */
+        if (picked) {
+          const d = linkDashes(pts);
+          pulse(d, 0.95);
           const [mx, my] = linkMidWorld(def, game.era);
-          priceTag(mx, my - 17.5, 48, 17, `£${t.total}`);
+          tag(mx, my - 17.5, 48, 17, money(t.total));
         }
       }
     }
@@ -1419,11 +1454,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (verb === 'sell' && selectedCardId) {
       for (const t of sellTargetsList) {
         if (!t.valid) continue;
-        const c = townChrome(TOWN_BY_ID[t.town]);
-        const pos = c.slots[t.slot];
+        const pos = townChrome(TOWN_BY_ID[t.town]).slots[t.slot];
         const picked = sellPicks.some((x) => tileKey(x.town, x.slot) === tileKey(t.town, t.slot));
-        const g = new Graphics().roundRect(pos.x - TILE_R - 4, pos.y - TILE_R - 4, TILE_R * 2 + 8, TILE_R * 2 + 8, 9).stroke({ width: picked ? 4 : 3, color: 0xc9a45c });
-        g.eventMode = 'none';
+        /* the works to sell from, in the same grammar as a place to build:
+           its halo and ring only, its face left clear to read */
+        const g = slotMark(pos.x, pos.y, picked, false);
         if (picked) overlay.addChild(g);
         else pulse(g, 0.9);
       }
@@ -1565,29 +1600,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       drawOwnerMedallion(disc, at[0], at[1] - 92, col, shape);
       disc.eventMode = 'none';
       overlay.addChild(disc);
-    }
-
-    /* ledger flash: hoverKey naming a town or link outside planning pulses
-       the cluster frame / the route (Board: TownNode flashing rect) */
-    if (idle && hoverKey) {
-      const town = TOWN_BY_ID[hoverKey];
-      if (town) {
-        const c = townChrome(town);
-        const g = new Graphics()
-          .roundRect(c.minX + 4, c.minY + 4, c.maxX - c.minX - 8, c.maxY - c.minY - 8, 10)
-          .stroke({ width: 3, color: 0xc9a45c });
-        g.eventMode = 'none';
-        pulse(g, 0.9);
-      } else {
-        const def = LINKS.find((l) => l.id === hoverKey);
-        if (def) {
-          const g = new Graphics();
-          trace(g, routeFor(def, game.era).pts);
-          g.stroke({ width: 8, color: 0xc9a45c, cap: 'round', join: 'round' });
-          g.eventMode = 'none';
-          pulse(g, 0.45);
-        }
-      }
     }
 
     /* the orders for my turn, in colour on the sepia table: every tile still
@@ -1753,18 +1765,91 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => {
       alive = false;
     };
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hoverKey, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt, sceneSeq]);
 
-  /* browsing: the route under the pointer lights up in brass — the one
-     hover effect kept on the board, on links only (not when the pointer is
-     on a town at its end: the town owns that hover). Its own layer: a
-     hover must never rebuild the overlay above */
+  /* everything the pointer alone decides lives on its own layer, so a
+     hover never rebuilds the overlay: the cream edge and the £-plaque of
+     the place, link or works under the pointer while a move is planned;
+     while browsing, the route under the pointer in brass (not when the
+     pointer is on a town at its end: the town owns that hover), and the
+     town or route a ledger line points at */
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
     const layer = scene.hoverLayer;
     for (const c of layer.removeChildren()) c.destroy();
-    if (!(idle && !hoverKey && hoverLink)) return;
+    hoverPulsesRef.current = [];
+    const pulse = (g: Graphics, base = 1) => {
+      layer.addChild(g);
+      hoverPulsesRef.current.push({ g, base });
+    };
+
+    if (!idle && hoverKey && verb === 'build') {
+      const t = targets.find((x) => x.valid && tileKey(x.town, x.slot) === hoverKey);
+      if (t) {
+        const pos = townChrome(TOWN_BY_ID[t.town]).slots[t.slot];
+        const picked = !!buildPick && tileKey(buildPick.town, buildPick.slot) === hoverKey;
+        layer.addChild(slotHoverEdge(pos.x, pos.y, picked));
+        /* the price above it; the beginner aid itemises it: tile + market coal + market iron */
+        const coal = t.coalPlan.totalCost;
+        const iron = t.ironPlan.totalCost;
+        const label =
+          aidOn(game.assist, code !== null) && coal + iron > 0
+            ? `${money(t.total)} = ${t.cost}${coal ? ` + ${coal} ${tr('board.aid.coal')}` : ''}${iron ? ` + ${iron} ${tr('board.aid.iron')}` : ''}`
+            : money(t.total);
+        layer.addChild(...priceTag(pos.x, pos.y - TILE_R - 13.5, Math.max(52, label.length * 6.2 + 12), 15, label));
+      }
+    }
+
+    if (!idle && hoverKey && verb === 'network') {
+      const t = linkTargetsList.find((x) => x.valid && x.link.id === hoverKey);
+      if (t) {
+        const pts = routeFor(t.link, game.era).pts;
+        const picked = linkPick?.link.id === hoverKey || secondLinkPick?.link.id === hoverKey;
+        layer.addChild(linkHoverEdge(pts, picked));
+        /* a picked link carries its dashes and price on the overlay already */
+        if (!picked) {
+          pulse(linkDashes(pts), 0.95);
+          const [mx, my] = linkMidWorld(t.link, game.era);
+          layer.addChild(...priceTag(mx, my - 17.5, 48, 17, money(t.total)));
+        }
+      }
+    }
+
+    if (!idle && hoverKey && verb === 'sell') {
+      const t = sellTargetsList.find((x) => x.valid && tileKey(x.town, x.slot) === hoverKey);
+      if (t) {
+        const pos = townChrome(TOWN_BY_ID[t.town]).slots[t.slot];
+        const picked = sellPicks.some((x) => tileKey(x.town, x.slot) === hoverKey);
+        layer.addChild(slotHoverEdge(pos.x, pos.y, picked));
+      }
+    }
+
+    /* ledger flash: a ledger line naming a town or a link pulses the
+       cluster's frame or the route */
+    if (idle && hoverKey) {
+      const town = TOWN_BY_ID[hoverKey];
+      if (town) {
+        const c = townChrome(town);
+        const g = new Graphics()
+          .roundRect(c.minX + 4, c.minY + 4, c.maxX - c.minX - 8, c.maxY - c.minY - 8, 10)
+          .stroke({ width: 3, color: 0xc9a45c });
+        g.eventMode = 'none';
+        pulse(g, 0.9);
+      } else {
+        const def = LINKS.find((l) => l.id === hoverKey);
+        if (def) {
+          const g = new Graphics();
+          trace(g, routeFor(def, game.era).pts);
+          g.stroke({ width: 8, color: 0xc9a45c, cap: 'round', join: 'round' });
+          g.eventMode = 'none';
+          pulse(g, 0.45);
+        }
+      }
+      return;
+    }
+
+    if (!(idle && hoverLink)) return;
     const def = LINKS.find((l) => l.id === hoverLink);
     const adjacent = def && hoverTown !== null && (def.a === hoverTown || def.b === hoverTown);
     const hidden = def && (hideUnbuilt || !!game.links[def.id]);
@@ -1777,22 +1862,12 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     g.stroke({ width: 3.6, color: 0xddbe7e, alpha: 0.92, cap: 'round', join: 'round' });
     g.eventMode = 'none';
     layer.addChild(g);
-  }, [idle, hoverKey, hoverLink, hoverTown, hideUnbuilt, game.era, game.links]);
+  }, [idle, verb, hoverKey, hoverLink, hoverTown, hideUnbuilt, targets, linkTargetsList, sellTargetsList, buildPick, linkPick, secondLinkPick, sellPicks, code, game.assist, game.era, game.links, sceneSeq]);
   /* a tap when a mark lands (board option: sounds) */
   const lastPing = pings.length ? pings[pings.length - 1].id : 0;
   useEffect(() => {
     if (lastPing && getBoardOptions().sound) pingTap();
   }, [lastPing]);
-
-  /* Esc closes the inspector */
-  useEffect(() => {
-    if (!inspect) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setInspect(null);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [inspect]);
 
   /* ------------------------- overlay positions ------------------------ */
   const shake = useGame((s) => s.shake);
@@ -1895,7 +1970,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           and offers the page itself if the browser never hands it back */}
       {glLost && (
         <div role="status" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-coal-900/90 text-center">
-          <span className="font-fell text-lg text-brass-400">{t('game.page.settingTable')}</span>
+          <span className="font-fell text-lg text-brass-400">{t('board.glLost')}</span>
           <button type="button" onClick={() => window.location.reload()} className="rounded-md border border-brass-700/60 px-3 py-1 font-sans text-sm text-cream-100 hover:border-brass-400">
             {t('platform.boundary.reload')}
           </button>
@@ -1950,7 +2025,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             <div className="space-y-1 font-sans text-[12px] leading-relaxed text-cream-100/90">
               <div>
                 {t('board.merchant.buys')}{' '}
-                <span className="text-cream-100">{merchantDemand(game, hoverMerchantDef.id).map((x) => INDUSTRY_LABEL[x]).join(', ') || t('board.merchant.buysNothing')}</span>
+                <span className="text-cream-100">{merchantDemand(game, hoverMerchantDef.id).map((x) => t(`game.industry.${x}`)).join(', ') || t('board.merchant.buysNothing')}</span>
               </div>
               <div>
                 {t('board.merchant.barrels', { left: merchantBeerLeft(game, hoverMerchantDef.id), total: merchantBarrelSlots(game, hoverMerchantDef.id) })}

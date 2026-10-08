@@ -9,6 +9,7 @@ import type { Era, GameState, IndustryType, LinkDef } from '@/game/types';
 import { RIBBON_FONT, RIBBON_GAP, RIBBON_H, TILE, TILE_HALF, ribbonWidth, townChrome } from '@/components/game/townChrome';
 import { FEET, SHADE } from './placeGround';
 import { FIGURE_MIN_SCREEN, SEAL_MIN_SCREEN } from './floor';
+import { roman } from './roman';
 import type { FloorRule } from './floor';
 import { BUILT_FOR, CUT_FOR, FRONT_RANK, ICON_FOR, PARTNER, pairFile, pairKey, variantOf } from './faces';
 import type { ChipStyle, SlotArt, StockStyle, TileArt, TileVariant } from './faces';
@@ -922,8 +923,9 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     /* closed at this player count: rust stamp across the row */
     const closed = new Container();
     closed.eventMode = 'none';
+    /* a stamp is struck in capitals, whatever case the sheets write it in */
     const stamp = new Text({
-      text: tr('board.merchant.closedStamp'),
+      text: tr('board.merchant.closedStamp').toLocaleUpperCase(),
       style: { fontFamily: "'Archivo',sans-serif", fontSize: 12, fontWeight: '900', letterSpacing: 2.5, fill: 0xd05a48 },
     });
     stamp.anchor.set(0.5);
@@ -1050,7 +1052,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
      level as a roman numeral, then one chain link per point the tile adds
      to each neighbouring canal or rail at era's end. Pinned at the card's
      corner, so it grows inward, and held under the stock disc's reach. */
-  const ROMAN = ['', 'I', 'II', 'III', 'IV'];
   const drawLevelMark = (sv: SlotView, x: number, y: number, level: number, links: number, muted: boolean) => {
     const h = bigChips ? 14 : 12;
     const font = bigChips ? 10.5 : 9;
@@ -1061,7 +1062,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     const g = new Graphics();
     g.eventMode = 'none';
     const numeral = new Text({
-      text: ROMAN[level] ?? String(level),
+      text: roman(level),
       style: { fontFamily: "'Playfair Display', serif", fontSize: font, fontWeight: '900', fill: ink },
     });
     numeral.anchor.set(0.5);

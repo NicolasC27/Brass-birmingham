@@ -81,37 +81,44 @@ const ambience = (id: string): Promise<AudioBuffer | null> => {
 };
 
 let playing: { id: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+/** the recordings still fading out, by house: a house the pointer comes
+ *  back to within the fade waits for its old loop to end before it starts
+ *  another, so two copies never sound over each other */
+const fading = new Map<string, AudioBufferSourceNode>();
 const FADE_IN = 0.3;
 const FADE_OUT = 0.5;
 
-/** the pointer left the house: the ambience fades out */
 /** the house under the pointer right now */
 let hovered: string | null = null;
 
+/** the pointer left the house: the ambience fades out */
 export function houseLeave(): void {
   hovered = null;
   if (!playing) return;
-  const { src, gain } = playing;
+  const { id, src, gain } = playing;
   playing = null;
   const ac = src.context;
   const now = ac.currentTime;
   gain.gain.cancelScheduledValues(now);
   gain.gain.setValueAtTime(gain.gain.value, now);
   gain.gain.linearRampToValueAtTime(0.0001, now + FADE_OUT);
+  fading.set(id, src);
+  src.onended = () => {
+    if (fading.get(id) === src) fading.delete(id);
+    /* the pointer came back while it faded: the house sounds again */
+    if (hovered === id && !playing) sound(id);
+  };
   src.stop(now + FADE_OUT + 0.05);
 }
 
-/** the pointer reached a house: its recording loops under the pointer,
- *  fading in — or the shop bell rings when no recording is served */
-export function houseHover(id: string | null): void {
-  if (playing && playing.id !== id) houseLeave();
-  hovered = id;
-  if (!id || (playing && playing.id === id)) return;
+/** the house's recording, looped under the pointer and fading in */
+function sound(id: string): void {
   void ambience(id).then(async (buf) => {
-    /* the pointer may have moved on while the file was fetched */
-    if (!buf || playing || hovered !== id) return;
+    /* the pointer may have moved on while the file was fetched; a loop of
+       this house still fading out starts it again when it ends */
+    if (!buf || playing || hovered !== id || fading.has(id)) return;
     const ac = await context();
-    if (!ac || playing || hovered !== id) return;
+    if (!ac || playing || hovered !== id || fading.has(id)) return;
     const src = ac.createBufferSource();
     src.buffer = buf;
     src.loop = true;
@@ -126,6 +133,15 @@ export function houseHover(id: string | null): void {
     src.start(now);
     playing = { id, src, gain };
   });
+}
+
+/** the pointer reached a house: its recording loops under the pointer,
+ *  fading in — or the shop bell rings when no recording is served */
+export function houseHover(id: string | null): void {
+  if (playing && playing.id !== id) houseLeave();
+  hovered = id;
+  if (!id || (playing && playing.id === id)) return;
+  sound(id);
   /* the bell rings at once when there is nothing to hear; the check is
      cached, so a house without a recording rings every time */
   void ambience(id).then((buf) => {
@@ -138,6 +154,7 @@ export function houseHover(id: string | null): void {
  *  decoded (a buffer outlives its context); the next sound opens another. */
 export function closeAudio(): void {
   houseLeave();
+  fading.clear();
   const ac = ctx;
   ctx = null;
   if (ac && ac.state !== 'closed') void ac.close().catch(() => undefined);

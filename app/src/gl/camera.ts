@@ -1,4 +1,4 @@
-import { WORLD_H, WORLD_W, centeredOn, clampK, clampPan, fitScale, kToCentre, zoomAt } from '@/components/game/boardView';
+import { WORLD_H, WORLD_W, centeredOn, clampK, clampPan, fitScale, fitView, kToCentre, zoomAt } from '@/components/game/boardView';
 import type { View } from '@/components/game/boardView';
 
 /* ------------------------------------------------------------------ */
@@ -29,16 +29,30 @@ export class Camera {
   /** two fingers on the glass: their last spread and midpoint, in frame pixels */
   private pinch: { d: number; mx: number; my: number } | null = null;
   private lastCommit = 0;
+  /** the opening view has been set: the whole board, framed on the room
+   *  the HUD leaves (a frame with no size yet is framed on its first tick) */
+  private opened = false;
   private readonly getSize: () => { w: number; h: number };
 
   constructor(getSize: () => { w: number; h: number }) {
     this.getSize = getSize;
+    this.open();
+  }
+
+  /** the table opens on the whole board, above the hand */
+  private open(): void {
+    const { w, h } = this.getSize();
+    if (this.opened || w <= 0 || h <= 0) return;
+    this.opened = true;
+    this.view = fitView(w, h);
+    this.target = { ...this.view };
   }
 
   /** call every ticker frame */
   tick(deltaMS: number): void {
     const { w, h } = this.getSize();
     if (w === 0) return;
+    this.open();
     /* the chase: ~90 ms for a pan, weighty but snappy; ~170 ms while the
        scale is moving, so a wheel notch swells rather than steps (the
        anchor under the pointer holds: k, x and y share the one factor) */
@@ -205,8 +219,23 @@ export class Camera {
     this.target = zoomAt(this.target, w / 2, h / 2, factor, w, h);
   }
 
+  /** the whole board, framed on the room the HUD leaves it */
   fit(): void {
-    this.glide({ k: 1, x: 0, y: 0 }, 600);
+    const { w, h } = this.getSize();
+    this.glide(fitView(w, h), 600);
+  }
+
+  /** the frame changed shape (a resize, the guide's lane, the hand coming
+   *  or going): the camera is held back inside the new bounds, so the
+   *  table's black never shows past the bleed. `snap` moves the view at
+   *  once (the frame itself jumped); otherwise the chase carries it there */
+  reclamp(snap = false): void {
+    const { w, h } = this.getSize();
+    if (w <= 0 || h <= 0) return;
+    this.open();
+    if (this.fly) this.fly = { ...this.fly, to: clampView(this.fly.to, w, h) };
+    this.target = clampView(this.target, w, h);
+    if (snap && !this.fly && !this.drag && !this.pinch) this.view = clampView(this.view, w, h);
   }
 
   /** back to k=1 keeping the current world centre on screen */
