@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, SkipForward, X, Undo2 } from 'lucide-react';
 import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
+import type { GameState } from '@/game/types';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
 import { beerSources, buildTargets, ironSources, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
@@ -15,7 +16,10 @@ import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
 import { minimapWidth, tableWidth, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
-import { isKey, keyLabel, useKeybindings } from './keybindings';
+import { isKey, keyLabel, typing, useKeybindings } from './keybindings';
+import { FIT_PAD_BOTTOM, setFitReserve } from './boardView';
+import { levelMark, tileMark } from './levelMark';
+import { CARD_H, DOCK_FIXED, DOCK_OPEN_H, HINTS_W, fanMeasure } from './handFan';
 
 const PIN_KEY = 'brassworks.dockPinned';
 
@@ -72,38 +76,50 @@ function ShieldEmblem({ initial }: { initial: string }) {
   );
 }
 
-function GameCard({
+const GameCard = memo(function GameCard({
   card,
   index,
+  width,
   selected,
   scoutMarked,
   disabled,
   canBuild,
-  onClick,
-  onDoubleClick,
+  onPick,
+  onFly,
 }: {
   card: Card;
   index: number;
+  width: number;
   selected: boolean;
   scoutMarked: boolean;
   disabled: boolean;
   /** the aid: this card can build something right now */
   canBuild?: boolean;
-  onClick: () => void;
-  onDoubleClick?: () => void;
+  onPick: (id: string) => void;
+  /** a town card's double-click: the camera flies to its town */
+  onFly?: (card: Card) => void;
 }) {
   const t = useT();
   const wild = card.kind.startsWith('wild');
   const industry = card.kind === 'industry' ? card.industry! : null;
   const label = cardLabel(card);
+  /* the name is set whole. A double card names one trade a line (the
+     slash would only eat the room); a long word sets at the floor size;
+     a single word too long even then (Coalbrookdale, Wolverhampton) is
+     condensed on the line, as a compositor would, never cut in two */
+  const parts = label.split(' / ');
+  const longest = Math.max(...label.split(/[\s/-]+/).map((w) => w.length));
+  const small = parts.length === 2 || longest > 10;
+  const inner = width - 10;
+  const squeeze = parts.length === 1 && !/[\s-]/.test(label) ? Math.min(1, inner / (label.length * 6.9)) : 1;
   return (
     <motion.button
       layout="position"
       type="button"
       aria-label={t('game.hand.cardAria', { n: index + 1, label })}
       aria-pressed={selected}
-      onClick={onClick}
-      onDoubleClick={onDoubleClick}
+      onClick={() => onPick(card.id)}
+      onDoubleClick={onFly && card.town ? () => onFly(card) : undefined}
       disabled={disabled}
       initial={{ y: 40, opacity: 0 }}
       animate={{ y: selected || scoutMarked ? -12 : 0, opacity: disabled ? 0.45 : 1, rotate: scoutMarked ? 0 : (index % 3 - 1) * 2 }}
@@ -111,11 +127,11 @@ function GameCard({
       whileHover={{ rotate: 0 }}
       transition={{ type: 'spring', stiffness: 180, damping: 20 }}
       className={cn(
-        'relative h-[120px] w-[84px] shrink-0 overflow-hidden rounded-md border border-[#A8843F] text-left shadow-e3',
+        'relative shrink-0 overflow-hidden rounded-md border border-[#A8843F] text-left shadow-e3',
         selected && 'shadow-[0_0_0_2px_rgb(var(--brass-500)),0_18px_34px_rgba(0,0,0,.55)]',
         scoutMarked && 'brightness-[.55] saturate-50 shadow-[0_0_0_2px_#B5412F,0_10px_20px_rgba(0,0,0,.5)]',
       )}
-      style={{ zIndex: selected ? 10 : scoutMarked ? 9 : index }}
+      style={{ zIndex: selected ? 10 : scoutMarked ? 9 : index, width, height: CARD_H }}
       title={cardFlavor(card)}
     >
       {/* aged parchment: cream gradient + paper grain + browned corners */}
@@ -142,14 +158,32 @@ function GameCard({
           <Hammer className="h-2.5 w-2.5 text-[#2A241C]" />
         </span>
       )}
-      {/* top band: name in small caps over an engraved rule */}
-      <div className="absolute inset-x-[8px] top-[6px] border-b border-[#8A6B33]/60 pb-[2px]">
-        <p className="truncate text-center font-fell text-[10px] uppercase leading-tight tracking-[0.05em] text-[#2A241C]">
-          {label}
-        </p>
+      {/* top band: the whole name in small caps over an engraved rule, on
+          two lines when it needs them — the band has the height, not the
+          width, and a name cut short names nothing */}
+      <div className="absolute inset-x-[4px] top-[5px] border-b border-[#8A6B33]/60 pb-[2px]">
+        {squeeze < 1 ? (
+          <p className="flex justify-center font-fell text-[9px] uppercase leading-[11px] text-[#2A241C]">
+            <span className="whitespace-nowrap" style={{ transform: `scaleX(${squeeze.toFixed(3)})` }}>
+              {label}
+            </span>
+          </p>
+        ) : (
+          <p className={cn('line-clamp-2 text-center font-fell uppercase leading-[11px] text-[#2A241C]', small ? 'text-[9px]' : 'text-[10px] tracking-[0.02em]')}>
+            {parts.length === 2 ? (
+              <>
+                {parts[0]}
+                <br />
+                {parts[1]}
+              </>
+            ) : (
+              label
+            )}
+          </p>
+        )}
       </div>
       {/* emblem: tinted trade icon / town shield / engraved wild star */}
-      <div className="absolute inset-x-0 top-[26px] flex h-[52px] items-center justify-center">
+      <div className="absolute inset-x-0 top-[30px] flex h-[48px] items-center justify-center">
         {card.industry2 && (
           <span
             aria-hidden
@@ -197,7 +231,7 @@ function GameCard({
         )}
       </div>
       {/* flavour line, fine italics */}
-      <p className="absolute inset-x-[8px] bottom-[5px] line-clamp-2 text-center font-serif text-[8px] italic leading-tight text-[#5A4A30]">
+      <p className="absolute inset-x-[6px] bottom-[4px] line-clamp-3 text-center font-serif text-[9px] italic leading-[10px] text-[#4A3C26]">
         {cardFlavor(card)}
       </p>
       {scoutMarked && (
@@ -213,7 +247,7 @@ function GameCard({
       )}
     </motion.button>
   );
-}
+});
 
 /**
  * Floating hand dock (map-v3 §2): bottom-centre, auto-collapses to a slim
@@ -221,7 +255,7 @@ function GameCard({
  * click (pins), or hotkey (1–8 selects a card, which forces expansion).
  * The Confirm bar floats above it.
  */
-export default function HandDock() {
+function HandDock() {
   const t = useT();
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
@@ -299,9 +333,7 @@ export default function HandDock() {
   /* H pins / unpins the hand from anywhere (not while typing) */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!isKey(e, 'hand')) return;
-      const tag = (e.target as HTMLElement | null)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (!isKey(e, 'hand') || typing(e)) return;
       togglePin();
     };
     window.addEventListener('keydown', onKey);
@@ -372,21 +404,52 @@ export default function HandDock() {
   }, [turnKey]);
 
   /* a spectator holds no cards: no dock at all */
-  if (!game || (seat !== null && seat < 0)) return null;
+  const visible = !!game && !(seat !== null && seat < 0);
+  /* the board is framed on the room the hand leaves it: the dock says how
+     tall it stands open (not folded, so the map does not breathe with the
+     hand), and takes the word back when it goes */
+  useLayoutEffect(() => {
+    if (!visible) return;
+    setFitReserve(insets.bottom + DOCK_OPEN_H + 8);
+    return () => setFitReserve(FIT_PAD_BOTTOM);
+  }, [visible, insets.bottom]);
+  /* whose cards to show: online, always my own — dimmed while I wait my turn.
+     Here, the player to act when human; during a bot's turn the lone human
+     keeps seeing their own hand. With several humans at one screen nothing
+     is shown — the pass interstitial guards privacy. */
+  const shown = useMemo(() => {
+    if (!game) return null;
+    const p = game.players[game.current];
+    const humans = game.players.filter((x) => !x.isBot);
+    return seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
+  }, [game, seat]);
+  /* with moves already prepared, the hand plans on the table they leave */
+  const planGame = useMemo<GameState | null>(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
+  const usedByQueue = useMemo(() => new Set(queued.map((q) => ('card' in q.action ? q.action.card : undefined)).filter(Boolean)), [queued]);
+  /* the aid's hammer: which cards can build now, worked out once per table
+     rather than once per card on every pass of the pointer */
+  const buildable = useMemo(() => {
+    const out = new Set<string>();
+    if (!aid || !planGame || planActor < 0 || !shown) return out;
+    for (const c of shown.hand) if (!usedByQueue.has(c.id) && buildTargets(planGame, planActor, c).some((x) => x.valid)) out.add(c.id);
+    return out;
+  }, [aid, planGame, planActor, shown, usedByQueue]);
+  const flyCard = useCallback(
+    (card: Card) => {
+      /* the two clicks before it toggle the card off, so re-select it
+         (not in scout mode, where clicks toggle marks) */
+      flyToRegion(card.town!);
+      const st = useGame.getState();
+      if (st.verb !== 'scout' && st.selectedCardId !== card.id) selectCard(card.id);
+    },
+    [flyToRegion, selectCard],
+  );
+  if (!game || !planGame || !visible) return null;
   const p = game.players[game.current];
   const isHumanTurn = game.phase === 'action' && (seat === null ? !p.isBot : seat === game.current);
   /* a move may also be planned out of turn: it waits for my turn */
   const actor = planActor;
   const canPlan = actor >= 0;
-  /* whose cards to show: online, always my own — dimmed while I wait my turn.
-     Here, the player to act when human; during a bot's turn the lone human
-     keeps seeing their own hand. With several humans at one screen nothing
-     is shown — the pass interstitial guards privacy. */
-  const humans = game.players.filter((x) => !x.isBot);
-  const shown = seat !== null ? game.players[seat] : !p.isBot ? p : humans.length === 1 ? humans[0] : null;
-  /* with moves already prepared, the hand plans on the table they leave */
-  const planGame = preparing && queued.length && actor >= 0 ? projectQueued(game, actor, queued) : game;
-  const usedByQueue = new Set(queued.map((q) => ('card' in q.action ? q.action.card : undefined)).filter(Boolean));
   const verbs = verbsForCard({ game: planGame, selectedCardId, actor: actor >= 0 ? actor : undefined });
   const summary = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
   const devOptions = verb === 'develop' ? currentDevelops() : [];
@@ -401,6 +464,11 @@ export default function HandDock() {
      kept, so the hand is back up the moment the view is left */
   const expanded = (pinned && !boardOpts.focus) || busy || (hovered && !hoverMuted) || (isHumanTurn && !folded && !boardOpts.focus);
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
+  /* the fan's room: what the dock may take, less its fixed parts */
+  const handSize = shown?.hand.length ?? 0;
+  const hintsShown = handSize < 7 && verb !== 'develop' && vw >= 1280;
+  const dockMax = centredOnScreen ? centredRoom : vw - insets.left - bandRight;
+  const fan = fanMeasure(handSize, dockMax - DOCK_FIXED - (hintsShown ? HINTS_W : 0));
 
   return (
     <footer data-dock data-lens="hand" aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={centredOnScreen ? { bottom: insets.bottom, left: 0, right: 0 } : { bottom: insets.bottom, left: insets.left, right: bandRight }}>
@@ -409,7 +477,7 @@ export default function HandDock() {
         animate={{ height: expanded ? 180 : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
         /* centred on the screen, never wider than the room between the rail and the minimap */
-        style={{ maxWidth: centredOnScreen ? centredRoom : vw - insets.left - bandRight }}
+        style={{ maxWidth: dockMax }}
         className="pointer-events-auto relative w-auto plaque overflow-hidden rounded-lg"
         onPointerEnter={onEnter}
         onPointerLeave={onLeave}
@@ -487,11 +555,11 @@ export default function HandDock() {
                   undo();
                 }
               }}
-              className="absolute left-3 top-1/2 flex h-6 -translate-y-1/2 items-center gap-1 rounded-full border border-brass-700/50 px-2 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-500/70 transition-colors hover:border-brass-400 hover:text-brass-400"
+              className="absolute left-3 top-1/2 flex h-7 -translate-y-1/2 items-center gap-1 rounded-full border border-brass-700/50 px-2 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-500/80 transition-colors hover:border-brass-400 hover:text-brass-400"
             >
               <Undo2 className="h-3 w-3" />
               {t('game.hand.undoShort')}
-              <kbd className="ml-0.5 rounded-[2px] border border-brass-700/60 px-1 font-mono text-[8px] leading-[11px] text-brass-500/80">{keyLabel(keys.undo)}</kbd>
+              <kbd className="ml-0.5 rounded-[2px] border border-brass-700/60 px-1 font-mono text-[9px] leading-[11px] text-brass-500/80">{keyLabel(keys.undo)}</kbd>
             </span>
           )}
           {/* pin: keeps the dock open whatever the pointer does */}
@@ -513,7 +581,7 @@ export default function HandDock() {
               }
             }}
             className={cn(
-              'absolute right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border transition-colors',
+              'absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border transition-colors',
               pinned ? 'border-brass-400 bg-brass-500/25 text-brass-400' : 'border-brass-700/50 text-brass-500/60 hover:text-brass-400',
             )}
           >
@@ -539,7 +607,7 @@ export default function HandDock() {
                 {game.deck.length}
               </span>
             </div>
-            <span className="font-mono text-[9px] uppercase text-cream-100/45">{t('game.hand.deckLabel')}</span>
+            <span className="font-mono text-[9px] uppercase text-cream-100/60">{t('game.hand.deckLabel')}</span>
           </div>
 
           {/* verb chips — a fixed 2×3 grid: nothing wraps behind the cards */}
@@ -562,15 +630,17 @@ export default function HandDock() {
                   onFocus={v === 'loan' && ok ? () => setLoanPeek(true) : undefined}
                   onBlur={v === 'loan' ? () => setLoanPeek(false) : undefined}
                   className={cn(
-                    'flex w-full items-center gap-1.5 rounded-sm border px-2 py-[3px] font-sans text-[10px] font-bold uppercase tracking-wider transition-colors',
+                    /* 31px tall: four rows fill the body's 136px, and each verb
+                       clears the target floor */
+                    'flex min-h-[31px] w-full items-center gap-1.5 rounded-sm border px-2 py-[5px] font-sans text-[10px] font-bold uppercase tracking-wider transition-colors',
                     v === 'pass' && 'col-span-2 justify-center border-dashed',
                     verb === v
                       ? 'border-brass-400 bg-brass-500/20 text-brass-400 shadow-[0_0_8px_rgba(201,164,92,.3)]'
                       : ok
                         ? 'border-brass-700/70 bg-coal-800 text-cream-100/85 hover:border-brass-500 hover:text-brass-400'
                         : clickable
-                          ? 'border-brass-700/40 bg-coal-800/70 text-cream-100/45 hover:border-brass-700 hover:text-cream-100/70'
-                          : 'cursor-not-allowed border-brass-700/30 bg-coal-800/60 text-cream-100/30',
+                          ? 'border-brass-700/40 bg-coal-800/70 text-cream-100/65 hover:border-brass-700 hover:text-cream-100/80'
+                          : 'cursor-not-allowed border-brass-700/30 bg-coal-800/60 text-cream-100/45',
                   )}
                 >
                   <Icon className="h-3 w-3" />
@@ -693,7 +763,7 @@ export default function HandDock() {
                     return (
                       <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[10px] text-ink-900/80">
                         <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">
-                          {tr(`game.log.industry.${pick.tile.industry}`)} L{pick.tile.level} · {TOWN_BY_ID[pick.town]?.name ?? pick.town}
+                          {tileMark(tr(`game.log.industry.${pick.tile.industry}`), pick.tile.level)} · {TOWN_BY_ID[pick.town]?.name ?? pick.town}
                         </span>
                         <span className="text-ink-900/45">→</span>
                         <select
@@ -805,7 +875,7 @@ export default function HandDock() {
                       return (
                         <label key={k} className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80" title={t('game.hand.devIron', { name: INDUSTRY_LABEL[ind], level })}>
                           <img src={INDUSTRY_ICON[ind]} alt="" className="h-3.5 w-3.5" />
-                          <span className="font-semibold">L{level}</span>
+                          <span className="font-semibold">{levelMark(level)}</span>
                           <span className="text-ink-900/45">←</span>
                           <select
                             value={developIron[k] ?? ''}
@@ -846,16 +916,18 @@ export default function HandDock() {
             )}
             {shown && (
               /* room at the right for the cards that slide aside under the pointer */
-              <div className={cn('mx-auto flex items-end pl-1', shown.hand.length >= 6 ? 'pr-9' : 'pr-3')}>
+              <div className="mx-auto flex items-end pl-1" style={{ paddingRight: Math.max(12, -fan.step) }}>
               {shown.hand.map((card, i) => (
                 <div
                   key={card.id}
-                  className={cn('relative first:ml-0 transition-transform duration-150 ease-out', shown.hand.length >= 7 ? '-ml-9' : shown.hand.length === 6 ? '-ml-6' : '-ml-4', hoverCard === i && 'z-20')}
+                  className={cn('relative transition-transform duration-150 ease-out', hoverCard === i && 'z-20')}
                   style={{
                     scrollSnapAlign: 'center',
-                    /* the hovered card rises and grows a touch; those to its right make room for it */
-                    /* no lift: the dock is not tall enough for one — the card only comes forward, ringed in brass */
-                    transform: hoverCard !== null && i > hoverCard ? `translateX(${shown.hand.length >= 7 ? 30 : shown.hand.length === 6 ? 18 : 8}px)` : undefined,
+                    marginLeft: i === 0 ? 0 : fan.step,
+                    /* no lift: the dock is not tall enough for one — the card
+                       under the pointer comes forward, ringed in brass, and
+                       those to its right slide aside by exactly the overlap */
+                    transform: hoverCard !== null && i > hoverCard && fan.step < 0 ? `translateX(${-fan.step}px)` : undefined,
                     filter: hoverCard === i ? 'drop-shadow(0 0 4px rgba(232,196,122,.9))' : undefined,
                   }}
                   onPointerEnter={() => setHoverCard(i)}
@@ -864,23 +936,13 @@ export default function HandDock() {
                   <GameCard
                     card={card}
                     index={i}
+                    width={fan.card}
                     selected={canPlan && selectedCardId === card.id}
                     scoutMarked={canPlan && scoutPick.includes(card.id)}
                     disabled={!canPlan || usedByQueue.has(card.id)}
-                    canBuild={aid && canPlan && !usedByQueue.has(card.id) && buildTargets(planGame, actor, card).some((x) => x.valid)}
-                    onClick={() => canPlan && !usedByQueue.has(card.id) && selectCard(card.id)}
-                    /* double-click a town card = camera flies to that town.
-                       The two clicks before it toggle the card off, so
-                       re-select it (not in scout mode, where clicks toggle marks) */
-                    onDoubleClick={
-                      card.town
-                        ? () => {
-                            flyToRegion(card.town!);
-                            const st = useGame.getState();
-                            if (st.verb !== 'scout' && st.selectedCardId !== card.id) selectCard(card.id);
-                          }
-                        : undefined
-                    }
+                    canBuild={canPlan && buildable.has(card.id)}
+                    onPick={selectCard}
+                    onFly={flyCard}
                   />
                 </div>
               ))}
@@ -889,7 +951,7 @@ export default function HandDock() {
           </div>
 
           {/* right status / hints */}
-          <div className={cn('hidden w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3', (shown?.hand.length ?? 0) < 7 && verb !== 'develop' && 'xl:flex')}>
+          <div className={cn('w-[190px] flex-col justify-center gap-1.5 border-l border-brass-700/40 pl-3', hintsShown ? 'flex' : 'hidden')}>
             {game.round === 1 && game.era === 'canal' ? (
               <p className="paper px-2 py-1.5 font-fell text-[11px] italic leading-snug text-ink-900/85">
                 {t('game.hand.firstRound')}
@@ -908,3 +970,6 @@ export default function HandDock() {
     </footer>
   );
 }
+
+/* the dock re-renders on its own subscriptions, not on every render of the page */
+export default memo(HandDock);
