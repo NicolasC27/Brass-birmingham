@@ -43,7 +43,6 @@ const game: typeof engame = {
     eraCanal: 'Era del canal',
     eraRail: 'Era del ferrocarril',
     eraRoundTitle: '{era} — ronda {round} de {total}',
-    noWay: '{verb} imposible:',
     prepare: 'Preparar',
     queued: 'Listo para mi turno:',
     queueDrop: 'Retirar esta jugada',
@@ -154,9 +153,9 @@ const game: typeof engame = {
     bigChips: 'Cifras grandes de ingresos / PV',
     bigChipsHint: 'Más legibles de lejos, a costa de un poco de pintura.',
     colorBlind: 'Modo daltónico',
-    colorBlindHint: 'Añade la forma de cada jugador allí donde su color no basta.',
+    colorBlindHint: 'Agranda el sello de las losetas y pone la forma de cada jugador en sus conexiones.',
     colorBlindTiles: 'En las losetas colocadas',
-    colorBlindTilesHint: 'Un sello en la esquina de cada loseta construida.',
+    colorBlindTilesHint: 'Un sello más grande en la esquina de cada loseta construida.',
     colorBlindLinks: 'En las conexiones',
     colorBlindLinksHint: 'Un medallón a mitad de cada canal o vía construidos.',
     cardGrain: 'Grano de papel',
@@ -181,7 +180,7 @@ const game: typeof engame = {
     trafficHint: 'Barcazas y locomotoras en los canales y vías construidos.',
     trafficLevel: { none: 'Ninguno', light: 'Ligero', busy: 'Denso' },
     followBots: 'Seguir a los demás jugadores',
-    followBotsHint: 'La cámara se desliza hacia la ciudad donde un bot, o un rival en línea, acaba de jugar.',
+    followBotsHint: 'La cámara se desliza hacia la ciudad donde un bot, o un rival en línea, acaba de jugar, y las máquinas dejan cuatro segundos entre dos jugadas.',
     beginnerAidTable: 'En una mesa en línea, el anfitrión lo ajusta en la sala, para todos.',
     boardSection: 'Tablero',
     vpTrack: 'Pista de PV arriba',
@@ -456,6 +455,22 @@ const game: typeof engame = {
   },
   /** an industry named on its own — a card, a mat heading, a plate on the board */
   industry: { coal: 'Mina de carbón', iron: 'Fundición', cotton: 'Hilandería', manufacturer: 'Manufactura', pottery: 'Alfarería', brewery: 'Cervecería' },
+  /** a tile's level, where the industry is already said */
+  level: { mark: 'N{level}' },
+  /** a game at home and the office that keeps it, when the two fall out:
+      {move} counts from one */
+  homeTrouble: {
+    offline: 'La oficina no responde. Tu partida está guardada allí; la mesa vuelve en cuanto vuelva la línea.',
+    absent: 'La oficina ya no guarda esta partida.',
+    unreplayable: 'El registro de esta partida ya no se reproduce con esta versión de la mesa.',
+    refused: 'La oficina rechazó la jugada {move}: la mesa se vuelve a leer desde su registro.',
+    waiting: 'Esperando la línea con la oficina…',
+    mendedRefused: 'La oficina no tenía la jugada {move}: la mesa se ha vuelto a leer desde su registro y la partida sigue desde ahí.',
+    mendedOffline: 'La línea ha vuelto: la mesa se ha vuelto a leer desde el registro de la oficina.',
+    retry: 'Reintentar',
+    leave: 'Dejar la mesa',
+    dismiss: 'Cerrar',
+  },
   log: {
     industry: { coal: 'mina de carbón', iron: 'fundición', cotton: 'hilandería', manufacturer: 'manufactura', pottery: 'alfarería', brewery: 'cervecería' },
     res: { coal: 'carbón', iron: 'hierro' },

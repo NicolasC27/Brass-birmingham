@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { afterEach, describe, expect, it } from 'vitest';
-import { LANGS, reasonText, setLang } from '../index';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { LANGS, reasonText, setLang, tr } from '../index';
 import type { Lang } from '../index';
 import { de } from '../de';
 import { en } from '../en';
@@ -117,10 +117,71 @@ describe('the table’s sheets', () => {
       if (/^[A-Z][a-z]/.test(text) && text.includes(' ')) said.add(text);
     }
     expect(said.size).toBeGreaterThan(15);
-    for (const lang of LANGS.filter((l) => l !== 'en')) {
-      setLang(lang);
-      const english = [...said].filter((text) => reasonText(text) === text);
-      expect(`${lang}: ${english.join(' | ')}`).toBe(`${lang}: `);
+    /* a refusal the sheets do not know is confessed to the console */
+    const confessed = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      for (const lang of LANGS) {
+        setLang(lang);
+        confessed.mockClear();
+        const unsaid = [...said].filter((text) => {
+          const before = confessed.mock.calls.length;
+          const out = reasonText(text);
+          return confessed.mock.calls.length > before || (lang !== 'en' && out === text);
+        });
+        expect(`${lang}: ${unsaid.join(' | ')}`).toBe(`${lang}: `);
+      }
+    } finally {
+      confessed.mockRestore();
+    }
+  });
+
+  it('never hand the player a refusal it cannot say, in any tongue', () => {
+    const confessed = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const raw = 'Card not in hand — Ada (seat 1, era canal R3) holds c12, c40, action names c7';
+      for (const lang of LANGS) {
+        setLang(lang);
+        expect(reasonText(raw)).toBe(DICTS[lang].game.reasons.unknown);
+      }
+      /* the raw words go to the console, once per tongue however often the bubble re-renders */
+      expect(confessed.mock.calls.filter((c) => String(c[0]).includes(raw))).toHaveLength(LANGS.length);
+      reasonText(raw);
+      expect(confessed.mock.calls.filter((c) => String(c[0]).includes(raw))).toHaveLength(LANGS.length);
+    } finally {
+      confessed.mockRestore();
+    }
+  });
+
+  it('say an office code by its code, the detail left to the console', () => {
+    const confessed = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      setLang('fr');
+      expect(reasonText('out-of-step: the log stands at 12')).toBe(fr.game.reasons['out-of-step']);
+      expect(confessed).toHaveBeenCalledWith(expect.stringContaining('the log stands at 12'));
+      setLang('de');
+      expect(reasonText('card-not-in-hand')).toBe(de.game.reasons['card-not-in-hand']);
+      /* a code the sheets do not know is no better than a sentence they do not know */
+      expect(reasonText('lost-in-the-post: 3')).toBe(de.game.reasons.unknown);
+    } finally {
+      confessed.mockRestore();
+    }
+  });
+
+  it('let a sentence the table already said in the reader’s tongue stand', () => {
+    const confessed = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      for (const lang of LANGS) {
+        setLang(lang);
+        const reconnecting = tr('game.page.reconnecting');
+        expect(reasonText(reconnecting)).toBe(reconnecting);
+        const undone = tr('game.hand.undoFailed');
+        expect(reasonText(undone)).toBe(undone);
+        const dropped = tr('game.hand.queueDropped', { reason: tr('game.reasons.card-not-in-hand') });
+        expect(reasonText(dropped)).toBe(dropped);
+      }
+      expect(confessed).not.toHaveBeenCalled();
+    } finally {
+      confessed.mockRestore();
     }
   });
 

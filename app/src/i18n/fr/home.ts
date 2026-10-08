@@ -41,7 +41,7 @@ const fr: typeof enHome = {
     market: {
       coal: 'Charbon',
       iron: 'Fer',
-      buy: 'Achat £3',
+      buy: 'Achat 3 £',
     },
     eras: {
       canalAlt: "Frise gravée de l’ère canal : écluses, narrowboats et chemins de halage",

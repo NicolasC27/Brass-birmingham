@@ -43,7 +43,6 @@ const fr: typeof engame = {
     eraCanal: 'Ère canal',
     eraRail: 'Ère rail',
     eraRoundTitle: '{era} — manche {round} sur {total}',
-    noWay: '{verb} impossible :',
     prepare: 'Préparer',
     queued: 'Prêt pour mon tour :',
     queueDrop: 'Retirer ce coup',
@@ -154,9 +153,9 @@ const fr: typeof engame = {
     bigChips: 'Gros chiffres revenu / PV',
     bigChipsHint: 'Plus lisibles de loin, la peinture en prend un peu moins.',
     colorBlind: 'Mode daltonien',
-    colorBlindHint: 'Ajoute la forme de chaque joueur là où sa couleur seule ne suffit pas.',
+    colorBlindHint: 'Grossit le sceau des tuiles et pose la forme de chaque joueur sur ses liaisons.',
     colorBlindTiles: 'Sur les tuiles posées',
-    colorBlindTilesHint: 'Un sceau dans le coin de chaque tuile construite.',
+    colorBlindTilesHint: 'Un sceau plus grand dans le coin de chaque tuile construite.',
     colorBlindLinks: 'Sur les liaisons',
     colorBlindLinksHint: 'Un médaillon au milieu de chaque canal ou rail construit.',
     cardGrain: 'Grain papier',
@@ -181,7 +180,7 @@ const fr: typeof engame = {
     trafficHint: 'Péniches et locomotives sur les canaux et rails construits.',
     trafficLevel: { none: 'Aucun', light: 'Léger', busy: 'Dense' },
     followBots: 'Suivre les autres joueurs',
-    followBotsHint: 'La caméra glisse vers la ville où un bot, ou un rival en ligne, vient de jouer.',
+    followBotsHint: 'La caméra glisse vers la ville où un bot, ou un rival en ligne, vient de jouer, et les machines laissent quatre secondes entre deux coups.',
     beginnerAidTable: 'À une table en ligne, l’hôte la règle dans la salle, pour tout le monde.',
     boardSection: 'Plateau',
     vpTrack: 'Piste des PV en haut',
@@ -456,6 +455,22 @@ const fr: typeof engame = {
   },
   /** an industry named on its own — a card, a mat heading, a plate on the board */
   industry: { coal: 'Mine de charbon', iron: 'Forge', cotton: 'Filature', manufacturer: 'Manufacture', pottery: 'Poterie', brewery: 'Brasserie' },
+  /** a tile's level, where the industry is already said */
+  level: { mark: 'N{level}' },
+  /** a game at home and the office that keeps it, when the two fall out:
+      {move} counts from one */
+  homeTrouble: {
+    offline: 'Le bureau ne répond pas. Votre partie y est gardée ; la table revient dès que la ligne tient.',
+    absent: 'Le bureau ne garde plus cette partie.',
+    unreplayable: 'Le registre de cette partie ne se rejoue plus avec cette version de la table.',
+    refused: 'Le bureau a refusé le coup {move} : on relit la table depuis son registre.',
+    waiting: 'On attend la ligne du bureau…',
+    mendedRefused: 'Le bureau n’avait pas le coup {move} : la table a été relue depuis son registre, et la partie reprend de là.',
+    mendedOffline: 'La ligne est revenue : la table a été relue depuis le registre du bureau.',
+    retry: 'Réessayer',
+    leave: 'Quitter la table',
+    dismiss: 'Fermer',
+  },
   log: {
     industry: { coal: 'mine de charbon', iron: 'forge', cotton: 'filature', manufacturer: 'manufacture', pottery: 'poterie', brewery: 'brasserie' },
     res: { coal: 'charbon', iron: 'fer' },

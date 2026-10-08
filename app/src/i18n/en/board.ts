@@ -2,6 +2,8 @@ const board = {
   ariaLabel: 'Midlands board',
   ariaLabelWebgl: 'Midlands board (WebGL)',
   svgAria: 'Towns, links and industries',
+  /** the plate over a board whose drawing context the browser took back */
+  glLost: 'The board went dark — setting it up again…',
   hover: {
     townHint: 'Click to inspect · double-click to zoom',
   },

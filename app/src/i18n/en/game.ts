@@ -41,7 +41,6 @@ const game = {
     eraCanal: 'Canal Era',
     eraRail: 'Rail Era',
     eraRoundTitle: '{era} — Round {round} of {total}',
-    noWay: '{verb} impossible:',
     prepare: 'Prepare',
     queued: 'Ready for my turn:',
     queueDrop: 'Drop this move',
@@ -152,9 +151,9 @@ const game = {
     bigChips: 'Big income / VP numerals',
     bigChipsHint: 'Easier to read from afar, at the cost of a little painting.',
     colorBlind: 'Colour-blind mode',
-    colorBlindHint: 'Adds each player’s shape wherever colour alone is not enough.',
+    colorBlindHint: 'Enlarges the seal on the tiles and sets each player’s shape on their links.',
     colorBlindTiles: 'On built works',
-    colorBlindTilesHint: 'A seal in the corner of every built tile.',
+    colorBlindTilesHint: 'A larger seal in the corner of every built tile.',
     colorBlindLinks: 'On links',
     colorBlindLinksHint: 'A medallion mid-way along every built canal or rail.',
     cardGrain: 'Paper grain',
@@ -179,7 +178,7 @@ const game = {
     trafficHint: 'Barges and locomotives on built canals and rails.',
     trafficLevel: { none: 'None', light: 'Light', busy: 'Busy' },
     followBots: 'Follow the other players',
-    followBotsHint: 'The camera glides to the town a bot, or a rival online, just played in.',
+    followBotsHint: 'The camera glides to the town a bot, or a rival online, just played in, and the machines leave four seconds between two moves.',
     beginnerAidTable: 'At an online table the host sets it in the room, for everyone.',
     boardSection: 'Board',
     vpTrack: 'VP track on top',
@@ -454,6 +453,22 @@ const game = {
   },
   /** an industry named on its own — a card, a mat heading, a plate on the board */
   industry: { coal: 'Coal Mine', iron: 'Iron Works', cotton: 'Cotton Mill', manufacturer: 'Manufactory', pottery: 'Pottery', brewery: 'Brewery' },
+  /** a tile's level, where the industry is already said */
+  level: { mark: 'L{level}' },
+  /** a game at home and the office that keeps it, when the two fall out:
+      {move} counts from one */
+  homeTrouble: {
+    offline: 'The office is not answering. Your game is kept there; the table comes back as soon as the line does.',
+    absent: 'The office no longer keeps this game.',
+    unreplayable: 'This game’s log no longer replays under this version of the table.',
+    refused: 'The office turned down move {move}: the table is being read again from its log.',
+    waiting: 'Waiting for the line to the office…',
+    mendedRefused: 'The office did not have move {move}: the table was read again from its log, and play goes on from there.',
+    mendedOffline: 'The line is back: the table was read again from the office’s log.',
+    retry: 'Try again',
+    leave: 'Leave the table',
+    dismiss: 'Close',
+  },
   log: {
     industry: { coal: 'coal mine', iron: 'iron works', cotton: 'cotton mill', manufacturer: 'manufactory', pottery: 'pottery', brewery: 'brewery' },
     res: { coal: 'coal', iron: 'iron' },

@@ -4,6 +4,8 @@ const fr: typeof enboard = {
   ariaLabel: 'Plateau des Midlands',
   ariaLabelWebgl: 'Plateau des Midlands (WebGL)',
   svgAria: 'Villes, liaisons et industries',
+  /** the plate over a board whose drawing context the browser took back */
+  glLost: 'Le plateau s’est éteint — on le redresse…',
   hover: {
     townHint: 'Clic pour inspecter · double-clic pour zoomer',
   },

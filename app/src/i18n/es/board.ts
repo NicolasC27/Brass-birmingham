@@ -4,6 +4,8 @@ const es: typeof enboard = {
   ariaLabel: 'Tablero de los Midlands',
   ariaLabelWebgl: 'Tablero de los Midlands (WebGL)',
   svgAria: 'Ciudades, conexiones e industrias',
+  /** the plate over a board whose drawing context the browser took back */
+  glLost: 'El tablero se ha apagado — lo estamos levantando…',
   hover: {
     townHint: 'Clic para inspeccionar · doble clic para ampliar',
   },

@@ -4,6 +4,8 @@ const de: typeof enboard = {
   ariaLabel: 'Spielplan der Midlands',
   ariaLabelWebgl: 'Spielplan der Midlands (WebGL)',
   svgAria: 'Städte, Verbindungen und Industrien',
+  /** the plate over a board whose drawing context the browser took back */
+  glLost: 'Der Spielplan ist erloschen — er wird neu aufgestellt…',
   hover: {
     townHint: 'Klick zum Inspizieren · Doppelklick zum Zoomen',
   },

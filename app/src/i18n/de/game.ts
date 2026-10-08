@@ -43,7 +43,6 @@ const game: typeof engame = {
     eraCanal: 'Kanalzeit',
     eraRail: 'Eisenbahnzeit',
     eraRoundTitle: '{era} — Runde {round} von {total}',
-    noWay: '{verb} nicht möglich:',
     prepare: 'Vorbereiten',
     queued: 'Bereit für meinen Zug:',
     queueDrop: 'Diesen Zug verwerfen',
@@ -154,9 +153,9 @@ const game: typeof engame = {
     bigChips: 'Große Ziffern für Einkommen / SP',
     bigChipsHint: 'Von weitem besser lesbar, die Malerei verliert etwas Platz.',
     colorBlind: 'Farbenblind-Modus',
-    colorBlindHint: 'Fügt die Form jedes Spielers hinzu, wo seine Farbe allein nicht reicht.',
+    colorBlindHint: 'Vergrößert das Siegel der Plättchen und setzt die Form jedes Spielers auf seine Verbindungen.',
     colorBlindTiles: 'Auf gebauten Plättchen',
-    colorBlindTilesHint: 'Ein Siegel in der Ecke jedes gebauten Plättchens.',
+    colorBlindTilesHint: 'Ein größeres Siegel in der Ecke jedes gebauten Plättchens.',
     colorBlindLinks: 'Auf Verbindungen',
     colorBlindLinksHint: 'Ein Medaillon in der Mitte jedes gebauten Kanals oder jeder Bahnstrecke.',
     cardGrain: 'Papierkörnung',
@@ -181,7 +180,7 @@ const game: typeof engame = {
     trafficHint: 'Kähne und Lokomotiven auf gebauten Kanälen und Bahnstrecken.',
     trafficLevel: { none: 'Keiner', light: 'Leicht', busy: 'Dicht' },
     followBots: 'Den anderen Spielern folgen',
-    followBotsHint: 'Die Kamera gleitet zur Stadt, in der ein Bot oder ein Rivale online gerade gespielt hat.',
+    followBotsHint: 'Die Kamera gleitet zur Stadt, in der ein Bot oder ein Rivale online gerade gespielt hat, und die Maschinen lassen vier Sekunden zwischen zwei Zügen.',
     beginnerAidTable: 'An einem Online-Tisch stellt der Gastgeber sie im Raum ein, für alle.',
     boardSection: 'Spielplan',
     vpTrack: 'SP-Leiste oben',
@@ -456,6 +455,22 @@ const game: typeof engame = {
   },
   /** an industry named on its own — a card, a mat heading, a plate on the board */
   industry: { coal: 'Kohlemine', iron: 'Eisenhütte', cotton: 'Baumwollspinnerei', manufacturer: 'Manufaktur', pottery: 'Töpferei', brewery: 'Brauerei' },
+  /** a tile's level, where the industry is already said */
+  level: { mark: 'Stufe {level}' },
+  /** a game at home and the office that keeps it, when the two fall out:
+      {move} counts from one */
+  homeTrouble: {
+    offline: 'Das Kontor antwortet nicht. Deine Partie ist dort verwahrt; der Tisch kehrt zurück, sobald die Leitung wieder steht.',
+    absent: 'Das Kontor führt diese Partie nicht mehr.',
+    unreplayable: 'Das Protokoll dieser Partie lässt sich mit dieser Version des Tisches nicht mehr nachspielen.',
+    refused: 'Das Kontor hat Zug {move} abgelehnt: Der Tisch wird aus seinem Protokoll neu gelesen.',
+    waiting: 'Warten auf die Leitung zum Kontor…',
+    mendedRefused: 'Dem Kontor fehlte Zug {move}: Der Tisch wurde aus seinem Protokoll neu gelesen, die Partie geht von dort weiter.',
+    mendedOffline: 'Die Leitung steht wieder: Der Tisch wurde aus dem Protokoll des Kontors neu gelesen.',
+    retry: 'Erneut versuchen',
+    leave: 'Tisch verlassen',
+    dismiss: 'Schließen',
+  },
   log: {
     industry: { coal: 'Kohlemine', iron: 'Eisenhütte', cotton: 'Spinnerei', manufacturer: 'Manufaktur', pottery: 'Töpferei', brewery: 'Brauerei' },
     res: { coal: 'Kohle', iron: 'Eisen' },

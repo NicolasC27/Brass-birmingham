@@ -35,7 +35,7 @@ const fr: typeof enresults = {
     scoringAria: "Décompte détaillé",
     scoringTitle: "Décompte détaillé",
   },
-  tiebreak: "départage : revenu £{hi} > £{lo}",
+  tiebreak: "départage : revenu {hi} £ > {lo} £",
   share: {
     text: "BLACKRAIL — Le Bilan : {summary}",
     share: "Partager le bilan",
@@ -67,10 +67,10 @@ const fr: typeof enresults = {
     ranks: { 0: "1re", 1: "2e", 2: "3e", 3: "4e" },
     places: { 0: "1re place", 1: "2e place", 2: "3e place", 3: "4e place" },
     vp: "{vp} PV",
-    incomeShort: "rev. £{income}",
+    incomeShort: "rev. {income} £",
     winnerHuman: "Votre empire prospère.",
     winnerAi: "L’empire de {name} prospère… cette fois.",
-    finalIncome: "Revenu final £{income}",
+    finalIncome: "Revenu final {income} £",
     victoryPoints: "points de victoire",
   },
   table: {

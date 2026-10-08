@@ -103,21 +103,95 @@ function fmt(s: string, vars?: Record<string, string | number>, l: Lang = lang):
   return out;
 }
 
-/** an engine refusal in the reader's language — the English sentence is the key, and stands when unknown */
+/** an engine refusal in the reader's language: the English sentence, or
+ *  the office's code, is the key. A refusal the sheets do not know is said
+ *  as a plain sentence, and its raw words go to the console, never to the
+ *  player's bubble. */
 export function reasonText(text: string | null | undefined): string {
   if (!text) return '';
   const dict = dictOf(lang);
   const said = (dict.game as AnyDict | undefined)?.reasons as Record<string, string> | undefined;
+  const known = knownReason(text, dict, said);
+  if (known !== null) return known;
+  if (sheetsSay(text, lang)) return text;
+  const seen = `${lang}\n${text}`;
+  if (!confessed.has(seen)) {
+    confessed.add(seen);
+    console.error(`[refusal] no sentence for: ${text}`);
+  }
+  return said?.unknown ?? lookup(en as AnyDict, 'game.reasons.unknown') ?? text;
+}
+
+/* each unknown refusal is confessed once per tongue: the bubble that shows
+   it re-renders, the console need not repeat itself */
+const confessed = new Set<string>();
+
+/* the table also hands this path sentences it has already put in the
+   reader's tongue (a queued move dropped, the line being set again): they
+   are recognised against the sheets' own templates and stand as written.
+   A template with hardly a word of its own ("{industry} L{level}") would
+   swallow anything, and is left out. */
+const shapes = new Map<Lang, { plain: Set<string>; shaped: RegExp[] }>();
+const verdicts = new Map<string, boolean>();
+const SLOT = /\{\w+\}|\[\w+\|[^|\]]*\|[^\]]*\]/g;
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function template(s: string): RegExp {
+  let src = '';
+  let from = 0;
+  for (const m of s.matchAll(SLOT)) {
+    src += escape(s.slice(from, m.index));
+    const agree = m[0].match(/^\[\w+\|([^|\]]*)\|([^\]]*)\]$/);
+    src += agree ? `(?:${escape(agree[1])}|${escape(agree[2])})` : '[\\s\\S]+?';
+    from = (m.index ?? 0) + m[0].length;
+  }
+  return new RegExp(`^${src}${escape(s.slice(from))}$`, 'u');
+}
+
+function sheetsSay(text: string, l: Lang): boolean {
+  const key = `${l}\n${text}`;
+  const cached = verdicts.get(key);
+  if (cached !== undefined) return cached;
+  let book = shapes.get(l);
+  if (!book) {
+    const plain = new Set<string>();
+    const shaped: RegExp[] = [];
+    const walk = (node: unknown): void => {
+      if (typeof node === 'string') {
+        if (!node.match(SLOT)) plain.add(node);
+        else if ((node.replace(SLOT, '').match(/\p{L}/gu)?.length ?? 0) >= 8) shaped.push(template(node));
+      } else if (node && typeof node === 'object') for (const v of Object.values(node)) walk(v);
+    };
+    const d = dictOf(l);
+    walk(d.game);
+    walk(d.board);
+    book = { plain, shaped };
+    shapes.set(l, book);
+  }
+  const said = book.plain.has(text) || book.shaped.some((r) => r.test(text));
+  if (verdicts.size > 500) verdicts.clear();
+  verdicts.set(key, said);
+  return said;
+}
+
+function knownReason(text: string, dict: AnyDict, said: Record<string, string> | undefined): string | null {
   if (said?.[text]) return said[text];
+  /* a code followed by its detail, "out-of-step: the log stands at 12":
+     the code is said, the detail is for the console */
+  const coded = text.match(/^([a-z]+(?:-[a-z]+)+)(?::\s|$)/);
+  if (coded && said?.[coded[1]]) {
+    if (coded[1] !== text) console.error(`[refusal] ${text}`);
+    return said[coded[1]];
+  }
   /* the few refusals that carry a number: match on the words around it */
-  const money = text.match(/^Needs £(\d+) — you hold £(\d+)$/);
-  if (money && said?.needsMoney) return fmt(said.needsMoney, { need: money[1], have: money[2] });
+  const owed = text.match(/^Needs £(\d+) — you hold £(\d+)$/);
+  if (owed && said?.needsMoney) return fmt(said.needsMoney, { need: owed[1], have: owed[2] });
   const beer = text.match(/^Needs (\d+) beer — a brewery of yours, one connected here, or the merchant's barrel$/);
   if (beer && said?.needsBeer) return fmt(said.needsBeer, { n: beer[1] }, lang);
   /* the refusals that carry a name — a town, an industry, an era */
   const board = dict.board as AnyDict | undefined;
   const refusal = board?.refusal as (Record<string, string> & { plain?: Record<string, string> }) | undefined;
-  if (!refusal) return text;
+  if (!refusal) return null;
   if (refusal.plain?.[text]) return refusal.plain[text];
   const industry = (id: string) => lookup(dict, `game.log.industry.${id}`) ?? lookup(en as AnyDict, `game.log.industry.${id}`) ?? id;
   const era = (id: string) => lookup(dict, `board.era.${id}`) ?? id;
@@ -127,7 +201,17 @@ export function reasonText(text: string | null | undefined): string {
   if ((m = text.match(/^No (\w+) tiles left$/))) return fmt(refusal.noTiles, { industry: industry(m[1]) });
   if ((m = text.match(/^(\w+) L(\d) cannot be built in the (\w+) era$/))) return fmt(refusal.wrongEra, { industry: industry(m[1]), level: m[2], era: era(m[3]) });
   if ((m = text.match(/^Opponent's tile can only be overbuilt once no (\w+) is left anywhere$/))) return fmt(refusal.overbuildOnce, { resource: industry(m[1]) });
-  return text;
+  return null;
+}
+
+/** a sum of money as the reader's sheets set it: "12 £" in French and
+ *  Spanish, with the unbreakable space the sheets use, "£12" in English
+ *  and German; a debt keeps its minus sign in front ("−£3", "−3 £") */
+export function money(n: number | string, l: Lang = lang): string {
+  const debt = typeof n === 'number' ? n < 0 : /^[-−]/.test(n);
+  const figure = typeof n === 'number' ? String(Math.abs(n)) : n.replace(/^[-−]/, '');
+  const sum = l === 'fr' || l === 'es' ? `${figure}\u00a0£` : `£${figure}`;
+  return debt ? `−${sum}` : sum;
 }
 
 /** translate outside React (current language, English fallback) */

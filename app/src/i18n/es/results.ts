@@ -35,7 +35,7 @@ const es: typeof enresults = {
     scoringAria: "Recuento detallado",
     scoringTitle: "Recuento detallado",
   },
-  tiebreak: "desempate: ingresos £{hi} > £{lo}",
+  tiebreak: "desempate: ingresos {hi} £ > {lo} £",
   share: {
     text: "BLACKRAIL — El Balance: {summary}",
     share: "Compartir el balance",
@@ -67,10 +67,10 @@ const es: typeof enresults = {
     ranks: { 0: "1.º", 1: "2.º", 2: "3.º", 3: "4.º" },
     places: { 0: "1.er puesto", 1: "2.º puesto", 2: "3.er puesto", 3: "4.º puesto" },
     vp: "{vp} PV",
-    incomeShort: "ing. £{income}",
+    incomeShort: "ing. {income} £",
     winnerHuman: "Su imperio prospera.",
     winnerAi: "El imperio de {name} prospera… esta vez.",
-    finalIncome: "Ingresos finales £{income}",
+    finalIncome: "Ingresos finales {income} £",
     victoryPoints: "puntos de victoria",
   },
   table: {

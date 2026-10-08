@@ -41,7 +41,7 @@ const es: typeof enHome = {
     market: {
       coal: 'Carbón',
       iron: 'Hierro',
-      buy: 'Compra £3',
+      buy: 'Compra 3 £',
     },
     eras: {
       canalAlt: 'Friso grabado de la era del canal: esclusas, barcazas y caminos de sirga',
