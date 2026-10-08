@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Application, Assets, ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { Application, Assets, ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { activeBoard, INDUSTRY_LABEL, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
 import { merchantBarrelSlots, merchantBeerLeft, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
@@ -19,17 +19,29 @@ import TownInspector from '@/components/game/TownInspector';
 import Anchored from '@/components/game/Anchored';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
-import { buildBoardScene, drawOwnerMedallion, industryFaceUrl, loadBoardAssets, tileFaceUrl } from './paint';
+import { CASING, boardAssetTally, buildBoardScene, drawOwnerMedallion, holdBoardAssets, industryFaceUrl, loadBoardAssets, tileFaceUrl, wearSheets } from './paint';
 import type { Prepared } from '@/game/store';
 import type { GameAction } from '@/game/actions';
-import { houseHover, pingTap } from './sfx';
+import { closeAudio, houseHover, pingTap } from './sfx';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
+import { flooredScale } from './floor';
 import { isKey } from '@/components/game/keybindings';
 import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
+/** the files a map style lays on the table */
+const sheetList = (u: ReturnType<typeof mapUrls>): string[] => [u.canal, u.rail, ...(u.etch ? [u.etch.canal, u.etch.rail] : [])];
+/** the whole printed table, bleed included, in world units: the one area a
+ *  veil or the night is laid over, so the filter never walks the sheet's
+ *  children for its bounds each frame */
+const TABLE_AREA = new Rectangle(-BLEED_X, -BLEED_Y, WORLD_W + 2 * BLEED_X, WORLD_H + 2 * BLEED_Y);
+/** how long the table dims for another seat's move (its last half-second a
+ *  fade): kept well under the pace the machines are played at, whatever
+ *  that pace is (GLIMPSE_MS, the store's own clock for the glimpse) */
+const GLIMPSE_VEIL_MS = Math.min(1400, GLIMPSE_MS);
+const GLIMPSE_FADE_MS = 500;
 /* the green of a place open to you: a slot or a link you may build on now */
 const BUILDABLE = 0x7fe08f;
 const BUILDABLE_PICK = 0xc4ffcc;
@@ -158,7 +170,6 @@ interface March {
    *  arrow run the other way, and the line is the colour of a gain */
   selling?: boolean;
 }
-const CASING = 0xf2ead6;
 
 /** an arrowhead at (gx,gy) pointing away from (sx,sy), stopping `back` short */
 function arrowHead(sx: number, sy: number, gx: number, gy: number, back: number): number[] {
@@ -196,12 +207,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const [hoverTown, setHoverTown] = useState<string | null>(null);
   const [hoverLink, setHoverLink] = useState<string | null>(null);
   const [hoverMerchant, setHoverMerchant] = useState<string | null>(null);
-  /* the house's own sound while the pointer rests on it: its recording in
-     a loop, or a bell over the door (board option) */
-  useEffect(() => {
-    houseHover(hoverMerchant && getBoardOptions().sound ? hoverMerchant : null);
-    return () => houseHover(null);
-  }, [hoverMerchant]);
   const [inspect, setInspect] = useState<string | null>(null);
   /* the HUD hung from the map (inspector, chooser, callout) and the
      minimap's frame are moved by the ticker, in the frame the map moves */
@@ -210,7 +215,16 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, railPainting, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle } = opts;
+  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, railPainting, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
+  /* the house's own sound while the pointer rests on it: its recording in
+     a loop, or a bell over the door (board option) — hushed at once when
+     the sound is turned off under the pointer */
+  useEffect(() => {
+    houseHover(hoverMerchant && sound ? hoverMerchant : null);
+    return () => houseHover(null);
+  }, [hoverMerchant, sound]);
+  /* the table's sounds go quiet with it: the tab is no longer a sounding one */
+  useEffect(() => () => closeAudio(), []);
   /* fullscreen is a keyboard-only affair now (F) — no HUD button */
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -221,6 +235,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
   /* imperative handles shared between the boot effect and prop effects */
   const sceneRef = useRef<ReturnType<typeof buildBoardScene> | null>(null);
+  /* the GPU may take the table's context back (a driver reset, the tab
+     starved of memory): the board says so, and is set again from scratch
+     once the context is handed back — the game lives in the store and at
+     the office, so nothing is lost with it */
+  const [glLost, setGlLost] = useState(false);
+  const [glEpoch, setGlEpoch] = useState(0);
+  /* counts the scenes set up: the effects that dress a scene (the veil, the
+     night of a game read again) run again on a fresh one */
+  const [sceneSeq, setSceneSeq] = useState(0);
   const keyboardRef = useRef(keyboard);
   keyboardRef.current = keyboard;
   /* a replayed state: repaint the scene whenever the prop changes */
@@ -302,6 +325,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         sp.width = WORLD_W + 2 * BLEED_X;
         sp.height = WORLD_H + 2 * BLEED_Y;
       }
+      /* the sheets they replace go back to the loader */
+      wearSheets(sheetList(urls));
     })();
     return () => {
       cancelled = true;
@@ -313,36 +338,38 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
-    /* the survey: the land drained of colour and dimmed to a night-blue
-       ink, so the orders and the tiles still to flip are the only warmth */
     /* the reader may keep the land lit while a game is read: no ink, no night */
     const lit = reading && opts.reviewLit;
-    const sepia = preview && !lit ? new ColorMatrixFilter() : null;
-    if (sepia) {
-      sepia.desaturate();
-      sepia.tint(0x7f9cc8, true);
-      sepia.brightness(0.66, true);
-      sepia.contrast(0.12, true);
-    }
-    for (const child of scene.world.children) {
-      if (child === scene.overlay || child === fxLayerRef.current) continue;
-      child.filters = sepia ? [sepia] : null;
-    }
-    /* reading a game again: the land goes to night so the tiles, the links and
-       the merchants are the only thing left to read on it */
-    if (!sepia) {
-      const night = reading && !lit ? new ColorMatrixFilter() : null;
-      if (night) {
-        night.desaturate();
-        night.brightness(0.35, true);
+    /* a glimpse of another seat's move only lowers the lamp: the owners'
+       colours are what it shows, and a drained table would take them away.
+       The survey a reader opens — their orders, a seat's empire — drains
+       the land to a night-blue ink, so the orders are the only warmth */
+    const glimpse = preview?.kind === 'player' && !!preview.transient;
+    const veil = preview && !lit ? new ColorMatrixFilter() : null;
+    if (veil) {
+      if (glimpse) veil.brightness(0.6, false);
+      else {
+        veil.desaturate();
+        veil.tint(0x7f9cc8, true);
+        veil.brightness(0.66, true);
+        veil.contrast(0.12, true);
       }
-      scene.bgCanal.filters = night ? [night] : null;
-      scene.bgRail.filters = night ? [night] : null;
-      scene.etchCanal.filters = night ? [night] : null;
-      scene.etchRail.filters = night ? [night] : null;
-      const ambiance = scene.world.children[3];
-      if (ambiance && ambiance !== scene.overlay) ambiance.alpha = reading && !lit ? 0.25 : 1;
     }
+    /* one pass over the whole land, the overlay and the FX left in colour */
+    scene.land.filters = veil ? [veil] : null;
+    scene.land.filterArea = veil ? TABLE_AREA : undefined;
+    /* reading a game again: the ground goes to night and the ambiance
+       steps back, so the tiles, the links and the merchants are the only
+       thing left to read on it */
+    const night = !veil && reading && !lit ? new ColorMatrixFilter() : null;
+    if (night) {
+      night.desaturate();
+      night.brightness(0.35, true);
+    }
+    scene.ground.filters = night ? [night] : null;
+    scene.ground.filterArea = night ? TABLE_AREA : undefined;
+    const ambiance = ambianceRef.current?.layer;
+    if (ambiance) ambiance.alpha = night ? 0.25 : 1;
     /* the camera on the orders: close on them when they sit together, the
        whole table when they are spread out */
     if (preview) {
@@ -372,27 +399,31 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         else cameraRef.current?.fit();
       } else cameraRef.current?.fit();
     }
-    /* a glimpse fades out over its last second: the filter's blend and the
-       overlay's alpha both go to nothing, then the page lets it go */
+    /* a glimpse fades out over its last half-second: the filter's blend and
+       the overlay's alpha both go to nothing, then the land is let go */
     let raf = 0;
-    if (preview?.kind === 'player' && preview.transient && sepia) {
+    if (preview?.kind === 'player' && preview.transient && veil) {
       const born = preview.at ?? Date.now();
       const tick = () => {
-        const left = GLIMPSE_MS - (Date.now() - born);
-        const a = Math.max(0, Math.min(1, left / 1000));
-        sepia.alpha = a;
+        const left = GLIMPSE_VEIL_MS - (Date.now() - born);
+        const a = Math.max(0, Math.min(1, left / GLIMPSE_FADE_MS));
+        veil.alpha = a;
         scene.overlay.alpha = a;
         if (left > 0) raf = requestAnimationFrame(tick);
+        else scene.land.filters = null;
       };
       raf = requestAnimationFrame(tick);
     }
     return () => {
       if (raf) cancelAnimationFrame(raf);
       scene.overlay.alpha = 1;
-      for (const child of scene.world.children) child.filters = null;
-      sepia?.destroy();
+      scene.land.filters = null;
+      scene.ground.filters = null;
+      if (ambiance) ambiance.alpha = 1;
+      veil?.destroy();
+      night?.destroy();
     };
-  }, [preview, reading, opts.reviewLit]);
+  }, [preview, reading, opts.reviewLit, sceneSeq]);
 
   /* planning mode cancels browsing affordances (mirrors the SVG Board) */
   const selectedCardId = useGame((s) => s.selectedCardId);
@@ -417,6 +448,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     }
   }
 
+
   /* ------------------------------ boot ------------------------------ */
   useEffect(() => {
     const el = host.current;
@@ -424,6 +456,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     let destroyed = false;
     let app: Application | null = null;
     const cleanups: (() => void)[] = [];
+    /* the table's textures stay inked while this board is up */
+    const letGo = holdBoardAssets();
 
     const boot = async () => {
       const a = new Application();
@@ -447,6 +481,39 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
       app = a;
       el.appendChild(a.canvas);
+      const canvas = a.canvas;
+      const onLost = (e: Event) => {
+        if (destroyed) return; // the stage taken down gives its context back itself
+        e.preventDefault(); // asks the browser for the context back
+        a.ticker.stop();
+        setGlLost(true);
+      };
+      const onRestored = () => {
+        if (destroyed) return;
+        setGlLost(false);
+        setGlEpoch((n) => n + 1);
+      };
+      canvas.addEventListener('webglcontextlost', onLost);
+      canvas.addEventListener('webglcontextrestored', onRestored);
+      cleanups.push(() => {
+        canvas.removeEventListener('webglcontextlost', onLost);
+        canvas.removeEventListener('webglcontextrestored', onRestored);
+      });
+      /* the canvas follows the screen's density: a browser zoom, or the
+         window carried to another screen, would leave it blurred or
+         oversampled — the media query is set again for each new density */
+      let dppx: MediaQueryList | null = null;
+      const onDensity = () => {
+        a.renderer.resize(a.screen.width, a.screen.height, Math.min(2, window.devicePixelRatio || 1));
+        watchDensity();
+      };
+      const watchDensity = () => {
+        dppx?.removeEventListener('change', onDensity);
+        dppx = window.matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+        dppx.addEventListener('change', onDensity);
+      };
+      watchDensity();
+      cleanups.push(() => dppx?.removeEventListener('change', onDensity));
 
       await loadBoardAssets();
       if (destroyed) return;
@@ -475,6 +542,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const etchRail = sheet(etchRailTex);
       etchCanal.eventMode = 'none';
       etchRail.eventMode = 'none';
+      wearSheets(sheetList(bgUrls));
 
       const scene = buildBoardScene(bgCanal, bgRail, etchCanal, etchRail);
       sceneRef.current = scene;
@@ -496,7 +564,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       ambianceRef.current = ambiance;
       /* mist + halos under the towns, smoke + traffic above: right over the
          links, whatever sheets lie under them */
-      scene.world.addChildAt(ambiance.layer, scene.world.getChildIndex(scene.linksLayer) + 1);
+      scene.land.addChildAt(ambiance.layer, scene.land.getChildIndex(scene.linksLayer) + 1);
 
       const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }));
       cameraRef.current = cam;
@@ -544,6 +612,14 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             }
           },
           dbg: () => ({ ...dbg, rootTarget: a.renderer.events.rootBoundary.rootTarget?.constructor?.name ?? 'null' }),
+          /* probe helpers: the textures the press holds, and a lost context */
+          tally: () => boardAssetTally(),
+          loseGl: () => {
+            const lose = (a.renderer as unknown as { gl?: WebGLRenderingContext }).gl?.getExtension('WEBGL_lose_context');
+            lose?.loseContext();
+            /* a lost context hands out no extension: the restorer is kept from before */
+            return { restore: () => lose?.restoreContext() };
+          },
         };
       }
 
@@ -632,19 +708,24 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const ls = ribbonLabelScale(cam.view.k, fitScale(w, h), RIBBON_FONT);
         for (const r of scene.ribbons) r.scale.set(ls);
         const detail = s < FAR_LOD_SCREEN ? 0 : 1;
-        const ringI = s <= 1.1 ? 1 : Math.max(0.6, 1 - (s - 1.1) * 0.8);
         for (const tv of scene.towns.values()) {
           for (const sl of tv.slots) {
-            sl.ring.alpha = ringI * sl.spotAlpha;
             sl.frame.alpha = sl.spotAlpha;
             /* the painted art face stays full colour at every zoom */
             sl.art.alpha = sl.artBase * sl.spotAlpha;
             sl.art2.alpha = sl.art.alpha;
-            sl.extras.alpha = detail * sl.spotAlpha;
-            /* etched mark + income/VP chips fade at far zoom */
-            sl.detailC.alpha = detail * sl.spotAlpha;
+            /* the owner's rim and the badges say whose and how much: read
+               at every zoom; only the income/VP band fades at far zoom */
+            sl.rim.alpha = sl.spotAlpha;
+            sl.detail.alpha = detail * sl.spotAlpha;
             sl.badges.alpha = sl.spotAlpha;
             sl.deco.alpha = sl.spotAlpha;
+            /* level, stock, score and seal keep a floor on screen, the way
+               the name ribbons do (floor.ts), scaled about their own pin */
+            for (const f of sl.floored) {
+              f.c.scale.set(flooredScale(s, f));
+              if (f.fine) f.fine.alpha = detail;
+            }
           }
         }
         /* pulses (planning highlights, hover rings) */
@@ -1224,6 +1305,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       });
       ro.observe(el);
       setSize({ w: el.clientWidth, h: el.clientHeight });
+      setSceneSeq((n) => n + 1);
       cleanups.push(() => ro.disconnect());
     };
 
@@ -1233,11 +1315,14 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       destroyed = true;
       for (const fn of cleanups) fn();
       if (app) app.destroy(true, { children: true, texture: false });
+      /* the textures are let go after the stage that showed them */
+      letGo();
       sceneRef.current = null;
       cameraRef.current = null;
       overlayRef.current = null;
+      ambianceRef.current = null;
     };
-  }, [reduced]);
+  }, [reduced, glEpoch]);
 
   /* ------------------- planning highlights + ghost ------------------- */
   useEffect(() => {
@@ -1699,25 +1784,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (lastPing && getBoardOptions().sound) pingTap();
   }, [lastPing]);
 
-  /* pointer affordances on the WebGL hit areas (SVG: cursor-pointer/help).
-     Anything left at 'inherit' falls back to the frame's grab/grabbing. */
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    const isBuilding = verb === 'build' && !!selectedCardId;
-    const isNetworking = verb === 'network' && !!selectedCardId;
-    const isSelling = verb === 'sell' && !!selectedCardId;
-    const slotCursor = isBuilding || isSelling || !selectedCardId ? 'pointer' : 'inherit';
-    for (const town of TOWNS) {
-      for (const sl of scene.towns.get(town.id)!.slots) sl.hit.cursor = slotCursor;
-    }
-    for (const def of LINKS) {
-      const eraOk = game.era === 'canal' ? def.canal : def.rail;
-      const clickable = isNetworking && eraOk && !game.links[def.id];
-      scene.linkHit.get(def.id)!.cursor = clickable ? 'pointer' : !selectedCardId ? 'help' : 'inherit';
-    }
-  }, [verb, selectedCardId, game, size]);
-
   /* Esc closes the inspector */
   useEffect(() => {
     if (!inspect) return;
@@ -1824,6 +1890,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     >
       {/* fixed lighting: darkened corners + warm lamp halo */}
       <VignetteLamp era={game.era} />
+
+      {/* the context taken back: the table says it is being set again,
+          and offers the page itself if the browser never hands it back */}
+      {glLost && (
+        <div role="status" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-coal-900/90 text-center">
+          <span className="font-fell text-lg text-brass-400">{t('game.page.settingTable')}</span>
+          <button type="button" onClick={() => window.location.reload()} className="rounded-md border border-brass-700/60 px-3 py-1 font-sans text-sm text-cream-100 hover:border-brass-400">
+            {t('platform.boundary.reload')}
+          </button>
+        </div>
+      )}
 
       {/* board-edge inner shadow for relief */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md shadow-[inset_0_0_60px_rgba(0,0,0,.35)]" />

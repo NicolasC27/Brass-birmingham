@@ -133,6 +133,16 @@ export function houseHover(id: string | null): void {
   });
 }
 
+/** the table is left: whatever sounds is stopped and the context closed,
+ *  so the tab no longer counts as one playing sound. The recordings stay
+ *  decoded (a buffer outlives its context); the next sound opens another. */
+export function closeAudio(): void {
+  houseLeave();
+  const ac = ctx;
+  ctx = null;
+  if (ac && ac.state !== 'closed') void ac.close().catch(() => undefined);
+}
+
 /* dev only: what is sounding right now (window.__sfx.playing()) */
 if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __sfx?: { playing: () => string | null } }).__sfx = { playing: () => playing?.id ?? null };
 

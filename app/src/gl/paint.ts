@@ -8,6 +8,8 @@ import { tr } from '@/i18n';
 import type { Era, GameState, IndustryType, LinkDef } from '@/game/types';
 import { RIBBON_FONT, RIBBON_GAP, RIBBON_H, TILE, TILE_HALF, ribbonWidth, townChrome } from '@/components/game/townChrome';
 import { FEET, SHADE } from './placeGround';
+import { FIGURE_MIN_SCREEN, SEAL_MIN_SCREEN } from './floor';
+import type { FloorRule } from './floor';
 import { BUILT_FOR, CUT_FOR, FRONT_RANK, ICON_FOR, PARTNER, pairFile, pairKey, variantOf } from './faces';
 import type { ChipStyle, SlotArt, StockStyle, TileArt, TileVariant } from './faces';
 
@@ -27,10 +29,14 @@ export type { ChipStyle, SlotArt, StockStyle, TileArt, TileVariant } from './fac
 /* ------------------------------------------------------------------ */
 
 const hex = (s: string): number => parseInt(s.replace('#', ''), 16);
+/** the cream casing laid under a mark so it reads on water, hills and
+ *  towns alike: the supply lines wear it, and so does an owner's mark */
+export const CASING = 0xf2ead6;
 /** how a built card is dressed (board options) */
 export interface TileLook {
   slotArt: SlotArt;
-  /** colour-blind mode: the owner's shape on built cards and/or links */
+  /** colour-blind mode: the owner's seal drawn larger on built cards, and
+   *  seated on the links too (the seal on a card is always there) */
   colorBlind: boolean;
   sealTiles: boolean;
   sealLinks: boolean;
@@ -39,18 +45,25 @@ export interface TileLook {
 }
 export const DEFAULT_TILE_LOOK: TileLook = { slotArt: 'engraved', colorBlind: false, sealTiles: true, sealLinks: true, cardGrain: true, chipStyle: 'band' };
 const playerHex = (game: GameState, i: number): number => hex(PLAYER_COLORS[game.players[i].color]?.hex ?? '#C9A45C');
+/** a mark on a card that keeps a floor on screen (floor.ts): the ticker
+ *  scales it about its own pin, as it does the name ribbons */
+export interface Floored extends FloorRule {
+  c: Container;
+  /** the small print inside it, faded with the detail at far zoom */
+  fine?: Container;
+}
 export interface SlotView {
-  ring: Graphics; // unused by towns (kept for the ticker's alpha write)
   frame: Graphics; // tile body (empty dark card / flipped muted card)
   art: Sprite; // painted face (slot cutout / built player-colour card)
   art2: Sprite; // right-half painting for dual-industry slots
   artMask: Graphics; // GPU-rounded clip on the built card (empty otherwise)
-  extras: Graphics; // far-LOD details: level pips
-  detailC: Container; // LOD text details: etched mark, income/VP chips
-  badges: Container; // flipped rim/VP + resource cubes/barrels (always visible)
+  rim: Graphics; // the owner's rim on a built card: read at every zoom
+  detail: Container; // the income/VP band: faded at far zoom (FAR_LOD_SCREEN)
+  badges: Container; // level, stock, VP token, owner seal: always shown, floored
   deco: Container; // empty-slot chrome: frame lip, top glow
   glow: Graphics; // the top glow alone, hidden over a printed label
-  hit: Graphics;
+  /** the badges that keep a screen floor, rebuilt with them */
+  floored: Floored[];
   /** per-frame alphas recomputed in the ticker from these bases */
   artBase: number; // painting alpha at rest (1 shown / 0 flipped)
   spotAlpha: number; // player spotlight dimming (1 or 0.3)
@@ -66,6 +79,12 @@ export interface TownView {
 
 export interface BoardScene {
   world: Container;
+  /** everything printed on the table — ground, links, the ambiance,
+   *  merchants, towns, ribbons — under one sheet, so a veil laid over the
+   *  land is one pass and leaves the overlay, the hover and the FX in colour */
+  land: Container;
+  /** the four ground sheets alone: the night of a game read again */
+  ground: Container;
   /** the sheet the links are drawn on; the ambiance goes right above it */
   linksLayer: Container;
   bgCanal: Sprite;
@@ -78,7 +97,6 @@ export interface BoardScene {
    *  so a hover never rebuilds the overlay */
   hoverLayer: Container;
   linkGfx: Map<string, Graphics>;
-  linkHit: Map<string, Graphics>;
   towns: Map<string, TownView>;
   merchantBeer: Map<string, Container>;
   /** all ribbon containers (towns + merchants) for the counter-scale pass */
@@ -105,6 +123,13 @@ export interface BoardScene {
   setVillages: (style: 'painted' | 'engraved', ground?: string | null) => void;
 }
 
+/** one print run: the engraved face, its halves, the dual-slot scenes */
+interface Prints {
+  print: Record<IndustryType, Texture>;
+  halfL: Record<IndustryType, Texture>;
+  halfR: Record<IndustryType, Texture>;
+  pair: Record<string, Texture>;
+}
 /** every painting-derived texture for one tile style */
 interface TileSet {
   cut: Record<IndustryType, Texture>; // transparent cutouts (empty slots, merchants)
@@ -113,17 +138,21 @@ interface TileSet {
   halfL: Record<IndustryType, Texture>; // colour left half (dual slots, fallback)
   halfR: Record<IndustryType, Texture>; // colour right half (fallback)
   pair: Record<string, Texture>; // combined dual-industry cutouts: key "a-b" (sorted)
-  print: Record<IndustryType, Texture>; // engraved sepia print (empty slots)
-  printHalfL: Record<IndustryType, Texture>; // engraved left half (dual slots, fallback)
-  printHalfR: Record<IndustryType, Texture>; // engraved right half (fallback)
-  printPair: Record<string, Texture>; // engraved combined dual-industry prints
-  mono: Record<IndustryType, Texture>; // black-and-white print (empty slots, plainer)
-  monoHalfL: Record<IndustryType, Texture>;
-  monoHalfR: Record<IndustryType, Texture>;
-  monoPair: Record<string, Texture>;
+  sepia: Prints; // the engraved sepia print (empty slots, the default)
+  /** the black-and-white print, pulled only when a reader asks for it */
+  mono: () => Prints;
+  /** what the set is made of (cache keys), so a set no longer worn can be let go */
+  arts: Set<string>;
+  pairs: Set<string>;
+}
+/** what a piece of art holds on to: the files it was cut from, handed back
+ *  to the loader, and the textures baked from them, destroyed */
+interface Holdings {
+  urls: string[];
+  baked: Texture[];
 }
 /** one industry's textures from one variant directory */
-interface IndustryArt {
+interface IndustryArt extends Holdings {
   cut: Texture;
   built: Record<string, Texture>;
   builtGrain: Record<string, Texture>;
@@ -132,16 +161,25 @@ interface IndustryArt {
   print: Texture;
   printHalfL: Texture;
   printHalfR: Texture;
-  mono: Texture;
-  monoHalfL: Texture;
-  monoHalfR: Texture;
+  /** the mono print, pulled on first call */
+  mono: () => { print: Texture; halfL: Texture; halfR: Texture };
+}
+/** one dual slot's scene, painted as one or assembled, and its prints */
+interface PairArt extends Holdings {
+  scene: Texture;
+  print: Texture;
+  mono: () => Texture;
 }
 const artCache = new Map<string, Promise<IndustryArt>>(); // `${dir}|${industry}`
-const pairCache = new Map<string, Promise<Texture | null>>(); // default-set pairs, `${a}-${b}`
+const pairCache = new Map<string, Promise<PairArt | null>>(); // `${variant a}|${a}|${variant b}|${b}`
 let tileSet: TileSet; // the set currently painted
 let tileArt: TileArt = {}; // the variant choices it was built from
 let barrelTex: Texture;
 let villageTex: Texture;
+/** the files loadBoardAssets fetched for the table itself, handed back on leaving */
+let tableUrls: string[] = [];
+/** the ground sheets the table wears now (PixiBoard says which, wearSheets) */
+let sheetUrls: string[] = [];
 /** the trades that have a works of their own to show */
 const WORKS: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 /** five wharves, one to a merchant */
@@ -158,14 +196,12 @@ let shadowTex: Record<string, Texture | null> = {};
 /* the engraved map lays an ink hamlet under each town instead (three, in turn) */
 let hamletTex: Texture[] = [];
 
-/** canonical key for a dual-industry slot painting */
-
-/** multiply an rgb int by f (clamped) — muted/brightened owner colour */
 /** lighten toward white by `f` (0..1) */
 const tint = (c: number, f: number): number => {
   const ch = (v: number) => Math.min(255, Math.round(v + (255 - v) * f));
   return (ch((c >> 16) & 0xff) << 16) | (ch((c >> 8) & 0xff) << 8) | ch(c & 0xff);
 };
+/** multiply an rgb int by f (clamped) — muted owner colour */
 const shade = (c: number, f: number): number => {
   const r = Math.min(255, Math.round(((c >> 16) & 0xff) * f));
   const g = Math.min(255, Math.round(((c >> 8) & 0xff) * f));
@@ -173,39 +209,68 @@ const shade = (c: number, f: number): number => {
   return (r << 16) | (g << 8) | b;
 };
 
+/* the page's turn between two bakes: one texture is a few milliseconds of
+   work, a whole set in one go held the press for the better part of a second */
+const yieldToPage = (): Promise<void> => {
+  const s = (globalThis as { scheduler?: { yield?: () => Promise<void> } }).scheduler;
+  return s?.yield ? s.yield() : new Promise((r) => setTimeout(r, 0));
+};
+
+/** a painting drawn onto a canvas the CPU can read back quickly (a canvas
+ *  left to the GPU pays a readback for every getImageData) */
+function pixelsOf(tex: Texture): { c: HTMLCanvasElement; ctx: CanvasRenderingContext2D; img: ImageData } | null {
+  const src = tex.source.resource as CanvasImageSource | undefined;
+  if (!src) return null;
+  const c = document.createElement('canvas');
+  c.width = tex.width;
+  c.height = tex.height;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(src, 0, 0, c.width, c.height);
+  return { c, ctx, img: ctx.getImageData(0, 0, c.width, c.height) };
+}
+
+/* the engraving's tone curve, set in type once: 1024 steps of luminance to
+   an ink-and-paper colour, sepia and black-and-white — a lookup where each
+   pixel used to pay a Math.pow */
+const TONE_STEPS = 1024;
+const toneTable = (mono: boolean): Uint8ClampedArray => {
+  const ink = mono ? [0x12, 0x10, 0x0e] : [0x2a, 0x21, 0x18];
+  const paper = mono ? [0xf0, 0xec, 0xe2] : [0xbf, 0xa9, 0x82];
+  const t = new Uint8ClampedArray(TONE_STEPS * 3);
+  for (let i = 0; i < TONE_STEPS; i++) {
+    const raw = i / (TONE_STEPS - 1);
+    const lum = mono ? Math.min(1, Math.max(0, (Math.pow(raw, 0.9) - 0.5) * 1.35 + 0.5)) : Math.pow(raw, 0.85);
+    for (let k = 0; k < 3; k++) t[i * 3 + k] = ink[k] + (paper[k] - ink[k]) * lum;
+  }
+  return t;
+};
+let sepiaTone: Uint8ClampedArray | null = null;
+let monoTone: Uint8ClampedArray | null = null;
+
 /** Empty slots are PRINTED on the board, built works are physical cards
  *  laid on top (official board: grey printed icons vs. player-colour tiles).
  *  Rebake a painting as a monochrome sepia engraving — ink for the darks,
  *  parchment for the lights — so the colour of a placed tile is the only
  *  colour in the slot grid. Done once per texture at load. */
 function engraveTexture(tex: Texture, mono = false): Texture {
-  const src = tex.source.resource as CanvasImageSource | undefined;
-  if (!src) return tex;
-  const w = tex.width;
-  const h = tex.height;
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext('2d');
-  if (!ctx) return tex;
-  ctx.drawImage(src, 0, 0, w, h);
-  const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
+  const px = pixelsOf(tex);
+  if (!px) return tex;
+  const d = px.img.data;
   /* ink #2a2118 → faded parchment #bfa982, slight gamma so mid-tones stay
      legible; the mono print is black ink on white paper, contrast pushed,
      for eyes that want the empty slots plainer still */
-  const ink = mono ? [0x12, 0x10, 0x0e] : [0x2a, 0x21, 0x18];
-  const paper = mono ? [0xf0, 0xec, 0xe2] : [0xbf, 0xa9, 0x82];
+  const tone = mono ? (monoTone ??= toneTable(true)) : (sepiaTone ??= toneTable(false));
+  const k = (TONE_STEPS - 1) / 255;
   for (let i = 0; i < d.length; i += 4) {
     if (d[i + 3] === 0) continue;
-    const raw = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
-    const lum = mono ? Math.min(1, Math.max(0, (Math.pow(raw, 0.9) - 0.5) * 1.35 + 0.5)) : Math.pow(raw, 0.85);
-    d[i] = ink[0] + (paper[0] - ink[0]) * lum;
-    d[i + 1] = ink[1] + (paper[1] - ink[1]) * lum;
-    d[i + 2] = ink[2] + (paper[2] - ink[2]) * lum;
+    const j = ((0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) * k + 0.5) | 0;
+    d[i] = tone[j * 3];
+    d[i + 1] = tone[j * 3 + 1];
+    d[i + 2] = tone[j * 3 + 2];
   }
-  ctx.putImageData(img, 0, 0);
-  return Texture.from(c);
+  px.ctx.putImageData(px.img, 0, 0);
+  return Texture.from(px.c);
 }
 
 /** Built cards are cardboard: a faint paper grain (art direction: 4–7 %
@@ -213,18 +278,11 @@ function engraveTexture(tex: Texture, mono = false): Texture {
  *  hashed cells of a few texels so the grain still shows once the card is
  *  scaled down to its ~60–100 px on screen. */
 function grainTexture(tex: Texture): Texture {
-  const src = tex.source.resource as CanvasImageSource | undefined;
-  if (!src) return tex;
-  const w = tex.width;
-  const h = tex.height;
-  const c = document.createElement('canvas');
-  c.width = w;
-  c.height = h;
-  const ctx = c.getContext('2d');
-  if (!ctx) return tex;
-  ctx.drawImage(src, 0, 0, w, h);
-  const img = ctx.getImageData(0, 0, w, h);
-  const d = img.data;
+  const px = pixelsOf(tex);
+  if (!px) return tex;
+  const d = px.img.data;
+  const w = px.c.width;
+  const h = px.c.height;
   const cell = Math.max(1, Math.round(w / 110));
   const amp = 14; // ≈ ±5.5 % of full range
   for (let y = 0; y < h; y++) {
@@ -236,13 +294,13 @@ function grainTexture(tex: Texture): Texture {
       let n = (cx * 374761393 + cy * 668265263) | 0;
       n = ((n ^ (n >>> 13)) * 1274126177) | 0;
       const g = (((n ^ (n >>> 16)) & 0xffff) / 0xffff - 0.5) * 2 * amp;
-      d[i] = Math.max(0, Math.min(255, d[i] + g));
-      d[i + 1] = Math.max(0, Math.min(255, d[i + 1] + g));
-      d[i + 2] = Math.max(0, Math.min(255, d[i + 2] + g));
+      d[i] += g;
+      d[i + 1] += g;
+      d[i + 2] += g;
     }
   }
-  ctx.putImageData(img, 0, 0);
-  return Texture.from(c);
+  px.ctx.putImageData(px.img, 0, 0);
+  return Texture.from(px.c);
 }
 
 /** the dual-industry slot pairs printed on the board */
@@ -260,52 +318,61 @@ function dualPairs(): [IndustryType, IndustryType][] {
 
 const half = (t: Texture, right: boolean): Texture => new Texture({ source: t.source, frame: new Rectangle(right ? t.width / 2 : 0, 0, t.width / 2, t.height) });
 
-/** derive the halves and the engraved print every set needs from its face */
-const artFrom = (cut: Texture, built: Record<string, Texture>, builtGrain: Record<string, Texture>): IndustryArt => {
-  const print = engraveTexture(cut);
-  const mono = engraveTexture(cut, true);
-  return { cut, built, builtGrain, halfL: half(cut, false), halfR: half(cut, true), print, printHalfL: half(print, false), printHalfR: half(print, true), mono, monoHalfL: half(mono, false), monoHalfR: half(mono, true) };
-};
+/** bake one texture from another, the page given its turn first, and keep
+ *  the result on the holder's books (a bake that fell back to its source
+ *  owns nothing new) */
+async function bake(into: Texture[], from: Texture, make: (t: Texture) => Texture): Promise<Texture> {
+  await yieldToPage();
+  const t = make(from);
+  if (t !== from) into.push(t);
+  return t;
+}
 
-/** fetch (once) one industry's art from a variant: a finished painting that
- *  serves as slot face and as every owner's card, or the cutout and the
- *  four colour cards of a drawn set */
+const artKey = (v: TileVariant | undefined, i: IndustryType): string => `${v?.dir ?? ''}|${i}`;
+
+/** fetch (once) one industry's art from a variant: the cutout and the four
+ *  colour cards, the cards grained, the cutout engraved in sepia — the mono
+ *  print waits until a reader asks for it */
 function loadIndustryArt(v: TileVariant | undefined, i: IndustryType): Promise<IndustryArt> {
   const dir = v?.dir ?? '';
-  const key = `${dir}|${i}`;
+  const key = artKey(v, i);
   let p = artCache.get(key);
   if (!p) {
     p = (async () => {
       const colorNames = Object.keys(PLAYER_COLORS);
-      const loaded = await Assets.load([dir + CUT_FOR(i, v?.ext), ...colorNames.map((c) => dir + BUILT_FOR(i, c, v?.ext))]);
-      const built = Object.fromEntries(colorNames.map((c) => [c, loaded[dir + BUILT_FOR(i, c, v?.ext)]])) as Record<string, Texture>;
-      const builtGrain = Object.fromEntries(colorNames.map((c) => [c, grainTexture(built[c])])) as Record<string, Texture>;
-      return artFrom(loaded[dir + CUT_FOR(i, v?.ext)], built, builtGrain);
+      const cutUrl = dir + CUT_FOR(i, v?.ext);
+      const builtUrls = colorNames.map((c) => dir + BUILT_FOR(i, c, v?.ext));
+      const urls = [cutUrl, ...builtUrls];
+      const loaded = await Assets.load<Texture>(urls);
+      const cut = loaded[cutUrl];
+      const built = Object.fromEntries(colorNames.map((c, n) => [c, loaded[builtUrls[n]]])) as Record<string, Texture>;
+      const baked: Texture[] = [];
+      const builtGrain: Record<string, Texture> = {};
+      for (const c of colorNames) builtGrain[c] = await bake(baked, built[c], grainTexture);
+      const print = await bake(baked, cut, (t) => engraveTexture(t));
+      let mono: { print: Texture; halfL: Texture; halfR: Texture } | null = null;
+      return {
+        cut,
+        built,
+        builtGrain,
+        halfL: half(cut, false),
+        halfR: half(cut, true),
+        print,
+        printHalfL: half(print, false),
+        printHalfR: half(print, true),
+        mono: () => {
+          if (!mono) {
+            const m = engraveTexture(cut, true);
+            if (m !== cut) baked.push(m);
+            mono = { print: m, halfL: half(m, false), halfR: half(m, true) };
+          }
+          return mono;
+        },
+        urls,
+        baked,
+      };
     })();
     artCache.set(key, p);
-  }
-  return p;
-}
-
-/** fetch (once, tolerantly) one painting by url — null when the set does not
- *  carry it, so a missing scene falls back rather than breaking the board */
-function loadUrl(url: string): Promise<Texture | null> {
-  let p = pairCache.get(url);
-  if (!p) {
-    p = Assets.load(url).catch(() => null) as Promise<Texture | null>;
-    pairCache.set(url, p);
-  }
-  return p;
-}
-
-/** fetch (once, tolerantly) a dual-slot painting painted as one scene rather
- *  than assembled: a finished set's own, or the default set's */
-function loadPair(a: IndustryType, b: IndustryType): Promise<Texture | null> {
-  const url = `/tile-${pairFile(a, b)}-cut.png`;
-  let p = pairCache.get(url);
-  if (!p) {
-    p = Assets.load(url).catch(() => null) as Promise<Texture | null>;
-    pairCache.set(url, p);
   }
   return p;
 }
@@ -335,7 +402,41 @@ function composePair(a: IndustryType, ta: Texture, va: TileVariant | undefined, 
   ctx.drawImage(fs, cx * sx, 0, cw * sx, ft.height, 4, 512 - fh - 38, (cw * recipe.scale) / 100, fh);
   return Texture.from(c);
 }
-const composedCache = new Map<string, Texture>(); // `${variant a}|${a}|${variant b}|${b}`
+
+/** fetch (once, tolerantly) a dual slot's scene: the set's own painting
+ *  when both industries wear a set that paints this very slot, the default
+ *  set's when both are on it, else assembled from the two cutouts. Null
+ *  when the set does not carry it, so the half-crops take over rather than
+ *  the board breaking. */
+function loadPairArt(key: string, a: IndustryType, va: TileVariant | undefined, b: IndustryType, vb: TileVariant | undefined, arts: Record<IndustryType, IndustryArt>): Promise<PairArt | null> {
+  let p = pairCache.get(key);
+  if (!p) {
+    p = (async () => {
+      const url = va && vb && va.id === vb.id && va.pair ? va.dir + va.pair(a, b) : !va?.dir && !vb?.dir ? `/tile-${pairFile(a, b)}-cut.png` : null;
+      const loaded = url ? ((await Assets.load<Texture>(url).catch(() => null)) as Texture | null) : null;
+      const scene = url ? loaded : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
+      if (!scene) return null;
+      const baked: Texture[] = loaded ? [] : [scene];
+      const print = await bake(baked, scene, (t) => engraveTexture(t));
+      let mono: Texture | null = null;
+      return {
+        scene,
+        print,
+        mono: () => (mono ??= bakeNow(baked, scene, (t) => engraveTexture(t, true))),
+        urls: loaded && url ? [url] : [],
+        baked,
+      };
+    })();
+    pairCache.set(key, p);
+  }
+  return p;
+}
+/** the same bake, at once: a reader asked for it and is waiting */
+function bakeNow(into: Texture[], from: Texture, make: (t: Texture) => Texture): Texture {
+  const t = make(from);
+  if (t !== from) into.push(t);
+  return t;
+}
 
 /** Assemble the painting set for a per-industry variant choice. A dual-slot
  *  painting is the default file when both industries are on their default,
@@ -343,42 +444,61 @@ const composedCache = new Map<string, Texture>(); // `${variant a}|${a}|${varian
  *  a coal-and-goods slot is always the crate of the goods slots. */
 async function buildTileSet(art: TileArt): Promise<TileSet> {
   const industries = Object.keys(ICON_FOR) as IndustryType[];
+  const keys = new Set(industries.map((i) => artKey(variantOf(i, art), i)));
   const arts = Object.fromEntries(await Promise.all(industries.map(async (i) => [i, await loadIndustryArt(variantOf(i, art), i)]))) as Record<IndustryType, IndustryArt>;
-  const pair: Record<string, Texture> = {};
-  const printPair: Record<string, Texture> = {};
-  const monoPair: Record<string, Texture> = {};
+  const pairKeys = new Set<string>();
+  const pairs: [string, PairArt][] = [];
   await Promise.all(
     dualPairs().map(async ([a, b]) => {
       const va = variantOf(a, art);
       const vb = variantOf(b, art);
       const key = `${va?.id ?? ''}|${a}|${vb?.id ?? ''}|${b}`;
-      let t: Texture | null | undefined = composedCache.get(key);
-      if (!t) {
-        /* both industries on a set that paints this very slot: its scene.
-           Both on the default set: that one has its own scenes too.
-           Anything mixed is assembled from the two cutouts. */
-        const sameSet = va && vb && va.id === vb.id && va.pair ? va.dir + va.pair(a, b) : null;
-        t = sameSet ? await loadUrl(sameSet) : !va?.dir && !vb?.dir ? await loadPair(a, b) : composePair(a, arts[a].cut, va, b, arts[b].cut, vb);
-        if (t) composedCache.set(key, t);
-      }
-      if (!t) return;
-      pair[pairKey(a, b)] = t;
-      printPair[pairKey(a, b)] = engravedPair(key, t);
-      monoPair[pairKey(a, b)] = engravedPair(key, t, true);
+      pairKeys.add(key);
+      const pa = await loadPairArt(key, a, va, b, vb, arts);
+      if (pa) pairs.push([pairKey(a, b), pa]);
     }),
   );
   const by = <K extends keyof IndustryArt>(k: K) => Object.fromEntries(industries.map((i) => [i, arts[i][k]])) as Record<IndustryType, IndustryArt[K]>;
-  return { cut: by('cut'), built: by('built'), builtGrain: by('builtGrain'), halfL: by('halfL'), halfR: by('halfR'), pair, print: by('print'), printHalfL: by('printHalfL'), printHalfR: by('printHalfR'), printPair, mono: by('mono'), monoHalfL: by('monoHalfL'), monoHalfR: by('monoHalfR'), monoPair };
+  const each = (f: (i: IndustryType) => Texture) => Object.fromEntries(industries.map((i) => [i, f(i)])) as Record<IndustryType, Texture>;
+  let mono: Prints | null = null;
+  return {
+    cut: by('cut'),
+    built: by('built'),
+    builtGrain: by('builtGrain'),
+    halfL: by('halfL'),
+    halfR: by('halfR'),
+    pair: Object.fromEntries(pairs.map(([k, pa]) => [k, pa.scene])),
+    sepia: { print: by('print'), halfL: by('printHalfL'), halfR: by('printHalfR'), pair: Object.fromEntries(pairs.map(([k, pa]) => [k, pa.print])) },
+    mono: () =>
+      (mono ??= {
+        print: each((i) => arts[i].mono().print),
+        halfL: each((i) => arts[i].mono().halfL),
+        halfR: each((i) => arts[i].mono().halfR),
+        pair: Object.fromEntries(pairs.map(([k, pa]) => [k, pa.mono()])),
+      }),
+    arts: keys,
+    pairs: pairKeys,
+  };
 }
-const printPairCache = new Map<string, Texture>();
-function engravedPair(key: string, t: Texture, mono = false): Texture {
-  const k = mono ? `${key}|mono` : key;
-  let e = printPairCache.get(k);
-  if (!e) {
-    e = engraveTexture(t, mono);
-    printPairCache.set(k, e);
+
+/** hand a piece of art back: its bakes destroyed, its files returned */
+const letGo = (h: Holdings | null): void => {
+  if (!h) return;
+  for (const t of h.baked) t.destroy(true);
+  if (h.urls.length) void Assets.unload(h.urls);
+};
+/** let go of every art and dual-slot scene the kept set does not wear */
+function releaseArts(keep: { arts: Set<string>; pairs: Set<string> }): void {
+  for (const [k, p] of artCache) {
+    if (keep.arts.has(k)) continue;
+    artCache.delete(k);
+    void p.then(letGo, () => undefined);
   }
-  return e;
+  for (const [k, p] of pairCache) {
+    if (keep.pairs.has(k)) continue;
+    pairCache.delete(k);
+    void p.then(letGo, () => undefined);
+  }
 }
 
 /* WebKit (the Linux and macOS desktop shells, Safari) hands a texture
@@ -391,12 +511,19 @@ export async function loadBoardAssets(): Promise<void> {
   Assets.setPreferences({ preferWorkers: !WEBKIT });
   const urls = ['/beer-barrel.png', '/town-village.webp', '/town-hamlet-0.webp', '/town-hamlet-1.webp', '/town-hamlet-2.webp', '/town-place-0.webp', '/town-place-1.webp', '/town-place-2.webp', '/town-place-3.webp', '/vehicle-boat.png', '/boat-fx.png', '/icon-canal.svg', '/icon-rail.svg'];
   const loaded = await Assets.load(urls);
+  const kept = [...urls];
   /* a works is a nicety, not a need: one not painted yet must not take the
      whole board down with it, so each is asked for on its own and a miss
      leaves the town its painted place */
-  const works = await Promise.all(WORKS.map(async (i) => [i, await Assets.load<Texture>(`/town-works-${i}.webp`).catch(() => null)] as const));
-  const wharves = await Promise.all(WHARVES.map((n) => Assets.load<Texture>(`/merchant-wharf-${n}.webp`).catch(() => null)));
+  const tolerant = async (url: string): Promise<Texture | null> => {
+    const t = (await Assets.load<Texture>(url).catch(() => null)) as Texture | null;
+    if (t) kept.push(url);
+    return t;
+  };
+  const works = await Promise.all(WORKS.map(async (i) => [i, await tolerant(`/town-works-${i}.webp`)] as const));
+  const wharves = await Promise.all(WHARVES.map((n) => tolerant(`/merchant-wharf-${n}.webp`)));
   tileSet = await buildTileSet({});
+  tileArt = {};
   barrelTex = loaded['/beer-barrel.png'];
   villageTex = loaded['/town-village.webp'];
   hamletTex = [loaded['/town-hamlet-0.webp'], loaded['/town-hamlet-1.webp'], loaded['/town-hamlet-2.webp']];
@@ -404,12 +531,66 @@ export async function loadBoardAssets(): Promise<void> {
   worksTex = Object.fromEntries(works.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
   wharfTex = wharves;
   const drawn = [0, 1, 2, 3].map((i) => `town-place-${i}`).concat(WORKS.map((i) => `town-works-${i}`), WHARVES.map((n) => `merchant-wharf-${n}`));
-  shadowTex = Object.fromEntries(await Promise.all(drawn.map(async (n) => [n, await Assets.load<Texture>(`/${n}-shadow.webp`).catch(() => null)] as const)));
+  shadowTex = Object.fromEntries(await Promise.all(drawn.map(async (n) => [n, await tolerant(`/${n}-shadow.webp`)] as const)));
+  tableUrls = kept;
+}
+
+/** the ground sheets now laid on the table: the ones they replace go back
+ *  to the loader (38 MiB apiece on the GPU, and nothing else reads them) */
+export function wearSheets(urls: string[]): void {
+  const gone = sheetUrls.filter((u) => !urls.includes(u));
+  sheetUrls = [...urls];
+  if (gone.length) void Assets.unload(gone);
+}
+
+/* The table's textures are held while a board is up. The last board to go
+   lets them go on the next turn of the page — not at once, so a board that
+   is taken down and put straight back up (React's development double mount,
+   a replay opened from the table) finds its press still inked. */
+let holders = 0;
+export function holdBoardAssets(): () => void {
+  holders++;
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    holders--;
+    if (holders > 0) return;
+    setTimeout(() => {
+      if (holders > 0) return;
+      releaseArts({ arts: new Set(), pairs: new Set() });
+      const files = [...tableUrls, ...sheetUrls];
+      tableUrls = [];
+      sheetUrls = [];
+      if (files.length) void Assets.unload(files);
+    }, 0);
+  };
+}
+
+/** what the press holds right now, for the measures of a table being set:
+ *  textures, and bytes at four to a texel */
+export async function boardAssetTally(): Promise<{ textures: number; bytes: number }> {
+  const seen = new Set<Texture>();
+  const add = (t: Texture | null | undefined) => {
+    if (t && !t.destroyed) seen.add(t);
+  };
+  for (const p of artCache.values()) {
+    const a = await p;
+    [a.cut, ...Object.values(a.built), ...a.baked].forEach(add);
+  }
+  for (const p of pairCache.values()) {
+    const a = await p;
+    if (a) [a.scene, ...a.baked].forEach(add);
+  }
+  for (const u of [...tableUrls, ...sheetUrls]) add(Assets.get<Texture>(u));
+  let bytes = 0;
+  for (const t of seen) bytes += t.source.pixelWidth * t.source.pixelHeight * 4;
+  return { textures: seen.size, bytes };
 }
 
 /* The true winding route (same as the SVG board): a dense sampling of the
-   bulged quad from routeFor — used for BOTH drawing and hit geometry, so
-   the hover zone always sits exactly on the visible track. */
+   bulged quad from routeFor — the same sampling the board's pointer reads
+   (PixiBoard, linkAt), so the hover zone sits exactly on the visible track. */
 const linkPoints = (def: LinkDef, era: Era = 'canal'): [number, number][] => routeFor(def, era).pts;
 
 function tracePath(g: Graphics, pts: [number, number][]): void {
@@ -496,7 +677,7 @@ function drawShapeGlyph(g: Graphics, shape: string, x: number, y: number): void 
 
 /** owner seal on a built card: dark ring, colour disc, the player's shape */
 export function drawOwnerMedallion(g: Graphics, x: number, y: number, col: number, shape: string): void {
-  g.circle(x, y, 7).fill(0x100d0b).stroke({ width: 0.8, color: 0xf2ead6, alpha: 0.35 });
+  g.circle(x, y, 7).fill(0x100d0b).stroke({ width: 1, color: CASING, alpha: 0.85 });
   g.circle(x, y, 5.6).fill(col);
   drawShapeGlyph(g, shape, x, y);
 }
@@ -550,34 +731,31 @@ function makeRibbon(labelText: string, cx: number, cy: number, w: number, h: num
 }
 
 export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Sprite, etchRail: Sprite): BoardScene {
+  /* the sheets, bottom to top, each named: nothing on the table is found by
+     its rank among its siblings */
   const world = new Container();
+  const land = new Container();
+  const ground = new Container();
   const linksLayer = new Container();
-  const hitLayer = new Container();
   const merchantsLayer = new Container();
   const townsLayer = new Container();
   const ribbonsLayer = new Container();
   const overlay = new Container();
   const hoverLayer = new Container();
-  hoverLayer.eventMode = 'none';
-  world.addChild(bgCanal, bgRail, etchCanal, etchRail, linksLayer, merchantsLayer, townsLayer, hitLayer, ribbonsLayer, overlay, hoverLayer);
+  for (const c of [land, ground, linksLayer, merchantsLayer, townsLayer, ribbonsLayer, hoverLayer]) c.eventMode = 'none';
+  ground.addChild(bgCanal, bgRail, etchCanal, etchRail);
+  land.addChild(ground, linksLayer, merchantsLayer, townsLayer, ribbonsLayer);
+  world.addChild(land, overlay, hoverLayer);
   bgRail.alpha = 0;
   etchRail.alpha = 0;
 
   /* ------------------------------ links ------------------------------ */
   const linkGfx = new Map<string, Graphics>();
-  const linkHit = new Map<string, Graphics>();
   for (const def of LINKS) {
     const g = new Graphics();
     g.eventMode = 'none';
     linksLayer.addChild(g);
     linkGfx.set(def.id, g);
-    /* generous invisible hit stroke — Pixi hit-tests geometry, not alpha */
-    const hit = new Graphics();
-    tracePath(hit, linkPoints(def));
-    hit.stroke({ width: 26, color: 0xffffff, alpha: 0 });
-    hit.eventMode = 'static';
-    hitLayer.addChild(hit);
-    linkHit.set(def.id, hit);
   }
 
   /* ----------------------------- shadows ----------------------------- */
@@ -810,20 +988,19 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     const slots: SlotView[] = [];
     for (let si = 0; si < town.slots.length; si++) {
       const pos = c.slots[si];
-      const ring = new Graphics();
       const frame = new Graphics();
       const art = new Sprite();
       const art2 = new Sprite();
       /* GPU clip that rounds the built player-colour card exactly like the
          board's roundRect slots (baked-in PNG corners looked rough) */
       const artMask = new Graphics();
-      const extras = new Graphics();
+      const rim = new Graphics();
+      const detail = new Container();
       const badges = new Container();
       const deco = new Container();
-      const hit = new Graphics();
       art.visible = false;
       art2.visible = false;
-      for (const o of [ring, frame, art, art2, artMask, extras, badges, deco]) o.eventMode = 'none';
+      for (const o of [frame, art, art2, artMask, rim, detail, badges, deco]) o.eventMode = 'none';
 
       /* ---- static empty-slot chrome (SlotTile), toggled by `deco.visible` ---- */
       /* the painted industry art IS the slot face — no edge stripes, no
@@ -837,12 +1014,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       lip.eventMode = 'none';
       deco.addChild(lip);
 
-      hit.rect(pos.x - TILE_HALF, pos.y - TILE_HALF, TILE, TILE).fill({ color: 0xffffff, alpha: 0 });
-      hit.eventMode = 'static';
-      const detailC = new Container();
-      detailC.eventMode = 'none';
-      townsLayer.addChild(ring, frame, art, art2, artMask, deco, extras, detailC, badges, hit);
-      slots.push({ ring, frame, art, art2, artMask, extras, detailC, badges, deco, glow: topGlow, hit, artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
+      townsLayer.addChild(frame, art, art2, artMask, deco, rim, detail, badges);
+      slots.push({ frame, art, art2, artMask, rim, detail, badges, deco, glow: topGlow, floored: [], artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
     }
     /* town colour code (physical Brass): the name banner itself takes the
        town's own colour — no dash, no underline */
@@ -860,22 +1033,36 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
   let look: TileLook = { ...DEFAULT_TILE_LOOK };
   let styleReq = 0;
 
-  /* resource stock badge layouts on a built tile (A-B choice) */
+  /** a group of marks pinned at (px, py) on a slot: the ticker scales it
+   *  about that point so its `size` keeps `floor` px on screen (FIGURE_ /
+   *  SEAL_MIN_SCREEN), never under `base`, never over `max` */
+  const pinned = (sv: SlotView, px: number, py: number, size: number, floor: number, base = 1, max?: number): Floored => {
+    const c = new Container();
+    c.eventMode = 'none';
+    c.pivot.set(px, py);
+    c.position.set(px, py);
+    sv.badges.addChild(c);
+    const f: Floored = { c, size, px: floor, base, max };
+    sv.floored.push(f);
+    return f;
+  };
   /* level and link value, top-left of a built tile: a dark plaque with the
      level as a roman numeral, then one chain link per point the tile adds
-     to each neighbouring canal or rail at era's end. Sits in `badges` so it
-     reads at any zoom, like the stock disc. */
+     to each neighbouring canal or rail at era's end. Pinned at the card's
+     corner, so it grows inward, and held under the stock disc's reach. */
   const ROMAN = ['', 'I', 'II', 'III', 'IV'];
-  const drawLevelMark = (into: Container, x: number, y: number, level: number, links: number, muted: boolean) => {
+  const drawLevelMark = (sv: SlotView, x: number, y: number, level: number, links: number, muted: boolean) => {
     const h = bigChips ? 14 : 12;
+    const font = bigChips ? 10.5 : 9;
     const x0 = x - TILE_HALF + 2.75;
     const y0 = y - TILE_HALF + 2.75;
+    const into = pinned(sv, x0, y0, font, FIGURE_MIN_SCREEN, 1, 1.25).c;
     const ink = muted ? 0xc9b48a : 0xf4ecd8;
     const g = new Graphics();
     g.eventMode = 'none';
     const numeral = new Text({
       text: ROMAN[level] ?? String(level),
-      style: { fontFamily: "'Playfair Display', serif", fontSize: bigChips ? 10.5 : 9, fontWeight: '900', fill: ink },
+      style: { fontFamily: "'Playfair Display', serif", fontSize: font, fontWeight: '900', fill: ink },
     });
     numeral.anchor.set(0.5);
     numeral.eventMode = 'none';
@@ -894,32 +1081,35 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       g.roundRect(x1 + 3 + i * step, y0 + h / 2 - lh / 2, lw, lh, lh / 2).stroke({ width: 1.1, color: ink, alpha: muted ? 0.8 : 0.95 });
     }
   };
-  const drawStock = (badges: Container, x: number, y: number, n: number, kind: 'coal' | 'iron' | 'beer') => {
-    const iconAt = (cx: number, cy: number, s: number) => {
+  /* resource stock badge layouts on a built tile (A-B choice), each pinned
+     at its own centre */
+  const drawStock = (sv: SlotView, x: number, y: number, n: number, kind: 'coal' | 'iron' | 'beer') => {
+    const iconAt = (into: Container, cx: number, cy: number, s: number) => {
       if (kind === 'beer') {
         const b = new Sprite(barrelTex);
         b.width = b.height = s;
         b.position.set(cx - s / 2, cy - s / 2);
         b.eventMode = 'none';
-        badges.addChild(b);
+        into.addChild(b);
       } else {
         const cube = new Graphics();
         drawCube(cube, cx, cy, s, kind);
         cube.eventMode = 'none';
-        badges.addChild(cube);
+        into.addChild(cube);
       }
     };
     /* dark tag with icon left + ×n right, centred on (cx, cy) */
     const tag = (cx: number, cy: number, tw: number, th: number, iconS: number, font: number) => {
+      const into = pinned(sv, cx, cy, font, FIGURE_MIN_SCREEN).c;
       const g = new Graphics().roundRect(cx - tw / 2, cy - th / 2, tw, th, 4).fill({ color: 0x17110c, alpha: 0.92 }).stroke({ width: 0.9, color: 0xf4ecd8, alpha: 0.45 });
       g.eventMode = 'none';
-      badges.addChild(g);
-      iconAt(cx - tw / 2 + iconS / 2 + 3, cy, iconS);
+      into.addChild(g);
+      iconAt(into, cx - tw / 2 + iconS / 2 + 3, cy, iconS);
       const t = new Text({ text: `×${n}`, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: font, fontWeight: '700', fill: 0xf4ecd8 } });
       t.anchor.set(0.5, 0.5);
       t.position.set(cx + (tw / 2 - (iconS + 6)) / 2 + 2, cy + 0.5);
       t.eventMode = 'none';
-      badges.addChild(t);
+      into.addChild(t);
     };
     if (stockStyle === 'counter') tag(x, y + 7, 32, 15, 11, 9.5);
     else if (stockStyle === 'big') tag(x, y + 8, 46, 21, 14, 13);
@@ -931,28 +1121,29 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
          chips bottom) */
       const cx = x + TILE_HALF - 5;
       const cy = y - TILE_HALF + 5;
+      const into = pinned(sv, cx, cy, 12.5, FIGURE_MIN_SCREEN).c;
       const g = new Graphics().circle(cx, cy, 10).fill({ color: 0x17110c, alpha: 0.95 }).stroke({ width: 1.4, color: 0xc9a45c });
       g.eventMode = 'none';
-      badges.addChild(g);
+      into.addChild(g);
       const t = new Text({ text: String(n), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 12.5, fontWeight: '700', fill: 0xf4ecd8 } });
       t.anchor.set(0.5);
       t.position.set(cx, cy + 0.5);
       t.eventMode = 'none';
-      badges.addChild(t);
+      into.addChild(t);
     }
   };
-  /* the hit strokes follow the era's routes: retraced when the era turns */
-  let hitEra: Era = 'canal';
+  /* the owner's seal on a built card — the player's shape on their colour —
+     is always there, pinned in a corner and floored like the figures: the
+     colour of a card alone does not tell two players apart for every eye,
+     nor on a card turned over. Colour-blind mode seats it larger. */
+  const drawSeal = (sv: SlotView, sx: number, sy: number, col: number, shape: string) => {
+    const into = pinned(sv, sx, sy, 9, SEAL_MIN_SCREEN, look.colorBlind && look.sealTiles ? 1.35 : 1).c;
+    const g = new Graphics();
+    g.eventMode = 'none';
+    drawOwnerMedallion(g, sx, sy, col, shape);
+    into.addChild(g);
+  };
   const drawLinks = (game: GameState) => {
-    if (game.era !== hitEra) {
-      hitEra = game.era;
-      for (const def of LINKS) {
-        const hit = linkHit.get(def.id)!;
-        hit.clear();
-        tracePath(hit, linkPoints(def, hitEra));
-        hit.stroke({ width: 26, color: 0xffffff, alpha: 0 });
-      }
-    }
     for (const def of LINKS) {
       const g = linkGfx.get(def.id)!;
       g.clear();
@@ -1047,7 +1238,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
         if (look.colorBlind && look.sealLinks) {
           const mid = pts[Math.floor(pts.length / 2)];
           g.circle(mid[0], mid[1], 10).fill(0x100d0b).stroke({ width: 1.6, color: 0xc9a45c });
-          g.circle(mid[0], mid[1], 7.6).fill(col).stroke({ width: 0.8, color: 0xf2ead6, alpha: 0.35 });
+          g.circle(mid[0], mid[1], 7.6).fill(col).stroke({ width: 0.8, color: CASING, alpha: 0.35 });
           drawShapeGlyph(g, shape, mid[0], mid[1]);
         }
       }
@@ -1124,20 +1315,19 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       const c = townChrome(town);
       for (let si = 0; si < town.slots.length; si++) {
         const sv = view.slots[si];
-        const { ring, frame, art, art2, artMask, extras, badges, deco, detailC } = sv;
+        const { frame, art, art2, artMask, rim, detail, badges, deco } = sv;
         const x = c.slots[si].x;
         const y = c.slots[si].y;
         const tile = game.tiles[tileKey(town.id, si)];
-        ring.clear();
         frame.clear();
-        extras.clear();
+        rim.clear();
         artMask.clear();
         art.mask = null;
-        for (const child of badges.removeChildren()) child.destroy();
-        for (const child of detailC.removeChildren()) child.destroy();
+        for (const child of badges.removeChildren()) child.destroy({ children: true });
+        for (const child of detail.removeChildren()) child.destroy({ children: true });
+        sv.floored.length = 0;
         sv.hasTile = !!tile;
         sv.flipped = tile?.flipped ?? false;
-        ring.alpha = 1;
         frame.alpha = 1;
         badges.alpha = 1;
         if (tile) {
@@ -1157,10 +1347,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
           if (tile.flipped) {
             /* flipped = the works has paid out: the painting stays as a sepia
                engraving over the owner's colour, so a flipped mill still
-               reads as a mill, and the score sits in the middle on a brass
-               token, stamped like a counter laid on the card. The owner's
-               rim stays, quieter. */
-            art.texture = tileSet.print[tile.industry] ?? tileSet.cut[tile.industry];
+               reads as a mill, and the score sits in the middle on a token
+               stamped like a counter laid on the card. The card has lost its
+               colour, so the owner's rim speaks louder, not softer: full
+               strength, a half point wider, on the cream casing the supply
+               lines wear — and the token is rimmed in the owner's colour. */
+            art.texture = tileSet.sepia.print[tile.industry] ?? tileSet.cut[tile.industry];
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -1169,32 +1361,40 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
             sv.artBase = 0.42;
             art.alpha = sv.artBase;
             art.visible = true;
-            extras.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col, alpha: 0.6 });
-            extras.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
-            /* the token: a brass coin, dark face, milled edge, the score stamped */
+            rim.roundRect(x - TILE_HALF + 0.3, y - TILE_HALF + 0.3, TILE - 0.6, TILE - 0.6, 6).stroke({ width: 1.2, color: CASING, alpha: 0.85 });
+            rim.roundRect(x - TILE_HALF + 1.5, y - TILE_HALF + 1.5, TILE - 3, TILE - 3, 5.5).stroke({ width: 3, color: col });
+            rim.roundRect(x - TILE_HALF + 3.25, y - TILE_HALF + 3.25, TILE - 6.5, TILE - 6.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
+            /* the token: a dark coin in the owner's ring, the score stamped;
+               the word under it is small print, faded at far zoom */
             const R = 14;
+            const coin = pinned(sv, x, y, 15, FIGURE_MIN_SCREEN);
             const token = new Graphics();
             token.circle(x + 1, y + 2, R).fill({ color: 0x000000, alpha: 0.4 });
-            token.circle(x, y, R).fill(0x2a2118).stroke({ width: 2, color: 0xc9a45c });
-            token.circle(x, y, R - 3).stroke({ width: 0.8, color: 0xc9a45c, alpha: 0.55 });
+            token.circle(x, y, R + 1.6).fill(CASING);
+            token.circle(x, y, R).fill(0x1c1611).stroke({ width: 2.6, color: col });
+            token.circle(x, y, R - 3.2).stroke({ width: 0.8, color: tint(col, 0.5), alpha: 0.6 });
             token.eventMode = 'none';
             const vpText = new Text({
               text: String(lv.vp),
-              style: { fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: '900', fill: 0xe8c47a },
+              style: { fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: '900', fill: 0xf4ecd8 },
             });
             vpText.anchor.set(0.5);
             vpText.position.set(x, y - 2);
             vpText.eventMode = 'none';
+            const fine = new Container();
+            fine.eventMode = 'none';
             const vpLabel = new Text({
               text: tr('board.tile.vp'),
-              style: { fontFamily: "'Archivo', sans-serif", fontSize: 5.5, fontWeight: '700', letterSpacing: 1.4, fill: 0xc9a45c },
+              style: { fontFamily: "'Archivo', sans-serif", fontSize: 5.5, fontWeight: '700', letterSpacing: 1.4, fill: tint(col, 0.55) },
             });
             vpLabel.anchor.set(0.5);
             vpLabel.position.set(x, y + 7.5);
             vpLabel.eventMode = 'none';
-            badges.addChild(token, vpText, vpLabel);
-            if (look.colorBlind && look.sealTiles) drawOwnerMedallion(extras, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
-            drawLevelMark(badges, x, y, tile.level, lv.links, true);
+            fine.addChild(vpLabel);
+            coin.c.addChild(token, vpText, fine);
+            coin.fine = fine;
+            drawSeal(sv, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
+            drawLevelMark(sv, x, y, tile.level, lv.links, true);
           } else {
             /* player-colour card painting (builtTex), full opacity, clipped
                to the slot's rounded rect by the GPU mask */
@@ -1208,13 +1408,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
             art.alpha = sv.artBase;
             art.visible = true;
             /* owner rim: colour band + dark inner hairline + light bevel */
-            extras.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col });
-            extras.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
-            extras.roundRect(x - TILE_HALF + 0.5, y - TILE_HALF + 0.5, TILE - 1, TILE - 1, 6).stroke({ width: 0.8, color: tint(col, 0.45), alpha: 0.8 });
-            /* owner medallion (colour-blind safe): the player's shape on a
-               small disc in the top-right corner — bottom-right when the
-               stock disc already sits there ('corner' layout) */
-            if (look.colorBlind && look.sealTiles) drawOwnerMedallion(extras, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
+            rim.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col });
+            rim.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
+            rim.roundRect(x - TILE_HALF + 0.5, y - TILE_HALF + 0.5, TILE - 1, TILE - 1, 6).stroke({ width: 0.8, color: tint(col, 0.45), alpha: 0.8 });
+            /* the owner's seal in the top-right corner — bottom-right when
+               the stock disc already sits there ('corner' layout) */
+            drawSeal(sv, x + TILE_HALF - 8, stockStyle === 'corner' ? y + TILE_HALF - 8 - (bigChips ? 15 : 11) : y - TILE_HALF + 8, col, shape);
             const numStyle = { fontFamily: "'IBM Plex Mono', monospace", fontSize: bigChips ? 10.5 : 7.5, fontWeight: '600' as const, fill: 0xf4ecd8 };
             const incText = new Text({ text: `+${lv.incomeDelta}`, style: numStyle });
             incText.eventMode = 'none';
@@ -1234,7 +1433,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
               vpText.anchor.set(1, 0.5);
               vpText.position.set(x + TILE_HALF - 7, cy0 + ch / 2 + 0.5);
               vpText.alpha = 0.95;
-              detailC.addChild(band, incText, vpText);
+              detail.addChild(band, incText, vpText);
             } else {
               /* two boxed chips riding the bottom edge — dark tokens with
                  cream numerals, readable on ANY player colour */
@@ -1249,15 +1448,15 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
               chipVp.eventMode = 'none';
               vpText.anchor.set(0.5);
               vpText.position.set(x + TILE_HALF - 4 - cw / 2, cy0 + ch / 2 + 0.5);
-              detailC.addChild(chipInc, incText, chipVp, vpText);
+              detail.addChild(chipInc, incText, chipVp, vpText);
             }
-            drawLevelMark(badges, x, y, tile.level, lv.links, false);
+            drawLevelMark(sv, x, y, tile.level, lv.links, false);
           }
           /* resource stock badge — layout is switchable (stockStyle, board
              option / A-B probe). The numeral is always exact; the industry
              implies the good, the mini icon only speeds the read. */
           if (!tile.flipped && tile.cubes > 0) {
-            drawStock(badges, x, y, tile.cubes, tile.industry === 'brewery' ? 'beer' : tile.industry === 'iron' ? 'iron' : 'coal');
+            drawStock(sv, x, y, tile.cubes, tile.industry === 'brewery' ? 'beer' : tile.industry === 'iron' ? 'iron' : 'coal');
           }
         } else {
           const allows = town.slots[si].allows;
@@ -1275,7 +1474,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
           const engraved = look.slotArt !== 'painted';
           /* the print set: sepia, or black ink on white for plainer slots */
           const mono = look.slotArt === 'mono';
-          const prints = mono ? { pair: tileSet.monoPair, halfL: tileSet.monoHalfL, halfR: tileSet.monoHalfR, print: tileSet.mono } : { pair: tileSet.printPair, halfL: tileSet.printHalfL, halfR: tileSet.printHalfR, print: tileSet.print };
+          const prints = mono ? tileSet.mono() : tileSet.sepia;
           if (allows.length > 1) {
             const combined = (engraved ? prints.pair : tileSet.pair)[pairKey(allows[0], allows[1])];
             if (combined) {
@@ -1421,6 +1620,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
   let lastGame: GameState | null = null;
   return {
     world,
+    land,
+    ground,
     linksLayer,
     bgCanal,
     bgRail,
@@ -1429,7 +1630,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     overlay,
     hoverLayer,
     linkGfx,
-    linkHit,
     towns,
     merchantBeer,
     ribbons,
@@ -1477,6 +1677,8 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
         drawTowns(lastGame);
         drawMerchants(lastGame);
       }
+      /* nothing on the table wears the set it replaced any more */
+      releaseArts(set);
     },
     setTileLook(l: TileLook) {
       const linksToo = (l.colorBlind && l.sealLinks) !== (look.colorBlind && look.sealLinks);
