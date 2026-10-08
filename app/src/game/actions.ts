@@ -1,4 +1,5 @@
 import { cloneState } from './clone';
+import { spareCard } from './bot';
 import { RULES_EDITION, advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beerShort, beginRailEra, buildTargets, canScout, linkTargets, newGame, salesThatStand, sellTargets, withCoal, withIron, withLinkCoal } from './engine';
 import type { BotMove } from './bot';
 import type { GameState, IndustryType, SetupPayload } from './types';
@@ -54,8 +55,16 @@ export type GameAction =
 
 export interface ActionResult {
   state: GameState | null;
+  /** the refusal, as a key the tongues can say */
   error?: string;
+  /** for the one who reads the logs, not the player: what the refusal was
+   *  read off */
+  detail?: string;
 }
+
+/** replays that are only trying a reading — an edition the log may not be
+ *  written under — refuse without a word; the one that counts speaks */
+let trying = 0;
 
 /** validate `action` for `playerIdx` against `s`, apply it on a copy and
  *  advance the turn. `s` itself is never touched. */
@@ -92,8 +101,13 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
   const p = mut.players[playerIdx];
   const cardOf = (id: string | undefined) => (id ? p.hand.find((c) => c.id === id) : undefined);
   /* a refused card is the classic sign of a log that no longer matches its
-     seed: say who was to act and what they hold, it is the whole diagnosis */
-  const noCard = (id: string) => fail(`Card not in hand — ${p.name} (seat ${playerIdx}, ${s.era} R${s.round}) holds ${p.hand.map((c) => c.id).join(' ') || 'nothing'}, action names ${id}`);
+     seed: who was to act and what they hold is the whole diagnosis — for the
+     logs. The player is told the table moved on */
+  const noCard = (id: string): ActionResult => {
+    const detail = `${p.name} (seat ${playerIdx}, ${s.era} R${s.round}) holds ${p.hand.map((c) => c.id).join(' ') || 'nothing'}, action names ${id}`;
+    if (!trying) console.error(`card not in hand: ${detail}`);
+    return { state: null, error: 'card-not-in-hand', detail };
+  };
   let ok = false;
   switch (action.kind) {
     case 'build': {
@@ -177,17 +191,20 @@ export function botAction(move: BotMove | null): GameAction | null {
     case 'sell':
       return move.card && move.sell ? { kind: 'sell', card: move.card.id, sales: move.sell.map((t) => ({ town: t.town, slot: t.slot, merchant: t.merchant })) } : null;
     case 'loan':
-      return { kind: 'loan' };
+      /* the card laid down is the machine's to name, not the engine's */
+      return move.card ? { kind: 'loan', card: move.card.id } : { kind: 'loan' };
     case 'scout':
       return move.scoutCards ? { kind: 'scout', cards: move.scoutCards } : null;
   }
 }
 
-/** what a player with nothing playable does: scout if allowed, else pass */
+/** what a player with nothing playable does: scout if allowed, else pass —
+ *  laying down the card they can best spare, named in the log */
 export function fallbackAction(s: GameState, playerIdx: number): GameAction {
   const p = s.players[playerIdx];
   if (canScout(s, playerIdx).ok && p.hand.length >= 3) return { kind: 'scout', cards: p.hand.slice(0, 3).map((c) => c.id) };
-  return { kind: 'pass' };
+  const card = spareCard(s, playerIdx, p.hand);
+  return card ? { kind: 'pass', card: card.id } : { kind: 'pass' };
 }
 
 /** who takes an action of the log: the player to act, except a vote, which is cast in its author's name */
@@ -197,10 +214,20 @@ function replayUnder(setup: SetupPayload, seed: number, actions: GameAction[]): 
   let s = newGame(setup, seed);
   actions.forEach((a, i) => {
     const r = applyAction(s, actorOf(s, a), a);
-    if (!r.state) throw new Error(`replay: action ${i} (${a.kind}) refused — ${r.error}`);
+    if (!r.state) throw new Error(`replay: action ${i} (${a.kind}) refused — ${r.error}${r.detail ? ` (${r.detail})` : ''}`);
     s = r.state;
   });
   return s;
+}
+
+/** a reading tried quietly: a refusal there is an answer, not a fault */
+function quietly<T>(read: () => T): T {
+  trying += 1;
+  try {
+    return read();
+  } finally {
+    trying -= 1;
+  }
 }
 
 /** rebuild a game from its seed and its log; throws on the first refused
@@ -218,10 +245,10 @@ export function replay(setup: SetupPayload, seed: number, actions: GameAction[])
   const first: SetupPayload = { ...setup, options: { ...setup.options, rules: 1 } };
   let today: GameState;
   try {
-    today = replayUnder(setup, seed, actions);
+    today = quietly(() => replayUnder(setup, seed, actions));
   } catch (err) {
     try {
-      return replayUnder(first, seed, actions);
+      return quietly(() => replayUnder(first, seed, actions));
     } catch {
       /* the first reading's refusal is the one worth reporting */
       throw err;
@@ -229,7 +256,7 @@ export function replay(setup: SetupPayload, seed: number, actions: GameAction[])
   }
   if (today.phase !== 'game-over' && actions.some((a) => a.kind === 'begin-rail')) {
     try {
-      const old = replayUnder(first, seed, actions);
+      const old = quietly(() => replayUnder(first, seed, actions));
       if (old.phase === 'game-over') return old;
     } catch {
       /* it will not stand the old way: today's reading holds */
@@ -277,6 +304,19 @@ export function undoLastHuman(s: GameState, marks: UndoMark[]): GameState | null
   back.fxSeq = s.fxSeq + 1;
   delete back.lastFx;
   return back;
+}
+
+/** a setup as a deal writes it down: the edition of the rules always named —
+ *  the one asked for when this engine plays it, today's otherwise. A log
+ *  whose deal names its edition is never read under another */
+export function withEdition(setup: SetupPayload): SetupPayload {
+  return { ...setup, options: { ...setup.options, rules: editionOf(setup.options.rules) } };
+}
+
+/** an edition someone asked for, as far as this engine plays it: 1 or 2
+ *  today, and today's for anything else — or nothing at all */
+export function editionOf(asked: unknown): number {
+  return typeof asked === 'number' && Number.isInteger(asked) && asked >= 1 && asked <= RULES_EDITION ? asked : RULES_EDITION;
 }
 
 /** the setup a state was created from (what replay needs besides the seed) */

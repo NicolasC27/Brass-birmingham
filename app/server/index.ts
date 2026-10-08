@@ -734,10 +734,19 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'home.act': {
         const code = typeof m.code === 'string' ? normalizeCode(m.code) : '';
         const r = code && Number.isInteger(m.idx) && m.idx >= 0 && m.action ? home.act(who.id, code, m.idx, m.action) : ({ ok: false, error: 'refused' } as const);
-        /* a move that stands says nothing back: the browser already has the
-           position it played. Only a refusal is worth a frame */
-        if (!r.ok) send(c, { t: 'home.refused', code, at: Number(m.idx), error: r.error });
-        else if (r.over) {
+        /* a browser that numbered its move is answered either way: a move
+           written, or turned down. One that did not hears only a refusal —
+           the position it played is already on its screen */
+        const rid = 'rid' in m && typeof m.rid === 'number' ? m.rid : undefined;
+        if (!r.ok) {
+          /* the refusal frame first: whoever listens for refusals has heard
+             it by the time the move's own answer comes back */
+          send(c, { t: 'home.refused', code, at: Number(m.idx), error: r.error });
+          if (rid !== undefined) send(c, { t: 'refused', rid, error: r.error });
+          return;
+        }
+        if (rid !== undefined) send(c, { t: 'done', rid });
+        if (r.over) {
           tellHome(who.id);
           /* a game played out is one more line of the history */
           for (const s of socketsOf(who.id)) pushDesk(s);
@@ -749,6 +758,10 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         const r = code && Number.isInteger(m.at) ? home.undo(who.id, code, m.at) : ({ ok: false, error: 'refused' } as const);
         if (!r.ok) send(c, { t: 'refused', rid: m.rid, error: r.error });
         else {
+          /* the judge's reading ran to moves the log no longer has: it is
+             read again from the shorter game, not kept past its end */
+          readings.forget(code);
+          store.dropAnalyses(code);
           send(c, { t: 'done', rid: m.rid });
           tellHome(who.id);
         }

@@ -1,4 +1,4 @@
-import { actorOf, applyAction, replay } from '@/game/actions';
+import { actorOf, applyAction, replay, setupOf, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { newGame } from '@/game/engine';
 import { tallyGame } from '@/game/tally';
@@ -37,7 +37,9 @@ interface Held {
   at: number;
 }
 
-export type Refusal = { ok: false; error: string };
+/** a move turned down: the refusal as a key the tongues can say, and for a
+ *  move out of step, where the office's log stands */
+export type Refusal = { ok: false; error: string; stands?: number };
 export type Accepted = { ok: true; over: boolean };
 
 /** the line of the register a position leaves behind */
@@ -69,7 +71,10 @@ export class Home {
   }
 
   /** a new game at home: dealt here, so its code is the office's to give */
-  deal(ownerId: string, name: string, setup: SetupPayload, seed: number): HomeTable {
+  deal(ownerId: string, name: string, asked: SetupPayload, seed: number): HomeTable {
+    /* the deal names the edition it is played under, whatever the browser
+       sent: one this engine plays, today's when it named none */
+    const setup = withEdition(asked);
     const state = newGame(setup, seed);
     const line = this.store.openHomeGame(ownerId, name, seed, setup, briefOf(state));
     this.held.set(line.code, { ownerId, setup, seed, state, at: Date.now() });
@@ -84,7 +89,7 @@ export class Home {
     if (g.state.phase === 'game-over') return { ok: false, error: 'the game is over' };
     /* the log is a line, not a heap: a move out of step means the two sides
        have drifted, and the browser must read the game back */
-    if (idx !== g.state.actions.length) return { ok: false, error: `out-of-step: the log stands at ${g.state.actions.length}` };
+    if (idx !== g.state.actions.length) return { ok: false, error: 'out-of-step', stands: g.state.actions.length };
     const r = applyAction(g.state, actorOf(g.state, action), action);
     if (!r.state) return { ok: false, error: r.error ?? 'the engine refused the action' };
     g.state = r.state;
@@ -93,7 +98,7 @@ export class Home {
     const over = r.state.phase === 'game-over';
     /* the standings are the office's own reading of its own log — the browser
        is never asked what it scored */
-    if (over) this.store.finishHomeGame(ownerId, code, r.state, tallyGame(g.setup, g.seed, r.state.actions));
+    if (over) this.store.finishHomeGame(ownerId, code, r.state, tallyGame(setupOf(r.state), g.seed, r.state.actions));
     return { ok: true, over };
   }
 
@@ -104,7 +109,9 @@ export class Home {
     if (at < 0 || at >= g.state.actions.length) return { ok: false, error: 'nothing to take back there' };
     let state: GameState;
     try {
-      state = replay(g.setup, g.seed, g.state.actions.slice(0, at));
+      /* the edition the log was read under when the game was taken up, not
+         the bare deal of a game dealt before editions were named */
+      state = replay(setupOf(g.state), g.seed, g.state.actions.slice(0, at));
     } catch (e) {
       return { ok: false, error: (e as Error).message };
     }

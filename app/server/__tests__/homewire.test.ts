@@ -5,6 +5,7 @@ import { newGame } from '@/game/engine';
 import { legalActions } from '@/game/search';
 import { ANALYSIS_VERSION } from '@/game/analysis';
 import type { GameState, SetupPayload } from '@/game/types';
+import type { ClientMessage } from '@/online/protocol';
 import { serve } from '../index';
 import type { Serving } from '../index';
 import { Guest, OPTIONS, post } from './guest';
@@ -25,6 +26,9 @@ const SETUP: SetupPayload = {
 const SEED = 909;
 
 const plainMove = (s: GameState): GameAction => legalActions(s, s.current)[0]!;
+
+/** a move at home, numbered so the office answers it either way */
+const numbered = (rid: number, m: Omit<Extract<ClientMessage, { t: 'home.act' }>, 't'>): ClientMessage => Object.assign({ t: 'home.act' as const, rid }, m);
 
 describe('a game at home', () => {
   let server: Serving | null = null;
@@ -88,7 +92,7 @@ describe('a game at home', () => {
     const first = plainMove(newGame(SETUP, SEED));
     ada.send({ t: 'home.act', code, idx: 4, action: first });
     await ada.until('the second refusal', () => ada.homeRefused.length === 2);
-    expect(ada.homeRefused[1].error).toContain('out-of-step');
+    expect(ada.homeRefused[1]).toEqual({ code, at: 4, error: 'out-of-step' });
 
     /* the moves that stand are written, in order, and say nothing back */
     let state = newGame(SETUP, SEED);
@@ -104,6 +108,66 @@ describe('a game at home', () => {
     expect(ada.save!.actions).toEqual(played);
     expect(ada.homeRefused).toHaveLength(2);
     expect(ada.save!.round).toBe(state.round);
+  });
+
+  it('answers a numbered move either way: written, or turned down', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    await ada.asGuest();
+    ada.send({ t: 'home.open', rid: 10, name: 'Cromford Mill', seed: SEED, setup: SETUP });
+    await ada.until('the deal', () => !!ada.dealt);
+    const code = ada.dealt!.code;
+    const answer = (rid: number) => ada.frames.find((f) => (f.t === 'done' || f.t === 'refused') && f.rid === rid);
+
+    /* a move that stands is acknowledged under its own number */
+    const first = plainMove(newGame(SETUP, SEED));
+    ada.send(numbered(50, { code, idx: 0, action: first }));
+    await ada.until('the move written', () => !!answer(50));
+    expect(answer(50)).toEqual({ t: 'done', rid: 50 });
+    expect(ada.homeRefused).toEqual([]);
+
+    /* one turned down is refused under its number — and the refusal frame,
+       which the table listens for, has come first */
+    ada.send(numbered(51, { code, idx: 7, action: first }));
+    await ada.until('the move refused', () => !!answer(51));
+    expect(answer(51)).toEqual({ t: 'refused', rid: 51, error: 'out-of-step' });
+    const at = (f: (typeof ada.frames)[number]) => ada.frames.indexOf(f);
+    expect(at(ada.frames.find((f) => f.t === 'home.refused')!)).toBeLessThan(at(answer(51)!));
+
+    ada.send({ t: 'home.load', rid: 52, code });
+    await ada.until('the game back', () => ada.save?.code === code);
+    expect(ada.save!.actions).toEqual([first]);
+  });
+
+  it('forgets the judge\'s reading of moves an undo took back', async () => {
+    await open();
+    const ada = await arrive('Ada');
+    await ada.asGuest();
+    ada.send({ t: 'home.open', rid: 10, name: 'Cromford Mill', seed: SEED, setup: SETUP });
+    await ada.until('the deal', () => !!ada.dealt);
+    const code = ada.dealt!.code;
+    let state = newGame(SETUP, SEED);
+    const played: GameAction[] = [];
+    for (let i = 0; i < 4; i++) {
+      const move = plainMove(state);
+      ada.send(numbered(60 + i, { code, idx: i, action: move }));
+      played.push(move);
+      state = replay(SETUP, SEED, played);
+    }
+    await ada.until('the moves written', () => ada.frames.some((f) => f.t === 'done' && f.rid === 63));
+
+    const chance = { chance: 0.5, low: 0.48, high: 0.52, passes: 1 };
+    ada.send({ t: 'analysis.post', code, v: ANALYSIS_VERSION, judge: 'long', part: { moves: 4, seats: { 0: [chance, chance] } } });
+    const readings = () => ada.frames.filter((f) => f.t === 'analysis');
+    ada.send({ t: 'analysis.get', rid: 70, code, v: ANALYSIS_VERSION, judge: 'long' });
+    await ada.until('the reading', () => readings().length === 1);
+    expect(readings()[0]).toMatchObject({ reading: { moves: 4 } });
+
+    ada.send({ t: 'home.undo', rid: 71, code, at: 2 });
+    await ada.until('the undo', () => ada.frames.some((f) => f.t === 'done' && f.rid === 71));
+    ada.send({ t: 'analysis.get', rid: 72, code, v: ANALYSIS_VERSION, judge: 'long' });
+    await ada.until('the reading again', () => readings().length === 2);
+    expect(readings()[1]).toMatchObject({ reading: null });
   });
 
   it('gives another account nothing of a game it did not play', async () => {

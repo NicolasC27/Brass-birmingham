@@ -7,7 +7,9 @@
 /* ------------------------------------------------------------------ */
 
 import { BOT_SKILL, INCOME_PAYOUT, INDUSTRIES, INDUSTRY_LABEL, LINKS, MARKET_MAX, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, marketSellPrice } from './data';
+import { cloneState } from './clone';
 import { salesThatStand,
+  applyDevelop,
   buildTargets,
   canLoan,
   canScout,
@@ -179,7 +181,7 @@ function iconsAt(s: GameState, node: string): number {
 }
 
 /** the card we can best spare: fewest build uses, wilds last */
-function spareCard(s: GameState, i: number, hand: Card[]): Card | undefined {
+export function spareCard(s: GameState, i: number, hand: Card[]): Card | undefined {
   let best: { card: Card; v: number } | null = null;
   for (const card of hand) {
     const uses = buildTargets(s, i, card).filter((t) => t.valid).length;
@@ -309,9 +311,14 @@ export function chooseBotMove(s: GameState, i: number, sk: BotSkill = BOT_SKILL.
   if (s.era === 'rail') {
     const stale = developOptions(s, i).filter((d) => d.valid && !INDUSTRIES[d.industry][d.level - 1].eras.includes('rail'));
     if (stale.length) {
-      const pick = stale.slice(0, 2);
-      const cost = pick.reduce((a, d) => a + d.iron.totalCost, 0);
-      if (cost <= p.money) return { kind: 'develop', card: spareCard(s, i, p.hand)!, develop: pick.map((d) => d.industry), note: `${p.name} retools for the age of steam` };
+      /* each option priced its cube of iron alone, so two of them both count
+         the cheapest one: the pair is put to the engine itself, on a copy,
+         and when the iron will not stretch to two the first goes alone */
+      const card = spareCard(s, i, p.hand)!;
+      for (const n of stale.length > 1 ? [2, 1] : [1]) {
+        const develop = stale.slice(0, n).map((d) => d.industry);
+        if (applyDevelop(cloneState(s), i, card, develop)) return { kind: 'develop', card, develop, note: `${p.name} retools for the age of steam` };
+      }
     }
   }
 
@@ -348,7 +355,7 @@ export function chooseBotMove(s: GameState, i: number, sk: BotSkill = BOT_SKILL.
   const floor = s.era === 'canal' && s.round <= 4 && flipsPending(s, i) >= 2 ? -6 : -3;
   const opening = s.era === 'canal' && s.round <= 2 && p.loans === 0;
   if (canLoan(s, i).ok && lvl - 3 >= floor && (p.money < 8 || (opening && p.money < 20))) {
-    return { kind: 'loan', note: `${p.name} visits the moneylenders` };
+    return { kind: 'loan', card: spareCard(s, i, p.hand)!, note: `${p.name} visits the moneylenders` };
   }
 
   /* 6 — anything positive-ish beats passing (passing still burns a card) */

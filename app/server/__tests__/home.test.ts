@@ -1,13 +1,13 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { actorOf, replay } from '@/game/actions';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { actorOf, applyAction, replay } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { newGame } from '@/game/engine';
+import { RULES_EDITION, newGame } from '@/game/engine';
 import { legalActions } from '@/game/search';
 import type { GameState, SetupPayload } from '@/game/types';
-import { Home } from '../home';
+import { Home, briefOf } from '../home';
 import { Store } from '../store';
 
 /* A game played at home is a game of the house: the office deals its code,
@@ -61,7 +61,7 @@ describe('the games at home', () => {
     expect(move).not.toBeNull();
 
     /* a move out of step is refused, and nothing is written */
-    expect(home.act(ME, code, 3, move!)).toEqual({ ok: false, error: expect.stringContaining('out-of-step') });
+    expect(home.act(ME, code, 3, move!)).toEqual({ ok: false, error: 'out-of-step', stands: 0 });
     expect(store.homeSave(ME, code)?.actions).toEqual([]);
 
     /* a move the position does not allow is refused too: no ceremony has
@@ -72,6 +72,58 @@ describe('the games at home', () => {
     /* the move the engine allows stands */
     expect(home.act(ME, code, 0, move!)).toEqual({ ok: true, over: false });
     expect(store.homeSave(ME, code)?.actions).toEqual([move]);
+  });
+
+  it('says a card the hand does not hold in words the table can read, and the rest to the logs', () => {
+    const { home, store } = open();
+    const { code } = home.deal(ME, 'Cromford Mill', SETUP, SEED);
+    const logs = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect(home.act(ME, code, 0, { kind: 'develop', card: 'no-such-card', industries: ['coal'] })).toEqual({ ok: false, error: 'card-not-in-hand' });
+      /* who was to act and what they held goes to the logs, not to the player */
+      expect(logs).toHaveBeenCalledWith(expect.stringContaining('action names no-such-card'));
+    } finally {
+      logs.mockRestore();
+    }
+    expect(store.homeSave(ME, code)?.actions).toEqual([]);
+  });
+
+  it('names the edition of the rules on every deal, and only one it plays', () => {
+    const { home, store } = open();
+    const today = home.deal(ME, 'Cromford Mill', SETUP, SEED);
+    expect(store.homeSave(ME, today.code)?.setup.options.rules).toBe(RULES_EDITION);
+    const first = home.deal(ME, 'Soho Works', { ...SETUP, options: { ...SETUP.options, rules: 1 } }, SEED);
+    expect(store.homeSave(ME, first.code)?.setup.options.rules).toBe(1);
+    for (const rules of [0, 3, 1.5, 99]) {
+      const odd = home.deal(ME, 'Etruria', { ...SETUP, options: { ...SETUP.options, rules } }, SEED);
+      expect(store.homeSave(ME, odd.code)?.setup.options.rules).toBe(RULES_EDITION);
+    }
+  });
+
+  it('takes a move back under the edition the log was read under', () => {
+    const { store, file } = open();
+    /* a game of four played out under the first edition, every seat passing
+       with whatever card the engine lays down — saved before deals named
+       their edition, so its deal names none */
+    const seats: SetupPayload['players'] = (['brass', 'oxblood', 'verdigris', 'steel'] as const).map((color, i) => ({ name: `P${i}`, color, type: 'human' }));
+    const bare: SetupPayload = { players: seats, options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' } };
+    let s = newGame({ ...bare, options: { ...bare.options, rules: 1 } }, 1);
+    const log: GameAction[] = [];
+    while (s.phase !== 'game-over') {
+      const a: GameAction = s.phase === 'scoring-canal' ? { kind: 'begin-rail' } : { kind: 'pass' };
+      s = applyAction(s, s.current, a).state!;
+      log.push(a);
+    }
+    const { code } = store.openHomeGame(ME, 'Old Mill', 1, bare, briefOf(newGame(bare, 1)));
+    log.forEach((a, i) => store.appendHomeMove(ME, code, i, a, briefOf(s)));
+    store.close();
+
+    /* taken up again: the log only plays out under the first edition */
+    const home = new Home(new Store(file));
+    expect(home.undo(ME, code, log.length - 1)).toEqual({ ok: true, over: false });
+    /* and the last pass, played again, still ends the game there — under
+       today's rules the rail would be four moves short of its end */
+    expect(home.act(ME, code, log.length - 1, log[log.length - 1])).toEqual({ ok: true, over: true });
   });
 
   it('refuses another account the games it did not play', () => {

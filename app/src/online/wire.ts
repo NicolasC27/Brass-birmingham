@@ -20,6 +20,12 @@ const MAX_BACKOFF = 8000;
 const TOKEN_KEY = 'brassworks.session.v1';
 /** how long a request waits for the office to answer */
 const ANSWER_MS = 8000;
+/** the word a request gives up with when no answer came in time */
+const OFFLINE = 'offline';
+
+/** what became of a move at home sent to the office: written, turned down,
+ *  or not known — the line went quiet before the office had read it */
+export type HomeHeard = 'kept' | 'refused' | 'offline';
 
 interface Waiting {
   ok: (m: ServerMessage) => void;
@@ -190,9 +196,18 @@ export class Wire {
     return m.t === 'home.save' ? m.save : null;
   }
 
-  /** one move, at its place in the log. Nothing comes back when it stands */
-  actHome(code: string, idx: number, action: GameAction): void {
-    this.send({ t: 'home.act', code, idx, action });
+  /** one move, at its place in the log, and the office's word on it:
+   *  written, turned down — the refusal is heard by `onHomeRefused` too, and
+   *  first — or not heard in time. A move not answered stays in the outbox
+   *  and goes out with the line: whether it stands is the office's to say
+   *  then. Never throws */
+  async actHome(code: string, idx: number, action: GameAction): Promise<HomeHeard> {
+    try {
+      await this.ask((rid) => ({ t: 'home.act', rid, code, idx, action }), false, true);
+      return 'kept';
+    } catch (e) {
+      return (e as Error).message === OFFLINE ? 'offline' : 'refused';
+    }
   }
 
   async undoHome(code: string, at: number): Promise<void> {
@@ -298,15 +313,17 @@ export class Wire {
   }
 
   /** send a request and wait for the frame that answers it. `asStranger`
-   *  is for the two things a socket may say before it is known. */
-  ask(make: (rid: number) => ClientMessage, asStranger = false): Promise<ServerMessage> {
+   *  is for the two things a socket may say before it is known; `held` for
+   *  a request that must still go out once its answer is given up on. */
+  ask(make: (rid: number) => ClientMessage, asStranger = false, held = false): Promise<ServerMessage> {
     const rid = ++this.rid;
     return new Promise<ServerMessage>((ok, ko) => {
       const timer = window.setTimeout(() => {
         this.waiting.delete(rid);
-        /* an answer given up on must not go out later on its own */
-        this.outbox = this.outbox.filter((m) => !('rid' in m) || m.rid !== rid);
-        ko(new Error('offline'));
+        /* an answer given up on must not go out later on its own — unless
+           what it asked is worth saying late rather than never */
+        if (!held) this.outbox = this.outbox.filter((m) => !('rid' in m) || m.rid !== rid);
+        ko(new Error(OFFLINE));
       }, ANSWER_MS);
       this.waiting.set(rid, { ok, ko, timer });
       this.post(make(rid), asStranger);

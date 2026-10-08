@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { botAction, fallbackAction, replay } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { chooseBotMove } from '@/game/bot';
-import { serialize } from '@/game/engine';
+import { RULES_EDITION, serialize } from '@/game/engine';
 import type { GameView } from '@/online/protocol';
 import { serve } from '../index';
 import type { Pace } from '../game';
@@ -77,6 +77,19 @@ describe('a table over the wire', () => {
 
   const ring = (host: Guest, code: string, seats = host.table!.seats) =>
     host.send({ t: 'table', code, table: { ...host.table!, seats: seats.map((s) => (s.id === host.id ? { ...s, ready: true } : s)), status: 'starting' } });
+
+  it('deals every table under a named edition of the rules, and only one it plays', async () => {
+    const { host, code } = await seatTwo();
+    /* whatever the host asks for, the table stands under an edition the engine plays */
+    host.send({ t: 'table', code, table: { ...host.table!, options: { ...OPTIONS, rules: 7 } as typeof OPTIONS } });
+    await host.until('the rules read back', () => (host.table!.options as { rules?: number }).rules === RULES_EDITION);
+    host.send({ t: 'table', code, table: { ...host.table!, options: { ...OPTIONS, rules: 1 } as typeof OPTIONS } });
+    await host.until('the first edition', () => (host.table!.options as { rules?: number }).rules === 1);
+    ring(host, code);
+    await host.until('the game', () => !!host.view);
+    expect(host.view!.state.rules).toBe(1);
+    expect(server!.store.games().find((g) => g.code === code)?.setup.options.rules).toBe(1);
+  });
 
   it('seats two players and two bots, plays the game out and replays its log', async () => {
     const { host, guest, code } = await seatTwo();

@@ -1,6 +1,7 @@
 import { randomBytes, randomInt } from 'node:crypto';
 import type { BotPersona, PlayerColor, SetupOptions } from '@/components/setup/constants';
 import { freePersona, personaName, personaOf } from '@/game/data';
+import { editionOf, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import type { GameState, SetupPayload } from '@/game/types';
 import { CODE_ALPHABET, MAX_SEATS, canStart, freeColor, setupFromTable } from '@/online/table';
@@ -583,7 +584,9 @@ export class Hall {
   private start(code: string): void {
     const room = this.rooms.get(code);
     if (!room || this.started(room)) return;
-    const setup: SetupPayload = setupFromTable(room.table);
+    /* the edition is named on every deal: a table set before the house
+       wrote it down, or dealt from a queue, is played under today's */
+    const setup: SetupPayload = withEdition(setupFromTable(room.table));
     const seatIds = room.table.seats.map((s) => s.id);
     const seed = randomInt(1e9);
     if (!this.store.openGame(code, seed, setup, seatIds)) {
@@ -705,8 +708,10 @@ function seatFor(me: Identity, table: Pick<Table, 'seats'>, color?: PlayerColor)
   return { id: me.id, name: me.name, color: freeColor(table, color), kind: 'human', ready: false, joinedAt: Date.now() };
 }
 
-/** the house rules as the server will have them — never the client's object */
-function houseRules(o: Partial<SetupOptions> | undefined): SetupOptions {
+/** the house rules as the server will have them — never the client's object.
+ *  The edition of the rules is written down with them: one this engine
+ *  plays when the host named it, today's otherwise */
+function houseRules(o: (Partial<SetupOptions> & { rules?: unknown }) | undefined): SetupOptions & { rules: number } {
   const one = <T>(v: unknown, allowed: readonly T[], fallback: T): T => (allowed.includes(v as T) ? (v as T) : fallback);
   const minutes = o?.timerMinutes;
   return {
@@ -715,6 +720,7 @@ function houseRules(o: Partial<SetupOptions> | undefined): SetupOptions {
     fidelity: one(o?.fidelity, ['core', 'approx'] as const, 'core'),
     assist: !!o?.assist,
     timerMinutes: typeof minutes === 'number' && minutes > 0 ? Math.min(180, Math.round(minutes)) : null,
+    rules: editionOf(o?.rules),
   };
 }
 

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { botAction, fallbackAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { chooseBotMove } from '@/game/bot';
+import { RULES_EDITION } from '@/game/engine';
 import type { GameState } from '@/game/types';
 import type { GameView } from '@/online/protocol';
 import { FREE_ITEMS, GUINEAS } from '@/online/counter';
@@ -325,6 +326,8 @@ describe('the hall', () => {
     expect(ada.table!.seats.map((s) => s.color)).toEqual(['brass', 'steel', 'oxblood', 'verdigris']);
     expect(ada.table!.hostId).toBe(ada.id);
     expect(server!.hall.game(ada.table!.code)?.over).toBe(false);
+    /* a table dealt from a queue names the edition of the rules too */
+    expect(server!.store.games().find((g) => g.code === ada.table!.code)?.setup.options.rules).toBe(RULES_EDITION);
 
     /* one alone: forty seconds on, two machines keep them company */
     const eli = await arrive('Eli');
