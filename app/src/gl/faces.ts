@@ -40,12 +40,14 @@ export interface FrontRecipe {
   scale: number;
   partnerX?: Partial<Record<IndustryType, number>>;
 }
-/** The painted subjects, cut out on transparency: the same hand as the
- *  painted set, but with no backdrop of their own, so an owner's colour
- *  shows through the card and the slot grid keeps its printed look.
- *  (The finished paintings live in /v3, these in /tiles-v3.) */
+/** The painted subjects, cut out on transparency, and THE SET THE TABLE
+ *  WEARS: the same hand as the painted set, but with no backdrop of their
+ *  own, so an owner's colour shows through the card and the slot grid keeps
+ *  its printed look. (The finished paintings live in /v3, these in
+ *  /tiles-v3.) It stands first in every list below, and a list's first
+ *  entry is what a table with no saved choice is dealt. */
 const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v3', front, ext: 'webp', pair: (a, b) => `/tile-combo-${pairKey(a, b)}.webp` });
-/** The woodcut set, the default: six bold engravings drawn by Midjourney in
+/** The woodcut set, one choice among the others: six bold engravings in
  *  the hand of the engraved map, black ink on a cream label; an owner's
  *  card carries the same drawing on the colour. Its dual slots are printed
  *  as one label, the two drawings side by side (tools/assets/tiles-woodcut). */
@@ -53,31 +55,32 @@ const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', fron
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
-    woodcut(),
     subject({ scale: 64 }),
+    woodcut(),
     { id: 'wagon', dir: '', front: { scale: 64 } },
     { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
     { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
-  iron: [woodcut(), subject({ scale: 70 }), { id: 'foundry', dir: '', front: { scale: 70 } }],
-  cotton: [woodcut(), subject({ scale: 70 }), { id: 'mill', dir: '', front: { scale: 70 } }],
+  iron: [subject({ scale: 70 }), woodcut(), { id: 'foundry', dir: '', front: { scale: 70 } }],
+  cotton: [subject({ scale: 70 }), woodcut(), { id: 'mill', dir: '', front: { scale: 70 } }],
   manufacturer: [
-    woodcut(),
     subject({ scale: 62 }),
+    woodcut(),
     { id: 'crate', dir: '', front: { scale: 62 } },
     { id: 'parcels', dir: '/tiles-classic', front: { scale: 62 } },
     { id: 'manufactory', dir: '/tiles-works', front: { crop: [10, 300], scale: 84, partnerX: { cotton: 160, iron: 160, pottery: 160 } } },
   ],
-  pottery: [woodcut(), subject({ scale: 70 }), { id: 'kiln', dir: '', front: { scale: 70 } }],
+  pottery: [subject({ scale: 70 }), woodcut(), { id: 'kiln', dir: '', front: { scale: 70 } }],
   brewery: [
-    woodcut(),
     subject({ scale: 60 }),
+    woodcut(),
     { id: 'barrel', dir: '', front: { scale: 60 } },
     { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },
     { id: 'brewhouse', dir: '/tiles-works', front: { crop: [40, 305], scale: 80, partnerX: { cotton: 160, iron: 160 } } },
   ],
 };
-/** chosen variant id per industry (missing = the first, default one) */
+/** chosen variant id per industry (missing = the first of the list, the
+ *  painted subjects of /tiles-v3) */
 export type TileArt = Partial<Record<IndustryType, string>>;
 export const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefined => TILE_VARIANTS[i]?.find((v) => v.id === art[i]) ?? TILE_VARIANTS[i]?.[0];
 /** the face an industry wears under the current art choice: the finished
