@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, levelTopSpace, loanLanding } from '@/game/data';
@@ -227,7 +227,9 @@ function Pawn({
           aria-label={kind === 'vp' ? t('game.frame.vpPawnAria', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnAria', { name: p.name, lvl: incomeLevel(p.income), pay })}
           onClick={onToggle}
           onPointerDown={(e) => e.stopPropagation()}
-          className="relative flex shrink-0 items-center justify-center rounded-full"
+          /* the pawn is painted at 16px; its hit zone runs 4px further all
+             round (24px, the target floor), the drawing of the track untouched */
+          className="relative flex shrink-0 items-center justify-center rounded-full before:absolute before:-inset-1 before:rounded-full before:content-['']"
           style={{ width: CHIP, height: CHIP, background: `${col}55` }}
         >
           <ShapeChip color={p.color} size={10} />
@@ -235,7 +237,7 @@ function Pawn({
         {showLabel && (
           <span
             aria-hidden
-            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${kind === 'income' && INCOME_PAYOUT[p.income] < 0 ? 'text-rust-500 brightness-150' : 'text-cream-100'}`}
+            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${kind === 'income' && INCOME_PAYOUT[p.income] < 0 ? 'text-[#C4644F]' : 'text-cream-100'}`}
             style={{ textShadow: '0 1px 1px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.8)' }}
           >
             {label}
@@ -277,7 +279,7 @@ function MoveFx({ axis, move, pct, from, to, col, reduced }: { axis: Axis; move:
 
 /* ------------------------------ tracks ----------------------------- */
 
-export default function EdgeTracks() {
+function EdgeTracks() {
   const game = useShownGame();
   const spotlight = useGame((s) => s.spotlight);
   const setSpotlight = useGame((s) => s.setSpotlight);
@@ -414,7 +416,7 @@ export default function EdgeTracks() {
             aria-label={t('game.frame.vpTrackLabel')}
             data-lens="vp"
           >
-            <span aria-hidden className="absolute left-1.5 top-[3px] font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
+            <span aria-hidden className="absolute left-1.5 top-[3px] font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
               {t('game.frame.vpTrackShort')}
               {vpLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{vpLane.zoom.toFixed(1)}</span>}
             </span>
@@ -448,7 +450,7 @@ export default function EdgeTracks() {
         aria-label={t('game.incomeRail.aria')}
         data-lens="income"
       >
-        <span aria-hidden className={`absolute font-sans text-[8px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}>
+        <span aria-hidden className={`absolute font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}>
           {t('game.incomeRail.trackShort')}
           {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
         </span>
@@ -472,7 +474,7 @@ export default function EdgeTracks() {
                     content={who.length ? t('game.incomeRail.bandWho', { names: who.join(', ') }) : t('game.incomeRail.bandEmpty')}
                   >
                     {fits(b) && (
-                      <span className={`${incAxis === 'x' ? 'mt-[2px]' : ''} font-mono text-[9px] font-bold leading-none ${b.pay < 0 ? 'text-rust-500 brightness-150' : 'text-brass-400'}`}>
+                      <span className={`${incAxis === 'x' ? 'mt-[2px]' : ''} font-mono text-[9px] font-bold leading-none ${b.pay < 0 ? 'text-[#C4644F]' : 'text-brass-400'}`}>
                         {fmtPay(b.pay)}
                       </span>
                     )}
@@ -497,7 +499,7 @@ export default function EdgeTracks() {
               <span
                 key={l}
                 aria-hidden
-                className="pointer-events-none absolute font-mono text-[7.5px] leading-none text-cream-100/55"
+                className="pointer-events-none absolute font-mono text-[9px] leading-none text-cream-100/55"
                 style={incAxis === 'x' ? { ...at('x', lvlPct(l)), bottom: 1, marginLeft: 3 } : { ...at('y', lvlPct(l)), left: 2, marginTop: 2 }}
               >
                 {l}
@@ -516,7 +518,7 @@ export default function EdgeTracks() {
                 <span className="flex items-center justify-center rounded-full border border-dashed" style={{ width: CHIP, height: CHIP, borderColor: ghostCol, background: `${ghostCol}22` }}>
                   <ShapeChip color={cur.color} size={9} />
                 </span>
-                <span className="ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold text-rust-500 brightness-150" style={{ textShadow: '0 1px 1px rgba(0,0,0,.95)' }}>
+                <span className="ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold text-[#C4644F]" style={{ textShadow: '0 1px 1px rgba(0,0,0,.95)' }}>
                   {t('game.incomeRail.loanGhost', { pay: fmtPay(INCOME_PAYOUT[ghostLvl]) })}
                 </span>
               </motion.div>
@@ -528,3 +530,6 @@ export default function EdgeTracks() {
     </div>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(EdgeTracks);

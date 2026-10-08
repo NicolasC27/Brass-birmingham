@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -6,6 +6,7 @@ import { setLang, useLang, useT, LANGS } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { MAP_STYLES, RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
 import { narrowRailTop, useHudInsets } from './useHudInsets';
+import { useLayer } from './useLayer';
 import { useNarrow } from '@/hooks/use-narrow';
 import type { IncomeSide, MapStyle, MinimapSize, RailPainting } from './boardOptions';
 import type { TrafficLevel } from '@/gl/ambiance';
@@ -67,7 +68,7 @@ function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
 
 /** brass card with the income / VP layout */
 function ChipPreview({ style, active }: { style: ChipStyle; active: boolean }) {
-  const num = 'font-mono text-[6.5px] font-semibold text-[#F4ECD8]';
+  const num = 'font-mono text-[6.5px] font-semibold text-[#F4ECD8]'; // picture-scale: a miniature of the chip, aria-hidden
   return (
     <span
       aria-hidden
@@ -99,11 +100,11 @@ function StockPreview({ style, active }: { style: StockStyle; active: boolean })
       case 'big':
         return <span className={`${base} left-1/2 top-1/2 h-5 w-9 -translate-x-1/2 -translate-y-1/2 gap-0.5 text-[9px]`}>▪×3</span>;
       case 'counter':
-        return <span className={`${base} left-1/2 top-1/2 h-3.5 w-7 -translate-x-1/2 -translate-y-1/2 text-[7px]`}>▪×3</span>;
+        return <span className={`${base} left-1/2 top-1/2 h-3.5 w-7 -translate-x-1/2 -translate-y-1/2 text-[7px]`}>▪×3</span>; // picture-scale
       case 'tag':
-        return <span className={`${base} right-0 top-1/2 h-3.5 w-7 -translate-y-1/2 translate-x-1 text-[7px]`}>▪×3</span>;
+        return <span className={`${base} right-0 top-1/2 h-3.5 w-7 -translate-y-1/2 translate-x-1 text-[7px]`}>▪×3</span>; // picture-scale
       case 'top':
-        return <span className={`${base} left-1/2 top-0 h-3.5 w-7 -translate-x-1/2 -translate-y-1 text-[7px]`}>▪×3</span>;
+        return <span className={`${base} left-1/2 top-0 h-3.5 w-7 -translate-x-1/2 -translate-y-1 text-[7px]`}>▪×3</span>; // picture-scale
     }
   })();
   return (
@@ -227,15 +228,14 @@ function ShortcutEditor() {
   const keys = useKeybindings();
   const [listening, setListening] = useState<KeyAction | null>(null);
   const [refused, setRefused] = useState(false);
+  /* a keycap listening is a ticket of its own on the spike: Escape gives
+     up the listening, and leaves the panel open */
+  useLayer(listening !== null, () => setListening(null), { focus: false });
   useEffect(() => {
     if (!listening) return;
     const onKey = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      if (e.key === 'Escape') {
-        setListening(null);
-        return;
-      }
       if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
       const k = eventKey(e);
       if (RESERVED_KEYS.has(k) || e.ctrlKey || e.metaKey || e.altKey) {
@@ -360,7 +360,7 @@ function AbandonRow() {
 
 /* ------------------------------ dialog ----------------------------- */
 
-export default function BoardSettings() {
+function BoardSettings() {
   const opts = useBoardOptions();
   const lang = useLang();
   const t = useT();
@@ -373,6 +373,9 @@ export default function BoardSettings() {
   const insets = useHudInsets();
   const narrow = useNarrow();
   const close = () => setBoardOption('settingsOpen', false);
+  /* the settings hold the left edge: opening them sends the mat or a tool's
+     sheet away, and Escape closes them when they are on top */
+  const sheet = useLayer(open, close, { zone: 'left' });
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement) void document.exitFullscreen();
@@ -389,6 +392,8 @@ export default function BoardSettings() {
           transition={{ duration: 0.18, ease: 'easeOut' }}
           className="plate fixed left-3 z-[70] flex w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden shadow-e4"
           style={{ top: narrow ? narrowRailTop(insets) : insets.top + 8, bottom: insets.bottom + 8 }}
+          ref={sheet}
+          tabIndex={-1}
           role="dialog"
           aria-label={t('game.settings.title')}
         >
@@ -592,3 +597,6 @@ export default function BoardSettings() {
     </AnimatePresence>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(BoardSettings);

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GripVertical, Maximize2, Minimize2, X } from 'lucide-react';
@@ -13,7 +13,9 @@ import { useNarrow } from '@/hooks/use-narrow';
 import { INDUSTRY_COLOR } from './townChrome';
 import { tileFaceUrl } from '@/gl/faces';
 import type { TileArt } from '@/gl/faces';
-import { keyLabel, useKeybindings } from './keybindings';
+import { keyLabel, typing, useKeybindings } from './keybindings';
+import { useLayer } from './useLayer';
+import { levelMark } from './levelMark';
 import { ShapeChip } from './TownInspector';
 
 /* ------------------------------------------------------------------ */
@@ -121,7 +123,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
             </div>
             <div className="flex items-baseline justify-between whitespace-nowrap rounded-b-[5px] bg-black/65 px-1.5 py-[4px] font-mono leading-none">
               <span className="text-[11px] font-bold text-cream-100">£{lv.cost}</span>
-              <span className="flex items-baseline gap-[5px] text-[8.5px]">
+              <span className="flex items-baseline gap-[5px] text-[9px]">
                 <span className="text-bottle-600 brightness-[1.7]">+{lv.incomeDelta}</span>
                 <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
               </span>
@@ -182,7 +184,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
           {lv.noDevelop && <span className="h-[5px] w-[5px] rounded-full bg-rust-500 ring-1 ring-black/60" />}
         </span>
       )}
-      {isNext && <span className="absolute -top-[7px] left-1/2 z-30 -translate-x-1/2 rounded-sm bg-brass-400 px-1 font-sans text-[7px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950 shadow-[0_1px_2px_rgba(0,0,0,.6)]">{t('game.mat.next')}</span>}
+      {isNext && <span className="absolute -top-[7px] left-1/2 z-30 -translate-x-1/2 rounded-sm bg-brass-400 px-1 font-sans text-[9px] font-black uppercase leading-[11px] tracking-[0.14em] text-coal-950 shadow-[0_1px_2px_rgba(0,0,0,.6)]">{t('game.mat.next')}</span>}
       {tip &&
         createPortal(
           <div
@@ -222,9 +224,9 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
             </dl>
             {(canalOnly || railOnly || lv.noDevelop) && (
               <div className="mt-1.5 flex flex-wrap gap-1">
-                {canalOnly && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
-                {railOnly && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
-                {lv.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[8px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
+                {canalOnly && <span className="rounded-sm border border-bottle-600/70 px-1 font-sans text-[9px] font-semibold uppercase tracking-wider text-bottle-600 brightness-150">{t('game.mat.canalOnly')}</span>}
+                {railOnly && <span className="rounded-sm border border-copper-500/70 px-1 font-sans text-[9px] font-semibold uppercase tracking-wider text-copper-500 brightness-125">{t('game.mat.railOnly')}</span>}
+                {lv.noDevelop && <span className="rounded-sm border border-rust-500/70 px-1 font-sans text-[9px] font-semibold uppercase tracking-wider text-rust-500 brightness-150">{t('game.mat.noDevelop')}</span>}
               </div>
             )}
           </div>,
@@ -341,7 +343,7 @@ function IndustryBlock({
               className={cn('rounded-[4px] border px-1.5 py-[2px] font-mono text-[9px]', x.flipped ? 'border-brass-500/60 text-brass-400' : 'border-brass-700/40 text-cream-100/75')}
               title={x.flipped ? t('game.mat.flipped') : x.cubes > 0 ? t('game.mat.stock', { n: x.cubes }) : undefined}
             >
-              L{x.level} {town}
+              {levelMark(x.level)} {town}
               {!x.flipped && x.cubes > 0 && <span className="text-cream-100/45"> · {x.cubes}</span>}
               {x.flipped && <span> ✓</span>}
             </li>
@@ -352,7 +354,7 @@ function IndustryBlock({
   );
 }
 
-export default function PlayerMat() {
+function PlayerMat() {
   const t = useT();
   const game = useShownGame();
   const matPlayer = useGame((s) => s.matPlayer);
@@ -406,15 +408,15 @@ export default function PlayerMat() {
     return () => ro.disconnect();
   }, [matPlayer]);
 
+  /* the mat holds the left edge, beside the rail: opening it sends the
+     settings or a tool's sheet away (the spike does that), and Escape
+     closes it when it is on top */
+  const sheet = useLayer(matPlayer !== null, closeMat, { zone: 'left' });
   useEffect(() => {
     if (matPlayer === null) return;
-    /* one left-hand panel at a time: the mat takes the settings' place */
-    setBoardOption('settingsOpen', false);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        closeMat();
-        return;
-      }
+      /* a field keeps its digits: a question typed to the guide is not a seat */
+      if (typing(e)) return;
       /* 1–4: read that seat's mat (the digits leave the hand while it is open) */
       const n = Number(e.key);
       const g = useGame.getState().game;
@@ -436,6 +438,8 @@ export default function PlayerMat() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -12 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
+          ref={sheet}
+          tabIndex={-1}
           role="dialog"
           data-player-mat
           aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
@@ -472,7 +476,7 @@ export default function PlayerMat() {
                   )}
                   style={active ? { boxShadow: `inset 0 0 0 1px ${col}55` } : undefined}
                 >
-                  <kbd className={cn('rounded-[3px] border px-1 font-mono text-[8.5px] font-semibold leading-[13px]', active ? 'border-brass-400/70 text-brass-400' : 'border-brass-700/60 text-cream-100/45')}>{i + 1}</kbd>
+                  <kbd className={cn('rounded-[3px] border px-1 font-mono text-[9px] font-semibold leading-[13px]', active ? 'border-brass-400/70 text-brass-400' : 'border-brass-700/60 text-cream-100/45')}>{i + 1}</kbd>
                   <ShapeChip color={pl.color} size={10} />
                   {pl.name}
                 </button>
@@ -509,8 +513,8 @@ export default function PlayerMat() {
                 <div className="border-b border-brass-700/40 px-3 py-2">
                   <div className="flex items-baseline gap-2">
                     <h2 className="whitespace-nowrap font-fell text-[15px] tracking-wide text-brass-400">{t('game.mat.title', { name: p.name })}</h2>
-                    {matPlayer === game.current && <span className="font-sans text-[8px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
-                    <span className="ml-auto max-w-[55%] text-right font-sans text-[8.5px] uppercase leading-tight tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint', { p: keyLabel(keys.mat), t: keyLabel(keys.matStyle), w: keyLabel(keys.matWide) })}</span>
+                    {matPlayer === game.current && <span className="font-sans text-[9px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
+                    <span className="ml-auto max-w-[55%] text-right font-sans text-[9px] uppercase leading-tight tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint', { p: keyLabel(keys.mat), t: keyLabel(keys.matStyle), w: keyLabel(keys.matWide) })}</span>
                   </div>
                   {/* the mat's own dress, set where it is looked at: how the
                       tiles read, whether the pile shows its count, and a way
@@ -574,3 +578,6 @@ export default function PlayerMat() {
     </AnimatePresence>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(PlayerMat);

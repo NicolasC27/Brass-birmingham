@@ -4,6 +4,7 @@ import { ChevronRight, MessageCircleQuestion, X } from 'lucide-react';
 import { faqBest, faqFor, passagesOf, rulesMatch } from '@/game/faq';
 import { dictOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { leftSheetStyle, useDockReserve, useLayer } from './useLayer';
 
 /* ------------------------------------------------------------------ */
 /* A question to the guide, at any table: the guided game's column has  */
@@ -17,6 +18,9 @@ export default function AskGuide({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState<{ q: string; a: string }[]>([]);
+  /* a sheet of the left edge, like the notebook: one of them at a time */
+  const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
+  const reserve = useDockReserve();
   const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
   const put = () => {
     const q = question.trim();
@@ -36,13 +40,16 @@ export default function AskGuide({ className }: { className?: string }) {
         {open && (
           <motion.div
             key="ask-guide"
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
+            ref={sheet}
+            tabIndex={-1}
+            initial={{ opacity: 0, x: -8, y: '-50%' }}
+            animate={{ opacity: 1, x: 0, y: '-50%' }}
+            exit={{ opacity: 0, x: -8, y: '-50%' }}
             transition={{ duration: 0.16 }}
             role="dialog"
             aria-label={t('game.guide.ask.open')}
-            className="plate fixed left-3 top-1/2 z-[70] flex max-h-[min(60vh,520px)] w-[340px] -translate-y-1/2 flex-col p-3 shadow-e4"
+            className="plate fixed left-3 z-[70] flex w-[340px] flex-col p-3 shadow-e4"
+            style={{ ...leftSheetStyle(reserve), maxHeight: `min(60vh, 520px, ${leftSheetStyle(reserve).maxHeight})` }}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between">
@@ -74,7 +81,7 @@ export default function AskGuide({ className }: { className?: string }) {
                 aria-label={t('game.guide.ask.placeholder')}
                 autoFocus
                 onKeyDown={(e) => e.stopPropagation()}
-                className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] text-cream-100 placeholder:text-cream-100/35 focus:border-brass-400 focus:outline-none"
+                className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] text-cream-100 placeholder:text-cream-100/55 focus:border-brass-400"
               />
               <button type="submit" disabled={!question.trim()} aria-label={t('game.guide.ask.send')} title={t('game.guide.ask.send')} className="btn-strike !min-h-[32px] shrink-0 !px-3 !py-1 !text-[10px] disabled:opacity-40">
                 <ChevronRight className="h-3.5 w-3.5" />

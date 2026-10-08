@@ -59,7 +59,7 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
               key={sp}
               className={`flex flex-1 items-end justify-center pb-[2px] ${boundary ? 'border-l border-brass-500/80' : sp > lo ? 'border-l border-brass-700/25' : ''} ${INCOME_PAYOUT[sp] < 0 ? 'bg-rust-500/10' : ''}`}
             >
-              <span className="font-mono text-[7.5px] leading-none text-cream-100/45">{sp}</span>
+              <span className="font-mono text-[9px] leading-none text-cream-100/45">{sp}</span>
             </div>
           );
         })}
@@ -77,7 +77,7 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
             className="absolute top-[5px] flex h-[17px] w-[17px] -translate-x-1/2 items-center justify-center rounded-[3px] border-2 border-dashed"
             style={{ left: `${centre(after)}%`, borderColor: col, background: `${col}2e` }}
           >
-            <span className="font-mono text-[8px] font-black" style={{ color: col }}>{incomeLevel(after)}</span>
+            <span className="font-mono text-[9px] font-black" style={{ color: col }}>{incomeLevel(after)}</span>
           </span>
         )}
         <span
@@ -85,7 +85,7 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
           className="absolute top-[5px] flex h-[17px] w-[17px] -translate-x-1/2 items-center justify-center rounded-[3px]"
           style={{ left: `${centre(income)}%`, background: col, boxShadow: `0 0 6px ${col}` }}
         >
-          <span className="font-mono text-[8px] font-black text-ink-900">{incomeLevel(income)}</span>
+          <span className="font-mono text-[9px] font-black text-ink-900">{incomeLevel(income)}</span>
         </span>
       </div>
       <p className="mt-2 text-center font-sans text-[11px] text-cream-100/80">
@@ -135,7 +135,7 @@ export default function IncomeRail() {
           <span
             key={lvl}
             aria-hidden
-            className="absolute top-[1px] -translate-x-1/2 font-mono text-[8px] font-semibold text-brass-500/90"
+            className="absolute top-[1px] -translate-x-1/2 font-mono text-[9px] font-semibold text-brass-500/90"
             style={{ left: `${posOf(lvl)}%` }}
           >
             £{INCOME_PAYOUT[lvl]}
@@ -146,7 +146,7 @@ export default function IncomeRail() {
           <span
             key={mid}
             aria-hidden
-            className="absolute top-[29px] -translate-x-1/2 whitespace-nowrap font-mono text-[7.5px] uppercase tracking-wider text-brass-500/75"
+            className="absolute top-[29px] -translate-x-1/2 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-brass-500/75"
             style={{ left: `${posOf(mid)}%` }}
           >
             {t(`game.incomeRail.band${b + 1}`)}

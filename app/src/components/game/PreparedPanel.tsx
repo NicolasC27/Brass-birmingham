@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Eye, EyeOff, Hammer, Landmark, MapPin, Route, Scale, SkipForward, X } from 'lucide-react';
 import { INDUSTRY_COLOR } from './townChrome';
@@ -28,10 +28,11 @@ function MiniCard({ card }: { card: Card }) {
   const industry = card.kind === 'industry' ? card.industry! : null;
   const stripe = industry ? INDUSTRY_COLOR[industry] : card.town ? townColor(card.town) : '#C9A45C';
   return (
-    <span className="relative flex h-[42px] w-[30px] shrink-0 flex-col items-center justify-end overflow-hidden rounded-[3px] border border-[#2A241C]/70 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)] pb-0.5 shadow-[0_2px_3px_rgba(0,0,0,.45),inset_0_0_0_1px_rgba(138,107,51,.35)] -rotate-3" title={cardLabel(card)}>
+    /* a picture of the card, named for whoever cannot see it: at this size
+       a caption could only be a smudge, so the name lives in the label */
+    <span role="img" aria-label={cardLabel(card)} className="relative flex h-[42px] w-[30px] shrink-0 flex-col items-center justify-center overflow-hidden rounded-[3px] border border-[#2A241C]/70 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)] shadow-[0_2px_3px_rgba(0,0,0,.45),inset_0_0_0_1px_rgba(138,107,51,.35)] -rotate-3" title={cardLabel(card)}>
       <span aria-hidden className="absolute bottom-[3px] left-[2px] top-[3px] w-[2px] rounded-full" style={{ backgroundColor: stripe }} />
-      {industry ? <img src={INDUSTRY_ICON[industry]} alt="" className="mb-0.5 h-3.5 w-3.5" /> : <span className="mb-0.5 font-fell text-[12px] font-bold text-[#2A241C]">{cardLabel(card).slice(0, 1)}</span>}
-      <span className="w-full truncate px-0.5 text-center font-fell text-[6px] uppercase leading-none text-[#2A241C]">{cardLabel(card)}</span>
+      {industry ? <img src={INDUSTRY_ICON[industry]} alt="" className="h-4 w-4" /> : <span aria-hidden className="font-fell text-[14px] font-bold text-[#2A241C]">{cardLabel(card).slice(0, 1)}</span>}
     </span>
   );
 }
@@ -47,7 +48,7 @@ function Blank({ label, open, onToggle, children }: { label: string; open: boole
         className={cn('inline-flex h-6 items-center gap-1 rounded-sm border-b-2 border-[#8A6B33] bg-[#f7efd9] px-1.5 font-fell text-[12px] text-ink-900 shadow-[inset_0_-1px_0_rgba(138,107,51,.35)] hover:bg-[#fbf5e6]', open && 'bg-[#fbf5e6] ring-1 ring-[#8A6B33]')}
       >
         {label}
-        <span aria-hidden className="text-[8px] text-ink-900/50">▾</span>
+        <span aria-hidden className="text-[9px] text-ink-900/50">▾</span>
       </button>
       {open && <span className="absolute left-0 top-full z-10 mt-1 flex min-w-[150px] flex-col gap-0.5 rounded-sm border border-ink-900/40 bg-[#f7efd9] p-1 shadow-e3">{children}</span>}
     </span>
@@ -144,7 +145,7 @@ function UnlessRow({ game, action, players, value, picking, onPick, onClear, onC
   );
 }
 
-export default function PreparedPanel() {
+function PreparedPanel() {
   const t = useT();
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
@@ -290,9 +291,9 @@ export default function PreparedPanel() {
       {unfolded && (<>
       <div className="relative border-b border-ink-900/50 pb-1 pr-16 text-center">
         <p className="whitespace-nowrap font-display text-[11px] font-black uppercase tracking-[0.16em] text-ink-900">
-          <span aria-hidden className="mr-2 text-[8px] text-ink-900/50">◆</span>
+          <span aria-hidden className="mr-2 text-[9px] text-ink-900/50">◆</span>
           {t('game.prepared.title')}
-          <span aria-hidden className="ml-2 text-[8px] text-ink-900/50">◆</span>
+          <span aria-hidden className="ml-2 text-[9px] text-ink-900/50">◆</span>
         </p>
         <p className="font-fell text-[9.5px] italic text-ink-900/60">{t('game.prepared.note')}</p>
         {rows.length > 0 && rows.every((r) => r.holds) && <span className="ink-stamp absolute right-0 top-0 font-sans text-[9px]">{t('game.prepared.stampReady')}</span>}
@@ -302,7 +303,7 @@ export default function PreparedPanel() {
           const Icon = VERB_ICON[q.action.kind] ?? Hammer;
           return (
             <li key={i} className={cn('relative rounded-[2px] border-b border-dashed border-ink-900/30 px-1 py-1.5 last:border-b-0', !holds && 'bg-rust-500/10')}>
-              {!holds && <span className="ink-stamp absolute right-8 top-1 font-sans text-[8px]">{t('game.prepared.stampVoid')}</span>}
+              {!holds && <span className="ink-stamp absolute right-8 top-1 font-sans text-[9px]">{t('game.prepared.stampVoid')}</span>}
               <div className="flex items-center gap-2">
               <span className="brass-roundel h-6 w-6 shrink-0 font-fell text-[12px] font-bold">{i + 1}</span>
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-ink-900/50 text-ink-900/75">
@@ -356,3 +357,6 @@ export default function PreparedPanel() {
     </motion.section>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(PreparedPanel);

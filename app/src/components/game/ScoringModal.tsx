@@ -5,11 +5,14 @@ import { PLAYER_COLORS } from '@/game/data';
 import { leaveOnlineTable, useGame } from '@/game/store';
 import { shareFragment } from '@/game/share';
 import { useT } from '@/i18n';
+import { useLayer } from './useLayer';
 
 /**
  * Game-over write-out (game.md §10): podium + ledger table on a paper panel,
  * slow brass-gear particle fall (≤30, stops after 6s), rematch actions.
  */
+const holdOn = () => undefined;
+
 export default function GameOverModal({ onRematch }: { onRematch: () => void }) {
   const t = useT();
   const seat = useGame((s) => s.seat);
@@ -22,6 +25,9 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
   const local = useGame((s) => s.local);
   const code = useGame((s) => s.code);
   const navigate = useNavigate();
+  /* the write-out holds the table until one of its ways out is taken:
+     Escape stops at it (the board's own Escape stays out of reach) */
+  const sheet = useLayer(open && !!game && game.phase === 'game-over', holdOn, { modal: true });
   /* the game handed on in a link: the deal and the moves, replayed on arrival */
   const [shared, setShared] = useState(false);
   const share = () => {
@@ -61,6 +67,9 @@ export default function GameOverModal({ onRematch }: { onRematch: () => void }) 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[75] flex items-center justify-center overflow-y-auto bg-coal-950/80 p-4 backdrop-blur-md"
+      ref={sheet}
+      tabIndex={-1}
+      aria-modal="true"
       role="dialog"
       aria-label={t('game.scoring.aria')}
     >

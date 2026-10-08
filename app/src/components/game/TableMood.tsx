@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Coffee, Pause, Play, RotateCcw, Users } from 'lucide-react';
 import { ledgerText } from '@/game/ledgerText';
@@ -101,7 +101,7 @@ export function TableMenu({ className, compact }: { className: string; compact?:
 }
 
 /** what the table is doing, said to everyone: the banners and the curtains */
-export default function TableMood() {
+function TableMood() {
   const t = useT();
   const code = useGame((s) => s.code);
   const seat = useGame((s) => s.seat);
@@ -209,3 +209,6 @@ export default function TableMood() {
     </>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(TableMood);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID, incomeLevel } from '@/game/data';
@@ -9,6 +9,7 @@ import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
+import { useHudRects } from './useHudRects';
 
 /* ------------------------------------------------------------------ */
 /* What happened that the reader should not miss, said where it        */
@@ -34,7 +35,7 @@ const SHOWN_MS = 12000;
 const DOCK_MS = 5000;
 const FLOAT_MS = 2200;
 
-export default function Notices() {
+function Notices() {
   const t = useT();
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
@@ -42,40 +43,15 @@ export default function Notices() {
   const pins = useGame((s) => s.pins);
   const insets = useHudInsets();
   const [notes, setNotes] = useState<Note[]>([]);
-  /* the banner's lower edge: the sales' notices hang right under it */
-  const [under, setUnder] = useState<number | null>(null);
-  const shown = notes.length > 0;
-  useEffect(() => {
-    /* the banner is remounted when the turn changes hands: it is looked up
-       each time, and followed while a notice hangs under it */
-    const measure = () => {
-      const bar = document.querySelector('[data-topbar]');
-      /* the guide's note holds the same lane: a notice hangs under it too */
-      const note = document.querySelector('[data-guide]');
-      const foot = Math.max(bar?.getBoundingClientRect().bottom ?? 0, note?.getBoundingClientRect().bottom ?? 0);
-      if (foot > 0) setUnder(Math.round(foot));
-    };
-    measure();
-    if (!shown) return;
-    const iv = window.setInterval(measure, 400);
-    return () => window.clearInterval(iv);
-  }, [shown]);
+  /* the banner's lower edge: the sales' notices hang right under it. The
+     banner is remounted when the turn changes hands and the guide's note
+     holds the same lane: both are followed as they move, by observation,
+     and a notice hangs under the lower of the two */
+  const [bar, note, railBox] = useHudRects(['[data-topbar]', '[data-guide]', '[data-player-rail]']);
+  const foot = Math.max(bar?.bottom ?? 0, note?.bottom ?? 0);
+  const under = foot > 0 ? foot : null;
   /* the player rail's foot: the flips settle under it once read */
-  const [rail, setRail] = useState<{ left: number; top: number; width: number } | null>(null);
-  const docked = notes.some((n) => n.kind === 'flip' && n.docked);
-  useEffect(() => {
-    const measure = () => {
-      const el = document.querySelector('[data-player-rail]');
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setRail({ left: Math.round(r.left), top: Math.round(r.bottom), width: Math.round(r.width) });
-      }
-    };
-    measure();
-    if (!docked) return;
-    const iv = window.setInterval(measure, 400);
-    return () => window.clearInterval(iv);
-  }, [docked]);
+  const rail = railBox ? { left: railBox.left, top: railBox.bottom, width: railBox.width } : null;
   const [seen, setSeen] = useState<number | null>(null);
   const [floats, setFloats] = useState<{ id: number; n: number }[]>([]);
   const [incomeSeen, setIncomeSeen] = useState<number | null>(null);
@@ -216,3 +192,6 @@ export default function Notices() {
     </>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(Notices);

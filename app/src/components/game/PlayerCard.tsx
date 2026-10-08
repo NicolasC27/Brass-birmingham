@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
@@ -13,6 +13,7 @@ import { recordAgainst } from '@/online/rivals';
 import { useDesk, useSession } from '@/online/session';
 import { useT } from '@/i18n';
 import { PortraitMedallion } from './PlayerRail';
+import { useLayer } from './useLayer';
 
 /* The player's card — what the table knows of a seat: the purse and the
    income, the tally of the game so far and the title it earns, and, when
@@ -30,11 +31,9 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
   const code = useGame((s) => s.code);
   const table = useTable(code);
   const [zoom, setZoom] = useState(false);
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  /* on the spike while it is up: Escape lifts it, and the keyboard goes
+     back to the portrait that opened it */
+  const sheet = useLayer(true, onClose);
   if (!p) return null;
   const color = PLAYER_COLORS[p.color] ?? PLAYER_COLORS.brass;
   const ranked = game.players.map((_, i) => i).sort((a, b) => game.players[b].vp - game.players[a].vp || game.players[b].income - game.players[a].income);
@@ -56,6 +55,8 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
   ];
   return (
     <motion.div
+      ref={sheet}
+      tabIndex={-1}
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -8 }}
@@ -75,7 +76,7 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
         </button>
         <div className="min-w-0">
           <p className="truncate font-fell text-[16px] tracking-wide" style={{ color: color.hex }}>{p.name}</p>
-          <p className="font-mono text-[10px] uppercase tracking-wider text-cream-100/50">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-cream-100/65">
             {p.isBot ? t(isExpert(game, seat) ? 'setup.persona.expertShort' : 'setup.persona.short') : mine ? t('game.card.you') : t('game.card.player')}
             {title && <span className="ml-1.5 rounded-sm border border-brass-700/60 px-1 font-fell normal-case tracking-wide text-brass-400">{t(`results.titles.${title}`)}</span>}
           </p>
@@ -85,13 +86,13 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
       <dl className="space-y-1">
         {rows.map(([k, v]) => (
           <div key={k} className="flex items-baseline justify-between gap-3 font-sans text-[11.5px]">
-            <dt className="text-cream-100/55">{k}</dt>
+            <dt className="text-cream-100/65">{k}</dt>
             <dd className="text-right font-mono text-[11px] text-cream-100/90">{v}</dd>
           </div>
         ))}
         {record && (
           <div className="flex items-baseline justify-between gap-3 font-sans text-[11.5px]">
-            <dt className="text-cream-100/55">{t('game.card.record')}</dt>
+            <dt className="text-cream-100/65">{t('game.card.record')}</dt>
             <dd className="text-right font-mono text-[11px] text-brass-400">{t('game.card.recordValue', { won: record.won, lost: record.lost, played: record.played })}</dd>
           </div>
         )}

@@ -33,7 +33,8 @@ import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { analysisLane, useHudInsets } from '@/components/game/useHudInsets';
-import { isKey } from '@/components/game/keybindings';
+import { isKey, onControl, typing } from '@/components/game/keybindings';
+import { useLayer } from '@/components/game/useLayer';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
 import MarketTray from '@/components/game/MarketTray';
@@ -43,7 +44,7 @@ import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
 import { routeFor } from '@/components/game/routePaths';
 import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withIron } from '@/game/engine';
-import type { BuildTarget } from '@/game/engine';
+import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { listHomeGames, openHomeGame } from '@/game/home';
 import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame, describeAction } from '@/game/store';
@@ -60,6 +61,14 @@ const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
 /** the pause between two moves of a machine while the reader follows them */
 const FOLLOW_PACE_MS = 4000;
+
+/* a game being read shows no plan on the board: the same empty lists each
+   time, so the board's overlay is not rebuilt for a new [] on every render */
+const NO_TARGETS: BuildTarget[] = [];
+const NO_LINKS: LinkTarget[] = [];
+const NO_SALES: SellTarget[] = [];
+/** a sheet that must be answered: Escape stops at it */
+const holdOn = () => undefined;
 
 /** the tools under the player rail: one plaque each, icon only */
 const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brass-400 opacity-90 transition-opacity hover:opacity-100';
@@ -140,8 +149,7 @@ export default function Game() {
   const runBot = useGame((s) => s.runBot);
   const pass = useGame((s) => s.pass);
   const botHold = useGame((s) => s.botHold);
-  const setBotHold = useGame((s) => s.setBotHold);
-  const takeLoan = useGame((s) => s.takeLoan);
+    const takeLoan = useGame((s) => s.takeLoan);
   const ceremony = useGame((s) => s.ceremony);
   const gameOverOpen = useGame((s) => s.gameOverOpen);
   const verb = useGame((s) => s.verb);
@@ -213,6 +221,14 @@ export default function Game() {
   /* the ledger index the reader has looked up to (closing the drawer
      moves it); their own last move counts as read too */
   const [ledgerRead, setLedgerRead] = useState(0);
+  const closeLedger = useCallback(() => {
+    const g = useGame.getState().game;
+    if (g) setLedgerRead(g.ledger.length);
+    setLedgerOpen(false);
+  }, []);
+  /* the ledger holds the right edge: the exchange's tray, opened after it,
+     sends it away, and the other way round */
+  const ledgerSheet = useLayer<HTMLElement>(ledgerOpen, closeLedger, { zone: 'right' });
   /* the exchange starts folded; it unfolds by itself while a planned action
      draws coal or iron from it, and folds back once that plan is gone */
   const [marketOpen, setMarketOpen] = useState(false);
@@ -343,9 +359,10 @@ export default function Game() {
     const onKey = (e: KeyboardEvent) => {
       /* a reader writing somewhere keeps their letters: the shortcuts are
          for the board, not for a field */
-      const on = e.target as HTMLElement | null;
-      if (on && (on.tagName === 'INPUT' || on.tagName === 'TEXTAREA' || on.tagName === 'SELECT' || on.isContentEditable)) return;
-      /* the orders shown on the board: Escape closes that first */
+      if (typing(e)) return;
+      /* the panels have had their Escape already (the table's spike hears
+         it first, and closes the top one only): what reaches here is for
+         the board. The orders shown on the board close first. */
       if (e.key === 'Escape' && (useGame.getState().previewQueue || useGame.getState().surveySeat !== null)) {
         e.preventDefault();
         setPreviewQueue(false);
@@ -367,11 +384,7 @@ export default function Game() {
       }
       if (e.key === 'Escape') {
         cancel();
-        setRulesOpen(false);
-        if (ledgerOpen) setLedgerRead(game.ledger.length);
-        setLedgerOpen(false);
         setSpotlight(null);
-        setBoardOption('settingsOpen', false);
         return;
       }
       if (isKey(e, 'rules')) {
@@ -379,10 +392,8 @@ export default function Game() {
         return;
       }
       if (isKey(e, 'settings')) {
-        /* S toggles the settings panel; it shares the left edge with the mat */
-        const openNow = getBoardOptions().settingsOpen;
-        if (!openNow) useGame.getState().closeMat();
-        setBoardOption('settingsOpen', !openNow);
+        /* S toggles the settings panel; the spike sends away whatever held the left edge */
+        setBoardOption('settingsOpen', !getBoardOptions().settingsOpen);
         return;
       }
       if (isKey(e, 'replay')) {
@@ -420,8 +431,8 @@ export default function Game() {
         return;
       }
       if (isKey(e, 'ledger')) {
-        setLedgerOpen((o) => !o);
-        if (ledgerOpen && game) setLedgerRead(game.ledger.length);
+        if (ledgerOpen) closeLedger();
+        else setLedgerOpen(true);
         return;
       }
       if (isKey(e, 'focus')) {
@@ -449,6 +460,8 @@ export default function Game() {
       /* read live: the actor changes when a move is prepared, with nothing else in this list */
       if (useGame.getState().planActor() < 0) return;
       if (e.key === 'Enter') {
+        /* Enter on a button, a tab or a link belongs to that control */
+        if (onControl(e)) return;
         const ok = confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId });
         if (ok) confirm();
         return;
@@ -463,7 +476,7 @@ export default function Game() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [game, mySeat, spectating, passTo, isHumanTurn, ledgerOpen, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, review, debriefOpen, leaveReview, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
+  }, [game, mySeat, spectating, passTo, isHumanTurn, ledgerOpen, closeLedger, verb, buildPick, linkPick, secondLinkPick, sellPick, developPick, scoutPick, selectedCardId, review, debriefOpen, leaveReview, cancel, confirm, selectCard, setRulesOpen, setMarketFocus, setSpotlight]);
 
   /* ---------------------- planning targets ---------------------- */
   const selectedCard = useMemo(() => {
@@ -473,7 +486,7 @@ export default function Game() {
 
   /* the plan is made for the acting human, or for me while preparing a move out of turn */
   const targets = useMemo(
-    () => (planGame && planActor >= 0 && verb === 'build' && selectedCard ? buildTargets(planGame, planActor, selectedCard) : []),
+    () => (planGame && planActor >= 0 && verb === 'build' && selectedCard ? buildTargets(planGame, planActor, selectedCard) : NO_TARGETS),
     [planGame, planActor, verb, selectedCard],
   );
   /* the links as the board may take them: on their own until a first is
@@ -481,7 +494,7 @@ export default function Game() {
      double's second — touching the network, or the first's own ends —
      with the double's price and the engine's reason when it cannot be */
   const linkTargetsList = useMemo(() => {
-    if (!planGame || planActor < 0 || verb !== 'network') return [];
+    if (!planGame || planActor < 0 || verb !== 'network') return NO_LINKS;
     const list = linkTargets(planGame, planActor);
     if (!linkPick || planGame.era !== 'rail') return list;
     return list.map((t) => {
@@ -491,7 +504,7 @@ export default function Game() {
     });
   }, [planGame, planActor, verb, linkPick, linkBeer]);
   const sellTargetsList = useMemo(
-    () => (planGame && planActor >= 0 && verb === 'sell' ? sellTargets(planGame, planActor) : []),
+    () => (planGame && planActor >= 0 && verb === 'sell' ? sellTargets(planGame, planActor) : NO_SALES),
     [planGame, planActor, verb],
   );
   /* my turn has come: a prepared move plays after a beat, if the engine still takes it */
@@ -570,6 +583,17 @@ export default function Game() {
   /* the tray opens whenever the plan trades with the exchange: buying
      coal or iron, or a mine/works selling its output on the spot */
   const drawsFromMarket = (consumePreview.coal ?? 0) > 0 || (consumePreview.iron ?? 0) > 0 || !!ghost?.sale;
+  const closeMarket = useCallback(() => {
+    setMarketOpen(false);
+    setMarketFocus(false);
+  }, [setMarketFocus]);
+  /* the tray shares the right edge with the ledger; opened by the plan
+     rather than by the reader, it leaves the keyboard where it was */
+  const marketSheet = useLayer<HTMLElement>(marketOpen, closeMarket, { zone: 'right', focus: !drawsFromMarket });
+  /* the two sheets that hold the whole table: the pass of the device is
+     answered by its button only, the loan by one of its two */
+  const passSheet = useLayer(!!passTo, holdOn, { modal: true });
+  const loanSheet = useLayer(loanConfirm, () => setLoanConfirm(false), { modal: true });
   useEffect(() => {
     if (drawsFromMarket && !marketOpen) {
       marketAutoOpened.current = true;
@@ -581,20 +605,33 @@ export default function Game() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawsFromMarket]);
 
+  /* read up to: the drawer's last closing, or the reader's own last move —
+     one walk of the ledger per new entry, not one per pointer move */
+  const ledger = game?.ledger;
+  const { seenIdx, unread } = useMemo(() => {
+    if (!ledger) return { seenIdx: 0, unread: 0 };
+    const lastMine = ledger.reduce((acc, e, i) => (e.player === mySeat ? i + 1 : acc), 0);
+    const seen = Math.max(ledgerRead, lastMine);
+    return { seenIdx: seen, unread: ledger.slice(seen).filter((e) => e.player !== undefined && e.player !== mySeat).length };
+  }, [ledger, mySeat, ledgerRead]);
+  const toggleLedger = useCallback(() => {
+    if (ledgerOpen) closeLedger();
+    else setLedgerOpen(true);
+  }, [ledgerOpen, closeLedger]);
+  const toggleSkip = useCallback(() => setSkipAnim((v) => !v), []);
+  /* the tools under the players, as one element that only changes when
+     what it shows does: the rail is memoised, and a new element each
+     render would undo that */
+  const tools = useMemo(() => <TableTools skipAnim={skipAnim} onSkip={toggleSkip} ledgerOpen={ledgerOpen} unread={unread} onLedger={toggleLedger} />, [skipAnim, toggleSkip, ledgerOpen, unread, toggleLedger]);
+
   if (!game) {
     return <div className="flex min-h-[60vh] items-center justify-center font-fell text-brass-400">{t('game.page.settingTable')}</div>;
   }
 
-  /* the skip chip is a local courtesy: online the table sets the pace */
-  const botThinking = seat === null && game.phase === 'action' && game.players[game.current].isBot && !ceremony;
-  /* read up to: the drawer's last closing, or the reader's own last move */
-  const lastMine = game.ledger.reduce((acc, e, i) => (e.player === mySeat ? i + 1 : acc), 0);
   /* the guide's lane down the right edge: a rail when folded (key G) */
   /* the board's own lane: beside the guide while a lesson runs, and beside
      the analysis while a game is read again — never under either */
   const dock = analysisPane || (tutorial && wide ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
-  const seenIdx = Math.max(ledgerRead, lastMine);
-  const unread = game.ledger.slice(seenIdx).filter((e) => e.player !== undefined && e.player !== mySeat).length;
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
@@ -612,9 +649,9 @@ export default function Game() {
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
             game={review?.state ?? game}
-            targets={review ? [] : targets}
-            linkTargetsList={review ? [] : linkTargetsList}
-            sellTargetsList={review ? [] : sellTargetsList}
+            targets={review ? NO_TARGETS : targets}
+            linkTargetsList={review ? NO_LINKS : linkTargetsList}
+            sellTargetsList={review ? NO_SALES : sellTargetsList}
             ghost={review ? null : ghost}
             onInvalid={reject}
             preview={preview}
@@ -627,54 +664,7 @@ export default function Game() {
       {/* the orders shown on the board: the whole HUD steps aside, the ribbon alone stays */}
       {!surveying && <EdgeTracks />}
       {!surveying && !review && <GameTopBar candle={candle} marketOpen={marketOpen} />}
-      {!surveying && <PlayerRail
-        tools={
-          /* the tools under the players: the bots' pace while they play,
-             then settings, ideas, the table and the ledger — the ledger
-             counts what others did since the reader last looked. Nothing
-             at the right edge, where the exchange unfolds. */
-          <>
-            {/* hold the machines where they stand (a standing switch at a home
-                table, not only while one thinks): time to look, or to prepare a move */}
-            {seat === null && game.phase === 'action' && (
-              <button type="button" onClick={() => setBotHold(!botHold)} aria-pressed={botHold} title={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} aria-label={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} className={cn(TOOL, botHold && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
-                {botHold ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-              </button>
-            )}
-            {botThinking && (
-              <button type="button" onClick={() => setSkipAnim((s) => !s)} aria-pressed={skipAnim} title={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} aria-label={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} className={cn(TOOL, skipAnim && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
-                <FastForward className="h-4 w-4" />
-              </button>
-            )}
-            <TelegramButton className={TOOL} />
-            <NotebookButton className={TOOL} />
-            <AskGuide className={TOOL} />
-            <button
-              type="button"
-              onClick={() => {
-                /* one left-hand panel at a time: the settings take the mat's place */
-                if (!boardOpts.settingsOpen) useGame.getState().closeMat();
-                setBoardOption('settingsOpen', !boardOpts.settingsOpen);
-              }}
-              aria-label={t('board.options.settingsAria')}
-              title={t('game.page.settingsChip')}
-              className={TOOL}
-            >
-              <Settings2 className="h-4 w-4" />
-            </button>
-            <FeedbackButton compact className={TOOL} />
-            <TableMenu compact className={TOOL} />
-            <button type="button" data-lens="ledger" onClick={() => setLedgerOpen((o) => !o)} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (L)`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
-              <ScrollText className="h-4 w-4" />
-              {unread > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold leading-[14px] text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
-                  {unread > 9 ? '9+' : unread}
-                </span>
-              )}
-            </button>
-          </>
-        }
-      />}
+      {!surveying && <PlayerRail tools={tools} />}
 
       {/* the exchange: the quotation strip is always there at the top right;
           the full tray hangs right under it when asked, whole, no scrolling,
@@ -691,6 +681,8 @@ export default function Game() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className={cn('fixed z-[82] w-[min(320px,88vw)]', !review && 'right-3')}
             style={review ? { bottom: insets.bottom + 52, left: insets.left } : { top: insets.top + 48 }}
+            ref={marketSheet}
+            tabIndex={-1}
             data-market
             aria-label={t('game.page.marketPanelAria')}
           >
@@ -698,10 +690,7 @@ export default function Game() {
               <MarketTray consumePreview={consumePreview} />
               <button
                 type="button"
-                onClick={() => {
-                  setMarketOpen(false);
-                  setMarketFocus(false);
-                }}
+                onClick={closeMarket}
                 aria-label={t('game.page.foldMarket')}
                 className="absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 shadow-e3 hover:bg-coal-800"
               >
@@ -723,16 +712,15 @@ export default function Game() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="fixed bottom-0 top-0 z-[66] w-[min(360px,92vw)] p-3"
             style={{ right: analysisPane }}
+            ref={ledgerSheet}
+            tabIndex={-1}
             aria-label={t('game.page.ledgerDrawerAria')}
           >
             <div className="relative h-full rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e4 backdrop-blur-md [&>.plate]:h-full [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">
               <Ledger seen={seenIdx} />
               <button
                 type="button"
-                onClick={() => {
-                  setLedgerRead(game.ledger.length);
-                  setLedgerOpen(false);
-                }}
+                onClick={closeLedger}
                 aria-label={t('game.page.closeLedger')}
                 className="absolute right-2 top-2 z-10 rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100"
               >
@@ -775,6 +763,8 @@ export default function Game() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[78] flex items-center justify-center bg-coal-950"
+            ref={passSheet}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-label={t('game.page.passDevice', { name: passTo })}
@@ -817,7 +807,10 @@ export default function Game() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[82] flex items-center justify-center bg-coal-950/75 p-4 backdrop-blur-sm"
+            ref={loanSheet}
+            tabIndex={-1}
             role="dialog"
+            aria-modal="true"
             aria-label={t('game.page.loanAria')}
           >
             <motion.div
@@ -925,5 +918,54 @@ function CoachChip() {
       {fine && <span className="font-sans text-[11.5px] text-cream-100/70">{t('game.coachChip.fine')}</span>}
       <button type="button" onClick={() => setCoached(null)} aria-label={t('game.coachChip.close')} className="ml-1 text-cream-100/50 hover:text-cream-100">×</button>
     </div>
+  );
+}
+
+/** the tools under the players: the bots' pace while they play, then the
+    wire, the notebook, a question, settings, ideas, the table and the
+    ledger — the ledger counts what others did since the reader last looked.
+    Nothing at the right edge, where the exchange unfolds. */
+function TableTools({ skipAnim, onSkip, ledgerOpen, unread, onLedger }: { skipAnim: boolean; onSkip: () => void; ledgerOpen: boolean; unread: number; onLedger: () => void }) {
+  const t = useT();
+  const seat = useGame((s) => s.seat);
+  const acting = useGame((s) => (s.game && s.game.phase === 'action' ? (s.game.players[s.game.current].isBot ? 'bot' : 'human') : null));
+  const ceremony = useGame((s) => s.ceremony);
+  const botHold = useGame((s) => s.botHold);
+  const setBotHold = useGame((s) => s.setBotHold);
+  const settingsOpen = useBoardOptions().settingsOpen;
+  /* the skip chip is a local courtesy: online the table sets the pace */
+  const botThinking = seat === null && acting === 'bot' && !ceremony;
+  return (
+    <>
+      {/* hold the machines where they stand (a standing switch at a home
+          table, not only while one thinks): time to look, or to prepare a move */}
+      {seat === null && acting !== null && (
+        <button type="button" onClick={() => setBotHold(!botHold)} aria-pressed={botHold} title={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} aria-label={t(botHold ? 'game.page.resumeBots' : 'game.page.holdBots')} className={cn(TOOL, botHold && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
+          {botHold ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+        </button>
+      )}
+      {botThinking && (
+        <button type="button" onClick={onSkip} aria-pressed={skipAnim} title={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} aria-label={skipAnim ? t('game.page.botsBrisk') : t('game.page.skipBots')} className={cn(TOOL, skipAnim && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
+          <FastForward className="h-4 w-4" />
+        </button>
+      )}
+      <TelegramButton className={TOOL} />
+      <NotebookButton className={TOOL} />
+      <AskGuide className={TOOL} />
+      {/* the settings take the left edge; the spike sends away what held it */}
+      <button type="button" onClick={() => setBoardOption('settingsOpen', !settingsOpen)} aria-pressed={settingsOpen} aria-label={t('board.options.settingsAria')} title={t('game.page.settingsChip')} className={TOOL}>
+        <Settings2 className="h-4 w-4" />
+      </button>
+      <FeedbackButton compact className={TOOL} />
+      <TableMenu compact className={TOOL} />
+      <button type="button" data-lens="ledger" onClick={onLedger} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (L)`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
+        <ScrollText className="h-4 w-4" />
+        {unread > 0 && (
+          <span className="absolute -right-1.5 -top-1.5 rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold leading-[14px] text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+    </>
   );
 }

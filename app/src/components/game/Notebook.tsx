@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { NotebookPen, X } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { leftSheetStyle, useDockReserve, useLayer } from './useLayer';
 
 /* ------------------------------------------------------------------ */
 /* The notebook: a page of the reader's own for the whole game — plans,  */
@@ -22,19 +23,15 @@ export default function NotebookButton({ className }: { className?: string }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? text;
   const setText = (next: string) => setDraft(next);
-  const box = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     if (draft === null || draft === text) return;
     const id = window.setTimeout(() => setNotebook(draft), 300);
     return () => window.clearTimeout(id);
   }, [draft, text, setNotebook]);
-  useEffect(() => {
-    if (!open) return;
-    box.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open]);
+  /* a sheet of the left edge: the pen lands on the page as it opens, and
+     Escape (heard by the table, ahead of the page's own keys) puts it away */
+  const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
+  const reserve = useDockReserve();
   const filled = shown.trim().length > 0;
   return (
     <>
@@ -46,13 +43,16 @@ export default function NotebookButton({ className }: { className?: string }) {
         {open && (
           <motion.div
             key="notebook"
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -8 }}
+            ref={sheet}
+            tabIndex={-1}
+            initial={{ opacity: 0, x: -8, y: '-50%' }}
+            animate={{ opacity: 1, x: 0, y: '-50%' }}
+            exit={{ opacity: 0, x: -8, y: '-50%' }}
             transition={{ duration: 0.16 }}
             role="dialog"
             aria-label={t('board.notebook.title')}
-            className="plate fixed left-3 top-1/2 z-[70] flex h-[min(46vh,420px)] w-[320px] -translate-y-1/2 flex-col p-3 shadow-e4"
+            className="plate fixed left-3 z-[70] flex h-[min(46vh,420px)] w-[320px] flex-col p-3 shadow-e4"
+            style={leftSheetStyle(reserve)}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between">
@@ -62,15 +62,15 @@ export default function NotebookButton({ className }: { className?: string }) {
               </button>
             </div>
             <textarea
-              ref={box}
+              autoFocus
               value={shown}
               onChange={(e) => setText(e.target.value.slice(0, 4000))}
               placeholder={t('board.notebook.placeholder')}
               aria-label={t('board.notebook.title')}
-              className="paper min-h-0 flex-1 resize-none rounded-sm px-2.5 py-2 font-fell text-[13px] leading-snug text-ink-900 outline-none placeholder:text-ink-900/40 focus:ring-1 focus:ring-brass-400"
+              className="paper min-h-0 flex-1 resize-none rounded-sm px-2.5 py-2 font-serif text-[13px] leading-snug text-ink-900 placeholder:text-ink-900/40"
               onKeyDown={(e) => e.stopPropagation()}
             />
-            <p className="mt-1.5 font-sans text-[9.5px] uppercase tracking-[0.14em] text-cream-100/40">{t('board.notebook.kept')}</p>
+            <p className="mt-1.5 font-sans text-[10px] uppercase tracking-[0.14em] text-cream-100/60">{t('board.notebook.kept')}</p>
           </motion.div>
         )}
       </AnimatePresence>

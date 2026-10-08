@@ -8,6 +8,7 @@ import type { GameState, Town } from '@/game/types';
 import { useT } from '@/i18n';
 import type { AnchorRegistry } from './boardView';
 import { cn } from '@/lib/utils';
+import { useLayer } from './useLayer';
 
 /* ------------------------------------------------------------------ */
 /* Town inspector — popover anchored to a town (idle clicks only,      */
@@ -133,6 +134,8 @@ export default function TownInspector({
   const note = useGame((s) => s.pins[town.id] ?? '');
   const pinTown = useGame((s) => s.pinTown);
   const setPinNote = useGame((s) => s.setPinNote);
+  /* on the spike while it is open: Escape closes the card and nothing else */
+  const sheet = useLayer(true, onClose);
   const W = 264;
   const EST_H = 240;
   /* where the card sits is decided once, when it opens: below or above the
@@ -163,6 +166,8 @@ export default function TownInspector({
         exit={{ opacity: 0, y: 6, scale: 0.97 }}
         transition={{ duration: 0.16, ease: 'easeOut' }}
         className="plate relative p-3 shadow-e4"
+        ref={sheet}
+        tabIndex={-1}
         role="dialog"
         aria-label={t('board.inspector.ariaLabel', { name: town.name })}
       >
@@ -185,7 +190,7 @@ export default function TownInspector({
           placeholder={t('board.inspector.notePlaceholder')}
           aria-label={t('board.inspector.note')}
           rows={2}
-          className="paper min-w-0 flex-1 resize-none rounded-sm px-2 py-1 font-fell text-[12px] leading-snug text-ink-900 outline-none placeholder:text-ink-900/40 focus:ring-1 focus:ring-brass-400"
+          className="paper min-w-0 flex-1 resize-none rounded-sm px-2 py-1 font-serif text-[12px] leading-snug text-ink-900 placeholder:text-ink-900/55"
           onKeyDown={(e) => e.stopPropagation()}
         />
         <button

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Flag } from 'lucide-react';
 import { useGame } from '@/game/store';
@@ -10,7 +11,7 @@ import { ShapeChip } from '@/components/game/TownInspector';
 /* seat, since the device is shared. One refusal ends the proposal.    */
 /* ------------------------------------------------------------------ */
 
-export default function ConcedeBanner() {
+function ConcedeBanner() {
   const t = useT();
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
@@ -65,3 +66,6 @@ export default function ConcedeBanner() {
     </AnimatePresence>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(ConcedeBanner);

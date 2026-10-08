@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
@@ -170,13 +170,13 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard }
       <div className="flex min-w-0 flex-col items-start gap-[3px]">
         <span className="flex items-center gap-1.5">
           <span className={cn('max-w-[104px] truncate font-fell leading-tight tracking-wide', active ? 'text-cream-100' : 'text-cream-100/85', compact ? 'text-[12px]' : 'text-[13px]')}>{p.name}</span>
-          {p.isBot && <span className="font-mono text-[8px] uppercase text-brass-500/80">{t('game.rail.bot')}</span>}
+          {p.isBot && <span className="font-mono text-[9px] uppercase text-brass-500/80">{t('game.rail.bot')}</span>}
           {online && !p.isBot && typeof latency[index] === 'number' && (
-            <span className="font-mono text-[8.5px] tabular-nums" style={{ color: latency[index]! < 90 ? '#4EE38F' : latency[index]! < 220 ? '#DDBE7E' : '#FF5F4C' }} title={t('game.rail.latency', { ms: latency[index]! })}>
+            <span className="font-mono text-[9px] tabular-nums" style={{ color: latency[index]! < 90 ? '#4EE38F' : latency[index]! < 220 ? '#DDBE7E' : '#FF5F4C' }} title={t('game.rail.latency', { ms: latency[index]! })}>
               {latency[index]} ms
             </span>
           )}
-          {active && <span className="rounded-sm bg-brass-400 px-1 py-px font-sans text-[8px] font-bold uppercase tracking-widest text-coal-950">{t('game.rail.toAct')}</span>}
+          {active && <span className="rounded-sm bg-brass-400 px-1 py-px font-sans text-[9px] font-bold uppercase tracking-widest text-coal-950">{t('game.rail.toAct')}</span>}
         </span>
         {/* the three figures, money first and largest, each behind its own icon */}
         <span className="flex items-baseline gap-2 font-mono leading-none">
@@ -194,7 +194,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard }
           >
             <Trophy aria-hidden className="h-2.5 w-2.5 shrink-0" />
             {vp}
-            {live !== null && <span className="text-[8px] uppercase tracking-[0.1em] text-brass-400/70">{t('game.rail.vpLive')}</span>}
+            {live !== null && <span className="text-[9px] uppercase tracking-[0.1em] text-brass-400/70">{t('game.rail.vpLive')}</span>}
           </span>
         </span>
         {/* turn order: what this round cost so far, and the seat it earns next
@@ -232,7 +232,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard }
  * round sits at the top, and the chips glide to their new places when the
  * round turns. Click = spotlight that player's possessions on the map. No
  * hover expansion: the strip is all there is. */
-export default function PlayerRail({ tools }: { tools?: ReactNode }) {
+function PlayerRail({ tools }: { tools?: ReactNode }) {
   const t = useT();
   const game = useShownGame();
   const reading = useGame((s) => s.review !== null);
@@ -293,7 +293,7 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
           aria-pressed={railCompact}
           aria-label={t(railCompact ? 'game.rail.expand' : 'game.rail.fold')}
           title={t(railCompact ? 'game.rail.expand' : 'game.rail.fold')}
-          className="flex h-5 w-full items-center justify-center plaque rounded-md text-brass-500/70 opacity-80 transition-opacity hover:opacity-100"
+          className="flex h-6 w-full items-center justify-center plaque rounded-md text-brass-500/80 opacity-80 transition-opacity hover:opacity-100"
         >
           {railCompact ? <ChevronsUpDown className="h-3 w-3" /> : <ChevronsDownUp className="h-3 w-3" />}
         </button>
@@ -302,3 +302,6 @@ export default function PlayerRail({ tools }: { tools?: ReactNode }) {
     </div>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(PlayerRail);

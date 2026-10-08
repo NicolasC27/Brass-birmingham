@@ -7,6 +7,7 @@ import { counterBell } from '@/gl/sfx';
 import { useT } from '@/i18n';
 import { getBoardOptions, useBoardOptions } from './boardOptions';
 import { cn } from '@/lib/utils';
+import { useLayer } from './useLayer';
 
 /* Telegrams — the printed lines a player wires across the table. The
    button lives with the tools under the players; a received line hangs
@@ -43,30 +44,30 @@ export function TelegramButton({ className }: { className: string }) {
     tick();
     return () => window.clearInterval(id);
   }, [sentAt]);
-  useEffect(() => {
-    if (!open) return;
-    const close = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
-  }, [open]);
+  /* the wire's sheet holds the left edge like the other tools' sheets */
+  const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   if (!enabled || !game || me < 0 || game.phase === 'game-over') return null;
   const label = left > 0 ? t('game.telegram.wait', { s: Math.ceil(left / 1000) }) : t('game.telegram.send');
   return (
     <span className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} title={label} aria-label={label} className={cn(className, open && '!border-brass-400 bg-brass-500/20 !opacity-100')}>
         <Mail className="h-4 w-4" />
-        {left > 0 && <span className="absolute -bottom-1 -right-1 rounded-sm bg-coal-900 px-0.5 font-mono text-[8px] leading-[10px] text-brass-400">{Math.ceil(left / 1000)}</span>}
+        {left > 0 && <span className="absolute -bottom-1 -right-1 rounded-sm bg-coal-900 px-0.5 font-mono text-[9px] leading-[11px] text-brass-400">{Math.ceil(left / 1000)}</span>}
       </button>
       <AnimatePresence>
         {open && (
+          /* under the row of tools, not across it: the button that opened
+             it and its neighbours stay in reach */
           <motion.div
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -6 }}
+            ref={sheet}
+            tabIndex={-1}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.15 }}
             role="menu"
             aria-label={t('game.telegram.title')}
-            className="plaque absolute left-full top-0 z-[72] ml-2 w-[440px] rounded-md p-2"
+            className="plaque absolute left-0 top-full z-[72] mt-2 w-[440px] rounded-md p-2"
           >
             <div className="mb-1 flex items-center justify-between px-1">
               <span className="engraved-brass font-fell text-[12px] tracking-[0.08em]">{t('game.telegram.title')}</span>
@@ -89,7 +90,7 @@ export function TelegramButton({ className }: { className: string }) {
                     className="flex flex-col items-start rounded-sm px-2 py-1 text-left hover:bg-brass-500/15 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <span className="font-fell text-[13px] leading-tight text-cream-100/90">{text}</span>
-                    {gloss && <span className="font-sans text-[10px] italic leading-tight text-cream-100/50">{gloss}</span>}
+                    {gloss && <span className="font-sans text-[10px] italic leading-tight text-cream-100/65">{gloss}</span>}
                   </button>
                 );
               })}
@@ -156,10 +157,12 @@ export function MarkWarning() {
   const dismiss = useGame((s) => s.dismissMarkWarning);
   /* the word holds the whole screen until it is acknowledged: nothing
      underneath takes a click, Enter or Escape stand for the button */
+  /* a modal sheet: Escape is heard by the table's spike, Tab stays inside */
+  const sheet = useLayer(!!warning, dismiss, { modal: true });
   useEffect(() => {
     if (!warning) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         e.stopPropagation();
         dismiss();
@@ -181,6 +184,8 @@ export function MarkWarning() {
           onContextMenu={(e) => e.preventDefault()}
         >
           <motion.div
+            ref={sheet}
+            tabIndex={-1}
             initial={{ scale: 0.94, y: 8 }}
             animate={{ scale: 1, y: 0 }}
             role="alertdialog"

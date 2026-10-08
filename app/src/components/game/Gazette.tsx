@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useGame } from '@/game/store';
@@ -8,6 +8,7 @@ import type { Headline } from '@/game/gazette';
 import { useT } from '@/i18n';
 import { useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
+import { useHudRects } from './useHudRects';
 
 /* The Gazette — three headlines on the round just played, set from the
    ledger in the style of a Midlands paper of 1850. Read by everyone at
@@ -15,26 +16,15 @@ import { useHudInsets } from './useHudInsets';
 
 const SHOWN_MS = 11_000;
 
-export default function Gazette() {
+function Gazette() {
   const t = useT();
   const game = useGame((s) => s.game);
   const { telegrams: enabled, focus } = useBoardOptions();
   const insets = useHudInsets();
-  /* the guide keeps the right lane while it runs: the headlines step left of it */
-  const [aside, setAside] = useState(16);
-  useEffect(() => {
-    const measure = () => {
-      const lane = document.querySelector('[data-guide]')?.getBoundingClientRect();
-      setAside(lane && lane.width > 0 ? Math.round(window.innerWidth - lane.left + 12) : 16);
-    };
-    measure();
-    const t = window.setInterval(measure, 1000);
-    window.addEventListener('resize', measure);
-    return () => {
-      window.clearInterval(t);
-      window.removeEventListener('resize', measure);
-    };
-  }, []);
+  /* the guide keeps the right lane while it runs: the headlines step left
+     of it — followed as the lane moves, not sounded once a second */
+  const [lane] = useHudRects(['[data-guide]']);
+  const aside = lane && lane.width > 0 ? window.innerWidth - lane.left + 12 : 16;
   const [issue, setIssue] = useState<{ id: string; round: number; era: GameState['era']; lines: Headline[] } | null>(null);
   const [seen, setSeen] = useState<string | null>(null);
   const mark = game ? `${game.era}:${game.round}` : null;
@@ -94,3 +84,6 @@ export default function Gazette() {
     </AnimatePresence>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(Gazette);

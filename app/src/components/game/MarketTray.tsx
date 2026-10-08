@@ -29,10 +29,12 @@ function Ingot({ resource }: { resource: Resource }) {
       />
     );
   /* coal on a soot-dark socket: lit top plane or it vanishes — but dark
-     enough to never rival the brass accents (anthracite, not lead) */
+     enough to never rival the brass accents (anthracite, not lead). The
+     middle of the ingot stands at 3:1 against the empty socket (#12100E),
+     the floor for the state of a control: a full row reads as full */
   return (
     <span
-      className="block h-full w-full rounded-[2px] bg-[linear-gradient(160deg,#948A7C,#4E4740_45%,#211D19)]"
+      className="block h-full w-full rounded-[2px] bg-[linear-gradient(160deg,#B9AFA0,#6E665B_45%,#2E2924)]"
       style={{ boxShadow: 'inset 0 1px 0 rgba(242,234,214,.45), inset 0 -3px 4px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.8)' }}
     />
   );
@@ -75,7 +77,7 @@ function QuotationRow({
         <img src={resource === 'coal' ? '/icon-coal.svg' : '/icon-iron.svg'} alt="" className="mb-0.5 h-5 w-5 opacity-90" />
         <span className="font-fell text-[14px] leading-none tracking-wide text-cream-100">{name}</span>
         <span className="ml-auto flex items-baseline gap-2.5">
-          <span className="font-sans text-[8px] font-bold uppercase tracking-[0.14em] text-cream-100/45">{t('game.market.buyBadge')}</span>
+          <span className="font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-cream-100/45">{t('game.market.buyBadge')}</span>
           {/* hero price — chalk on slate: the ONE cream-bright figure of the panel */}
           <span
             className={cn('font-fell text-[24px] leading-none text-cream-100', focus && 'animate-pulse')}
@@ -86,7 +88,7 @@ function QuotationRow({
           {count === 0 && (
             <span
               title={t('game.market.fallbackTip')}
-              className="rounded-[3px] border border-dashed border-brass-500/50 px-1 py-px font-sans text-[7.5px] font-bold uppercase tracking-[0.1em] text-brass-500/80"
+              className="rounded-[3px] border border-dashed border-brass-500/50 px-1 py-px font-sans text-[9px] font-bold uppercase tracking-[0.1em] text-brass-500/80"
             >
               {t('game.market.fallbackPrice')}
             </span>
@@ -273,7 +275,7 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
             the same money the banner's cost chip counts, read from the tray */}
         {drawTotal > 0 && (
           <p className="mb-1.5 flex items-center gap-1.5 rounded-sm border border-brass-500/40 bg-brass-500/10 px-1.5 py-1 font-mono text-[10px] text-cream-100/85">
-            <span className="shrink-0 font-sans text-[8.5px] font-bold uppercase tracking-[0.12em] text-brass-400">{t('game.market.drawLead')}</span>
+            <span className="shrink-0 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-400">{t('game.market.drawLead')}</span>
             {coalDraw > 0 && <span>{t('game.log.coalN', { n: coalDraw })}</span>}
             {ironDraw > 0 && <span>{t('game.log.ironN', { n: ironDraw })}</span>}
             <span className="ml-auto shrink-0 font-semibold text-brass-400">£{drawTotal}</span>

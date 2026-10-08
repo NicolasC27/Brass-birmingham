@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { cardLabel, useGame } from '@/game/store';
 import type { Card } from '@/game/types';
 import { PLAYER_COLORS } from '@/game/data';
@@ -17,7 +18,7 @@ import { useHudInsets } from './useHudInsets';
 
 const hidden = (c: Card): boolean => c.id.startsWith('hidden:');
 
-export default function ReviewHand() {
+function ReviewHand() {
   const t = useT();
   const review = useGame((s) => s.review);
   const insets = useHudInsets();
@@ -57,3 +58,6 @@ export default function ReviewHand() {
     </div>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(ReviewHand);

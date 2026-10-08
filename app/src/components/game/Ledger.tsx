@@ -142,6 +142,30 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [game?.ledger.length]);
+  /* the flashes the register sets going on the board: every timer kept, so
+     a new pick stops the last one's chain, and closing the drawer stops
+     them all — the board's shared highlight is never written after that */
+  const timers = useRef(new Set<number>());
+  const later = (fn: () => void, ms: number) => {
+    const id = window.setTimeout(() => {
+      timers.current.delete(id);
+      fn();
+    }, ms);
+    timers.current.add(id);
+  };
+  const stopFlashes = () => {
+    for (const id of timers.current) window.clearTimeout(id);
+    timers.current.clear();
+  };
+  useEffect(() => {
+    const held = timers.current;
+    return () => {
+      if (!held.size) return;
+      for (const id of held) window.clearTimeout(id);
+      held.clear();
+      setHover(null);
+    };
+  }, [setHover]);
 
   if (!game) return null;
 
@@ -249,13 +273,14 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
             setPicked(same ? null : { key, player });
             setFolded((f) => ({ ...f, [key]: false }));
             if (same) return;
-            window.setTimeout(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"] [data-player="${player}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
+            stopFlashes();
+            later(() => listRef.current?.querySelector<HTMLElement>(`[data-round="${key}"] [data-player="${player}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 50);
             /* and on the board: the camera goes to the first of the moves, each flashes in turn */
             const regions = allRounds.find((r) => r.key === key)?.items.filter((e) => e.player === player && e.region).map((e) => e.region!) ?? [];
             if (regions.length) flyToRegion(regions[0]);
             regions.forEach((region, i) => {
-              window.setTimeout(() => setHover(region), i * 900);
-              window.setTimeout(() => setHover(null), i * 900 + 800);
+              later(() => setHover(region), i * 900);
+              later(() => setHover(null), i * 900 + 800);
             });
           }}
         />
@@ -288,7 +313,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                       <span className="shrink-0 font-bold" style={{ color: PLAYER_COLORS[game.players[e.player!].color]?.hex ?? '#C9A45C' }}>
                         {game.players[e.player!].name}
                       </span>
-                      <span className={cn('shrink-0 text-[8px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
+                      <span className={cn('shrink-0 text-[9px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
                       {hitsMe(e) && <span className="h-2 w-2 shrink-0 self-center rounded-full bg-rust-500" title={t('game.ledger.hitsMe')} />}
                       <span className="min-w-0 truncate text-cream-100/85">{ledgerParts(e, t).head}</span>
                     </p>
@@ -310,7 +335,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                           {e.id === firstNew && (
                             <div className="my-1.5 flex items-center gap-2">
                               <span className="h-px flex-1 bg-brass-400/70" />
-                              <span className="font-sans text-[8.5px] font-bold tracking-[0.18em] text-brass-400">{t('game.ledger.newSince')}</span>
+                              <span className="font-sans text-[9px] font-bold tracking-[0.18em] text-brass-400">{t('game.ledger.newSince')}</span>
                               <span className="h-px flex-1 bg-brass-400/70" />
                             </div>
                           )}
@@ -330,13 +355,14 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                             <button
                               type="button"
                               onClick={() => {
+                                stopFlashes();
                                 if (e.region) {
                                   flyToRegion(e.region); // camera glides to the town/link
                                   setHover(e.region); // board flashes the town/link region
-                                  window.setTimeout(() => setHover(null), 900);
+                                  later(() => setHover(null), 900);
                                 }
                                 setFlash(e.id);
-                                window.setTimeout(() => setFlash(null), 900);
+                                later(() => setFlash(null), 900);
                               }}
                               className={cn('flex min-w-0 flex-1 items-start gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-brass-500/10', flash === e.id && 'bg-brass-500/15')}
                             >
@@ -346,7 +372,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-baseline gap-1.5">
-                                  <span className={cn('shrink-0 font-sans text-[8.5px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
+                                  <span className={cn('shrink-0 font-sans text-[9px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
                                   <span className={cn('font-sans leading-snug text-cream-100/90', (e.verb === 'system' || e.verb === 'score') && e.player === undefined && 'italic text-cream-100/65')}>{head}</span>
                                 </span>
                                 {detail && <span className="mt-0.5 block font-sans text-[10.5px] leading-snug text-cream-100/55">{detail}</span>}

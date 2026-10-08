@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
@@ -16,6 +16,9 @@ import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { dictOf, getLang, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useHudRects } from './useHudRects';
+import { EMPTY_THREAD, askThread, fileThread } from './guideThread';
+import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 
@@ -107,6 +110,18 @@ const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
   const down = Math.max(0, h - 220);
   return { x: clamp(p.x, -left, 0), y: clamp(p.y, Math.min(0, -90), down) };
 };
+/** the lesson's entry in the dictionary: some lessons read otherwise in debt, or in a short era */
+function stepKeyOf(id: string, game: GameState, me: number): string {
+  return id === 'payday' && incomeLevel(game.players[me].income) < 0 ? 'paydayOwed' : id === 'eraEnd' && game.eraLength === 'short' ? 'eraEndShort' : id;
+}
+
+/** the figures a lesson's text is written with */
+function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string): Record<string, string | number> {
+  const p = game.players[me];
+  const k = getKeybindings();
+  return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+}
+
 /** a sentence that follows a colon starts low */
 const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
 const place = (p: Pos) => `translate(${p.x}px, ${p.y}px)`;
@@ -229,15 +244,7 @@ function happenings(g: GameState, me: number, t: T): { id: number; text: string 
 
 /* ------------------------------ the thread --------------------------- */
 
-/** a turn of the conversation, kept once it is no longer the live one */
-interface Said {
-  key: string;
-  kind: 'lesson' | 'bot' | 'news' | 'ask' | 'answer';
-  head?: string;
-  body: string;
-  /** the seat whose move this was, for the look back at the board */
-  seat?: number;
-}
+/* the thread itself is kept in guideThread.ts */
 
 /** the questions the guide knows, in the order they are tried */
 const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win'] as const;
@@ -361,7 +368,7 @@ function Paragraphs({ text, className }: { text: string; className?: string }) {
   );
 }
 
-export default function Guide({ dock = 0 }: { dock?: number }) {
+function Guide({ dock = 0 }: { dock?: number }) {
   const t = useT();
   const game = useGame((s) => s.game);
   const code = useGame((s) => s.code);
@@ -410,29 +417,27 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
     }
   });
   const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos; t0: number } | null>(null);
-  /* the room the note has: under whatever the top bar occupies, above the hand */
-  const [band, setBand] = useState<{ top: number; height: number }>({ top: 100, height: 520 });
+  /* the room the note has: under whatever the top bar occupies, above the
+     hand — read from the pieces as they move, not sounded once a second */
+  const [bar, map, dockBox] = useHudRects(['[data-topbar]', '[data-minimap]', '[data-dock]']);
+  const band = useMemo(() => {
+    const h = window.innerHeight;
+    const top = (bar?.bottom || 80) + 12;
+    /* the lane runs down to whatever the right edge already holds */
+    const feet = [map?.top, dockBox && dockBox.right > window.innerWidth - laneWidth() - 40 ? dockBox.top : undefined, h - 40].filter((x): x is number => typeof x === 'number' && x > top);
+    return { top, height: Math.max(220, Math.round(Math.min(...feet) - top - 12)) };
+  }, [bar, map, dockBox]);
+  /* the note is kept inside the window: once as it opens, and whenever the
+     window or the room around it changes — the same place when it fits */
   useEffect(() => {
-    const measure = () => {
-      /* a hidden tab measures every box at zero: nothing is learned from it */
-      if (window.innerHeight < 320) return;
-      const bar = document.querySelector('[data-topbar]')?.getBoundingClientRect();
-      const map = document.querySelector('[data-minimap]')?.getBoundingClientRect();
-      const dock = document.querySelector('[data-dock]')?.getBoundingClientRect();
-      const top = Math.round(bar?.bottom || 80) + 12;
-      /* the lane runs down to whatever the right edge already holds */
-      const feet = [map?.top, dock && dock.right > window.innerWidth - laneWidth() - 40 ? dock.top : undefined, window.innerHeight - 40].filter((x): x is number => typeof x === 'number' && x > top);
-      setBand({ top, height: Math.max(220, Math.round(Math.min(...feet) - top - 12)) });
-      setPos((p) => fit(p));
-    };
-    measure();
-    const t = window.setInterval(measure, 1000);
-    window.addEventListener('resize', measure);
-    return () => {
-      window.clearInterval(t);
-      window.removeEventListener('resize', measure);
-    };
-  }, []);
+    const keep = () => setPos((p) => {
+      const f = fit(p);
+      return f.x === p.x && f.y === p.y ? p : f;
+    });
+    keep();
+    window.addEventListener('resize', keep);
+    return () => window.removeEventListener('resize', keep);
+  }, [band]);
   /* the press that just ended was a move or a hold, not a click: the
      click that follows it must not fold the note */
   const held = useRef(false);
@@ -459,10 +464,8 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   /* the machine's move whose reading the reader has set aside to see the lesson */
   const [unfoldAt, setUnfoldAt] = useState(-1);
   /* everything already said, oldest first, and what is still live */
-  const [said, setSaid] = useState<Said[]>([]);
-  const [liveLesson, setLiveLesson] = useState<{ at: number; head: string; body: string } | null>(null);
-  const [liveBot, setLiveBot] = useState<{ id: number; head: string; body: string; seat: number } | null>(null);
-  const [filed, setFiled] = useState(-1);
+  const [thread, setThread] = useState<Thread>(EMPTY_THREAD);
+  const said = thread.said;
   const [question, setQuestion] = useState('');
   /* the rules codex, flattened once into the passages a question searches */
   const lang = useLang();
@@ -530,14 +533,17 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   const dueId = tutorial && rawIndex >= 0 && rawIndex < STEPS.length ? STEPS[rawIndex].id : null;
   const stepIndex = rawIndex < 0 ? -1 : review !== null ? review : Math.max(rawIndex, reached);
   const reachable = pending >= 0 ? Math.min(rawIndex, pending) : rawIndex;
-  if (tutorial && review === null && reachable > reached) {
-    setReached(reachable);
+  if (tutorial && review === null && reachable > reached) setReached(reachable);
+  /* the furthest lesson is kept for the next visit from an effect: a render
+     may be thrown away, a line written to the disk may not */
+  useEffect(() => {
+    if (!tutorial) return;
     try {
-      localStorage.setItem(REACH_KEY, String(reachable));
+      localStorage.setItem(REACH_KEY, String(reached));
     } catch {
       /* non-fatal */
     }
-  }
+  }, [tutorial, reached]);
 
   const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, step: dueId, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, dueId, selectedCardId, verb, buildPick]);
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
@@ -559,17 +565,41 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   }, [holdWanted, setBotHold]);
 
 
-  if (!game || game.phase !== 'action') return null;
-  const showSteps = tutorial && stepIndex >= 0;
+  /* the lesson on show, worked out before the note decides whether to
+     show at all: the thread files away whatever it replaces */
+  const onTable = !!game && game.phase === 'action';
+  const showSteps = onTable && tutorial && stepIndex >= 0;
   const due = showSteps ? STEPS[Math.min(stepIndex, STEPS.length - 1)] : null;
   const finished = showSteps && stepIndex >= STEPS.length;
   /* the deed the lesson asks for, when the table does not allow it now;
      when money is what is missing and the loan is still to be taught, the
      guide takes that lesson first and comes back to this one after */
-  const block = due?.done && !finished && review === null ? blockedBy(due.id, game, me, t) : null;
-  const detour = !!block?.money && due!.id !== 'loan' && stepIndex < LOAN_AT && !STEPS[LOAN_AT].done!(game, me, selectedCardId, matPlayer, ack) && canLoan(game, me).ok;
+  const block = game && due?.done && !finished && review === null ? blockedBy(due.id, game, me, t) : null;
+  const detour = !!game && !!block?.money && due!.id !== 'loan' && stepIndex < LOAN_AT && !STEPS[LOAN_AT].done!(game, me, selectedCardId, matPlayer, ack) && canLoan(game, me).ok;
   const step = detour ? STEPS[LOAN_AT] : due;
   const shownIndex = detour ? LOAN_AT : stepIndex;
+
+  /* a lesson, a move of hers or an event that is no longer the live one
+     is filed into the thread, worded as it was when it was read: one pure
+     step, kept only when it changed anything (see guideThread.ts) */
+  const filedNow = fileThread(thread, {
+    lesson:
+      game && dock && showSteps && step
+        ? {
+            at: shownIndex,
+            word: () => {
+              const vars = stepVarsOf(game, me, t);
+              const key = stepKeyOf(step.id, game, me);
+              return { head: t(`game.guide.steps.${key}.title`, vars), body: t(`game.guide.steps.${key}.body`, vars) };
+            },
+          }
+        : null,
+    bot: dock && bot ? { id: bot.id, head: bot.what, body: bot.why, seat: bot.seat } : null,
+    news: dock ? happens.filter((x) => x.id <= eventsSeen) : [],
+  });
+  if (filedNow !== thread) setThread(filedNow);
+
+  if (!game || game.phase !== 'action') return null;
   const blocked = detour ? null : (block?.text ?? null);
   /* folded for the lesson on show only: the next one unfolds the note */
   const mini = miniAt === shownIndex;
@@ -754,8 +784,7 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
   };
   /* the lesson's words, when the table asks for another telling of it:
      a payday owed rather than paid, a short game that ends here */
-  const stepKey = (id: string): string =>
-    id === 'payday' && incomeLevel(game.players[me].income) < 0 ? 'paydayOwed' : id === 'eraEnd' && game.eraLength === 'short' ? 'eraEndShort' : id;
+  const stepKey = (id: string): string => stepKeyOf(id, game, me);
   /* the question about this table the words point at, and how long the
      phrase matched was — the same measure the written answers use, so the
      surest of the two wins rather than whichever was tried first */
@@ -811,34 +840,10 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
     const entry = id ? null : written?.entry;
     const passage = id || entry ? null : rulesMatch(q, passages);
     const answer = id ? answerTo(id) : entry ? entry.answer : passage ? (passage.title ? `${passage.title} — ${passage.body}` : passage.body) : t('game.guide.ask.answer.none');
-    setSaid((prev) => [
-      ...prev,
-      { key: `q${prev.length}`, kind: 'ask', body: q },
-      { key: `a${prev.length}`, kind: 'answer', body: answer },
-    ]);
+    setThread((prev) => askThread(prev, q, answer));
     if (id === 'do' && myTurn && !advised) ask();
   };
-  const stepVars = (): Record<string, string | number> => {
-    const p = game.players[me];
-    const k = getKeybindings();
-    return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
-  };
-
-  /* a lesson, a move of hers or an event that is no longer the live one
-     is filed into the thread, worded as it was when it was read */
-  if (dock && showSteps && step && liveLesson?.at !== shownIndex) {
-    if (liveLesson) setSaid((prev) => [...prev, { key: `l${liveLesson.at}`, kind: 'lesson', head: liveLesson.head, body: liveLesson.body }]);
-    setLiveLesson({ at: shownIndex, head: t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars()), body: t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars()) });
-  }
-  if (dock && bot && liveBot?.id !== bot.id) {
-    if (liveBot) setSaid((prev) => [...prev, { key: `b${liveBot.id}`, kind: 'bot', head: liveBot.head, body: liveBot.body, seat: liveBot.seat }]);
-    setLiveBot({ id: bot.id, head: bot.what, body: bot.why, seat: bot.seat });
-  }
-  const toFile = dock ? happens.filter((x) => x.id <= eventsSeen && x.id > filed) : [];
-  if (toFile.length) {
-    setSaid((prev) => [...prev, ...toFile.map((x) => ({ key: `n${x.id}`, kind: 'news' as const, body: x.text }))]);
-    setFiled(toFile[toFile.length - 1].id);
-  }
+  const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t);
 
   /* folded: a rail down the right edge — the lesson's number, how far the
      guide has come, a dot when the machine or the table has something to
@@ -1221,3 +1226,6 @@ export default function Guide({ dock = 0 }: { dock?: number }) {
     </div>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(Guide);

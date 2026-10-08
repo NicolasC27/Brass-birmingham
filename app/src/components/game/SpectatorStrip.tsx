@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router';
 import { Eye } from 'lucide-react';
 import { PLAYER_COLORS } from '@/game/data';
@@ -10,7 +11,7 @@ import { useHudInsets } from './useHudInsets';
    one watches a table from no seat: whose move it is, the two keys that
    read the board (another seat's last move, the acting seat's empire),
    and the way back to the desk. */
-export default function SpectatorStrip() {
+function SpectatorStrip() {
   const t = useT();
   const game = useShownGame();
   const keys = useKeybindings();
@@ -41,3 +42,6 @@ export default function SpectatorStrip() {
     </div>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(SpectatorStrip);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { PLAYER_COLORS } from '@/game/data';
 import { useGame } from '@/game/store';
@@ -11,7 +11,7 @@ import { useReducedMotion } from './useReducedMotion';
  * per-player scoring tickers, then the rail banner locks in.
  * Reduced motion: single crossfade. Skippable after 800ms.
  */
-export default function Ceremony() {
+function Ceremony() {
   const t = useT();
   const ceremony = useGame((s) => s.ceremony);
   const game = useGame((s) => s.game);
@@ -140,3 +140,6 @@ export default function Ceremony() {
     </motion.div>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(Ceremony);

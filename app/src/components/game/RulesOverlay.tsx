@@ -1,14 +1,18 @@
+import { memo } from 'react';
 import { Link } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
+import { useLayer } from './useLayer';
 
 /** `?` rules overlay — quick reference modal, links to the full codex. */
-export default function RulesOverlay() {
+function RulesOverlay() {
   const t = useT();
   const open = useGame((s) => s.rulesOpen);
   const setOpen = useGame((s) => s.setRulesOpen);
+  /* a sheet across the whole table: it holds the keyboard while it is up */
+  const sheet = useLayer(open, () => setOpen(false), { modal: true });
 
   return (
     <AnimatePresence>
@@ -19,7 +23,10 @@ export default function RulesOverlay() {
           exit={{ opacity: 0 }}
           className="fixed inset-0 z-[85] flex items-center justify-center bg-coal-950/75 p-4 backdrop-blur-sm"
           onClick={() => setOpen(false)}
+          ref={sheet}
+          tabIndex={-1}
           role="dialog"
+          aria-modal="true"
           aria-label={t('game.rules.aria')}
         >
           <motion.div
@@ -59,3 +66,6 @@ export default function RulesOverlay() {
     </AnimatePresence>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(RulesOverlay);

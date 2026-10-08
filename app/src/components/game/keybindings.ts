@@ -103,3 +103,18 @@ export function isKey(e: KeyboardEvent, action: KeyAction): boolean {
 
 /** how a key is printed on a keycap */
 export const keyLabel = (k: string): string => (k === ' ' ? 'Space' : k.length === 1 ? k.toUpperCase() : k);
+
+/** the reader is writing somewhere: a field keeps its letters, and no
+ *  shortcut of the table may take them */
+export function typing(e: KeyboardEvent): boolean {
+  const on = e.target as HTMLElement | null;
+  if (!on || typeof on.tagName !== 'string') return false;
+  return on.tagName === 'INPUT' || on.tagName === 'TEXTAREA' || on.tagName === 'SELECT' || on.isContentEditable === true;
+}
+
+/** the key lands on a control of its own (a button, a tab, a link): Enter
+ *  and Space belong to that control, not to the move in hand */
+export function onControl(e: KeyboardEvent): boolean {
+  const on = e.target as HTMLElement | null;
+  return !!on && typeof on.closest === 'function' && on.closest('button, [role="button"], [role="tab"], [role="menuitem"], a[href], summary') !== null;
+}

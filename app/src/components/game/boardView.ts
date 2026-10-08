@@ -29,19 +29,47 @@ export const GLIMPSE_MS = 3200;
 
 export const clampK = (k: number): number => Math.min(MAX_K, Math.max(MIN_K, k));
 
-/* the hand dock overlays the bottom of the screen; the fit reserves
-   FIT_PAD_BOTTOM px of container height so the ×2.3 prestige signs of the
-   southern merchants (Gloucester, Oxford) stay clear of it. Only the fit
-   SCALE shrinks (~8% at 1920×1080) — the world centre stays at the
-   container centre, so worldToScreen/screenToWorld remain exact inverses
-   and hit-testing, pan clamps and zoom math are untouched. */
+/* the hand dock overlays the bottom of the screen. The board is framed on
+   the room the HUD leaves it, not on the whole canvas: the dock says how
+   tall it stands (its open height, so the board does not breathe each time
+   the hand folds) and the fit takes that strip off the height it fits the
+   world into. FIT_PAD_BOTTOM is only what is assumed before a dock has
+   spoken, and after it has gone (a game being read, a spectator's table).
+   The world centre stays at the container centre, so worldToScreen and
+   screenToWorld remain exact inverses; the strip is won back by the pan,
+   which may lift the map until its southern edge clears the dock. */
 export const FIT_PAD_BOTTOM = 88;
 
+let fitReserve = FIT_PAD_BOTTOM;
+const reserveListeners = new Set<() => void>();
+
+/** the height (px, from the bottom of the frame) the HUD holds over the
+ *  board; called by the hand dock, never by the board itself */
+export function setFitReserve(px: number): void {
+  const next = Math.max(0, Math.round(px));
+  if (next === fitReserve) return;
+  fitReserve = next;
+  for (const fn of [...reserveListeners]) fn();
+}
+
+export const getFitReserve = (): number => fitReserve;
+
+export function subscribeFitReserve(fn: () => void): () => void {
+  reserveListeners.add(fn);
+  return () => reserveListeners.delete(fn);
+}
+
 /** scale that fits the whole world inside a cw×ch container, minus the
- *  bottom strip reserved for the hand dock (FIT_PAD_BOTTOM) */
+ *  bottom strip the HUD holds (never less than half the height) */
 export function fitScale(cw: number, ch: number): number {
   if (cw <= 0 || ch <= 0) return 1;
-  return Math.min(cw / WORLD_W, Math.max(ch - FIT_PAD_BOTTOM, ch / 2) / WORLD_H);
+  return Math.min(cw / WORLD_W, Math.max(ch - fitReserve, ch / 2) / WORLD_H);
+}
+
+/** how far (px, upward) the map must be lifted at scale s for its southern
+ *  edge to clear the HUD's strip */
+function liftFor(s: number, ch: number): number {
+  return Math.max(0, (WORLD_H * s) / 2 + fitReserve - ch / 2);
 }
 
 /** clamp pan so at least `margin` px of the map stays reachable on each axis */
@@ -54,11 +82,27 @@ export function clampPan(v: View, cw: number, ch: number): View {
   const s = fitScale(cw, ch) * v.k;
   const mx = Math.max(0, (WORLD_W * s) / 2 + BLEED_X * s - cw / 2);
   const my = Math.max(0, (WORLD_H * s) / 2 + BLEED_Y * s - ch / 2);
+  /* upward, the map may always rise far enough to show its southern towns
+     above the hand, even where the bleed alone would not allow it */
+  const up = Math.max(my, liftFor(s, ch));
+  /* while the whole play area fits in the strip above the hand, it stays
+     in that strip: nothing of it is ever pushed under the dock at a view
+     that could show it all */
+  const free = ch - fitReserve;
+  const hh = (WORLD_H * s) / 2;
+  const [lo, hi] = 2 * hh <= free ? [hh - ch / 2, free - hh - ch / 2] : [-up, my];
   return {
     k: clampK(v.k),
     x: Math.min(mx, Math.max(-mx, v.x)),
-    y: Math.min(my, Math.max(-my, v.y)),
+    y: Math.min(hi, Math.max(lo, v.y)),
   };
+}
+
+/** the whole-board view framed on the room the HUD leaves: the world at the
+ *  fit, its centre raised to the middle of the free strip above the hand.
+ *  The camera's fit and its opening view are meant to use this. */
+export function fitView(cw: number, ch: number): View {
+  return clampPan({ k: 1, x: 0, y: -fitReserve / 2 }, cw, ch);
 }
 
 /** world (viewBox) coords → container pixels */

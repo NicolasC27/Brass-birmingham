@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useGame } from '@/game/store';
 
@@ -11,7 +11,7 @@ import { useGame } from '@/game/store';
 
 const PAD = 6;
 
-export default function LessonHalo() {
+function LessonHalo() {
   const hud = useGame((s) => s.lens?.hud ?? null);
   const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   useEffect(() => {
@@ -57,3 +57,6 @@ export default function LessonHalo() {
     </AnimatePresence>
   );
 }
+
+/* renders on its own subscriptions, not on every render of the page */
+export default memo(LessonHalo);

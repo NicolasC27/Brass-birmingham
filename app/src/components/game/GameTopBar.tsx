@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrainFront, Waves } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
@@ -124,7 +124,7 @@ function Candle({ candle, total }: { candle: CandleProp; total: number }) {
   );
 }
 
-export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: boolean }) {
+function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: boolean }) {
   const t = useT();
   const game = useShownGame();
   const botHold = useGame((s) => s.botHold);
@@ -178,6 +178,10 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
   const lastWhat = theirLast ? ledgerParts(theirLast, t).head : null;
 
   let line: string;
+  /* what blocks the verb, when nothing takes it: the dictionary's own
+     sentence, which names the cause and the way round it — on a line of
+     its own under the strip, whole, never cut after its first words */
+  let blocked: string | null = null;
   if (stage === 'theirs') {
     line = game.phase !== 'action' ? t('game.topbar.between') : p.isBot ? t(botHold ? 'game.topbar.waitsRead' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
   } else if (stage === 'ready') {
@@ -198,8 +202,10 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
          reader pick it so the answer lands here, not in a tooltip */
       if (n === 0) {
         const why = verbsForCard({ game: planGame ?? game, selectedCardId, actor: me }).find((v) => v.verb === verb)?.reason;
-        line = `${t('game.topbar.noWay', { verb: t(VERB_LABEL[verb]) })} ${reasonText(why)}`;
-        if (aid) line += ` — ${t(`game.topbar.aid.none.${verb}`)}`;
+        /* the verb is on its chip and the card on the strip: the line
+           under them says only why, and what would open the way */
+        blocked = reasonText(why);
+        if (aid) blocked += ` — ${t(`game.topbar.aid.none.${verb}`)}`;
       } else if (aid) {
         /* the beginner's aid counts the choices */
         line = `${line} · ${t('game.topbar.aid.count', { n })}`;
@@ -247,7 +253,7 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
       return (
         <>
           <b className="font-semibold text-brass-400">{cardLabel(card)}</b>
-          <span className="text-cream-100/85"> · {line}</span>
+          {!blocked && <span className="text-cream-100/85"> · {line}</span>}
         </>
       );
     }
@@ -281,7 +287,7 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
               <EraIcon className={cn('h-3 w-3', game.era === 'canal' ? 'text-cream-100/70' : 'text-copper-500 brightness-150')} aria-hidden />
               <span className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-cream-100/80">{game.era === 'canal' ? t('game.topbar.badgeCanal') : t('game.topbar.badgeRail')}</span>
               <span className="font-mono text-[11px] text-brass-400">
-                {game.round}<span className="text-cream-100/35">/{total}</span>
+                {game.round}<span className="text-cream-100/55">/{total}</span>
               </span>
               {/* the era's progress, a hairline under the plaque */}
               <span className="absolute inset-x-0 bottom-0 h-px bg-brass-700/40">
@@ -308,8 +314,8 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
                 ))}
               </span>
             )}
-            {mine && verb && <span className="hidden shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[9px] font-bold uppercase tracking-[0.14em] text-brass-400 min-[1180px]:inline">{t(VERB_LABEL[verb])}</span>}
-            <span className={cn('min-w-0 flex-1 truncate font-fell text-[13px] leading-none', theirs && 'text-cream-100/85')} title={summaryFull ?? undefined}>
+            {mine && verb && <span className="hidden shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-brass-400 min-[1180px]:inline">{t(VERB_LABEL[verb])}</span>}
+            <span role="status" className={cn('min-w-0 flex-1 truncate font-fell text-[13px] leading-none', theirs && 'text-cream-100/85')} title={summaryFull ?? undefined}>
               {mine && summary ? <span className="text-cream-100/90">{summary}</span> : sentence}
             </span>
           </div>
@@ -326,28 +332,36 @@ export default function GameTopBar({ candle, marketOpen }: { candle: CandleProp;
                   title={t('game.hand.costTip')}
                 >
                   <span className="font-semibold">{t('game.hand.total', { n: cost.total })}</span>
-                  <span className="text-cream-100/35">·</span>
+                  <span className="text-cream-100/55">·</span>
                   <span className={cost.after < 0 ? '' : 'text-cream-100/60'}>{t('game.hand.left', { n: cost.after })}</span>
                 </motion.span>
               )}
               {stage === 'verb' && (
-                <button type="button" onClick={() => setVerb('pass')} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]" title={t('game.topbar.passTip')}>
+                <button type="button" onClick={() => setVerb('pass')} className="btn-ledger !min-h-[32px] !px-2.5 !py-0.5 text-[11px]" title={t('game.topbar.passTip')}>
                   {t('game.topbar.pass')}
                 </button>
               )}
-              <button type="button" onClick={cancel} disabled={stage === 'card' && !preparing} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-30" title={`${t('game.topbar.cancel')} — Esc`}>
+              <button type="button" onClick={cancel} disabled={stage === 'card' && !preparing} className="btn-ledger !min-h-[32px] !px-2.5 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-40" title={`${t('game.topbar.cancel')} — Esc`}>
                 {t('game.topbar.cancel')}
               </button>
-              <button type="button" onClick={confirm} disabled={stage !== 'ready'} className="btn-strike !min-h-[26px] !px-3 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-30" title={`${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵`}>
-                {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} <kbd className="ml-1 font-mono text-[9px] opacity-60">↵</kbd>
+              <button type="button" onClick={confirm} disabled={stage !== 'ready'} className="btn-strike !min-h-[32px] !px-3 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-40" title={`${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵`}>
+                {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} <kbd className="ml-1 font-mono text-[10px] opacity-75">↵</kbd>
               </button>
             </div>
           )}
         </div>
-        {aidNote && <p className="truncate border-t border-brass-700/30 px-3 py-0.5 font-sans text-[10.5px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
+        {blocked && (
+          <p role="status" className="border-t border-brass-700/30 px-3 py-1 font-sans text-[12px] leading-snug text-cream-100/90">
+            {blocked}
+          </p>
+        )}
+        {aidNote && <p className="truncate border-t border-brass-700/30 px-3 py-0.5 font-sans text-[11px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
         {/* the candle burns along the bottom edge, by itself */}
         <Candle candle={candle} total={candleTotal} />
       </motion.div>
     </div>
   );
 }
+
+/* the banner re-renders on its own subscriptions, not on every render of the page */
+export default memo(GameTopBar);
