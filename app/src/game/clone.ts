@@ -20,9 +20,8 @@
 /* nothing written on the copy may ever show through on the original.  */
 /* ------------------------------------------------------------------ */
 
+import { INDUSTRIES_IN_ORDER } from './data';
 import type { Card, GameState, IndustryType, LinkState, PlayerState, TileState } from './types';
-
-const INDUSTRIES_IN_ORDER: IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
 
 /** cards are written at setup and never altered: the array is cut, the
  *  cards within it are shared */
@@ -58,29 +57,69 @@ function cloneMerchantTiles(m: GameState['merchantTiles']): GameState['merchantT
   return out;
 }
 
+/** a field of the table as the copy takes it: `'kept'` for a word or a
+ *  number, which the copy may share, or the function that makes it afresh */
+type Take<T> = 'kept' | ((v: NonNullable<T>) => NonNullable<T>);
+
+/** every field of the table, and how a copy takes it. This is the one list:
+ *  a field added to `GameState` does not compile until it is written here,
+ *  and `clone.test.ts` checks over real games that no field holding an
+ *  object is left `'kept'` */
+export const TAKE: { [K in keyof Required<GameState>]: Take<GameState[K]> } = {
+  version: 'kept',
+  seed: 'kept',
+  era: 'kept',
+  round: 'kept',
+  eraLength: 'kept',
+  marketTemper: 'kept',
+  fidelity: 'kept',
+  timerMinutes: 'kept',
+  assist: 'kept',
+  board: 'kept',
+  rules: 'kept',
+  players: (v) => v.map(clonePlayer),
+  order: (v) => v.slice(),
+  turnPos: 'kept',
+  current: 'kept',
+  actionsLeft: 'kept',
+  tiles: cloneTiles,
+  links: cloneLinks,
+  market: (v) => ({ ...v }),
+  deck: cards,
+  discard: cards,
+  wildLeft: (v) => ({ ...v }),
+  merchantTiles: cloneMerchantTiles,
+  merchantBeer: (v) => ({ ...v }),
+  merchantBonusTaken: (v) => ({ ...v }),
+  /* the lines of the ledger are written once and never changed: the list
+     is cut, the lines shared */
+  ledger: (v) => v.slice(),
+  ledgerSeq: 'kept',
+  phase: 'kept',
+  fxSeq: 'kept',
+  lastFx: (v) => ({ ...v, at: [v.at[0], v.at[1]] }),
+  canalScores: (v) => v.slice(),
+  canalSplit: (v) => v.map((x) => ({ ...x })),
+  finalScores: (v) => v.slice(),
+  finalSplit: (v) => v.map((x) => ({ ...x })),
+  winner: 'kept',
+  concessions: (v) => v.slice(),
+  abandoned: 'kept',
+  history: (v) => v.map((h) => structuredClone(h)),
+  lastSpent: (v) => v.slice(),
+  /* an action is a word of the log, never rewritten */
+  actions: (v) => v.slice(),
+};
+
+/** the fields a copy makes afresh, read once off the list above */
+const FRESH = (Object.keys(TAKE) as (keyof GameState)[]).filter((k) => TAKE[k] !== 'kept');
+
 /** the table as it stands, ready to be played on without touching the original */
 export function cloneState(s: GameState): GameState {
-  const out: GameState = {
-    ...s,
-    players: s.players.map(clonePlayer),
-    order: s.order.slice(),
-    tiles: cloneTiles(s.tiles),
-    links: cloneLinks(s.links),
-    market: { ...s.market },
-    deck: cards(s.deck),
-    discard: cards(s.discard),
-    wildLeft: { ...s.wildLeft },
-    merchantTiles: cloneMerchantTiles(s.merchantTiles),
-    merchantBeer: { ...s.merchantBeer },
-    merchantBonusTaken: { ...s.merchantBonusTaken },
-    ledger: s.ledger.slice(),
-    history: s.history.map((h) => structuredClone(h)),
-    actions: s.actions.slice(),
-  };
-  if (s.lastFx) out.lastFx = { ...s.lastFx, at: [s.lastFx.at[0], s.lastFx.at[1]] };
-  if (s.canalScores) out.canalScores = s.canalScores.slice();
-  if (s.finalScores) out.finalScores = s.finalScores.slice();
-  if (s.concessions) out.concessions = s.concessions.slice();
-  if (s.lastSpent) out.lastSpent = s.lastSpent.slice();
-  return out;
+  const out = { ...s } as Record<keyof GameState, unknown>;
+  for (const k of FRESH) {
+    const v = s[k];
+    if (v !== undefined && v !== null) out[k] = (TAKE[k] as (x: unknown) => unknown)(v);
+  }
+  return out as GameState;
 }

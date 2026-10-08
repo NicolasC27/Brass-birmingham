@@ -1,10 +1,11 @@
 import { onlineWire } from '@/online/net';
 import { hasOldStuff, liftBrowser } from '@/platform/uplift';
 import { pickTableName } from '@/online/tableNames';
+import { normalizeCode } from '@/online/table';
 import type { HomeSave, HomeTable } from '@/online/table';
 import { replay, setupOf } from './actions';
 import type { GameAction } from './actions';
-import { defaultSetup } from './engine';
+import { RULES_EDITION, defaultSetup } from './engine';
 import type { GameState, SetupPayload } from './types';
 import { SETUP_KEY } from './types';
 
@@ -91,35 +92,70 @@ export async function hydrateHome(): Promise<void> {
 export async function openHomeGame(seed = Math.floor(Math.random() * 1e9), setup: SetupPayload = readSetup(), name?: string): Promise<HomeTable> {
   const wire = onlineWire();
   if (!wire) throw new Error('offline');
-  const table = await wire.openHome(name ?? pickTableName(register.map((t) => t.name)), seed, setup);
+  /* the deal is written down with the edition of the rules it is played
+     under, so the log never has to be tried against two of them */
+  const dealt: SetupPayload = setup.options.rules === undefined ? { ...setup, options: { ...setup.options, rules: RULES_EDITION } } : setup;
+  const table = await wire.openHome(name ?? pickTableName(register.map((t) => t.name)), seed, dealt);
   settle([table, ...register.filter((t) => t.code !== table.code)]);
   return table;
 }
 
-/** a game at home as it now stands, replayed from the log the office keeps */
-export async function readHomeSave(code: string): Promise<GameState | null> {
+/** why a game at home could not be read back: the office has no such game,
+ *  its log will not replay under this build's engine, or the office did not
+ *  answer at all. Only the first is a reason to deal a new one */
+export type HomeMiss = 'absent' | 'unreplayable' | 'offline';
+
+/** a game at home as it now stands, replayed from the log the office keeps
+ *  — or the reason it could not be */
+export async function readHomeSave(code: string): Promise<{ game: GameState } | { miss: HomeMiss }> {
   const wire = onlineWire();
-  if (!wire) return null;
+  if (!wire) return { miss: 'offline' };
   let save: HomeSave | null;
   try {
     save = await wire.loadHome(code);
   } catch {
-    return null;
+    return { miss: 'offline' };
   }
-  if (!save) return null;
+  if (!save) return { miss: 'absent' };
   try {
-    return replay(save.setup, save.seed, save.actions);
+    return { game: replay(save.setup, save.seed, save.actions) };
   } catch {
     /* a log this build's engine no longer accepts: the game is on the record
        and is played no further */
-    return null;
+    return { miss: 'unreplayable' };
   }
 }
 
-/** one move, at its place in the log. Nothing is awaited: the position is
- *  already on the board here, and the office speaks only to refuse */
-export function recordMove(code: string, idx: number, action: GameAction): void {
-  onlineWire()?.actHome(code, idx, action);
+/** what became of a move sent to the office: written, turned down, or not
+ *  known — the line went quiet before the office had read it */
+export type Recorded = 'kept' | 'refused' | 'offline';
+
+/** one move, at its place in the log, and the office's reading of it.
+ *
+ *  The office says nothing when a move stands and speaks only to refuse, so
+ *  the move is followed down the line by a question it must answer: frames
+ *  are read in the order they were sent, and the answer to the question
+ *  comes back only once the move before it has been read. A refusal of
+ *  this very move, heard before that answer, means it was turned down */
+export async function recordMove(code: string, idx: number, action: GameAction): Promise<Recorded> {
+  const wire = onlineWire();
+  if (!wire) return 'offline';
+  const mine = normalizeCode(code);
+  let refused = false;
+  const off = wire.onHomeRefused((r) => {
+    if (normalizeCode(r.code) === mine && r.at === idx) refused = true;
+  });
+  try {
+    wire.actHome(code, idx, action);
+    await wire.askNotes(code);
+    return refused ? 'refused' : 'kept';
+  } catch {
+    /* no answer in time: the move waits in the wire's outbox and goes out
+       with the line — whether it stands is the office's to say then */
+    return refused ? 'refused' : 'offline';
+  } finally {
+    off();
+  }
 }
 
 /** a move taken back, and the log cut there */

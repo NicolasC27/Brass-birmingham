@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, botAction, fallbackAction } from '../actions';
 import { chooseBotMove } from '../bot';
-import { cloneState } from '../clone';
+import { TAKE, cloneState } from '../clone';
 import { newGame } from '../engine';
 import { legalActions } from '../search';
 import type { GameState, SetupPayload } from '../types';
@@ -68,6 +68,24 @@ describe('a quick copy of the table', () => {
       for (const k of Object.keys(c.links)) expect(c.links[k]).not.toBe(s.links[k]);
       for (const k of Object.keys(c.merchantTiles)) expect(c.merchantTiles[k]).not.toBe(s.merchantTiles[k]);
     }
+  });
+
+  it('knows every field of the table, and makes afresh every one holding an object', () => {
+    /* two whole games, the scores of both eras and their splits included */
+    const states = [...statesOf(77, 4), ...statesOf(302, 2)];
+    const seen = new Set<string>();
+    for (const s of states) {
+      const c = cloneState(s) as unknown as Record<string, unknown>;
+      for (const [k, v] of Object.entries(s)) {
+        seen.add(k);
+        expect(Object.keys(TAKE)).toContain(k);
+        if (v === null || typeof v !== 'object') continue;
+        /* shared by reference, a field would be written on through the copy */
+        expect(TAKE[k as keyof GameState], k).not.toBe('kept');
+        expect(c[k], k).not.toBe(v);
+      }
+    }
+    for (const k of ['canalSplit', 'finalSplit', 'canalScores', 'finalScores', 'lastFx', 'lastSpent']) expect(seen).toContain(k);
   });
 
   it('leaves the original untouched when a move is played on the copy', () => {

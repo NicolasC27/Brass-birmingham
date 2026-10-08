@@ -5,7 +5,7 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { actionsFor, beginRailEra, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, planIronFrom, scoreEra, sellTargets, tileKey, withIron } from './engine';
+import { actionsFor, beerShort, beginRailEra, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, planIronFrom, salesThatStand, scoreEra, sellTargets, tileKey, withCoal, withIron, withLinkCoal } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
@@ -31,6 +31,8 @@ import type {
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY } from './quickplay';
 import { forkHomeGame, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
+import type { HomeMiss, Recorded } from './home';
+import { normalizeCode } from '@/online/table';
 import { readNotes, writeNotes } from '@/platform/notes';
 import { challengeSeedFor, noteChallenge } from './challenge';
 import { grantFromGame } from '@/platform/patents';
@@ -49,6 +51,21 @@ export interface Shake {
   at: number;
 }
 
+/** what went wrong between a game at home and the office that keeps it */
+export interface HomeTrouble {
+  /** refused: the office turned a move down, the two logs have drifted
+   *  apart; offline: the office did not answer; absent: it holds no such
+   *  game any more; unreplayable: its log will not replay under this build */
+  cause: 'refused' | HomeMiss;
+  /** for a refusal: the place in the log of the move turned down */
+  at?: number;
+  /** for a refusal: the office's own words */
+  error?: string;
+  /** the board has been read back from the office's log: play goes on from
+   *  where the office stands, and the notice only remains to be read */
+  mended: boolean;
+}
+
 interface GameStore {
   game: GameState | null;
   /* ---- the table, when the game is played over the wire ---- */
@@ -65,6 +82,15 @@ interface GameStore {
   line: WireStatus | null;
   /** what the server says about taking the last action back */
   serverUndo: boolean;
+  /** a game at home the office would not follow — a move it turned down,
+   *  a line gone quiet, a log it cannot hand back. Play stands frozen until
+   *  the board has been read back from the office (`mended`); what is left
+   *  after that is a notice for the reader to dismiss */
+  homeTrouble: HomeTrouble | null;
+  /** the notice put away, once the board has been read back */
+  dismissHomeTrouble: () => void;
+  /** ask the office again for the game at home it would not hand over */
+  retryHome: () => void;
   /** the turn candle as the table last reported it, anchored to this clock
    *  so the two need not agree on the time of day */
   candle: { msLeft: number; at: number } | null;
@@ -85,6 +111,12 @@ interface GameStore {
   developIron: (string | null)[];
   /** the iron works a build draws from (its key), 'market', or null for the engine's nearest */
   buildIron: string | null;
+  /** per cube of coal a build burns, the mine named (its key) among the
+   *  nearest connected ones, or null for the engine's choice */
+  buildCoal: (string | null)[];
+  /** at the rail, the mine each link burns its cube from: the first link's,
+   *  then the second's; null for the engine's choice */
+  linkCoal: (string | null)[];
   /** the brewery a double rail drinks from (its key), or null for the engine's choice */
   linkBeer: string | null;
   /** per picked sale (by tile key), the beer named for each barrel it needs */
@@ -226,6 +258,10 @@ interface GameStore {
   dropDevelop: (ind: IndustryType) => void;
   setDevelopIron: (k: number, from: string | null) => void;
   setBuildIron: (from: string | null) => void;
+  /** the mine the `k`-th cube of coal of a build is drawn from */
+  setBuildCoal: (k: number, from: string | null) => void;
+  /** the mine the `k`-th rail link (0 the first, 1 the second) burns its cube from */
+  setLinkCoal: (k: number, from: string | null) => void;
   setLinkBeer: (from: string | null) => void;
   /** sell the picked tile to another merchant that takes it */
   setSellMerchant: (key: string, merchant: string) => void;
@@ -336,27 +372,36 @@ function noteHouse(g: GameState, local: string | null): void {
  *  `init` makes. An address naming a game the office does not hold opens a
  *  new one instead: a game carried in the link is written down as it stands,
  *  and an empty link is a fresh deal. Either way the page is then sent to
- *  the code the office gave, which is the only code that means anything. */
+ *  the code the office gave, which is the only code that means anything.
+ *  An office that does not answer, or a log it cannot replay, opens nothing:
+ *  the reader's game is still there, and the board says why it is not */
 async function fetchHome(code: string): Promise<void> {
   /* a link that points at a move: the analysis opens on that very move,
      which is the whole point of sending it */
   const moment = sharedMoment(window.location.hash);
   const carried = readShared(window.location.hash);
   let at = code;
-  let game = await readHomeSave(code);
-  if (!game) {
+  const read = await readHomeSave(code);
+  let game: GameState | null = 'game' in read ? read.game : null;
+  let miss: HomeMiss | null = 'miss' in read ? read.miss : null;
+  if (miss === 'absent') {
     try {
       const table = carried ? await forkHomeGame(carried) : await openHomeGame();
       at = table.code;
-      game = carried ?? (await readHomeSave(at));
+      if (carried) game = carried;
+      else {
+        const dealt = await readHomeSave(at);
+        game = 'game' in dealt ? dealt.game : null;
+        miss = 'miss' in dealt ? dealt.miss : null;
+      }
     } catch {
       /* the office is not answering: the board stays empty and says so */
-      game = null;
+      miss = 'offline';
     }
-    if (!game) {
-      if (useGame.getState().local === code) useGame.setState({ game: null, movedTo: null });
-      return;
-    }
+  }
+  if (!game) {
+    if (useGame.getState().local === code) useGame.setState({ game: null, movedTo: null, homeTrouble: { cause: miss ?? 'offline', mended: false } });
+    return;
   }
   /* the reader may have walked away while the office was answering */
   if (useGame.getState().local !== code) return;
@@ -381,23 +426,18 @@ async function fetchHome(code: string): Promise<void> {
       return true;
     }
   })();
-  const humanMarks = (() => {
-    try {
-      return humanActionIndices(setupOf(game), game.seed, game.actions);
-    } catch {
-      return [];
-    }
-  })();
+  const humanMarks = marksOf(game);
   useGame.setState({
     ...clearSelection,
     ...freshTable,
+    ...freshGame,
     game,
     code: null,
     local: at,
     /* the office's code, when it is not the one the address named */
     movedTo: at === code ? null : at,
     seat: null,
-    line: null,
+    line: onlineWire()?.status ?? null,
     candle: null,
     mood: NO_MOOD,
     tutorial,
@@ -415,6 +455,106 @@ async function fetchHome(code: string): Promise<void> {
   /* the towns pinned and the page kept beside this game come back with it */
   const notes = await readNotes(at);
   if (useGame.getState().local === at) useGame.setState({ pins: notes.pins, notebook: notes.page });
+}
+
+/** the move last sent to the office from a game at home, until the office
+ *  has read it — the next one waits for it */
+let inFlight: Promise<Recorded> | null = null;
+/** the board being read back from the office, so two calls make one reading */
+let rereading: Promise<void> | null = null;
+/** stop hearing the office about the game at home */
+let homeDeafen: (() => void) | null = null;
+
+/** a game at home that may not take a move just now: the office has not
+ *  read the last one yet, or the two logs have drifted apart and the board
+ *  is waiting to be read back */
+function homeHeld(st: Pick<GameStore, 'code' | 'local' | 'homeTrouble'>): boolean {
+  if (st.code || !st.local) return false;
+  return inFlight !== null || (!!st.homeTrouble && !st.homeTrouble.mended);
+}
+
+/** the human moves of a log, as the undo marks read them */
+function marksOf(game: GameState): UndoMark[] {
+  try {
+    return humanActionIndices(setupOf(game), game.seed, game.actions);
+  } catch {
+    return [];
+  }
+}
+
+/** the board read back from the office's log, once the two have drifted
+ *  apart or the office went quiet: its log is the game. The table keeps
+ *  its pins, its notes and its telegrams; only the game and what was
+ *  being chosen on it are replaced */
+function rereadHome(code: string): Promise<void> {
+  if (rereading) return rereading;
+  rereading = (async () => {
+    const read = await readHomeSave(code);
+    const st = useGame.getState();
+    if (st.local !== code) return;
+    if ('miss' in read) {
+      /* nothing to put on the board: it stays as it is, frozen, and says
+         why — a refusal keeps its own story while the line is only down */
+      const was = st.homeTrouble;
+      const cause = read.miss === 'offline' && was?.cause === 'refused' ? 'refused' : read.miss;
+      useGame.setState({ homeTrouble: { ...was, cause, mended: false } });
+      return;
+    }
+    const game = read.game;
+    /* the office wrote every move after all: nothing to tell the reader */
+    const same = !!st.game && JSON.stringify(st.game.actions) === JSON.stringify(game.actions);
+    setBoard(game.board);
+    useGame.setState({
+      ...clearSelection,
+      game,
+      humanMarks: marksOf(game),
+      coached: null,
+      ceremony: game.phase === 'scoring-canal' ? 'canal-end' : null,
+      gameOverOpen: game.phase === 'game-over',
+      homeTrouble: same ? null : { ...(st.homeTrouble ?? { cause: 'refused' }), mended: true },
+    });
+  })().finally(() => {
+    rereading = null;
+  });
+  return rereading;
+}
+
+/** hear the office about the game at home: a move it turns down, and the
+ *  line going up and down. The game is named by the store, not here, so a
+ *  rematch under a new code is heard without listening again */
+function listenHome(wire: Wire): void {
+  homeDeafen?.();
+  const offRefused = wire.onHomeRefused((r) => {
+    const local = useGame.getState().local;
+    if (!local || useGame.getState().code || normalizeCode(r.code) !== normalizeCode(local)) return;
+    /* the office's log stopped short of this board: nothing more is played
+       on it until it has been read back from the office */
+    useGame.setState({ ...clearSelection, humanMarks: useGame.getState().humanMarks, homeTrouble: { cause: 'refused', at: r.at, error: r.error, mended: false } });
+    void rereadHome(local);
+  });
+  const offLine = wire.onStatus(() => {
+    useGame.setState({ line: wire.status });
+    /* the line is back: a board left waiting on the office is read again.
+       Frames sent before are still ahead of this one in the wire's outbox,
+       so the office has read the waiting move by the time it answers */
+    const st = useGame.getState();
+    if (wire.status === 'online' && st.local && !st.code && st.homeTrouble && !st.homeTrouble.mended) {
+      if (st.game) void rereadHome(st.local);
+      else void fetchHome(st.local);
+    }
+  });
+  homeDeafen = () => {
+    offRefused();
+    offLine();
+    homeDeafen = null;
+  };
+}
+
+/** leave the game at home: the office is no longer heard about it */
+export function leaveHomeTable(): void {
+  homeDeafen?.();
+  inFlight = null;
+  useGame.setState({ homeTrouble: null, line: null });
 }
 
 export function buildFinalPayload(g: GameState): FinalPayload {
@@ -458,6 +598,8 @@ const clearSelection = {
   developPick: [] as IndustryType[],
   developIron: [] as (string | null)[],
   buildIron: null as string | null,
+  buildCoal: [] as (string | null)[],
+  linkCoal: [] as (string | null)[],
   linkBeer: null as string | null,
   sellBeer: {} as Record<string, (string | null)[]>,
   scoutPick: [] as string[],
@@ -493,6 +635,28 @@ const freshTable = {
   unlessPick: null as number | null,
 };
 
+/* what belongs to one game and goes with it: every place that sits the
+   reader at another table — online, at home, a rematch, a game fetched
+   from the office — spreads this whole, and a field of one game is added
+   here or nowhere. `__tests__/store-table.test.ts` holds the sites to it */
+export const freshGame = {
+  humanMarks: [] as UndoMark[],
+  review: null as Review | null,
+  reviewAt: null as number | null,
+  debriefOpen: false,
+  coached: null as Coached | null,
+  serverUndo: false,
+  movedTo: null as string | null,
+  ceremony: null as 'canal-end' | null,
+  gameOverOpen: false,
+  tutorial: false,
+  coachStep: -1,
+  shown: null as GameStore['shown'],
+  sharing: false,
+  following: false,
+  homeTrouble: null as HomeTrouble | null,
+} satisfies Partial<GameStore>;
+
 export const useGame = create<GameStore>((set, get) => ({
   game: null,
   code: null,
@@ -501,6 +665,15 @@ export const useGame = create<GameStore>((set, get) => ({
   seat: null,
   line: null,
   serverUndo: false,
+  homeTrouble: null,
+  dismissHomeTrouble: () => set((st) => (st.homeTrouble?.mended ? { homeTrouble: null } : st)),
+  retryHome: () => {
+    const { local, game } = get();
+    if (!local) return;
+    /* a board on show is read back in place; an empty one is fetched whole */
+    if (game) void rereadHome(local);
+    else void fetchHome(local);
+  },
   candle: null,
   mood: NO_MOOD,
   ...clearSelection,
@@ -528,9 +701,10 @@ export const useGame = create<GameStore>((set, get) => ({
     /* the table's code is in the address bar: a game online is a place you
        can link to, come back to and hand to someone else */
     const wire = code ? onlineWire() : null;
+    homeDeafen?.();
     if (code && wire) {
       /* the table's pins and notes come back with the table */
-      set({ ...clearSelection, ...freshTable, game: null, code, local: null, seat: null, line: wire.status, serverUndo: false, candle: null, mood: NO_MOOD, tutorial: false, ceremony: null, gameOverOpen: false, coachStep: -1, pins: {}, notebook: '' });
+      set({ ...clearSelection, ...freshTable, ...freshGame, game: null, code, local: null, seat: null, line: wire.status, candle: null, mood: NO_MOOD, pins: {}, notebook: '' });
       listen(code, wire);
       void readNotes(code).then((n) => {
         /* the reader may have left the table while the office was answering */
@@ -540,8 +714,11 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     /* a game at home. The office holds it: the board waits, empty, until it
        has been handed over — the very shape the online branch above takes */
-    set({ ...clearSelection, ...freshTable, game: null, code: null, local: local ?? null, movedTo: null, seat: null, line: null, candle: null, mood: NO_MOOD, tutorial: false, humanMarks: [], pins: {}, ceremony: null, gameOverOpen: false, debriefOpen: false, reviewAt: null, coachStep: -1 });
+    const home = onlineWire();
+    /* the line to the office shows at home too: every move goes down it */
+    set({ ...clearSelection, ...freshTable, ...freshGame, game: null, code: null, local: local ?? null, seat: null, line: home?.status ?? null, candle: null, mood: NO_MOOD, pins: {} });
     if (!local) return;
+    if (home) listenHome(home);
     void fetchHome(local);
   },
 
@@ -574,7 +751,7 @@ export const useGame = create<GameStore>((set, get) => ({
        keeps a log, and a log is not begun twice under one code. The page
        follows `movedTo` to the deal the office hands back */
     if (get().code || !get().local) return;
-    set({ ...clearSelection, ...freshTable, game: null, humanMarks: [], ceremony: null, gameOverOpen: false, pins: {}, notebook: '', movedTo: null });
+    set({ ...clearSelection, ...freshTable, ...freshGame, game: null, pins: {}, notebook: '' });
     void openHomeGame()
       .then((table) => {
         set({ local: table.code, movedTo: table.code });
@@ -589,7 +766,17 @@ export const useGame = create<GameStore>((set, get) => ({
   record: (action, at) => {
     const { code, local } = get();
     if (code || !local) return;
-    recordMove(local, at, action);
+    const sent = recordMove(local, at, action);
+    inFlight = sent;
+    void sent.then((r) => {
+      if (inFlight === sent) inFlight = null;
+      /* a refusal is heard by `listenHome`, whoever sent the move. A move
+         the office never answered for may be lost: the table waits for it,
+         frozen, and is read back as soon as the office can be asked */
+      if (r !== 'offline' || get().local !== local) return;
+      if (!get().homeTrouble) set({ homeTrouble: { cause: 'offline', mended: false } });
+      void rereadHome(local);
+    });
   },
 
   /* ------------------------- selection ------------------------- */
@@ -622,19 +809,36 @@ export const useGame = create<GameStore>((set, get) => ({
     set({ verb: v, buildPick: null, linkPick: null, secondLinkPick: null, sellPick: null, sellPicks: [], developPick: [], developIron: [], buildIron: null, linkBeer: null, sellBeer: {}, shake: null });
   },
 
-  pickBuild: (t) => set((st) => ({ buildPick: t, shake: null, buildIron: t && st.buildPick && tileKey(t.town, t.slot) === tileKey(st.buildPick.town, st.buildPick.slot) ? st.buildIron : null })),
+  pickBuild: (t) =>
+    set((st) => {
+      /* the same slot picked again keeps the supply named for it */
+      const same = !!t && !!st.buildPick && tileKey(t.town, t.slot) === tileKey(st.buildPick.town, st.buildPick.slot);
+      return { buildPick: t, shake: null, buildIron: same ? st.buildIron : null, buildCoal: same ? st.buildCoal : [] };
+    }),
   setBuildIron: (from) => set({ buildIron: from }),
+  setBuildCoal: (k, from) =>
+    set((st) => {
+      const next = [...st.buildCoal];
+      next[k] = from;
+      return { buildCoal: next };
+    }),
+  setLinkCoal: (k, from) =>
+    set((st) => {
+      const next = [...st.linkCoal];
+      next[k] = from;
+      return { linkCoal: next };
+    }),
   setLinkBeer: (from) => set({ linkBeer: from }),
   pickLink: (t) => {
     const st = get();
     if (!st.linkPick) {
-      set({ linkPick: t });
+      set({ linkPick: t, linkCoal: [] });
       return;
     }
     if (st.linkPick && t && st.game?.era === 'rail') {
       const first = st.linkPick.link;
       if (t.link.id === first.id) {
-        set({ linkPick: null, secondLinkPick: null, linkBeer: null });
+        set({ linkPick: null, secondLinkPick: null, linkBeer: null, linkCoal: [] });
         return;
       }
       /* the second rail: one the network already reaches, or one the first
@@ -642,12 +846,12 @@ export const useGame = create<GameStore>((set, get) => ({
       const ends = [first.a, first.b, first.alsoConnects].filter(Boolean);
       const touches = t.valid || ends.includes(t.link.a) || ends.includes(t.link.b) || (!!t.link.alsoConnects && ends.includes(t.link.alsoConnects));
       if (touches) {
-        set({ secondLinkPick: t, linkBeer: null });
+        set({ secondLinkPick: t, linkBeer: null, linkCoal: st.linkCoal.slice(0, 1) });
       } else {
-        set({ linkPick: t, secondLinkPick: null, linkBeer: null });
+        set({ linkPick: t, secondLinkPick: null, linkBeer: null, linkCoal: [] });
       }
     } else {
-      set({ linkPick: t });
+      set({ linkPick: t, linkCoal: [] });
     }
   },
   /* click a tile = queue it; click it again = drop it. Any number of
@@ -660,6 +864,17 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     const same = (x: SellTarget) => x.town === t.town && x.slot === t.slot;
     const next = cur.some(same) ? cur.filter((x) => !same(x)) : [...cur, t];
+    /* a tile joins the sale only if the beer reaches it after the ones
+       already in it have drunk: the whole sale stands, or it is not begun */
+    const g = get().planGame();
+    const actor = get().planActor();
+    if (!cur.some(same) && t.valid && g && actor >= 0) {
+      const beer = next.map((x) => get().sellBeer[tileKey(x.town, x.slot)] ?? []);
+      if (salesThatStand(g, actor, next.filter((x) => x.valid), beer.filter((_, i) => next[i].valid)) < next.filter((x) => x.valid).length) {
+        set({ shake: { key: tileKey(t.town, t.slot), reason: beerShort(t), at: Date.now() } });
+        return;
+      }
+    }
     const sellBeer = { ...get().sellBeer };
     if (cur.some(same)) delete sellBeer[tileKey(t.town, t.slot)];
     set({ sellPick: next[next.length - 1] ?? null, sellPicks: next, sellBeer, shake: null });
@@ -936,7 +1151,7 @@ export const useGame = create<GameStore>((set, get) => ({
     let action: GameAction | null = null;
     switch (st.verb) {
       case 'build':
-        if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry, ...(st.buildIron ? { ironFrom: st.buildIron } : {}) };
+        if (card && st.buildPick?.valid) action = { kind: 'build', card: card.id, town: st.buildPick.town, slot: st.buildPick.slot, industry: st.buildPick.industry, ...(st.buildIron ? { ironFrom: st.buildIron } : {}), ...(st.buildCoal.some(Boolean) ? { coalFrom: st.buildCoal } : {}) };
         break;
       case 'network':
         if (card && st.linkPick?.valid) {
@@ -944,13 +1159,13 @@ export const useGame = create<GameStore>((set, get) => ({
              the coal reserved — and refused here, in words, rather than
              handed to the engine to refuse in silence */
           if (st.secondLinkPick) {
-            const dbl = doubleLinkPlan(g, actor, st.linkPick, st.secondLinkPick.link, st.linkBeer);
+            const dbl = doubleLinkPlan(g, actor, withLinkCoal(g, actor, st.linkPick, st.linkCoal[0]), st.secondLinkPick.link, st.linkBeer, st.linkCoal[1]);
             if (!dbl.valid) {
               set({ shake: { key: st.secondLinkPick.link.id, reason: dbl.reason ?? '', at: Date.now() } });
               return;
             }
           }
-          action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id, ...(st.secondLinkPick && st.linkBeer ? { beerFrom: st.linkBeer } : {}) };
+          action = { kind: 'network', card: card.id, link: st.linkPick.link.id, second: st.secondLinkPick?.link.id, ...(st.secondLinkPick && st.linkBeer ? { beerFrom: st.linkBeer } : {}), ...(st.linkCoal.some(Boolean) ? { coalFrom: st.linkCoal } : {}) };
         }
         break;
       case 'develop':
@@ -991,6 +1206,12 @@ export const useGame = create<GameStore>((set, get) => ({
       wire.send({ t: 'act', code: st.code, action });
       set({ ...clearSelection });
       return true;
+    }
+    /* at home the office keeps the log: no move goes on the board before it
+       has read the last one, and none while the two stand apart */
+    if (homeHeld(st)) {
+      set({ shake: { key: '', reason: tr('game.page.reconnecting'), at: Date.now() } });
+      return false;
     }
     const r = applyAction(g, actorOf(g, action), action);
     if (!r.state) {
@@ -1038,6 +1259,8 @@ export const useGame = create<GameStore>((set, get) => ({
     const g = st.game;
     const marks = get().humanMarks;
     if (!g || !canUndoNow(g, marks)) return false;
+    /* a board the office is reading back is not one to take a move off */
+    if (st.homeTrouble && !st.homeTrouble.mended) return false;
     let back: GameState | null = null;
     try {
       back = undoLastHuman(g, marks);
@@ -1048,7 +1271,8 @@ export const useGame = create<GameStore>((set, get) => ({
       return false;
     }
     if (!back) return false;
-    set({ ...clearSelection, game: back, humanMarks: marks.slice(0, -1), ceremony: back.phase === 'scoring-canal' ? 'canal-end' : null, gameOverOpen: false });
+    /* and the coach's word on the move taken back goes with it */
+    set({ ...clearSelection, game: back, humanMarks: marks.slice(0, -1), ceremony: back.phase === 'scoring-canal' ? 'canal-end' : null, gameOverOpen: false, coached: null });
     /* the office cuts its log where the board now stands */
     const at = get().local;
     if (at) void recordUndo(at, back.actions.length).catch(() => undefined);
@@ -1062,6 +1286,7 @@ export const useGame = create<GameStore>((set, get) => ({
       get().dispatch({ kind: 'begin-rail' });
       return;
     }
+    if (homeHeld(get())) return;
     const r = applyAction(g, g.current, { kind: 'begin-rail' });
     if (!r.state) return;
     set({ game: r.state, ceremony: null, gameOverOpen: r.state.phase === 'game-over' });
@@ -1173,6 +1398,15 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!g || g.phase !== 'action' || st.code) return null;
     const p = g.players[g.current];
     if (!p.isBot) return null;
+    /* at home a machine waits for the office to have read the last move,
+       then plays — on the very table it was asked to play on */
+    if (homeHeld(st)) {
+      const waiting = inFlight;
+      if (waiting) void waiting.then(() => {
+        if (get().game === g) get().runBot();
+      });
+      return null;
+    }
     /* a browser thinks on the thread that paints, so a machine keeps it short
        — an expert a little less so; it plays at the form the house holds */
     const strength = readForm().level;
@@ -1251,7 +1485,7 @@ export function developPlans(game: GameState, ironFrom: (string | null)[]): Supp
 }
 
 export function confirmCost(
-  st: { verb: Verb | null; buildPick: BuildTarget | null; buildIron?: string | null; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; linkBeer?: string | null; developPick: IndustryType[]; developIron: (string | null)[] },
+  st: { verb: Verb | null; buildPick: BuildTarget | null; buildIron?: string | null; buildCoal?: (string | null)[]; linkPick: LinkTarget | null; secondLinkPick: LinkTarget | null; linkBeer?: string | null; linkCoal?: (string | null)[]; developPick: IndustryType[]; developIron: (string | null)[] },
   game: GameState,
   actor: number = game.current,
 ): { total: number; after: number } | null {
@@ -1260,11 +1494,14 @@ export function confirmCost(
   switch (st.verb) {
     case 'build':
       if (!st.buildPick) return null;
-      total = withIron(game, actor, st.buildPick, st.buildIron).total;
+      total = withIron(game, actor, withCoal(game, actor, st.buildPick, st.buildCoal), st.buildIron).total;
       break;
     case 'network':
       if (!st.linkPick) return null;
-      total = st.secondLinkPick ? doubleLinkPlan(game, actor, st.linkPick, st.secondLinkPick.link, st.linkBeer).total : st.linkPick.total;
+      {
+        const first = withLinkCoal(game, actor, st.linkPick, st.linkCoal?.[0]);
+        total = st.secondLinkPick ? doubleLinkPlan(game, actor, first, st.secondLinkPick.link, st.linkBeer, st.linkCoal?.[1]).total : first.total;
+      }
       break;
     case 'develop': {
       if (!st.developPick.length) return null;
@@ -1495,6 +1732,7 @@ function listen(code: string, wire: Wire): void {
 /** stop following the online table (leaving the board for good) */
 export function leaveOnlineTable(): void {
   deafen?.();
+  homeDeafen?.();
   const code = useGame.getState().code;
   if (code) onlineWire()?.unwatch(code);
   useGame.setState({ code: null, local: null, seat: null, line: null, serverUndo: false, candle: null, mood: NO_MOOD, shown: null, sharing: false, following: false });
