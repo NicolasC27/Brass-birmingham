@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Scale } from 'lucide-react';
 import { MARKET_MAX, marketBuyPrice } from '@/game/data';
 import type { MarketState, Resource } from '@/game/types';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -30,7 +30,7 @@ function useMarketMove(market: MarketState, watching: boolean): { text: string |
       const from = marketBuyPrice(r, before[r]);
       const to = marketBuyPrice(r, market[r]);
       const name = t(`game.market.${r}`);
-      bits.push(from !== to ? `${name} £${from} → £${to}` : `${name} ${market[r] > before[r] ? '+' : ''}${market[r] - before[r]}`);
+      bits.push(from !== to ? `${name} ${money(from)} → ${money(to)}` : `${name} ${market[r] > before[r] ? '+' : ''}${market[r] - before[r]}`);
     }
     if (!bits.length) return;
     const key = Date.now();
@@ -78,11 +78,11 @@ export default function MarketPill({ market, consume, top, bottom, left, open, o
             <span key={r} className="flex items-center gap-1.5">
               <img src={r === 'coal' ? '/icon-coal.svg' : '/icon-iron.svg'} alt="" className="h-3.5 w-3.5 opacity-90" />
               <span className="font-fell text-[15px] leading-none text-cream-100" style={{ fontVariantNumeric: 'oldstyle-nums' }}>
-                £{price}
+                {money(price)}
               </span>
               {after !== null && after !== price && (
                 <span className="font-mono text-[9.5px] leading-none text-rust-500 brightness-150" title={t('game.page.marketAfter')}>
-                  → £{after}
+                  → {money(after)}
                 </span>
               )}
               {/* stock left, as a short bar of the tray's own colour */}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, PLAYER_COLORS, incomeLevel } from '@/game/data';
 import { isExpert } from '@/game/search';
 import PortraitLightbox from './PortraitLightbox';
 import { portraitFor } from './portraits';
@@ -11,7 +11,7 @@ import { titlesFor } from '@/components/results/titles';
 import { useTable } from '@/online/lobby';
 import { recordAgainst } from '@/online/rivals';
 import { useDesk, useSession } from '@/online/session';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import { PortraitMedallion } from './PlayerRail';
 import { useLayer } from './useLayer';
 
@@ -47,8 +47,8 @@ export default function PlayerCard({ game, seat, onClose }: { game: GameState; s
   const mine = seat === myIndex;
   const muted = mutedSeats.includes(seat);
   const rows: [string, string][] = [
-    [t('game.card.purse'), `£${p.money}`],
-    [t('game.card.income'), `${incomeLevel(p.income)} · ${fmtPay(INCOME_PAYOUT[p.income])}`],
+    [t('game.card.purse'), money(p.money)],
+    [t('game.card.income'), `${incomeLevel(p.income)} · ${money(INCOME_PAYOUT[p.income])}`],
     [t('game.card.vp'), String(p.vp)],
     [t('game.card.onBoard'), t('game.card.onBoardValue', { tiles: tiles.length, flipped, links })],
     [t('game.card.tally'), t('game.card.tallyValue', { built: p.stats.built, sold: p.stats.sold, developed: p.stats.developed, loans: p.stats.loans })],

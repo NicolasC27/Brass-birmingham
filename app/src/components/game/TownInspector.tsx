@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pin, PinOff, X } from 'lucide-react';
 import { useGame } from '@/game/store';
-import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS } from '@/game/data';
+import { INDUSTRIES, INDUSTRY_ICON, PLAYER_COLORS } from '@/game/data';
 import { tileKey } from '@/game/engine';
 import type { GameState, Town } from '@/game/types';
 import { useT } from '@/i18n';
@@ -17,9 +17,9 @@ import { useLayer } from './useLayer';
 /* ------------------------------------------------------------------ */
 
 /** tiny shape-coded player chip (design.md §8: colour + shape) */
-export function ShapeChip({ color, size = 10 }: { color: string; size?: number }) {
+export function ShapeChip({ color, size = 10, vivid = false }: { color: string; size?: number; /** the bright tone, for a chip set on the dark map */ vivid?: boolean }) {
   const c = PLAYER_COLORS[color];
-  const hex = c?.hex ?? '#C9A45C';
+  const hex = (vivid ? c?.vivid : c?.hex) ?? '#C9A45C';
   const shape = c?.shape ?? 'circle';
   const s = size;
   return (
@@ -66,7 +66,7 @@ export function TownCardContent({ town, game }: { town: Town; game: GameState })
                     <img key={ind} src={INDUSTRY_ICON[ind]} alt="" className="h-4 w-4 rounded-sm bg-cream-100/50 p-px opacity-70" />
                   ))}
                 </span>
-                <span className="truncate">{sp.allows.map((a) => INDUSTRY_LABEL[a]).join(t('board.slot.or'))}</span>
+                <span className="truncate">{sp.allows.map((a) => t(`game.industry.${a}`)).join(t('board.slot.or'))}</span>
                 <span className="ml-auto pl-2 font-mono text-[9px] uppercase tracking-wider text-brass-700 brightness-150">{t('board.slot.free')}</span>
               </li>
             );
@@ -83,7 +83,7 @@ export function TownCardContent({ town, game }: { town: Town; game: GameState })
               </span>
               <img src={INDUSTRY_ICON[tile.industry]} alt="" className="h-5 w-5 rounded-sm bg-cream-100/90 p-px" />
               <span className="flex min-w-0 flex-col leading-tight">
-                <span className="truncate font-sans text-[12px] text-cream-100/90">{INDUSTRY_LABEL[tile.industry]}</span>
+                <span className="truncate font-sans text-[12px] text-cream-100/90">{t(`game.industry.${tile.industry}`)}</span>
                 <span className="flex items-center gap-1 font-fell text-[12px]" style={{ color: hex }}>
                   <ShapeChip color={owner.color} size={9} />
                   <span className="truncate">{owner.name}</span>

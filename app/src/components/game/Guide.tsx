@@ -11,7 +11,7 @@ import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellT
 import { ledgerText } from '@/game/ledgerText';
 import { carries, faqBest, faqFor, passagesOf, rulesMatch } from '@/game/faq';
 import { describeAction, useGame } from '@/game/store';
-import { chooseBotAction } from '@/game/search';
+import { searchTurn } from '@/game/search';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { dictOf, getLang, useLang, useT } from '@/i18n';
@@ -713,7 +713,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
     window.setTimeout(() => {
       const g = useGame.getState().game;
       if (!g || g.actions.length !== here) return;
-      const a = chooseBotAction(g, me, { budgetMs: 400, strength: 1 });
+      /* the search itself, at full strength: the machines' own entry point
+         caps a human seat under assist and blurs its reading */
+      const a = searchTurn(g, me, { budgetMs: 400, strength: 1 })?.action ?? null;
       setAdvice({ at: here, action: a, busy: false });
     }, 30);
   };

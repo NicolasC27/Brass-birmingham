@@ -14,5 +14,5 @@ export function tileMark(industry: string, level: number): string {
 
 /** "N2": the level alone, where the industry is already said */
 export function levelMark(level: number): string {
-  return tileMark('', level);
+  return tr('game.level.mark', { level });
 }

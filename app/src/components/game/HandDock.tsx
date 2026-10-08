@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Binoculars, DraftingCompass, Hammer, Landmark, Pin, PinOff, Route, Scale, SkipForward, X, Undo2 } from 'lucide-react';
-import { INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
+import { INDUSTRIES, INDUSTRY_ICON, TOWN_BY_ID, incomeLevel, marketBuyPrice } from '@/game/data';
 import type { GameState } from '@/game/types';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
@@ -9,7 +9,7 @@ import { beerSources, buildTargets, ironSources, saleBeerSources, sellTargets, t
 import { MERCHANT_BY_ID } from '@/game/data';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
-import { reasonText, tr, useT } from '@/i18n';
+import { money, reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
 import { industryFaceUrl } from '@/gl/faces';
 import Tooltip from './Tooltip';
@@ -19,6 +19,8 @@ import { useHudInsets } from './useHudInsets';
 import { isKey, keyLabel, typing, useKeybindings } from './keybindings';
 import { FIT_PAD_BOTTOM, setFitReserve } from './boardView';
 import { levelMark, tileMark } from './levelMark';
+import { buildCoalCubes, linkCoalCubes } from './coalPicks';
+import type { CoalCube } from './coalPicks';
 import { CARD_H, DOCK_FIXED, DOCK_OPEN_H, HINTS_W, fanMeasure } from './handFan';
 
 const PIN_KEY = 'brassworks.dockPinned';
@@ -249,6 +251,32 @@ const GameCard = memo(function GameCard({
   );
 });
 
+/** one cube of coal: the mine it is drawn from, among the nearest ones.
+ *  The select shows the mine the table would draw from, named or not, so
+ *  the choice reads before it is made. */
+function CoalRow({ cube, named, game, label, onPick }: { cube: CoalCube; named: string | null; game: GameState; label: string; onPick: (key: string | null) => void }) {
+  const t = useT();
+  const value = named && cube.choices.some((c) => c.key === named) ? named : (cube.drawn ?? '');
+  return (
+    <label className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80">
+      <img src={INDUSTRY_ICON.coal} alt="" className="h-3.5 w-3.5" />
+      <span className="text-ink-900/45">←</span>
+      <select
+        value={value}
+        onChange={(e) => onPick(e.target.value || null)}
+        aria-label={label}
+        className="max-w-[200px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+      >
+        {cube.choices.map((c) => (
+          <option key={c.key} value={c.key}>
+            {t('game.hand.devIronWorks', { owner: game.players[c.owner].name, town: TOWN_BY_ID[c.town]?.name ?? c.town, cubes: c.cubes })}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
 /**
  * Floating hand dock (map-v3 §2): bottom-centre, auto-collapses to a slim
  * brass strip (card count + selected verb) when idle; expands on hover,
@@ -274,6 +302,10 @@ function HandDock() {
   const developIron = useGame((s) => s.developIron);
   const buildIron = useGame((s) => s.buildIron);
   const setBuildIron = useGame((s) => s.setBuildIron);
+  const buildCoal = useGame((s) => s.buildCoal);
+  const setBuildCoal = useGame((s) => s.setBuildCoal);
+  const linkCoal = useGame((s) => s.linkCoal);
+  const setLinkCoal = useGame((s) => s.setLinkCoal);
   const linkBeer = useGame((s) => s.linkBeer);
   const setLinkBeer = useGame((s) => s.setLinkBeer);
   const sellBeer = useGame((s) => s.sellBeer);
@@ -469,6 +501,11 @@ function HandDock() {
   const hintsShown = handSize < 7 && verb !== 'develop' && vw >= 1280;
   const dockMax = centredOnScreen ? centredRoom : vw - insets.left - bandRight;
   const fan = fanMeasure(handSize, dockMax - DOCK_FIXED - (hintsShown ? HINTS_W : 0));
+  /* the coal pickers: a mine to name only when two or more stand nearest */
+  const buildCubes = verb === 'build' && canPlan && buildPick ? buildCoalCubes(planGame, buildPick, buildCoal) : null;
+  const buildCoalShown = !!buildCubes?.some((c) => c.choices.length > 0);
+  const linkCubes = verb === 'network' && canPlan && linkPick ? linkCoalCubes(planGame, linkPick, secondLinkPick, linkCoal) : [null, null];
+  const linkCoalShown = linkCubes.some((c) => !!c && c.choices.length > 0);
 
   return (
     <footer data-dock data-lens="hand" aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={centredOnScreen ? { bottom: insets.bottom, left: 0, right: 0 } : { bottom: insets.bottom, left: insets.left, right: bandRight }}>
@@ -533,7 +570,7 @@ function HandDock() {
           {/* the purse, right where the eyes already are: money, income level */}
           {shown && (
             <span className="flex items-center gap-1.5 font-mono text-[10.5px] normal-case tracking-normal" title={t('game.hand.purseTip', { name: shown.name })}>
-              <span className="rounded-sm border border-brass-700/60 bg-coal-950/70 px-1.5 py-[1px] font-bold text-brass-400">£{shown.money}</span>
+              <span className="rounded-sm border border-brass-700/60 bg-coal-950/70 px-1.5 py-[1px] font-bold text-brass-400">{money(shown.money)}</span>
               <span className="rounded-sm border border-brass-700/40 bg-coal-950/50 px-1.5 py-[1px] text-bottle-600 brightness-150">↗ {incomeLevel(shown.income)}</span>
             </span>
           )}
@@ -699,6 +736,65 @@ function HandDock() {
               </motion.div>
             )}
           </AnimatePresence>
+          {/* the coal of a build: among the nearest connected mines the
+              choice is the reader's — shown only when there is one to make */}
+          <AnimatePresence>
+            {buildCoalShown && (
+              <motion.div
+                key="build-coal"
+                initial={{ opacity: 0, x: -14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="paper flex shrink-0 flex-col gap-1.5 self-center rounded-md px-3 py-2"
+              >
+                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.market.coal')}</span>
+                {buildCubes!.map((cube, k) =>
+                  cube.choices.length > 0 ? (
+                    <CoalRow
+                      key={k}
+                      cube={cube}
+                      named={buildCoal[k] ?? null}
+                      game={planGame}
+                      label={t('game.market.coal')}
+                      onPick={(key) => {
+                        setBuildCoal(k, key);
+                        if (key) flyToRegion(key.split(':')[0]);
+                      }}
+                    />
+                  ) : null,
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {/* the coal of each rail link, the same way */}
+          <AnimatePresence>
+            {linkCoalShown && (
+              <motion.div
+                key="link-coal"
+                initial={{ opacity: 0, x: -14 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -14 }}
+                className="paper flex shrink-0 flex-col gap-1.5 self-center rounded-md px-3 py-2"
+              >
+                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.market.coal')}</span>
+                {linkCubes.map((cube, k) =>
+                  cube && cube.choices.length > 0 ? (
+                    <CoalRow
+                      key={k}
+                      cube={cube}
+                      named={linkCoal[k] ?? null}
+                      game={planGame}
+                      label={t('game.market.coal')}
+                      onPick={(key) => {
+                        setLinkCoal(k, key);
+                        if (key) flyToRegion(key.split(':')[0]);
+                      }}
+                    />
+                  ) : null,
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
           {/* the beer of a double rail: the player's breweries anywhere, or
               another's the second link connects to — the reader names one */}
           <AnimatePresence>
@@ -834,12 +930,12 @@ function HandDock() {
                     const canAdd = developPick.length < 2 && (count === 0 ? d.valid : nextOk);
                     const usable = d.valid || count > 0;
                     return (
-                      <div key={d.industry} className="flex flex-col items-center gap-1" title={d.reason ? reasonText(d.reason) : INDUSTRY_LABEL[d.industry]}>
+                      <div key={d.industry} className="flex flex-col items-center gap-1" title={d.reason ? reasonText(d.reason) : t(`game.industry.${d.industry}`)}>
                         <button
                           type="button"
                           disabled={!canAdd}
                           onClick={() => addDevelop(d.industry)}
-                          aria-label={`${INDUSTRY_LABEL[d.industry]} L${d.level} — ${t('game.hand.devMore')}`}
+                          aria-label={`${t(`game.industry.${d.industry}`)} ${levelMark(d.level)} — ${t('game.hand.devMore')}`}
                           className={cn(
                             'relative h-[44px] w-[44px] overflow-hidden rounded-md border-2 shadow-[0_2px_4px_rgba(0,0,0,.35)] transition-transform',
                             count ? 'border-rust-500 ring-2 ring-rust-500/40' : d.valid ? 'border-brass-700/70 hover:-translate-y-0.5 hover:border-brass-500' : 'border-brass-700/30',
@@ -873,7 +969,7 @@ function HandDock() {
                       const plan = developPlans(game, developIron)[k];
                       const marketCost = plan?.sources[0]?.kind === 'market' ? plan.sources[0].cost : marketBuyPrice('iron', game.market.iron);
                       return (
-                        <label key={k} className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80" title={t('game.hand.devIron', { name: INDUSTRY_LABEL[ind], level })}>
+                        <label key={k} className="flex items-center gap-1.5 whitespace-nowrap font-sans text-[10px] text-ink-900/80" title={t('game.hand.devIron', { name: t(`game.industry.${ind}`), level })}>
                           <img src={INDUSTRY_ICON[ind]} alt="" className="h-3.5 w-3.5" />
                           <span className="font-semibold">{levelMark(level)}</span>
                           <span className="text-ink-900/45">←</span>

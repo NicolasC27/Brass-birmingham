@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { MARKET_MAX, marketBuyPrice, marketSellPrice } from '@/game/data';
 import type { Resource } from '@/game/types';
 import { useGame, useShownGame } from '@/game/store';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
@@ -83,7 +83,7 @@ function QuotationRow({
             className={cn('font-fell text-[24px] leading-none text-cream-100', focus && 'animate-pulse')}
             style={{ textShadow: '0 1px 0 rgba(0,0,0,.85), 0 0 8px rgba(242,234,214,.22)', fontVariantNumeric: 'oldstyle-nums' }}
           >
-            £{buyPrice}
+            {money(buyPrice)}
           </span>
           {count === 0 && (
             <span
@@ -278,7 +278,7 @@ export default function MarketTray({ consumePreview }: { consumePreview?: Partia
             <span className="shrink-0 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-400">{t('game.market.drawLead')}</span>
             {coalDraw > 0 && <span>{t('game.log.coalN', { n: coalDraw })}</span>}
             {ironDraw > 0 && <span>{t('game.log.ironN', { n: ironDraw })}</span>}
-            <span className="ml-auto shrink-0 font-semibold text-brass-400">£{drawTotal}</span>
+            <span className="ml-auto shrink-0 font-semibold text-brass-400">{money(drawTotal)}</span>
           </p>
         )}
         {/* demand track — fixed 5-notch scale, tinted per resource */}

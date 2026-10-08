@@ -313,7 +313,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                       <span className="shrink-0 font-bold" style={{ color: PLAYER_COLORS[game.players[e.player!].color]?.hex ?? '#C9A45C' }}>
                         {game.players[e.player!].name}
                       </span>
-                      <span className={cn('shrink-0 text-[9px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
+                      <span className={cn('shrink-0 text-[9px] font-bold uppercase tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
                       {hitsMe(e) && <span className="h-2 w-2 shrink-0 self-center rounded-full bg-rust-500" title={t('game.ledger.hitsMe')} />}
                       <span className="min-w-0 truncate text-cream-100/85">{ledgerParts(e, t).head}</span>
                     </p>
@@ -335,7 +335,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                           {e.id === firstNew && (
                             <div className="my-1.5 flex items-center gap-2">
                               <span className="h-px flex-1 bg-brass-400/70" />
-                              <span className="font-sans text-[9px] font-bold tracking-[0.18em] text-brass-400">{t('game.ledger.newSince')}</span>
+                              <span className="font-sans text-[9px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.ledger.newSince')}</span>
                               <span className="h-px flex-1 bg-brass-400/70" />
                             </div>
                           )}
@@ -372,7 +372,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                               </span>
                               <span className="min-w-0 flex-1">
                                 <span className="flex items-baseline gap-1.5">
-                                  <span className={cn('shrink-0 font-sans text-[9px] font-bold tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
+                                  <span className={cn('shrink-0 font-sans text-[9px] font-bold uppercase tracking-wider', VERB_CLASS[e.verb])}>{t(VERB_LABEL[e.verb])}</span>
                                   <span className={cn('font-sans leading-snug text-cream-100/90', (e.verb === 'system' || e.verb === 'score') && e.player === undefined && 'italic text-cream-100/65')}>{head}</span>
                                 </span>
                                 {detail && <span className="mt-0.5 block font-sans text-[10.5px] leading-snug text-cream-100/55">{detail}</span>}

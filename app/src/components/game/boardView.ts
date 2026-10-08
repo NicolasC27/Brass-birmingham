@@ -24,8 +24,9 @@ export interface View {
 
 export const FIT_VIEW: View = { k: 1, x: 0, y: 0 };
 
-/** how long another seat's move is shown the survey's way (ms) */
-export const GLIMPSE_MS = 3200;
+/** how long another seat's move is shown the survey's way (ms): the
+ *  board's veil lasts about as long, so the two clocks agree */
+export const GLIMPSE_MS = 1500;
 
 export const clampK = (k: number): number => Math.min(MAX_K, Math.max(MIN_K, k));
 
@@ -167,14 +168,24 @@ export const RIBBON_MIN_SCREEN = 13;
 export const RIBBON_MAX_SCALE = 1.5;
 
 /**
- * v14: far-zoom LOD threshold. When the EFFECTIVE screen scale
- * `fitScale(cw,ch) * k` drops below this, fine details that would be
- * unreadable anyway (income/VP chips, level pips, etched tile marks,
- * merchant name ribbons) fade out — town ribbons, industry tiles with
- * their cubes and links always stay (critical game state). Board.tsx is
- * the single place that evaluates this threshold and toggles the
- * `--bw-detail` CSS var; components just consume the var.
+ * Far-zoom level of detail. Only the income/VP band of a built tile fades
+ * when the camera stands far back; the owner's rim, the level, the stock,
+ * the points and the seal are read at every zoom. The threshold is a zoom
+ * over the fit, not an absolute screen scale: the fitted view itself sits
+ * under any absolute threshold on every screen below 1760×1078, so one
+ * indexed on the screen scale would keep the band hidden at the opening
+ * view whatever the window. At the fit and just past it the band is away;
+ * the first steps of zoom bring it back.
  */
+export const FAR_LOD_K = 1.2;
+
+/** the income/VP band's alpha at zoom k (over the fit): 0 far back, 1 closer in */
+export function farDetail(k: number): 0 | 1 {
+  return k < FAR_LOD_K ? 0 : 1;
+}
+
+/** @deprecated an absolute screen-scale threshold, kept only for the board
+ *  until it reads `farDetail(k)` instead */
 export const FAR_LOD_SCREEN = 0.55;
 
 

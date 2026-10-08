@@ -127,7 +127,7 @@ function Ceremony() {
         className={cn('mt-6 w-[min(860px,90vw)]', short && 'hidden')}
       >
         <img src="/era-rail-banner.webp" alt={t('game.ceremony.railAlt')} className="mx-auto max-h-[30vh] w-auto max-w-full rounded-md border border-copper-500/70 shadow-e4" />
-        <p className="mt-2 text-center font-display text-2xl font-black tracking-wide text-copper-500 brightness-125">
+        <p className="mt-2 text-center font-display text-2xl font-black uppercase tracking-wide text-copper-500 brightness-125">
           {t('game.ceremony.railEra')}
         </p>
       </motion.div>

@@ -2,7 +2,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
-import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, PLAYER_COLORS, incomeLevel } from '@/game/data';
 import { ChevronsDownUp, ChevronsUpDown, Coins, Eye, LayoutGrid, TrendingUp, Trophy } from 'lucide-react';
 import { useGame, useShownGame } from '@/game/store';
 import { projectEraScores, projectedOrder } from '@/game/engine';
@@ -10,7 +10,7 @@ import { setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets, narrowRailTop } from './useHudInsets';
 import { TelegramPlaque } from './Telegrams';
 import { useNarrow } from '@/hooks/use-narrow';
-import { useT } from '@/i18n';
+import { money as sum, useT } from '@/i18n';
 import { useTable } from '@/online/lobby';
 import { portraitUrl } from '@/online/session';
 import type { PlayerState } from '@/game/types';
@@ -116,7 +116,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard }
   const peekTimer = useRef<number | null>(null);
   const spotlighted = spotlight === index;
   const lvl = incomeLevel(p.income);
-  const pay = fmtPay(INCOME_PAYOUT[p.income]);
+  const pay = sum(INCOME_PAYOUT[p.income]);
 
   return (
     <div
@@ -181,7 +181,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard }
         {/* the three figures, money first and largest, each behind its own icon */}
         <span className="flex items-baseline gap-2 font-mono leading-none">
           <span className={cn('flex items-baseline gap-0.5 font-bold', compact ? 'text-[12px]' : 'text-[14px]')} style={{ color: color.hex }} title={t('game.rail.moneyTip')}>
-            <Coins aria-hidden className={cn('shrink-0 self-center opacity-80', compact ? 'h-2.5 w-2.5' : 'h-3 w-3')} />£{money}
+            <Coins aria-hidden className={cn('shrink-0 self-center opacity-80', compact ? 'h-2.5 w-2.5' : 'h-3 w-3')} />{sum(money)}
           </span>
           <span className="flex items-center gap-0.5 text-[10px] text-bottle-600 brightness-150" title={t('game.rail.incomeTitle', { income: lvl }) + ' — ' + t('game.rail.incomeContent', { amount: pay })}>
             <TrendingUp aria-hidden className="h-2.5 w-2.5 shrink-0" />

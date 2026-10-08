@@ -2,10 +2,10 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { GripVertical, Maximize2, Minimize2, X } from 'lucide-react';
-import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, INDUSTRY_LABEL, PLAYER_COLORS, TOWN_BY_ID, fmtPay, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, INDUSTRIES, INDUSTRY_ICON, PLAYER_COLORS, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
 import type { IndustryLevel, IndustryType, PlayerState } from '@/game/types';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { MAT_ORDER_DEFAULT, MAT_STYLES, sanitizeMatOrder, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
@@ -122,7 +122,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
               </span>
             </div>
             <div className="flex items-baseline justify-between whitespace-nowrap rounded-b-[5px] bg-black/65 px-1.5 py-[4px] font-mono leading-none">
-              <span className="text-[11px] font-bold text-cream-100">£{lv.cost}</span>
+              <span className="text-[11px] font-bold text-cream-100">{money(lv.cost)}</span>
               <span className="flex items-baseline gap-[5px] text-[9px]">
                 <span className="text-bottle-600 brightness-[1.7]">+{lv.incomeDelta}</span>
                 <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
@@ -168,7 +168,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
                 <span className={cn('font-mono text-[9px] font-bold leading-none', gone ? 'text-cream-100/40' : 'text-brass-400')}>{gone ? '—' : `×${count}`}</span>
               </span>
             </div>
-            <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">£{lv.cost}</div>
+            <div className="mt-1 font-mono text-[12px] font-bold leading-none text-cream-100">{money(lv.cost)}</div>
             <div className="mt-1 flex items-baseline justify-between whitespace-nowrap font-mono text-[9px] leading-none">
               <span className="text-bottle-600 brightness-150">+{lv.incomeDelta}</span>
               <span className="text-cream-100/85">{lv.vp}{t('game.mat.vpShort')}</span>
@@ -193,7 +193,7 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
             style={{ left: tip.x, top: tip.y, transform: tip.up ? 'translate(-50%, -100%)' : 'translate(-50%, 0)' }}
           >
             <div className="flex items-baseline justify-between border-b border-brass-700/40 pb-1">
-              <span className="font-fell text-[12px] tracking-wide text-brass-400">{INDUSTRY_LABEL[ind]} · {t('game.mat.level', { n: lv.level })}</span>
+              <span className="font-fell text-[12px] tracking-wide text-brass-400">{t(`game.industry.${ind}`)} · {t('game.mat.level', { n: lv.level })}</span>
               <span className="font-mono text-[9px] text-cream-100/55">{gone ? t('game.mat.gone') : `×${count}`}</span>
             </div>
             <dl className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-[3px] font-mono text-[9.5px] leading-[13px]">
@@ -287,7 +287,7 @@ function IndustryBlock({
         <span
           draggable
           role="button"
-          aria-label={t('game.mat.dragAria', { name: INDUSTRY_LABEL[ind] })}
+          aria-label={t('game.mat.dragAria', { name: t(`game.industry.${ind}`) })}
           title={t('game.mat.dragTip')}
           onDragStart={(e) => {
             e.dataTransfer.effectAllowed = 'move';
@@ -317,7 +317,7 @@ function IndustryBlock({
             backgroundColor: color,
           }}
         />
-        <span className="truncate font-fell text-[13px] tracking-wide text-cream-100">{INDUSTRY_LABEL[ind]}</span>
+        <span className="truncate font-fell text-[13px] tracking-wide text-cream-100">{t(`game.industry.${ind}`)}</span>
         <span className="ml-auto shrink-0 font-mono text-[9.5px] text-cream-100/55">{t('game.mat.remaining', { left: left.length, total })}</span>
       </div>
       {/* the stack laid flat: one MINI TILE per level, level I first like the
@@ -556,9 +556,9 @@ function PlayerMat() {
                     )}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                    {stat(`£${p.money}`)}
-                    {stat(t('game.mat.income', { lvl: incomeLevel(p.income), pay: fmtPay(INCOME_PAYOUT[p.income]) }))}
-                    {stat(`${p.vp} VP`)}
+                    {stat(money(p.money))}
+                    {stat(t('game.mat.income', { lvl: incomeLevel(p.income), pay: money(INCOME_PAYOUT[p.income]) }))}
+                    {stat(`${p.vp} ${t('game.score.vpUnit')}`)}
                     {stat(t('game.mat.links', { n: links }), true)}
                     {stat(t('game.mat.loans', { n: p.loans }), true)}
                     {stat(t('game.mat.hand', { n: p.hand.length }), true)}

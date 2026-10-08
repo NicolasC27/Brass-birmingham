@@ -11,12 +11,14 @@ import type { GameState } from '@/game/types';
 import { MM_MAX_W, MM_MIN_W, MM_W_FOR, mapUrls, minimapWidth, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { useT } from '@/i18n';
+import { ShapeChip } from './TownInspector';
+import { ownerDash } from './ownerMarks';
 
 /* ------------------------------------------------------------------ */
 /* Minimap — small engraved coal plate (bottom-right) showing the      */
 /* whole map, the current viewport in brass, and click/drag to move.   */
 /* Resizable (S/M/L) via the corner button or the settings panel;      */
-/* empty towns are GREY dots — colour means a player holds the town.   */
+/* empty towns are GREY dots; a held town wears its owner's shape.     */
 /* ------------------------------------------------------------------ */
 
 
@@ -54,7 +56,7 @@ export default function Minimap({
   const MM_W = minimapWidth(boardOpts);
   const resizing = useRef<{ x: number; w: number } | null>(null);
   const MM_H = Math.round((MM_W * WORLD_H) / WORLD_W);
-  /* possession dots grow with the plate: 6 / 7 / 9 px */
+  /* possession marks grow with the plate: 6 / 7 / 9 px, never under 6 */
   const DOT = MM_W < 260 ? 6 : MM_W < 420 ? 7 : 9;
 
   // visible world rect → minimap fractions
@@ -117,8 +119,9 @@ export default function Minimap({
       />
       {/* soot wash so the viewport reads on the dark art */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-coal-950/15" />
-      {/* built links: one stroke per link in its owner's vivid colour, so the
-          shape of every network reads at a glance */}
+      {/* built links: one stroke per link in its owner's vivid colour and
+          dash, so the shape of every network reads at a glance, and the
+          owner reads without the colour */}
       <svg aria-hidden className="pointer-events-none absolute inset-0" width={MM_W} height={MM_H} viewBox={`0 0 ${MM_W} ${MM_H}`}>
         {LINKS.map((def) => {
           const built = game.links[def.id];
@@ -126,12 +129,13 @@ export default function Minimap({
           const a = TOWN_BY_ID[def.a] ?? MERCHANT_BY_ID[def.a];
           const b = TOWN_BY_ID[def.b] ?? MERCHANT_BY_ID[def.b];
           if (!a || !b) return null;
-          const color = PLAYER_COLORS[game.players[built.owner].color]?.vivid ?? '#C9A45C';
+          const seat = game.players[built.owner].color;
+          const color = PLAYER_COLORS[seat]?.vivid ?? '#C9A45C';
           const sw = MM_W < 260 ? 2 : MM_W < 420 ? 2.5 : 3.5;
           return (
             <g key={def.id}>
               <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke="#100D0B" strokeWidth={sw + 2} strokeOpacity={0.8} strokeLinecap="round" />
-              <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={built.era === 'rail' ? `${sw * 2} ${sw}` : undefined} />
+              <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={ownerDash(seat, sw)} />
             </g>
           );
         })}
@@ -158,31 +162,40 @@ export default function Minimap({
           );
         })}
       </svg>
-      {/* possession dots: one per town, colour of its first built tile owner
-          (GREY when empty — colour means a player holds the town) */}
+      {/* possession: one mark per town — the shape of its first built
+          tile's owner, in their colour; a grey dot while the town is empty */}
       {TOWNS.map((t) => {
-        let color = 'rgba(200,200,205,.55)';
-        let held = false;
+        let owner: string | null = null;
         for (let si = 0; si < t.slots.length; si++) {
           const tile = game.tiles[tileKey(t.id, si)];
           if (tile) {
-            color = PLAYER_COLORS[game.players[tile.owner].color]?.vivid ?? color;
-            held = true;
+            owner = game.players[tile.owner].color;
             break;
           }
         }
-        return (
+        const left = (t.x / WORLD_W) * MM_W;
+        const top = (t.y / WORLD_H) * MM_H;
+        return owner ? (
+          <span
+            key={t.id}
+            aria-hidden
+            className="pointer-events-none absolute flex"
+            style={{ left: left - DOT / 2, top: top - DOT / 2, filter: `drop-shadow(0 0 3px ${PLAYER_COLORS[owner]?.vivid ?? '#C9A45C'})` }}
+          >
+            <ShapeChip color={owner} size={DOT} vivid />
+          </span>
+        ) : (
           <span
             key={t.id}
             aria-hidden
             className="pointer-events-none absolute rounded-full"
             style={{
-              left: (t.x / WORLD_W) * MM_W - DOT / 2,
-              top: (t.y / WORLD_H) * MM_H - DOT / 2,
-              width: held ? DOT : DOT - 2,
-              height: held ? DOT : DOT - 2,
-              background: color,
-              boxShadow: held ? `0 0 0 1px rgba(16,13,11,.9), 0 0 5px ${color}` : '0 0 0 1px rgba(16,13,11,.7)',
+              left: left - (DOT - 2) / 2,
+              top: top - (DOT - 2) / 2,
+              width: DOT - 2,
+              height: DOT - 2,
+              background: 'rgba(200,200,205,.55)',
+              boxShadow: '0 0 0 1px rgba(16,13,11,.7)',
             }}
           />
         );

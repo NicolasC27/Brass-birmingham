@@ -11,7 +11,7 @@ import type { Note } from '@/game/analysisWorker';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { LINKS, MERCHANT_BY_ID, PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
-import { useLang, useT } from '@/i18n';
+import { money, useLang, useT } from '@/i18n';
 import { forkHomeGame } from '@/game/home';
 import { ledgerText } from '@/game/ledgerText';
 import { shareFragment } from '@/game/share';
@@ -988,7 +988,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
                             {' · '}
                             <span className={cn('font-mono', cost.short.income > 0 ? 'text-bottle-700' : cost.short.income < 0 ? 'text-rust-700' : '')}>{signed(cost.short.income)} {t('game.debrief.cost.income')}</span>
                             {' · '}
-                            <span className={cn('font-mono', cost.short.money > 0 ? 'text-bottle-700' : cost.short.money < 0 ? 'text-rust-700' : '')}>{signed(cost.short.money)} £</span>
+                            <span className={cn('font-mono', cost.short.money > 0 ? 'text-bottle-700' : cost.short.money < 0 ? 'text-rust-700' : '')}>{cost.short.money > 0 ? '+' : ''}{money(cost.short.money)}</span>
                           </li>
                           {cost.long && (
                             <li title={t('game.debrief.cost.longTip')}>

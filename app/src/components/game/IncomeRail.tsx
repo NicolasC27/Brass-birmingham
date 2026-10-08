@@ -1,6 +1,6 @@
-import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, PLAYER_COLORS, fmtPay, incomeLevel, loanLanding } from '@/game/data';
+import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, PLAYER_COLORS, incomeLevel, loanLanding } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
 
@@ -46,7 +46,7 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
             className={`truncate text-center font-mono text-[10px] font-bold leading-4 ${b.pay < 0 ? 'text-rust-500 brightness-150' : 'text-brass-400'}`}
             style={{ flex: b.to - b.from + 1 }}
           >
-            {fmtPay(b.pay)}
+            {money(b.pay)}
           </div>
         ))}
       </div>
@@ -91,7 +91,7 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
       <p className="mt-2 text-center font-sans text-[11px] text-cream-100/80">
         {landing === null
           ? t('game.incomeRail.loanBlocked')
-          : t('game.incomeRail.loanLine', { from: incomeLevel(income), to: incomeLevel(after), payFrom: fmtPay(INCOME_PAYOUT[income]), payTo: fmtPay(INCOME_PAYOUT[after]) })}
+          : t('game.incomeRail.loanLine', { from: incomeLevel(income), to: incomeLevel(after), payFrom: money(INCOME_PAYOUT[income]), payTo: money(INCOME_PAYOUT[after]) })}
       </p>
     </div>
   );
@@ -138,7 +138,7 @@ export default function IncomeRail() {
             className="absolute top-[1px] -translate-x-1/2 font-mono text-[9px] font-semibold text-brass-500/90"
             style={{ left: `${posOf(lvl)}%` }}
           >
-            £{INCOME_PAYOUT[lvl]}
+            {money(INCOME_PAYOUT[lvl])}
           </span>
         ))}
         {/* rate categories: how much each rung pays inside the band */}
@@ -159,7 +159,7 @@ export default function IncomeRail() {
           const off = (group.indexOf(i) - (group.length - 1) / 2) * 10;
           const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
           const spot = spotlight === i;
-          const pay = fmtPay(INCOME_PAYOUT[p.income]);
+          const pay = money(INCOME_PAYOUT[p.income]);
           const after = Math.max(0, p.income - LOAN_INCOME_HIT);
           return (
             /* the ABSOLUTE wrapper carries the position — the Tooltip span
@@ -168,7 +168,7 @@ export default function IncomeRail() {
               <Tooltip
                 side="bottom"
                 title={t('game.incomeRail.pawnTitle', { name: p.name, lvl: p.income, pay })}
-                content={t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after, pay: fmtPay(INCOME_PAYOUT[after]) })}
+                content={t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after, pay: money(INCOME_PAYOUT[after]) })}
               >
                 <button
                   type="button"

@@ -1,9 +1,9 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, fmtPay, incomeLevel, levelTopSpace, loanLanding } from '@/game/data';
+import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, incomeLevel, levelTopSpace, loanLanding } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
 import { useReducedMotion } from './useReducedMotion';
@@ -179,13 +179,13 @@ function Pawn({
   const t = useT();
   const p = game.players[idx];
   const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
-  const pay = fmtPay(INCOME_PAYOUT[p.income]);
+  const pay = money(INCOME_PAYOUT[p.income]);
   const after = loanLanding(p.income) ?? p.income;
   /* the climb ahead: how many spaces the pawn still has to cross before
      the next level pays, or the ceiling */
   const lvl = incomeLevel(p.income);
   const toNext = lvl >= 30 ? 0 : levelTopSpace(lvl) + 1 - p.income;
-  const nextPay = fmtPay(INCOME_PAYOUT[Math.min(INCOME_MAX, levelTopSpace(lvl) + 1)]);
+  const nextPay = money(INCOME_PAYOUT[Math.min(INCOME_MAX, levelTopSpace(lvl) + 1)]);
   const fan = (fanIndex - (fanSize - 1) / 2) * 10;
   const zig = fanSize > 1 ? (fanIndex % 2 ? 4 : -4) : 0;
   const label = kind === 'vp' ? String(p.vp) : pay;
@@ -210,7 +210,7 @@ function Pawn({
           ) : (
             <>
               <span className="block font-semibold text-cream-100">{toNext > 0 ? t('game.incomeRail.pawnNext', { n: toNext, lvl: lvl + 1, pay: nextPay }) : t('game.incomeRail.pawnTop')}</span>
-              <span className="mt-1 block">{t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after: incomeLevel(after), pay: fmtPay(INCOME_PAYOUT[after]) })}</span>
+              <span className="mt-1 block">{t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after: incomeLevel(after), pay: money(INCOME_PAYOUT[after]) })}</span>
             </>
           )
         }
@@ -394,7 +394,7 @@ function EdgeTracks() {
   const ghostCol = PLAYER_COLORS[cur.color]?.hex ?? '#C9A45C';
 
   const pxPerUnit = (incLane.size * incLane.zoom) / UNITS;
-  const fits = (b: Band) => (incAxis === 'x' ? bandUnits(b) * pxPerUnit >= fmtPay(b.pay).length * 5.2 + 4 : bandUnits(b) * pxPerUnit >= 12);
+  const fits = (b: Band) => (incAxis === 'x' ? bandUnits(b) * pxPerUnit >= money(b.pay).length * 5.2 + 4 : bandUnits(b) * pxPerUnit >= 12);
 
   const grab = (lane: ReturnType<typeof useLaneZoom>) => (lane.grabbing ? 'cursor-grab active:cursor-grabbing' : '');
 
@@ -470,12 +470,12 @@ function EdgeTracks() {
                   <Tooltip
                     side={incAxis === 'x' ? 'top' : 'right'}
                     className={`absolute inset-0 !flex ${incAxis === 'x' ? 'items-start justify-center' : 'items-center justify-end pr-1'}`}
-                    title={t('game.incomeRail.bandTitle', { levels: String(incomeLevel(b.from)), pay: fmtPay(b.pay) })}
+                    title={t('game.incomeRail.bandTitle', { levels: String(incomeLevel(b.from)), pay: money(b.pay) })}
                     content={who.length ? t('game.incomeRail.bandWho', { names: who.join(', ') }) : t('game.incomeRail.bandEmpty')}
                   >
                     {fits(b) && (
                       <span className={`${incAxis === 'x' ? 'mt-[2px]' : ''} font-mono text-[9px] font-bold leading-none ${b.pay < 0 ? 'text-[#C4644F]' : 'text-brass-400'}`}>
-                        {fmtPay(b.pay)}
+                        {money(b.pay)}
                       </span>
                     )}
                   </Tooltip>
@@ -519,7 +519,7 @@ function EdgeTracks() {
                   <ShapeChip color={cur.color} size={9} />
                 </span>
                 <span className="ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold text-[#C4644F]" style={{ textShadow: '0 1px 1px rgba(0,0,0,.95)' }}>
-                  {t('game.incomeRail.loanGhost', { pay: fmtPay(INCOME_PAYOUT[ghostLvl]) })}
+                  {t('game.incomeRail.loanGhost', { pay: money(INCOME_PAYOUT[ghostLvl]) })}
                 </span>
               </motion.div>
             )}
