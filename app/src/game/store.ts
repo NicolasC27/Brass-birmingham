@@ -9,11 +9,11 @@ import { actionsFor, beerShort, beginRailEra, buildTargets, canLoan, canScout, d
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
-import { tr } from '@/i18n';
+import { reasonText, tr } from '@/i18n';
 import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
 import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
-import { INDUSTRIES, INDUSTRY_LABEL, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, setBoard } from './data';
+import { INDUSTRIES, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, setBoard } from './data';
 import { onlineWire } from '@/online/net';
 import { DIALECT, PING_SHOWER, PING_SHOWN_MS, PING_WINDOW_MS, TELEGRAM_COOLDOWN_MS, TELEGRAM_SHOWN_MS, isTelegramKey } from './telegrams';
 import type { Ping, Telegram, TelegramKey } from './telegrams';
@@ -30,6 +30,7 @@ import type {
 
 import { ledgerText } from './ledgerText';
 import { TUTORIAL_KEY } from './quickplay';
+import { cloneState } from './clone';
 import { forkHomeGame, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
 import type { HomeMiss, Recorded } from './home';
 import { normalizeCode } from '@/online/table';
@@ -529,7 +530,7 @@ function listenHome(wire: Wire): void {
     if (!local || useGame.getState().code || normalizeCode(r.code) !== normalizeCode(local)) return;
     /* the office's log stopped short of this board: nothing more is played
        on it until it has been read back from the office */
-    useGame.setState({ ...clearSelection, humanMarks: useGame.getState().humanMarks, homeTrouble: { cause: 'refused', at: r.at, error: r.error, mended: false } });
+    useGame.setState({ ...clearSelection, homeTrouble: { cause: 'refused', at: r.at, error: r.error, mended: false } });
     void rereadHome(local);
   });
   const offLine = wire.onStatus(() => {
@@ -587,6 +588,9 @@ export function buildFinalPayload(g: GameState): FinalPayload {
   };
 }
 
+/* what is being chosen on the board, and nothing else: a choice put down
+   leaves the game as it stood. The marks of the moves that can be taken
+   back belong to the game (`freshGame`) and move only with its log */
 const clearSelection = {
   selectedCardId: null,
   verb: null,
@@ -605,7 +609,6 @@ const clearSelection = {
   scoutPick: [] as string[],
   hoverKey: null,
   shake: null as Shake | null,
-  humanMarks: [] as UndoMark[],
   loanConfirm: false,
   loanPeek: false,
 };
@@ -678,6 +681,7 @@ export const useGame = create<GameStore>((set, get) => ({
   mood: NO_MOOD,
   ...clearSelection,
   ...freshTable,
+  humanMarks: [],
   pins: {},
   marketFocus: false,
   ledgerFilter: 'all',
@@ -1012,7 +1016,7 @@ export const useGame = create<GameStore>((set, get) => ({
     }
     const r = applyAction(g, g.current, next.action);
     if (!r.state) {
-      set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueDropped', { reason: r.error ?? '' }), at: Date.now() } });
+      set({ queued: rest, shake: { key: '', reason: tr('game.hand.queueDropped', { reason: reasonText(r.error) }), at: Date.now() } });
       return;
     }
     set({ queued: rest });
@@ -1218,7 +1222,7 @@ export const useGame = create<GameStore>((set, get) => ({
       /* the engine's refusal, said where it applies: at the link, the
          slot, or nowhere in particular */
       const key = action.kind === 'network' ? (action.second ?? action.link) : action.kind === 'build' ? tileKey(action.town, action.slot) : '';
-      set({ shake: { key, reason: r.error ?? '', at: Date.now() } });
+      set({ shake: { key, reason: reasonText(r.error), at: Date.now() } });
       return false;
     }
     const mut = r.state;
@@ -1599,7 +1603,8 @@ export function confirmSummary(st: {
 
 export function cardLabel(card: Card): string {
   if (card.kind === 'location') return TOWN_BY_ID[card.town!]?.name ?? card.town!;
-  if (card.kind === 'industry') return card.industry2 ? `${INDUSTRY_LABEL[card.industry!]} / ${INDUSTRY_LABEL[card.industry2]}` : INDUSTRY_LABEL[card.industry!];
+  const industry = (x: IndustryType) => tr(`game.industry.${x}`);
+  if (card.kind === 'industry') return card.industry2 ? `${industry(card.industry!)} / ${industry(card.industry2)}` : industry(card.industry!);
   if (card.kind === 'wild-location') return tr('game.confirm.wildLocation');
   return tr('game.confirm.wildIndustry');
 }
@@ -1750,7 +1755,7 @@ let lookSent = 0;
  *  pretended, the moves applied in order, the first refused one and those
  *  after it left out. The projection is what a further move is planned on. */
 export function projectQueued(g: GameState, me: number, queued: Prepared[]): GameState {
-  let sim: GameState = { ...structuredClone(g), current: me, actionsLeft: Math.max(Math.min(queued.length, actionsFor(g, g.players[me])), 1), phase: 'action' };
+  let sim: GameState = { ...cloneState(g), current: me, actionsLeft: Math.max(Math.min(queued.length, actionsFor(g, g.players[me])), 1), phase: 'action' };
   for (const { action: a } of queued) {
     const r = applyAction(sim, me, a);
     if (!r.state) break;

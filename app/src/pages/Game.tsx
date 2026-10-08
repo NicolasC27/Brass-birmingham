@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { FastForward, Pause, Play, ScrollText, Settings2, X } from 'lucide-react';
 import NotebookButton from '@/components/game/Notebook';
@@ -47,7 +47,8 @@ import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnB
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { listHomeGames, openHomeGame } from '@/game/home';
-import { buildFinalPayload, confirmSummary, developPlans, leaveOnlineTable, projectQueued, useGame, describeAction } from '@/game/store';
+import { buildFinalPayload, confirmSummary, developPlans, leaveHomeTable, leaveOnlineTable, projectQueued, useGame, describeAction } from '@/game/store';
+import type { HomeTrouble } from '@/game/store';
 import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
 import { useStranger } from '@/online/session';
@@ -88,6 +89,9 @@ export default function Game() {
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const line = useGame((s) => s.line);
+  /* a game at home the office would not follow: why, and whether the
+     board has been read back from its log yet */
+  const homeTrouble = useGame((s) => s.homeTrouble);
   const myTurn = useGame((s) => s.myTurn());
   const planActor = useGame((s) => s.planActor());
   const queued = useGame((s) => s.queued);
@@ -247,9 +251,11 @@ export default function Game() {
       return;
     }
     init(tableCode, localCode);
-    /* leaving the page leaves the table: its frames must not land on the next board */
+    /* leaving the page leaves the table: its frames must not land on the
+       next board, and at home the office is no longer listened to */
     return () => {
       if (tableCode) leaveOnlineTable();
+      else leaveHomeTable();
     };
   }, [init, tableCode, localCode, navigate]);
   /* the office named the game something else than the address did — a game
@@ -625,7 +631,10 @@ export default function Game() {
   const tools = useMemo(() => <TableTools skipAnim={skipAnim} onSkip={toggleSkip} ledgerOpen={ledgerOpen} unread={unread} onLedger={toggleLedger} />, [skipAnim, toggleSkip, ledgerOpen, unread, toggleLedger]);
 
   if (!game) {
-    return <div className="flex min-h-[60vh] items-center justify-center font-fell text-brass-400">{t('game.page.settingTable')}</div>;
+    /* the office would not hand the game over: the plate says why, in
+       place of a table that is never going to be set */
+    if (homeTrouble && !tableCode) return <HomeMissPlate trouble={homeTrouble} />;
+    return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-coal-950 font-fell text-brass-400">{t('game.page.settingTable')}</div>;
   }
 
   /* the guide's lane down the right edge: a rail when folded (key G) */
@@ -753,6 +762,12 @@ export default function Game() {
           {t('game.page.reconnecting')}
         </div>
       )}
+
+      {/* at home, the office and the board fell out: play waits, frozen,
+          until the board is read back from the office's log — then a word
+          on what was read, for the reader to put away */}
+      {!tableCode && homeTrouble && !homeTrouble.mended && <HomeFrozen trouble={homeTrouble} />}
+      {!tableCode && homeTrouble?.mended && <HomeMended trouble={homeTrouble} />}
 
       {/* hot-seat pass interstitial — fully opaque: the board and every hand
           stay hidden until the next human claims the device */}
@@ -896,6 +911,101 @@ export default function Game() {
   );
 }
 
+/** the plate's buttons: one size for every road out of a quarrel with the office */
+const TROUBLE_BTN = 'btn-ledger !min-h-[36px] !px-4 !py-1.5 text-xs';
+
+/** the cause of a trouble at home as the sheets say it, the move counted
+    from one — a refusal without its move is only the wait for the office */
+function troubleText(t: ReturnType<typeof useT>, trouble: HomeTrouble): string {
+  if (trouble.cause === 'refused') return trouble.at !== undefined ? t('game.homeTrouble.refused', { move: trouble.at + 1 }) : t('game.homeTrouble.waiting');
+  if (trouble.cause === 'offline') return t('game.homeTrouble.waiting');
+  return t(`game.homeTrouble.${trouble.cause}`);
+}
+
+/** the game at home the office would not hand over: the cause named, and
+    the roads left — asking again when the line is down, the desk always */
+function HomeMissPlate({ trouble }: { trouble: HomeTrouble }) {
+  const t = useT();
+  const retryHome = useGame((s) => s.retryHome);
+  /* a refusal cannot leave the board empty: whatever else it is, the
+     office is not answering */
+  const cause = trouble.cause === 'absent' || trouble.cause === 'unreplayable' ? trouble.cause : 'offline';
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-coal-950 p-4">
+      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.06]" />
+      <div role="alert" className="plate relative w-full max-w-[440px] border-rust-500/70 p-6 text-center shadow-e4">
+        <p className="font-sans text-sm leading-relaxed text-cream-100/85">{t(`game.homeTrouble.${cause}`)}</p>
+        <div className="mt-5 flex justify-center gap-2">
+          <Link to="/desk" className={TROUBLE_BTN}>
+            {t('game.homeTrouble.leave')}
+          </Link>
+          {cause === 'offline' && (
+            <button type="button" autoFocus onClick={retryHome} className={TROUBLE_BTN}>
+              {t('game.homeTrouble.retry')}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** the board at home stands frozen while it waits on the office: the
+    store already refuses every move, the veil says why. It comes in late,
+    so a refusal read back at once only ever shows as the notice after it */
+function HomeFrozen({ trouble }: { trouble: HomeTrouble }) {
+  const t = useT();
+  const retryHome = useGame((s) => s.retryHome);
+  const sheet = useLayer(true, holdOn, { modal: true });
+  const said = useId();
+  const waiting = trouble.cause === 'refused' || trouble.cause === 'offline';
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.4, duration: 0.25 }}
+      ref={sheet}
+      tabIndex={-1}
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby={said}
+      className="fixed inset-0 z-[79] flex items-center justify-center bg-coal-950/60 p-4 backdrop-blur-[2px]"
+    >
+      <div className="plate relative w-full max-w-[420px] border-rust-500/70 p-6 text-center shadow-e4">
+        <p id={said} className="font-sans text-sm leading-relaxed text-cream-100/85">
+          {troubleText(t, trouble)}
+        </p>
+        <div className="mt-5 flex justify-center gap-2">
+          <Link to="/desk" className={TROUBLE_BTN}>
+            {t('game.homeTrouble.leave')}
+          </Link>
+          {waiting && (
+            <button type="button" onClick={retryHome} className={TROUBLE_BTN}>
+              {t('game.homeTrouble.retry')}
+            </button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/** the board has been read back from the office's log: what changed, said
+    once, for the reader to put away */
+function HomeMended({ trouble }: { trouble: HomeTrouble }) {
+  const t = useT();
+  const dismiss = useGame((s) => s.dismissHomeTrouble);
+  const insets = useHudInsets();
+  const text = trouble.cause === 'refused' && trouble.at !== undefined ? t('game.homeTrouble.mendedRefused', { move: trouble.at + 1 }) : t('game.homeTrouble.mendedOffline');
+  return (
+    <div role="status" className="pointer-events-auto fixed left-1/2 z-[64] flex w-max max-w-[min(560px,calc(100vw-32px))] -translate-x-1/2 items-center gap-3 rounded-md border border-brass-700/60 bg-coal-950/95 px-4 py-2 shadow-e3" style={{ top: insets.top + 44 }}>
+      <p className="font-sans text-xs leading-snug text-cream-100/85">{text}</p>
+      <button type="button" onClick={dismiss} className={cn(TROUBLE_BTN, 'shrink-0')}>
+        {t('game.homeTrouble.dismiss')}
+      </button>
+    </div>
+  );
+}
 
 /** the coach's word on the move just played, behind the beginner's aid at a
     home table: what it cost in chance, and what read better — after the

@@ -7,7 +7,8 @@ import type { GameState, SetupPayload } from '../types';
 /* ------------------------------------------------------------------ */
 /* A game at home and the office that keeps its log. The office here   */
 /* is a stand-in with the wire's own manners: it answers a question,   */
-/* says nothing when a move stands, and speaks only to refuse one.     */
+/* and a move with its word on it — the refusal heard by the listeners */
+/* first — or, down a dead line, not at all.                           */
 /* ------------------------------------------------------------------ */
 
 type Refusal = { code: string; at: number; error: string };
@@ -38,17 +39,18 @@ class Office {
   watch(): void {}
   unwatch(): void {}
   send(): void {}
-  actHome(code: string, idx: number, action: GameAction): void {
-    /* a frame sent down a dead line never arrives */
-    if (this.silent) return;
+  async actHome(code: string, idx: number, action: GameAction): Promise<'kept' | 'refused' | 'offline'> {
+    /* a frame sent down a dead line never arrives, and nothing answers it */
+    if (this.silent) return 'offline';
     const save = this.saves.get(code);
     const error = this.refuseNext ?? (!save ? 'no-such-game' : idx !== save.actions.length ? `out-of-step: the log stands at ${save.actions.length}` : null);
     this.refuseNext = null;
     if (error) {
       for (const cb of this.refusals) cb({ code, at: idx, error });
-      return;
+      return 'refused';
     }
     save!.actions.push(action);
+    return 'kept';
   }
   async askNotes(): Promise<unknown> {
     if (this.silent) throw new Error('offline');

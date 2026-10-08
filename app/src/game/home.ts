@@ -1,8 +1,8 @@
 import { onlineWire } from '@/online/net';
 import { hasOldStuff, liftBrowser } from '@/platform/uplift';
 import { pickTableName } from '@/online/tableNames';
-import { normalizeCode } from '@/online/table';
 import type { HomeSave, HomeTable } from '@/online/table';
+import type { HomeHeard } from '@/online/wire';
 import { replay, setupOf } from './actions';
 import type { GameAction } from './actions';
 import { RULES_EDITION, defaultSetup } from './engine';
@@ -128,34 +128,16 @@ export async function readHomeSave(code: string): Promise<{ game: GameState } | 
 
 /** what became of a move sent to the office: written, turned down, or not
  *  known — the line went quiet before the office had read it */
-export type Recorded = 'kept' | 'refused' | 'offline';
+export type Recorded = HomeHeard;
 
-/** one move, at its place in the log, and the office's reading of it.
- *
- *  The office says nothing when a move stands and speaks only to refuse, so
- *  the move is followed down the line by a question it must answer: frames
- *  are read in the order they were sent, and the answer to the question
- *  comes back only once the move before it has been read. A refusal of
- *  this very move, heard before that answer, means it was turned down */
+/** one move, at its place in the log, and the office's reading of it. The
+ *  office answers the move itself; a move not answered in time waits in the
+ *  wire's outbox and goes out with the line — whether it stands is the
+ *  office's to say then */
 export async function recordMove(code: string, idx: number, action: GameAction): Promise<Recorded> {
   const wire = onlineWire();
   if (!wire) return 'offline';
-  const mine = normalizeCode(code);
-  let refused = false;
-  const off = wire.onHomeRefused((r) => {
-    if (normalizeCode(r.code) === mine && r.at === idx) refused = true;
-  });
-  try {
-    wire.actHome(code, idx, action);
-    await wire.askNotes(code);
-    return refused ? 'refused' : 'kept';
-  } catch {
-    /* no answer in time: the move waits in the wire's outbox and goes out
-       with the line — whether it stands is the office's to say then */
-    return refused ? 'refused' : 'offline';
-  } finally {
-    off();
-  }
+  return wire.actHome(code, idx, action);
 }
 
 /** a move taken back, and the log cut there */
@@ -180,7 +162,8 @@ export async function forkHomeGame(g: GameState): Promise<HomeTable> {
   const wire = onlineWire();
   if (!wire) throw new Error('offline');
   const table = await openHomeGame(g.seed, setupOf(g));
-  /* the moves that led here, written again under the new code */
-  g.actions.forEach((a, i) => wire.actHome(table.code, i, a));
+  /* the moves that led here, written again under the new code. They go
+     out in order; what the office makes of each is read with the board */
+  g.actions.forEach((a, i) => void wire.actHome(table.code, i, a));
   return table;
 }
