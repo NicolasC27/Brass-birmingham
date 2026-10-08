@@ -180,7 +180,7 @@ const rules = {
       '— every value below is read from the official player mat: 45 tiles per player, canal-only and rail-only levels, beer needed to sell, link icons and lightbulbs.',
     headers: {
       tile: 'Tile',
-      lvl: 'Lvl',
+      lvl: 'Level',
       build: 'Build',
       coalIron: 'Coal / Iron',
       beerToFlip: 'Beer to flip',

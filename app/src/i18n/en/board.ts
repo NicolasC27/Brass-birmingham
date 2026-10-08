@@ -89,7 +89,7 @@ const board = {
     closedStamp: 'CLOSED',
     buys: 'Buys',
     buysNothing: 'nothing (blank tiles)',
-    barrels: '{left}/{total} beer barrels',
+    barrels: '{left}/{total} beer [total|barrel|barrels]',
     bonusIs: 'bonus {bonus}',
     youCanSell: 'You could sell {n} of your works here',
     nothingToSell: 'None of your works can sell here yet',

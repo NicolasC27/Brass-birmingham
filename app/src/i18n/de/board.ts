@@ -91,7 +91,7 @@ const de: typeof enboard = {
     closedStamp: 'GESCHLOSSEN',
     buys: 'Kauft',
     buysNothing: 'nichts (leere Plättchen)',
-    barrels: '{left}/{total} Bierfässer',
+    barrels: '{left}/{total} [total|Bierfass|Bierfässer]',
     bonusIs: 'Bonus {bonus}',
     youCanSell: 'Du könntest hier {n} deiner Werke verkaufen',
     nothingToSell: 'Keines deiner Werke kann hier derzeit verkaufen',

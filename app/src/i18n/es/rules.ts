@@ -69,10 +69,10 @@ const es: typeof enrules = {
     railAlt: "Friso grabado de la era del ferrocarril",
     canalTitle: "La era del canal, 1770–1830",
     canalBody:
-      "Los turnos se suceden ronda a ronda: una carta por cada una de tus dos acciones (una sola acción en la primera ronda), y luego robas hasta completar la mano. Los canales cuestan 3 £ por enlace y son las únicas vías de la era. Cuando el mazo y todas las manos se agotan, se cuenta la era — las industrias volteadas dan sus PV, y cada enlace cuenta los iconos de enlace de las losetas de industria de los lugares que une, y dos por mercader.",
+      "Los turnos se suceden ronda a ronda: una carta por cada una de tus dos acciones (una sola acción en la primera ronda), y luego robas hasta completar la mano. Los canales cuestan 3 £ por enlace y son las únicas vías de la era. Cuando el mazo y todas las manos se agotan, se cuenta la era — las industrias volteadas dan sus PV, y cada enlace cuenta los iconos de enlace de las losetas de industria de los lugares que une, y dos por mercader.",
     railTitle: "La era del ferrocarril, 1830–1870",
     railBody:
-      "Un mazo nuevo, manos frescas, y vías férreas a 5 £ más un carbón por enlace — pueden colocarse dos enlaces en una sola acción por 15 £, dos carbones y una cerveza. Ya no puede excavarse ningún canal nuevo, y las cervecerías llegan ahora con dos barriles en lugar de uno. Cuando también este mazo se agota, el tablero se cuenta por segunda vez y el registro más rico gana.",
+      "Un mazo nuevo, manos frescas, y vías férreas a 5 £ más un carbón por enlace — pueden colocarse dos enlaces en una sola acción por 15 £, dos carbones y una cerveza. Ya no puede excavarse ningún canal nuevo, y las cervecerías llegan ahora con dos barriles en lugar de uno. Cuando también este mazo se agota, el tablero se cuenta por segunda vez y el registro más rico gana.",
     betweenTitle: "Entre las eras",
     betweenBody:
       "Las obras de nivel 1 se barren del tablero cuando las aguas se retiran — planea voltearlas antes de que acabe la era del canal, o míralas desaparecer sin contarse. Todas las losetas de enlace se retiran también, una vez contadas: la era del ferrocarril arranca solo desde tus industrias.",
@@ -90,7 +90,7 @@ const es: typeof enrules = {
       mill: "hilandería",
       beer: "cerveza",
       merchant: "mercader",
-      loanLabel: "−3 niveles · +30 £",
+      loanLabel: "−3 niveles · +30 £",
     },
   },
   actions: {
@@ -110,14 +110,14 @@ const es: typeof enrules = {
     },
     network: {
       name: "Red",
-      cost: "Canal 3 £ · Vía férrea 5 £ + 1 carbón · Doble vía 15 £ + 2 carbones + 1 cerveza",
+      cost: "Canal 3 £ · Vía férrea 5 £ + 1 carbón · Doble vía 15 £ + 2 carbones + 1 cerveza",
       steps: {
         s1: "Juega cualquier carta y coloca un enlace de canal (era del canal) o un enlace de vía férrea (era del ferrocarril) en una ruta libre entre dos ciudades.",
         s2: "El enlace debe tocar tu red existente — una ciudad con una de tus losetas, o el extremo de uno de tus enlaces.",
         s3: "Paga el coste; los enlaces de vía férrea consumen además un carbón, entregado como en el capítulo VI.",
       },
       edges: {
-        e1: "En la era del ferrocarril puedes colocar dos enlaces de vía en una sola acción por 15 £, 2 carbones y una cerveza — sacada de una cervecería, nunca de un barril de mercader.",
+        e1: "En la era del ferrocarril puedes colocar dos enlaces de vía en una sola acción por 15 £, 2 carbones y una cerveza — sacada de una cervecería, nunca de un barril de mercader.",
         e2: "No puede construirse ningún canal nuevo una vez empezada la era del ferrocarril; los canales existentes permanecen.",
         e3: "Los puertos de mercader cuentan como ciudades para las conexiones.",
       },
@@ -151,14 +151,14 @@ const es: typeof enrules = {
     },
     loan: {
       name: "Préstamo",
-      cost: "Ingresos −3 niveles · toma 30 £",
+      cost: "Ingresos −3 niveles · toma 30 £",
       steps: {
-        s1: "Juega cualquier carta, baja tu marcador de ingresos tres niveles en la pista, y toma 30 £ del banco.",
+        s1: "Juega cualquier carta, baja tu marcador de ingresos tres niveles en la pista, y toma 30 £ del banco.",
       },
       edges: {
         e1: "Un préstamo puede pedirse en cualquiera de las dos acciones de tu turno — incluso como segunda acción.",
         e2: "Los préstamos nunca se devuelven; la pérdida de ingresos es definitiva.",
-        e3: "Si tus ingresos caen por debajo de 0 £, pagas al banco al final de cada ronda. Un préstamo que te hiciera bajar del nivel −10 se rechaza.",
+        e3: "Si tus ingresos caen por debajo de 0 £, pagas al banco al final de cada ronda. Un préstamo que te hiciera bajar del nivel −10 se rechaza.",
       },
     },
     scout: {
@@ -182,7 +182,7 @@ const es: typeof enrules = {
       "— cada valor de abajo se lee en el tablero de jugador oficial: 45 losetas por jugador, niveles reservados al canal o al ferrocarril, cerveza necesaria para vender, iconos de enlace y bombillas.",
     headers: {
       tile: "Loseta",
-      lvl: "Niv",
+      lvl: "Nivel",
       build: "Coste",
       coalIron: "Carbón / Hierro",
       beerToFlip: "Cerveza para voltear",
@@ -191,8 +191,8 @@ const es: typeof enrules = {
       notes: "Notas",
     },
     resource: {
-      coal: "{n} carbón",
-      iron: "{n} hierro",
+      coal: "{n} [n|carbón|carbones]",
+      iron: "{n} [n|hierro|hierros]",
       none: "—",
     },
     beer: {
@@ -274,9 +274,9 @@ const es: typeof enrules = {
   network: {
     intro:
       "Tu red es el conjunto de ciudades con una de tus losetas y de enlaces que has colocado — más todo lo que toca a través de las rutas de los demás jugadores. Construir más allá de tu primera jugada, entregar carbón y hierro, y vender a los mercaderes se trazan a lo largo de esa red.",
-    canalChip: "Enlace de canal · 3 £ · era del canal",
-    railChip: "Enlace de vía férrea · 5 £ + 1 carbón · era del ferrocarril",
-    doubleRailChip: "Doble vía · 15 £ + 2 carbones + 1 cerveza · una acción",
+    canalChip: "Enlace de canal · 3 £ · era del canal",
+    railChip: "Enlace de vía férrea · 5 £ + 1 carbón · era del ferrocarril",
+    doubleRailChip: "Doble vía · 15 £ + 2 carbones + 1 cerveza · una acción",
     outro:
       "Los enlaces se cuentan, no solo se usan: al final de cada era, cada enlace cuenta los iconos de enlace impresos en las losetas de industria de los lugares que une — sin importar de quién sean las losetas — y dos por mercader. Un canal bien colocado a través de la ciudad floreciente de un rival vale tanto para ti como para él.",
   },
@@ -293,7 +293,7 @@ const es: typeof enrules = {
       },
       market: {
         label: "Compra en el mercado",
-        hint: "¿Sin mina conectada? Entonces el carbón se compra en el tablero del mercado: pagas el precio vigente (3 £ aquí) y el cubo más barato desaparece — el siguiente comprador pagará más caro.",
+        hint: "¿Sin mina conectada? Entonces el carbón se compra en el tablero del mercado: pagas el precio vigente (3 £ aquí) y el cubo más barato desaparece — el siguiente comprador pagará más caro.",
       },
       none: {
         label: "Ninguna fuente",
@@ -301,8 +301,8 @@ const es: typeof enrules = {
       },
     },
     chips: {
-      mine: "Carbón 0 £ — tu propia mina",
-      market: "Comprar 1 carbón · 3 £",
+      mine: "Carbón 0 £ — tu propia mina",
+      market: "Comprar 1 carbón · 3 £",
       none: "Ningún carbón accesible",
     },
     yourMine: "tu mina de carbón",
@@ -311,12 +311,12 @@ const es: typeof enrules = {
   },
   marketTray: {
     title: "El tablero del carbón",
-    buy: "Comprar 3 £",
+    buy: "Comprar 3 £",
     caption: "← comprar vacía primero las casillas baratas · vender repone por el extremo caro →",
   },
   market: {
     p1:
-      "Cuando la oferta escasea, el mercado responde — a un precio. El carbón descansa en catorce casillas cotizadas de 1 £ a 7 £, el hierro en diez casillas de 1 £ a 5 £; un tablero vacío aún vende, a 8 £ y 6 £. Comprar toma el cubo más barato y el precio sube. Nada repone los tableros por sí solo: una mina o una fundición recién construida y conectada a un mercader vende sus cubos sobrantes al mercado, que se repone por el extremo caro y el precio vuelve a bajar.",
+      "Cuando la oferta escasea, el mercado responde — a un precio. El carbón descansa en catorce casillas cotizadas de 1 £ a 7 £, el hierro en diez casillas de 1 £ a 5 £; un tablero vacío aún vende, a 8 £ y 6 £. Comprar toma el cubo más barato y el precio sube. Nada repone los tableros por sí solo: una mina o una fundición recién construida y conectada a un mercader vende sus cubos sobrantes al mercado, que se repone por el extremo caro y el precio vuelve a bajar.",
     p2:
       "Un mercado vacío es un muro, no un inconveniente: el carbón que no se puede comprar ni alcanzar está sencillamente fuera de tu alcance. Vigila los tableros como un capataz vigila el cielo.",
   },
@@ -340,9 +340,9 @@ const es: typeof enrules = {
   },
   money: {
     intro: "Al final de cada ronda, tu marcador de ingresos te paga su nivel en libras. Voltear industrias hace subir la escalera, que tiene su techo en el nivel 30.",
-    li1: "Un préstamo puede pedirse en cualquiera de las dos acciones: baja tres niveles, toma 30 £, juega.",
+    li1: "Un préstamo puede pedirse en cualquiera de las dos acciones: baja tres niveles, toma 30 £, juega.",
     li2: "Los préstamos nunca se devuelven. Los niveles sencillamente han desaparecido.",
-    li3: "Por debajo de 0 £, la escalera se vuelve acreedora — pagas al banco al final de cada ronda.",
+    li3: "Por debajo de 0 £, la escalera se vuelve acreedora — pagas al banco al final de cada ronda.",
     develop:
       "Desarrollar, ese discreto sexto sentido de los buenos jugadores, cambia un hierro por la retirada de una loseta débil, descubriendo los niveles potentes de debajo sin gastar una construcción.",
     ladderAria:

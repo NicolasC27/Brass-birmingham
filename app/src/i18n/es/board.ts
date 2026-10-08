@@ -3,7 +3,7 @@ import enboard from "../en/board";
 const es: typeof enboard = {
   ariaLabel: 'Tablero de los Midlands',
   ariaLabelWebgl: 'Tablero de los Midlands (WebGL)',
-  svgAria: 'Ciudades, enlaces e industrias',
+  svgAria: 'Ciudades, conexiones e industrias',
   hover: {
     townHint: 'Clic para inspeccionar · doble clic para ampliar',
   },
@@ -21,9 +21,9 @@ const es: typeof enboard = {
     rail: 'ferrocarril',
   },
   options: {
-    links: 'Enlaces',
+    links: 'Conexiones',
     hideUnbuiltTip: 'Ocultar los canales / vías sin construir — tecla C',
-    hideUnbuiltAria: 'Ocultar los enlaces sin construir',
+    hideUnbuiltAria: 'Ocultar las conexiones sin construir',
     chips: 'Fichas',
     bigChipsTip: 'Fichas de ingresos / PV más grandes en las losetas colocadas',
     bigChipsAria: 'Fichas más grandes',
@@ -81,8 +81,8 @@ const es: typeof enboard = {
     unavailable: 'No es posible con esta carta',
   },
   ghost: {
-    sale: '×{n} → £{gain}',
-    mkt: '×{n} · £{cost} mercado',
+    sale: '×{n} → {gain} £',
+    mkt: '×{n} · {cost} £ mercado',
   },
   merchant: {
     claimed: '✓ RECLAMADO',
@@ -91,7 +91,7 @@ const es: typeof enboard = {
     closedStamp: 'CERRADO',
     buys: 'Compra',
     buysNothing: 'nada (losetas en blanco)',
-    barrels: '{left}/{total} barriles de cerveza',
+    barrels: '{left}/{total} [total|barril|barriles] de cerveza',
     bonusIs: 'bono {bonus}',
     youCanSell: 'Podrías vender aquí {n} de tus fábricas',
     nothingToSell: 'Ninguna de tus fábricas puede venderse aquí por ahora',
@@ -107,7 +107,7 @@ const es: typeof enboard = {
     builtTitle: '{industry} N{level} · {name}{flipped} · ingresos +{income} · {vp} PV',
   },
   slot: {
-    targetTitle: '{industry} N{level} — £{total} ({status})',
+    targetTitle: '{industry} N{level} — {total} £ ({status})',
     valid: 'válido',
     or: ' o ',
     free: 'libre',
@@ -126,7 +126,7 @@ const es: typeof enboard = {
     paid: 'Pagado · {vp} PV',
     unsold: 'por vender',
     worth: '{vp} PV · ingresos +{income}',
-    stock: { coal: '{n} carbón', iron: '{n} hierro', beer: '{n} cerveza' },
+    stock: { coal: '{n} [n|carbón|carbones]', iron: '{n} [n|hierro|hierros]', beer: '{n} [n|cerveza|cervezas]' },
     close: 'Cerrar el inspector',
     zoomHere: 'Ampliar aquí',
   },

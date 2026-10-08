@@ -69,10 +69,10 @@ const fr: typeof enrules = {
     railAlt: "Frise gravée de l’ère rail",
     canalTitle: "L’ère canal, 1770–1830",
     canalBody:
-      "Les tours s’enchaînent manche par manche : une carte pour chacune de vos deux actions (une seule action à la première manche), puis repiochez jusqu’à une main complète. Les canaux coûtent 3 £ par liaison et sont les seules voies de l’ère. Quand la pioche et toutes les mains sont épuisées, l’ère est comptée — les industries retournées rapportent leurs PV, et chaque liaison compte les icônes lien des tuiles d’industrie dans les lieux qu’elle relie, et deux par marchand.",
+      "Les tours s’enchaînent manche par manche : une carte pour chacune de vos deux actions (une seule action à la première manche), puis repiochez jusqu’à une main complète. Les canaux coûtent 3 £ par liaison et sont les seules voies de l’ère. Quand la pioche et toutes les mains sont épuisées, l’ère est comptée — les industries retournées rapportent leurs PV, et chaque liaison compte les icônes lien des tuiles d’industrie dans les lieux qu’elle relie, et deux par marchand.",
     railTitle: "L’ère rail, 1830–1870",
     railBody:
-      "Une nouvelle pioche, des mains fraîches, et des rails à 5 £ plus un charbon par liaison — deux liaisons peuvent être posées en une seule action pour 15 £, deux charbons et une bière. Aucun nouveau canal ne peut être creusé, et les brasseries arrivent désormais avec deux barils au lieu d’un. Quand cette pioche aussi est épuisée, le plateau est compté une seconde fois et le registre le plus riche l’emporte.",
+      "Une nouvelle pioche, des mains fraîches, et des rails à 5 £ plus un charbon par liaison — deux liaisons peuvent être posées en une seule action pour 15 £, deux charbons et une bière. Aucun nouveau canal ne peut être creusé, et les brasseries arrivent désormais avec deux barils au lieu d’un. Quand cette pioche aussi est épuisée, le plateau est compté une seconde fois et le registre le plus riche l’emporte.",
     betweenTitle: "Entre les ères",
     betweenBody:
       "Les ouvrages de niveau 1 sont balayés du plateau quand les eaux se retirent — prévoyez de les retourner avant la fin de l’ère canal, ou regardez-les disparaître sans être comptés. Toutes les tuiles Liaison sont retirées aussi, une fois comptées : l’ère rail repart de vos seules industries.",
@@ -90,7 +90,7 @@ const fr: typeof enrules = {
       mill: "filature",
       beer: "bière",
       merchant: "négociant",
-      loanLabel: "−3 niveaux · +30 £",
+      loanLabel: "−3 niveaux · +30 £",
     },
   },
   actions: {
@@ -110,14 +110,14 @@ const fr: typeof enrules = {
     },
     network: {
       name: "Réseau",
-      cost: "Canal 3 £ · Rail 5 £ + 1 charbon · Double rail 15 £ + 2 charbons + 1 bière",
+      cost: "Canal 3 £ · Rail 5 £ + 1 charbon · Double rail 15 £ + 2 charbons + 1 bière",
       steps: {
         s1: "Jouez une carte quelconque et placez une liaison canal (ère canal) ou une liaison rail (ère rail) sur une route libre entre deux villes.",
         s2: "La liaison doit toucher votre réseau existant — une ville tenant une de vos tuiles, ou l’extrémité d’une de vos liaisons.",
         s3: "Payez le coût ; les liaisons rail consomment aussi un charbon, livré comme au chapitre VI.",
       },
       edges: {
-        e1: "À l’ère rail, vous pouvez poser deux liaisons rail en une seule action pour 15 £, 2 charbons et une bière — tirée d’une brasserie, jamais d’un baril marchand.",
+        e1: "À l’ère rail, vous pouvez poser deux liaisons rail en une seule action pour 15 £, 2 charbons et une bière — tirée d’une brasserie, jamais d’un baril marchand.",
         e2: "Aucun nouveau canal ne peut être construit une fois l’ère rail commencée ; les canaux existants demeurent.",
         e3: "Les ports négociants comptent comme des villes pour les connexions.",
       },
@@ -151,14 +151,14 @@ const fr: typeof enrules = {
     },
     loan: {
       name: "Emprunt",
-      cost: "Revenu −3 niveaux · prenez 30 £",
+      cost: "Revenu −3 niveaux · prenez 30 £",
       steps: {
-        s1: "Jouez une carte quelconque, descendez votre marqueur de revenu de trois niveaux sur la piste, et prenez 30 £ à la banque.",
+        s1: "Jouez une carte quelconque, descendez votre marqueur de revenu de trois niveaux sur la piste, et prenez 30 £ à la banque.",
       },
       edges: {
         e1: "Un emprunt peut être pris dans l’un ou l’autre emplacement d’action de votre tour — même en seconde action.",
         e2: "Les emprunts ne sont jamais remboursés ; la perte de revenu est définitive.",
-        e3: "Si votre revenu tombe sous 0 £, vous payez la banque à la fin de chaque manche. Un emprunt qui vous ferait passer sous le niveau −10 est refusé.",
+        e3: "Si votre revenu tombe sous 0 £, vous payez la banque à la fin de chaque manche. Un emprunt qui vous ferait passer sous le niveau −10 est refusé.",
       },
     },
     scout: {
@@ -182,7 +182,7 @@ const fr: typeof enrules = {
       "— chaque valeur ci-dessous est lue sur le tapis de joueur officiel : 45 tuiles par joueur, niveaux réservés au canal ou au rail, bière nécessaire à la vente, icônes lien et ampoules.",
     headers: {
       tile: "Tuile",
-      lvl: "Niv",
+      lvl: "Niveau",
       build: "Coût",
       coalIron: "Charbon / Fer",
       beerToFlip: "Bière pour retourner",
@@ -191,8 +191,8 @@ const fr: typeof enrules = {
       notes: "Notes",
     },
     resource: {
-      coal: "{n} charbon",
-      iron: "{n} fer",
+      coal: "{n} [n|charbon|charbons]",
+      iron: "{n} [n|fer|fers]",
       none: "—",
     },
     beer: {
@@ -274,9 +274,9 @@ const fr: typeof enrules = {
   network: {
     intro:
       "Votre réseau est l’ensemble des villes tenant une de vos tuiles et des liaisons que vous avez posées — plus tout ce qu’il touche par les routes des autres joueurs. Construire au-delà de votre premier coup, livrer charbon et fer, et vendre aux négociants se tracent le long de ce réseau.",
-    canalChip: "Liaison canal · 3 £ · ère canal",
-    railChip: "Liaison rail · 5 £ + 1 charbon · ère rail",
-    doubleRailChip: "Double rail · 15 £ + 2 charbons + 1 bière · une action",
+    canalChip: "Liaison canal · 3 £ · ère canal",
+    railChip: "Liaison rail · 5 £ + 1 charbon · ère rail",
+    doubleRailChip: "Double rail · 15 £ + 2 charbons + 1 bière · une action",
     outro:
       "Les liaisons sont comptées, pas seulement utilisées : à la fin de chaque ère, chaque liaison compte les icônes lien imprimées sur les tuiles d’industrie des lieux qu’elle relie — peu importe à qui sont les tuiles — et deux par marchand. Un canal bien placé à travers la ville florissante d’un rival vaut autant pour vous que pour lui.",
   },
@@ -293,7 +293,7 @@ const fr: typeof enrules = {
       },
       market: {
         label: "Achat au marché",
-        hint: "Pas de mine connectée ? Le charbon est alors acheté au plateau du marché : payez le prix courant (3 £ ici) et le cube le moins cher disparaît — l’acheteur suivant paiera donc plus cher.",
+        hint: "Pas de mine connectée ? Le charbon est alors acheté au plateau du marché : payez le prix courant (3 £ ici) et le cube le moins cher disparaît — l’acheteur suivant paiera donc plus cher.",
       },
       none: {
         label: "Aucune source",
@@ -301,8 +301,8 @@ const fr: typeof enrules = {
       },
     },
     chips: {
-      mine: "Charbon 0 £ — votre propre mine",
-      market: "Acheter 1 charbon · 3 £",
+      mine: "Charbon 0 £ — votre propre mine",
+      market: "Acheter 1 charbon · 3 £",
       none: "Aucun charbon accessible",
     },
     yourMine: "votre mine de charbon",
@@ -311,12 +311,12 @@ const fr: typeof enrules = {
   },
   marketTray: {
     title: "Le plateau du charbon",
-    buy: "Acheter 3 £",
+    buy: "Acheter 3 £",
     caption: "← acheter vide d’abord les cases bon marché · vendre regarnit par le bout cher →",
   },
   market: {
     p1:
-      "Quand l’offre vient à manquer, le marché répond — à un prix. Le charbon repose dans quatorze cases cotées de 1 £ à 7 £, le fer dans dix cases de 1 £ à 5 £ ; un plateau vide vend encore, à 8 £ et 6 £. Acheter prend le cube le moins cher et le prix monte. Rien ne regarnit les plateaux tout seul : une mine ou une forge fraîchement bâtie et connectée à un marchand vend ses cubes en trop au marché, qui se regarnit par le bout cher et le prix redescend.",
+      "Quand l’offre vient à manquer, le marché répond — à un prix. Le charbon repose dans quatorze cases cotées de 1 £ à 7 £, le fer dans dix cases de 1 £ à 5 £ ; un plateau vide vend encore, à 8 £ et 6 £. Acheter prend le cube le moins cher et le prix monte. Rien ne regarnit les plateaux tout seul : une mine ou une forge fraîchement bâtie et connectée à un marchand vend ses cubes en trop au marché, qui se regarnit par le bout cher et le prix redescend.",
     p2:
       "Un marché vide est un mur, pas un inconvénient : le charbon qu’on ne peut ni acheter ni atteindre est tout simplement hors de portée. Surveillez les plateaux comme un contremaître surveille le ciel.",
   },
@@ -340,9 +340,9 @@ const fr: typeof enrules = {
   },
   money: {
     intro: "À la fin de chaque manche, votre marqueur de revenu vous paie son niveau en livres. Retourner des industries fait grimper l’échelle, qui plafonne au niveau 30.",
-    li1: "Un emprunt peut être pris dans l’un ou l’autre emplacement d’action : descendez trois niveaux, prenez 30 £, jouez.",
+    li1: "Un emprunt peut être pris dans l’un ou l’autre emplacement d’action : descendez trois niveaux, prenez 30 £, jouez.",
     li2: "Les emprunts ne sont jamais remboursés. Les niveaux ont simplement disparu.",
-    li3: "Sous 0 £, l’échelle se fait créancière — vous payez la banque à la fin de chaque manche.",
+    li3: "Sous 0 £, l’échelle se fait créancière — vous payez la banque à la fin de chaque manche.",
     develop:
       "Développer, ce discret sixième sens des bons joueurs, échange un fer contre le retrait d’une tuile faible, découvrant les niveaux puissants en dessous sans dépenser de construction.",
     ladderAria:

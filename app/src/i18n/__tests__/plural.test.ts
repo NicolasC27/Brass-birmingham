@@ -82,7 +82,7 @@ describe('a counted word', () => {
       'gewertet', 'verloren', 'ausgegeben', 'möglich', 'deiner', 'deine',
       'Kohle', 'Eisen', 'Bier', 'Einkommen',
       /* der Spieler, die Spieler — the same word on either side of one */
-      'Spieler', 'Würfel',
+      'Spieler', 'Würfel', 'Plättchen',
     ],
   };
 
