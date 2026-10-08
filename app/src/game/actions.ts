@@ -1,5 +1,5 @@
 import { cloneState } from './clone';
-import { advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beginRailEra, buildTargets, canScout, linkTargets, newGame, sellTargets, withIron } from './engine';
+import { RULES_EDITION, advance, applyBuild, applyConcede, applyDevelop, applyLoan, applyNetwork, applyPass, applyResign, applyScout, applySell, beerShort, beginRailEra, buildTargets, canScout, linkTargets, newGame, salesThatStand, sellTargets, withCoal, withIron, withLinkCoal } from './engine';
 import type { BotMove } from './bot';
 import type { GameState, IndustryType, SetupPayload } from './types';
 
@@ -17,8 +17,29 @@ import type { GameState, IndustryType, SetupPayload } from './types';
 /* ------------------------------------------------------------------ */
 
 export type GameAction =
-  | { kind: 'build'; card: string; town: string; slot: number; industry: IndustryType; /** the iron works to draw from (its key) or 'market'; nothing for the engine's nearest */ ironFrom?: string | null }
-  | { kind: 'network'; card: string; link: string; second?: string; /** for a double rail, the brewery to drink from (its key); nothing for the engine's choice */ beerFrom?: string | null }
+  | {
+      kind: 'build';
+      card: string;
+      town: string;
+      slot: number;
+      industry: IndustryType;
+      /** the iron works to draw from (its key) or 'market'; nothing for the engine's nearest */
+      ironFrom?: string | null;
+      /** per cube of coal, the mine to draw it from (its key) — one of the
+       *  nearest connected mines; nothing for the engine's choice */
+      coalFrom?: (string | null)[];
+    }
+  | {
+      kind: 'network';
+      card: string;
+      link: string;
+      second?: string;
+      /** for a double rail, the brewery to drink from (its key); nothing for the engine's choice */
+      beerFrom?: string | null;
+      /** at the rail, the mine each link burns its cube from (its key): the
+       *  first link's, then the second's; nothing for the engine's choice */
+      coalFrom?: (string | null)[];
+    }
   | { kind: 'develop'; card: string; industries: IndustryType[]; /** per industry, the iron works to draw from (its key), 'market', or nothing for the engine's choice */ ironFrom?: (string | null)[] }
   | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string; /** per beer needed, the merchant's barrel ('merchant') or a brewery (its key); nothing for the engine's choice */ beerFrom?: (string | null)[] }[] }
   | { kind: 'loan'; card?: string }
@@ -81,7 +102,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       const target = buildTargets(mut, playerIdx, card).find((t) => t.town === action.town && t.slot === action.slot && t.industry === action.industry);
       if (!target) return fail('No such slot for this card');
       if (!target.valid) return fail(target.reason ?? 'Cannot build there');
-      const chosen = withIron(mut, playerIdx, target, action.ironFrom);
+      const chosen = withIron(mut, playerIdx, withCoal(mut, playerIdx, target, action.coalFrom), action.ironFrom);
       if (!chosen.valid) return fail(chosen.reason ?? 'Cannot build there');
       ok = applyBuild(mut, playerIdx, card, chosen);
       break;
@@ -90,12 +111,13 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       const card = cardOf(action.card);
       if (!card) return noCard(action.card);
       const list = linkTargets(mut, playerIdx);
-      const first = list.find((t) => t.link.id === action.link);
-      if (!first) return fail('No such link');
+      const listed = list.find((t) => t.link.id === action.link);
+      if (!listed) return fail('No such link');
+      const first = withLinkCoal(mut, playerIdx, listed, action.coalFrom?.[0]);
       if (!first.valid) return fail(first.reason ?? 'Cannot lay that link');
       const second = action.second ? list.find((t) => t.link.id === action.second) : undefined;
       if (action.second && !second) return fail('No such second link');
-      ok = applyNetwork(mut, playerIdx, card, first, second, action.beerFrom);
+      ok = applyNetwork(mut, playerIdx, card, first, second, action.beerFrom, action.coalFrom?.[1]);
       break;
     }
     case 'develop': {
@@ -110,7 +132,15 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       const list = sellTargets(mut, playerIdx);
       const picks = action.sales.map((x) => list.find((t) => t.town === x.town && t.slot === x.slot && t.merchant === x.merchant && t.valid));
       if (picks.some((t) => !t)) return fail('A sale is not possible');
-      ok = applySell(mut, playerIdx, card, picks as NonNullable<(typeof picks)[number]>[], action.sales.map((x) => x.beerFrom ?? []));
+      const sales = picks as NonNullable<(typeof picks)[number]>[];
+      const beer = action.sales.map((x) => x.beerFrom ?? []);
+      ok = applySell(mut, playerIdx, card, sales, beer);
+      /* each tile could drink alone, but not all of them together: name the
+         first that goes dry, read on the table as it stood */
+      if (!ok && sales.length > 1) {
+        const dry = sales[salesThatStand(s, playerIdx, sales, beer)];
+        if (dry) return fail(beerShort(dry));
+      }
       break;
     }
     case 'loan':
@@ -163,8 +193,7 @@ export function fallbackAction(s: GameState, playerIdx: number): GameAction {
 /** who takes an action of the log: the player to act, except a vote, which is cast in its author's name */
 export const actorOf = (s: GameState, a: GameAction): number => (a.kind === 'concede' || a.kind === 'resign' ? a.player : s.current);
 
-/** rebuild a game from its seed and its log; throws on the first refused action */
-export function replay(setup: SetupPayload, seed: number, actions: GameAction[]): GameState {
+function replayUnder(setup: SetupPayload, seed: number, actions: GameAction[]): GameState {
   let s = newGame(setup, seed);
   actions.forEach((a, i) => {
     const r = applyAction(s, actorOf(s, a), a);
@@ -172,6 +201,41 @@ export function replay(setup: SetupPayload, seed: number, actions: GameAction[])
     s = r.state;
   });
   return s;
+}
+
+/** rebuild a game from its seed and its log; throws on the first refused
+ *  action.
+ *
+ *  A deal names the edition of the rules it is played under. A log written
+ *  before editions were named names none, and is read under today's rules
+ *  first: one that will not stand there — a sale short of beer carried out
+ *  by half — was written under the first edition and is read under it. A
+ *  log past the rail deal may stand under both, the two deals differing by
+ *  a card a seat; a game the first edition played out to its last move is
+ *  the first edition's, for today's would still be short of four moves */
+export function replay(setup: SetupPayload, seed: number, actions: GameAction[]): GameState {
+  if (setup.options.rules !== undefined) return replayUnder(setup, seed, actions);
+  const first: SetupPayload = { ...setup, options: { ...setup.options, rules: 1 } };
+  let today: GameState;
+  try {
+    today = replayUnder(setup, seed, actions);
+  } catch (err) {
+    try {
+      return replayUnder(first, seed, actions);
+    } catch {
+      /* the first reading's refusal is the one worth reporting */
+      throw err;
+    }
+  }
+  if (today.phase !== 'game-over' && actions.some((a) => a.kind === 'begin-rail')) {
+    try {
+      const old = replayUnder(first, seed, actions);
+      if (old.phase === 'game-over') return old;
+    } catch {
+      /* it will not stand the old way: today's reading holds */
+    }
+  }
+  return today;
 }
 
 /** an action a human took: its index in the log and the seat that took it */
@@ -224,6 +288,8 @@ export function setupOf(s: GameState): SetupPayload {
        would take the assistance away mid-game */
     /* and the board with it: a game replayed without it would be dealt
        the same cards on another country */
-    options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity, assist: s.assist, ...(s.board ? { map: s.board } : {}) },
+    /* and the edition of the rules it was dealt under, always named: a log
+       that says so is never read under another */
+    options: { eraLength: s.eraLength, marketTemper: s.marketTemper, timerMinutes: s.timerMinutes, fidelity: s.fidelity, assist: s.assist, ...(s.board ? { map: s.board } : {}), rules: s.rules ?? RULES_EDITION },
   };
 }

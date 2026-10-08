@@ -31,8 +31,15 @@ function playOut(n: number, seed: number, eraLength: 'short' | 'standard' = 'sta
   for (let i = 0; i < 900 && s.phase !== 'game-over'; i++) {
     const seat = s.current;
     /* the ceremony is a move of the table's own: the log carries it */
-    const a: GameAction = s.phase === 'scoring-canal' ? { kind: 'begin-rail' } : (botAction(chooseBotMove(s, seat, BOT_SKILL.foreman)) ?? fallbackAction(s, seat));
-    const r = applyAction(s, actorOf(s, a), a);
+    const wanted: GameAction = s.phase === 'scoring-canal' ? { kind: 'begin-rail' } : (botAction(chooseBotMove(s, seat, BOT_SKILL.foreman)) ?? fallbackAction(s, seat));
+    /* a move the engine refuses is put down for a scout or a pass, as the
+       table itself does: the log carries the move that was played */
+    let a = wanted;
+    let r = applyAction(s, actorOf(s, a), a);
+    if (!r.state && s.phase === 'action') {
+      a = fallbackAction(s, seat);
+      r = applyAction(s, seat, a);
+    }
     if (!r.state) break;
     log.push(a);
     s = r.state;

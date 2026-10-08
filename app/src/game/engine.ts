@@ -13,6 +13,7 @@ import {
   INCOME_MAX,
   INCOME_PAYOUT,
   INDUSTRIES,
+  INDUSTRIES_IN_ORDER,
   INDUSTRY_LABEL,
   LINKS,
   LOAN_AMOUNT,
@@ -42,6 +43,7 @@ import {
   setBoard,
   activeBoard,
 } from './data';
+import { cloneState } from './clone';
 import type {
   Card,
   Era,
@@ -59,6 +61,16 @@ import type {
 export const ENGINE_VERSION = 6;
 export { eraRounds };
 
+/** the edition of the rules this engine plays. Edition 1 burnt a card per
+ *  seat again at the rail deal and let a sale go through on the tiles its
+ *  beer reached; a log written under it still replays under it, and every
+ *  game dealt from now on is played under this one */
+export const RULES_EDITION = 2;
+
+/** the game was dealt under the first edition: the rail deal burns a card,
+ *  and a sale short of beer sells what it can */
+const firstEdition = (s: GameState): boolean => (s.rules ?? RULES_EDITION) < 2;
+
 /* ============================ setup ================================ */
 
 export function defaultSetup(): SetupPayload {
@@ -72,10 +84,13 @@ export function defaultSetup(): SetupPayload {
   };
 }
 
-/** deal 8 cards to each player + 1 face-down card that opens their discard */
-function dealHands(s: GameState) {
+/** deal 8 cards to each player. At the opening deal one more goes face down
+ *  and begins each discard (§4.3); the rail era's deal is the 8 and nothing
+ *  else (§5.13) — a card burnt there is an action lost to that seat */
+function dealHands(s: GameState, opener: boolean) {
   for (const p of s.players) {
     p.hand = s.deck.splice(0, HAND_SIZE);
+    if (!opener) continue;
     const faceDown = s.deck.shift();
     if (faceDown) s.discard.push(faceDown);
   }
@@ -123,6 +138,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
   const state: GameState = {
     version: ENGINE_VERSION,
     board: activeBoard().id,
+    ...(setup.options.rules !== undefined && setup.options.rules < RULES_EDITION ? { rules: setup.options.rules } : {}),
     seed,
     era: 'canal',
     round: 1,
@@ -152,7 +168,7 @@ export function newGame(setup: SetupPayload, seed = Math.floor(Math.random() * 1
     history: [],
     actions: [],
   };
-  dealHands(state);
+  dealHands(state, true);
   log(state, undefined, 'system', `The table is set — ${players.map((p) => p.name).join(', ')}. The Canal Era begins.`, undefined, 'setup', { names: players.map((p) => p.name).join(', ') });
   return state;
 }
@@ -340,7 +356,9 @@ export function planSupply(s: GameState, town: string, resource: Resource, neede
     if (resource === 'iron') candidates.push({ key, town: tId, slot: Number(slotStr), cubes, d: 0 });
     else if (dist!.has(tId)) candidates.push({ key, town: tId, slot: Number(slotStr), cubes, d: dist!.get(tId)! });
   }
-  // APPROX: ties in distance are broken by the engine (nearest, then largest stock)
+  /* ties in distance are the player's to break (§5.3): an action that names
+     no mine gets the engine's — nearest, then largest stock. `planCoalFrom`
+     takes the player's names */
   candidates.sort((a, b) => a.d - b.d || b.cubes - a.cubes);
 
   let left = needed;
@@ -376,6 +394,48 @@ function reserveFrom(plan: SupplyPlan, reserved: Map<string, number>) {
     const k = src.kind === 'tile' ? tileKey(src.town!, src.slot!) : `market:${src.resource}`;
     reserved.set(k, (reserved.get(k) ?? 0) + src.amount);
   }
+}
+
+/** the mines a cube of coal for `town` may come from right now: the
+ *  connected ones with coal left that stand nearest, all at one distance.
+ *  Among them the choice is the player's (§5.3); empty once no connected
+ *  mine has a cube to give, and the market's turn has come */
+export function coalChoices(s: GameState, town: string, extra: LinkDef[] = [], reserved: Map<string, number> = new Map()): { key: string; town: string; slot: number; owner: number; cubes: number; d: number }[] {
+  const dist = linkDistances(s, town, s.era, null, extra);
+  const out: ReturnType<typeof coalChoices> = [];
+  for (const [key, tile] of Object.entries(s.tiles)) {
+    if (tile.flipped || tile.industry !== 'coal') continue;
+    const at = key.split(':')[0];
+    const cubes = tile.cubes - (reserved.get(key) ?? 0);
+    if (cubes <= 0 || !dist.has(at)) continue;
+    out.push({ key, town: at, slot: Number(key.split(':')[1]), owner: tile.owner, cubes, d: dist.get(at)! });
+  }
+  const near = Math.min(...out.map((c) => c.d));
+  return out.filter((c) => c.d === near);
+}
+
+/** coal for `town`, a cube at a time, from the mines the player named.
+ *  A name holds only while that mine is among the nearest with coal left —
+ *  once it runs dry the next cube is the next nearest's (§5.3). A cube left
+ *  unnamed, or named wrongly, is drawn as `planSupply` would draw it */
+export function planCoalFrom(s: GameState, town: string, needed: number, from: (string | null)[] = [], extra: LinkDef[] = [], reserved: Map<string, number> = new Map()): SupplyPlan {
+  if (!from.some(Boolean)) return planSupply(s, town, 'coal', needed, extra, reserved);
+  const own = new Map(reserved);
+  const plan = emptyPlan();
+  for (let k = 0; k < needed; k++) {
+    const name = from[k];
+    const pick = name ? coalChoices(s, town, extra, own).find((c) => c.key === name) : undefined;
+    const one: SupplyPlan = pick ? { sources: [{ kind: 'tile', resource: 'coal', town: pick.town, slot: pick.slot, amount: 1, cost: 0 }], totalCost: 0, shortage: 0 } : planSupply(s, town, 'coal', 1, extra, own);
+    plan.sources.push(...one.sources);
+    plan.totalCost += one.totalCost;
+    if (one.shortage > 0) {
+      plan.shortage = needed - k;
+      if (one.marketBlocked) plan.marketBlocked = true;
+      break;
+    }
+    reserveFrom(one, own);
+  }
+  return plan;
 }
 
 /* ------------------------------ beer ------------------------------- */
@@ -593,11 +653,11 @@ export function beerSources(s: GameState, playerIdx: number, first: LinkDef, sec
     .sort((a, b) => Number(b.own) - Number(a.own) || a.town.localeCompare(b.town));
 }
 
-export function doubleLinkPlan(s: GameState, playerIdx: number, first: LinkTarget, second: LinkDef, beerFrom?: string | null): DoubleLinkPlan {
+export function doubleLinkPlan(s: GameState, playerIdx: number, first: LinkTarget, second: LinkDef, beerFrom?: string | null, coalFrom?: string | null): DoubleLinkPlan {
   const p = s.players[playerIdx];
   const reserved = new Map<string, number>();
   reserveFrom(first.coalPlan, reserved);
-  const coal2 = planSupply(s, second.a, 'coal', COSTS.railCoal, [first.link, second], reserved);
+  const coal2 = planCoalFrom(s, second.a, COSTS.railCoal, [coalFrom ?? null], [first.link, second], reserved);
   let beer = planBeer(s, playerIdx, second.a, null, COSTS.doubleRailBeer, [first.link, second]);
   /* the brewery the player named, when it is one the rules allow */
   const named = beerFrom ? beerSources(s, playerIdx, first.link, second).find((b) => b.key === beerFrom) : undefined;
@@ -629,6 +689,10 @@ export interface SellTarget {
   reason?: string;
 }
 
+/** why a tile will not sell: the beer it needs is nowhere to be drunk —
+ *  alone, or after the tiles sold before it in the same action */
+export const beerShort = (t: Pick<SellTarget, 'tile'>): string => `Needs ${INDUSTRIES[t.tile.industry][t.tile.level - 1].beerToSell} beer — a brewery of yours, one connected here, or the merchant's barrel`;
+
 /** every own unflipped goods tile × every open merchant that buys it and is connected */
 export function sellTargets(s: GameState, playerIdx: number): SellTarget[] {
   const out: SellTarget[] = [];
@@ -646,7 +710,7 @@ export function sellTargets(s: GameState, playerIdx: number): SellTarget[] {
       out.push({
         town, slot, tile, merchant: m.id, beer: beer.sources,
         valid: beer.shortage === 0,
-        reason: beer.shortage > 0 ? `Needs ${lv.beerToSell} beer — a brewery of yours, one connected here, or the merchant's barrel` : undefined,
+        reason: beer.shortage > 0 ? beerShort({ tile }) : undefined,
       });
     }
   }
@@ -655,7 +719,7 @@ export function sellTargets(s: GameState, playerIdx: number): SellTarget[] {
 
 export function developOptions(s: GameState, playerIdx: number): { industry: IndustryType; level: number; iron: SupplyPlan; valid: boolean; reason?: string }[] {
   const p = s.players[playerIdx];
-  return (Object.keys(p.stacks) as IndustryType[])
+  return INDUSTRIES_IN_ORDER
     .filter((ind) => p.stacks[ind].length > 0)
     .map((ind) => {
       const level = p.stacks[ind][0];
@@ -754,7 +818,7 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]) {
       if (bn.develop) {
         // Gloucester: remove one lowest-level tile from the mat, no iron, lightbulbs excluded
         let bestInd: IndustryType | null = null;
-        for (const ind of Object.keys(p.stacks) as IndustryType[]) {
+        for (const ind of INDUSTRIES_IN_ORDER) {
           const lvl = p.stacks[ind][0];
           if (!lvl || INDUSTRIES[ind][lvl - 1].noDevelop) continue;
           if (bestInd === null || lvl < p.stacks[bestInd][0]) bestInd = ind;
@@ -863,13 +927,13 @@ export function applyBuild(s: GameState, playerIdx: number, card: Card, target: 
   return true;
 }
 
-export function applyNetwork(s: GameState, playerIdx: number, card: Card, target: LinkTarget, second?: LinkTarget, beerFrom?: string | null): boolean {
+export function applyNetwork(s: GameState, playerIdx: number, card: Card, target: LinkTarget, second?: LinkTarget, beerFrom?: string | null, coalFrom?: string | null): boolean {
   const p = s.players[playerIdx];
   if (!target.valid) return false;
   const name = (id: string) => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
   let extra = '';
   if (second) {
-    const dbl = doubleLinkPlan(s, playerIdx, target, second.link, beerFrom);
+    const dbl = doubleLinkPlan(s, playerIdx, target, second.link, beerFrom, coalFrom);
     if (!dbl.valid) return false;
     paySupply(s, p, target.coalPlan);
     s.links[target.link.id] = { owner: playerIdx, era: s.era };
@@ -954,6 +1018,36 @@ export function withIron(s: GameState, playerIdx: number, t: BuildTarget, from: 
   const total = t.cost + t.coalPlan.totalCost + ironPlan.totalCost;
   const money = s.players[playerIdx].money;
   return { ...t, ironPlan, total, valid: total <= money, ...(total > money ? { reason: `Needs £${total} — you hold £${money}` } : {}) };
+}
+
+/** the build target with its coal drawn from the mines the reader named,
+ *  a cube each: among the nearest connected mines the choice is the
+ *  player's (§5.3), and a mine about to run dry is often the one they want
+ *  — its owner's income moves when it flips. Nothing named, or a target
+ *  that burns no coal, leaves the engine's own plan */
+export function withCoal(s: GameState, playerIdx: number, t: BuildTarget, from: (string | null)[] | null | undefined): BuildTarget {
+  if (!from?.some(Boolean) || !t.valid) return t;
+  const lv = INDUSTRIES[t.industry][t.level - 1];
+  if (!lv?.coal) return t;
+  const coalPlan = planCoalFrom(s, t.town, lv.coal, from);
+  if (coalPlan.shortage > 0) return t;
+  const reserved = new Map<string, number>();
+  reserveFrom(coalPlan, reserved);
+  const ironPlan = planSupply(s, t.town, 'iron', lv.iron, [], reserved);
+  const total = t.cost + coalPlan.totalCost + ironPlan.totalCost;
+  const money = s.players[playerIdx].money;
+  return { ...t, coalPlan, ironPlan, total, valid: total <= money, ...(total > money ? { reason: `Needs £${total} — you hold £${money}` } : {}) };
+}
+
+/** a rail link with its cube of coal drawn from the mine the reader named,
+ *  when that mine is among the nearest; the canal burns none */
+export function withLinkCoal(s: GameState, playerIdx: number, t: LinkTarget, from: string | null | undefined): LinkTarget {
+  if (!from || !t.valid || s.era !== 'rail') return t;
+  const coalPlan = planCoalFrom(s, t.link.a, COSTS.railCoal, [from], [t.link]);
+  if (coalPlan.shortage > 0) return t;
+  const total = t.cost + coalPlan.totalCost;
+  const money = s.players[playerIdx].money;
+  return { ...t, coalPlan, total, valid: total <= money, ...(total > money ? { reason: `Needs £${total} — you hold £${money}` } : {}) };
 }
 
 /** the tile a second development of the same industry would take: the
@@ -1075,13 +1169,29 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (st
 /** Sell: one card, any number of tiles (each with its own beer) */
 export function applySell(s: GameState, playerIdx: number, card: Card, targets: SellTarget | SellTarget[], beerFrom: (string | null)[][] = []): boolean {
   const list = Array.isArray(targets) ? targets : [targets];
+  if (!list.length) return false;
   let sold = 0;
   list.forEach((t, i) => {
     if (sellOne(s, playerIdx, t, beerFrom[i] ?? [])) sold += 1;
   });
-  if (!sold) return false;
+  /* a sale is begun only if every tile of it can drink its beer (§5.5):
+     each tile drinks what the ones before it left, and one of them going
+     dry refuses the whole action — never half of it, in silence */
+  if (firstEdition(s) ? !sold : sold !== list.length) return false;
   discardCard(s, s.players[playerIdx], card.id);
   return true;
+}
+
+/** how many of these sales, taken in order, the beer reaches: each drinks
+ *  what the ones before it left. Read on a copy — the table is not touched */
+export function salesThatStand(s: GameState, playerIdx: number, targets: SellTarget[], beerFrom: (string | null)[][] = []): number {
+  const mut = cloneState(s);
+  let n = 0;
+  for (const [i, t] of targets.entries()) {
+    if (!sellOne(mut, playerIdx, t, beerFrom[i] ?? [])) break;
+    n += 1;
+  }
+  return n;
 }
 
 export function applyLoan(s: GameState, playerIdx: number, card?: Card): boolean {
@@ -1304,7 +1414,9 @@ export function beginRailEra(s: GameState) {
   s.discard = [];
   s.era = 'rail';
   s.round = 1;
-  dealHands(s);
+  /* eight cards each and no more: the face-down openers went into the
+     shuffle above, and none is laid aside again */
+  dealHands(s, firstEdition(s));
   s.turnPos = 0;
   s.current = s.order[0];
   s.actionsLeft = actionsFor(s, s.players[s.current]);

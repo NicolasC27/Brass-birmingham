@@ -74,10 +74,15 @@ export const INDUSTRIES: Record<IndustryType, IndustryLevel[]> = {
   ],
 };
 
+/** the industries of a mat in one fixed order. Whatever walks a mat walks
+ *  it in this order — never in the order its keys happen to have been
+ *  written in, which a copy of the table may not keep */
+export const INDUSTRIES_IN_ORDER: readonly IndustryType[] = ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'];
+
 /** a fresh player mat: every level repeated `count` times, lowest first */
 export function freshStacks(): Record<IndustryType, number[]> {
   const out = {} as Record<IndustryType, number[]>;
-  for (const ind of Object.keys(INDUSTRIES) as IndustryType[]) {
+  for (const ind of INDUSTRIES_IN_ORDER) {
     out[ind] = INDUSTRIES[ind].flatMap((lv) => Array.from({ length: lv.count }, () => lv.level));
   }
   return out;

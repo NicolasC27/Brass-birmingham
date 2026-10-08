@@ -175,6 +175,9 @@ export interface GameState {
   /** the board this game stands on; absent means the Midlands. A save, a
       replay and a shared link all carry it, so the ground is never guessed */
   board?: string;
+  /** the edition of the rules this game was dealt under, when it is older
+      than the engine's own (`RULES_EDITION`); absent means today's */
+  rules?: number;
   players: PlayerState[];
   /** player indices in this round's turn order (least money spent first) */
   order: number[];
@@ -258,6 +261,10 @@ export interface SetupPayload {
     /** the board this game stands on; absent means the Midlands, which is
         where every game played before there was a second one stood */
     map?: string;
+    /** the edition of the rules the game is dealt under. A new deal names
+        it, and `setupOf` always does; a log written before editions were
+        named has none, and `replay` finds out which one it stands under */
+    rules?: number;
   };
 }
 
