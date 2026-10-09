@@ -31,6 +31,8 @@ import EdgeTracks from '@/components/game/EdgeTracks';
 import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
 import PlayerMat from '@/components/game/PlayerMat';
+import TitleCard, { TitlePlate, TroubleCard } from '@/components/game/TitleCard';
+import { useBoardSet } from '@/components/game/titleStage';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { analysisLane, useHudInsets } from '@/components/game/useHudInsets';
 import { isKey, onControl, typing } from '@/components/game/keybindings';
@@ -92,6 +94,14 @@ export default function Game() {
   /* a game at home the office would not follow: why, and whether the
      board has been read back from its log yet */
   const homeTrouble = useGame((s) => s.homeTrouble);
+  /* the table the title card names: the address first, so a card never
+     shows the table left behind while the store is still being set */
+  const storeLocal = useGame((s) => s.local);
+  const titleCode = tableCode ?? null;
+  const titleLocal = localCode ?? (tableCode ? null : storeLocal);
+  /* how far the board has come: the title card covers the table until then */
+  const boardHost = useRef<HTMLDivElement>(null);
+  const boardStage = useBoardSet(boardHost, !!game);
   const myTurn = useGame((s) => s.myTurn());
   const planActor = useGame((s) => s.planActor());
   const queued = useGame((s) => s.queued);
@@ -633,8 +643,8 @@ export default function Game() {
   if (!game) {
     /* the office would not hand the game over: the plate says why, in
        place of a table that is never going to be set */
-    if (homeTrouble && !tableCode) return <HomeMissPlate trouble={homeTrouble} />;
-    return <div className="fixed inset-0 z-[60] flex items-center justify-center bg-coal-950 font-fell text-brass-400">{t('game.page.settingTable')}</div>;
+    if (homeTrouble && !tableCode) return <HomeMissPlate trouble={homeTrouble} local={titleLocal} />;
+    return <TitleCard stage="reading" game={null} code={titleCode} local={titleLocal} />;
   }
 
   /* the guide's lane down the right edge: a rail when folded (key G) */
@@ -654,7 +664,7 @@ export default function Game() {
       {/* the board fills 100% of the screen and stays interactive
           wherever no floating panel is open; panels float over it and
           never move it */}
-      <div className="absolute inset-0">
+      <div ref={boardHost} className="absolute inset-0">
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
             game={review?.state ?? game}
@@ -766,7 +776,7 @@ export default function Game() {
       {/* at home, the office and the board fell out: play waits, frozen,
           until the board is read back from the office's log — then a word
           on what was read, for the reader to put away */}
-      {!tableCode && homeTrouble && !homeTrouble.mended && <HomeFrozen trouble={homeTrouble} />}
+      {!tableCode && homeTrouble && !homeTrouble.mended && <HomeFrozen trouble={homeTrouble} local={titleLocal} />}
       {!tableCode && homeTrouble?.mended && <HomeMended trouble={homeTrouble} />}
 
       {/* hot-seat pass interstitial — fully opaque: the board and every hand
@@ -907,6 +917,10 @@ export default function Game() {
           being read, the analysis has it */}
       {!analysisPane && <Guide dock={dock} />}
       {tutorial && <LessonHalo />}
+
+      {/* the title card over the whole table while the board is set; it
+          lifts once the map is engraved */}
+      <TitleCard stage={boardStage} game={game} code={titleCode} local={titleLocal} />
     </div>
   );
 }
@@ -924,16 +938,15 @@ function troubleText(t: ReturnType<typeof useT>, trouble: HomeTrouble): string {
 
 /** the game at home the office would not hand over: the cause named, and
     the roads left — asking again when the line is down, the desk always */
-function HomeMissPlate({ trouble }: { trouble: HomeTrouble }) {
+function HomeMissPlate({ trouble, local }: { trouble: HomeTrouble; local: string | null }) {
   const t = useT();
   const retryHome = useGame((s) => s.retryHome);
   /* a refusal cannot leave the board empty: whatever else it is, the
      office is not answering */
   const cause = trouble.cause === 'absent' || trouble.cause === 'unreplayable' ? trouble.cause : 'offline';
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-coal-950 p-4">
-      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.06]" />
-      <div role="alert" className="plate relative w-full max-w-[440px] border-rust-500/70 p-6 text-center shadow-e4">
+    <TroubleCard game={null} code={null} local={local}>
+      <div role="alert">
         <p className="font-sans text-sm leading-relaxed text-cream-100/85">{t(`game.homeTrouble.${cause}`)}</p>
         <div className="mt-5 flex justify-center gap-2">
           <Link to="/desk" className={TROUBLE_BTN}>
@@ -946,16 +959,17 @@ function HomeMissPlate({ trouble }: { trouble: HomeTrouble }) {
           )}
         </div>
       </div>
-    </div>
+    </TroubleCard>
   );
 }
 
 /** the board at home stands frozen while it waits on the office: the
     store already refuses every move, the veil says why. It comes in late,
     so a refusal read back at once only ever shows as the notice after it */
-function HomeFrozen({ trouble }: { trouble: HomeTrouble }) {
+function HomeFrozen({ trouble, local }: { trouble: HomeTrouble; local: string | null }) {
   const t = useT();
   const retryHome = useGame((s) => s.retryHome);
+  const game = useGame((s) => s.game);
   const sheet = useLayer(true, holdOn, { modal: true });
   const said = useId();
   const waiting = trouble.cause === 'refused' || trouble.cause === 'offline';
@@ -971,7 +985,7 @@ function HomeFrozen({ trouble }: { trouble: HomeTrouble }) {
       aria-labelledby={said}
       className="fixed inset-0 z-[79] flex items-center justify-center bg-coal-950/60 p-4 backdrop-blur-[2px]"
     >
-      <div className="plate relative w-full max-w-[420px] border-rust-500/70 p-6 text-center shadow-e4">
+      <TitlePlate game={game} code={null} local={local} kicker={t('game.titre.troubleKicker')} tone="rust">
         <p id={said} className="font-sans text-sm leading-relaxed text-cream-100/85">
           {troubleText(t, trouble)}
         </p>
@@ -985,7 +999,7 @@ function HomeFrozen({ trouble }: { trouble: HomeTrouble }) {
             </button>
           )}
         </div>
-      </div>
+      </TitlePlate>
     </motion.div>
   );
 }
