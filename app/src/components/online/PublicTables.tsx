@@ -137,8 +137,9 @@ function Flap({ text, className }: { text: string; className?: string }) {
   );
 }
 
-/** the lamp beside a departure: lit and breathing for a game in play */
-const LAMP: Record<string, string> = { live: 'bg-signal-400 shadow-[0_0_6px_rgb(var(--signal-400))] animate-pulse', open: 'bg-bottle-400', full: 'bg-iron-600' };
+/** the lamp beside a departure: lit and breathing for a game in play; the
+ *  lamp and its word share one ink, a full table's grey included */
+const LAMP: Record<string, string> = { live: 'bg-signal-400 shadow-[0_0_6px_rgb(var(--signal-400))] animate-pulse', open: 'bg-bottle-400', full: 'bg-iron-400' };
 const LAMP_TEXT: Record<string, string> = { live: 'text-signal-ink', open: 'text-bottle-ink', full: 'text-iron-400' };
 
 /** the notches of an era, the rounds played filled in */
@@ -262,8 +263,8 @@ function Detail({ table, onCopy, onLink, onInvite }: { table: CardTable } & Pick
                 {s.name}
               </span>
               {s.host && <Crown size={12} className="text-brass-300" aria-label={t('platform.seat.host')} />}
-              {s.kind === 'bot' && <span className="micro-label text-[9px] text-iron-400">{t('platform.seat.bot')}</span>}
-              {table.toAct === s && <span className="micro-label text-[9px] text-signal-ink">{t('platform.play.tables.playing')}</span>}
+              {s.kind === 'bot' && <span className="micro-label text-iron-400">{t('platform.seat.bot')}</span>}
+              {table.toAct === s && <span className="micro-label text-signal-ink">{t('platform.play.tables.playing')}</span>}
             </li>
           ))}
           {free > 0 && (
@@ -288,12 +289,12 @@ function Detail({ table, onCopy, onLink, onInvite }: { table: CardTable } & Pick
           <span className="room-code !text-[14px] !tracking-[0.22em] text-paper-100">{table.code}</span>
           <button type="button" onClick={() => onCopy(table.code)} className="inline-flex items-center gap-1 text-iron-400 transition-colors hover:text-brass-300" title={t('platform.play.tables.copy')}>
             <Copy size={12} aria-hidden />
-            <span className="micro-label text-[9px]">{t('platform.play.tables.copy')}</span>
+            <span className="micro-label">{t('platform.play.tables.copy')}</span>
           </button>
           {canInvite && (
             <button type="button" onClick={() => onLink(table.code)} className="inline-flex items-center gap-1 text-iron-400 transition-colors hover:text-brass-300" title={t('platform.play.tables.inviteLink')}>
               <Link2 size={12} aria-hidden />
-              <span className="micro-label text-[9px]">{t('platform.play.tables.inviteLink')}</span>
+              <span className="micro-label">{t('platform.play.tables.inviteLink')}</span>
             </button>
           )}
         </dd>
@@ -326,8 +327,6 @@ function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink
     return () => window.clearTimeout(id);
   }, [flashes]);
   const flash = flashes > doused;
-  const seated = table.seats.filter(Boolean).length;
-  const free = table.seats.length - seated;
   const rounds = table.rounds ?? 10;
   const round = table.round ?? 0;
   /* the ticket at the end of the line: brass to board, plain to watch */
@@ -338,18 +337,13 @@ function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink
       : table.state === 'open' && table.mode !== 'ranked'
         ? { label: t('platform.play.tables.board'), go: () => onJoin(table), brass: true }
         : null;
-  const progress =
-    table.state === 'live'
-      ? `${t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal')} · ${t('platform.play.tables.roundOf', { round: Math.max(1, round), total: rounds })}`
-      : free === 0
-        ? t('platform.play.tables.full')
-        : free === 1
-          ? t('platform.play.tables.freeSeatOne')
-          : t('platform.play.tables.freeSeatsCount', { count: free });
+  /* the run is told only once there is one: an open table's free chairs are
+     already drawn as dashed carriages, and a full one says so under DEPARTURE */
+  const progress = table.state === 'live' ? `${t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal')} · ${t('platform.play.tables.roundOf', { round: Math.max(1, round), total: rounds })}` : null;
   return (
     <motion.li initial={fresh ? { opacity: 0, y: -18 } : { opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: fresh ? 0.36 : 0.2, ease: 'easeOut', delay: fresh ? 0 : 0.03 * i }} className="gz-board-line">
       <div className={cn('gz-board-row', table.mine && 'is-mine', open && 'is-open', (flash || fresh) && 'is-flash')}>
-        <span className="data-text text-[13px] text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
+        <span className="data-text text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="min-w-0 text-left" title={t('platform.play.tables.details')}>
           <span className="flex items-center gap-2">
             <span className={cn('truncate font-fraunces text-[17px] font-medium leading-tight', table.mine ? 'text-brass-300' : 'text-paper-100')}>
@@ -358,20 +352,24 @@ function Line({ table, i, fresh, busy, onJoin, onResume, onWatch, onCopy, onLink
             {table.myTurn && <span className="micro-label shrink-0 text-signal-ink">{t('platform.play.tables.yourTurn')}</span>}
             <ChevronDown size={12} className={cn('shrink-0 text-iron-400 transition-transform', open && 'rotate-180')} aria-hidden />
           </span>
-          <span className="data-text mt-0.5 block truncate text-[10.5px] text-iron-400">
+          <span className="data-text mt-0.5 block truncate text-iron-400">
             {t(`platform.mode.${table.mode}`)} · {t('platform.play.tables.host', { name: table.hostName })} · {ago(t, lang, table.updatedAt)}
           </span>
         </button>
         <SeatTrain table={table} />
         <span className={cn('micro-label flex items-center gap-2', LAMP_TEXT[table.state] ?? 'text-iron-400')}>
-          <span className={cn('h-2 w-2 shrink-0 rounded-full', LAMP[table.state] ?? 'bg-iron-600')} aria-hidden />
+          <span className={cn('h-2 w-2 shrink-0 rounded-full', LAMP[table.state] ?? 'bg-iron-400')} aria-hidden />
           <Flap text={t(`platform.state.${table.state}`)} />
         </span>
         <span className="gz-board-col-progress">
-          {table.state === 'live' && <RoundTrack round={round} rounds={rounds} />}
-          <span className={cn('data-text block truncate text-[10.5px] tnums', table.state === 'live' ? 'mt-1 text-iron-400' : 'text-paper-100')}>
-            <Flap text={progress} />
-          </span>
+          {progress && (
+            <>
+              <RoundTrack round={round} rounds={rounds} />
+              <span className="data-text mt-1 block truncate text-iron-400 tnums">
+                <Flap text={progress} />
+              </span>
+            </>
+          )}
         </span>
         <span className="flex items-center gap-2 justify-self-end">
           {table.mine && table.state === 'open' && (
@@ -456,12 +454,13 @@ function NextDeparture({ table, busy, onJoin }: { table: CardTable; busy: boolea
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease: 'easeOut' }} className="gz-poster mt-5">
       <div className="min-w-0">
         <p className="eyebrow-fell">{t('platform.play.tables.nextDeparture')}</p>
-        <p className="mt-1 truncate font-fraunces text-[28px] font-normal leading-none text-paper-100">
+        {/* truncated across, never cut through: the line keeps room for a descender */}
+        <p className="mt-1 truncate pb-1 font-fraunces text-[28px] font-normal leading-[1.15] text-paper-100">
           {table.name}
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
           <SeatTrain table={table} size={30} />
-          <span className="data-text text-[10.5px] text-iron-400">
+          <span className="data-text text-iron-400">
             {t(`platform.mode.${table.mode}`)} · {t('platform.play.tables.host', { name: table.hostName })} · {ago(t, lang, table.updatedAt)}
           </span>
         </div>
@@ -614,20 +613,26 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
   } else {
     const from = page.query.offset + 1;
     const to = page.query.offset + page.tables.length;
+    /* a table printed in a group of its own is not printed again in the
+       register below: one line a table, and the count under the board holds */
+    const byFriends = friends.slice(0, 3);
+    const watched = live.filter((x) => !byFriends.some((f) => f.code === x.code)).slice(0, 3);
+    const featured = new Set([...byFriends, ...watched].map((x) => x.code));
+    const ledger = rows.filter((x) => !featured.has(x.code));
     body = (
       <div className="mt-4" aria-busy={settling || undefined}>
         <Board
           pageKey={JSON.stringify(page.query)}
           groups={[
             { label: t('platform.play.tables.mine'), tables: mine },
-            { label: t('platform.play.tables.friendsTitle'), tables: friends.slice(0, 3) },
-            { label: t('platform.play.tables.liveTitle'), tables: live.slice(0, 3) },
-            { label: t('platform.play.tables.register'), tables: rows },
+            { label: t('platform.play.tables.friendsTitle'), tables: byFriends },
+            { label: t('platform.play.tables.liveTitle'), tables: watched },
+            { label: t('platform.play.tables.register'), tables: ledger },
           ]}
           {...hands}
         />
         <div className="flex items-center justify-between gap-3 px-2 py-2">
-          <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.play.tables.pageOf', { from, to, total: page.total })}</span>
+          <span className="data-text text-iron-400 tnums">{t('platform.play.tables.pageOf', { from, to, total: page.total })}</span>
           <span className="flex items-center gap-4">
             <button type="button" disabled={page.query.offset === 0} onClick={() => setOffset(Math.max(0, page.query.offset - TABLE_PAGE))} className={cn(boarding, 'inline-flex items-center gap-1 text-brass-300 hover:text-paper-100')}>
               <ChevronLeft size={12} aria-hidden />
@@ -674,7 +679,7 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
               className={cn('gz-nav-link !py-1.5 !text-[10.5px]', filter === chip.id && 'is-active')}
             >
               {chip.label}
-              {chip.count !== undefined && <span className="data-text ml-1.5 text-[10.5px] normal-case tracking-normal text-iron-400 tnums">{chip.count}</span>}
+              {chip.count !== undefined && <span className="data-text ml-1.5 normal-case tracking-normal text-iron-400 tnums">{chip.count}</span>}
             </button>
           ))}
           <span className="flex-1" />
@@ -698,7 +703,13 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
               /
             </kbd>
           </label>
-          <span role="group" aria-label={t('platform.play.tables.sortFilling')} className="flex items-center gap-1 border-l border-[var(--gz-ink-faint)] pl-2">
+          {/* the order is not a filter: it is headed as such and set in the
+              run of the text, so the two rows never read as one. Below 1100px
+              it takes a line of its own, without the rule that parted it */}
+          <span role="group" aria-label={t('platform.play.tables.sortAria')} className="flex items-center gap-3 max-[1099px]:basis-full min-[1100px]:ml-2 min-[1100px]:border-l min-[1100px]:border-[var(--gz-ink-faint)] min-[1100px]:pl-4">
+            <span aria-hidden className="micro-label text-iron-400">
+              {t('platform.play.tables.sortTitle')}
+            </span>
             {(['filling', 'fresh'] as const).map((id) => (
               <button
                 key={id}
@@ -708,7 +719,10 @@ export default function PublicTables({ onToast }: { onToast: Notify }) {
                   setBoard((b) => ({ ...b, sort: id }));
                   setOffset(0);
                 }}
-                className={cn('gz-nav-link !py-1.5 !text-[10.5px]', sort === id && 'is-active')}
+                className={cn(
+                  'font-serif text-[13px] italic transition-colors',
+                  sort === id ? 'text-paper-100 underline decoration-brass-300 decoration-1 underline-offset-4' : 'text-iron-400 hover:text-paper-100',
+                )}
               >
                 {t(id === 'filling' ? 'platform.play.tables.sortFilling' : 'platform.play.tables.sortFresh')}
               </button>

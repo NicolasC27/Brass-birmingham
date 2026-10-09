@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useT } from '@/i18n';
 import { colorDef, type PlayerColor } from '@/components/setup/constants';
 import { MAX_SEATS } from '@/online/table';
 
@@ -8,7 +7,9 @@ import { MAX_SEATS } from '@/online/table';
 /* The train on the platform: the engine, then one carriage a seat —   */
 /* painted in the passenger's colour once taken, an empty outline      */
 /* while free, the name on the door. Purely a picture of the table;    */
-/* the seats themselves are handled below it.                          */
+/* the seats themselves are handled below it. A free carriage carries  */
+/* no word: its dashed outline says it, and the seat below names it.   */
+/* The rail under the wheels is the strip's only rule.                 */
 /* ------------------------------------------------------------------ */
 
 export interface Carriage {
@@ -19,14 +20,14 @@ export interface Carriage {
 }
 
 export default function TrainStrip({ seats, counting }: { seats: (Carriage | null)[]; counting?: boolean }) {
-  const t = useT();
   const cars = [...seats];
   while (cars.length < MAX_SEATS) cars.push(null);
   return (
-    <div className={cn('relative overflow-hidden border-b border-[var(--gz-ink-soft)] pb-3', counting && 'animate-pulse-signal')} aria-hidden>
+    <div className={cn('relative overflow-hidden', counting && 'animate-pulse-signal')} aria-hidden>
       <div className="flex items-end gap-2">
-        {/* the engine, drawn as the rail's own */}
-        <svg viewBox="0 0 44 18" width="88" height="36" fill="currentColor" className="shrink-0 text-paper-100">
+        {/* the engine, drawn as the rail's own, at the carriages' scale: at
+            twice their height it took the width the names had to give up */}
+        <svg viewBox="0 0 44 18" width="56" height="23" fill="currentColor" className="shrink-0 text-paper-100">
           <rect x="0" y="8" width="9" height="6" />
           <circle cx="2.5" cy="15.5" r="1.7" />
           <circle cx="6.5" cy="15.5" r="1.7" />
@@ -57,7 +58,9 @@ export default function TrainStrip({ seats, counting }: { seats: (Carriage | nul
               <circle cx="12" cy="15.5" r="2" fill="currentColor" className="text-paper-100" opacity={c ? 1 : 0.3} />
               <circle cx="48" cy="15.5" r="2" fill="currentColor" className="text-paper-100" opacity={c ? 1 : 0.3} />
             </svg>
-            <span className={cn('max-w-full truncate font-ui text-[10.5px] uppercase tracking-[0.12em]', c ? 'text-paper-100' : 'text-iron-400')}>{c ? c.name : t('platform.seat.free')}</span>
+            {/* the name in its own case, and whole: a long one takes a second line
+                rather than losing its end (« MRS WED… ») */}
+            <span className="max-w-full text-center font-ui text-[10.5px] leading-[1.15] tracking-[0.06em] text-paper-100 [overflow-wrap:anywhere]">{c ? c.name : '\u00a0'}</span>
           </motion.div>
         ))}
       </div>

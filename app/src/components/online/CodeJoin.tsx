@@ -48,7 +48,8 @@ export default function CodeJoin() {
       </h2>
       <div className="gz-rule-double mt-2" aria-hidden />
       <p className="mt-4 font-serif text-[13px] italic leading-relaxed text-paper-300">{t('platform.play.code.copy')}</p>
-      <CodeInput className="mt-4" onSubmit={(code) => void submit(code)} />
+      {/* the cells keep to the measure of the words above them, left-aligned */}
+      <CodeInput className="mt-4 items-start" onSubmit={(code) => void submit(code)} />
       {error && (
         <p role="alert" className="mt-3 font-serif text-[13px] italic text-rust-400">
           {error}

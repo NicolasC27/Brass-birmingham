@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
@@ -78,14 +78,9 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
     navigate(`/game/${dealt}`);
   }, [dealt, navigate]);
 
-  const estimateFor = (mode: TableMode) => (mode === 'ranked' ? t('platform.queue.estimateRange', { min: 2, max: 4 }) : t('platform.queue.estimate', { minutes: 1 }));
-
   const select = (mode: TableMode) => {
-    if (!serverUp) return;
-    if (!session) {
-      navigate('/account');
-      return;
-    }
+    /* a visitor's counters are closed: the register is signed first */
+    if (!serverUp || !session) return;
     if (mode === 'ranked' && !verified) {
       onToast({ message: t('platform.play.verifyFirst'), kind: 'info' });
       return;
@@ -119,7 +114,9 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
     const snap = ranked ? presence.rankedQueue : presence.normalQueue;
     const lockedRanked = ranked && !!session && !verified;
     const active = queueMode === mode;
-    const closed = !serverUp || lockedRanked;
+    /* a line takes names: a visitor has none to give, so both counters are
+       closed to them, and the one way in is printed under the pair */
+    const closed = !serverUp || !session || lockedRanked;
     const reason = !serverUp ? (line === 'connecting' ? t('platform.play.idleConnecting') : t('platform.play.idleOffline')) : lockedRanked ? t('platform.play.verifyFirst') : null;
     return (
       <motion.div
@@ -133,16 +130,18 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
           <h3 className="micro-label text-paper-100">{t(`platform.play.counter.${mode}`)}</h3>
           {ranked && rank && rank.tier !== 'placement' && <RankBadge tier={rank.tier} division={rank.division} size={18} compact />}
         </div>
+        {/* the large type is the wait, the office's own estimate (the same
+            figure the masthead prints); how many stand in the line is its
+            caption. An empty line is not the news of the counter. */}
         <div className="mt-3 flex items-end gap-3">
           <span className="font-fraunces text-[44px] font-normal leading-none text-paper-100 tnums">
-            {snap.count}
+            {serverUp ? t('platform.queue.estimate', { minutes: snap.estimateMin }) : '—'}
           </span>
-          <span className="data-text pb-1.5 text-[10.5px] text-iron-400 tnums">
-            {t('platform.queue.playersWaiting', { count: snap.count })} · {estimateFor(mode)}
-          </span>
+          <span className="data-text pb-1.5 text-iron-400 tnums">{t('platform.queue.playersWaiting', { count: snap.count })}</span>
         </div>
-        <p className="mt-3 min-h-[3.9em] font-serif text-[13px] italic leading-snug text-paper-300">{reason ?? t(ranked ? 'platform.queue.rankedRule' : 'platform.queue.normalRule')}</p>
-        <div className="mt-4 flex items-center justify-between gap-3">
+        <p className="mt-3 font-serif text-[13px] italic leading-snug text-paper-300">{reason ?? t(ranked ? 'platform.queue.rankedRule' : 'platform.queue.normalRule')}</p>
+        {/* the bar sits at the foot of the notice: twin counters, twin tickets */}
+        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
           {active && queue ? (
             <>
               <span className="flex items-center gap-2 font-ui text-[12.5px] font-semibold text-signal-ink">
@@ -176,7 +175,16 @@ export default function Matchmaking({ onToast }: { onToast: Notify }) {
         {counter('ranked', 1)}
       </div>
       <motion.p initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.22 }} className="mt-4 font-serif text-[13px] italic leading-relaxed text-iron-400">
-        {serverUp && !session ? t('platform.play.idleSignIn') : t('platform.play.officeNote')}
+        {serverUp && !session ? (
+          <>
+            {t('platform.play.idleSignIn')}{' '}
+            <Link to="/account" className="font-ui text-[12.5px] font-semibold not-italic text-brass-300 underline decoration-1 underline-offset-4 transition-colors hover:text-paper-100">
+              {t('platform.action.signIn')} →
+            </Link>
+          </>
+        ) : (
+          t('platform.play.officeNote')
+        )}
       </motion.p>
 
       {/* changing lines while standing in one: a confirmation */}

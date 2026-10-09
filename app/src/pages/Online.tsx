@@ -63,7 +63,7 @@ export default function Online() {
   }
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+    <div className="gz-measure">
       {isOnline ? (
         <>
           <header className="pt-10">

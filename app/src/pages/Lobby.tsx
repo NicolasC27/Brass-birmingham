@@ -4,7 +4,7 @@ import TrainStrip from '@/components/online/TrainStrip';
 import { steamWhistle } from '@/gl/sfx';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Play, Search, Send, X } from 'lucide-react';
+import { ArrowLeft, Bot, Check, Copy, Factory, LogOut, Play, Search, Send, UserPlus, X } from 'lucide-react';
 import HouseRules from '@/components/setup/HouseRules';
 import { PERSONAS, PLAYER_COLORS, SETUP_STORAGE_KEY, recastSeat } from '@/components/setup/constants';
 import { freePersona, personaName } from '@/game/data';
@@ -34,12 +34,19 @@ import { cn } from '@/lib/utils';
 
 const seatSpring = { type: 'spring', stiffness: 260, damping: 24 } as const;
 
-/* Ellipse desktop : haut, droite, bas, gauche (mobile : grille 2×2). */
-const ELLIPSE = [
-  'lg:left-1/2 lg:top-0 lg:-ml-[70px]',
-  'lg:right-0 lg:top-1/2 lg:-mt-[76px]',
-  'lg:left-1/2 lg:bottom-0 lg:-ml-[70px]',
-  'lg:left-0 lg:top-1/2 lg:-mt-[76px]',
+/* The seats stand on one circle round the medallion: top, right, bottom,
+   left. Each seat is placed by the centre of its token, not by the edge of
+   its box — a seat is a 140px column, a 64px token over an 8px gap and a
+   52px plate, so its token centre sits 32px below the box's top edge.
+   With a radius of 168px the medallion's centre lies 168 + 32 = 200px down
+   the ring, the top plate clears the medallion by 16px, and the ring is
+   2 × 168 + 124 = 460px tall. Margins, not transforms: framer-motion owns
+   the transform of every seat for its entrance. */
+const SEAT_RING = [
+  'md:left-1/2 md:top-0 md:-ml-[70px]',
+  'md:left-1/2 md:top-[168px] md:ml-[98px]',
+  'md:left-1/2 md:top-[336px] md:-ml-[70px]',
+  'md:left-1/2 md:top-[168px] md:-ml-[238px]',
 ] as const;
 const POPOVER_ALIGN = ['left-1/2 -translate-x-1/2', 'right-0', 'left-1/2 -translate-x-1/2', 'left-0'] as const;
 
@@ -109,6 +116,7 @@ function SeatSlot({
   onPersona,
   onMinutes,
   onAddBot,
+  onSit,
 }: {
   slot: TableSeat | null;
   table: Table;
@@ -123,10 +131,16 @@ function SeatSlot({
   onPersona: (p: BotPersona) => void;
   onMinutes: (m: number | null | undefined) => void;
   onAddBot: () => void;
+  /** set when the reader stands at the table without a seat: the chair takes them */
+  onSit?: () => void;
 }) {
   const t = useT();
 
-  /* the open chair: dashed token, the host may seat a mechanical player */
+  /* the open chair: a dashed ring and one word under it. It offers a seat
+     only to a reader who can take one — then it is a real button, and the
+     « + » on it keeps its promise; to everyone else it is a plain ring.
+     The host may seat a mechanical player there: a command, so it wears
+     the house's ticket, not the green that tells a state. */
   if (!slot) {
     return (
       <motion.li
@@ -134,18 +148,35 @@ function SeatSlot({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ ...seatSpring, delay: index * 0.09 }}
-        className={cn('group relative flex w-[140px] flex-col items-center justify-self-center lg:absolute lg:justify-self-auto', ELLIPSE[index])}
+        className={cn('group relative flex w-[140px] flex-col items-center justify-self-center md:absolute md:justify-self-auto', SEAT_RING[index])}
       >
-        <SeatToken seat={null} size={64} index={index} />
+        {onSit ? (
+          <button
+            type="button"
+            onClick={onSit}
+            aria-label={t('platform.seat.seatAria', { n: index + 1, label: t('online.room.sitDown') })}
+            className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-iron-400 bg-enamel-700/40 text-iron-400 transition-colors hover:border-brass-300 hover:text-brass-300"
+          >
+            <UserPlus size={27} aria-hidden />
+          </button>
+        ) : (
+          <span
+            role="img"
+            aria-label={t('platform.seat.seatAria', { n: index + 1, label: t('platform.seat.free') })}
+            className="block h-16 w-16 rounded-full border-2 border-dashed border-iron-600 bg-enamel-700/40"
+          />
+        )}
         <div className="mt-2 flex h-[52px] flex-col items-center justify-start gap-1.5">
-          <span className="micro-label text-iron-400">{t('platform.lobby.emptySeat')}</span>
+          <span aria-hidden className="micro-label text-iron-400">
+            {t('platform.lobby.emptySeat')}
+          </span>
           {iAmHost && (
             <button
               type="button"
               onClick={onAddBot}
-              className="inline-flex items-center gap-1 rounded-full border border-bottle-500/70 bg-bottle-700/40 px-2.5 py-1 font-ui text-[10.5px] font-semibold uppercase tracking-[0.1em] text-bottle-ink transition-colors hover:border-bottle-400 hover:text-paper-100 lg:opacity-0 lg:transition-opacity lg:group-hover:opacity-100 lg:group-focus-within:opacity-100"
+              className="gz-ticket gz-ticket-sm md:opacity-0 md:transition-opacity md:group-hover:opacity-100 md:group-focus-within:opacity-100"
             >
-              <Bot size={12} aria-hidden /> {t('platform.lobby.addBot')}
+              <Bot aria-hidden /> {t('platform.lobby.addBot')}
             </button>
           )}
         </div>
@@ -172,7 +203,7 @@ function SeatSlot({
       animate={{ scale: 1, opacity: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ ...seatSpring, delay: index * 0.09 }}
-      className={cn('relative flex w-[140px] flex-col items-center justify-self-center lg:absolute lg:justify-self-auto', ELLIPSE[index])}
+      className={cn('relative flex w-[140px] flex-col items-center justify-self-center md:absolute md:justify-self-auto', SEAT_RING[index])}
     >
       <button
         type="button"
@@ -188,9 +219,9 @@ function SeatSlot({
       <div className="mt-2 flex min-h-[52px] w-full flex-col items-center">
         <span className="max-w-full shrink-0 truncate font-ui text-[14px] font-semibold text-paper-100">
           {slot.name || '…'}
-          {isMe && <span className="micro-label ml-1.5 text-[9px] text-brass-300">{t('platform.seat.you')}</span>}
+          {isMe && <span className="micro-label ml-1.5 text-brass-300">{t('platform.seat.you')}</span>}
         </span>
-        <span className={cn('data-text mt-0.5 line-clamp-2 text-center text-[10.5px] uppercase leading-tight', ready ? 'text-bottle-ink' : 'text-iron-400')}>{subLine}</span>
+        <span className={cn('data-text mt-0.5 line-clamp-2 text-center uppercase leading-tight', ready ? 'text-bottle-ink' : 'text-iron-400')}>{subLine}</span>
       </div>
 
       {/* le pupitre du siège : couleur, tempo mécanique, chandelle, renvoi */}
@@ -243,7 +274,7 @@ function SeatSlot({
             {/* this seat's candle: the table's, none, or its own minutes */}
             {!bot && (
               <div className={cn('flex flex-wrap items-center justify-center gap-1', (canColor || (bot && iAmHost)) && 'mt-2.5')}>
-                <span className="micro-label mr-1 text-[9px] text-iron-400">{t('site.room.candle')}</span>
+                <span className="micro-label mr-1 text-iron-400">{t('site.room.candle')}</span>
                 {iAmHost ? (
                   ([undefined, null, 3, 5, 10] as const).map((m) => {
                     const on = slot.minutes === m;
@@ -489,6 +520,7 @@ export default function Lobby() {
   const humansWaiting = table.seats.filter((s) => s.kind === 'human' && !s.ready).length;
   const readyCount = table.seats.filter((s) => s.kind === 'bot' || s.ready).length;
   const counting = countdown !== null && startable;
+  const inviting = isOnline && !!mySeat && table.status === 'open' && seated < MAX_SEATS;
 
   /* the host leads the procession around the medallion */
   const ordered = [...table.seats].sort((a, b) => Number(b.id === table.hostId) - Number(a.id === table.hostId));
@@ -547,9 +579,13 @@ export default function Lobby() {
                 <ArrowLeft size={14} aria-hidden />
                 {t(isOnline ? 'site.nav.desk' : 'online.room.back')}
               </Link>
+              {/* the state as the departures board prints it: a lamp and a word, no plate */}
               <div className="flex items-center gap-3">
                 <p className="eyebrow-fell">{t('platform.lobby.eyebrow')}</p>
-                <span className="rounded-full bg-bottle-700 px-2.5 py-0.5 font-ui text-[10.5px] font-semibold uppercase tracking-[0.12em] text-paper-100">{t('platform.state.open')}</span>
+                <span className="micro-label flex items-center gap-2 text-bottle-ink">
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-bottle-400" aria-hidden />
+                  {t('platform.state.open')}
+                </span>
               </div>
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut', delay: 0.06 }}>
@@ -570,28 +606,32 @@ export default function Lobby() {
           )}
         </header>
 
-        {/* code de salle en tête sur mobile */}
-        <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-brass-hairline bg-lacquer-950 px-4 py-3 lg:hidden">
+        {/* the room's code at the head while the page runs in one column */}
+        <div className="mb-6 flex items-center justify-between gap-3 rounded-lg border border-brass-hairline bg-lacquer-950 px-4 py-3 min-[1100px]:hidden">
           <span className="room-code text-paper-100">{table.code}</span>
           <Button variant="ghost" className="!h-9 !px-3 !text-[12.5px]" onClick={copy} icon={<Copy size={14} aria-hidden />}>
             {t('platform.lobby.copy')}
           </Button>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-12">
+        {/* the hall's convention: two columns from 1100px, a 40px gutter.
+            Each column keeps its own height — stretched to the row, the
+            table's frame ran 230px past its last seat. */}
+        <div className="grid items-start gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">
           {/* ---------------------- La table (§S2) ----------------------- */}
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.26, ease: 'easeOut' }}
-            className="console p-6 lg:col-span-8 lg:p-8"
+            className="console p-6 min-[1100px]:col-span-8 lg:p-8"
             aria-label={t('online.room.seats')}
           >
             <div className="mb-6">
               <TrainStrip seats={table.seats.map((s) => ({ name: s.name, color: s.color, kind: s.kind, ready: s.ready }))} counting={counting} />
             </div>
-            <ul className="grid grid-cols-2 gap-x-2 gap-y-6 lg:relative lg:block lg:h-[460px]">
-              <li className="col-span-2 flex justify-center lg:absolute lg:left-1/2 lg:top-1/2 lg:-ml-[60px] lg:-mt-[60px] lg:block">
+            {/* the ring's height is its geometry (SEAT_RING): 2 × 168 + 124 */}
+            <ul className="grid grid-cols-2 gap-x-2 gap-y-6 md:relative md:block md:h-[460px]">
+              <li className="col-span-2 flex justify-center md:absolute md:left-1/2 md:top-[140px] md:-ml-[60px] md:block">
                 <ReadyMedallion ready={readyCount} allReady={startable} />
               </li>
               <AnimatePresence>
@@ -623,6 +663,7 @@ export default function Lobby() {
                       }))
                     }
                     onAddBot={addBot}
+                    onSit={!mySeat && table.status === 'open' ? () => void sitDown() : undefined}
                   />
                 ))}
               </AnimatePresence>
@@ -634,12 +675,12 @@ export default function Lobby() {
             initial={{ opacity: 0, x: 16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.26, ease: 'easeOut', delay: 0.05 }}
-            className="lg:col-span-4"
+            className="min-[1100px]:col-span-4"
           >
-            <div className="flex flex-col gap-6 lg:sticky lg:top-[88px]">
+            <div className="flex flex-col gap-6 min-[1100px]:sticky min-[1100px]:top-[88px]">
               <div className="console p-5">
                 {/* 3a — code de salle */}
-                <section className="max-lg:hidden">
+                <section className="max-[1099px]:hidden">
                   <p className="micro-label text-brass-300">{t('platform.lobby.codeLabel')}</p>
                   <div className="mt-2.5 flex h-14 items-center justify-center rounded-lg border border-brass-hairline bg-lacquer-950">
                     <span className="room-code text-paper-100">{table.code}</span>
@@ -651,14 +692,16 @@ export default function Lobby() {
                 </section>
 
                 {/* 3b — invitations */}
-                {isOnline && mySeat && table.status === 'open' && seated < MAX_SEATS && (
-                  <div className="border-enamel-line max-lg:border-0 lg:mt-5 lg:border-t lg:pt-5">
+                {inviting && (
+                  <div className="border-enamel-line min-[1100px]:mt-5 min-[1100px]:border-t min-[1100px]:pt-5">
                     <InvitePanel code={code} seated={table.seats.map((s) => s.id)} />
                   </div>
                 )}
 
                 {/* 3c — actions */}
-                <div className="border-t border-enamel-line pt-5 max-lg:mt-5 lg:mt-5">
+                {/* in one column the code rides at the head of the page: with no
+                    letters to write either, the actions open the panel unruled */}
+                <div className={cn('mt-5 border-t border-enamel-line pt-5', !inviting && 'max-[1099px]:mt-0 max-[1099px]:border-t-0 max-[1099px]:pt-0')}>
                   {!mySeat && (
                     <div className="flex flex-col gap-2.5">
                       <p className="font-ui text-[13px] text-paper-300">{table.seats.length >= MAX_SEATS ? t('online.entry.join.error.full') : t('online.room.notSeated')}</p>
