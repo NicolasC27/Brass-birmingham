@@ -9,7 +9,9 @@ import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
-import { carries, faqBest, faqFor, passagesOf, rulesMatch } from '@/game/faq';
+import { carries, faqBest, faqFor, passagesOf } from '@/game/faq';
+import { askedAs, asksTheRules, consult, mend, tell } from '@/game/faq/consult';
+import type { NearNotion } from '@/game/faq/consult';
 import { describeAction, useGame } from '@/game/store';
 import { searchTurn } from '@/game/search';
 import type { GameAction } from '@/game/actions';
@@ -18,6 +20,7 @@ import { dictOf, getLang, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useHudRects } from './useHudRects';
 import { EMPTY_THREAD, askThread, fileThread } from './guideThread';
+import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
@@ -467,6 +470,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const [thread, setThread] = useState<Thread>(EMPTY_THREAD);
   const said = thread.said;
   const [question, setQuestion] = useState('');
+  /* the notions offered under a question nothing matched, by the question */
+  const [nearFor, setNearFor] = useState<Record<string, NearNotion[]>>({});
   /* the rules codex, flattened once into the passages a question searches */
   const lang = useLang();
   const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
@@ -791,14 +796,18 @@ function Guide({ dock = 0 }: { dock?: number }) {
      phrase matched was — the same measure the written answers use, so the
      surest of the two wins rather than whichever was tried first */
   const intentOf = (q: string): { id: Ask; score: number } | null => {
-    let best: { id: Ask; score: number } | null = null;
+    let best: { id: Ask; score: number; phrase: string } | null = null;
+    /* as typed, and as mended — "jai combien dargent" is still the purse */
+    const readings = [q, mend(q, lang)];
     for (const id of ASKS) {
       for (const phrase of t(`game.guide.ask.words.${id}`).split(',')) {
-        const score = carries(q, phrase);
-        if (score && (!best || score > best.score)) best = { id, score };
+        const score = Math.max(...readings.map((r) => carries(r, phrase)));
+        if (score && (!best || score > best.score)) best = { id, score, phrase };
       }
     }
-    return best;
+    /* "c'est quoi la bière" is the rules' question, "j'ai de la bière" the
+       table's: the table's phrase alone cannot tell them apart */
+    return best && !asksTheRules(q, lang, best.phrase) ? { id: best.id, score: best.score } : null;
   };
   /* the answer, read off the table as it stands */
   const answerTo = (id: Ask): string => {
@@ -829,8 +838,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
         return t('game.guide.ask.answer.do', { name: machine });
     }
   };
-  /* a question is answered in three tries: the table as it stands, then the
-     rules as the guide has them written, then the rules codex read as it is */
+  /* a question is answered in two tries: the table as it stands, then the
+     guide's case — the notions of the game, the written answers, the rules
+     codex — and, when nothing there is close, the notions it might mean */
   const putQuestion = () => {
     const q = question.trim();
     if (!q) return;
@@ -839,12 +849,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const written = faqBest(q, faqFor(getLang()));
     /* the table answers when it is the surer match; the rules when they are */
     const id = table && (!written || table.score >= written.score) ? table.id : null;
-    const entry = id ? null : written?.entry;
-    const passage = id || entry ? null : rulesMatch(q, passages);
-    const answer = id ? answerTo(id) : entry ? entry.answer : passage ? (passage.title ? `${passage.title} — ${passage.body}` : passage.body) : t('game.guide.ask.answer.none');
-    setThread((prev) => askThread(prev, q, answer));
+    const found = id ? null : consult(q, getLang(), passages);
+    if (found?.kind === 'near') setNearFor((prev) => ({ ...prev, [q]: found.near }));
+    setThread((prev) => askThread(prev, q, id ? answerTo(id) : found!.answer));
     if (id === 'do' && myTurn && !advised) ask();
   };
+  /* a notion taken up from the ones offered: asked by its name, answered
+     plainly */
+  const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang())));
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t);
 
   /* folded: a rail down the right edge — the lesson's number, how far the
@@ -900,12 +912,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
         </div>
       )}
       {/* what has already been said, kept so a reader can look back at it */}
-      {dock && said.length > 0 && (
+      {dock > 0 && said.length > 0 && (
         <div aria-label={t('game.guide.thread.aria')} className="flex shrink-0 flex-col gap-2">
-          {said.map((m) => (
+          {said.map((m, i) => (
             <article key={m.key} className={cn('relative rounded-md border px-3 py-2', m.kind === 'ask' ? 'ml-6 border-bottle-600/50 bg-bottle-600/10' : 'border-brass-700/40 bg-coal-900/70')}>
               {m.head && <p className="font-mono text-[10.5px] leading-snug text-cream-100/55">{m.head}</p>}
               <p className={cn('font-serif text-[12px] leading-snug', m.kind === 'ask' ? 'text-bottle-400' : 'text-cream-100/70')}>{m.body}</p>
+              {m.kind === 'answer' && i > 0 && nearFor[said[i - 1].body] && <NearList near={nearFor[said[i - 1].body]} onPick={takeUp} />}
               {m.kind === 'bot' && m.seat !== undefined && m.seat >= 0 && (
                 <button type="button" onClick={() => setGlimpse({ seat: m.seat!, at: Date.now() })} className="mt-1 inline-flex items-center gap-1 font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400">
                   <Eye className="h-3 w-3" /> {t('game.guide.ask.replay')}
@@ -1205,7 +1218,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       </AnimatePresence>
 
       {/* a question to the guide, answered from the table as it stands */}
-      {dock && showSteps && (
+      {dock > 0 && showSteps && (
         <form
           onSubmit={(e) => {
             e.preventDefault();

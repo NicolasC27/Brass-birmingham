@@ -1,0 +1,383 @@
+import type { Tongue } from './notions';
+
+/* ------------------------------------------------------------------ */
+/* The guide's case, in English. The same plates as the French, the     */
+/* same figures, read off brass/game-data.md and the engine.            */
+/* ------------------------------------------------------------------ */
+
+export const EN: Tongue = {
+  near: 'I can’t find that question as such in the rules. Did you mean:',
+  self: 'i me my myself im'.split(' '),
+  define: 'what explain explains mean means meaning definition purpose work works'.split(' '),
+  alias: {
+    u: 'you', ur: 'your', r: 'are', y: 'why', wat: 'what', wot: 'what', whats: 'what is', hw: 'how', cant: 'can t', cannot: 'can t',
+    dont: 'don t', doesnt: 'doesn t', wont: 'won t', isnt: 'isn t', im: 'i am', pls: '', plz: '', thx: '', vp: 'vp', vps: 'vp', lvl: 'level', dev: 'develop',
+  },
+  stop: (
+    'the a an of to in on at for with and or is are was were be been being it its this that these those what which who whom whose when how why where ' +
+    'do does did done doing can could should would will shall may might must i me my you your yours he she his her they them their we our us ' +
+    'not no yes if from as by about into than then so just there here any some all also very much many more less get got have has had am ' +
+    'please thanks thank hi hello mean means meant exactly really thing things stuff okay ok well still even ever again already now ' +
+    'explain tell know understand happen happens happened use used using need needs one ones way ways ' +
+    'isn doesn don won t s d m ll ve re'
+  ).split(' '),
+  cues: {
+    whyNot: ['can t', 'couldn t', 'won t', 'why not', 'not allowed', 'unable', 'impossible', 'blocked', 'greyed', 'grayed', 'disabled', 'doesn t work', 'refused', 'refuses', 'forbidden', 'not let', 'isn t allowed', 'no way to'],
+    gain: ['worth', 'earn', 'earns', 'gain', 'gains', 'gives', 'give', 'yield', 'yields', 'benefit', 'reward', 'rewards', 'score', 'scores', 'bring', 'brings', 'profit'],
+    cost: ['cost', 'costs', 'price', 'prices', 'pay', 'expensive', 'how much', 'fee', 'charge'],
+    how: ['how', 'steps', 'way to'],
+  },
+  notions: {
+    coalMine: {
+      topic: 'coal mines',
+      words: ['mine', 'mines', 'coal mine', 'coal mines', 'colliery', 'collieries', 'pit', 'pits', 'pithead', 'mining', 'miner', 'coal pit', 'sell coal', 'coal sold'],
+      what: 'A coal mine produces coal cubes: 2 to 5 depending on its level, placed on the tile when you build it. Any player connected to your mine takes coal from it for free, to build or to lay a rail. The mine flips when its last cube leaves — whoever took it — and only then does it raise your income and score its points. If it is connected to a merchant space when you build it, its cubes go straight to the coal market for money.',
+      how: 'You need a card that allows it (the town’s location card, the coal industry card for a town in your network, or a wild card), a free space showing the coal icon, and the money — plus one iron at levels III and IV. Pick the card, the Build action, then the space that lights up, and confirm.',
+      cost: 'Level I: £5, Canal Era only, 2 cubes. Level II: £7, 3 cubes. Level III: £8 and 1 iron, 4 cubes. Level IV: £10 and 1 iron, 5 cubes. You have seven on your mat (one level I, two of each other level), and you always build the lowest level left.',
+      gain: 'Flipped, a mine moves your income 4, 7, 6 or 5 spaces (levels I to IV) and scores 1, 2, 3 or 4 VP at every era’s scoring while it stands. When built, it also earns the price of the cubes sent to the market, if it is connected to a merchant. A mine emptied by your rivals pays you as well as one you emptied yourself.',
+    },
+    ironWorks: {
+      topic: 'iron works',
+      words: ['iron works', 'ironworks', 'iron work', 'foundry', 'foundries', 'forge', 'forges', 'furnace', 'blast furnace', 'steelworks', 'smelter', 'sell iron', 'iron sold'],
+      what: 'An iron works produces iron: 4 to 6 bars placed on the tile when it is built. It sells at once to the iron market whatever fits there, connected to a merchant or not, and you collect the price of each space it fills. The iron left serves whoever needs it, anywhere on the board, and the works flips when its last bar leaves.',
+      how: 'A card that allows it (the town’s location card, an iron works card for a town in your network, or a wild card), a free space with the iron icon, the money, and one coal connected to the site. Pick the card, the Build action, the space, then confirm.',
+      cost: 'Level I: £5 and 1 coal, Canal Era only, 4 bars. Level II: £7 and 1 coal, 4 bars. Level III: £9 and 1 coal, 5 bars. Level IV: £12 and 1 coal, 6 bars. One tile per level, four in all on your mat.',
+      gain: 'Flipped, an iron works moves your income 3, 3, 2 or 1 space (levels I to IV) and scores 3, 5, 7 or 9 VP at the end of the era. When built, it also earns the price of the bars sent to the iron market.',
+    },
+    brewery: {
+      topic: 'breweries',
+      words: ['brewery', 'breweries', 'brewer', 'brewers', 'brewhouse', 'malthouse', 'distillery', 'rail brewery', 'brewery barrels'],
+      what: 'A brewery produces the beer that sales and the double rail need: 1 barrel placed on it when built in the Canal Era, 2 in the Rail Era, whatever its level. Your own barrels can be drunk anywhere, with no link; a rival’s only if their brewery is connected. It flips when its last barrel is drunk, by you or anyone else.',
+      how: 'A card that allows it (the town’s location card, a brewery card for a town in your network, or a wild card), a free space with the brewery icon, the money and one iron — iron needs no connection. Pick the card, Build, the space, then confirm.',
+      cost: 'Level I: £5 and 1 iron, Canal Era only. Level II: £7 and 1 iron. Level III: £9 and 1 iron. Level IV: £9 and 1 iron, Rail Era only. Seven breweries on your mat; each gets 1 barrel in the Canal Era and 2 in the Rail Era.',
+      gain: 'Flipped, a brewery moves your income 4 spaces (level I) or 5 (levels II to IV) and scores 4, 5, 7 or 9 VP. Each carries 2 link icons, which count for the links touching its town.',
+    },
+    farmBrewery: {
+      topic: 'farm breweries',
+      words: ['farm brewery', 'farm breweries', 'farm', 'farms', 'farmhouse', 'north farm', 'south farm'],
+      what: 'Two lone spaces, with no town name, that take only a brewery. You build there only with a brewery industry card or a wild industry card — never with a location card or a wild location. On the Midlands map, the northern farm is connected by the Cannock–farm link; the southern farm is connected by the Kidderminster–Worcester link itself, with no other tile.',
+    },
+    cotton: {
+      topic: 'cotton mills',
+      words: ['cotton', 'cotton mill', 'cotton mills', 'mill', 'mills', 'spinning', 'textile', 'textiles', 'weaving', 'spinner'],
+      what: 'The cotton mill is a works: it produces nothing, it is sold. Once built it waits; the Sell action flips it when it is connected to a merchant who buys cotton (or “all goods”) and you drink 1 beer. Only then does it raise your income and will it score its points. There is no cotton-only card: cotton and manufactured goods share double cards.',
+      how: 'To build it: a location card for the town, a cotton/manufactory double card for a town in your network, or a wild card, on a space with the cotton icon. To flip it afterwards: the Sell action, a connected merchant who buys cotton, and 1 beer.',
+      cost: 'Level I: £12, Canal Era only. Level II: £14 and 1 coal. Level III: £16, 1 coal and 1 iron. Level IV: £18, 1 coal and 1 iron. Eleven mills on your mat (3, 2, 3 and 3), each sold for 1 beer.',
+      gain: 'Sold, a cotton mill moves your income 5, 4, 3 or 2 spaces (levels I to IV) and scores 5, 5, 9 or 12 VP at the end of the era. Until it is sold, it brings in nothing.',
+    },
+    manufacturer: {
+      topic: 'manufactories',
+      words: ['manufactory', 'manufactories', 'manufacturer', 'manufacturers', 'manufacture', 'factory', 'factories', 'workshop', 'workshops', 'goods', 'manufactured goods', 'box', 'boxes'],
+      what: 'The manufactory is a works, like the mill: it flips through the Sell action, connected to a merchant who buys manufactured goods (or “all goods”). It is the industry with eight levels, their costs and gains very uneven: read each tile on your mat. Its cards are the cotton/manufactory double cards.',
+      how: 'To build it: a location card for the town, a cotton/manufactory double card for a town in your network, or a wild card, on a space with the manufactory icon. To flip it: the Sell action, a connected merchant who buys these goods, and the beer it asks for.',
+      cost: 'The eight levels: I, £8 and 1 coal (Canal only); II, £10 and 1 iron; III, £12 and 2 coal; IV, £8 and 1 iron; V, £16 and 1 coal; VI, £20; VII, £16, 1 coal and 1 iron; VIII, £20 and 2 iron. All sell for 1 beer, except level V, which needs 2.',
+      gain: 'Sold, a manufactory moves your income 5, 1, 4, 6, 2, 6, 4 or 1 space by level (I to VIII) and scores 3, 5, 4, 3, 8, 7, 9 or 11 VP. Levels III and VII have no link icon.',
+    },
+    pottery: {
+      topic: 'potteries',
+      words: ['pottery', 'potteries', 'ceramic', 'ceramics', 'china', 'porcelain', 'potter', 'potters', 'kiln', 'lightbulb', 'light bulb', 'bulb', 'free pottery'],
+      what: 'The pottery is a works sold like the mill, to a merchant who buys pottery or “all goods”. On the Midlands map it has only four towns to be built in: Belper, Coventry, Stoke-on-Trent and Stafford. Levels I and III carry a lightbulb: they cannot be developed, they must be built. And, as an exception, pottery I can also be built in the Rail Era.',
+      how: 'A location card for a town with a pottery space, the pottery card for such a town in your network, or a wild card; then the Sell action flips it, connected to a merchant who buys pottery or “all goods”.',
+      cost: 'Level I: £17 and 1 iron. Level II: £0 and 1 coal. Level III: £22 and 2 coal. Level IV: £0 and 1 coal. Level V: £24 and 2 coal, Rail Era only. Levels I, II and IV sell for 1 beer, III and V for 2.',
+      gain: 'Sold, a pottery moves your income 5 spaces at levels I, III and V, and 1 at levels II and IV. It scores 10, 1, 11, 1 or 20 VP: level V is the heaviest tile in the game.',
+      whyNot: 'Two refusals come up. Potteries I and III carry a lightbulb and cannot be developed: they must be built to leave the mat. And to sell, you need a connected merchant who buys pottery or “all goods” — with two players, only the “all goods” tile takes it.',
+    },
+    coal: {
+      topic: 'coal',
+      words: ['coal', 'coal cube', 'coal cubes', 'black cube', 'black cubes', 'fuel', 'rival coal', 'opponent coal'],
+      what: 'Coal is needed by some builds and by every rail. It must reach the site: it comes free from the nearest unflipped mine connected to it, whoever owns it. Failing that, it is bought from the market, but only if the site is connected to a merchant space. Otherwise the build is impossible.',
+      cost: 'Taken from a connected mine, coal is free, even from a rival’s mine. From the market it costs £1 to £7 depending on what is left, cheapest space first, and £8 when the market is empty.',
+      whyNot: 'Coal must be connected: no unflipped mine reaches this place through links, and the place reaches no merchant space to buy from the market either. A link towards a mine, or towards a merchant, opens the way.',
+    },
+    iron: {
+      topic: 'iron',
+      words: ['iron', 'iron bar', 'iron bars', 'bar', 'bars', 'iron cube', 'iron cubes', 'metal', 'steel', 'ore', 'ingot', 'ingots'],
+      what: 'Iron is needed by some builds and by every tile developed. It needs no link at all: it is taken free from any unflipped iron works on the board, whoever owns it. With no works, it is bought from the iron market, again with no connection.',
+      cost: 'Taken from an iron works, iron is free, even from a rival’s. From the market it costs £1 to £5 depending on what is left, cheapest space first, and £6 when the market is empty.',
+      whyNot: 'Iron only runs out when there is none anywhere: no unflipped iron works holds any, and you cannot pay for it at the market (£6 a bar when it is empty). No link is ever needed for iron.',
+    },
+    beer: {
+      topic: 'beer',
+      words: ['beer', 'beers', 'barrel', 'barrels', 'cask', 'casks', 'ale', 'pint', 'hops', 'merchant beer', 'merchant barrel', 'rival beer', 'opponent beer', 'own beer'],
+      what: 'Beer is drunk to sell (1 or 2 barrels per tile) and for the double rail. Three sources, barrel by barrel: your own unflipped breweries, anywhere and with no link; a rival’s brewery, only if it is connected to the tile being sold; or the barrel beside the merchant you sell to, which adds its bonus. The double rail never drinks a merchant’s beer.',
+      whyNot: 'Without the beer it needs, the sale is refused. Your breweries must still hold barrels; a rival’s brewery only serves if it is connected to the tile sold; and a merchant’s barrel only serves whoever sells to that very merchant, once per era.',
+      cost: 'Beer is never bought: it is drunk for free, from your breweries, from a rival’s connected to the tile sold, or at the merchant. What it costs is the brewery that had to be built.',
+    },
+    market: {
+      topic: 'the coal and iron market',
+      words: ['market', 'markets', 'coal market', 'iron market', 'coal price', 'iron price', 'buy coal', 'buy iron', 'buying coal', 'buying iron', 'exchange', 'empty market'],
+      what: 'Two markets at the edge of the board: 14 coal spaces, two at each price from £1 to £7, and 10 iron spaces, two at each price from £1 to £5. You always buy the cheapest space first; empty, the market still sells, £8 for coal and £6 for iron. It never refills on its own: only the mines and iron works being built sell their cubes into it, filling the dearest spaces first.',
+      cost: 'The price depends on what is left: the cheapest space still full, £1 to £7 for coal, £1 to £5 for iron, then £8 and £6 once everything is gone. Buying coal needs a connection to a merchant space; iron does not. At the standard setting the game opens with 13 coal and 8 iron.',
+      gain: 'When you build a mine connected to a merchant, or any iron works, the cubes that fit in the market go there and you collect the printed price of each space filled, dearest first. It is the only way to sell to the market, and it happens only when building.',
+      whyNot: 'Market coal only reaches places connected to a merchant space, any of the five. Iron is bought with no condition; if it is refused, the money is short.',
+    },
+    build: {
+      topic: 'the Build action',
+      words: ['build', 'builds', 'building', 'built', 'construct', 'construction', 'place tile', 'lay tile', 'put tile', 'industry', 'industries', 'greyed space', 'greyed tile', 'grey space'],
+      what: 'Build places an industry tile on a free space: discard a card that allows it, pay for the tile in money and resources, and always take the lowest level of that industry left on your mat. A location card builds in its town, even outside your network; an industry card builds that industry in a town of your network. In the Canal Era, only one of your tiles per place.',
+      how: 'Pick a card from your hand, then the Build action: the possible spaces light up on the map. Click the one you want, read the note (price, coal and iron, and where they come from), then confirm. If the space takes two industries, clicking again switches between them.',
+      cost: 'The price is that of the lowest tile left on your mat: money, sometimes coal and iron. Coal from a connected mine and iron from an iron works are free; from the market they cost the space’s price. The mat (key P) shows the cost of each next tile.',
+      whyNot: 'The usual refusals: the card names neither this town nor this industry, or the town is not in your network; the space lacks the icon or is taken; you already have a tile in this place (Canal Era); the next tile on your mat is not of this era; coal cannot reach the site; or the money is short. Click the space: the table gives its reason.',
+    },
+    network: {
+      topic: 'the Network action',
+      words: ['network', 'networks', 'my network', 'network action', 'lay link', 'place link', 'lay canal', 'build canal', 'lay rail', 'build rail', 'build link', 'connect', 'extend network'],
+      what: 'The Network action lays a link tile on a free route touching your network: a canal in the Canal Era, a rail in the Rail Era. Your network is every place where you have a tile and every place your links touch; it is where your industry cards can build. While you have nothing on the board, your first link may go anywhere.',
+      how: 'Pick any card, the Network action, then a route that lights up on the map, and confirm. In the Rail Era you may lay a second rail in the same action.',
+      cost: 'In the Canal Era: £3 a canal, one per action. In the Rail Era: £5 and 1 coal a rail, or two rails in the same action for £15, 1 coal each and 1 beer drawn from a brewery. A rail’s coal must be connected to the link once laid.',
+      whyNot: 'The route must be free and touch your network — a route holds only one link. In the Canal Era the rail-only routes are closed; in the Rail Era the canal-only Burton–Walsall route is closed too. A rail also needs coal connected to the link, the double rail a brewery beer, and you need the money.',
+    },
+    develop: {
+      topic: 'the Develop action',
+      words: ['develop', 'develops', 'developing', 'development', 'remove tile', 'remove tiles', 'skip level', 'skip levels', 'upgrade', 'improve'],
+      what: 'Develop removes one or two tiles from your mat without building them, to reach the higher levels sooner. Each tile removed is the lowest of its column and costs 1 iron; it goes back to the box and earns nothing. Lightbulb potteries (levels I and III) cannot be developed.',
+      how: 'Pick a card, the Develop action, then the tile or tiles to remove: one or two, from the same industry or from two. The note shows where the iron comes from; confirm.',
+      cost: 'One card, and 1 iron per tile removed — taken free from any iron works, otherwise bought from the iron market (£1 to £5, £6 when empty). Nothing else: two tiles in the same action cost two iron.',
+      gain: 'Developing earns nothing on the spot: no money, no income, no points. What it changes is the next tile of the column, which will be a level higher.',
+      whyNot: 'You need iron: an unflipped iron works somewhere, or the money to buy it at the market. The tile must also be developable — lightbulb potteries I and III are not — and a tile must be left in the column.',
+    },
+    sell: {
+      topic: 'the Sell action',
+      words: ['sell', 'sells', 'selling', 'sold', 'sale', 'sales', 'trade', 'trading', 'deliver', 'ship goods'],
+      what: 'Sell flips your works — cotton mills, manufactories, potteries. Discard any card, choose an unflipped tile connected to a merchant who buys those goods, and drink the beer it asks for. The tile flips: your income rises at once, its points come at the end of the era. One action can sell several tiles, as long as the beer holds out.',
+      how: 'Pick a card, the Sell action, then the tile to sell: the table offers the merchants in reach and the beer available. Add more tiles if you like, then confirm.',
+      gain: 'Each tile sold moves your income by the spaces printed on it and will score its points at the end of the era. Drinking the merchant’s barrel adds its bonus. The sale itself pays no money.',
+      cost: 'One card, any card, and the beer of each tile sold: 1 barrel most often, 2 for manufactory V and potteries III and V. No money.',
+      whyNot: 'To sell, the tile must be an unflipped works (mines, iron works and breweries are not sold: they are emptied), connected by links to a merchant who buys those goods — a blank merchant tile buys nothing. You also need the beer: your breweries, a connected rival brewery, or the merchant’s barrel.',
+    },
+    loan: {
+      topic: 'loans',
+      words: ['loan', 'loans', 'borrow', 'borrowing', 'credit', 'bank', 'banker', 'debt', 'debts', 'repay', 'repayment', 'pay back', 'mortgage'],
+      what: 'Taking a loan is an action: discard a card, receive £30, and your income drops 3 levels (not 3 spaces), set on the highest space of the new level. A loan is never repaid: its price is the income lost at every payday until the end. Impossible if your income would fall below level −10.',
+      how: 'Pick a card, the Loan action, and confirm: the £30 arrives at once, and the income track shows where your marker lands.',
+      cost: 'A loan brings £30 and costs 3 income levels, so at every payday left whatever those three levels would have paid. It is never repaid: the £30 is never given back, during the game or at its end.',
+      whyNot: 'A loan drops your income 3 levels, and income never goes below −10. If your marker is already at level −8 or lower, the bank refuses.',
+    },
+    scout: {
+      topic: 'scouting',
+      words: ['scout', 'scouting', 'scouted', 'explore', 'exploration', 'reconnaissance', 'two wilds', 'two wild cards'],
+      what: 'Scouting gives you both wild cards at once: discard three cards (the action’s card and two more) and take one wild location and one wild industry. It is forbidden while you already hold a wild card. Wild cards discarded go back to their pile, which holds four of each kind.',
+      how: 'Pick a card, the Scout action, then two more cards to discard; confirm, and both wild cards join your hand.',
+      cost: 'Three cards from your hand and nothing else: no money. You get two back, the wild cards, so your hand is one card lighter.',
+      whyNot: 'Three possible reasons: you already hold a wild card, you are short of cards (three must be discarded), or one of the two wild piles is empty.',
+    },
+    pass: {
+      topic: 'passing',
+      words: ['pass', 'passing', 'skip', 'skip turn', 'do nothing', 'no action'],
+      what: 'Passing means discarding a card and doing nothing: the action is lost, but the card still goes. You may pass one action or both. It costs no money, and what is not spent counts for next round’s turn order.',
+      cost: 'Passing costs one card per action passed, and nothing else.',
+    },
+    canal: {
+      topic: 'the Canal Era',
+      words: ['canal', 'canals', 'canal era', 'barge', 'barges', 'lock', 'locks', 'waterway', 'waterways', 'double canal'],
+      what: 'The Canal Era is the first of the two. Only canals are laid (£3, one per action), only one of your tiles per place, and level 1 tiles can be built. The very first round gives each player a single action. At its end, links and flipped tiles score, then canals and level 1 tiles leave the board.',
+      cost: 'A canal costs £3, no coal, and one link per action — there is no double canal.',
+      whyNot: 'In the Canal Era, one link per action and only on routes open to canals; rail-only routes stay closed. You need £3 and a free route touching your network.',
+    },
+    rail: {
+      topic: 'the Rail Era',
+      words: ['rail', 'rails', 'railway', 'railways', 'railroad', 'rail era', 'train', 'trains', 'locomotive', 'locomotives', 'double rail', 'two rails', 'track'],
+      what: 'The Rail Era is the second and last. Rails are laid: £5 and 1 coal each, or two in the same action for £15, 2 coal and 1 brewery beer. Level 1 tiles (except pottery I) can no longer be built, breweries receive 2 barrels, and several of your tiles may share a place. The final scoring follows its last round.',
+      cost: 'One rail: £5 and 1 coal, connected to the link once laid. Two rails in the same action: £15, 1 coal each, and 1 beer drawn from a brewery — never from a merchant’s barrel.',
+      whyNot: 'In the Canal Era rails do not exist yet: they arrive with the second era. In the Rail Era, a rail needs a free route touching your network, £5, and coal connected to the link laid — a connected mine, or the market through a merchant.',
+    },
+    links: {
+      topic: 'links',
+      words: ['link', 'links', 'link tile', 'link tiles', 'connection', 'connections', 'connected', 'route', 'routes', 'link icon', 'link icons', 'link points', 'links points'],
+      what: 'A link is a canal or a rail laid on a route between two places. It extends your network and connects places for everyone: coal, a rival’s beer and sales to merchants run along anyone’s links. At the end of an era, each scores 1 point per link icon in the places it touches, 2 for a merchant, then leaves the board.',
+      gain: 'At the end of each era, a link scores the link icons of every tile in the places it connects — 0 to 2 per tile, whoever owns it, flipped or not — and 2 points for a merchant space. Then it is removed.',
+      cost: 'A canal costs £3. A rail costs £5 and 1 coal; two rails in the same action, £15, 2 coal and 1 brewery beer.',
+    },
+    eras: {
+      topic: 'eras and rounds',
+      words: ['era', 'eras', 'age', 'epoch', 'round', 'rounds', 'period', 'length', 'duration', 'how long', 'number rounds', 'end round'],
+      what: 'A game has two eras: the Canal Era, then the Rail Era. Each lasts 8 rounds with 4 players, 9 with 3 and 10 with 2 — it ends when the draw deck and every hand are empty. Each round, everyone plays a turn of two actions (just one in the very first), then comes the new turn order and payday.',
+    },
+    firstRound: {
+      topic: 'the first round',
+      words: ['first round', 'first turn', 'start game', 'beginning', 'start', 'starting', 'opening', 'first move', 'one action', 'first action', 'first tile'],
+      what: 'In the very first round of the Canal Era, each player takes one action instead of two, and the order of that first turn is drawn at random. Everyone starts with £17, income at level 0 and eight cards in hand. While you have no tile on the board, an industry card builds anywhere, and your first link may go anywhere.',
+    },
+    eraEnd: {
+      topic: 'the end of an era',
+      words: ['end era', 'end canal', 'era end', 'canal end', 'transition', 'between eras', 'era change', 'sweep', 'new era', 'level 1 tiles', 'tiles removed', 'tiles disappeared', 'tiles gone', 'canals gone', 'links gone', 'links removed'],
+      what: 'When the deck and hands are empty the era ends: each link scores, each flipped tile scores its points, then every link leaves the board. After the Canal Era, in addition, level 1 tiles are removed from the board, the merchants’ barrels are restored, and all discards are shuffled into a new deck of eight cards per player. Money, income, points and tiles of level 2 and up remain.',
+    },
+    scoring: {
+      topic: 'scoring',
+      words: ['scoring', 'score points', 'count points', 'counting points', 'point count', 'tally', 'era scoring', 'final scoring', 'calculate score'],
+      what: 'Scoring happens at the end of each era. First the links: each scores 1 point per link icon in the places it touches (everyone’s tiles, 2 for a merchant). Then each flipped tile scores the number printed at its bottom; a tile never flipped scores nothing. Tiles of level 2 and up stay for the Rail Era and score a second time if they are still there.',
+    },
+    ties: {
+      topic: 'ties',
+      words: ['tie', 'ties', 'tied', 'tiebreak', 'tie break', 'tiebreaker', 'same points', 'equal'],
+      what: 'On equal points at the end of the game, the higher income level wins, then the money in hand. For turn order, equal spending keeps the relative order of the previous round.',
+    },
+    gameEnd: {
+      topic: 'the end of the game',
+      words: ['end game', 'game end', 'win', 'wins', 'winning', 'winner', 'victory', 'game over', 'finish', 'last round', 'end'],
+      what: 'The game stops after the Rail Era’s scoring, and whoever has the most victory points wins. The game’s last round has no payday. On a tie, the higher income level decides, then the money in hand.',
+      how: 'You win by having the most points at the end of the Rail Era. Points come from flipped tiles and links, counted at each era’s scoring, and from a few merchant bonuses; a shortfall takes some away.',
+    },
+    initiation: {
+      topic: 'the introductory game',
+      words: ['introductory', 'introductory game', 'short game', 'short', 'canal only', 'quick game', 'beginner game', 'first game', 'tutorial'],
+      what: 'The introductory game plays the Canal Era only. After its normal scoring, each player adds 1 point per £4 (15 at most), points equal to their income level (subtracted if negative), and scores their flipped tiles of level 2 and up a second time. There is no payday after its last round.',
+    },
+    merchants: {
+      topic: 'merchants and their bonuses',
+      words: ['merchant', 'merchants', 'merchant bonus', 'trader', 'traders', 'buyer', 'buyers', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'merchant tile', 'merchant tiles', 'bonus', 'all goods', 'blank merchant'],
+      what: 'The merchants, at the edge of the map, buy your works: each merchant tile shows what it takes (cotton, manufactured goods, pottery, “all goods”, or nothing when blank). To sell, your tile must be connected to one. Each non-blank tile has a beer barrel, and drinking it while selling gives the place’s bonus. A merchant space also counts 2 link icons, and opens the coal market to whoever is connected to it.',
+      gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5, Nottingham 3 VP, Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale, one per merchant tile per era; the barrels return at the start of the Rail Era.',
+    },
+    income: {
+      topic: 'income and its track',
+      words: ['income', 'income track', 'income level', 'payday', 'pay day', 'salary', 'progress track', 'progress', 'raise income', 'income spaces'],
+      what: 'Income is the money you collect at the end of every round. The track has 100 spaces, and each shows a level from −10 to 30: you start at level 0. Flipping a tile moves your marker the printed number of spaces — the spaces tighten as you climb — and a loan drops it 3 levels. Negative income is paid to the bank.',
+      how: 'Income only rises through flipped tiles — a works sold, a mine, iron works or brewery emptied — and through Oxford’s bonus (2 spaces). It only falls through a loan (3 levels). Payday comes at the end of every round, except the game’s very last.',
+      gain: 'At the end of every round you collect as many pounds as your income level — or pay them if it is negative. The game’s last round has no payday.',
+    },
+    shortfall: {
+      topic: 'running short',
+      words: ['bankrupt', 'bankruptcy', 'broke', 'ruin', 'ruined', 'insolvent', 'shortfall', 'negative income', 'negative money', 'not enough money', 'enough money', 'out money', 'eliminated'],
+      what: 'No one is knocked out. If payday is negative and your purse cannot cover it, you remove industry tiles of yours from the board (never links), each worth half its cost rounded down; the table takes the cheapest first. If money is still missing, you lose 1 victory point per pound short. A tile is never sold off for any other reason.',
+    },
+    money: {
+      topic: 'money',
+      words: ['money', 'pound', 'pounds', 'cash', 'coins', 'coin', 'purse', 'funds', 'sterling', 'starting money', 'earn money', 'get money', 'make money'],
+      what: 'Everyone starts with £17. Money comes in through the end-of-round payday, loans (£30), the cubes your mines and iron works sell to the market, and Warrington’s bonus. It is spent on tiles, links and market purchases, and what you spend in a round sets your place in the next turn order. It carries over from one era to the next and only breaks a tie as a last resort.',
+    },
+    turnOrder: {
+      topic: 'turn order',
+      words: ['turn order', 'order', 'who plays first', 'first player', 'plays first', 'goes first', 'last player', 'money spent', 'spent', 'spending', 'spend', 'character tile', 'plays last', 'goes last'],
+      what: 'At the end of each round, the order is reset by the money spent during that round: whoever spent least plays first, whoever spent most plays last. On a tie, the relative order of the previous round is kept. Everything counts — tiles, links, market purchases — but not money received.',
+    },
+    actions: {
+      topic: 'the actions of a turn',
+      words: ['action', 'actions', 'two actions', 'number actions', 'actions per turn', 'my turn', 'turn', 'turns', 'same action twice', 'twice'],
+      what: 'On your turn you play two actions — just one in the very first round of the Canal Era. There are six, plus passing: Build, Network, Develop, Sell, Loan and Scout. Each costs a discarded card, and the same one may be played twice.',
+    },
+    flip: {
+      topic: 'flipped tiles',
+      words: ['flip', 'flips', 'flipped', 'flipping', 'turn over', 'turned over', 'back side', 'flipped tile', 'unflipped', 'unflipped tile'],
+      what: 'A tile flips when it has done its work: a mine or iron works when its last cube leaves, a brewery when its last barrel is drunk — by anyone — and a works when you sell it. Flipped, it moves your income at once by the printed number of spaces, and its points count at each era’s scoring while it stands. A tile never flipped scores nothing.',
+      how: 'Mines, iron works and breweries flip when all their cubes or barrels are gone, whoever took them. Cotton mills, manufactories and potteries flip only through the Sell action.',
+      gain: 'Flipped, a tile moves your income at once by the printed number of spaces, and its victory points count at the era’s scoring. Unflipped, it scores nothing.',
+    },
+    levels: {
+      topic: 'tile levels',
+      words: ['level', 'levels', 'level 1', 'higher level', 'lowest tile', 'roman numeral', 'canal icon', 'rail icon', 'column', 'tier'],
+      what: 'Each industry is stacked on your mat from the lowest level to the highest, and you always take the lowest tile left, to build as to develop. Higher up, a tile mostly costs more, and scores more. A canal icon marks tiles that cannot be built in the Rail Era (the level 1 tiles, except pottery I); a rail icon, those built only in the Rail Era (brewery IV, pottery V).',
+    },
+    overbuild: {
+      topic: 'overbuilding',
+      words: ['overbuild', 'overbuilding', 'overbuilt', 'build over', 'build on top', 'replace tile', 'upgrade tile', 'rebuild', 'someone else tile', 'someone elses tile', 'opponent tile', 'rival tile', 'build over rival'],
+      what: 'Overbuilding means building a tile of the same industry and a higher level on a tile already placed. On your own tiles it is free to do. On a rival’s, only a mine or an iron works, and only when not a single cube of that resource is left on the board or in the market. The tile replaced leaves the game, but the income and points it already gave are kept.',
+      whyNot: 'You need the same industry and a strictly higher level. On a rival’s tile, only the mine and the iron works can be replaced, and only once that coal or iron has gone everywhere, market included. In the Canal Era you can still have only one tile per place.',
+    },
+    mat: {
+      topic: 'the player mat',
+      words: ['mat', 'player mat', 'player board', 'player mat tiles', 'stack', 'stacks', 'tiles left', 'remaining tiles'],
+      what: 'The mat holds your 45 industry tiles, stacked by industry from the lowest level to the highest: 11 cotton mills, 11 manufactories, 7 breweries, 7 mines, 5 potteries and 4 iron works. For each next tile it shows its cost, what it brings and its era limits. Key P opens it; 1 to 4 switch players.',
+    },
+    towns: {
+      topic: 'towns and spaces',
+      words: ['town', 'towns', 'city', 'cities', 'space', 'industry space', 'slot', 'slots', 'location', 'locations', 'place', 'places', 'one tile per place', 'two tiles same town'],
+      what: 'The Midlands map has 20 towns, two farm breweries and five merchant spaces. Each town has two to four spaces, and each shows the industries it accepts, one or two icons. In the Canal Era you may have only one tile per place; in the Rail Era, several.',
+    },
+    vp: {
+      topic: 'victory points',
+      words: ['points', 'point', 'vp', 'victory points', 'victory point', 'score', 'scores', 'vp track', 'score track', 'points track'],
+      what: 'Victory points decide the game. They are scored at each era’s end: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury and Nottingham bonuses; a shortfall takes points away. The track wraps round at 100.',
+      gain: 'Points come from flipped tiles (the number at the bottom of the tile, at every scoring where it stands), from links (the link icons of the places they touch, 2 per merchant) and from the Shrewsbury (4) and Nottingham (3) bonuses.',
+    },
+    cards: {
+      topic: 'cards',
+      words: ['card', 'cards', 'location card', 'location cards', 'town card', 'industry card', 'industry cards', 'double card', 'which card'],
+      what: 'Every action is paid with a discarded card. A location card builds any industry in the town it names, even outside your network; an industry card builds that industry in a town of your network, and anywhere while you have nothing on the board. Cotton mills and manufactories share double cards. For the other actions, any card will do.',
+      whyNot: 'A location card builds only in the town it names; an industry card builds only its industry, and only in a town of your network; no location card or wild location builds on a farm brewery. For Network, Develop, Sell, Loan or passing, any card will do: if the action is refused, the reason lies elsewhere.',
+    },
+    wild: {
+      topic: 'wild cards',
+      words: ['wild', 'wilds', 'wild card', 'wild cards', 'wild location', 'wild industry', 'joker', 'jokers', 'wild pile'],
+      what: 'A wild location stands for any location card, except for the two farm breweries; a wild industry stands for any industry card. You only get them by scouting, both at once, and never while you already hold one. Discarded, they go back to their pile instead of the discard.',
+    },
+    hand: {
+      topic: 'hand and deck',
+      words: ['hand', 'my hand', 'hands', 'deck', 'draw pile', 'draw', 'discard', 'discards', 'discard pile', 'refill', 'draw card', 'eight cards', 'empty deck', 'cards in hand'],
+      what: 'You hold eight cards. Each action discards one, and at the end of your turn you draw back up to eight from the deck. When the deck is empty, hands shrink round by round, and the era ends when every hand is empty. The deck holds 40 cards with 2 players, 54 with 3 and 64 with 4, wild cards apart.',
+    },
+    players: {
+      topic: 'the number of players',
+      words: ['players', 'number players', 'two players', 'three players', 'four players', '2 players', '3 players', '4 players', 'solo', 'opponents', 'player count', 'player'],
+      what: 'Two to four play. The count changes the deck (40, 54 or 64 cards: with fewer than 4, some towns lose their cards), the merchants open (Warrington from 3 players, Nottingham at 4) and the length of the eras: 10 rounds with 2, 9 with 3, 8 with 4. Towns without cards can still be built on with industry cards or wild cards.',
+    },
+    undo: {
+      topic: 'undoing a move',
+      words: ['undo', 'undoing', 'take back', 'go back', 'revert', 'cancel move', 'mistake', 'misclick', 'wrong move', 'ctrl z'],
+      what: 'Key Z, or the Undo button, takes back your last move while the turn is still yours: once play has passed to another player, the move stands. Before confirming, Escape simply drops the move being prepared.',
+      whyNot: 'Undo is allowed only for your last move, and only while it is still your turn. As soon as another player, machine or human, has played, the move stands.',
+    },
+    confirm: {
+      topic: 'confirming a move',
+      words: ['confirm', 'confirmation', 'validate', 'submit', 'enter', 'confirm button', 'play move', 'play card', 'select card'],
+      what: 'A move is set up in three gestures: a card from your hand, an action, then a target on the map. The note at the top of the screen then details what it will cost and where the coal, iron and beer come from. Nothing is played before Confirm (or Enter); Escape drops it.',
+    },
+    prepare: {
+      topic: 'preparing a move ahead',
+      words: ['prepare', 'prepared', 'preparing', 'plan ahead', 'queue', 'queued', 'pre move', 'premove', 'unless'],
+      what: 'During the others’ turns you can prepare your move: card, action, target, then “Prepare”. It goes off by itself on your turn if it still holds; otherwise it is dropped and the table tells you why. An “unless” clause can call it off in advance, for instance if a rival builds on the space you aimed at.',
+    },
+    ledger: {
+      topic: 'the ledger',
+      words: ['ledger', 'log', 'history', 'journal', 'move history', 'past moves', 'last move', 'last moves', 'record'],
+      what: 'The ledger (key L) keeps every move of the game, round by round and player by player, with what it cost. Filters isolate your own moves, the economy or the network, and each line can be replayed on the board. Key D shows a player’s last move.',
+    },
+    notebook: {
+      topic: 'the notebook',
+      words: ['notebook', 'notes', 'note', 'notepad', 'memo', 'take notes', 'write', 'jot', 'pen'],
+      what: 'The notebook is a page of your own for the whole game: plans, things to remember, what a rival seems to be after. It is kept at the office with the table, follows you to another device, and no one else reads it. It opens from the pen button among the tools.',
+    },
+    marketPanel: {
+      topic: 'the market panel',
+      words: ['market panel', 'show market', 'open market', 'market window', 'price board', 'market display'],
+      what: 'The market panel (key M) shows both markets: the coal and iron cubes left, and the price of the next one. When the move being prepared buys from the market, it shows the price after the purchase. It folds away when you do not need it.',
+    },
+    minimap: {
+      topic: 'the minimap',
+      words: ['minimap', 'mini map', 'small map', 'overview map', 'navigate', 'move view', 'zoom', 'zoom in', 'zoom out', 'pan'],
+      what: 'The minimap, bottom right, shows the whole board and the frame of what you are looking at. Click or drag inside it to move the view; the corner button, or the settings, sizes it small, medium or large. Empty towns are grey dots there; a town built on wears its owner’s shape. The wheel zooms, and 0 frames the whole board.',
+    },
+    keys: {
+      topic: 'keyboard shortcuts',
+      words: ['shortcut', 'shortcuts', 'keyboard', 'key', 'keys', 'hotkey', 'hotkeys', 'keybinding', 'keybindings'],
+      what: 'The main ones: 1 to 8 pick a card, Enter confirms, Escape cancels, Z takes back your last move, M opens the market, L the ledger, P the mat, S the settings, H pins the hand, F full screen, 0 frames the board, D shows a player’s last move and ? the rules. All can be changed in the settings, Shortcuts section.',
+    },
+    settings: {
+      topic: 'settings',
+      words: ['setting', 'settings', 'options', 'option', 'preferences', 'language', 'display', 'colour blind', 'color blind', 'colorblind', 'full screen', 'fullscreen', 'sound', 'sounds', 'volume', 'theme'],
+      what: 'The settings (key S) set how the table looks on this device: language, map background, tile artwork, colour-blind mode, minimap, tracks, sounds, full screen and shortcuts. Everything applies at once and changes nothing in the rules.',
+    },
+    aid: {
+      topic: 'the placement aid',
+      words: ['aid', 'placement aid', 'beginner aid', 'beginner mode', 'beginner', 'beginners', 'assist', 'assistance', 'novice', 'help mode'],
+      what: 'The placement aid is a setting for beginners: with a card in hand, unplayable spaces fade out, and the price itemises the coal and iron bought from the market. It is ticked in the settings; at an online table, the host sets it for everyone. It never says what to play.',
+    },
+    machines: {
+      topic: 'the machines and their characters',
+      words: ['machine', 'machines', 'bot', 'bots', 'computer', 'ai', 'robot', 'robots', 'automaton', 'watt', 'boulton', 'wedgwood', 'arkwright', 'characters', 'difficulty', 'computer opponent'],
+      what: 'Four characters hold the machines’ seats: Mr Boulton, who spends wide and sells wider still; Mrs Wedgwood, patient with her potteries; Miss Arkwright, who sells fast and doubles her rails; and Mr Watt, the expert, who always plays flat out. The first three play at your level, sharper when you win, gentler when you lose. All follow the same rules as you.',
+    },
+    overview: {
+      topic: 'the game in brief',
+      words: ['brass', 'blackrail', 'birmingham brass', 'game', 'goal', 'aim', 'objective', 'principle', 'rules game', 'play', 'learn', 'summary', 'basics'],
+      what: 'Blackrail plays Brass: Birmingham, in two eras: the canals, then the railways. You build industries — mines, iron works, breweries, cotton mills, manufactories, potteries —, connect them with canals and then rails, and sell your works to the merchants. Points come from flipped tiles and links, counted at the end of each era, and the player with the most points wins.',
+      how: 'On your turn, two actions (just one in the very first round): Build, Network, Develop, Sell, Loan, Scout, or pass. Each costs a card: pick it from your hand, then the action, then the target on the map, and confirm. The codex (key ?) holds every rule, and you can ask me any of them here.',
+    },
+    rules: {
+      topic: 'the rules codex',
+      words: ['rules', 'rulebook', 'rule book', 'codex', 'manual', 'full rules', 'instructions'],
+      what: 'The rules codex opens with the ? key: it sets out the full rules, section by section. You can also ask me the question here, in your own words.',
+    },
+  },
+};
