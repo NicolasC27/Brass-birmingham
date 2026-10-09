@@ -1,13 +1,15 @@
-import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type Ref, type RefObject } from 'react';
 import { motion } from 'framer-motion';
-import { TrainFront, Waves } from 'lucide-react';
+import { X } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
 import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard, useShownGame } from '@/game/store';
-import type { Verb } from '@/game/types';
-import { reasonText, useT } from '@/i18n';
+import type { GameState, Verb } from '@/game/types';
+import { money, reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
+import { drawText, moveHead, planDraws, saleText, type Draw, type DrawPicks, type DrawResource, type DrawSale } from './draws';
+import { stripRoom } from './stripRoom';
 import { useHudInsets } from './useHudInsets';
 import { PortraitMedallion } from './PlayerRail';
 import Tooltip from './Tooltip';
@@ -124,8 +126,230 @@ function Candle({ candle, total }: { candle: CandleProp; total: number }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* The era, laid as a length of line: one sleeper a round, the ones     */
+/* run over filled with brass, the one underfoot lit. At the canal the  */
+/* sleepers are lock gates across a cut of water with the towpath       */
+/* above; at the rail, sleepers under a pair of rails. No words: the    */
+/* era and the round are said to the ear and in the tooltip.            */
+/* ------------------------------------------------------------------ */
+
+const STEP = 7;
+const EDGE = 3;
+const LIT = { filter: 'drop-shadow(0 0 2px rgba(242,234,214,.85))' };
+
+function EraTrack({ era, round, total }: { era: 'canal' | 'rail'; round: number; total: number }) {
+  const w = EDGE * 2 + total * STEP;
+  const at = (i: number) => EDGE + i * STEP + STEP / 2;
+  const now = Math.min(total, Math.max(1, round)) - 1;
+  /* the line run over so far ends at the middle of the current sleeper */
+  const run = at(now);
+  const state = (i: number) => (i < now ? 'past' : i === now ? 'now' : 'next');
+  if (era === 'canal') {
+    return (
+      <svg width={w} height={20} viewBox={`0 0 ${w} 20`} aria-hidden className="block overflow-visible">
+        {/* the towpath, a trodden dotted line above the cut */}
+        <line x1={0} x2={w} y1={3.5} y2={3.5} className="stroke-brass-700/70" strokeWidth={0.8} strokeDasharray="1.2 1.6" />
+        {/* the water: filled up to the lock the boat stands at */}
+        <rect x={0} y={7} width={w} height={8} className="fill-player-steel/15" />
+        <rect x={0} y={7} width={run} height={8} className="fill-player-steel/60" />
+        <line x1={0} x2={run} y1={8.6} y2={8.6} className="stroke-cream-100/25" strokeWidth={0.6} />
+        <line x1={0} x2={w} y1={7} y2={7} className="stroke-cream-100/30" strokeWidth={0.8} />
+        <line x1={0} x2={w} y1={15} y2={15} className="stroke-cream-100/30" strokeWidth={0.8} />
+        {Array.from({ length: total }, (_, i) => {
+          const s = state(i);
+          return (
+            <rect
+              key={i}
+              x={at(i) - 1}
+              y={5.5}
+              width={2}
+              height={11}
+              rx={0.4}
+              className={s === 'past' ? 'fill-brass-400' : s === 'now' ? 'fill-cream-100' : 'fill-transparent stroke-brass-700/80'}
+              strokeWidth={s === 'next' ? 0.8 : 0}
+              style={s === 'now' ? LIT : undefined}
+            />
+          );
+        })}
+      </svg>
+    );
+  }
+  return (
+    <svg width={w} height={20} viewBox={`0 0 ${w} 20`} aria-hidden className="block overflow-visible">
+      {Array.from({ length: total }, (_, i) => {
+        const s = state(i);
+        return (
+          <rect
+            key={i}
+            x={at(i) - 1.2}
+            y={3.5}
+            width={2.4}
+            height={13}
+            rx={0.4}
+            className={s === 'past' ? 'fill-brass-400' : s === 'now' ? 'fill-cream-100' : 'fill-transparent stroke-brass-700/80'}
+            strokeWidth={s === 'next' ? 0.8 : 0}
+            style={s === 'now' ? LIT : undefined}
+          />
+        );
+      })}
+      {/* the two rails, laid over the sleepers: polished where the train has run */}
+      {[7.5, 12.5].map((y) => (
+        <g key={y}>
+          <line x1={0} x2={w} y1={y} y2={y} className="stroke-cream-100/30" strokeWidth={1} />
+          <line x1={0} x2={run} y1={y} y2={y} className="stroke-brass-300" strokeWidth={1} />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* The waybill tokens: what the move draws, one stamped token a siding, */
+/* the resource's own glyph cut out of the plate and the figure beside  */
+/* it, tinted by where it comes from — the seat's colour for a works    */
+/* (filled when it is the reader's own), pewter for the exchange,       */
+/* copper for a merchant's barrel.                                      */
+/* ------------------------------------------------------------------ */
+
+const GLYPH: Record<DrawResource, string> = { coal: '/icon-coal.svg', iron: '/icon-iron.svg', beer: '/beer-barrel.png' };
+
+function ResourceGlyph({ resource }: { resource: DrawResource }) {
+  const url = `url(${GLYPH[resource]})`;
+  return (
+    <span
+      aria-hidden
+      className="block h-3 w-3 shrink-0 bg-current"
+      style={{ maskImage: url, WebkitMaskImage: url, maskSize: 'contain', WebkitMaskSize: 'contain', maskRepeat: 'no-repeat', WebkitMaskRepeat: 'no-repeat', maskPosition: 'center', WebkitMaskPosition: 'center' }}
+    />
+  );
+}
+
+/* the seats' inks, spelt out whole so the stylesheet keeps every one */
+const SEAT_INK: Record<string, { own: string; rival: string }> = {
+  brass: { own: 'text-player-brass border-player-brass/70 bg-player-brass/15', rival: 'text-player-brass border-player-brass/45' },
+  oxblood: { own: 'text-player-oxblood border-player-oxblood/75 bg-player-oxblood/20', rival: 'text-player-oxblood border-player-oxblood/50' },
+  verdigris: { own: 'text-player-verdigris border-player-verdigris/75 bg-player-verdigris/20', rival: 'text-player-verdigris border-player-verdigris/50' },
+  steel: { own: 'text-player-steel border-player-steel/75 bg-player-steel/20', rival: 'text-player-steel border-player-steel/50' },
+};
+
+function tokenInk(d: Draw | DrawSale, game: GameState): string {
+  if (!('source' in d)) return 'text-cream-100/80 border-cream-100/25';
+  if (d.source === 'market') return 'text-cream-100/80 border-cream-100/25';
+  if (d.source === 'merchant') return 'text-rust-400 border-rust-400/55';
+  const seat = d.owner === undefined ? undefined : game.players[d.owner]?.color;
+  const ink = SEAT_INK[seat ?? 'brass'] ?? SEAT_INK.brass;
+  return d.source === 'own' ? ink.own : ink.rival;
+}
+
+function WaybillTokens({ draws, sale, game, box }: { draws: Draw[]; sale: DrawSale | null; game: GameState; box?: Ref<HTMLSpanElement> }) {
+  const t = useT();
+  const parts = [...draws.map((d) => drawText(d, game, t)), ...(sale ? [saleText(sale, t)] : [])];
+  if (!parts.length) return null;
+  const tokens: { key: string; resource: DrawResource; n: string; ink: string }[] = [
+    ...draws.map((d, i) => ({ key: `d${i}`, resource: d.resource, n: String(d.n), ink: tokenInk(d, game) })),
+    ...(sale ? [{ key: 'sale', resource: sale.resource, n: `→${sale.n}`, ink: tokenInk(sale, game) }] : []),
+  ];
+  const whole = parts.join(', ');
+  return (
+    <span ref={box} role="group" aria-label={t('game.bandeau.group', { list: whole })} className="flex shrink-0 items-center gap-[3px]">
+      {tokens.map((tok, k) => (
+        <Tooltip
+          key={tok.key}
+          side="bottom"
+          title={t('game.bandeau.title')}
+          content={parts.map((p, i) => (
+            <span key={i} className={i === k ? 'text-brass-300' : 'text-cream-100/70'}>
+              {p}
+              {i < parts.length - 1 ? ', ' : ''}
+            </span>
+          ))}
+        >
+          <span
+            tabIndex={0}
+            aria-label={parts[k]}
+            className={cn(
+              'inline-flex h-[18px] items-center gap-[3px] rounded-[3px] border bg-coal-950/55 pl-[3px] pr-[4px] font-mono text-[11px] font-semibold leading-none',
+              'shadow-[inset_0_1px_1.5px_rgba(0,0,0,.6),0_1px_0_rgba(242,234,214,.07)] outline-none focus-visible:ring-1 focus-visible:ring-brass-400',
+              tok.ink,
+            )}
+          >
+            <ResourceGlyph resource={tok.resource} />
+            {tok.n}
+          </span>
+        </Tooltip>
+      ))}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* What the settled line has room for once the works, the town and the  */
+/* tokens are set: the tile's price first, then the verb's chip. Taken  */
+/* with the rule, not guessed from the width of the window — a short    */
+/* town leaves room at 1024 px that a long line through three does not. */
+/* An item left out is kept in the forme, out of the flow and unseen,   */
+/* so its width can still be read.                                      */
+/* ------------------------------------------------------------------ */
+
+const OUT_OF_FLOW = 'pointer-events-none invisible absolute';
+
+interface RoomRefs {
+  status: RefObject<HTMLSpanElement | null>;
+  what: RefObject<HTMLSpanElement | null>;
+  price: RefObject<HTMLSpanElement | null>;
+  chip: RefObject<HTMLSpanElement | null>;
+  tokens: RefObject<HTMLSpanElement | null>;
+}
+
+function useRoom({ status, what, price, chip, tokens }: RoomRefs) {
+  const [room, setRoom] = useState({ price: true, verb: true });
+  /* after every render of the strip, since the words may have changed,
+     and whenever the band is reset: the window, the rail, the market */
+  const watched = useRef<{ el: HTMLElement; ro: ResizeObserver } | null>(null);
+  const shown = useRef(room);
+  useLayoutEffect(() => {
+    shown.current = room;
+    const measure = () => {
+      const st = status.current;
+      const wh = what.current;
+      if (!st || !wh) return;
+      const width = (el: HTMLElement | null) => (el ? el.getBoundingClientRect().width : 0);
+      const { price: p, verb: v } = stripRoom({
+        line: st.clientWidth,
+        what: width(wh),
+        tokens: tokens.current ? width(tokens.current) + 6 : 0,
+        price: width(price.current),
+        chip: chip.current ? width(chip.current) + 8 : 0,
+        chipShown: shown.current.verb,
+      });
+      if (p !== shown.current.price || v !== shown.current.verb) setRoom({ price: p, verb: v });
+    };
+    measure();
+    const el = status.current;
+    if (watched.current?.el !== el) {
+      watched.current?.ro.disconnect();
+      watched.current = null;
+      if (el) {
+        const ro = new ResizeObserver(() => measure());
+        ro.observe(el);
+        watched.current = { el, ro };
+        void document.fonts?.ready.then(() => measure());
+      }
+    }
+  });
+  useEffect(() => () => watched.current?.ro.disconnect(), []);
+  return room;
+}
+
 function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: boolean }) {
   const t = useT();
+  const statusRef = useRef<HTMLSpanElement>(null);
+  const whatRef = useRef<HTMLSpanElement>(null);
+  const priceRef = useRef<HTMLSpanElement>(null);
+  const chipRef = useRef<HTMLSpanElement>(null);
+  const tokensRef = useRef<HTMLSpanElement>(null);
+  const room = useRoom({ status: statusRef, what: whatRef, price: priceRef, chip: chipRef, tokens: tokensRef });
   const game = useShownGame();
   const botHold = useGame((s) => s.botHold);
   const band = useBand(marketOpen, game?.players.length ?? 0);
@@ -146,6 +370,10 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const developPick = useGame((s) => s.developPick);
   const developIron = useGame((s) => s.developIron);
   const buildIron = useGame((s) => s.buildIron);
+  const buildCoal = useGame((s) => s.buildCoal);
+  const linkCoal = useGame((s) => s.linkCoal);
+  const linkBeer = useGame((s) => s.linkBeer);
+  const sellBeer = useGame((s) => s.sellBeer);
   const scoutPick = useGame((s) => s.scoutPick);
   const setVerb = useGame((s) => s.setVerb);
   const confirm = useGame((s) => s.confirm);
@@ -159,7 +387,6 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const p = game.players[me];
   const color = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
   const total = eraRounds(game.players.length);
-  const roundFrac = Math.min(1, game.round / total);
   const maxActions = game.round === 1 && game.era === 'canal' ? 1 : 2;
   const done = maxActions - game.actionsLeft;
   /* the beginner's aid: the table's house rule online, the reader's own setting at home */
@@ -169,9 +396,16 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const summaryFull = mine ? confirmSummary({ verb, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, developPick, developIron, scoutPick, selectedCardId }) : null;
   /* the verb chip already says it: the summary starts after the verb */
   const summary = summaryFull && verb && summaryFull.startsWith(`${t(VERB_LABEL[verb])} · `) ? summaryFull.slice(t(VERB_LABEL[verb]).length + 3) : summaryFull;
-  const cost = summary ? confirmCost({ verb, buildPick, buildIron, linkPick, secondLinkPick, developPick, developIron }, game, me) : null;
+  /* the plan the move will run: the mines, works and breweries the reader
+     named, on the table the prepared moves leave */
+  const gp = planGame ?? game;
+  const picks: DrawPicks = { verb, selectedCardId, buildPick, buildIron, buildCoal, linkPick, secondLinkPick, linkBeer, linkCoal, sellPicks, sellBeer, developPick, developIron };
+  const cost = summary ? confirmCost({ verb, buildPick, buildIron, buildCoal, linkPick, secondLinkPick, linkBeer, linkCoal, developPick, developIron }, gp, me) : null;
   /* what the banner asks of the reader, in one line */
   const stage = !mine ? 'theirs' : summary ? 'ready' : verb ? 'target' : card ? 'verb' : 'card';
+  /* once ready: the works and the place in words, what it draws as tokens */
+  const head = stage === 'ready' ? moveHead(gp, me, picks, t) : null;
+  const waybill = head ? planDraws(gp, me, picks) : null;
 
   /* someone else's turn: what they last did, from the ledger */
   const theirLast = !mine ? [...game.ledger].reverse().find((e) => e.player === me && e.verb !== 'system' && e.verb !== 'score') : undefined;
@@ -189,7 +423,6 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   } else if (stage === 'target') {
     line = t(`game.topbar.hint.${verb}`);
     if (card && (verb === 'build' || verb === 'network' || verb === 'sell' || verb === 'develop')) {
-      const gp = planGame ?? game;
       const n =
         verb === 'build'
           ? buildTargets(gp, me, card).filter((x) => x.valid).length
@@ -235,7 +468,10 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
      centred in its band, stays narrow enough never to run under it */
   const trayLeft = typeof window === 'undefined' ? 9999 : window.innerWidth - 12 - 320;
   const mid = typeof window === 'undefined' ? 0 : (band.left + (window.innerWidth - band.right)) / 2;
-  const maxW = Math.max(520, Math.min(920, 2 * (trayLeft - 8 - mid)));
+  /* the tray hangs below the strip itself: only a second row (a refusal,
+     the beginner's note) could run into it, so a single strip takes the
+     whole band */
+  const maxW = marketOpen && (blocked || aidNote) ? Math.max(520, Math.min(920, 2 * (trayLeft - 8 - mid))) : 920;
   /* the sentence, with the word that matters set apart: the card in hand
      while a place is looked for, the player while they play */
   const sentence = (() => {
@@ -262,7 +498,12 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   /* a turn spends cards: the actions as card stubs, played, in hand, to come */
   const stubs = Array.from({ length: maxActions }, (_, i) => (i < done ? 'played' : i === done ? 'current' : 'next') as 'played' | 'current' | 'next');
   const theirs = !mine;
-  const EraIcon = game.era === 'canal' ? Waves : TrainFront;
+  const eraTitle = t('game.topbar.eraRoundTitle', { era: game.era === 'canal' ? t('game.topbar.eraCanal') : t('game.topbar.eraRail'), round: game.round, total });
+  /* at the confirm, the portrait and the stubs step aside on a narrow
+     table: the line is the move, its tokens and its price */
+  const settle = mine && stage === 'ready';
+  /* a move that costs nothing (a sale, a scout, a pass) prints no price */
+  const priced = cost && cost.total > 0 ? cost : null;
   return (
     <div className="pointer-events-none fixed z-[64] flex justify-center" style={{ left: band.left, right: band.right, top: insets.top }}>
       <motion.div
@@ -278,29 +519,19 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
             being done, and on the reader's turn the price and the button.
             Nothing grows; the sentence gives way. */}
         <div className="flex h-9 items-stretch">
-          <Tooltip
-            side="bottom"
-            title={t('game.topbar.eraRoundTitle', { era: game.era === 'canal' ? t('game.topbar.eraCanal') : t('game.topbar.eraRail'), round: game.round, total })}
-            content={game.era === 'canal' ? t('game.topbar.canalTip') : t('game.topbar.railTip')}
-          >
-            <span className="relative flex h-full items-center gap-1.5 whitespace-nowrap border-r border-brass-700/40 pl-3 pr-2.5">
-              <EraIcon className={cn('h-3 w-3', game.era === 'canal' ? 'text-cream-100/70' : 'text-copper-500 brightness-150')} aria-hidden />
-              <span className="font-sans text-[10px] font-bold uppercase tracking-[0.16em] text-cream-100/80">{game.era === 'canal' ? t('game.topbar.badgeCanal') : t('game.topbar.badgeRail')}</span>
-              <span className="font-mono text-[11px] text-brass-400">
-                {game.round}<span className="text-cream-100/55">/{total}</span>
-              </span>
-              {/* the era's progress, a hairline under the plaque */}
-              <span className="absolute inset-x-0 bottom-0 h-px bg-brass-700/40">
-                <motion.span className="block h-full bg-brass-400/80" animate={{ width: `${roundFrac * 100}%` }} transition={{ duration: 0.5 }} />
-              </span>
+          <Tooltip side="bottom" title={eraTitle} content={game.era === 'canal' ? t('game.topbar.canalTip') : t('game.topbar.railTip')}>
+            <span tabIndex={0} role="img" aria-label={eraTitle} className="flex h-full items-center border-r border-brass-700/40 px-2 outline-none focus-visible:bg-brass-400/10">
+              <EraTrack era={game.era} round={game.round} total={total} />
             </span>
           </Tooltip>
 
           {/* the fixed cluster is clipped before it can ride over the summary */}
-          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2.5">
-            <PortraitMedallion p={p} index={me} active={mine} size={22} />
+          <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2">
+            <span className={cn('shrink-0', settle && 'max-[1279px]:hidden')}>
+              <PortraitMedallion p={p} index={me} active={mine} size={22} />
+            </span>
             {mine && (
-              <span className="flex shrink-0 items-center gap-[3px]" aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
+              <span className={cn('flex shrink-0 items-center gap-[3px]', settle && 'max-[1279px]:hidden')} aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
                 {stubs.map((st, i) => (
                   <motion.span
                     key={i}
@@ -314,38 +545,86 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
                 ))}
               </span>
             )}
-            {mine && verb && <span className="hidden shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-brass-400 min-[1180px]:inline">{t(VERB_LABEL[verb])}</span>}
-            <span role="status" className={cn('min-w-0 flex-1 truncate font-fell text-[13px] leading-none', theirs && 'text-cream-100/85')} title={summaryFull ?? undefined}>
-              {mine && summary ? <span className="text-cream-100/90">{summary}</span> : sentence}
-            </span>
+            {mine && verb && (
+              <span
+                ref={head ? chipRef : undefined}
+                aria-hidden={head && !room.verb ? true : undefined}
+                className={cn(
+                  'shrink-0 rounded-sm border border-brass-700/70 px-1.5 py-px font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-brass-400',
+                  /* settled, the chip stays while the line has room for it */
+                  head ? (room.verb ? 'inline' : OUT_OF_FLOW) : 'hidden min-[1180px]:inline',
+                )}
+              >
+                {t(VERB_LABEL[verb])}
+              </span>
+            )}
+            {head && waybill ? (
+              /* the move, whole: the works and the place, the tile's price
+                 when the line has room, then its tokens — no ellipsis; the
+                 words give way only on a line too narrow for anything */
+              <span ref={statusRef} role="status" className="flex min-w-0 flex-1 items-center gap-1.5" title={head.full ?? summaryFull ?? undefined}>
+                <span className="min-w-0 truncate whitespace-nowrap font-fell text-[12.5px] leading-none text-cream-100/90 min-[1280px]:text-[13px]">
+                  <span ref={whatRef}>{head.what}</span>
+                  {head.price !== null && (
+                    <span ref={priceRef} aria-hidden={room.price ? undefined : true} className={cn('whitespace-pre text-cream-100/60', room.price ? 'inline' : OUT_OF_FLOW)}>
+                      {' · '}
+                      <span className="font-mono text-[11px]">{money(head.price)}</span>
+                    </span>
+                  )}
+                </span>
+                <WaybillTokens box={tokensRef} draws={waybill.draws} sale={waybill.sale} game={gp} />
+              </span>
+            ) : (
+              <span role="status" className={cn('min-w-0 flex-1 truncate font-fell text-[13px] leading-none', theirs && 'text-cream-100/85')} title={summaryFull ?? undefined}>
+                {mine && summary ? <span className="text-cream-100/90">{summary}</span> : sentence}
+              </span>
+            )}
           </div>
 
           {mine && (
             <div className="flex shrink-0 items-center gap-1.5 pr-1.5">
-              {cost && (
-                <motion.span
-                  key={`${cost.total}:${cost.after}`}
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                  className={cn('flex items-center gap-1 whitespace-nowrap font-mono text-[11px]', cost.after < 0 ? 'text-rust-500 brightness-150' : 'text-cream-100/90')}
-                  title={t('game.hand.costTip')}
-                >
-                  <span className="font-semibold">{t('game.hand.total', { n: cost.total })}</span>
-                  <span className="text-cream-100/55">·</span>
-                  <span className={cost.after < 0 ? '' : 'text-cream-100/60'}>{t('game.hand.left', { n: cost.after })}</span>
-                </motion.span>
-              )}
               {stage === 'verb' && (
                 <button type="button" onClick={() => setVerb('pass')} className="btn-ledger !min-h-[32px] !px-2.5 !py-0.5 text-[11px]" title={t('game.topbar.passTip')}>
                   {t('game.topbar.pass')}
                 </button>
               )}
-              <button type="button" onClick={cancel} disabled={stage === 'card' && !preparing} className="btn-ledger !min-h-[32px] !px-2.5 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-40" title={`${t('game.topbar.cancel')} — Esc`}>
-                {t('game.topbar.cancel')}
+              {/* on a narrow table the cancel is a struck cross; Esc says the same */}
+              <button
+                type="button"
+                onClick={cancel}
+                disabled={stage === 'card' && !preparing}
+                aria-label={t('game.topbar.cancel')}
+                className={cn('btn-ledger !min-h-[32px] !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-40', settle ? '!px-0 max-[1279px]:!w-8 min-[1280px]:!px-2.5' : '!px-2.5')}
+                title={`${t('game.topbar.cancel')} — Esc`}
+              >
+                <X aria-hidden className={cn('h-3.5 w-3.5', settle ? 'min-[1280px]:hidden' : 'hidden')} />
+                <span className={settle ? 'max-[1279px]:hidden' : undefined}>{t('game.topbar.cancel')}</span>
               </button>
-              <button type="button" onClick={confirm} disabled={stage !== 'ready'} className="btn-strike !min-h-[32px] !px-3 !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-40" title={`${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵`}>
-                {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} <kbd className="ml-1 font-mono text-[10px] opacity-75">↵</kbd>
+              {/* the strike carries the price it settles: the whole sum, cubes
+                  bought included, and what the purse keeps */}
+              <button
+                type="button"
+                onClick={confirm}
+                disabled={stage !== 'ready'}
+                className={cn('btn-strike !min-h-[32px] !px-2.5 !py-0 text-[11px] disabled:cursor-not-allowed disabled:opacity-40', priced && '!flex-col !gap-0 leading-none')}
+                title={priced ? `${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵ · ${t('game.bandeau.priceTip')}` : `${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵`}
+              >
+                <span className="whitespace-nowrap">
+                  {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')}
+                  <kbd className={cn('ml-1 font-mono text-[10px] opacity-75', priced && 'max-[1279px]:hidden')}>↵</kbd>
+                </span>
+                {priced && (
+                  <motion.span
+                    key={`${priced.total}:${priced.after}`}
+                    initial={{ opacity: 0.4 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25 }}
+                    className={cn('mt-[3px] whitespace-nowrap font-mono text-[9px] font-semibold normal-case tracking-normal', priced.after < 0 ? 'text-rust-700' : 'text-ink-900/80')}
+                  >
+                    {money(priced.total)}
+                    <span className="font-normal opacity-70"> · {t('game.bandeau.left', { sum: money(priced.after) })}</span>
+                  </motion.span>
+                )}
               </button>
             </div>
           )}
