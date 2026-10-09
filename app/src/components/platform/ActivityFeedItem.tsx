@@ -6,7 +6,8 @@ import { ago } from './ago';
 /* ------------------------------------------------------------------ */
 /* ActivityFeedItem — a line of the club's news: a small mark, the     */
 /* sentence in the serif, the time in the mono at the end of the line, */
-/* « il y a 4 min », counted from the real instant. A rule under each. */
+/* « il y a 4 min », counted from the real instant. A rule under each; */
+/* a long line takes a second one rather than losing its end.          */
 /* ------------------------------------------------------------------ */
 
 /** what the club's feed can say: my finished games, the tables in play */
@@ -40,13 +41,13 @@ export default function ActivityFeedItem({ kind, vars, at, textKey, onClick, cla
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 border-b border-[var(--gz-ink-faint)] px-1 py-2.5 text-left transition-colors duration-150 hover:bg-enamel-800',
+        'flex w-full items-start gap-3 border-b border-[var(--gz-ink-faint)] px-1 py-2.5 text-left transition-colors duration-150 hover:bg-enamel-800',
         className,
       )}
     >
-      <Icon size={13} strokeWidth={1.75} aria-hidden className={cn('shrink-0', kind === 'tableLive' ? 'text-signal-ink' : 'text-brass-300')} />
-      <span className="min-w-0 flex-1 truncate font-serif text-[13.5px] text-paper-100">{t(textKey ?? `platform.home.feed.${kind}`, vars)}</span>
-      <span className="data-text shrink-0 text-[11px] text-iron-400 tnums">{ago(t, lang, at)}</span>
+      <Icon size={13} strokeWidth={1.75} aria-hidden className={cn('mt-1 shrink-0', kind === 'tableLive' ? 'text-signal-ink' : 'text-brass-300')} />
+      <span className="line-clamp-2 min-w-0 flex-1 font-serif text-[13.5px] leading-5 text-paper-100">{t(textKey ?? `platform.home.feed.${kind}`, vars)}</span>
+      <span className="data-text mt-0.5 shrink-0 text-iron-400 tnums">{ago(t, lang, at)}</span>
     </button>
   );
 }

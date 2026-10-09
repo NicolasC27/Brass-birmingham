@@ -81,7 +81,7 @@ export default function QueuePanel({ mode, since, waiting, estimate, onCancel, c
       </div>
 
       <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="data-text min-w-0 text-[12px] text-iron-400">
+        <p className="data-text min-w-0 text-iron-400">
           {t('platform.queue.playersWaiting', { count: waiting })} · {estimate}
         </p>
         <Button variant="danger-ghost" className="!h-9 shrink-0 whitespace-nowrap" onClick={onCancel}>

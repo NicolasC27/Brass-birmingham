@@ -8,6 +8,10 @@ import { cn } from '@/lib/utils';
 /* Fraunces page title and an Inter lede, on the lacquer floor. Pages  */
 /* fill the slot with `Panel` consoles; the API (Panel / Field /       */
 /* inputClass / Refusal) is stable — other pages build on it.          */
+/* A room opens on its title and nothing else: the rail above already  */
+/* prints the double rule, so a second one under the header would only */
+/* repeat it. The double rule belongs to what is ruled — the head of a */
+/* list or a table, as the almanac and the archives set it.            */
 /* ------------------------------------------------------------------ */
 
 export default function PageShell({
@@ -29,11 +33,12 @@ export default function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn('mx-auto px-4 pb-24 pt-10 sm:px-8', width === 'wide' ? 'max-w-[1240px]' : 'max-w-[640px]')}>
+    <div className={cn('gz-measure pb-24 pt-10', width === 'narrow' && 'max-w-[640px]')}>
       <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
         <div className="min-w-0">
           {back && (
-            <Link to={back.to} className="micro-label mb-4 inline-flex items-center gap-1.5 text-iron-400 transition-colors duration-150 hover:text-brass-300">
+            /* alone on its line, the way back is a target of its own: 24px at least */
+            <Link to={back.to} className="micro-label mb-2 inline-flex min-h-6 items-center gap-1.5 py-1 text-iron-400 transition-colors duration-150 hover:text-brass-300">
               <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
               {back.label}
             </Link>
@@ -58,7 +63,7 @@ export function Panel({ title, meta, children, className, tone = 'plate' }: { ti
         <header className="relative mb-4">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="title-card">{title}</h2>
-            {meta && <span className="data-text text-[12px] tabular-nums text-iron-400">{meta}</span>}
+            {meta && <span className="data-text tabular-nums text-iron-400">{meta}</span>}
           </div>
           <div className="mt-3 h-px bg-brass-hairline" />
         </header>

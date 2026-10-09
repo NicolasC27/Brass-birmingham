@@ -1,9 +1,11 @@
 import { PLACEMENTS } from '@/platform/rank';
 import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
+import RankEmblem from './RankEmblem';
 
 /* ------------------------------------------------------------------ */
-/* RankBadge (design.md §7.5) — emblème SVG (§12) + nom de rang + LP.  */
+/* RankBadge (design.md §7.5) — emblème (RankEmblem, inked from the    */
+/* register) + nom de rang + LP.                                       */
 /* Tiers : bronze, fer, acier, laiton, or, maître. Non placé :         */
 /* emblème « ? » + PLACEMENTS n/5 (les cinq du bureau).                 */
 /* ------------------------------------------------------------------ */
@@ -26,12 +28,11 @@ export interface RankBadgeProps {
 
 export default function RankBadge({ tier, division, lp, placementDone, size = 32, compact = false, className }: RankBadgeProps) {
   const t = useT();
-  const emblem = tier === 'placement' ? '/rank-placement.svg' : `/rank-${tier}.svg`;
   const name = tier === 'placement' ? null : t(`platform.rank.${tier}`);
 
   return (
     <span className={cn('inline-flex items-center gap-2', className)}>
-      <img src={emblem} alt="" width={size} height={size} style={{ width: size, height: size }} />
+      <RankEmblem tier={tier} size={size} />
       {!compact && (
         <span className="flex flex-col leading-tight">
           {tier === 'placement' ? (
@@ -42,7 +43,7 @@ export default function RankBadge({ tier, division, lp, placementDone, size = 32
                 {name}
                 {division ? ` ${division}` : ''}
               </span>
-              {lp !== undefined && <span className="data-text text-[12px] text-iron-400">{t('platform.rank.lp', { lp })}</span>}
+              {lp !== undefined && <span className="data-text text-iron-400">{t('platform.rank.lp', { lp })}</span>}
             </>
           )}
         </span>

@@ -80,7 +80,7 @@ export default function Tabs({ tabs, active, onChange, groupId, ariaLabel, class
             )}
           >
             {tab.label}
-            {tab.badge !== undefined && <span className="data-text ml-1.5 text-[11px] text-iron-400 tnums">{tab.badge}</span>}
+            {tab.badge !== undefined && <span className="data-text ml-1.5 text-iron-400 tnums">{tab.badge}</span>}
             {isActive && (
               <motion.span
                 layoutId={`tab-underline-${groupId}`}

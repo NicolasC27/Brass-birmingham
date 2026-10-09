@@ -44,7 +44,8 @@ export default function EmptyState({ title, copy, plate, cta, mini = false, icon
       <p className="title-card">{title}</p>
       {copy && <p className="max-w-sm font-serif text-[13.5px] italic text-paper-300">{copy}</p>}
       {cta && (
-        <Button variant="primary" to={cta.to} onClick={cta.onClick} icon={cta.icon}>
+        /* off the board an action is a ticket: the brass one, as on the front page */
+        <Button variant="ticket-brass" to={cta.to} onClick={cta.onClick} icon={cta.icon}>
           {cta.label}
         </Button>
       )}

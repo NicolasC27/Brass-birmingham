@@ -62,7 +62,7 @@ export default class Boundary extends Component<Props, State> {
         </div>
         <details className="mt-3 w-full">
           <summary className="cursor-pointer font-ui text-[12px] text-iron-400">{tr('platform.boundary.detail')}</summary>
-          <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-coal-950 p-3 data-text text-[11px] text-iron-400">{error.message}</pre>
+          <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-coal-950 p-3 data-text text-iron-400">{error.message}</pre>
         </details>
       </div>
     );

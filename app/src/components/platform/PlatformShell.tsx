@@ -72,7 +72,7 @@ function PlayerToken() {
 
   if (!session) {
     return (
-      <Button variant="ghost" className="!h-7 px-3 !text-[10.5px]" to="/account">
+      <Button variant="ghost" size="sm" to="/account">
         {t('platform.action.signIn')}
       </Button>
     );
@@ -103,7 +103,7 @@ function WalletChip() {
       className="flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-brass-hairline-strong bg-enamel-850 px-2.5 transition-colors duration-150 hover:border-brass-300"
     >
       <Coins size={13} aria-hidden className="text-brass-300" />
-      <span className="data-text tnums text-[11.5px] text-paper-100">{guineas}</span>
+      <span className="data-text tnums text-paper-100">{guineas}</span>
     </Link>
   );
 }
@@ -178,6 +178,7 @@ function Figures() {
 function Masthead() {
   const t = useT();
   const lang = useLang();
+  const session = useSession();
   /* the edition is dated in the era: today's day and month, the almanac's year */
   const date = `${new Date().toLocaleDateString(localeOf(lang), { weekday: 'long', day: 'numeric', month: 'long' })} ${ephemerisOf().year}`;
   return (
@@ -187,7 +188,7 @@ function Masthead() {
         {/* the ear line stops growing at 1176px of measure, so the room the
             figures want is taken from the tools, not from the window: the
             blocks stand a hair closer, and the plate carries less air */}
-        <div className="mx-auto flex h-9 max-w-[1240px] items-center gap-3 px-4 font-mono text-[11px] text-iron-400 sm:px-8">
+        <div className="gz-measure flex h-9 items-center gap-3 font-mono text-[11px] text-iron-400">
           <span className="hidden whitespace-nowrap min-[900px]:inline">{t('platform.masthead.edition', { date })}</span>
           <span aria-hidden className="hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
           {/* the line is cut at its own end, not in the middle of a glyph:
@@ -201,21 +202,35 @@ function Masthead() {
             <ThemeToggle />
             <span aria-hidden className="mx-0.5 hidden h-3 w-px bg-[var(--gz-ink-soft)] min-[900px]:block" />
             <PlayerToken />
-            <Button variant="primary" className="!h-7 hidden px-2.5 !text-[10.5px] min-[1100px]:inline-flex" to="/setup" icon={<Plus size={13} aria-hidden />}>
-              {t('platform.nav.createTable')}
+            {/* the way to a new table stands wherever the tab bar is gone (from
+                900px), in two words until the line has room for its four. A
+                visitor's one plate is the register to sign: the charter is
+                set beside it as a ghost, not as a second plate */}
+            <Button
+              variant={session ? 'primary' : 'ghost'}
+              size="sm"
+              className="hidden min-[900px]:inline-flex"
+              to="/setup"
+              icon={<Plus aria-hidden />}
+              aria-label={t('platform.nav.createTable')}
+            >
+              <span className="min-[1100px]:hidden">{t('platform.nav.createTableShort')}</span>
+              <span className="hidden min-[1100px]:inline">{t('platform.nav.createTable')}</span>
             </Button>
           </span>
         </div>
       </div>
 
       {/* the title, between its marks, and the motto */}
-      <div className="mx-auto flex max-w-[1240px] flex-col items-center px-4 pb-4 pt-5 text-center sm:px-8 min-[900px]:pb-5 min-[900px]:pt-7">
+      <div className="gz-measure flex flex-col items-center pb-4 pt-5 text-center min-[900px]:pb-5 min-[900px]:pt-7">
         <Link to="/" aria-label="Blackrail" className="flex items-center gap-5 min-[900px]:gap-8">
           <img src="/logo-blackrail.svg" alt="" className="hidden h-6 w-6 opacity-80 min-[600px]:block" />
           <span className="gz-wordmark">Blackrail</span>
           <img src="/logo-blackrail.svg" alt="" className="hidden h-6 w-6 opacity-80 min-[600px]:block" />
         </Link>
-        <p className="mt-3 font-fell text-[12px] uppercase tracking-[0.22em] text-paper-300 min-[900px]:text-[13px]">{t('platform.masthead.motto')}</p>
+        {/* Fell's SC cut draws its own small capitals from the sentence: set in
+            capitals it only printed them all at full height */}
+        <p className="mt-3 font-fell text-[13px] tracking-[0.14em] text-paper-300 min-[900px]:text-[14px]">{t('platform.masthead.motto')}</p>
       </div>
     </header>
   );
@@ -225,21 +240,37 @@ function Masthead() {
 
 const rail = ({ isActive }: { isActive: boolean }) => cn('gz-nav-link', isActive && 'is-active');
 
+/* the reading rooms are one heading: the lessons and the glossary are read
+   under the rules, so the rail keeps its diamond under RÈGLES on them too */
+const RULES_ROOMS = ['/rules', '/cours', '/glossaire'];
+
 function NavRail() {
   const t = useT();
+  const { pathname } = useLocation();
+  const inRules = RULES_ROOMS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   return (
     <div className="sticky top-0 z-50 hidden overflow-x-clip bg-[rgb(var(--lacquer-900)/.94)] backdrop-blur-[10px] min-[900px]:block" data-print="hide">
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+      {/* the rail is laid on the same sheet: its ground carries the page's
+          grain, pinned to the window as the page's is, or it read as a band
+          of smoother paper across the top */}
+      <div aria-hidden className="tex-lacquer pointer-events-none absolute inset-0 opacity-60 [background-attachment:fixed]" />
+      <div className="gz-measure relative">
         <div className="gz-rule-double" aria-hidden />
-        <nav aria-label="Primary" className="flex items-center justify-center gap-7 min-[1100px]:gap-10">
+        <nav aria-label="Primary" className="flex items-center justify-center gap-6 min-[1100px]:gap-9">
           <NavLink to="/online" className={rail}>
             {t('platform.nav.play')}
+          </NavLink>
+          <NavLink to="/defis" className={rail}>
+            {t('platform.nav.defis')}
           </NavLink>
           <NavLink to="/comptoir" className={rail}>
             {t('platform.nav.comptoir')}
           </NavLink>
           <NavLink to="/classement" className={rail}>
             {t('platform.nav.ranking')}
+          </NavLink>
+          <NavLink to="/almanach" className={rail}>
+            {t('platform.nav.almanach')}
           </NavLink>
           {DISCORD_URL && (
             <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className={rail({ isActive: false })}>
@@ -249,12 +280,12 @@ function NavRail() {
           <NavLink to="/desk" className={rail}>
             {t('platform.nav.desk')}
           </NavLink>
-          <NavLink to="/rules" className={rail}>
+          <Link to="/rules" className={rail({ isActive: inRules })} aria-current={pathname === '/rules' ? 'page' : inRules ? 'true' : undefined}>
             {t('platform.nav.rules')}
-          </NavLink>
+          </Link>
         </nav>
       </div>
-      <div className="relative mx-auto max-w-[1240px] px-4 sm:px-8">
+      <div className="gz-measure relative">
         <div className="h-px bg-[var(--gz-ink)]" aria-hidden />
         <RailEngine />
       </div>
@@ -267,17 +298,22 @@ function NavRail() {
 function Colophon() {
   const t = useT();
   const lang = useLang();
-  const link = 'micro-label text-iron-400 transition-colors hover:text-paper-100';
+  const session = useSession();
+  const link = 'gz-hit micro-label text-iron-400 transition-colors hover:text-paper-100';
   return (
-    <footer className="mt-10 pb-8 pt-6">
-      <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+    /* positioned, as the masthead and the page are: left in the flow, the
+       colophon sat under the sheet's grain, and by night the lacquer veiled
+       its links */
+    <footer className="relative mt-10 pb-8 pt-6">
+      <div className="gz-measure">
         <div className="gz-rule-double" aria-hidden />
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           <span className="micro-label text-iron-400">{t('platform.footer.copyright')}</span>
           <Link to="/rules" className={link}>
             {t('platform.footer.rules')}
           </Link>
-          <Link to="/account" className={link}>
+          {/* a member's account is the profile: /account would only send them on */}
+          <Link to={session ? '/profile' : '/account'} className={link}>
             {t('platform.footer.account')}
           </Link>
           <Link to="/legal" className={link}>
@@ -290,15 +326,17 @@ function Colophon() {
             {t('platform.glossary.title')}
           </Link>
         </div>
-        <div className="mt-2 flex items-center justify-center gap-3" data-print="hide">
-          <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-2">
+        {/* the four languages are commands, not a line of print: each is a
+            target of 24px and more, the resting ones in the page's second ink */}
+        <div className="mt-3 flex items-center justify-center gap-2" data-print="hide">
+          <span role="group" aria-label={t('common.chrome.language')} className="flex items-center gap-1">
             {LANGS.map((l) => (
               <button
                 key={l}
                 type="button"
                 aria-pressed={lang === l}
                 onClick={() => setLang(l)}
-                className={cn('micro-label transition-colors', lang === l ? 'text-brass-300' : 'text-iron-400 hover:text-paper-100')}
+                className={cn('micro-label px-2 py-1.5 transition-colors', lang === l ? 'text-brass-300' : 'text-paper-300 hover:text-paper-100')}
               >
                 {l.toUpperCase()}
               </button>

@@ -158,7 +158,9 @@ module.exports = {
         // register's square corner — the outline follows the radius, so it
         // showed at the keyboard
         DEFAULT: "var(--radius)",
-        xl: "calc(var(--radius) + 4px)",
+        // the register is printed: xl squares off with the rest (the table
+        // never asked for it; the shadcn primitives that did are unused)
+        xl: "var(--radius)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",

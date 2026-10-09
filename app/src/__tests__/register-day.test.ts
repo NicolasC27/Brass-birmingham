@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-/* the day register is printed twice: once for the screen and once for the
-   paper edition. They must read the same, declaration for declaration — a
-   value corrected in one and forgotten in the other is the whole point of
-   this test. */
+/* the day register is written once. The screen reads it by default, the
+   paper edition reads it whatever the screen shows, and the night is laid
+   over it for the screen only. A second copy for the printer — where a
+   value corrected in one and forgotten in the other went unseen — is what
+   these tests keep out. */
 
 const css = readFileSync(fileURLToPath(new URL('../index.css', import.meta.url)), 'utf8');
 
@@ -28,18 +29,21 @@ function body(head: string): string {
 function customProps(rule: string): string[] {
   return rule
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    .split(';')
+    .split(/[;{}]/)
     .map((d) => d.trim().replace(/\s+/g, ' '))
     .filter((d) => d.startsWith('--'));
 }
 
-/* the screen's day register, and the one the printer works from */
-const screen = customProps(body('html[data-theme="light"] .platform-root {'));
-const paper = customProps(body('@media print {\n  .platform-root {'));
+const names = (decls: string[]) => decls.map((d) => d.slice(0, d.indexOf(':')));
+
+/* the default register, the night laid over it, and the paper edition */
+const day = customProps(body('.platform-root {\n  /* corners'));
+const night = customProps(body('@media screen {'));
+const paper = customProps(body('@media print {'));
 
 describe('the day register', () => {
   it('declares the tokens the day depends on', () => {
-    expect(screen.length).toBeGreaterThan(20);
+    expect(day.length).toBeGreaterThan(20);
     for (const token of [
       '--iron-400',
       '--iron-600',
@@ -55,11 +59,21 @@ describe('the day register', () => {
       '--state-off-bg',
       '--state-off-ink',
     ]) {
-      expect(screen.some((d) => d.startsWith(`${token}:`)), `missing ${token}`).toBe(true);
+      expect(day.some((d) => d.startsWith(`${token}:`)), `missing ${token}`).toBe(true);
     }
   });
 
-  it('reads the same on the screen and on the paper edition', () => {
-    expect(paper).toEqual(screen);
+  it('is not copied into the paper edition', () => {
+    expect(paper).toEqual([]);
+  });
+
+  it('is overlaid token for token by the night, which is kept to the screen', () => {
+    const shared = ['--radius', '--ink-on-brass', '--ink-on-signal'];
+    const overlaid = new Set(names(night));
+    for (const token of names(day)) {
+      if (shared.includes(token)) continue;
+      expect(overlaid.has(token), `the night leaves ${token} to the day`).toBe(true);
+    }
+    expect(css).toMatch(/@media screen \{\s*html\[data-theme="dark"\] \.platform-root,\s*\.platform-root \[data-theme="dark"\] \{/);
   });
 });

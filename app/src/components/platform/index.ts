@@ -3,8 +3,6 @@ export { default as Button } from './Button';
 export type { ButtonProps, ButtonVariant } from './Button';
 export { default as SeatToken } from './SeatToken';
 export type { SeatTokenProps } from './SeatToken';
-export { default as TableCard } from './TableCard';
-export type { TableCardProps } from './TableCard';
 export { default as ModeCard } from './ModeCard';
 export type { ModeCardProps } from './ModeCard';
 export { default as QueuePanel } from './QueuePanel';

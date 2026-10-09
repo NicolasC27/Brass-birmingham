@@ -140,7 +140,7 @@ export default function Arrival() {
             >
               Blackrail
             </motion.h1>
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: at(1.5), duration: 0.5 }} className="mt-3 font-fell text-[13px] uppercase tracking-[0.22em] text-paper-300">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: at(1.5), duration: 0.5 }} className="mt-3 font-fell text-[14px] tracking-[0.14em] text-paper-300">
               {t('platform.masthead.motto')}
             </motion.p>
             <motion.div initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ delay: at(1.7), duration: 0.7, ease: 'easeOut' }} className="gz-rule-double mx-auto mt-6 max-w-[520px]" aria-hidden />

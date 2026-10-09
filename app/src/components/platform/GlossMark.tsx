@@ -35,9 +35,16 @@ export default function GlossMark({ id, className }: { id: string; className?: s
         aria-expanded={open}
         aria-label={t('platform.glossary.what', { term: t(`platform.glossary.terms.${id}.name`) })}
         onClick={() => setOpen((o) => !o)}
-        className="ml-1.5 inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--gz-ink-soft)] font-ui text-[9px] font-semibold text-iron-400 transition-colors hover:border-brass-300 hover:text-paper-100"
+        /* the disc stays a 16px mark in the line, the hand gets 24px round it:
+           the margins give back what the zone adds, so the line keeps its height */
+        className="group -my-1 ml-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full"
       >
-        ?
+        <span
+          aria-hidden
+          className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-[var(--gz-ink-soft)] font-ui text-[9px] font-semibold text-iron-400 transition-colors group-hover:border-brass-300 group-hover:text-paper-100"
+        >
+          ?
+        </span>
       </button>
       {open && (
         <span
@@ -48,7 +55,8 @@ export default function GlossMark({ id, className }: { id: string; className?: s
             {t(`platform.glossary.terms.${id}.name`)}
           </span>
           <span className="mt-1 block font-serif text-[13px] italic leading-relaxed text-paper-300">{t(`platform.glossary.terms.${id}.def`)}</span>
-          <Link to="/glossaire" className="mt-2 inline-block font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
+          {/* the glossary opens on this very word, not at its top */}
+          <Link to={`/glossaire#${id}`} className="mt-2 inline-block font-ui text-[10.5px] font-semibold uppercase tracking-[0.14em] text-brass-300 transition-colors hover:text-paper-100">
             {t('platform.glossary.all')} →
           </Link>
         </span>

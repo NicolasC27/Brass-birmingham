@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Check, Crown, UserPlus } from 'lucide-react';
+import { Bot, Check, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { colorDef, type PlayerColor, type PlayerShape } from '@/components/setup/constants';
 import { useT } from '@/i18n';
@@ -70,13 +70,10 @@ export default function SeatToken({ seat, size = 36, index = 0 }: SeatTokenProps
         role="img"
         aria-label={t('platform.seat.seatAria', { n: index + 1, label: t('platform.seat.free') })}
       >
-        <div
-          className="flex items-center justify-center rounded-full border-2 border-dashed border-iron-600 bg-enamel-700/40"
-          style={{ width: size, height: size }}
-        >
-          <UserPlus className="text-iron-600" style={{ width: size * 0.42, height: size * 0.42 }} aria-hidden />
-        </div>
-        <span className="micro-label text-[9px] text-iron-400">{t('platform.seat.free')}</span>
+        {/* an empty chair, not a command: nothing here can be pressed, so
+            the disc carries no « add » glyph that would promise otherwise */}
+        <div className="rounded-full border-2 border-dashed border-iron-600 bg-enamel-700/40" style={{ width: size, height: size }} />
+        <span className="micro-label text-iron-400">{t('platform.seat.free')}</span>
       </motion.div>
     );
   }
