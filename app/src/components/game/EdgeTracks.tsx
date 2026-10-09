@@ -7,13 +7,17 @@ import { money, useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
 import { useReducedMotion } from './useReducedMotion';
-import { TRACK_H, TRACK_W, useBoardOptions } from './boardOptions';
+import { FILET_H, FILET_W, TRACK_H, TRACK_W, useBoardOptions } from './boardOptions';
+import { filetTicks } from './railLogic';
 
 /* ------------------------------------------------------------------ */
 /* Two STRAIGHT tracks, one per scale:                                  */
 /*  • victory points: a ruler 0→100 along the TOP edge                  */
 /*  • income: graduated by PAYOUT bracket, along the BOTTOM edge or     */
-/*    down the LEFT edge (board option `incomeSide`)                    */
+/*    down the LEFT edge (board option `incomeSide`). At rest the      */
+/*    income track is a thin brass filet: the pawns, a graduation every */
+/*    five spaces, the tens' figures barely there. Under the pointer or */
+/*    the keyboard it opens into the full ruler, never taller than it.  */
 /* Both tracks ZOOM under the mouse wheel (up to ×6, around the cursor),*/
 /* pan by dragging, and reset on double-click. Every position is a      */
 /* fraction of the track, so the same code lays out either axis.       */
@@ -53,6 +57,8 @@ const BANDS: Band[] = (() => {
 })();
 
 const CHIP = 16;
+/** the pawn on the filet: the same token, a size down */
+const CHIP_THIN = 13;
 const ZOOM_MAX = 6;
 
 /** place something at `pct` (0 = track start) along the lane's axis */
@@ -163,6 +169,7 @@ function Pawn({
   spot,
   onToggle,
   reduced,
+  thin = false,
 }: {
   axis: Axis;
   idx: number;
@@ -174,6 +181,8 @@ function Pawn({
   spot: boolean;
   onToggle: () => void;
   reduced: boolean;
+  /** seated on the thin filet: smaller, and no figure beside it */
+  thin?: boolean;
 }) {
   const game = useShownGame()!;
   const t = useT();
@@ -186,15 +195,18 @@ function Pawn({
   const lvl = incomeLevel(p.income);
   const toNext = lvl >= 30 ? 0 : levelTopSpace(lvl) + 1 - p.income;
   const nextPay = money(INCOME_PAYOUT[Math.min(INCOME_MAX, levelTopSpace(lvl) + 1)]);
-  const fan = (fanIndex - (fanSize - 1) / 2) * 10;
-  const zig = fanSize > 1 ? (fanIndex % 2 ? 4 : -4) : 0;
+  const chip = thin ? CHIP_THIN : CHIP;
+  const fan = (fanIndex - (fanSize - 1) / 2) * (thin ? 8 : 10);
+  const zig = fanSize > 1 ? (fanIndex % 2 ? (thin ? 2 : 4) : thin ? -2 : -4) : 0;
   const label = kind === 'vp' ? String(p.vp) : pay;
   const place: CSSProperties =
-    axis === 'x' ? { top: '50%', marginLeft: fan - CHIP / 2, marginTop: -CHIP / 2 + zig, zIndex: 10 + fanIndex } : { left: 18, marginTop: fan - CHIP / 2, marginLeft: zig, zIndex: 10 + fanIndex };
+    axis === 'x'
+      ? { top: '50%', marginLeft: fan - chip / 2, marginTop: -chip / 2 + zig, zIndex: 10 + fanIndex }
+      : { left: thin ? (FILET_W - chip) / 2 : 18, marginTop: fan - chip / 2, marginLeft: zig, zIndex: 10 + fanIndex };
 
   return (
     <motion.div
-      className="pointer-events-none absolute z-10"
+      className="pointer-events-none absolute z-10 flex"
       initial={false}
       animate={anim(axis, pct)}
       transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 170, damping: 22 }}
@@ -230,11 +242,11 @@ function Pawn({
           /* the pawn is painted at 16px; its hit zone runs 4px further all
              round (24px, the target floor), the drawing of the track untouched */
           className="relative flex shrink-0 items-center justify-center rounded-full before:absolute before:-inset-1 before:rounded-full before:content-['']"
-          style={{ width: CHIP, height: CHIP, background: `${col}55` }}
+          style={{ width: chip, height: chip, background: `${col}55` }}
         >
-          <ShapeChip color={p.color} size={10} />
+          <ShapeChip color={p.color} size={thin ? 8 : 10} />
         </motion.button>
-        {showLabel && (
+        {showLabel && !thin && (
           <span
             aria-hidden
             className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${kind === 'income' && INCOME_PAYOUT[p.income] < 0 ? 'text-[#C4644F]' : 'text-cream-100'}`}
@@ -291,6 +303,13 @@ function EdgeTracks() {
   const t = useT();
   const reduced = useReducedMotion();
   const incAxis: Axis = incomeSide === 'left' ? 'y' : 'x';
+  /* the filet opens into the ruler while the pointer rests on it, while
+     the keyboard is inside, and while a loan's landing is on show */
+  const [hot, setHot] = useState(false);
+  const [focusIn, setFocusIn] = useState(false);
+  const cool = useRef<number | null>(null);
+  useEffect(() => () => { if (cool.current !== null) window.clearTimeout(cool.current); }, []);
+  const ruler = hot || focusIn || loanConfirm || loanPeek;
 
   /* the VP lane frames every pawn: the ruler stretches with the leader and
      the lane zooms on the pack, 6 points of air either side, never narrower
@@ -355,7 +374,7 @@ function EdgeTracks() {
   const vpAt = groups('vp');
   const incAt = groups('income');
 
-  const pawns = (kind: Kind, axis: Axis) =>
+  const pawns = (kind: Kind, axis: Axis, thin = false) =>
     game.players.map((p, i) => {
       const map = kind === 'vp' ? vpAt : incAt;
       const key = kind === 'vp' ? p.vp : p.income;
@@ -374,6 +393,7 @@ function EdgeTracks() {
           spot={spotlight === i}
           onToggle={() => toggle(i)}
           reduced={reduced}
+          thin={thin}
         />
       );
     });
@@ -443,19 +463,68 @@ function EdgeTracks() {
         )}
       </AnimatePresence>
 
-      {/* ====================== income: BOTTOM edge or LEFT edge ====================== */}
+      {/* ====================== income: BOTTOM edge or LEFT edge ======================
+          a thin brass filet at rest, the full ruler under the pointer or
+          the keyboard; it opens over the HUD's margin, never taller than
+          the ruler it has always been */}
       <div
-        className={`fixed z-[58] ${belt} ${incAxis === 'x' ? 'inset-x-0 bottom-0 border-t' : 'bottom-0 left-0 border-r'}`}
-        style={incAxis === 'x' ? { height: TRACK_H } : { width: TRACK_W, top: TRACK_H }}
+        className={`fixed ${ruler ? `z-[65] ${belt}` : 'z-[58] border-brass-700/25 bg-coal-950/60 backdrop-blur-sm'} ${reduced ? '' : 'transition-[height,width,background-color] duration-200 ease-out'} ${incAxis === 'x' ? 'inset-x-0 bottom-0 border-t' : 'bottom-0 left-0 border-r'}`}
+        style={incAxis === 'x' ? { height: ruler ? TRACK_H : FILET_H } : { width: ruler ? TRACK_W : FILET_W, top: TRACK_H }}
         aria-label={t('game.incomeRail.aria')}
         data-lens="income"
+        onPointerEnter={() => {
+          if (cool.current !== null) window.clearTimeout(cool.current);
+          cool.current = null;
+          setHot(true);
+        }}
+        onPointerLeave={() => {
+          if (cool.current !== null) window.clearTimeout(cool.current);
+          cool.current = window.setTimeout(() => setHot(false), 220);
+        }}
+        onFocus={() => setFocusIn(true)}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusIn(false);
+        }}
       >
-        <span aria-hidden className={`absolute font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'}`}>
+        <span aria-hidden className={`absolute font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'} ${ruler ? '' : 'hidden'}`}>
           {t('game.incomeRail.trackShort')}
           {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
         </span>
         <div ref={incLane.ref} className={`relative overflow-hidden ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-4 h-[calc(100%-28px)]'} ${grab(incLane)}`} {...incLane.handlers}>
           <div style={incLane.inner}>
+            {!ruler && (
+              /* the filet: one brass line, a graduation every five spaces,
+                 the tens' figures barely there */
+              <div aria-hidden className="pointer-events-none absolute inset-0">
+                <span
+                  className={`absolute ${incAxis === 'x' ? 'inset-x-0 top-1/2 h-px' : 'inset-y-0 left-1/2 w-px'}`}
+                  style={{
+                    background: `linear-gradient(${incAxis === 'x' ? '90deg' : '0deg'}, rgba(201,164,92,.15), rgba(201,164,92,.6) 6%, rgba(201,164,92,.6) 94%, rgba(201,164,92,.15))`,
+                    boxShadow: incAxis === 'x' ? '0 1px 0 rgba(0,0,0,.6)' : '1px 0 0 rgba(0,0,0,.6)',
+                  }}
+                />
+                {filetTicks(INCOME_MAX).map(({ space, major }) => (
+                  <span
+                    key={space}
+                    className={`absolute ${major ? 'bg-brass-400/60' : 'bg-brass-500/35'} ${incAxis === 'x' ? `top-1/2 w-px ${major ? 'h-[7px] -mt-[3px]' : 'h-[5px] -mt-[2px]'}` : `left-1/2 h-px ${major ? 'w-[7px] -ml-[3px]' : 'w-[5px] -ml-[2px]'}`}`}
+                    style={at(incAxis, lvlPct(space))}
+                  />
+                ))}
+                {filetTicks(INCOME_MAX)
+                  .filter((k) => k.major)
+                  .map(({ space }) => (
+                    <span
+                      key={`n${space}`}
+                      className="absolute font-mono text-[9px] leading-none text-cream-100/30"
+                      style={incAxis === 'x' ? { ...at('x', lvlPct(space)), top: 1, marginLeft: 3 } : { ...at('y', lvlPct(space)), left: 1, marginTop: 2 }}
+                    >
+                      {space}
+                    </span>
+                  ))}
+              </div>
+            )}
+            {ruler && (
+            <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : 0.16 }}>
             {/* payout brackets */}
             {BANDS.map((b) => {
               const who = game.players.filter((p) => p.income >= b.from && p.income <= b.to).map((p) => p.name);
@@ -505,6 +574,8 @@ function EdgeTracks() {
                 {l}
               </span>
             ))}
+            </motion.div>
+            )}
             {fx('income', incAxis)}
             {(loanConfirm || loanPeek) && (
               <motion.div
@@ -523,7 +594,7 @@ function EdgeTracks() {
                 </span>
               </motion.div>
             )}
-            {pawns('income', incAxis)}
+            {pawns('income', incAxis, !ruler)}
           </div>
         </div>
       </div>

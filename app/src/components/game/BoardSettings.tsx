@@ -8,7 +8,8 @@ import { MAP_STYLES, RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './b
 import { narrowRailTop, useHudInsets } from './useHudInsets';
 import { useLayer } from './useLayer';
 import { useNarrow } from '@/hooks/use-narrow';
-import type { IncomeSide, MapStyle, MinimapSize, RailPainting } from './boardOptions';
+import type { IncomeSide, MapStyle, MinimapSize, RailMode, RailPainting } from './boardOptions';
+import { RAIL_MODES } from './railLogic';
 import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
 import type { KeyAction } from './keybindings';
@@ -567,6 +568,13 @@ function BoardSettings() {
                           setBoardOption('minimapSize', v);
                         }}
                         options={(['s', 'm', 'l'] as MinimapSize[]).map((id) => ({ id, label: t(`game.settings.size.${id}`) }))}
+                      />
+                    </OptionRow>
+                    <OptionRow label={t('game.railLane.setting')} hint={t('game.railLane.settingHint')}>
+                      <Segmented<RailMode>
+                        value={opts.railMode}
+                        onChange={(v) => setBoardOption('railMode', v)}
+                        options={RAIL_MODES.map((id) => ({ id, label: t(id === 'medals' ? 'game.railLane.modeMedals' : id === 'cards' ? 'game.railLane.modeCards' : 'game.railLane.modeSlip') }))}
                       />
                     </OptionRow>
                     <OptionRow label={t('game.settings.incomeSide')} hint={t('game.settings.incomeSideHint')}>

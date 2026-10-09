@@ -1,19 +1,12 @@
-import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, PLAYER_COLORS, incomeLevel, loanLanding } from '@/game/data';
-import { useGame, useShownGame } from '@/game/store';
+import { INCOME_MAX, INCOME_PAYOUT, PLAYER_COLORS, incomeLevel, loanLanding } from '@/game/data';
 import { money, useT } from '@/i18n';
-import Tooltip from './Tooltip';
-import { ShapeChip } from './TownInspector';
 
 /* ------------------------------------------------------------------ */
-/* Income rail — the physical game's edge track, flattened under the   */
-/* score bar: levels 0..30 with payout band marks (£0/£10/£30/£70),    */
-/* one pawn per player seated on their level (hover = where a loan     */
-/* would drop them). The loan CONFIRM modal shows the landing pawn     */
-/* itself (LoanLandingTrack, below).                                   */
+/* The loan's landing, as the confirmation sheet shows it: a few spaces */
+/* of the income track either side of where the pawn stands and where  */
+/* the loan would set it down. The track along the table's edge lives  */
+/* in EdgeTracks.                                                      */
 /* ------------------------------------------------------------------ */
-
-const PAD = 5; // % padding both ends
-const posOf = (lvl: number) => PAD + (lvl / INCOME_MAX) * (100 - 2 * PAD);
 
 /** mini track inside the loan-confirm modal — ZOOMED on the spaces that
  *  matter (a few either side of the current and landing spaces): every
@@ -93,101 +86,6 @@ export function LoanLandingTrack({ income, color }: { income: number; color: str
           ? t('game.incomeRail.loanBlocked')
           : t('game.incomeRail.loanLine', { from: incomeLevel(income), to: incomeLevel(after), payFrom: money(INCOME_PAYOUT[income]), payTo: money(INCOME_PAYOUT[after]) })}
       </p>
-    </div>
-  );
-}
-
-export default function IncomeRail() {
-  const game = useShownGame();
-  const setSpotlight = useGame((s) => s.setSpotlight);
-  const spotlight = useGame((s) => s.spotlight);
-  const t = useT();
-  if (!game) return null;
-
-  /* group players by level so stacked pawns fan out horizontally */
-  const atLevel = new Map<number, number[]>();
-  game.players.forEach((p, i) => {
-    const l = atLevel.get(p.income) ?? [];
-    l.push(i);
-    atLevel.set(p.income, l);
-  });
-
-  return (
-    <div
-      className="fixed inset-x-0 top-9 z-[59] flex h-10 items-center border-b border-brass-700/40 bg-coal-950/85 px-6 shadow-e2 backdrop-blur-md"
-      role="group"
-      aria-label={t('game.incomeRail.aria')}
-    >
-      <div className="relative h-full flex-1">
-        {/* payout bands: faint tint per rate zone + separator at each step-up */}
-        <div aria-hidden className="absolute inset-y-0" style={{ left: `${posOf(0)}%`, width: `${posOf(10) - posOf(0)}%`, background: 'rgba(201,164,92,.03)' }} />
-        <div aria-hidden className="absolute inset-y-0" style={{ left: `${posOf(10)}%`, width: `${posOf(20) - posOf(10)}%`, background: 'rgba(201,164,92,.06)' }} />
-        <div aria-hidden className="absolute inset-y-0" style={{ left: `${posOf(20)}%`, width: `${posOf(30) - posOf(20)}%`, background: 'rgba(201,164,92,.09)' }} />
-        <span aria-hidden className="absolute inset-y-1 w-px bg-brass-700/50" style={{ left: `${posOf(10)}%` }} />
-        <span aria-hidden className="absolute inset-y-1 w-px bg-brass-700/50" style={{ left: `${posOf(20)}%` }} />
-        {/* the groove */}
-        <div aria-hidden className="absolute inset-x-0 top-[24px] h-[3px] rounded-full bg-black/70 shadow-[0_1px_0_rgba(242,234,214,.08)]" />
-        {/* level ticks + band labels */}
-        {Array.from({ length: INCOME_MAX + 1 }, (_, lvl) => (
-          <span key={lvl} aria-hidden className="absolute top-[21px] w-px bg-brass-700/60" style={{ left: `${posOf(lvl)}%`, height: lvl % 5 === 0 ? 7 : 4 }} />
-        ))}
-        {[0, 10, 20, 30].map((lvl) => (
-          <span
-            key={lvl}
-            aria-hidden
-            className="absolute top-[1px] -translate-x-1/2 font-mono text-[9px] font-semibold text-brass-500/90"
-            style={{ left: `${posOf(lvl)}%` }}
-          >
-            {money(INCOME_PAYOUT[lvl])}
-          </span>
-        ))}
-        {/* rate categories: how much each rung pays inside the band */}
-        {[5, 15, 25].map((mid, b) => (
-          <span
-            key={mid}
-            aria-hidden
-            className="absolute top-[29px] -translate-x-1/2 whitespace-nowrap font-mono text-[9px] uppercase tracking-wider text-brass-500/75"
-            style={{ left: `${posOf(mid)}%` }}
-          >
-            {t(`game.incomeRail.band${b + 1}`)}
-          </span>
-        ))}
-
-        {/* player pawns */}
-        {game.players.map((p, i) => {
-          const group = atLevel.get(p.income)!;
-          const off = (group.indexOf(i) - (group.length - 1) / 2) * 10;
-          const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
-          const spot = spotlight === i;
-          const pay = money(INCOME_PAYOUT[p.income]);
-          const after = Math.max(0, p.income - LOAN_INCOME_HIT);
-          return (
-            /* the ABSOLUTE wrapper carries the position — the Tooltip span
-               wrapper is static and would collapse the pawn to the rail start */
-            <div key={i} className="absolute top-[8px] -translate-x-1/2" style={{ left: `calc(${posOf(p.income)}% + ${off}px)` }}>
-              <Tooltip
-                side="bottom"
-                title={t('game.incomeRail.pawnTitle', { name: p.name, lvl: p.income, pay })}
-                content={t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after, pay: money(INCOME_PAYOUT[after]) })}
-              >
-                <button
-                  type="button"
-                  aria-label={t('game.incomeRail.pawnAria', { name: p.name, lvl: p.income, pay })}
-                  aria-pressed={spot}
-                  onClick={() => setSpotlight(spot ? null : i)}
-                  className="flex h-[13px] w-[13px] items-center justify-center rounded-[3px] transition-transform hover:scale-125"
-                  style={{
-                    background: `${col}26`,
-                    boxShadow: spot ? `0 0 0 1.5px ${col}, 0 0 8px ${col}` : `0 0 0 1px ${col}88`,
-                  }}
-                >
-                  <ShapeChip color={p.color} size={9} />
-                </button>
-              </Tooltip>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

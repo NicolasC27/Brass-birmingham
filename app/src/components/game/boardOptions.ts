@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react';
 import type { ChipStyle, SlotArt, StockStyle, TileArt } from '@/gl/faces';
 import type { TrafficLevel } from '@/gl/ambiance';
 import type { IndustryType } from '@/game/types';
+import { sanitizeRailMode } from './railLogic';
 
 /* ------------------------------------------------------------------ */
 /* Board display options — one tiny shared store (localStorage-backed) */
@@ -20,6 +21,9 @@ export const sanitizeMatOrder = (o: unknown): IndustryType[] => {
   return [...seen, ...MAT_ORDER_DEFAULT.filter((i) => !seen.includes(i))];
 };
 export const MAT_STYLES: MatStyle[] = ['cards', 'compact', 'chips'];
+/** the players' column: narrow medallions, the full cards, or folded
+ *  away into a slip on the left edge */
+export type RailMode = 'medals' | 'cards' | 'slip';
 /** where the income track runs: along the bottom edge or down the left edge */
 export type IncomeSide = 'bottom' | 'left';
 /** the ground under the board: a period engraved map drawn from the geometry
@@ -122,8 +126,8 @@ export interface BoardOptions {
   traffic: TrafficLevel;
   /** beginner aid: dim unplayable slots while planning, itemised price tags */
   beginnerAid: boolean;
-  /** the player rail folded to one line per seat, for more board */
-  railCompact: boolean;
+  /** the players' column: medallions (the default), cards, or the slip */
+  railMode: RailMode;
   /** the guide's column folded to a rail down the right edge (key G) */
   guideFolded: boolean;
   /** player mat spread wide (six columns) instead of the slim docked panel */
@@ -165,7 +169,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   railPainting: 'brassworks.railPainting',
   traffic: 'brassworks.traffic',
   beginnerAid: 'brassworks.beginnerAid',
-  railCompact: 'brassworks.railCompact',
+  railMode: 'brassworks.railMode',
   guideFolded: 'brassworks.guideFolded',
   matWide: 'brassworks.matWide',
   sound: 'brassworks.sound',
@@ -213,7 +217,7 @@ let state: BoardOptions = {
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
-  railCompact: read('railCompact', false),
+  railMode: sanitizeRailMode(read('railMode', 'medals')),
   guideFolded: read('guideFolded', false),
   matWide: read('matWide', false),
   sound: read('sound', true),
@@ -257,7 +261,12 @@ export const getBoardOptions = (): BoardOptions => state;
  *  track takes the bottom edge or the left edge depending on `incomeSide` */
 export const TRACK_H = 36;
 export const TRACK_W = 56;
-/** pixel insets every floating HUD element keeps from the screen edges */
+/** the income track at rest: a thin brass filet that opens into the full
+ *  ruler (TRACK_H / TRACK_W) under the pointer or the keyboard */
+export const FILET_H = 20;
+export const FILET_W = 22;
+/** pixel insets every floating HUD element keeps from the screen edges: the
+ *  income track is counted at rest, the ruler opens over the margin */
 export function hudInsets(o: BoardOptions, vpTrack = true, lane = 0): { left: number; bottom: number; top: number; right: number } {
-  return { top: vpTrack ? TRACK_H + 8 : 8, left: o.incomeSide === 'left' ? TRACK_W + 8 : 12, bottom: o.incomeSide === 'bottom' ? TRACK_H + 8 : 12, right: lane + 12 };
+  return { top: vpTrack ? TRACK_H + 8 : 8, left: o.incomeSide === 'left' ? FILET_W + 8 : 12, bottom: o.incomeSide === 'bottom' ? FILET_H + 8 : 12, right: lane + 12 };
 }
