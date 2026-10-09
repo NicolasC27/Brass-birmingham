@@ -38,6 +38,19 @@ const game: typeof engame = {
     signNote: 'Schuldschein unterschreiben',
     candleOut: 'Die Kerze von {name} ist heruntergebrannt.',
   },
+  bandeau: {
+    title: 'Was der Zug verbraucht',
+    group: 'Verbraucht: {list}',
+    res: { coal: '{n} Kohle', iron: '{n} Eisen', beer: '{n} Bier' },
+    works: { coal: 'Mine', iron: 'Eisenhütte', beer: 'Brauerei' },
+    own: '{what} aus deiner {works} in {town}',
+    rival: '{what} aus der {works} von {owner} in {town}',
+    market: '{what} vom Markt für {price}',
+    merchant: '{what} aus dem Fass des Händlers in {merchant}',
+    sale: 'verkauft {what} an den Markt, +{gain}',
+    left: 'bleiben {sum}',
+    priceTip: 'Was der Zug kostet, am Markt gekaufte Würfel eingeschlossen, und was dir bleibt',
+  },
   topbar: {
     ironTip: 'Woher das Eisen kommt: jede Hütte auf dem Plan, deine eigene, um sie zu leeren',
     eraCanal: 'Kanalzeit',
@@ -344,6 +357,22 @@ const game: typeof engame = {
     loansLine: ' · Kredite {loans} (−{penalty} Einkommen)',
     seatOf: '{n} von {total}',
   },
+  railLane: {
+    medalAria:
+      '{name}{now} — {money} in der Kasse, Einkommen {income}, {vp} [vp|Siegpunkt|Siegpunkte], {spent} in dieser Runde ausgegeben, Platz {rank} in der nächsten Runde',
+    now: ', am Zug',
+    spentLine: '{spent} von {purse} ausgegeben',
+    rankLine: 'Platz {rank} in der nächsten Runde',
+    toCards: 'Spielerkarten aufklappen',
+    toMedals: 'Zu Medaillons einklappen',
+    toSlip: 'Spieler in die Leiste wegklappen',
+    slipOpen: 'Spielerspalte wieder öffnen',
+    setting: 'Spielerspalte',
+    settingHint: 'Schmale Medaillons, volle Karten oder eine Leiste am linken Rand',
+    modeMedals: 'Medaillons',
+    modeCards: 'Karten',
+    modeSlip: 'Leiste',
+  },
   market: {
     sectionAria: 'Kohle- und Eisenmarkt',
     heading: 'Kohle- & Eisenmarkt',
@@ -457,6 +486,30 @@ const game: typeof engame = {
   industry: { coal: 'Kohlemine', iron: 'Eisenhütte', cotton: 'Baumwollspinnerei', manufacturer: 'Manufaktur', pottery: 'Töpferei', brewery: 'Brauerei' },
   /** a tile's level, where the industry is already said */
   level: { mark: 'Stufe {level}' },
+  /** the hand's lane: the purse's public figures, the coal of a build */
+  main: {
+    spent: 'ausgegeben {money}',
+    nextPlace: '{place} in der nächsten Runde',
+    place1: '1.',
+    place2: '2.',
+    place3: '3.',
+    place4: '4.',
+    orderTip: 'Was {name} in dieser Runde ausgegeben hat. Die nächste Runde spielt von der geringsten Ausgabe zur höchsten; bei Gleichstand bleibt die Reihenfolge dieser Runde.',
+    buildCoal: 'Kohle:',
+    coalHint: 'Die nächsten verbundenen Minen, gleich wessen; deine eigene, um sie zu leeren',
+  },
+  /** the title card while the table is set, and the plates that wear its
+      dress (a board gone dark, a quarrel with the office) */
+  titre: {
+    ticket: 'Tisch Nr. {code}',
+    seatsAria: 'Am Tisch: {names}',
+    progressAria: 'Der Tisch wird gedeckt',
+    pressing: 'Die Presse wird eingefärbt…',
+    engraving: 'Die Karte wird graviert…',
+    set: 'Der Tisch ist gedeckt',
+    lostKicker: 'Der Spielplan',
+    troubleKicker: 'Das Kontor',
+  },
   /** a game at home and the office that keeps it, when the two fall out:
       {move} counts from one */
   homeTrouble: {

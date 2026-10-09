@@ -38,6 +38,19 @@ const fr: typeof engame = {
     signNote: 'Signer le billet',
     candleOut: 'La bougie de {name} a brûlé jusqu’au bout.',
   },
+  bandeau: {
+    title: 'Ce que le coup puise',
+    group: 'Le coup puise {list}',
+    res: { coal: '{n} [n|charbon|charbons]', iron: '{n} [n|fer|fers]', beer: '{n} [n|bière|bières]' },
+    works: { coal: 'mine', iron: 'forge', beer: 'brasserie' },
+    own: '{what} de votre {works} à {town}',
+    rival: '{what} de la {works} de {owner} à {town}',
+    market: '{what} du marché pour {price}',
+    merchant: '{what} du tonneau du marchand de {merchant}',
+    sale: 'vend {what} au marché, +{gain}',
+    left: 'reste {sum}',
+    priceTip: 'Ce que coûte le coup, cubes achetés au marché compris, et ce qu’il vous restera',
+  },
   topbar: {
     ironTip: 'D’où vient le fer : n’importe quelle forge du plateau, la vôtre pour la vider',
     eraCanal: 'Ère canal',
@@ -344,6 +357,22 @@ const fr: typeof engame = {
     loansLine: ' · Emprunts {loans} (−{penalty} revenu)',
     seatOf: '{n} sur {total}',
   },
+  railLane: {
+    medalAria:
+      '{name}{now} — {money} en caisse, revenu {income}, {vp} [vp|point de victoire|points de victoire], {spent} dépensés cette manche, place {rank} au prochain tour',
+    now: ', à qui c’est le tour',
+    spentLine: 'dépensé {spent} sur {purse}',
+    rankLine: 'place {rank} au prochain tour',
+    toCards: 'Déplier les cartes des joueurs',
+    toMedals: 'Replier en médaillons',
+    toSlip: 'Ranger les joueurs dans la réglette',
+    slipOpen: 'Rouvrir la colonne des joueurs',
+    setting: 'Colonne des joueurs',
+    settingHint: 'Médaillons étroits, cartes complètes, ou une réglette rangée au bord gauche',
+    modeMedals: 'Médaillons',
+    modeCards: 'Cartes',
+    modeSlip: 'Réglette',
+  },
   market: {
     sectionAria: 'Bourse charbon & fer',
     heading: 'Bourse charbon & fer',
@@ -457,6 +486,30 @@ const fr: typeof engame = {
   industry: { coal: 'Mine de charbon', iron: 'Forge', cotton: 'Filature', manufacturer: 'Manufacture', pottery: 'Poterie', brewery: 'Brasserie' },
   /** a tile's level, where the industry is already said */
   level: { mark: 'N{level}' },
+  /** the hand's lane: the purse's public figures, the coal of a build */
+  main: {
+    spent: 'dépensé {money}',
+    nextPlace: '{place} au prochain tour',
+    place1: '1ᵉʳ',
+    place2: '2ᵉ',
+    place3: '3ᵉ',
+    place4: '4ᵉ',
+    orderTip: 'Ce que {name} a dépensé cette manche. Au prochain tour, on joue du moins dépensier au plus dépensier ; à égalité, l’ordre de ce tour est gardé.',
+    buildCoal: 'Charbon :',
+    coalHint: 'Les mines reliées les plus proches, à qui qu’elles soient ; la vôtre pour la vider',
+  },
+  /** the title card while the table is set, and the plates that wear its
+      dress (a board gone dark, a quarrel with the office) */
+  titre: {
+    ticket: 'Table n° {code}',
+    seatsAria: '{names}, autour de la table',
+    progressAria: 'La table se dresse',
+    pressing: 'On encre la presse…',
+    engraving: 'On grave la carte…',
+    set: 'La table est dressée',
+    lostKicker: 'Le plateau',
+    troubleKicker: 'Le bureau',
+  },
   /** a game at home and the office that keeps it, when the two fall out:
       {move} counts from one */
   homeTrouble: {

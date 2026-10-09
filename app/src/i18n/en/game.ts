@@ -36,6 +36,19 @@ const game = {
     signNote: 'Sign the note',
     candleOut: "{name}'s candle burned out.",
   },
+  bandeau: {
+    title: 'What the move draws on',
+    group: 'Drawn: {list}',
+    res: { coal: '{n} coal', iron: '{n} iron', beer: '{n} beer' },
+    works: { coal: 'mine', iron: 'ironworks', beer: 'brewery' },
+    own: '{what} from your {works} at {town}',
+    rival: "{what} from {owner}'s {works} at {town}",
+    market: '{what} from the market for {price}',
+    merchant: "{what} from the {merchant} merchant's barrel",
+    sale: 'sells {what} to the market, +{gain}',
+    left: '{sum} left',
+    priceTip: 'What the move costs, cubes bought at the market included, and what you will have left',
+  },
   topbar: {
     ironTip: 'Where the iron comes from: any works on the board, your own to empty it',
     eraCanal: 'Canal Era',
@@ -342,6 +355,22 @@ const game = {
     loansLine: ' · Loans {loans} (−{penalty} income)',
     seatOf: '{n} of {total}',
   },
+  railLane: {
+    medalAria:
+      '{name}{now} — {money} in hand, income {income}, {vp} victory [vp|point|points], {spent} spent this round, place {rank} next round',
+    now: ', to act',
+    spentLine: 'spent {spent} of {purse}',
+    rankLine: 'place {rank} next round',
+    toCards: 'Unfold the players’ cards',
+    toMedals: 'Fold to medallions',
+    toSlip: 'Put the players away in the slip',
+    slipOpen: 'Bring the players back',
+    setting: 'Players’ column',
+    settingHint: 'Narrow medallions, full cards, or a slip tucked on the left edge',
+    modeMedals: 'Medallions',
+    modeCards: 'Cards',
+    modeSlip: 'Slip',
+  },
   market: {
     sectionAria: 'Coal and Iron Exchange',
     heading: 'Coal & iron exchange',
@@ -455,6 +484,30 @@ const game = {
   industry: { coal: 'Coal Mine', iron: 'Iron Works', cotton: 'Cotton Mill', manufacturer: 'Manufactory', pottery: 'Pottery', brewery: 'Brewery' },
   /** a tile's level, where the industry is already said */
   level: { mark: 'L{level}' },
+  /** the hand's lane: the purse's public figures, the coal of a build */
+  main: {
+    spent: 'spent {money}',
+    nextPlace: '{place} next round',
+    place1: '1st',
+    place2: '2nd',
+    place3: '3rd',
+    place4: '4th',
+    orderTip: 'What {name} has spent this round. Next round is played from the least spent to the most; on a tie, this round’s order holds.',
+    buildCoal: 'Coal:',
+    coalHint: 'The nearest connected mines, whoever’s; your own to empty it',
+  },
+  /** the title card while the table is set, and the plates that wear its
+      dress (a board gone dark, a quarrel with the office) */
+  titre: {
+    ticket: 'Table no. {code}',
+    seatsAria: 'Around the table: {names}',
+    progressAria: 'The table being set',
+    pressing: 'Inking the press…',
+    engraving: 'Engraving the map…',
+    set: 'The table is set',
+    lostKicker: 'The board',
+    troubleKicker: 'The office',
+  },
   /** a game at home and the office that keeps it, when the two fall out:
       {move} counts from one */
   homeTrouble: {
