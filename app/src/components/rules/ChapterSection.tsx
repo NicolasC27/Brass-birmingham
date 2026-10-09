@@ -42,26 +42,32 @@ export default function ChapterSection({
       viewport={{ amount: 0.2, once: true }}
       transition={{ duration: 0.22, ease: "easeOut" }}
     >
-      <header className="group flex items-baseline gap-3">
-        <span aria-hidden className="font-mono text-[13px] text-brass-500">
-          {numeral}.
-        </span>
-        <h2 id={`${id}-heading`} className="h2-section">
-          {title}
-        </h2>
-        {onCopyAnchor && (
-          <button
-            type="button"
-            onClick={() => onCopyAnchor(id, title)}
-            aria-label={t("platform.rules.copyLinkAria", { section: title })}
-            className="rules-print-hide ml-auto self-center rounded p-1 text-iron-400 opacity-0 transition-[opacity,color] duration-150 hover:text-brass-300 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-signal-400 group-hover:opacity-100"
-          >
-            <Link2 size={14} aria-hidden />
-          </button>
-        )}
-      </header>
-      <div className="rules-body mt-5 max-w-[68ch] space-y-5 font-ui text-[15px] leading-[1.7] text-paper-300">
-        {children}
+      {/* the chapter keeps one measure, head and body together, set in the
+          middle of the register: a 641px column set flush left in a 762px
+          frame left 176px of dead gutter on the right, and the anchor
+          floated off beyond the last line */}
+      <div className="mx-auto max-w-[640px]">
+        <header className="group flex items-baseline gap-3">
+          <span aria-hidden className="font-mono text-[13px] text-brass-500">
+            {numeral}.
+          </span>
+          <h2 id={`${id}-heading`} className="h2-section">
+            {title}
+          </h2>
+          {onCopyAnchor && (
+            <button
+              type="button"
+              onClick={() => onCopyAnchor(id, title)}
+              aria-label={t("platform.rules.copyLinkAria", { section: title })}
+              className="rules-print-hide ml-auto self-center p-1 text-iron-400 opacity-0 transition-[opacity,color] duration-150 hover:text-brass-300 focus-visible:opacity-100 group-hover:opacity-100"
+            >
+              <Link2 size={14} aria-hidden />
+            </button>
+          )}
+        </header>
+        <div className="rules-body mt-5 space-y-5 font-ui text-[15px] leading-[1.7] text-paper-300">
+          {children}
+        </div>
       </div>
     </motion.section>
   );

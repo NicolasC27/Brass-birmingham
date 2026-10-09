@@ -12,9 +12,9 @@ export default function MoneyLadder() {
   const t = useT();
 
   return (
-    <div className="flex items-center justify-center">
+    <figure className="flex flex-col items-center justify-center gap-2">
       <svg
-        viewBox="0 0 120 210"
+        viewBox="0 0 120 204"
         className="h-52 w-auto"
         role="img"
         aria-label={t("rules.money.ladderAria")}
@@ -32,7 +32,7 @@ export default function MoneyLadder() {
                 width={40}
                 height={15}
                 rx={3}
-                fill={i === MID ? "var(--rd-brass, #C9A45C)" : "var(--rd-cream, #F2EAD6)"}
+                fill={i === MID ? "rgb(var(--brass-plate))" : "var(--rd-cream, #F2EAD6)"}
                 stroke={i === 1 ? "var(--rd-rust, #D0704E)" : "var(--rd-brass, #8A6B33)"}
                 strokeWidth={i === 1 ? 1.6 : 1}
               />
@@ -40,8 +40,8 @@ export default function MoneyLadder() {
                 x={60}
                 y={y + 3.5}
                 textAnchor="middle"
-                fontSize={9}
-                fill="#241D14"
+                fontSize={11}
+                fill={i === MID ? "rgb(var(--ink-on-brass))" : "#241D14"}
                 fontFamily="'IBM Plex Mono', monospace"
               >
                 {label}
@@ -53,10 +53,10 @@ export default function MoneyLadder() {
           <circle cx={22} cy={24 + (RUNGS.length - 1 - MID) * 24 - 1} r={8} fill="var(--rd-brass, #C9A45C)" stroke="var(--rd-brass, #8A6B33)" strokeWidth={1.5} />
           <circle cx={20} cy={24 + (RUNGS.length - 1 - MID) * 24 - 3} r={2} fill="var(--rd-cream, #DDBE7E)" />
         </g>
-        <text x={60} y={208} textAnchor="middle" fontSize={8.5} fill="var(--rd-ink, #C8BFAC)" opacity={0.75} fontFamily="'IBM Plex Mono', monospace">
-          {t("rules.money.ladderCaption")}
-        </text>
       </svg>
-    </div>
+      {/* the caption leaves the drawing for the page: at 8.5 units it read
+          at 8px, and at a legible size it no longer fitted 120 */}
+      <figcaption className="data-text text-iron-400">{t("rules.money.ladderCaption")}</figcaption>
+    </figure>
   );
 }

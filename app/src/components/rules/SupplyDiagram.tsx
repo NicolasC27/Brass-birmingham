@@ -17,8 +17,10 @@ const CREAM = "var(--rd-cream, #F2EAD6)";           /* the counters and cards */
 const PLATE_INK = "var(--rd-ink, #C8BFAC)";         /* free lettering and linework: 5.68 / 10.64 */
 const BRASS = "var(--rd-brass, #C9A45C)";           /* 4.83 on paper, 8.28 on lacquer */
 const BRASS_DIM = "var(--rd-brass, #8A6B33)";       /* rims and frames: 4.83 / 3.91 */
-const COPPER = "var(--rd-rust, #A6562B)";           /* 4.96 / 5.65 */
-const RUST = "var(--rd-rust, #D0704E)";             /* 4.96 / 5.65 */
+const RUST = "var(--rd-rust, #D0704E)";             /* the market's coal on the move: 4.96 / 5.65 */
+/* a broken chain is a state, not a material, so it takes the signal's ink;
+   rust stays the rail's and the ember's */
+const SIGNAL = "rgb(var(--signal-ink, 240 169 46))";
 
 const FELL = "'IM Fell English SC', Georgia, serif";
 const MONO = "'IBM Plex Mono', monospace";
@@ -41,11 +43,12 @@ function SvgChip({
   text: string;
   color: string;
 }) {
-  const w = text.length * 6.4 + 18;
+  /* 8.1 units a glyph at 13.5 in Plex Mono, 9 of margin either side */
+  const w = text.length * 8.1 + 18;
   return (
     <g transform={`translate(${x - w / 2}, ${y})`}>
-      <rect width={w} height={22} rx={5} fill={CREAM} stroke={color} strokeWidth={1.2} />
-      <text x={w / 2} y={15} textAnchor="middle" fontSize={11} fill={INK} fontFamily={MONO}>
+      <rect width={w} height={24} fill={CREAM} stroke={color} strokeWidth={1.2} />
+      <text x={w / 2} y={16.5} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily={MONO}>
         {text}
       </text>
     </g>
@@ -87,7 +90,7 @@ const ScenarioLayer = memo(function ScenarioLayer({
           <circle r={11} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1} />
           <image href="/icon-canal.svg" x={-8.5} y={-8.5} width={17} height={17} />
         </g>
-        <SvgChip x={520} y={128} text={mineChip} color={BRASS} />
+        <SvgChip x={520} y={136} text={mineChip} color={BRASS} />
       </g>
     );
   }
@@ -97,7 +100,7 @@ const ScenarioLayer = memo(function ScenarioLayer({
         <path
           d={PATH_GHOST_MARKET}
           fill="none"
-          stroke={COPPER}
+          stroke={RUST}
           strokeWidth={2.5}
           strokeLinecap="round"
           className="rules-ghost"
@@ -120,10 +123,10 @@ const ScenarioLayer = memo(function ScenarioLayer({
           <animateMotion dur="2.2s" begin="1s" repeatCount="indefinite">
             <mpath href="#rules-ghost-market-up" />
           </animateMotion>
-          <circle r={10} fill={CREAM} stroke={COPPER} strokeWidth={1} />
+          <circle r={10} fill={CREAM} stroke={RUST} strokeWidth={1} />
           <image href="/icon-coal.svg" x={-8} y={-8} width={16} height={16} />
         </g>
-        <SvgChip x={585} y={128} text={marketChip} color={COPPER} />
+        <SvgChip x={585} y={136} text={marketChip} color={RUST} />
       </g>
     );
   }
@@ -132,14 +135,14 @@ const ScenarioLayer = memo(function ScenarioLayer({
       <path
         d={PATH_BROKEN}
         fill="none"
-        stroke={RUST}
+        stroke={SIGNAL}
         strokeWidth={2.5}
         strokeLinecap="round"
         className="rules-ghost-rust"
         style={{ "--ghost-len": 130 } as CSSProperties}
       />
       {/* the break in the chain */}
-      <g stroke={RUST} strokeWidth={2.5} strokeLinecap="round">
+      <g stroke={SIGNAL} strokeWidth={2.5} strokeLinecap="round">
         <path d="M 132 118 L 148 134 M 148 118 L 132 134" />
       </g>
       <g className="rules-shake">
@@ -150,12 +153,12 @@ const ScenarioLayer = memo(function ScenarioLayer({
           height={46}
           rx={4}
           fill="none"
-          stroke={RUST}
+          stroke={SIGNAL}
           strokeWidth={2}
           strokeDasharray="5 4"
         />
       </g>
-      <SvgChip x={548} y={128} text={noneChip} color={RUST} />
+      <SvgChip x={548} y={136} text={noneChip} color={SIGNAL} />
     </g>
   );
 });
@@ -227,7 +230,7 @@ export default function SupplyDiagram() {
             <circle cx={95} cy={250} r={30} fill={BRASS} className="rules-mine-pulse" />
             <circle cx={95} cy={250} r={24} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1.5} />
             <image href="/icon-coal.svg" x={78} y={233} width={34} height={34} />
-            <text x={95} y={292} textAnchor="middle" fontSize={11} fill={PLATE_INK} fontFamily={FELL}>
+            <text x={95} y={296} textAnchor="middle" fontSize={13.5} fill={PLATE_INK} fontFamily={FELL}>
               {t("rules.supply.yourMine")}
             </text>
           </g>
@@ -235,20 +238,20 @@ export default function SupplyDiagram() {
           {/* town A */}
           <g>
             <circle cx={150} cy={85} r={26} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1.5} />
-            <text x={150} y={90} textAnchor="middle" fontSize={12} fill={INK} fontFamily={FELL}>Dudley</text>
+            <text x={150} y={90} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily={FELL}>Dudley</text>
           </g>
 
           {/* town B */}
           <g>
             <circle cx={430} cy={85} r={26} fill={CREAM} stroke={BRASS_DIM} strokeWidth={1.5} />
-            <text x={430} y={90} textAnchor="middle" fontSize={12} fill={INK} fontFamily={FELL}>B’ham</text>
+            <text x={430} y={90} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily={FELL}>B’ham</text>
           </g>
 
           {/* build slot */}
           {mode !== "none" && (
             <g>
               <rect x={468} y={62} width={54} height={46} rx={4} fill="none" stroke={BRASS} strokeWidth={1.6} strokeDasharray="5 4" />
-              <text x={495} y={128} textAnchor="middle" fontSize={10.5} fill={PLATE_INK} fontFamily={MONO}>
+              <text x={495} y={126} textAnchor="middle" fontSize={13.5} fill={PLATE_INK} fontFamily={MONO}>
                 {t("rules.supply.buildSlot")}
               </text>
             </g>
@@ -257,7 +260,7 @@ export default function SupplyDiagram() {
           {/* market tray */}
           <g>
             <rect x={430} y={244} width={262} height={46} rx={7} fill={PLATE_INK} fillOpacity={0.1} stroke={BRASS_DIM} strokeOpacity={0.7} />
-            <text x={561} y={236} textAnchor="middle" fontSize={11} fill={PLATE_INK} fontFamily={FELL}>
+            <text x={561} y={236} textAnchor="middle" fontSize={13.5} fill={PLATE_INK} fontFamily={FELL}>
               {t("rules.supply.marketLabel")}
             </text>
             {Array.from({ length: 7 }).map((_, i) => (
@@ -272,7 +275,7 @@ export default function SupplyDiagram() {
                   stroke={BRASS_DIM}
                   strokeOpacity={0.5}
                 />
-                <text x={460 + i * 35} y={264} textAnchor="middle" fontSize={9} fill={INK} fontFamily={MONO}>
+                <text x={460 + i * 35} y={266} textAnchor="middle" fontSize={13.5} fill={INK} fontFamily={MONO}>
                   £{i + 1}
                 </text>
                 {i >= 2 && <circle cx={460 + i * 35} cy={275} r={6} fill={INK} />}

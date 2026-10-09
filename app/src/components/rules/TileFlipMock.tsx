@@ -50,7 +50,9 @@ export default function TileFlipMock() {
           </div>
         </div>
       </div>
-      <p className="font-ui text-[10.5px] text-iron-400">
+      {/* the caption is held to the tile's width: left free, it ran 357px
+          and the grid gave the chapter's text what was left */}
+      <p className="max-w-[148px] text-center font-ui text-[10.5px] leading-snug text-iron-400">
         {t("rules.selling.flip.caption")}
       </p>
     </div>

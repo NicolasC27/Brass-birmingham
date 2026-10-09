@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
-import { Play, Plus, Search } from "lucide-react";
+import { Play, Plus, Search, X } from "lucide-react";
 
 import { useT } from "@/i18n";
-import Button from "@/components/platform/Button";
 import Toast from "@/components/platform/Toast";
 import type { ToastData } from "@/components/platform/Toast";
+import PageShell from "@/components/site/PageShell";
 import RulesStyle from "@/components/rules/RulesStyle";
 import RulesIcon from "@/components/rules/RulesIcon";
 import ChapterSection from "@/components/rules/ChapterSection";
@@ -66,7 +66,10 @@ function MarketTrayMock() {
           >
             <span className="tnums font-mono text-[10.5px] text-brass-500">£{i + 1}</span>
             {i >= 2 ? (
-              <span className="mt-0.5 h-3 w-3 rounded-full bg-ink-900 ring-1 ring-paper-100/40" />
+              /* the cube is cut from the register's own ink — dark on the day's
+                 paper, pale at night — where a flat ink-900 sank to 1.02 on
+                 the night's enamel */
+              <span className="mt-0.5 h-3 w-3 rounded-full bg-paper-100 ring-1 ring-[var(--gz-ink-soft)]" />
             ) : (
               <span className="mt-0.5 h-3 w-3 rounded-full border border-dashed border-paper-100/20" />
             )}
@@ -86,6 +89,11 @@ function MarketTrayMock() {
 /** Worked scoring sketch for chapter 10. */
 function ScoringSketch() {
   const t = useT();
+  /* the label's frame is cut to its words: 6 units a glyph at 10 in Plex
+     Mono, 6 of margin either side — « Verbindung 3 » ran 20 units past a
+     frame sized on the English */
+  const link = t("rules.scoringSketch.link");
+  const linkW = link.length * 6 + 12;
   return (
     <svg
       viewBox="0 0 360 130"
@@ -110,12 +118,12 @@ function ScoringSketch() {
       </g>
       {/* the link */}
       <path d="M 86 56 C 140 40, 180 72, 224 58" fill="none" stroke="var(--rd-brass, #C9A45C)" strokeWidth={2.5} strokeLinecap="round" />
-      <rect x={140} y={10} width={52} height={18} rx={4} fill="rgb(var(--enamel-850))" stroke="var(--rd-brass, #C9A45C)" />
-      <text x={166} y={23} textAnchor="middle" fontSize={10} fill="var(--rd-brass, #C9A45C)" fontFamily="'IBM Plex Mono', monospace">{t("rules.scoringSketch.link")}</text>
+      <rect x={176 - linkW / 2} y={10} width={linkW} height={18} fill="rgb(var(--enamel-850))" stroke="var(--rd-brass, #C9A45C)" />
+      <text x={176} y={23} textAnchor="middle" fontSize={10} fill="var(--rd-brass, #C9A45C)" fontFamily="'IBM Plex Mono', monospace">{link}</text>
       <text x={320} y={60} textAnchor="middle" fontSize={13} fill="rgb(var(--paper-100))" fontFamily="'IBM Plex Mono', monospace">
         = 10
       </text>
-      <text x={320} y={78} textAnchor="middle" fontSize={8.5} fill="rgb(var(--iron-400))" fontFamily="Inter, sans-serif">
+      <text x={320} y={80} textAnchor="middle" fontSize={10} fill="rgb(var(--iron-400))" fontFamily="'IBM Plex Mono', monospace">
         {t("rules.scoringSketch.vpTotal")}
       </text>
     </svg>
@@ -245,52 +253,70 @@ export default function Rules() {
     [t],
   );
 
-  const headerReveal = (i: number) => ({
-    initial: reduced ? (false as const) : { opacity: 0, y: 10 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.22, ease: "easeOut" as const, delay: reduced ? 0 : i * 0.06 },
-  });
-
   return (
     <div className="relative">
       <RulesStyle />
 
-      <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
-        {/* --------------------- En-tête du registre --------------------- */}
-        <header className="flex flex-col gap-6 min-[900px]:flex-row min-[900px]:items-end min-[900px]:justify-between">
-          <div>
-            <motion.p {...headerReveal(0)} className="micro-label text-brass-300">
-              {t("platform.rules.eyebrow")}
-            </motion.p>
-            <motion.h1 {...headerReveal(1)} className="display-page mt-2">
-              {t("platform.rules.title")}
-            </motion.h1>
-            <motion.p {...headerReveal(2)} className="mt-2 max-w-[52ch] font-serif text-[15px] italic leading-relaxed text-paper-300">
-              {t("platform.rules.lede")}
-            </motion.p>
+      {/* the register opens like the other two reading rooms, through the
+          shared page head; the search and the tickets sit in its aside */}
+      <PageShell
+        eyebrow={t("platform.rules.eyebrow")}
+        title={t("platform.rules.title")}
+        lede={t("platform.rules.lede")}
+        aside={
+          <div className="rules-print-hide flex flex-col gap-2">
+            <div className="flex flex-col gap-3 min-[640px]:flex-row min-[640px]:items-center">
+              <label className="relative block min-[640px]:w-[260px]">
+                <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-iron-400" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(e) => onSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape" && query) onSearch("");
+                  }}
+                  placeholder={t("platform.rules.searchPlaceholder")}
+                  aria-label={t("platform.rules.searchAria")}
+                  aria-describedby="rules-search-count"
+                  className="h-10 w-full border border-brass-hairline-strong bg-enamel-850 pl-9 pr-10 font-ui text-[14px] text-paper-100 placeholder:text-iron-400 [&::-webkit-search-cancel-button]:hidden"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => onSearch("")}
+                    aria-label={t("platform.rules.clear")}
+                    className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center text-iron-400 transition-colors duration-150 hover:text-paper-100"
+                  >
+                    <X size={14} aria-hidden />
+                  </button>
+                )}
+              </label>
+              <Link to="/online" className="gz-ticket">
+                <Play aria-hidden />
+                {t("platform.nav.play")}
+              </Link>
+            </div>
+            {/* a fixed line: an empty count has no baseline, and aligning on
+                one nudged the whole aside 5px each time the count appeared */}
+            <div className="flex h-4 items-center justify-between gap-4">
+              {/* what the search found, said aloud as it narrows */}
+              <p id="rules-search-count" aria-live="polite" className="data-text leading-4 text-iron-400">
+                {matches ? t("platform.rules.matches", { n: matches.length, total: chapters.length }) : ""}
+              </p>
+              <Link
+                to="/cours"
+                className="font-ui text-[10.5px] font-semibold uppercase leading-4 tracking-label text-brass-500 transition-colors duration-150 hover:text-paper-100"
+              >
+                {t("platform.rules.programme")} →
+              </Link>
+            </div>
           </div>
-          <motion.div {...headerReveal(3)} className="rules-print-hide flex flex-col gap-3 min-[640px]:flex-row min-[640px]:items-center">
-            <label className="relative block min-[640px]:w-[260px]">
-              <Search size={16} aria-hidden className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-iron-400" />
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => onSearch(e.target.value)}
-                placeholder={t("platform.rules.searchPlaceholder")}
-                aria-label={t("platform.rules.searchAria")}
-                className="h-10 w-full rounded-lg border border-brass-hairline bg-enamel-850 pl-9 pr-3 font-ui text-[14px] text-paper-100 placeholder:text-iron-400 focus-visible:outline-2 focus-visible:outline-signal-400"
-              />
-            </label>
-            <Button variant="ghost" to="/online" icon={<Play size={16} aria-hidden />}>
-              {t("platform.nav.play")}
-            </Button>
-          </motion.div>
-        </header>
-
-        <div className="mt-10 min-[900px]:grid min-[900px]:grid-cols-12 min-[900px]:gap-6">
+        }
+      >
+        <div className="min-[900px]:grid min-[900px]:grid-cols-12 min-[900px]:gap-6">
           {/* ------------------------- Sommaire ------------------------- */}
           <div className="min-[900px]:col-span-3">
-            <IndexRail chapters={chapters} activeId={activeId} matches={matches} onNavigate={onNavigate} />
+            <IndexRail chapters={chapters} activeId={activeId} matches={matches} onNavigate={onNavigate} onClear={() => onSearch("")} />
           </div>
 
           {/* ------------------------- Le registre ------------------------- */}
@@ -314,7 +340,7 @@ export default function Rules() {
                     >
                       <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-brass-600 bg-[rgb(var(--brass-plate))] text-[rgb(var(--ink-on-brass))]">
                         <RulesIcon icon={s.icon} className="h-[18px] w-[18px]" />
-                        <span className="tnums absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-lacquer-950 font-mono text-[9px] font-semibold text-paper-100 ring-1 ring-brass-hairline">
+                        <span className="tnums absolute -bottom-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-lacquer-950 font-mono text-[10.5px] font-semibold text-paper-100 ring-1 ring-brass-hairline">
                           {i + 1}
                         </span>
                       </span>
@@ -329,7 +355,7 @@ export default function Rules() {
                     </div>
                   ))}
                 </div>
-                <p className="flex items-center gap-3 font-ui text-[13px] text-iron-400">
+                <p className="flex items-center gap-3 font-ui text-[13px] text-paper-300">
                   <img src="/card-back.webp" alt="" className="h-14 w-10 rounded-sm border border-brass-hairline" />
                   {t("rules.quickstart.note")}
                 </p>
@@ -341,7 +367,7 @@ export default function Rules() {
                   <div className="overflow-hidden rounded-lg border border-brass-hairline">
                     <img src="/era-canal-banner.webp" alt={t("rules.eras.canalAlt")} className="block h-16 w-full object-cover md:h-20" />
                   </div>
-                  <h3 className="mt-3 font-ui text-[15px] font-semibold text-bottle-ink">
+                  <h3 className="mt-3 font-fraunces text-[15px] font-medium leading-[1.3] text-bottle-ink">
                     {t("rules.eras.canalTitle")}
                   </h3>
                   <p className="mt-1">{t("rules.eras.canalBody")}</p>
@@ -353,7 +379,7 @@ export default function Rules() {
                   <div className="overflow-hidden rounded-lg border border-brass-hairline">
                     <img src="/era-rail-banner.webp" alt={t("rules.eras.railAlt")} className="block h-16 w-full object-cover md:h-20" />
                   </div>
-                  <h3 className="mt-3 font-ui text-[15px] font-semibold text-rust-400">
+                  <h3 className="mt-3 font-fraunces text-[15px] font-medium leading-[1.3] text-rust-400">
                     {t("rules.eras.railTitle")}
                   </h3>
                   <p className="mt-1">{t("rules.eras.railBody")}</p>
@@ -386,11 +412,11 @@ export default function Rules() {
                 <p>{t("rules.network.intro")}</p>
                 <div className="flex flex-wrap gap-2">
                   <span className="inline-flex items-center gap-2 rounded-md border border-bottle-500/40 bg-bottle-500/10 px-3 py-2 font-mono text-[12.5px] text-paper-100">
-                    <img src="/icon-canal.svg" alt="" className="h-4 w-4 [filter:brightness(0)_invert(0.85)]" />
+                    <img src="/icon-canal.svg" alt="" className="h-4 w-4 [html[data-theme=dark]_&]:[filter:brightness(0)_invert(0.85)]" />
                     {t("rules.network.canalChip")}
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-md border border-rust-600/40 bg-rust-600/10 px-3 py-2 font-mono text-[12.5px] text-paper-100">
-                    <img src="/icon-rail.svg" alt="" className="h-4 w-4 [filter:brightness(0)_invert(0.85)]" />
+                    <img src="/icon-rail.svg" alt="" className="h-4 w-4 [html[data-theme=dark]_&]:[filter:brightness(0)_invert(0.85)]" />
                     {t("rules.network.railChip")}
                   </span>
                   <span className="inline-flex items-center gap-2 rounded-md border border-rust-600/40 bg-rust-600/10 px-3 py-2 font-mono text-[12.5px] text-paper-100">
@@ -404,7 +430,7 @@ export default function Rules() {
               <ChapterSection id="supply" numeral="06" title={t("rules.chapters.supply")} onCopyAnchor={onCopyAnchor}>
                 <p>{t("rules.supply.intro")}</p>
                 <SupplyDiagram />
-                <p className="font-ui text-[13px] text-iron-400">{t("rules.supply.note")}</p>
+                <p className="font-ui text-[13px] text-paper-300">{t("rules.supply.note")}</p>
               </ChapterSection>
 
               {/* ---------------------- 07. Market ---------------------- */}
@@ -416,7 +442,7 @@ export default function Rules() {
 
               {/* ---------------------- 08. Selling ---------------------- */}
               <ChapterSection id="selling" numeral="08" title={t("rules.chapters.selling")} onCopyAnchor={onCopyAnchor}>
-                <div className="grid items-start gap-6 md:grid-cols-[1fr_auto]">
+                <div className="grid items-start gap-6 min-[1100px]:grid-cols-[1fr_180px]">
                   <div className="space-y-4">
                     <p>{t("rules.selling.intro")}</p>
                     <ul className="space-y-1 font-ui text-[14px]">
@@ -483,7 +509,7 @@ export default function Rules() {
 
               {/* ---------------------- 11. Glossary ---------------------- */}
               <ChapterSection id="glossary" numeral="11" title={t("rules.chapters.glossary")} onCopyAnchor={onCopyAnchor}>
-                <dl className="grid gap-x-8 gap-y-4 md:grid-cols-2">
+                <dl className="grid gap-x-10 gap-y-4 md:grid-cols-2">
                   {glossary.map((g) => (
                     <div key={g.term} className="border-b border-[rgb(var(--paper-100)/.08)] pb-3">
                       <dt className="font-ui text-[14px] font-semibold text-paper-100">{g.term}</dt>
@@ -496,10 +522,13 @@ export default function Rules() {
               {/* ------------------ 12. Approximations ------------------ */}
               <ChapterSection id="approximations" numeral="12" title={t("rules.chapters.approximations")} onCopyAnchor={onCopyAnchor}>
                 <p>{t("rules.approx.intro")}</p>
-                <div className="overflow-hidden rounded-lg border border-[rgb(var(--rust-600)/.35)] bg-[rgb(var(--rust-600)/.05)]">
-                  <ul className="divide-y divide-[rgb(var(--rust-600)/.18)]">
+                {/* the ledger of fidelity keeps the page's own rules — rust is
+                    the rail and the ember, not a state — and its stamps share
+                    one column, whatever the width of the word in each tongue */}
+                <div className="border border-[var(--gz-ink-soft)]">
+                  <ul className="divide-y divide-[var(--gz-ink-faint)] sm:grid sm:grid-cols-[max-content_1fr]">
                     {approximations.map((a) => (
-                      <li key={a.area} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-baseline sm:gap-4">
+                      <li key={a.area} className="flex flex-col gap-2 px-4 py-3 sm:col-span-2 sm:grid sm:grid-cols-subgrid sm:items-baseline sm:gap-x-4">
                         <span
                           className={`inline-flex w-fit shrink-0 items-center rounded-sm border px-2 py-0.5 font-ui text-[10.5px] font-semibold uppercase tracking-label ${STATUS_STYLES[a.status]}`}
                         >
@@ -517,7 +546,7 @@ export default function Rules() {
                 {/* The Clockwork Club — bot note with beta ribbon, deep-link target */}
                 <div id="bots" className="relative scroll-mt-24 overflow-hidden rounded-lg border border-brass-hairline bg-enamel-800 p-4">
                   <span className="beta-ribbon">{t("rules.approx.botsRibbon")}</span>
-                  <h3 className="font-ui text-[15px] font-semibold text-paper-100">
+                  <h3 className="title-card">
                     {t("rules.approx.botsTitle")}
                   </h3>
                   <p className="mt-1 font-ui text-[13px] leading-relaxed text-paper-300">
@@ -546,21 +575,23 @@ export default function Rules() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ amount: 0.25, once: true }}
           transition={{ duration: 0.22, ease: "easeOut" }}
-          className="rules-print-hide mt-12 flex min-h-[88px] flex-col gap-4 rounded-xl border border-[rgb(var(--paper-100)/.14)] px-6 py-5 min-[640px]:flex-row min-[640px]:items-center min-[640px]:justify-between"
+          className="rules-print-hide mt-12 flex min-h-[88px] flex-col gap-4 border border-[var(--gz-ink-faint)] px-6 py-5 min-[640px]:flex-row min-[640px]:items-center min-[640px]:justify-between"
         >
-          <p className="font-fraunces text-[20px] font-semibold text-paper-100">
-            {t("platform.rules.ready")}
-          </p>
+          <p className="h2-section">{t("platform.rules.ready")}</p>
+          {/* the house's tickets, as on the evening course — not the form
+              buttons, which drew the same departure a second way */}
           <div className="flex flex-wrap gap-3">
-            <Button variant="primary" to="/online" icon={<Play size={16} aria-hidden />}>
+            <Link to="/online" className="gz-ticket gz-ticket-brass">
+              <Play aria-hidden />
               {t("platform.action.playNow")}
-            </Button>
-            <Button variant="ghost" to="/setup" icon={<Plus size={16} aria-hidden />}>
+            </Link>
+            <Link to="/setup" className="gz-ticket">
+              <Plus aria-hidden />
               {t("platform.action.createTable")}
-            </Button>
+            </Link>
           </div>
         </motion.div>
-      </div>
+      </PageShell>
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>

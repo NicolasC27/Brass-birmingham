@@ -131,7 +131,6 @@ const RULES_CSS = `
   100% { background-color: transparent; }
 }
 .rules-hit {
-  border-radius: 4px;
   animation: rules-hit-fade 1.6s ease-out forwards;
 }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { ArrowUp, ListOrdered, X } from "lucide-react";
+import { ListOrdered, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n";
 
@@ -17,6 +17,8 @@ interface IndexRailProps {
   /** ids matching the current search — null when the search field is empty */
   matches: string[] | null;
   onNavigate: (id: string) => void;
+  /** empties the search, giving the whole summary back */
+  onClear: () => void;
 }
 
 /** Numbered chapter list shared by the desktop rail and the mobile drawer. */
@@ -25,14 +27,28 @@ function ChapterList({
   activeId,
   matches,
   onNavigate,
+  onClear,
   stagger,
 }: IndexRailProps & { stagger: boolean }) {
   const t = useT();
   const reduced = useReducedMotion();
   const visible = matches ? chapters.filter((c) => matches.includes(c.id)) : chapters;
 
+  /* an empty search never takes the only table of contents away without
+     the way back to it */
   if (matches && visible.length === 0) {
-    return <p className="mt-3 font-ui text-[13px] text-iron-400">{t("platform.rules.noResult")}</p>;
+    return (
+      <div className="mt-3">
+        <p className="font-serif text-[14px] italic text-paper-300">{t("platform.rules.noResult")}</p>
+        <button
+          type="button"
+          onClick={onClear}
+          className="mt-2 font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-500 transition-colors duration-150 hover:text-paper-100"
+        >
+          {t("platform.rules.clear")}
+        </button>
+      </div>
+    );
   }
   return (
     <ol className="mt-3 space-y-0.5">
@@ -49,7 +65,7 @@ function ChapterList({
               type="button"
               onClick={() => onNavigate(c.id)}
               aria-current={active ? "true" : undefined}
-              className="group relative flex w-full items-baseline gap-2.5 rounded py-1.5 pl-3 pr-2 text-left transition-colors duration-150"
+              className="group relative flex w-full items-baseline gap-2.5 py-1.5 pl-3 pr-2 text-left transition-colors duration-150"
             >
               {active && (
                 <motion.span
@@ -120,9 +136,9 @@ function RailFoot() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={() => window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" })}
-            className="flex items-center gap-1.5 rounded font-ui text-[13px] font-semibold text-iron-400 transition-colors duration-150 hover:text-paper-100 focus-visible:outline-2 focus-visible:outline-signal-400"
+            className="flex items-center gap-1.5 font-ui text-[13px] font-semibold text-iron-400 transition-colors duration-150 hover:text-paper-100"
           >
-            <ArrowUp size={14} aria-hidden />
+            {/* the label carries its own arrow */}
             {t("platform.rules.backToTop")}
           </motion.button>
         )}
@@ -147,7 +163,10 @@ export default function IndexRail(props: IndexRailProps) {
   };
 
   return (
-    <div className="rules-print-hide">
+    /* the wrapper runs the height of its grid column: sized to the rail
+       alone, it left the sticky rail no room to travel and the summary
+       scrolled away with the first chapter */
+    <div className="rules-print-hide min-[900px]:h-full">
       {/* Desktop: sticky rail */}
       <nav
         aria-label={t("rules.rail.navAria")}
@@ -163,7 +182,7 @@ export default function IndexRail(props: IndexRailProps) {
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="fixed bottom-[76px] left-4 z-40 flex h-10 items-center gap-2 rounded-lg border border-brass-hairline-strong bg-enamel-800 px-4 font-ui text-[13px] font-semibold text-paper-100 shadow-[0_8px_24px_var(--shadow-modal)] transition-colors duration-150 hover:border-brass-500 focus-visible:outline-2 focus-visible:outline-signal-400"
+          className="fixed bottom-[76px] left-4 z-40 flex h-10 items-center gap-2 rounded-lg border border-brass-hairline-strong bg-enamel-800 px-4 font-ui text-[13px] font-semibold text-paper-100 shadow-[0_8px_24px_var(--shadow-modal)] transition-colors duration-150 hover:border-brass-500"
         >
           <ListOrdered size={16} aria-hidden className="text-brass-300" />
           {t("platform.rules.summaryOpen")}

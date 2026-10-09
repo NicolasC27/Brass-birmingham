@@ -81,7 +81,9 @@ export default function IndustryTabs() {
   const industries = getIndustries();
   return (
     <div>
-      <p className="mb-3 flex items-center gap-2 rounded border-l-[3px] border-rust-600/70 bg-lacquer-950 px-3 py-2 font-ui text-[11.5px] leading-snug text-paper-300">
+      {/* a note of provenance, not a warning: it takes the brass of the
+          register's other notes, and rust stays the rail's and the ember's */}
+      <p className="mb-3 flex items-center gap-2 border-l-[3px] border-brass-500/70 bg-lacquer-950 px-3 py-2 font-ui text-[12.5px] leading-snug text-paper-300">
         <span className="font-semibold uppercase tracking-label">{t("rules.industries.tuningTag")}</span>
         <span>
           {t("rules.industries.tuningNote")}
@@ -95,7 +97,13 @@ export default function IndustryTabs() {
               value={ind.id}
               className="group relative flex h-10 flex-none items-center gap-2 rounded-full border border-brass-hairline bg-transparent px-4 font-ui text-[13px] font-semibold text-paper-300 transition-[background-color,border-color,color] duration-150 hover:border-brass-hairline-strong hover:text-paper-100 data-[state=active]:border-brass-500 data-[state=active]:bg-[rgb(var(--brass-plate))] data-[state=active]:text-[rgb(var(--ink-on-brass))]"
             >
-              <RulesIcon icon={ind.icon} className="h-4 w-4" />
+              {/* the woodcut is black: it holds on the day's paper and on the
+                  plate, and is lifted to the page's pale ink on the night's
+                  enamel, where it vanished */}
+              <RulesIcon
+                icon={ind.icon}
+                className="h-4 w-4 [html[data-theme=dark]_&]:[filter:brightness(0)_invert(0.85)] [html[data-theme=dark]_[data-state=active]_&]:[filter:none]"
+              />
               {ind.name}
             </TabsTrigger>
           ))}
