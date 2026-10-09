@@ -30,16 +30,16 @@ export default function Feuilleton() {
             <h3 className="font-fraunces text-[18px] font-medium leading-tight text-paper-100">
               {t('platform.feuilleton.title', { table: tableTitle(episode.name, lang) })}
             </h3>
-            <p className="data-text mt-1 text-[10.5px] text-iron-400 tnums">{episode.scores.map((s) => `${s.name} ${s.vp}`).join(' · ')}</p>
+            <p className="data-text mt-1 text-iron-400 tnums">{episode.scores.map((s) => `${s.name} ${s.vp}`).join(' · ')}</p>
             <ol className="mt-3 flex flex-col">
               {episode.moments.map((m, i) => (
-                <li key={m.at} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2.5 last:border-b-0">
+                <li key={m.at} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-3 last:border-b-0">
                   <span className="brass-roundel h-5 w-5 shrink-0 font-ui text-[10.5px] font-bold">{i + 1}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-serif text-[13px] leading-snug text-paper-100">
                       {t(m.mine ? 'platform.feuilleton.mine' : 'platform.feuilleton.theirs', { round: m.round, era: t(`platform.challenge.era.${m.era}`), name: m.by })}
                     </span>
-                    <span className={cn('data-text text-[10.5px] tnums', m.shift >= 0 ? 'text-bottle-ink' : 'text-rust-400')}>
+                    <span className={cn('data-text tnums', m.shift >= 0 ? 'text-bottle-ink' : 'text-rust-400')}>
                       {t('platform.feuilleton.shift', { n: `${m.shift > 0 ? '+' : ''}${m.shift}` })}
                     </span>
                   </span>

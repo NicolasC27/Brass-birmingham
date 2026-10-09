@@ -1,5 +1,5 @@
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BookOpen, Briefcase, GraduationCap, Hash, Play, Plus, RotateCcw, Trash2, User } from 'lucide-react';
 import { useLang, useT } from '@/i18n';
@@ -107,7 +107,7 @@ function ResumeBanner() {
         <p className="truncate font-fraunces text-[15px] font-medium text-paper-100">
           {text}
         </p>
-        <p className="data-text text-[10.5px] text-iron-400 tnums">{meta}</p>
+        <p className="data-text text-iron-400 tnums">{meta}</p>
       </div>
       {!table && (
         <button type="button" aria-label={t('platform.home.discard')} title={t('platform.home.discard')} onClick={() => setDiscarding(true)} className="text-iron-400 transition-colors hover:text-rust-400">
@@ -155,7 +155,7 @@ function QueueRankStrip() {
   });
 
   return (
-    <div className="grid gap-4 border-y border-[var(--gz-ink-soft)] py-5 min-[900px]:grid-cols-3">
+    <div className="grid gap-4 min-[900px]:grid-cols-3">
       <motion.div {...reveal(0)}>
         <ModeCard mode="normal" compact disabled={offline} queueCount={presence.normalQueue.count} estimateMin={presence.normalQueue.estimateMin} onSelect={() => navigate('/online')} />
       </motion.div>
@@ -164,10 +164,19 @@ function QueueRankStrip() {
       </motion.div>
       <motion.div {...reveal(2)}>
         {session ? (
-          <div className="flex h-[76px] items-center gap-4 border border-[var(--gz-ink-soft)] p-4">
-            <RankBadge tier={rank.tier} division={rank.division} size={32} compact />
-            <div className="min-w-0 flex-1">
-              <p className="title-card truncate">
+          /* my standing is a way in too — to the rankings — so it wears the
+             queues' paper and rule, its title set on the same line as theirs;
+             the progress is a thread along its foot, drawn only once there is
+             some, or an empty bar read as one more rule */
+          <Link
+            to="/classement"
+            className="relative flex h-full min-h-[76px] items-center gap-4 border border-[var(--gz-line-control)] bg-enamel-850 p-4 transition-colors duration-150 hover:border-[var(--gz-ink)] hover:bg-enamel-800"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center">
+              <RankBadge tier={rank.tier} division={rank.division} size={32} compact />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="title-card block truncate">
                 {rank.tier === 'placement'
                   ? rank.rating === null
                     ? t('platform.home.rating.none')
@@ -175,19 +184,25 @@ function QueueRankStrip() {
                   : rank.division
                     ? t('platform.home.rating.value', { tier: t(`platform.rank.${rank.tier}`), division: rank.division, lp: rank.lp ?? 0 })
                     : t('platform.home.rating.valueTop', { tier: t(`platform.rank.${rank.tier}`), lp: rank.lp ?? 0 })}
-              </p>
-              <div className="mt-2 h-px overflow-hidden bg-[var(--gz-ink-faint)]">
-                <motion.div initial={reduced ? false : { width: 0 }} whileInView={{ width: `${rank.progress}%` }} viewport={{ once: true }} transition={{ duration: 0.6, ease }} className="h-full bg-brass-300" />
-              </div>
-            </div>
-          </div>
+              </span>
+              <span className="mt-0.5 block truncate font-ui text-[12.5px] text-paper-300">{t('platform.home.rating.ladder')} →</span>
+            </span>
+            {rank.progress > 0 && (
+              <span className="absolute inset-x-4 bottom-2 h-px overflow-hidden bg-[var(--gz-ink-faint)]" aria-hidden>
+                <motion.span initial={reduced ? false : { width: 0 }} whileInView={{ width: `${rank.progress}%` }} viewport={{ once: true }} transition={{ duration: 0.6, ease }} className="block h-full bg-brass-300" />
+              </span>
+            )}
+          </Link>
         ) : (
-          <div className="flex h-[76px] items-center justify-between gap-3 border border-dashed border-[var(--gz-ink-soft)] p-4">
-            <p className="font-serif text-[13px] text-paper-300">{t('platform.home.rating.signIn')}</p>
-            <Button variant="ghost" className="!h-8 shrink-0" to="/account">
-              {t('platform.action.signIn')}
-            </Button>
-          </div>
+          /* a stranger's cell stays the dashed one of a door not yet open, but
+             the whole of it is the way in: a third button beside the queues'
+             cards crowded the sentence into three lines at a tablet's width */
+          <Link
+            to="/account"
+            className="flex h-full min-h-[76px] items-center border border-dashed border-[var(--gz-ink-soft)] p-4 font-serif text-[13px] leading-snug text-paper-300 transition-colors duration-150 hover:border-[var(--gz-ink)] hover:bg-enamel-800 hover:text-paper-100"
+          >
+            {`${t('platform.home.rating.signIn')}\u00a0→`}
+          </Link>
         )}
       </motion.div>
     </div>
@@ -241,9 +256,19 @@ export default function Home() {
   const [codeOpen, setCodeOpen] = useState(false);
   const [plate] = useState(plateOfTheEra);
   const theme = useTheme();
+  /* an anchor on the front page (/#defi): the columns arrive after the
+     first paint, so the scroll is asked again once they have */
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!hash) return;
+    const scroll = () => document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
+    scroll();
+    const retry = window.setTimeout(scroll, 350);
+    return () => window.clearTimeout(retry);
+  }, [hash]);
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 sm:px-8">
+    <div className="gz-measure">
       {/* the notice board, placarded at the door before anything else */}
       <NoticeBoard />
 
@@ -252,8 +277,13 @@ export default function Home() {
         <img src={theme === 'dark' ? plate.night : plate.src} alt="" style={{ objectPosition: plate.position }} />
       </motion.figure>
 
-      {/* the leader beside the departures */}
-      <div className="mt-8 grid gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-10">
+      {/* the leader beside the departures. One gutter for every pair of
+          columns on the page, the width of the rule's own indent, so the rule
+          stands in the middle of it and on the same vertical as the club's.
+          The almanac's line is printed under the tickets rather than under
+          the board: the leader is the short column, and left alone it opened
+          a well of paper beside a long timetable. */}
+      <div className="mt-8 grid gap-10 min-[1100px]:grid-cols-12 min-[1100px]:grid-rows-[auto_1fr] min-[1100px]:gap-x-7">
         <section className="flex flex-col gap-5 min-[1100px]:col-span-7">
           <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.24, ease }} className="eyebrow-fell">
             {t('platform.home.eyebrow')}
@@ -289,14 +319,17 @@ export default function Home() {
           </div>
         </section>
 
-        <aside className="gz-col-rule min-[1100px]:col-span-5">
+        <aside className="gz-col-rule min-[1100px]:col-span-5 min-[1100px]:col-start-8 min-[1100px]:row-span-2 min-[1100px]:row-start-1">
           <Departures />
-          <div className="mt-8">
-            <Ephemeris />
-          </div>
         </aside>
+
+        <div className="self-start min-[1100px]:col-span-7 min-[1100px]:row-start-2">
+          <Ephemeris />
+        </div>
       </div>
 
+      {/* two steps of rhythm only: 40px between blocks of a rank, 72px
+          before a rubric that carries its own title */}
       <div className="mt-10">
         <ChallengeNotice />
       </div>
@@ -305,7 +338,7 @@ export default function Home() {
         <QueueRankStrip />
       </div>
 
-      <div className="mt-10">
+      <div className="mt-[72px]">
         <ClubActivity />
       </div>
 

@@ -37,9 +37,9 @@ export default function Telegraph() {
         ) : (
           dispatches.slice(0, SHOWN).map((d, i) => (
             <p key={`${d.code}:${d.at}:${i}`} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] px-1 py-2 last:border-b-0">
-              <span className="data-text shrink-0 text-[10.5px] text-iron-400 tnums">{hour(d.at, lang)}</span>
+              <span className="data-text shrink-0 text-iron-400 tnums">{hour(d.at, lang)}</span>
               <span className="min-w-0 flex-1 font-serif text-[13px] leading-snug text-paper-100">
-                <span className="text-iron-400">« {tableTitle(d.table, lang)} » — </span>
+                <span className="text-iron-400">{t('platform.tableau.quoted', { table: tableTitle(d.table, lang) })} — </span>
                 {say(d)}
               </span>
             </p>

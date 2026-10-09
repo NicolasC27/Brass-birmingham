@@ -98,22 +98,31 @@ export default function ChallengeNotice() {
         </div>
 
         <div className="min-[900px]:col-span-4 min-[900px]:border-l min-[900px]:border-[var(--gz-ink-soft)] min-[900px]:pl-8">
-          <ul className="flex flex-col">
+          {/* the conditions are a list, not a choice: a ring is drawn only
+              once an attempt has marked it held or missed; until then the
+              line is led by a dash, and the state is said in words */}
+          <h3 id="challenge-conditions" className="micro-label text-iron-400">{t('platform.challenge.conditions')}</h3>
+          <ul aria-labelledby="challenge-conditions" className="mt-2 flex flex-col">
             {challenge.rules.map((rule, i) => {
               const met = best ? best.met[i] : null;
               return (
-                <li key={i} className="flex items-start gap-3 border-b border-[var(--gz-ink-faint)] py-2 last:border-b-0">
-                  <span
-                    className={cn(
-                      'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                      met === null ? 'border-[var(--gz-ink-soft)]' : met ? 'border-bottle-400 text-bottle-ink' : 'border-rust-400 text-rust-400',
-                    )}
-                    aria-label={met === null ? undefined : t(met ? 'platform.challenge.met' : 'platform.challenge.missed')}
-                  >
-                    {met === true && <Check size={10} strokeWidth={3} aria-hidden />}
-                    {met === false && <X size={10} strokeWidth={3} aria-hidden />}
+                <li key={i} className="flex items-start gap-3 border-b border-[var(--gz-ink-faint)] py-2 last:border-b-0 last:pb-0">
+                  {met === null ? (
+                    <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center font-ui text-[13px] leading-none text-iron-400" aria-hidden>
+                      —
+                    </span>
+                  ) : (
+                    <span
+                      className={cn('mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border', met ? 'border-bottle-400 text-bottle-ink' : 'border-rust-400 text-rust-400')}
+                      aria-hidden
+                    >
+                      {met ? <Check size={10} strokeWidth={3} /> : <X size={10} strokeWidth={3} />}
+                    </span>
+                  )}
+                  <span className="font-ui text-[13px] text-paper-100">
+                    {ruleText(t, rule)}
+                    <span className="sr-only"> — {t(met === null ? 'platform.challenge.untried' : met ? 'platform.challenge.met' : 'platform.challenge.missed')}</span>
                   </span>
-                  <span className="font-ui text-[13px] text-paper-100">{ruleText(t, rule)}</span>
                 </li>
               );
             })}
@@ -128,7 +137,7 @@ export default function ChallengeNotice() {
               <>
                 <p className="mt-2 font-fraunces text-[34px] font-normal leading-none text-paper-100 tnums">{best.points}</p>
                 <p className="micro-label mt-1 text-paper-300">{t(best.met.every(Boolean) ? 'platform.challenge.verdictWon' : 'platform.challenge.verdictLost', { n: best.points })}</p>
-                <p className="data-text mt-1 text-[10.5px] text-iron-400">{t('platform.challenge.attempts', { n: attempts.length })}</p>
+                <p className="data-text mt-1 text-iron-400">{t('platform.challenge.attempts', { n: attempts.length })}</p>
               </>
             ) : (
               <p className="mt-2 font-serif text-[13px] text-paper-300">{t('platform.challenge.none')}</p>
@@ -151,7 +160,7 @@ export default function ChallengeNotice() {
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="micro-label text-paper-100">{t('platform.challenge.board.title')}</h3>
           <span className="flex items-baseline gap-4">
-            {board && board.players > 0 && <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.players', { n: board.players })}</span>}
+            {board && board.players > 0 && <span className="data-text text-iron-400 tnums">{t('platform.challenge.board.players', { n: board.players })}</span>}
             <Link to="/defis" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
               {t('platform.defis.archive')} →
             </Link>
@@ -164,20 +173,20 @@ export default function ChallengeNotice() {
         ) : (
           <ol className="mt-2 grid gap-x-8 gap-y-1 min-[900px]:grid-cols-2">
             {board.rows.slice(0, 6).map((row, i) => (
-              <li key={row.id} className={cn('flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5', row.id === session.id && 'text-brass-300')}>
-                <span className="data-text w-5 text-[10.5px] text-iron-400 tnums">{i + 1}.</span>
+              <li key={row.id} className={cn('flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2', row.id === session.id && 'text-brass-300')}>
+                <span className="data-text w-5 text-iron-400 tnums">{i + 1}.</span>
                 <span className="min-w-0 flex-1 truncate font-fraunces text-[14px] font-medium">
                   {row.name}
                   {row.id === session.id && <span className="micro-label ml-2 text-iron-400">{t('platform.challenge.board.you')}</span>}
                 </span>
-                <span className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.met', { done: row.met.filter(Boolean).length, total: row.met.length })}</span>
+                <span className="data-text text-iron-400 tnums">{t('platform.challenge.board.met', { done: row.met.filter(Boolean).length, total: row.met.length })}</span>
                 <span className="font-fraunces text-[15px] font-medium tnums">{row.points}</span>
               </li>
             ))}
           </ol>
         )}
         {board?.me && board.me.rank > 6 && (
-          <p className="data-text mt-2 text-[10.5px] text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</p>
+          <p className="data-text mt-2 text-iron-400 tnums">{t('platform.challenge.board.mine', { rank: board.me.rank, points: board.me.points })}</p>
         )}
       </div>
     </motion.section>

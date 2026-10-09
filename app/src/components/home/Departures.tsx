@@ -46,7 +46,7 @@ function Seats({ table }: { table: CardTable }) {
   const t = useT();
   const filled = table.seats.filter(Boolean).length;
   return (
-    <span className="flex items-center gap-1.5" aria-label={t('platform.state.seats', { filled, total: table.seats.length })}>
+    <span className="flex items-center gap-2" aria-label={t('platform.state.seats', { filled, total: table.seats.length })}>
       {table.seats.map((s, i) =>
         s ? (
           <span
@@ -66,7 +66,7 @@ function Seats({ table }: { table: CardTable }) {
 function Boarding({ table }: { table: CardTable }) {
   const t = useT();
   const navigate = useNavigate();
-  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-label whitespace-nowrap transition-colors';
+  const link = 'gz-hit font-ui text-[10.5px] font-semibold uppercase tracking-label whitespace-nowrap transition-colors';
   if (table.mine) {
     const to = table.state === 'live' ? `/game/${table.code}` : `/online/${table.code}`;
     return (
@@ -97,6 +97,13 @@ function Boarding({ table }: { table: CardTable }) {
   return <span className={cn(link, 'text-iron-400')}>{t('platform.action.full')}</span>;
 }
 
+/* between 1100 and 1250px the board is a narrow column beside the hall: the
+   seats give their width to the name of the table and its host */
+const NARROW_HIDE = 'min-[1100px]:max-[1249px]:hidden';
+
+/** the line starts with a capital, whichever of its parts comes first */
+const capital = (line: string) => line.charAt(0).toLocaleUpperCase() + line.slice(1);
+
 function Row({ table, i }: { table: CardTable; i: number }) {
   const t = useT();
   const detail =
@@ -112,15 +119,16 @@ function Row({ table, i }: { table: CardTable; i: number }) {
         <span className={cn('block truncate font-fraunces text-[14px] font-medium', table.mine ? 'text-brass-300' : 'text-paper-100')}>
           {table.name}
         </span>
-        <span className="data-text block truncate text-[10.5px] text-iron-400">
-          {[t(`platform.mode.${table.mode}`), ...detail].filter(Boolean).join(' · ')}
+        <span className="data-text block truncate text-iron-400">
+          {/* the plain table is the rule on this board: only the ranked one says so */}
+          {capital([table.mode === 'ranked' ? t('platform.mode.ranked') : null, ...detail].filter(Boolean).join(' · '))}
         </span>
       </td>
-      <td className="w-[76px]">
+      <td className={cn('w-[76px]', NARROW_HIDE)}>
         <Seats table={table} />
       </td>
       <td className="w-[88px]">
-        <span className={cn('micro-label flex items-center gap-1.5', table.state === 'live' ? 'text-signal-ink' : table.state === 'open' ? 'text-bottle-ink' : 'text-iron-400')}>
+        <span className={cn('micro-label flex items-center gap-2', table.state === 'live' ? 'text-signal-ink' : table.state === 'open' ? 'text-bottle-ink' : 'text-iron-400')}>
           {table.state === 'live' && <span className={cn('h-1.5 w-1.5 rounded-full bg-signal-400', i < 3 && 'animate-pulse-signal')} aria-hidden />}
           {t(`platform.state.${table.state}`)}
         </span>
@@ -142,12 +150,12 @@ function LocalRow({ table, i }: { table: HomeTable; i: number }) {
         <span className="block truncate font-fraunces text-[14px] font-medium text-paper-100">
           {tableTitle(table.name, lang)}
         </span>
-        <span className="data-text block truncate text-[10.5px] text-iron-400">
+        <span className="data-text block truncate text-iron-400">
           {[t('platform.action.localGame'), t(table.era === 'rail' ? 'platform.home.eraRail' : 'platform.home.eraCanal'), t('platform.state.turn', { round: table.round })].join(' · ')}
         </span>
       </td>
-      <td className="w-[76px]">
-        <span className="flex items-center gap-1.5">
+      <td className={cn('w-[76px]', NARROW_HIDE)}>
+        <span className="flex items-center gap-2">
           {table.seats.map((s, j) => (
             <span
               key={j}
@@ -185,7 +193,7 @@ function LocalEdition() {
           <thead>
             <tr>
               <th>{t('platform.home.departures.table')}</th>
-              <th>{t('platform.home.departures.seats')}</th>
+              <th className={NARROW_HIDE}>{t('platform.home.departures.seats')}</th>
               <th>{t('platform.home.departures.state')}</th>
               <th />
             </tr>
@@ -207,16 +215,23 @@ function LocalEdition() {
   );
 }
 
-/* a quiet line across the board when there is nothing to list */
-function Notice({ text, cta }: { text: string; cta?: { label: string; to: string } }) {
+/* a quiet line across the board when there is nothing to list. The board
+   is the first place a stranger is asked to sign, so that invitation is the
+   page's one plate; the same errand further down stays a ghost */
+function Notice({ text, cta, plate = false }: { text: string; cta?: { label: string; to: string }; plate?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
       <p className="max-w-[300px] font-serif text-[14px] text-paper-300">{text}</p>
-      {cta && (
-        <Button variant="ghost" className="!h-8 px-3" to={cta.to}>
-          {cta.label}
-        </Button>
-      )}
+      {cta &&
+        (plate ? (
+          <Button variant="ticket-brass" className="gz-ticket-sm" to={cta.to}>
+            {cta.label}
+          </Button>
+        ) : (
+          <Button variant="ghost" className="!h-8 px-3" to={cta.to}>
+            {cta.label}
+          </Button>
+        ))}
     </div>
   );
 }
@@ -228,7 +243,7 @@ function MyQueue() {
   const desk = useDesk();
   const queue = desk?.queue ?? null;
   const now = useNow(queue !== null);
-  const link = 'font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100';
+  const link = 'gz-hit font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100';
 
   if (!session) return null;
   if (!queue) {
@@ -236,7 +251,7 @@ function MyQueue() {
       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
         <span className="font-serif text-[13px] text-paper-300">
           {t('platform.home.departures.queueNone')}
-          {desk && desk.hall.queued > 0 && <span className="data-text ml-2 text-[10.5px] not-italic text-iron-400 tnums">{t('platform.home.board.queue.house', { count: desk.hall.queued })}</span>}
+          {desk && desk.hall.queued > 0 && <span className="data-text ml-2 not-italic text-iron-400 tnums">{t('platform.home.board.queue.house', { count: desk.hall.queued })}</span>}
         </span>
         <Link to="/online" className={link}>
           {t('platform.home.departures.enter')} →
@@ -248,10 +263,10 @@ function MyQueue() {
   return (
     <div role="status" className="flex flex-wrap items-center justify-between gap-2 border-t border-[var(--gz-ink-soft)] px-2 pt-3">
       <span className="flex items-center gap-2 font-ui text-[12.5px] text-paper-100">
-        <span className={cn('h-1.5 w-1.5 animate-pulse-signal rounded-full', mode === 'ranked' ? 'bg-rust-600' : 'bg-bottle-500')} aria-hidden />
+        <span className={cn('h-1.5 w-1.5 animate-pulse-signal rounded-full', mode === 'ranked' ? 'bg-brass-400' : 'bg-bottle-500')} aria-hidden />
         {t('platform.home.board.queue.mine', { mode: t(`platform.mode.${mode}`) })}
         <span className="data-text text-brass-300 tnums">{mmss(now - queue.since)}</span>
-        <span className="data-text text-[10.5px] text-iron-400">
+        <span className="data-text text-iron-400">
           {queue.waiting <= 1 ? t('platform.home.board.queue.alone') : t('platform.home.board.queue.others', { count: queue.waiting - 1 })}
         </span>
       </span>
@@ -289,7 +304,7 @@ export default function Departures() {
 
   let body: React.ReactNode;
   if (local) body = <LocalEdition />;
-  else if (stranger) body = <Notice text={t('platform.home.board.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />;
+  else if (stranger) body = <Notice text={t('platform.home.board.signIn')} cta={{ label: t('platform.action.signIn'), to: '/account' }} plate />;
   /* the wait has its own drawing and says so once: the counts stay silent
      while the board is still being set */
   else if (waiting) body = <Skeleton shape="table" rows={4} className="px-2 py-2" label={t('platform.home.board.loading')} />;
@@ -301,7 +316,7 @@ export default function Departures() {
         <thead>
           <tr>
             <th>{t('platform.home.departures.table')}</th>
-            <th>{t('platform.home.departures.seats')}</th>
+            <th className={NARROW_HIDE}>{t('platform.home.departures.seats')}</th>
             <th>{t('platform.home.departures.state')}</th>
             <th />
           </tr>
@@ -321,24 +336,29 @@ export default function Departures() {
       transition={{ duration: 0.28, ease: 'easeOut', delay: 0.08 }}
       aria-label={t('platform.home.board.title')}
     >
+      {/* the head holds two things and keeps each on one line: the title,
+          and the ways to act on the board; the count is the board's first
+          line under the rule, where the column has room for it */}
       <div className="flex items-center justify-between gap-3">
-        <h2 className="micro-label flex items-center gap-2 text-paper-100">
+        <h2 className="micro-label flex items-center gap-2 whitespace-nowrap text-paper-100">
           <span className={cn('h-1.5 w-1.5 rounded-full', tables ? 'animate-presence-dot bg-signal-400' : 'bg-iron-600')} aria-hidden />
           {t('platform.home.board.title')}
         </h2>
         <span className="flex items-center gap-3">
-          <span className="data-text text-[10.5px] text-iron-400 tnums">{local ? t('platform.status.localMode') : waiting || stranger ? '' : t('platform.home.board.counts', { open, live })}</span>
-          <button type="button" aria-label={t('platform.home.board.refresh')} onClick={refresh} className="text-iron-400 transition-colors hover:text-paper-100">
+          <button type="button" aria-label={t('platform.home.board.refresh')} onClick={refresh} className="gz-hit text-iron-400 transition-colors hover:text-paper-100">
             <motion.span animate={{ rotate: spin * 360 }} transition={{ duration: 0.4, ease: 'easeOut' }} className="flex">
               <RefreshCw size={13} aria-hidden />
             </motion.span>
           </button>
-          <Link to="/online#tables" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+          <Link to="/online#tables" className="gz-hit whitespace-nowrap font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
             {t('platform.home.board.seeAll')} →
           </Link>
         </span>
       </div>
       <div className="gz-rule-double mt-2" aria-hidden />
+      {(local || !(waiting || stranger)) && (
+        <p className="data-text mt-2 px-2 text-iron-400 tnums">{local ? t('platform.status.localMode') : t('platform.home.board.counts', { open, live })}</p>
+      )}
       <div className="mt-1">{body}</div>
       {!local && (
         <div className="mt-2">

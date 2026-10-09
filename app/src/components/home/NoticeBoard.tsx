@@ -36,14 +36,14 @@ export default function NoticeBoard() {
         transition={{ duration: 0.24, ease: 'easeOut' }}
         className="mt-5 flex items-center gap-2 rounded-lg border border-dashed border-brass-hairline bg-enamel-850/60 px-3 py-2"
       >
-        <button type="button" onClick={() => setOpen(true)} className="group flex min-w-0 flex-1 items-center gap-2.5 text-left" aria-label={`${t('platform.notices.eyebrow')} — ${title}`}>
+        <button type="button" onClick={() => setOpen(true)} className="gz-hit group flex min-w-0 flex-1 items-center gap-3 text-left" aria-label={`${t('platform.notices.eyebrow')} — ${title}`}>
           <Megaphone size={14} aria-hidden className="shrink-0 text-brass-300" />
           <span className="micro-label shrink-0 text-brass-300">{t('platform.notices.eyebrow')}</span>
           <span className="truncate font-serif text-[13px] text-paper-300 transition-colors group-hover:text-paper-100">{title}</span>
           <span className="micro-label hidden shrink-0 text-iron-400 min-[760px]:inline">· {t(`platform.notices.stage.${notice.stage}`)}</span>
           <ChevronRight size={14} aria-hidden className="shrink-0 text-iron-400 transition-transform group-hover:translate-x-0.5" />
         </button>
-        <button type="button" onClick={take} aria-label={t('platform.notices.dismiss')} title={t('platform.notices.dismiss')} className="shrink-0 rounded p-1 text-iron-400 transition-colors hover:text-paper-100">
+        <button type="button" onClick={take} aria-label={t('platform.notices.dismiss')} title={t('platform.notices.dismiss')} className="shrink-0 p-[5px] text-iron-400 transition-colors hover:text-paper-100">
           <X size={14} aria-hidden />
         </button>
       </motion.div>

@@ -38,14 +38,14 @@ export default function ClubEdition() {
           <p className="px-1 py-5 text-center font-serif text-[13px] text-paper-300">{t('platform.home.edition.none')}</p>
         ) : (
           <div className="px-1 py-3">
-            <p className="data-text text-[10.5px] text-iron-400 tnums">{t('platform.home.edition.games', { n: edition.games })}</p>
+            <p className="data-text text-iron-400 tnums">{t('platform.home.edition.games', { n: edition.games })}</p>
             {edition.best && (
               <div className="mt-3">
                 <p className="micro-label text-brass-300">{t('platform.home.edition.best')}</p>
                 <p className="mt-1 font-fraunces text-[17px] font-medium leading-snug text-paper-100">
                   {t('platform.home.edition.bestLine', { table: tableTitle(edition.best.name, lang), name: edition.best.winner, vp: edition.best.vp })}
                 </p>
-                <p className="data-text mt-1 text-[10.5px] text-iron-400">{edition.best.players.join(' · ')}</p>
+                <p className="data-text mt-1 text-iron-400">{edition.best.players.join(' · ')}</p>
               </div>
             )}
             {edition.busiest && <p className="mt-3 font-serif text-[13px] text-paper-300">{t('platform.home.edition.busiest', { name: edition.busiest.name, n: edition.busiest.games })}</p>}

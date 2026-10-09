@@ -32,7 +32,7 @@ export default function Post() {
                 <span className="font-fraunces text-[14px] font-medium text-paper-100">
                   {t('platform.letters.from', { name: personaName(l.persona) })}
                 </span>
-                <span className="data-text text-[10.5px] text-iron-400">{t('platform.letters.re', { table: tableTitle(l.table, lang) })}</span>
+                <span className="data-text text-iron-400">{t('platform.letters.re', { table: tableTitle(l.table, lang) })}</span>
               </p>
               <p className="mt-2 font-serif text-[14px] leading-relaxed text-paper-300">
                 {t(letterKey(l), { me: l.me, table: tableTitle(l.table, lang), vp: l.vp, theirs: l.theirs })}

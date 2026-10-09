@@ -105,12 +105,14 @@ function MyGames() {
 function LiveItem({ table }: { table: PublicTable }) {
   const navigate = useNavigate();
   const lang = useLang();
+  /* the feed's line is a single line beside its hour: the chronicle's long
+     turns lost their verb to the ellipsis, so a table in play is told the
+     short way */
   const story = storyOfTable(table, tableTitle(table.name, lang));
   return (
     <ActivityFeedItem
       kind="tableLive"
       vars={story.vars}
-      textKey={story.key}
       at={table.updatedAt}
       onClick={() => navigate(`/game/${table.code}`)}
     />
@@ -133,7 +135,7 @@ function LiveTables() {
       <div className="flex items-center justify-between gap-3 pb-2">
         <h2 className="micro-label text-paper-100">{t('platform.home.activity.liveTitle')}</h2>
         {live.length > 0 && (
-          <span className="micro-label flex items-center gap-1.5 text-signal-ink">
+          <span className="micro-label flex items-center gap-2 text-signal-ink">
             <span className="animate-pulse-signal h-1.5 w-1.5 rounded-full bg-signal-400" aria-hidden />
             {t('platform.home.activity.live')}
           </span>
@@ -163,50 +165,67 @@ function LiveTables() {
 
 export default function ClubActivity() {
   const t = useT();
+  const session = useSession();
+  const stranger = useStranger();
+  const desk = useDesk();
+  /* the way to the history is offered on the same terms as the games above
+     it: a stranger, a desk still on its way or an empty register has none */
+  const history = !stranger && !!session && (desk?.history.length ?? 0) > 0;
 
+  /* the rubric's title spans both columns, as the wall of patents under
+     them does: the columns share one head and one foot, and the rule
+     between them runs from one to the other */
   return (
-    <div className="grid gap-6 min-[900px]:grid-cols-12">
-      <section className="min-[900px]:col-span-7" aria-label={t('platform.home.activity.title')}>
-        <Reveal i={0}>
-          <h2 className="gz-head h2-section">{t('platform.home.activity.title')}</h2>
-          <h3 className="micro-label mt-3 text-paper-100">{t('platform.home.activity.mine')}</h3>
-        </Reveal>
-        <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
-          <MyGames />
+    <section aria-labelledby="club-activity">
+      <Reveal i={0}>
+        <h2 id="club-activity" className="gz-head h2-section">
+          {t('platform.home.activity.title')}
+        </h2>
+      </Reveal>
+      <div className="mt-6 grid gap-10 min-[900px]:grid-cols-12 min-[900px]:gap-x-7">
+        <div className="min-[900px]:col-span-7">
+          <Reveal i={0}>
+            <h3 className="micro-label text-paper-100">{t('platform.home.activity.mine')}</h3>
+          </Reveal>
+          <div className="mt-1 border-t border-[var(--gz-ink-soft)]">
+            <MyGames />
+          </div>
+          {history && (
+            <Reveal i={FEED + 1} className="mt-3">
+              <Link to="/desk#historique" className="gz-hit font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
+                {t('platform.home.activity.seeHistory')} →
+              </Link>
+            </Reveal>
+          )}
+          <div className="mt-10">
+            <Feuilleton />
+          </div>
+          <div className="mt-10">
+            <Post />
+          </div>
         </div>
-        <Reveal i={FEED + 1} className="mt-3">
-          <Link to="/desk#historique" className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-300 transition-colors hover:text-paper-100">
-            {t('platform.home.activity.seeHistory')} →
-          </Link>
-        </Reveal>
-        <div className="mt-8">
-          <Feuilleton />
-        </div>
-        <div className="mt-8">
-          <Post />
-        </div>
-      </section>
-      <motion.section
-        className="gz-col-rule-900 min-[900px]:col-span-5 min-[900px]:pt-[52px]"
-        initial={{ opacity: 0, y: 12 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ amount: 0.15, once: true }}
-        transition={{ duration: 0.22, ease: 'easeOut', delay: 0.08 }}
-      >
-        <Portrait />
-        <div className="mt-8">
-          <Telegraph />
-        </div>
-        <div className="mt-8">
-          <ClubEdition />
-        </div>
-        <div className="mt-8">
-          <LiveTables />
-        </div>
-        <div className="mt-8">
-          <PatentsWall />
-        </div>
-      </motion.section>
-    </div>
+        <motion.div
+          className="gz-col-rule-900 min-[900px]:col-span-5"
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ amount: 0.15, once: true }}
+          transition={{ duration: 0.22, ease: 'easeOut', delay: 0.08 }}
+        >
+          <Portrait />
+          <div className="mt-10">
+            <Telegraph />
+          </div>
+          <div className="mt-10">
+            <ClubEdition />
+          </div>
+          <div className="mt-10">
+            <LiveTables />
+          </div>
+        </motion.div>
+      </div>
+      <Reveal i={2} className="mt-10">
+        <PatentsWall />
+      </Reveal>
+    </section>
   );
 }
