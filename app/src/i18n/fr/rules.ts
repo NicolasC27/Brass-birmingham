@@ -17,7 +17,7 @@ const fr: typeof enrules = {
     selling: "Vente et négociants",
     money: "Argent et emprunts",
     scoring: "Décompte et victoire",
-    glossary: "Le glossaire",
+    glossary: "Glossaire du jeu",
     approximations: "Approximations actuelles",
   },
   hero: {
@@ -428,7 +428,7 @@ const fr: typeof enrules = {
     },
     clockworkClub: {
       term: "The Clockwork Club",
-      def: "Les joueurs mécaniques qui occupent une chaise vide — Mr Boulton, Mrs Wedgwood et Miss Arkwright jouent à votre niveau ; Mr Watt, l’expert, joue à fond.",
+      def: "Les machines qui occupent une chaise vide — Mr Boulton, Mrs Wedgwood et Miss Arkwright jouent à votre niveau ; Mr Watt, l’expert, joue à fond.",
     },
   },
   approx: {
@@ -436,7 +436,7 @@ const fr: typeof enrules = {
       "Un registre honnête, tenu à la vue de tous : ce que cet aperçu joue fidèlement, et ce qu’il simplifie encore. L’écran de préparation renvoie ici partout où une pastille de fidélité apparaît.",
     botsRibbon: "Bêta",
     botsTitle: "The Clockwork Club",
-    botsBody1: "Les chaises vides sont occupées par des joueurs mécaniques : ",
+    botsBody1: "Les chaises vides sont occupées par des machines : ",
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " et ",
@@ -460,7 +460,7 @@ const fr: typeof enrules = {
       note: "Les neuf tuiles marchand sont distribuées au hasard comme imprimées ; les deux tuiles ajoutées à 3 et 4 joueurs suivent le manifeste publié le plus courant (céramique + manufacture, puis tous biens + coton).",
     },
     bots: {
-      area: "The Clockwork Club (bots)",
+      area: "The Clockwork Club",
       note: "Quatre personnages partagent une même cervelle : chacun réfléchit tout son tour et, à pleine force, regarde un ou deux tours plus loin. Trois jouent à votre niveau, Mr Watt joue à fond — aucun ne pousse la recherche jusqu’à la fin de la partie.",
     },
     multiplayer: {

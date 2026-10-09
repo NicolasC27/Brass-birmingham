@@ -16,6 +16,10 @@ const platform = {
     desk: "Stationmaster",
     rules: 'Rules',
     createTable: "Charter a train",
+    /* the ear line between 900 and 1100px: the same plate in one word */
+    createTableShort: "Charter",
+    almanach: "Almanac",
+    defis: "Challenges",
     invitations: 'Invitations',
     noInvitations: 'No invitation waiting.',
     profile: 'Profile',
@@ -105,7 +109,7 @@ const platform = {
     lp: '{lp} [lp|rating point|rating points]',
   },
   queue: {
-    estimate: '~{minutes} min',
+    estimate: '~{minutes} min',
     estimateRange: '{min}–{max} min',
     playersWaiting: '{count} in the queue',
     searching: "Awaiting departure…",
@@ -204,6 +208,7 @@ const platform = {
       placement: 'Placements {done}/{total}',
       none: 'No ranked game yet',
       signIn: 'Sign the register to play ranked',
+      ladder: 'Your place in the honours',
     },
     activity: {
       title: 'Club activity',
@@ -247,6 +252,9 @@ const platform = {
     copyLinkAria: 'Copy the link to “{section}”',
     linkCopied: 'Link copied',
     ready: 'Ready to take a seat?',
+    clear: 'Clear the search',
+    matches: '{n} [n|chapter|chapters] of {total}',
+    programme: 'The evening course',
   },
   // --- lobby ---
   lobby: {
@@ -364,6 +372,8 @@ const platform = {
       search: 'Code, host or table name…',
       sortFilling: 'Starting soon',
       sortFresh: 'Just moved',
+      sortTitle: 'Order',
+      sortAria: 'Order of the register',
       pageOf: '{from}–{to} of {total}',
       prev: 'Previous',
       next: 'Next',
@@ -405,7 +415,7 @@ const platform = {
       viaQueueHint: 'A ranked table is joined through the ranked queue.',
       yourTurn: 'Your move',
       colDestination: 'Train',
-      colTrack: 'Track',
+      colTrack: 'Passengers',
       colDeparture: 'Departure',
       colProgress: 'Progress',
       board: 'Board',
@@ -451,6 +461,7 @@ const platform = {
     eyebrow: "The stationmaster’s office",
     memberSince: 'Club member since {date}',
     season: '{season} · {days} d left',
+    placements: 'Placements {done}/{total}',
     editProfile: 'Edit profile',
     progress: {
       title: 'Your progress',
@@ -465,7 +476,7 @@ const platform = {
       lastPlan: 'Last plan played',
       back: 'What keeps coming back',
     },
-    report: { eyebrow: 'Game report', title: 'The report', lede: '{n} [n|move|moves], {players} [players|player|players]. The curve settles as the reading goes; click a seat to read its game.', none: 'This link carries no game.', noDrops: 'No clear fall in this game.', open: 'Open the game and its analysis', home: 'Back home' },
+    report: { eyebrow: 'Game report', title: 'The report', lede: '{n} [n|move|moves], {players} [players|player|players]. The curve settles as the reading goes; click a seat to read its game.', none: 'This link carries no game.', noneWhy: 'A report opens from the link a player shares at the end of a game: the link itself carries the moves. If it was cut short on the way, ask for it again.', toDesk: 'See my games', noDrops: 'No clear fall in this game.', open: 'Open the game and its analysis', home: 'Back home' },
     stats: {
       played: 'Games',
       won: 'Wins',
@@ -627,6 +638,7 @@ const platform = {
       title: 'Your industries',
       towns: 'Your towns',
       perGame: 'per game',
+      none: 'Your industries are counted after a first game.',
     },
     rivals: {
       title: 'Head to head',
@@ -678,6 +690,9 @@ const platform = {
   // --- account ---
   account: {
     eyebrow: 'The register',
+    /* sent by an invitation (/account?table=CODE) */
+    invitedEyebrow: 'A table awaits you',
+    invitedLede: 'Train {code} is keeping a seat for you. Sign the register, and you are on board.',
     back: 'Home',
     titleIn: 'Sign the register',
     titleUp: 'Open an account',
@@ -743,7 +758,6 @@ const platform = {
     lede: 'What the tables paid you, the counter makes into change.',
     walletAria: 'Purse: {count} [count|guinea|guineas] — open the Counter',
     tokens: '{count} [count|guinea|guineas]',
-    hint: 'A finished game pays {sitting} guineas, {win} more to the winner, twice on a ranked table.',
     signedOutBadge: 'Purse at the office',
     signedOutNote: 'Sign the register: the office keeps the purse and takes the purchases.',
     free: 'Free',
@@ -844,7 +858,7 @@ const platform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: "Honours of the companies",
+    eyebrow: "The roll of honour",
     title: "The honours",
     players: '{count} ranked this season',
     daysLeft: 'closes in {days} d',
@@ -856,6 +870,9 @@ const platform = {
     emptyTitle: 'Nobody is ranked yet.',
     emptyCopy: 'A ranked game opens the season’s board.',
     emptyCta: 'Play ranked',
+    lede: 'The season’s fifty best ratings, earned at ranked tables; the companies are counted by their wins.',
+    signInTitle: 'The board is read at the register.',
+    signInCopy: 'Sign the register to read the season’s ratings and write yours among them. The ladder of ranks is posted for everyone.',
     ladder: {
       title: 'The five ranks',
       body: 'The rating starts at 1,200 and moves with every ranked game, by place and by the strength of the table. Five placements open the season; two divisions per rank, II then I.',
@@ -964,6 +981,8 @@ const platform = {
     resume: "Resume the challenge",
     met: "met",
     missed: "missed",
+    conditions: "Conditions",
+    untried: "to be met",
     scoring: "Points: the VP, 15 per condition held, 25 more if all are. Mr Watt plays flat out, always.",
     verdictWon: "Challenge met — {n} [n|point|points]",
     verdictLost: "Challenge missed — {n} [n|point|points]",
@@ -1186,6 +1205,10 @@ const platform = {
     redoMeta: "{times} times over {games} games",
     chapter: "chapter {n}, {title}",
     sheet: "The sheet of progress",
+    back: "The rules",
+    markRead: "read",
+    markUnread: "to read",
+    toAnalyse: "Your finished games, at the stationmaster’s",
   },
   companies: {
     title: "Honours of the companies",
@@ -1200,6 +1223,11 @@ const platform = {
     leave: "Leave the company",
     members: "{n} [n|member|members]",
     wins: "{n} [n|win|wins] / {games}",
+    /* the honours' cell: the column head already says « Wins » */
+    winsCell: "{n} / {games}",
+    joinTitle: "Join the {name} company?",
+    joinCopy: "One sits at one company at a time: to join another, you will first have to leave this one.",
+    cancel: "Cancel",
     colMembers: "Members",
     colWins: "Wins",
     of: "{name} company",
@@ -1224,15 +1252,24 @@ const platform = {
     title: "Almanac of the era",
     lede: "Forty years, one a week: what the Midlands did that year. The journal turns them in order and begins again.",
     thisWeek: "this week",
+    goCurrent: "This week’s year: {year}",
     all: "The whole almanac",
   },
   tableau: {
     eyebrow: "Blackrail station · year {year}",
     title: "Departures",
+    /* a table's name quoted in a dispatch, in the language's own marks */
+    quoted: "“{table}”",
     colTrain: "Train",
     colSeats: "Seats",
     colState: "State",
+    colProgress: "Progress",
     colHost: "Guard",
+    canal: "Canal",
+    rail: "Rail",
+    progress: "{era} · {turn}",
+    empty: "No departure announced.",
+    summary: "{n} [n|train announced|trains announced], {open} open for boarding.",
   },
   defis: {
     eyebrow: "Past notices",
@@ -1243,6 +1280,7 @@ const platform = {
     mine: "Your best attempt",
     none: "No attempt that week.",
     noBoard: "Nobody took that notice.",
+    colNotice: "The notice",
     open: "Take the notice",
     archive: "Past notices",
   },
@@ -1251,8 +1289,9 @@ const platform = {
   },
   glossary: {
     eyebrow: "The stationmaster explains",
-    title: "Glossary",
-    lede: "The station’s words, and what they mean at the table.",
+    title: "The station’s words",
+    lede: "Every word of the house, and what it means at the table.",
+    back: "Back to the station",
     all: "The whole glossary",
     what: "What is “{term}”?",
     terms: {
@@ -1288,6 +1327,8 @@ const platform = {
     players: "The passengers ahead",
     nobody: "Nobody is ranked yet.",
     link: "Service reviews",
+    signInTitle: "The reviews are kept in the register.",
+    signIn: "Sign the register to read the review of every service: the leading travellers, the companies, the game of the service.",
   },
   portrait: {
     eyebrow: "Portrait of the week",

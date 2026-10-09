@@ -17,7 +17,7 @@ const de: typeof enrules = {
     selling: "Verkauf und Händler",
     money: "Geld und Kredite",
     scoring: "Wertung und Sieg",
-    glossary: "Das Glossar",
+    glossary: "Spielglossar",
     approximations: "Aktuelle Näherungen",
   },
   hero: {
@@ -428,7 +428,7 @@ const de: typeof enrules = {
     },
     clockworkClub: {
       term: "The Clockwork Club",
-      def: "Die mechanischen Spieler, die einen leeren Stuhl besetzen — Mr Boulton, Mrs Wedgwood und Miss Arkwright spielen auf deinem Niveau; Mr Watt, der Experte, spielt mit voller Kraft.",
+      def: "Die Maschinen, die einen leeren Stuhl besetzen — Mr Boulton, Mrs Wedgwood und Miss Arkwright spielen auf deinem Niveau; Mr Watt, der Experte, spielt mit voller Kraft.",
     },
   },
   approx: {
@@ -436,7 +436,7 @@ const de: typeof enrules = {
       "Ein ehrliches Register, für alle sichtbar geführt: was diese Vorschau regeltreu spielt und was sie noch vereinfacht. Der Einrichtungsbildschirm verweist überall hierher, wo eine Treue-Marke erscheint.",
     botsRibbon: "Beta",
     botsTitle: "The Clockwork Club",
-    botsBody1: "Leere Stühle werden von mechanischen Spielern besetzt: ",
+    botsBody1: "Leere Stühle werden von Maschinen besetzt: ",
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " und ",
@@ -460,7 +460,7 @@ const de: typeof enrules = {
       note: "Die neun Händlerplättchen werden zufällig wie gedruckt verteilt; die zwei bei 3 und 4 Spielern hinzukommenden Plättchen folgen dem gängigsten veröffentlichten Manifest (Töpferware + Manufakturware, dann beliebige Ware + Baumwolle).",
     },
     bots: {
-      area: "The Clockwork Club (Bots)",
+      area: "The Clockwork Club",
       note: "Vier Charaktere teilen sich ein Gehirn: jeder denkt seinen ganzen Zug durch und blickt bei voller Stärke ein oder zwei Runden voraus. Drei spielen auf deinem Niveau, Mr Watt spielt mit voller Kraft — keiner sucht das Spiel bis zum Ende durch.",
     },
     multiplayer: {

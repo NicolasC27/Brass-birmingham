@@ -16,6 +16,10 @@ const platform = {
     desk: "Jefe de estación",
     rules: 'Reglas',
     createTable: "Fletar un convoy",
+    /* the ear line between 900 and 1100px: the same plate in one word */
+    createTableShort: "Fletar",
+    almanach: "Almanaque",
+    defis: "Desafíos",
     invitations: 'Invitaciones',
     noInvitations: 'Ninguna invitación pendiente.',
     profile: 'Perfil',
@@ -105,7 +109,7 @@ const platform = {
     lp: '{lp} [lp|punto de cotización|puntos de cotización]',
   },
   queue: {
-    estimate: '~{minutes} min',
+    estimate: '~{minutes} min',
     estimateRange: '{min}–{max} min',
     playersWaiting: '{count} en la cola',
     searching: "Esperando la salida…",
@@ -204,6 +208,7 @@ const platform = {
       placement: 'Colocaciones {done}/{total}',
       none: 'Aún sin partida clasificatoria',
       signIn: 'Firme el registro para jugar clasificatorias',
+      ladder: 'Su puesto en el palmarés',
     },
     activity: {
       title: 'Actividad del club',
@@ -247,6 +252,9 @@ const platform = {
     copyLinkAria: 'Copiar el enlace a « {section} »',
     linkCopied: 'Enlace copiado',
     ready: '¿Listo para sentarte?',
+    clear: 'Borrar la búsqueda',
+    matches: '{n} [n|capítulo|capítulos] de {total}',
+    programme: 'El curso nocturno',
   },
   // --- lobby ---
   lobby: {
@@ -364,6 +372,8 @@ const platform = {
       search: 'Código, anfitrión o nombre de mesa…',
       sortFilling: 'Empieza pronto',
       sortFresh: 'Acaba de moverse',
+      sortTitle: 'Orden',
+      sortAria: 'Orden del registro',
       pageOf: '{from}–{to} de {total}',
       prev: 'Anteriores',
       next: 'Siguientes',
@@ -405,7 +415,7 @@ const platform = {
       viaQueueHint: 'A una mesa clasificatoria se entra por la cola clasificatoria.',
       yourTurn: 'Te toca jugar',
       colDestination: 'Convoy',
-      colTrack: 'Vía',
+      colTrack: 'Viajeros',
       colDeparture: 'Salida',
       colProgress: 'Recorrido',
       board: 'Subir a bordo',
@@ -451,6 +461,7 @@ const platform = {
     eyebrow: "Oficina del jefe de estación",
     memberSince: 'Socio del club desde {date}',
     season: '{season} · faltan {days} d',
+    placements: 'Colocaciones {done}/{total}',
     editProfile: 'Editar el perfil',
     progress: {
       title: 'Su progreso',
@@ -465,7 +476,7 @@ const platform = {
       lastPlan: 'Último plan jugado',
       back: 'Lo que se repite',
     },
-    report: { eyebrow: 'Informe de partida', title: 'El informe', lede: '{n} [n|jugada|jugadas], {players} [players|jugador|jugadores]. La curva se afina durante la lectura; un clic en un asiento lee su partida.', none: 'Este enlace no lleva ninguna partida.', noDrops: 'Ninguna caída clara en esta partida.', open: 'Abrir la partida y su análisis', home: 'Volver al inicio' },
+    report: { eyebrow: 'Informe de partida', title: 'El informe', lede: '{n} [n|jugada|jugadas], {players} [players|jugador|jugadores]. La curva se afina durante la lectura; un clic en un asiento lee su partida.', none: 'Este enlace no lleva ninguna partida.', noneWhy: 'Un informe se abre desde el enlace que un jugador comparte al final de una partida: es el enlace el que lleva las jugadas. Si se cortó por el camino, vuelva a pedirlo.', toDesk: 'Ver mis partidas', noDrops: 'Ninguna caída clara en esta partida.', open: 'Abrir la partida y su análisis', home: 'Volver al inicio' },
     stats: {
       played: 'Partidas',
       won: 'Victorias',
@@ -609,7 +620,7 @@ const platform = {
     historyTitle: 'Historial',
     trend: {
       title: 'La cotización en la temporada',
-      none: 'Una clasificatoria para trazar la primera línea.',
+      none: 'Una partida clasificatoria bastará para trazar la primera línea.',
       lastGame: 'última clasificatoria',
     },
     manner: {
@@ -627,6 +638,7 @@ const platform = {
       title: 'Sus industrias',
       towns: 'Sus ciudades',
       perGame: 'por partida',
+      none: 'Sus industrias se contarán tras una primera partida.',
     },
     rivals: {
       title: 'Cara a cara',
@@ -678,6 +690,9 @@ const platform = {
   // --- account ---
   account: {
     eyebrow: 'El registro',
+    /* sent by an invitation (/account?table=CODE) */
+    invitedEyebrow: 'Una mesa le espera',
+    invitedLede: 'El convoy {code} le guarda un asiento. Firme el registro y subirá a bordo.',
     back: 'Inicio',
     titleIn: 'Firmar el registro',
     titleUp: 'Abrir una cuenta',
@@ -743,7 +758,6 @@ const platform = {
     lede: 'Lo que las mesas te han pagado, el mostrador te lo cambia.',
     walletAria: 'Bolsa: {count} [count|guinea|guineas] — abrir el Mostrador',
     tokens: '{count} [count|guinea|guineas]',
-    hint: 'Una partida terminada da {sitting} guineas, {win} más al vencedor, el doble en una clasificatoria.',
     signedOutBadge: 'Bolsa en la oficina',
     signedOutNote: 'Firme el registro: es la oficina la que guarda la bolsa y cobra las compras.',
     free: 'Regalo',
@@ -844,7 +858,7 @@ const platform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: "Palmarés de las compañías",
+    eyebrow: "El cuadro de honor",
     title: "El palmarés",
     players: '{count} [count|clasificado|clasificados] esta temporada',
     daysLeft: 'cierra en {days} d',
@@ -856,6 +870,9 @@ const platform = {
     emptyTitle: 'Nadie está clasificado todavía.',
     emptyCopy: 'Una clasificatoria abre el cuadro de la temporada.',
     emptyCta: 'Jugar clasificatorias',
+    lede: 'Las cincuenta mejores cotizaciones de la temporada, ganadas en las mesas clasificatorias; las compañías se cuentan por sus victorias.',
+    signInTitle: 'El cuadro se lee en el registro.',
+    signInCopy: 'Firme el registro para leer las cotizaciones de la temporada e inscribir la suya. La escala de rangos está a la vista de todos.',
     ladder: {
       title: 'Los cinco rangos',
       body: 'La cotización parte de 1 200 y se mueve con cada clasificatoria, según el puesto y la fuerza de la mesa. Cinco colocaciones abren la temporada; dos divisiones por rango, II y luego I.',
@@ -964,6 +981,8 @@ const platform = {
     resume: "Retomar el desafío",
     met: "cumplida",
     missed: "fallada",
+    conditions: "Condiciones",
+    untried: "por cumplir",
     scoring: "Puntos: los PV, 15 por condición cumplida, 25 más si lo son todas. Mr Watt juega a fondo, siempre.",
     verdictWon: "Desafío superado — {n} [n|punto|puntos]",
     verdictLost: "Desafío fallado — {n} [n|punto|puntos]",
@@ -1186,6 +1205,10 @@ const platform = {
     redoMeta: "{times} veces en {games} partidas",
     chapter: "capítulo {n}, {title}",
     sheet: "La hoja de progreso",
+    back: "Las reglas",
+    markRead: "leída",
+    markUnread: "por leer",
+    toAnalyse: "Sus partidas terminadas, con el jefe de estación",
   },
   companies: {
     title: "Palmarés de las compañías",
@@ -1200,6 +1223,11 @@ const platform = {
     leave: "Dejar la compañía",
     members: "{n} [n|socio|socios]",
     wins: "{n} [n|victoria|victorias] / {games}",
+    /* the honours' cell: the column head already says « Victorias » */
+    winsCell: "{n} / {games}",
+    joinTitle: "¿Adherirse a la compañía {name}?",
+    joinCopy: "Solo se pertenece a una compañía a la vez: para unirse a otra, habrá que dejar antes esta.",
+    cancel: "Cancelar",
     colMembers: "Socios",
     colWins: "Victorias",
     of: "Compañía {name}",
@@ -1224,15 +1252,24 @@ const platform = {
     title: "Almanaque de la era",
     lede: "Cuarenta años, uno por semana: lo que hicieron los Midlands aquel año. El diario los recorre en orden y vuelve a empezar.",
     thisWeek: "esta semana",
+    goCurrent: "El año de esta semana: {year}",
     all: "Todo el almanaque",
   },
   tableau: {
     eyebrow: "Estación de Blackrail · año {year}",
     title: "Salidas",
+    /* a table's name quoted in a dispatch, in the language's own marks */
+    quoted: "«{table}»",
     colTrain: "Convoy",
     colSeats: "Plazas",
     colState: "Estado",
+    colProgress: "Avance",
     colHost: "Jefe de tren",
+    canal: "Canal",
+    rail: "Tren",
+    progress: "{era} · {turn}",
+    empty: "Ninguna salida anunciada.",
+    summary: "{n} [n|convoy anunciado|convoyes anunciados], {open} [open|abierto|abiertos] al embarque.",
   },
   defis: {
     eyebrow: "Avisos pasados",
@@ -1243,6 +1280,7 @@ const platform = {
     mine: "Su mejor intento",
     none: "Ningún intento esa semana.",
     noBoard: "Nadie aceptó ese aviso.",
+    colNotice: "El aviso",
     open: "Aceptar el aviso",
     archive: "Avisos pasados",
   },
@@ -1251,8 +1289,9 @@ const platform = {
   },
   glossary: {
     eyebrow: "El jefe de estación explica",
-    title: "Glosario",
-    lede: "Las palabras de la estación y lo que significan en la mesa.",
+    title: "Las palabras de la estación",
+    lede: "Cada palabra de la casa y lo que significa en la mesa.",
+    back: "Volver a la estación",
     all: "Todo el glosario",
     what: "¿Qué es «{term}»?",
     terms: {
@@ -1288,6 +1327,8 @@ const platform = {
     players: "Los viajeros en cabeza",
     nobody: "Nadie está clasificado aún.",
     link: "Balances de servicio",
+    signInTitle: "Los balances se leen en el registro.",
+    signIn: "Firme el registro para leer el balance de cada servicio: los viajeros en cabeza, las compañías, la partida del servicio.",
   },
   portrait: {
     eyebrow: "El retrato de la semana",

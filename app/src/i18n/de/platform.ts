@@ -18,6 +18,10 @@ const platform: typeof enPlatform = {
     desk: "Vorsteher",
     rules: 'Regeln',
     createTable: "Einen Zug chartern",
+    /* the ear line between 900 and 1100px: the same plate in one word */
+    createTableShort: "Chartern",
+    almanach: "Almanach",
+    defis: "Herausforderungen",
     invitations: 'Einladungen',
     noInvitations: 'Keine offene Einladung.',
     profile: 'Profil',
@@ -107,7 +111,7 @@ const platform: typeof enPlatform = {
     lp: '{lp} [lp|Wertungspunkt|Wertungspunkte]',
   },
   queue: {
-    estimate: '~{minutes} Min.',
+    estimate: '~{minutes} Min.',
     estimateRange: '{min}–{max} Min.',
     playersWaiting: '{count} in der Warteschlange',
     searching: "Warten auf die Abfahrt…",
@@ -206,6 +210,7 @@ const platform: typeof enPlatform = {
       placement: 'Platzierungen {done}/{total}',
       none: 'Noch keine gewertete Partie',
       signIn: 'Tragen Sie sich ins Register ein, um gewertet zu spielen',
+      ladder: 'Ihr Platz auf der Ehrentafel',
     },
     activity: {
       title: 'Im Club',
@@ -249,6 +254,9 @@ const platform: typeof enPlatform = {
     copyLinkAria: 'Link zu „{section}“ kopieren',
     linkCopied: 'Link kopiert',
     ready: 'Bereit, Platz zu nehmen?',
+    clear: 'Suche löschen',
+    matches: '{n} [n|Kapitel|Kapitel] von {total}',
+    programme: 'Der Abendkurs',
   },
   // --- lobby ---
   lobby: {
@@ -366,6 +374,8 @@ const platform: typeof enPlatform = {
       search: 'Code, Gastgeber oder Tischname…',
       sortFilling: 'Startet bald',
       sortFresh: 'Zuletzt bewegt',
+      sortTitle: 'Reihenfolge',
+      sortAria: 'Reihenfolge des Registers',
       pageOf: '{from}–{to} von {total}',
       prev: 'Zurück',
       next: 'Weiter',
@@ -407,7 +417,7 @@ const platform: typeof enPlatform = {
       viaQueueHint: 'Einem gewerteten Tisch treten Sie über die gewertete Warteschlange bei.',
       yourTurn: 'Sie sind am Zug',
       colDestination: 'Zug',
-      colTrack: 'Gleis',
+      colTrack: 'Fahrgäste',
       colDeparture: 'Abfahrt',
       colProgress: 'Strecke',
       board: 'Einsteigen',
@@ -453,6 +463,7 @@ const platform: typeof enPlatform = {
     eyebrow: "Büro des Bahnhofsvorstehers",
     memberSince: 'Clubmitglied seit {date}',
     season: '{season} · noch {days} T.',
+    placements: 'Platzierungen {done}/{total}',
     editProfile: 'Profil bearbeiten',
     progress: {
       title: 'Ihr Fortschritt',
@@ -467,7 +478,7 @@ const platform: typeof enPlatform = {
       lastPlan: 'Zuletzt gespielter Plan',
       back: 'Was wiederkehrt',
     },
-    report: { eyebrow: 'Partiebericht', title: 'Der Bericht', lede: '{n} [n|Zug|Züge], {players} Spieler. Die Kurve verfeinert sich während der Lesung; ein Klick auf einen Platz liest dessen Partie.', none: 'Dieser Link trägt keine Partie.', noDrops: 'Kein klarer Einbruch in dieser Partie.', open: 'Partie und Analyse öffnen', home: 'Zurück zur Startseite' },
+    report: { eyebrow: 'Partiebericht', title: 'Der Bericht', lede: '{n} [n|Zug|Züge], {players} Spieler. Die Kurve verfeinert sich während der Lesung; ein Klick auf einen Platz liest dessen Partie.', none: 'Dieser Link trägt keine Partie.', noneWhy: 'Ein Bericht öffnet sich über den Link, den ein Spieler am Ende einer Partie teilt: Der Link selbst trägt die Züge. Wurde er unterwegs gekürzt, fragen Sie erneut danach.', toDesk: 'Meine Partien ansehen', noDrops: 'Kein klarer Einbruch in dieser Partie.', open: 'Partie und Analyse öffnen', home: 'Zurück zur Startseite' },
     stats: {
       played: 'Partien',
       won: 'Siege',
@@ -629,6 +640,7 @@ const platform: typeof enPlatform = {
       title: 'Ihre Industrien',
       towns: 'Ihre Städte',
       perGame: 'pro Partie',
+      none: 'Ihre Industrien werden nach einer ersten Partie gezählt.',
     },
     rivals: {
       title: 'Kopf an Kopf',
@@ -680,6 +692,9 @@ const platform: typeof enPlatform = {
   // --- account ---
   account: {
     eyebrow: 'Das Register',
+    /* sent by an invitation (/account?table=CODE) */
+    invitedEyebrow: 'Ein Tisch erwartet Sie',
+    invitedLede: 'Zug {code} hält Ihnen einen Platz frei. Tragen Sie sich ins Register ein, und Sie sind an Bord.',
     back: 'Halle',
     titleIn: 'Ins Register eintragen',
     titleUp: 'Konto eröffnen',
@@ -745,7 +760,6 @@ const platform: typeof enPlatform = {
     lede: 'Was die Tische Ihnen gezahlt haben, macht der Ladentisch zu Münze.',
     walletAria: 'Börse: {count} [count|Guinee|Guineen] — Ladentisch öffnen',
     tokens: '{count} [count|Guinee|Guineen]',
-    hint: 'Eine beendete Partie bringt {sitting} Guineen, {win} mehr für den Sieger, das Doppelte bei einer gewerteten.',
     signedOutBadge: 'Börse im Kontor',
     signedOutNote: 'Tragen Sie sich ins Register ein: Das Kontor führt die Börse und verbucht die Käufe.',
     free: 'Geschenkt',
@@ -846,7 +860,7 @@ const platform: typeof enPlatform = {
   },
   // --- ranking ---
   ranking: {
-    eyebrow: "Ehrentafel der Gesellschaften",
+    eyebrow: "Die Ehrentafel",
     title: "Die Ehrentafel",
     players: '{count} gewertet in dieser Saison',
     daysLeft: 'endet in {days} T.',
@@ -858,6 +872,9 @@ const platform: typeof enPlatform = {
     emptyTitle: 'Noch niemand ist gewertet.',
     emptyCopy: 'Eine gewertete Partie eröffnet die Tafel der Saison.',
     emptyCta: 'Gewertet spielen',
+    lede: 'Die fünfzig besten Wertungen der Saison, erspielt an gewerteten Tischen; die Gesellschaften zählen nach ihren Siegen.',
+    signInTitle: 'Die Tafel liest man im Register.',
+    signInCopy: 'Tragen Sie sich ins Register ein, um die Wertungen der Saison zu lesen und Ihre eigene dazuzuschreiben. Die Rangleiter hängt für alle aus.',
     ladder: {
       title: 'Die fünf Ränge',
       body: 'Die Wertung startet bei 1 200 und bewegt sich mit jeder gewerteten Partie, nach Platz und Stärke des Tisches. Fünf Platzierungen eröffnen die Saison; zwei Divisionen pro Rang, II dann I.',
@@ -966,6 +983,8 @@ const platform: typeof enPlatform = {
     resume: "Herausforderung fortsetzen",
     met: "erfüllt",
     missed: "verfehlt",
+    conditions: "Bedingungen",
+    untried: "offen",
     scoring: "Punkte: die SP, 15 je erfüllter Bedingung, 25 dazu, wenn alle erfüllt sind. Mr Watt spielt immer mit voller Kraft.",
     verdictWon: "Herausforderung bestanden — {n} [n|Punkt|Punkte]",
     verdictLost: "Herausforderung verfehlt — {n} [n|Punkt|Punkte]",
@@ -1188,6 +1207,10 @@ const platform: typeof enPlatform = {
     redoMeta: "{times}-mal in {games} Partien",
     chapter: "Kapitel {n}, {title}",
     sheet: "Das Fortschrittsblatt",
+    back: "Die Regeln",
+    markRead: "gelesen",
+    markUnread: "ungelesen",
+    toAnalyse: "Ihre beendeten Partien, beim Vorsteher",
   },
   companies: {
     title: "Ehrentafel der Gesellschaften",
@@ -1202,6 +1225,11 @@ const platform: typeof enPlatform = {
     leave: "Gesellschaft verlassen",
     members: "{n} [n|Mitglied|Mitglieder]",
     wins: "{n} [n|Sieg|Siege] / {games}",
+    /* the honours' cell: the column head already says « Siege » */
+    winsCell: "{n} / {games}",
+    joinTitle: "Der Gesellschaft {name} beitreten?",
+    joinCopy: "Man gehört nur einer Gesellschaft zugleich an: Um einer anderen beizutreten, müssen Sie diese zuerst verlassen.",
+    cancel: "Abbrechen",
     colMembers: "Mitglieder",
     colWins: "Siege",
     of: "Gesellschaft {name}",
@@ -1226,15 +1254,24 @@ const platform: typeof enPlatform = {
     title: "Almanach der Epoche",
     lede: "Vierzig Jahre, eines je Woche: was die Midlands in jenem Jahr taten. Die Zeitung blättert sie der Reihe nach um und beginnt von vorn.",
     thisWeek: "diese Woche",
+    goCurrent: "Das Jahr dieser Woche: {year}",
     all: "Der ganze Almanach",
   },
   tableau: {
     eyebrow: "Bahnhof Blackrail · Jahr {year}",
     title: "Abfahrten",
+    /* a table's name quoted in a dispatch, in the language's own marks */
+    quoted: "„{table}“",
     colTrain: "Zug",
     colSeats: "Plätze",
     colState: "Stand",
+    colProgress: "Fortschritt",
     colHost: "Zugführer",
+    canal: "Kanal",
+    rail: "Bahn",
+    progress: "{era} · {turn}",
+    empty: "Keine Abfahrt angekündigt.",
+    summary: "{n} [n|Zug angekündigt|Züge angekündigt], {open} zum Einsteigen offen.",
   },
   defis: {
     eyebrow: "Frühere Anzeigen",
@@ -1245,6 +1282,7 @@ const platform: typeof enPlatform = {
     mine: "Ihr bester Versuch",
     none: "Kein Versuch in jener Woche.",
     noBoard: "Niemand hat diese Anzeige angenommen.",
+    colNotice: "Die Anzeige",
     open: "Anzeige annehmen",
     archive: "Frühere Anzeigen",
   },
@@ -1253,8 +1291,9 @@ const platform: typeof enPlatform = {
   },
   glossary: {
     eyebrow: "Der Bahnhofsvorsteher erklärt",
-    title: "Glossar",
-    lede: "Die Wörter des Bahnhofs, und was sie am Tisch bedeuten.",
+    title: "Die Wörter des Bahnhofs",
+    lede: "Jedes Wort des Hauses, und was es am Tisch bedeutet.",
+    back: "Zurück zum Bahnhof",
     all: "Das ganze Glossar",
     what: "Was ist „{term}“?",
     terms: {
@@ -1290,6 +1329,8 @@ const platform: typeof enPlatform = {
     players: "Die Reisenden vorn",
     nobody: "Noch niemand ist gereiht.",
     link: "Dienstbilanzen",
+    signInTitle: "Die Bilanzen liegen im Register.",
+    signIn: "Tragen Sie sich ins Register ein, um die Bilanz jedes Dienstes zu lesen: die führenden Reisenden, die Gesellschaften, die Partie des Dienstes.",
   },
   portrait: {
     eyebrow: "Das Porträt der Woche",

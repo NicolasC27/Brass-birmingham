@@ -15,7 +15,7 @@ const rules = {
     selling: 'Selling & Merchants',
     money: 'Money & Loans',
     scoring: 'Scoring & Victory',
-    glossary: 'The Glossary',
+    glossary: 'Game Glossary',
     approximations: 'Current Approximations',
   },
   hero: {
@@ -426,7 +426,7 @@ const rules = {
     },
     clockworkClub: {
       term: 'The Clockwork Club',
-      def: 'The mechanical players that fill an empty chair — Mr Boulton, Mrs Wedgwood and Miss Arkwright play to your level; Mr Watt, the expert, plays flat out.',
+      def: 'The machines that fill an empty chair — Mr Boulton, Mrs Wedgwood and Miss Arkwright play to your level; Mr Watt, the expert, plays flat out.',
     },
   },
   approx: {
@@ -434,7 +434,7 @@ const rules = {
       'An honest ledger, kept in plain sight: what this preview plays true, and what it still simplifies. The Setup screen links here wherever a fidelity chip appears.',
     botsRibbon: "Beta",
     botsTitle: 'The Clockwork Club',
-    botsBody1: "Empty chairs are filled by mechanical players: ",
+    botsBody1: "Empty chairs are filled by machines: ",
     botsBody2: ", ",
     botsBody3: ", ",
     botsBody4: " and ",
@@ -458,7 +458,7 @@ const rules = {
       note: 'The nine merchant tiles are dealt at random as printed; the two tiles added at 3 and 4 players follow the most common published manifest (pottery + goods, then any + cotton).',
     },
     bots: {
-      area: 'The Clockwork Club (bots)',
+      area: 'The Clockwork Club',
       note: 'Four characters share one brain: each thinks its whole turn through and, at full strength, looks a round or two ahead. Three play to your level; Mr Watt plays flat out — none searches the game to its end.',
     },
     multiplayer: {
