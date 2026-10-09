@@ -21,7 +21,9 @@ import { FIT_PAD_BOTTOM, setFitReserve } from './boardView';
 import { levelMark, tileMark } from './levelMark';
 import { buildCoalCubes, linkCoalCubes } from './coalPicks';
 import type { CoalCube } from './coalPicks';
-import { CARD_H, DOCK_FIXED, DOCK_OPEN_H, HINTS_W, fanMeasure } from './handFan';
+import { CARD_H, DOCK_FIXED, DOCK_OPEN_H, FAN_PAD, FAN_SLIDE_MIN, HINTS_W, cardArt, fanMeasure, nextTurnPlace, skylineOf } from './handFan';
+import { useReducedMotion } from './useReducedMotion';
+import { roman } from '@/gl/roman';
 
 const PIN_KEY = 'brassworks.dockPinned';
 
@@ -65,18 +67,148 @@ function cardFlavor(card: Card): string {
   return tr('game.hand.wildIndustry');
 }
 
-/** engraved shield with the town initial (location cards) */
-function ShieldEmblem({ initial }: { initial: string }) {
+/** A town with no engraved plate yet (another board's towns, or a plate
+ *  that did not load): its skyline cut on the card itself — gables, a
+ *  spire, a chimney or two over a strip of water, hatched as the plates
+ *  are. The same town always draws the same skyline. */
+function EngravedSkyline({ town }: { town: string }) {
+  const id = `sky-${town}`;
+  const { ground, houses, spire, stacks } = skylineOf(town);
+  const ink = '#3B2A1A';
   return (
-    <svg viewBox="0 0 36 42" className="h-11 w-9" aria-hidden>
-      <path d="M18 2 L33 7 V20 C33 31 26 38 18 40 C10 38 3 31 3 20 V7 Z" fill="#F4ECD8" stroke="#8A6B33" strokeWidth={1.6} />
-      <path d="M18 5.5 L29.5 9.8 V20 C29.5 28.8 24 34.4 18 36.4 C12 34.4 6.5 28.8 6.5 20 V9.8 Z" fill="none" stroke="#2A241C" strokeOpacity={0.55} strokeWidth={0.9} />
-      <text x={18} y={25} textAnchor="middle" fontFamily="'IM Fell English SC',Georgia,serif" fontSize={16} fill="#2A241C">
-        {initial}
-      </text>
+    <svg viewBox="0 0 100 72" preserveAspectRatio="xMidYMax slice" className="h-full w-full" aria-hidden>
+      <defs>
+        {/* the burin's three cuts: close diagonals for the roofs, open
+            verticals for the walls, level rules for sky and water */}
+        <pattern id={`${id}-roof`} width="1.6" height="1.6" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <line x1="0" y1="0" x2="0" y2="1.6" stroke={ink} strokeWidth="0.7" strokeOpacity="0.85" />
+        </pattern>
+        <pattern id={`${id}-wall`} width="2.4" height="2.4" patternUnits="userSpaceOnUse">
+          <line x1="0.6" y1="0" x2="0.6" y2="2.4" stroke={ink} strokeWidth="0.4" strokeOpacity="0.4" />
+        </pattern>
+      </defs>
+      {Array.from({ length: 9 }, (_, i) => (
+        <line key={`s${i}`} x1="0" x2="100" y1={3 + i * 2.6} y2={3 + i * 2.6} stroke={ink} strokeOpacity={0.2 - i * 0.018} strokeWidth="0.45" />
+      ))}
+      {/* the church: its tower and spire above the roofs */}
+      <rect x={spire} y={ground - 28} width="8" height="28" fill={`url(#${id}-wall)`} stroke={ink} strokeWidth="0.7" />
+      <rect x={spire} y={ground - 28} width="8" height="28" fill="#EFE4C8" fillOpacity="0.4" />
+      <path d={`M${spire - 0.6} ${ground - 28}L${spire + 4} ${ground - 50}L${spire + 8.6} ${ground - 28}Z`} fill={`url(#${id}-roof)`} stroke={ink} strokeWidth="0.7" />
+      <rect x={spire + 2.8} y={ground - 24} width="2.4" height="4" rx="1.2" fill={ink} fillOpacity="0.75" />
+      {stacks.map((c, i) => (
+        <g key={`c${i}`}>
+          <rect x={c.x} y={c.top} width="2.6" height={ground - c.top} fill={`url(#${id}-roof)`} stroke={ink} strokeWidth="0.6" />
+          <path d={`M${c.x + 1.3} ${c.top - 1}c3 -3 6 -2 9 -5s6 -2 10 -4`} fill="none" stroke={ink} strokeOpacity="0.4" strokeWidth="0.7" />
+        </g>
+      ))}
+      {houses.map((h, i) => (
+        <g key={`h${i}`}>
+          <rect x={h.x} y={h.top} width={h.w} height={ground - h.top} fill="#F1E7CD" />
+          <rect x={h.x} y={h.top} width={h.w} height={ground - h.top} fill={`url(#${id}-wall)`} stroke={ink} strokeWidth="0.7" />
+          <path d={`M${h.x - 1} ${h.top}L${h.x + h.w / 2} ${h.peak}L${h.x + h.w + 1} ${h.top}Z`} fill={`url(#${id}-roof)`} stroke={ink} strokeWidth="0.7" />
+          {Array.from({ length: Math.max(0, Math.floor((ground - h.top - 5) / 6)) }, (_, k) => (
+            <rect key={k} x={h.x + h.w / 2 - 1.2} y={h.top + 3 + k * 6} width="2.4" height="3" fill={ink} fillOpacity="0.8" />
+          ))}
+        </g>
+      ))}
+      {/* the water in front: level rules, broken by the reflections */}
+      <line x1="0" x2="100" y1={ground} y2={ground} stroke={ink} strokeWidth="0.9" />
+      {Array.from({ length: 8 }, (_, i) => (
+        <path key={`w${i}`} d={`M0 ${ground + 2.4 + i * 2.4}H${30 + (i % 3) * 6}M${36 + (i % 3) * 6} ${ground + 2.4 + i * 2.4}H100`} stroke={ink} strokeOpacity={0.55 - i * 0.05} strokeWidth="0.45" />
+      ))}
     </svg>
   );
 }
+
+/** a line of a card's name, condensed on the line when the word is too
+ *  long for the band — as a compositor would, never cut in two. The
+ *  measure is the type's own, once the face has loaded. */
+function FitLine({ text, width, className }: { text: string; width: number; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let live = true;
+    const fit = () => {
+      if (!live || !el.parentElement) return;
+      el.style.transform = '';
+      const room = el.parentElement.clientWidth;
+      const w = el.scrollWidth;
+      el.style.transform = w > room ? `scaleX(${(room / w).toFixed(3)})` : '';
+    };
+    fit();
+    void document.fonts?.ready.then(fit);
+    return () => {
+      live = false;
+    };
+  }, [text, width]);
+  return (
+    <span className={cn('block min-w-0 overflow-hidden whitespace-nowrap', className)}>
+      <span ref={ref} className="inline-block origin-left">
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/** a card's picture, printed on its paper: the town's plate, the trade's
+ *  painting (two for a double card), a joker's own plate */
+function CardArt({ card }: { card: Card }) {
+  const [failed, setFailed] = useState(false);
+  const art = cardArt(card);
+  if (card.kind === 'industry' && card.industry) {
+    const second = card.industry2 ? industryFaceUrl(card.industry2, {}) : null;
+    return (
+      <div className="absolute inset-0 flex items-center justify-center">
+        {/* the ground the painting stands on, a soft pool of shade */}
+        <span aria-hidden className="absolute bottom-[10%] left-1/2 h-[14%] w-[70%] -translate-x-1/2 rounded-[50%] bg-[radial-gradient(closest-side,rgba(60,38,14,.38),transparent)]" />
+        {second && <img src={second} alt="" draggable={false} className="absolute right-[4%] top-[6%] h-[62%] w-[62%] object-contain opacity-95 drop-shadow-[0_2px_2px_rgba(40,24,8,.35)]" />}
+        <img
+          src={art!}
+          alt=""
+          draggable={false}
+          className={cn('relative object-contain drop-shadow-[0_3px_3px_rgba(40,24,8,.4)]', second ? '-translate-x-[16%] translate-y-[10%] h-[74%] w-[74%]' : 'h-[88%] w-[88%]')}
+        />
+      </div>
+    );
+  }
+  if (!art || failed) return card.town ? <EngravedSkyline town={card.town} /> : null;
+  return (
+    <img
+      src={art}
+      alt=""
+      draggable={false}
+      onError={() => setFailed(true)}
+      className="h-full w-full object-cover mix-blend-multiply"
+      /* the plate fades into the card's paper, as a vignette does */
+      style={{ WebkitMaskImage: PLATE_FADE, maskImage: PLATE_FADE }}
+    />
+  );
+}
+
+const PLATE_FADE = 'radial-gradient(125% 115% at 50% 40%, #000 58%, transparent 100%)';
+
+/** a colour's perceived lightness, 0 to 1 */
+function lightness(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+}
+
+/** the band a card's name is set on: the town's colour, the trade's, a
+ *  joker's brass */
+function bandOf(card: Card): { bg: string; ink: string } {
+  if (card.kind === 'location' && card.town) {
+    const bg = townColor(card.town);
+    /* a pale band (the amber of the Black Country, a farm's cream) takes
+       the ink; a dark one the cream */
+    return { bg, ink: lightness(bg) > 0.5 ? '#2A241C' : '#F4ECD8' };
+  }
+  if (card.kind === 'industry' && card.industry) return { bg: '#2A241C', ink: '#F0E3C2' };
+  return { bg: 'linear-gradient(180deg,#D8B36A,#A8843F)', ink: '#2A241C' };
+}
+
+/* the name's band across the top of a card, and the picture beneath it */
+const BAND_H = 25;
 
 const GameCard = memo(function GameCard({
   card,
@@ -86,6 +218,7 @@ const GameCard = memo(function GameCard({
   scoutMarked,
   disabled,
   canBuild,
+  reduced,
   onPick,
   onFly,
 }: {
@@ -97,23 +230,26 @@ const GameCard = memo(function GameCard({
   disabled: boolean;
   /** the aid: this card can build something right now */
   canBuild?: boolean;
+  /** the reader asks for stillness: no lift, no tilt */
+  reduced: boolean;
   onPick: (id: string) => void;
   /** a town card's double-click: the camera flies to its town */
   onFly?: (card: Card) => void;
 }) {
   const t = useT();
-  const wild = card.kind.startsWith('wild');
-  const industry = card.kind === 'industry' ? card.industry! : null;
   const label = cardLabel(card);
-  /* the name is set whole. A double card names one trade a line (the
-     slash would only eat the room); a long word sets at the floor size;
-     a single word too long even then (Coalbrookdale, Wolverhampton) is
-     condensed on the line, as a compositor would, never cut in two */
+  const band = bandOf(card);
+  /* the name is set whole, from the left edge — a covered card still shows
+     where its name begins. A double card names one trade a line (the slash
+     would only eat the room); a single word too long for the band
+     (Coalbrookdale, Wolverhampton) is condensed on the line, as a
+     compositor would, never cut in two */
   const parts = label.split(' / ');
-  const longest = Math.max(...label.split(/[\s/-]+/).map((w) => w.length));
-  const small = parts.length === 2 || longest > 10;
-  const inner = width - 10;
-  const squeeze = parts.length === 1 && !/[\s-]/.test(label) ? Math.min(1, inner / (label.length * 6.9)) : 1;
+  const oneWord = parts.length === 1 && !/[\s-]/.test(label);
+  const small = label.length > 12;
+  /* the body keeps fourteen pixels over the cards: a chosen card rises by
+     eight of them, so its ring and the light it catches stay in view */
+  const lift = selected || scoutMarked ? -8 : 0;
   return (
     <motion.button
       layout="position"
@@ -123,119 +259,64 @@ const GameCard = memo(function GameCard({
       onClick={() => onPick(card.id)}
       onDoubleClick={onFly && card.town ? () => onFly(card) : undefined}
       disabled={disabled}
-      initial={{ y: 40, opacity: 0 }}
-      animate={{ y: selected || scoutMarked ? -12 : 0, opacity: disabled ? 0.45 : 1, rotate: scoutMarked ? 0 : (index % 3 - 1) * 2 }}
-      /* no lift under the pointer: the dock has no room for one; the card only straightens */
-      whileHover={{ rotate: 0 }}
-      transition={{ type: 'spring', stiffness: 180, damping: 20 }}
+      initial={reduced ? false : { y: 40, opacity: 0 }}
+      animate={{ y: lift, opacity: disabled ? 0.45 : 1, rotate: scoutMarked ? 0 : (index % 3 - 1) * 1.5 }}
+      /* under the pointer the card rises a little, the faintest tilt, a
+         soft shadow beneath it; the dock's body leaves exactly this room */
+      whileHover={reduced || disabled ? undefined : { y: Math.min(lift, -6), rotate: -0.8 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 24 }}
       className={cn(
-        'relative shrink-0 overflow-hidden rounded-md border border-[#A8843F] text-left shadow-e3',
-        selected && 'shadow-[0_0_0_2px_rgb(var(--brass-500)),0_18px_34px_rgba(0,0,0,.55)]',
+        'group relative shrink-0 overflow-hidden rounded-[7px] text-left',
+        'shadow-[0_0_0_1px_#8A6B33,0_4px_8px_rgba(0,0,0,.45)] transition-shadow duration-200 motion-reduce:transition-none',
+        !disabled && !selected && !scoutMarked && 'hover:shadow-[0_0_0_1px_#C9A45C,0_14px_22px_rgba(0,0,0,.55)]',
+        /* the chosen card: a ring of brass, and the light it catches */
+        selected && 'shadow-[0_0_0_1px_#2A241C,0_0_0_3px_rgb(var(--brass-500)),0_0_14px_rgba(232,196,122,.45),0_16px_26px_rgba(0,0,0,.55)]',
         scoutMarked && 'brightness-[.55] saturate-50 shadow-[0_0_0_2px_#B5412F,0_10px_20px_rgba(0,0,0,.5)]',
       )}
       style={{ zIndex: selected ? 10 : scoutMarked ? 9 : index, width, height: CARD_H }}
       title={cardFlavor(card)}
     >
-      {/* aged parchment: cream gradient + paper grain + browned corners */}
-      <div aria-hidden className="absolute inset-0 bg-[linear-gradient(165deg,#F2E8CE,#E7D8B2_55%,#D9C491)]" />
-      <div aria-hidden className="tex-paper absolute inset-0 opacity-[0.12]" />
+      {/* the card's stock: warm cream, a paper grain, corners browned by hands */}
+      <div aria-hidden className="absolute inset-0 bg-[linear-gradient(165deg,#F4EBD3,#EADDBA_60%,#DDCB9C)]" />
+      <div aria-hidden className="tex-paper absolute inset-0 opacity-[0.10]" />
+      {/* the picture, under the band */}
+      <div aria-hidden className="absolute inset-x-[4px] bottom-[4px] overflow-hidden rounded-b-[3px]" style={{ top: BAND_H + 5 }}>
+        <CardArt card={card} />
+      </div>
       <div
         aria-hidden
-        className="absolute inset-0"
-        style={{ background: 'radial-gradient(120% 90% at 50% 42%, transparent 52%, rgba(120,82,32,.32) 86%, rgba(70,45,16,.5))' }}
+        className="pointer-events-none absolute inset-0"
+        style={{ background: 'radial-gradient(130% 95% at 50% 45%, transparent 60%, rgba(120,82,32,.22) 88%, rgba(70,45,16,.4))' }}
       />
-      {/* double engraved border: brass outer edge + charcoal inner fillet */}
-      <div aria-hidden className="pointer-events-none absolute inset-[3px] rounded-[5px] border border-[#2A241C]/55" />
-      {/* industry liseré down the left edge, tinted with the trade colour */}
-      {industry && (
-        <span aria-hidden className="absolute bottom-[4px] left-[4px] top-[4px] w-[3px] rounded-full" style={{ backgroundColor: INDUSTRY_COLOR[industry] }} />
-      )}
-      {/* location liseré: the town's own colour code (matches the board's
-          slot frames + ribbon dash — physical Brass location colours) */}
-      {card.town && (
-        <span aria-hidden className="absolute bottom-[4px] left-[4px] top-[4px] w-[3px] rounded-full" style={{ backgroundColor: townColor(card.town) }} />
-      )}
+      {/* the name's band: the town's colour, the trade's ink, a joker's brass */}
+      <div className="absolute inset-x-[3px] top-[3px] flex items-center overflow-hidden rounded-t-[4px] pl-[6px] pr-[4px]" style={{ height: BAND_H, background: band.bg, color: band.ink }}>
+        {/* the trade's colour, as a rule under an industry's name */}
+        {card.kind === 'industry' && card.industry && (
+          <span aria-hidden className="absolute inset-x-0 bottom-0 flex h-[3px]">
+            <span className="flex-1" style={{ backgroundColor: INDUSTRY_COLOR[card.industry] }} />
+            {card.industry2 && <span className="flex-1" style={{ backgroundColor: INDUSTRY_COLOR[card.industry2] }} />}
+          </span>
+        )}
+        {parts.length === 2 ? (
+          <p className="min-w-0 flex-1 font-fell text-[9px] uppercase leading-[10.5px]">
+            <FitLine text={parts[0]} width={width} />
+            <FitLine text={parts[1]} width={width} />
+          </p>
+        ) : oneWord ? (
+          <p className="min-w-0 flex-1 font-fell text-[10px] uppercase leading-[11px] tracking-[0.03em]">
+            <FitLine text={label} width={width} />
+          </p>
+        ) : (
+          <p className={cn('line-clamp-2 min-w-0 flex-1 font-fell uppercase leading-[10.5px]', small ? 'text-[9px]' : 'text-[10px] tracking-[0.03em]')}>{label}</p>
+        )}
+      </div>
+      {/* the engraved fillet round the whole face */}
+      <div aria-hidden className="pointer-events-none absolute inset-[3px] rounded-[4px] border border-[#2A241C]/45" />
       {canBuild && (
-        <span aria-hidden title={t('game.guide.canBuild')} className="absolute right-[5px] top-[5px] z-10 flex h-4 w-4 items-center justify-center rounded-full border border-[#8A6B33] bg-[#C9A45C] shadow-[0_1px_2px_rgba(0,0,0,.4)]">
+        <span aria-hidden title={t('game.guide.canBuild')} className="absolute bottom-[6px] right-[6px] z-10 flex h-4 w-4 items-center justify-center rounded-full border border-[#8A6B33] bg-[#C9A45C] shadow-[0_1px_2px_rgba(0,0,0,.4)]">
           <Hammer className="h-2.5 w-2.5 text-[#2A241C]" />
         </span>
       )}
-      {/* top band: the whole name in small caps over an engraved rule, on
-          two lines when it needs them — the band has the height, not the
-          width, and a name cut short names nothing */}
-      <div className="absolute inset-x-[4px] top-[5px] border-b border-[#8A6B33]/60 pb-[2px]">
-        {squeeze < 1 ? (
-          <p className="flex justify-center font-fell text-[9px] uppercase leading-[11px] text-[#2A241C]">
-            <span className="whitespace-nowrap" style={{ transform: `scaleX(${squeeze.toFixed(3)})` }}>
-              {label}
-            </span>
-          </p>
-        ) : (
-          <p className={cn('line-clamp-2 text-center font-fell uppercase leading-[11px] text-[#2A241C]', small ? 'text-[9px]' : 'text-[10px] tracking-[0.02em]')}>
-            {parts.length === 2 ? (
-              <>
-                {parts[0]}
-                <br />
-                {parts[1]}
-              </>
-            ) : (
-              label
-            )}
-          </p>
-        )}
-      </div>
-      {/* emblem: tinted trade icon / town shield / engraved wild star */}
-      <div className="absolute inset-x-0 top-[30px] flex h-[48px] items-center justify-center">
-        {card.industry2 && (
-          <span
-            aria-hidden
-            className="absolute right-[10px] top-[30px] block h-5 w-5"
-            style={{
-              WebkitMaskImage: `url(${INDUSTRY_ICON[card.industry2]})`,
-              maskImage: `url(${INDUSTRY_ICON[card.industry2]})`,
-              WebkitMaskSize: 'contain',
-              maskSize: 'contain',
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat',
-              WebkitMaskPosition: 'center',
-              maskPosition: 'center',
-              backgroundColor: INDUSTRY_COLOR[card.industry2],
-            }}
-          />
-        )}
-        {industry && (
-          <span
-            aria-hidden
-            className={card.industry2 ? 'block h-8 w-8 -translate-x-2' : 'block h-9 w-9'}
-            style={{
-              WebkitMaskImage: `url(${INDUSTRY_ICON[industry]})`,
-              maskImage: `url(${INDUSTRY_ICON[industry]})`,
-              WebkitMaskSize: 'contain',
-              maskSize: 'contain',
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat',
-              WebkitMaskPosition: 'center',
-              maskPosition: 'center',
-              backgroundColor: INDUSTRY_COLOR[industry],
-              filter: 'drop-shadow(0 1px 0 rgba(244,236,216,.5))',
-            }}
-          />
-        )}
-        {card.kind === 'location' && <ShieldEmblem initial={label.slice(0, 1)} />}
-        {wild && (
-          <span
-            aria-hidden
-            className="font-display text-[26px] font-black text-[#2A241C]/80"
-            style={{ textShadow: '0 1px 0 rgba(244,236,216,.55), 0 -1px 1px rgba(0,0,0,.25)' }}
-          >
-            ✦
-          </span>
-        )}
-      </div>
-      {/* flavour line, fine italics */}
-      <p className="absolute inset-x-[6px] bottom-[4px] line-clamp-3 text-center font-serif text-[9px] italic leading-[10px] text-[#4A3C26]">
-        {cardFlavor(card)}
-      </p>
       {scoutMarked && (
         <>
           {/* discard stamp: red ✕ badge + diagonal "OUT" ribbon, unmistakable */}
@@ -476,6 +557,37 @@ function HandDock() {
     },
     [flyToRegion, selectCard],
   );
+  /* the purse's spending, told by a few coins that slide from the money to
+     the tally of what was spent — only on a spend, never on a new round or
+     an undo, and not at all for a reader who asks for stillness */
+  const reduced = useReducedMotion();
+  const shownSeat = game && shown ? game.players.indexOf(shown) : -1;
+  const spentNow = shown?.spent ?? 0;
+  const stripRef = useRef<HTMLButtonElement>(null);
+  const moneyRef = useRef<HTMLSpanElement>(null);
+  const spentRef = useRef<HTMLSpanElement>(null);
+  const lastSpend = useRef<{ key: string; spent: number } | null>(null);
+  const [coins, setCoins] = useState<{ id: number; from: [number, number]; to: [number, number] } | null>(null);
+  const spendKey = game ? `${shownSeat}:${game.era}:${game.round}` : '';
+  useEffect(() => {
+    const prev = lastSpend.current;
+    lastSpend.current = { key: spendKey, spent: spentNow };
+    if (reduced || !prev || prev.key !== spendKey || spentNow <= prev.spent) return;
+    const raf = window.requestAnimationFrame(() => {
+      const strip = stripRef.current?.getBoundingClientRect();
+      const a = moneyRef.current?.getBoundingClientRect();
+      const b = spentRef.current?.getBoundingClientRect();
+      if (!strip || !a || !b) return;
+      setCoins({ id: Date.now(), from: [a.left + a.width / 2 - strip.left, a.top + a.height / 2 - strip.top], to: [b.left + b.width / 2 - strip.left, b.top + b.height / 2 - strip.top] });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [spendKey, spentNow, reduced]);
+  useEffect(() => {
+    if (!coins) return;
+    const id = window.setTimeout(() => setCoins(null), 600);
+    return () => window.clearTimeout(id);
+  }, [coins]);
+
   if (!game || !planGame || !visible) return null;
   const p = game.players[game.current];
   const isHumanTurn = game.phase === 'action' && (seat === null ? !p.isBot : seat === game.current);
@@ -496,11 +608,16 @@ function HandDock() {
      kept, so the hand is back up the moment the view is left */
   const expanded = (pinned && !boardOpts.focus) || busy || (hovered && !hoverMuted) || (isHumanTurn && !folded && !boardOpts.focus);
   const verbLabel = verb ? VERB_META.find((v) => v.verb === verb)?.label : null;
+  const nextPlace = shownSeat >= 0 ? nextTurnPlace(game, shownSeat) : null;
+  /* the sentence around the sum, so the sum alone can be set in brass */
+  const spentWords = t('game.main.spent').split('{money}');
   /* the fan's room: what the dock may take, less its fixed parts */
   const handSize = shown?.hand.length ?? 0;
   const hintsShown = handSize < 7 && verb !== 'develop' && vw >= 1280;
   const dockMax = centredOnScreen ? centredRoom : vw - insets.left - bandRight;
   const fan = fanMeasure(handSize, dockMax - DOCK_FIXED - (hintsShown ? HINTS_W : 0));
+  const siding = Math.max(FAN_SLIDE_MIN, -fan.step);
+  const parting = hoverCard !== null && hoverCard < handSize - 1 && fan.step < 0;
   /* the coal pickers: a mine to name only when two or more stand nearest */
   const buildCubes = verb === 'build' && canPlan && buildPick ? buildCoalCubes(planGame, buildPick, buildCoal) : null;
   const buildCoalShown = !!buildCubes?.some((c) => c.choices.length > 0);
@@ -523,6 +640,7 @@ function HandDock() {
 
         {/* collapsed brass strip */}
         <button
+          ref={stripRef}
           type="button"
           aria-expanded={expanded}
           aria-label={expanded ? t('game.hand.foldDock') : t('game.hand.openDock')}
@@ -570,10 +688,40 @@ function HandDock() {
           {/* the purse, right where the eyes already are: money, income level */}
           {shown && (
             <span className="flex items-center gap-1.5 font-mono text-[10.5px] normal-case tracking-normal" title={t('game.hand.purseTip', { name: shown.name })}>
-              <span className="rounded-sm border border-brass-700/60 bg-coal-950/70 px-1.5 py-[1px] font-bold text-brass-400">{money(shown.money)}</span>
+              <span ref={moneyRef} className="rounded-sm border border-brass-700/60 bg-coal-950/70 px-1.5 py-[1px] font-bold text-brass-400">{money(shown.money)}</span>
               <span className="rounded-sm border border-brass-700/40 bg-coal-950/50 px-1.5 py-[1px] text-bottle-600 brightness-150">↗ {incomeLevel(shown.income)}</span>
             </span>
           )}
+          {/* what the purse has spent this round, and the place it earns at
+              the next: public figures, the order the engine will deal */}
+          {shown && game.phase === 'action' && (
+            <span className="flex items-center gap-1 whitespace-nowrap font-sans text-[10px] font-normal normal-case tracking-normal text-cream-100/55" title={t('game.main.orderTip', { name: shown.name })}>
+              <span>
+                {spentWords[0]}
+                <span ref={spentRef} className="font-mono text-[10.5px] font-semibold text-brass-400 transition-colors delay-300 duration-300" style={coins ? { color: '#F2D38A' } : undefined}>
+                  {money(spentNow)}
+                </span>
+                {spentWords[1]}
+              </span>
+              {nextPlace !== null && (
+                <>
+                  <span aria-hidden className="text-brass-700">·</span>
+                  <span>{t('game.main.nextPlace', { place: t(`game.main.place${nextPlace}`) })}</span>
+                </>
+              )}
+            </span>
+          )}
+          {coins &&
+            [0, 1, 2].map((k) => (
+              <motion.span
+                key={`${coins.id}-${k}`}
+                aria-hidden
+                className="pointer-events-none absolute left-0 top-0 z-10 h-[7px] w-[7px] rounded-full border border-[#8A6B33] bg-[radial-gradient(circle_at_35%_35%,#F6DE9C,#C9A45C_60%,#8A6B33)] shadow-[0_1px_1px_rgba(0,0,0,.5)]"
+                initial={{ x: coins.from[0] - 3.5 + (k - 1) * 3, y: coins.from[1] - 3.5, opacity: 0 }}
+                animate={{ x: coins.to[0] - 3.5, y: [coins.from[1] - 3.5, Math.min(coins.from[1], coins.to[1]) - 11, coins.to[1] - 3.5], opacity: [0, 1, 1, 0] }}
+                transition={{ duration: 0.4, delay: k * 0.05, ease: 'easeInOut' }}
+              />
+            ))}
           {/* undo: back to before your last action, the bots' replies with it */}
           {canUndo && (
             <span
@@ -747,7 +895,7 @@ function HandDock() {
                 exit={{ opacity: 0, x: -14 }}
                 className="paper flex shrink-0 flex-col gap-1.5 self-center rounded-md px-3 py-2"
               >
-                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.market.coal')}</span>
+                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.main.buildCoal')}</span>
                 {buildCubes!.map((cube, k) =>
                   cube.choices.length > 0 ? (
                     <CoalRow
@@ -755,7 +903,7 @@ function HandDock() {
                       cube={cube}
                       named={buildCoal[k] ?? null}
                       game={planGame}
-                      label={t('game.market.coal')}
+                      label={t('game.main.buildCoal')}
                       onPick={(key) => {
                         setBuildCoal(k, key);
                         if (key) flyToRegion(key.split(':')[0]);
@@ -763,6 +911,7 @@ function HandDock() {
                     />
                   ) : null,
                 )}
+                <span className="max-w-[210px] font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.main.coalHint')}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -776,7 +925,7 @@ function HandDock() {
                 exit={{ opacity: 0, x: -14 }}
                 className="paper flex shrink-0 flex-col gap-1.5 self-center rounded-md px-3 py-2"
               >
-                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.market.coal')}</span>
+                <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">{t('game.main.buildCoal')}</span>
                 {linkCubes.map((cube, k) =>
                   cube && cube.choices.length > 0 ? (
                     <CoalRow
@@ -784,7 +933,7 @@ function HandDock() {
                       cube={cube}
                       named={linkCoal[k] ?? null}
                       game={planGame}
-                      label={t('game.market.coal')}
+                      label={t('game.main.buildCoal')}
                       onPick={(key) => {
                         setLinkCoal(k, key);
                         if (key) flyToRegion(key.split(':')[0]);
@@ -792,6 +941,7 @@ function HandDock() {
                     />
                   ) : null,
                 )}
+                <span className="max-w-[210px] font-sans text-[9.5px] leading-snug text-ink-900/55">{t('game.main.coalHint')}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -946,7 +1096,7 @@ function HandDock() {
                         >
                           <img src={industryFaceUrl(d.industry, boardOpts.tileArt)} alt="" className="h-full w-full object-contain p-0.5" draggable={false} />
                           {/* the level, stamped top-left as on the board */}
-                          <span className="absolute left-[3px] top-[3px] rounded-[3px] bg-ink-900/75 px-1 font-fell text-[10px] font-bold leading-[14px] text-cream-100">{['', 'I', 'II', 'III', 'IV'][d.level] ?? d.level}</span>
+                          <span className="absolute left-[3px] top-[3px] rounded-[3px] bg-ink-900/75 px-1 font-fell text-[10px] font-bold leading-[14px] text-cream-100">{roman(d.level)}</span>
                           {count > 0 && <span className="absolute -right-0.5 -top-0.5 rounded-full bg-rust-500 px-1.5 font-sans text-[9px] font-bold leading-[14px] text-cream-100">×{count}</span>}
                         </button>
                         <span className="flex items-center gap-1 font-sans text-[9.5px] leading-none text-ink-900/60">
@@ -1002,7 +1152,7 @@ function HandDock() {
 
           {/* the fan — centred while it fits, scrollable from the FIRST card
               once it overflows (a centred flex row would clip its left edge) */}
-          <div ref={fanRef} className="relative flex min-w-0 flex-1 items-end overflow-x-auto pb-1" style={{ scrollSnapType: 'x proximity' }}>
+          <div ref={fanRef} className="relative flex min-w-0 flex-1 items-end overflow-x-auto pb-0.5" style={{ scrollSnapType: 'x proximity' }}>
             {/* the strip already names who is at the table; the fan only
                 speaks when there is nothing to show */}
             {!isHumanTurn && !shown && (
@@ -1011,20 +1161,22 @@ function HandDock() {
               </p>
             )}
             {shown && (
-              /* room at the right for the cards that slide aside under the pointer */
-              <div className="mx-auto flex items-end pl-1" style={{ paddingRight: Math.max(12, -fan.step) }}>
+              /* the siding the cards part into under the pointer, laid half
+                 on each side, so the fan at rest sits in the middle of it */
+              <div className="mx-auto flex items-end" style={{ paddingLeft: FAN_PAD + Math.floor(siding / 2), paddingRight: Math.ceil(siding / 2) }}>
               {shown.hand.map((card, i) => (
                 <div
                   key={card.id}
-                  className={cn('relative transition-transform duration-150 ease-out', hoverCard === i && 'z-20')}
+                  /* a flex box, so the card sits on the fan's floor with no
+                     line's descent under it: the room goes over the cards */
+                  className={cn('relative flex transition-transform duration-150 ease-out motion-reduce:transition-none', hoverCard === i && 'z-20')}
                   style={{
                     scrollSnapAlign: 'center',
                     marginLeft: i === 0 ? 0 : fan.step,
-                    /* no lift: the dock is not tall enough for one — the card
-                       under the pointer comes forward, ringed in brass, and
-                       those to its right slide aside by exactly the overlap */
-                    transform: hoverCard !== null && i > hoverCard && fan.step < 0 ? `translateX(${-fan.step}px)` : undefined,
-                    filter: hoverCard === i ? 'drop-shadow(0 0 4px rgba(232,196,122,.9))' : undefined,
+                    /* the card under the pointer comes forward, and the fan
+                       parts at its right edge by exactly the overlap: half of
+                       it to each side, the last card needing no parting */
+                    transform: parting ? `translateX(${i <= (hoverCard ?? -1) ? -Math.floor(-fan.step / 2) : Math.ceil(-fan.step / 2)}px)` : undefined,
                   }}
                   onPointerEnter={() => setHoverCard(i)}
                   onPointerLeave={() => setHoverCard((h) => (h === i ? null : h))}
@@ -1037,6 +1189,7 @@ function HandDock() {
                     scoutMarked={canPlan && scoutPick.includes(card.id)}
                     disabled={!canPlan || usedByQueue.has(card.id)}
                     canBuild={canPlan && buildable.has(card.id)}
+                    reduced={reduced}
                     onPick={selectCard}
                     onFly={flyCard}
                   />
