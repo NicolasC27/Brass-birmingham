@@ -6,11 +6,11 @@ import { merchantBarrelSlots, merchantBeerLeft, merchantDemand, merchantOpen, ne
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
 import type { Era, GameState } from '@/game/types';
-import { lastActionOf, useGame, verbsForCard } from '@/game/store';
+import { lastActionOf, projectQueued, useGame, verbsForCard } from '@/game/store';
 import { money, onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { FAR_LOD_SCREEN, WORLD_H, WORLD_W, fitScale, placeAnchor, ribbonLabelScale, screenToWorld, subscribeFitReserve, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
+import { WORLD_H, WORLD_W, farDetail, fitScale, placeAnchor, ribbonLabelScale, screenToWorld, subscribeFitReserve, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
 import type { AnchorRegistry, MapAnchor, View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -22,7 +22,11 @@ import { Camera } from './camera';
 import { CASING, boardAssetTally, buildBoardScene, drawOwnerMedallion, holdBoardAssets, industryFaceUrl, loadBoardAssets, tileFaceUrl, wearSheets } from './paint';
 import type { Prepared } from '@/game/store';
 import type { GameAction } from '@/game/actions';
-import { closeAudio, houseHover, pingTap } from './sfx';
+import { closeAudio, houseHover, pingTap, stampThud } from './sfx';
+import { ROW_SCALE, rowLift, rowWidth } from './merchantRow';
+import { EMPTY_PROVENANCE, provenance, slotAt as slotPos, sourceCounts } from './provenance';
+import type { Stuff } from './provenance';
+import { STAMP_IMPACT_S, STAMP_S, freshPieces, inkBloom, stampPose } from './stamp';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
@@ -225,44 +229,202 @@ function linkDashes(pts: number[][]): Graphics {
   return d;
 }
 
-/** a supply line from the exchange to the works being planned: the
- *  exchange is a panel of the page, not of the board, so the line is
- *  redrawn every frame from wherever its coal or iron tray stands on
- *  screen, with a sliding dash offset that marches toward the works */
-interface March {
+/* -------- the provenance threads: where a move's goods come from -------- */
+/* A fine beaded line from each source to the place its cubes are spent,
+   in the colour of what it carries, the beads walking slowly toward the
+   works; the count is engraved on the source. Everything is measured
+   on screen (px at the current scale) and drawn again each frame, so the
+   thread keeps its fineness at every zoom and follows the exchange's tray
+   wherever the page has it. With motion reduced the beads stand still. */
+
+/** the inks of a thread: the bead, and the halo it sits in */
+const STRAND_INK: Record<Stuff | 'sale', { core: number; halo: number; haloAlpha: number }> = {
+  /* coal is near-black: it sits in the cream casing the owner's marks wear */
+  coal: { core: 0x1b1714, halo: CASING, haloAlpha: 0.82 },
+  iron: { core: 0xe07a2e, halo: 0x17110b, haloAlpha: 0.62 },
+  beer: { core: 0xe3b04e, halo: 0x17110b, haloAlpha: 0.62 },
+  /* cubes the new works sells to the exchange: the green of a gain */
+  sale: { core: 0x72c08c, halo: 0x0e1811, haloAlpha: 0.62 },
+};
+/** a bead's radius, its halo's, the gap from bead to bead, the walk (px, px/s) */
+const BEAD_PX = 1.7;
+const BEAD_HALO_PX = 2.9;
+const BEAD_GAP_PX = 9;
+const BEAD_WALK_PX = 11;
+/** the last stretch of a thread, drawn over the cards (world units): long
+ *  enough to cross the neighbour a works sits behind, so the thread is
+ *  seen to arrive at the very card it feeds and not at the one before it */
+const SURFACE_W = TILE_R * 2.6;
+
+interface Strand {
   g: Graphics;
-  tray: 'coal' | 'iron';
-  /** the works, in world coordinates */
-  to: [number, number];
-  color: number;
-  /** the plaque (cubes and price), kept on the line a little way from the works */
+  /** the stretch at the works, laid above the towns (see SURFACE_W) */
+  top?: Graphics;
+  /** which end of the thread is the works being fed: that end surfaces */
+  surface?: 'from' | 'to';
+  ink: (typeof STRAND_INK)[keyof typeof STRAND_INK];
+  /** world points; `tray` stands for the exchange's tray, read each frame */
+  from: [number, number] | 'tray';
+  to: [number, number] | 'tray';
+  /** which tray row a purchase or a sale runs to */
+  tray?: 'coal' | 'iron';
+  /** how far short of each end the beads stop: world units, then px */
+  trimFrom: [number, number];
+  trimTo: [number, number];
+  /** what the source is, which sets where its count is engraved: on a
+   *  card's top edge, over a barrel, or (none) along the thread */
+  seat?: 'tile' | 'barrel';
+  /** the engraved count, carried at the source end of the thread */
   tag: Container;
-  /** the plaque's distance from the works along the line */
-  along: number;
-  /** the cubes go to the exchange, not away from it: the dashes and the
-   *  arrow run the other way, and the line is the colour of a gain */
-  selling?: boolean;
 }
 
-/** an arrowhead at (gx,gy) pointing away from (sx,sy), stopping `back` short */
-function arrowHead(sx: number, sy: number, gx: number, gy: number, back: number): number[] {
-  const dx = gx - sx;
-  const dy = gy - sy;
-  const len = Math.hypot(dx, dy) || 1;
-  const ux = dx / len;
-  const uy = dy / len;
-  const tipX = gx - ux * back;
-  const tipY = gy - uy * back;
-  const baseX = tipX - ux * 13;
-  const baseY = tipY - uy * 13;
-  return [tipX, tipY, baseX - uy * 7, baseY + ux * 7, baseX + uy * 7, baseY - ux * 7];
+/** the exchange's tray row for a resource, as a point of the world: its
+ *  left edge on screen, or the table's right edge when the page shows none */
+function trayPoint(tray: 'coal' | 'iron', host: DOMRect, world: Container): [number, number] {
+  const el = document.querySelector(`[data-market-tray="${tray}"]`) ?? document.querySelector('[data-market-pill]');
+  const r = el?.getBoundingClientRect();
+  if (!r || r.width <= 0) return [WORLD_W - 52, tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71];
+  return [(r.left - 6 - host.left - world.position.x) / world.scale.x, (r.top + r.height / 2 - host.top - world.position.y) / world.scale.y];
 }
 
-/** a supply line's geometry: it stops short of the tile, on an arrowhead */
-function supplyLine(sx: number, sy: number, gx: number, gy: number): { end: [number, number]; head: number[] } {
-  const len = Math.hypot(gx - sx, gy - sy) || 1;
-  const back = TILE_R + 13;
-  return { end: [gx - ((gx - sx) / len) * back, gy - ((gy - sy) / len) * back], head: arrowHead(sx, sy, gx, gy, TILE_R + 3) };
+/** a thread drawn at screen scale `s`, `clock` seconds in */
+function drawStrand(m: Strand, a: [number, number], b: [number, number], s: number, clock: number, still: boolean): void {
+  const g = m.g;
+  g.clear();
+  m.top?.clear();
+  const px = 1 / s;
+  const dx = b[0] - a[0];
+  const dy = b[1] - a[1];
+  const len = Math.hypot(dx, dy);
+  const from = m.trimFrom[0] + m.trimFrom[1] * px;
+  const to = len - (m.trimTo[0] + m.trimTo[1] * px);
+  const ux = len ? dx / len : 0;
+  const uy = len ? dy / len : 0;
+  /* the count is engraved on the source: seated on the card's top edge,
+     clear of its level and stock, or over the barrel; a thread from the
+     exchange carries it where it comes onto the table, and the beads
+     start clear of it */
+  m.tag.scale.set(px);
+  let start = from + 2 * px;
+  if (m.seat === 'tile') m.tag.position.set(a[0], a[1] - TILE_R - 7 * px);
+  else if (m.seat === 'barrel') m.tag.position.set(a[0], a[1] - 22 - 9 * px);
+  else {
+    const half = Math.abs(ux) * (m.tag.width / px / 2) + Math.abs(uy) * (m.tag.height / px / 2);
+    m.tag.position.set(a[0] + ux * (from + (12 + half) * px), a[1] + uy * (from + (12 + half) * px));
+    start = from + (18 + 2 * half) * px;
+  }
+  const gap = BEAD_GAP_PX * px;
+  if (to - start < gap) return;
+  /* the beads walk toward the works; the first and last swell in and out,
+     so the walk has no seam at either end */
+  const shift = still ? gap / 2 : ((clock * BEAD_WALK_PX * px) % gap + gap) % gap;
+  const beads: [number, number, number, number][] = [];
+  for (let d = start + shift - gap; d <= to; d += gap) {
+    if (d < start) continue;
+    const f = Math.min(1, (d - start) / gap, (to - d) / gap);
+    if (f <= 0.05) continue;
+    beads.push([a[0] + ux * d, a[1] + uy * d, f, d]);
+  }
+  /* the run slips under the cards it passes; the stretch at the works
+     comes up over them, so the last bead touches the card it feeds */
+  const surfaced = (d: number) => (m.surface === 'to' ? d >= to - SURFACE_W : m.surface === 'from' ? d <= start + SURFACE_W : false);
+  const under = beads.filter((b) => !m.top || !surfaced(b[3]));
+  const over = m.top ? beads.filter((b) => surfaced(b[3])) : [];
+  for (const [layer, list] of [[g, under], [m.top, over]] as const) {
+    if (!layer || !list.length) continue;
+    for (const [x, y, f] of list) layer.circle(x, y, BEAD_HALO_PX * px * f);
+    layer.fill({ color: m.ink.halo, alpha: m.ink.haloAlpha });
+    for (const [x, y, f] of list) layer.circle(x, y, BEAD_PX * px * f);
+    layer.fill(m.ink.core);
+  }
+}
+
+/** the engraved count of a thread: a small lacquer plate with a bead of
+ *  the resource and the figure, drawn in screen px (the thread scales it) */
+function strandTag(ink: Strand['ink'], label: string): Container {
+  const c = new Container();
+  c.eventMode = 'none';
+  const txt = new Text({ text: label, style: { fontFamily: "'Playfair Display', serif", fontSize: 12, fontWeight: '700', fill: 0xf2ead6, letterSpacing: 0.3 } });
+  txt.anchor.set(0, 0.5);
+  const w = txt.width + 22;
+  const h = 16;
+  const plate = new Graphics()
+    .roundRect(-w / 2, -h / 2, w, h, 3.5)
+    .fill({ color: 0x15110d, alpha: 0.93 })
+    .stroke({ width: 1, color: 0xa8864a, alpha: 0.85 })
+    .circle(-w / 2 + 8, 0, 3.4)
+    .fill(ink.core)
+    .stroke({ width: 1, color: ink.core === 0x1b1714 ? CASING : 0x15110d, alpha: 0.9 });
+  txt.position.set(-w / 2 + 14.5, 0.5);
+  c.addChild(plate, txt);
+  return c;
+}
+
+/* ------------------ the press (stamp.ts measures it) ------------------ */
+
+/** when the sound of the strike is heard: the block meeting the paper */
+const STAMP_IMPACT_MS = Math.round(STAMP_IMPACT_S * 1000);
+
+/** a speck of ink squeezed out under the block: where it starts, the way
+ *  it runs, how far and how big */
+interface Speck {
+  x: number;
+  y: number;
+  nx: number;
+  ny: number;
+  d: number;
+  r: number;
+}
+
+/** a piece being struck: the card's box, or the link's drawing, and the
+ *  ink it squeezes out */
+interface Stamp {
+  t0: number;
+  box?: Container;
+  link?: Graphics;
+  ink: Graphics;
+  specks: Speck[];
+  /** a card's centre: the ink also rings its edge */
+  rim?: [number, number];
+}
+
+/** the ink of one strike, on the FX layer */
+function inkGfx(layer: Container): Graphics {
+  const g = new Graphics();
+  g.eventMode = 'none';
+  layer.addChild(g);
+  return g;
+}
+
+/** a handful of specks round a card's edge, each running outward */
+function tileSpecks(x: number, y: number): Speck[] {
+  const out: Speck[] = [];
+  const n = 14;
+  for (let i = 0; i < n; i++) {
+    /* a point on the card's edge, side by side round it */
+    const side = i % 4;
+    const along = (Math.random() * 2 - 1) * (TILE_R - 6);
+    const [px, py, nx, ny] = side === 0 ? [x + along, y - TILE_R, 0, -1] : side === 1 ? [x + TILE_R, y + along, 1, 0] : side === 2 ? [x + along, y + TILE_R, 0, 1] : [x - TILE_R, y + along, -1, 0];
+    const skew = (Math.random() * 2 - 1) * 0.35;
+    out.push({ x: px, y: py, nx: nx + ny * skew, ny: ny + nx * skew, d: 6 + Math.random() * 11, r: 1.8 + Math.random() * 1.8 });
+  }
+  return out;
+}
+
+/** specks along a new route, running off either side of it */
+function routeSpecks(pts: number[][]): Speck[] {
+  const out: Speck[] = [];
+  if (pts.length < 2) return out;
+  for (let k = 0; k < 9; k++) {
+    const i = Math.min(pts.length - 2, Math.floor(((k + 0.5) / 9) * (pts.length - 1)));
+    const [ax, ay] = pts[i];
+    const [bx, by] = pts[i + 1];
+    const len = Math.hypot(bx - ax, by - ay) || 1;
+    const side = k % 2 ? 1 : -1;
+    const f = Math.random();
+    out.push({ x: ax + (bx - ax) * f, y: ay + (by - ay) * f, nx: (-(by - ay) / len) * side, ny: ((bx - ax) / len) * side, d: 5 + Math.random() * 8, r: 1.5 + Math.random() * 1.5 });
+  }
+  return out;
 }
 
 export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsList, ghost, onInvalid, keyboard = true, focus = null, preview = null }: Props) {
@@ -348,7 +510,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
   /* the hover layer's own pulses: a hover redraws them without touching the overlay's */
   const hoverPulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
-  const marchRef = useRef<March[]>([]);
+  const strandsRef = useRef<Strand[]>([]);
   const propsRef = useRef({ targets, linkTargetsList, sellTargetsList, onInvalid });
   propsRef.current = { targets, linkTargetsList, sellTargetsList, onInvalid };
   const hoverRef = useRef({ setHoverTown, setHoverLink, setInspect, setHoverMerchant });
@@ -512,7 +674,30 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const secondLinkPick = useGame((s) => s.secondLinkPick);
   const sellPick = useGame((s) => s.sellPick);
   const sellPicks = useGame((s) => s.sellPicks);
+  const buildCoal = useGame((s) => s.buildCoal);
+  const buildIron = useGame((s) => s.buildIron);
+  const linkCoal = useGame((s) => s.linkCoal);
+  const linkBeer = useGame((s) => s.linkBeer);
+  const sellBeer = useGame((s) => s.sellBeer);
+  const developPick = useGame((s) => s.developPick);
+  const developIron = useGame((s) => s.developIron);
+  const planActor = useGame((s) => s.planActor());
+  const preparing = useGame((s) => s.preparing);
+  const queued = useGame((s) => s.queued);
   const idle = !selectedCardId;
+  /* where the goods of the move being prepared come from, read on the
+     table the plan is made on (with moves already prepared, the one they
+     leave) and only at the live table: a game read again has no plan */
+  const supply = useMemo(() => {
+    if (!keyboard || reading || !selectedCardId || !verb) return EMPTY_PROVENANCE;
+    const planGame = preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game;
+    return provenance(
+      planGame,
+      planActor,
+      { verb, buildPick, buildCoal, buildIron, linkPick, secondLinkPick, linkCoal, linkBeer, sellPicks, sellBeer, developPick, developIron, hoverKey },
+      { targets, links: linkTargetsList, sales: sellTargetsList },
+    );
+  }, [keyboard, reading, selectedCardId, verb, preparing, queued, planActor, game, buildPick, buildCoal, buildIron, linkPick, secondLinkPick, linkCoal, linkBeer, sellPicks, sellBeer, developPick, developIron, hoverKey, targets, linkTargetsList, sellTargetsList]);
   const [prevIdle, setPrevIdle] = useState(idle);
   if (prevIdle !== idle) {
     setPrevIdle(idle);
@@ -719,6 +904,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       let railAlphaTarget = 0;
       let lastFxSeq = -1;
       const fxRings: { g: Graphics; t0: number }[] = [];
+      /* the pieces being struck, and the table the press last looked at */
+      const stamps: Stamp[] = [];
+      let stampSeen: GameState | null = gameRef.current;
       const fxVehicles: { s: Sprite; pts: [number, number][]; t0: number }[] = [];
       /* the arrow keys pan the map while held: so many pixels a second */
       const pressed = new Set<string>();
@@ -779,7 +967,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
            spotlight dimming — all plain alpha writes, no re-raster */
         const ls = ribbonLabelScale(cam.view.k, fitScale(w, h), RIBBON_FONT);
         for (const r of scene.ribbons) r.scale.set(ls);
-        const detail = s < FAR_LOD_SCREEN ? 0 : 1;
+        const detail = farDetail(cam.view.k);
         for (const tv of scene.towns.values()) {
           for (const sl of tv.slots) {
             sl.frame.alpha = sl.spotAlpha;
@@ -804,33 +992,74 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const osc = 0.55 + 0.35 * Math.sin(clock * 4.5);
         for (const p of pulsesRef.current) p.g.alpha = p.base * osc;
         for (const p of hoverPulsesRef.current) p.g.alpha = p.base * osc;
-        /* supply lines from the exchange march toward the works being
-           planned — from the tray's own place on screen (the drawer's coal
-           or iron row, or the folded pill), turned into world coordinates */
-        if (marchRef.current.length) {
-          const host = el.getBoundingClientRect();
-          for (const m of marchRef.current) {
-            const tray = document.querySelector(`[data-market-tray="${m.tray}"]`) ?? document.querySelector('[data-market-pill]');
-            const r = tray?.getBoundingClientRect();
-            const sx = r && r.width > 0 ? (r.left - 6 - host.left - scene.world.position.x) / scene.world.scale.x : WORLD_W - 52;
-            const sy = r && r.width > 0 ? (r.top + r.height / 2 - host.top - scene.world.position.y) / scene.world.scale.y : (m.tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71);
-            /* selling: the works is the source and the exchange the target,
-               so the dashes march the other way and the head sits on the tray */
-            const [ax, ay] = m.selling ? m.to : [sx, sy];
-            const [bx, by] = m.selling ? [sx, sy] : m.to;
-            const { end, head } = m.selling ? { end: [bx, by] as [number, number], head: arrowHead(ax, ay, bx, by, 14) } : supplyLine(ax, ay, bx, by);
-            m.g.clear();
-            m.g.moveTo(ax, ay).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
-            dashPath(m.g, [[ax, ay], end], 9, 7, -clock * 36);
-            m.g.stroke({ width: 3, color: m.color, cap: 'round' });
-            m.g.poly(head).fill(m.color).stroke({ width: 2, color: CASING, join: 'round' });
-            /* the plaque rides the line, a little way from the works */
-            const tx = m.selling ? ax : end[0];
-            const ty = m.selling ? ay : end[1];
-            const dx = (m.selling ? bx : ax) - tx;
-            const dy = (m.selling ? by : ay) - ty;
-            const len = Math.hypot(dx, dy) || 1;
-            m.tag.position.set(tx + (dx / len) * m.along, ty + (dy / len) * m.along);
+        /* the provenance threads of the move being prepared: redrawn at
+           this scale, from the tray's own place on screen for the cubes
+           bought or sold at the exchange */
+        if (strandsRef.current.length) {
+          const box = el.getBoundingClientRect();
+          for (const m of strandsRef.current) {
+            const from = m.from === 'tray' ? trayPoint(m.tray ?? 'coal', box, scene.world) : m.from;
+            const to = m.to === 'tray' ? trayPoint(m.tray ?? 'coal', box, scene.world) : m.to;
+            drawStrand(m, from, to, s, clock, reduced);
+          }
+        }
+        /* the press: whatever was laid on the table since the last frame
+           (a tile, a link — yours or a machine's) is struck like a block */
+        const seen = gameRef.current;
+        if (seen !== stampSeen) {
+          const fresh = freshPieces(stampSeen, seen);
+          stampSeen = seen;
+          const struck = fresh.tiles.length + fresh.links.length;
+          if (struck && getBoardOptions().sound) {
+            const kind = fresh.tiles.length ? 'tile' : 'link';
+            if (reduced) stampThud(kind);
+            else window.setTimeout(() => stampThud(kind), STAMP_IMPACT_MS);
+          }
+          if (struck && !reduced) {
+            for (const key of fresh.tiles) {
+              const [townId, si] = key.split(':');
+              const sv = scene.towns.get(townId)?.slots[Number(si)];
+              const pos = slotPos(key);
+              if (!sv || !pos) continue;
+              stamps.push({ t0: clock, box: sv.box, ink: inkGfx(fxLayer), specks: tileSpecks(pos[0], pos[1]), rim: pos });
+            }
+            fresh.links.forEach((id, i) => {
+              const def = LINKS.find((l) => l.id === id);
+              const g = scene.linkGfx.get(id);
+              if (!def || !g) return;
+              /* the second rail of a double comes down a beat after the first */
+              stamps.push({ t0: clock + i * 0.06, link: g, ink: inkGfx(fxLayer), specks: routeSpecks(routeFor(def, seen.era).pts) });
+            });
+          }
+        }
+        for (let i = stamps.length - 1; i >= 0; i--) {
+          const st = stamps[i];
+          const age = clock - st.t0;
+          if (age < 0) continue;
+          const pose = stampPose(age);
+          if (st.box) st.box.scale.set(pose.scale);
+          if (st.box) st.box.alpha = pose.alpha;
+          if (st.link) st.link.alpha = pose.alpha;
+          const { spread, wet } = inkBloom(age);
+          st.ink.clear();
+          if (wet > 0) {
+            for (const sp of st.specks) st.ink.circle(sp.x + sp.nx * sp.d * spread, sp.y + sp.ny * sp.d * spread, sp.r * (0.55 + 0.45 * wet));
+            st.ink.fill({ color: 0x1d1712, alpha: 0.72 * wet });
+            if (st.rim) {
+              const r = TILE_R + 1 + spread * 7;
+              st.ink.roundRect(st.rim[0] - r, st.rim[1] - r, r * 2, r * 2, 10).stroke({ width: 1 + 3.5 * wet, color: 0x1d1712, alpha: 0.4 * wet });
+            }
+          }
+          if (age >= STAMP_S) {
+            if (st.box) {
+              st.box.scale.set(1);
+              st.box.alpha = 1;
+            }
+            /* the link's own alpha is the spotlight's again */
+            if (st.link) scene.setSpotlight(useGame.getState().netPeek ?? useGame.getState().spotlight);
+            fxLayer.removeChild(st.ink);
+            st.ink.destroy();
+            stamps.splice(i, 1);
           }
         }
         /* era crossfade */
@@ -843,12 +1072,16 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const g0 = gameRef.current;
         if (g0.fxSeq !== lastFxSeq && g0.lastFx) {
           lastFxSeq = g0.fxSeq;
-          const at = displayPosFor(g0.lastFx.at[0], g0.lastFx.at[1]);
-          const ring = new Graphics();
-          fxLayer.addChild(ring);
-          fxRings.push({ g: ring, t0: clock });
-          ring.eventMode = 'none';
-          ring.position.set(at[0], at[1]);
+          /* a tile or a link laid is the press's to mark (stamp.ts): the
+             brass ring is for the moves that lay nothing down */
+          if (g0.lastFx.kind !== 'build' && g0.lastFx.kind !== 'link') {
+            const at = displayPosFor(g0.lastFx.at[0], g0.lastFx.at[1]);
+            const ring = new Graphics();
+            fxLayer.addChild(ring);
+            fxRings.push({ g: ring, t0: clock });
+            ring.eventMode = 'none';
+            ring.position.set(at[0], at[1]);
+          }
           if (g0.lastFx.kind === 'link' && g0.lastFx.linkId && !reduced) {
             const def = LINKS.find((l) => l.id === g0.lastFx!.linkId);
             if (def) {
@@ -1037,9 +1270,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       /* merchant rows (paint.ts): tiles, a gap and the medallion, 1.45-scaled and centred on the node, southern ones lifted 34 units */
       const merchantAt = (wx: number, wy: number) => {
         for (const m of MERCHANTS) {
-          const w = (m.slots * 46 + (m.slots - 1) * 10 + 14 + 42) * 1.45 + 16;
-          const h = (46 + 22 + 12) * 1.45;
-          const cy = m.y - (m.y > 1500 ? 34 : 0);
+          const w = rowWidth(m.slots) * ROW_SCALE + 16;
+          const h = (46 + 22 + 12) * ROW_SCALE;
+          const cy = m.y - rowLift(m);
           if (Math.abs(wx - m.x) <= w / 2 && Math.abs(wy - cy) <= h / 2) return m;
         }
         return null;
@@ -1407,8 +1640,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     const scene = sceneRef.current;
     if (!overlay || !scene) return;
     for (const c of overlay.removeChildren()) c.destroy({ children: true });
+    for (const c of scene.threadLayer.removeChildren()) c.destroy();
     pulsesRef.current = [];
-    marchRef.current = [];
+    strandsRef.current = [];
 
     const pulse = (g: Graphics, base = 1) => {
       overlay.addChild(g);
@@ -1464,106 +1698,57 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-    /* ghost supply lines — where the coal and iron of the planned works
-       would come from. Each line is a pale casing under a resource-coloured
-       core so it reads on water, hills and towns alike; an arrow lands on
-       the works, and the market lines march from a cube at the edge of
-       the world with the resource's own colour (coal near-black, iron the
-       orange of the exchange). */
-    if (ghost) {
-      const [gx0, gy0] = displayPosFor(ghost.at[0], ghost.at[1]);
-      const gx = gx0;
-      const gy = gy0;
-      const coreOf = (resource: string) => (resource === 'coal' ? 0x171310 : resource === 'beer' ? 0xd9a441 : 0xe07020);
-      /* a development draws its iron from works with nowhere to run to: the
-         picks are numbered, and a dashed thread ties them when there are two */
-      if (ghost.noTarget && ghost.tileSources.length > 1) {
-        const thread = new Graphics();
-        const pts = ghost.tileSources.map((src) => displayPosFor(src.x, src.y));
-        dashPath(thread, pts, 10, 8);
-        thread.stroke({ width: 5, color: CASING, alpha: 0.8, cap: 'round' });
-        dashPath(thread, pts, 10, 8);
-        thread.stroke({ width: 2, color: 0xe07020, cap: 'round' });
-        thread.eventMode = 'none';
-        overlay.addChild(thread);
+    /* where the goods of the move come from (provenance.ts): a thread from
+       each mine, works, brewery or barrel to the place the cubes are spent,
+       the count engraved at its source; the cubes bought at the exchange
+       come in from its tray, and those a new works sells go out to it */
+    const strand = (m: Omit<Strand, 'g' | 'tag' | 'top'>, label: string | null) => {
+      const g = new Graphics();
+      g.eventMode = 'none';
+      const top = m.surface ? new Graphics() : undefined;
+      if (top) {
+        top.eventMode = 'none';
+        overlay.addChild(top);
       }
-      ghost.tileSources.forEach((src, order) => {
-        if (!ghost.noTarget) return;
-        const [sx, sy] = displayPosFor(src.x, src.y);
-        const n = new Graphics().circle(sx - TILE_R - 2, sy - TILE_R - 2, 9).fill(0xe07020).stroke({ width: 1.5, color: CASING });
-        const nt = new Text({ text: String(order + 1), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, fontWeight: '700', fill: 0x171310 } });
-        nt.anchor.set(0.5);
-        nt.position.set(sx - TILE_R - 2, sy - TILE_R - 2);
-        n.eventMode = 'none';
-        nt.eventMode = 'none';
-        overlay.addChild(n, nt);
-      });
-      for (const src of ghost.tileSources) {
-        const [sx, sy] = displayPosFor(src.x, src.y);
-        const [gx, gy] = src.to ? displayPosFor(src.to[0], src.to[1]) : [gx0, gy0];
-        if (ghost.noTarget) {
-          /* nowhere on the board to run to: the source itself is marked */
-          const ring = new Graphics().roundRect(sx - TILE_R - 4, sy - TILE_R - 4, TILE_R * 2 + 8, TILE_R * 2 + 8, 9).stroke({ width: 3, color: coreOf(src.resource) === 0x171310 ? 0xc9a45c : coreOf(src.resource) });
-          ring.eventMode = 'none';
-          pulse(ring, 0.95);
-          const tag = new Graphics().roundRect(-16, -9, 32, 18, 3).fill(0x171310).stroke({ width: 1, color: coreOf(src.resource) === 0x171310 ? 0xc9a45c : coreOf(src.resource) });
-          tag.position.set(sx, sy - TILE_R - 14);
-          const txt = new Text({ text: `−${src.amount}`, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 10.5, fontWeight: '600', fill: 0xf2ead6 } });
-          txt.anchor.set(0.5);
-          txt.position.set(sx, sy - TILE_R - 14);
-          tag.eventMode = 'none';
-          txt.eventMode = 'none';
-          overlay.addChild(tag, txt);
-          continue;
-        }
-        const { end, head } = supplyLine(sx, sy, gx, gy);
-        const line = new Graphics();
-        line.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
-        line.moveTo(sx, sy).lineTo(end[0], end[1]).stroke({ width: 3, color: coreOf(src.resource), cap: 'round' });
-        line.poly(head).fill(coreOf(src.resource)).stroke({ width: 2, color: CASING, join: 'round' });
-        line.eventMode = 'none';
-        overlay.addChild(line);
-        const tag = new Graphics().roundRect(-14, -9, 28, 16, 3).fill(0x171310).stroke({ width: 0.8, color: 0x8a6b33 });
-        tag.position.set((sx + gx) / 2, (sy + gy) / 2);
-        const txt = new Text({ text: `×${src.amount}`, style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 9.5, fill: 0xf2ead6 } });
-        txt.anchor.set(0.5);
-        txt.position.set((sx + gx) / 2, (sy + gy) / 2);
-        tag.eventMode = 'none';
-        txt.eventMode = 'none';
-        overlay.addChild(tag, txt);
-      }
-      /* market supply: a line from the exchange's own tray, drawn by the
-         ticker (see March), and a £-plaque per resource by the works */
-      if (ghost.noTarget) return;
-      ghost.market.forEach((m, i) => {
-        const g = new Graphics();
-        g.eventMode = 'none';
-        overlay.addChild(g);
-        /* the plaque rides the line, clear of the tile: how many cubes, at what price */
-        const tag = new Container();
-        const label = new Text({ text: tr('board.ghost.mkt', { n: m.amount, cost: m.cost }), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, fontWeight: '600', fill: 0xf2ead6 } });
-        label.anchor.set(0.5);
-        const w = label.width + 18;
-        tag.addChild(new Graphics().roundRect(-w / 2, -11, w, 22, 4).fill({ color: 0x171310, alpha: 0.94 }).stroke({ width: 1.4, color: coreOf(m.resource) === 0x171310 ? 0xc9a45c : coreOf(m.resource) }), label);
-        tag.eventMode = 'none';
-        overlay.addChild(tag);
-        marchRef.current.push({ g, tray: m.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: coreOf(m.resource), tag, along: 78 + i * 30 });
-      });
-      /* what the works would sell to the exchange the moment it is built:
-         the same line the other way round, in the green of a gain */
-      if (ghost.sale) {
-        const g = new Graphics();
-        g.eventMode = 'none';
-        overlay.addChild(g);
-        const tag = new Container();
-        const label = new Text({ text: tr('board.ghost.sale', { n: ghost.sale.amount, gain: ghost.sale.gain }), style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 11.5, fontWeight: '600', fill: 0xd6f0dd } });
-        label.anchor.set(0.5);
-        const w = label.width + 18;
-        tag.addChild(new Graphics().roundRect(-w / 2, -11, w, 22, 4).fill({ color: 0x0f1a12, alpha: 0.94 }).stroke({ width: 1.4, color: 0x5fa37a }), label);
-        tag.eventMode = 'none';
-        overlay.addChild(tag);
-        marchRef.current.push({ g, tray: ghost.sale.resource === 'coal' ? 'coal' : 'iron', to: [gx, gy], color: 0x5fa37a, selling: true, tag, along: 78 + ghost.market.length * 30 });
-      }
+      /* a source already counted on another of its threads carries no plate */
+      const tag = label === null ? new Container() : strandTag(m.ink, label);
+      scene.threadLayer.addChild(g);
+      overlay.addChild(tag);
+      strandsRef.current.push({ ...m, g, top, tag });
+    };
+    const counts = sourceCounts(supply.threads);
+    supply.threads.forEach((th, i) => {
+      strand(
+        {
+          ink: STRAND_INK[th.resource],
+          from: th.from,
+          to: th.to,
+          trimFrom: th.source === 'tile' ? [TILE_R, 4] : [22, 4],
+          trimTo: th.onTile ? [TILE_R, 5] : [0, 7],
+          seat: th.source,
+          surface: 'to',
+        },
+        counts[i] === null ? null : `×${counts[i]}`,
+      );
+    });
+    for (const p of supply.market) {
+      strand({ ink: STRAND_INK[p.resource], from: 'tray', to: p.to, tray: p.resource, trimFrom: [0, 2], trimTo: p.onTile ? [TILE_R, 5] : [0, 7], surface: 'to' }, tr('board.ghost.mkt', { n: p.amount, cost: p.cost }));
+    }
+    const sale = ghost?.sale;
+    const saleAt = supply.threads[0]?.to ?? supply.market[0]?.to ?? (ghost && !ghost.noTarget ? displayPosFor(ghost.at[0], ghost.at[1]) : null);
+    if (sale && saleAt && verb === 'build') {
+      strand({ ink: STRAND_INK.sale, from: saleAt, to: 'tray', tray: sale.resource === 'coal' ? 'coal' : 'iron', trimFrom: [TILE_R, 4], trimTo: [0, 2], surface: 'from' }, tr('board.ghost.sale', { n: sale.amount, gain: sale.gain }));
+    }
+    /* a development takes its iron off the board: the works it comes from
+       carry their count, and no thread runs from them */
+    for (const d of supply.draws) {
+      const ink = STRAND_INK[d.resource as Stuff];
+      const g = new Graphics();
+      g.eventMode = 'none';
+      const tag = strandTag(ink, `×${d.amount}`);
+      scene.threadLayer.addChild(g);
+      overlay.addChild(tag);
+      strandsRef.current.push({ g, tag, ink, from: d.at, to: d.at, trimFrom: [0, 0], trimTo: [0, 0], seat: 'tile' });
     }
 
     /* the reader's pinned towns: a brass pin at the cluster's top-right corner */
@@ -1765,7 +1950,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => {
       alive = false;
     };
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt, sceneSeq]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, supply, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt, sceneSeq]);
 
   /* everything the pointer alone decides lives on its own layer, so a
      hover never rebuilds the overlay: the cream edge and the £-plaque of
@@ -1919,37 +2104,42 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const hoverLinkDef = idle && hoverLink ? LINKS.find((l) => l.id === hoverLink && !hideUnbuilt && !game.links[l.id]) : undefined;
   const hoverLinkPos = hoverLinkDef ? worldToScreen(...linkMidWorld(hoverLinkDef, game.era), view, size.w, size.h) : null;
   const hoverLinkBuilt = hoverLinkDef ? game.links[hoverLinkDef.id] : undefined;
-  /* merchant hover: the plate's tooltip, and only the goods YOU could sell there stay lit */
+  /* merchant hover: the plate's tooltip says what the house buys, its
+     barrels and its bonus — what anyone at the table can read on it. Which
+     of the reader's works could sell there is theirs to work out: only the
+     beginner aid counts them and lights them (aidOn) */
   const hoverMerchantDef = idle && hoverMerchant ? MERCHANT_BY_ID[hoverMerchant] : undefined;
-  const hoverMerchantPos = hoverMerchantDef ? worldToScreen(hoverMerchantDef.x, hoverMerchantDef.y - (hoverMerchantDef.y > 1500 ? 34 : 0), view, size.w, size.h) : null;
+  const hoverMerchantPos = hoverMerchantDef ? worldToScreen(hoverMerchantDef.x, hoverMerchantDef.y - rowLift(hoverMerchantDef), view, size.w, size.h) : null;
   const viewerIdx = (() => {
     const cur = game.players[game.current];
     if (!cur.isBot) return game.current;
     const humans = game.players.map((p, i) => (p.isBot ? -1 : i)).filter((i) => i >= 0);
     return humans.length === 1 ? humans[0] : -1;
   })();
-  const sellableHere = hoverMerchantDef && viewerIdx >= 0 ? sellTargets(game, viewerIdx).filter((s) => s.merchant === hoverMerchantDef.id) : [];
+  const aidHere = aidOn(game.assist, code !== null);
+  const sellableHere = aidHere && hoverMerchantDef && viewerIdx >= 0 ? sellTargets(game, viewerIdx).filter((s) => s.merchant === hoverMerchantDef.id) : [];
   const netPeek = useGame((s) => s.netPeek);
   const lens = useGame((s) => s.lens);
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
     /* what stays lit, by priority: the beginner aid's playable slots while
-       planning, a hovered player's network, the tiles a hovered merchant
-       would buy — otherwise everything */
+       planning, a hovered player's network, and with the aid the tiles a
+       hovered merchant would buy — otherwise everything. Without the aid a
+       plan dims nothing: its candidates wear their own marks */
     const aid = aidOn(game.assist, code !== null);
     if (lens?.slots?.length) {
       /* the guide's lesson names the places it is about: they alone stay lit */
       scene.setHighlight(lens.slots);
     } else if (aid && selectedCardId && verb === 'build') {
       scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
-    } else if (selectedCardId && verb === 'sell') {
-      /* what can be sold is one's own affair: the rest of the board dims */
+    } else if (aid && selectedCardId && verb === 'sell') {
+      /* the aid lights the works that can be sold and dims the rest */
       scene.setHighlight([...new Set(sellTargetsList.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
     } else if (netPeek !== null) {
       const towns = networkTowns(game, netPeek);
       scene.setHighlight(TOWNS.filter((t) => towns.has(t.id)).flatMap((t) => t.slots.map((_, si) => tileKey(t.id, si))));
-    } else if (hoverMerchantDef && merchantOpen(game, hoverMerchantDef.id) && viewerIdx >= 0) {
+    } else if (aid && hoverMerchantDef && merchantOpen(game, hoverMerchantDef.id) && viewerIdx >= 0) {
       const keys = [...new Set(sellableHere.map((s) => tileKey(s.town, s.slot)))];
       scene.setHighlight(keys);
     } else scene.setHighlight(null);
@@ -2032,9 +2222,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
                 {' · '}
                 {t('board.merchant.bonusIs', { bonus: hoverMerchantDef.bonusLabel })}
               </div>
-              <div className={sellableHere.length ? 'text-bottle-600 brightness-150' : 'text-cream-100/55'}>
-                {viewerIdx < 0 ? t('board.merchant.noViewer') : sellableHere.length ? t('board.merchant.youCanSell', { n: new Set(sellableHere.map((s) => tileKey(s.town, s.slot))).size }) : t('board.merchant.nothingToSell')}
-              </div>
+              {aidHere && viewerIdx >= 0 && (
+                <div className={sellableHere.length ? 'text-bottle-600 brightness-150' : 'text-cream-100/55'}>
+                  {sellableHere.length ? t('board.merchant.youCanSell', { n: new Set(sellableHere.map((s) => tileKey(s.town, s.slot))).size }) : t('board.merchant.nothingToSell')}
+                </div>
+              )}
             </div>
           ) : (
             <div className="font-sans text-[12px] text-cream-100/65">{t('board.merchant.closed')}</div>

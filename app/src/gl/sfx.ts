@@ -322,3 +322,71 @@ export function steamWhistle(): void {
   });
 }
 
+
+/* ---------------- the press: a tile or a link struck on the table ---------------- */
+
+/** a short breath of paper noise, shared by every strike: made once */
+let paperGrain: AudioBuffer | null = null;
+const grain = (ac: AudioContext): AudioBuffer => {
+  if (paperGrain && paperGrain.sampleRate === ac.sampleRate) return paperGrain;
+  const n = Math.floor(ac.sampleRate * 0.09);
+  const buf = ac.createBuffer(1, n, ac.sampleRate);
+  const data = buf.getChannelData(0);
+  /* the fibres give way unevenly: noise that thins as it goes */
+  for (let i = 0; i < n; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2.2);
+  paperGrain = buf;
+  return buf;
+};
+
+/** the block meets the paper: a dull press, the paper's short hiss and a
+ *  small brass tick of the handle — a card struck firmer than a link */
+export function stampThud(kind: 'tile' | 'link' = 'tile'): void {
+  void context().then((ac) => {
+    if (!ac) return;
+    const now = ac.currentTime;
+    const firm = kind === 'tile' ? 1 : 0.6;
+    const master = ac.createGain();
+    master.gain.setValueAtTime(0.9 * firm, now);
+    master.connect(ac.destination);
+    /* the press: a low body that falls away at once */
+    const body = ac.createOscillator();
+    body.type = 'sine';
+    body.frequency.setValueAtTime(150, now);
+    body.frequency.exponentialRampToValueAtTime(70, now + 0.09);
+    const bg = ac.createGain();
+    bg.gain.setValueAtTime(0.0001, now);
+    bg.gain.exponentialRampToValueAtTime(0.14, now + 0.004);
+    bg.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+    body.connect(bg).connect(master);
+    body.start(now);
+    body.stop(now + 0.13);
+    /* the paper: filtered noise, bright and brief */
+    const paper = ac.createBufferSource();
+    paper.buffer = grain(ac);
+    const band = ac.createBiquadFilter();
+    band.type = 'bandpass';
+    band.frequency.setValueAtTime(kind === 'tile' ? 2300 : 3100, now);
+    band.Q.setValueAtTime(0.9, now);
+    const pg = ac.createGain();
+    pg.gain.setValueAtTime(0.1, now);
+    paper.connect(band).connect(pg).connect(master);
+    paper.start(now);
+    paper.stop(now + 0.09);
+    /* the brass: two thin partials, a tick rather than a ring */
+    for (const [f, level, decay] of [
+      [2480, 0.035, 0.09],
+      [5930, 0.015, 0.05],
+    ] as const) {
+      const o = ac.createOscillator();
+      o.type = 'sine';
+      o.frequency.setValueAtTime(f, now + 0.006);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(level, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.01 + decay);
+      o.connect(g).connect(master);
+      o.start(now);
+      o.stop(now + 0.02 + decay);
+    }
+  });
+}

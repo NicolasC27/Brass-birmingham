@@ -10,6 +10,7 @@ import { RIBBON_FONT, RIBBON_GAP, RIBBON_H, TILE, TILE_HALF, ribbonWidth, townCh
 import { FEET, SHADE } from './placeGround';
 import { FIGURE_MIN_SCREEN, SEAL_MIN_SCREEN } from './floor';
 import { roman } from './roman';
+import { MEDAL_R, MT, ROW_SCALE, barrelLocal, rowLift, rowSlotX, rowWidth } from './merchantRow';
 import type { FloorRule } from './floor';
 import { BUILT_FOR, CUT_FOR, FRONT_RANK, ICON_FOR, PARTNER, pairFile, pairKey, variantOf } from './faces';
 import type { ChipStyle, SlotArt, StockStyle, TileArt, TileVariant } from './faces';
@@ -54,12 +55,15 @@ export interface Floored extends FloorRule {
   fine?: Container;
 }
 export interface SlotView {
+  /** the whole card, pinned at the slot's centre: the ticker presses it
+   *  when a tile is struck there (stamp.ts), and nothing else moves it */
+  box: Container;
   frame: Graphics; // tile body (empty dark card / flipped muted card)
   art: Sprite; // painted face (slot cutout / built player-colour card)
   art2: Sprite; // right-half painting for dual-industry slots
   artMask: Graphics; // GPU-rounded clip on the built card (empty otherwise)
   rim: Graphics; // the owner's rim on a built card: read at every zoom
-  detail: Container; // the income/VP band: faded at far zoom (FAR_LOD_SCREEN)
+  detail: Container; // the income/VP band: faded at far zoom (farDetail)
   badges: Container; // level, stock, VP token, owner seal: always shown, floored
   deco: Container; // empty-slot chrome: frame lip, top glow
   glow: Graphics; // the top glow alone, hidden over a printed label
@@ -94,6 +98,10 @@ export interface BoardScene {
   etchCanal: Sprite;
   etchRail: Sprite;
   overlay: Container; // planning highlights, ghost lines, FX — above towns
+  /** the supply threads of a move being prepared: over the merchants and
+   *  under the towns, so a thread leaves its card from underneath and
+   *  slips under any other card on its way */
+  threadLayer: Container;
   /** the one hover effect (a route lit under the pointer): its own layer,
    *  so a hover never rebuilds the overlay */
   hoverLayer: Container;
@@ -740,12 +748,13 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
   const linksLayer = new Container();
   const merchantsLayer = new Container();
   const townsLayer = new Container();
+  const threadLayer = new Container();
   const ribbonsLayer = new Container();
   const overlay = new Container();
   const hoverLayer = new Container();
-  for (const c of [land, ground, linksLayer, merchantsLayer, townsLayer, ribbonsLayer, hoverLayer]) c.eventMode = 'none';
+  for (const c of [land, ground, linksLayer, merchantsLayer, threadLayer, townsLayer, ribbonsLayer, hoverLayer]) c.eventMode = 'none';
   ground.addChild(bgCanal, bgRail, etchCanal, etchRail);
-  land.addChild(ground, linksLayer, merchantsLayer, townsLayer, ribbonsLayer);
+  land.addChild(ground, linksLayer, merchantsLayer, threadLayer, townsLayer, ribbonsLayer);
   world.addChild(land, overlay, hoverLayer);
   bgRail.alpha = 0;
   etchRail.alpha = 0;
@@ -801,9 +810,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
      the hand of the places. Nothing framed, nothing pictured. Everything
      that changes (tiles, barrels, claimed, closed) is redrawn in
      drawMerchants.                                                        */
-  const MT = 46; // merchant tile size
-  const MT_GAP = 10;
-  const MEDAL_R = 21;
   const merchantBeer = new Map<string, Container>();
   const merchantDyn = new Map<string, { plate: Container; slots: Container; medal: Container; claimed: Container; closed: Container; slotX: number[]; tileTop: number }>();
   const ribbons: Container[] = [];
@@ -811,17 +817,15 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     const plate = new Container();
     /* southern merchants (Oxford, Gloucester) sit on the map's bottom edge:
        their row rides 34 units above the node so the hand dock never hides it */
-    const south = m.y > 1500;
-    plate.position.set(m.x, m.y - (south ? 34 : 0));
-    plate.scale.set(1.45);
+    plate.position.set(m.x, m.y - rowLift(m));
+    plate.scale.set(ROW_SCALE);
     plate.eventMode = 'none';
 
     /* the row: the tiles, a gap, the medallion; centred on the node */
-    const rowW = m.slots * MT + (m.slots - 1) * MT_GAP + 14 + MEDAL_R * 2;
-    const x0 = -rowW / 2 + MT / 2;
+    const rowW = rowWidth(m.slots);
     const tileTop = -MT / 2;
     const slotX: number[] = [];
-    for (let i = 0; i < m.slots; i++) slotX.push(x0 + i * (MT + MT_GAP));
+    for (let i = 0; i < m.slots; i++) slotX.push(rowSlotX(m.slots, i));
     const medalX = rowW / 2 - MEDAL_R;
     const medalY = 0;
     const medalR = MEDAL_R;
@@ -1016,8 +1020,14 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
       lip.eventMode = 'none';
       deco.addChild(lip);
 
-      townsLayer.addChild(frame, art, art2, artMask, deco, rim, detail, badges);
-      slots.push({ frame, art, art2, artMask, rim, detail, badges, deco, glow: topGlow, floored: [], artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
+      /* one box per card, pinned at its centre, in the order the press lays them */
+      const box = new Container();
+      box.eventMode = 'none';
+      box.pivot.set(pos.x, pos.y);
+      box.position.set(pos.x, pos.y);
+      box.addChild(frame, art, art2, artMask, deco, rim, detail, badges);
+      townsLayer.addChild(box);
+      slots.push({ box, frame, art, art2, artMask, rim, detail, badges, deco, glow: topGlow, floored: [], artBase: 0.95, spotAlpha: 1, hasTile: false, flipped: false });
     }
     /* town colour code (physical Brass): the name banner itself takes the
        town's own colour — no dash, no underline */
@@ -1571,8 +1581,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
         /* the beer barrel stands at the tile's foot, slightly overlapping the
            card like a token set down beside it; once drunk, a faint ring
            marks the empty spot */
-        const bx = x + MT / 2 - 6;
-        const by = TILE_TOP + MT + 2;
+        const [bx, by] = barrelLocal(m.slots, i);
         if ((game.merchantBeer[barrelKey(m.id, i)] ?? 0) > 0) {
           const sh = new Graphics().ellipse(bx, by + 10, 11, 4).fill({ color: 0x000000, alpha: 0.5 });
           sh.eventMode = 'none';
@@ -1629,6 +1638,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     etchCanal,
     etchRail,
     overlay,
+    threadLayer,
     hoverLayer,
     linkGfx,
     towns,
