@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { BarChart3, ChevronDown, Coins, GraduationCap, History, LayoutGrid, LogOut, Mail, MailOpen, MoreHorizontal, Send, UserX, Users, X } from 'lucide-react';
+import { BarChart3, ChevronDown, Coins, GraduationCap, History, LayoutGrid, LogOut, Mail, MailOpen, Plus, Send, UserX, Users, X } from 'lucide-react';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import { Refusal, inputClass } from '@/components/site/PageShell';
 import Button from '@/components/platform/Button';
@@ -10,7 +10,6 @@ import RankBadge from '@/components/platform/RankBadge';
 import StatTile from '@/components/platform/StatTile';
 import EmptyState from '@/components/platform/EmptyState';
 import Skeleton from '@/components/platform/Skeleton';
-import MemberAvatar from '@/components/platform/MemberAvatar';
 import Modal from '@/components/platform/Modal';
 import Toast, { type ToastData } from '@/components/platform/Toast';
 import type { RankTier } from '@/components/platform/RankBadge';
@@ -19,6 +18,7 @@ import { PLACEMENTS, rankOf, type RankView } from '@/platform/rank';
 import { collectRewards, useWallet } from '@/platform/wallet';
 import { forgetHomeGame, homeSnapshot, subscribeHome } from '@/game/home';
 import ProgressCard from '@/components/desk/ProgressCard';
+import MemberPlate, { PlateLine } from '@/components/desk/MemberPlate';
 import LinesMap from '@/components/desk/LinesMap';
 import Ticket from '@/components/results/Ticket';
 import type { FinalResult } from '@/components/results/types';
@@ -88,7 +88,7 @@ function nextOf(rank: RankView): { tier: RankTier; division: string } | null {
 
 /** La tendance d'une cote en une ligne — le bureau et le classement s'en servent. */
 export function Sparkline({ values, width = 72, height = 20, className }: { values: number[]; width?: number; height?: number; className?: string }) {
-  if (values.length < 2) return <span className={cn('data-text text-[10.5px] text-iron-400', className)}>—</span>;
+  if (values.length < 2) return <span className={cn('data-text text-iron-400', className)}>—</span>;
   const min = Math.min(...values);
   const span = Math.max(1, Math.max(...values) - min);
   const pts = values.map((v, i) => `${1 + (i / (values.length - 1)) * (width - 2)},${height - 1 - ((v - min) / span) * (height - 2)}`);
@@ -123,54 +123,58 @@ function MemberHeader() {
   const since = memberSince(session.createdAt, lang);
   const rate = stats && stats.played ? `${Math.round((stats.won / stats.played) * 100)} %` : '—';
 
+  /* under the name, one line of words (the title worn, the year of entry,
+     the company) and one line of data (the rank and the season): the only
+     capitals on the plate are the eyebrow's */
+  const rankLine = rank.tier === 'placement' ? t('platform.desk.placements', { done: rank.placementDone ?? 0, total: PLACEMENTS }) : `${t(`platform.rank.${rank.tier}`)}${rank.division ? ` ${rank.division}` : ''}${rank.lp !== undefined ? ` · ${t('platform.rank.lp', { lp: rank.lp })}` : ''}`;
+
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, ease }}
-      className="relative overflow-hidden console"
+    <MemberPlate
+      eyebrow={t('platform.desk.eyebrow')}
+      name={session.name}
+      aside={
+        <>
+          {/* the three figures hang on the plate where it has the width for
+              them; narrower, they would push the plate's commands under the
+              portrait, and the Statistics drawer keeps them all the same */}
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.12 }} className="hidden gap-3 xl:flex">
+            <StatTile value={stats?.won ?? 0} label={t('platform.desk.stats.won')} className="!p-3" />
+            <StatTile value={rate} label={t('platform.desk.stats.rate')} className="!p-3" />
+            <StatTile value={stats?.played ?? 0} label={t('platform.desk.stats.played')} className="!p-3" />
+          </motion.div>
+
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <Button variant="ghost" to="/comptoir" icon={<Coins size={16} aria-hidden className="text-brass-300" />} aria-label={t('platform.comptoir.walletAria', { count: wallet.balance })}>
+              <span className="tnums">{wallet.balance}</span>
+            </Button>
+            <Button variant="ghost" to="/profile">
+              {t('platform.desk.editProfile')}
+            </Button>
+          </div>
+        </>
+      }
     >
-      <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />
-      <div className="relative flex flex-wrap items-center gap-x-6 gap-y-5 p-6">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.26, ease }}
-          className="shrink-0"
-        >
-          <MemberAvatar avatar={wallet.equipped.avatar} frame={wallet.equipped.frame} size={64} />
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.06 }} className="min-w-0 flex-1">
-          <p className="eyebrow-fell">{t('platform.desk.eyebrow')}</p>
-          <h1 className="display-page mt-1 truncate">{session.name}</h1>
-          {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
-          <p className="micro-label mt-1 text-iron-400">
-            {t('platform.desk.memberSince', { date: since })}
-            {desk?.company && <span className="text-brass-300"> · {t('platform.companies.of', { name: desk.company.name })}</span>}
-          </p>
-          <p className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            <RankBadge tier={rank.tier} division={rank.division} lp={rank.lp} placementDone={rank.placementDone ?? undefined} size={24} />
-            {desk && <span className="micro-label rounded bg-enamel-700 px-1.5 py-0.5 text-iron-400">{t('platform.desk.season', { season: desk.season.name, days: daysUntil(desk.season.endsAt) })}</span>}
-          </p>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.12 }} className="hidden gap-3 min-[900px]:flex">
-          <StatTile value={stats?.won ?? 0} label={t('platform.desk.stats.won')} className="!p-3" />
-          <StatTile value={rate} label={t('platform.desk.stats.rate')} className="!p-3" />
-          <StatTile value={stats?.played ?? 0} label={t('platform.desk.stats.played')} className="!p-3" />
-        </motion.div>
-
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Button variant="ghost" to="/comptoir" icon={<Coins size={16} aria-hidden className="text-brass-300" />} aria-label={t('platform.comptoir.walletAria', { count: wallet.balance })}>
-            <span className="tnums">{wallet.balance}</span>
-          </Button>
-          <Button variant="ghost" to="/profile">
-            {t('platform.desk.editProfile')}
-          </Button>
-        </div>
+      <PlateLine>
+        {wallet.equipped.title !== 'title-none' && <span className="font-semibold text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)} · </span>}
+        {t('platform.desk.memberSince', { date: since })}
+        {desk?.company && <span className="text-brass-300"> · {t('platform.companies.of', { name: desk.company.name })}</span>}
+      </PlateLine>
+      {/* each group carries its dot in front, and the line is shifted left by
+          one dot's width inside a clipped box: a group that wraps opens its
+          line clean instead of leaving a dot hanging at the end of the last */}
+      <div className="data-text mt-2 flex items-center gap-x-2 text-iron-400">
+        <RankBadge tier={rank.tier} division={rank.division} size={20} compact />
+        <span className="min-w-0 overflow-hidden">
+          <span className="-ml-5 flex flex-wrap">
+            {[rankLine, desk && t('platform.desk.season', { season: desk.season.name, days: daysUntil(desk.season.endsAt) })].filter(Boolean).map((part) => (
+              <span key={String(part)} className="whitespace-nowrap before:inline-block before:w-5 before:text-center before:content-['·']">
+                {part}
+              </span>
+            ))}
+          </span>
+        </span>
       </div>
-    </motion.section>
+    </MemberPlate>
   );
 }
 
@@ -209,10 +213,11 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
     { id: 'stats', icon: BarChart3, label: t('platform.desk.tabs.stats') },
   ];
 
-  const badge = (n?: number, signal = false) =>
-    n !== undefined && (
-      <span className={cn('data-text ml-auto rounded-full px-1.5 py-px text-[10.5px] tabular-nums', signal ? 'animate-pulse-signal bg-signal-400 text-[rgb(var(--ink-on-signal))]' : 'bg-enamel-700 text-iron-400')}>{n}</span>
-    );
+  /* an unread count is written the one way the masthead writes it — a full
+     signal plate, its own ink — on either rail; the 14 % tint stays with the
+     neutral counts, and even those take the body's ink, not iron's */
+  const count = (signal: boolean) => cn('data-text rounded-full px-1.5 py-px tabular-nums', signal ? 'bg-signal-400 text-[rgb(var(--ink-on-signal))]' : 'bg-enamel-700 text-paper-300');
+  const badge = (n?: number, signal = false) => n !== undefined && <span className={cn(count(signal), 'ml-auto', signal && 'animate-pulse-signal')}>{n}</span>;
 
   /* Two rails, one panel, and the drawers carry deep links (/desk#historique):
      that is navigation, not a tablist — a tablist would have to own the panel,
@@ -241,7 +246,7 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
               <Icon size={16} aria-hidden className={cn('shrink-0', isActive ? 'text-brass-300' : 'text-iron-400')} />
               <span className="truncate">{label}</span>
               {badge(n, id === 'tables' || id === 'invitations')}
-              {note && !n && <span className="data-text ml-auto whitespace-nowrap text-[10.5px] text-iron-400">{note}</span>}
+              {note && !n && <span className="data-text ml-auto whitespace-nowrap text-iron-400">{note}</span>}
             </button>
           );
         })}
@@ -261,7 +266,7 @@ function TabRail({ active, onChange, turnCount, inviteCount, onlineCount }: { ac
             >
               <Icon size={16} aria-hidden className={isActive ? 'text-brass-300' : 'text-iron-400'} />
               {label}
-              {n !== undefined && <span className={cn('data-text rounded-full px-1.5 py-px text-[10.5px] tabular-nums', id === 'tables' || id === 'invitations' ? 'bg-[rgb(var(--signal-400)/.14)] text-signal-ink' : 'bg-enamel-700 text-iron-400')}>{n}</span>}
+              {n !== undefined && <span className={count(id === 'tables' || id === 'invitations')}>{n}</span>}
               {isActive && <motion.span layoutId="desk-tab-filet" className="absolute inset-x-2 -bottom-px h-0.5 bg-brass-500" transition={{ type: 'spring', stiffness: 260, damping: 24 }} />}
             </button>
           );
@@ -315,8 +320,10 @@ function TableRibbon({ table, pulse }: { table: DeskTable; pulse: boolean }) {
       </span>
     );
   }
+  /* the signal says one thing on the desk — it is your move — so a game
+     merely running wears the brass, quieter, with a steady lamp */
   const styles: Record<TableSummary['status'], string> = {
-    playing: 'bg-[rgb(var(--signal-400)/.12)] text-signal-ink',
+    playing: 'gap-1.5 bg-brass-300/10 text-brass-300',
     open: 'bg-bottle-700/60 text-paper-100',
     over: 'bg-enamel-700 text-iron-400',
   };
@@ -325,14 +332,18 @@ function TableRibbon({ table, pulse }: { table: DeskTable; pulse: boolean }) {
     open: t('platform.desk.tables.waiting'),
     over: t('platform.desk.tables.over'),
   };
-  return <span className={cn('micro-label flex h-[22px] shrink-0 items-center rounded-full px-2.5', styles[table.status])}>{labels[table.status]}</span>;
+  return (
+    <span className={cn('micro-label flex h-[22px] shrink-0 items-center rounded-full px-2.5', styles[table.status])}>
+      {table.status === 'playing' && <span className="h-1.5 w-1.5 rounded-full bg-brass-300" aria-hidden />}
+      {labels[table.status]}
+    </span>
+  );
 }
 
 function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string; pulse: boolean; onLeave: (table: DeskTable) => void }) {
   const t = useT();
   const lang = useLang();
   const ago = useAgo();
-  const [menu, setMenu] = useState(false);
   const toAct = table.current !== undefined ? table.seats[table.current] : null;
   const to = table.local ? `/game/local/${table.code}` : table.status === 'open' ? `/online/${table.code}` : `/game/${table.code}`;
   const meta = [
@@ -359,7 +370,7 @@ function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string;
             <h3 className="title-card truncate">{tableTitle(table.name, lang)}</h3>
             <TableRibbon table={table} pulse={pulse} />
           </div>
-          <p className="data-text mt-1.5 text-[10.5px] text-iron-400">
+          <p className="data-text mt-1.5 text-iron-400">
             <span className="tracking-[0.28em] text-brass-300">{table.code}</span>
             {meta.length > 0 && <span className="text-iron-400"> · {meta.join(' · ')}</span>}
           </p>
@@ -387,27 +398,10 @@ function TableRow({ table, me, pulse, onLeave }: { table: DeskTable; me: string;
               </Button>
             </>
           )}
-          <div className="relative">
-            <Button variant="icon" aria-label={t('platform.desk.tables.leave')} aria-expanded={menu} onClick={() => setMenu((m) => !m)} icon={<MoreHorizontal size={16} aria-hidden />} />
-            {menu && (
-              <>
-                <div className="fixed inset-0 z-30" onClick={() => setMenu(false)} />
-                <div className="absolute right-0 top-10 z-40 w-52 rounded-lg border border-brass-hairline bg-enamel-800 p-1 shadow-[0_8px_24px_var(--shadow-modal)]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMenu(false);
-                      onLeave(table);
-                    }}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 font-ui text-[13px] font-semibold text-rust-400 transition-colors duration-150 hover:bg-rust-600/10"
-                  >
-                    <LogOut size={14} aria-hidden />
-                    {t('platform.desk.tables.leave')}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          {/* one command behind a « … » was a menu of one, named after the
+              action it did not perform: the command stands on its own, in
+              the rust of a thing that asks to be confirmed */}
+          <Button variant="danger-ghost" className="!h-9 !w-9 !px-0" aria-label={t('platform.desk.tables.leave')} title={t('platform.desk.tables.leave')} onClick={() => onLeave(table)} icon={<LogOut size={16} aria-hidden />} />
         </div>
       </div>
     </motion.li>
@@ -429,8 +423,24 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
   const sorted: DeskTable[] = [...tables].sort((a, b) => rank(a) - rank(b));
   for (const local of locals) sorted.push(localTable(local, me));
 
+  /* the masthead charters a train from 900 px up; below, the tab bar takes
+     over and has no such button, so the drawer offers it itself where the
+     masthead no longer does */
+  const charter = (
+    <div className="mb-3 flex justify-end min-[900px]:hidden">
+      <Button variant="primary" to="/setup" icon={<Plus size={16} aria-hidden />}>
+        {t('platform.nav.createTable')}
+      </Button>
+    </div>
+  );
+
   if (sorted.length === 0) {
-    return <EmptyState plate="tables" title={t('platform.desk.tables.emptyTitle')} copy={t('platform.desk.tables.emptyCopy')} cta={{ label: t('platform.desk.tables.emptyCta'), to: '/online' }} />;
+    return (
+      <>
+        {charter}
+        <EmptyState plate="tables" title={t('platform.desk.tables.emptyTitle')} copy={t('platform.desk.tables.emptyCopy')} cta={{ label: t('platform.desk.tables.emptyCta'), to: '/online' }} />
+      </>
+    );
   }
 
   const leave = () => {
@@ -442,6 +452,7 @@ function TablesPanel({ tables, me }: { tables: TableSummary[]; me: string }) {
 
   return (
     <>
+      {charter}
       <ul className="grid gap-3">
         {sorted.map((x, i) => (
           <TableRow key={x.local ? `local:${x.code}` : x.code} table={x} me={me} pulse={i < 3} onLeave={setLeaving} />
@@ -501,7 +512,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
                 <div className="min-w-0 flex-1">
                   <p className="micro-label text-signal-ink">{t('platform.nav.invitations')}</p>
                   <p className="mt-0.5 truncate font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.invitations.invitedBy', { from: i.from.name, table: tableTitle(i.tableName, lang) })}</p>
-                  <p className="data-text mt-0.5 text-[10.5px] text-iron-400">{ago(i.createdAt)}</p>
+                  <p className="data-text mt-0.5 text-iron-400">{ago(i.createdAt)}</p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <Button variant="live" className="!h-9 text-[13px]" onClick={() => onAnswer(i.id, true)}>
@@ -522,7 +533,7 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
           <button type="button" onClick={() => setShowSent((s) => !s)} aria-expanded={showSent} className="flex w-full items-center gap-2 px-4 py-3 font-ui text-[13px] font-semibold text-iron-400 transition-colors duration-150 hover:text-paper-100">
             <ChevronDown size={16} aria-hidden className={cn('transition-transform duration-200', showSent && 'rotate-180')} />
             {t('platform.desk.invitations.sentTitle')}
-            <span className="data-text ml-auto text-[10.5px] tabular-nums text-iron-400">{sent.length}</span>
+            <span className="data-text ml-auto tabular-nums text-iron-400">{sent.length}</span>
           </button>
           <motion.div initial={false} animate={{ height: showSent ? 'auto' : 0, opacity: showSent ? 1 : 0 }} transition={{ duration: 0.22, ease }} className="overflow-hidden">
             <ul className="grid gap-1.5 px-4 pb-4">
@@ -545,7 +556,6 @@ function InvitationsPanel({ invitations, sent, onAnswer }: { invitations: Invita
 
 function FriendRow({ friend, table, sent, onInvite, onRemove, onAccept }: { friend: Friend; table: TableSummary | null; sent: boolean; onInvite: () => void; onRemove: () => void; onAccept: () => void }) {
   const t = useT();
-  const [menu, setMenu] = useState(false);
   return (
     <li className="flex flex-wrap items-center gap-3 rounded-lg border border-brass-hairline bg-enamel-850 px-3 py-2.5 transition-colors duration-150 hover:bg-enamel-800">
       <span className="relative shrink-0">
@@ -554,7 +564,7 @@ function FriendRow({ friend, table, sent, onInvite, onRemove, onAccept }: { frie
       </span>
       <div className="min-w-0 flex-1">
         <p className="truncate font-ui text-[13px] font-semibold text-paper-100">{friend.account.name}</p>
-        <p className="data-text text-[10.5px] text-iron-400">
+        <p className="data-text text-iron-400">
           {friend.status === 'asks' ? t('platform.desk.friends.asks') : friend.status === 'asked' ? t('platform.desk.friends.asked') : t(friend.online ? 'platform.desk.friends.presenceOnline' : 'platform.desk.friends.presenceOffline')}
         </p>
       </div>
@@ -575,27 +585,7 @@ function FriendRow({ friend, table, sent, onInvite, onRemove, onAccept }: { frie
             {sent ? t('platform.desk.friends.invited') : t('platform.desk.friends.invite')}
           </Button>
         )}
-        <div className="relative">
-          <Button variant="icon" className="!h-8 !w-8 border-0" aria-label={t('platform.desk.friends.remove')} aria-expanded={menu} onClick={() => setMenu((m) => !m)} icon={<MoreHorizontal size={16} aria-hidden />} />
-          {menu && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setMenu(false)} />
-              <div className="absolute right-0 top-9 z-40 w-44 rounded-lg border border-brass-hairline bg-enamel-800 p-1 shadow-[0_8px_24px_var(--shadow-modal)]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMenu(false);
-                    onRemove();
-                  }}
-                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 font-ui text-[13px] font-semibold text-rust-400 transition-colors duration-150 hover:bg-rust-600/10"
-                >
-                  <X size={14} aria-hidden />
-                  {t('platform.desk.friends.remove')}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <Button variant="danger-ghost" className="!h-8 !w-8 !px-0" aria-label={t('platform.desk.friends.remove')} title={t('platform.desk.friends.remove')} onClick={onRemove} icon={<X size={16} aria-hidden />} />
       </span>
     </li>
   );
@@ -758,20 +748,20 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
       </td>
       <td className="py-2.5 pr-3">
         <span className="font-ui text-[13px] font-semibold text-paper-100">{tableTitle(game.name, lang)}</span>
-        <span className="data-text ml-2 text-[10.5px] uppercase tracking-[0.2em] text-iron-400">{game.code}</span>
+        <span className="data-text ml-2 uppercase tracking-[0.2em] text-iron-400">{game.code}</span>
       </td>
       <td className="py-2.5 pr-3">
         <ul className="flex flex-wrap gap-x-3 gap-y-1">
           {game.players.map((p, i) => (
             <li key={i} className={cn('inline-flex items-center gap-1 font-ui text-[12.5px]', i === game.winner ? 'text-brass-300' : 'text-iron-400')}>
               <PlayerToken color={p.color} size={12} />
-              {p.name} <span className="data-text text-[10.5px] text-iron-400">{t('platform.desk.history.vp', { vp: p.vp })}</span>
+              {p.name} <span className="data-text text-iron-400">{t('platform.desk.history.vp', { vp: p.vp })}</span>
             </li>
           ))}
         </ul>
       </td>
       <td className="py-2.5 pr-2 text-right">
-        <span className="data-text whitespace-nowrap text-[10.5px] text-iron-400">
+        <span className="data-text whitespace-nowrap text-iron-400">
           {date} · {time}
         </span>
         {!game.abandoned && mine >= 0 && (
@@ -788,7 +778,9 @@ function HistoryRow({ game, me }: { game: PastGame; me: string }) {
 }
 
 /** Le registre des parties passées — utilisé par le bureau et le profil. */
-export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGame[]; me: string; pageSize?: number }) {
+/* `flush`: the ledger sits under a section title that already keeps its 16 px,
+   so the empty page drops its own top margin rather than add 32 more */
+export function HistoryLedger({ history, me, pageSize = 10, flush = false }: { history: PastGame[]; me: string; pageSize?: number; flush?: boolean }) {
   const t = useT();
   const [filter, setFilter] = useState<HistoryFilter>('all');
   const [shown, setShown] = useState(pageSize);
@@ -809,7 +801,7 @@ export function HistoryLedger({ history, me, pageSize = 10 }: { history: PastGam
   ];
 
   if (history.length === 0) {
-    return <EmptyState plate="tables" title={t('platform.desk.history.emptyTitle')} copy={t('platform.desk.history.emptyCopy')} cta={{ label: t('platform.desk.history.emptyCta'), to: '/online' }} />;
+    return <EmptyState plate="tables" title={t('platform.desk.history.emptyTitle')} copy={t('platform.desk.history.emptyCopy')} cta={{ label: t('platform.desk.history.emptyCta'), to: '/online' }} className={flush ? 'pt-0' : undefined} />;
   }
 
   return (
@@ -909,7 +901,7 @@ function RatingCard({ rating, season }: { rating: Rating | null; season: Season 
           <p className="mt-1 flex items-baseline gap-2">
             <span className="font-fraunces text-[40px] font-semibold leading-none text-paper-100 tnums">{cote(rating.rating, lang)}</span>
             {delta !== 0 && (
-              <span className={cn('data-text text-[13px]', delta > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
+              <span className={cn('data-text', delta > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
                 {delta > 0 ? `+${delta}` : delta} <span className="text-iron-400">· {t('platform.desk.rating.lastGame')}</span>
               </span>
             )}
@@ -1046,7 +1038,7 @@ export default function Desk() {
 
   if (stranger || !session) {
     return (
-      <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
+      <div className="gz-measure pb-24 pt-10">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 console px-8 py-12 text-center">
           <UserX size={32} aria-hidden className="text-iron-400" />
           <h1 className="h2-section">{t('platform.desk.stranger.title')}</h1>
@@ -1081,7 +1073,7 @@ export default function Desk() {
   };
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
+    <div className="gz-measure pb-24 pt-10">
       <MemberHeader />
       <TutorialStrip />
       <div className="mt-4">

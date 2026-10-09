@@ -8,6 +8,7 @@ import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import { isOnline, lobby, normalizeCode } from '@/online/lobby';
 import { forgotPassword, resetPassword, signIn, signUp, useSession, useStranger, verifyEmail } from '@/online/session';
 import { useT } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* Le registre « Club Industriel » — signin / signup / forgot, plus    */
@@ -21,10 +22,21 @@ import { useT } from '@/i18n';
 
 type Mode = 'in' | 'up' | 'forgot';
 
+/* a command set in words — back to the sign-in, the forgotten password — is
+   written as a link is, underlined, and never in the capitals of a label:
+   the one way out of a lost password must not read as a heading */
+const textCommand = 'font-ui text-[13px] text-brass-300 underline decoration-brass-500/40 underline-offset-2 transition-colors duration-150 hover:text-paper-100 hover:decoration-current';
+
+/** where a page that sent the stranger here asked to be taken back — a path of this site, nothing else */
+function returnPath(state: unknown): string | null {
+  const from = (state as { from?: unknown } | null)?.from;
+  return typeof from === 'string' && from.startsWith('/') && !from.startsWith('//') ? from : null;
+}
+
 export default function Account() {
   const t = useT();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, state } = useLocation();
   const { token = '' } = useParams();
   const [params, setParams] = useSearchParams();
   const session = useSession();
@@ -64,7 +76,15 @@ export default function Account() {
     };
   }, [verifying, token]);
 
-  /* signed in already: the desk is where you belong — unless a table waits */
+  /* the register signed on this page, rather than a member arriving with
+     a session already in hand */
+  const [signedHere, setSignedHere] = useState(false);
+  const back = returnPath(state);
+
+  /* signed in: back to the page that sent you here, if one did; a table
+     that waits, if one does; else the desk for one who has just signed, and
+     the member's own card — where the account's settings are kept — for
+     one who came to « Account » already signed in */
   useEffect(() => {
     if (!isOnline || !session || verifying || resetting) return;
     if (invited.length === 4) {
@@ -73,8 +93,8 @@ export default function Account() {
         .catch((e: Error) => setError(t(`site.desk.error.${e.message}`)));
       return;
     }
-    navigate('/desk', { replace: true });
-  }, [session, invited, verifying, resetting, navigate, t]);
+    navigate(back ?? (signedHere ? '/desk' : '/profile'), { replace: true });
+  }, [session, invited, verifying, resetting, navigate, t, back, signedHere]);
 
   const fail = (e: unknown) => setError(t(`site.account.error.${(e as Error).message}`));
 
@@ -87,6 +107,7 @@ export default function Account() {
     }
     setBusy(true);
     try {
+      if (mode !== 'forgot') setSignedHere(true);
       if (mode === 'in') await signIn(name, password);
       else if (mode === 'up') await signUp(name, email, password);
       else {
@@ -177,9 +198,11 @@ export default function Account() {
     <PageShell
       width="narrow"
       back={{ to: '/', label: t('platform.account.back') }}
-      eyebrow={t('platform.account.eyebrow')}
+      /* sent here by an invitation, the reader is told why the register
+         stands between them and the table: a seat is kept for them */
+      eyebrow={invited.length === 4 ? t('platform.account.invitedEyebrow') : t('platform.account.eyebrow')}
       title={mode === 'up' ? t('platform.account.titleUp') : mode === 'forgot' ? t('platform.account.forgotTitle') : t('platform.account.titleIn')}
-      lede={mode === 'forgot' ? t('platform.account.forgotLede') : t('platform.account.lede')}
+      lede={mode === 'forgot' ? t('platform.account.forgotLede') : invited.length === 4 ? t('platform.account.invitedLede', { code: invited }) : t('platform.account.lede')}
     >
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: 'easeOut' }}>
         <Panel>
@@ -204,7 +227,7 @@ export default function Account() {
             sent ? (
               <div>
                 <p className="font-ui text-[14px] leading-relaxed text-paper-300">{t('platform.account.forgotSent')}</p>
-                <button type="button" onClick={() => setMode('in')} className="micro-label mt-4 text-brass-300 transition-colors duration-150 hover:text-brass-500">
+                <button type="button" onClick={() => setMode('in')} className={cn(textCommand, 'mt-4')}>
                   {t('platform.account.backToSignIn')}
                 </button>
               </div>
@@ -218,7 +241,7 @@ export default function Account() {
                   <Button variant="primary" onClick={submit} disabled={busy || !email.includes('@')}>
                     {t('platform.account.forgotCta')}
                   </Button>
-                  <button type="button" onClick={() => setMode('in')} className="micro-label text-iron-400 transition-colors duration-150 hover:text-brass-300">
+                  <button type="button" onClick={() => setMode('in')} className={textCommand}>
                     {t('platform.account.backToSignIn')}
                   </button>
                 </div>
@@ -250,7 +273,7 @@ export default function Account() {
                       .split(/(\[\[privacy\]\])/)
                       .map((part, i) =>
                         part === '[[privacy]]' ? (
-                          <Link key={i} to="/legal#privacy" className="text-brass-300 underline decoration-brass-500/40 underline-offset-2 hover:text-brass-200">
+                          <Link key={i} to="/legal#privacy" className="text-brass-300 underline decoration-current decoration-1 underline-offset-2 transition-colors duration-150 hover:text-signal-ink">
                             {t('platform.account.acceptPrivacy')}
                           </Link>
                         ) : (
@@ -266,7 +289,7 @@ export default function Account() {
                   {mode === 'in' ? t('platform.account.signIn') : t('platform.account.signUp')}
                 </Button>
                 {mode === 'in' && (
-                  <button type="button" onClick={() => setMode('forgot')} className="micro-label text-iron-400 transition-colors duration-150 hover:text-brass-300">
+                  <button type="button" onClick={() => setMode('forgot')} className={textCommand}>
                     {t('platform.account.forgot')}
                   </button>
                 )}

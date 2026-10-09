@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { motion, useReducedMotion } from 'framer-motion';
-import { BadgeCheck, Coins, Download, LogOut, MailWarning, UserX } from 'lucide-react';
+import { BadgeCheck, Check, Coins, Download, LogOut, MailWarning, UserX } from 'lucide-react';
 import { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import Button from '@/components/platform/Button';
-import MemberAvatar from '@/components/platform/MemberAvatar';
 import RankBadge, { type RankTier } from '@/components/platform/RankBadge';
 import StatTile from '@/components/platform/StatTile';
+import MemberPlate, { PlateLine } from '@/components/desk/MemberPlate';
+import RankEmblem from '@/components/platform/RankEmblem';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { PLAYER_COLORS } from '@/components/setup/constants';
 import type { PlayerColor } from '@/components/setup/constants';
@@ -51,27 +52,11 @@ function MemberCard() {
   const season = desk?.season.name ?? '';
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.24, ease }}
-      className="relative overflow-hidden console"
-    >
-      <div aria-hidden className="tex-ledger pointer-events-none absolute inset-0 opacity-50" />
-      <div className="relative flex flex-wrap items-center gap-x-8 gap-y-6 p-6 lg:p-8">
-        <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.28, ease }} className="relative shrink-0">
-          <MemberAvatar avatar={wallet.equipped.avatar} frame={wallet.equipped.frame} size={88} />
-          <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-bottle-400 ring-2 ring-enamel-850" title={t('platform.desk.friends.presenceOnline')} />
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease, delay: 0.06 }} className="min-w-0 flex-1">
-          <p className="eyebrow-fell">{t('platform.profile.eyebrow')}</p>
-          <h1 className="display-hero mt-1 truncate">{session.name}</h1>
-          {wallet.equipped.title !== 'title-none' && <p className="micro-label mt-1 text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)}</p>}
-          <p className="micro-label mt-1.5 text-iron-400">{t('platform.profile.memberSince', { date: since })}</p>
-          {session.motto && <p className="mt-2.5 font-ui text-[14px] text-paper-300">« {session.motto} »</p>}
-        </motion.div>
-
+    <MemberPlate
+      eyebrow={t('platform.profile.eyebrow')}
+      name={session.name}
+      presence={<span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full bg-bottle-400 ring-2 ring-enamel-850" title={t('platform.desk.friends.presenceOnline')} />}
+      aside={
         <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.26, ease, delay: 0.1 }} className="flex shrink-0 items-center gap-4 rounded-xl border border-brass-hairline bg-enamel-800 px-5 py-4">
           <RankBadge tier={rank.tier} division={rank.division} size={48} compact />
           <div>
@@ -89,13 +74,19 @@ function MemberCard() {
                   {rank.division ? ` ${rank.division}` : ''}
                 </p>
                 <p className="data-text mt-1.5 tabular-nums text-iron-400">{t('platform.profile.season', { lp: rank.lp ?? 0, season })}</p>
-                <p className="micro-label mt-1.5 text-brass-300">{t('platform.profile.cote', { rating: (rank.rating ?? 0).toLocaleString(locale(lang)) })}</p>
+                <p className="data-text mt-1 tabular-nums text-brass-300">{t('platform.profile.cote', { rating: (rank.rating ?? 0).toLocaleString(locale(lang)) })}</p>
               </>
             )}
           </div>
         </motion.div>
-      </div>
-    </motion.section>
+      }
+    >
+      <PlateLine>
+        {wallet.equipped.title !== 'title-none' && <span className="font-semibold text-brass-300">{t(`platform.comptoir.items.${wallet.equipped.title}`)} · </span>}
+        {t('platform.profile.memberSince', { date: since })}
+      </PlateLine>
+      {session.motto && <p className="mt-2.5 font-ui text-[14px] text-paper-300">{`«\u00A0${session.motto}\u00A0»`}</p>}
+    </MemberPlate>
   );
 }
 
@@ -117,82 +108,80 @@ function StatsAndRanks() {
     { value: stats?.bestVp ?? 0, label: t('platform.profile.stats.best') },
     { value: stats?.averagePlace ? stats.averagePlace : '—', label: t('platform.profile.stats.place') },
   ];
+  const rise = (i: number) => ({ initial: { opacity: 0, y: 12 }, whileInView: { opacity: 1, y: 0 }, viewport: { amount: 0.15, once: true }, transition: { duration: 0.22, ease, delay: i * 0.05 } });
 
+  /* Eight figures, one grammar: the figure over its label, flush left, at
+     the tile's one size. The rating and the purse keep their emblem, hung in
+     the tile's corner out of the line of reading. The rating spans two cells
+     where the grid runs three wide, so the eight fill three full rows (two
+     wide: four); and the rows share out the height of the ladder beside
+     them rather than stopping short of it — each tile spreads, the figure
+     at its head and the label at its foot. One gutter across the row. */
   return (
     <div className="mt-6 grid gap-6 min-[1100px]:grid-cols-12">
-      <div className="grid content-start gap-4 min-[760px]:grid-cols-2 min-[1100px]:col-span-8 xl:grid-cols-3">
+      <div className="grid gap-6 min-[760px]:grid-cols-2 min-[1100px]:col-span-8 xl:grid-cols-3">
         {tiles.map((tile, i) => (
-          <motion.div key={tile.label} initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.22, ease, delay: i * 0.05 }}>
-            <StatTile value={tile.value} label={tile.label} className="h-full" />
+          <motion.div key={tile.label} {...rise(i)}>
+            <StatTile value={tile.value} label={tile.label} spread className="h-full" />
           </motion.div>
         ))}
-        {/* tuile cote — le badge de l'exercice et le chiffre */}
-        <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.22, ease, delay: tiles.length * 0.05 }}>
-          <div className="flex h-full items-center gap-3 console p-4">
-            <RankBadge tier={rank.tier} division={rank.division} lp={rank.lp} placementDone={rank.placementDone ?? undefined} size={32} />
-            <span className="ml-auto text-right">
-              <span className="tnums block font-fraunces text-[24px] font-semibold leading-none text-paper-100">{rank.rating !== null ? rank.rating.toLocaleString(locale(lang)) : '—'}</span>
-              <span className="micro-label mt-1 block text-iron-400">{t('platform.desk.rating.cote')}</span>
-            </span>
-          </div>
+        <motion.div {...rise(tiles.length)} className="xl:col-span-2">
+          <StatTile
+            value={rank.rating !== null ? rank.rating.toLocaleString(locale(lang)) : '—'}
+            label={t('platform.desk.rating.cote')}
+            badge={<RankBadge tier={rank.tier} division={rank.division} size={28} compact />}
+            spread
+            className="h-full"
+          />
         </motion.div>
-        {/* tuile bourse → Comptoir */}
-        <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.22, ease, delay: (tiles.length + 1) * 0.05 }}>
-          <Link
-            to="/comptoir"
-            aria-label={t('platform.comptoir.walletAria', { count: wallet.balance })}
-            className="flex h-full items-center gap-3 console p-4 transition-colors duration-150 hover:border-brass-hairline-strong hover:bg-enamel-800"
-          >
-            <Coins size={24} aria-hidden className="shrink-0 text-brass-300" />
-            <span>
-              <span className="tnums block font-fraunces text-[24px] font-semibold leading-none text-paper-100">{wallet.balance}</span>
-              <span className="micro-label mt-1 block text-iron-400">{t('platform.comptoir.deskTile')}</span>
-            </span>
+        <motion.div {...rise(tiles.length + 1)}>
+          <Link to="/comptoir" aria-label={t('platform.comptoir.walletAria', { count: wallet.balance })} className="group block h-full">
+            <StatTile
+              value={wallet.balance}
+              label={t('platform.comptoir.deskTile')}
+              icon={<Coins size={24} />}
+              spread
+              className="h-full transition-colors duration-150 group-hover:border-brass-hairline-strong group-hover:bg-enamel-800"
+            />
           </Link>
         </motion.div>
       </div>
 
-      <motion.aside
-        initial={{ opacity: 0, y: 12 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ amount: 0.15, once: true }}
-        transition={{ duration: 0.24, ease, delay: 0.08 }}
-        className="console p-5 min-[1100px]:col-span-4"
-      >
-        <h2 className="title-card">{t('platform.profile.ranksTitle')}</h2>
-        <div className="mb-4 mt-3 h-px bg-brass-hairline" />
-        <ul className="grid gap-1.5">
-          {[...TIERS].reverse().map((tier, i) => {
-            const current = tier === rank.tier;
-            return (
-              <motion.li
-                key={tier}
-                initial={{ opacity: 0, y: 8 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.2, ease, delay: i * 0.04 }}
-                className={cn('flex items-center gap-3 rounded-lg border px-3 py-2', current ? 'border-brass-hairline-strong bg-enamel-800' : 'border-transparent')}
-              >
-                <img src={`/rank-${tier}.svg`} alt="" width={24} height={24} className="h-6 w-6" />
-                <span className={cn('font-ui text-[13px] font-semibold', current ? 'text-paper-100' : 'text-iron-400')}>{t(`platform.rank.${tier}`)}</span>
-                <span className="data-text ml-auto tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
-                {current && rank.lp !== undefined && <span className="micro-label text-brass-300">{t('platform.rank.lp', { lp: rank.lp })}</span>}
-              </motion.li>
-            );
-          })}
-        </ul>
-        <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12.5px] leading-snug text-iron-400">{t('platform.profile.ranksFoot')}</p>
-      </motion.aside>
+      <motion.div initial={{ opacity: 0, y: 12 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.24, ease, delay: 0.08 }} className="min-[1100px]:col-span-4">
+        <Panel title={t('platform.profile.ranksTitle')} className="h-full">
+          <ul className="grid gap-1.5">
+            {[...TIERS].reverse().map((tier) => {
+              const current = tier === rank.tier;
+              return (
+                <li key={tier} className={cn('flex items-center gap-3 rounded-lg border px-3 py-2', current ? 'border-brass-hairline-strong bg-enamel-800' : 'border-transparent')}>
+                  <RankEmblem tier={tier} />
+                  <span className={cn('font-ui text-[13px] font-semibold', current ? 'text-paper-100' : 'text-iron-400')}>{t(`platform.rank.${tier}`)}</span>
+                  <span className="data-text ml-auto tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
+                  {current && rank.lp !== undefined && <span className="data-text text-brass-300">{t('platform.rank.lp', { lp: rank.lp })}</span>}
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-4 border-t border-[rgb(var(--paper-100)/.07)] pt-3 font-ui text-[12.5px] leading-snug text-iron-400">{t('platform.profile.ranksFoot')}</p>
+        </Panel>
+      </motion.div>
     </div>
   );
 }
 
 /* ------------------------------- La fiche ------------------------------- */
 
+/* A panel with nothing yet to show says so in the voice the history uses
+   below it — the register's italic, the same air, the same ink — so four
+   waiting lines on one page read as one clerk and not two. */
+function Waiting({ children }: { children: React.ReactNode }) {
+  return <p className="px-6 py-8 text-center font-serif text-[13.5px] italic text-paper-300">{children}</p>;
+}
+
 /** La cote sur l'exercice : la ligne, la zone sous elle, trois repères. */
 function TrendChart({ values }: { values: number[] }) {
   const t = useT();
-  if (values.length < 2) return <p className="py-8 text-center font-ui text-[13px] text-iron-400">{t('platform.profile.trend.none')}</p>;
+  if (values.length < 2) return <Waiting>{t('platform.profile.trend.none')}</Waiting>;
   const lo = Math.min(...values, 1200) - 40;
   const hi = Math.max(...values, 1200) + 40;
   const x = (i: number) => 44 + (i / (values.length - 1)) * 548;
@@ -217,7 +206,7 @@ function TrendChart({ values }: { values: number[] }) {
   );
 }
 
-function TrendPanel({ rating }: { rating: Rating | null }) {
+function TrendPanel({ rating, className }: { rating: Rating | null; className?: string }) {
   const t = useT();
   const lang = useLang();
   const prev = rating && rating.trend.length > 1 ? rating.trend[rating.trend.length - 2] : null;
@@ -233,7 +222,7 @@ function TrendPanel({ rating }: { rating: Rating | null }) {
     </>
   ) : undefined;
   return (
-    <Panel title={t('platform.profile.trend.title')} meta={meta}>
+    <Panel title={t('platform.profile.trend.title')} meta={meta} className={className}>
       <TrendChart values={rating?.trend ?? []} />
     </Panel>
   );
@@ -245,7 +234,7 @@ function perGame(stats: Stats, lang: string) {
   return (v: number) => (Math.round((v / n) * 10) / 10).toLocaleString(locale(lang));
 }
 
-function MannerPanel({ stats }: { stats: Stats }) {
+function MannerPanel({ stats, className }: { stats: Stats; className?: string }) {
   const t = useT();
   const lang = useLang();
   const tally = stats.tally;
@@ -261,7 +250,7 @@ function MannerPanel({ stats }: { stats: Stats }) {
       ]
     : [];
   return (
-    <Panel title={t('platform.profile.manner.title')} meta={tally ? t('platform.profile.manner.perGame', { n: stats.tallied || stats.played }) : undefined}>
+    <Panel title={t('platform.profile.manner.title')} meta={tally ? t('platform.profile.manner.perGame', { n: stats.tallied || stats.played }) : undefined} className={className}>
       {tally ? (
         <div className="grid grid-cols-2 gap-x-4 gap-y-5 sm:grid-cols-3">
           {figures.map((f) => (
@@ -272,20 +261,26 @@ function MannerPanel({ stats }: { stats: Stats }) {
           ))}
         </div>
       ) : (
-        <p className="py-6 text-center font-ui text-[13px] text-iron-400">{t('platform.profile.manner.none')}</p>
+        <Waiting>{t('platform.profile.manner.none')}</Waiting>
       )}
     </Panel>
   );
 }
 
-function IndustriesPanel({ stats }: { stats: Stats }) {
+function IndustriesPanel({ stats, className }: { stats: Stats; className?: string }) {
   const t = useT();
   const lang = useLang();
   /* the shell asks framer for the reader's own setting, but a width is neither
      a transform nor a layout: it fills on regardless, so the bar is told here */
   const reduced = useReducedMotion();
   const tally = stats.tally;
-  if (!tally) return null;
+  if (!tally) {
+    return (
+      <Panel title={t('platform.profile.industries.title')} className={className}>
+        <Waiting>{t('platform.profile.industries.none')}</Waiting>
+      </Panel>
+    );
+  }
   const per = perGame(stats, lang);
   const inds = (Object.keys(INDUSTRIES) as IndustryType[]).map((k) => [k, tally.industries[k] ?? 0] as const);
   const most = Math.max(1, ...inds.map(([, v]) => v));
@@ -293,7 +288,7 @@ function IndustriesPanel({ stats }: { stats: Stats }) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
   return (
-    <Panel title={t('platform.profile.industries.title')} meta={t('platform.profile.industries.perGame')}>
+    <Panel title={t('platform.profile.industries.title')} meta={t('platform.profile.industries.perGame')} className={className}>
       <ul className="grid gap-2.5">
         {inds.map(([k, v]) => (
           <li key={k} className="grid grid-cols-[minmax(0,7.5rem)_1fr_2.75rem] items-center gap-3">
@@ -311,7 +306,7 @@ function IndustriesPanel({ stats }: { stats: Stats }) {
           <ul className="mt-2 flex flex-wrap gap-2">
             {towns.map(([id, v]) => (
               <li key={id} className="rounded-full border border-brass-hairline bg-enamel-800 px-2.5 py-1 font-ui text-[12.5px] font-semibold text-paper-100">
-                {TOWN_BY_ID[id]?.name ?? id} <span className="data-text text-[10.5px] font-normal text-iron-400">×{v}</span>
+                {TOWN_BY_ID[id]?.name ?? id} <span className="data-text font-normal text-iron-400">×{v}</span>
               </li>
             ))}
           </ul>
@@ -321,12 +316,12 @@ function IndustriesPanel({ stats }: { stats: Stats }) {
   );
 }
 
-function RivalsPanel({ stats }: { stats: Stats }) {
+function RivalsPanel({ stats, className }: { stats: Stats; className?: string }) {
   const t = useT();
   return (
-    <Panel title={t('platform.profile.rivals.title')}>
+    <Panel title={t('platform.profile.rivals.title')} className={className}>
       {stats.rivals.length === 0 ? (
-        <p className="py-6 text-center font-ui text-[13px] text-iron-400">{t('platform.profile.rivals.none')}</p>
+        <Waiting>{t('platform.profile.rivals.none')}</Waiting>
       ) : (
         <ul className="grid gap-1.5">
           {stats.rivals.slice(0, 8).map((r) => (
@@ -336,9 +331,9 @@ function RivalsPanel({ stats }: { stats: Stats }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-ui text-[13px] font-semibold text-paper-100">{r.name}</span>
-                <span className="data-text text-[10.5px] text-iron-400">{r.played === 1 ? t('platform.profile.rivals.games.one') : t('platform.profile.rivals.games.many', { n: r.played })}</span>
+                <span className="data-text text-iron-400">{r.played === 1 ? t('platform.profile.rivals.games.one') : t('platform.profile.rivals.games.many', { n: r.played })}</span>
               </span>
-              <span className={cn('data-text text-[14px] font-semibold tabular-nums', r.won > r.lost ? 'text-bottle-ink' : r.won < r.lost ? 'text-rust-400' : 'text-paper-300')}>
+              <span className={cn('data-text font-semibold tabular-nums', r.won > r.lost ? 'text-bottle-ink' : r.won < r.lost ? 'text-rust-400' : 'text-paper-300')}>
                 {r.won} – {r.lost}
               </span>
             </li>
@@ -352,21 +347,74 @@ function RivalsPanel({ stats }: { stats: Stats }) {
 function RecordSection() {
   const desk = useDesk();
   const stats = desk?.stats ?? null;
+  /* One grid for the four panels, not two columns stacked on their own: a
+     row holds two panels and their feet meet, whatever each has to say. The
+     cut is the page's 8/4, the one the figures and the ladder take above.
+     Every panel stands, empty or not — a panel that vanished when it had
+     nothing to show left its column 200 px short of the other. Under the
+     wide cut the four go two by two, halves, rather than four full-width
+     panels stacked down the page. */
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.1, once: true }} transition={{ duration: 0.24, ease }} className="mt-6 grid gap-6 min-[1100px]:grid-cols-12">
-      <div className="grid content-start gap-6 min-[1100px]:col-span-7">
-        <TrendPanel rating={desk?.rating ?? null} />
-        {stats && <MannerPanel stats={stats} />}
-      </div>
-      <div className="grid content-start gap-6 min-[1100px]:col-span-5">
-        {stats && <IndustriesPanel stats={stats} />}
-        {stats && <RivalsPanel stats={stats} />}
-      </div>
+    <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.1, once: true }} transition={{ duration: 0.24, ease }} className="mt-6 grid gap-6 min-[900px]:grid-cols-2 min-[1100px]:grid-cols-12">
+      <TrendPanel rating={desk?.rating ?? null} className="min-[1100px]:col-span-8" />
+      {stats && <RivalsPanel stats={stats} className="min-[1100px]:col-span-4" />}
+      {stats && <MannerPanel stats={stats} className="min-[1100px]:col-span-8" />}
+      {stats && <IndustriesPanel stats={stats} className="min-[1100px]:col-span-4" />}
     </motion.div>
   );
 }
 
 /* ------------------------------ Réglages : identité ------------------------------ */
+
+/** a command set in words: a link's underline, never a label's capitals */
+const textCommand = 'font-ui text-[13px] text-brass-300 underline decoration-brass-500/40 underline-offset-2 transition-colors duration-150 hover:text-paper-100 hover:decoration-current';
+
+/* The favourite colour is one choice out of five — four seats and no
+   preference — so it is a radio group: one plate each, the same size, the
+   chosen one ringed in brass and ticked, so the choice does not rest on a
+   hue alone. The arrows walk the group, as they do in any set of radios. */
+function ColorChoice({ value, onChange }: { value: PlayerColor | null; onChange: (c: PlayerColor | null) => void }) {
+  const t = useT();
+  const options: (PlayerColor | null)[] = [...PLAYER_COLORS.map((c) => c.id), null];
+  const current = Math.max(0, options.indexOf(value));
+  const walk = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = (current + step + options.length) % options.length;
+    onChange(options[next]);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus();
+  };
+  return (
+    <div role="radiogroup" aria-labelledby="profile-color" onKeyDown={walk} className="mt-2 flex flex-wrap items-center gap-2.5">
+      {options.map((c, i) => {
+        const on = i === current && value === c;
+        return (
+          <button
+            key={c ?? 'none'}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            tabIndex={i === current ? 0 : -1}
+            onClick={() => onChange(c)}
+            className={cn(
+              'flex h-8 items-center gap-2 rounded-full border py-1 pl-1 pr-3 transition-colors duration-150',
+              on ? 'border-brass-500 bg-brass-500/10' : 'border-[rgb(var(--paper-100)/.14)] hover:border-brass-hairline-strong',
+            )}
+          >
+            {c ? (
+              <PlayerToken color={c} size={22} />
+            ) : (
+              <span aria-hidden className="h-[22px] w-[22px] rounded-full border border-dashed border-iron-400" />
+            )}
+            <span className="font-ui text-[12.5px] font-semibold text-paper-100">{c ? t(`setup.colors.${c}`) : t('platform.profile.settings.none')}</span>
+            {on && <Check size={14} aria-hidden className="-mr-1 text-brass-300" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 function IdentitySettings() {
   const t = useT();
@@ -433,39 +481,22 @@ function IdentitySettings() {
               <input type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files?.[0] && pick(e.target.files[0])} />
             </label>
             {portraitValue && (
-              <button type="button" onClick={() => setPortrait(null)} className="micro-label text-iron-400 transition-colors duration-150 hover:text-paper-100">
+              <button type="button" onClick={() => setPortrait(null)} className={textCommand}>
                 {t('platform.profile.settings.portraitRemove')}
               </button>
             )}
           </div>
-          <p className="mt-2 font-serif text-[12.5px] italic text-iron-400">{t('platform.profile.settings.portraitHint')}</p>
+          <p className="mt-1.5 font-ui text-[12px] leading-snug text-iron-400">{t('platform.profile.settings.portraitHint')}</p>
         </div>
         <Field id="profile-motto" label={t('platform.profile.settings.motto')} hint={t('platform.profile.settings.mottoHint')}>
           <input id="profile-motto" value={mottoValue} onChange={(e) => setMotto(e.target.value)} maxLength={80} placeholder={t('platform.profile.settings.mottoPlaceholder')} className={inputClass} />
         </Field>
         <div>
-          <p className="micro-label text-brass-300">{t('platform.profile.settings.color')}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-2.5">
-            {PLAYER_COLORS.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                aria-pressed={colorValue === c.id}
-                onClick={() => setColor(colorValue === c.id ? null : c.id)}
-                className={cn(
-                  'flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 transition-colors duration-150',
-                  colorValue === c.id ? 'border-brass-500 bg-brass-500/10' : 'border-[rgb(var(--paper-100)/.14)] hover:border-brass-hairline-strong',
-                )}
-              >
-                <PlayerToken color={c.id} size={22} />
-                <span className="font-ui text-[12.5px] font-semibold text-paper-100">{t(`setup.colors.${c.id}`)}</span>
-              </button>
-            ))}
-            <button type="button" onClick={() => setColor(null)} className={cn('micro-label transition-colors duration-150', colorValue === null ? 'text-brass-300' : 'text-iron-400 hover:text-paper-100')}>
-              {t('platform.profile.settings.none')}
-            </button>
-          </div>
-          <p className="mt-1.5 font-ui text-[12.5px] text-iron-400">{t('platform.profile.settings.colorHint')}</p>
+          <p id="profile-color" className="micro-label text-brass-300">
+            {t('platform.profile.settings.color')}
+          </p>
+          <ColorChoice value={colorValue} onChange={setColor} />
+          <p className="mt-1.5 font-ui text-[12px] leading-snug text-iron-400">{t('platform.profile.settings.colorHint')}</p>
         </div>
         <Refusal text={error} />
         <div className="flex items-center gap-3">
@@ -499,7 +530,7 @@ function PostSettings() {
   };
   return (
     <Panel title={t('platform.profile.settings.post')}>
-      <p className="font-serif text-[13px] italic leading-relaxed text-paper-300">{t('platform.profile.settings.postCopy')}</p>
+      <p className="font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.profile.settings.postCopy')}</p>
       <label className="mt-4 flex cursor-pointer items-center gap-3">
         <input type="checkbox" checked={session.newsletter} onChange={() => void toggle()} disabled={busy || !session.verified} className="h-4 w-4 accent-[rgb(var(--brass-plate))]" />
         <span className="font-ui text-[13px] text-paper-100">{t('platform.profile.settings.postOn')}</span>
@@ -539,7 +570,7 @@ function SecuritySettings() {
         <div>
           <p className="micro-label text-brass-300">{t('platform.profile.settings.email')}</p>
           <p className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="data-text text-[13px] text-paper-100">{session.email ?? '—'}</span>
+            <span className="data-text text-paper-100">{session.email ?? '—'}</span>
             <span className={cn('micro-label inline-flex items-center gap-1 rounded px-1.5 py-0.5', session.verified ? 'bg-bottle-700/60 text-paper-100' : 'bg-rust-700/50 text-paper-100')}>
               {session.verified ? <BadgeCheck size={12} aria-hidden /> : <MailWarning size={12} aria-hidden />}
               {session.verified ? t('platform.profile.settings.verified') : t('platform.profile.settings.unverified')}
@@ -678,13 +709,13 @@ export default function Profile() {
 
   useEffect(() => {
     if (!isOnline) navigate('/online', { replace: true });
-    else if (stranger) navigate('/account', { replace: true });
+    else if (stranger) navigate('/account', { replace: true, state: { from: '/profile' } });
   }, [stranger, navigate]);
 
   if (!session) return null;
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-24 pt-10 sm:px-8">
+    <div className="gz-measure pb-24 pt-10">
       <MemberCard />
       <div className="mt-4">
         <VerifyBanner />
@@ -692,16 +723,26 @@ export default function Profile() {
       <StatsAndRanks />
       <RecordSection />
 
-      <section className="mt-6">
+      {/* a section title takes 48 px of air above it and 16 below: the
+          figures and panels over it are one block, the history another */}
+      <section className="mt-12">
         <h2 className="h2-section mb-4">{t('platform.profile.historyTitle')}</h2>
-        <HistoryLedger history={desk?.history ?? []} me={session.id} />
+        <HistoryLedger history={desk?.history ?? []} me={session.id} flush />
       </section>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.24, ease }} className="mt-6 grid content-start gap-6 min-[900px]:grid-cols-2">
-        <IdentitySettings />
-        <SecuritySettings />
-        <PostSettings />
-        <DataSettings />
+      {/* two stacks, not a grid of four: each card keeps its own height, and
+          the member's own things (the face, the post) stand on the left, the
+          account's (the keys, the papers) on the right, so no card is
+          stretched and no row leaves a hole under its shorter half */}
+      <motion.div initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ amount: 0.15, once: true }} transition={{ duration: 0.24, ease }} className="mt-12 grid items-start gap-6 min-[900px]:grid-cols-2">
+        <div className="grid gap-6">
+          <IdentitySettings />
+          <PostSettings />
+        </div>
+        <div className="grid gap-6">
+          <SecuritySettings />
+          <DataSettings />
+        </div>
       </motion.div>
     </div>
   );

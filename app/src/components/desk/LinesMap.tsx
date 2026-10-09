@@ -39,7 +39,7 @@ export default function LinesMap() {
     <section aria-label={t('platform.desk.lines.title')}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="micro-label text-paper-100">{t('platform.desk.lines.title')}</p>
-        <p className="data-text text-[10.5px] text-iron-400 tnums">{marks.length ? t('platform.desk.lines.legend', { towns: marks.length, tiles, games: lines.games }) : ''}</p>
+        <p className="data-text text-iron-400 tnums">{marks.length ? t('platform.desk.lines.legend', { towns: marks.length, tiles, games: lines.games }) : ''}</p>
       </div>
       <div className="gz-rule-double mt-2" aria-hidden />
       <p className="mt-3 font-serif text-[13px] italic text-paper-300">{marks.length ? t('platform.desk.lines.lede') : t('platform.desk.lines.none')}</p>
