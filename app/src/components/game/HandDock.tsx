@@ -996,7 +996,10 @@ function HandDock() {
                 initial={{ opacity: 0, x: -14 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -14 }}
-                className="paper flex max-h-[164px] shrink-0 flex-col gap-1.5 self-center overflow-y-auto rounded-md px-3 py-2"
+                /* the strip takes the room the verbs leave and no more: at a
+                   narrow table its rows wrap, the beer under the merchant,
+                   rather than run past the dock's edge */
+                className="paper flex max-h-[132px] min-w-0 flex-col gap-1.5 self-center overflow-y-auto rounded-md px-3 py-2"
               >
                 {(() => {
                   const all = sellTargets(planGame, actor);
@@ -1032,7 +1035,7 @@ function HandDock() {
                               value={named[k] ?? ''}
                               onChange={(e) => setSellBeer(key, k, e.target.value || null)}
                               aria-label={t('game.hand.linkBeer')}
-                              className="max-w-[190px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                              className="min-w-0 max-w-[240px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
                             >
                               <option value="">{t('game.hand.beerDefault')}</option>
                               {sources.map((src) =>

@@ -45,9 +45,8 @@ import PlayerRail from '@/components/game/PlayerRail';
 import RulesOverlay from '@/components/game/RulesOverlay';
 import GameOverModal from '@/components/game/ScoringModal';
 import { routeFor } from '@/components/game/routePaths';
-import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withIron } from '@/game/engine';
+import { buildTargets, candleMinutes, doubleLinkPlan, linkTargets, marketSaleOnBuild, sellTargets, slotXY, tileKey, withCoal, withIron, withLinkCoal } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
-import { MERCHANT_BY_ID } from '@/game/data';
 import { listHomeGames, openHomeGame } from '@/game/home';
 import { buildFinalPayload, confirmSummary, developPlans, leaveHomeTable, leaveOnlineTable, projectQueued, useGame, describeAction } from '@/game/store';
 import type { HomeTrouble } from '@/game/store';
@@ -179,6 +178,8 @@ export default function Game() {
   const developPick = useGame((s) => s.developPick);
   const developIron = useGame((s) => s.developIron);
   const buildIron = useGame((s) => s.buildIron);
+  const buildCoal = useGame((s) => s.buildCoal);
+  const linkCoal = useGame((s) => s.linkCoal);
   const linkBeer = useGame((s) => s.linkBeer);
   const scoutPick = useGame((s) => s.scoutPick);
   const hoverKey = useGame((s) => s.hoverKey);
@@ -513,12 +514,15 @@ export default function Game() {
     if (!planGame || planActor < 0 || verb !== 'network') return NO_LINKS;
     const list = linkTargets(planGame, planActor);
     if (!linkPick || planGame.era !== 'rail') return list;
+    /* the first as it will be laid: with the mine named for its coal, whose
+       cubes the second then cannot count on */
+    const first = withLinkCoal(planGame, planActor, linkPick, linkCoal[0]);
     return list.map((t) => {
       if (t.link.id === linkPick.link.id) return t;
-      const dbl = doubleLinkPlan(planGame, planActor, linkPick, t.link, linkBeer);
+      const dbl = doubleLinkPlan(planGame, planActor, first, t.link, linkBeer, t.link.id === secondLinkPick?.link.id ? linkCoal[1] : null);
       return { ...t, valid: dbl.valid, reason: dbl.reason, total: dbl.total, coalPlan: dbl.coal2 };
     });
-  }, [planGame, planActor, verb, linkPick, linkBeer]);
+  }, [planGame, planActor, verb, linkPick, secondLinkPick, linkBeer, linkCoal]);
   const sellTargetsList = useMemo(
     () => (planGame && planActor >= 0 && verb === 'sell' ? sellTargets(planGame, planActor) : NO_SALES),
     [planGame, planActor, verb],
@@ -530,8 +534,12 @@ export default function Game() {
     return () => window.clearTimeout(id);
   }, [myTurn, queuedCount, game?.actionsLeft]);
 
+  /* what the plan trades with the exchange, and where a sale on the spot
+     leaves from: read with the mines and the works the player named, as
+     the confirmation prices it, so a named mine never opens the tray for
+     coal the move will not buy */
   const ghost: PlanGhost | null = useMemo(() => {
-    if (!planGame) return null;
+    if (!planGame || planActor < 0) return null;
     if (verb === 'build') {
       /* a works that would sell to the market the moment it is built sends
          its cubes the other way: the ghost carries that too */
@@ -540,33 +548,26 @@ export default function Game() {
         const sale = marketSaleOnBuild(planGame, t.town, t.industry, t.level);
         return sale.sold ? { ...g, sale: { resource: t.industry, amount: sale.sold, gain: sale.earned } } : g;
       };
-      if (buildPick?.valid) return withSale(withIron(planGame, planActor, buildPick, buildIron));
+      if (buildPick?.valid) return withSale(withIron(planGame, planActor, withCoal(planGame, planActor, buildPick, buildCoal), buildIron));
       const t = hoverKey ? targets.find((x) => tileKey(x.town, x.slot) === hoverKey && x.valid) : null;
       if (t) return withSale(t);
     }
     if (verb === 'network') {
-      const id = linkPick?.link.id ?? hoverKey;
-      const t = id ? linkTargetsList.find((x) => x.link.id === id && x.valid) : null;
-      if (t && secondLinkPick && linkPick && planActor >= 0) {
-        /* a double rail: each link's coal to its own middle, and the beer
-           the pair drinks to the second's */
-        const dbl = doubleLinkPlan(planGame, planActor, linkPick, secondLinkPick.link, linkBeer);
-        const mid1 = routeFor(linkPick.link, planGame.era).mid;
-        const mid2 = routeFor(secondLinkPick.link, planGame.era).mid;
-        const g = ghostFromPlan(mid2, dbl.coal2);
-        for (const b of dbl.beer) {
-          if (b.kind !== 'brewery') continue;
-          const [x, y] = slotXY(b.town!, b.slot!);
-          g.tileSources.push({ x, y, resource: 'beer', amount: 1, to: mid2 });
+      const mid = (t: LinkTarget) => routeFor(t.link, planGame.era).mid;
+      if (linkPick?.valid) {
+        const first = withLinkCoal(planGame, planActor, linkPick, linkCoal[0]);
+        if (secondLinkPick && planGame.era === 'rail') {
+          /* a double rail buys for both links: the first's coal, then the
+             second's with the first's cubes already spoken for */
+          const dbl = doubleLinkPlan(planGame, planActor, first, secondLinkPick.link, linkBeer, linkCoal[1]);
+          return ghostFromPlan(mid(secondLinkPick), first.coalPlan, dbl.coal2);
         }
-        g.tileSources.push(...ghostFromPlan(mid1, linkPick.coalPlan).tileSources.map((src) => ({ ...src, to: mid1 })));
-        return g;
-      }
-      if (t && t.coalPlan.sources.length) {
         /* the coal line lands mid-route, on the route of this era: a rail
            does not follow the canal's winding path */
-        return ghostFromPlan(routeFor(t.link, planGame.era).mid, t.coalPlan);
+        return first.coalPlan.sources.length ? ghostFromPlan(mid(first), first.coalPlan) : null;
       }
+      const t = hoverKey ? linkTargetsList.find((x) => x.link.id === hoverKey && x.valid) : null;
+      if (t?.coalPlan.sources.length) return ghostFromPlan(mid(t), t.coalPlan);
     }
     if (verb === 'develop' && developPick.length) {
       /* iron ships from any works on the board, or the exchange: mark where
@@ -574,22 +575,8 @@ export default function Game() {
       const plans = developPlans(planGame, developIron);
       if (plans.length) return { ...ghostFromPlan([0, 0], ...plans), noTarget: true };
     }
-    if (verb === 'sell') {
-      /* every sale picked so far, and the one under the pointer: each with
-         its own line from the merchant's barrel to the works */
-      const picks = [...sellPicks];
-      const hovered = hoverKey && !picks.some((x) => tileKey(x.town, x.slot) === hoverKey) ? sellTargetsList.find((x) => tileKey(x.town, x.slot) === hoverKey && x.valid) : null;
-      if (hovered) picks.push(hovered);
-      if (picks.length) {
-        return {
-          tileSources: picks.map((t) => ({ x: MERCHANT_BY_ID[t.merchant].x, y: MERCHANT_BY_ID[t.merchant].y, resource: 'beer', amount: 1, to: slotXY(t.town, t.slot) })),
-          market: [],
-          at: slotXY(picks[0].town, picks[0].slot),
-        };
-      }
-    }
     return null;
-  }, [planGame, planActor, verb, buildPick, buildIron, linkPick, secondLinkPick, linkBeer, sellPicks, developPick, developIron, mySeat, hoverKey, targets, linkTargetsList, sellTargetsList]);
+  }, [planGame, planActor, verb, buildPick, buildCoal, buildIron, linkPick, secondLinkPick, linkCoal, linkBeer, developPick, developIron, hoverKey, targets, linkTargetsList]);
 
   const consumePreview = useMemo(() => {
     const out: Partial<Record<Resource, number>> = {};

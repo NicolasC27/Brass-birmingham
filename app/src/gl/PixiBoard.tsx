@@ -5,6 +5,7 @@ import { activeBoard, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TO
 import { merchantBarrelSlots, merchantBeerLeft, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget, LinkTarget, SellTarget } from '@/game/engine';
 import type { PlanGhost } from '@/game/ghost';
+import { BoardLostPlate } from '@/components/game/TitleCard';
 import type { Era, GameState } from '@/game/types';
 import { lastActionOf, projectQueued, useGame, verbsForCard } from '@/game/store';
 import { money, onLangChange, reasonText, tr, useT } from '@/i18n';
@@ -2156,16 +2157,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       {/* fixed lighting: darkened corners + warm lamp halo */}
       <VignetteLamp era={game.era} />
 
-      {/* the context taken back: the table says it is being set again,
-          and offers the page itself if the browser never hands it back */}
-      {glLost && (
-        <div role="status" className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-coal-900/90 text-center">
-          <span className="font-fell text-lg text-brass-400">{t('board.glLost')}</span>
-          <button type="button" onClick={() => window.location.reload()} className="rounded-md border border-brass-700/60 px-3 py-1 font-sans text-sm text-cream-100 hover:border-brass-400">
-            {t('platform.boundary.reload')}
-          </button>
-        </div>
-      )}
+      {/* the context taken back: the title card's plate says the board is
+          being set again, and offers the page if the browser never hands
+          the context back */}
+      {glLost && <BoardLostPlate game={game} />}
 
       {/* board-edge inner shadow for relief */}
       <div aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-md shadow-[inset_0_0_60px_rgba(0,0,0,.35)]" />
@@ -2213,9 +2208,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           <div className="my-1.5 h-px bg-brass-700/50" />
           {merchantOpen(game, hoverMerchantDef.id) ? (
             <div className="space-y-1 font-sans text-[12px] leading-relaxed text-cream-100/90">
+              {/* the goods named inside the sentence, in the log's words: lower
+                  case where the language writes its nouns so */}
               <div>
                 {t('board.merchant.buys')}{' '}
-                <span className="text-cream-100">{merchantDemand(game, hoverMerchantDef.id).map((x) => t(`game.industry.${x}`)).join(', ') || t('board.merchant.buysNothing')}</span>
+                <span className="text-cream-100">{merchantDemand(game, hoverMerchantDef.id).map((x) => t(`game.log.industry.${x}`)).join(', ') || t('board.merchant.buysNothing')}</span>
               </div>
               <div>
                 {t('board.merchant.barrels', { left: merchantBeerLeft(game, hoverMerchantDef.id), total: merchantBarrelSlots(game, hoverMerchantDef.id) })}
