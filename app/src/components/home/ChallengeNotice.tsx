@@ -47,6 +47,16 @@ function ruleText(t: ReturnType<typeof useT>, rule: Rule): string {
   }
 }
 
+/* the ticket keeps to its column: between 900 and about 1100px the
+   column is narrow, and a long label (the German one above all) folds
+   onto more lines, a long word hyphenated, rather than crossing the
+   frame and pushing the page sideways. A label that fits is printed as
+   before, one line, 40px high; in the narrow band the right margin gives
+   a few pixels back so the arrow stays with its word. The ticket's own
+   rule sits outside the layers, hence the marks */
+const FOLD =
+  'max-w-full !h-auto min-h-[40px] !whitespace-normal !py-2 text-left leading-snug hyphens-auto break-words min-[900px]:max-[1099px]:!pr-3';
+
 export default function ChallengeNotice() {
   const t = useT();
   const navigate = useNavigate();
@@ -144,12 +154,12 @@ export default function ChallengeNotice() {
             )}
           </div>
           {open ? (
-            <Link to={`/game/local/${open}`} className="gz-ticket gz-ticket-signal self-start">
-              {t('platform.challenge.resume')} →
+            <Link to={`/game/local/${open}`} className={cn('gz-ticket gz-ticket-signal self-start', FOLD)}>
+              {t('platform.challenge.resume')}{'\u00a0'}→
             </Link>
           ) : (
-            <button type="button" onClick={take} onMouseEnter={preloadGame} onFocus={preloadGame} className="gz-ticket gz-ticket-brass self-start">
-              {t('platform.challenge.take')} →
+            <button type="button" onClick={take} onMouseEnter={preloadGame} onFocus={preloadGame} className={cn('gz-ticket gz-ticket-brass self-start', FOLD)}>
+              {t('platform.challenge.take')}{'\u00a0'}→
             </button>
           )}
         </div>

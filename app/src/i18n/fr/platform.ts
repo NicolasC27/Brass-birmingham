@@ -870,7 +870,7 @@ const platform = {
     emptyTitle: 'Personne n’est encore classé.',
     emptyCopy: 'Une classée ouvre le tableau de l’exercice.',
     emptyCta: 'Jouer en classé',
-    lede: 'Les cinquante premières cotes de l’exercice, gagnées aux tables classées ; les compagnies se comptent à leurs victoires.',
+    lede: 'Les cinquante premières cotes de l’exercice, gagnées aux tables classées ; les compagnies se comptent à leurs victoires.',
     signInTitle: 'Le tableau se lit au registre.',
     signInCopy: 'Signez le registre pour lire les cotes de l’exercice et y inscrire la vôtre. L’échelle des rangs, elle, est affichée pour tous.',
     ladder: {
@@ -1252,7 +1252,7 @@ const platform = {
     title: "Almanach de l’ère",
     lede: "Quarante années, une par semaine : ce que les Midlands ont fait cette année-là. Le journal les tourne dans l’ordre et recommence.",
     thisWeek: "cette semaine",
-    goCurrent: "L’année de cette semaine : {year}",
+    goCurrent: "L’année de cette semaine : {year}",
     all: "Tout l’almanach",
   },
   tableau: {
