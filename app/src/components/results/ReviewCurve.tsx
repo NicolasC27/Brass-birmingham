@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { motion } from 'framer-motion';
-import { PLAYER_COLORS } from '@/game/data';
+import { INK, seatInk } from './ink';
 import type { Beat } from '@/game/review';
 import { useT } from '@/i18n';
 
@@ -22,7 +22,8 @@ export interface Mark {
   grade: 'inaccuracy' | 'mistake' | 'blunder';
 }
 
-const GRADE_HEX: Record<Mark['grade'], string> = { inaccuracy: '#DDBE7E', mistake: '#C97B3C', blunder: '#A33B2A' };
+/* the grades in the register's inks, the same as the chips below the curve */
+const GRADE_HEX: Record<Mark['grade'], string> = { inaccuracy: 'rgb(var(--brass-300))', mistake: 'rgb(var(--signal-ink))', blunder: 'rgb(var(--rust-400))' };
 
 export default function ReviewCurve({
   curve,
@@ -96,8 +97,8 @@ export default function ReviewCurve({
           const v = lo + ((hi - lo) * k) / ticks;
           return (
             <g key={k}>
-              <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke="#F4ECD8" strokeOpacity={0.1} strokeWidth={1} />
-              <text x={PAD.l - 6} y={y(v) + 3.5} textAnchor="end" fontFamily="'IBM Plex Mono',monospace" fontSize={10} fill="#F4ECD8" fillOpacity={0.55}>
+              <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} style={{ stroke: INK.text }} strokeOpacity={0.14} strokeWidth={1} />
+              <text x={PAD.l - 6} y={y(v) + 3.5} textAnchor="end" fontFamily="'IBM Plex Mono',monospace" fontSize={10} style={{ fill: INK.text }} fillOpacity={0.72}>
                 {Math.round(v)}
               </text>
             </g>
@@ -106,7 +107,7 @@ export default function ReviewCurve({
 
         {opens.map((i, k) =>
           k % step === 0 || k === opens.length - 1 ? (
-            <text key={i} x={x(i)} y={H - PAD.b + 16} textAnchor="middle" fontFamily="'IBM Plex Mono',monospace" fontSize={9.5} fill="#F4ECD8" fillOpacity={0.5}>
+            <text key={i} x={x(i)} y={H - PAD.b + 16} textAnchor="middle" fontFamily="'IBM Plex Mono',monospace" fontSize={9.5} style={{ fill: INK.text }} fillOpacity={0.72}>
               {t('results.page.curvesRound', { n: curve[i].round })}
             </text>
           ) : null,
@@ -114,11 +115,11 @@ export default function ReviewCurve({
 
         {eraSplit !== null && (
           <g>
-            <line x1={eraSplit} x2={eraSplit} y1={PAD.t - 8} y2={H - PAD.b} stroke="#C9A45C" strokeOpacity={0.55} strokeWidth={1} strokeDasharray="4 4" />
-            <text x={eraSplit - 6} y={PAD.t - 10} textAnchor="end" fontFamily="'IM Fell English SC',serif" fontSize={11} className="fill-bottle-600">
+            <line x1={eraSplit} x2={eraSplit} y1={PAD.t - 8} y2={H - PAD.b} style={{ stroke: INK.brass }} strokeOpacity={0.7} strokeWidth={1} strokeDasharray="4 4" />
+            <text x={eraSplit - 6} y={PAD.t - 10} textAnchor="end" fontFamily="Inter,system-ui,sans-serif" fontSize={9.5} fontWeight={500} letterSpacing="0.16em" style={{ fill: INK.canal, textTransform: 'uppercase' }}>
               {t('results.page.curvesCanal')}
             </text>
-            <text x={eraSplit + 6} y={PAD.t - 10} textAnchor="start" fontFamily="'IM Fell English SC',serif" fontSize={11} fill="#B0703C">
+            <text x={eraSplit + 6} y={PAD.t - 10} textAnchor="start" fontFamily="Inter,system-ui,sans-serif" fontSize={9.5} fontWeight={500} letterSpacing="0.16em" style={{ fill: INK.rail, textTransform: 'uppercase' }}>
               {t('results.page.curvesRail')}
             </text>
           </g>
@@ -126,19 +127,19 @@ export default function ReviewCurve({
 
         {/* the move under the pointer */}
         {over !== null && (
-          <line x1={x(over)} x2={x(over)} y1={PAD.t - 8} y2={H - PAD.b} stroke="#F4ECD8" strokeOpacity={0.35} strokeWidth={1} />
+          <line x1={x(over)} x2={x(over)} y1={PAD.t - 8} y2={H - PAD.b} style={{ stroke: INK.text }} strokeOpacity={0.45} strokeWidth={1} />
         )}
 
         <g clipPath={`url(#${id}-clip)`}>
           {seats.map((p, pi) => {
-            const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
+            const col = seatInk(p.color);
             const d = curve.map((b, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(b.proj[pi] ?? 0).toFixed(1)}`).join(' ');
             return (
               <motion.path
                 key={pi}
                 d={d}
                 fill="none"
-                stroke={col}
+                style={{ stroke: col }}
                 strokeWidth={pi === seat ? 2.6 : 1.6}
                 strokeOpacity={pi === seat ? 1 : 0.55}
                 strokeLinejoin="round"
@@ -160,8 +161,7 @@ export default function ReviewCurve({
                 cx={x(i)}
                 cy={y(curve[i].proj[seat] ?? 0)}
                 r={m.grade === 'blunder' ? 4.5 : 3.4}
-                fill={GRADE_HEX[m.grade]}
-                stroke="#191715"
+                style={{ fill: GRADE_HEX[m.grade], stroke: INK.ground }}
                 strokeWidth={1.2}
                 className={onPick ? 'cursor-pointer' : undefined}
               />
@@ -171,7 +171,7 @@ export default function ReviewCurve({
 
         {/* the readout, above the chart so it never covers the lines */}
         {at && (
-          <text x={PAD.l} y={12} fontFamily="'IBM Plex Mono',monospace" fontSize={10} fill="#F4ECD8" fillOpacity={0.8}>
+          <text x={PAD.l} y={12} fontFamily="'IBM Plex Mono',monospace" fontSize={10} style={{ fill: INK.text }} fillOpacity={0.9}>
             {t(at.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: at.round })}
             {'  '}
             {seats.map((p, pi) => `${p.name.split(' ')[0]} ${at.proj[pi] ?? 0}`).join('   ')}

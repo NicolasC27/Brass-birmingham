@@ -54,7 +54,7 @@ export default function SeatRow({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.2 }}
-        className="mt-3 flex items-center justify-between border border-dashed border-[var(--gz-ink-soft)] px-4"
+        className="col-span-full mt-3 flex items-center justify-between border border-dashed border-[var(--gz-ink-soft)] px-4"
         style={{ height: 56 }}
       >
         <span className="font-ui text-[13px] tracking-wide text-iron-400">
@@ -79,9 +79,12 @@ export default function SeatRow({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.2 }}
-      className="border-b border-[var(--gz-ink-faint)] px-1 py-3 last:border-b-0"
+      /* every seat is cut to the columns of the list (Setup's grid): the
+         token, the machine's medallion, the name, the choice — so the names
+         start and their rules stop at the same place on every line */
+      className="col-span-full grid grid-cols-subgrid border-b border-[var(--gz-ink-faint)] py-3 last:border-b-0"
     >
-      <div className="flex min-h-[52px] flex-wrap items-center gap-x-3 gap-y-2">
+      <div className="col-span-full grid min-h-[52px] grid-cols-subgrid items-center">
         {/* Token — quarter-flip as its color/shape resolves */}
         <motion.div
           key={seat.color}
@@ -93,22 +96,26 @@ export default function SeatRow({
           <PlayerToken color={seat.color} size={28} />
         </motion.div>
 
-        {/* Bot medallion — clockwork icon on enamel (platform §7.1) */}
-        <AnimatePresence>
-          {seat.type === "bot" && (
-            <motion.span
-              key="bot-medallion"
-              initial={{ opacity: 0, x: -10, scale: 0.85 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: -10, scale: 0.85 }}
-              transition={{ duration: 0.25 }}
-              aria-label={t("platform.seat.bot")}
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gz-ink-soft)] text-iron-400"
-            >
-              <Bot size={18} aria-hidden />
-            </motion.span>
-          )}
-        </AnimatePresence>
+        {/* Bot medallion — clockwork icon on enamel (platform §7.1). The
+            column is kept at a human seat too, empty, so the name does not
+            start further left there */}
+        <span className="flex h-8 w-8 items-center justify-center">
+          <AnimatePresence>
+            {seat.type === "bot" && (
+              <motion.span
+                key="bot-medallion"
+                initial={{ opacity: 0, x: -10, scale: 0.85 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -10, scale: 0.85 }}
+                transition={{ duration: 0.25 }}
+                aria-label={t("platform.seat.bot")}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--gz-ink-soft)] text-iron-400"
+              >
+                <Bot size={18} aria-hidden />
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </span>
 
         {/* Name field — register input */}
         <input
@@ -117,16 +124,17 @@ export default function SeatRow({
           placeholder={t("setup.seat.namePlaceholder")}
           maxLength={24}
           aria-label={t("setup.seat.nameAria", { n: index + 1 })}
-          className="h-9 min-w-0 flex-1 border-b border-[var(--gz-ink-soft)] bg-transparent px-1 font-fraunces text-[15px] font-medium text-paper-100 placeholder:text-iron-400 focus:border-brass-300 focus:outline-none"
+          className="h-9 w-full min-w-0 border-b border-[var(--gz-ink-soft)] bg-transparent px-1 font-fraunces text-[15px] font-medium text-paper-100 placeholder:text-iron-400 focus:border-brass-300"
         />
 
         {/* Type selector */}
         {isHead ? (
-          <span className="micro-label text-brass-300">
+          <span className="micro-label justify-self-end text-brass-300">
             {t("setup.seat.headBadge")}
           </span>
         ) : (
           <Segmented<SeatType>
+            className="justify-self-end"
             ariaLabel={t("setup.seat.typeAria", { n: index + 1 })}
             value={seat.type}
             onChange={onTypeChange}
@@ -147,7 +155,7 @@ export default function SeatRow({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.18 }}
-          className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2"
+          className="col-span-full mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-2"
         >
           {/* Color picker — choosing a color steals it from its holder */}
           <div className="flex items-center gap-1.5" role="radiogroup" aria-label={t("setup.seat.colorAria", { n: index + 1 })}>
@@ -177,7 +185,7 @@ export default function SeatRow({
               chosen one ringed in its own colour; the words for it below */}
           {seat.type === "bot" && (
             <div className="flex w-full flex-col gap-2">
-              <div role="radiogroup" aria-label={t("setup.seat.typeBot")} className="flex flex-wrap items-center gap-1">
+              <div role="radiogroup" aria-label={t("setup.seat.typeBot")} className="grid grid-cols-2 justify-items-start gap-1 min-[1200px]:flex min-[1200px]:flex-wrap min-[1200px]:items-center">
                 {PERSONAS.map((d) => {
                   const active = seat.persona === d.id;
                   const hex = colorDef(d.color).hex;
@@ -207,10 +215,12 @@ export default function SeatRow({
                   );
                 })}
               </div>
-              <p className="flex flex-wrap items-center gap-x-3 font-serif text-[12.5px] italic leading-snug text-paper-300">
-                <span>{t(seat.persona === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}</span>
-                <Tip label={t("setup.seat.engineTip")}>
-                  <span className="inline-flex cursor-help items-center gap-1 font-ui text-[10.5px] font-semibold not-italic uppercase tracking-label text-rust-400">
+              <p className="font-serif text-[12.5px] italic leading-snug text-paper-300">
+                {t(seat.persona === EXPERT ? "setup.persona.expert" : "setup.persona.adaptive")}
+                {/* the mark rides at the end of the sentence, never alone on a
+                    line; iron, not rust — rust is kept for what stops the start */}
+                <Tip label={t("setup.seat.engineTip")} className="ml-3 whitespace-nowrap align-middle">
+                  <span className="inline-flex cursor-help items-center gap-1 border border-[var(--gz-ink-soft)] px-1.5 py-px font-ui text-[10px] font-semibold not-italic uppercase tracking-label text-iron-400">
                     {t("setup.seat.beta")}
                     <Info className="h-3 w-3" />
                   </span>

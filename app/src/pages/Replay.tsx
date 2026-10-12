@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
 import { applyAction } from '@/game/actions';
-import { INCOME_PAYOUT, PLAYER_COLORS, fmtPay, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, fmtPay, incomeLevel } from '@/game/data';
 import { newGame } from '@/game/engine';
 import type { FinalPayload, GameState } from '@/game/types';
 import { heldFinal as readFinal } from '@/game/final';
@@ -12,6 +12,9 @@ import { useGame } from '@/game/store';
 import { setupOf } from '@/game/actions';
 import { cn } from '@/lib/utils';
 import { ShapeChip } from '@/components/game/TownInspector';
+import { seatInk } from '@/components/results/ink';
+import EmptyNotice from '@/components/results/EmptyNotice';
+import { minimapWidth, tableWidth, useBoardOptions } from '@/components/game/boardOptions';
 
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
@@ -67,6 +70,17 @@ export default function Replay() {
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const n = states ? states.length - 1 : 0;
   const step = (d: number) => setI((k) => Math.max(0, Math.min(n, k + d)));
+  /* the reel keeps to the band left of the minimap's plate, as the hand
+     does at the table: centred on the screen, it ran under the plate on a
+     tablet. The plate's width follows the window, so a resize re-reads it */
+  const boardOpts = useBoardOptions();
+  const [, setVw] = useState(tableWidth);
+  useEffect(() => {
+    const onResize = () => setVw(tableWidth());
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const reelRight = minimapWidth(boardOpts) + 28;
 
   /* auto-play: one action every 1.2 s at ×1 */
   useEffect(() => {
@@ -97,16 +111,20 @@ export default function Replay() {
     return () => window.removeEventListener('keydown', onKey);
   }, [n, navigate, backTo]);
 
+  const backLabel = from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack');
+
   if (!final || !states) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        {/* no felt under this one: it is said on the register's own paper,
-            so it takes the register's ink and not the room's */}
-        <p className="font-fell text-lg text-paper-300">{t('results.page.replayMissing')}</p>
-        <Link to={backTo} className="btn-ledger">
-          {from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
-        </Link>
-      </div>
+      <EmptyNotice
+        eyebrow={t('results.empty.eyebrow')}
+        title={t('results.page.replay')}
+        actions={[
+          { to: backTo, label: backLabel },
+          { to: '/setup', label: t('platform.action.createTable') },
+        ]}
+      >
+        {t('results.page.replayMissing')}
+      </EmptyNotice>
     );
   }
 
@@ -115,10 +133,12 @@ export default function Replay() {
   const focus = game.lastFx ? { at: game.lastFx.at, seq: game.fxSeq } : null;
 
   return (
+    /* the board keeps its own night; the reel and the chips laid over it
+       are the register's paper, so they turn with the reader's register */
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
       <div aria-hidden className="tex-wood pointer-events-none absolute inset-0 opacity-35" />
       <div className="absolute inset-0">
-        <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">…</div>}>
+        <Suspense fallback={<div className="flex h-full items-center justify-center font-ui text-cream-100/70">…</div>}>
           <PixiBoard game={game} targets={[]} linkTargetsList={[]} sellTargetsList={[]} ghost={null} onInvalid={() => {}} keyboard={false} focus={focus} />
         </Suspense>
       </div>
@@ -126,53 +146,55 @@ export default function Replay() {
       {/* players at this point of the game */}
       <div className="pointer-events-none fixed left-3 top-3 z-[64] flex flex-col gap-1.5">
         {game.players.map((p, k) => {
-          const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
           const toAct = game.phase === 'action' && game.current === k;
           return (
-            <div key={k} className={cn('flex items-center gap-2 rounded-md border bg-coal-900/85 px-2 py-1 backdrop-blur-md', toAct ? 'border-brass-400' : 'border-brass-700/40')}>
+            <div key={k} className={cn('flex items-center gap-2 border bg-enamel-850/95 px-2 py-1 backdrop-blur-md', toAct ? 'border-[rgb(var(--paper-100))]' : 'border-[var(--gz-ink-soft)]')}>
               <ShapeChip color={p.color} size={11} />
-              <span className="font-fell text-[12.5px] tracking-wide text-cream-100">{p.name}</span>
-              <span className="font-mono text-[10.5px]" style={{ color: col }}>
+              <span className="font-fraunces text-[13px] font-medium text-paper-100">{p.name}</span>
+              <span className="font-mono text-[11px] font-semibold" style={{ color: seatInk(p.color) }}>
                 £{p.money}
               </span>
-              <span className="font-mono text-[10.5px] text-bottle-600 brightness-150">
+              <span className="font-mono text-[11px] text-bottle-ink">
                 ↗ {incomeLevel(p.income)} ({fmtPay(INCOME_PAYOUT[p.income])})
               </span>
-              <span className="font-mono text-[10.5px] text-cream-100/75">{p.vp} VP</span>
+              <span className="font-mono text-[11px] text-paper-300">{p.vp}{t('game.mat.vpShort')}</span>
             </div>
           );
         })}
       </div>
 
       {/* back */}
-      <Link to={backTo} className="plate fixed right-3 top-3 z-[64] flex items-center gap-1.5 px-3 py-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-wider text-cream-100/75 hover:text-brass-400">
-        <ArrowLeft className="h-3 w-3" /> {from === 'review' ? t('results.review.backToReview') : live ? t('results.page.replayBackGame') : t('results.page.replayBack')}
-      </Link>
+      <div className="fixed right-3 top-3 z-[64]">
+        <Link to={backTo} className="gz-ticket gz-ticket-sm">
+          <ArrowLeft aria-hidden /> {backLabel}
+        </Link>
+      </div>
 
       {/* the reel: what just happened, the scrubber, transport */}
-      <div className="plate fixed bottom-4 left-1/2 z-[64] flex w-[min(760px,94vw)] -translate-x-1/2 flex-col gap-2 px-4 py-3" role="region" aria-label={t('results.page.replayAria')}>
+      <div className="pointer-events-none fixed bottom-4 left-3 z-[64] flex justify-center" style={{ right: reelRight }}>
+      <div className="pointer-events-auto flex w-full max-w-[760px] flex-col gap-2 border border-[var(--gz-ink-soft)] bg-enamel-850/95 px-4 py-3 shadow-[inset_0_0_0_3px_rgb(var(--enamel-850)),inset_0_0_0_4px_var(--gz-ink-faint)] backdrop-blur-md" role="region" aria-label={t('results.page.replayAria')}>
         <div className="flex items-baseline gap-3">
-          <span className="shrink-0 font-sans text-[10.5px] font-semibold uppercase tracking-label text-brass-400">
+          <span className="micro-label shrink-0 text-brass-300">
             {t('results.page.replayStep', { i, n })}
-            <span className="ml-2 text-cream-100/45">
-              {game.era === 'canal' ? 'Canal' : 'Rail'} · R{game.round}
+            <span className="ml-2 text-iron-400">
+              {t('platform.tableau.progress', { era: t(game.era === 'canal' ? 'platform.tableau.canal' : 'platform.tableau.rail'), turn: t('platform.state.turn', { round: game.round }) })}
             </span>
           </span>
-          <span className="min-w-0 truncate font-mono text-[11.5px] text-cream-100/90">{entry ? ledgerText(entry, t) : t('results.page.replayStart')}</span>
+          <span className="min-w-0 truncate font-mono text-[12px] text-paper-100">{entry ? ledgerText(entry, t) : t('results.page.replayStart')}</span>
         </div>
         <div className="flex items-center gap-3">
-          <button type="button" onClick={() => step(-1)} aria-label="−1" className="flex h-7 w-7 items-center justify-center rounded-full border border-brass-700/60 text-brass-400 hover:bg-coal-800">
+          <button type="button" onClick={() => step(-1)} aria-label="−1" className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--gz-line-control)] text-paper-100 hover:bg-enamel-700">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             type="button"
             onClick={() => setPlaying((p) => !p)}
             aria-label={playing ? t('results.page.replayPause') : t('results.page.replayPlay')}
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-brass-400 bg-brass-500/20 text-brass-400 hover:bg-brass-500/30"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-brass-400 bg-brass-400/15 text-brass-300 hover:bg-brass-400/25"
           >
             {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
           </button>
-          <button type="button" onClick={() => step(1)} aria-label="+1" className="flex h-7 w-7 items-center justify-center rounded-full border border-brass-700/60 text-brass-400 hover:bg-coal-800">
+          <button type="button" onClick={() => step(1)} aria-label="+1" className="flex h-7 w-7 items-center justify-center rounded-full border border-[var(--gz-line-control)] text-paper-100 hover:bg-enamel-700">
             <ChevronRight className="h-4 w-4" />
           </button>
           <input
@@ -185,23 +207,24 @@ export default function Replay() {
               setI(Number(e.target.value));
             }}
             aria-label={t('results.page.replayStep', { i, n })}
-            className="h-1.5 flex-1 cursor-pointer accent-[#C9A45C]"
+            className="h-1.5 flex-1 cursor-pointer accent-[rgb(var(--brass-400))]"
           />
-          <div className="flex overflow-hidden rounded-md border border-brass-700/60" aria-label={t('results.page.replaySpeed')}>
+          <div className="flex overflow-hidden border border-[var(--gz-line-control)]" role="group" aria-label={t('results.page.replaySpeed')}>
             {SPEEDS.map((sp) => (
               <button
                 key={sp}
                 type="button"
                 aria-pressed={speed === sp}
                 onClick={() => setSpeed(sp)}
-                className={cn('px-2 py-0.5 font-mono text-[10.5px] font-bold', speed === sp ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400')}
+                className={cn('px-2 py-0.5 font-mono text-[11px] font-bold', speed === sp ? 'bg-paper-100 text-lacquer-900' : 'text-paper-300 hover:text-paper-100')}
               >
                 ×{sp}
               </button>
             ))}
           </div>
         </div>
-        <div className="font-sans text-[8.5px] uppercase tracking-label text-cream-100/35">{t('results.page.replayKeys')}</div>
+        <div className="micro-label !text-[9.5px] text-iron-400">{t('results.page.replayKeys')}</div>
+      </div>
       </div>
     </div>
   );

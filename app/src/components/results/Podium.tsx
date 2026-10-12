@@ -34,7 +34,7 @@ function Laurel({ className }: { className?: string }) {
           rx="5.4"
           ry="2.4"
           fill="none"
-          stroke="#C9A45C"
+          stroke="currentColor"
           strokeWidth="1.4"
           transform={`rotate(${-38 - i * 6} ${26 + i * 2.4} ${46 - i * 6.4})`}
         />
@@ -42,7 +42,7 @@ function Laurel({ className }: { className?: string }) {
       <path
         d="M 24 50 C 30 34 36 22 44 10"
         fill="none"
-        stroke="#C9A45C"
+        stroke="currentColor"
         strokeWidth="1.6"
         strokeLinecap="round"
       />
@@ -107,18 +107,18 @@ export default function Podium({
   const countersLive = countStart ?? start;
   if (compact) {
     return (
-      <ol className="flex flex-col divide-y divide-coal-700/70" aria-label={t("results.podium.standingsAria")}>
+      <ol className="flex flex-col divide-y divide-[var(--gz-ink-faint)]" aria-label={t("results.podium.standingsAria")}>
         {entries.map((e) => (
           <li key={e.name} className="flex items-center gap-3 py-2.5">
-            <span className="w-8 font-fell text-sm text-brass-500">{t(`results.podium.ranks.${e.rank - 1}`)}</span>
+            <span className="micro-label w-8 text-brass-300">{t(`results.podium.ranks.${e.rank - 1}`)}</span>
             <PlayerToken color={e.color} size={22} />
-            <span className="min-w-0 flex-1 truncate font-sans text-sm font-medium text-cream-100">
+            <span className="min-w-0 flex-1 truncate font-ui text-sm font-medium text-paper-100">
               {e.name}
             </span>
-            <span className="font-mono text-sm font-semibold text-brass-400 tabular-nums">
+            <span className="font-mono text-sm font-semibold text-brass-300 tabular-nums">
               {t("results.podium.vp", { vp: e.vp })}
             </span>
-            <span className="font-mono text-xs text-cream-100/55 tabular-nums">
+            <span className="font-mono text-xs text-iron-400 tabular-nums">
               {t("results.podium.incomeShort", { income: e.income })}
             </span>
           </li>
@@ -137,7 +137,7 @@ export default function Podium({
 
   return (
     <div
-      className="flex flex-wrap items-end justify-center gap-4 sm:gap-6"
+      className="flex flex-wrap items-end justify-center gap-4 border-b border-[var(--gz-ink)] sm:gap-6"
       role="list"
       aria-label={t("results.podium.podiumAria")}
     >
@@ -165,7 +165,7 @@ export default function Podium({
                     className="absolute -inset-2 rounded-full"
                     style={{
                       background:
-                        "radial-gradient(50% 50% at 50% 60%, rgba(201,164,92,0.4), transparent 70%)",
+                        "radial-gradient(50% 50% at 50% 60%, rgb(var(--brass-400) / 0.28), transparent 70%)",
                     }}
                   />
                   <motion.div
@@ -173,7 +173,7 @@ export default function Podium({
                     animate={start ? { opacity: 1, y: 0 } : {}}
                     transition={{ delay: 1.85, duration: 0.5, ease: "easeOut" }}
                   >
-                    <Laurel className="h-11 w-12" />
+                    <Laurel className="h-11 w-12 text-brass-400" />
                   </motion.div>
                 </>
               )}
@@ -182,25 +182,22 @@ export default function Podium({
             {/* Engraved medallion */}
             <div
               className={cn(
-                "flex items-center justify-center rounded-full border bg-coal-800 shadow-e2 transition-transform duration-200 group-hover:rotate-2",
+                "flex items-center justify-center rounded-full border bg-enamel-850 transition-transform duration-200 group-hover:rotate-2",
                 first
                   ? "h-[72px] w-[72px] border-brass-400"
-                  : "h-14 w-14 border-brass-700/80",
+                  : "h-14 w-14 border-[var(--gz-ink-soft)]",
               )}
-              style={{
-                boxShadow: first
-                  ? "0 3px 6px rgba(0,0,0,.45), 0 10px 24px rgba(0,0,0,.25), 0 0 22px rgba(201,164,92,0.28), inset 0 1px 0 rgba(242,234,214,.18)"
-                  : undefined,
-              }}
+              /* the register's own double ring: a hairline, the paper, a rule */
+              style={{ boxShadow: "inset 0 0 0 3px rgb(var(--lacquer-900)), inset 0 0 0 4px var(--gz-ink-faint)" }}
             >
               <PlayerToken color={e.color} size={first ? 44 : 34} />
             </div>
 
             {/* Name + caption */}
-            <p className="mt-3 max-w-[150px] truncate text-center font-display text-base font-bold text-cream-100">
+            <p className="title-card mt-3 max-w-[170px] truncate text-center">
               {e.name}
             </p>
-            <p className="mt-0.5 text-center font-fell text-[12.5px] tracking-wide text-cream-100/55">
+            <p className="mt-0.5 max-w-[220px] text-center font-serif text-[13px] italic leading-snug text-paper-300">
               {first
                 ? e.isHuman
                   ? t("results.podium.winnerHuman")
@@ -211,26 +208,22 @@ export default function Podium({
             {/* Pedestal */}
             <div
               className={cn(
-                "mt-3 flex w-full min-w-[132px] flex-col items-center rounded-t-md border border-b-0 border-brass-700/60 bg-coal-700 px-5 shadow-e2 transition-shadow duration-200 group-hover:shadow-e3-hover",
-                first ? "pb-8 pt-5" : "pb-5 pt-4",
+                "mt-3 flex w-full min-w-[132px] flex-col items-center border border-b-0 bg-enamel-850 px-5 transition-colors duration-200 group-hover:border-[var(--gz-ink)]",
+                first ? "border-brass-400 pb-8 pt-5" : "border-[var(--gz-ink-soft)] pb-5 pt-4",
               )}
-              style={{
-                backgroundImage:
-                  "linear-gradient(180deg, rgba(44,37,29,1), rgba(33,28,23,1))",
-              }}
             >
-              <span className="font-fell text-[10.5px] uppercase tracking-label text-brass-500">
+              <span className="micro-label text-brass-300">
                 {t(`results.podium.places.${e.rank - 1}`)}
               </span>
               <Counter
                 value={e.vp}
                 start={countersLive}
                 className={cn(
-                  "mt-1 font-mono font-semibold text-brass-400",
+                  "mt-1 font-mono font-semibold text-paper-100",
                   first ? "text-[40px] leading-none" : "text-[32px] leading-none",
                 )}
               />
-              <span className="mt-1 font-sans text-[10.5px] uppercase tracking-[0.16em] text-cream-100/50">
+              <span className="micro-label mt-1 text-iron-400">
                 {t("results.podium.victoryPoints")}
               </span>
             </div>

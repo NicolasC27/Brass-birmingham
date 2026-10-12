@@ -43,17 +43,20 @@ import { cn } from "@/lib/utils";
 const ease = "easeOut" as const;
 type LocalMode = "solo" | "hotseat";
 
-/** Section heading inside the settings sheet — the console's voice. */
-/** a clause of the waybill: small capitals over a double rule */
+/** a clause of the waybill: a section title over the printer's double rule.
+ *  The field labels beneath keep the small capitals, so a heading and a
+ *  label are never the same object */
 function SheetHeading({ children }: { children: string }) {
   return (
     <>
-      <h2 className="micro-label text-paper-100">{children}</h2>
+      <h2 className="h2-section">{children}</h2>
       <div aria-hidden className="gz-rule-double mt-2" />
     </>
   );
 }
 
+/** the air between two clauses: one measure, 32px, everywhere on the sheet
+ *  (an empty block, so its two margins fold into one) */
 function Divider() {
   return <div aria-hidden className="my-8" />;
 }
@@ -218,12 +221,12 @@ export default function Setup() {
     if (options.timerMinutes !== null) {
       chips.push(t("setup.houseRules.timer.min", { n: options.timerMinutes }));
     }
-    if (options.assist) chips.push(t("setup.houseRules.assist.on"));
+    if (options.assist) chips.push(t("setup.houseRules.assist.label"));
     return chips;
   }, [options, t]);
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pt-10 pb-8 sm:px-8">
+    <div className="gz-measure pt-10 pb-8">
       {/* En-tête (create.md §Structure) */}
       <header>
         <p className="eyebrow-fell">{t("platform.setup.eyebrow")}</p>
@@ -244,7 +247,7 @@ export default function Setup() {
             <section aria-label={t("platform.setup.identity.heading")}>
               <SheetHeading>{t("platform.setup.identity.heading")}</SheetHeading>
               <p className="micro-label mt-4 text-iron-400">{t("platform.setup.identity.nameLabel")}</p>
-              <p className="mt-1 truncate font-fraunces text-[26px] font-medium leading-tight text-paper-100">
+              <p className="title-card mt-1 truncate">
                 {tableTitle(tableName, lang)}
               </p>
               <p className="mt-1 font-serif text-[13px] italic text-iron-400">{t("platform.setup.identity.drawn")}</p>
@@ -256,7 +259,7 @@ export default function Setup() {
             {/* A1b. Where the table stands: this device, or the club */}
             <section aria-label={t("platform.setup.where.heading")}>
               <SheetHeading>{t("platform.setup.where.heading")}</SheetHeading>
-              <div role="radiogroup" aria-label={t("platform.setup.where.heading")} className="mt-2 grid sm:grid-cols-2 sm:gap-8">
+              <div role="radiogroup" aria-label={t("platform.setup.where.heading")} className="mt-1 grid sm:grid-cols-2 sm:gap-8">
                 {(
                   [
                     { id: "local" as const, icon: MonitorSmartphone, title: t("platform.setup.where.localTitle"), copy: t("platform.setup.where.localCopy"), off: false },
@@ -297,7 +300,7 @@ export default function Setup() {
             {where === "local" && (
             <section aria-label={t("platform.setup.mode.heading")}>
               <SheetHeading>{t("platform.setup.mode.heading")}</SheetHeading>
-              <div role="radiogroup" aria-label={t("platform.setup.mode.heading")} className="mt-2 grid sm:grid-cols-2 sm:gap-8">
+              <div role="radiogroup" aria-label={t("platform.setup.mode.heading")} className="mt-1 grid sm:grid-cols-2 sm:gap-8">
                 {(
                   [
                     { id: "solo" as const, icon: Bot, title: t("platform.setup.mode.soloTitle"), copy: t("platform.setup.mode.soloCopy") },
@@ -338,7 +341,7 @@ export default function Setup() {
             {where === "local" && (
             <section aria-label={t("platform.setup.seats.heading")}>
               <SheetHeading>{t("platform.setup.seats.heading")}</SheetHeading>
-              <div className="mt-2 flex flex-col">
+              <div className="mt-1 grid grid-cols-[28px_32px_minmax(0,1fr)_max-content] gap-x-3">
                 {seats.map((seat, i) => (
                   <SeatRow
                     key={i}
@@ -359,9 +362,8 @@ export default function Setup() {
           </div>
 
           {/* A4. Options de la partie (house rules — props figées, partagé avec Lobby) */}
-          <div className="mt-10">
-            <HouseRules options={options} onChange={(patch) => setOptions((o) => ({ ...o, ...patch }))} />
-          </div>
+          <Divider />
+          <HouseRules options={options} onChange={(patch) => setOptions((o) => ({ ...o, ...patch }))} />
         </motion.div>
 
         {/* -------- Section B — aperçu « registre » (colonnes 8–12, sticky) -------- */}
@@ -375,7 +377,7 @@ export default function Setup() {
           <div className="gz-classified !items-stretch !p-6 !text-left">
             <div className="relative">
               {/* the train on the platform at dawn, painted in the tiles' own hand */}
-              <img src="/setup-station.webp" alt="" draggable={false} className="mb-5 -mt-1 w-full rounded-md object-cover shadow-[0_6px_18px_rgba(0,0,0,.35)]" style={{ aspectRatio: "21 / 9" }} />
+              <img src="/setup-station.webp" alt="" draggable={false} className="mb-5 -mt-1 w-full border border-[var(--gz-ink-soft)] object-cover" style={{ aspectRatio: "21 / 9" }} />
               <p className="eyebrow-fell">{t("platform.setup.preview.label")}</p>
               <p className="mt-2 truncate font-fraunces text-[22px] font-medium leading-tight text-paper-100">
                 {tableTitle(tableName, lang)}
@@ -400,7 +402,7 @@ export default function Setup() {
                   ...optionChips,
                 ].map((chip, i) => (
                   <li key={chip} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-1.5 last:border-b-0">
-                    <span className="data-text w-5 text-[10.5px] text-iron-400 tnums">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="data-text w-5 text-iron-400 tnums">{String(i + 1).padStart(2, "0")}</span>
                     <span className="font-serif text-[13px] text-paper-100">{chip}</span>
                   </li>
                 ))}
@@ -416,7 +418,7 @@ export default function Setup() {
                 initial={canStart ? { boxShadow: "0 0 0 1px rgba(201,162,75,.6), 0 0 18px rgba(201,162,75,.28)" } : false}
                 animate={{ boxShadow: "0 0 0 0 rgba(201,162,75,0), 0 0 0 rgba(201,162,75,0)" }}
                 transition={{ duration: 0.6, ease }}
-                className="mt-5 rounded-lg"
+                className="mt-5"
               >
                 {where === "online" ? (
                   <button type="button" onClick={() => void openAtClub()} disabled={opening} className="gz-ticket gz-ticket-brass w-full justify-center !h-11">
@@ -452,7 +454,7 @@ export default function Setup() {
           const inner = (
             <>
               <item.icon size={16} className="shrink-0 text-brass-400" aria-hidden />
-              <span className="font-ui text-[12.5px] text-iron-400">{item.text}</span>
+              <span className={cn("font-ui text-[12.5px]", item.to ? "text-paper-100 underline decoration-[var(--gz-ink-soft)] underline-offset-[3px]" : "text-iron-400")}>{item.text}</span>
             </>
           );
           return (
@@ -464,7 +466,7 @@ export default function Setup() {
               transition={{ duration: 0.2, ease, delay: i * 0.06 }}
             >
               {item.to ? (
-                <Link to={item.to} className="flex items-center gap-2 transition-colors hover:[&>span]:text-paper-300">
+                <Link to={item.to} className="flex items-center gap-2 transition-colors hover:[&>span]:decoration-[rgb(var(--paper-100))]">
                   {inner}
                 </Link>
               ) : (

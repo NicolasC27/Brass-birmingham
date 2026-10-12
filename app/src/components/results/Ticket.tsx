@@ -177,8 +177,8 @@ export default function Ticket({ result, me, table }: { result: FinalResult; me:
   return (
     <div className="flex flex-col items-center gap-4">
       <canvas ref={cv} className="hidden" aria-hidden />
-      {src && <img src={src} alt={t('results.ticket.alt')} className="w-full max-w-[760px] shadow-[0_10px_30px_rgba(0,0,0,.45)]" width={W} height={H} />}
-      <button type="button" onClick={save} disabled={!src} className="btn-ledger">
+      {src && <img src={src} alt={t('results.ticket.alt')} className="h-auto w-full max-w-[760px] border border-[var(--gz-ink-soft)]" width={W} height={H} />}
+      <button type="button" onClick={save} disabled={!src} className="gz-ticket disabled:cursor-not-allowed disabled:opacity-50">
         <Download size={14} aria-hidden />
         {t('results.ticket.download')}
       </button>

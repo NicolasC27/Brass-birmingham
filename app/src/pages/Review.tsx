@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ArrowLeft, Bot, Eye, Loader2, Sparkles } from 'lucide-react';
-import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
+import { TOWN_BY_ID } from '@/game/data';
 import { describeAction } from '@/game/store';
 import { reviewGame, swingsFor } from '@/game/review';
 import type { Grade, Idle, Review as GameReview, SeatReview } from '@/game/review';
@@ -11,6 +11,9 @@ import type { Mark } from '@/components/results/ReviewCurve';
 import type { Note, Second } from '@/game/reviewWorker';
 import { heldFinal as readFinal } from '@/game/final';
 import { ShapeChip } from '@/components/game/TownInspector';
+import EmptyNotice from '@/components/results/EmptyNotice';
+import { seatInk } from '@/components/results/ink';
+import Segmented from '@/components/setup/Segmented';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
@@ -29,12 +32,13 @@ import { cn } from '@/lib/utils';
 const BAR = 5;
 /** the grades, from the move the machine would have played to the worst */
 const GRADE_ORDER: Grade[] = ['top', 'good', 'inaccuracy', 'mistake', 'blunder'];
+/* each told in an ink of the register, so the day reads them as the night */
 const GRADE_TONE: Record<Grade, string> = {
-  top: 'border-bottle-600/70 text-bottle-ink',
-  good: 'border-bottle-600/40 text-bottle-ink',
-  inaccuracy: 'border-brass-400/60 text-brass-400',
-  mistake: 'border-copper-500/70 text-copper-500',
-  blunder: 'border-rust-500/70 text-rust-400',
+  top: 'border-bottle-ink/70 text-bottle-ink',
+  good: 'border-bottle-ink/40 text-bottle-ink',
+  inaccuracy: 'border-brass-300/60 text-brass-300',
+  mistake: 'border-signal-ink/70 text-signal-ink',
+  blunder: 'border-rust-400/70 text-rust-400',
 };
 /** which judge reads the moves, by the reader's choice: the quick one
  *  weighs the table as it stands, the long one plays the replies out first */
@@ -44,7 +48,7 @@ type Depth = keyof typeof THINK;
 type Scope = 'seat' | 'table';
 
 
-const hexOf = (color: string | undefined): string => (color && PLAYER_COLORS[color]?.hex) || '#C9A45C';
+const hexOf = seatInk;
 
 /** a row of bars, longest against the widest figure on the table */
 function Bars({
@@ -68,18 +72,18 @@ function Bars({
         <li key={s.seat} className="flex items-center gap-2.5">
           <span className="flex w-[130px] shrink-0 items-center gap-1.5">
             <ShapeChip color={colors[s.seat]} size={10} />
-            <span className="truncate font-fell text-[13px] tracking-wide text-cream-100/90">{s.name}</span>
+            <span className="truncate font-ui text-[13px] font-medium text-paper-100">{s.name}</span>
           </span>
-          <span className="relative h-3.5 flex-1 overflow-hidden rounded-sm border border-brass-700/40 bg-coal-900/70">
+          <span className="relative h-3.5 flex-1 overflow-hidden border border-[var(--gz-ink-faint)] bg-enamel-700/60">
             <span
-              className="absolute inset-y-0 left-0 rounded-sm transition-[width] duration-500"
-              style={{ width: `${(of(s) / most) * 100}%`, background: colors[s.seat] ? hexOf(colors[s.seat]) : '#C9A45C', opacity: 0.85 }}
+              className="absolute inset-y-0 left-0 transition-[width] duration-500"
+              style={{ width: `${(of(s) / most) * 100}%`, background: hexOf(colors[s.seat]), opacity: 0.85 }}
             />
             {mark !== undefined && mark > 0 && (
-              <span aria-hidden className="absolute inset-y-0 w-px bg-cream-100/45" style={{ left: `${(mark / most) * 100}%` }} />
+              <span aria-hidden className="absolute inset-y-0 w-px bg-paper-100/70" style={{ left: `${(mark / most) * 100}%` }} />
             )}
           </span>
-          <span className="w-[150px] shrink-0 text-right font-mono text-[11.5px] text-cream-100/70 tnums">{label(s)}</span>
+          <span className="w-[150px] shrink-0 text-right font-mono text-[12px] text-paper-300 tnums">{label(s)}</span>
         </li>
       ))}
     </ul>
@@ -88,10 +92,11 @@ function Bars({
 
 function Section({ title, lead, children }: { title: string; lead?: string; children: ReactNode }) {
   return (
-    <section className="plate mt-6 rounded-lg px-5 py-4">
-      <h2 className="font-fell text-[15px] uppercase tracking-[0.08em] text-cream-100">{title}</h2>
-      {lead && <p className="mt-1 max-w-[62ch] font-sans text-[12.5px] leading-relaxed text-cream-100/60">{lead}</p>}
-      <div className="mt-4">{children}</div>
+    <section className="mt-12">
+      <h2 className="h2-section">{title}</h2>
+      <div aria-hidden className="gz-rule-double mt-2" />
+      {lead && <p className="mt-3 max-w-[72ch] font-ui text-[13.5px] leading-relaxed text-paper-300">{lead}</p>}
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
@@ -135,15 +140,16 @@ export default function Review() {
 
   if (!review || !final) {
     return (
-      <div className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-6 text-center">
-        {/* no felt is laid for this one: the notice stands on the club's own
-            page, so it takes the page's ink — cream measured 1.02 on the day's
-            paper, and the sentence simply was not there */}
-        <p className="font-fell text-lg text-paper-100">{t('results.review.missing')}</p>
-        <Link to="/results" className="btn-ledger">
-          {t('results.review.back')}
-        </Link>
-      </div>
+      <EmptyNotice
+        eyebrow={t('results.empty.eyebrow')}
+        title={t('results.review.title')}
+        actions={[
+          { to: '/results', label: t('results.review.back') },
+          { to: '/setup', label: t('platform.action.createTable') },
+        ]}
+      >
+        {t('results.review.missing')}
+      </EmptyNotice>
     );
   }
 
@@ -246,34 +252,31 @@ export default function Review() {
   const board = (at: number) => navigate(`/replay?at=${at}&from=review`);
 
   return (
-    <div className="relative min-h-[calc(100dvh-3.5rem)] pb-24">
-      <div aria-hidden className="tex-felt pointer-events-none absolute inset-0 opacity-60" />
-      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.06]" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{ background: 'radial-gradient(120% 80% at 50% 20%, transparent 40%, rgba(16,13,11,0.82) 100%)' }}
-      />
-
-      <div className="relative mx-auto max-w-[900px] px-6 pt-10">
-        <Link to="/results" className="mb-6 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400">
+    <div className="gz-measure pb-16 pt-8">
+      <div>
+        <Link to="/results" className="micro-label inline-flex items-center gap-1.5 text-iron-400 transition-colors hover:text-paper-100">
           <ArrowLeft className="h-3.5 w-3.5" />
           {t('results.review.back')}
         </Link>
 
-        <header>
-          <h1 className="font-fell text-[clamp(28px,4vw,42px)] leading-tight text-cream-100">{t('results.review.title')}</h1>
-          <div aria-hidden className="divider-brass mt-3 !mx-0 max-w-md" />
-          <p className="mt-3 max-w-[64ch] font-sans text-[13px] leading-relaxed text-cream-100/65">{t('results.review.lead')}</p>
+        <header className="mt-6">
+          <p className="eyebrow-fell">{t('results.empty.eyebrow')}</p>
+          <h1 className="display-page mt-2">{t('results.review.title')}</h1>
+          <p className="mt-2 max-w-[72ch] font-serif text-[15px] italic leading-relaxed text-paper-300">{t('results.review.lead')}</p>
+          <div aria-hidden className="gz-rule-double mt-5" />
         </header>
 
         {/* how the game ran, move by move */}
         <Section title={t('results.review.curve')} lead={t('results.review.curveLead')}>
-          <ReviewCurve curve={review.curve} seats={review.seats.map((x) => ({ name: x.name, color: colors[x.seat] }))} seat={mineSeat} marks={marks} onPick={board} />
+          {/* the chart is drawn to a fixed box and scales with it: held to
+              the reading width, its figures stay at the size of the text */}
+          <div className="max-w-[880px]">
+            <ReviewCurve curve={review.curve} seats={review.seats.map((x) => ({ name: x.name, color: colors[x.seat] }))} seat={mineSeat} marks={marks} onPick={board} />
+          </div>
           <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
             {review.seats.map((x) => (
-              <li key={x.seat} className="flex items-center gap-1.5 font-sans text-[11.5px] text-cream-100/70">
-                <span aria-hidden className="h-0.5 w-5 rounded-sm" style={{ background: hexOf(colors[x.seat]) }} />
+              <li key={x.seat} className="flex items-center gap-1.5 font-ui text-[12.5px] text-paper-300">
+                <span aria-hidden className="h-0.5 w-5" style={{ background: hexOf(colors[x.seat]) }} />
                 {x.name}
               </li>
             ))}
@@ -298,15 +301,15 @@ export default function Review() {
               const canal = s.canal.tiles + s.canal.links;
               const rail = s.rail ? s.rail.tiles + s.rail.links : 0;
               return (
-                <li key={s.seat} className="border-b border-brass-700/25 pb-3 last:border-0 last:pb-0">
-                  <p className="flex items-center gap-1.5 font-fell text-[14px] text-cream-100">
+                <li key={s.seat} className="border-b border-[var(--gz-ink-faint)] pb-3 last:border-0 last:pb-0">
+                  <p className="title-card flex items-center gap-1.5">
                     <ShapeChip color={colors[s.seat]} size={10} />
                     {s.name}
                     <span className="ml-auto font-mono text-[12.5px] tnums" style={{ color: hexOf(colors[s.seat]) }}>
                       {t('results.review.vp', { vp: s.vp })}
                     </span>
                   </p>
-                  <p className="mt-1 font-sans text-[12.5px] leading-relaxed text-cream-100/70">
+                  <p className="mt-1 font-ui text-[13px] leading-relaxed text-paper-300">
                     {t('results.review.sourcesCanal', { total: canal, tiles: s.canal.tiles, links: s.canal.links })}
                     {s.rail ? ` · ${t('results.review.sourcesRail', { total: rail, tiles: s.rail.tiles, links: s.rail.links })}` : ''}
                     {s.bonus > 0 ? ` · ${t(review.short ? 'results.review.sourcesClose' : 'results.review.sourcesBonus', { n: s.bonus })}` : ''}
@@ -323,18 +326,18 @@ export default function Review() {
           <ul className="flex flex-col gap-2.5">
             {seats.map((s) => (
               <li key={s.seat}>
-                <p className="flex items-center gap-1.5 font-fell text-[13px] text-cream-100/90">
+                <p className="title-card flex items-center gap-1.5">
                   <ShapeChip color={colors[s.seat]} size={10} />
                   {s.name}
-                  <span className="ml-auto font-mono text-[11.5px] text-cream-100/60 tnums">
+                  <span className="ml-auto font-mono text-[12px] font-normal text-paper-300 tnums">
                     {s.idle.length === 0 ? t('results.review.idleNone') : t('results.review.idleSome', { n: s.idle.length, vp: s.idleVp })}
                   </span>
                 </p>
                 {s.idle.length > 0 && (
-                  <p className="mt-0.5 font-mono text-[10.5px] leading-relaxed text-cream-100/50">{s.idle.map(tileName).join(' · ')}</p>
+                  <p className="mt-0.5 font-mono text-[11px] leading-relaxed text-iron-400">{s.idle.map(tileName).join(' · ')}</p>
                 )}
                 {s.sweptVp > 0 && (
-                  <p className="mt-0.5 font-sans text-[11.5px] text-rust-400">{t('results.review.swept', { n: s.swept.length, vp: s.sweptVp })}</p>
+                  <p className="mt-0.5 font-ui text-[12px] text-rust-400">{t('results.review.swept', { n: s.swept.length, vp: s.sweptVp })}</p>
                 )}
               </li>
             ))}
@@ -354,37 +357,37 @@ export default function Review() {
         {/* the chosen seat, round by round */}
         <Section title={t('results.review.rounds', { name: mine.name })} lead={t('results.review.roundsLead')}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[420px] border-collapse font-mono text-[11.5px] tnums">
+            <table className="gz-timetable min-w-[420px] font-mono text-[12px] tnums [&_td]:py-1.5">
               <thead>
-                <tr className="text-cream-100/45">
-                  <th className="border-b border-brass-700/40 py-1 text-left font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colRound')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colVp')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label text-brass-400">{t('results.review.colProj')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colIncome')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colPurse')}</th>
-                  <th className="border-b border-brass-700/40 py-1 text-right font-sans text-[10.5px] font-semibold uppercase tracking-label">{t('results.review.colSpent')}</th>
+                <tr>
+                  <th>{t('results.review.colRound')}</th>
+                  <th className="!text-right">{t('results.review.colVp')}</th>
+                  <th className="!text-right !text-brass-300">{t('results.review.colProj')}</th>
+                  <th className="!text-right">{t('results.review.colIncome')}</th>
+                  <th className="!text-right">{t('results.review.colPurse')}</th>
+                  <th className="!text-right">{t('results.review.colSpent')}</th>
                 </tr>
               </thead>
               <tbody>
                 {review.rounds.map((r, i) => (
-                  <tr key={`${r.era}-${r.round}-${i}`} className="text-cream-100/80">
-                    <td className="border-b border-brass-700/15 py-1 text-left font-sans text-[10.5px] text-cream-100/60">
+                  <tr key={`${r.era}-${r.round}-${i}`} className="text-paper-100">
+                    <td className="text-left font-ui text-[12px] text-paper-300">
                       {t(r.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: r.round })}
                     </td>
-                    <td className="border-b border-brass-700/15 py-1 text-right">{r.vp[mineSeat] ?? 0}</td>
-                    <td className="border-b border-brass-700/15 py-1 text-right text-brass-400">{r.proj[mineSeat] ?? 0}</td>
-                    <td className="border-b border-brass-700/15 py-1 text-right">{r.income[mineSeat] ?? 0}</td>
-                    <td className="border-b border-brass-700/15 py-1 text-right">£{r.money[mineSeat] ?? 0}</td>
-                    <td className="border-b border-brass-700/15 py-1 text-right text-cream-100/55">£{mine.spent[i] ?? 0}</td>
+                    <td className="text-right">{r.vp[mineSeat] ?? 0}</td>
+                    <td className="text-right text-brass-300">{r.proj[mineSeat] ?? 0}</td>
+                    <td className="text-right">{r.income[mineSeat] ?? 0}</td>
+                    <td className="text-right">£{r.money[mineSeat] ?? 0}</td>
+                    <td className="text-right text-iron-400">£{mine.spent[i] ?? 0}</td>
                   </tr>
                 ))}
-                <tr className="font-semibold text-cream-100">
-                  <td className="py-1.5 text-left font-sans text-[10.5px] uppercase tracking-[0.12em] text-brass-400">{t('results.review.colClose')}</td>
-                  <td className="py-1.5 text-right">{mine.vp}</td>
-                  <td className="py-1.5 text-right text-brass-400">{mine.vp}</td>
-                  <td className="py-1.5 text-right">{mine.income}</td>
-                  <td className="py-1.5 text-right">£{mine.money}</td>
-                  <td className="py-1.5 text-right text-cream-100/40">—</td>
+                <tr className="font-semibold text-paper-100 [&>td]:border-t [&>td]:border-[var(--gz-ink)]">
+                  <td className="micro-label text-left text-brass-300">{t('results.review.colClose')}</td>
+                  <td className="text-right">{mine.vp}</td>
+                  <td className="text-right text-brass-300">{mine.vp}</td>
+                  <td className="text-right">{mine.income}</td>
+                  <td className="text-right">£{mine.money}</td>
+                  <td className="text-right text-iron-400">—</td>
                 </tr>
               </tbody>
             </table>
@@ -394,7 +397,7 @@ export default function Review() {
         {/* the machine's own reading, asked for by hand */}
         <Section title={t('results.review.machine')} lead={t('results.review.machineLead')}>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-sans text-[10.5px] uppercase tracking-label text-cream-100/45">{t('results.review.whichSeat')}</span>
+            <span className="micro-label mr-1 text-iron-400">{t('results.review.whichSeat')}</span>
             {review.seats.map((s) => (
               <button
                 key={s.seat}
@@ -402,8 +405,9 @@ export default function Review() {
                 aria-pressed={s.seat === mineSeat}
                 onClick={() => pick(s.seat)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-md border px-2 py-1 font-fell text-[12.5px] transition-colors',
-                  s.seat === mineSeat ? 'border-brass-400 bg-brass-500/15 text-cream-100' : 'border-brass-700/50 text-cream-100/60 hover:text-brass-400',
+                  'flex items-center gap-1.5 border px-2.5 py-1 font-ui text-[13px] font-medium transition-colors',
+                  /* the place being read is set in full ink on a ruled ground */
+                  s.seat === mineSeat ? 'border-[rgb(var(--paper-100))] bg-enamel-700 text-paper-100' : 'border-[var(--gz-line-control)] text-paper-300 hover:border-[var(--gz-ink)] hover:text-paper-100',
                 )}
               >
                 <ShapeChip color={colors[s.seat]} size={9} />
@@ -414,34 +418,21 @@ export default function Review() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="font-sans text-[10.5px] uppercase tracking-label text-cream-100/45">{t('results.review.howLong')}</span>
-            <div className="flex overflow-hidden rounded-md border border-brass-700/60">
-              {(Object.keys(THINK) as Depth[]).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  aria-pressed={depth === d}
-                  onClick={() => setDepth(d)}
-                  className={cn('px-2.5 py-1 font-sans text-[10.5px] font-bold uppercase tracking-[0.1em]', depth === d ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400')}
-                >
-                  {t(`results.review.depth.${d}`)}
-                </button>
-              ))}
-            </div>
-            <div className="flex overflow-hidden rounded-md border border-brass-700/60">
-              {(['seat', 'table'] as Scope[]).map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  aria-pressed={scope === k}
-                  onClick={() => setScope(k)}
-                  className={cn('px-2.5 py-1 font-sans text-[10.5px] font-bold uppercase tracking-[0.1em]', scope === k ? 'bg-brass-400 text-ink-900' : 'text-cream-100/60 hover:text-brass-400')}
-                >
-                  {t(`results.review.scope.${k}`)}
-                </button>
-              ))}
-            </div>
-            <button type="button" onClick={ask} disabled={busy} className="btn-strike !h-9 !px-4 !text-[10.5px] disabled:opacity-50">
+            <span className="micro-label mr-1 text-iron-400">{t('results.review.howLong')}</span>
+            <Segmented<Depth>
+              ariaLabel={t('results.review.howLong')}
+              value={depth}
+              onChange={setDepth}
+              options={(Object.keys(THINK) as Depth[]).map((d) => ({ value: d, label: t(`results.review.depth.${d}`) }))}
+            />
+            <Segmented<Scope>
+              className="ml-3"
+              ariaLabel={t('results.review.whichSeat')}
+              value={scope}
+              onChange={setScope}
+              options={(['seat', 'table'] as Scope[]).map((k) => ({ value: k, label: t(`results.review.scope.${k}`) }))}
+            />
+            <button type="button" onClick={ask} disabled={busy} className="gz-ticket gz-ticket-brass ml-auto disabled:cursor-wait disabled:opacity-60">
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
               {busy ? t('results.review.machineBusy') : scope === 'table' ? t('results.review.machineAskAll') : t('results.review.machineAsk', { name: mine.name })}
             </button>
@@ -449,45 +440,45 @@ export default function Review() {
 
           {busy && (
             <div className="mt-3 flex flex-col gap-1.5">
-              <span className="relative h-2 overflow-hidden rounded-sm border border-brass-700/40 bg-coal-900/70">
+              <span className="relative h-2 overflow-hidden border border-[var(--gz-ink-faint)] bg-enamel-700/60">
                 <span
-                  className="absolute inset-y-0 left-0 rounded-sm bg-brass-400/80 transition-[width] duration-200"
+                  className="absolute inset-y-0 left-0 bg-brass-400/80 transition-[width] duration-200"
                   style={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 4}%` }}
                 />
               </span>
-              <span className="font-mono text-[10.5px] text-cream-100/55 tnums">
+              <span className="font-mono text-[11px] text-iron-400 tnums">
                 {t('results.review.machineRead', { done: progress.done, total: progress.total })}
                 {progress.left > 0 ? ` · ${t('results.review.machineLeft', { s: progress.left })}` : ''}
               </span>
             </div>
           )}
 
-          {failed && <p className="mt-3 font-sans text-[12.5px] text-rust-400">{t('results.review.machineFailed')}</p>}
+          {failed && <p className="mt-3 font-ui text-[13px] text-rust-400">{t('results.review.machineFailed')}</p>}
 
           {graded.length > 0 && (
             <>
               {/* the card a chess review opens with */}
-              <div className="mt-4 flex flex-wrap items-end gap-x-6 gap-y-3 border-t border-brass-700/30 pt-4">
+              <div className="mt-5 flex flex-wrap items-end gap-x-6 gap-y-3 border-t border-[var(--gz-ink-soft)] pt-4">
                 <p className="flex flex-col">
-                  <span className="font-fell text-[30px] leading-none text-brass-400 tnums">{rightness}%</span>
-                  <span className="mt-1 font-sans text-[10.5px] uppercase tracking-label text-cream-100/50">{t('results.review.rightness')}</span>
+                  <span className="font-fraunces text-[30px] leading-none text-brass-300 tnums">{rightness}%</span>
+                  <span className="micro-label mt-1 text-iron-400">{t('results.review.rightness')}</span>
                 </p>
                 <ul className="flex flex-wrap items-center gap-1.5">
                   {counts.map((x) => (
                     <li
                       key={x.grade}
-                      className={cn('rounded-md border px-2 py-1 font-sans text-[10.5px]', GRADE_TONE[x.grade], x.n === 0 && 'opacity-35')}
+                      className={cn('border px-2 py-1 font-ui text-[11.5px]', x.n === 0 ? 'border-[var(--gz-ink-faint)] text-iron-400' : GRADE_TONE[x.grade])}
                     >
                       <span className="font-mono font-bold tnums">{x.n}</span> {t(`results.review.grade.${x.grade}`)}
                     </li>
                   ))}
                 </ul>
               </div>
-              <p className="mt-2 font-sans text-[11.5px] leading-relaxed text-cream-100/50">{t('results.review.rightnessLead', { n: graded.length })}</p>
+              <p className="mt-2 max-w-[72ch] font-ui text-[12.5px] leading-relaxed text-paper-300">{t('results.review.rightnessLead', { n: graded.length })}</p>
 
               {readSeats.length > 1 && (
-                <div className="mt-4 border-t border-brass-700/30 pt-3">
-                  <p className="mb-2 font-sans text-[10.5px] uppercase tracking-label text-cream-100/45">{t('results.review.everySeat')}</p>
+                <div className="mt-4 border-t border-[var(--gz-ink-soft)] pt-3">
+                  <p className="micro-label mb-2 text-iron-400">{t('results.review.everySeat')}</p>
                   <ul className="flex flex-col gap-1.5">
                     {[...readSeats]
                       .sort((a, b) => soundness(reading[b.seat] ?? []) - soundness(reading[a.seat] ?? []))
@@ -503,12 +494,12 @@ export default function Review() {
                             >
                               <span className="flex w-[130px] shrink-0 items-center gap-1.5">
                                 <ShapeChip color={colors[x.seat]} size={10} />
-                                <span className={cn('truncate font-fell text-[13px]', x.seat === mineSeat ? 'text-cream-100' : 'text-cream-100/65')}>{x.name}</span>
+                                <span className={cn('truncate font-ui text-[13px] font-medium', x.seat === mineSeat ? 'text-paper-100' : 'text-paper-300')}>{x.name}</span>
                               </span>
-                              <span className="relative h-3 flex-1 overflow-hidden rounded-sm border border-brass-700/40 bg-coal-900/70">
-                                <span className="absolute inset-y-0 left-0 rounded-sm" style={{ width: `${pc}%`, background: hexOf(colors[x.seat]), opacity: x.seat === mineSeat ? 0.9 : 0.5 }} />
+                              <span className="relative h-3 flex-1 overflow-hidden border border-[var(--gz-ink-faint)] bg-enamel-700/60">
+                                <span className="absolute inset-y-0 left-0" style={{ width: `${pc}%`, background: hexOf(colors[x.seat]), opacity: x.seat === mineSeat ? 0.9 : 0.5 }} />
                               </span>
-                              <span className="w-[92px] shrink-0 text-right font-mono text-[11.5px] text-cream-100/70 tnums">
+                              <span className="w-[92px] shrink-0 text-right font-mono text-[12px] text-paper-300 tnums">
                                 {t('results.review.seatScore', { pc, n: (reading[x.seat] ?? []).length })}
                               </span>
                             </button>
@@ -519,24 +510,24 @@ export default function Review() {
                 </div>
               )}
 
-              {worst.length === 0 && <p className="mt-3 font-sans text-[12.5px] text-cream-100/75">{t('results.review.machineAgrees', { name: mine.name })}</p>}
+              {worst.length === 0 && <p className="mt-3 font-ui text-[13px] text-paper-300">{t('results.review.machineAgrees', { name: mine.name })}</p>}
 
               {worst.length > 0 && (
                 <>
-                  <p className="mt-5 font-fell text-[13px] uppercase tracking-[0.08em] text-cream-100/85">{t('results.review.otherwise')}</p>
+                  <p className="title-card mt-6">{t('results.review.otherwise')}</p>
                   <ol className="mt-2 flex flex-col gap-2">
                     {worst.map((m) => (
-                      <li key={m.at} className="rounded-md border border-brass-700/40 bg-coal-900/50 px-3 py-2">
-                        <p className="flex flex-wrap items-center gap-2 font-sans text-[10.5px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">
+                      <li key={m.at} className="border border-[var(--gz-ink-soft)] bg-enamel-850 px-3 py-2">
+                        <p className="micro-label flex flex-wrap items-center gap-2 text-iron-400">
                           {t(m.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: m.round })}
-                          <span className={cn('rounded-sm border px-1.5 py-px tracking-[0.1em]', GRADE_TONE[m.grade])}>{t(`results.review.grade.${m.grade}`)}</span>
-                          <button type="button" onClick={() => board(m.at)} className="ml-auto flex items-center gap-1 tracking-[0.1em] text-cream-100/45 hover:text-brass-400">
+                          <span className={cn('border px-1.5 py-px', GRADE_TONE[m.grade])}>{t(`results.review.grade.${m.grade}`)}</span>
+                          <button type="button" onClick={() => board(m.at)} className="ml-auto flex items-center gap-1 text-paper-300 underline decoration-[var(--gz-ink-soft)] underline-offset-[3px] hover:text-paper-100">
                             <Eye className="h-3 w-3" /> {t('results.review.onTheBoard')}
                           </button>
                         </p>
-                        <p className="mt-1 font-mono text-[11.5px] text-cream-100/85">{t('results.review.yours', { move: describeAction(m.yours) })}</p>
-                        <p className="font-mono text-[11.5px] text-brass-400">{t('results.review.theirs', { move: m.theirs ? describeAction(m.theirs) : '—' })}</p>
-                        <p className="mt-0.5 font-sans text-[10.5px] text-cream-100/40">
+                        <p className="mt-1 font-mono text-[12px] text-paper-100">{t('results.review.yours', { move: describeAction(m.yours) })}</p>
+                        <p className="font-mono text-[12px] text-brass-300">{t('results.review.theirs', { move: m.theirs ? describeAction(m.theirs) : '—' })}</p>
+                        <p className="mt-0.5 font-ui text-[11.5px] text-iron-400">
                           {t('results.review.cost', { pc: Math.round(m.loss * 100) })} · {t('results.review.among', { n: m.choices })}
                         </p>
                       </li>
@@ -553,20 +544,22 @@ export default function Review() {
           <Section title={t('results.review.turns', { name: mine.name })} lead={t('results.review.turnsLead')}>
             <ol className="flex flex-col gap-2">
               {turns.map((x) => (
-                <li key={x.at} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-brass-700/20 pb-2 last:border-0 last:pb-0">
-                  <span className="font-sans text-[10.5px] font-semibold uppercase tracking-[0.16em] text-cream-100/40">
+                <li key={x.at} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-[var(--gz-ink-faint)] pb-2 last:border-0 last:pb-0">
+                  {/* the turn and the seat are columns: the names and the
+                      moves start at one place down the list */}
+                  <span className="micro-label w-[5.5rem] shrink-0 text-iron-400">
                     {t(x.era === 'canal' ? 'results.review.atCanal' : 'results.review.atRail', { round: x.round })}
                   </span>
-                  <span className="flex items-center gap-1.5 font-fell text-[13px] text-cream-100/90">
+                  <span className="flex min-w-[9.5rem] items-center gap-1.5 font-ui text-[13px] font-medium text-paper-100">
                     <ShapeChip color={colors[x.by]} size={9} />
                     {review.seats[x.by]?.name}
                   </span>
-                  <span className="min-w-0 flex-1 truncate font-mono text-[11.5px] text-cream-100/70">{moveOf(x.at)}</span>
+                  <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-paper-300">{moveOf(x.at)}</span>
                   <span className={cn('font-mono text-[12.5px] font-bold tnums', x.shift > 0 ? 'text-bottle-ink' : 'text-rust-400')}>
                     {x.shift > 0 ? '+' : ''}
                     {x.shift}
                   </span>
-                  <button type="button" onClick={() => board(x.at)} className="font-sans text-[10.5px] uppercase tracking-[0.12em] text-cream-100/40 hover:text-brass-400">
+                  <button type="button" onClick={() => board(x.at)} className="micro-label text-paper-300 underline decoration-[var(--gz-ink-soft)] underline-offset-[3px] hover:text-paper-100">
                     {t('results.review.onTheBoard')}
                   </button>
                 </li>
@@ -575,11 +568,11 @@ export default function Review() {
           </Section>
         )}
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link to="/replay" className="btn-ledger !h-11">
+        <div className="mt-14 flex flex-wrap items-center gap-3 border-t border-[var(--gz-ink-soft)] pt-6">
+          <Link to="/replay" className="gz-ticket">
             {t('results.page.replay')}
           </Link>
-          <Link to="/results" className="btn-ledger !h-11">
+          <Link to="/results" className="gz-ticket">
             {t('results.review.back')}
           </Link>
         </div>

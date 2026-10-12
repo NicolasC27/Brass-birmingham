@@ -14,9 +14,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+/* the canal told in green, the rail in copper — both the register's inks */
 const ERA_ACCENT: Record<string, string> = {
-  Canal: "text-bottle-600",
-  Rail: "text-copper-500",
+  Canal: "text-bottle-ink",
+  Rail: "text-rust-400",
 };
 
 /**
@@ -45,21 +46,17 @@ export default function ScoringTable({
   let row = 0;
 
   return (
-    <div className="plate relative overflow-hidden">
-      <div
-        aria-hidden
-        className="tex-paper pointer-events-none absolute inset-0 opacity-[0.05]"
-      />
+    <div className="relative overflow-hidden border border-[var(--gz-ink-soft)] bg-enamel-850">
       <Table className="relative">
         <TableHeader>
-          <TableRow className="border-b border-brass-700/50 hover:bg-transparent">
-            <TableHead className="font-fell text-sm uppercase tracking-[0.06em] text-brass-500">
+          <TableRow className="border-b border-[var(--gz-ink)] hover:bg-transparent">
+            <TableHead className="micro-label text-iron-400">
               {t("results.table.header")}
             </TableHead>
             {players.map((p) => (
               <TableHead key={p.name} className="text-right">
                 <span className="inline-flex items-center justify-end gap-2">
-                  <span className="max-w-[120px] truncate font-sans text-[13px] font-semibold text-cream-100">
+                  <span className="max-w-[140px] truncate font-ui text-[13px] font-semibold text-paper-100">
                     {p.name}
                   </span>
                   <PlayerToken color={p.color} size={18} />
@@ -76,7 +73,7 @@ export default function ScoringTable({
             return [
               <TableRow
                 key={`${era.name}-head`}
-                className="cursor-pointer border-b border-coal-700/70 bg-coal-800/60 hover:bg-coal-800"
+                className="cursor-pointer border-b border-[var(--gz-ink-soft)] bg-lacquer-900/60 hover:bg-enamel-800"
                 onClick={() => setOpen((o) => ({ ...o, [era.name]: !isOpen }))}
                 aria-expanded={isOpen}
               >
@@ -89,28 +86,28 @@ export default function ScoringTable({
                   >
                     <ChevronDown
                       className={cn(
-                        "h-3.5 w-3.5 text-brass-500 transition-transform duration-200",
+                        "h-3.5 w-3.5 text-iron-400 transition-transform duration-200",
                         !isOpen && "-rotate-90",
                       )}
                     />
-                    <span className={cn("font-fell text-sm uppercase tracking-[0.08em]", ERA_ACCENT[era.name])}>
+                    <span className={cn("micro-label", ERA_ACCENT[era.name])}>
                       {t(era.name === "Canal" ? "results.table.eraCanal" : "results.table.eraRail")}
                     </span>
                   </motion.span>
                 </TableCell>
               </TableRow>,
               isOpen && (
-                <TableRow key={`${era.name}-scores`} className="border-b border-coal-700/50 hover:bg-transparent">
+                <TableRow key={`${era.name}-scores`} className="border-b border-[var(--gz-ink-faint)] hover:bg-transparent">
                   <motion.td
                     initial={{ opacity: 0, y: 8 }}
                     animate={reveal ? { opacity: 1, y: 0 } : {}}
                     transition={{ delay: 0.2 + scoreRow * 0.06, duration: 0.2 }}
-                    className="pl-8 font-sans text-[13px] text-cream-100/75"
+                    className="pl-8 font-ui text-[13px] text-paper-300"
                   >
                     {t("results.table.vpScored")}
                   </motion.td>
                   {players.map((p, i) => (
-                    <TableCell key={p.name} className="text-right font-mono text-sm text-cream-100 tabular-nums">
+                    <TableCell key={p.name} className="text-right font-mono text-sm text-paper-100 tabular-nums">
                       {era.scores[i] ?? 0}
                     </TableCell>
                   ))}
@@ -121,17 +118,17 @@ export default function ScoringTable({
 
           {/* What fell outside the eras, when anything did */}
           {aside.some((v) => v !== 0) && (
-            <TableRow className="border-b border-coal-700/40 hover:bg-transparent">
+            <TableRow className="border-b border-[var(--gz-ink-faint)] hover:bg-transparent">
               <motion.td
                 initial={{ opacity: 0, y: 8 }}
                 animate={reveal ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.2 }}
-                className="pl-8 font-sans text-[13px] text-cream-100/75"
+                className="pl-8 font-ui text-[13px] text-paper-300"
               >
                 {t("results.table.aside")}
               </motion.td>
               {players.map((p, i) => (
-                <TableCell key={p.name} className="text-right font-mono text-sm text-cream-100 tabular-nums">
+                <TableCell key={p.name} className="text-right font-mono text-sm text-paper-100 tabular-nums">
                   {aside[i] > 0 ? `+${aside[i]}` : aside[i]}
                 </TableCell>
               ))}
@@ -139,14 +136,14 @@ export default function ScoringTable({
           )}
 
           {/* Total — brass line */}
-          <TableRow className="border-y border-brass-700/70 bg-brass-500/[0.07] hover:bg-brass-500/[0.07]">
-            <TableCell className="font-display text-base font-bold text-brass-400">
+          <TableRow className="border-y border-[var(--gz-ink)] bg-brass-500/[0.07] hover:bg-brass-500/[0.07]">
+            <TableCell className="font-fraunces text-base font-medium text-paper-100">
               {t("results.table.total")}
             </TableCell>
             {players.map((p) => (
               <TableCell
                 key={p.name}
-                className="text-right font-display text-lg font-bold text-brass-400 tabular-nums"
+                className="text-right font-mono text-lg font-semibold text-brass-300 tabular-nums"
               >
                 {p.vp}
               </TableCell>
@@ -161,17 +158,17 @@ export default function ScoringTable({
               [t("results.table.tilesBuilt"), players.map((p) => String(p.industries))],
             ] as [string, string[]][]
           ).map(([label, cells], r) => (
-            <TableRow key={label} className="border-b border-coal-700/40 hover:bg-transparent">
+            <TableRow key={label} className="border-b border-[var(--gz-ink-faint)] hover:bg-transparent">
               <motion.td
                 initial={{ opacity: 0, y: 8 }}
                 animate={reveal ? { opacity: 1, y: 0 } : {}}
                 transition={{ delay: 0.35 + r * 0.06, duration: 0.2 }}
-                className="pl-8 font-sans text-[13px] italic text-cream-100/55"
+                className="pl-8 font-serif text-[13px] italic text-paper-300"
               >
                 {label}
               </motion.td>
               {cells.map((c, i) => (
-                <TableCell key={players[i].name} className="text-right font-mono text-[13px] text-cream-100/65 tabular-nums">
+                <TableCell key={players[i].name} className="text-right font-mono text-[13px] text-paper-300 tabular-nums">
                   {c}
                 </TableCell>
               ))}

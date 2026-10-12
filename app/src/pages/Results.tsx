@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, Beer, BookOpen, LineChart, RotateCcw, Share2, Check } from "lucide-react";
 import { useGame } from "@/game/store";
-import { PLAYER_COLORS } from "@/game/data";
 import { useTable } from "@/online/lobby";
 import { recordAgainst } from "@/online/rivals";
 import { useDesk, useSession } from "@/online/session";
@@ -16,7 +15,8 @@ import TimelineFrieze from "@/components/results/TimelineFrieze";
 import Ticket from "@/components/results/Ticket";
 import { homeGame } from "@/game/home";
 import ScoreCurves from "@/components/results/ScoreCurves";
-import EmberParticles from "@/components/results/EmberParticles";
+import EmptyNotice from "@/components/results/EmptyNotice";
+import { seatInk } from "@/components/results/ink";
 import {
   rankPlayers,
   readFinalResult,
@@ -73,36 +73,16 @@ function EmberBurst() {
 function EmptyState() {
   const t = useT();
   return (
-    <div className="relative flex min-h-[calc(100dvh-3.5rem)] items-center justify-center px-6 py-24">
-      <div aria-hidden className="tex-felt pointer-events-none absolute inset-0 opacity-60" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 90% at 50% 35%, transparent 35%, rgba(16,13,11,0.8) 100%)",
-        }}
-      />
-      <div className="plaque plaque-rivets relative max-w-[560px] px-8 py-12 text-center sm:px-12">
-        <p className="font-sans text-xs font-semibold uppercase tracking-[0.3em] text-cream-100/70">
-          {t("results.empty.eyebrow")}
-        </p>
-        <h1 className="engraved-brass mt-4 font-display text-4xl font-black">
-          {t("results.empty.title")}
-        </h1>
-        <p className="mx-auto mt-4 max-w-sm font-sans text-sm leading-relaxed text-cream-100/85">
-          {t("results.empty.body")}
-        </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link to="/setup" className="btn-strike">
-            {t("results.empty.setTable")}
-          </Link>
-          <Link to="/" className="btn-ledger">
-            {t("results.empty.backTitle")}
-          </Link>
-        </div>
-      </div>
-    </div>
+    <EmptyNotice
+      eyebrow={t("results.empty.eyebrow")}
+      title={t("results.empty.title")}
+      actions={[
+        { to: "/setup", label: t("results.empty.setTable") },
+        { to: "/", label: t("results.empty.backTitle") },
+      ]}
+    >
+      {t("results.empty.body")}
+    </EmptyNotice>
   );
 }
 
@@ -188,33 +168,29 @@ export default function Results() {
     window.setTimeout(() => setCopied(false), 1500);
   };
 
-  return (
-    <div className="relative min-h-[calc(100dvh-3.5rem)] pb-20">
-      {/* Felt surround + soot vignette; textures stay ≤12% behind text */}
-      <div aria-hidden className="tex-felt pointer-events-none absolute inset-0 opacity-60" />
-      <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.06]" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(120% 80% at 50% 20%, transparent 35%, rgba(16,13,11,0.82) 100%)",
-        }}
-      />
-      <EmberParticles density={16} />
+  /* a section of the account: its heading over the printer's double rule */
+  const heading = (title: string) => (
+    <>
+      <h2 className="h2-section">{title}</h2>
+      <div aria-hidden className="gz-rule-double mt-2" />
+    </>
+  );
 
-      <div className="relative mx-auto max-w-[1100px] px-6 pt-12">
+  return (
+    <div className="gz-measure pb-16 pt-8">
+      <div>
         <Link
           to="/"
-          className="mb-6 inline-flex items-center gap-1.5 font-sans text-xs font-semibold uppercase tracking-[0.12em] text-cream-100/60 transition-colors hover:text-brass-400"
+          className="micro-label inline-flex items-center gap-1.5 text-iron-400 transition-colors hover:text-paper-100"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           {t("results.page.back")}
         </Link>
 
         {/* 1 — Title reveal, word by word */}
-        <header className="text-center">
-          <h1 className="font-fell text-[clamp(32px,5vw,52px)] leading-tight text-cream-100">
+        <header className="mt-6">
+          <p className="eyebrow-fell">{tableName || t("results.ticket.route")}</p>
+          <h1 className="display-hero mt-2">
             {t("results.page.title")
               .split(" ")
               .map((w, i, a) => (
@@ -235,10 +211,11 @@ export default function Results() {
             initial={{ scaleX: 0 }}
             animate={{ scaleX: 1 }}
             transition={{ delay: 0.35, duration: 0.5, ease: "easeInOut" }}
-            className="divider-brass mt-4 max-w-md"
+            style={{ transformOrigin: "left" }}
+            className="gz-rule-double mt-5"
           />
           {!settled && (
-            <p className="mt-3 font-sans text-[10.5px] uppercase tracking-[0.2em] text-cream-100/40">
+            <p className="micro-label mt-3 text-iron-400">
               {t("results.page.skip")}
             </p>
           )}
@@ -257,7 +234,7 @@ export default function Results() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-6 text-center font-mono text-sm text-cream-100/65 tabular-nums"
+              className="mt-6 text-center font-mono text-[13px] text-paper-300 tabular-nums"
             >
               {tiebreak}
             </motion.p>
@@ -272,10 +249,7 @@ export default function Results() {
           transition={{ duration: 0.35 }}
           className={cn("mt-14", phase < 2 && "pointer-events-none")}
         >
-          <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">
-            {t("results.page.scoringTitle")}
-          </h2>
-          <div className="divider-brass mt-3 !mx-0" />
+          {heading(t("results.page.scoringTitle"))}
           <div className="mt-6">
             <ScoringTable result={result} reveal={phase >= 2} />
           </div>
@@ -290,10 +264,7 @@ export default function Results() {
             transition={{ duration: 0.35, delay: 0.1 }}
             className={cn("mt-14", phase < 2 && "pointer-events-none")}
           >
-            <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">
-              {t("results.page.curvesTitle")}
-            </h2>
-            <div className="divider-brass mt-3 !mx-0" />
+            {heading(t("results.page.curvesTitle"))}
             <div className="mt-6">
               <ScoreCurves result={result} reveal={phase >= 2} />
             </div>
@@ -317,8 +288,7 @@ export default function Results() {
           const ticketSeat = mySeat >= 0 ? mySeat : byName >= 0 ? byName : result.players.findIndex((p) => !p.bot);
           return ticketSeat >= 0 && (
           <motion.section initial={false} animate={{ opacity: settled ? 1 : 0, y: settled ? 0 : 16 }} transition={{ duration: 0.35 }} className={cn("mt-14", !settled && "pointer-events-none")} aria-label={t("results.ticket.heading")}>
-            <h2 className="font-fell text-lg uppercase tracking-[0.06em] text-cream-100">{t("results.ticket.heading")}</h2>
-            <div className="divider-brass mt-3 !mx-0" />
+            {heading(t("results.ticket.heading"))}
             <div className="mt-6">
               <Ticket result={result} me={ticketSeat} table={tableName} />
             </div>
@@ -344,23 +314,23 @@ export default function Results() {
           });
           if (!rows.some((r) => r.title || r.raised || r.record)) return null;
           return (
-            <motion.div initial={false} animate={{ opacity: settled ? 1 : 0 }} transition={{ duration: 0.3 }} className="plaque mx-auto mt-10 w-[min(560px,92vw)] rounded-md px-4 py-3">
-              <p className="engraved-brass mb-2 text-center font-fell text-[12.5px] uppercase tracking-label">{t("results.titles.heading")}</p>
+            <motion.div initial={false} animate={{ opacity: settled ? 1 : 0 }} transition={{ duration: 0.3 }} className="gz-classified mx-auto mt-14 w-full max-w-[560px] !items-stretch !px-6 !py-5">
+              <p className="eyebrow-fell mb-2 text-center">{t("results.titles.heading")}</p>
               <ul className="flex flex-col gap-1">
                 {rows.map((r) => (
-                  <li key={r.index} className="flex items-center gap-3 font-sans text-[13px] text-cream-100/85">
-                    <span className="font-fell text-[14px]" style={{ color: PLAYER_COLORS[r.player.color]?.hex }}>{r.player.name}</span>
-                    {r.title && <span className="rounded-sm border border-brass-700/60 px-1.5 py-px font-fell text-[11.5px] tracking-wide text-brass-400">{t(`results.titles.${r.title}`)}</span>}
-                    {r.record && <span className="font-mono text-[10.5px] text-cream-100/55">{r.record}</span>}
+                  <li key={r.index} className="flex items-center gap-3 border-b border-[var(--gz-ink-faint)] py-1.5 font-ui text-[13px] text-paper-300 last:border-b-0">
+                    <span className="title-card" style={{ color: seatInk(r.player.color) }}>{r.player.name}</span>
+                    {r.title && <span className="micro-label border border-[var(--gz-ink-soft)] px-1.5 py-px text-paper-100">{t(`results.titles.${r.title}`)}</span>}
+                    {r.record && <span className="data-text text-iron-400">{r.record}</span>}
                     {r.raised && (
-                      <span className="ml-auto flex items-center gap-1 text-brass-400" title={t("results.toast.raised", { name: r.player.name })} aria-label={t("results.toast.raised", { name: r.player.name })}>
+                      <span className="ml-auto flex items-center gap-1 text-brass-300" title={t("results.toast.raised", { name: r.player.name })} aria-label={t("results.toast.raised", { name: r.player.name })}>
                         <Beer className={cn("h-4 w-4", clinked && "animate-bounce")} />
                       </span>
                     )}
                   </li>
                 ))}
               </ul>
-              {clinked && <p className="mt-2 text-center font-fell text-[12.5px] italic text-brass-400">{t("results.toast.clink")}</p>}
+              {clinked && <p className="mt-2 text-center font-serif text-[13px] italic text-brass-300">{t("results.toast.clink")}</p>}
             </motion.div>
           );
         })()}
@@ -369,12 +339,12 @@ export default function Results() {
           animate={{ opacity: settled ? 1 : 0 }}
           transition={{ duration: 0.3 }}
           className={cn(
-            "mt-16 flex flex-wrap items-center justify-center gap-4",
+            "mt-14 flex flex-wrap items-center gap-3 border-t border-[var(--gz-ink-soft)] pt-6",
             !settled && "pointer-events-none",
           )}
         >
           {canToast && (
-            <button type="button" onClick={() => sendToast()} className="btn-ledger !h-12" aria-label={t("results.toast.aria")}>
+            <button type="button" onClick={() => sendToast()} className="gz-ticket" aria-label={t("results.toast.aria")}>
               <Beer className="h-4 w-4" />
               {t("results.toast.button")}
             </button>
@@ -382,27 +352,27 @@ export default function Results() {
           <button
             type="button"
             onClick={handleRevanche}
-            className="btn-strike relative !h-12 !px-8"
+            className="gz-ticket gz-ticket-brass relative"
           >
             <RotateCcw className="h-4 w-4" />
             {t("results.actions.revanche")}
             {bursting && <EmberBurst />}
           </button>
-          <Link to="/replay" className="btn-ledger !h-12" aria-label={t("results.page.replayAria")}>
+          <Link to="/replay" className="gz-ticket" aria-label={t("results.page.replayAria")}>
             {t("results.page.replay")}
           </Link>
-          <Link to="/review" className="btn-ledger !h-12">
+          <Link to="/review" className="gz-ticket">
             <LineChart className="h-4 w-4" />
             {t("results.review.title")}
           </Link>
-          <Link to="/" className="btn-ledger !h-12">
+          <Link to="/" className="gz-ticket">
             {t("results.actions.backToMenu")}
           </Link>
-          <Link to="/rules" className="btn-ledger !h-12">
+          <Link to="/rules" className="gz-ticket">
             <BookOpen className="h-4 w-4" />
             {t("results.actions.consultManual")}
           </Link>
-          <button type="button" onClick={handleShare} className="btn-ledger !h-12 w-[210px]">
+          <button type="button" onClick={handleShare} className="gz-ticket min-w-[210px] justify-center">
             {copied ? <Check className="h-4 w-4" /> : <Share2 className="h-4 w-4" />}
             {copied ? t("results.share.copied") : t("results.share.share")}
           </button>
