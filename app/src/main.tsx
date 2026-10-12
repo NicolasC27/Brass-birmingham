@@ -20,6 +20,13 @@ import '@fontsource/inter/600.css'
 import '@fontsource/ibm-plex-mono/400.css'
 import '@fontsource/ibm-plex-mono/500.css'
 import '@fontsource/ibm-plex-mono/600.css'
+/* the journal's own hands, kept here rather than asked of Google: Spectral
+   400 and its italic (the body and the standfirst — no heavier weight is
+   set anywhere), IM Fell English SC (the eyebrows and the plates' titles).
+   Playfair Display and Archivo still come from Google for /game */
+import '@fontsource/spectral/400.css'
+import '@fontsource/spectral/400-italic.css'
+import '@fontsource/im-fell-english-sc/400.css'
 import './index.css'
 import App from './App.tsx'
 import { installDesktopZoom } from './desktop/zoom'
