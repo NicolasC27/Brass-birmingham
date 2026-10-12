@@ -34,7 +34,7 @@ function Prose({ text }: { text: string }) {
     <p className="font-ui text-[14px] leading-relaxed text-paper-300">
       {parts.map((p, i) =>
         /^(https?:\/\/|www\.)/i.test(p) ? (
-          <a key={i} href={p.startsWith('http') ? p : `https://${p}`} target="_blank" rel="noopener noreferrer" className="text-brass-300 underline decoration-brass-500/40 underline-offset-2 hover:text-brass-200">
+          <a key={i} href={p.startsWith('http') ? p : `https://${p}`} target="_blank" rel="noopener noreferrer" className="text-brass-300 underline decoration-current decoration-1 underline-offset-2 transition-colors duration-150 hover:text-signal-ink">
             {p}
           </a>
         ) : (
@@ -56,22 +56,28 @@ export default function Legal() {
     host: env('VITE_LEGAL_HOST') || todo,
   };
   const tv = (k: string) => t(k, vars);
-  useEffect(() => {
-    if (!hash) return;
-    document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start' });
-  }, [hash]);
   const sections: { h: string; p: string[] }[] = [];
   for (let i = 0; i < 16; i++) {
     const h = t(`platform.legal.privacy.sections.${i}.h`);
     if (h.endsWith(`.${i}.h`)) break;
     sections.push({ h, p: list(tv, `platform.legal.privacy.sections.${i}.p`) });
   }
+  /* a reader arriving on an anchor lands on it at once, as a browser does:
+     the page's smooth scrolling would glide there instead, and anything that
+     moves the page meanwhile (the session arriving, the fonts) stops the
+     glide short of the section */
+  useEffect(() => {
+    if (!hash) return;
+    document.getElementById(hash.slice(1))?.scrollIntoView({ block: 'start', behavior: 'instant' });
+  }, [hash]);
   const date = new Date(POLICY_DATE).toLocaleDateString(localeOf(lang), { year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <PageShell back={{ to: '/', label: t('platform.account.back') }} eyebrow={t('platform.legal.eyebrow')} title={t('platform.legal.title')} lede={t('platform.legal.lede')} width="narrow">
-      <div className="grid gap-6">
-        <section id="notice">
+    <PageShell back={{ to: '/', label: t('platform.account.back') }} eyebrow={t('platform.legal.eyebrow')} title={t('platform.legal.title')} lede={t('platform.legal.lede')}>
+      {/* a policy keeps a short measure, but on the shell's own left edge,
+          under the back link and the title, not centred beneath them */}
+      <div className="grid max-w-[576px] gap-6">
+        <section id="notice" className="scroll-mt-24">
           <Panel title={t('platform.legal.notice.title')}>
             <div className="grid gap-3">
               {list(tv, 'platform.legal.notice.items').map((p, i) => (
@@ -80,7 +86,7 @@ export default function Legal() {
             </div>
           </Panel>
         </section>
-        <section id="privacy">
+        <section id="privacy" className="scroll-mt-24">
           <Panel title={t('platform.legal.privacy.title')}>
             <div className="grid gap-6">
               {sections.map((s) => (
