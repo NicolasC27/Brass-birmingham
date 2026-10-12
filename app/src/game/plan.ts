@@ -1,5 +1,6 @@
 import { applyAction, setupOf } from './actions';
 import { newGame } from './engine';
+import { incomeLevel } from './data';
 import type { Era, GameState, IndustryType } from './types';
 
 /* ------------------------------------------------------------------ */
@@ -64,6 +65,7 @@ export interface Deeds {
   /** the tiles never turned over, level 1 apart from coal and iron */
   lowLeft: number;
   vp: number;
+  /** the income LEVEL the seat closed on (−10 to 30), not the space on the track */
   income: number;
 }
 
@@ -128,7 +130,7 @@ export function deedsOf(g: GameState, me: number): Deeds {
     if (tile.industry === 'coal' || tile.industry === 'iron') continue;
     lowLeft += 1;
   }
-  return { built, links, loans, develops, developed, actions, lowLeft, vp: s.players[me]?.vp ?? 0, income: s.players[me]?.income ?? 0 };
+  return { built, links, loans, develops, developed, actions, lowLeft, vp: s.players[me]?.vp ?? 0, income: incomeLevel(s.players[me]?.income ?? 0) };
 }
 
 const sold = (d: Deeds, industry: IndustryType, from = 1, era?: Era) => d.built.filter((b) => b.industry === industry && b.level >= from && b.sold && (!era || b.era === era)).length;

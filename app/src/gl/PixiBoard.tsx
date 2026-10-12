@@ -492,6 +492,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   }, [focus?.seq]);
   const ambianceRef = useRef<Ambiance | null>(null);
   const cameraRef = useRef<Camera | null>(null);
+  /* the final register lowered to look at the board: the whole country is
+     shown, not the last site the camera flew to */
+  const overOpen = useGame((s) => s.gameOverOpen);
+  const finished = useGame((s) => s.game?.phase === 'game-over');
+  const wasOverOpen = useRef(overOpen);
+  useEffect(() => {
+    if (wasOverOpen.current && !overOpen && finished) cameraRef.current?.fit();
+    wasOverOpen.current = overOpen;
+  }, [overOpen, finished]);
   const anchors = useMemo<AnchorRegistry>(
     () => ({
       register: (el, at) => {

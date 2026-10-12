@@ -74,8 +74,10 @@ export function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { k
         <tbody>
           {players.map((p, pi) => (
             <tr key={pi}>
-              <th scope="row" className="pr-2 text-left font-sans text-[11px] font-bold" style={{ color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }}>
-                {p.name.slice(0, 8)}
+              {/* the surname alone, whole and on one line — "Mrs / Wedg" helped
+                  nobody — and held at the left while the rounds scroll by */}
+              <th scope="row" title={p.name} className="sticky left-0 z-[1] whitespace-nowrap bg-coal-950/95 pr-2 text-left font-sans text-[11px] font-bold" style={{ color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }}>
+                {p.name.replace(/^(mrs|mr|miss|ms|dr)\.?\s+/i, '')}
               </th>
               {rounds.map((r, ri) => {
                 const moves = r.items.filter((e) => e.player === pi && e.verb !== 'system' && e.verb !== 'score');
