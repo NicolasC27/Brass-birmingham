@@ -79,7 +79,10 @@ const REGISTER_INK: typeof TABLE_INK = {
   window: 'rgb(var(--paper-300))',
 };
 
-export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, locked = false, register = false, onPick }: { height?: number; /** set on the site's pages (inside .platform-root): the curve reads the register's tokens, and `color` may be one of them, `rgb(var(--player-…))` */ register?: boolean; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; /** a line is being explored: a press no longer picks a move (it would drop the line), zoom and pan still do */ locked?: boolean; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+/** a chance as the curve writes it, when the page says nothing of its tongue */
+const PERCENT = (p: number) => `${p} %`;
+
+export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, locked = false, register = false, percent = PERCENT, foot = false, onPick }: { height?: number; /** the rounds and the eras named in a band of their own under the plot, clear of the lines and of each other */ foot?: boolean; /** how a chance is written, in the reader's tongue: `12 %` or `12%` */ percent?: (p: number) => string; /** set on the site's pages (inside .platform-root): the curve reads the register's tokens, and `color` may be one of them, `rgb(var(--player-…))` */ register?: boolean; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; /** a line is being explored: a press no longer picks a move (it would drop the line), zoom and pan still do */ locked?: boolean; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
   const ink = register ? REGISTER_INK : TABLE_INK;
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
@@ -96,7 +99,8 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
   const [hover, setHover] = useState<number | null>(null);
   const H = height;
   const TOP = 16;
-  const BOTTOM = 12;
+  /* with a foot, the plot stops above a band that carries the rounds, then the eras */
+  const BOTTOM = foot ? 25 : 12;
   const last = Math.max(1, chances.length - 1);
   /* the stretch of the game on view, in moves: the whole of it until zoomed */
   /* `anchor` is the move on show when the window was set by hand: the view
@@ -285,12 +289,12 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
     /* the spread between the passes, when they disagreed by a point or more */
     const r = reads[k];
     const band = r ? Math.round(((r.high - r.low) / 2) * 100) : 0;
-    const text = `${k} · ${Math.round((chances[k] ?? 0.5) * 100)} %${band > 0 ? ` ± ${band}` : ''}`;
+    const text = `${k} · ${percent(Math.round((chances[k] ?? 0.5) * 100))}${band > 0 ? ` ± ${band}` : ''}`;
     const words = titleOf && k > 0 ? titleOf(k) : '';
     const right = cx > w - 160;
     return (
       <g key={strong ? 'at' : 'hover'} pointerEvents="none">
-        <line x1={cx} x2={cx} y1={TOP - 4} y2={BAR_Y - 2} style={{ stroke: strong ? ink.strong : ink.hoverLine }} strokeWidth={1} />
+        <line x1={cx} x2={cx} y1={TOP - 4} y2={foot ? H - BOTTOM : BAR_Y - 2} style={{ stroke: strong ? ink.strong : ink.hoverLine }} strokeWidth={1} />
         <circle cx={cx} cy={cy} r={3} style={{ fill: strong ? ink.strong : ink.hoverBead, stroke: ink.halo }} strokeWidth={1} />
         <text x={right ? cx - 5 : cx + 5} y={TOP - 5} textAnchor={right ? 'end' : 'start'} style={{ fill: strong ? ink.strong : ink.hoverText }} fontSize={9.5} fontFamily="ui-monospace, monospace">
           {text}{words ? `  ${words}` : ''}
@@ -321,23 +325,24 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
           <line key={c} x1={0} x2={w} y1={y(c)} y2={y(c)} style={{ stroke: ink.grid }} strokeWidth={1} />
         ))}
         {midOn && <line x1={0} x2={w} y1={mid} y2={mid} style={{ stroke: ink.mid }} strokeWidth={1} strokeDasharray="3 3" />}
-        {midOn && <text x={4} y={mid - 3} style={{ fill: ink.scale }} fontSize={9} fontFamily="ui-monospace, monospace">50 %</text>}
+        {midOn && <text x={4} y={mid - 3} style={{ fill: ink.scale }} fontSize={9} fontFamily="ui-monospace, monospace">{percent(50)}</text>}
         {/* zoomed: the scale's ends named, so a flat stretch is read for what it is */}
         {view && (
           <>
-            <text x={4} y={TOP + 8} style={{ fill: ink.scale }} fontSize={8.5} fontFamily="ui-monospace, monospace">{`${Math.round(yHi * 100)} %`}</text>
-            <text x={w - 4} y={H - BOTTOM - 2} textAnchor="end" style={{ fill: ink.scale }} fontSize={8.5} fontFamily="ui-monospace, monospace">{`${Math.round(yLo * 100)} %`}</text>
+            <text x={4} y={TOP + 8} style={{ fill: ink.scale }} fontSize={8.5} fontFamily="ui-monospace, monospace">{percent(Math.round(yHi * 100))}</text>
+            <text x={w - 4} y={H - BOTTOM - 2} textAnchor="end" style={{ fill: ink.scale }} fontSize={8.5} fontFamily="ui-monospace, monospace">{percent(Math.round(yLo * 100))}</text>
           </>
         )}
         {/* the eras */}
         {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} style={{ stroke: ink.split }} strokeWidth={1} />}
-        {x(0) > -w && <text x={Math.max(4, x(0) + 4)} y={BAR_Y - 4} style={{ fill: ink.era }} fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>}
-        {split > 0 && <text x={Math.max(4, x(split) + 4)} y={BAR_Y - 4} style={{ fill: ink.era }} fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
+        {foot && <line x1={0} x2={w} y1={H - BOTTOM} y2={H - BOTTOM} style={{ stroke: ink.grid }} strokeWidth={1} />}
+        {x(0) > -w && <text x={Math.max(4, x(0) + 4)} y={foot ? H - 3 : BAR_Y - 4} style={{ fill: ink.era }} fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>}
+        {split > 0 && <text x={Math.max(4, x(split) + 4)} y={foot ? H - 3 : BAR_Y - 4} style={{ fill: ink.era }} fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
         {/* the rounds, ticked and named once there is room */}
         {roundTicks.map((tk) => (
           <g key={tk.k} pointerEvents="none">
-            <line x1={x(tk.k)} x2={x(tk.k)} y1={BAR_Y - 14} y2={BAR_Y - 8} style={{ stroke: ink.tick }} strokeWidth={1} />
-            {roomPerRound >= 26 && <text x={x(tk.k) + 2} y={BAR_Y - 9} style={{ fill: ink.round }} fontSize={8} fontFamily="ui-monospace, monospace">{tk.round}</text>}
+            <line x1={x(tk.k)} x2={x(tk.k)} y1={foot ? H - BOTTOM : BAR_Y - 14} y2={foot ? H - BOTTOM + 4 : BAR_Y - 8} style={{ stroke: ink.tick }} strokeWidth={1} />
+            {roomPerRound >= 26 && <text x={x(tk.k) + 2} y={foot ? H - BOTTOM + 11 : BAR_Y - 9} style={{ fill: ink.round }} fontSize={8} fontFamily="ui-monospace, monospace">{tk.round}</text>}
           </g>
         ))}
         {doubt && <path d={doubt} style={{ fill: tint(color, 0.22) }} stroke="none" />}
@@ -364,7 +369,7 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
         )}
         {misses.map((m) => (
           <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} style={{ fill: m.grade === 'blunder' ? ink.blunder : m.grade === 'mistake' ? ink.mistake : ink.slip, stroke: ink.halo }} strokeWidth={1}>
-            <title>{`${m.at + 1} · −${Math.round(m.loss * 100)} %`}</title>
+            <title>{`${m.at + 1} · −${percent(Math.round(m.loss * 100))}`}</title>
           </circle>
         ))}
         {/* the variation, dashed, leaving the game where it does */}

@@ -589,8 +589,12 @@ function PlayerRail({ tools }: { tools?: ReactNode }) {
   const compact = narrow || reading;
   const row = narrow;
   /* a game read again shows the standing as it was at that moment: the points
-     banked, plus what the board would have scored had the era ended there */
-  const live = reading ? projectEraScores(game) : null;
+     banked, plus what the board would have scored had the era ended there.
+     Once an era has been counted — the canal's scoring, the game's end — the
+     tiles still standing are already in the bank, and adding them again
+     printed 194 for a winner who closed on 143 */
+  const counted = game.phase === 'game-over' || game.phase === 'scoring-canal';
+  const live = reading && !counted ? projectEraScores(game) : null;
   const medals = mode === 'medals';
 
   /* wide: a vertical stack top-left. Narrow: a wrapping strip under the top

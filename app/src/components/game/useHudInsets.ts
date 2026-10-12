@@ -6,7 +6,11 @@ import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
 /** the lane the analysis panel holds down the right edge, and nothing when it
  *  is closed: the HUD keeps out of it rather than hiding under it */
 export function analysisLane(open: boolean): number {
-  return open ? Math.max(GUIDE_RAIL, guideDock()) : 0;
+  /* the same measure the panel takes for itself: under 1100 px the guide's
+     dock is folded, and the analysis would otherwise be counted as a rail */
+  if (!open) return 0;
+  const vw = typeof window === 'undefined' ? 1280 : window.innerWidth;
+  return Math.max(GUIDE_RAIL, guideDock(vw) || Math.max(300, Math.min(420, Math.round(vw * 0.34))));
 }
 
 /** the insets every floating HUD element keeps from the screen edges,

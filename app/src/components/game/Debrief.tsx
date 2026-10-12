@@ -22,7 +22,7 @@ import { listProgress, motifsOf, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import type { PlanId } from '@/game/plan';
 import { setBoardOption, useBoardOptions } from './boardOptions';
-import { GUIDE_RAIL, REVIEW_CURVE_H, guideDock } from './guideKeys';
+import { REVIEW_CURVE_H, guideDock } from './guideKeys';
 import AnalysisCurve from './AnalysisCurve';
 import { RoundsGrid } from './Ledger';
 import { cn } from '@/lib/utils';
@@ -70,6 +70,15 @@ const STUCK_MS = 60_000;
 const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 /** one decimal, in the reader's tongue: roads often sit under a point apart */
 const fine = (p: number, lang: string) => new Intl.NumberFormat(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(p * 100);
+/* the panel's own width: the guide's lane where the window spares one, and a
+   readable column where it does not. The analysis is the matter being read,
+   not a note beside the board, so it never folds to the guide's rail */
+const panelWidth = (vw: number) => guideDock(vw) || Math.max(300, Math.min(420, Math.round(vw * 0.34)));
+const onResize = (f: () => void) => {
+  window.addEventListener('resize', f);
+  return () => window.removeEventListener('resize', f);
+};
+const viewport = () => window.innerWidth;
 export default function Debrief({ game: live, me: opened }: { game: GameState; me: number }) {
   /* the game as it stood when the panel opened. A game read at the turn of
      the eras is still being played: were the panel to follow every move, the
@@ -598,11 +607,20 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     if (!vary) return;
     setVaryMine({ from: vary.from, moves: vary.moves.slice(0, i), picked: sameRoad(vary.moves[i].action), step: null });
   };
-  /* leaving the analysis is leaving the game: back to the desk, the table
-     itself has nothing more to show once it has been read */
-  const close = () => {
+  /* two ways out. The foot goes back to where the reader came from: the
+     final ledger of a game played out, with its rematch and its link still
+     there. The cross leaves the table for the desk, and says so */
+  const openGameOver = useGame((s) => s.openGameOver);
+  const over = live.phase === 'game-over';
+  const toDesk = () => {
     setDebriefOpen(false);
     navigate('/desk');
+  };
+  const leave = () => {
+    if (!over) return toDesk();
+    setReview(null);
+    setDebriefOpen(false);
+    openGameOver();
   };
   const plateLabel = useGame((s) => s.review?.label ?? '');
   /* the panel's two pages under the curve: the moves, or the seat's review;
@@ -629,7 +647,13 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     if (st.sharing) st.shareReview(false);
     st.followReview(false);
   }, [setReview, setReviewAt]);
-  const width = Math.max(GUIDE_RAIL, guideDock());
+  const width = panelWidth(useSyncExternalStore(onResize, viewport, () => 1280));
+  /* the panel takes the focus as it opens, so the keys read it and not the
+     bar behind */
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    panelRef.current?.focus({ preventScroll: true });
+  }, []);
   const listRef = useRef<HTMLOListElement>(null);
   /* the register page: the ledger's lines up to the position on show, by round, and the cell picked in the grid */
   const ledgerRef = useRef<HTMLOListElement>(null);
@@ -650,15 +674,20 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
     const el = ledgerRef.current;
     if (el && tab === 'ledger' && !ledgerPick) el.scrollTop = 0;
   }, [tab, shown, ledgerPick]);
+  /* the move on show stays in sight: when it changes, when the list comes
+     back from another page or a filter, and when the grades' row lands
+     above it and pushes the foot of the list down */
+  const graded = !!tally;
+  const varying = !!vary;
   useEffect(() => {
     listRef.current?.querySelector<HTMLElement>(`[data-at="${at}"]`)?.scrollIntoView({ block: 'nearest' });
-  }, [at]);
+  }, [at, tab, filter, help, varying, graded]);
 
   /* the curve across the top of the board, where the VP track stood: wide,
      tall, and clear of the panel; the HUD keeps under it */
   const strip = createPortal(
-    <div data-debrief-curve title={t('game.debrief.curveHint')} className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
-      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t(vary ? 'game.debrief.curveLocked' : 'game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} locked={!!vary} onPick={(k) => { setAt(k); setVaryMine(null); }} />
+    <div data-debrief-curve title={t(vary ? 'game.debrief.curveLocked' : 'game.debrief.curveHint')} className="pointer-events-auto fixed left-0 top-0 z-[79] border-b border-brass-hairline bg-coal-950/92 px-2 pt-1 backdrop-blur-md" style={{ right: width, height: REVIEW_CURVE_H }}>
+      <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={verdicts} vary={varyChances} color={PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} percent={(p) => t('game.debrief.road', { p })} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={REVIEW_CURVE_H - 10} foot locked={!!vary} onPick={(k) => { setAt(k); setVaryMine(null); }} />
     </div>,
     document.body,
   );
@@ -666,22 +695,31 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
   return (
     <>
     {strip}
-    <aside data-debrief aria-label={t('game.debrief.title')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col gap-2 border-l border-brass-hairline bg-coal-950/92 px-3 py-3 backdrop-blur-md" style={{ width }}>
+    <aside ref={panelRef} tabIndex={-1} data-debrief aria-label={t('game.debrief.title')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col gap-2 border-l border-brass-hairline bg-coal-950/92 px-3 py-3 outline-none backdrop-blur-md" style={{ width }}>
+      {/* the head in two rows: the name and the ways out, then the seat and
+          the judge, so nothing is pushed past the edge at any width */}
       <div className="flex shrink-0 items-center gap-2">
-        <Sparkles className="h-4 w-4 text-brass-400" aria-hidden />
-        <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.debrief.title')}</span>
-        <span className="flex-1" />
-        <label className="flex items-center gap-1 text-cream-100/60" title={t('game.debrief.seat')}>
-          <UserRound className="h-3.5 w-3.5" aria-hidden />
+        <Sparkles className="h-4 w-4 shrink-0 text-brass-400" aria-hidden />
+        <span className="min-w-0 flex-1 truncate whitespace-nowrap font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.debrief.title')}</span>
+        <button type="button" onClick={() => setHelp((o) => !o)} aria-pressed={help} aria-label={t('game.debrief.help.open')} title={t('game.debrief.help.open')} className={cn('shrink-0 rounded-md border p-1 transition-colors', help ? 'border-brass-400 text-brass-300' : 'border-brass-700/50 text-brass-400/80 hover:border-brass-400')}>
+          <HelpCircle className="h-3.5 w-3.5" />
+        </button>
+        <button type="button" onClick={toDesk} aria-label={t('game.debrief.toDesk')} title={t('game.debrief.toDesk')} className="shrink-0 rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <label className="flex min-w-0 flex-1 items-center gap-1 text-cream-100/60" title={t('game.debrief.seat')}>
+          <UserRound className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[me]?.color]?.hex ?? '#C9A45C' }} />
-          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMeMine(Number(e.target.value)); setVaryMine(null); }} className="max-w-[120px] rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
+          <select aria-label={t('game.debrief.seat')} value={me} onChange={(e) => { setMeMine(Number(e.target.value)); setVaryMine(null); }} className="min-w-0 flex-1 rounded border border-brass-700/50 bg-coal-900 px-1 py-0.5 font-sans text-[11px] text-cream-100">
             {game.players.map((p, i) => (
               <option key={i} value={i}>{p.name}</option>
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-1 text-cream-100/60" title={t(`game.debrief.judge.${judgeId}Tip`)}>
-          <Gauge className="h-3.5 w-3.5" aria-hidden />
+        <label className="flex min-w-0 shrink-0 items-center gap-1 text-cream-100/60" title={t(`game.debrief.judge.${judgeId}Tip`)}>
+          <Gauge className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <select
             aria-label={t('game.debrief.judge.label')}
             value={judgeId}
@@ -693,12 +731,6 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
             ))}
           </select>
         </label>
-        <button type="button" onClick={() => setHelp((o) => !o)} aria-pressed={help} aria-label={t('game.debrief.help.open')} title={t('game.debrief.help.open')} className={cn('rounded-md border p-1 transition-colors', help ? 'border-brass-400 text-brass-300' : 'border-brass-700/50 text-brass-400/80 hover:border-brass-400')}>
-          <HelpCircle className="h-3.5 w-3.5" />
-        </button>
-        <button type="button" onClick={close} aria-label={t('game.debrief.close')} title={t('game.debrief.close')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
-          <X className="h-3.5 w-3.5" />
-        </button>
       </div>
 
       {/* the judge's chance, for the position on the board */}
@@ -799,7 +831,7 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
           <p className="mt-1 font-sans text-[11.5px] leading-snug text-ink-900/85">{t('game.debrief.help.grades.how')}</p>
           <ul className="mt-1 flex flex-col gap-0.5 font-sans text-[11.5px] text-ink-900/85">
             {(['top', 'good', 'inaccuracy', 'mistake', 'blunder'] as const).map((g) => (
-              <li key={g}><span className={cn('font-semibold', g === 'blunder' ? 'text-rust-700' : g === 'mistake' ? 'text-copper-700' : '')}>{t(`game.debrief.quality.${g}`)}</span> : {t(`game.debrief.gradeTip.${g}`)}</li>
+              <li key={g}><span className={cn('font-semibold', g === 'blunder' ? 'text-rust-700' : g === 'mistake' ? 'text-copper-700' : '')}>{t(`game.debrief.quality.${g}`)}</span>{lang === 'fr' ? '\u00a0: ' : ': '}{t(`game.debrief.gradeTip.${g}`)}</li>
             ))}
           </ul>
           <h3 className="mt-3 font-fell text-[13px] text-ink-900">{t('game.debrief.help.method.title')}</h3>
@@ -1097,26 +1129,26 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
               <table className="mt-1 w-full border-collapse font-sans text-[11px] text-cream-100/80">
                 <thead>
                   <tr className="font-mono text-[9px] uppercase tracking-[0.12em] text-cream-100/40">
-                    <th className="py-0.5 text-left font-normal">{t('game.debrief.standings.seat')}</th>
-                    <th className="py-0.5 text-right font-normal">{t('game.debrief.standings.vp')}</th>
-                    <th className="py-0.5 text-right font-normal" title={t('game.debrief.standings.perActionTip')}>{t('game.debrief.standings.perAction')}</th>
-                    <th className="py-0.5 text-right font-normal" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.standings.lost')}</th>
-                    <th className="py-0.5 text-right font-normal" title={t('game.debrief.standings.missesTip')}>{t('game.debrief.standings.misses')}</th>
+                    <th className="w-full max-w-0 py-0.5 text-left font-normal">{t('game.debrief.standings.seat')}</th>
+                    <th className="whitespace-nowrap py-0.5 pl-2 text-right font-normal">{t('game.debrief.standings.vp')}</th>
+                    <th className="whitespace-nowrap py-0.5 pl-2 text-right font-normal" title={t('game.debrief.standings.perActionTip')}>{t('game.debrief.standings.perAction')}</th>
+                    <th className="whitespace-nowrap py-0.5 pl-2 text-right font-normal" title={t('game.debrief.tally.lostTip')}>{t('game.debrief.standings.lost')}</th>
+                    <th className="whitespace-nowrap py-0.5 pl-2 text-right font-normal" title={t('game.debrief.standings.missesTip')}>{t('game.debrief.standings.misses')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {standings.map((row) => (
                     <tr key={row.seat} className={cn(row.seat === me && 'text-brass-300')}>
-                      <td className="py-0.5">
-                        <button type="button" onClick={() => { setMeMine(row.seat); setVaryMine(null); }} className="flex items-center gap-1.5 hover:text-brass-300">
+                      <td className="max-w-0 py-0.5">
+                        <button type="button" onClick={() => { setMeMine(row.seat); setVaryMine(null); }} title={game.players[row.seat]?.name} className="flex max-w-full items-center gap-1.5 whitespace-nowrap text-left hover:text-brass-300">
                           <span aria-hidden className="h-2 w-2 shrink-0 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[row.seat]?.color]?.hex ?? '#C9A45C' }} />
-                          {game.players[row.seat]?.name}
+                          <span className="min-w-0 truncate">{game.players[row.seat]?.name}</span>
                         </button>
                       </td>
-                      <td className="py-0.5 text-right font-mono">{game.players[row.seat]?.vp ?? 0}</td>
-                      <td className={cn('py-0.5 text-right font-mono', row.perAction >= 5 ? 'text-bottle-400' : row.perAction < 4 ? 'text-copper-500' : '')} title={t('game.debrief.standings.actionsN', { n: row.actions })}>{fine(row.perAction / 100, lang)}</td>
-                      <td className="py-0.5 text-right font-mono">{row.n ? `−${row.lost}` : '…'}</td>
-                      <td className="py-0.5 text-right font-mono">{row.n ? row.misses : '…'}</td>
+                      <td className="py-0.5 pl-2 text-right font-mono">{game.players[row.seat]?.vp ?? 0}</td>
+                      <td className={cn('py-0.5 pl-2 text-right font-mono', row.perAction >= 5 ? 'text-bottle-400' : row.perAction < 4 ? 'text-copper-500' : '')} title={t('game.debrief.standings.actionsN', { n: row.actions })}>{fine(row.perAction / 100, lang)}</td>
+                      <td className="py-0.5 pl-2 text-right font-mono">{row.n ? `−${row.lost}` : '…'}</td>
+                      <td className="py-0.5 pl-2 text-right font-mono">{row.n ? row.misses : '…'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1180,8 +1212,8 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
       {/* the foot of the panel: the moment on show, and the way out */}
       <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-brass-700/40 pt-2">
         <span className="min-w-0 flex-1 truncate font-fell text-[11.5px] text-cream-100/80">{plateLabel}</span>
-        <button type="button" onClick={close} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
-          {t('game.debrief.back')}
+        <button type="button" onClick={leave} className="btn-ledger shrink-0 whitespace-nowrap !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
+          {t(over ? 'game.debrief.toLedger' : 'game.debrief.toDesk')}
         </button>
       </div>
     </aside>
