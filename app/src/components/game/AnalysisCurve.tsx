@@ -11,13 +11,76 @@ import type { Reading, Verdict } from '@/game/analysis';
    shift-drag (or a right-button drag) marks a stretch to zoom to, a
    double-click shows the whole game again, and a bar at the foot shows the
    window and pans it when dragged. The window follows the move on show. */
-/** a hex colour with an alpha, for the fills */
-const tint = (hex: string, alpha: number): string => {
-  const n = parseInt(hex.replace('#', ''), 16);
+/** a colour with an alpha, for the fills: a hex, or a register token
+    written `rgb(var(--token))` */
+const tint = (c: string, alpha: number): string => {
+  const token = /^rgb\((var\(--[\w-]+\))\)$/.exec(c);
+  if (token) return `rgb(${token[1]} / ${alpha})`;
+  const n = parseInt(c.replace('#', ''), 16);
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 };
 
-export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, locked = false, onPick }: { height?: number; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; /** a line is being explored: a press no longer picks a move (it would drop the line), zoom and pan still do */ locked?: boolean; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+/* the inks. At the table the curve is drawn for the night, cream on coal,
+   and the table has no register to read. On the site's pages it is set in
+   the register's own tokens, so it holds by day as by night. The colours go
+   in `style`, where a `var()` resolves; a presentation attribute would not. */
+const cream = (a: number) => `rgba(245,235,215,${a})`;
+const TABLE_INK = {
+  frame: 'border-brass-700/40 bg-coal-900/80',
+  shade: 'rgba(20,14,10,0.55)',
+  grid: cream(0.08),
+  mid: cream(0.35),
+  scale: cream(0.4),
+  split: cream(0.22),
+  era: cream(0.4),
+  tick: cream(0.3),
+  round: cream(0.45),
+  strong: '#F5EBD7',
+  hoverLine: cream(0.45),
+  hoverBead: '#C9A45C',
+  hoverText: cream(0.7),
+  halo: 'rgba(0,0,0,0.6)',
+  blunder: '#B4472E',
+  mistake: '#C97A3B',
+  slip: '#E7D6AE',
+  fork: cream(0.5),
+  under: 'rgba(0,0,0,0.55)',
+  hint: cream(0.38),
+  brushFill: cream(0.12),
+  brushLine: cream(0.6),
+  track: cream(0.12),
+  window: cream(0.45),
+};
+const REGISTER_INK: typeof TABLE_INK = {
+  frame: 'border-[color:var(--gz-ink-soft)] bg-lacquer-900',
+  /* below even the ground steps back towards the page, whichever register */
+  shade: 'rgb(var(--lacquer-950) / 0.7)',
+  grid: 'var(--gz-ink-faint)',
+  mid: 'var(--gz-ink-soft)',
+  scale: 'rgb(var(--paper-300))',
+  split: 'var(--gz-ink-soft)',
+  era: 'rgb(var(--paper-300))',
+  tick: 'var(--gz-ink-soft)',
+  round: 'rgb(var(--paper-300))',
+  strong: 'rgb(var(--paper-100))',
+  hoverLine: 'var(--gz-ink-soft)',
+  hoverBead: 'rgb(var(--brass-400))',
+  hoverText: 'rgb(var(--paper-300))',
+  halo: 'rgb(var(--lacquer-900))',
+  blunder: 'rgb(var(--rust-400))',
+  mistake: 'rgb(var(--signal-ink))',
+  slip: 'rgb(var(--iron-400))',
+  fork: 'var(--gz-ink-soft)',
+  under: 'rgb(var(--lacquer-900))',
+  hint: 'rgb(var(--paper-300))',
+  brushFill: 'var(--gz-ink-faint)',
+  brushLine: 'var(--gz-ink)',
+  track: 'var(--gz-ink-faint)',
+  window: 'rgb(var(--paper-300))',
+};
+
+export default function AnalysisCurve({ chances, reads, settled, rivals, at, marks, split, label, eras, vary, height = 112, color = '#E7C978', rounds, titleOf, hint, locked = false, register = false, onPick }: { height?: number; /** set on the site's pages (inside .platform-root): the curve reads the register's tokens, and `color` may be one of them, `rgb(var(--player-…))` */ register?: boolean; /** the seat's colour: the line and its ground wear it */ color?: string; /** the round each position stands in, for the ticks */ rounds?: number[]; /** a move's words, for the reading under the pointer */ titleOf?: (k: number) => string; /** how to zoom, said in a corner until the reader has */ hint?: string; /** a line is being explored: a press no longer picks a move (it would drop the line), zoom and pan still do */ locked?: boolean; chances: number[]; reads: (Reading | undefined)[]; settled: boolean[]; rivals: { seat: number; color: string; chances: (number | null)[] }[]; at: number; marks: Record<number, Verdict>; split: number; label: string; eras: [string, string]; vary: { from: number; chances: number[]; seats: { seat: number; color: string; chances: number[] }[] } | null; onPick: (k: number) => void }) {
+  const ink = register ? REGISTER_INK : TABLE_INK;
   const box = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(320);
   useEffect(() => {
@@ -227,9 +290,9 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
     const right = cx > w - 160;
     return (
       <g key={strong ? 'at' : 'hover'} pointerEvents="none">
-        <line x1={cx} x2={cx} y1={TOP - 4} y2={BAR_Y - 2} stroke={strong ? '#F5EBD7' : 'rgba(245,235,215,0.45)'} strokeWidth={1} />
-        <circle cx={cx} cy={cy} r={3} fill={strong ? '#F5EBD7' : '#C9A45C'} stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
-        <text x={right ? cx - 5 : cx + 5} y={TOP - 5} textAnchor={right ? 'end' : 'start'} fill={strong ? '#F5EBD7' : 'rgba(245,235,215,0.7)'} fontSize={9.5} fontFamily="ui-monospace, monospace">
+        <line x1={cx} x2={cx} y1={TOP - 4} y2={BAR_Y - 2} style={{ stroke: strong ? ink.strong : ink.hoverLine }} strokeWidth={1} />
+        <circle cx={cx} cy={cy} r={3} style={{ fill: strong ? ink.strong : ink.hoverBead, stroke: ink.halo }} strokeWidth={1} />
+        <text x={right ? cx - 5 : cx + 5} y={TOP - 5} textAnchor={right ? 'end' : 'start'} style={{ fill: strong ? ink.strong : ink.hoverText }} fontSize={9.5} fontFamily="ui-monospace, monospace">
           {text}{words ? `  ${words}` : ''}
         </text>
       </g>
@@ -237,7 +300,7 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
   };
   return (
     <div ref={box} className="w-full">
-      <svg ref={svgRef} width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={() => setHover(null)} onDoubleClick={() => setWin(null)} onContextMenu={(e) => e.preventDefault()} style={{ height: H }} className={`block w-full ${locked ? 'cursor-col-resize' : 'cursor-crosshair'} touch-none select-none rounded-sm border border-brass-700/40 bg-coal-900/80`}>
+      <svg ref={svgRef} width={w} height={H} viewBox={`0 0 ${w} ${H}`} role="img" aria-label={label} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up} onPointerLeave={() => setHover(null)} onDoubleClick={() => setWin(null)} onContextMenu={(e) => e.preventDefault()} style={{ height: H }} className={`block w-full ${locked ? 'cursor-col-resize' : 'cursor-crosshair'} touch-none select-none rounded-sm border ${ink.frame}`}>
         <defs>
           <clipPath id="curve-above">
             <rect x={0} y={0} width={w} height={Math.max(0, Math.min(H, mid))} />
@@ -252,55 +315,55 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
           </clipPath>
         </defs>
         {/* the ground: lit where the reader stood above even, dark below */}
-        <path d={areaDown} fill={tint(color, 0.28)} clipPath="url(#curve-above)" />
-        <path d={areaUp} fill="rgba(20,14,10,0.55)" clipPath="url(#curve-below)" />
+        <path d={areaDown} style={{ fill: tint(color, 0.28) }} clipPath="url(#curve-above)" />
+        <path d={areaUp} style={{ fill: ink.shade }} clipPath="url(#curve-below)" />
         {[0.25, 0.75].map((c) => (
-          <line key={c} x1={0} x2={w} y1={y(c)} y2={y(c)} stroke="rgba(245,235,215,0.08)" strokeWidth={1} />
+          <line key={c} x1={0} x2={w} y1={y(c)} y2={y(c)} style={{ stroke: ink.grid }} strokeWidth={1} />
         ))}
-        {midOn && <line x1={0} x2={w} y1={mid} y2={mid} stroke="rgba(245,235,215,0.35)" strokeWidth={1} strokeDasharray="3 3" />}
-        {midOn && <text x={4} y={mid - 3} fill="rgba(245,235,215,0.4)" fontSize={9} fontFamily="ui-monospace, monospace">50 %</text>}
+        {midOn && <line x1={0} x2={w} y1={mid} y2={mid} style={{ stroke: ink.mid }} strokeWidth={1} strokeDasharray="3 3" />}
+        {midOn && <text x={4} y={mid - 3} style={{ fill: ink.scale }} fontSize={9} fontFamily="ui-monospace, monospace">50 %</text>}
         {/* zoomed: the scale's ends named, so a flat stretch is read for what it is */}
         {view && (
           <>
-            <text x={4} y={TOP + 8} fill="rgba(245,235,215,0.4)" fontSize={8.5} fontFamily="ui-monospace, monospace">{`${Math.round(yHi * 100)} %`}</text>
-            <text x={w - 4} y={H - BOTTOM - 2} textAnchor="end" fill="rgba(245,235,215,0.4)" fontSize={8.5} fontFamily="ui-monospace, monospace">{`${Math.round(yLo * 100)} %`}</text>
+            <text x={4} y={TOP + 8} style={{ fill: ink.scale }} fontSize={8.5} fontFamily="ui-monospace, monospace">{`${Math.round(yHi * 100)} %`}</text>
+            <text x={w - 4} y={H - BOTTOM - 2} textAnchor="end" style={{ fill: ink.scale }} fontSize={8.5} fontFamily="ui-monospace, monospace">{`${Math.round(yLo * 100)} %`}</text>
           </>
         )}
         {/* the eras */}
-        {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} stroke="rgba(245,235,215,0.22)" strokeWidth={1} />}
-        {x(0) > -w && <text x={Math.max(4, x(0) + 4)} y={BAR_Y - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>}
-        {split > 0 && <text x={Math.max(4, x(split) + 4)} y={BAR_Y - 4} fill="rgba(245,235,215,0.4)" fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
+        {split > 0 && <line x1={x(split)} x2={x(split)} y1={0} y2={H} style={{ stroke: ink.split }} strokeWidth={1} />}
+        {x(0) > -w && <text x={Math.max(4, x(0) + 4)} y={BAR_Y - 4} style={{ fill: ink.era }} fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[0].toUpperCase()}</text>}
+        {split > 0 && <text x={Math.max(4, x(split) + 4)} y={BAR_Y - 4} style={{ fill: ink.era }} fontSize={8} fontFamily="IM Fell English, serif" letterSpacing={1.2}>{eras[1].toUpperCase()}</text>}
         {/* the rounds, ticked and named once there is room */}
         {roundTicks.map((tk) => (
           <g key={tk.k} pointerEvents="none">
-            <line x1={x(tk.k)} x2={x(tk.k)} y1={BAR_Y - 14} y2={BAR_Y - 8} stroke="rgba(245,235,215,0.3)" strokeWidth={1} />
-            {roomPerRound >= 26 && <text x={x(tk.k) + 2} y={BAR_Y - 9} fill="rgba(245,235,215,0.45)" fontSize={8} fontFamily="ui-monospace, monospace">{tk.round}</text>}
+            <line x1={x(tk.k)} x2={x(tk.k)} y1={BAR_Y - 14} y2={BAR_Y - 8} style={{ stroke: ink.tick }} strokeWidth={1} />
+            {roomPerRound >= 26 && <text x={x(tk.k) + 2} y={BAR_Y - 9} style={{ fill: ink.round }} fontSize={8} fontFamily="ui-monospace, monospace">{tk.round}</text>}
           </g>
         ))}
-        {doubt && <path d={doubt} fill={tint(color, 0.22)} stroke="none" />}
+        {doubt && <path d={doubt} style={{ fill: tint(color, 0.22) }} stroke="none" />}
         {/* the other seats, faint: the same reading from their chair */}
         {/* a variation on view: what the game did past the fork steps back,
             so the lines that matter are the ones being tried */}
         <g opacity={vary ? 0.35 : 1} clipPath={vary ? 'url(#curve-past)' : undefined}>
           {rivals.map((r) => {
             const pts = r.chances.map((c, k) => (c === null ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
-            return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
+            return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" style={{ stroke: r.color }} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
           })}
           {/* the line: dashed while a stretch is read by one pass only */}
-          <path d={line} fill="none" stroke={color} strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
-          {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
+          <path d={line} fill="none" style={{ stroke: color }} strokeOpacity={0.45} strokeWidth={1.6} strokeDasharray="4 3" strokeLinejoin="round" strokeLinecap="round" />
+          {front > 0 && <path d={smooth(pts.slice(0, front + 1))} fill="none" style={{ stroke: color }} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />}
         </g>
         {vary && (
           <g>
             {rivals.map((r) => {
               const pts = r.chances.map((c, k) => (c === null || k > vary.from ? null : ([x(k), y(c)] as const))).filter((p): p is readonly [number, number] => !!p);
-              return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" stroke={r.color} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
+              return pts.length > 1 ? <path key={r.seat} d={smooth(pts)} fill="none" style={{ stroke: r.color }} strokeOpacity={0.35} strokeWidth={1} strokeLinejoin="round" /> : null;
             })}
-            <path d={smooth(pts.slice(0, vary.from + 1))} fill="none" stroke={color} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={smooth(pts.slice(0, vary.from + 1))} fill="none" style={{ stroke: color }} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
           </g>
         )}
         {misses.map((m) => (
-          <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} fill={m.grade === 'blunder' ? '#B4472E' : m.grade === 'mistake' ? '#C97A3B' : '#E7D6AE'} stroke="rgba(0,0,0,0.6)" strokeWidth={1}>
+          <circle key={m.at} cx={x(m.at + 1)} cy={y(chances[m.at + 1] ?? 0.5)} r={3} style={{ fill: m.grade === 'blunder' ? ink.blunder : m.grade === 'mistake' ? ink.mistake : ink.slip, stroke: ink.halo }} strokeWidth={1}>
             <title>{`${m.at + 1} · −${Math.round(m.loss * 100)} %`}</title>
           </circle>
         ))}
@@ -308,28 +371,28 @@ export default function AnalysisCurve({ chances, reads, settled, rivals, at, mar
         {vary && vary.chances.length > 1 && (
           <g pointerEvents="none" className="curve-vary">
             {/* the fork, marked */}
-            <line x1={x(vary.from)} x2={x(vary.from)} y1={TOP - 4} y2={BAR_Y - 2} stroke="rgba(245,235,215,0.5)" strokeWidth={1} strokeDasharray="2 2" />
+            <line x1={x(vary.from)} x2={x(vary.from)} y1={TOP - 4} y2={BAR_Y - 2} style={{ stroke: ink.fork }} strokeWidth={1} strokeDasharray="2 2" />
             {vary.seats.map((r) => (
-              <path key={r.seat} d={smooth(r.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke={r.color} strokeOpacity={0.9} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+              <path key={r.seat} d={smooth(r.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" style={{ stroke: r.color }} strokeOpacity={0.9} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
             ))}
-            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke="rgba(0,0,0,0.55)" strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
-            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke={color} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />
-            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" stroke="#F5EBD7" strokeWidth={1} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
-            <circle cx={x(vary.from + vary.chances.length - 1)} cy={y(vary.chances[vary.chances.length - 1])} r={3.5} fill="#F5EBD7" stroke="rgba(0,0,0,0.6)" strokeWidth={1} />
+            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" style={{ stroke: ink.under }} strokeWidth={4} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" style={{ stroke: color }} strokeWidth={2.2} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={smooth(vary.chances.map((c, i) => [x(vary.from + i), y(c)] as const))} fill="none" style={{ stroke: ink.strong }} strokeWidth={1} strokeDasharray="5 4" strokeLinejoin="round" strokeLinecap="round" />
+            <circle cx={x(vary.from + vary.chances.length - 1)} cy={y(vary.chances[vary.chances.length - 1])} r={3.5} style={{ fill: ink.strong, stroke: ink.halo }} strokeWidth={1} />
           </g>
         )}
         {hover !== null && hover !== at && mark(hover, false)}
         {mark(at, true)}
         {/* how to look closer, in the corner while the whole game is on view */}
-        {!view && hint && <text x={w - 4} y={BAR_Y - 4} textAnchor="end" fill="rgba(245,235,215,0.38)" fontSize={8.5} fontFamily="ui-monospace, monospace" pointerEvents="none">{hint}</text>}
+        {!view && hint && <text x={w - 4} y={BAR_Y - 4} textAnchor="end" style={{ fill: ink.hint }} fontSize={8.5} fontFamily="ui-monospace, monospace" pointerEvents="none">{hint}</text>}
         {/* the stretch being marked to zoom to */}
-        {brush && <rect x={x(Math.min(brush.a, brush.b))} y={TOP - 4} width={Math.max(1, x(Math.max(brush.a, brush.b)) - x(Math.min(brush.a, brush.b)))} height={BAR_Y - TOP + 2} fill="rgba(245,235,215,0.12)" stroke="rgba(245,235,215,0.6)" strokeWidth={1} strokeDasharray="3 2" pointerEvents="none" />}
+        {brush && <rect x={x(Math.min(brush.a, brush.b))} y={TOP - 4} width={Math.max(1, x(Math.max(brush.a, brush.b)) - x(Math.min(brush.a, brush.b)))} height={BAR_Y - TOP + 2} style={{ fill: ink.brushFill, stroke: ink.brushLine }} strokeWidth={1} strokeDasharray="3 2" pointerEvents="none" />}
         {/* the window's bar at the foot: where the view sits in the whole game; drag it to pan */}
         {view && (
           <g>
-            <rect x={0} y={BAR_Y} width={w} height={4} rx={2} fill="rgba(245,235,215,0.12)" />
-            <rect x={(lo / last) * w} y={BAR_Y} width={Math.max(6, (span / last) * w)} height={4} rx={2} fill={color} fillOpacity={0.8} style={{ cursor: 'grab' }} />
-            <text x={w - 4} y={TOP - 5} textAnchor="end" fill="rgba(245,235,215,0.45)" fontSize={8.5} fontFamily="ui-monospace, monospace" pointerEvents="none">{`${Math.round(lo)}–${Math.round(hi)} · ×${(last / span).toFixed(1)}`}</text>
+            <rect x={0} y={BAR_Y} width={w} height={4} rx={2} style={{ fill: ink.track }} />
+            <rect x={(lo / last) * w} y={BAR_Y} width={Math.max(6, (span / last) * w)} height={4} rx={2} fillOpacity={0.8} style={{ fill: color, cursor: 'grab' }} />
+            <text x={w - 4} y={TOP - 5} textAnchor="end" style={{ fill: ink.window }} fontSize={8.5} fontFamily="ui-monospace, monospace" pointerEvents="none">{`${Math.round(lo)}–${Math.round(hi)} · ×${(last / span).toFixed(1)}`}</text>
           </g>
         )}
       </svg>

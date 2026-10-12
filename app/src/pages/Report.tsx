@@ -22,6 +22,9 @@ import EmptyNotice from '@/components/results/EmptyNotice';
 
 const EMPTY_SEATS: Record<number, Reading[]> = {};
 
+/** a seat's colour as the register tells it, tempered for the day's paper */
+const seatInk = (c: string | undefined): string => `rgb(var(--player-${c && c in PLAYER_COLORS ? c : 'brass'}))`;
+
 export default function Report() {
   const t = useT();
   const judgeId = useGame((s) => s.judgeId);
@@ -45,7 +48,7 @@ export default function Report() {
   const settled = useMemo(() => reads.map((r) => !!r && r.passes >= wantPasses), [reads, wantPasses]);
   const verdicts = read?.verdicts ?? {};
   const mine: Record<number, Verdict> = verdicts[shown] ?? {};
-  const rivals = useMemo(() => (game ? game.players.map((p, i) => ({ seat: i, color: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C', chances: positions.map((_, k) => seats[k]?.[i]?.chance ?? null) })).filter((r) => r.seat !== shown && r.chances.some((c) => c !== null)) : []), [game, positions, seats, shown]);
+  const rivals = useMemo(() => (game ? game.players.map((p, i) => ({ seat: i, color: seatInk(p.color), chances: positions.map((_, k) => seats[k]?.[i]?.chance ?? null) })).filter((r) => r.seat !== shown && r.chances.some((c) => c !== null)) : []), [game, positions, seats, shown]);
   const [at, setAt] = useState<number>(positions.length - 1);
   const drops = useMemo(() => {
     const out: { k: number; drop: number; seat: number }[] = [];
@@ -97,14 +100,14 @@ export default function Report() {
         <div className="flex flex-wrap items-center gap-3">
           {game.players.map((p, i) => (
             <button key={i} type="button" onClick={() => setSeat(i)} className={`flex items-center gap-2 border px-2.5 py-1 font-ui text-[13px] ${shown === i ? 'border-brass-500 bg-brass-500/10 text-brass-300' : 'border-brass-hairline text-paper-300 hover:border-brass-500'}`}>
-              <span aria-hidden className="h-2.5 w-2.5 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[p.color]?.hex ?? '#C9A45C' }} />
+              <span aria-hidden className="h-2.5 w-2.5 rounded-full ring-1 ring-black/40" style={{ backgroundColor: seatInk(p.color) }} />
               {p.name} <span className="data-text opacity-70">{p.vp}{t('game.mat.vpShort')}</span>
             </button>
           ))}
           {progress && <span className="data-text ml-auto text-iron-400">{t('game.debrief.reading', { done: progress.done, total: progress.total })}</span>}
         </div>
-        <div className="mt-3 bg-coal-950 p-2">
-          <AnalysisCurve chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={mine} vary={null} color={PLAYER_COLORS[game.players[shown]?.color]?.hex ?? '#E7C978'} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t('game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={160} onPick={setAt} />
+        <div className="mt-3">
+          <AnalysisCurve register chances={chances} reads={reads} settled={settled} rivals={rivals} at={at} marks={mine} vary={null} color={seatInk(game.players[shown]?.color)} rounds={positions.map((p) => p.round)} titleOf={(k) => describeAction(game.actions[k - 1])} hint={t('game.debrief.curveHint')} split={positions.findIndex((p) => p.era === 'rail')} label={t('game.debrief.curve')} eras={[t('game.topbar.eraCanal'), t('game.topbar.eraRail')]} height={160} onPick={setAt} />
         </div>
         <p className="mt-2 data-text text-iron-400">{at === 0 ? t('game.debrief.start') : `${at}/${positions.length - 1} · ${describeAction(game.actions[at - 1])}`}</p>
       </div>
@@ -125,7 +128,7 @@ export default function Report() {
             <tbody>
               {standings.map((r) => (
                 <tr key={r.seat} className={r.seat === shown ? 'text-brass-300' : ''}>
-                  <td className="py-1"><span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[r.color]?.hex ?? '#C9A45C' }} />{r.name}</span></td>
+                  <td className="py-1"><span className="inline-flex items-center gap-1.5"><span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: seatInk(r.color) }} />{r.name}</span></td>
                   <td className="py-1 text-right data-text">{r.vp}</td>
                   <td className="py-1 text-right data-text">{r.perAction.toFixed(1)}</td>
                   <td className="py-1 text-right data-text">{r.n ? `−${r.lost}` : '…'}</td>
@@ -141,7 +144,7 @@ export default function Report() {
             {drops.map((d) => (
               <li key={d.k}>
                 <button type="button" onClick={() => setAt(d.k)} className="flex w-full items-center gap-2 px-1 py-0.5 text-left hover:bg-enamel-700/60">
-                  <span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: PLAYER_COLORS[game.players[d.seat]?.color]?.hex ?? '#C9A45C' }} />
+                  <span aria-hidden className="h-2 w-2 rounded-full ring-1 ring-black/40" style={{ backgroundColor: seatInk(game.players[d.seat]?.color) }} />
                   <span className="data-text text-iron-400">{t('game.debrief.roundShort', { round: positions[d.k - 1].round })}</span>
                   <span className="min-w-0 flex-1 truncate">{game.players[d.seat]?.name} · {describeAction(game.actions[d.k - 1])}</span>
                   <span className="data-text text-rust-400">−{Math.round(d.drop * 100)} %</span>
