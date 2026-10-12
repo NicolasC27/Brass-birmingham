@@ -8,6 +8,8 @@
 /* ------------------------------------------------------------------ */
 
 import type { Lang } from '@/i18n';
+import { WRITTEN_ES } from './faq/writtenEs';
+import { WRITTEN_DE } from './faq/writtenDe';
 
 export interface FaqEntry {
   id: string;
@@ -475,10 +477,19 @@ const EN: FaqEntry[] = [
     answer: 'At the end of each era every link first scores the link icons of the places it touches — everyone’s tiles count, flipped or not, and a merchant is worth 2 — and then all link tiles come off the board. The Rail Era therefore starts on a map with no links at all, and networks must be rebuilt. Level 1 industry tiles are swept away at the same moment.' },
 ];
 
-/** the entries the guide knows in a tongue, English standing in where a
- *  tongue has none of its own */
+/** the entries the guide knows in a tongue: the same answers in all four,
+ *  English standing in for a tongue the case does not know */
 export function faqFor(lang: Lang): FaqEntry[] {
-  return lang === 'fr' ? FR : EN;
+  switch (lang) {
+    case 'fr':
+      return FR;
+    case 'es':
+      return WRITTEN_ES;
+    case 'de':
+      return WRITTEN_DE;
+    default:
+      return EN;
+  }
 }
 
 /* --------------------- the rules, read as written -------------------- */

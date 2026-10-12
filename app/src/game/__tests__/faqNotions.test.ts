@@ -485,6 +485,53 @@ describe('the case in four tongues', () => {
     expect(faqFor('fr').filter((e) => !FAQ_NOTION[e.id]).map((e) => e.id)).toEqual([]);
   });
 
+  it('gives the written answer in the reader’s own tongue', () => {
+    const asks: ['es' | 'de', string, string][] = [
+      ['es', '¿mi fundición vende el hierro automáticamente?', 'ironSells'],
+      ['es', '¿dónde encuentro hierro?', 'ironWhere'],
+      ['es', '¿el hierro necesita conexión?', 'ironConnection'],
+      ['es', '¿qué pasa si el mercado está vacío de carbón?', 'marketEmpty'],
+      ['es', '¿cuántas cartas tiene el mazo?', 'deckSize'],
+      ['es', '¿puedo explorar con un comodín en la mano?', 'scoutWithWild'],
+      ['es', '¿cuántas rondas dura una era?', 'roundsPerEra'],
+      ['es', '¿con cuánto dinero empiezo?', 'startingPurse'],
+      ['es', '¿qué es la ruta burton walsall?', 'canalOnlyRoute'],
+      ['es', '¿puedo usar la mina de un rival?', 'rivalMineLinks'],
+      ['de', 'verkauft meine eisenhütte das eisen automatisch?', 'ironSells'],
+      ['de', 'verkauft meine mine die kohle automatisch?', 'coalSells'],
+      ['de', 'woher bekomme ich eisen?', 'ironWhere'],
+      ['de', 'braucht eisen einen anschluss?', 'ironConnection'],
+      ['de', 'was passiert, wenn der kohlemarkt leer ist?', 'marketEmpty'],
+      ['de', 'ein plättchen pro ort in der kanalzeit?', 'oneTilePerPlace'],
+      ['de', 'kann ich erkunden mit joker auf der hand?', 'scoutWithWild'],
+      ['de', 'wie viele runden hat eine epoche?', 'roundsPerEra'],
+      ['de', 'wie viel geld habe ich am anfang?', 'startingPurse'],
+      ['de', 'kann ich die mine anderer spieler nutzen?', 'rivalMineLinks'],
+    ];
+    for (const [lang, q, id] of asks) {
+      const own = faqFor(lang).find((e) => e.id === id)!;
+      const r = consult(q, lang);
+      expect(`${q} → ${r.kind}:${r.answer === own.answer ? id : r.notion}`).toBe(`${q} → entry:${id}`);
+      /* the reader's tongue, never the French or the English standing in */
+      expect(r.answer).not.toBe(faqFor('fr').find((e) => e.id === id)!.answer);
+      expect(r.answer).not.toBe(faqFor('en').find((e) => e.id === id)!.answer);
+    }
+  });
+
+  it('answers in detail in every tongue where it does in French', () => {
+    /* a written answer's topic, asked as it is titled, is the same question
+       in the four tongues: where the French reader gets the written answer,
+       the Spanish and the German readers get theirs */
+    const fr = faqFor('fr');
+    const detailed = fr.filter((e) => consult(e.topic, 'fr').answer === e.answer).map((e) => e.id);
+    expect(detailed.length).toBeGreaterThanOrEqual(40);
+    for (const lang of ['es', 'de'] as const) {
+      const entries = new Map(faqFor(lang).map((e) => [e.id, e]));
+      const flat = detailed.filter((id) => consult(entries.get(id)!.topic, lang).answer !== entries.get(id)!.answer);
+      expect(`${lang}: ${flat.join(', ')}`).toBe(`${lang}: `);
+    }
+  });
+
   it('never advises a move nor projects a score', () => {
     /* the guide explains; it does not play for the reader */
     const advice = /\b(vous devriez|je vous conseille|il vaut mieux|you should|we recommend|deberías|te recomiendo|sie sollten|ich empfehle)\b/i;

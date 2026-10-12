@@ -175,16 +175,14 @@ function caseOf(lang: Lang): Case {
       if (t.length) phrases.push({ toks: t, notion: id });
     }
   }
-  /* the written answers of faq.ts, in the tongues that have their own:
-     a phrase of theirs must carry two words to stand against a notion */
-  if (lang === 'fr' || lang === 'en') {
-    for (const entry of faqFor(lang)) {
-      const notion = FAQ_NOTION[entry.id];
-      if (!notion) continue;
-      for (const w of entry.words) {
-        const t = toks(w).filter((x) => !cueWords.has(x));
-        if (t.length >= 2) phrases.push({ toks: t, notion, entry });
-      }
+  /* the written answers of faq.ts, in the reader's own tongue: a phrase
+     of theirs must carry two words to stand against a notion */
+  for (const entry of faqFor(lang)) {
+    const notion = FAQ_NOTION[entry.id];
+    if (!notion) continue;
+    for (const w of entry.words) {
+      const t = toks(w).filter((x) => !cueWords.has(x));
+      if (t.length >= 2) phrases.push({ toks: t, notion, entry });
     }
   }
   const cues: Case['cues'] = (['whyNot', 'gain', 'cost', 'how'] as const).map((k) => [k, tongue.cues[k].map(words)]);

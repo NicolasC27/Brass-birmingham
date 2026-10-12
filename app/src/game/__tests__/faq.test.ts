@@ -8,7 +8,7 @@ import { en } from '@/i18n/en';
 
 describe('the rules the guide knows', () => {
   it('names a topic and carries words for every entry', () => {
-    for (const lang of ['fr', 'en'] as const) {
+    for (const lang of ['fr', 'en', 'es', 'de'] as const) {
       for (const e of faqFor(lang)) {
         expect(`${lang}:${e.id}:words`).toBe(e.words.length > 0 ? `${lang}:${e.id}:words` : `${lang}:${e.id} has no words`);
         expect(`${lang}:${e.id}:answer`).toBe(e.answer.length > 40 ? `${lang}:${e.id}:answer` : `${lang}:${e.id} answers too briefly`);
@@ -43,6 +43,26 @@ describe('the rules the guide knows', () => {
   it('matches in English too', () => {
     expect(faqMatch('does my forge sell iron by itself?', faqFor('en'))?.id).toBe('ironSells');
     expect(faqMatch('where does beer come from', faqFor('en'))?.id).toBe('beer');
+  });
+
+  it('matches in Spanish and German, in their own words', () => {
+    const asks: ['es' | 'de', string, string][] = [
+      ['es', '¿mi fundición vende el hierro automáticamente?', 'ironSells'],
+      ['es', '¿dónde encuentro hierro?', 'ironWhere'],
+      ['es', '¿cuánto cuesta un canal?', 'linkCost'],
+      ['es', '¿el préstamo se devuelve?', 'loan'],
+      ['es', '¿una loseta por lugar o varias?', 'oneTilePerPlace'],
+      ['es', '¿cómo funciona sobreconstruir?', 'overbuildTile'],
+      ['de', 'verkauft meine eisenhütte das eisen automatisch?', 'ironSells'],
+      ['de', 'woher bekomme ich eisen?', 'ironWhere'],
+      ['de', 'was kostet ein kanal?', 'linkCost'],
+      ['de', 'muss man den kredit zurückzahlen?', 'loan'],
+      ['de', 'ein plättchen pro ort oder mehrere?', 'oneTilePerPlace'],
+      ['de', 'wie funktioniert überbauen?', 'overbuildTile'],
+    ];
+    for (const [lang, q, id] of asks) expect(`${q} → ${faqMatch(q, faqFor(lang))?.id ?? 'none'}`).toBe(`${q} → ${id}`);
+    const idle: ['es' | 'de', string][] = [['es', 'hola'], ['es', 'quién ganó el mundial'], ['de', 'hallo'], ['de', 'wer wurde weltmeister']];
+    for (const [lang, q] of idle) expect(faqMatch(q, faqFor(lang))).toBeNull();
   });
 });
 
@@ -85,27 +105,49 @@ describe('the answers written from the rules dossier', () => {
       expect(`${must}: ${ids.includes(must)}`).toBe(`${must}: true`);
   });
 
-  it('holds the same ids in both tongues', () => {
-    expect(faqFor('en').map((e) => e.id)).toEqual(faqFor('fr').map((e) => e.id));
+  it('holds the same ids in all four tongues', () => {
+    for (const lang of ['en', 'es', 'de'] as const) expect(faqFor(lang).map((e) => e.id)).toEqual(faqFor('fr').map((e) => e.id));
+  });
+
+  it('carries the French figures into every tongue', () => {
+    /* the translations were checked figure by figure: a number or a
+       level written as a numeral in one tongue is written in the others
+       too, save the counts of players that German and English spell out */
+    const numerals = (s: string) => (s.match(/\d+/g) ?? []).sort().join(' ');
+    const levels = (s: string) => (s.match(/\b(?:I{1,3}|IV|VI{0,3})\b/g) ?? []).sort().join(' ');
+    const fr = faqFor('fr');
+    for (const lang of ['es', 'de'] as const) {
+      faqFor(lang).forEach((e, i) => {
+        expect(`${lang}:${e.id}:${levels(e.answer)}`).toBe(`${lang}:${e.id}:${levels(fr[i].answer)}`);
+        /* every figure it gives is one the French gives */
+        const mine = numerals(e.answer).split(' ').filter(Boolean);
+        const theirs = new Set(numerals(fr[i].answer).split(' '));
+        expect(`${lang}:${e.id}:${mine.filter((n) => !theirs.has(n)).join(',')}`).toBe(`${lang}:${e.id}:`);
+      });
+    }
   });
 
   it('keeps the entries mostly out of each other’s way', () => {
     /* a phrase belonging to one entry may be answered by another when both
        answers are true — two entries on the income track, say. What must not
        happen is a corpus where that is the rule rather than the exception */
-    const entries = faqFor('fr');
-    const phrases = entries.flatMap((e) => e.words.map((w) => ({ e, w })));
-    const stolen = phrases.filter(({ e, w }) => {
-      const hit = faqMatch(w, entries);
-      return hit && hit.id !== e.id;
-    });
-    expect(stolen.length / phrases.length).toBeLessThan(0.15);
+    for (const lang of ['fr', 'es', 'de'] as const) {
+      const entries = faqFor(lang);
+      const phrases = entries.flatMap((e) => e.words.map((w) => ({ e, w })));
+      const stolen = phrases.filter(({ e, w }) => {
+        const hit = faqMatch(w, entries);
+        return hit && hit.id !== e.id;
+      });
+      expect(stolen.length / phrases.length).toBeLessThan(0.15);
+    }
   });
 
   it('answers a hundred plain questions without falling through', () => {
-    const entries = faqFor('fr');
-    /* every entry must be reachable by at least one of its own phrases */
-    const mute = entries.filter((e) => !e.words.some((w) => faqMatch(w, entries)?.id === e.id));
-    expect(mute.map((e) => e.id)).toEqual([]);
+    for (const lang of ['fr', 'es', 'de'] as const) {
+      const entries = faqFor(lang);
+      /* every entry must be reachable by at least one of its own phrases */
+      const mute = entries.filter((e) => !e.words.some((w) => faqMatch(w, entries)?.id === e.id));
+      expect(`${lang}: ${mute.map((e) => e.id).join(', ')}`).toBe(`${lang}: `);
+    }
   });
 });
