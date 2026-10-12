@@ -417,7 +417,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
      its own under the strip, whole, never cut after its first words */
   let blocked: string | null = null;
   if (stage === 'theirs') {
-    line = game.phase !== 'action' ? t('game.topbar.between') : p.isBot ? t(botHold ? 'game.topbar.waitsRead' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
+    line = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t(botHold ? 'game.topbar.waitsRead' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
   } else if (stage === 'ready') {
     line = preparing ? t('game.topbar.hint.prepared') : t('game.topbar.hint.ready');
   } else if (stage === 'target') {
@@ -476,12 +476,13 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
      while a place is looked for, the player while they play */
   const sentence = (() => {
     if (stage === 'theirs') {
-      const rest = game.phase !== 'action' ? t('game.topbar.between') : p.isBot ? t('game.topbar.thinksRest') : t('game.topbar.playsRest');
+      const rest = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t('game.topbar.thinksRest') : t('game.topbar.playsRest');
       return (
         <>
           <b className="font-semibold" style={{ color }}>{game.phase !== 'action' ? '' : p.name}</b>
           {game.phase !== 'action' ? rest : ` ${rest}`}
-          {lastWhat && <span className="text-cream-100/60"> · {lastWhat}</span>}
+          {/* a finished game has no last move to report: the register says the rest */}
+          {lastWhat && game.phase !== 'game-over' && <span className="text-cream-100/60"> · {lastWhat}</span>}
         </>
       );
     }
