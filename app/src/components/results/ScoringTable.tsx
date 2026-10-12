@@ -42,6 +42,10 @@ export default function ScoringTable({
      empty purse on payday costs on the spot, and the initiation game closes
      its books with a bonus. Without this line the total reads as an error. */
   const aside = players.map((p, i) => p.vp - eraTotal(result, i));
+  /* a table that rose before an era was counted: that era scored nothing,
+     and a nought would read as a count that came out empty */
+  const uncounted = (name: string) =>
+    !!result.abandoned && !!eras.find((e) => e.name === name)?.scores.every((v) => !v);
 
   let row = 0;
 
@@ -108,7 +112,7 @@ export default function ScoringTable({
                   </motion.td>
                   {players.map((p, i) => (
                     <TableCell key={p.name} className="text-right font-mono text-sm text-paper-100 tabular-nums">
-                      {era.scores[i] ?? 0}
+                      {uncounted(era.name) ? "—" : (era.scores[i] ?? 0)}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -117,13 +121,15 @@ export default function ScoringTable({
           })}
 
           {/* What fell outside the eras, when anything did */}
+          {/* set at the eras' own level, not indented under the rail: a
+              barrel can pay in either era */}
           {aside.some((v) => v !== 0) && (
-            <TableRow className="border-b border-[var(--gz-ink-faint)] hover:bg-transparent">
+            <TableRow className="border-y border-[var(--gz-ink-soft)] hover:bg-transparent">
               <motion.td
                 initial={{ opacity: 0, y: 8 }}
                 animate={reveal ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.2 }}
-                className="pl-8 font-ui text-[13px] text-paper-300"
+                className="p-2 align-middle font-ui text-[13px] text-paper-300"
               >
                 {t("results.table.aside")}
               </motion.td>
@@ -153,7 +159,8 @@ export default function ScoringTable({
           {/* Info rows (not scored in VP) */}
           {(
             [
-              [t("results.table.finalIncome"), players.map((p) => `£${p.income}`)],
+              /* the income LEVEL, what a payday pays — not a sum of money */
+              [t("results.table.finalIncome"), players.map((p) => String(p.income))],
               [t("results.table.linksBuilt"), players.map((p) => String(p.links))],
               [t("results.table.tilesBuilt"), players.map((p) => String(p.industries))],
             ] as [string, string[]][]

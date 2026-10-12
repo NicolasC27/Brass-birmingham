@@ -92,7 +92,9 @@ function draw(cv: HTMLCanvasElement, r: FinalResult, me: number, table: string, 
   ctx.fillText(mine.player.name, x, 214);
   ctx.font = '15px "IBM Plex Mono", monospace';
   ctx.fillStyle = 'rgba(36,29,20,0.75)';
-  ctx.fillText(`${lines.points.replace('{vp}', String(mine.player.vp))}  ·  ${lines.place.replace('{n}', String(place)).replace('{of}', String(ranked.length))}`, x, 248);
+  /* the place as the podium writes it (1re, 1st, 1.), never a bare "1e" */
+  const rank = lines.ranks.split('|')[place - 1] ?? String(place);
+  ctx.fillText(`${lines.points.replace('{vp}', String(mine.player.vp))}  ·  ${lines.place.replace('{rank}', rank).replace('{of}', String(ranked.length))}`, x, 248);
   ctx.fillText(table, x, 274);
   /* the other passengers, a line each with their colour */
   let y = 322;
@@ -109,8 +111,8 @@ function draw(cv: HTMLCanvasElement, r: FinalResult, me: number, table: string, 
     ctx.textAlign = 'left';
     y += 24;
   }
-  /* the stamp of the winner */
-  if (r.winnerIndex === me) {
+  /* the stamp of the winner — none on a table that rose before the end */
+  if (r.winnerIndex === me && !r.abandoned) {
     ctx.save();
     ctx.translate(W - 210, 300);
     ctx.rotate(-0.16);
@@ -150,6 +152,7 @@ export default function Ticket({ result, me, table }: { result: FinalResult; me:
       passenger: t('results.ticket.passenger'),
       points: t('results.ticket.points'),
       place: t('results.ticket.place'),
+      ranks: [0, 1, 2, 3].map((i) => t(`results.podium.ranks.${i}`)).join('|'),
       winner: t('results.ticket.winner'),
       number: String(1000 + ((Date.now() / 60000) | 0) % 9000),
       date: `${new Date().toLocaleDateString(localeOf(lang), { day: 'numeric', month: 'long' })} ${e.year}`,

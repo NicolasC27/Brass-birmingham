@@ -24,13 +24,20 @@ export default function TimelineFrieze({
 
   if (timeline.length === 0) return null;
 
-  const playerFor = (entry: string) =>
-    players.find((p) => p.name && entry.includes(p.name)) ?? null;
+  /* the seat a line is about: one name only — a line that names the whole
+     table (the deal, an era's count) belongs to nobody */
+  const playerFor = (entry: string) => {
+    const named = players.filter((p) => p.name && entry.includes(p.name));
+    return named.length === 1 ? named[0] : null;
+  };
 
-  const isRailTurn = (entry: string) =>
-    /rail/i.test(entry) && /ère|era|commence|begins/i.test(entry);
-
-  const railTurnIdx = timeline.findIndex(isRailTurn);
+  /* the swing into the Rail Era: the first line dated in the rail after one
+     dated in the canal — read from the ledger's bracket, never from words
+     that happen to hold "rail" and "ère" (« bière ») */
+  const eraOf = (entry: string) => /^\[(Canal|Rail) R\d+\]/.exec(entry)?.[1] ?? null;
+  const railTurnIdx = timeline.findIndex(
+    (entry, i) => i > 0 && eraOf(entry) === "Rail" && eraOf(timeline[i - 1]) === "Canal",
+  );
 
   /* the store keeps each entry as « [Canal R5] sentence »: the bracket is the
      ledger's shorthand, printed here as the era and the round in words */
@@ -38,7 +45,8 @@ export default function TimelineFrieze({
     const m = /^\[(Canal|Rail) R(\d+)\]\s*(.*)$/.exec(entry);
     if (!m) return { when: null, text: entry };
     const era = t(m[1] === 'Canal' ? 'platform.tableau.canal' : 'platform.tableau.rail');
-    return { when: t('platform.tableau.progress', { era, turn: t('platform.state.turn', { round: Number(m[2]) }) }), text: m[3] };
+    /* the round is named as the table names it (manche, Runde, ronda) */
+    return { when: t('game.ledger.roundSep', { era, round: Number(m[2]) }), text: m[3] };
   };
 
   return (
@@ -60,7 +68,7 @@ export default function TimelineFrieze({
         <ol className="relative flex min-w-max items-start gap-7 px-4">
           {timeline.map((entry, i) => {
             const player = playerFor(entry);
-            const color: PlayerColor = player?.color ?? "brass";
+            const color: PlayerColor | null = player?.color ?? null;
             const railTurn = i === railTurnIdx;
             const inRailEra = railTurnIdx >= 0 && i > railTurnIdx;
             const { when, text } = split(entry);
@@ -78,9 +86,11 @@ export default function TimelineFrieze({
                     )}
                     style={{ boxShadow: `0 0 0 3px ${INK.ground}` }}
                   >
+                    {/* a line of the whole table is a hollow ring, not
+                        the first seat's colour */}
                     <span
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: seatInk(color) }}
+                      className={cn("h-3 w-3 rounded-full", !color && "border border-[var(--gz-ink-soft)]")}
+                      style={color ? { backgroundColor: seatInk(color) } : undefined}
                     />
                   </motion.span>
                 </Tip>
