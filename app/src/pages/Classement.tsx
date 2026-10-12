@@ -4,11 +4,13 @@ import { motion } from 'framer-motion';
 import EmptyState from '@/components/platform/EmptyState';
 import MemberAvatar from '@/components/platform/MemberAvatar';
 import RankBadge, { type RankTier } from '@/components/platform/RankBadge';
+import RankEmblem from '@/components/platform/RankEmblem';
 import Skeleton from '@/components/platform/Skeleton';
 import PlayerToken from '@/components/setup/PlayerToken';
 import { isOnline } from '@/online/lobby';
 import { useDesk, useLeaderboard, useSession, useStranger } from '@/online/session';
 import CompaniesPanel from '@/components/platform/CompaniesPanel';
+import PageShell from '@/components/site/PageShell';
 import type { LeaderRow } from '@/online/table';
 import { rankOf, type RankView } from '@/platform/rank';
 import { useWallet } from '@/platform/wallet';
@@ -44,7 +46,7 @@ function HonourRow({ row, mine, avatar }: { row: Ranked; mine: boolean; avatar: 
   return (
     <tr className={cn('border-b border-[rgb(var(--paper-100)/.06)] transition-colors duration-150 last:border-b-0', mine ? 'bg-[rgb(var(--signal-400)/.08)]' : 'hover:bg-enamel-700/50')}>
       <td className="py-2.5 pl-3 pr-2">
-        <span className={cn('data-text text-[13px] tabular-nums', row.rank <= 3 ? 'font-semibold text-brass-300' : 'text-iron-400')}>{row.rank}</span>
+        <span className={cn('data-text tabular-nums', row.rank <= 3 ? 'font-semibold text-brass-300' : 'text-iron-400')}>{row.rank}</span>
       </td>
       <td className="py-2.5 pr-3">
         <span className="flex items-center gap-2.5">
@@ -57,7 +59,7 @@ function HonourRow({ row, mine, avatar }: { row: Ranked; mine: boolean; avatar: 
           )}
           <span className="truncate font-ui text-[13px] font-semibold text-paper-100">{row.name}</span>
           {row.color && <PlayerToken color={row.color} size={12} />}
-          {mine && <span className="micro-label rounded bg-[rgb(var(--signal-400)/.14)] px-1.5 py-0.5 text-signal-ink">{t('platform.ranking.you')}</span>}
+          {mine && <span className="micro-label bg-[rgb(var(--signal-400)/.14)] px-1.5 py-0.5 text-signal-ink">{t('platform.ranking.you')}</span>}
         </span>
       </td>
       <td className="py-2.5 pr-3">
@@ -103,7 +105,7 @@ function HonourTable({ rows, pinned, me, avatar }: { rows: Ranked[]; pinned: Ran
           {pinned && (
             <>
               <tr aria-hidden>
-                <td colSpan={cols.length} className="data-text py-1 text-center text-[13px] leading-none text-iron-400">
+                <td colSpan={cols.length} className="data-text py-1 text-center leading-none text-iron-400">
                   …
                 </td>
               </tr>
@@ -125,7 +127,7 @@ function Ladder({ mine }: { mine: RankView }) {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease, delay: 0.1 }}
-      className="self-start console p-5 min-[1100px]:col-span-4"
+      className="self-start console p-5 min-[900px]:col-span-4"
     >
       <h2 className="title-card">{t('platform.ranking.ladder.title')}</h2>
       <div className="mb-4 mt-3 h-px bg-brass-hairline" />
@@ -139,9 +141,9 @@ function Ladder({ mine }: { mine: RankView }) {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, ease, delay: 0.12 + i * 0.04 }}
-              className={cn('flex items-center gap-3 rounded-lg border px-3 py-2', here ? 'border-brass-hairline-strong bg-enamel-800' : 'border-transparent')}
+              className={cn('flex items-center gap-3 border px-3 py-2', here ? 'border-brass-hairline-strong bg-enamel-800' : 'border-transparent')}
             >
-              <img src={`/rank-${tier}.svg`} alt="" width={24} height={24} className="h-6 w-6" />
+              <RankEmblem tier={tier} size={24} />
               <span className={cn('font-ui text-[13px] font-semibold', here ? 'text-paper-100' : 'text-iron-400')}>{t(`platform.rank.${tier}`)}</span>
               <span className="data-text ml-auto tabular-nums text-iron-400">{t(`platform.ranking.ladder.floor.${tier}`)}</span>
               {here && <span className="micro-label text-brass-300">{t('platform.ranking.ladder.you')}</span>}
@@ -156,6 +158,13 @@ function Ladder({ mine }: { mine: RankView }) {
 
 /* ----------------------------------- Page ----------------------------------- */
 
+/* The page goes through the journal's own frame, like its neighbours: an
+   eyebrow, the title, a lede in the book face with the season's facts set
+   under it, the reader's plaque at the right. The visitor is no longer sent
+   away to the sign-in form without a word: the ladder is public and stays,
+   the table and the companies — which the office only reads to members —
+   give way to a plate that says where they are read. */
+
 export default function Classement() {
   const t = useT();
   const navigate = useNavigate();
@@ -167,10 +176,7 @@ export default function Classement() {
 
   useEffect(() => {
     if (!isOnline) navigate('/online', { replace: true });
-    else if (stranger) navigate('/account', { replace: true });
-  }, [stranger, navigate]);
-
-  if (!session) return null;
+  }, [navigate]);
 
   const rows: Ranked[] = (board?.rows ?? []).map((r, i) => ({ ...r, rank: i + 1 }));
   const me = board?.me ?? null;
@@ -179,35 +185,48 @@ export default function Classement() {
   const mine = rankOf(desk?.rating);
   const avatar = { avatar: wallet.equipped.avatar, frame: wallet.equipped.frame };
 
+  const facts = [
+    board ? t('platform.ranking.players', { count: board.players }) : session ? t('platform.ranking.loading') : null,
+    season ? t('platform.ranking.daysLeft', { days: daysUntil(season.endsAt) }) : null,
+  ].filter((x): x is string => x !== null);
+
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-16 pt-10 sm:px-8">
-      <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease }} className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-        <div className="min-w-0">
-          <p className="eyebrow-fell">{t('platform.ranking.eyebrow')}</p>
-          <h1 className="display-page mt-1">
-            {t('platform.ranking.title')}
-            {season && <span className="text-iron-400"> · {season.name}</span>}
-          </h1>
-          <p className="data-text mt-2 tabular-nums text-iron-400">
-            {board ? t('platform.ranking.players', { count: board.players }) : t('platform.ranking.loading')}
-            {season && ` · ${t('platform.ranking.daysLeft', { days: daysUntil(season.endsAt) })}`}
-            {' · '}
-            <Link to="/services" className="text-brass-300 transition-colors hover:text-paper-100">
+    <PageShell
+      eyebrow={t('platform.ranking.eyebrow')}
+      title={
+        <>
+          {t('platform.ranking.title')}
+          {season && <span className="text-iron-400"> · {season.name}</span>}
+        </>
+      }
+      lede={
+        <>
+          {t('platform.ranking.lede')}
+          <span className="mt-2 block font-serif text-[13px] not-italic text-iron-400 tnums">
+            {facts.map((f) => `${f} · `).join('')}
+            <Link to="/services" className="text-paper-100 underline decoration-[var(--gz-ink-soft)] underline-offset-4 transition-colors hover:decoration-[var(--gz-ink)]">
               {t('platform.seasons.link')} →
             </Link>
-          </p>
-        </div>
-        {board && (
-          <div className="flex flex-wrap items-center gap-3 console px-4 py-3">
-            <RankBadge tier={mine.tier} division={mine.division} lp={mine.lp} placementDone={mine.placementDone ?? undefined} size={32} />
-            <span className="data-text tabular-nums text-iron-400">{me ? t('platform.ranking.myRank', { rank: me.rank, count: board.players }) : t('platform.ranking.unranked')}</span>
+          </span>
+        </>
+      }
+      aside={
+        session && board ? (
+          /* as wide as four of the twelve columns below (gap-8), so the plaque
+             and the ladder under it stand on one axis; the badge above its
+             sentence, which a third of the page would break in three */
+          <div className="console flex w-full items-center gap-3 px-4 py-3 min-[1100px]:w-[calc((100%-22rem)/3+6rem)] min-[1100px]:flex-col min-[1100px]:items-start min-[1100px]:gap-2">
+            <RankBadge tier={mine.tier} division={mine.division} lp={mine.lp} placementDone={mine.placementDone ?? undefined} size={32} className="shrink-0" />
+            <span className="min-w-0 font-serif text-[13px] leading-snug text-paper-300">{me ? t('platform.ranking.myRank', { rank: me.rank, count: board.players }) : t('platform.ranking.unranked')}</span>
           </div>
-        )}
-      </motion.header>
-
-      <div className="mt-8 grid gap-6 min-[1100px]:grid-cols-12">
-        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease, delay: 0.06 }} className="min-w-0 min-[1100px]:col-span-8">
-          {board === null ? (
+        ) : undefined
+      }
+    >
+      <div className="grid gap-8 min-[900px]:grid-cols-12">
+        <motion.section initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease, delay: 0.06 }} className="min-w-0 min-[900px]:col-span-8">
+          {stranger ? (
+            <EmptyState plate="tables" title={t('platform.ranking.signInTitle')} copy={t('platform.ranking.signInCopy')} cta={{ label: t('platform.action.signIn'), to: '/account' }} />
+          ) : board === null || !session ? (
             <div className="grid gap-3 console p-5" aria-busy aria-label={t('platform.ranking.loading')}>
               {Array.from({ length: 8 }, (_, i) => (
                 <Skeleton key={i} className={cn('h-8', i === 0 ? 'w-2/3' : 'w-full')} />
@@ -221,7 +240,7 @@ export default function Classement() {
         </motion.section>
         <Ladder mine={mine} />
       </div>
-      <CompaniesPanel />
-    </div>
+      {session && <CompaniesPanel />}
+    </PageShell>
   );
 }
