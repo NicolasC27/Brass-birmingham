@@ -53,7 +53,9 @@ import type { HomeTrouble } from '@/game/store';
 import { GLIMPSE_MS } from '@/components/game/boardView';
 import { isOnline } from '@/online/lobby';
 import { useStranger } from '@/online/session';
-import { keepFinal } from '@/game/final';
+import { keepFinal, keepTableOf } from '@/game/final';
+import { replay, setupOf } from '@/game/actions';
+import { topLayer } from '@/components/game/layers';
 import type { Resource } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
@@ -248,7 +250,6 @@ export default function Game() {
      draws coal or iron from it, and folds back once that plan is gone */
   const [marketOpen, setMarketOpen] = useState(false);
   const marketAutoOpened = useRef(false);
-  const finalWritten = useRef(false);
   const prevPlayer = useRef(-1);
 
   /* ------------------------- lifecycle ------------------------- */
@@ -354,22 +355,33 @@ export default function Game() {
   }, [game, setDebriefOpen]);
 
   /* ------------------------- final write ------------------------ */
-  /* a game already over when the page opened is being looked at again:
-     its results were written then, and nobody is sent on to them */
-  const overAtStart = useRef<boolean | null>(null);
+  /* the ledger of a finished game is left for the pages that follow the
+     board, closed on this visit or reopened; nobody is sent on to them —
+     the reader leaves the final ledger when they choose. A game that
+     closes while the table watches has its last era counted in; one
+     already over when it was opened is simply read */
+  const tableAt = tableCode ?? localCode ?? '';
+  const [openedOver, setOpenedOver] = useState<{ at: string; over: boolean } | null>(null);
+  if (game && openedOver?.at !== tableAt) setOpenedOver({ at: tableAt, over: game.phase === 'game-over' });
   useEffect(() => {
-    if (game && overAtStart.current === null) overAtStart.current = game.phase === 'game-over';
+    if (game?.phase === 'game-over') keepFinal(buildFinalPayload(game));
   }, [game]);
-  useEffect(() => {
-    if (!game || game.phase !== 'game-over' || !gameOverOpen || finalWritten.current || overAtStart.current) return;
-    /* the reader is in the analysis: the ledger waits for them, it does not
-       pull them out of it */
-    if (debriefOpen || review) return;
-    finalWritten.current = true;
-    keepFinal(buildFinalPayload(game));
-    const t = window.setTimeout(() => navigate('/results'), 9000);
-    return () => window.clearTimeout(t);
-  }, [game, gameOverOpen, debriefOpen, review, navigate]);
+  /* the links come off the board with the last scoring: the finished table
+     shows the network at its height, as it stood before the last move */
+  const finalBoard = useMemo(() => {
+    if (!game || game.phase !== 'game-over' || game.abandoned || Object.keys(game.links).length) return null;
+    const cut = game.actions[game.actions.length - 1]?.kind === 'begin-rail' ? 2 : 1;
+    try {
+      const before = replay(setupOf(game), game.seed, game.actions.slice(0, -cut));
+      /* the last move may have laid a line itself: it belongs to the network */
+      const links = { ...before.links };
+      const last = game.actions[game.actions.length - cut];
+      if (last?.kind === 'network') for (const id of [last.link, last.second]) if (id && !links[id]) links[id] = { owner: before.current, era: before.era };
+      return { ...game, links };
+    } catch {
+      return null;
+    }
+  }, [game]);
 
   /* -------------------------- keyboard -------------------------- */
   useEffect(() => {
@@ -377,6 +389,9 @@ export default function Game() {
       /* a reader writing somewhere keeps their letters: the shortcuts are
          for the board, not for a field */
       if (typing(e)) return;
+      /* a sheet that holds the table — the final ledger, the era's scene, a
+         note to sign — keeps the board's keys away: Escape and Tab are its own */
+      if (topLayer()?.modal) return;
       /* the panels have had their Escape already (the table's spike hears
          it first, and closes the top one only): what reaches here is for
          the board. The orders shown on the board close first. */
@@ -400,6 +415,11 @@ export default function Game() {
         return;
       }
       if (e.key === 'Escape') {
+        /* the finished board, looked at: Escape puts the final ledger back up */
+        if (game.phase === 'game-over' && !useGame.getState().gameOverOpen) {
+          useGame.getState().openGameOver();
+          return;
+        }
         cancel();
         setSpotlight(null);
         return;
@@ -654,7 +674,7 @@ export default function Game() {
       <div ref={boardHost} className="absolute inset-0">
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
-            game={review?.state ?? game}
+            game={review?.state ?? finalBoard ?? game}
             targets={review ? NO_TARGETS : targets}
             linkTargetsList={review ? NO_LINKS : linkTargetsList}
             sellTargetsList={review ? NO_SALES : sellTargetsList}
@@ -737,13 +757,14 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      {!surveying && !review && (spectating ? <SpectatorStrip /> : <HandDock />)}
+      {/* a game played out has no hand to hold: its foot is the final ledger's strip */}
+      {!surveying && !review && game.phase !== 'game-over' && (spectating ? <SpectatorStrip /> : <HandDock />)}
       {/* reading a game again: the hand the move was chosen from, where the
           player's own hand sits while the game runs */}
       {review && <ReviewHand />}
       <ConcedeBanner />
       <TableMood />
-      {!surveying && <Notices />}
+      {!surveying && !gameOverOpen && !ceremony && <Notices />}
       {!surveying && !review && <CoachChip />}
       <Gazette />
       <PreparedPanel />
@@ -868,10 +889,13 @@ export default function Game() {
         )}
       </AnimatePresence>
 
-      <Ceremony />
+      <Ceremony ready={boardStage === 'ready'} />
       <GameOverModal
+        fresh={openedOver?.over === false}
+        ready={boardStage === 'ready'}
         onRematch={() => {
-          finalWritten.current = false;
+          /* the rematch is dealt for the table just played, not the salon's last one */
+          if (game && !tableCode) keepTableOf(game);
           reset();
         }}
       />
@@ -888,6 +912,19 @@ export default function Game() {
             <span className="font-fell text-[12.5px] text-cream-100">{review.label ?? t('game.debrief.banner', { round: review.round })}</span>
             <button type="button" onClick={leaveReview} className="btn-ledger !min-h-[26px] !px-2.5 !py-0.5 text-[11px]">
               {t('game.debrief.back')}
+            </button>
+          </div>
+        </div>
+      )}
+      {/* the finished board, looked at: the final ledger lowered to a strip */}
+      {game.phase === 'game-over' && !gameOverOpen && !debriefOpen && !review && (
+        <div className="pointer-events-none fixed inset-x-0 z-[66] flex justify-center px-4" style={{ bottom: insets.bottom + 12 }}>
+          <div role="status" className="plaque pointer-events-auto flex items-center gap-4 rounded-lg px-4 py-2">
+            <span className="font-fell text-[14px] text-cream-100">
+              {game.abandoned || game.winner === undefined ? t('game.scoring.abandonedTitle') : t('game.scoring.strip', { name: game.players[game.winner].name, vp: game.players[game.winner].vp })}
+            </span>
+            <button type="button" onClick={() => useGame.getState().openGameOver()} aria-keyshortcuts="Escape" className="btn-ledger !min-h-[30px] !px-3 !py-1 text-[11px]">
+              {t('game.scoring.backToLedger')}
             </button>
           </div>
         </div>
