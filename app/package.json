@@ -8,12 +8,15 @@
     "build": "tsc -b && vite build",
     "build:server": "node server/build.mjs",
     "server": "node server/build.mjs && node server/dist/blackrail-server.mjs",
+    "office:restore": "node --no-warnings server/restore.mjs",
     "server:dev": "node server/build.mjs --watch & node --watch server/dist/blackrail-server.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
     "desktop": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build",
+    "visual": "node tools/visual/run.mjs",
+    "visual:update": "node tools/visual/run.mjs --update"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.3.0",
@@ -87,7 +90,9 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "pixelmatch": "^6.0.0",
     "plugin-inspect-react-code": "^1.0.3",
+    "pngjs": "^7.0.0",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
     "tailwindcss-animate": "^1.0.7",
