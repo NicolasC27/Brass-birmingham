@@ -82,6 +82,8 @@ export type ClientMessage =
   /** close my account and erase what identifies me; the password says it is me */
   | { t: 'close'; rid: number; password: string }
   /** an idea or a bug for the house, from any page */
+  /** a browser's own fault, sent unasked: no game, nothing personal */
+  | { t: 'fault'; message: string; stack: string; page: string; version: string; agent: string; at: number }
   | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
   /** the desk: my tables, my invitations, my past games */
   | { t: 'desk'; rid?: number }

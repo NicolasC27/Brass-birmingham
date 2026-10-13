@@ -308,6 +308,12 @@ export class Wire {
     await this.ask((rid) => ({ t: 'buy', rid, item }));
   }
 
+  /** a fault of this page, for the office's log: goes even before sign-in,
+   *  and waits in the outbox while the line is down */
+  fault(f: Omit<Extract<ClientMessage, { t: 'fault' }>, 't'>): void {
+    this.post({ t: 'fault', ...f }, true);
+  }
+
   send(m: ClientMessage): void {
     this.post(m, false);
   }

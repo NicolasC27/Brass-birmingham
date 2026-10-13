@@ -30,6 +30,9 @@ import '@fontsource/im-fell-english-sc/400.css'
 import './index.css'
 import App from './App.tsx'
 import { installDesktopZoom } from './desktop/zoom'
+import { installFaultReports } from './platform/errors'
+
+installFaultReports()
 
 void installDesktopZoom()
 

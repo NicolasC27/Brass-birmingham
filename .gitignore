@@ -22,3 +22,6 @@ AGENTS.md
 # secrets (API keys) — never committed
 .env
 .env.*
+
+# copies of the office register
+app/backups/

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { serve } from './index';
+import { startBackups } from './backup';
 
 /* The server as a process: PORT, HOST and BLACKRAIL_DB from the
    environment, and the keys the house keeps in `.env.local` beside the
@@ -52,6 +53,7 @@ const file = process.env.BLACKRAIL_DB ?? 'brassworks.db';
 
 serve({ port, host, file }).then((table) => {
   console.log(`blackrail table server listening on ${host}:${table.port}, register in ${file}`);
+  startBackups(file);
   for (const signal of ['SIGINT', 'SIGTERM'] as const) {
     process.on(signal, () => {
       /* the register is already up to date: closing is only good manners */

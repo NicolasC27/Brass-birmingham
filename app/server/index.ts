@@ -268,6 +268,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     const a = failures.get(key);
     return !!a && a.n >= limit && Date.now() - a.at < ATTEMPTS.forMs;
   };
+  const faultTimes = new WeakMap<object, number[]>();
   const http = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://blackrail');
     const own = dev && loopback(req);
@@ -312,6 +313,18 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     }
     /* the suggestion box, as a page: every idea and bug, newest first —
        from this machine, or with the token FEEDBACK_TOKEN names */
+    if (url.pathname === '/faults') {
+      const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
+      if (!shown) {
+        headed(res, 404, 'text/plain');
+        res.end('Not found\n');
+        return;
+      }
+      headed(res, 200, 'text/plain; charset=utf-8');
+      const faults = store.faults();
+      res.end(faults.length ? faults.map((f) => `${new Date(f.seen).toISOString()}  ${f.page}  v${f.version}  ${f.name ?? f.accountId ?? 'stranger'}\n  ${f.message}\n  ${f.agent}\n${f.stack ? f.stack.replace(/^/gm, '    ') + '\n' : ''}`).join('\n') : 'No fault reported.\n');
+      return;
+    }
     if (url.pathname === '/feedback') {
       const shown = own || (feedbackToken !== '' && sameToken(url.searchParams.get('token') ?? '', feedbackToken));
       if (!shown) {
@@ -597,6 +610,16 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         /* an unknown address gets the same answer: the letter is the only tell */
         if (account) mail('reset', account);
         send(c, { t: 'done', rid: m.rid });
+        return;
+      }
+      case 'fault': {
+        /* five a minute per socket, whatever the page believes it sent */
+        const now = Date.now();
+        const recent = (faultTimes.get(c) ?? []).filter((t) => now - t < 60_000);
+        if (recent.length >= 5) return;
+        faultTimes.set(c, [...recent, now]);
+        const cut = (v: unknown, n: number) => (typeof v === 'string' ? v : '').slice(0, n);
+        store.fault({ accountId: c.me?.id ?? null, message: cut(m.message, 500), stack: cut(m.stack, 2000), page: cut(m.page, 200), version: cut(m.version, 40), agent: cut(m.agent, 200), at: typeof m.at === 'number' ? m.at : now, seen: now });
         return;
       }
       case 'reset': {

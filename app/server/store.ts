@@ -427,6 +427,22 @@ function resultOf(state: GameState, tallies?: Tally[]): Result {
   };
 }
 
+/* the browsers' faults: what broke, where, on which build — never a game */
+const FAULTS = `
+create table if not exists faults (
+  id        integer primary key,
+  accountId text,
+  message   text not null,
+  stack     text not null,
+  page      text not null,
+  version   text not null,
+  agent     text not null,
+  at        integer not null,
+  seen      integer not null
+);`;
+
+export type Fault = { accountId: string | null; message: string; stack: string; page: string; version: string; agent: string; at: number; seen: number };
+
 export class Store {
   private db: DatabaseSync;
 
@@ -435,6 +451,7 @@ export class Store {
     this.db.exec('pragma journal_mode = wal');
     this.db.exec('pragma foreign_keys = on');
     this.db.exec(SCHEMA);
+    this.db.exec(FAULTS);
     this.grow();
   }
 
@@ -737,7 +754,7 @@ export class Store {
       this.db
         .prepare("update accounts set name = ?, folded = ?, email = null, emailFolded = null, secret = ?, motto = '', favoriteColor = null, portrait = null, createdIp = null, closedAt = ? where id = ?")
         .run(gone, fold(gone), seal(randomBytes(32).toString('hex')), now, accountId);
-      for (const table of ['sessions', 'letters', 'feedback', 'purses', 'papers', 'notes']) {
+      for (const table of ['sessions', 'letters', 'feedback', 'purses', 'papers', 'notes', 'faults']) {
         try {
           this.db.prepare(`delete from ${table} where accountId = ?`).run(accountId);
         } catch {
@@ -1130,6 +1147,16 @@ export class Store {
   }
 
   /** every mark, newest first, with the account's name */
+  fault(f: Fault): void {
+    this.db.prepare('insert into faults (accountId, message, stack, page, version, agent, at, seen) values (?, ?, ?, ?, ?, ?, ?, ?)').run(f.accountId, f.message, f.stack, f.page, f.version, f.agent, f.at, f.seen);
+    /* the log keeps its last thousand lines; older faults are old news */
+    this.db.prepare('delete from faults where id <= (select max(id) from faults) - 1000').run();
+  }
+
+  faults(): (Fault & { name: string | null })[] {
+    return this.db.prepare('select f.*, a.name from faults f left join accounts a on a.id = f.accountId order by f.id desc limit 300').all() as unknown as (Fault & { name: string | null })[];
+  }
+
   flags(): (Flag & { name: string })[] {
     return this.db.prepare('select f.*, a.name from flags f left join accounts a on a.id = f.accountId order by f.at desc').all() as unknown as (Flag & { name: string })[];
   }
