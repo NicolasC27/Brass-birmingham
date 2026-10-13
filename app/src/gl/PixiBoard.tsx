@@ -8,6 +8,7 @@ import type { PlanGhost } from '@/game/ghost';
 import { BoardLostPlate } from '@/components/game/TitleCard';
 import type { Era, GameState } from '@/game/types';
 import { lastActionOf, projectQueued, useGame, verbsForCard } from '@/game/store';
+import { WhyLink } from '@/components/game/RulesOverlay';
 import { money, onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
@@ -52,6 +53,8 @@ const GLIMPSE_FADE_MS = 500;
 /* a refusal, as a small ledger note: a rust seal, the word in small caps,
    the sentence in the book's hand; a notch points at the place refused */
 function RefusalNote({ text, notch, wide }: { text: string; notch?: 'up' | 'down'; wide?: boolean }) {
+  const reason = useGame((s) => s.shake?.reason);
+  const verb = useGame((s) => s.verb);
   return (
     <div className={cn('relative flex items-start gap-2 rounded-md border border-brass-700/50 bg-coal-900/[.97] py-1.5 pl-2 pr-3 text-left shadow-e3', wide ? 'max-w-[440px]' : 'max-w-[300px]')} role="alert">
       <span aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-md opacity-[0.06]" />
@@ -63,6 +66,8 @@ function RefusalNote({ text, notch, wide }: { text: string; notch?: 'up' | 'down
         <span className="font-sans text-[8px] font-bold uppercase tracking-[0.2em] text-rust-500 brightness-150">{tr('board.refusal.label')}</span>
         <span className="font-fell text-[13px] leading-snug text-cream-100">{text}</span>
       </span>
+      {/* the rule behind the no, on the label's line so the bubble keeps its size */}
+      {reason && <WhyLink reason={reason} verb={verb} className="absolute right-3 top-1 !text-[9px] tracking-wide" />}
       {notch && (
         <span
           aria-hidden

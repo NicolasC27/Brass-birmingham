@@ -5,6 +5,7 @@ import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
 import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard, useShownGame } from '@/game/store';
+import { WhyLink } from './RulesOverlay';
 import type { GameState, Verb } from '@/game/types';
 import { money, reasonText, useT } from '@/i18n';
 import { aidOn, useBoardOptions } from './boardOptions';
@@ -416,6 +417,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
      sentence, which names the cause and the way round it — on a line of
      its own under the strip, whole, never cut after its first words */
   let blocked: string | null = null;
+  let blockedWhy: string | undefined;
   if (stage === 'theirs') {
     line = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t(botHold ? 'game.topbar.waitsRead' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
   } else if (stage === 'ready') {
@@ -438,6 +440,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
         /* the verb is on its chip and the card on the strip: the line
            under them says only why, and what would open the way */
         blocked = reasonText(why);
+        blockedWhy = why;
         if (aid) blocked += ` — ${t(`game.topbar.aid.none.${verb}`)}`;
       } else if (aid) {
         /* the beginner's aid counts the choices */
@@ -633,6 +636,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
         {blocked && (
           <p role="status" className="border-t border-brass-700/30 px-3 py-1 font-sans text-[12px] leading-snug text-cream-100/90">
             {blocked}
+            {' '}<WhyLink reason={blockedWhy} verb={verb} />
           </p>
         )}
         {aidNote && <p className="truncate border-t border-brass-700/30 px-3 py-0.5 font-sans text-[11px] text-brass-400/85" title={aidNote}>{aidNote}</p>}
