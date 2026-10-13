@@ -14,6 +14,7 @@ import { stripRoom } from './stripRoom';
 import { useHudInsets } from './useHudInsets';
 import { PortraitMedallion } from './PlayerRail';
 import Tooltip from './Tooltip';
+import BarTip from './BarTip';
 import { cn } from '@/lib/utils';
 
 /**
@@ -295,6 +296,16 @@ function WaybillTokens({ draws, sale, game, box }: { draws: Draw[]; sale: DrawSa
 
 const OUT_OF_FLOW = 'pointer-events-none invisible absolute';
 
+/* The house buttons lift 2px on hover and drop a shadow below them: on a
+   36px strip that clips its overflow, the lift runs into the top edge and
+   the shadow is cut at the bottom one. Here they answer in place: the
+   ledger's wash, the strike's sheen and a touch of light, all inside.
+   The keyboard's ring, drawn 2px off a 32px button, was cut the same way:
+   here it hugs the button and ends on the strip's inner edge. */
+const IN_STRIP = 'hover:!transform-none active:!transform-none focus-visible:!outline-offset-0';
+const STRIKE_IN_STRIP =
+  '!shadow-[inset_0_1px_0_rgba(242,234,214,.55),inset_0_-1px_0_rgba(0,0,0,.3)] hover:brightness-110 active:brightness-95';
+
 interface RoomRefs {
   status: RefObject<HTMLSpanElement | null>;
   what: RefObject<HTMLSpanElement | null>;
@@ -531,21 +542,25 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
 
           {/* the fixed cluster is clipped before it can ride over the summary */}
           <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden px-2">
-            <span className={cn('shrink-0', settle && 'max-[1279px]:hidden')}>
-              <PortraitMedallion p={p} index={me} active={mine} size={22} />
+            {/* the medallion is a flex box of its own, not an inline block on
+                a line of text: sat on the baseline it rode 3.5px high. Its
+                ring stands 3.5px outside the box, so the box keeps that much
+                clear on either hand. Unlit here: the strip already says whose
+                turn it is, and a glow would be cut by the strip's edge. */}
+            <span className={cn('flex shrink-0 items-center pl-1 pr-0.5', settle && 'max-[1279px]:hidden')}>
+              <PortraitMedallion p={p} index={me} active={false} size={22} />
             </span>
             {mine && (
-              <span className={cn('flex shrink-0 items-center gap-[3px]', settle && 'max-[1279px]:hidden')} aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
+              <span className={cn('flex shrink-0 items-center gap-1', settle && 'max-[1279px]:hidden')} aria-label={t('game.topbar.actionOf', { n: Math.min(maxActions, done + 1), max: maxActions })}>
                 {stubs.map((st, i) => (
-                  <motion.span
+                  /* the stub in hand is lit, not swollen: nothing on the strip grows */
+                  <span
                     key={i}
                     title={t(`game.topbar.stub.${st}`)}
-                    animate={st === 'current' ? { scale: [1, 1.15, 1] } : { scale: 1 }}
-                    transition={{ duration: 0.6 }}
-                    className={cn('block h-[14px] w-[10px] overflow-hidden rounded-[2px] border', st === 'played' ? 'border-brass-400 bg-brass-400' : st === 'current' ? 'border-brass-400 shadow-[0_0_6px_rgba(221,190,126,.8)]' : 'border-brass-700/60')}
+                    className={cn('block h-4 w-[11px] overflow-hidden rounded-[2px] border', st === 'played' ? 'border-brass-400 bg-brass-400' : st === 'current' ? 'border-brass-400 shadow-[0_0_5px_rgba(221,190,126,.7)]' : 'border-brass-700/60')}
                   >
                     {st !== 'played' && <img src="/card-back.webp" alt="" className={cn('h-full w-full object-cover', st === 'next' && 'opacity-40')} />}
-                  </motion.span>
+                  </span>
                 ))}
               </span>
             )}
@@ -588,48 +603,68 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
           {mine && (
             <div className="flex shrink-0 items-center gap-1.5 pr-1.5">
               {stage === 'verb' && (
-                <button type="button" onClick={() => setVerb('pass')} className="btn-ledger !min-h-[32px] !px-2.5 !py-0.5 text-[11px]" title={t('game.topbar.passTip')}>
-                  {t('game.topbar.pass')}
-                </button>
+                <BarTip tip={t('game.topbar.passTip')}>
+                  <button type="button" onClick={() => setVerb('pass')} className={cn('btn-ledger !min-h-[32px] !px-2.5 !py-0.5 text-[11px]', IN_STRIP)}>
+                    {t('game.topbar.pass')}
+                  </button>
+                </BarTip>
               )}
-              {/* on a narrow table the cancel is a struck cross; Esc says the same */}
-              <button
-                type="button"
-                onClick={cancel}
-                disabled={stage === 'card' && !preparing}
-                aria-label={t('game.topbar.cancel')}
-                className={cn('btn-ledger !min-h-[32px] !py-0.5 text-[11px] disabled:cursor-not-allowed disabled:opacity-40', settle ? '!px-0 max-[1279px]:!w-8 min-[1280px]:!px-2.5' : '!px-2.5')}
-                title={`${t('game.topbar.cancel')} — Esc`}
-              >
-                <X aria-hidden className={cn('h-3.5 w-3.5', settle ? 'min-[1280px]:hidden' : 'hidden')} />
-                <span className={settle ? 'max-[1279px]:hidden' : undefined}>{t('game.topbar.cancel')}</span>
-              </button>
+              {/* on a narrow table the cancel is a struck cross; Esc says the same.
+                  A disabled button lets the pointer through to the strip: it
+                  has nothing to answer, and a disabled control swallows the
+                  pointer's leaving, which would hold the neighbour's hint open */}
+              <BarTip tip={t('game.topbar.cancel')} keys="Esc" off={stage === 'card' && !preparing}>
+                <button
+                  type="button"
+                  onClick={cancel}
+                  disabled={stage === 'card' && !preparing}
+                  aria-label={t('game.topbar.cancel')}
+                  aria-keyshortcuts="Escape"
+                  className={cn(
+                    'btn-ledger !min-h-[32px] !py-0.5 text-[11px] disabled:pointer-events-none disabled:opacity-40',
+                    IN_STRIP,
+                    settle ? '!px-0 max-[1279px]:!w-8 min-[1280px]:!px-2.5' : '!px-2.5',
+                  )}
+                >
+                  <X aria-hidden className={cn('h-3.5 w-3.5', settle ? 'min-[1280px]:hidden' : 'hidden')} />
+                  <span className={settle ? 'max-[1279px]:hidden' : undefined}>{t('game.topbar.cancel')}</span>
+                </button>
+              </BarTip>
               {/* the strike carries the price it settles: the whole sum, cubes
                   bought included, and what the purse keeps */}
-              <button
-                type="button"
-                onClick={confirm}
-                disabled={stage !== 'ready'}
-                className={cn('btn-strike !min-h-[32px] !px-2.5 !py-0 text-[11px] disabled:cursor-not-allowed disabled:opacity-40', priced && '!flex-col !gap-0 leading-none')}
-                title={priced ? `${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵ · ${t('game.bandeau.priceTip')}` : `${t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')} — ↵`}
-              >
-                <span className="whitespace-nowrap">
-                  {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')}
-                  <kbd className={cn('ml-1 font-mono text-[10px] opacity-75', priced && 'max-[1279px]:hidden')}>↵</kbd>
-                </span>
-                {priced && (
-                  <motion.span
-                    key={`${priced.total}:${priced.after}`}
-                    initial={{ opacity: 0.4 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.25 }}
-                    className={cn('mt-[3px] whitespace-nowrap font-mono text-[9px] font-semibold normal-case tracking-normal', priced.after < 0 ? 'text-rust-700' : 'text-ink-900/80')}
-                  >
-                    {money(priced.total)}
-                    <span className="font-normal opacity-70"> · {t('game.bandeau.left', { sum: money(priced.after) })}</span>
-                  </motion.span>
-                )}
-              </button>
+              {/* the strike already reads its word and its key: the slip
+                  speaks only when there is a price to account for */}
+              <BarTip tip={t('game.bandeau.priceTip')} keys="↵" off={stage !== 'ready' || !priced}>
+                <button
+                  type="button"
+                  onClick={confirm}
+                  disabled={stage !== 'ready'}
+                  aria-keyshortcuts="Enter"
+                  className={cn(
+                    'btn-strike !min-h-[32px] !px-2.5 !py-0 text-[11px] disabled:pointer-events-none disabled:opacity-40',
+                    IN_STRIP,
+                    STRIKE_IN_STRIP,
+                    priced && '!flex-col !gap-0 leading-none',
+                  )}
+                >
+                  <span className="whitespace-nowrap">
+                    {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')}
+                    <kbd className={cn('ml-1 font-mono text-[10px] opacity-75', priced && 'max-[1279px]:hidden')}>↵</kbd>
+                  </span>
+                  {priced && (
+                    <motion.span
+                      key={`${priced.total}:${priced.after}`}
+                      initial={{ opacity: 0.4 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.25 }}
+                      className={cn('mt-[3px] whitespace-nowrap font-mono text-[9px] font-semibold normal-case tracking-normal', priced.after < 0 ? 'text-rust-700' : 'text-ink-900/80')}
+                    >
+                      {money(priced.total)}
+                      <span className="font-normal opacity-70"> · {t('game.bandeau.left', { sum: money(priced.after) })}</span>
+                    </motion.span>
+                  )}
+                </button>
+              </BarTip>
             </div>
           )}
         </div>
