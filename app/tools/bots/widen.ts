@@ -31,6 +31,7 @@
 
 import { readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { RULES_EDITION } from '@/game/engine';
 import { FEATURES } from '@/game/net';
 
 /** the values that follow the features on every row. Six for the record
@@ -41,7 +42,11 @@ const TRAILING = Number(process.env.TRAILING ?? 6);
 const FROM = Number(process.env.FROM ?? 0);
 const DIR = resolve(process.env.DIR ?? 'tools/bots/data');
 const PREFIX = process.env.PREFIX ?? 'positions';
-const STAMP = `${PREFIX}-${FEATURES}f-`;
+const STAMP = `${PREFIX}-${FEATURES}f-r${RULES_EDITION}-`;
+/** Features can be carried across; rules cannot. A row written under other
+ *  rules has the outcome of a different game, and no column of noughts fixes
+ *  that — so only records of this edition are ever carried. */
+const EDITION = `-r${RULES_EDITION}-`;
 
 if (!FROM || FROM === FEATURES) {
   console.error(`FROM must name the feature count the record was written for, and differ from the ${FEATURES} this reading wants`);
@@ -56,7 +61,7 @@ const kept = Math.min(FROM, FEATURES);
 let carried = 0;
 
 for (const name of readdirSync(DIR)) {
-  if (!name.startsWith(`${PREFIX}-`) || !name.endsWith('.f32') || name.startsWith(STAMP)) continue;
+  if (!name.startsWith(`${PREFIX}-`) || !name.endsWith('.f32') || name.startsWith(STAMP) || !name.includes(EDITION)) continue;
   const path = resolve(DIR, name);
   const bytes = readFileSync(path);
   const all = new Uint32Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 4));
@@ -76,7 +81,7 @@ for (const name of readdirSync(DIR)) {
   /* the tag the old name carried, so two records never collide. Any
      stamp it already holds is stripped rather than kept, or a record
      carried twice would be named for every reading it has passed through */
-  const tag = name.slice(`${PREFIX}-`.length, -'.f32'.length).replace(/^\d+f-/, '');
+  const tag = name.slice(`${PREFIX}-`.length, -'.f32'.length).replace(/^\d+f-(r\d+-)?/, '');
   const to = resolve(DIR, `${STAMP}${tag}.f32`);
   writeFileSync(to, Buffer.from(out.buffer, 0, out.byteLength));
   const was = statSync(path).size;

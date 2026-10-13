@@ -31,7 +31,7 @@ import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { applyAction, fallbackAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { newGame } from '@/game/engine';
+import { RULES_EDITION, newGame } from '@/game/engine';
 import { FEATURES, features, forwardAll, pack, unpack } from '@/game/net';
 import type { Net } from '@/game/net';
 import { ACTIONS, DEVELOP_ONE_AT, DEVELOP_TWO_AT, LINK_ONE_AT, LINK_TWO_AT, LOAN_AT, PASS_AT, SCOUT_AT, SELL_ALL_AT, actionIndex, priors } from '@/game/policy';
@@ -73,7 +73,7 @@ const ROW = KEPT_AT + KEPT * 2;
 /** A record is only readable by a reading of the same shape: change the
  *  features and the same bytes are cut in the wrong places. The shape is
  *  written into the name, and a record of another shape is left alone. */
-const STAMP = `moves-${FEATURES}f-`;
+const STAMP = `moves-${FEATURES}f-r${RULES_EDITION}-`;
 
 const DATA_DIR = resolve('tools/bots/policy-data');
 const LOG = resolve('tools/bots/distil.log');

@@ -24,7 +24,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { applyAction, fallbackAction } from '@/game/actions';
-import { newGame } from '@/game/engine';
+import { RULES_EDITION, newGame } from '@/game/engine';
 import { FEATURES, GLOBAL_ERA, features, forward, loadNet, packBrain, unpackBrain } from '@/game/net';
 import { NET_B64 } from '@/game/net-weights';
 import type { Brain, Net } from '@/game/net';
@@ -105,8 +105,15 @@ const ROW = FEATURES + 6;
  *  features and every row already written means something else — the same
  *  bytes, cut in the wrong places — so the shape is written into the name
  *  and a record of another shape is left where it lies rather than read as
- *  gibberish. Nothing is deleted: an older reading can still find its own. */
-const STAMP = `positions-${FEATURES}f-`;
+ *  gibberish. Nothing is deleted: an older reading can still find its own.
+ *
+ *  The rules are written in too. A row's label is what the rest of that game
+ *  made of the position, and the game changes with its rules: under the first
+ *  edition the rail deal burnt a card, so seats played 16, 14, 14 and 16 rail
+ *  actions, and a sale could go through half-served. A record of those games
+ *  has the right shape and the wrong outcomes, and nothing in the bytes says
+ *  so — only the name can. */
+const STAMP = `positions-${FEATURES}f-r${RULES_EDITION}-`;
 const OWN_CANAL_AT = FEATURES + 4;
 const OWN_GAME_AT = FEATURES + 5;
 /** a seat's own score hovers around this, so the target is taken from here */
