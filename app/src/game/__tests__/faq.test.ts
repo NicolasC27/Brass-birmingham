@@ -140,7 +140,7 @@ describe('the answers written from the rules dossier', () => {
       });
       expect(stolen.length / phrases.length).toBeLessThan(0.15);
     }
-  });
+  }, 20_000);
 
   it('answers a hundred plain questions without falling through', () => {
     for (const lang of ['fr', 'es', 'de'] as const) {

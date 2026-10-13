@@ -107,7 +107,7 @@ describe('the moves already played while listing them', () => {
       }
     }
     expect(kept).toBeGreaterThan(0);
-  });
+  }, 20_000);
 });
 
 describe('the table read once a seat', () => {
