@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-/* a Web Audio stand-in: enough of a context to count the loops that sound */
+/* a Web Audio stand-in: enough of a context to tell which recordings
+   sound, and when */
 interface FakeSource {
+  buffer: { url: string } | null;
+  loop: boolean;
   started: boolean;
+  startAt: number | null;
   stopAt: number | null;
   onended: (() => void) | null;
 }
@@ -15,7 +19,8 @@ class FakeContext {
   destination = {};
   resume = () => Promise.resolve();
   close = () => Promise.resolve();
-  decodeAudioData = () => Promise.resolve({ duration: 4 });
+  /* the "decoded" recording remembers where it was fetched from */
+  decodeAudioData = (bytes: ArrayBuffer & { url?: string }) => Promise.resolve({ duration: 2, url: bytes.url ?? '' });
   createGain() {
     const param = { value: 0.35, setValueAtTime() {}, linearRampToValueAtTime() {}, cancelScheduledValues() {}, exponentialRampToValueAtTime() {} };
     return { gain: param, connect: (d: unknown) => d };
@@ -28,11 +33,13 @@ class FakeContext {
       loopStart: 0,
       loopEnd: 0,
       started: false,
+      startAt: null as number | null,
       stopAt: null as number | null,
       onended: null as (() => void) | null,
       connect: (g: unknown) => g,
-      start() {
+      start(t = 0) {
         node.started = true;
+        node.startAt = t;
       },
       stop(t: number) {
         node.stopAt = t;
@@ -47,22 +54,38 @@ const settle = async () => {
   for (let i = 0; i < 8; i++) await new Promise((r) => setTimeout(r, 0));
 };
 const sounding = () => sources.filter((s) => s.started && s.stopAt === null);
+/** the recordings started, by the name of their file (house-oxford, stamp…) */
+const played = () => sources.filter((s) => s.started).map((s) => s.buffer?.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1'));
 
 beforeEach(() => {
   sources = [];
   vi.resetModules();
   vi.stubGlobal('window', { AudioContext: FakeContext });
   vi.stubGlobal('AudioContext', FakeContext);
-  vi.stubGlobal('fetch', (_url: string, init?: { method?: string }) =>
-    Promise.resolve(init?.method === 'HEAD' ? { ok: true, headers: { get: () => 'audio/mpeg' } } : { arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) }),
-  );
+  vi.stubGlobal('fetch', (url: string) => Promise.resolve({ ok: true, headers: { get: () => 'audio/mpeg' }, arrayBuffer: () => Promise.resolve(Object.assign(new ArrayBuffer(8), { url })) }));
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('a house’s ambience under the pointer', () => {
+describe('a house’s town under the pointer', () => {
+  it('plays the house’s own recording, once, and not in a loop', async () => {
+    const { houseHover } = await import('../sfx');
+    houseHover('m-oxford');
+    await settle();
+    expect(played()).toEqual(['house-oxford']);
+    expect(sources[0].loop).toBe(false);
+    /* heard to its end with the pointer still there: quiet, not again */
+    sources[0].onended?.();
+    await settle();
+    expect(played()).toEqual(['house-oxford']);
+    /* another house is its own town */
+    houseHover('m-gloucester');
+    await settle();
+    expect(played()).toEqual(['house-oxford', 'house-gloucester']);
+  });
+
   it('coming back during the fade never lays a second loop over the first', async () => {
     const { houseHover } = await import('../sfx');
     houseHover('m-shrewsbury');
@@ -91,5 +114,64 @@ describe('a house’s ambience under the pointer', () => {
     await settle();
     expect(sounding()).toHaveLength(0);
     expect(sources.filter((s) => s.started)).toHaveLength(1);
+  });
+});
+
+describe('a piece laid, heard', () => {
+  it('a canal link laps, a rail link clanks', async () => {
+    const { noteStrike, stampThud, warmSounds } = await import('../sfx');
+    warmSounds();
+    await settle();
+    noteStrike('link', 'canal', true);
+    stampThud('link');
+    await settle();
+    expect(played()).toEqual(['link-canal']);
+    noteStrike('link', 'rail', false);
+    stampThud('link');
+    await settle();
+    expect(played()).toEqual(['link-canal', 'link-rail']);
+  });
+
+  it('an industry is heard as its trade, just behind the stamp', async () => {
+    const { noteStrike, stampThud, warmSounds } = await import('../sfx');
+    warmSounds();
+    await settle();
+    for (const industry of ['coal', 'iron', 'cotton', 'manufacturer', 'pottery', 'brewery'] as const) {
+      sources = [];
+      noteStrike('tile', 'canal', true, industry);
+      stampThud('tile');
+      await settle();
+      expect(played().sort()).toEqual([`ind-${industry}`, 'stamp']);
+      const stamp = sources.find((s) => s.buffer?.url.includes('stamp'));
+      const trade = sources.find((s) => s.buffer?.url.includes('ind-'));
+      expect(trade!.startAt!).toBeGreaterThan(stamp!.startAt!);
+    }
+  });
+
+  it('a tile and a link laid in the same breath are both heard', async () => {
+    const { noteStrike, stampThud, warmSounds } = await import('../sfx');
+    warmSounds();
+    await settle();
+    noteStrike('link', 'canal', true);
+    noteStrike('tile', 'canal', true, 'brewery');
+    stampThud('tile');
+    await settle();
+    expect(played().sort()).toEqual(['ind-brewery', 'link-canal', 'stamp']);
+  });
+
+  it('a strike long past is not heard as the next one', async () => {
+    const { noteStrike, stampThud, warmSounds } = await import('../sfx');
+    warmSounds();
+    await settle();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      noteStrike('tile', 'canal', true, 'coal');
+      vi.setSystemTime(Date.now() + 5000);
+      stampThud('tile');
+    } finally {
+      vi.useRealTimers();
+    }
+    await settle();
+    expect(played()).toEqual(['stamp']);
   });
 });

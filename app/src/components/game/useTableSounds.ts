@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '@/game/store';
-import type { GameState, Verb } from '@/game/types';
+import type { GameState, IndustryType, Verb } from '@/game/types';
 import { cue, noteStrike, setMix, tableAmbience, warmSounds } from '@/gl/sfx';
 import type { Cue } from '@/gl/sfx';
 import { useBoardOptions } from './boardOptions';
@@ -28,8 +28,13 @@ export interface TableShot {
 }
 
 /** one thing to be heard: a sound of the palette, or word to the press
- *  that the piece it is about to strike was laid by me or by another */
-export type Heard = { cue: Cue; quiet?: boolean } | { strike: 'tile' | 'link'; era: 'canal' | 'rail'; mine: boolean };
+ *  that the piece it is about to strike was laid by me or by another (and,
+ *  for a tile, of which trade: its sound follows the stamp) */
+export type Heard = { cue: Cue; quiet?: boolean } | { strike: 'tile' | 'link'; era: 'canal' | 'rail'; mine: boolean; industry?: IndustryType };
+
+const INDUSTRIES: readonly IndustryType[] = ['coal', 'iron', 'brewery', 'cotton', 'manufacturer', 'pottery'];
+/** the industry a build entry of the log laid, when it says */
+const industryOf = (v: unknown): IndustryType | undefined => (INDUSTRIES as readonly unknown[]).includes(v) ? (v as IndustryType) : undefined;
 
 /** a batch this large is a board read back or caught up, not moves played */
 const CATCH_UP = 8;
@@ -68,7 +73,7 @@ export function tableCues(prev: TableShot, next: TableShot): Heard[] {
     if (fresh.length <= CATCH_UP) {
       for (const e of fresh) {
         const mine = mineOf(b, next.seat, e.player);
-        if (e.verb === 'build') add({ strike: 'tile', era: e.era, mine });
+        if (e.verb === 'build') add({ strike: 'tile', era: e.era, mine, industry: industryOf(e.vars?.industry) });
         else if (e.verb === 'network') add({ strike: 'link', era: e.era, mine });
         else {
           const c = MOVE_CUE[e.verb];
@@ -140,7 +145,7 @@ export function useTableSounds(): void {
       const heard = tableCues(prev, next);
       const moved = heard.some((h) => 'strike' in h || h.cue === 'sell' || h.cue === 'loan' || h.cue === 'develop' || h.cue === 'scout');
       for (const h of heard) {
-        if ('strike' in h) noteStrike(h.era, h.mine);
+        if ('strike' in h) noteStrike(h.strike, h.era, h.mine, h.industry);
         else if (moved && (h.cue === 'turn' || h.cue === 'era-end' || h.cue === 'victory' || h.cue === 'defeat')) {
           const c = h.cue;
           timers.push(window.setTimeout(() => cue(c), MOMENT_AFTER_MOVE_MS));

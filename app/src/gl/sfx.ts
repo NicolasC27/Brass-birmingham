@@ -10,6 +10,8 @@
    the close of an era, the band at the end. Each has its own level, and
    the board's sound switch closes the master. */
 
+import type { IndustryType } from '@/game/types';
+
 let ctx: AudioContext | null = null;
 
 /** the reader has touched the page: sticky user activation where the
@@ -124,43 +126,34 @@ function ring(ac: AudioContext, id: string): void {
   }
 }
 
-/* ---------------- a house's own ambience, while hovered ---------------- */
+/* ---------------- a house's own glimpse of its town, while hovered ---------------- */
 
-const buffers = new Map<string, Promise<AudioBuffer | null>>();
-/** the recording served for a house (/sfx-<name>.mp3), decoded once; null
- *  when the server has none */
-const ambience = (id: string): Promise<AudioBuffer | null> => {
-  const name = id.replace(/^m-/, '');
-  /* nothing is fetched, nor remembered as missing, before the first gesture */
-  if (!audio()) return Promise.resolve(null);
-  let p = buffers.get(name);
-  if (!p) {
-    p = (async () => {
-      const ac = audio();
-      if (!ac) return null;
-      const url = `/sfx-${name}.mp3`;
-      const head = await fetch(url, { method: 'HEAD' }).catch(() => null);
-      if (!head?.ok || !(head.headers.get('content-type') ?? '').startsWith('audio/')) return null;
-      const bytes = await fetch(url).then((r) => r.arrayBuffer());
-      return await ac.decodeAudioData(bytes);
-    })().catch(() => null);
-    buffers.set(name, p);
-  }
-  return p;
+/** the houses with a recording of their own (/sfx/house-<name>): two
+ *  seconds of the town behind the merchant, heard once as the pointer
+ *  arrives; any other house rings its bell */
+const HOUSES = ['warrington', 'nottingham', 'shrewsbury', 'oxford', 'gloucester'];
+const houseName = (id: string): string => id.replace(/^m-/, '');
+/** the recording served for a house, decoded once; null when it has none */
+const houseSound = (id: string): Promise<AudioBuffer | null> => {
+  const name = houseName(id);
+  return HOUSES.includes(name) ? sample(`house-${name}`) : Promise.resolve(null);
 };
+/** the houses sit under the moves of the game: heard, not announced (the
+ *  recordings are levelled a few LU under the gestures, at -25 LUFS) */
+const HOUSE_LEVEL = 0.6;
 
 let playing: { id: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 /** the recordings still fading out, by house: a house the pointer comes
- *  back to within the fade waits for its old loop to end before it starts
- *  another, so two copies never sound over each other */
+ *  back to within the fade waits for its old sound to end before it plays
+ *  again, so two copies never sound over each other */
 const fading = new Map<string, AudioBufferSourceNode>();
-const FADE_IN = 0.3;
-const FADE_OUT = 0.5;
+const FADE_IN = 0.06;
+const FADE_OUT = 0.4;
 
 /** the house under the pointer right now */
 let hovered: string | null = null;
 
-/** the pointer left the house: the ambience fades out */
+/** the pointer left the house: its sound fades out */
 export function houseLeave(): void {
   hovered = null;
   if (!playing) return;
@@ -180,41 +173,42 @@ export function houseLeave(): void {
   src.stop(now + FADE_OUT + 0.05);
 }
 
-/** the house's recording, looped under the pointer and fading in */
+/** the house's recording, once, on the gestures' bus */
 function sound(id: string): void {
-  void ambience(id).then(async (buf) => {
-    /* the pointer may have moved on while the file was fetched; a loop of
+  void houseSound(id).then(async (buf) => {
+    /* the pointer may have moved on while the file was fetched; a sound of
        this house still fading out starts it again when it ends */
     if (!buf || playing || hovered !== id || fading.has(id)) return;
     const ac = await context();
     if (!ac || playing || hovered !== id || fading.has(id)) return;
     const src = ac.createBufferSource();
     src.buffer = buf;
-    src.loop = true;
-    /* an MP3 carries a sliver of silence at both ends: the loop skips it */
-    src.loopStart = 0.04;
-    src.loopEnd = Math.max(0.1, buf.duration - 0.04);
     const gain = ac.createGain();
     const now = ac.currentTime;
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.35, now + FADE_IN);
-    src.connect(gain).connect(ac.destination);
+    gain.gain.linearRampToValueAtTime(HOUSE_LEVEL, now + FADE_IN);
+    src.connect(gain).connect(busOf(ac, 'gestures'));
+    /* heard to its end, the house is quiet until the pointer comes again */
+    src.onended = () => {
+      if (playing?.src === src) playing = null;
+    };
     src.start(now);
     playing = { id, src, gain };
+    if (import.meta.env.DEV && heard.push(`house-${houseName(id)}`) > 40) heard.shift();
   });
 }
 
-/** the pointer reached a house: its recording loops under the pointer,
- *  fading in — or the shop bell rings when no recording is served */
+/** the pointer reached a house: its town is heard once — or the shop bell
+ *  rings when it has no recording */
 export function houseHover(id: string | null): void {
   if (playing && playing.id !== id) houseLeave();
   hovered = id;
   if (!id || (playing && playing.id === id)) return;
+  if (!mix.on) return;
   sound(id);
-  /* the bell rings at once when there is nothing to hear; the check is
-     cached, so a house without a recording rings every time */
-  void ambience(id).then((buf) => {
-    if (!buf) houseBell(id);
+  /* the bell rings at once when there is nothing to hear */
+  void houseSound(id).then((buf) => {
+    if (!buf && hovered === id) houseBell(id);
   });
 }
 
@@ -408,15 +402,27 @@ const grain = (ac: AudioContext): AudioBuffer => {
   return buf;
 };
 
+/** the link of an era: water for the canal, iron for the rail */
+const linkCue = (era: 'canal' | 'rail'): Cue => (era === 'rail' ? 'link-rail' : 'link-canal');
+
 /** the block meets the paper: a dull press, the paper's short hiss and a
  *  small brass tick of the handle — a card struck firmer than a link */
 export function stampThud(kind: 'tile' | 'link' = 'tile'): void {
-  /* the move behind the strike, if the table has just told us of one: a
+  /* the moves behind the strike, if the table has just told us of them: a
      link is heard as its era's link, a machine's piece a little further off */
-  const strike = struck && Date.now() - struck.at < STRIKE_FRESH_MS ? struck : null;
-  struck = null;
+  const fresh = (s: Strike | null) => (s && Date.now() - s.at < STRIKE_FRESH_MS ? s : null);
+  const tile = fresh(struck.tile);
+  const link = fresh(struck.link);
+  struck = { tile: null, link: null };
+  const strike = kind === 'tile' ? tile : link;
   const quiet = strike ? !strike.mine : false;
-  const name: Cue = kind === 'tile' ? 'stamp' : (strike?.era ?? wantEra ?? 'canal') === 'rail' ? 'link-rail' : 'link-canal';
+  const name: Cue = kind === 'tile' ? 'stamp' : linkCue(strike?.era ?? wantEra ?? 'canal');
+  if (kind === 'tile') {
+    /* the trade of the tile, just behind the stamp that lays it */
+    if (tile?.industry) cue(`ind-${tile.industry}`, { quiet, after: TRADE_AFTER_S });
+    /* a link laid in the same breath (the board strikes once a frame) */
+    if (link) cue(linkCue(link.era), { quiet: !link.mine, after: TRADE_AFTER_S });
+  }
   /* a recording already decoded is played; otherwise the press is
      synthesised this once while the recording is fetched for next time */
   const ready = decoded.get(name);
@@ -477,7 +483,9 @@ export function stampThud(kind: 'tile' | 'link' = 'tile'): void {
 
 /* ---------------- the recorded palette: gestures and moments ---------------- */
 
-export type Cue = 'turn' | 'stamp' | 'link-canal' | 'link-rail' | 'sell' | 'loan' | 'develop' | 'card' | 'scout' | 'era-end' | 'victory' | 'defeat' | 'click' | 'panel-open' | 'panel-close' | 'refuse';
+/** an industry laid on the board: its trade heard with the stamp */
+export type TradeCue = `ind-${IndustryType}`;
+export type Cue = 'turn' | 'stamp' | 'link-canal' | 'link-rail' | 'sell' | 'loan' | 'develop' | 'card' | 'scout' | 'era-end' | 'victory' | 'defeat' | 'click' | 'panel-open' | 'panel-close' | 'refuse' | TradeCue;
 const BUS_OF: Record<Cue, Bus> = {
   turn: 'moments',
   'era-end': 'moments',
@@ -495,9 +503,31 @@ const BUS_OF: Record<Cue, Bus> = {
   'panel-open': 'gestures',
   'panel-close': 'gestures',
   refuse: 'gestures',
+  'ind-coal': 'gestures',
+  'ind-iron': 'gestures',
+  'ind-cotton': 'gestures',
+  'ind-manufacturer': 'gestures',
+  'ind-pottery': 'gestures',
+  'ind-brewery': 'gestures',
 };
-/** the interface's own small noises sit under the moves of the game */
-const CUE_LEVEL: Partial<Record<Cue, number>> = { click: 0.45, 'panel-open': 0.4, 'panel-close': 0.4, card: 0.6, refuse: 0.7 };
+/** the interface's own small noises sit under the moves of the game, and a
+ *  trade under the stamp it follows */
+const TRADE_LEVEL = 0.6;
+const CUE_LEVEL: Partial<Record<Cue, number>> = {
+  click: 0.45,
+  'panel-open': 0.4,
+  'panel-close': 0.4,
+  card: 0.6,
+  refuse: 0.7,
+  'ind-coal': TRADE_LEVEL,
+  'ind-iron': TRADE_LEVEL,
+  'ind-cotton': TRADE_LEVEL,
+  'ind-manufacturer': TRADE_LEVEL,
+  'ind-pottery': TRADE_LEVEL,
+  'ind-brewery': TRADE_LEVEL,
+};
+/** the trade comes in just behind the thump of the stamp, not on top of it */
+const TRADE_AFTER_S = 0.07;
 /** a machine's gesture (or a rival's) is heard across the table, not under the hand */
 export const MACHINE = 0.45;
 /** a gesture that arrives this late after it was asked for is let go */
@@ -547,8 +577,9 @@ const SYNTH: Partial<Record<Cue, () => void>> = {
   'era-end': () => steamWhistle(),
 };
 
-/** play one sound of the palette on its bus; `quiet` for another seat's move */
-export function cue(name: Cue, opts: { quiet?: boolean } = {}): void {
+/** play one sound of the palette on its bus; `quiet` for another seat's
+ *  move, `after` seconds from now */
+export function cue(name: Cue, opts: { quiet?: boolean; after?: number } = {}): void {
   if (!mix.on) return;
   const asked = Date.now();
   void context().then(async (ac) => {
@@ -565,7 +596,7 @@ export function cue(name: Cue, opts: { quiet?: boolean } = {}): void {
     const g = ac.createGain();
     g.gain.setValueAtTime((CUE_LEVEL[name] ?? 1) * (opts.quiet ? MACHINE : 1), ac.currentTime);
     src.connect(g).connect(busOf(ac, BUS_OF[name]));
-    src.start();
+    src.start(ac.currentTime + (opts.after ?? 0));
     if (import.meta.env.DEV && heard.push(`${name}${opts.quiet ? ' (quiet)' : ''}`) > 40) heard.shift();
   });
 }
@@ -575,17 +606,26 @@ export function cue(name: Cue, opts: { quiet?: boolean } = {}): void {
 export function warmSounds(): void {
   if (!mix.on) return;
   for (const n of Object.keys(BUS_OF)) void sample(n);
+  for (const h of HOUSES) void sample(`house-${h}`);
 }
 
 /* ---------------- the strike: who laid the piece the press is about to strike ---------------- */
 
-/** the piece the table has just been told of; the press reads it once */
-let struck: { era: 'canal' | 'rail'; mine: boolean; at: number } | null = null;
+interface Strike {
+  era: 'canal' | 'rail';
+  mine: boolean;
+  at: number;
+  /** a tile's industry, whose trade is heard with the stamp */
+  industry?: IndustryType;
+}
+/** the last tile and the last link the table has just been told of; the
+ *  press reads them once */
+let struck: { tile: Strike | null; link: Strike | null } = { tile: null, link: null };
 const STRIKE_FRESH_MS = 2000;
 /** the table says a piece was laid, and by whom: the press that strikes it
  *  (stampThud, on the board's own beat) is heard accordingly */
-export function noteStrike(era: 'canal' | 'rail', mine: boolean): void {
-  struck = { era, mine, at: Date.now() };
+export function noteStrike(kind: 'tile' | 'link', era: 'canal' | 'rail', mine: boolean, industry?: IndustryType): void {
+  struck = { ...struck, [kind]: { era, mine, at: Date.now(), industry } };
 }
 
 /* ---------------- the ambience under the table ---------------- */
@@ -594,6 +634,9 @@ export function noteStrike(era: 'canal' | 'rail', mine: boolean): void {
 let wantEra: 'canal' | 'rail' | null = null;
 let table: { era: 'canal' | 'rail'; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 const AMB_FADE = 3;
+/** the canal's loop is birds over a quiet bed, levelled 4 dB under the
+ *  town's rumble (its peaks would not allow more): brought up a little */
+const AMB_TRIM: Record<'canal' | 'rail', number> = { canal: 1.4, rail: 1 };
 /** the loop's own length: the file was folded onto itself at this length,
  *  an MP3's padding past it is left out of the loop */
 const AMB_LOOP_S = 27;
@@ -635,7 +678,7 @@ function applyAmbience(): void {
     const gain = ac.createGain();
     const t0 = ac.currentTime;
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.linearRampToValueAtTime(1, t0 + AMB_FADE);
+    gain.gain.linearRampToValueAtTime(AMB_TRIM[era], t0 + AMB_FADE);
     src.connect(gain).connect(busOf(ac, 'ambience'));
     src.start(t0);
     table = { era, src, gain };

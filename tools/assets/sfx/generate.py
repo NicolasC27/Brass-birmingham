@@ -41,8 +41,11 @@ PLAN = {
     'sell': (1.5, 1, 0.6, False, 'a few heavy copper and silver coins poured into a wooden counting tray, short clinking, close, ' + ERA),
     'era-end': (4.0, 1, 0.55, False, 'a distant steam locomotive whistle blowing once far across the countryside, long and melancholic, soft reverb, ' + ERA),
     'victory': (5.0, 1, 0.55, False, 'a short triumphant fanfare played on natural brass horns and a cornet, a few bright notes and a held final chord, a brass band in a hall, ' + ERA),
-    'amb-canal': (30.0, 1, 0.45, True, 'quiet ambience of a calm English canal in the countryside at morning, still water lapping softly against the bank, distant horse hooves on a towpath, small birds singing far away, no voices, continuous, ' + ERA),
-    'amb-rail': (30.0, 1, 0.45, True, 'quiet ambience of an early industrial town seen from afar, distant steam engine chuffing, faint blacksmith forge hammer on an anvil far away, soft steam hiss, occasional distant rail clank, no voices, continuous, ' + ERA),
+    # take 1 of each ambience was asked with an earlier prompt (see CHOIX.md):
+    # its bed was a broad rumble that, lifted to the table's level, buzzed.
+    # Takes 2 and 3 ask for sparse events over a quiet, clean bed.
+    'amb-canal': (30.0, 3, 0.5, True, 'peaceful open countryside by an English canal on a spring morning, clear birdsong at a distance, a light breeze in the reeds, now and then a small soft ripple of water, clean quiet recording with a low noise floor, no hum, no rumble, no wind noise on the microphone, no voices, continuous, ' + ERA),
+    'amb-rail': (30.0, 3, 0.5, True, 'an early industrial town heard from a green hillside far away, a distant steam engine puffing slowly, now and then a faint faraway hammer on an anvil, a soft breeze, a few birds, clean quiet recording with a low noise floor, no hum, no drone, no rumble, no voices, continuous, ' + ERA),
     'click': (0.5, 2, 0.7, False, 'a single small brass latch click, crisp, close, very short, ' + ERA),
     'loan': (1.2, 1, 0.6, False, 'a thick leather-bound ledger book closed shut on a wooden desk, one soft heavy thump of paper and leather, close, ' + ERA),
     'develop': (1.0, 1, 0.6, False, 'a steel hammer striking a small iron chisel once on a workbench, one sharp metallic knock, close, ' + ERA),
@@ -51,6 +54,19 @@ PLAN = {
     'panel-open': (0.7, 1, 0.6, False, 'a small wooden drawer slid open, soft wooden slide with a light brass knob rattle, close, ' + ERA),
     'panel-close': (0.7, 1, 0.6, False, 'a small wooden drawer pushed shut, soft wooden slide ending in a gentle knock, close, ' + ERA),
     'refuse': (0.5, 1, 0.65, False, 'a single dull muffled knock of a knuckle on a thick oak table, low and short, close, ' + ERA),
+    # an industry laid on the board: heard with the stamp, so short and dry
+    'ind-coal': (1.2, 2, 0.6, False, 'a miner\'s pickaxe striking a coal face once, then a few lumps of coal tumbling into a small wooden mine cart, close, short, ' + ERA),
+    'ind-iron': (1.0, 2, 0.6, False, 'a blacksmith\'s hammer striking a hot iron bar on an anvil twice, bright ringing clangs, close, short, ' + ERA),
+    'ind-cotton': (1.0, 2, 0.6, False, 'a wooden hand loom: the shuttle thrown across and the beater knocked against the cloth, a quick wooden clack-clack, close, short, ' + ERA),
+    'ind-manufacturer': (1.0, 2, 0.6, False, 'a joiner\'s workbench: a wooden mallet tapping a chisel twice and a small iron vice turned with a creak, close, short, ' + ERA),
+    'ind-pottery': (1.2, 2, 0.6, False, 'a potter\'s wheel turning briefly, then a fired earthenware jug set down on a wooden shelf with a soft ceramic clink, close, short, ' + ERA),
+    'ind-brewery': (1.2, 2, 0.6, False, 'a small oak ale cask set down on a stone floor with a hollow knock, then a short pour of ale into a pewter tankard, close, short, ' + ERA),
+    # a merchant's house under the pointer: a glimpse of the town, soft
+    'house-warrington': (2.5, 2, 0.5, False, 'a coaching inn yard in a market town: a horse\'s hooves stepping slowly on cobbles, a harness jingle, a wooden cart wheel creaking past, soft and distant, no voices, no speech, ' + ERA),
+    'house-nottingham': (2.5, 2, 0.5, False, 'a market square on market day, soft and distant: a wooden stall shutter let down, a basket set on cobbles, a small hand bell rung once far off, no voices, no speech, ' + ERA),
+    'house-shrewsbury': (2.5, 2, 0.5, False, 'a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA),
+    'house-oxford': (2.5, 2, 0.5, False, 'a quiet old university town: a stagecoach rolling slowly over cobbles under a stone gateway, a chapel bell striking once in the distance, soft, no voices, no speech, ' + ERA),
+    'house-gloucester': (2.5, 2, 0.5, False, 'an inland port dock on a river: a wooden crane winch creaking, a heavy sack set down on timber boards, water lapping, soft and distant, no voices, no speech, ' + ERA),
 }
 
 

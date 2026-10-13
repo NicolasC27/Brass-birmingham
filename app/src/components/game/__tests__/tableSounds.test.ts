@@ -57,6 +57,19 @@ describe('what the table sounds like', () => {
     expect(cues(tableCues(shot(railB), shot(c)))).toEqual(['strike:link:rail:mine']);
   });
 
+  it('tells the press which trade a tile is, when the log says', () => {
+    const built = (industry: unknown) => ({ ...entry('build', 0), vars: { industry } as Record<string, string> });
+    const a = game();
+    const b = game({ ledger: [built('pottery'), { ...entry('network', 1) }] });
+    expect(tableCues(shot(a), shot(b))).toEqual([
+      { strike: 'tile', era: 'canal', mine: true, industry: 'pottery' },
+      { strike: 'link', era: 'canal', mine: false },
+    ]);
+    /* a word the palette does not know is no trade */
+    const c = game({ ledger: [built('windmill')] });
+    expect(tableCues(shot(a), shot(c))).toEqual([{ strike: 'tile', era: 'canal', mine: true, industry: undefined }]);
+  });
+
   it('gives each other move its own sound, a machine’s further off', () => {
     const a = game({ ledger: [] });
     const b = game({ ledger: [entry('sell', 0), entry('loan', 1), entry('develop', 2), entry('scout', 0), entry('pass', 1)] });
