@@ -515,7 +515,7 @@ const game: typeof engame = {
       {move} counts from one */
   homeTrouble: {
     offline: 'Das Kontor antwortet nicht. Deine Partie ist dort verwahrt; der Tisch kehrt zurück, sobald die Leitung wieder steht.',
-    absent: 'Das Kontor führt diese Partie nicht mehr.',
+    absent: 'Diese Partie steht nicht in deinem Register – der Tisch eines anderen Mitglieds oder eine abgelegte Partie.',
     unreplayable: 'Das Protokoll dieser Partie lässt sich mit dieser Version des Tisches nicht mehr nachspielen.',
     refused: 'Das Kontor hat Zug {move} abgelehnt: Der Tisch wird aus seinem Protokoll neu gelesen.',
     waiting: 'Warten auf die Leitung zum Kontor…',

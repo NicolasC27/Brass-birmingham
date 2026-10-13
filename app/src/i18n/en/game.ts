@@ -513,7 +513,7 @@ const game = {
       {move} counts from one */
   homeTrouble: {
     offline: 'The office is not answering. Your game is kept there; the table comes back as soon as the line does.',
-    absent: 'The office no longer keeps this game.',
+    absent: 'This game is not in your register — another member’s table, or one put away.',
     unreplayable: 'This game’s log no longer replays under this version of the table.',
     refused: 'The office turned down move {move}: the table is being read again from its log.',
     waiting: 'Waiting for the line to the office…',

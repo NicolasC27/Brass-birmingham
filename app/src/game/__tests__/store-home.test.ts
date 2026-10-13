@@ -121,7 +121,7 @@ describe('a game at home read back from the office', () => {
     expect(await readHomeSave('HOME')).toEqual({ miss: 'offline' });
   });
 
-  it('opens a new table only for a game the office does not hold', async () => {
+  it('never deals a new table for an address the office does not hold', async () => {
     office.current.silent = true;
     useGame.getState().init(undefined, 'HOME');
     await settle();
@@ -137,11 +137,15 @@ describe('a game at home read back from the office', () => {
     expect(useGame.getState().game?.seed).toBe(5);
     expect(useGame.getState().homeTrouble).toBeNull();
     expect(office.current.opened).toBe(0);
-    /* and an address the office has never heard of is a fresh deal */
+    /* and an address the office does not keep for this reader — another
+       member's table, a stale bookmark — is said to be absent: no game the
+       reader did not ask for is dealt behind their back */
     useGame.getState().init(undefined, 'GONE');
     await settle();
-    expect(office.current.opened).toBe(1);
-    expect(useGame.getState().movedTo).toBe('NEWG');
+    expect(office.current.opened).toBe(0);
+    expect(useGame.getState().game).toBeNull();
+    expect(useGame.getState().movedTo).toBeNull();
+    expect(useGame.getState().homeTrouble?.cause).toBe('absent');
   });
 });
 

@@ -515,7 +515,7 @@ const fr: typeof engame = {
       {move} counts from one */
   homeTrouble: {
     offline: 'Le bureau ne répond pas. Votre partie y est gardée ; la table revient dès que la ligne tient.',
-    absent: 'Le bureau ne garde plus cette partie.',
+    absent: 'Cette partie n’est pas à votre registre : la table d’un autre membre, ou une partie rangée.',
     unreplayable: 'Le registre de cette partie ne se rejoue plus avec cette version de la table.',
     refused: 'Le bureau a refusé le coup {move} : on relit la table depuis son registre.',
     waiting: 'On attend la ligne du bureau…',

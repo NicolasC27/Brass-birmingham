@@ -515,7 +515,7 @@ const game: typeof engame = {
       {move} counts from one */
   homeTrouble: {
     offline: 'La oficina no responde. Tu partida está guardada allí; la mesa vuelve en cuanto vuelva la línea.',
-    absent: 'La oficina ya no guarda esta partida.',
+    absent: 'Esta partida no está en tu registro: la mesa de otro miembro, o una partida guardada.',
     unreplayable: 'El registro de esta partida ya no se reproduce con esta versión de la mesa.',
     refused: 'La oficina rechazó la jugada {move}: la mesa se vuelve a leer desde su registro.',
     waiting: 'Esperando la línea con la oficina…',

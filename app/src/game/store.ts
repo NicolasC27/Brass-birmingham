@@ -385,16 +385,16 @@ async function fetchHome(code: string): Promise<void> {
   const read = await readHomeSave(code);
   let game: GameState | null = 'game' in read ? read.game : null;
   let miss: HomeMiss | null = 'miss' in read ? read.miss : null;
-  if (miss === 'absent') {
+  /* an address the office does not keep for this reader — another member's
+     table, a stale bookmark — is said to be absent, never answered with a
+     fresh deal the reader did not ask for: every new game is dealt before
+     its address is ever visited. Only a game carried in a shared link is
+     written down here, as the reader's own copy */
+  if (miss === 'absent' && carried) {
     try {
-      const table = carried ? await forkHomeGame(carried) : await openHomeGame();
+      const table = await forkHomeGame(carried);
       at = table.code;
-      if (carried) game = carried;
-      else {
-        const dealt = await readHomeSave(at);
-        game = 'game' in dealt ? dealt.game : null;
-        miss = 'miss' in dealt ? dealt.miss : null;
-      }
+      game = carried;
     } catch {
       /* the office is not answering: the board stays empty and says so */
       miss = 'offline';
