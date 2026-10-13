@@ -211,6 +211,88 @@ const ETCH_DUR = 1.5;
 /** cubic ease-in-out, approximating the CSS animation timing */
 const easeInOut = (p: number): number => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
 
+/* -------------------------- traffic pace ---------------------------- */
+/* A vehicle's run along a link is a pure function of time since it     */
+/* cast off: it gathers way over a ramp, keeps a steady cruise in world */
+/* units per second, and brakes over the same ramp into the far quay.   */
+/* The pace never depends on the link's length nor on the frame rate:   */
+/* a long canal takes longer, it is not sailed faster.                  */
+
+/** a horse-drawn barge's cruise, in world units per second (a hull's
+ *  length every four seconds or so) */
+export const BARGE_SPEED = 12;
+/** seconds a barge takes to gather way, and again to come to rest */
+export const BARGE_RAMP_S = 4;
+/** a locomotive's cruise: three times the barge, still a walk to the eye */
+export const TRAIN_SPEED = 36;
+export const TRAIN_RAMP_S = 3;
+/** seconds a vehicle takes to show itself at a quay, and to fade at the next */
+export const QUAY_FADE_S = 1.2;
+
+export interface Passage {
+  /** distance run from quay to quay, world units */
+  dist: number;
+  /** cruise speed actually reached (lower on a link too short to cruise) */
+  cruise: number;
+  /** seconds spent gathering way (and as many braking) */
+  ramp: number;
+  /** seconds from casting off to mooring */
+  dur: number;
+}
+
+/** plan a run of `dist` world units at `speed` with `ramp`-second starts and stops */
+export function planPassage(dist: number, speed: number, ramp: number): Passage {
+  /* each ramp covers speed·ramp/2; a link shorter than both ramps is run
+     at the pace that just fits them, never faster than the cruise */
+  const cruise = Math.min(speed, dist / ramp);
+  return { dist, cruise, ramp, dur: dist / cruise + ramp };
+}
+
+/** distance covered `s` seconds after casting off (clamped to the quays).
+ *  The speed follows a smoothstep up and down, so both the start and the
+ *  stop are free of any jolt. */
+export function passageAt(p: Passage, s: number): number {
+  if (s <= 0) return 0;
+  if (s >= p.dur) return p.dist;
+  const { cruise: v, ramp: r } = p;
+  const eased = (u: number): number => v * r * (u * u * u - (u * u * u * u) / 2);
+  if (s < r) return eased(s / r);
+  if (s > p.dur - r) return p.dist - eased((p.dur - s) / r);
+  return (v * r) / 2 + v * (s - r);
+}
+
+/** when a vehicle sails: its run, a phase, the moored spell between two
+ *  crossings, and the window it may show itself in */
+export interface Timetable {
+  pass: Passage;
+  ph: number;
+  rest: number;
+  /** out of sight before this time (a maiden voyage waits for its turn) */
+  from: number;
+  /** out of sight from this time on (a maiden voyage with traffic off) */
+  until: number;
+}
+
+/** modulo that stays positive for a negative dividend */
+const mod = (a: number, n: number): number => ((a % n) + n) % n;
+
+/** the phase that has a vehicle cast off exactly at `t0` */
+export const castOffAt = (t0: number, tt: Pick<Timetable, 'pass' | 'rest'>): number => mod(-t0, tt.pass.dur + tt.rest);
+
+/** the first time at or after `t` that the vehicle casts off from a quay */
+export const nextCastOff = (t: number, tt: Pick<Timetable, 'pass' | 'rest' | 'ph'>): number => t + mod(-(t + tt.ph), tt.pass.dur + tt.rest);
+
+/** seconds since the vehicle last cast off at time `t`, or null while it is
+ *  moored out of sight */
+export function underWay(tt: Timetable, t: number): number | null {
+  if (t < tt.from || t >= tt.until) return null;
+  const s = mod(t + tt.ph, tt.pass.dur + tt.rest);
+  return s < tt.pass.dur ? s : null;
+}
+
+/** the vehicle shows itself at the quay while still slow, and fades at the next */
+export const quayAlpha = (p: Passage, s: number): number => Math.max(0, Math.min(1, s / QUAY_FADE_S, (p.dur - s) / QUAY_FADE_S));
+
 /** how much traffic runs on built links: none, a light trickle (one vehicle
  *  per link, moored most of the time) or the busy two-per-link parade */
 export type TrafficLevel = 'none' | 'light' | 'busy';
@@ -357,22 +439,29 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     x: number;
     y: number;
   }
-  interface Vehicle {
+  interface Vehicle extends Timetable {
     c: Container;
     wake: Graphics;
     sam: Sampler;
-    dur: number;
-    ph: number;
+    /** arc distance of the first quay along the route */
+    quay: number;
     reverse: boolean;
     boat: boolean;
     puffs: Puff[];
     lastPuff: number;
     len: number;
-    /** seconds moored out of sight between two crossings (0 = continuous) */
-    rest: number;
   }
   let vehicles: Vehicle[] = [];
   let traffic: TrafficLevel = 'light';
+  /** links seen at the last rebuild (null until the first game is seen) */
+  let knownLinks: Set<string> | null = null;
+  /** when each freshly laid link saw its first vehicle cast off: the link
+   *  keeps that rhythm for good, so later rebuilds never jump it */
+  const maidens = new Map<string, number>();
+  /** when each link that came with a crowd (too many at once for a maiden
+   *  voyage) was first seen: its vehicle waits for its own next cast-off
+   *  rather than popping up mid-route */
+  const joined = new Map<string, number>();
 
   /* a narrowboat seen from above, pointing +x: long dark hull, the owner's
      livery stripe, a stern cabin with a brass chimney and a bow lantern */
@@ -465,7 +554,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
   let smokeKey = '';
   let trafficKey = '';
 
-  const rebuildDynamic = (game: GameState | null, iconCanal: Texture | null, iconRail: Texture | null) => {
+  const rebuildDynamic = (t: number, game: GameState | null, iconCanal: Texture | null, iconRail: Texture | null) => {
     if (!game) return;
     /* smoke: two wisps per unflipped built works */
     const emitters: [number, number][] = [];
@@ -496,27 +585,50 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     }
     /* traffic: one vehicle per built link, following its polyline */
     const links = Object.entries(game.links);
-    const tKey = traffic + '|' + links.map(([id, l]) => `${id}:${l.era}`).join('|');
+    const seen = links.map(([id, l]) => `${id}:${l.era}`);
+    const tKey = traffic + '|' + seen.join('|');
     if (tKey !== trafficKey && iconCanal && iconRail) {
       trafficKey = tKey;
+      /* a link just laid (one, or a double rail) gets its maiden voyage:
+         the vehicle casts off from the quay now, whatever the rhythm of the
+         others. The first sight of a game, or a whole board appearing at
+         once, launches nothing. */
+      if (knownLinks) {
+        const fresh = seen.filter((k) => !knownLinks!.has(k));
+        for (const k of fresh) (fresh.length <= 2 ? maidens : joined).set(k, t);
+      }
+      knownLinks = new Set(seen);
+      for (const m of [maidens, joined]) for (const k of [...m.keys()]) if (!knownLinks.has(k)) m.delete(k);
       for (const child of trafficLayer.removeChildren()) child.destroy({ children: true });
       for (const child of wakeLayer.removeChildren()) child.destroy();
       vehicles = [];
-      if (!reduced && traffic !== 'none') {
+      if (!reduced) {
         for (const [id, l] of links) {
           const def = LINKS.find((d) => d.id === id);
           if (!def) continue;
+          const maiden = maidens.get(`${id}:${l.era}`);
+          /* traffic off: only a maiden voyage still under way sails */
+          if (traffic === 'none' && maiden === undefined) continue;
           /* vehicles follow the true winding route (routeFor sampling —
              same curve the board draws and hit-tests) */
           const pts = routeFor(def, game.era).pts;
+          const sam = makeSampler(pts);
           const boat = l.era !== 'rail';
           const col = hex(PLAYER_COLORS[game.players[l.owner].color]?.hex ?? '#C9A45C');
           const h = hashId(id);
-          /* barges amble (a full crossing in 24–40 s), locomotives hurry (11–19 s) */
-          const dur = boat ? 24 + (h % 16) : 11 + (h % 8);
-          const spawn = (reverse: boolean, phase: number) => {
+          /* keep to the open water between the quays: the vehicle never
+             hides under a town's tiles */
+          const pass = boat ? planPassage(0.8 * sam.total, BARGE_SPEED, BARGE_RAMP_S) : planPassage(0.8 * sam.total, TRAIN_SPEED, TRAIN_RAMP_S);
+          /* light traffic: one vehicle that moors for 1.5–2.5 crossings
+             between trips, so only a third of the lines are busy at once;
+             busy traffic still moors a few seconds before the way back */
+          const rest = traffic === 'light' ? pass.dur * (1.5 + ((h >> 3) % 10) / 10) : boat ? 4 : 2.5;
+          const cycle = pass.dur + rest;
+          if (traffic === 'none' && maiden !== undefined && t >= maiden + pass.dur) continue;
+          const spawn = (reverse: boolean, ph: number, from: number) => {
             const c = boat ? makeBoat(col) : makeTrain(col);
             c.scale.set(boat ? 1.3 : 1.25);
+            c.visible = false;
             const wake = new Graphics();
             wake.eventMode = 'none';
             wakeLayer.addChild(wake);
@@ -532,19 +644,24 @@ export function buildAmbiance(reduced: boolean): Ambiance {
               wakeLayer.addChild(s);
               puffs.push({ s, born: -99, x: 0, y: 0 });
             }
-            /* light traffic: one vehicle that moors for 1.5–2.5 crossings
-               between trips, so only a third of the lines are busy at once */
-            const rest = traffic === 'light' ? dur * (1.5 + ((h >> 3) % 10) / 10) : 0;
-            vehicles.push({ c, wake, sam: makeSampler(pts), dur, ph: phase, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48, rest });
+            const until = traffic === 'none' && maiden !== undefined ? maiden + pass.dur : Infinity;
+            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until });
           };
           const first = h % 2 === 0;
-          const ph = (h % 900) / 100;
-          spawn(first, ph);
-          /* busy traffic: two vehicles per link, the second casts off when the
-             first reaches 80 % of the crossing, so the line never looks idle.
-             Barges run in opposite directions and pass each other mid-canal;
-             trains follow one another the same way down the line. */
-          if (traffic === 'busy') spawn(boat ? !first : first, ph + 0.2 * dur);
+          /* a maiden voyage starts its cycle right now; an older link keeps
+             a phase of its own, so the lines never move in step */
+          const ph = maiden !== undefined ? castOffAt(maiden, { pass, rest }) : ((h % 900) / 900) * cycle;
+          /* a link that came with a crowd shows its vehicle from its next
+             cast-off on, never halfway down the line */
+          const join = joined.get(`${id}:${l.era}`);
+          const fromFor = (p: number): number => (join === undefined ? -Infinity : nextCastOff(join, { pass, rest, ph: p }));
+          spawn(first, ph, maiden ?? fromFor(ph));
+          /* busy traffic: two vehicles per link, half a cycle apart, so the
+             line never looks idle. Barges run in opposite directions and
+             pass each other mid-canal; trains follow one another the same
+             way down the line. On a new link the second waits its turn. */
+          const ph2 = mod(ph - cycle / 2, cycle);
+          if (traffic === 'busy') spawn(boat ? !first : first, ph2, maiden !== undefined ? maiden + cycle / 2 : fromFor(ph2));
         }
       }
     }
@@ -629,7 +746,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
           drawRiverDashes(fx, step);
         }
       }
-      rebuildDynamic(game, iconCanal, iconRail);
+      rebuildDynamic(t, game, iconCanal, iconRail);
       updateEtch(t, game);
       for (const w of wisps) {
         const cycle = 5.2;
@@ -641,10 +758,10 @@ export function buildAmbiance(reduced: boolean): Ambiance {
         w.s.alpha = p < 0.18 ? (p / 0.18) * 0.3 : 0.3 * (1 - p);
       }
       for (const v of vehicles) {
-        /* moored spell between two crossings: out of sight, wake and smoke off */
-        const cycle = v.dur + v.rest;
-        const inCycle = (t + v.ph) % cycle;
-        if (inCycle >= v.dur) {
+        /* moored spell between two crossings (or a maiden voyage not yet
+           begun, or over): out of sight, wake and smoke off */
+        const inCycle = underWay(v, t);
+        if (inCycle === null) {
           if (v.c.visible) {
             v.c.visible = false;
             v.wake.clear();
@@ -653,11 +770,15 @@ export function buildAmbiance(reduced: boolean): Ambiance {
           continue;
         }
         v.c.visible = true;
-        /* ease in and out at the quays: a barge casts off and moors, it never teleports */
-        const raw = inCycle / v.dur;
-        const p = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
-        /* keep to the open water between the quays: the vehicle never hides under a town's tiles */
-        const d = (0.1 + 0.8 * (v.reverse ? 1 - p : p)) * v.sam.total;
+        /* the vehicle gathers way at one quay and brakes into the next at
+           a steady pace in world units per second: it never teleports */
+        const run = passageAt(v.pass, inCycle);
+        const d = v.quay + (v.reverse ? v.pass.dist - run : run);
+        /* and shows itself (or fades) at the quay while still slow */
+        v.c.alpha = quayAlpha(v.pass, inCycle);
+        /* the wake grows with the way the vehicle is making */
+        const way = (passageAt(v.pass, inCycle + 0.1) - run) / (0.1 * v.pass.cruise);
+        v.wake.alpha = v.c.alpha * (0.25 + 0.75 * Math.min(1, way));
         v.sam.at(d, P);
         const heading = v.reverse ? P[2] + Math.PI : P[2];
         /* a barge sways a touch on the water; a locomotive rattles faster and less */

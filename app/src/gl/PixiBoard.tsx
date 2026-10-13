@@ -922,7 +922,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       /* the pieces being struck, and the table the press last looked at */
       const stamps: Stamp[] = [];
       let stampSeen: GameState | null = gameRef.current;
-      const fxVehicles: { s: Sprite; pts: [number, number][]; t0: number }[] = [];
       /* the arrow keys pan the map while held: so many pixels a second */
       const pressed = new Set<string>();
       let wasMoving = true;
@@ -1081,9 +1080,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         scene.bgRail.alpha += (railAlphaTarget - scene.bgRail.alpha) * Math.min(1, t.deltaMS / 700);
         scene.etchRail.alpha = scene.bgRail.alpha;
         scene.etchCanal.alpha = 1 - scene.bgRail.alpha;
-        /* spark-ring FX for the last confirmed action + a vehicle sailing
-           the whole route when a link is built (boat on canals, train on
-           rail, tinted with the owner's colour) */
+        /* spark-ring FX for the last confirmed action (a link just laid
+           sends its first vehicle off at the traffic's own pace: ambiance.ts) */
         const g0 = gameRef.current;
         if (g0.fxSeq !== lastFxSeq && g0.lastFx) {
           lastFxSeq = g0.fxSeq;
@@ -1097,59 +1095,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             ring.eventMode = 'none';
             ring.position.set(at[0], at[1]);
           }
-          if (g0.lastFx.kind === 'link' && g0.lastFx.linkId && !reduced) {
-            const def = LINKS.find((l) => l.id === g0.lastFx!.linkId);
-            if (def) {
-              const built = g0.links[def.id];
-              const isRail = built?.era === 'rail';
-              const s = new Sprite(Texture.from(isRail ? '/icon-rail.svg' : '/boat-fx.png'));
-              s.anchor.set(0.5);
-              const ownerHex = PLAYER_COLORS[g0.players[g0.lastFx.player]?.color]?.hex ?? '#C9A45C';
-              if (isRail) {
-                s.width = s.height = 26;
-                s.tint = 0xf2ead6;
-              } else {
-                /* the grand narrowboat sails the new canal — big ceremony
-                   moment, owner-tinted (the tint shows on the lit cabin
-                   and roses; the hull stays dark and elegant) */
-                s.width = 130;
-                s.height = 130 * (167 / 507);
-                s.tint = parseInt(ownerHex.replace('#', ''), 16);
-              }
-              s.eventMode = 'none';
-              fxLayer.addChild(s);
-              fxVehicles.push({ s, pts: routeFor(def, isRail ? 'rail' : 'canal').pts, t0: clock });
-            }
-          }
-        }
-        /* vehicles sailing a freshly built route (~1.8s end to end) */
-        for (let i = fxVehicles.length - 1; i >= 0; i--) {
-          const fx = fxVehicles[i];
-          const age = (clock - fx.t0) / 1.8;
-          if (age >= 1) {
-            fxLayer.removeChild(fx.s);
-            fx.s.destroy();
-            fxVehicles.splice(i, 1);
-            continue;
-          }
-          /* parametric position + heading along the route */
-          const pts = fx.pts;
-          let total = 0;
-          for (let j = 1; j < pts.length; j++) total += Math.hypot(pts[j][0] - pts[j - 1][0], pts[j][1] - pts[j - 1][1]);
-          let d = age * total;
-          for (let j = 1; j < pts.length; j++) {
-            const seg = Math.hypot(pts[j][0] - pts[j - 1][0], pts[j][1] - pts[j - 1][1]);
-            if (d <= seg || j === pts.length - 1) {
-              const p = seg === 0 ? 0 : d / seg;
-              const x = pts[j - 1][0] + (pts[j][0] - pts[j - 1][0]) * p;
-              const y = pts[j - 1][1] + (pts[j][1] - pts[j - 1][1]) * p;
-              fx.s.position.set(x, y);
-              fx.s.rotation = Math.atan2(pts[j][1] - pts[j - 1][1], pts[j][0] - pts[j - 1][0]);
-              break;
-            }
-            d -= seg;
-          }
-          fx.s.alpha = age < 0.15 ? age / 0.15 : age > 0.8 ? (1 - age) / 0.2 : 1;
         }
         for (let i = fxRings.length - 1; i >= 0; i--) {
           const fx = fxRings[i];
