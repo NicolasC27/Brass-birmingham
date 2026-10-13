@@ -30,6 +30,7 @@ import GameTopBar from '@/components/game/GameTopBar';
 import EdgeTracks from '@/components/game/EdgeTracks';
 import { LoanLandingTrack } from '@/components/game/IncomeRail';
 import BoardSettings from '@/components/game/BoardSettings';
+import { useTableSounds } from '@/components/game/useTableSounds';
 import PlayerMat from '@/components/game/PlayerMat';
 import TitleCard, { TitlePlate, TroubleCard } from '@/components/game/TitleCard';
 import { useBoardSet } from '@/components/game/titleStage';
@@ -103,6 +104,7 @@ export default function Game() {
   /* how far the board has come: the title card covers the table until then */
   const boardHost = useRef<HTMLDivElement>(null);
   const boardStage = useBoardSet(boardHost, !!game);
+  useTableSounds();
   const myTurn = useGame((s) => s.myTurn());
   const planActor = useGame((s) => s.planActor());
   const queued = useGame((s) => s.queued);

@@ -152,6 +152,23 @@ function Switch({ on, onClick, label }: { on: boolean; onClick: () => void; labe
   );
 }
 
+/** a level on a brass rule, 0 to 1, in tenths */
+function Level({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+  return (
+    <input
+      type="range"
+      min={0}
+      max={10}
+      step={1}
+      value={Math.round(value * 10)}
+      aria-label={label}
+      aria-valuetext={`${Math.round(value * 100)} %`}
+      onChange={(e) => onChange(Number(e.target.value) / 10)}
+      className="h-5 w-32 cursor-pointer accent-brass-400"
+    />
+  );
+}
+
 /** segmented control */
 /* many choices wrap onto a second line instead of running off the panel */
 function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { id: T; label: string }[]; onChange: (v: T) => void }) {
@@ -529,9 +546,27 @@ function BoardSettings() {
                     <OptionRow label={t('game.settings.telegrams')} hint={t('game.settings.telegramsHint')}>
                       <Switch on={opts.telegrams} onClick={() => setBoardOption('telegrams', !opts.telegrams)} label={t('game.settings.telegrams')} />
                     </OptionRow>
-                    <OptionRow label={t('game.settings.sound')} hint={t('game.settings.soundHint')}>
+                    <OptionRow label={t('game.settings.sound')} hint={t('game.settings.sounds.hint')}>
                       <Switch on={opts.sound} onClick={() => setBoardOption('sound', !opts.sound)} label={t('game.settings.sound')} />
                     </OptionRow>
+                    {opts.sound && (
+                      <div className="mb-1 ml-3 border-l-2 border-brass-400/40 pl-3">
+                        <OptionRow label={t('game.settings.sounds.ambience')} hint={t('game.settings.sounds.ambienceHint')}>
+                          <Switch on={opts.ambience} onClick={() => setBoardOption('ambience', !opts.ambience)} label={t('game.settings.sounds.ambience')} />
+                        </OptionRow>
+                        {opts.ambience && (
+                          <OptionRow label={t('game.settings.sounds.volAmbience')}>
+                            <Level value={opts.volAmbience} onChange={(v) => setBoardOption('volAmbience', v)} label={t('game.settings.sounds.volAmbience')} />
+                          </OptionRow>
+                        )}
+                        <OptionRow label={t('game.settings.sounds.volGestures')} hint={t('game.settings.sounds.volGesturesHint')}>
+                          <Level value={opts.volGestures} onChange={(v) => setBoardOption('volGestures', v)} label={t('game.settings.sounds.volGestures')} />
+                        </OptionRow>
+                        <OptionRow label={t('game.settings.sounds.volMoments')} hint={t('game.settings.sounds.volMomentsHint')}>
+                          <Level value={opts.volMoments} onChange={(v) => setBoardOption('volMoments', v)} label={t('game.settings.sounds.volMoments')} />
+                        </OptionRow>
+                      </div>
+                    )}
                     <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
                       <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
                     </OptionRow>

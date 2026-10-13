@@ -132,8 +132,15 @@ export interface BoardOptions {
   guideFolded: boolean;
   /** player mat spread wide (six columns) instead of the slim docked panel */
   matWide: boolean;
-  /** the board's small sounds (a bell over a hovered house) */
+  /** the table's sounds, all of them: the master switch of the mixing desk */
   sound: boolean;
+  /** the ambience of the era under the table (off by default for a reader
+   *  who asked the system for less motion) */
+  ambience: boolean;
+  /** the three buses' levels, 0 to 1: ambience, gestures of play, moments */
+  volAmbience: number;
+  volGestures: number;
+  volMoments: number;
   /** the telegrams wired across the table, and the machines' banter */
   telegrams: boolean;
   /** the focus view: rail folded, tools away, minimap small, hand tucked, no Gazette */
@@ -173,6 +180,10 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   guideFolded: 'brassworks.guideFolded',
   matWide: 'brassworks.matWide',
   sound: 'brassworks.sound',
+  ambience: 'brassworks.sound.ambience',
+  volAmbience: 'brassworks.sound.volAmbience',
+  volGestures: 'brassworks.sound.volGestures',
+  volMoments: 'brassworks.sound.volMoments',
   telegrams: 'brassworks.telegrams',
   focus: 'brassworks.focus',
   reviewLit: 'brassworks.reviewLit',
@@ -192,6 +203,20 @@ const read = <K extends keyof typeof KEYS>(k: K, fallback: BoardOptions[K]): Boa
     return fallback;
   }
 };
+
+/** the reader asked the system for less motion: the ambience starts shut */
+function reducedMotion(): boolean {
+  try {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+/** a stored level, between 0 and 1 */
+function level(k: 'volAmbience' | 'volGestures' | 'volMoments', fallback: number): number {
+  const v = Number(read(k, fallback));
+  return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback;
+}
 
 let state: BoardOptions = {
   hideUnbuilt: read('hideUnbuilt', false),
@@ -221,6 +246,10 @@ let state: BoardOptions = {
   guideFolded: read('guideFolded', false),
   matWide: read('matWide', false),
   sound: read('sound', true),
+  ambience: read('ambience', !reducedMotion()),
+  volAmbience: level('volAmbience', 0.5),
+  volGestures: level('volGestures', 0.8),
+  volMoments: level('volMoments', 0.8),
   telegrams: read('telegrams', true),
   focus: read('focus', false),
   reviewLit: read('reviewLit', false),

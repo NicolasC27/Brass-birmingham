@@ -1,12 +1,28 @@
-/* The board's few sounds, synthesised on the spot with Web Audio: nothing
-   to download, nothing to license. A single context is opened lazily and
-   resumed on demand (browsers keep it suspended until the reader has
-   clicked once somewhere, which a game always brings). */
+/* The table's sounds. A few are synthesised on the spot with Web Audio —
+   the shop bells, the counter, the station — and the rest are short
+   recordings served under /sfx/ (Opus in WebM, MP3 for Safari), fetched
+   the first time they are wanted. A single context is opened lazily, and
+   never before the reader has touched the page: until then every sound is
+   simply not made (browsers would keep the context suspended anyway).
+
+   Three buses run into one master: the ambience under the table, the
+   gestures of play, and the moments — the bell of a turn, the whistle at
+   the close of an era, the band at the end. Each has its own level, and
+   the board's sound switch closes the master. */
 
 let ctx: AudioContext | null = null;
-/** the context, whatever its state (decoding works while suspended) */
+
+/** the reader has touched the page: sticky user activation where the
+ *  browser reports it; a context without the API is taken as willing */
+const touched = (): boolean => {
+  const ua = (globalThis.navigator as (Navigator & { userActivation?: { hasBeenActive: boolean } }) | undefined)?.userActivation;
+  return ua ? ua.hasBeenActive : true;
+};
+/** the context, whatever its state (decoding works while suspended) —
+ *  none before the first gesture */
 const audio = (): AudioContext | null => {
   if (typeof window === 'undefined' || !('AudioContext' in window)) return null;
+  if (!ctx && !touched()) return null;
   ctx ??= new AudioContext();
   return ctx;
 };
@@ -17,6 +33,57 @@ const context = async (): Promise<AudioContext | null> => {
   if (ac.state === 'suspended') await ac.resume().catch(() => undefined);
   return ac.state === 'running' ? ac : null;
 };
+
+/* ---------------- the mixing desk: three buses and a master ---------------- */
+
+export type Bus = 'ambience' | 'gestures' | 'moments';
+export interface Mix {
+  /** the board's sound switch: the master open or shut */
+  on: boolean;
+  /** the ambience under the table plays at all */
+  ambience: boolean;
+  /** each bus's level, 0 to 1 */
+  levels: Record<Bus, number>;
+}
+let mix: Mix = { on: true, ambience: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8 } };
+/* a bus at full is still well under the page: the recordings are cut to
+   peak at -3 dBFS, the ambiences levelled to -16 LUFS, and a board game is
+   played for two hours */
+const BUS_SCALE: Record<Bus, number> = { ambience: 0.22, gestures: 0.55, moments: 0.5 };
+
+let desk: { ac: AudioContext; master: GainNode; bus: Record<Bus, GainNode> } | null = null;
+/** the buses of this context, made on first use */
+const busOf = (ac: AudioContext, bus: Bus): GainNode => {
+  if (!desk || desk.ac !== ac) {
+    const master = ac.createGain();
+    master.gain.setValueAtTime(mix.on ? 1 : 0, ac.currentTime);
+    master.connect(ac.destination);
+    const make = (b: Bus) => {
+      const g = ac.createGain();
+      g.gain.setValueAtTime(mix.levels[b] * BUS_SCALE[b], ac.currentTime);
+      g.connect(master);
+      return g;
+    };
+    desk = { ac, master, bus: { ambience: make('ambience'), gestures: make('gestures'), moments: make('moments') } };
+  }
+  return desk.bus[bus];
+};
+
+/** the levels and switches as the board options have them */
+export function setMix(next: Mix): void {
+  mix = { on: next.on, ambience: next.ambience, levels: { ...next.levels } };
+  if (desk) {
+    const now = desk.ac.currentTime;
+    const glide = (p: AudioParam, v: number) => {
+      p.cancelScheduledValues(now);
+      p.setValueAtTime(p.value, now);
+      p.linearRampToValueAtTime(v, now + 0.15);
+    };
+    glide(desk.master.gain, mix.on ? 1 : 0);
+    for (const b of ['ambience', 'gestures', 'moments'] as const) glide(desk.bus[b].gain, mix.levels[b] * BUS_SCALE[b]);
+  }
+  applyAmbience();
+}
 
 /** deterministic 31-hash, for a house's own note */
 const hash = (s: string): number => {
@@ -64,6 +131,8 @@ const buffers = new Map<string, Promise<AudioBuffer | null>>();
  *  when the server has none */
 const ambience = (id: string): Promise<AudioBuffer | null> => {
   const name = id.replace(/^m-/, '');
+  /* nothing is fetched, nor remembered as missing, before the first gesture */
+  if (!audio()) return Promise.resolve(null);
   let p = buffers.get(name);
   if (!p) {
     p = (async () => {
@@ -155,13 +224,14 @@ export function houseHover(id: string | null): void {
 export function closeAudio(): void {
   houseLeave();
   fading.clear();
+  /* the ambience dies with its context; the era wanted is kept for the next */
+  table = null;
+  desk = null;
   const ac = ctx;
   ctx = null;
   if (ac && ac.state !== 'closed') void ac.close().catch(() => undefined);
 }
 
-/* dev only: what is sounding right now (window.__sfx.playing()) */
-if (import.meta.env.DEV && typeof window !== 'undefined') (window as unknown as { __sfx?: { playing: () => string | null } }).__sfx = { playing: () => playing?.id ?? null };
 
 /** the counter bell of the telegraph office: one bright strike */
 export function counterBell(): void {
@@ -341,13 +411,27 @@ const grain = (ac: AudioContext): AudioBuffer => {
 /** the block meets the paper: a dull press, the paper's short hiss and a
  *  small brass tick of the handle — a card struck firmer than a link */
 export function stampThud(kind: 'tile' | 'link' = 'tile'): void {
+  /* the move behind the strike, if the table has just told us of one: a
+     link is heard as its era's link, a machine's piece a little further off */
+  const strike = struck && Date.now() - struck.at < STRIKE_FRESH_MS ? struck : null;
+  struck = null;
+  const quiet = strike ? !strike.mine : false;
+  const name: Cue = kind === 'tile' ? 'stamp' : (strike?.era ?? wantEra ?? 'canal') === 'rail' ? 'link-rail' : 'link-canal';
+  /* a recording already decoded is played; otherwise the press is
+     synthesised this once while the recording is fetched for next time */
+  const ready = decoded.get(name);
+  if (ready) {
+    cue(name, { quiet });
+    return;
+  }
+  void sample(name);
   void context().then((ac) => {
     if (!ac) return;
     const now = ac.currentTime;
-    const firm = kind === 'tile' ? 1 : 0.6;
+    const firm = (kind === 'tile' ? 1 : 0.6) * (quiet ? MACHINE : 1) * 1.6;
     const master = ac.createGain();
     master.gain.setValueAtTime(0.9 * firm, now);
-    master.connect(ac.destination);
+    master.connect(busOf(ac, 'gestures'));
     /* the press: a low body that falls away at once */
     const body = ac.createOscillator();
     body.type = 'sine';
@@ -390,3 +474,195 @@ export function stampThud(kind: 'tile' | 'link' = 'tile'): void {
     }
   });
 }
+
+/* ---------------- the recorded palette: gestures and moments ---------------- */
+
+export type Cue = 'turn' | 'stamp' | 'link-canal' | 'link-rail' | 'sell' | 'loan' | 'develop' | 'card' | 'scout' | 'era-end' | 'victory' | 'defeat' | 'click' | 'panel-open' | 'panel-close' | 'refuse';
+const BUS_OF: Record<Cue, Bus> = {
+  turn: 'moments',
+  'era-end': 'moments',
+  victory: 'moments',
+  defeat: 'moments',
+  stamp: 'gestures',
+  'link-canal': 'gestures',
+  'link-rail': 'gestures',
+  sell: 'gestures',
+  loan: 'gestures',
+  develop: 'gestures',
+  card: 'gestures',
+  scout: 'gestures',
+  click: 'gestures',
+  'panel-open': 'gestures',
+  'panel-close': 'gestures',
+  refuse: 'gestures',
+};
+/** the interface's own small noises sit under the moves of the game */
+const CUE_LEVEL: Partial<Record<Cue, number>> = { click: 0.45, 'panel-open': 0.4, 'panel-close': 0.4, card: 0.6, refuse: 0.7 };
+/** a machine's gesture (or a rival's) is heard across the table, not under the hand */
+export const MACHINE = 0.45;
+/** a gesture that arrives this late after it was asked for is let go */
+const STALE_MS = 700;
+
+/** Opus in WebM where the browser plays it, MP3 elsewhere (Safari) */
+let opus: boolean | null = null;
+const canOpus = (): boolean => {
+  if (opus === null) {
+    try {
+      opus = typeof document !== 'undefined' && document.createElement('audio').canPlayType('audio/webm; codecs="opus"') !== '';
+    } catch {
+      opus = false;
+    }
+  }
+  return opus;
+};
+
+const decoded = new Map<string, AudioBuffer>();
+const loading = new Map<string, Promise<AudioBuffer | null>>();
+/** a recording of the palette, fetched and decoded once; null when it
+ *  cannot be had (then the synthesised voice, where there is one, stands in) */
+function sample(name: string): Promise<AudioBuffer | null> {
+  const ac = audio();
+  if (!ac) return Promise.resolve(null);
+  let p = loading.get(name);
+  if (!p) {
+    const get = async (ext: string): Promise<AudioBuffer> => {
+      const r = await fetch(`/sfx/${name}.${ext}`);
+      if (!r.ok || !(r.headers.get('content-type') ?? '').match(/^(audio|video)\//)) throw new Error(`no ${name}.${ext}`);
+      return ac.decodeAudioData(await r.arrayBuffer());
+    };
+    p = (canOpus() ? get('webm').catch(() => get('mp3')) : get('mp3'))
+      .then((buf) => {
+        decoded.set(name, buf);
+        return buf;
+      })
+      .catch(() => null);
+    loading.set(name, p);
+  }
+  return p;
+}
+
+/** what stands in for a recording that could not be had */
+const SYNTH: Partial<Record<Cue, () => void>> = {
+  turn: () => counterBell(),
+  'era-end': () => steamWhistle(),
+};
+
+/** play one sound of the palette on its bus; `quiet` for another seat's move */
+export function cue(name: Cue, opts: { quiet?: boolean } = {}): void {
+  if (!mix.on) return;
+  const asked = Date.now();
+  void context().then(async (ac) => {
+    if (!ac) return;
+    const buf = decoded.get(name) ?? (await sample(name));
+    if (!buf) {
+      SYNTH[name]?.();
+      return;
+    }
+    /* a gesture heard long after the hand moved is worse than none */
+    if (BUS_OF[name] === 'gestures' && Date.now() - asked > STALE_MS) return;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const g = ac.createGain();
+    g.gain.setValueAtTime((CUE_LEVEL[name] ?? 1) * (opts.quiet ? MACHINE : 1), ac.currentTime);
+    src.connect(g).connect(busOf(ac, BUS_OF[name]));
+    src.start();
+    if (import.meta.env.DEV && heard.push(`${name}${opts.quiet ? ' (quiet)' : ''}`) > 40) heard.shift();
+  });
+}
+
+/** the short sounds of the palette (a few kilobytes each), fetched once a
+ *  table is sat at so the first of each is not late */
+export function warmSounds(): void {
+  if (!mix.on) return;
+  for (const n of Object.keys(BUS_OF)) void sample(n);
+}
+
+/* ---------------- the strike: who laid the piece the press is about to strike ---------------- */
+
+/** the piece the table has just been told of; the press reads it once */
+let struck: { era: 'canal' | 'rail'; mine: boolean; at: number } | null = null;
+const STRIKE_FRESH_MS = 2000;
+/** the table says a piece was laid, and by whom: the press that strikes it
+ *  (stampThud, on the board's own beat) is heard accordingly */
+export function noteStrike(era: 'canal' | 'rail', mine: boolean): void {
+  struck = { era, mine, at: Date.now() };
+}
+
+/* ---------------- the ambience under the table ---------------- */
+
+/** the era the table stands in (null: no table, the ambience goes) */
+let wantEra: 'canal' | 'rail' | null = null;
+let table: { era: 'canal' | 'rail'; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+const AMB_FADE = 3;
+/** the loop's own length: the file was folded onto itself at this length,
+ *  an MP3's padding past it is left out of the loop */
+const AMB_LOOP_S = 27;
+
+/** the ambience of this era, looped under the table; another era's fades
+ *  across into it */
+export function tableAmbience(era: 'canal' | 'rail' | null): void {
+  wantEra = era;
+  applyAmbience();
+}
+
+function fadeOut(t: { src: AudioBufferSourceNode; gain: GainNode }, seconds: number): void {
+  const ac = t.src.context;
+  const now = ac.currentTime;
+  t.gain.gain.cancelScheduledValues(now);
+  t.gain.gain.setValueAtTime(t.gain.gain.value, now);
+  t.gain.gain.linearRampToValueAtTime(0.0001, now + seconds);
+  t.src.stop(now + seconds + 0.05);
+}
+
+function applyAmbience(): void {
+  const era = mix.on && mix.ambience ? wantEra : null;
+  if (table && table.era !== era) {
+    fadeOut(table, era ? AMB_FADE : 1);
+    table = null;
+  }
+  if (!era || table) return;
+  void context().then(async (ac) => {
+    if (!ac) return;
+    const buf = await sample(`amb-${era}`);
+    /* the table may have moved on while the file came */
+    const now = mix.on && mix.ambience ? wantEra : null;
+    if (!buf || now !== era || table) return;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.loopStart = 0;
+    src.loopEnd = Math.min(buf.duration, AMB_LOOP_S);
+    const gain = ac.createGain();
+    const t0 = ac.currentTime;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(1, t0 + AMB_FADE);
+    src.connect(gain).connect(busOf(ac, 'ambience'));
+    src.start(t0);
+    table = { era, src, gain };
+  });
+}
+
+/* the first touch of the page opens the way: what was wanted before it —
+   the ambience of the table already sat at — starts then */
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  const first = () => {
+    window.removeEventListener('pointerdown', first, true);
+    window.removeEventListener('keydown', first, true);
+    /* the activation is recorded once this handler has run */
+    window.setTimeout(() => {
+      applyAmbience();
+      if (wantEra) warmSounds();
+    }, 0);
+  };
+  window.addEventListener('pointerdown', first, true);
+  window.addEventListener('keydown', first, true);
+}
+
+/* dev only: what is sounding right now (window.__sfx.playing(), .ambience(), .heard()) */
+const heard: string[] = [];
+if (import.meta.env.DEV && typeof window !== 'undefined')
+  (window as unknown as { __sfx?: { playing: () => string | null; ambience: () => string | null; heard: () => string[] } }).__sfx = {
+    playing: () => playing?.id ?? null,
+    ambience: () => table?.era ?? null,
+    heard: () => heard.slice(),
+  };
