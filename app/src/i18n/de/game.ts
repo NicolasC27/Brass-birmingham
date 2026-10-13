@@ -203,6 +203,17 @@ const game: typeof engame = {
     telegramsHint: 'Die festen Zeilen, die sich Spieler zukabeln, die Sticheleien der Maschinen, die Gazette jeder Runde.',
     sound: 'Töne',
     soundHint: 'Die Stimmung eines Händlers beim Überfahren: sein Kai oder eine Ladenglocke.',
+    /* the table's sounds: master switch, ambience, the three levels */
+    sounds: {
+      hint: 'Alle Töne des Tisches: gelegte Plättchen, die Glocke deines Zuges, die Häuser unter dem Zeiger.',
+      ambience: 'Klangkulisse',
+      ambienceHint: 'Der Kanal, dann die Eisenbahn, ganz leise unter dem Tisch. Aus, wenn das System weniger Bewegung wünscht.',
+      volAmbience: 'Pegel der Kulisse',
+      volGestures: 'Züge',
+      volGesturesHint: 'Plättchen, Verbindungen, Verkäufe, Kredite. Die Züge der Maschinen klingen ferner.',
+      volMoments: 'Momente',
+      volMomentsHint: 'Dein Zug, das Ende einer Epoche, das Ende der Partie.',
+    },
     showUnbuilt: 'Ungebaute Verbindungen',
     showUnbuiltHint: 'Die noch freien Kanal- und Bahnrouten. Taste C.',
     greyMerch: 'Nicht genutzte Händler ausgrauen',
@@ -639,6 +650,15 @@ const game: typeof engame = {
     'You are not seated at this table': 'Du sitzt nicht an diesem Tisch',
     'No game at this table': 'Keine Partie an diesem Tisch',
     needsMoney: 'Braucht £{need} — du hast £{have}',
+  },
+  /* the "why?" beside a refusal: the rule it rests on */
+  why: {
+    link: 'Warum?',
+    aria: 'Die Regel hinter dieser Ablehnung öffnen',
+    cited: 'Die Regel',
+    steps: 'Ablauf',
+    edges: 'Kleingedrucktes',
+    codex: 'Das Kapitel im Kodex lesen',
   },
   confirm: {
     build: 'Bauen · {industry} Stufe {level} · {town} · £{price}',

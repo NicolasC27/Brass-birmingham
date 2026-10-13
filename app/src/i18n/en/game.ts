@@ -201,6 +201,17 @@ const game = {
     telegramsHint: 'The printed lines players wire each other, the machines’ banter, the Gazette of every round.',
     sound: 'Sounds',
     soundHint: 'A merchant’s ambience while hovered: its quay, or a shop bell.',
+    /* the table's sounds: master switch, ambience, the three levels */
+    sounds: {
+      hint: 'Every sound of the table: the pieces laid, the bell of your turn, the houses under the pointer.',
+      ambience: 'Ambience',
+      ambienceHint: 'The canal, then the rail, very low under the table. Off when the system asks for less motion.',
+      volAmbience: 'Ambience level',
+      volGestures: 'Moves',
+      volGesturesHint: 'Tiles, links, sales, loans. The machines’ moves are heard further off.',
+      volMoments: 'Moments',
+      volMomentsHint: 'Your turn, the close of an era, the end of the game.',
+    },
     showUnbuilt: 'Unbuilt links',
     showUnbuiltHint: 'Canal and rail routes still open. C key.',
     greyMerch: 'Grey out unclaimed merchants',
@@ -637,6 +648,15 @@ const game = {
     'You are not seated at this table': 'You are not seated at this table',
     'No game at this table': 'No game at this table',
     needsMoney: 'Needs £{need} — you hold £{have}',
+  },
+  /* the "why?" beside a refusal: the rule it rests on */
+  why: {
+    link: 'Why?',
+    aria: 'Open the rule behind this refusal',
+    cited: 'The rule',
+    steps: 'How it goes',
+    edges: 'Fine print',
+    codex: 'Read the chapter in the codex',
   },
   confirm: {
     build: 'Build · {industry} L{level} · {town} · £{price}',

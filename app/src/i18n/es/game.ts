@@ -203,6 +203,17 @@ const game: typeof engame = {
     telegramsHint: 'Las líneas fijas que los jugadores se cablean, las pullas de las máquinas, la Gaceta de cada ronda.',
     sound: 'Sonidos',
     soundHint: 'El ambiente de un mercader al pasar el cursor: su muelle, o una campanilla.',
+    /* the table's sounds: master switch, ambience, the three levels */
+    sounds: {
+      hint: 'Todos los sonidos de la mesa: las piezas colocadas, la campana de tu turno, las casas bajo el cursor.',
+      ambience: 'Ambiente',
+      ambienceHint: 'El canal, luego el ferrocarril, muy bajo bajo la mesa. Apagado si el sistema pide menos movimiento.',
+      volAmbience: 'Nivel del ambiente',
+      volGestures: 'Jugadas',
+      volGesturesHint: 'Losetas, enlaces, ventas, préstamos. Las jugadas de las máquinas se oyen más lejos.',
+      volMoments: 'Momentos',
+      volMomentsHint: 'Tu turno, el final de una era, el final de la partida.',
+    },
     showUnbuilt: 'Conexiones sin construir',
     showUnbuiltHint: 'Los trazados de canales y vías aún disponibles. Tecla C.',
     greyMerch: 'Atenuar los mercaderes sin reclamar',
@@ -639,6 +650,15 @@ const game: typeof engame = {
     'You are not seated at this table': 'No estás sentado a esta mesa',
     'No game at this table': 'No hay partida en esta mesa',
     needsMoney: 'Hacen falta {need} £ — tienes {have} £',
+  },
+  /* the "why?" beside a refusal: the rule it rests on */
+  why: {
+    link: '¿Por qué?',
+    aria: 'Abrir la regla que funda esta negativa',
+    cited: 'La regla',
+    steps: 'Cómo se hace',
+    edges: 'Letra pequeña',
+    codex: 'Leer el capítulo en el códice',
   },
   confirm: {
     build: 'Construir · {industry} N{level} · {town} · {price} £',

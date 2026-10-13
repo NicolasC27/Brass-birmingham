@@ -203,6 +203,17 @@ const fr: typeof engame = {
     telegramsHint: 'Les lignes fixes que les joueurs se câblent, les piques des machines, la Gazette de chaque manche.',
     sound: 'Sons',
     soundHint: 'L’ambiance d’un marchand au survol : son quai, ou une clochette.',
+    /* the table's sounds: master switch, ambience, the three levels */
+    sounds: {
+      hint: 'Tous les sons de la table : les pièces posées, la cloche de votre tour, les maisons au survol.',
+      ambience: 'Ambiance',
+      ambienceHint: 'Le canal, puis le rail, très bas sous la table. Coupée si le système demande moins d’animations.',
+      volAmbience: 'Niveau de l’ambiance',
+      volGestures: 'Coups',
+      volGesturesHint: 'Tuiles, liaisons, ventes, emprunts. Les coups des machines s’entendent de plus loin.',
+      volMoments: 'Moments',
+      volMomentsHint: 'Votre tour, la fin d’une ère, la fin de la partie.',
+    },
     showUnbuilt: 'Liaisons non construites',
     showUnbuiltHint: 'Les tracés de canaux et de rails encore disponibles. Touche C.',
     greyMerch: 'Griser les marchands non pris',
@@ -639,6 +650,15 @@ const fr: typeof engame = {
     'You are not seated at this table': 'Vous n’êtes pas assis à cette table',
     'No game at this table': 'Pas de partie à cette table',
     needsMoney: 'Il faut {need} £ — vous avez {have} £',
+  },
+  /* the "why?" beside a refusal: the rule it rests on */
+  why: {
+    link: 'Pourquoi\u202f?',
+    aria: 'Ouvrir la règle qui fonde ce refus',
+    cited: 'La règle',
+    steps: 'Déroulé',
+    edges: 'En petits caractères',
+    codex: 'Lire le chapitre dans le codex',
   },
   confirm: {
     build: 'Construire · {industry} N{level} · {town} · {price} £',
