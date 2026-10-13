@@ -41,13 +41,42 @@ export const eventKey = (e: KeyboardEvent): string => (e.key.length === 1 ? e.ke
 /** keys that cannot be bound: they already drive the hand or the camera */
 export const RESERVED_KEYS = new Set(['1', '2', '3', '4', '5', '6', '7', '8', '+', '=', '-', '_', 'Enter', 'Escape', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', ' ', 'Tab']);
 
+const LETTERS = 'abcdefghijklmnopqrstuvwxyz';
+
+/**
+ * A stored set of keys made whole against today's actions. The player's
+ * own choices stand; an action added since (or one that came back sharing
+ * a key) takes its default when it is free, else the default the holder of
+ * its key gave up — the same exchange a rebinding makes — else the first
+ * free letter. Two actions never answer to one key: a mat moved to Q stays
+ * on Q when the analysis arrives with Q for its default.
+ */
+export function reconcileKeys(stored: Partial<Record<string, unknown>> | null | undefined): Record<KeyAction, string> {
+  const out: Partial<Record<KeyAction, string>> = {};
+  const taken = new Set<string>();
+  const src = stored && typeof stored === 'object' ? stored : {};
+  for (const a of KEY_ACTIONS) {
+    const k = src[a];
+    if (typeof k !== 'string' || !k || RESERVED_KEYS.has(k) || taken.has(k)) continue;
+    out[a] = k;
+    taken.add(k);
+  }
+  for (const a of KEY_ACTIONS) {
+    if (out[a] !== undefined) continue;
+    const mine = DEFAULT_KEYS[a];
+    const holder = KEY_ACTIONS.find((b) => out[b] === mine);
+    const traded = holder ? DEFAULT_KEYS[holder] : undefined;
+    const k = !taken.has(mine) ? mine : traded && !taken.has(traded) ? traded : [...LETTERS].find((l) => !taken.has(l)) ?? mine;
+    out[a] = k;
+    taken.add(k);
+  }
+  return out as Record<KeyAction, string>;
+}
+
 let state: Record<KeyAction, string> = (() => {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<Record<KeyAction, string>>;
-      return { ...DEFAULT_KEYS, ...parsed };
-    }
+    if (raw) return reconcileKeys(JSON.parse(raw) as Partial<Record<string, unknown>>);
   } catch {
     /* private mode / malformed */
   }

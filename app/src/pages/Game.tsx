@@ -37,6 +37,7 @@ import { useBoardSet } from '@/components/game/titleStage';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { analysisLane, useHudInsets } from '@/components/game/useHudInsets';
 import { isKey, onControl, typing } from '@/components/game/keybindings';
+import { ownMatSeat } from '@/components/game/railLogic';
 import { useLayer } from '@/components/game/useLayer';
 import HandDock from '@/components/game/HandDock';
 import Ledger from '@/components/game/Ledger';
@@ -412,8 +413,10 @@ export default function Game() {
         e.preventDefault();
         return;
       }
-      if (isKey(e, 'analysis')) {
-        if (readable(game)) setDebriefOpen(true);
+      /* the analysis key opens the analysis once the game can be read;
+         before that it has nothing to open and leaves the key to the list */
+      if (isKey(e, 'analysis') && readable(game)) {
+        setDebriefOpen(true);
         return;
       }
       if (e.key === 'Escape') {
@@ -454,12 +457,8 @@ export default function Game() {
       if (isKey(e, 'mat')) {
         const st = useGame.getState();
         if (st.matPlayer !== null) st.closeMat();
-        else if (st.game) {
-          /* your own mat first: the lone human when a bot is at the table */
-          const cur = st.game.players[st.game.current];
-          const humans = st.game.players.map((pl, i) => (pl.isBot ? -1 : i)).filter((i) => i >= 0);
-          st.openMat(!cur.isBot ? st.game.current : humans.length === 1 ? humans[0] : st.game.current);
-        }
+        /* your own mat first: your seat online, the lone human when a bot is at the table */
+        else if (st.game) st.openMat(ownMatSeat(st.game.players, st.game.current, st.seat));
         return;
       }
       if (isKey(e, 'market')) {

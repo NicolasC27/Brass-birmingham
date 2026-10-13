@@ -303,9 +303,9 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard, 
 /* The medallions: each seat a portrait in a disc, ringed in its colour. */
 /* The ring's arc is the part of the purse this round has taken; a       */
 /* small numeral struck on the ring is the seat it earns next round;     */
-/* the points sit on a plate under the disc, the owner's shape on the    */
-/* ring for eyes that do not tell the colours apart. The money waits     */
-/* under the pointer, the card unfolds at a click.                       */
+/* the purse and the points sit on a plate under the disc, the owner's  */
+/* shape on the ring for eyes that do not tell the colours apart. The    */
+/* round's figures wait under the pointer, the card unfolds at a click.  */
 /* ------------------------------------------------------------------ */
 
 /** the lamp's lane on the left, the ring beside it */
@@ -441,14 +441,19 @@ function Medal({ p, index, active, nextRank, nowRank, open, onToggle, onClose, o
       <span aria-hidden className="pointer-events-none absolute flex items-center justify-center rounded-full border border-brass-700/70 bg-coal-950" style={at(45, 13)}>
         <ShapeChip color={p.color} size={8} vivid />
       </span>
-      {/* the points, on a small plate under the disc */}
+      {/* the purse and the points, on a small plate under the disc: what a
+          seat holds is public at the table, so it is always in sight */}
       <span
         aria-hidden
-        className="pointer-events-none absolute flex -translate-x-1/2 items-center gap-0.5 rounded-sm border border-brass-700/70 bg-coal-950/95 px-1 font-mono text-[9.5px] font-semibold leading-[13px] text-cream-100/85"
+        className="pointer-events-none absolute flex -translate-x-1/2 items-center whitespace-nowrap rounded-sm border border-brass-700/70 bg-coal-950/95 font-mono text-[9.5px] font-semibold leading-[13px] tabular-nums text-cream-100/85"
         style={{ left: LANE + RING / 2, top: RING - 5, boxShadow: '0 1px 2px rgba(0,0,0,.7)' }}
       >
-        <Trophy className="h-2 w-2 text-brass-400/80" />
-        {p.vp}
+        <span className={cn('px-1', p.money < 0 ? 'text-rust-500 brightness-125' : 'text-cream-100')}>{sum(money)}</span>
+        <span className="h-[9px] w-px bg-brass-700/70" />
+        <span className="flex items-center gap-0.5 px-1">
+          <Trophy className="h-2 w-2 text-brass-400/80" />
+          {p.vp}
+        </span>
       </span>
 
       {/* the money, and the round's figures, while the pointer rests */}

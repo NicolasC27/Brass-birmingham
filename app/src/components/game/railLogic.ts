@@ -62,3 +62,16 @@ export function filetTicks(max: number): { space: number; major: boolean }[] {
   for (let s = 0; s <= max; s += 5) out.push({ space: s, major: s % 10 === 0 });
   return out;
 }
+
+/**
+ * Whose mat the mat key opens: the reader's own seat at a table played
+ * over the wire; at home, the seat to act when it is a person, else the
+ * lone human at a table of machines, else the seat to act. A spectator
+ * (no seat of their own) reads the seat to act.
+ */
+export function ownMatSeat(players: readonly { isBot?: boolean }[], current: number, seat: number | null = null): number {
+  if (seat !== null && seat >= 0 && seat < players.length) return seat;
+  if (!players[current]?.isBot) return current;
+  const humans = players.flatMap((p, i) => (p.isBot ? [] : [i]));
+  return humans.length === 1 ? humans[0] : current;
+}

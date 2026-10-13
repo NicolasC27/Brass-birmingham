@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RAIL_MODES, filetTicks, lanternStop, rankDrift, sanitizeRailMode, shownRailMode, spentShare } from '../railLogic';
+import { RAIL_MODES, filetTicks, lanternStop, ownMatSeat, rankDrift, sanitizeRailMode, shownRailMode, spentShare } from '../railLogic';
 
 describe('the players’ column', () => {
   it('opens on the medallions whatever was stored before', () => {
@@ -59,5 +59,25 @@ describe('the income filet', () => {
     expect(ticks[1]).toEqual({ space: 5, major: false });
     expect(ticks.filter((k) => k.major).map((k) => k.space)).toEqual([0, 10, 20, 30, 40, 50, 60, 70, 80, 90]);
     expect(ticks[ticks.length - 1].space).toBe(95);
+  });
+});
+
+describe('the mat key', () => {
+  const seats = (...bots: boolean[]) => bots.map((isBot) => ({ isBot }));
+  it('opens the mat of the person to act', () => {
+    expect(ownMatSeat(seats(false, true, false), 2)).toBe(2);
+  });
+  it('opens the lone human’s mat while a machine acts', () => {
+    expect(ownMatSeat(seats(true, true, false, true), 1)).toBe(2);
+  });
+  it('opens the acting seat’s mat when several people share the table', () => {
+    expect(ownMatSeat(seats(false, true, false), 1)).toBe(1);
+  });
+  it('opens the reader’s own mat at a table over the wire, whoever acts', () => {
+    expect(ownMatSeat(seats(false, false, false), 0, 2)).toBe(2);
+    expect(ownMatSeat(seats(false, true, false), 1, 0)).toBe(0);
+  });
+  it('shows a spectator the seat to act', () => {
+    expect(ownMatSeat(seats(false, false), 1, -1)).toBe(1);
   });
 });
