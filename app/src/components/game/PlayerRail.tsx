@@ -3,7 +3,7 @@ import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
 import PlayerCard from './PlayerCard';
 import type { ReactNode } from 'react';
 import { INCOME_PAYOUT, PLAYER_COLORS, incomeLevel } from '@/game/data';
-import { ChevronsLeft, ChevronsRight, Coins, Eye, LayoutGrid, PanelLeftClose, TrendingUp, Trophy } from 'lucide-react';
+import { ArrowDownRight, ChevronsLeft, ChevronsRight, Coins, Eye, LayoutGrid, PanelLeftClose, TrendingUp, Trophy } from 'lucide-react';
 import { useGame, useShownGame } from '@/game/store';
 import { projectEraScores, projectedOrder } from '@/game/engine';
 import { FILET_W, setBoardOption, useBoardOptions } from './boardOptions';
@@ -313,7 +313,7 @@ const LANE = 16;
 const RING = 50;
 const R = 22.5;
 const SLOT_W = LANE + RING + 2;
-const SLOT_H = 58;
+const SLOT_H = 70;
 const GAP = 8;
 const PITCH = SLOT_H + GAP;
 const LANTERN_H = 24;
@@ -454,6 +454,16 @@ function Medal({ p, index, active, nextRank, nowRank, open, onToggle, onClose, o
           <Trophy className="h-2 w-2 text-brass-400/80" />
           {p.vp}
         </span>
+      </span>
+      {/* what the seat has laid out this round, under its purse: the figure
+          the next round's order is read from, public at the table */}
+      <span
+        aria-hidden
+        className={cn('pointer-events-none absolute flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap font-mono text-[9px] leading-none tabular-nums', p.spent > 0 ? 'text-cream-100/70' : 'text-cream-100/35')}
+        style={{ left: LANE + RING / 2, top: RING + 10 }}
+      >
+        <ArrowDownRight className="h-2 w-2 shrink-0 opacity-80" />
+        {sum(p.spent)}
       </span>
 
       {/* the money, and the round's figures, while the pointer rests */}
