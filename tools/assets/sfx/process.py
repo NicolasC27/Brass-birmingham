@@ -3,6 +3,7 @@
 
     tools/assets/sfx/process.py          # every sound
     tools/assets/sfx/process.py turn     # only these
+    tools/assets/sfx/process.py music-canal
 
 Reads tools/assets/sfx/raw/ (see generate.py) and writes
 app/public/sfx/<name>.webm (Opus) and <name>.mp3 (the fallback for Safari).
@@ -17,6 +18,10 @@ Spends nothing: ffmpeg only.
                          seamlessly, holding the few loud moments; no limiter
   houses, industries     as the gestures, rid of the hum where the take is a
                          texture rather than a knock, levelled by loudness
+  the canal's tune       a whole number of the tune's phrases cut out of the
+                         take, its head folded over by the same place one
+                         loop later (aligned to the sample), rid of the hum,
+                         levelled by a plain gain; stereo
 
 The choice of take, and why, is in CHOIX.md.
 """
@@ -39,6 +44,7 @@ HUM = 200.0
 #   options: fade  the tail's fade in seconds (default 40 ms)
 #            dehum the take is a texture: its hum is taken out (see dehum)
 #            lufs  level by loudness instead, the peak still held at `peak`
+#            fadein the head's fade in seconds (none by default)
 SHORT = {
     'turn': ('turn-1', None, '', PEAK),
     'stamp': ('stamp-1', None, '', PEAK),
@@ -55,7 +61,13 @@ SHORT = {
     'click': ('click-2', (0.27, 0.42), '', PEAK),
     'loan': ('loan-1', None, '', PEAK),
     'develop': ('develop-1', None, '', PEAK),
-    'card': ('card-1', None, '', PEAK),
+    # take 2, the card drawn and lifted: 110 ms of the slide, then the tick
+    # of the pasteboard and its short decay; the second, smaller tick at
+    # 0.33 s left out. The hiss of the slide softened over 7 kHz. It is heard
+    # on every card taken up, at full level: kept well under the brass latch
+    # (click, played at 0.45, comes to -34 LUFS). Asked -36 LUFS, the peak
+    # held at -12 dBFS stops it at -40
+    'card': ('card-2', (0.04, 0.22), 'lowpass=f=7000,', -12.0, {'fade': 0.03, 'fadein': 0.015, 'lufs': -36}),
     'scout': ('scout-1', None, '', PEAK),
     'panel-open': ('panel-open-1', None, '', PEAK),
     'panel-close': ('panel-close-1', None, '', PEAK),
@@ -87,6 +99,16 @@ LOOPS = {
     # only rattles a laptop's speakers) and a little less under 120 Hz
     'amb-rail': ('amb-rail-1', 'highpass=f=45,highpass=f=45,lowshelf=f=120:g=-4', -18.0, False),
 }
+# name: (take, loop start in s, loop length in s, fold in s, filters, LUFS)
+MUSIC = {
+    # take 2: a tune of eight bars (17.14 s) played round and round, a
+    # phrase coming back at 17.14, 34.28, 51.42 and 68.56 s with its chroma
+    # 0.92 to 0.95 alike; four phrases are kept from 21.92 s, where the same
+    # place four phrases on (90.48 s) matches it best (0.976 over 6 s), and
+    # well before the take's fade (95 s). Nothing of the tune under 40 Hz
+    'music-canal': ('music-canal-2', 21.92, 68.56, 2.0, 'highpass=f=40,highpass=f=40', -20.0),
+}
+
 # a soft compressor for the few loud moments of a loop (a bird close by):
 # slow enough not to pump, over the bed's level so the bed is left alone
 COMP = 'acompressor=threshold=0.2:ratio=3:attack=10:release=250:knee=4'
@@ -163,7 +185,8 @@ def short(name: str) -> None:
     if 'lufs' in opt:
         # by loudness, the peak still held where it was asked
         gain = min(gain, opt['lufs'] - lufs_of(tmp))
-    run(['-y', '-i', tmp, '-af', f'afade=t=out:st={dur - fade:.4f}:d={fade:.4f},volume={gain:.2f}dB', lev])
+    head = f'afade=t=in:d={opt["fadein"]:.4f},' if opt.get('fadein') else ''
+    run(['-y', '-i', tmp, '-af', f'{head}afade=t=out:st={dur - fade:.4f}:d={fade:.4f},volume={gain:.2f}dB', lev])
     serve(lev, name, False)
     print(f'{name:18} {take:20} {dur:5.2f}s gain {gain:+.1f} dB, {lufs_of(lev):.1f} LUFS, peak {peak_of(lev):.1f} dBFS')
 
@@ -221,10 +244,70 @@ def loop(name: str) -> None:
     print(f'{name:12} {take:14} {span:5.2f}s loop, {measured:.1f} -> {got:.1f} LUFS, gain {used:+.1f} dB, peak {top:.1f} dBFS')
 
 
+def aligned(pcm: array.array, ch: int, rate: int, a: int, b: int, reach: float = 0.03) -> tuple[int, float]:
+    """The sample, near b, where the take best repeats what it plays at a:
+    the two seconds from each are laid over one another (mono), first every
+    fourth sample over +-reach, then sample by sample. Returns that sample
+    and how alike the two stretches are there (normalised correlation)."""
+    span = 2 * rate
+    mono = [(sum(pcm[(i * ch) + c] for c in range(ch))) / ch for i in range(len(pcm) // ch)]
+    head = mono[a : a + span]
+    e_head = math.sqrt(sum(v * v for v in head[::4]))
+
+    def alike(d: int, step: int) -> float:
+        tail = mono[b + d : b + d + span : step]
+        num = sum(x * y for x, y in zip(head[::step], tail))
+        # the sample-by-sample search only ranks eight neighbours: the
+        # correlation is left unnormalised there
+        return num / (e_head * math.sqrt(sum(v * v for v in tail)) + 1e-9) if step == 4 else num
+
+    far = int(reach * rate)
+    coarse = max(range(-far, far + 1, 4), key=lambda d: alike(d, 4))
+    fine = max(range(coarse - 4, coarse + 5), key=lambda d: alike(d, 1))
+    return b + fine, alike(fine, 4)
+
+
+def tune(name: str) -> None:
+    take, start, length, fold, filters, target = MUSIC[name]
+    src = os.path.join(RAW, f'{take}.mp3')
+    tmpdir = os.environ.get('TMPDIR') or '/tmp'
+    rate, ch = 48000, 2
+    pcm = dehum(pcm_of(src, ch, rate, filters), ch, rate)
+    a = int(start * rate)
+    b, r = aligned(pcm, ch, rate, a, a + int(length * rate))
+    keep = b - a
+    f = int(fold * rate)
+    # the loop is in[a:b]; over its first `fold` seconds the head rises under
+    # in[b:b+fold], the same bars one loop later, so the last sample in[b-1]
+    # runs straight into in[b]. Two playings of one phrase are partly alike
+    # (correlation r): the sine and cosine curves are scaled so that their
+    # sum keeps its power for that r (up² + down² + 2r·up·down = 1), neither
+    # swelling nor sagging in the middle of the fold
+    out = array.array('h', pcm[a * ch : b * ch])
+    for t in range(f):
+        x = t / f
+        up, down = math.sin(0.5 * math.pi * x), math.cos(0.5 * math.pi * x)
+        k = 1 / math.sqrt(up * up + down * down + 2 * max(r, 0.0) * up * down)
+        up, down = up * k, down * k
+        for c in range(ch):
+            v = pcm[(a + t) * ch + c] * up + pcm[(b + t) * ch + c] * down
+            out[t * ch + c] = max(-32768, min(32767, int(round(v))))
+    folded = os.path.join(tmpdir, f'sfx-{name}.wav')
+    wav_of(out, ch, folded, rate)
+    measured = lufs_of(folded)
+    # a plain gain (a dynamic normaliser would break the seam); should a peak
+    # pass -1 dBFS the whole is lowered instead
+    gain = min(target - measured, -1.0 - peak_of(folded))
+    lev = os.path.join(tmpdir, f'sfx-{name}-lev.wav')
+    run(['-y', '-i', folded, '-af', f'volume={gain:.2f}dB', '-c:a', 'pcm_f32le', lev])
+    serve(lev, name, True)
+    print(f'{name:12} {take:14} {keep / rate:.4f}s loop from {start}s, alike {r:.3f}, {measured:.1f} -> {lufs_of(lev):.1f} LUFS, gain {gain:+.1f} dB, peak {peak_of(lev):.1f} dBFS')
+
+
 def main() -> None:
-    names = sys.argv[1:] or [*SHORT, *LOOPS]
+    names = sys.argv[1:] or [*SHORT, *LOOPS, *MUSIC]
     for n in names:
-        (loop if n in LOOPS else short)(n)
+        (tune if n in MUSIC else loop if n in LOOPS else short)(n)
 
 
 if __name__ == '__main__':

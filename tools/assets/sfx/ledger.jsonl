@@ -44,3 +44,8 @@
 {"take": "amb-canal-3", "seconds": 30.0, "before": 4434, "after": 4434, "spent": 0}
 {"take": "amb-rail-2", "seconds": 30.0, "before": 4434, "after": 4434, "spent": 0}
 {"take": "amb-rail-3", "seconds": 30.0, "before": 4434, "after": 4434, "spent": 0}
+{"take": "music-probe-1", "seconds": 12.0, "before": 5782, "after": 5782, "spent": 0}
+{"take": "card-2", "seconds": 0.5, "before": 5947, "after": 5947, "spent": 0}
+{"take": "card-3", "seconds": 0.5, "before": 5947, "after": 5959, "spent": 12}
+{"take": "music-canal-1", "seconds": 100.0, "before": 5959, "after": 7334, "spent": 1375}
+{"take": "music-canal-2", "seconds": 100.0, "before": 7334, "after": 7334, "spent": 0}

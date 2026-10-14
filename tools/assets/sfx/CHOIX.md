@@ -1,7 +1,9 @@
 # The table's sounds: takes and choices
 
 Generated with the ElevenLabs sound-effects model (`eleven_text_to_sound_v2`,
-Creator plan, commercial use allowed) by `generate.py`, then trimmed,
+Creator plan, commercial use allowed) by `generate.py`, and the canal's tune
+with the ElevenLabs music model (`music_v2_5`, `POST /v1/music`,
+instrumental forced), then trimmed,
 levelled and served by `process.py` (ffmpeg only). The raw takes sit in
 `raw/`, the per-call ledger in `ledger.jsonl`.
 
@@ -13,7 +15,15 @@ levelled and served by `process.py` (ffmpeg only). The raw takes sit in
 | after the first palette | 4 038 |
 | before the second round (houses, trades, ambiences again) | 4 038 |
 | after the second round | 5 782 |
-| **spent in all** | **2 699** (the owner's cap is 20 000; `generate.py` stops at 22 500 on the counter) |
+| before the third round (the canal's tune, the card) | 5 782 |
+| after the 12 s music probe | 5 947 |
+| after the two card takes | 5 959 |
+| after the two 100 s music takes | 8 709 |
+| **spent in all** | **5 626** (the owner's cap is 20 000; `generate.py` stops at 22 500 on the counter) |
+
+The third round: 2 927 credits. The music model costs about 14 credits a
+second (165 for the 12 s probe, 1 375 for each 100 s take), a little over
+the sound model's 11; `generate.py` estimates 30 a second for it.
 
 The second round: 26 takes, 159 s of sound, 1 744 credits (about 11 a
 second again). The four 30 s ambience takes alone came to 1 348.
@@ -49,7 +59,7 @@ Nothing was judged by ear.
 | defeat | victory-1, processed | the same fanfare muted: low-pass 900 Hz, high-pass 90 Hz, a short room echo, peak 6 dB under the win. No extra take bought |
 | loan | loan-1 | a paper rustle, then one leather thump |
 | develop | develop-1 | one sharp knock of hammer on iron, with a short ring |
-| card | card-1 | a soft paper swish, lifted by 13 dB |
+| card | **card-2, 0.04–0.22 s** (was card-1) | see "The card taken up" below |
 | scout | scout-1 | three riffles over 1.2 s |
 | panel-open / panel-close | -1 each | a wooden slide, then a knock. Played at 40 % |
 | refuse | refuse-1 | a dull low knock. The take was very quiet (peak -36 dB), lifted by 40 dB. It is only 0.12 s long, so the lift brings up little noise |
@@ -106,6 +116,65 @@ The seam is checked as before: 10 ms windows either side of the loop point
 agree, and the sample step across it (31 and 28) is well under the 99th
 percentile of the steps inside the loop (380 and 471).
 
+## The card taken up
+
+The owner asked for a better sound when a card is chosen from the hand.
+card-1 was asked as a card laid on a table: a soft swish of 0.45 s,
+broadband and even, heard as a breath; lifted by 13 dB to -27 LUFS it stood
+over the brass latch. Takes 2 and 3 ask for a pasteboard card drawn out of
+the hand and lifted (0.5 s each, 12 credits for the two).
+
+| take | what the spectrum and the envelope show |
+|---|---|
+| card-2 (kept) | 0–0.145 s a quiet slide (-33 dB RMS, 2–11 kHz), then at 0.150 s one clean tick of stiff card (peak -1.3 dBFS, partials at 1.5–3 kHz) falling 45 dB in 40 ms; a second, smaller tick at 0.33 s |
+| card-3 | four small knocks spread over 0.33 s under a slide: busier, no single attack |
+
+Cut to 0.04–0.22 s: 110 ms of the slide, faded in over 15 ms, leading into
+the tick and its decay; the second tick is left out. The slide's hiss is
+softened above 7 kHz. No 200 Hz comb in it (every multiple within 3.5 dB of
+its neighbours), so no dehum, which would leave a tail on the tick. It is
+heard at full level on every card taken up, so it is levelled well under
+the latch (click at 0.45 comes to -34 LUFS): asked -36 LUFS with the peak
+held at -12 dBFS, it comes to -40 LUFS, 0.15 s long.
+
+## The canal's tune
+
+Asked of the music model (prompt in `generate.py`, `TUNE`): an English
+country dance air of the late eighteenth century, a gavotte or Playford
+tune, baroque violin, wooden flute, harp, fortepiano and bassoon, major,
+about 84 bpm, the same even mood throughout, no drums, no voice, nothing
+modern or epic. A 12 s probe first, to learn the price, then two 100 s
+takes.
+
+| take | what the spectrum and the waveform show |
+|---|---|
+| music-canal-1 | -12.4 LUFS, LRA 1.9 LU: a dense, pressed wall; a thin 12 s introduction, then chords changing every 0.75 s under a busy line of short notes. Too full and too loud to sit under a table for an hour |
+| music-canal-2 (kept) | -27.8 LUFS, LRA 3.6 LU: a 17 s introduction (bass and harp), then a held melody with vibrato (violin, flute) over plucked chords every 2.14 s (a bar of three at 84 bpm), long notes and space between them; steady to 95 s, then a fade |
+
+Take 2's air is a phrase of eight bars (17.14 s) played round and round:
+its chroma is 0.92–0.95 alike at 17.14, 34.28, 51.42 and 68.56 s apart.
+The loop is four phrases, cut from 21.92 s, where the same place four
+phrases later (90.48 s) matches it best: 0.976 over 6 s. The end point is
+then set to the sample by laying two seconds of each over the other (25 ms
+earlier: the loop runs 68.5346 s). Their correlation there is 0.46, so the
+fold's sine and cosine curves are scaled to keep the power of the sum for
+that correlation (neither a swell nor a dip in the middle of the fold).
+
+The model's 200 Hz comb is in the music too: over the take's fade, every
+multiple of 200 Hz stands 13 to 31 dB over its neighbours; in the tune at
+40 s, 10 to 20 dB at 800 Hz–5 kHz. It is taken out with `dehum` before the
+fold. Nothing under 40 Hz is kept. A plain gain of +7.4 dB brings it to
+-20 LUFS, the peak at -8.3 dBFS; no compressor.
+
+Checked in headless Chrome: both files decode to 68.5346 s, 48 kHz stereo.
+Played in a loop across the seam, the 10 ms windows either side read -30.0
+to -31.7 dB RMS; the sample step at the seam is 0.0096 in the WebM (the
+99th percentile of the steps is 0.015), 0.018 in the MP3 (the encoder's
+frame edge; its largest step inside the music is 0.025).
+
+Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
+(1.2 MB). Fetched only when the tune is wanted, not with the short sounds.
+
 ## Processing (process.py)
 
 - Gestures and moments: silence cut at both ends (-55 dB), a 40 ms fade on
@@ -141,6 +210,15 @@ percentile of the steps inside the loop (380 and 471).
 
 ## How they are played (app/src/gl/sfx.ts)
 
+- The canal's tune: on a fourth bus, `music`, with its own switch and level
+  in the board settings (on, at 0.5, by default). Bus scale 0.18: at the
+  default levels it sits about -41 LUFS against the canal ambience's -38.
+  It plays only while a game is in the action phase of the canal era
+  (`tuneWanted` in useTableSounds.ts), comes in over 5 s, fades out over
+  4 s when the era closes (the whistle is then heard alone) and at the end
+  of the game, and within 1 s when its switch or the board's sound switch is
+  shut. Nothing before the reader's first gesture on the page.
+
 - A house: its recording once as the pointer arrives (no loop), on the
   gestures' bus at 0.6, faded in over 60 ms and out over 0.4 s when the
   pointer leaves. A house without a recording still rings its bell.
@@ -153,4 +231,5 @@ percentile of the steps inside the loop (380 and 471).
 
     python3 tools/assets/sfx/generate.py --dry   # plan and estimate, no call
     python3 tools/assets/sfx/generate.py         # only the takes not on disk
+    python3 tools/assets/sfx/generate.py music-canal  # the tune: only when named
     TMPDIR=/tmp python3 tools/assets/sfx/process.py

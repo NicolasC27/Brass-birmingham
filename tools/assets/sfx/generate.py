@@ -4,12 +4,17 @@
     tools/assets/sfx/generate.py            # every take not yet on disk
     tools/assets/sfx/generate.py turn stamp # only these sounds
     tools/assets/sfx/generate.py --dry      # the plan and its cost, no call
+    tools/assets/sfx/generate.py music-canal # the canal's tune (music model)
 
 The key is read from .env.local (ELEVENLABS) and never printed. Every raw
 take lands in tools/assets/sfx/raw/<name>-<n>.mp3 and is never asked for
 again: running the script twice spends nothing the second time. Before each
 call the account's counter is read, and nothing more is asked once a call
 would carry it past CEILING — the owner's hard cap for this palette.
+
+The music (MUSIC below) is asked of the music model instead, one take per
+call, and is only generated when named: a take of it runs a minute or two
+and costs over a thousand credits.
 
 The takes are then trimmed, levelled and served by process.py; the choice
 between two takes is written down in CHOIX.md.
@@ -49,7 +54,9 @@ PLAN = {
     'click': (0.5, 2, 0.7, False, 'a single small brass latch click, crisp, close, very short, ' + ERA),
     'loan': (1.2, 1, 0.6, False, 'a thick leather-bound ledger book closed shut on a wooden desk, one soft heavy thump of paper and leather, close, ' + ERA),
     'develop': (1.0, 1, 0.6, False, 'a steel hammer striking a small iron chisel once on a workbench, one sharp metallic knock, close, ' + ERA),
-    'card': (0.7, 1, 0.65, False, 'a single stiff paper playing card slid and laid down on a wooden table, soft paper swish, close, ' + ERA),
+    # take 1 was a card laid on the table (a swish, heard as a breath); takes
+    # 2 and 3 ask for a card drawn out of the hand and lifted
+    'card': (0.5, 3, 0.7, False, 'a single thick pasteboard playing card drawn out of a hand of cards and lifted: a very brief soft muffled slide of card against card, then one light dry tick of stiff card, close, quiet, very short, no rustle, no whoosh, no breath, no wind, ' + ERA),
     'scout': (1.5, 1, 0.6, False, 'a small deck of stiff paper cards riffled and shuffled once by hand, close, dry, ' + ERA),
     'panel-open': (0.7, 1, 0.6, False, 'a small wooden drawer slid open, soft wooden slide with a light brass knob rattle, close, ' + ERA),
     'panel-close': (0.7, 1, 0.6, False, 'a small wooden drawer pushed shut, soft wooden slide ending in a gentle knock, close, ' + ERA),
@@ -67,6 +74,27 @@ PLAN = {
     'house-shrewsbury': (2.5, 2, 0.5, False, 'a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA),
     'house-oxford': (2.5, 2, 0.5, False, 'a quiet old university town: a stagecoach rolling slowly over cobbles under a stone gateway, a chapel bell striking once in the distance, soft, no voices, no speech, ' + ERA),
     'house-gloucester': (2.5, 2, 0.5, False, 'an inland port dock on a river: a wooden crane winch creaking, a heavy sack set down on timber boards, water lapping, soft and distant, no voices, no speech, ' + ERA),
+}
+
+# the music model costs more a second than the sound model: the 12 s probe
+# below came to 165 credits (5 782 -> 5 947), about 14 a second, read a
+# minute after the call; the estimate errs high
+MUSIC_PER_SECOND = 30
+
+TUNE = ('an instrumental English country dance air of the late eighteenth century, '
+        'in the manner of a gavotte or a Playford tune, played by a small chamber group of period instruments: '
+        'baroque violin carrying the melody, a wooden transverse flute answering it, a pedal harp and a soft fortepiano '
+        'playing gentle broken chords, a bassoon on the bass line; major key, calm walking tempo around 84 bpm, '
+        'light, warm, lilting and pastoral, like musicians playing on the towpath of a canal on a spring afternoon; '
+        'intimate acoustic recording in a small wooden room; the same even mood from the first bar to the last, '
+        'no big introduction, no final cadence, no crescendo; no drums, no percussion, no vocals, no choir, '
+        'no synthesizer, no electric or modern instruments, not epic, not cinematic, not orchestral')
+
+# name: (seconds, takes, prompt) — asked of the music model, only when named
+MUSIC = {
+    # a short take first, to measure what a second of music costs
+    'music-probe': (12.0, 1, TUNE),
+    'music-canal': (100.0, 2, TUNE),
 }
 
 
@@ -106,6 +134,18 @@ def ask(k: str, seconds: float, influence: float, loop: bool, text: str) -> byte
         return r.read()
 
 
+def compose(k: str, seconds: float, text: str) -> bytes:
+    body = {'prompt': text, 'music_length_ms': int(seconds * 1000), 'model_id': 'music_v2_5', 'force_instrumental': True}
+    req = urllib.request.Request(
+        API + '/music?output_format=mp3_44100_192',
+        data=json.dumps(body).encode(),
+        headers={'xi-api-key': k, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=600) as r:
+        return r.read()
+
+
 def main() -> None:
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     dry = '--dry' in sys.argv
@@ -115,12 +155,17 @@ def main() -> None:
     start = None
     asked = 0
     for name in names:
-        seconds, takes, influence, loop, text = PLAN[name]
+        music = name in MUSIC
+        if music:
+            seconds, takes, text = MUSIC[name]
+            influence, loop = 0.0, False
+        else:
+            seconds, takes, influence, loop, text = PLAN[name]
         for n in range(1, takes + 1):
             out = os.path.join(RAW, f'{name}-{n}.mp3')
             if os.path.exists(out):
                 continue
-            estimate = int(seconds * PER_SECOND + 0.999)
+            estimate = int(seconds * (MUSIC_PER_SECOND if music else PER_SECOND) + 0.999)
             if dry:
                 print(f'{name}-{n}: {seconds}s, ~{estimate} credits')
                 continue
@@ -131,13 +176,15 @@ def main() -> None:
                 print(f'STOP before {name}-{n}: counter {before} + ~{estimate} would pass {CEILING}')
                 return
             try:
-                audio = ask(k, seconds, influence, loop, text)
+                audio = compose(k, seconds, text) if music else ask(k, seconds, influence, loop, text)
             except urllib.error.HTTPError as e:
                 print(f'{name}-{n}: HTTP {e.code} {e.read()[:300]!r}')
                 return
             asked += estimate
             with open(out, 'wb') as f:
                 f.write(audio)
+            # the counter is read late: give it time to catch up
+            time.sleep(20)
             after = counter(k)
             row = {'take': f'{name}-{n}', 'seconds': seconds, 'before': before, 'after': after, 'spent': after - before}
             with open(LEDGER, 'a') as f:
