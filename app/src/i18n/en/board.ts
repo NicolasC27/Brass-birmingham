@@ -80,6 +80,10 @@ const board = {
     which: 'Which works here?',
     unavailable: 'Not possible with this card',
   },
+  ghost: {
+    sale: '×{n} → £{gain}',
+    mkt: '×{n} · £{cost} mkt',
+  },
   merchant: {
     claimed: '✓ CLAIMED',
     title: '{name} — demands {demands} · beer {beer} · bonus {bonus}{claimed}',

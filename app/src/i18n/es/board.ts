@@ -82,6 +82,10 @@ const es: typeof enboard = {
     which: '¿Qué edificio aquí?',
     unavailable: 'No es posible con esta carta',
   },
+  ghost: {
+    sale: '×{n} → {gain} £',
+    mkt: '×{n} · {cost} £ mercado',
+  },
   merchant: {
     claimed: '✓ RECLAMADO',
     title: '{name} — pide: {demands} · cerveza {beer} · bono {bonus}{claimed}',

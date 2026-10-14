@@ -82,6 +82,10 @@ const de: typeof enboard = {
     which: 'Welches Werk hier?',
     unavailable: 'Mit dieser Karte nicht möglich',
   },
+  ghost: {
+    sale: '×{n} → £{gain}',
+    mkt: '×{n} · £{cost} Markt',
+  },
   merchant: {
     claimed: '✓ BEANSPRUCHT',
     title: '{name} — Nachfrage: {demands} · Bier {beer} · Bonus {bonus}{claimed}',

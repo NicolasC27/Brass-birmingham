@@ -98,10 +98,6 @@ export interface BoardScene {
   etchCanal: Sprite;
   etchRail: Sprite;
   overlay: Container; // planning highlights, ghost lines, FX — above towns
-  /** the supply threads of a move being prepared: over the merchants and
-   *  under the towns, so a thread leaves its card from underneath and
-   *  slips under any other card on its way */
-  threadLayer: Container;
   /** the one hover effect (a route lit under the pointer): its own layer,
    *  so a hover never rebuilds the overlay */
   hoverLayer: Container;
@@ -826,13 +822,12 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
   const linksLayer = new Container();
   const merchantsLayer = new Container();
   const townsLayer = new Container();
-  const threadLayer = new Container();
   const ribbonsLayer = new Container();
   const overlay = new Container();
   const hoverLayer = new Container();
-  for (const c of [land, ground, linksLayer, merchantsLayer, threadLayer, townsLayer, ribbonsLayer, hoverLayer]) c.eventMode = 'none';
+  for (const c of [land, ground, linksLayer, merchantsLayer, townsLayer, ribbonsLayer, hoverLayer]) c.eventMode = 'none';
   ground.addChild(bgCanal, bgRail, etchCanal, etchRail);
-  land.addChild(ground, linksLayer, merchantsLayer, threadLayer, townsLayer, ribbonsLayer);
+  land.addChild(ground, linksLayer, merchantsLayer, townsLayer, ribbonsLayer);
   world.addChild(land, overlay, hoverLayer);
   bgRail.alpha = 0;
   etchRail.alpha = 0;
@@ -1716,7 +1711,6 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     etchCanal,
     etchRail,
     overlay,
-    threadLayer,
     hoverLayer,
     linkGfx,
     towns,
