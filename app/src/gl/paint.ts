@@ -150,6 +150,9 @@ interface TileSet {
   sepia: Prints; // the engraved sepia print (empty slots, the default)
   /** the black-and-white print, pulled only when a reader asks for it */
   mono: () => Prints;
+  /** the reverse of a flipped card, the painting as one ink (inkTexture):
+   *  pulled the first time a works of that industry turns over */
+  ink: (i: IndustryType) => Texture;
   /** what the set is made of (cache keys), so a set no longer worn can be let go */
   arts: Set<string>;
   pairs: Set<string>;
@@ -172,6 +175,8 @@ interface IndustryArt extends Holdings {
   printHalfR: Texture;
   /** the mono print, pulled on first call */
   mono: () => { print: Texture; halfL: Texture; halfR: Texture };
+  /** the one-ink print of a flipped card's reverse, pulled on first call */
+  ink: () => Texture;
 }
 /** one dual slot's scene, painted as one or assembled, and its prints */
 interface PairArt extends Holdings {
@@ -282,6 +287,29 @@ function engraveTexture(tex: Texture, mono = false): Texture {
   return Texture.from(px.c);
 }
 
+/** The reverse of a card (a flipped works) is printed in one ink, the
+ *  owner's: rebake a painting as the ink alone — white, its opacity the
+ *  darkness of the painting, so the lights drop out and the card's own
+ *  colour shows through them. A tint then chooses the ink. The curve
+ *  opens the darks a little, so a black subject (a cart of coal)
+ *  keeps its detail rather than printing as one blot. */
+function inkTexture(tex: Texture): Texture {
+  const px = pixelsOf(tex);
+  if (!px) return tex;
+  const d = px.img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] === 0) continue;
+    const lum = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 255;
+    const ink = Math.min(1, Math.max(0, (1 - lum - 0.1) * 1.3)) ** 1.15;
+    d[i + 3] = Math.round(d[i + 3] * ink);
+    d[i] = 255;
+    d[i + 1] = 255;
+    d[i + 2] = 255;
+  }
+  px.ctx.putImageData(px.img, 0, 0);
+  return Texture.from(px.c);
+}
+
 /** Built cards are cardboard: a faint paper grain (art direction: 4–7 %
  *  overlay) baked once into the owner-colour card texture. Deterministic
  *  hashed cells of a few texels so the grain still shows once the card is
@@ -360,6 +388,7 @@ function loadIndustryArt(v: TileVariant | undefined, i: IndustryType): Promise<I
       for (const c of colorNames) builtGrain[c] = await bake(baked, built[c], grainTexture);
       const print = await bake(baked, cut, (t) => engraveTexture(t));
       let mono: { print: Texture; halfL: Texture; halfR: Texture } | null = null;
+      let ink: Texture | null = null;
       return {
         cut,
         built,
@@ -377,6 +406,7 @@ function loadIndustryArt(v: TileVariant | undefined, i: IndustryType): Promise<I
           }
           return mono;
         },
+        ink: () => (ink ??= bakeNow(baked, cut, inkTexture)),
         urls,
         baked,
       };
@@ -485,6 +515,7 @@ async function buildTileSet(art: TileArt): Promise<TileSet> {
         halfR: each((i) => arts[i].mono().halfR),
         pair: Object.fromEntries(pairs.map(([k, pa]) => [k, pa.mono()])),
       }),
+    ink: (i) => arts[i].ink(),
     arts: keys,
     pairs: pairKeys,
   };
@@ -661,7 +692,7 @@ const CUBE_PAINT = {
 } as const;
 
 /** small iso 3D cube (three shaded faces + brass liseré), centred on (x, y) */
-function drawCube(g: Graphics, x: number, y: number, s: number, kind: keyof typeof CUBE_PAINT): void {
+export function drawCube(g: Graphics, x: number, y: number, s: number, kind: keyof typeof CUBE_PAINT): void {
   const p = CUBE_PAINT[kind];
   const hw = s / 2; // half width
   const q = s / 4; // top-face slope
@@ -689,6 +720,53 @@ export function drawOwnerMedallion(g: Graphics, x: number, y: number, col: numbe
   g.circle(x, y, 7).fill(0x100d0b).stroke({ width: 1, color: CASING, alpha: 0.85 });
   g.circle(x, y, 5.6).fill(col);
   drawShapeGlyph(g, shape, x, y);
+}
+
+/* the brass of a score coin: its face, its deep engraving and its shine */
+const BRASS_FACE = 0xd6b36a;
+const BRASS_DEEP = 0x7d5f2c;
+const BRASS_LIGHT = 0xf4e0a8;
+/** the ink the figures are struck in */
+const COIN_INK = 0x241a10;
+
+/** The reverse of a flipped card, under its engraving: the owner's colour,
+ *  clean, a touch deeper towards the edges like a printed sheet, and a
+ *  ruled border inside the rim — the frame of a certificate. */
+function drawReverse(g: Graphics, x: number, y: number, col: number): void {
+  const x0 = x - TILE_HALF;
+  const y0 = y - TILE_HALF;
+  g.roundRect(x0, y0, TILE, TILE, 6).fill(col);
+  for (let i = 0; i < 4; i++) g.roundRect(x0 + 1 + i * 1.6, y0 + 1 + i * 1.6, TILE - 2 - i * 3.2, TILE - 2 - i * 3.2, 5.5).stroke({ width: 1.6, color: 0x000000, alpha: 0.1 - i * 0.022 });
+  g.roundRect(x0 + 5, y0 + 5, TILE - 10, TILE - 10, 3).stroke({ width: 0.7, color: tint(col, 0.5), alpha: 0.55 });
+  g.roundRect(x0 + 6.6, y0 + 6.6, TILE - 13.2, TILE - 13.2, 2.4).stroke({ width: 0.4, color: tint(col, 0.5), alpha: 0.4 });
+}
+
+/** A score struck on a brass coin centred on (x, y): an ink ring to part
+ *  it from any card, a milled edge, an engraved inner ring, a glint, and
+ *  the figure in ink — the figure alone: on a card turned over, a number
+ *  can only be points. */
+function drawScoreCoin(into: Container, x: number, y: number, vp: number, R = 12): void {
+  const g = new Graphics();
+  g.eventMode = 'none';
+  g.circle(x + 0.8, y + 1.8, R + 1.2).fill({ color: 0x000000, alpha: 0.38 });
+  g.circle(x, y, R + 1.3).fill(COIN_INK);
+  g.circle(x, y, R).fill(BRASS_FACE);
+  /* the milled edge: short strokes all round the rim */
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    g.moveTo(x + c * (R - 1.9), y + s * (R - 1.9)).lineTo(x + c * (R - 0.3), y + s * (R - 0.3));
+  }
+  g.stroke({ width: 0.55, color: BRASS_DEEP, alpha: 0.75 });
+  g.circle(x, y, R - 2.6).stroke({ width: 0.7, color: BRASS_DEEP, alpha: 0.85 });
+  const a0 = Math.PI * 1.08;
+  g.moveTo(x + Math.cos(a0) * (R - 3.6), y + Math.sin(a0) * (R - 3.6)).arc(x, y, R - 3.6, a0, Math.PI * 1.62).stroke({ width: 1.1, color: BRASS_LIGHT, alpha: 0.75, cap: 'round' });
+  const vpText = new Text({ text: String(vp), style: { fontFamily: "'Playfair Display', serif", fontSize: R + 1.5, fontWeight: '900', fill: COIN_INK } });
+  vpText.anchor.set(0.5);
+  vpText.position.set(x, y + 0.4);
+  vpText.eventMode = 'none';
+  into.addChild(g, vpText);
 }
 
 /**
@@ -1154,6 +1232,23 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
     drawOwnerMedallion(g, sx, sy, col, shape);
     into.addChild(g);
   };
+  /* the link value of a card turned over: what it adds to each canal or
+     rail beside it when the era is scored — a dark plate at the foot of
+     the card, one brass chain link per point, pinned at its left end
+     (x0, cy) so it grows into the card */
+  const drawLinkPlate = (sv: SlotView, x0: number, cy: number, links: number) => {
+    const into = pinned(sv, x0, cy, 9, FIGURE_MIN_SCREEN, 1, 1.25).c;
+    const lw = bigChips ? 9 : 8;
+    const lh = bigChips ? 5.5 : 4.6;
+    const step = lw - 2.2;
+    const w = 8 + step * (links - 1) + lw;
+    const h = bigChips ? 13 : 11;
+    const g = new Graphics();
+    g.eventMode = 'none';
+    g.roundRect(x0, cy - h / 2, w, h, 3).fill({ color: 0x120d09, alpha: 0.8 }).stroke({ width: 0.7, color: BRASS_LIGHT, alpha: 0.5 });
+    for (let i = 0; i < links; i++) g.roundRect(x0 + 4 + i * step, cy - lh / 2, lw, lh, lh / 2).stroke({ width: 1.3, color: BRASS_FACE });
+    into.addChild(g);
+  };
   const drawLinks = (game: GameState) => {
     for (const def of LINKS) {
       const g = linkGfx.get(def.id)!;
@@ -1356,60 +1451,42 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
           frame.roundRect(x - TILE_HALF + 1, y - TILE_HALF + 4, TILE - 2, TILE, 7).fill({ color: 0x000000, alpha: 0.42 });
           frame.roundRect(x - TILE_HALF, y - TILE_HALF + 2.5, TILE, TILE, 6).fill(shade(col, 0.42));
           if (tile.flipped) {
-            /* flipped = the works has paid out: the painting stays as a sepia
-               engraving over the owner's colour, so a flipped mill still
-               reads as a mill, and the score sits in the middle on a token
-               stamped like a counter laid on the card. The card has lost its
-               colour, so the owner's rim speaks louder, not softer: full
-               strength, a half point wider, on the cream casing the supply
-               lines wear — and the token is rimmed in the owner's colour. */
-            art.texture = tileSet.sepia.print[tile.industry] ?? tileSet.cut[tile.industry];
-            art.position.set(x - TILE_HALF, y - TILE_HALF);
+            /* flipped = the works has paid out and now scores: the card
+               shows its reverse, printed like a share certificate in the
+               owner's own ink — a clean face in the owner's colour, the
+               painting as a one-ink engraving on it (inkTexture), a ruled
+               border — the score struck on a brass coin and the link value
+               on a plate beside it: the two figures the tile still counts
+               for. Nothing dimmed: a spent works is done, not disabled. */
+            drawReverse(frame, x, y, col);
+            art.texture = tileSet.ink(tile.industry);
+            art.tint = shade(col, 0.3);
+            art.position.set(x - TILE_HALF + 5, y - TILE_HALF + 4);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
-            art.width = TILE;
-            art.height = TILE;
-            sv.artBase = 0.42;
+            art.width = TILE - 10;
+            art.height = TILE - 10;
+            sv.artBase = 0.78;
             art.alpha = sv.artBase;
             art.visible = true;
-            rim.roundRect(x - TILE_HALF + 0.3, y - TILE_HALF + 0.3, TILE - 0.6, TILE - 0.6, 6).stroke({ width: 1.2, color: CASING, alpha: 0.85 });
-            rim.roundRect(x - TILE_HALF + 1.5, y - TILE_HALF + 1.5, TILE - 3, TILE - 3, 5.5).stroke({ width: 3, color: col });
-            rim.roundRect(x - TILE_HALF + 3.25, y - TILE_HALF + 3.25, TILE - 6.5, TILE - 6.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
-            /* the token: a dark coin in the owner's ring, the score stamped;
-               the word under it is small print, faded at far zoom */
-            const R = 14;
-            const coin = pinned(sv, x, y, 15, FIGURE_MIN_SCREEN);
-            const token = new Graphics();
-            token.circle(x + 1, y + 2, R).fill({ color: 0x000000, alpha: 0.4 });
-            token.circle(x, y, R + 1.6).fill(CASING);
-            token.circle(x, y, R).fill(0x1c1611).stroke({ width: 2.6, color: col });
-            token.circle(x, y, R - 3.2).stroke({ width: 0.8, color: tint(col, 0.5), alpha: 0.6 });
-            token.eventMode = 'none';
-            const vpText = new Text({
-              text: String(lv.vp),
-              style: { fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: '900', fill: 0xf4ecd8 },
-            });
-            vpText.anchor.set(0.5);
-            vpText.position.set(x, y - 2);
-            vpText.eventMode = 'none';
-            const fine = new Container();
-            fine.eventMode = 'none';
-            const vpLabel = new Text({
-              text: tr('board.tile.vp'),
-              style: { fontFamily: "'Archivo', sans-serif", fontSize: 5.5, fontWeight: '700', letterSpacing: 1.4, fill: tint(col, 0.55) },
-            });
-            vpLabel.anchor.set(0.5);
-            vpLabel.position.set(x, y + 7.5);
-            vpLabel.eventMode = 'none';
-            fine.addChild(vpLabel);
-            coin.c.addChild(token, vpText, fine);
-            coin.fine = fine;
+            rim.roundRect(x - TILE_HALF + 1.25, y - TILE_HALF + 1.25, TILE - 2.5, TILE - 2.5, 5.5).stroke({ width: 2.5, color: col });
+            rim.roundRect(x - TILE_HALF + 2.75, y - TILE_HALF + 2.75, TILE - 5.5, TILE - 5.5, 4.5).stroke({ width: 0.8, color: 0x0c0a08, alpha: 0.7 });
+            rim.roundRect(x - TILE_HALF + 0.5, y - TILE_HALF + 0.5, TILE - 1, TILE - 1, 6).stroke({ width: 0.8, color: tint(col, 0.45), alpha: 0.8 });
+            /* the coin at the foot, right — where a card face shows its
+               points — and the link value at the foot, left, where the
+               face showed its income: the engraving stays whole above.
+               Pinned so the figures keep their size far out */
+            const cx = x + TILE_HALF - 15;
+            const cy = y + TILE_HALF - 15;
+            drawScoreCoin(pinned(sv, cx, cy, 13, FIGURE_MIN_SCREEN, 1, 1.3).c, cx, cy, lv.vp);
+            if (lv.links > 0) drawLinkPlate(sv, x - TILE_HALF + 5, y + TILE_HALF - 10, lv.links);
             drawSeal(sv, x + TILE_HALF - 8, y - TILE_HALF + 8, col, shape);
-            drawLevelMark(sv, x, y, tile.level, lv.links, true);
+            drawLevelMark(sv, x, y, tile.level, 0, true);
           } else {
             /* player-colour card painting (builtTex), full opacity, clipped
                to the slot's rounded rect by the GPU mask */
             art.texture = (look.cardGrain ? tileSet.builtGrain : tileSet.built)[tile.industry][colorName] ?? tileSet.cut[tile.industry];
+            art.tint = 0xffffff;
             art.position.set(x - TILE_HALF, y - TILE_HALF);
             artMask.roundRect(x - TILE_HALF, y - TILE_HALF, TILE, TILE, 6).fill(0xffffff);
             art.mask = artMask;
@@ -1472,6 +1549,7 @@ export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Spri
         } else {
           const allows = town.slots[si].allows;
           deco.visible = true;
+          art.tint = 0xffffff;
           sv.glow.visible = !variantOf(allows[0], tileArt)?.label;
           /* NO ring on empty slots — a contour only appears once a player
              owns the tile, and then in THEIR colour (see built branch) */
