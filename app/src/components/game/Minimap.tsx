@@ -12,7 +12,6 @@ import { MM_MAX_W, MM_MIN_W, MM_W_FOR, mapUrls, minimapWidth, setBoardOption, us
 import { useHudInsets } from './useHudInsets';
 import { useT } from '@/i18n';
 import { ShapeChip } from './TownInspector';
-import { ownerDash } from './ownerMarks';
 
 /* ------------------------------------------------------------------ */
 /* Minimap — small engraved coal plate (bottom-right) showing the      */
@@ -119,9 +118,9 @@ export default function Minimap({
       />
       {/* soot wash so the viewport reads on the dark art */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-coal-950/15" />
-      {/* built links: one stroke per link in its owner's vivid colour and
-          dash, so the shape of every network reads at a glance, and the
-          owner reads without the colour */}
+      {/* built links: one plain stroke per link in its owner's vivid
+          colour on a dark casing, so the shape of every network reads at
+          a glance; the towns' shapes tell the owner without the colour */}
       <svg aria-hidden className="pointer-events-none absolute inset-0" width={MM_W} height={MM_H} viewBox={`0 0 ${MM_W} ${MM_H}`}>
         {LINKS.map((def) => {
           const built = game.links[def.id];
@@ -129,13 +128,12 @@ export default function Minimap({
           const a = TOWN_BY_ID[def.a] ?? MERCHANT_BY_ID[def.a];
           const b = TOWN_BY_ID[def.b] ?? MERCHANT_BY_ID[def.b];
           if (!a || !b) return null;
-          const seat = game.players[built.owner].color;
-          const color = PLAYER_COLORS[seat]?.vivid ?? '#C9A45C';
+          const color = PLAYER_COLORS[game.players[built.owner].color]?.vivid ?? '#C9A45C';
           const sw = MM_W < 260 ? 2 : MM_W < 420 ? 2.5 : 3.5;
           return (
             <g key={def.id}>
               <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke="#100D0B" strokeWidth={sw + 2} strokeOpacity={0.8} strokeLinecap="round" />
-              <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke={color} strokeWidth={sw} strokeLinecap="round" strokeDasharray={ownerDash(seat, sw)} />
+              <line x1={(a.x / WORLD_W) * MM_W} y1={(a.y / WORLD_H) * MM_H} x2={(b.x / WORLD_W) * MM_W} y2={(b.y / WORLD_H) * MM_H} stroke={color} strokeWidth={sw} strokeLinecap="round" />
             </g>
           );
         })}

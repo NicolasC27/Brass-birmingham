@@ -1,10 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { PLAYER_COLORS } from '@/game/data';
 import { setLang } from '@/i18n';
 import { FAR_LOD_K, GLIMPSE_MS, farDetail } from '../boardView';
 import { getBoardOptions } from '../boardOptions';
 import { levelMark, tileMark } from '../levelMark';
-import { ownerDash } from '../ownerMarks';
 
 /* ------------------------------------------------------------------ */
 /* Who owns what, told without colour; what the board shows at which   */
@@ -12,16 +10,6 @@ import { ownerDash } from '../ownerMarks';
 /* ------------------------------------------------------------------ */
 
 describe('an owner told without colour', () => {
-  it('gives each seat a link stroke of its own on the minimap', () => {
-    const dashes = Object.keys(PLAYER_COLORS).map((c) => ownerDash(c, 2.5) ?? 'plain');
-    expect(new Set(dashes).size).toBe(Object.keys(PLAYER_COLORS).length);
-  });
-
-  it('scales the dash with the stroke', () => {
-    expect(ownerDash('oxblood', 2)).toBe('5.2 2.6');
-    expect(ownerDash('oxblood', 4)).toBe('10.4 5.2');
-  });
-
   it('wears the shapes by default, for the owners colour alone cannot part', () => {
     /* no stored choice (none can be read here): the default stands */
     expect(getBoardOptions().colorBlind).toBe(true);
