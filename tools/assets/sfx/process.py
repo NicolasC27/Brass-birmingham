@@ -4,6 +4,7 @@
     tools/assets/sfx/process.py          # every sound
     tools/assets/sfx/process.py turn     # only these
     tools/assets/sfx/process.py music-canal
+    tools/assets/sfx/process.py music-rail-i
 
 Reads tools/assets/sfx/raw/ (see generate.py) and writes
 app/public/sfx/<name>.webm (Opus) and <name>.mp3 (the fallback for Safari).
@@ -22,6 +23,11 @@ Spends nothing: ffmpeg only.
                          take, its head folded over by the same place one
                          loop later (aligned to the sample), rid of the hum,
                          levelled by a plain gain; stereo
+  the other tunes        played through once, not looped: the take whole,
+                         from its first note to its own last chord, rid of
+                         the hum, a short fade at each end, levelled by a
+                         plain gain like the first; stereo
+  the rail's life        as the houses: a train somewhere off, now and then
 
 The choice of take, and why, is in CHOIX.md.
 """
@@ -89,15 +95,40 @@ SHORT = {
     'house-shrewsbury': ('house-shrewsbury-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     'house-oxford': ('house-oxford-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     'house-gloucester': ('house-gloucester-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
+    # the rail's life, heard over its ambience every minute or so: far off,
+    # so nothing under 90 Hz (the model's floor, and the rumble the rail's
+    # bed was too full of) and the top dulled. Levelled by loudness a little
+    # over the bed (-25 LUFS), each on its own
+    # the whistle: one blast of 1.7 s and its ring; farther off than the
+    # era's own whistle, a slow echo off the hills
+    'life-whistle': ('life-whistle-1', (0.0, 3.3), 'highpass=f=90,lowpass=f=3000,aecho=0.8:0.5:230|470:0.22|0.12,', PEAK, {'fade': 0.8, 'dehum': True, 'lufs': -27}),
+    # a train across the field: the clatter of the rail joints swells for 3 s
+    # and holds; the take stops short at 7.2 s, so it is faded from 6.1 s
+    'life-passing': ('life-passing-1', (0.3, 7.4), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.3, 'fadein': 0.8, 'dehum': True, 'lufs': -25}),
+    # wagons shunted: a run of clanks 0.2-1.6 s, then only the model's floor
+    'life-couple': ('life-couple-1', (0.1, 2.1), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 0.4, 'lufs': -27}),
+    # an engine leaving: heavy chuffs with steam for 3 s, falling away; the
+    # low hum after 4.5 s (under 80 Hz) left out
+    'life-depart': ('life-depart-1', (0.0, 5.2), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.6, 'dehum': True, 'lufs': -26}),
 }
-# name: (take, filters before the fold, integrated loudness in LUFS, compressor)
+# name: (take, filters before the fold, integrated loudness in LUFS,
+#        compressor[, options])
+#   options: breathe  a slow swell of the take, +-dB, three times a loop
+#            under    (take, filters, LUFS): a second take laid under the
+#                     first at its own loudness, before the fold (the two
+#                     takes are the same 30 s long, so they fold as one)
 LOOPS = {
     # take 3: birds over a clean bed (take 1's bed was a broad rumble, lifted
     # 36 dB); under 90 Hz there is nothing of the scene, only the model's floor
     'amb-canal': ('amb-canal-3', 'highpass=f=90,highpass=f=90', -20.0, True),
-    # the town's rumble is the scene: kept, but nothing under 45 Hz (which
-    # only rattles a laptop's speakers) and a little less under 120 Hz
-    'amb-rail': ('amb-rail-1', 'highpass=f=45,highpass=f=45,lowshelf=f=120:g=-4', -18.0, False),
+    # the town far off: take 1's rumble, but only its low murmur (45-300 Hz,
+    # the band over it was what tired the ear), 8 dB under what it was and
+    # swelling and ebbing by 3 dB every nine seconds instead of a flat drone;
+    # a few of the canal's birds far over it, 12 dB under the canal's.
+    # Take 4 (a quiet valley) came back empty, -67 LUFS. The railway itself
+    # is heard in the life events (life-*), now and then
+    'amb-rail': ('amb-rail-1', 'highpass=f=45,highpass=f=45,lowpass=f=300,lowpass=f=300', -26.0, False,
+                 {'breathe': 3.0, 'under': ('amb-canal-3', 'highpass=f=1500,highpass=f=1500', -32.0)}),
 }
 # name: (take, loop start in s, loop length in s, fold in s, filters, LUFS)
 MUSIC = {
@@ -107,6 +138,21 @@ MUSIC = {
     # place four phrases on (90.48 s) matches it best (0.976 over 6 s), and
     # well before the take's fade (95 s). Nothing of the tune under 40 Hz
     'music-canal': ('music-canal-2', 21.92, 68.56, 2.0, 'highpass=f=40,highpass=f=40', -20.0),
+}
+# name: (take, start in s, end in s, fade out in s, filters, LUFS) — played
+# through once; each end is where the take's own last chord has died away
+PIECES = {
+    # strings alone, D minor, slow: long chords and a low cello that sits
+    # heavy under 150 Hz, taken 3 dB down
+    'music-canal-ii': ('music-canal-ii-1', 0.45, 98.0, 1.0, 'highpass=f=45,highpass=f=45,lowshelf=f=150:g=-3', -20.0),
+    # the jig: flute and concertina over plucked chords and a bass on the
+    # downbeats, a dense low band, taken 3 dB down under 200 Hz
+    'music-canal-iii': ('music-canal-iii-1', 0.0, 99.3, 2.5, 'highpass=f=45,highpass=f=45,lowshelf=f=200:g=-3', -20.0),
+    # the brass band's march: its last chord stops short at 97.4 s, so it is
+    # faded over the last three seconds
+    'music-rail-i': ('music-rail-i-1', 0.0, 98.3, 3.0, 'highpass=f=45,highpass=f=45', -20.0),
+    # the strings' ostinato: a thick band at 150-400 Hz, softened by 2 dB
+    'music-rail-ii': ('music-rail-ii-1', 0.0, 98.7, 2.0, 'highpass=f=45,highpass=f=45,lowshelf=f=250:g=-2', -20.0),
 }
 
 # a soft compressor for the few loud moments of a loop (a bird close by):
@@ -191,15 +237,48 @@ def short(name: str) -> None:
     print(f'{name:18} {take:20} {dur:5.2f}s gain {gain:+.1f} dB, {lufs_of(lev):.1f} LUFS, peak {peak_of(lev):.1f} dBFS')
 
 
+def at_loudness(pcm: array.array, ch: int, rate: int, target: float, tmpdir: str) -> list[float]:
+    """The samples scaled by a plain gain to `target` LUFS (as floats: the
+    sum of two takes is only rounded once)."""
+    probe = os.path.join(tmpdir, 'sfx-probe.wav')
+    wav_of(pcm, ch, probe, rate)
+    k = 10 ** ((target - lufs_of(probe)) / 20)
+    return [v * k for v in pcm]
+
+
 def loop(name: str) -> None:
-    take, filters, target, squeeze = LOOPS[name]
+    take, filters, target, squeeze, *rest = LOOPS[name]
+    opt = rest[0] if rest else {}
     src = os.path.join(RAW, f'{take}.mp3')
     tmpdir = os.environ.get('TMPDIR') or '/tmp'
     rate, ch = 48000, 2
     pcm = dehum(pcm_of(src, ch, rate, filters), ch, rate)
     frames = len(pcm) // ch
     f = int(FOLD * rate)
+    if 'under' in opt:
+        # the second take, at its own loudness, laid under the first; the
+        # first is set at the loop's loudness so the sum is levelled once more
+        # below by a gain of a few tenths of a decibel at most
+        utake, ufilters, ulufs = opt['under']
+        low = dehum(pcm_of(os.path.join(RAW, f'{utake}.mp3'), ch, rate, ufilters), ch, rate)
+        frames = min(frames, len(low) // ch)
+        lead = at_loudness(pcm[: frames * ch], ch, rate, target, tmpdir)
+        under = at_loudness(low[: frames * ch], ch, rate, ulufs, tmpdir)
+    else:
+        lead, under = [float(v) for v in pcm[: frames * ch]], None
     keep = frames - f
+    if opt.get('breathe'):
+        # a slow swell, three to a loop: the loop's first sample and the one
+        # `keep` later are at the same place of the swell, so the fold's two
+        # stretches breathe together and the seam is kept
+        depth = opt['breathe'] / 20
+        for t in range(frames):
+            g = 10 ** (depth * math.sin(2 * math.pi * 3 * t / keep))
+            for c in range(ch):
+                lead[t * ch + c] *= g
+    if under is not None:
+        lead = [a + b for a, b in zip(lead, under)]
+    pcm = array.array('h', (max(-32768, min(32767, int(round(v)))) for v in lead))
     # out[t] = in[t]·sin + in[keep+t]·cos over the first FOLD seconds (equal
     # power, the two stretches being unrelated), then in[t] up to keep: the
     # loop's last sample is in[keep-1] and its first is, in effect, in[keep]
@@ -304,10 +383,30 @@ def tune(name: str) -> None:
     print(f'{name:12} {take:14} {keep / rate:.4f}s loop from {start}s, alike {r:.3f}, {measured:.1f} -> {lufs_of(lev):.1f} LUFS, gain {gain:+.1f} dB, peak {peak_of(lev):.1f} dBFS')
 
 
+def piece(name: str) -> None:
+    take, start, end, fade, filters, target = PIECES[name]
+    src = os.path.join(RAW, f'{take}.mp3')
+    tmpdir = os.environ.get('TMPDIR') or '/tmp'
+    rate, ch = 48000, 2
+    cut = f'atrim={start}:{end},asetpts=PTS-STARTPTS,{filters}'
+    pcm = dehum(pcm_of(src, ch, rate, cut), ch, rate)
+    raw = os.path.join(tmpdir, f'sfx-{name}.wav')
+    wav_of(pcm, ch, raw, rate)
+    dur = len(pcm) / ch / rate
+    measured = lufs_of(raw)
+    # a plain gain, as for the first tune; should a peak pass -1 dBFS the
+    # whole is lowered instead
+    gain = min(target - measured, -1.0 - peak_of(raw))
+    lev = os.path.join(tmpdir, f'sfx-{name}-lev.wav')
+    run(['-y', '-i', raw, '-af', f'afade=t=in:d=0.3,afade=t=out:st={dur - fade:.3f}:d={fade:.3f},volume={gain:.2f}dB', '-c:a', 'pcm_f32le', lev])
+    serve(lev, name, True)
+    print(f'{name:16} {take:18} {dur:.2f}s from {start}s, {measured:.1f} -> {lufs_of(lev):.1f} LUFS, gain {gain:+.1f} dB, peak {peak_of(lev):.1f} dBFS')
+
+
 def main() -> None:
-    names = sys.argv[1:] or [*SHORT, *LOOPS, *MUSIC]
+    names = sys.argv[1:] or [*SHORT, *LOOPS, *MUSIC, *PIECES]
     for n in names:
-        (tune if n in MUSIC else loop if n in LOOPS else short)(n)
+        (tune if n in MUSIC else piece if n in PIECES else loop if n in LOOPS else short)(n)
 
 
 if __name__ == '__main__':

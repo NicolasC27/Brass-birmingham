@@ -49,3 +49,18 @@
 {"take": "card-3", "seconds": 0.5, "before": 5947, "after": 5959, "spent": 12}
 {"take": "music-canal-1", "seconds": 100.0, "before": 5959, "after": 7334, "spent": 1375}
 {"take": "music-canal-2", "seconds": 100.0, "before": 7334, "after": 7334, "spent": 0}
+{"take": "life-whistle-1", "seconds": 4.0, "before": 8709, "after": 8709, "spent": 0}
+{"take": "life-passing-1", "seconds": 10.0, "before": 8709, "after": 8709, "spent": 0}
+{"take": "life-couple-1", "seconds": 3.0, "before": 8709, "after": 8863, "spent": 154}
+{"take": "life-depart-1", "seconds": 8.0, "before": 8863, "after": 8863, "spent": 0}
+{"take": "amb-rail-4", "seconds": 30.0, "before": 8863, "after": 9314, "spent": 451}
+{"take": "music-canal-ii-1", "seconds": 100.0, "before": 9314, "after": 9314, "spent": 0}
+{"take": "music-canal-iii-1", "seconds": 100.0, "before": 10689, "after": 10689, "spent": 0}
+{"take": "music-rail-i-1", "seconds": 100.0, "before": 12064, "after": 12064, "spent": 0}
+{"take": "music-rail-ii-1", "seconds": 100.0, "before": 13439, "after": 13439, "spent": 0}
+{"note": "fourth round: the counter settled, read again 40 s or more after each call", "take": "life-whistle-1+life-passing-1+life-couple-1", "seconds": 17.0, "before": 8709, "after": 8863, "spent": 154}
+{"note": "fourth round: the counter settled", "take": "life-depart-1+amb-rail-4", "seconds": 38.0, "before": 8863, "after": 9314, "spent": 451}
+{"note": "fourth round: the counter settled", "take": "music-canal-ii-1", "seconds": 100.0, "before": 9314, "after": 10689, "spent": 1375}
+{"note": "fourth round: the counter settled", "take": "music-canal-iii-1", "seconds": 100.0, "before": 10689, "after": 12064, "spent": 1375}
+{"note": "fourth round: the counter settled", "take": "music-rail-i-1", "seconds": 100.0, "before": 12064, "after": 13439, "spent": 1375}
+{"note": "fourth round: the counter settled", "take": "music-rail-ii-1", "seconds": 100.0, "before": 13439, "after": 14814, "spent": 1375}

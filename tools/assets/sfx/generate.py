@@ -5,12 +5,13 @@
     tools/assets/sfx/generate.py turn stamp # only these sounds
     tools/assets/sfx/generate.py --dry      # the plan and its cost, no call
     tools/assets/sfx/generate.py music-canal # the canal's tune (music model)
+    tools/assets/sfx/generate.py music-rail-i # a rail tune (music model)
 
 The key is read from .env.local (ELEVENLABS) and never printed. Every raw
 take lands in tools/assets/sfx/raw/<name>-<n>.mp3 and is never asked for
 again: running the script twice spends nothing the second time. Before each
 call the account's counter is read, and nothing more is asked once a call
-would carry it past CEILING — the owner's hard cap for this palette.
+would carry it past CEILING — the owner's hard cap for this round.
 
 The music (MUSIC below) is asked of the music model instead, one take per
 call, and is only generated when named: a take of it runs a minute or two
@@ -27,12 +28,15 @@ RAW = os.path.join(HERE, 'raw')
 LEDGER = os.path.join(HERE, 'ledger.jsonl')
 API = 'https://api.elevenlabs.io/v1'
 
-# 3 083 on the counter when the palette was begun, plus 19 400 of room
-CEILING = 22_500
-# credits per second of sound: the first two calls (2 s each) cost 44 in all,
-# about 11 a second; the estimate stays at 40 to err high. The counter is read
-# a few seconds late, so the check also adds up this run's own estimates.
-PER_SECOND = 40
+# the owner's hard cap for the fourth round (the playlists, the rail's life):
+# 8 709 on the counter when it was begun. It was 22 500 before (3 083 on the
+# counter when the palette was begun, plus 19 400 of room)
+CEILING = 16_000
+# credits per second of sound: the first 20 calls came to about 10.7 a second;
+# the estimate errs a little high. The counter is read a few seconds late, so
+# the check also adds up this run's own estimates. (It was 40 until the fourth
+# round, which would have stopped the round well short of the cap.)
+PER_SECOND = 12
 
 ERA = 'England 1780-1840, period materials only, no music, no electronics, no modern sounds'
 
@@ -50,7 +54,17 @@ PLAN = {
     # its bed was a broad rumble that, lifted to the table's level, buzzed.
     # Takes 2 and 3 ask for sparse events over a quiet, clean bed.
     'amb-canal': (30.0, 3, 0.5, True, 'peaceful open countryside by an English canal on a spring morning, clear birdsong at a distance, a light breeze in the reeds, now and then a small soft ripple of water, clean quiet recording with a low noise floor, no hum, no rumble, no wind noise on the microphone, no voices, continuous, ' + ERA),
-    'amb-rail': (30.0, 3, 0.5, True, 'an early industrial town heard from a green hillside far away, a distant steam engine puffing slowly, now and then a faint faraway hammer on an anvil, a soft breeze, a few birds, clean quiet recording with a low noise floor, no hum, no drone, no rumble, no voices, continuous, ' + ERA),
+    # takes 2 and 3 of the rail asked for 'an early industrial town heard from
+    # a green hillside far away, a distant steam engine puffing slowly, now and
+    # then a faint faraway hammer on an anvil, a soft breeze, a few birds, ...':
+    # both came back as the same steady rumble. Take 4 names no town and no
+    # engine at all: the railway is heard in the life events below instead
+    'amb-rail': (30.0, 4, 0.5, True, 'a quiet green valley on a still grey afternoon, a light breeze in long grass, a few rooks calling far away, now and then a faint far-off clink of iron, long quiet gaps between sounds, sparse and calm, clean quiet recording with a very low noise floor, no hum, no drone, no rumble, no engine, no traffic, no voices, continuous, ' + ERA),
+    # the rail's life: now and then, over its ambience, a train somewhere off
+    'life-whistle': (4.0, 1, 0.55, False, 'a steam locomotive whistle blown twice, a short blast then a long one, very far away across open fields, faint, with a soft echo off the hills, outdoors, ' + ERA),
+    'life-passing': (10.0, 1, 0.5, False, 'an early steam train with a few wooden carriages passing along a line some distance away across a field: its puffing and the clatter of the wheels on the rail joints swell as it comes, pass, and fade away into the distance, a gentle doppler, calm open air, no whistle, ' + ERA),
+    'life-couple': (3.0, 1, 0.55, False, 'goods wagons shunted in a distant railway yard: the clank of iron buffers meeting and a chain coupling rattling, one wagon after another down the line, heard from a distance, outdoors, ' + ERA),
+    'life-depart': (8.0, 1, 0.5, False, 'a steam locomotive starting slowly from a distant station: a few heavy slow chuffs of steam with a hiss, then quicker, fading away into the distance, outdoors, faint, ' + ERA),
     'click': (0.5, 2, 0.7, False, 'a single small brass latch click, crisp, close, very short, ' + ERA),
     'loan': (1.2, 1, 0.6, False, 'a thick leather-bound ledger book closed shut on a wooden desk, one soft heavy thump of paper and leather, close, ' + ERA),
     'develop': (1.0, 1, 0.6, False, 'a steel hammer striking a small iron chisel once on a workbench, one sharp metallic knock, close, ' + ERA),
@@ -78,8 +92,9 @@ PLAN = {
 
 # the music model costs more a second than the sound model: the 12 s probe
 # below came to 165 credits (5 782 -> 5 947), about 14 a second, read a
-# minute after the call; the estimate errs high
-MUSIC_PER_SECOND = 30
+# minute after the call, and each 100 s take 1 375; the estimate errs a
+# little high (it was 30 until the fourth round)
+MUSIC_PER_SECOND = 15
 
 TUNE = ('an instrumental English country dance air of the late eighteenth century, '
         'in the manner of a gavotte or a Playford tune, played by a small chamber group of period instruments: '
@@ -90,11 +105,38 @@ TUNE = ('an instrumental English country dance air of the late eighteenth centur
         'no big introduction, no final cadence, no crescendo; no drums, no percussion, no vocals, no choir, '
         'no synthesizer, no electric or modern instruments, not epic, not cinematic, not orchestral')
 
+# the playlists: the canal's first tune above and two more, each unlike the
+# others in key, pace and players; then two for the rail, busier, with a
+# steady pulse (never a drum kit), still under the table
+PERIOD = ('intimate acoustic recording in a small wooden room; the same even mood from the first bar to the last, '
+          'no crescendo, no big climax; no drums, no percussion, no vocals, no choir, '
+          'no synthesizer, no electric or modern instruments, not epic, not cinematic')
+CANAL_II = ('an instrumental slow English folk air of the early nineteenth century, like an old ballad tune, '
+            'played by a string quartet of period instruments with gut strings: the viola and the cello carrying a long, '
+            'singing melody in turn, the two violins holding soft sustained chords beneath; D minor, dorian colour, '
+            'slow and unhurried around 66 bpm, in four; tender, reflective, a grey morning on a canal wharf; ' + PERIOD)
+CANAL_III = ('an instrumental gentle English jig of the 1830s in 6/8, around 100 bpm, G major, '
+             'played softly by a wooden simple-system flute and an English concertina sharing the tune, '
+             'a hammered dulcimer and an early nineteenth-century gut-strung guitar keeping light plucked chords, '
+             'a double bass played pizzicato on the downbeats; cheerful but unhurried, played quietly on the deck of a narrowboat; ' + PERIOD)
+RAIL_I = ('an instrumental quick march of the 1840s in 2/4, around 108 bpm, B-flat major, '
+          'played softly and at a distance by a small early brass band: keyed bugle and cornet carrying the tune, '
+          'an ophicleide and a euphonium on a steady bass, horns on the off-beats like a steam engine working, '
+          'determined, bright, industrious, restrained dynamics, background music; ' + PERIOD)
+RAIL_II = ('an instrumental piece of the 1840s for string quintet and fortepiano, E minor, around 116 bpm, '
+           'the cello and the viola playing a steady repeated pattern of short bowed notes like the beat of a steam engine\'s pistons, '
+           'the fortepiano doubling it softly, a long lyrical violin melody above it; '
+           'driving but quiet, purposeful, the age of iron and the railway; ' + PERIOD)
+
 # name: (seconds, takes, prompt) — asked of the music model, only when named
 MUSIC = {
     # a short take first, to measure what a second of music costs
     'music-probe': (12.0, 1, TUNE),
     'music-canal': (100.0, 2, TUNE),
+    'music-canal-ii': (100.0, 1, CANAL_II),
+    'music-canal-iii': (100.0, 1, CANAL_III),
+    'music-rail-i': (100.0, 1, RAIL_I),
+    'music-rail-ii': (100.0, 1, RAIL_II),
 }
 
 

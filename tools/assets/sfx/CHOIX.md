@@ -1,7 +1,7 @@
 # The table's sounds: takes and choices
 
 Generated with the ElevenLabs sound-effects model (`eleven_text_to_sound_v2`,
-Creator plan, commercial use allowed) by `generate.py`, and the canal's tune
+Creator plan, commercial use allowed) by `generate.py`, and the eras' tunes
 with the ElevenLabs music model (`music_v2_5`, `POST /v1/music`,
 instrumental forced), then trimmed,
 levelled and served by `process.py` (ffmpeg only). The raw takes sit in
@@ -19,7 +19,21 @@ levelled and served by `process.py` (ffmpeg only). The raw takes sit in
 | after the 12 s music probe | 5 947 |
 | after the two card takes | 5 959 |
 | after the two 100 s music takes | 8 709 |
-| **spent in all** | **5 626** (the owner's cap is 20 000; `generate.py` stops at 22 500 on the counter) |
+| before the fourth round (the playlists, the rail's life) | 8 709 |
+| after the rail's four events and the rail's bed | 9 314 |
+| after music-canal-ii | 10 689 |
+| after music-canal-iii | 12 064 |
+| after music-rail-i | 13 439 |
+| after music-rail-ii | 14 814 |
+| **spent in all** | **11 731** (the fourth round's cap was 16 000 on the counter; `generate.py` now stops there) |
+
+The fourth round: 6 105 credits. Each 100 s music take came to exactly
+1 375 again (13.75 a second). The five sound takes (55 s) came to 605, 11
+a second. Room was left for one more 100 s take (1 186 under the cap, a
+take costs 1 375): the rail has two tunes, not three, and no take was
+bought twice. `generate.py`'s estimates were brought down to 12 a second
+(sound) and 15 (music): at 40 and 30 they would have stopped the round
+at 13 000 on the counter.
 
 The third round: 2 927 credits. The music model costs about 14 credits a
 second (165 for the 12 s probe, 1 375 for each 100 s take), a little over
@@ -64,7 +78,7 @@ Nothing was judged by ear.
 | panel-open / panel-close | -1 each | a wooden slide, then a knock. Played at 40 % |
 | refuse | refuse-1 | a dull low knock. The take was very quiet (peak -36 dB), lifted by 40 dB. It is only 0.12 s long, so the lift brings up little noise |
 | amb-canal | **amb-canal-3** (was amb-canal-1) | see "The buzz" below. Take 3: birdsong spread over the whole loop at 2–7 kHz, a clean bed (under 1 kHz, 35 dB below take 1's). Take 2 had two loud bird bursts, one of them in the last three seconds, where the fold lays it over the head |
-| amb-rail | amb-rail-1, kept | takes 2 and 3 (asked for distant puffing and anvil strikes) came back as the same steady rumble, spread of loudness under 3.5 dB, nothing more to hear: bought, not used |
+| amb-rail | amb-rail-1, kept | takes 2 and 3 (asked for distant puffing and anvil strikes) came back as the same steady rumble, spread of loudness under 3.5 dB, nothing more to hear: bought, not used. Reshaped in the fourth round (its low murmur only, with far birds); take 4 came back empty: see "The rail's bed" |
 | house-warrington | house-warrington-1 | a coaching inn yard: a dozen light hoof steps, uneven, ending on a softer knock (cart). Take 2 is a trot, strong clip-clop pairs, busier |
 | house-nottingham | house-nottingham-2 | a hand bell rung three times, clear partials, then its ring-out (1.2 s). Take 1 is one dull knock and nothing else |
 | house-shrewsbury | house-shrewsbury-1 | water slapping a hull (the low band) under a mooring rope's creak that slows and stops at 1.7 s. Take 2 is the creak alone, even ticks all through: heard as a rattle |
@@ -76,6 +90,80 @@ Nothing was judged by ear.
 | ind-manufacturer | ind-manufacturer-2, 0.05–0.55 s | two sharp taps of a mallet on a chisel, each with a short metallic ring (the take has three: two kept, to stay short) |
 | ind-pottery | ind-pottery-1, 0–0.8 s | the wheel's rumble in short bursts, then a ceramic clink that rings. Take 2 opens on a smooth low hum (the wheel): too near a buzz |
 | ind-brewery | ind-brewery-2, 0–0.6 s | a hollow knock of the cask, then a short pour (a band at 1–3 kHz with the ripple of liquid). Take 1 is a cask bouncing, no pour |
+
+## The fourth round: playlists and the rail's life
+
+The owner: the canal's tune was always the same one, in a loop; the rail
+had no music, and its ambience was a tiring noise. Asked for: two more
+tunes for the canal, two or three for the rail, played one after another
+with the ambience alone between them; the rail's bed lower and sparser,
+with a train heard now and then.
+
+Judged as before, by measurement (ffmpeg only: loudness, loudness range,
+octave bands, a 2 s or 0.25 s envelope, the spectrogram), not by ear.
+
+### The tunes
+
+Each prompt names its key, pace and players so no two sound alike (the
+prompts are in `generate.py`: `CANAL_II`, `CANAL_III`, `RAIL_I`,
+`RAIL_II`). One 100 s take each; each came back usable, so none was asked
+twice.
+
+| tune | take | counter before / after | what the measures show, and why it was kept |
+|---|---|---|---|
+| music-canal (1) | music-canal-2 | (third round) | kept as it was: the loop of four phrases, now heard twice over (137 s) and faded over its last 6 s |
+| music-canal-ii | music-canal-ii-1 | 9 314 / 10 689 | strings alone, D minor, slow: long held chords in three sections (0-29 s, 30-58 s with more movement, 60-97 s), its own decay to silence at 97.7 s. -14.7 LUFS, LRA 8.6: the most dynamic of the five. Heavy under 150 Hz (the cello): a low shelf of -3 dB there |
+| music-canal-iii | music-canal-iii-1 | 10 689 / 12 064 | the jig: plucked chords every 0.3 s, a bass note on each downbeat (about 0.9 s apart, decaying in 0.3 s: a pizzicato, not a drum), a tune over 500-2 500 Hz from 20 s. -10.9 LUFS, LRA 3.6: dense and even, the brightest of the canal's three. -3 dB under 200 Hz |
+| music-rail-i | music-rail-i-1 | 12 064 / 13 439 | a brass band's march: phrases of 4.4 s, brass harmonics from 200 Hz to 3 kHz, almost nothing under 90 Hz (-61 dB). LRA 2.4, steady from the first bar. Its last chord stops short at 97.4 s: faded over the last 3 s |
+| music-rail-ii | music-rail-ii-1 | 13 439 / 14 814 | strings and fortepiano: a steady ostinato of short bowed notes at 150-400 Hz all through (the engine's beat), a violin line over it from 42 s, the upper strings from 60 s. LRA 3.1. The ostinato's band softened by 2 dB |
+
+The four new tunes are not looped: each is served whole, from its first
+note (canal-ii's 0.45 s of silence cut) to the end of its own last chord
+(97.6 to 99.3 s), rid of the 200 Hz comb (`dehum`, the same notch comb as
+the loops), nothing under 45 Hz, a 0.3 s fade in, a fade out of 1 to 3 s
+over the take's own ending, and a plain gain to -20 LUFS, like the first
+(peaks -7.8 to -9.2 dBFS; no compressor). WebM 1.3 to 1.5 MB each, MP3
+1.5 to 1.9 MB, fetched only during the pause before the tune is due.
+
+### The rail's bed
+
+| | before | after |
+|---|---|---|
+| loudness | -17.9 LUFS, LRA 0.8 LU (a flat drone) | -26.0 LUFS, played at 1.2 (-24.4), LRA 5.1 LU |
+| 45-90 Hz / 90-180 Hz | -28 / -26 dBFS RMS | -34 / -33 dBFS |
+| 250-700 Hz | -33 dBFS | -48 dBFS |
+| 700-2 000 Hz | -35 dBFS | -69 dBFS |
+| 2-6 kHz | -45 dBFS | -48 dBFS (birds, far) |
+
+Take 4 (`amb-rail-4`, 451 credits with life-depart) asked for a quiet
+valley with no town and no engine in the prompt: it came back empty,
+-67 LUFS, peak -62 dBFS, an even floor with nothing in it. Lifted 40 dB
+it would have been the model's floor and its comb. Bought, not used, and
+no fifth take: the bed is made from what was on disk instead.
+
+The bed is take 1's rumble cut to its low murmur (45-300 Hz, twice
+second-order each side; the 300 Hz-2 kHz band was what tired the ear), at
+-26 LUFS, swelling and ebbing by +-3 dB three times a loop (every 9 s)
+instead of a flat drone, with the birds of amb-canal-3 laid under it,
+nothing of them under 1.5 kHz, at -32 LUFS (12 dB under the canal's). The
+two takes are 30 s each and fold as one; the swell's period divides the
+loop, so the seam holds: 10 ms windows either side at -34.6 and -33.1 dB,
+the step across it 7 (the 99th percentile of the steps inside is 656).
+
+### The rail's life
+
+Four short takes, one each, heard over the rail's bed now and then:
+
+| event | take, cut | counter | what it is, and why kept |
+|---|---|---|---|
+| life-whistle | life-whistle-1, 0-3.3 s | 8 709 / (8 863) | one whistle blast of 1.7 s (a stack of partials over 400 Hz) and its ring. Asked for two blasts: one came, kept. Given distance: under 3 kHz only, two slow echoes (230 and 470 ms), -27 LUFS |
+| life-passing | life-passing-1, 0.3-7.4 s | 8 709 / (8 863) | the clatter of rail joints swelling from 1 s, held from 3 s; the take stops short at 7.2 s, so it is faded over its last 1.3 s. -25.7 LUFS. Played crossing from one side to the other |
+| life-couple | life-couple-1, 0.1-2.1 s | 8 709 / 8 863 | a run of iron clanks (0.2-1.6 s, the loudest at 1.1 s) over a low floor, the floor cut under 90 Hz. -27 LUFS. Knocks: no dehum, as for the trades |
+| life-depart | life-depart-1, 0-5.2 s | 8 863 / (9 314) | heavy chuffs and steam for 3 s, falling away; the low hum after 4.5 s (under 80 Hz) cut. -25.9 LUFS |
+
+(The counter lagged: the first three calls were counted together, 154,
+and life-depart with amb-rail-4, 451.) All four are cut under 90 Hz and
+over 6 kHz, mono.
 
 ## The buzz under the ambience
 
@@ -208,16 +296,30 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
   in all, most of it the two ambiences. `app/public/sfx-shrewsbury.mp3`
   (the six-second quay the table used to loop) is no longer read.
 
-## How they are played (app/src/gl/sfx.ts)
+## How they are played (app/src/gl/sfx.ts, app/src/gl/playlist.ts)
 
-- The canal's tune: on a fourth bus, `music`, with its own switch and level
-  in the board settings (on, at 0.5, by default). Bus scale 0.18: at the
-  default levels it sits about -41 LUFS against the canal ambience's -38.
-  It plays only while a game is in the action phase of the canal era
-  (`tuneWanted` in useTableSounds.ts), comes in over 5 s, fades out over
-  4 s when the era closes (the whistle is then heard alone) and at the end
-  of the game, and within 1 s when its switch or the board's sound switch is
+- The tunes: on a fourth bus, `music`, with its own switch and level in the
+  board settings (on, at 0.5, by default). Bus scale 0.18: at the default
+  levels a tune sits about -41 LUFS against the canal ambience's -38.
+  Each era has its playlist (`TUNES` in playlist.ts): the canal three, the
+  rail two. They play while a game is in the action phase of an era
+  (`tuneWanted` in useTableSounds.ts gives the era): the first tune 4 to
+  10 s after the era opens, then each tune heard through (the canal's first
+  air twice over, 137 s; the others once, 98 s or so), then the ambience
+  alone for 45 to 150 s, then another, never the one just heard. Pauses
+  and choices are drawn by `spanOf` and `nextOf`, pure functions tested
+  with a seeded chance. A tune comes in over 5 s, fades out over 4 s when
+  the canal era closes (the whistle is then heard alone) and at the end of
+  the game, and within 1 s when its switch or the board's sound switch is
   shut. Nothing before the reader's first gesture on the page.
+- The rail's life: while the rail's ambience plays, one of the four events
+  every 40 to 120 s (drawn afresh after each), never two at once, never the
+  same twice running, on the ambience bus at 1.4 (the bed plays at 1.2),
+  panned to one side at random; the passing train crosses from that side
+  to the other. A moment of the game (the bell of a turn, the era's
+  whistle, the band) hushes it: an event already sounding fades out in
+  0.3 s, and none begins until 3 s after the moment has ended. The canal
+  has none: its birds are its life.
 
 - A house: its recording once as the pointer arrives (no loop), on the
   gestures' bus at 0.6, faded in over 60 ms and out over 0.4 s when the
@@ -232,4 +334,5 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
     python3 tools/assets/sfx/generate.py --dry   # plan and estimate, no call
     python3 tools/assets/sfx/generate.py         # only the takes not on disk
     python3 tools/assets/sfx/generate.py music-canal  # the tune: only when named
+    python3 tools/assets/sfx/generate.py music-rail-i music-rail-ii  # likewise
     TMPDIR=/tmp python3 tools/assets/sfx/process.py
