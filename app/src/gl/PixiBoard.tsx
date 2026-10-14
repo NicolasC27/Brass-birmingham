@@ -21,7 +21,7 @@ import TownInspector from '@/components/game/TownInspector';
 import Anchored from '@/components/game/Anchored';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
-import { CASING, boardAssetTally, buildBoardScene, drawOwnerMedallion, holdBoardAssets, industryFaceUrl, loadBoardAssets, tileFaceUrl, wearSheets } from './paint';
+import { boardAssetTally, buildBoardScene, drawCube, drawOwnerMedallion, holdBoardAssets, industryFaceUrl, loadBoardAssets, tileFaceUrl, wearSheets } from './paint';
 import type { Prepared } from '@/game/store';
 import type { GameAction } from '@/game/actions';
 import { closeAudio, houseHover, pingTap, stampThud } from './sfx';
@@ -235,134 +235,176 @@ function linkDashes(pts: number[][]): Graphics {
   return d;
 }
 
-/* -------- the provenance threads: where a move's goods come from -------- */
-/* A fine beaded line from each source to the place its cubes are spent,
-   in the colour of what it carries, the beads walking slowly toward the
-   works; the count is engraved on the source. Everything is measured
-   on screen (px at the current scale) and drawn again each frame, so the
-   thread keeps its fineness at every zoom and follows the exchange's tray
-   wherever the page has it. With motion reduced the beads stand still. */
+/* ------------ the goods of a move: where from, and at what cost ------------ */
+/* While a move is prepared, each source of its goods (a mine, a works, a
+   brewery, a barrel) is ringed in the ink of what it gives, the draw on a
+   small plate at its edge; the coal and the beer that go by the network
+   run along the very canals and railways they take, a cube or a barrel at
+   a walk, over a lit way; and the place they are spent carries the
+   bill — each good, how many, and the price of those bought at the
+   exchange. Nothing is drawn across open country, and the exchange is
+   named by its price alone. Plates keep their size on screen at every
+   zoom; with motion reduced the goods stand still along their way. */
 
-/** the inks of a thread: the bead, and the halo it sits in */
-const STRAND_INK: Record<Stuff | 'sale', { core: number; halo: number; haloAlpha: number }> = {
-  /* coal is near-black: it sits in the cream casing the owner's marks wear */
-  coal: { core: 0x1b1714, halo: CASING, haloAlpha: 0.82 },
-  iron: { core: 0xe07a2e, halo: 0x17110b, haloAlpha: 0.62 },
-  beer: { core: 0xe3b04e, halo: 0x17110b, haloAlpha: 0.62 },
-  /* cubes the new works sells to the exchange: the green of a gain */
-  sale: { core: 0x72c08c, halo: 0x0e1811, haloAlpha: 0.62 },
-};
-/** a bead's radius, its halo's, the gap from bead to bead, the walk (px, px/s) */
-const BEAD_PX = 1.7;
-const BEAD_HALO_PX = 2.9;
-const BEAD_GAP_PX = 9;
-const BEAD_WALK_PX = 11;
-/** the last stretch of a thread, drawn over the cards (world units): long
- *  enough to cross the neighbour a works sits behind, so the thread is
- *  seen to arrive at the very card it feeds and not at the one before it */
-const SURFACE_W = TILE_R * 2.6;
-
-interface Strand {
-  g: Graphics;
-  /** the stretch at the works, laid above the towns (see SURFACE_W) */
-  top?: Graphics;
-  /** which end of the thread is the works being fed: that end surfaces */
-  surface?: 'from' | 'to';
-  ink: (typeof STRAND_INK)[keyof typeof STRAND_INK];
-  /** world points; `tray` stands for the exchange's tray, read each frame */
-  from: [number, number] | 'tray';
-  to: [number, number] | 'tray';
-  /** which tray row a purchase or a sale runs to */
-  tray?: 'coal' | 'iron';
-  /** how far short of each end the beads stop: world units, then px */
-  trimFrom: [number, number];
-  trimTo: [number, number];
-  /** what the source is, which sets where its count is engraved: on a
-   *  card's top edge, over a barrel, or (none) along the thread */
-  seat?: 'tile' | 'barrel';
-  /** the engraved count, carried at the source end of the thread */
-  tag: Container;
+/** the ring round a source, in the ink of what it gives: coal is black,
+ *  so its ring is the cream the owner's marks wear */
+const SOURCE_RING: Record<Stuff, number> = { coal: 0xeadfc4, iron: 0xe58a3e, beer: 0xe8b84f };
+/** a good on the move: its size on screen (px), the walk (px/s), the gap
+ *  from one to the next (sizes) and the rest between two runs (s) */
+const GOOD_PX = 13;
+const GOOD_WALK_PX = 70;
+const GOOD_GAP = 2.4;
+const GOOD_REST_S = 0.9;
+/** a plate's lift above what it names: world units, then px */
+interface Plate {
+  c: Container;
+  at: [number, number];
+  lift: [number, number];
 }
 
-/** the exchange's tray row for a resource, as a point of the world: its
- *  left edge on screen, or the table's right edge when the page shows none */
-function trayPoint(tray: 'coal' | 'iron', host: DOMRect, world: Container): [number, number] {
-  const el = document.querySelector(`[data-market-tray="${tray}"]`) ?? document.querySelector('[data-market-pill]');
-  const r = el?.getBoundingClientRect();
-  if (!r || r.width <= 0) return [WORLD_W - 52, tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71];
-  return [(r.left - 6 - host.left - world.position.x) / world.scale.x, (r.top + r.height / 2 - host.top - world.position.y) / world.scale.y];
+/** goods walking a route: the points, the running length at each, and one
+ *  piece per good (drawn once in screen px, moved and scaled every frame) */
+interface Convoy {
+  pts: [number, number][];
+  cum: number[];
+  pieces: Container[];
 }
 
-/** a thread drawn at screen scale `s`, `clock` seconds in */
-function drawStrand(m: Strand, a: [number, number], b: [number, number], s: number, clock: number, still: boolean): void {
-  const g = m.g;
-  g.clear();
-  m.top?.clear();
-  const px = 1 / s;
-  const dx = b[0] - a[0];
-  const dy = b[1] - a[1];
-  const len = Math.hypot(dx, dy);
-  const from = m.trimFrom[0] + m.trimFrom[1] * px;
-  const to = len - (m.trimTo[0] + m.trimTo[1] * px);
-  const ux = len ? dx / len : 0;
-  const uy = len ? dy / len : 0;
-  /* the count is engraved on the source: seated on the card's top edge,
-     clear of its level and stock, or over the barrel; a thread from the
-     exchange carries it where it comes onto the table, and the beads
-     start clear of it */
-  m.tag.scale.set(px);
-  let start = from + 2 * px;
-  if (m.seat === 'tile') m.tag.position.set(a[0], a[1] - TILE_R - 7 * px);
-  else if (m.seat === 'barrel') m.tag.position.set(a[0], a[1] - 22 - 9 * px);
-  else {
-    const half = Math.abs(ux) * (m.tag.width / px / 2) + Math.abs(uy) * (m.tag.height / px / 2);
-    m.tag.position.set(a[0] + ux * (from + (12 + half) * px), a[1] + uy * (from + (12 + half) * px));
-    start = from + (18 + 2 * half) * px;
-  }
-  const gap = BEAD_GAP_PX * px;
-  if (to - start < gap) return;
-  /* the beads walk toward the works; the first and last swell in and out,
-     so the walk has no seam at either end */
-  const shift = still ? gap / 2 : ((clock * BEAD_WALK_PX * px) % gap + gap) % gap;
-  const beads: [number, number, number, number][] = [];
-  for (let d = start + shift - gap; d <= to; d += gap) {
-    if (d < start) continue;
-    const f = Math.min(1, (d - start) / gap, (to - d) / gap);
-    if (f <= 0.05) continue;
-    beads.push([a[0] + ux * d, a[1] + uy * d, f, d]);
-  }
-  /* the run slips under the cards it passes; the stretch at the works
-     comes up over them, so the last bead touches the card it feeds */
-  const surfaced = (d: number) => (m.surface === 'to' ? d >= to - SURFACE_W : m.surface === 'from' ? d <= start + SURFACE_W : false);
-  const under = beads.filter((b) => !m.top || !surfaced(b[3]));
-  const over = m.top ? beads.filter((b) => surfaced(b[3])) : [];
-  for (const [layer, list] of [[g, under], [m.top, over]] as const) {
-    if (!layer || !list.length) continue;
-    for (const [x, y, f] of list) layer.circle(x, y, BEAD_HALO_PX * px * f);
-    layer.fill({ color: m.ink.halo, alpha: m.ink.haloAlpha });
-    for (const [x, y, f] of list) layer.circle(x, y, BEAD_PX * px * f);
-    layer.fill(m.ink.core);
-  }
+/** the point `d` along a route */
+function pointAlong(c: Convoy, d: number): [number, number] {
+  const { pts, cum } = c;
+  let i = 1;
+  while (i < cum.length - 1 && cum[i] < d) i++;
+  const seg = cum[i] - cum[i - 1] || 1;
+  const f = Math.min(1, Math.max(0, (d - cum[i - 1]) / seg));
+  return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f];
 }
 
-/** the engraved count of a thread: a small lacquer plate with a bead of
- *  the resource and the figure, drawn in screen px (the thread scales it) */
-function strandTag(ink: Strand['ink'], label: string): Container {
+/** one good on the move, centred on its origin, GOOD_PX wide: a cube or a
+ *  barrel riding a small cream token edged in ink, so black coal reads on
+ *  a dark canal and orange iron on a pale field */
+function goodPiece(resource: Stuff): Container {
   const c = new Container();
   c.eventMode = 'none';
-  const txt = new Text({ text: label, style: { fontFamily: "'Playfair Display', serif", fontSize: 12, fontWeight: '700', fill: 0xf2ead6, letterSpacing: 0.3 } });
-  txt.anchor.set(0, 0.5);
-  const w = txt.width + 22;
-  const h = 16;
+  const s = GOOD_PX;
+  const token = new Graphics().circle(0, s * 0.12, s * 0.95).fill({ color: 0x120d09, alpha: 0.72 }).circle(0, s * 0.12, s * 0.8).fill(0xf2ead6);
+  c.addChild(token);
+  /* out of sight until the ticker walks it onto its way */
+  c.visible = false;
+  goodIcon(c, resource, 0, s * 0.04, s * 0.95);
+  return c;
+}
+
+/** a convoy at screen scale `s`, `clock` seconds in: the goods walk from
+ *  the source to the place, one behind the other, fade in as they leave
+ *  and out as they arrive, rest a moment, and go again */
+function drawConvoy(c: Convoy, s: number, clock: number, still: boolean): void {
+  const px = 1 / s;
+  const size = GOOD_PX * px;
+  const len = c.cum[c.cum.length - 1];
+  const n = c.pieces.length;
+  const gap = size * GOOD_GAP;
+  const ease = Math.min(len / 3, size * 2.5);
+  const run = len + gap * (n - 1);
+  const walk = GOOD_WALK_PX * px;
+  const cycle = run / walk + GOOD_REST_S;
+  const head = still ? len * 0.55 + (gap * (n - 1)) / 2 : (clock % cycle) * walk;
+  c.pieces.forEach((p, i) => {
+    const d = head - i * gap;
+    const alpha = d >= 0 && d <= len ? Math.min(1, d / ease, (len - d) / ease) : 0;
+    p.visible = alpha > 0.02;
+    if (!p.visible) return;
+    const [x, y] = pointAlong(c, d);
+    p.alpha = alpha;
+    p.scale.set(px);
+    p.position.set(x, y);
+  });
+}
+
+/** a small barrel of beer, `s` tall, centred on (x, y): amber staves, two
+ *  dark hoops — drawn, so it keeps its shape at a dozen pixels */
+function drawBarrel(g: Graphics, x: number, y: number, s: number): void {
+  const w = s * 0.78;
+  const h = s;
+  const edge = { width: Math.max(0.6, s * 0.07), color: 0x2a1a0c };
+  g.roundRect(x - w / 2, y - h / 2, w, h, w * 0.42).fill(0xd79a3c).stroke(edge);
+  g.moveTo(x - w / 2 + s * 0.04, y - h * 0.24).lineTo(x + w / 2 - s * 0.04, y - h * 0.24).stroke(edge);
+  g.moveTo(x - w / 2 + s * 0.04, y + h * 0.24).lineTo(x + w / 2 - s * 0.04, y + h * 0.24).stroke(edge);
+  g.moveTo(x - w * 0.12, y - h * 0.44).lineTo(x - w * 0.12, y + h * 0.44).stroke({ width: Math.max(0.4, s * 0.045), color: 0x7a4e1c, alpha: 0.8 });
+  g.ellipse(x - w * 0.22, y - h * 0.06, w * 0.08, h * 0.12).fill({ color: 0xf6d38c, alpha: 0.7 });
+}
+
+/** a good's small picture, `s` wide, centred on (x, y) */
+function goodIcon(into: Container, resource: Stuff, x: number, y: number, s: number): void {
+  const g = new Graphics();
+  g.eventMode = 'none';
+  if (resource === 'beer') drawBarrel(g, x, y, s);
+  else drawCube(g, x, y, s, resource);
+  into.addChild(g);
+}
+
+/** one line of a bill: a good, how many, and what it costs or earns */
+interface BillLine {
+  resource: Stuff;
+  amount: number;
+  /** £ paid at the exchange for some of them */
+  cost?: number;
+  /** £ earned: the cubes a new works sells to the exchange at once */
+  gain?: number;
+}
+
+const PLATE_TEXT = { fontFamily: "'Playfair Display', serif", fontSize: 13, fontWeight: '700' as const, fill: 0xf2ead6 };
+
+/** a lacquer plate with a brass edge holding a row of goods, in screen px
+ *  centred on its origin (or with its left end there): the draw on a
+ *  source (`−1`), or a bill */
+function goodsPlate(lines: BillLine[], sign: '−' | '×', from: 'centre' | 'left' = 'centre'): Container {
+  const c = new Container();
+  c.eventMode = 'none';
+  const row = new Container();
+  let x = 0;
+  lines.forEach((l, i) => {
+    if (i > 0) {
+      const rule = new Graphics().moveTo(x + 4, -5).lineTo(x + 4, 5).stroke({ width: 1, color: 0xa8864a, alpha: 0.6 });
+      row.addChild(rule);
+      x += 9;
+    }
+    if (l.gain !== undefined) {
+      const arrow = new Text({ text: '→', style: { ...PLATE_TEXT, fill: 0x9fd6ae } });
+      arrow.anchor.set(0, 0.5);
+      arrow.position.set(x, 0);
+      row.addChild(arrow);
+      x += arrow.width + 3;
+    }
+    goodIcon(row, l.resource, x + 6, 0, 11.5);
+    x += 14;
+    const n = new Text({ text: `${sign}${l.amount}`, style: PLATE_TEXT });
+    n.anchor.set(0, 0.5);
+    n.position.set(x, 0.5);
+    row.addChild(n);
+    x += n.width;
+    const price = l.cost ? money(l.cost) : l.gain !== undefined ? `+${money(l.gain)}` : null;
+    if (price) {
+      const t = new Text({ text: price, style: { ...PLATE_TEXT, fill: l.gain !== undefined ? 0x9fd6ae : 0xe2c27f } });
+      t.anchor.set(0, 0.5);
+      t.position.set(x + 5, 0.5);
+      row.addChild(t);
+      x += t.width + 5;
+    }
+  });
+  const w = x + 14;
+  const h = 21;
   const plate = new Graphics()
-    .roundRect(-w / 2, -h / 2, w, h, 3.5)
-    .fill({ color: 0x15110d, alpha: 0.93 })
-    .stroke({ width: 1, color: 0xa8864a, alpha: 0.85 })
-    .circle(-w / 2 + 8, 0, 3.4)
-    .fill(ink.core)
-    .stroke({ width: 1, color: ink.core === 0x1b1714 ? CASING : 0x15110d, alpha: 0.9 });
-  txt.position.set(-w / 2 + 14.5, 0.5);
-  c.addChild(plate, txt);
+    .roundRect(-w / 2 + 1, -h / 2 + 2, w, h, 4)
+    .fill({ color: 0x000000, alpha: 0.35 })
+    .roundRect(-w / 2, -h / 2, w, h, 4)
+    .fill({ color: 0x15110d, alpha: 0.95 })
+    .stroke({ width: 1.2, color: 0xc9a45c, alpha: 0.95 })
+    .roundRect(-w / 2 + 2.5, -h / 2 + 2.5, w - 5, h - 5, 2.5)
+    .stroke({ width: 0.6, color: 0xc9a45c, alpha: 0.35 });
+  row.position.set(-w / 2 + 7, 0);
+  c.addChild(plate, row);
+  if (from === 'left') c.pivot.set(-w / 2 - 4, 0);
   return c;
 }
 
@@ -525,7 +567,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const pulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
   /* the hover layer's own pulses: a hover redraws them without touching the overlay's */
   const hoverPulsesRef = useRef<{ g: Graphics; base: number }[]>([]);
-  const strandsRef = useRef<Strand[]>([]);
+  const goodsRef = useRef<{ convoys: Convoy[]; plates: Plate[] }>({ convoys: [], plates: [] });
   const propsRef = useRef({ targets, linkTargetsList, sellTargetsList, onInvalid });
   propsRef.current = { targets, linkTargetsList, sellTargetsList, onInvalid };
   const hoverRef = useRef({ setHoverTown, setHoverLink, setInspect, setHoverMerchant });
@@ -1006,16 +1048,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const osc = 0.55 + 0.35 * Math.sin(clock * 4.5);
         for (const p of pulsesRef.current) p.g.alpha = p.base * osc;
         for (const p of hoverPulsesRef.current) p.g.alpha = p.base * osc;
-        /* the provenance threads of the move being prepared: redrawn at
-           this scale, from the tray's own place on screen for the cubes
-           bought or sold at the exchange */
-        if (strandsRef.current.length) {
-          const box = el.getBoundingClientRect();
-          for (const m of strandsRef.current) {
-            const from = m.from === 'tray' ? trayPoint(m.tray ?? 'coal', box, scene.world) : m.from;
-            const to = m.to === 'tray' ? trayPoint(m.tray ?? 'coal', box, scene.world) : m.to;
-            drawStrand(m, from, to, s, clock, reduced);
+        /* the goods of the move being prepared: plates held at their size
+           on screen, and the goods walking their way at this scale */
+        {
+          const px = 1 / s;
+          for (const p of goodsRef.current.plates) {
+            p.c.scale.set(px);
+            p.c.position.set(p.at[0], p.at[1] - p.lift[0] - p.lift[1] * px);
           }
+          for (const c of goodsRef.current.convoys) drawConvoy(c, s, clock, reduced);
         }
         /* the press: whatever was laid on the table since the last frame
            (a tile, a link — yours or a machine's) is struck like a block */
@@ -1602,7 +1643,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     for (const c of overlay.removeChildren()) c.destroy({ children: true });
     for (const c of scene.threadLayer.removeChildren()) c.destroy();
     pulsesRef.current = [];
-    strandsRef.current = [];
+    goodsRef.current = { convoys: [], plates: [] };
 
     const pulse = (g: Graphics, base = 1) => {
       overlay.addChild(g);
@@ -1658,57 +1699,92 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       }
     }
 
-    /* where the goods of the move come from (provenance.ts): a thread from
-       each mine, works, brewery or barrel to the place the cubes are spent,
-       the count engraved at its source; the cubes bought at the exchange
-       come in from its tray, and those a new works sells go out to it */
-    const strand = (m: Omit<Strand, 'g' | 'tag' | 'top'>, label: string | null) => {
-      const g = new Graphics();
-      g.eventMode = 'none';
-      const top = m.surface ? new Graphics() : undefined;
-      if (top) {
-        top.eventMode = 'none';
-        overlay.addChild(top);
-      }
-      /* a source already counted on another of its threads carries no plate */
-      const tag = label === null ? new Container() : strandTag(m.ink, label);
-      scene.threadLayer.addChild(g);
-      overlay.addChild(tag);
-      strandsRef.current.push({ ...m, g, top, tag });
+    /* where the goods of the move come from (provenance.ts): each source
+       ringed and plated with its draw, the goods that go by the network
+       walking their route over a lit way, and the bill at the place
+       they are spent — the exchange's cubes priced there, and the cubes a
+       new works sells to it counted as a gain */
+    const goods = goodsRef.current;
+    /* seated at once at the present scale; the ticker keeps them there */
+    const px0 = 1 / (scene.world.scale.x || 1);
+    const plate = (c: Container, at: [number, number], lift: [number, number]) => {
+      c.scale.set(px0);
+      c.position.set(at[0], at[1] - lift[0] - lift[1] * px0);
+      overlay.addChild(c);
+      goods.plates.push({ c, at, lift });
     };
+    /* the sources: one ring and one plate each, with the whole draw */
     const counts = sourceCounts(supply.threads);
+    const sources: { at: [number, number]; resource: Stuff; amount: number; barrel: boolean }[] = [];
     supply.threads.forEach((th, i) => {
-      strand(
-        {
-          ink: STRAND_INK[th.resource],
-          from: th.from,
-          to: th.to,
-          trimFrom: th.source === 'tile' ? [TILE_R, 4] : [22, 4],
-          trimTo: th.onTile ? [TILE_R, 5] : [0, 7],
-          seat: th.source,
-          surface: 'to',
-        },
-        counts[i] === null ? null : `×${counts[i]}`,
-      );
+      const n = counts[i];
+      if (n !== null) sources.push({ at: th.from, resource: th.resource, amount: n, barrel: th.source === 'barrel' });
     });
-    for (const p of supply.market) {
-      strand({ ink: STRAND_INK[p.resource], from: 'tray', to: p.to, tray: p.resource, trimFrom: [0, 2], trimTo: p.onTile ? [TILE_R, 5] : [0, 7], surface: 'to' }, tr('board.ghost.mkt', { n: p.amount, cost: p.cost }));
+    for (const d of supply.draws) sources.push({ at: d.at, resource: d.resource, amount: d.amount, barrel: false });
+    for (const src of sources) {
+      const ring = new Graphics();
+      ring.eventMode = 'none';
+      const ink = SOURCE_RING[src.resource];
+      /* a dark bed under the ink, so the ring reads on a brass card, a
+         pale field or a dark canal alike */
+      if (src.barrel) ring.circle(src.at[0], src.at[1], 16).stroke({ width: 8, color: 0x120d09, alpha: 0.6 }).circle(src.at[0], src.at[1], 16).stroke({ width: 3.2, color: ink });
+      else {
+        const [x, y] = src.at;
+        const r = TILE_R + 4;
+        ring.roundRect(x - r, y - r, r * 2, r * 2, 10).stroke({ width: 8.5, color: 0x120d09, alpha: 0.6 });
+        ring.roundRect(x - r, y - r, r * 2, r * 2, 10).stroke({ width: 3.4, color: ink });
+      }
+      overlay.addChild(ring);
+      plate(goodsPlate([{ resource: src.resource, amount: src.amount }], '−'), src.at, [src.barrel ? 18 : TILE_R + 1, 12]);
     }
+    /* the ways: a lit route under the towns, and the goods on it */
+    for (const th of supply.threads) {
+      if (!th.route || th.route.length < 2) continue;
+      const way = new Graphics();
+      way.eventMode = 'none';
+      /* a wash of lamplight either side, wider than any canal or line,
+         so the way shows whatever its owner's colour; an inked cream
+         thread down the middle */
+      trace(way, th.route);
+      way.stroke({ width: 26, color: 0xfff0c4, alpha: 0.2, cap: 'round', join: 'round' });
+      trace(way, th.route);
+      way.stroke({ width: 6, color: 0x120d09, alpha: 0.55, cap: 'round', join: 'round' });
+      trace(way, th.route);
+      way.stroke({ width: 3, color: 0xf6ecd2, alpha: 0.95, cap: 'round', join: 'round' });
+      scene.threadLayer.addChild(way);
+      const cum = [0];
+      for (let i = 1; i < th.route.length; i++) cum.push(cum[i - 1] + Math.hypot(th.route[i][0] - th.route[i - 1][0], th.route[i][1] - th.route[i - 1][1]));
+      const pieces = Array.from({ length: th.amount }, () => overlay.addChild(goodPiece(th.resource)));
+      goods.convoys.push({ pts: th.route, cum, pieces });
+    }
+    /* the bill, one per place: every good it takes, the exchange's price
+       on those bought there, and what a new works sells at once */
+    const bills: { at: [number, number]; onTile: boolean; lines: BillLine[] }[] = [];
+    const billAt = (at: [number, number], onTile: boolean) => {
+      let b = bills.find((x) => x.at[0] === at[0] && x.at[1] === at[1]);
+      if (!b) bills.push((b = { at, onTile, lines: [] }));
+      return b;
+    };
+    const addLine = (at: [number, number], onTile: boolean, resource: Stuff, amount: number, cost = 0) => {
+      const b = billAt(at, onTile);
+      const line = b.lines.find((l) => l.resource === resource && l.gain === undefined);
+      if (line) {
+        line.amount += amount;
+        if (cost) line.cost = (line.cost ?? 0) + cost;
+      } else b.lines.push({ resource, amount, ...(cost ? { cost } : {}) });
+    };
+    for (const th of supply.threads) addLine(th.to, th.onTile, th.resource, th.amount);
+    for (const p of supply.market) addLine(p.to, p.onTile, p.resource, p.amount, p.cost);
     const sale = ghost?.sale;
     const saleAt = supply.threads[0]?.to ?? supply.market[0]?.to ?? (ghost && !ghost.noTarget ? displayPosFor(ghost.at[0], ghost.at[1]) : null);
-    if (sale && saleAt && verb === 'build') {
-      strand({ ink: STRAND_INK.sale, from: saleAt, to: 'tray', tray: sale.resource === 'coal' ? 'coal' : 'iron', trimFrom: [TILE_R, 4], trimTo: [0, 2], surface: 'from' }, tr('board.ghost.sale', { n: sale.amount, gain: sale.gain }));
-    }
-    /* a development takes its iron off the board: the works it comes from
-       carry their count, and no thread runs from them */
-    for (const d of supply.draws) {
-      const ink = STRAND_INK[d.resource as Stuff];
-      const g = new Graphics();
-      g.eventMode = 'none';
-      const tag = strandTag(ink, `×${d.amount}`);
-      scene.threadLayer.addChild(g);
-      overlay.addChild(tag);
-      strandsRef.current.push({ g, tag, ink, from: d.at, to: d.at, trimFrom: [0, 0], trimTo: [0, 0], seat: 'tile' });
+    if (sale && saleAt && verb === 'build') billAt(saleAt, true).lines.push({ resource: sale.resource === 'coal' ? 'coal' : 'iron', amount: sale.amount, gain: sale.gain });
+    for (const b of bills) {
+      const order: Stuff[] = ['coal', 'iron', 'beer'];
+      b.lines.sort((x, y) => Number(x.gain !== undefined) - Number(y.gain !== undefined) || order.indexOf(x.resource) - order.indexOf(y.resource));
+      /* over the card it feeds, or beside the price of the link being
+         laid, on its line (the plaque is 48 wide, 17.5 over the middle) */
+      if (b.onTile) plate(goodsPlate(b.lines, '×'), b.at, [TILE_R + 1, 12]);
+      else plate(goodsPlate(b.lines, '×', 'left'), [b.at[0] + 24, b.at[1]], [17.5, 0]);
     }
 
     /* the reader's pinned towns: a brass pin at the cluster's top-right corner */

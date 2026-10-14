@@ -82,10 +82,6 @@ const fr: typeof enboard = {
     which: 'Quel ouvrage ici ?',
     unavailable: 'Pas possible avec cette carte',
   },
-  ghost: {
-    sale: '×{n} → {gain} £',
-    mkt: '×{n} · {cost} £ marché',
-  },
   merchant: {
     claimed: '✓ RÉCLAMÉ',
     title: '{name} — demande : {demands} · bière {beer} · bonus {bonus}{claimed}',
@@ -102,7 +98,6 @@ const fr: typeof enboard = {
     claimedSuffix: ' (réclamé)',
   },
   tile: {
-    vp: 'PV',
     vpChip: '{vp} PV',
     flipped: 'retournée',
     flippedSuffix: ' · RETOURNÉE',
