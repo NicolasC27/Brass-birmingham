@@ -517,7 +517,6 @@ const CUE_LEVEL: Partial<Record<Cue, number>> = {
   click: 0.45,
   'panel-open': 0.4,
   'panel-close': 0.4,
-  card: 0.6,
   refuse: 0.7,
   'ind-coal': TRADE_LEVEL,
   'ind-iron': TRADE_LEVEL,

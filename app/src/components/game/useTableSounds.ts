@@ -63,8 +63,7 @@ export function tableCues(prev: TableShot, next: TableShot): Heard[] {
   /* nothing is heard of a table just sat at, nor of another game */
   if (!a || !b || a.seed !== b.seed) return out;
 
-  /* taking a card up is silent: the paper was heard on every glance at the
-     hand, and the hand is looked at far more than it is played */
+  if (next.card && next.card !== prev.card) add({ cue: 'card' });
   if (next.verb && next.verb !== prev.verb) add({ cue: 'click' });
 
   /* the moves: whatever the log gained since the last look */

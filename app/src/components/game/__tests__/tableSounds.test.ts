@@ -127,9 +127,9 @@ describe('what the table sounds like', () => {
     expect(cues(tableCues(shot(g), shot(g, { refusedAt: 14 })))).toEqual(['refuse']);
   });
 
-  it('answers the hand: a card taken up in silence, a verb chosen, a panel opened and shut', () => {
+  it('answers the hand: a card taken up, a verb chosen, a panel opened and shut', () => {
     const g = game({ current: 0 });
-    expect(cues(tableCues(shot(g), shot(g, { card: 'c1' })))).toEqual([]);
+    expect(cues(tableCues(shot(g), shot(g, { card: 'c1' })))).toEqual(['card']);
     expect(cues(tableCues(shot(g, { card: 'c1' }), shot(g, { card: 'c1', verb: 'build' })))).toEqual(['click']);
     expect(cues(tableCues(shot(g, { card: 'c1' }), shot(g, { card: null })))).toEqual([]);
     expect(cues(tableCues(shot(g), shot(g, { panel: true })))).toEqual(['panel-open']);
