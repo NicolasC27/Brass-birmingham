@@ -5,10 +5,10 @@
    never before the reader has touched the page: until then every sound is
    simply not made (browsers would keep the context suspended anyway).
 
-   Three buses run into one master: the ambience under the table, the
-   gestures of play, and the moments — the bell of a turn, the whistle at
-   the close of an era, the band at the end. Each has its own level, and
-   the board's sound switch closes the master. */
+   Four buses run into one master: the ambience under the table, the
+   gestures of play, the moments — the bell of a turn, the whistle at the
+   close of an era, the band at the end — and the canal's tune. Each has
+   its own level, and the board's sound switch closes the master. */
 
 import type { IndustryType } from '@/game/types';
 
@@ -36,22 +36,26 @@ const context = async (): Promise<AudioContext | null> => {
   return ac.state === 'running' ? ac : null;
 };
 
-/* ---------------- the mixing desk: three buses and a master ---------------- */
+/* ---------------- the mixing desk: four buses and a master ---------------- */
 
-export type Bus = 'ambience' | 'gestures' | 'moments';
+export type Bus = 'ambience' | 'gestures' | 'moments' | 'music';
+const BUSES: readonly Bus[] = ['ambience', 'gestures', 'moments', 'music'];
 export interface Mix {
   /** the board's sound switch: the master open or shut */
   on: boolean;
   /** the ambience under the table plays at all */
   ambience: boolean;
+  /** the canal's tune plays at all */
+  music: boolean;
   /** each bus's level, 0 to 1 */
   levels: Record<Bus, number>;
 }
-let mix: Mix = { on: true, ambience: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8 } };
+let mix: Mix = { on: true, ambience: false, music: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } };
 /* a bus at full is still well under the page: the recordings are cut to
    peak at -3 dBFS, the ambiences levelled to -16 LUFS, and a board game is
-   played for two hours */
-const BUS_SCALE: Record<Bus, number> = { ambience: 0.22, gestures: 0.55, moments: 0.5 };
+   played for two hours. The tune (-20 LUFS) sits under the ambience at the
+   levels the settings open on, about -41 LUFS against the canal's -38 */
+const BUS_SCALE: Record<Bus, number> = { ambience: 0.22, gestures: 0.55, moments: 0.5, music: 0.18 };
 
 let desk: { ac: AudioContext; master: GainNode; bus: Record<Bus, GainNode> } | null = null;
 /** the buses of this context, made on first use */
@@ -66,14 +70,14 @@ const busOf = (ac: AudioContext, bus: Bus): GainNode => {
       g.connect(master);
       return g;
     };
-    desk = { ac, master, bus: { ambience: make('ambience'), gestures: make('gestures'), moments: make('moments') } };
+    desk = { ac, master, bus: { ambience: make('ambience'), gestures: make('gestures'), moments: make('moments'), music: make('music') } };
   }
   return desk.bus[bus];
 };
 
 /** the levels and switches as the board options have them */
 export function setMix(next: Mix): void {
-  mix = { on: next.on, ambience: next.ambience, levels: { ...next.levels } };
+  mix = { on: next.on, ambience: next.ambience, music: next.music, levels: { ...next.levels } };
   if (desk) {
     const now = desk.ac.currentTime;
     const glide = (p: AudioParam, v: number) => {
@@ -82,9 +86,10 @@ export function setMix(next: Mix): void {
       p.linearRampToValueAtTime(v, now + 0.15);
     };
     glide(desk.master.gain, mix.on ? 1 : 0);
-    for (const b of ['ambience', 'gestures', 'moments'] as const) glide(desk.bus[b].gain, mix.levels[b] * BUS_SCALE[b]);
+    for (const b of BUSES) glide(desk.bus[b].gain, mix.levels[b] * BUS_SCALE[b]);
   }
   applyAmbience();
+  applyMusic();
 }
 
 /** deterministic 31-hash, for a house's own note */
@@ -218,8 +223,10 @@ export function houseHover(id: string | null): void {
 export function closeAudio(): void {
   houseLeave();
   fading.clear();
-  /* the ambience dies with its context; the era wanted is kept for the next */
+  /* the ambience and the tune die with their context; what is wanted is
+     kept for the next */
   table = null;
+  tune = null;
   desk = null;
   const ac = ctx;
   ctx = null;
@@ -684,8 +691,56 @@ function applyAmbience(): void {
   });
 }
 
+/* ---------------- the canal's tune ---------------- */
+
+/** the tune is wanted: a table sat at, in the canal era, still in play */
+let wantTune = false;
+let tune: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
+/** the tune comes in slowly and leaves as slowly: the rail era arrives
+ *  under the whistle, not after a cut */
+const TUNE_IN = 5;
+const TUNE_OUT = 4;
+/** the loop's own length: four phrases of the air, folded at this length;
+ *  an MP3's padding past it is left out of the loop */
+const TUNE_LOOP_S = 68.5346;
+
+/** the canal's tune, looped on its own bus while `on`; faded out when the
+ *  canal era closes, when the game ends and when the table is left */
+export function tableMusic(on: boolean): void {
+  wantTune = on;
+  applyMusic();
+}
+
+function applyMusic(): void {
+  const on = mix.on && mix.music && wantTune;
+  if (tune && !on) {
+    /* the switch shut is obeyed at once; the era's close is heard out */
+    fadeOut(tune, mix.on && mix.music ? TUNE_OUT : 1);
+    tune = null;
+  }
+  if (!on || tune) return;
+  void context().then(async (ac) => {
+    if (!ac) return;
+    const buf = await sample('music-canal');
+    /* the table may have moved on while the file came */
+    if (!buf || !(mix.on && mix.music && wantTune) || tune) return;
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    src.loop = true;
+    src.loopStart = 0;
+    src.loopEnd = Math.min(buf.duration, TUNE_LOOP_S);
+    const gain = ac.createGain();
+    const t0 = ac.currentTime;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(1, t0 + TUNE_IN);
+    src.connect(gain).connect(busOf(ac, 'music'));
+    src.start(t0);
+    tune = { src, gain };
+  });
+}
+
 /* the first touch of the page opens the way: what was wanted before it —
-   the ambience of the table already sat at — starts then */
+   the ambience of the table already sat at, the canal's tune — starts then */
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   const first = () => {
     window.removeEventListener('pointerdown', first, true);
@@ -693,6 +748,7 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
     /* the activation is recorded once this handler has run */
     window.setTimeout(() => {
       applyAmbience();
+      applyMusic();
       if (wantEra) warmSounds();
     }, 0);
   };
@@ -700,11 +756,12 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
   window.addEventListener('keydown', first, true);
 }
 
-/* dev only: what is sounding right now (window.__sfx.playing(), .ambience(), .heard()) */
+/* dev only: what is sounding right now (window.__sfx.playing(), .ambience(), .music(), .heard()) */
 const heard: string[] = [];
 if (import.meta.env.DEV && typeof window !== 'undefined')
-  (window as unknown as { __sfx?: { playing: () => string | null; ambience: () => string | null; heard: () => string[] } }).__sfx = {
+  (window as unknown as { __sfx?: { playing: () => string | null; ambience: () => string | null; music: () => boolean; heard: () => string[] } }).__sfx = {
     playing: () => playing?.id ?? null,
     ambience: () => table?.era ?? null,
+    music: () => tune !== null,
     heard: () => heard.slice(),
   };

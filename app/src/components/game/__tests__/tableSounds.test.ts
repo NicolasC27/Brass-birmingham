@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameState, LedgerEntry } from '@/game/types';
-import { tableCues } from '../useTableSounds';
+import { tableCues, tuneWanted } from '../useTableSounds';
 import type { Heard, TableShot } from '../useTableSounds';
 
 /* a table of three: me at seat 0, a machine at 1, another at 2 */
@@ -134,5 +134,18 @@ describe('what the table sounds like', () => {
     expect(cues(tableCues(shot(g, { card: 'c1' }), shot(g, { card: null })))).toEqual([]);
     expect(cues(tableCues(shot(g), shot(g, { panel: true })))).toEqual(['panel-open']);
     expect(cues(tableCues(shot(g, { panel: true }), shot(g)))).toEqual(['panel-close']);
+  });
+});
+
+describe('the canal’s tune', () => {
+  it('is wanted while the canal era is played, and only then', () => {
+    expect(tuneWanted(game())).toBe(true);
+    /* the era's close: the whistle is heard alone */
+    expect(tuneWanted(game({ phase: 'scoring-canal' }))).toBe(false);
+    expect(tuneWanted(game({ era: 'rail' }))).toBe(false);
+    expect(tuneWanted(game({ era: 'canal', phase: 'game-over' }))).toBe(false);
+    expect(tuneWanted(game({ era: 'rail', phase: 'game-over' }))).toBe(false);
+    /* no table, no tune */
+    expect(tuneWanted(null)).toBe(false);
   });
 });

@@ -175,3 +175,56 @@ describe('a piece laid, heard', () => {
     expect(played()).toEqual(['stamp']);
   });
 });
+
+describe('the canal’s tune', () => {
+  const levels = { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 };
+  const tuneSources = () => sources.filter((s) => s.buffer?.url.includes('music-canal'));
+
+  it('loops while the canal era is played, and fades out slowly when it closes', async () => {
+    const { setMix, tableMusic } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: true, levels });
+    tableMusic(true);
+    await settle();
+    expect(played()).toEqual(['music-canal']);
+    expect(sources[0].loop).toBe(true);
+    /* asked again in the same era: still the one tune */
+    tableMusic(true);
+    await settle();
+    expect(tuneSources()).toHaveLength(1);
+    /* the rail era comes: the tune is heard out over four seconds */
+    tableMusic(false);
+    expect(sources[0].stopAt).toBeCloseTo(4.05);
+    expect(sounding()).toHaveLength(0);
+  });
+
+  it('is not played with its switch shut, and stops at once when the sound is cut', async () => {
+    const { setMix, tableMusic } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: false, levels });
+    tableMusic(true);
+    await settle();
+    expect(tuneSources()).toHaveLength(0);
+    /* the switch opened in the canal era: the tune comes */
+    setMix({ on: true, ambience: false, music: true, levels });
+    await settle();
+    expect(tuneSources()).toHaveLength(1);
+    /* the board's sound switch shut: the tune goes, and quickly */
+    setMix({ on: false, ambience: false, music: true, levels });
+    expect(tuneSources()[0].stopAt).toBeCloseTo(1.05);
+    await settle();
+    expect(sounding()).toHaveLength(0);
+    /* opened again, still in the canal era: it starts afresh */
+    setMix({ on: true, ambience: false, music: true, levels });
+    await settle();
+    expect(tuneSources()).toHaveLength(2);
+    expect(sounding()).toHaveLength(1);
+  });
+
+  it('waits for the reader’s first gesture', async () => {
+    vi.stubGlobal('navigator', { userActivation: { hasBeenActive: false } });
+    const { setMix, tableMusic } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: true, levels });
+    tableMusic(true);
+    await settle();
+    expect(sources).toHaveLength(0);
+  });
+});

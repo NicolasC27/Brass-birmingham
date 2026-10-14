@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '@/game/store';
 import type { GameState, IndustryType, Verb } from '@/game/types';
-import { cue, noteStrike, setMix, tableAmbience, warmSounds } from '@/gl/sfx';
+import { cue, noteStrike, setMix, tableAmbience, tableMusic, warmSounds } from '@/gl/sfx';
 import type { Cue } from '@/gl/sfx';
 import { useBoardOptions } from './boardOptions';
 
@@ -102,6 +102,10 @@ export function tableCues(prev: TableShot, next: TableShot): Heard[] {
   return out;
 }
 
+/** the canal's tune is wanted: a game in play in the canal era. It goes
+ *  when the era closes (the whistle is heard alone), and at the end */
+export const tuneWanted = (g: GameState | null): boolean => !!g && g.era === 'canal' && g.phase === 'action';
+
 /** the store and the settings, as the sounds read them */
 const shotOf = (s: ReturnType<typeof useGame.getState>, panel: boolean): TableShot => ({
   game: s.game,
@@ -120,11 +124,11 @@ const MOMENT_AFTER_MOVE_MS = 450;
  *  a cue for every change of the game worth hearing */
 export function useTableSounds(): void {
   const opts = useBoardOptions();
-  const { sound, ambience, volAmbience, volGestures, volMoments, settingsOpen } = opts;
+  const { sound, ambience, music, volAmbience, volGestures, volMoments, volMusic, settingsOpen } = opts;
 
   useEffect(() => {
-    setMix({ on: sound, ambience, levels: { ambience: volAmbience, gestures: volGestures, moments: volMoments } });
-  }, [sound, ambience, volAmbience, volGestures, volMoments]);
+    setMix({ on: sound, ambience, music, levels: { ambience: volAmbience, gestures: volGestures, moments: volMoments, music: volMusic } });
+  }, [sound, ambience, music, volAmbience, volGestures, volMoments, volMusic]);
 
   /* the era's ambience; gone at the end of the game and when the table is left */
   const era = useGame((s) => (s.game && s.game.phase !== 'game-over' ? s.game.era : null));
@@ -132,6 +136,13 @@ export function useTableSounds(): void {
     tableAmbience(era);
   }, [era]);
   useEffect(() => () => tableAmbience(null), []);
+
+  /* the canal's tune, while the canal era is played */
+  const tune = useGame((s) => tuneWanted(s.game));
+  useEffect(() => {
+    tableMusic(tune);
+  }, [tune]);
+  useEffect(() => () => tableMusic(false), []);
 
   const panelRef = useRef(settingsOpen);
   const lastRef = useRef<TableShot>(shotOf(useGame.getState(), settingsOpen));

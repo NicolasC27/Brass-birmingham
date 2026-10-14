@@ -559,6 +559,14 @@ function BoardSettings() {
                             <Level value={opts.volAmbience} onChange={(v) => setBoardOption('volAmbience', v)} label={t('game.settings.sounds.volAmbience')} />
                           </OptionRow>
                         )}
+                        <OptionRow label={t('game.settings.sounds.music')} hint={t('game.settings.sounds.musicHint')}>
+                          <Switch on={opts.music} onClick={() => setBoardOption('music', !opts.music)} label={t('game.settings.sounds.music')} />
+                        </OptionRow>
+                        {opts.music && (
+                          <OptionRow label={t('game.settings.sounds.volMusic')}>
+                            <Level value={opts.volMusic} onChange={(v) => setBoardOption('volMusic', v)} label={t('game.settings.sounds.volMusic')} />
+                          </OptionRow>
+                        )}
                         <OptionRow label={t('game.settings.sounds.volGestures')} hint={t('game.settings.sounds.volGesturesHint')}>
                           <Level value={opts.volGestures} onChange={(v) => setBoardOption('volGestures', v)} label={t('game.settings.sounds.volGestures')} />
                         </OptionRow>

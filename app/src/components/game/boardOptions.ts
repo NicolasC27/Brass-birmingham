@@ -137,10 +137,13 @@ export interface BoardOptions {
   /** the ambience of the era under the table (off by default for a reader
    *  who asked the system for less motion) */
   ambience: boolean;
-  /** the three buses' levels, 0 to 1: ambience, gestures of play, moments */
+  /** the canal's tune, heard through the canal era only */
+  music: boolean;
+  /** the buses' levels, 0 to 1: ambience, gestures of play, moments, the tune */
   volAmbience: number;
   volGestures: number;
   volMoments: number;
+  volMusic: number;
   /** the telegrams wired across the table, and the machines' banter */
   telegrams: boolean;
   /** the focus view: rail folded, tools away, minimap small, hand tucked, no Gazette */
@@ -184,6 +187,8 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   volAmbience: 'brassworks.sound.volAmbience',
   volGestures: 'brassworks.sound.volGestures',
   volMoments: 'brassworks.sound.volMoments',
+  music: 'brassworks.sound.music',
+  volMusic: 'brassworks.sound.volMusic',
   telegrams: 'brassworks.telegrams',
   focus: 'brassworks.focus',
   reviewLit: 'brassworks.reviewLit',
@@ -213,7 +218,7 @@ function reducedMotion(): boolean {
   }
 }
 /** a stored level, between 0 and 1 */
-function level(k: 'volAmbience' | 'volGestures' | 'volMoments', fallback: number): number {
+function level(k: 'volAmbience' | 'volGestures' | 'volMoments' | 'volMusic', fallback: number): number {
   const v = Number(read(k, fallback));
   return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : fallback;
 }
@@ -250,6 +255,9 @@ let state: BoardOptions = {
   volAmbience: level('volAmbience', 0.5),
   volGestures: level('volGestures', 0.8),
   volMoments: level('volMoments', 0.8),
+  music: read('music', true),
+  /* low: the tune is heard under the ambience, not over the table */
+  volMusic: level('volMusic', 0.5),
   telegrams: read('telegrams', true),
   focus: read('focus', false),
   reviewLit: read('reviewLit', false),
