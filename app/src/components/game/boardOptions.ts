@@ -83,11 +83,18 @@ export const tableWidth = (): number => {
   return Math.round(document.querySelector('[data-table]')?.getBoundingClientRect().width || window.innerWidth);
 };
 
+/** what the plate leaves the hand beside it once the table is wide */
+const MM_HAND_ROOM = 880;
+
 export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number; focus?: boolean }): number => {
   if (o.focus) return MM_MIN_W;
   const wanted = o.minimapWidth ? Math.min(MM_MAX_W, Math.max(MM_MIN_W, o.minimapWidth)) : MM_W_FOR[o.minimapSize];
-  /* on a tablet the plate yields to the hand: never more than a fifth of the table */
-  const cap = Math.max(MM_MIN_W, Math.floor(tableWidth() * 0.22));
+  /* on a tablet the plate yields to the hand: a fifth of the table at most.
+     On a desktop the cap is the room the hand leaves instead, for a fifth
+     of 1440 px was already under the small preset and the corner could no
+     longer widen the plate */
+  const table = tableWidth();
+  const cap = Math.max(MM_MIN_W, Math.floor(table * 0.22), table - MM_HAND_ROOM);
   return Math.min(wanted, cap);
 };
 
