@@ -1,51 +1,53 @@
 import { memo, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { PanInfo } from 'framer-motion';
-import { BellRing, Hourglass, MapPin, X } from 'lucide-react';
-import { INDUSTRY_ICON, PLAYER_COLORS, TOWN_BY_ID, incomeLevel } from '@/game/data';
+import { BellRing, BookOpen, ChevronDown, Hourglass, MapPin, Newspaper, X } from 'lucide-react';
+import { INDUSTRY_ICON, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { ledgerParts } from '@/game/ledgerText';
 import { useGame } from '@/game/store';
-import type { GameState, IndustryType, LedgerEntry } from '@/game/types';
+import type { Era, GameState, IndustryType, LedgerEntry } from '@/game/types';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { GazettePaper } from './Gazette';
 import { lastRound } from './handFan';
-import { MAX_SHOWN, enqueue, shownOf, useGazetteDesk } from './noticeQueue';
+import { MAX_SHOWN, enqueue, fileWhere, filedOf, ordered, shownOf, useGazetteDesk } from './noticeQueue';
 import type { Incoming, Notice } from './noticeQueue';
+import { ShapeChip } from './TownInspector';
 import { useHudInsets } from './useHudInsets';
+import { useLayer } from './useLayer';
 import { useReducedMotion } from './useReducedMotion';
 import { useHudRects } from './useHudRects';
 import type { HudRect } from './useHudRects';
 
 /* ------------------------------------------------------------------ */
-/* What happened that the reader should not miss, said in one place:   */
-/* a single pile down the right of the board, under the exchange's      */
-/* pill, clear of the banner, the hand, the minimap and the players.    */
-/* The pile has a width of its own and keeps it whatever the rail on    */
-/* the left is doing. What touches the reader stands first; three are   */
-/* shown at most, the rest wait behind a "+n". Each stays as long as it */
-/* takes to read, holds still under the pointer, and goes with its      */
-/* cross or a flick to the right. The reader's income rising floats up  */
-/* the middle of the board for a moment.                                */
+/* What happened that the reader should not miss, written in one small */
+/* book down the right of the board, under the exchange's pill, clear  */
+/* of the banner, the hand, the minimap and the players.                */
+/*                                                                      */
+/* The book is one slim plaque, not a stack of cards: a line of brass   */
+/* at its head says how many notices are open, and under it the notices */
+/* are ruled like the entries of a register. What touches the reader   */
+/* stands first; three are open at most, the rest wait behind a "+n".  */
+/* Nothing leaves on a clock: a notice stays until the reader files it  */
+/* (its cross, or "file all"), or until a newer one of its kind makes it */
+/* stale. Filed is not lost: the book's head opens every page kept,     */
+/* the open ones and the filed ones, the round's paper among them.      */
+/* With nothing open the book folds to a single brass stud.             */
+/* The reader's income rising floats up the middle of the board.        */
 /* ------------------------------------------------------------------ */
 
 const FLOAT_MS = 2200;
 /** the others' turns lasted this long, or the page was put away: the
  *  reader's turn is said when it comes back */
 const TURN_WAIT_MS = 20_000;
-const TURN_LIFE_MS = 7000;
-const ERA_LIFE_MS = 14_000;
-const GAZETTE_LIFE_MS = 11_000;
-/** the pile's width: its own, never what a neighbour leaves over */
-const WIDTH_MIN = 240;
-const WIDTH_MAX = 360;
+/** the book's width: its own, never what a neighbour leaves over */
+const WIDTH_MIN = 260;
+const WIDTH_MAX = 320;
 const GAP = 12;
-/** a notice's height, give or take: how many the column has room for */
-const ROW_H = 72;
-/** a flick to the right this far, or this fast, puts a notice away */
-const FLICK_PX = 80;
-const FLICK_SPEED = 450;
+/** the head's height and a notice's, give or take: how many the column
+ *  has room for */
+const HEAD_H = 34;
+const ROW_H = 54;
 const EASE = [0.22, 0.8, 0.3, 1] as const;
 /** the verbs that are a move at the table, not the table's own business */
 const MOVES = new Set<LedgerEntry['verb']>(['build', 'network', 'develop', 'sell', 'loan', 'scout', 'pass']);
@@ -78,11 +80,13 @@ interface Place {
   top: number;
   right: number;
   width: number;
-  /** how many notices the column has room for */
+  /** how many open notices the column has room for */
   room: number;
+  /** the tallest the opened book may stand */
+  tall: number;
 }
 
-/** where the pile stands: along the right edge, stepped left of whatever
+/** where the book stands: along the right edge, stepped left of whatever
  *  holds that edge (the guide, the exchange or the ledger when open),
  *  under the banner and the exchange's pill, above the hand and the
  *  minimap, and never over the players on the left */
@@ -109,38 +113,44 @@ function placePile(o: {
   /* the ledger slides in from the right: its width is read, not its
      place, which is still on its way while it arrives */
   if (o.ledger) edge(vw - (insets.right - GAP) - o.ledger.width);
-  let width = Math.round(Math.min(WIDTH_MAX, Math.max(WIDTH_MIN, vw * 0.28)));
+  let width = Math.round(Math.min(WIDTH_MAX, Math.max(WIDTH_MIN, vw * 0.22)));
   if (o.rail) width = Math.max(WIDTH_MIN, Math.min(width, vw - right - o.rail.right - GAP));
   const left = vw - right - width;
   let top = insets.top + 8;
   /* the rail counts too: on a narrow table (a tablet held upright) its
-     medallions run along the top, and the pile then hangs under them */
+     medallions run along the top, and the book then hangs under them */
   for (const r of [o.topbar, o.pill, o.rail]) if (r && overlapsX(r, left, vw - right)) top = Math.max(top, r.bottom + 10);
   let floor = vh - insets.bottom;
   for (const r of [o.minimap, o.dock]) if (r && r.top > top && overlapsX(r, left, vw - right)) floor = Math.min(floor, r.top - 10);
-  const room = Math.max(1, Math.min(MAX_SHOWN, Math.floor((floor - top + 8) / ROW_H)));
-  return { top, right, width, room };
+  const room = Math.max(1, Math.min(MAX_SHOWN, Math.floor((floor - top - HEAD_H) / ROW_H)));
+  return { top, right, width, room, tall: Math.max(HEAD_H + ROW_H, floor - top) };
 }
 
-/** the industry's glyph in a roundel ringed with the seat's colour */
-function Glyph({ note, ring }: { note: Notice; ring: string }) {
+/** the notice's mark: the industry's glyph, or the kind's own, with the
+ *  seat's shape in its colour set at its foot */
+function Mark({ note, color }: { note: Notice; color: string | null }) {
   const industry = note.industry && note.industry in INDUSTRY_ICON ? (note.industry as IndustryType) : null;
   let inner: ReactNode;
   if (industry) {
     const url = `url(${INDUSTRY_ICON[industry]})`;
     inner = (
       <span
-        className="block h-[18px] w-[18px]"
-        style={{ WebkitMaskImage: url, maskImage: url, WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center', backgroundColor: '#F2EAD6' }}
+        className="block h-[17px] w-[17px]"
+        style={{ WebkitMaskImage: url, maskImage: url, WebkitMaskSize: 'contain', maskSize: 'contain', WebkitMaskRepeat: 'no-repeat', maskRepeat: 'no-repeat', WebkitMaskPosition: 'center', maskPosition: 'center', backgroundColor: note.kind === 'beer' ? '#E08A6A' : '#DDBE7E' }}
       />
     );
   } else {
-    const Icon = note.kind === 'turn' ? BellRing : note.kind === 'pin' ? MapPin : Hourglass;
-    inner = <Icon className="h-4 w-4 text-brass-400" />;
+    const Icon = note.kind === 'turn' ? BellRing : note.kind === 'pin' ? MapPin : note.kind === 'gazette' ? Newspaper : Hourglass;
+    inner = <Icon className="h-4 w-4 text-brass-300" strokeWidth={1.75} />;
   }
   return (
-    <span aria-hidden className="mt-px flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-coal-950/70" style={{ boxShadow: `0 0 0 1.5px ${ring}, inset 0 1px 0 rgba(242,234,214,.08)` }}>
+    <span aria-hidden className="relative mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
       {inner}
+      {color && (
+        <span className="absolute -bottom-1 -right-1.5 flex">
+          <ShapeChip color={color} size={9} vivid />
+        </span>
+      )}
     </span>
   );
 }
@@ -164,7 +174,10 @@ function Notices() {
   const seq = useRef(0);
   /* the last words given to the screen reader: said once, not on a loop */
   const [said, setSaid] = useState('');
-  const [held, setHeld] = useState(false);
+  /* the whole book open, filed pages and all */
+  const [leafing, setLeafing] = useState(false);
+  /* the paper unfolded under its notice */
+  const [unfolded, setUnfolded] = useState<string | null>(null);
   const [seen, setSeen] = useState<number | null>(null);
   const [floats, setFloats] = useState<{ id: number; n: number }[]>([]);
   const [incomeSeen, setIncomeSeen] = useState<number | null>(null);
@@ -172,6 +185,8 @@ function Notices() {
   const players = game?.players;
   const me = seat ?? (players ? players.findIndex((p) => !p.isBot) : -1);
   const myIncome = me >= 0 && players ? incomeLevel(players[me].income) : null;
+  const closeBook = useCallback(() => setLeafing(false), []);
+  const book = useLayer<HTMLElement>(leafing, closeBook);
 
   const post = useCallback((items: Incoming[]) => {
     if (!items.length) return;
@@ -183,13 +198,9 @@ function Notices() {
     const lead = items.reduce((a, b) => (b.rank > a.rank ? b : a));
     setSaid(`${cap(lead.title)}. ${cap(lead.detail)}`);
   }, []);
-  /* a notice put away under the pointer: the pile is no longer held by
-     it (the element goes without a pointerleave) */
-  const dismiss = useCallback((id: string) => {
-    setNotes((n) => n.filter((x) => x.id !== id));
-    setHeld(false);
-  }, []);
-  const dismissKind = useCallback((kind: Notice['kind']) => setNotes((n) => (n.some((x) => x.kind === kind) ? n.filter((x) => x.kind !== kind) : n)), []);
+  const file = useCallback((id: string) => setNotes((n) => fileWhere(n, (x) => x.id === id)), []);
+  const fileKind = useCallback((kind: Notice['kind']) => setNotes((n) => fileWhere(n, (x) => x.kind === kind)), []);
+  const fileAll = useCallback(() => setNotes((n) => fileWhere(n, () => true)), []);
 
   /* the ledger, read from where the reader last was */
   useEffect(() => {
@@ -207,13 +218,14 @@ function Notices() {
       const myName = me >= 0 ? players[me]?.name : undefined;
       for (const e of fresh) {
         const who = e.player!;
+        const when = { round: e.round, era: e.era };
         /* the reader has played: the word that it was their turn is spent */
-        if (who === me && MOVES.has(e.verb)) dismissKind('turn');
+        if (who === me && MOVES.has(e.verb)) fileKind('turn');
         if (e.key === 'flip') {
           /* the works in the title, the owner and the reason under it */
           const { head } = ledgerParts(e, t);
           const why = t(`game.flip.why.${String(e.vars?.why ?? 'empties')}`, { merchant: String(e.vars?.merchant ?? '') });
-          items.push({ id: `f${e.id}`, kind: 'flip', rank: who === me ? 2 : 1, owner: who, industry: String(e.vars?.industry ?? ''), title: t('game.flip.title', { what: head }), detail: t('game.flip.detail', { name: players[who].name, why, income: Number(e.vars?.income ?? 0) }) });
+          items.push({ id: `f${e.id}`, kind: 'flip', rank: who === me ? 2 : 1, owner: who, industry: String(e.vars?.industry ?? ''), title: t('game.flip.title', { what: head }), detail: t('game.flip.detail', { name: players[who].name, why, income: Number(e.vars?.income ?? 0) }), ...when });
         }
         /* one of the reader's works built over by another seat */
         if (e.key === 'build' && who !== me && myName && e.vars?.overName === myName) {
@@ -225,42 +237,49 @@ function Notices() {
             industry: String(e.vars?.industry ?? ''),
             title: t('game.notice.overbuilt', { name: players[who].name }),
             detail: t('game.notice.overbuiltDetail', { industry: t(`game.log.industry.${String(e.vars?.industry ?? 'coal')}`), level: Number(e.vars?.overLevel ?? 0), town: String(e.vars?.town ?? '') }),
+            ...when,
           });
         }
         /* a pinned town: whatever another player does there is reported */
         if (who !== me && e.region && pins[e.region] !== undefined && (e.key === 'build' || e.key === 'sell' || e.key === 'network' || e.key === 'flip')) {
           const { head, detail } = ledgerParts(e, t);
-          items.push({ id: `p${e.id}`, kind: 'pin', rank: 1, owner: who, industry: e.vars?.industry ? String(e.vars.industry) : undefined, title: t('game.notice.pinned', { town: TOWN_BY_ID[e.region]?.name ?? e.region }), detail: `${head}${detail ? ' · ' + detail : ''}` });
+          items.push({ id: `p${e.id}`, kind: 'pin', rank: 1, owner: who, industry: e.vars?.industry ? String(e.vars.industry) : undefined, title: t('game.notice.pinned', { town: TOWN_BY_ID[e.region]?.name ?? e.region }), detail: `${head}${detail ? ' · ' + detail : ''}`, ...when });
         }
         if (e.key === 'sell' && who !== me && typeof e.vars?.beerFrom === 'string' && e.vars.beerFrom) {
           for (const bit of String(e.vars.beerFrom).split(',')) {
             const [owner, town] = bit.split(':');
             if (Number(owner) !== me) continue;
-            items.push({ id: `b${e.id}:${town}`, kind: 'beer', rank: 2, owner: who, industry: 'brewery', title: t('game.notice.beerTaken', { name: players[who].name, town: TOWN_BY_ID[town]?.name ?? town }), detail: ledgerParts(e, t).head });
+            items.push({ id: `b${e.id}:${town}`, kind: 'beer', rank: 2, owner: who, industry: 'brewery', title: t('game.notice.beerTaken', { name: players[who].name, town: TOWN_BY_ID[town]?.name ?? town }), detail: ledgerParts(e, t).head, ...when });
           }
         }
       }
       post(items);
     }, 0);
     return () => window.clearTimeout(add);
-  }, [ledger, players, seen, me, t, pins, post, dismissKind]);
+  }, [ledger, players, seen, me, t, pins, post, fileKind]);
 
-  /* the era's last round: said once, as it begins or as the table opens on it */
+  /* the era's last round: said once, as it begins or as the table opens
+     on it, and filed once the era is over, when it has nothing left to say */
   const eraEnds = !!game && game.phase === 'action' && lastRound({ ...game, era: 'rail' });
   const gameEnds = !!game && eraEnds && lastRound(game);
   const era = game?.era;
+  const round = game?.round;
   const eraSaid = useRef<string | null>(null);
   useEffect(() => {
-    if (!eraEnds || !era || eraSaid.current === era) return;
+    if (!eraEnds || !era) {
+      const id = window.setTimeout(() => fileKind('lastRound'), 0);
+      return () => window.clearTimeout(id);
+    }
+    if (eraSaid.current === era) return;
     const id = window.setTimeout(() => {
       eraSaid.current = era;
-      post([{ id: `e${era}`, kind: 'lastRound', rank: 2, title: t(gameEnds ? 'game.notice.lastGame' : 'game.notice.lastCanal'), detail: t(gameEnds ? 'game.notice.lastGameDetail' : 'game.notice.lastCanalDetail'), life: ERA_LIFE_MS }]);
+      post([{ id: `e${era}`, kind: 'lastRound', rank: 2, title: t(gameEnds ? 'game.notice.lastGame' : 'game.notice.lastCanal'), detail: t(gameEnds ? 'game.notice.lastGameDetail' : 'game.notice.lastCanalDetail'), round, era }]);
     }, 0);
     return () => window.clearTimeout(id);
-  }, [eraEnds, gameEnds, era, post, t]);
+  }, [eraEnds, gameEnds, era, round, post, fileKind, t]);
 
   /* the reader's turn, after a long wait or with the page put away: said
-     with what the others played meanwhile, and gone at the reader's move */
+     with what the others played meanwhile, and filed at the reader's move */
   const humans = players ? players.filter((p) => !p.isBot).length : 0;
   const turnWatch = me >= 0 && !(code === null && humans > 1);
   const current = game?.current;
@@ -274,7 +293,7 @@ function Notices() {
     const mine = current === me && phase === 'action';
     if (!mine) {
       if (!away.current) away.current = { since: Date.now(), from: ledger.length ? ledger[ledger.length - 1].id + 1 : 0, hidden: document.hidden };
-      const id = window.setTimeout(() => dismissKind('turn'), 0);
+      const id = window.setTimeout(() => fileKind('turn'), 0);
       return () => window.clearTimeout(id);
     }
     const was = away.current;
@@ -283,26 +302,28 @@ function Notices() {
       away.current = null;
       if (!was.hidden && Date.now() - was.since < TURN_WAIT_MS) return;
       const moves = new Set(ledger.filter((e) => e.id >= was.from && e.player !== undefined && e.player !== me && MOVES.has(e.verb)).map((e) => e.at ?? e.id)).size;
-      if (moves) post([{ id: `t${was.from}`, kind: 'turn', rank: 2, owner: me, title: t('game.notice.turn'), detail: t('game.notice.turnDetail', { n: moves }), life: TURN_LIFE_MS }]);
+      if (moves) post([{ id: `t${was.from}`, kind: 'turn', rank: 2, owner: me, title: t('game.notice.turn'), detail: t('game.notice.turnDetail', { n: moves }), round, era }]);
     }, 0);
     return () => window.clearTimeout(id);
-  }, [current, phase, turnWatch, me, ledger, post, dismissKind, t]);
+  }, [current, phase, turnWatch, me, ledger, round, era, post, fileKind, t]);
 
-  /* the round's paper, handed over by the Gazette: hung once, and taken
-     down if the reader turns the paper off */
+  /* the round's paper, handed over by the Gazette: laid in once (the next
+     issue files the last), and filed if the reader turns the paper off */
   const paperSaid = useRef<string | null>(null);
   useEffect(() => {
     if (issue && paperSaid.current === issue.id) return;
     const id = window.setTimeout(() => {
       paperSaid.current = issue?.id ?? null;
       if (!issue) {
-        dismissKind('gazette');
+        fileKind('gazette');
         return;
       }
-      post([{ id: `g${issue.id}`, kind: 'gazette', rank: 0, title: t('game.gazette.title'), detail: t('game.gazette.aria', { round: issue.round }), gazette: issue, life: GAZETTE_LIFE_MS }]);
+      const say = issue.lines[0];
+      const lead = say ? t(`game.gazette.${say.key}`, { ...say.vars, goods: say.vars.goods ? t(`game.log.industry.${say.vars.goods}`) : '' }) : t('game.gazette.aria', { round: issue.round });
+      post([{ id: `g${issue.id}`, kind: 'gazette', rank: 0, title: t('game.gazette.title'), detail: lead, gazette: issue, round: issue.round, era: issue.era }]);
     }, 0);
     return () => window.clearTimeout(id);
-  }, [issue, post, dismissKind, t]);
+  }, [issue, post, fileKind, t]);
 
   /* the reader's income climbing: a figure floats up the board */
   useEffect(() => {
@@ -323,122 +344,160 @@ function Notices() {
     return () => window.clearTimeout(go);
   }, [myIncome, incomeSeen]);
 
-  /* the clocks: one per notice on show, stopped (and what is left of it
-     kept) while the pointer or the keyboard rests on the pile, while the
-     page is put away, or while the notice waits behind the others */
-  const clocks = useRef(new Map<string, { stamp: number; since: number; ms: number; timer: number }>());
-  const left = useRef(new Map<string, number>());
-  const paused = held || hidden;
-  useEffect(() => {
-    const running = clocks.current;
-    const now = Date.now();
-    const live = new Map(paused ? [] : shownOf(notes, place.room).shown.map((n) => [n.id, n] as const));
-    for (const [id, c] of running) {
-      const n = live.get(id);
-      if (n && n.stamp === c.stamp) continue;
-      window.clearTimeout(c.timer);
-      running.delete(id);
-      /* stopped, not refreshed: what was left is kept for later */
-      if (!n) left.current.set(`${id}:${c.stamp}`, Math.max(600, c.ms - (now - c.since)));
-    }
-    for (const n of live.values()) {
-      if (running.has(n.id)) continue;
-      const ms = left.current.get(`${n.id}:${n.stamp}`) ?? n.life;
-      running.set(n.id, { stamp: n.stamp, since: now, ms, timer: window.setTimeout(() => dismiss(n.id), ms) });
-    }
-    /* what is left of notices gone is forgotten */
-    for (const key of left.current.keys()) if (!notes.some((n) => key.startsWith(`${n.id}:`))) left.current.delete(key);
-  }, [notes, paused, place.room, dismiss]);
-  useEffect(() => {
-    const running = clocks.current;
-    return () => {
-      for (const c of running.values()) window.clearTimeout(c.timer);
-      running.clear();
-    };
-  }, []);
-
   if (!game) return null;
+  const open = ordered(notes);
   const { shown, waiting } = shownOf(notes, place.room);
-  const flick = (id: string) => (_: unknown, info: PanInfo) => {
-    if (info.offset.x > FLICK_PX || info.velocity.x > FLICK_SPEED) dismiss(id);
-  };
-  /* the flick: the notice follows the hand, or with motion reduced, only
-     the gesture is read and the notice fades where it stands */
-  const gesture = (id: string) =>
-    still
-      ? { onPanEnd: flick(id) }
-      : { drag: 'x' as const, dragConstraints: { left: 0, right: 0 }, dragElastic: { left: 0.04, right: 0.7 }, dragSnapToOrigin: true, onDragEnd: flick(id) };
-  const colour = (g: GameState, seatAt?: number) => (seatAt === undefined ? '#C9A45C' : (PLAYER_COLORS[g.players[seatAt]?.color]?.hex ?? '#C9A45C'));
-  const card = (n: Notice) => {
-    if (n.kind === 'gazette' && n.gazette) return <GazettePaper issue={n.gazette} onClose={() => dismiss(n.id)} />;
-    const ring = colour(game, n.owner);
-    const accent = n.kind === 'beer' ? '#C05B3C' : n.kind === 'lastRound' || n.kind === 'turn' ? '#DDBE7E' : ring;
+  const filed = leafing ? filedOf(notes) : [];
+  const colour = (g: GameState, at?: number): string | null => (at === undefined ? null : (g.players[at]?.color ?? null));
+  const eraName = (e: Era) => t(`game.topbar.${e === 'canal' ? 'eraCanal' : 'eraRail'}`);
+
+  /* one ruled entry of the book: open (with its cross) or filed (dimmed,
+     with the round it was said in) */
+  const entry = (n: Notice, isFiled: boolean) => {
+    const paper = n.kind === 'gazette' && n.gazette ? n.gazette : null;
+    const unfold = paper && unfolded === n.id;
     return (
-      <div className={cn('plaque relative flex items-start gap-3 overflow-hidden rounded-lg py-2.5 pl-3.5 pr-8', n.rank === 2 && 'ring-1 ring-inset ring-brass-400/40')}>
-        <span aria-hidden className="absolute inset-y-0 left-0 w-[3px]" style={{ background: accent }} />
-        <Glyph note={n} ring={ring} />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className={cn('font-fell text-[14.5px] leading-snug tracking-wide [text-wrap:balance]', n.kind === 'beer' ? 'text-rust-400' : 'text-cream-100')}>
-            {cap(n.title)}
-            {n.count > 1 && <span className="ml-1.5 inline-block rounded-sm bg-cream-100/10 px-1 align-[1px] font-mono text-[10.5px] leading-[15px] text-cream-100/70">×{n.count}</span>}
+      <motion.li
+        key={n.id}
+        layout={still ? false : 'position'}
+        initial={still ? false : { opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={still ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, transition: { duration: 0.16, ease: EASE } }}
+        transition={{ duration: 0.22, ease: EASE }}
+        className={cn('relative border-t border-brass-700/30 first:border-t-0', isFiled && 'opacity-60')}
+      >
+        {/* what touches the reader carries a brass tick down its edge */}
+        {n.rank === 2 && !isFiled && <span aria-hidden className="absolute inset-y-2 left-0 w-[2px] rounded-full" style={{ background: n.kind === 'beer' ? '#C05B3C' : '#DDBE7E' }} />}
+        <div className="flex items-start gap-2.5 py-2 pl-3 pr-8">
+          <Mark note={n} color={colour(game, n.owner)} />
+          <span className="flex min-w-0 flex-1 flex-col gap-px">
+            <span className={cn('font-fell text-[13.5px] leading-snug tracking-wide [text-wrap:balance]', n.kind === 'beer' ? 'text-rust-400' : 'text-cream-100')}>
+              {cap(n.title)}
+              {n.count > 1 && <span className="ml-1.5 font-mono text-[10.5px] text-brass-400/80">×{n.count}</span>}
+            </span>
+            <span className="font-sans text-[11.5px] leading-snug text-cream-100/60 [text-wrap:pretty]">{cap(n.detail)}</span>
+            {isFiled && n.round !== undefined && n.era && <span className="mt-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] text-cream-100/40">{t('game.gazette.issue', { round: n.round, era: eraName(n.era) })}</span>}
+            {paper && (
+              <button
+                type="button"
+                onClick={() => setUnfolded(unfold ? null : n.id)}
+                aria-expanded={!!unfold}
+                className="mt-1 inline-flex items-center gap-1 self-start rounded-sm font-sans text-[10.5px] font-semibold uppercase tracking-[0.16em] text-brass-400 hover:text-brass-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-brass-400"
+              >
+                {t(unfold ? 'game.notice.foldPaper' : 'game.notice.readPaper')}
+                <ChevronDown aria-hidden className={cn('h-3 w-3 transition-transform', unfold && 'rotate-180')} />
+              </button>
+            )}
           </span>
-          <span className="font-sans text-[11.5px] leading-snug text-cream-100/65 [text-wrap:pretty]">{cap(n.detail)}</span>
-        </span>
-        <button type="button" onClick={() => dismiss(n.id)} aria-label={t('game.notice.dismiss')} className="absolute right-1.5 top-1.5 rounded-full p-1 text-cream-100/45 transition-colors hover:text-brass-400 focus-visible:text-brass-400">
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
+        </div>
+        {unfold && paper && (
+          <div className="px-3 pb-3">
+            <GazettePaper issue={paper} />
+          </div>
+        )}
+        {!isFiled && (
+          <button
+            type="button"
+            onClick={() => file(n.id)}
+            aria-label={t('game.notice.file')}
+            title={t('game.notice.file')}
+            className="absolute right-1 top-1.5 flex h-7 w-7 items-center justify-center rounded-full text-cream-100/35 transition-colors hover:bg-cream-100/5 hover:text-brass-300 focus-visible:text-brass-300"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </motion.li>
     );
   };
 
+  const hasPages = notes.length > 0;
+  const folded = !leafing && open.length === 0;
+  const list = leafing ? open : shown;
+
   return (
     <>
-      {/* one pile, one place: it glides when a sheet takes the edge */}
-      <motion.section
-        aria-label={t('game.notice.region')}
-        className="pointer-events-none fixed z-[82] flex flex-col items-stretch gap-2"
-        initial={false}
-        animate={{ top: place.top, right: place.right }}
-        transition={still ? { duration: 0 } : { duration: 0.24, ease: EASE }}
-        style={{ width: place.width }}
-      >
-        <AnimatePresence mode="popLayout" initial={false}>
-          {shown.map((n) => (
-            <motion.div
-              key={n.id}
-              layout
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 28, transition: { duration: 0.18, ease: EASE } }}
-              transition={{ duration: 0.22, ease: EASE, layout: { duration: 0.22, ease: EASE } }}
-              {...gesture(n.id)}
-              onPointerEnter={() => setHeld(true)}
-              onPointerLeave={() => setHeld(false)}
-              onFocus={() => setHeld(true)}
-              onBlur={() => setHeld(false)}
-              className="pointer-events-auto touch-pan-y"
+      {hasPages && (
+        <motion.section
+          ref={book}
+          tabIndex={-1}
+          aria-label={t('game.notice.region')}
+          className="pointer-events-none fixed z-[82] flex flex-col items-end outline-none"
+          initial={false}
+          animate={{ top: place.top, right: place.right }}
+          transition={still ? { duration: 0 } : { duration: 0.24, ease: EASE }}
+          style={{ width: place.width }}
+        >
+          {folded ? (
+            /* nothing open: the book is a stud of brass, the pages kept inside */
+            <button
+              type="button"
+              onClick={() => setLeafing(true)}
+              aria-label={t('game.notice.book')}
+              aria-expanded={false}
+              title={t('game.notice.book')}
+              className="plaque pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-brass-400/80 transition-colors hover:text-brass-300"
             >
-              {card(n)}
-            </motion.div>
-          ))}
-          {waiting > 0 && (
-            <motion.div
-              key="more"
-              layout
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.15 } }}
-              transition={{ duration: 0.2, ease: EASE, layout: { duration: 0.22, ease: EASE } }}
-              className="self-end rounded-full border border-brass-700/60 bg-coal-950/85 px-2.5 py-0.5 font-mono text-[11px] text-brass-400 shadow-e3 backdrop-blur-md"
-              role="note"
-              aria-label={t('game.notice.moreAria', { n: waiting })}
-            >
-              {t('game.notice.more', { n: waiting })}
-            </motion.div>
+              <BookOpen className="h-4 w-4" strokeWidth={1.75} />
+            </button>
+          ) : (
+            <div className="plaque pointer-events-auto flex w-full flex-col overflow-hidden rounded-lg" style={{ maxHeight: leafing ? place.tall : undefined }}>
+              {/* the head: how many are open, file them all, open the book */}
+              <div className="flex h-[34px] shrink-0 items-center gap-2 border-b border-brass-700/45 pl-3 pr-1.5">
+                <BellRing aria-hidden className="h-3.5 w-3.5 text-brass-400" strokeWidth={1.75} />
+                <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.24em] text-brass-400">{t(leafing ? 'game.notice.book' : 'game.notice.heading')}</span>
+                {open.length > 0 && (
+                  <span className="font-mono text-[11px] tabular-nums text-cream-100/70" aria-label={t('game.notice.openAria', { n: open.length })}>
+                    {open.length}
+                  </span>
+                )}
+                <span className="flex-1" />
+                {open.length > 1 && (
+                  <button type="button" onClick={fileAll} className="rounded-sm px-1.5 py-1 font-sans text-[10.5px] font-medium text-cream-100/55 transition-colors hover:text-brass-300 focus-visible:text-brass-300">
+                    {t('game.notice.fileAll')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setLeafing((v) => !v)}
+                  aria-label={t('game.notice.book')}
+                  aria-expanded={leafing}
+                  title={t('game.notice.book')}
+                  className={cn('flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-cream-100/5 hover:text-brass-300', leafing ? 'text-brass-300' : 'text-cream-100/50')}
+                >
+                  <BookOpen className="h-3.5 w-3.5" strokeWidth={1.75} />
+                </button>
+              </div>
+              <div className={cn('min-h-0', leafing && 'overflow-y-auto overscroll-contain')}>
+                <ul className="flex flex-col">
+                  <AnimatePresence initial={false}>{list.map((n) => entry(n, false))}</AnimatePresence>
+                </ul>
+                {!leafing && waiting > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setLeafing(true)}
+                    aria-label={t('game.notice.moreAria', { n: waiting })}
+                    className="flex w-full items-center justify-center border-t border-brass-700/30 py-1.5 font-mono text-[11px] text-brass-400 transition-colors hover:bg-cream-100/5 hover:text-brass-300"
+                  >
+                    {t('game.notice.more', { n: waiting })}
+                  </button>
+                )}
+                {leafing && (
+                  <>
+                    {open.length === 0 && <p className="px-3 py-2.5 font-fell text-[13px] italic text-cream-100/55">{t('game.notice.empty')}</p>}
+                    {filed.length > 0 && (
+                      <>
+                        <p className="border-t border-brass-700/45 px-3 pb-1 pt-2 font-sans text-[9.5px] font-semibold uppercase tracking-[0.24em] text-cream-100/40">{t('game.notice.filed')}</p>
+                        <ul className="flex flex-col">{filed.map((n) => entry(n, true))}</ul>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           )}
-        </AnimatePresence>
-      </motion.section>
-      {/* the screen reader hears each arrival once, never the pile again */}
+        </motion.section>
+      )}
+      {/* the screen reader hears each arrival once, never the book again */}
       <div className="sr-only" aria-live="polite" aria-atomic="true">
         {said}
       </div>

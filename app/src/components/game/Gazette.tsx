@@ -1,5 +1,4 @@
 import { memo, useEffect, useState } from 'react';
-import { X } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { headlinesFor } from '@/game/gazette';
 import type { Headline } from '@/game/gazette';
@@ -12,8 +11,9 @@ import type { GazetteIssue } from './noticeQueue';
 /* The Gazette — three headlines on the round just played, set from the
    ledger in the style of a Midlands paper of 1850. Read by everyone at
    the table from the same ledger: nothing goes over the wire. The paper
-   is set here and handed to the table's notices, which hang it in their
-   one pile at its rank: after whatever touches the reader. */
+   is set here and handed to the table's notices, which lay it in their
+   book at its rank, after whatever touches the reader: the headline in
+   its entry, the whole sheet unfolded under it when asked for. */
 
 function Gazette() {
   const game = useGame((s) => s.game);
@@ -47,15 +47,12 @@ function Gazette() {
   return null;
 }
 
-/** the paper itself, as it hangs in the notices' pile */
-export function GazettePaper({ issue, onClose }: { issue: GazetteIssue; onClose: () => void }) {
+/** the paper itself, as it unfolds in the notices' book */
+export function GazettePaper({ issue }: { issue: GazetteIssue }) {
   const t = useT();
   const say = (h: Headline) => t(`game.gazette.${h.key}`, { ...h.vars, goods: h.vars.goods ? t(`game.log.industry.${h.vars.goods}`) : '' });
   return (
-    <div className="paper relative rounded-[3px] px-4 py-3 shadow-e3" style={{ transform: 'rotate(-0.6deg)' }} aria-label={t('game.gazette.aria', { round: issue.round })}>
-      <button type="button" onClick={onClose} aria-label={t('game.notice.dismiss')} className="absolute right-1.5 top-1.5 rounded-sm p-0.5 text-ink-900/45 hover:bg-ink-900/10 hover:text-ink-900">
-        <X className="h-3.5 w-3.5" />
-      </button>
+    <div className="paper relative rounded-[3px] px-3.5 py-2.5 shadow-e2" aria-label={t('game.gazette.aria', { round: issue.round })}>
       <p className="border-b border-ink-900/40 pb-1 text-center font-display text-[15px] font-black uppercase tracking-[0.12em] text-ink-900">{t('game.gazette.title')}</p>
       <p className="mt-0.5 text-center font-fell text-[10px] uppercase tracking-[0.18em] text-ink-900/60">{t('game.gazette.issue', { round: issue.round, era: t(`game.topbar.${issue.era === 'canal' ? 'eraCanal' : 'eraRail'}`) })}</p>
       <ul className="mt-2 flex flex-col gap-1.5">
