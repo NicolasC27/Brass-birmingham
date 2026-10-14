@@ -209,6 +209,8 @@ const fr: typeof engame = {
       ambience: 'Ambiance',
       ambienceHint: 'Le canal, puis le rail, très bas sous la table. Coupée si le système demande moins d’animations.',
       volAmbience: 'Niveau de l’ambiance',
+      voices: 'Voix',
+      voicesHint: 'De temps à autre, un habitant a son mot à dire, content ou ronchon, dans une bulle au-dessus de sa ville. En anglais, au niveau de l’ambiance.',
       music: 'Musique',
       musicHint: 'Quelques airs propres à chaque ère, sous l’ambiance, avec des silences entre eux. Elle se tait pendant le décompte d’une ère.',
       volMusic: 'Niveau de la musique',

@@ -5,15 +5,19 @@
    never before the reader has touched the page: until then every sound is
    simply not made (browsers would keep the context suspended anyway).
 
-   Four buses run into one master: the ambience under the table (and, in
-   the rail era, a train somewhere off now and then), the gestures of play,
-   the moments — the bell of a turn, the whistle at the close of an era,
-   the band at the end — and the era's tunes. Each has its own level, and
-   the board's sound switch closes the master. */
+   Four buses run into one master: the ambience under the table (with, now
+   and then, something of the era somewhere off — a horse on the towpath, a
+   train — and a word from the townsfolk in a town of the board), the
+   gestures of play, the moments — the bell of a turn, the whistle at the
+   close of an era, the band at the end — and the era's tunes. Each has its
+   own level, and the board's sound switch closes the master. */
 
+import { WORLD_W } from '@/components/game/boardView';
 import type { Era, IndustryType } from '@/game/types';
-import { LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, lifeAt, nextOf, spanOf, tuneLength, tuneOf } from './playlist';
+import { LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, VOICE_REACT, bubbleSpan, lifeAt, nextOf, spanOf, tuneLength, tuneOf, voiceAt } from './playlist';
 import type { Chance, Life } from './playlist';
+import { CAST, panOf } from './voices';
+import type { Spoken } from './voices';
 
 let ctx: AudioContext | null = null;
 
@@ -50,10 +54,12 @@ export interface Mix {
   ambience: boolean;
   /** the era's tunes play at all */
   music: boolean;
+  /** the townsfolk are heard now and then (on the ambience's bus) */
+  voices: boolean;
   /** each bus's level, 0 to 1 */
   levels: Record<Bus, number>;
 }
-let mix: Mix = { on: true, ambience: false, music: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } };
+let mix: Mix = { on: true, ambience: false, music: false, voices: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } };
 /* a bus at full is still well under the page: the recordings are cut to
    peak at -3 dBFS, the ambiences levelled to -16 LUFS, and a board game is
    played for two hours. The tunes (-20 LUFS) sit under the ambience at the
@@ -80,7 +86,7 @@ const busOf = (ac: AudioContext, bus: Bus): GainNode => {
 
 /** the levels and switches as the board options have them */
 export function setMix(next: Mix): void {
-  mix = { on: next.on, ambience: next.ambience, music: next.music, levels: { ...next.levels } };
+  mix = { on: next.on, ambience: next.ambience, music: next.music, voices: next.voices, levels: { ...next.levels } };
   if (desk) {
     const now = desk.ac.currentTime;
     const glide = (p: AudioParam, v: number) => {
@@ -93,6 +99,7 @@ export function setMix(next: Mix): void {
   }
   applyAmbience();
   applyMusic();
+  applyVoices();
 }
 
 /** deterministic 31-hash, for a house's own note */
@@ -232,6 +239,12 @@ export function closeAudio(): void {
   life = null;
   if (lifeTimer !== null) clearTimeout(lifeTimer);
   lifeTimer = null;
+  lifeAsking = null;
+  voice = null;
+  voiceAsking = null;
+  if (voiceTimer !== null) clearTimeout(voiceTimer);
+  voiceTimer = null;
+  say(null);
   tune = null;
   asking = null;
   if (tuneTimer !== null) clearTimeout(tuneTimer);
@@ -607,7 +620,8 @@ export function cue(name: Cue, opts: { quiet?: boolean; after?: number } = {}): 
     }
     /* a gesture heard long after the hand moved is worse than none */
     if (BUS_OF[name] === 'gestures' && Date.now() - asked > STALE_MS) return;
-    /* a moment is heard alone: a train in the distance makes way for it */
+    /* a moment is heard alone: a train in the distance, a voice in a town,
+       make way for it */
     if (BUS_OF[name] === 'moments') hushLife(buf.duration + (opts.after ?? 0));
     const src = ac.createBufferSource();
     src.buffer = buf;
@@ -706,13 +720,16 @@ function applyAmbience(): void {
   });
 }
 
-/* ---------------- the rail's life: a train somewhere off, now and then ---------------- */
+/* ---------------- each era's life: something somewhere off, now and then ---------------- */
 
-/** the chance the tunes and the events are drawn with */
+/** the chance the tunes, the events and the voices are drawn with */
 const chance: Chance = () => Math.random();
-/** an event sits a little over the rail's bed, which is kept low */
-const LIFE_LEVEL = 1.4;
-let life: { name: Life; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+/** an event sits a little over the rail's bed, which is kept low (-26
+ *  LUFS); under the canal's birds (-22 LUFS), whose band it leaves free */
+const LIFE_LEVEL: Record<'canal' | 'rail', number> = { canal: 2, rail: 1.4 };
+/** the events that go by, from one side to the other */
+const CROSSING: readonly Life[] = ['life-passing', 'life-geese'];
+let life: { era: 'canal' | 'rail'; name: Life; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 /** the wait for the next event */
 let lifeTimer: ReturnType<typeof setTimeout> | null = null;
 /** an event being fetched to be played */
@@ -720,14 +737,19 @@ let lifeAsking: object | null = null;
 let lastLife: Life | null = null;
 /** no event before this time (Date.now()): a moment is being heard */
 let hushUntil = 0;
-/** the silence kept after a moment before a train may be heard again */
+/** the silence kept after a moment before an event may be heard again */
 const HUSH_AFTER_S = 3;
 
-const lifeWanted = (): boolean => mix.on && mix.ambience && wantEra === 'rail';
+const lifeWanted = (): boolean => mix.on && mix.ambience && wantEra !== null;
 
-/** the rail's events run while its ambience does: one at a time, each
- *  after a gap drawn afresh */
+/** an era's events run while its ambience does: one at a time, each after
+ *  a gap drawn afresh */
 function applyLife(): void {
+  /* another era's event goes with its ambience */
+  if (life && life.era !== wantEra) {
+    fadeOut(life, 1);
+    life = null;
+  }
   if (!lifeWanted()) {
     if (lifeTimer !== null) clearTimeout(lifeTimer);
     lifeTimer = null;
@@ -743,6 +765,7 @@ function applyLife(): void {
 }
 
 function waitLife(ms: number): void {
+  if (import.meta.env.DEV) lifeDue = Date.now() + ms;
   lifeTimer = setTimeout(() => {
     lifeTimer = null;
     playLife();
@@ -750,15 +773,16 @@ function waitLife(ms: number): void {
 }
 
 function playLife(): void {
-  if (!lifeWanted() || life) return;
-  /* a moment is being heard: the train waits for it */
+  const era = wantEra;
+  if (!lifeWanted() || life || !era) return;
+  /* a moment is being heard: the event waits for it */
   const now = Date.now();
   const at = lifeAt(now, hushUntil);
   if (at > now) {
     waitLife(at - now);
     return;
   }
-  const name = nextOf(LIFE, lastLife, chance);
+  const name = nextOf<Life>(LIFE[era], lastLife, chance);
   const token = {};
   lifeAsking = token;
   void context().then(async (ac) => {
@@ -766,7 +790,7 @@ function playLife(): void {
     if (lifeAsking !== token) return;
     lifeAsking = null;
     /* before the first gesture nothing waits: the first touch asks again */
-    if (!ac || !lifeWanted()) return;
+    if (!ac || !lifeWanted() || wantEra !== era) return;
     /* the file could not be had, or a moment began meanwhile: later */
     if (!buf || Date.now() < hushUntil) {
       applyLife();
@@ -776,14 +800,15 @@ function playLife(): void {
     src.buffer = buf;
     const gain = ac.createGain();
     const t0 = ac.currentTime;
-    gain.gain.setValueAtTime(LIFE_LEVEL, t0);
+    gain.gain.setValueAtTime(LIFE_LEVEL[era], t0);
     src.connect(gain);
-    /* from one side of the valley or the other; a train going by crosses it */
+    /* from one side of the valley or the other; a train or geese going by
+       cross it */
     if (typeof ac.createStereoPanner === 'function') {
       const pan = ac.createStereoPanner();
       const side = (chance() * 2 - 1) * 0.6;
       pan.pan.setValueAtTime(side, t0);
-      if (name === 'life-passing') pan.pan.linearRampToValueAtTime(-side, t0 + buf.duration);
+      if (CROSSING.includes(name)) pan.pan.linearRampToValueAtTime(-side, t0 + buf.duration);
       gain.connect(pan).connect(busOf(ac, 'ambience'));
     } else gain.connect(busOf(ac, 'ambience'));
     src.onended = () => {
@@ -792,14 +817,14 @@ function playLife(): void {
       applyLife();
     };
     src.start(t0);
-    life = { name, src, gain };
+    life = { era, name, src, gain };
     lastLife = name;
     if (import.meta.env.DEV && heard.push(name) > 40) heard.shift();
   });
 }
 
-/** a moment of the game is heard for `seconds`: no train over it, and a
- *  train already going by fades away */
+/** a moment of the game is heard for `seconds`: no event and no voice
+ *  over it, and one already sounding fades away */
 function hushLife(seconds: number): void {
   hushUntil = Math.max(hushUntil, Date.now() + (seconds + HUSH_AFTER_S) * 1000);
   if (life) {
@@ -807,6 +832,170 @@ function hushLife(seconds: number): void {
     life = null;
     applyLife();
   }
+  if (voice) {
+    fadeOut(voice, 0.3);
+    voice = null;
+    voiceLastEnd = Date.now();
+    say(null);
+    applyVoices();
+  }
+}
+
+/* ---------------- the townsfolk: a word in a town, now and then ---------------- */
+
+/** where the table finds the next line: the game and what just stirred
+ *  in its towns are the table's (useTableSounds), the timing is ours */
+export interface VoiceSource {
+  /** the line to say now and its town, or null when no one should speak */
+  pick(chance: Chance, last: string | null): Spoken | null;
+}
+/** a line is heard over the ambience's bed and under the gestures:
+ *  levelled at -22 LUFS, about -31 LUFS at the levels the settings open on
+ *  (a piece laid comes to -27, the canal's birds to -38) */
+const VOICE_LEVEL = 3.2;
+let voiceSource: VoiceSource | null = null;
+let voice: { id: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+let voiceTimer: ReturnType<typeof setTimeout> | null = null;
+let voiceAsking: object | null = null;
+/** when the next voice is planned (Date.now()), when the last one ended,
+ *  and the line it said */
+let voicePlanned = 0;
+let voiceLastEnd = 0;
+let lastVoice: string | null = null;
+
+const voicesWanted = (): boolean => mix.on && mix.voices && voiceSource !== null;
+
+/** the townsfolk speak while the table says so (an era being played):
+ *  one at a time, sparse; null silences them */
+export function tableVoices(source: VoiceSource | null): void {
+  voiceSource = source;
+  applyVoices();
+}
+
+function applyVoices(): void {
+  if (!voicesWanted()) {
+    if (voiceTimer !== null) clearTimeout(voiceTimer);
+    voiceTimer = null;
+    voiceAsking = null;
+    if (voice) {
+      fadeOut(voice, 0.5);
+      voice = null;
+      say(null);
+    }
+    return;
+  }
+  if (voice || voiceTimer !== null || voiceAsking) return;
+  voicePlanned = Date.now() + spanOf(VOICE_GAP, chance) * 1000;
+  waitVoice(voicePlanned);
+}
+
+function waitVoice(at: number): void {
+  if (voiceTimer !== null) clearTimeout(voiceTimer);
+  voiceTimer = setTimeout(() => {
+    voiceTimer = null;
+    playVoice();
+  }, Math.max(0, at - Date.now()));
+}
+
+/** something stirred in a town: its word comes a few seconds after,
+ *  unless a voice was heard too lately (see voiceAt) */
+export function voiceStir(): void {
+  if (!voicesWanted() || voice || voiceAsking || voiceTimer === null) return;
+  const now = Date.now();
+  voicePlanned = voiceAt(voicePlanned, voiceLastEnd, now, spanOf(VOICE_REACT, chance));
+  waitVoice(voicePlanned);
+}
+
+function playVoice(): void {
+  if (!voicesWanted() || voice || !voiceSource) return;
+  /* a moment is being heard: the voice waits for it */
+  const now = Date.now();
+  const at = lifeAt(now, hushUntil);
+  if (at > now) {
+    waitVoice(at);
+    return;
+  }
+  const spoken = voiceSource.pick(chance, lastVoice);
+  /* no one has a word to say now: later */
+  if (!spoken) {
+    applyVoices();
+    return;
+  }
+  const token = {};
+  voiceAsking = token;
+  void context().then(async (ac) => {
+    const buf = ac ? await sample(spoken.line.id) : null;
+    if (voiceAsking !== token) return;
+    voiceAsking = null;
+    /* before the first gesture nothing waits: the first touch asks again */
+    if (!ac || !voicesWanted()) return;
+    if (!buf || Date.now() < hushUntil) {
+      applyVoices();
+      return;
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const gain = ac.createGain();
+    const t0 = ac.currentTime;
+    gain.gain.setValueAtTime(VOICE_LEVEL, t0);
+    src.connect(gain);
+    /* from the side of the board the town stands on */
+    if (typeof ac.createStereoPanner === 'function') {
+      const pan = ac.createStereoPanner();
+      pan.pan.setValueAtTime(panOf(spoken.town, WORLD_W), t0);
+      gain.connect(pan).connect(busOf(ac, 'ambience'));
+    } else gain.connect(busOf(ac, 'ambience'));
+    src.onended = () => {
+      if (voice?.src !== src) return;
+      voice = null;
+      voiceLastEnd = Date.now();
+      applyVoices();
+    };
+    src.start(t0);
+    voice = { id: spoken.line.id, src, gain };
+    lastVoice = spoken.line.id;
+    const who = CAST[spoken.line.who];
+    say({ id: spoken.line.id, text: spoken.line.text, name: who.name, trade: who.trade, town: spoken.town, until: Date.now() + bubbleSpan(buf.duration) * 1000 });
+    if (import.meta.env.DEV && heard.push(`${spoken.line.id} @ ${spoken.town}`) > 40) heard.shift();
+  });
+}
+
+/* ---------------- what is being said, for the bubble over the town ---------------- */
+
+/** the line being said, where, and until when its bubble stays up */
+export interface Said {
+  id: string;
+  text: string;
+  name: string;
+  trade: string;
+  town: string;
+  /** Date.now() at which the bubble goes */
+  until: number;
+}
+let said: Said | null = null;
+let saidTimer: ReturnType<typeof setTimeout> | null = null;
+const saidListeners = new Set<() => void>();
+
+function say(next: Said | null): void {
+  if (saidTimer !== null) clearTimeout(saidTimer);
+  saidTimer = null;
+  said = next;
+  if (next) {
+    const spoken = next;
+    saidTimer = setTimeout(() => {
+      if (said === spoken) say(null);
+    }, Math.max(0, next.until - Date.now()));
+  }
+  for (const fn of [...saidListeners]) fn();
+}
+
+/** what is being said now (null: nothing) */
+export const saidNow = (): Said | null => said;
+
+/** be told when a line is said and when its bubble goes */
+export function onSaid(fn: () => void): () => void {
+  saidListeners.add(fn);
+  return () => saidListeners.delete(fn);
 }
 
 /* ---------------- the era's tunes ---------------- */
@@ -929,6 +1118,7 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
     window.setTimeout(() => {
       applyAmbience();
       applyMusic();
+      applyVoices();
       if (wantEra) warmSounds();
     }, 0);
   };
@@ -936,13 +1126,27 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
   window.addEventListener('keydown', first, true);
 }
 
-/* dev only: what is sounding right now (window.__sfx.playing(), .ambience(), .life(), .music(), .heard()) */
+/* dev only: what is sounding right now and what is coming (window.__sfx
+   .playing(), .ambience(), .life(), .music(), .voice(), .said(), .next(),
+   .heard()), and a voice asked for at once (.speak()) */
 const heard: string[] = [];
+/** the seconds until a wait ends, rounded, or null when nothing waits */
+const dueIn = (at: number | null): number | null => (at === null ? null : Math.round((at - Date.now()) / 100) / 10);
+let lifeDue: number | null = null;
 if (import.meta.env.DEV && typeof window !== 'undefined')
-  (window as unknown as { __sfx?: { playing: () => string | null; ambience: () => string | null; life: () => string | null; music: () => string | null; heard: () => string[] } }).__sfx = {
+  (window as unknown as { __sfx?: Record<string, () => unknown> }).__sfx = {
     playing: () => playing?.id ?? null,
     ambience: () => table?.era ?? null,
     life: () => life?.name ?? null,
     music: () => tune?.name ?? null,
+    voice: () => voice?.id ?? null,
+    said: () => said,
+    /* what waits: the next event and the next voice, in seconds */
+    next: () => ({ life: life ? life.name : lifeTimer !== null ? dueIn(lifeDue) : null, voice: voice ? voice.id : voiceTimer !== null ? dueIn(voicePlanned) : null, hushedFor: hushUntil > Date.now() ? dueIn(hushUntil) : 0 }),
+    speak: () => {
+      voicePlanned = Date.now();
+      waitVoice(voicePlanned);
+      return voicesWanted();
+    },
     heard: () => heard.slice(),
   };

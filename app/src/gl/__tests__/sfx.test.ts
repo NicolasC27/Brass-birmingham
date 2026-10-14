@@ -194,7 +194,7 @@ describe('the era’s tunes', () => {
 
   it('begin a few seconds into the era, play a tune through, pause, and never play it twice running', async () => {
     const { setMix, tableMusic } = await import('../sfx');
-    setMix({ on: true, ambience: false, music: true, levels });
+    setMix({ on: true, ambience: false, music: true, voices: false, levels });
     tableMusic('canal');
     await vi.advanceTimersByTimeAsync(3000);
     expect(tunes()).toHaveLength(0);
@@ -225,7 +225,7 @@ describe('the era’s tunes', () => {
 
   it('fade out slowly when the canal era closes, and the rail brings its own', async () => {
     const { setMix, tableMusic } = await import('../sfx');
-    setMix({ on: true, ambience: false, music: true, levels });
+    setMix({ on: true, ambience: false, music: true, voices: false, levels });
     tableMusic('canal');
     await vi.advanceTimersByTimeAsync(5000);
     expect(tunes()).toHaveLength(1);
@@ -246,21 +246,21 @@ describe('the era’s tunes', () => {
 
   it('are not played with their switch shut, and stop at once when the sound is cut', async () => {
     const { setMix, tableMusic } = await import('../sfx');
-    setMix({ on: true, ambience: false, music: false, levels });
+    setMix({ on: true, ambience: false, music: false, voices: false, levels });
     tableMusic('canal');
     await vi.advanceTimersByTimeAsync(20_000);
     expect(tunes()).toHaveLength(0);
     /* the switch opened in the canal era: a tune comes, shortly */
-    setMix({ on: true, ambience: false, music: true, levels });
+    setMix({ on: true, ambience: false, music: true, voices: false, levels });
     await vi.advanceTimersByTimeAsync(5000);
     expect(tunes()).toHaveLength(1);
     /* the board's sound switch shut: the tune goes, and quickly */
-    setMix({ on: false, ambience: false, music: true, levels });
+    setMix({ on: false, ambience: false, music: true, voices: false, levels });
     expect(tunes()[0].stopAt).toBeCloseTo(1.05);
     await vi.advanceTimersByTimeAsync(200_000);
     expect(sounding()).toHaveLength(0);
     /* opened again, still in the canal era: the playlist starts afresh */
-    setMix({ on: true, ambience: false, music: true, levels });
+    setMix({ on: true, ambience: false, music: true, voices: false, levels });
     await vi.advanceTimersByTimeAsync(5000);
     expect(tunes()).toHaveLength(2);
     expect(tunes().filter((s) => s.stopAt === null || s.stopAt > 100)).toHaveLength(1);
@@ -269,14 +269,14 @@ describe('the era’s tunes', () => {
   it('wait for the reader’s first gesture', async () => {
     vi.stubGlobal('navigator', { userActivation: { hasBeenActive: false } });
     const { setMix, tableMusic } = await import('../sfx');
-    setMix({ on: true, ambience: true, music: true, levels });
+    setMix({ on: true, ambience: true, music: true, voices: false, levels });
     tableMusic('canal');
     await vi.advanceTimersByTimeAsync(300_000);
     expect(sources).toHaveLength(0);
   });
 });
 
-describe('the rail’s life', () => {
+describe('each era’s life', () => {
   const levels = { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 };
   const events = () => sources.filter((s) => s.buffer?.url.includes('/life-'));
 
@@ -292,7 +292,7 @@ describe('the rail’s life', () => {
 
   it('a train somewhere off, now and then, one at a time, never the same twice running', async () => {
     const { setMix, tableAmbience } = await import('../sfx');
-    setMix({ on: true, ambience: true, music: false, levels });
+    setMix({ on: true, ambience: true, music: false, voices: false, levels });
     tableAmbience('rail');
     await vi.advanceTimersByTimeAsync(1000);
     expect(played()).toEqual(['amb-rail']);
@@ -311,7 +311,7 @@ describe('the rail’s life', () => {
 
   it('never over a moment of the game: a train waits for the bell, and one going by makes way', async () => {
     const { cue, setMix, tableAmbience, warmSounds } = await import('../sfx');
-    setMix({ on: true, ambience: true, music: false, levels });
+    setMix({ on: true, ambience: true, music: false, voices: false, levels });
     warmSounds();
     tableAmbience('rail');
     /* the bell rings a second before the train was due: it waits for it */
@@ -328,19 +328,123 @@ describe('the rail’s life', () => {
     expect(events()[0].stopAt).toBeCloseTo(0.35);
   });
 
-  it('is the rail’s only: the canal keeps its birds, and the events stop with the ambience', async () => {
+  it('is each era’s own: the canal hears its waterway, and the events stop with the ambience', async () => {
     const { setMix, tableAmbience } = await import('../sfx');
-    setMix({ on: true, ambience: true, music: false, levels });
+    setMix({ on: true, ambience: true, music: false, voices: false, levels });
     tableAmbience('canal');
-    await vi.advanceTimersByTimeAsync(400_000);
-    expect(events()).toHaveLength(0);
-    tableAmbience('rail');
     await vi.advanceTimersByTimeAsync(41_000);
-    expect(events()).toHaveLength(1);
-    /* the ambience switched off: the train goes, and no other comes */
-    setMix({ on: true, ambience: false, music: false, levels });
+    expect(events().map((s) => s.buffer?.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1'))).toEqual(['life-horse']);
+    /* the era turns: the canal's event goes with its ambience, the rail's come */
+    tableAmbience('rail');
     expect(events()[0].stopAt).toBeCloseTo(1.05);
+    await vi.advanceTimersByTimeAsync(41_000);
+    expect(events()).toHaveLength(2);
+    expect(events()[1].buffer?.url).toContain('/life-whistle');
+    /* the ambience switched off: the train goes, and no other comes */
+    setMix({ on: true, ambience: false, music: false, voices: false, levels });
+    expect(events()[1].stopAt).toBeCloseTo(1.05);
     await vi.advanceTimersByTimeAsync(400_000);
-    expect(events()).toHaveLength(1);
+    expect(events()).toHaveLength(2);
+  });
+});
+
+describe('the townsfolk', () => {
+  const levels = { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 };
+  const lines = () => sources.filter((s) => s.buffer?.url.includes('/bark-'));
+  const names = () => lines().map((s) => s.buffer?.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1'));
+  const spoken = (id: string, town = 'stoke') => ({
+    line: { id, who: 'kezia' as const, text: 'Kiln came out lovely, duck!', mood: 'glad' as const },
+    town,
+    stir: null,
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    /* the shortest gap: a minute */
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('speak now and then, one at a time, and the bubble says it while it is heard and a moment after', async () => {
+    const { onSaid, saidNow, setMix, tableVoices } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: false, voices: true, levels });
+    const asked: (string | null)[] = [];
+    tableVoices({ pick: (_c, last) => (asked.push(last), spoken(last === 'bark-kezia-kiln' ? 'bark-kezia-kettle' : 'bark-kezia-kiln')) });
+    let told = 0;
+    onSaid(() => told++);
+    await vi.advanceTimersByTimeAsync(59_000);
+    expect(lines()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(names()).toEqual(['bark-kezia-kiln']);
+    expect(saidNow()).toMatchObject({ text: 'Kiln came out lovely, duck!', name: 'Kezia Dunn', town: 'stoke' });
+    /* nothing more while it speaks */
+    await vi.advanceTimersByTimeAsync(300_000);
+    expect(lines()).toHaveLength(1);
+    /* heard out (the fake recording runs 2 s): the bubble goes 1.5 s after it */
+    lines()[0].onended?.();
+    expect(saidNow()).toBeNull();
+    expect(told).toBe(2);
+    /* another a minute on, never the line just said */
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(names()).toEqual(['bark-kezia-kiln', 'bark-kezia-kettle']);
+    expect(asked).toEqual([null, 'bark-kezia-kiln']);
+  });
+
+  it('answer a stir within seconds, but never sooner than a minute after the last voice', async () => {
+    const { setMix, tableVoices, voiceStir } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: false, voices: true, levels });
+    tableVoices({ pick: () => spoken('bark-kezia-kiln') });
+    /* nothing said yet: a stir is answered three seconds after (the shortest reaction) */
+    await vi.advanceTimersByTimeAsync(1000);
+    voiceStir();
+    await vi.advanceTimersByTimeAsync(2900);
+    expect(lines()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(lines()).toHaveLength(1);
+    /* heard out; a stir ten seconds later waits for the minute */
+    lines()[0].onended?.();
+    await vi.advanceTimersByTimeAsync(10_000);
+    voiceStir();
+    await vi.advanceTimersByTimeAsync(45_000);
+    expect(lines()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(6000);
+    expect(lines()).toHaveLength(2);
+  });
+
+  it('never over a moment of the game, and never with the switch shut', async () => {
+    const { cue, saidNow, setMix, tableVoices, warmSounds } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: false, voices: true, levels });
+    warmSounds();
+    tableVoices({ pick: () => spoken('bark-kezia-kiln') });
+    /* the bell a second before the voice was due: it waits for it */
+    await vi.advanceTimersByTimeAsync(59_000);
+    cue('turn');
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(lines()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(4500);
+    expect(lines()).toHaveLength(1);
+    /* a moment while it speaks: the voice and its bubble go */
+    cue('turn');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(lines()[0].stopAt).toBeCloseTo(0.35);
+    expect(saidNow()).toBeNull();
+    /* the switch shut: no one speaks again */
+    setMix({ on: true, ambience: false, music: false, voices: false, levels });
+    await vi.advanceTimersByTimeAsync(600_000);
+    expect(lines()).toHaveLength(1);
+  });
+
+  it('say nothing when no one has a word, and try again later', async () => {
+    const { setMix, tableVoices } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: false, voices: true, levels });
+    let n = 0;
+    tableVoices({ pick: () => (n++ === 0 ? null : spoken('bark-kezia-kiln')) });
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(lines()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(lines()).toHaveLength(1);
   });
 });

@@ -209,6 +209,8 @@ const game: typeof engame = {
       ambience: 'Ambiente',
       ambienceHint: 'El canal, luego el ferrocarril, muy bajo bajo la mesa. Apagado si el sistema pide menos movimiento.',
       volAmbience: 'Nivel del ambiente',
+      voices: 'Voces',
+      voicesHint: 'De vez en cuando, un vecino tiene algo que decir, contento o refunfuñando, en un bocadillo sobre su ciudad. En inglés, al nivel del ambiente.',
       music: 'Música',
       musicHint: 'Algunas tonadas propias de cada era, bajo el ambiente, con silencios entre ellas. Calla mientras se puntúa una era.',
       volMusic: 'Nivel de la música',

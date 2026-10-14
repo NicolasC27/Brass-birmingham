@@ -207,6 +207,8 @@ const game = {
       ambience: 'Ambience',
       ambienceHint: 'The canal, then the rail, very low under the table. Off when the system asks for less motion.',
       volAmbience: 'Ambience level',
+      voices: 'Voices',
+      voicesHint: 'Now and then a townsman or townswoman has a word to say, pleased or grumbling, shown in a bubble over the town. In English, at the ambience level.',
       music: 'Music',
       musicHint: 'A few airs of each era, under the ambience, with quiet spells between them. Silent while an era is scored.',
       volMusic: 'Music level',

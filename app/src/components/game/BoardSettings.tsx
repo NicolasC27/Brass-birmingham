@@ -554,7 +554,11 @@ function BoardSettings() {
                         <OptionRow label={t('game.settings.sounds.ambience')} hint={t('game.settings.sounds.ambienceHint')}>
                           <Switch on={opts.ambience} onClick={() => setBoardOption('ambience', !opts.ambience)} label={t('game.settings.sounds.ambience')} />
                         </OptionRow>
-                        {opts.ambience && (
+                        {/* the townsfolk are heard on the ambience's level */}
+                        <OptionRow label={t('game.settings.sounds.voices')} hint={t('game.settings.sounds.voicesHint')}>
+                          <Switch on={opts.voices} onClick={() => setBoardOption('voices', !opts.voices)} label={t('game.settings.sounds.voices')} />
+                        </OptionRow>
+                        {(opts.ambience || opts.voices) && (
                           <OptionRow label={t('game.settings.sounds.volAmbience')}>
                             <Level value={opts.volAmbience} onChange={(v) => setBoardOption('volAmbience', v)} label={t('game.settings.sounds.volAmbience')} />
                           </OptionRow>

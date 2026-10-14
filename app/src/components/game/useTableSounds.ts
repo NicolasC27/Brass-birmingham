@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '@/game/store';
 import type { Era, GameState, IndustryType, Verb } from '@/game/types';
-import { cue, noteStrike, setMix, tableAmbience, tableMusic, warmSounds } from '@/gl/sfx';
-import type { Cue } from '@/gl/sfx';
+import { cue, noteStrike, setMix, tableAmbience, tableMusic, tableVoices, voiceStir, warmSounds } from '@/gl/sfx';
+import type { Cue, VoiceSource } from '@/gl/sfx';
+import { freshStirs, pickVoice, stirsOf, voicesHere } from '@/gl/voices';
+import type { Stir } from '@/gl/voices';
 import { useBoardOptions } from './boardOptions';
 
 /* ------------------------------------------------------------------ */
@@ -106,6 +108,9 @@ export function tableCues(prev: TableShot, next: TableShot): Heard[] {
  *  when the canal era closes (the whistle is heard alone), and at the end */
 export const tuneWanted = (g: GameState | null): Era | null => (g && g.phase === 'action' ? g.era : null);
 
+/** the townsfolk speak while an era is played, on the English board */
+export const voicesWanted = (g: GameState | null): Era | null => (voicesHere(g) ? g!.era : null);
+
 /** the store and the settings, as the sounds read them */
 const shotOf = (s: ReturnType<typeof useGame.getState>, panel: boolean): TableShot => ({
   game: s.game,
@@ -124,11 +129,11 @@ const MOMENT_AFTER_MOVE_MS = 450;
  *  a cue for every change of the game worth hearing */
 export function useTableSounds(): void {
   const opts = useBoardOptions();
-  const { sound, ambience, music, volAmbience, volGestures, volMoments, volMusic, settingsOpen } = opts;
+  const { sound, ambience, music, voices, volAmbience, volGestures, volMoments, volMusic, settingsOpen } = opts;
 
   useEffect(() => {
-    setMix({ on: sound, ambience, music, levels: { ambience: volAmbience, gestures: volGestures, moments: volMoments, music: volMusic } });
-  }, [sound, ambience, music, volAmbience, volGestures, volMoments, volMusic]);
+    setMix({ on: sound, ambience, music, voices, levels: { ambience: volAmbience, gestures: volGestures, moments: volMoments, music: volMusic } });
+  }, [sound, ambience, music, voices, volAmbience, volGestures, volMoments, volMusic]);
 
   /* the era's ambience; gone at the end of the game and when the table is left */
   const era = useGame((s) => (s.game && s.game.phase !== 'game-over' ? s.game.era : null));
@@ -144,6 +149,27 @@ export function useTableSounds(): void {
   }, [tune]);
   useEffect(() => () => tableMusic(null), []);
 
+  /* the townsfolk: what stirred the towns lately, and the line said next,
+     picked from the game as it stands when its time comes */
+  const stirs = useRef<Stir[]>([]);
+  const talk = useGame((s) => voicesWanted(s.game));
+  useEffect(() => {
+    const source: VoiceSource = {
+      pick: (chance, last) => {
+        const now = Date.now();
+        stirs.current = freshStirs(stirs.current, now);
+        const spoken = pickVoice(useGame.getState().game, stirs.current, last, chance);
+        /* a stir answered is spent */
+        if (spoken?.stir) stirs.current = stirs.current.filter((s) => s !== spoken.stir);
+        return spoken;
+      },
+    };
+    tableVoices(talk ? source : null);
+    /* a new era speaks of its own doings */
+    stirs.current = [];
+  }, [talk]);
+  useEffect(() => () => tableVoices(null), []);
+
   const panelRef = useRef(settingsOpen);
   const lastRef = useRef<TableShot>(shotOf(useGame.getState(), settingsOpen));
 
@@ -153,6 +179,11 @@ export function useTableSounds(): void {
     const hear = (next: TableShot) => {
       const prev = lastRef.current;
       lastRef.current = next;
+      const stirred = stirsOf(prev.game, next.game, Date.now());
+      if (stirred.length) {
+        stirs.current = [...stirs.current, ...stirred];
+        voiceStir();
+      }
       const heard = tableCues(prev, next);
       const moved = heard.some((h) => 'strike' in h || h.cue === 'sell' || h.cue === 'loan' || h.cue === 'develop' || h.cue === 'scout');
       for (const h of heard) {

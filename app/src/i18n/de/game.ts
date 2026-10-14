@@ -209,6 +209,8 @@ const game: typeof engame = {
       ambience: 'Klangkulisse',
       ambienceHint: 'Der Kanal, dann die Eisenbahn, ganz leise unter dem Tisch. Aus, wenn das System weniger Bewegung wünscht.',
       volAmbience: 'Pegel der Kulisse',
+      voices: 'Stimmen',
+      voicesHint: 'Hin und wieder hat jemand aus der Stadt etwas zu sagen, zufrieden oder grummelnd, in einer Sprechblase über dem Ort. Auf Englisch, im Pegel der Kulisse.',
       music: 'Musik',
       musicHint: 'Einige Weisen jeder Epoche, unter der Klangkulisse, mit stillen Pausen dazwischen. Sie schweigt, während eine Epoche gewertet wird.',
       volMusic: 'Pegel der Musik',

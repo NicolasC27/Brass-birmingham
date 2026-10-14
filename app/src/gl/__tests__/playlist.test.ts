@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, lifeAt, nextOf, spanOf, tuneLength, tuneOf } from '../playlist';
-import type { Chance } from '../playlist';
+import { BUBBLE_AFTER_S, LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, bubbleSpan, lifeAt, nextOf, spanOf, tuneLength, tuneOf, voiceAt } from '../playlist';
+import type { Chance, Life } from '../playlist';
 
 /** a seeded chance (mulberry32), so a long run is the same every time */
 const seeded = (seed: number): Chance => {
@@ -16,9 +16,9 @@ const seeded = (seed: number): Chance => {
 const always = (v: number): Chance => () => v;
 
 describe('the playlists', () => {
-  it('give the canal three tunes and the rail two of its own', () => {
+  it('give the canal three tunes and the rail three of its own', () => {
     expect(TUNES.canal.map((t) => t.name)).toEqual(['music-canal', 'music-canal-ii', 'music-canal-iii']);
-    expect(TUNES.rail.map((t) => t.name)).toEqual(['music-rail-i', 'music-rail-ii']);
+    expect(TUNES.rail.map((t) => t.name)).toEqual(['music-rail-i', 'music-rail-ii', 'music-rail-iii']);
   });
 
   it('never play the same tune twice in a row, and play every one', () => {
@@ -74,17 +74,28 @@ describe('the playlists', () => {
   });
 });
 
-describe('the rail’s life', () => {
-  it('spaces its events 40 s to 120 s apart, never the same twice running', () => {
-    const chance = seeded(5);
-    let last: (typeof LIFE)[number] | null = null;
-    for (let i = 0; i < 300; i++) {
-      const gap = spanOf(LIFE_GAP, chance);
-      expect(gap).toBeGreaterThanOrEqual(40);
-      expect(gap).toBeLessThan(120);
-      const next: (typeof LIFE)[number] = nextOf(LIFE, last, chance);
-      expect(next).not.toBe(last);
-      last = next;
+describe('each era’s life', () => {
+  it('gives the canal its waterway and the rail its trains and works, none shared', () => {
+    expect(LIFE.canal).toEqual(['life-horse', 'life-lock', 'life-forge', 'life-bell', 'life-geese']);
+    expect(LIFE.rail).toEqual(['life-whistle', 'life-passing', 'life-couple', 'life-depart', 'life-hammer', 'life-steam']);
+    expect(LIFE.canal.filter((n) => (LIFE.rail as readonly string[]).includes(n))).toEqual([]);
+  });
+
+  it('spaces its events 40 s to 120 s apart, never the same twice running, and plays every one', () => {
+    for (const era of ['canal', 'rail'] as const) {
+      const chance = seeded(era === 'canal' ? 5 : 9);
+      let last: Life | null = null;
+      const heard = new Set<Life>();
+      for (let i = 0; i < 300; i++) {
+        const gap = spanOf(LIFE_GAP, chance);
+        expect(gap).toBeGreaterThanOrEqual(40);
+        expect(gap).toBeLessThan(120);
+        const next: Life = nextOf<Life>(LIFE[era], last, chance);
+        expect(next).not.toBe(last);
+        heard.add(next);
+        last = next;
+      }
+      expect(heard.size).toBe(LIFE[era].length);
     }
   });
 
@@ -92,5 +103,31 @@ describe('the rail’s life', () => {
     expect(lifeAt(1000, 0)).toBe(1000);
     expect(lifeAt(1000, 4000)).toBe(4000);
     expect(lifeAt(5000, 4000)).toBe(5000);
+  });
+});
+
+describe('the townsfolk’s pace', () => {
+  const S = 1000;
+  it('keeps to its plan when nothing stirs', () => {
+    expect(voiceAt(100 * S, 0, null, 5)).toBe(100 * S);
+  });
+
+  it('answers a stir within seconds once the last voice is a minute behind', () => {
+    /* the last voice ended at 0, the next planned at 150 s, a stir at 70 s */
+    expect(voiceAt(150 * S, 0, 70 * S, 5)).toBe(75 * S);
+  });
+
+  it('never speaks sooner than a minute after the last voice, stir or not', () => {
+    /* a stir 20 s after the last voice: it waits for the minute */
+    expect(voiceAt(150 * S, 0, 20 * S, 5)).toBe(VOICE_GAP[0] * S);
+  });
+
+  it('never later than planned', () => {
+    expect(voiceAt(62 * S, 0, 60 * S, 8)).toBe(62 * S);
+  });
+
+  it('keeps the bubble up a moment after the voice', () => {
+    expect(BUBBLE_AFTER_S).toBe(1.5);
+    expect(bubbleSpan(2.4)).toBeCloseTo(3.9);
   });
 });

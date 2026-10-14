@@ -18,6 +18,7 @@ import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/
 import { routeFor } from '@/components/game/routePaths';
 import Minimap from '@/components/game/Minimap';
 import TownInspector from '@/components/game/TownInspector';
+import VoiceBubble from '@/components/game/VoiceBubble';
 import Anchored from '@/components/game/Anchored';
 import VignetteLamp from '@/components/game/ambiance/VignetteLamp';
 import { Camera } from './camera';
@@ -2166,6 +2167,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           )}
         </div>
       )}
+
+      {/* a word from the townsfolk, over the town where it is said */}
+      {!preview && !reading && <VoiceBubble anchors={anchors} />}
 
       {/* town inspector popover */}
       <AnimatePresence>

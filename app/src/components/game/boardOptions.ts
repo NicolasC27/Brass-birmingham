@@ -146,6 +146,8 @@ export interface BoardOptions {
   ambience: boolean;
   /** the canal's tune, heard through the canal era only */
   music: boolean;
+  /** the townsfolk heard now and then in a town, a bubble saying what they said */
+  voices: boolean;
   /** the buses' levels, 0 to 1: ambience, gestures of play, moments, the tune */
   volAmbience: number;
   volGestures: number;
@@ -196,6 +198,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   volMoments: 'brassworks.sound.volMoments',
   music: 'brassworks.sound.music',
   volMusic: 'brassworks.sound.volMusic',
+  voices: 'brassworks.sound.voices',
   telegrams: 'brassworks.telegrams',
   focus: 'brassworks.focus',
   reviewLit: 'brassworks.reviewLit',
@@ -265,6 +268,7 @@ let state: BoardOptions = {
   music: read('music', true),
   /* low: the tune is heard under the ambience, not over the table */
   volMusic: level('volMusic', 0.5),
+  voices: read('voices', true),
   telegrams: read('telegrams', true),
   focus: read('focus', false),
   reviewLit: read('reviewLit', false),
