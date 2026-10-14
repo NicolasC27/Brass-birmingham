@@ -137,15 +137,16 @@ describe('what the table sounds like', () => {
   });
 });
 
-describe('the canal’s tune', () => {
-  it('is wanted while the canal era is played, and only then', () => {
-    expect(tuneWanted(game())).toBe(true);
-    /* the era's close: the whistle is heard alone */
-    expect(tuneWanted(game({ phase: 'scoring-canal' }))).toBe(false);
-    expect(tuneWanted(game({ era: 'rail' }))).toBe(false);
-    expect(tuneWanted(game({ era: 'canal', phase: 'game-over' }))).toBe(false);
-    expect(tuneWanted(game({ era: 'rail', phase: 'game-over' }))).toBe(false);
+describe('the era’s tunes', () => {
+  it('are wanted while an era is played, each era its own, and only then', () => {
+    expect(tuneWanted(game())).toBe('canal');
+    /* the canal's close: the whistle is heard alone */
+    expect(tuneWanted(game({ phase: 'scoring-canal' }))).toBeNull();
+    /* the rail era has its own */
+    expect(tuneWanted(game({ era: 'rail' }))).toBe('rail');
+    expect(tuneWanted(game({ era: 'canal', phase: 'game-over' }))).toBeNull();
+    expect(tuneWanted(game({ era: 'rail', phase: 'game-over' }))).toBeNull();
     /* no table, no tune */
-    expect(tuneWanted(null)).toBe(false);
+    expect(tuneWanted(null)).toBeNull();
   });
 });

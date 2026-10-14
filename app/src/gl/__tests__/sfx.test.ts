@@ -176,55 +176,171 @@ describe('a piece laid, heard', () => {
   });
 });
 
-describe('the canal’s tune', () => {
+describe('the era’s tunes', () => {
   const levels = { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 };
-  const tuneSources = () => sources.filter((s) => s.buffer?.url.includes('music-canal'));
+  const tunes = () => sources.filter((s) => s.buffer?.url.includes('/music-'));
+  const named = (s: FakeSource) => s.buffer?.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1');
 
-  it('loops while the canal era is played, and fades out slowly when it closes', async () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    /* the least of every draw: the first tune 4 s in, the first of the
+       playlist, the shortest pause (45 s) */
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('begin a few seconds into the era, play a tune through, pause, and never play it twice running', async () => {
     const { setMix, tableMusic } = await import('../sfx');
     setMix({ on: true, ambience: false, music: true, levels });
-    tableMusic(true);
-    await settle();
-    expect(played()).toEqual(['music-canal']);
-    expect(sources[0].loop).toBe(true);
+    tableMusic('canal');
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(tunes()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(tunes().map(named)).toEqual(['music-canal']);
+    /* the first air is a loop, heard twice over and then let go */
+    const first = tunes()[0];
+    expect(first.loop).toBe(true);
+    expect(first.stopAt).toBeCloseTo(2 * 68.5346 + 0.05, 3);
     /* asked again in the same era: still the one tune */
-    tableMusic(true);
-    await settle();
-    expect(tuneSources()).toHaveLength(1);
-    /* the rail era comes: the tune is heard out over four seconds */
-    tableMusic(false);
-    expect(sources[0].stopAt).toBeCloseTo(4.05);
+    tableMusic('canal');
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(tunes()).toHaveLength(1);
+    /* it ends: the ambience alone for the pause, then another tune */
+    first.onended?.();
+    await vi.advanceTimersByTimeAsync(44_000);
+    expect(tunes()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(tunes().map(named)).toEqual(['music-canal', 'music-canal-ii']);
+    /* played through once, not looped */
+    expect(tunes()[1].loop).toBe(false);
+    expect(tunes()[1].stopAt).toBeNull();
+    tunes()[1].onended?.();
+    await vi.advanceTimersByTimeAsync(46_000);
+    /* never the one just heard: the first of the others */
+    expect(tunes().map(named)).toEqual(['music-canal', 'music-canal-ii', 'music-canal']);
+  });
+
+  it('fade out slowly when the canal era closes, and the rail brings its own', async () => {
+    const { setMix, tableMusic } = await import('../sfx');
+    setMix({ on: true, ambience: false, music: true, levels });
+    tableMusic('canal');
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(tunes()).toHaveLength(1);
+    /* the canal's scoring: the tune is heard out over four seconds */
+    tableMusic(null);
+    expect(tunes()[0].stopAt).toBeCloseTo(4.05);
+    await vi.advanceTimersByTimeAsync(200_000);
+    expect(tunes()).toHaveLength(1);
+    /* the rail era's play */
+    tableMusic('rail');
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(tunes().map(named)).toEqual(['music-canal', 'music-rail-i']);
+    /* the game over: gone again */
+    tableMusic(null);
+    expect(tunes()[1].stopAt).toBeCloseTo(4.05);
     expect(sounding()).toHaveLength(0);
   });
 
-  it('is not played with its switch shut, and stops at once when the sound is cut', async () => {
+  it('are not played with their switch shut, and stop at once when the sound is cut', async () => {
     const { setMix, tableMusic } = await import('../sfx');
     setMix({ on: true, ambience: false, music: false, levels });
-    tableMusic(true);
-    await settle();
-    expect(tuneSources()).toHaveLength(0);
-    /* the switch opened in the canal era: the tune comes */
+    tableMusic('canal');
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(tunes()).toHaveLength(0);
+    /* the switch opened in the canal era: a tune comes, shortly */
     setMix({ on: true, ambience: false, music: true, levels });
-    await settle();
-    expect(tuneSources()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(tunes()).toHaveLength(1);
     /* the board's sound switch shut: the tune goes, and quickly */
     setMix({ on: false, ambience: false, music: true, levels });
-    expect(tuneSources()[0].stopAt).toBeCloseTo(1.05);
-    await settle();
+    expect(tunes()[0].stopAt).toBeCloseTo(1.05);
+    await vi.advanceTimersByTimeAsync(200_000);
     expect(sounding()).toHaveLength(0);
-    /* opened again, still in the canal era: it starts afresh */
+    /* opened again, still in the canal era: the playlist starts afresh */
     setMix({ on: true, ambience: false, music: true, levels });
-    await settle();
-    expect(tuneSources()).toHaveLength(2);
-    expect(sounding()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(tunes()).toHaveLength(2);
+    expect(tunes().filter((s) => s.stopAt === null || s.stopAt > 100)).toHaveLength(1);
   });
 
-  it('waits for the reader’s first gesture', async () => {
+  it('wait for the reader’s first gesture', async () => {
     vi.stubGlobal('navigator', { userActivation: { hasBeenActive: false } });
     const { setMix, tableMusic } = await import('../sfx');
-    setMix({ on: true, ambience: false, music: true, levels });
-    tableMusic(true);
-    await settle();
+    setMix({ on: true, ambience: true, music: true, levels });
+    tableMusic('canal');
+    await vi.advanceTimersByTimeAsync(300_000);
     expect(sources).toHaveLength(0);
+  });
+});
+
+describe('the rail’s life', () => {
+  const levels = { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 };
+  const events = () => sources.filter((s) => s.buffer?.url.includes('/life-'));
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    /* the shortest gap, 40 s, and the first event of the list */
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('a train somewhere off, now and then, one at a time, never the same twice running', async () => {
+    const { setMix, tableAmbience } = await import('../sfx');
+    setMix({ on: true, ambience: true, music: false, levels });
+    tableAmbience('rail');
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(played()).toEqual(['amb-rail']);
+    await vi.advanceTimersByTimeAsync(38_000);
+    expect(events()).toHaveLength(0);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(played()).toEqual(['amb-rail', 'life-whistle']);
+    /* nothing more while it sounds */
+    await vi.advanceTimersByTimeAsync(300_000);
+    expect(events()).toHaveLength(1);
+    /* heard out: another after a gap, not the same */
+    events()[0].onended?.();
+    await vi.advanceTimersByTimeAsync(41_000);
+    expect(events().map((s) => s.buffer?.url.replace(/^\/sfx\/(.*)\.\w+$/, '$1'))).toEqual(['life-whistle', 'life-passing']);
+  });
+
+  it('never over a moment of the game: a train waits for the bell, and one going by makes way', async () => {
+    const { cue, setMix, tableAmbience, warmSounds } = await import('../sfx');
+    setMix({ on: true, ambience: true, music: false, levels });
+    warmSounds();
+    tableAmbience('rail');
+    /* the bell rings a second before the train was due: it waits for it */
+    await vi.advanceTimersByTimeAsync(39_000);
+    cue('turn');
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(events()).toHaveLength(0);
+    /* the bell (2 s) and three seconds after it */
+    await vi.advanceTimersByTimeAsync(4500);
+    expect(events()).toHaveLength(1);
+    /* a moment while it sounds: the train fades away at once */
+    cue('turn');
+    await vi.advanceTimersByTimeAsync(10);
+    expect(events()[0].stopAt).toBeCloseTo(0.35);
+  });
+
+  it('is the rail’s only: the canal keeps its birds, and the events stop with the ambience', async () => {
+    const { setMix, tableAmbience } = await import('../sfx');
+    setMix({ on: true, ambience: true, music: false, levels });
+    tableAmbience('canal');
+    await vi.advanceTimersByTimeAsync(400_000);
+    expect(events()).toHaveLength(0);
+    tableAmbience('rail');
+    await vi.advanceTimersByTimeAsync(41_000);
+    expect(events()).toHaveLength(1);
+    /* the ambience switched off: the train goes, and no other comes */
+    setMix({ on: true, ambience: false, music: false, levels });
+    expect(events()[0].stopAt).toBeCloseTo(1.05);
+    await vi.advanceTimersByTimeAsync(400_000);
+    expect(events()).toHaveLength(1);
   });
 });

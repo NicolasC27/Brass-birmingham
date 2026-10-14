@@ -210,7 +210,7 @@ const game: typeof engame = {
       ambienceHint: 'El canal, luego el ferrocarril, muy bajo bajo la mesa. Apagado si el sistema pide menos movimiento.',
       volAmbience: 'Nivel del ambiente',
       music: 'Música',
-      musicHint: 'Una tonada campestre durante la era de los canales, bajo el ambiente. Calla cuando llega el ferrocarril.',
+      musicHint: 'Algunas tonadas propias de cada era, bajo el ambiente, con silencios entre ellas. Calla mientras se puntúa una era.',
       volMusic: 'Nivel de la música',
       volGestures: 'Jugadas',
       volGesturesHint: 'Losetas, enlaces, ventas, préstamos. Las jugadas de las máquinas se oyen más lejos.',

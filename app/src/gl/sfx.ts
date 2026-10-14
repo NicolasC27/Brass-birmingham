@@ -5,12 +5,15 @@
    never before the reader has touched the page: until then every sound is
    simply not made (browsers would keep the context suspended anyway).
 
-   Four buses run into one master: the ambience under the table, the
-   gestures of play, the moments — the bell of a turn, the whistle at the
-   close of an era, the band at the end — and the canal's tune. Each has
-   its own level, and the board's sound switch closes the master. */
+   Four buses run into one master: the ambience under the table (and, in
+   the rail era, a train somewhere off now and then), the gestures of play,
+   the moments — the bell of a turn, the whistle at the close of an era,
+   the band at the end — and the era's tunes. Each has its own level, and
+   the board's sound switch closes the master. */
 
-import type { IndustryType } from '@/game/types';
+import type { Era, IndustryType } from '@/game/types';
+import { LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, lifeAt, nextOf, spanOf, tuneLength, tuneOf } from './playlist';
+import type { Chance, Life } from './playlist';
 
 let ctx: AudioContext | null = null;
 
@@ -45,7 +48,7 @@ export interface Mix {
   on: boolean;
   /** the ambience under the table plays at all */
   ambience: boolean;
-  /** the canal's tune plays at all */
+  /** the era's tunes play at all */
   music: boolean;
   /** each bus's level, 0 to 1 */
   levels: Record<Bus, number>;
@@ -53,7 +56,7 @@ export interface Mix {
 let mix: Mix = { on: true, ambience: false, music: false, levels: { ambience: 0.5, gestures: 0.8, moments: 0.8, music: 0.5 } };
 /* a bus at full is still well under the page: the recordings are cut to
    peak at -3 dBFS, the ambiences levelled to -16 LUFS, and a board game is
-   played for two hours. The tune (-20 LUFS) sits under the ambience at the
+   played for two hours. The tunes (-20 LUFS) sit under the ambience at the
    levels the settings open on, about -41 LUFS against the canal's -38 */
 const BUS_SCALE: Record<Bus, number> = { ambience: 0.22, gestures: 0.55, moments: 0.5, music: 0.18 };
 
@@ -223,10 +226,17 @@ export function houseHover(id: string | null): void {
 export function closeAudio(): void {
   houseLeave();
   fading.clear();
-  /* the ambience and the tune die with their context; what is wanted is
-     kept for the next */
+  /* the ambience, its events and the tunes die with their context; what is
+     wanted is kept for the next, and the waits are begun again there */
   table = null;
+  life = null;
+  if (lifeTimer !== null) clearTimeout(lifeTimer);
+  lifeTimer = null;
   tune = null;
+  asking = null;
+  if (tuneTimer !== null) clearTimeout(tuneTimer);
+  tuneTimer = null;
+  tuneEra = null;
   desk = null;
   const ac = ctx;
   ctx = null;
@@ -597,6 +607,8 @@ export function cue(name: Cue, opts: { quiet?: boolean; after?: number } = {}): 
     }
     /* a gesture heard long after the hand moved is worse than none */
     if (BUS_OF[name] === 'gestures' && Date.now() - asked > STALE_MS) return;
+    /* a moment is heard alone: a train in the distance makes way for it */
+    if (BUS_OF[name] === 'moments') hushLife(buf.duration + (opts.after ?? 0));
     const src = ac.createBufferSource();
     src.buffer = buf;
     const g = ac.createGain();
@@ -640,9 +652,11 @@ export function noteStrike(kind: 'tile' | 'link', era: 'canal' | 'rail', mine: b
 let wantEra: 'canal' | 'rail' | null = null;
 let table: { era: 'canal' | 'rail'; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 const AMB_FADE = 3;
-/** the canal's loop is birds over a quiet bed, levelled 4 dB under the
- *  town's rumble (its peaks would not allow more): brought up a little */
-const AMB_TRIM: Record<'canal' | 'rail', number> = { canal: 1.4, rail: 1 };
+/** the canal's loop is birds over a quiet bed, levelled at -20 LUFS (its
+ *  peaks would not allow more): brought up a little. The rail's is a low
+ *  murmur of the town far off with a few birds, levelled at -26 LUFS so
+ *  that it tires no one; its trains come now and then over it */
+const AMB_TRIM: Record<'canal' | 'rail', number> = { canal: 1.4, rail: 1.2 };
 /** the loop's own length: the file was folded onto itself at this length,
  *  an MP3's padding past it is left out of the loop */
 const AMB_LOOP_S = 27;
@@ -664,6 +678,7 @@ function fadeOut(t: { src: AudioBufferSourceNode; gain: GainNode }, seconds: num
 }
 
 function applyAmbience(): void {
+  applyLife();
   const era = mix.on && mix.ambience ? wantEra : null;
   if (table && table.era !== era) {
     fadeOut(table, era ? AMB_FADE : 1);
@@ -691,56 +706,221 @@ function applyAmbience(): void {
   });
 }
 
-/* ---------------- the canal's tune ---------------- */
+/* ---------------- the rail's life: a train somewhere off, now and then ---------------- */
 
-/** the tune is wanted: a table sat at, in the canal era, still in play */
-let wantTune = false;
-let tune: { src: AudioBufferSourceNode; gain: GainNode } | null = null;
-/** the tune comes in slowly and leaves as slowly: the rail era arrives
- *  under the whistle, not after a cut */
+/** the chance the tunes and the events are drawn with */
+const chance: Chance = () => Math.random();
+/** an event sits a little over the rail's bed, which is kept low */
+const LIFE_LEVEL = 1.4;
+let life: { name: Life; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+/** the wait for the next event */
+let lifeTimer: ReturnType<typeof setTimeout> | null = null;
+/** an event being fetched to be played */
+let lifeAsking: object | null = null;
+let lastLife: Life | null = null;
+/** no event before this time (Date.now()): a moment is being heard */
+let hushUntil = 0;
+/** the silence kept after a moment before a train may be heard again */
+const HUSH_AFTER_S = 3;
+
+const lifeWanted = (): boolean => mix.on && mix.ambience && wantEra === 'rail';
+
+/** the rail's events run while its ambience does: one at a time, each
+ *  after a gap drawn afresh */
+function applyLife(): void {
+  if (!lifeWanted()) {
+    if (lifeTimer !== null) clearTimeout(lifeTimer);
+    lifeTimer = null;
+    lifeAsking = null;
+    if (life) {
+      fadeOut(life, 1);
+      life = null;
+    }
+    return;
+  }
+  if (life || lifeTimer !== null || lifeAsking) return;
+  waitLife(spanOf(LIFE_GAP, chance) * 1000);
+}
+
+function waitLife(ms: number): void {
+  lifeTimer = setTimeout(() => {
+    lifeTimer = null;
+    playLife();
+  }, ms);
+}
+
+function playLife(): void {
+  if (!lifeWanted() || life) return;
+  /* a moment is being heard: the train waits for it */
+  const now = Date.now();
+  const at = lifeAt(now, hushUntil);
+  if (at > now) {
+    waitLife(at - now);
+    return;
+  }
+  const name = nextOf(LIFE, lastLife, chance);
+  const token = {};
+  lifeAsking = token;
+  void context().then(async (ac) => {
+    const buf = ac ? await sample(name) : null;
+    if (lifeAsking !== token) return;
+    lifeAsking = null;
+    /* before the first gesture nothing waits: the first touch asks again */
+    if (!ac || !lifeWanted()) return;
+    /* the file could not be had, or a moment began meanwhile: later */
+    if (!buf || Date.now() < hushUntil) {
+      applyLife();
+      return;
+    }
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const gain = ac.createGain();
+    const t0 = ac.currentTime;
+    gain.gain.setValueAtTime(LIFE_LEVEL, t0);
+    src.connect(gain);
+    /* from one side of the valley or the other; a train going by crosses it */
+    if (typeof ac.createStereoPanner === 'function') {
+      const pan = ac.createStereoPanner();
+      const side = (chance() * 2 - 1) * 0.6;
+      pan.pan.setValueAtTime(side, t0);
+      if (name === 'life-passing') pan.pan.linearRampToValueAtTime(-side, t0 + buf.duration);
+      gain.connect(pan).connect(busOf(ac, 'ambience'));
+    } else gain.connect(busOf(ac, 'ambience'));
+    src.onended = () => {
+      if (life?.src !== src) return;
+      life = null;
+      applyLife();
+    };
+    src.start(t0);
+    life = { name, src, gain };
+    lastLife = name;
+    if (import.meta.env.DEV && heard.push(name) > 40) heard.shift();
+  });
+}
+
+/** a moment of the game is heard for `seconds`: no train over it, and a
+ *  train already going by fades away */
+function hushLife(seconds: number): void {
+  hushUntil = Math.max(hushUntil, Date.now() + (seconds + HUSH_AFTER_S) * 1000);
+  if (life) {
+    fadeOut(life, 0.3);
+    life = null;
+    applyLife();
+  }
+}
+
+/* ---------------- the era's tunes ---------------- */
+
+/** the era whose tunes are wanted: a table sat at, in the play of an era */
+let wantTunes: Era | null = null;
+let tune: { era: Era; name: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+/** the era the playlist runs for (null: none runs) */
+let tuneEra: Era | null = null;
+/** the wait for the next tune: the first of an era, or a pause between two */
+let tuneTimer: ReturnType<typeof setTimeout> | null = null;
+/** a tune being fetched to be played */
+let asking: object | null = null;
+/** never the same tune twice in a row */
+let lastTune: string | null = null;
+/** a tune comes in slowly and leaves as slowly: the rail era arrives under
+ *  the whistle, not after a cut */
 const TUNE_IN = 5;
 const TUNE_OUT = 4;
-/** the loop's own length: four phrases of the air, folded at this length;
- *  an MP3's padding past it is left out of the loop */
-const TUNE_LOOP_S = 68.5346;
+/** a loop heard its turns is faded over its last bars */
+const TUNE_END = 6;
 
-/** the canal's tune, looped on its own bus while `on`; faded out when the
- *  canal era closes, when the game ends and when the table is left */
-export function tableMusic(on: boolean): void {
-  wantTune = on;
+/** the tunes of this era, one after another with the ambience alone
+ *  between them, while `era` is played; faded out when the era closes,
+ *  when the game ends and when the table is left */
+export function tableMusic(era: Era | null): void {
+  wantTunes = era;
   applyMusic();
 }
 
 function applyMusic(): void {
-  const on = mix.on && mix.music && wantTune;
-  if (tune && !on) {
+  const era = mix.on && mix.music ? wantTunes : null;
+  if (tune && tune.era !== era) {
     /* the switch shut is obeyed at once; the era's close is heard out */
     fadeOut(tune, mix.on && mix.music ? TUNE_OUT : 1);
     tune = null;
   }
-  if (!on || tune) return;
+  if (tuneEra !== era) {
+    if (tuneTimer !== null) clearTimeout(tuneTimer);
+    tuneTimer = null;
+    asking = null;
+    tuneEra = era;
+  }
+  if (!era || tune || tuneTimer !== null || asking) return;
+  /* nothing sounds and nothing waits: the era's first tune, shortly */
+  waitTune(spanOf(TUNE_FIRST, chance));
+}
+
+/** the next tune of the playlist, after `seconds` of the ambience alone */
+function waitTune(seconds: number): void {
+  const era = tuneEra;
+  if (!era) return;
+  const name = nextOf(
+    TUNES[era].map((t) => t.name),
+    lastTune,
+    chance,
+  );
+  /* fetched during the wait, so it is ready when its time comes */
+  void sample(name);
+  tuneTimer = setTimeout(() => {
+    tuneTimer = null;
+    playTune(era, name);
+  }, seconds * 1000);
+}
+
+function playTune(era: Era, name: string): void {
+  const t = tuneOf(era, name);
+  if (!t || tuneEra !== era || tune) return;
+  const token = {};
+  asking = token;
   void context().then(async (ac) => {
-    if (!ac) return;
-    const buf = await sample('music-canal');
-    /* the table may have moved on while the file came */
-    if (!buf || !(mix.on && mix.music && wantTune) || tune) return;
+    const buf = ac ? await sample(name) : null;
+    if (asking !== token) return;
+    asking = null;
+    /* before the first gesture nothing waits: the first touch asks again */
+    if (!ac || tuneEra !== era) return;
+    /* the file could not be had: the ambience alone, and another later */
+    if (!buf) {
+      waitTune(spanOf(TUNE_PAUSE, chance));
+      return;
+    }
     const src = ac.createBufferSource();
     src.buffer = buf;
-    src.loop = true;
-    src.loopStart = 0;
-    src.loopEnd = Math.min(buf.duration, TUNE_LOOP_S);
     const gain = ac.createGain();
     const t0 = ac.currentTime;
+    const length = tuneLength(t, buf.duration);
     gain.gain.setValueAtTime(0.0001, t0);
     gain.gain.linearRampToValueAtTime(1, t0 + TUNE_IN);
+    if (t.loop) {
+      /* the loop's own length (an MP3's padding past it is left out), as
+         many turns as it is given, and faded over the last bars */
+      src.loop = true;
+      src.loopStart = 0;
+      src.loopEnd = Math.min(buf.duration, t.loop);
+      gain.gain.setValueAtTime(1, t0 + length - TUNE_END);
+      gain.gain.linearRampToValueAtTime(0.0001, t0 + length);
+      src.stop(t0 + length + 0.05);
+    }
     src.connect(gain).connect(busOf(ac, 'music'));
+    /* heard to its end: the ambience alone for a while, then another */
+    src.onended = () => {
+      if (tune?.src !== src) return;
+      tune = null;
+      waitTune(spanOf(TUNE_PAUSE, chance));
+    };
     src.start(t0);
-    tune = { src, gain };
+    tune = { era, name, src, gain };
+    lastTune = name;
+    if (import.meta.env.DEV && heard.push(name) > 40) heard.shift();
   });
 }
 
 /* the first touch of the page opens the way: what was wanted before it —
-   the ambience of the table already sat at, the canal's tune — starts then */
+   the ambience of the table already sat at, the era's tunes — starts then */
 if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
   const first = () => {
     window.removeEventListener('pointerdown', first, true);
@@ -756,12 +936,13 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
   window.addEventListener('keydown', first, true);
 }
 
-/* dev only: what is sounding right now (window.__sfx.playing(), .ambience(), .music(), .heard()) */
+/* dev only: what is sounding right now (window.__sfx.playing(), .ambience(), .life(), .music(), .heard()) */
 const heard: string[] = [];
 if (import.meta.env.DEV && typeof window !== 'undefined')
-  (window as unknown as { __sfx?: { playing: () => string | null; ambience: () => string | null; music: () => boolean; heard: () => string[] } }).__sfx = {
+  (window as unknown as { __sfx?: { playing: () => string | null; ambience: () => string | null; life: () => string | null; music: () => string | null; heard: () => string[] } }).__sfx = {
     playing: () => playing?.id ?? null,
     ambience: () => table?.era ?? null,
-    music: () => tune !== null,
+    life: () => life?.name ?? null,
+    music: () => tune?.name ?? null,
     heard: () => heard.slice(),
   };

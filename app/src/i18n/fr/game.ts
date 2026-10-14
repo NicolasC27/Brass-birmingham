@@ -210,7 +210,7 @@ const fr: typeof engame = {
       ambienceHint: 'Le canal, puis le rail, très bas sous la table. Coupée si le système demande moins d’animations.',
       volAmbience: 'Niveau de l’ambiance',
       music: 'Musique',
-      musicHint: 'Un air de campagne pendant l’ère des canaux, sous l’ambiance. Il se tait quand vient le rail.',
+      musicHint: 'Quelques airs propres à chaque ère, sous l’ambiance, avec des silences entre eux. Elle se tait pendant le décompte d’une ère.',
       volMusic: 'Niveau de la musique',
       volGestures: 'Coups',
       volGesturesHint: 'Tuiles, liaisons, ventes, emprunts. Les coups des machines s’entendent de plus loin.',

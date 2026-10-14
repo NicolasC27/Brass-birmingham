@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGame } from '@/game/store';
-import type { GameState, IndustryType, Verb } from '@/game/types';
+import type { Era, GameState, IndustryType, Verb } from '@/game/types';
 import { cue, noteStrike, setMix, tableAmbience, tableMusic, warmSounds } from '@/gl/sfx';
 import type { Cue } from '@/gl/sfx';
 import { useBoardOptions } from './boardOptions';
@@ -102,9 +102,9 @@ export function tableCues(prev: TableShot, next: TableShot): Heard[] {
   return out;
 }
 
-/** the canal's tune is wanted: a game in play in the canal era. It goes
- *  when the era closes (the whistle is heard alone), and at the end */
-export const tuneWanted = (g: GameState | null): boolean => !!g && g.era === 'canal' && g.phase === 'action';
+/** the era whose tunes are wanted: a game in play, canal or rail. They go
+ *  when the canal era closes (the whistle is heard alone), and at the end */
+export const tuneWanted = (g: GameState | null): Era | null => (g && g.phase === 'action' ? g.era : null);
 
 /** the store and the settings, as the sounds read them */
 const shotOf = (s: ReturnType<typeof useGame.getState>, panel: boolean): TableShot => ({
@@ -137,12 +137,12 @@ export function useTableSounds(): void {
   }, [era]);
   useEffect(() => () => tableAmbience(null), []);
 
-  /* the canal's tune, while the canal era is played */
+  /* the era's tunes, while it is played */
   const tune = useGame((s) => tuneWanted(s.game));
   useEffect(() => {
     tableMusic(tune);
   }, [tune]);
-  useEffect(() => () => tableMusic(false), []);
+  useEffect(() => () => tableMusic(null), []);
 
   const panelRef = useRef(settingsOpen);
   const lastRef = useRef<TableShot>(shotOf(useGame.getState(), settingsOpen));

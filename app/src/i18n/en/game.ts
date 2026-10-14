@@ -208,7 +208,7 @@ const game = {
       ambienceHint: 'The canal, then the rail, very low under the table. Off when the system asks for less motion.',
       volAmbience: 'Ambience level',
       music: 'Music',
-      musicHint: 'A country air through the canal era, under the ambience. It falls silent when the rail comes.',
+      musicHint: 'A few airs of each era, under the ambience, with quiet spells between them. Silent while an era is scored.',
       volMusic: 'Music level',
       volGestures: 'Moves',
       volGesturesHint: 'Tiles, links, sales, loans. The machines’ moves are heard further off.',

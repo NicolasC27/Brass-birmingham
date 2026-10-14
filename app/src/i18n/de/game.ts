@@ -210,7 +210,7 @@ const game: typeof engame = {
       ambienceHint: 'Der Kanal, dann die Eisenbahn, ganz leise unter dem Tisch. Aus, wenn das System weniger Bewegung wünscht.',
       volAmbience: 'Pegel der Kulisse',
       music: 'Musik',
-      musicHint: 'Eine ländliche Weise während der Kanal-Epoche, unter der Klangkulisse. Sie verstummt, wenn die Eisenbahn kommt.',
+      musicHint: 'Einige Weisen jeder Epoche, unter der Klangkulisse, mit stillen Pausen dazwischen. Sie schweigt, während eine Epoche gewertet wird.',
       volMusic: 'Pegel der Musik',
       volGestures: 'Züge',
       volGesturesHint: 'Plättchen, Verbindungen, Verkäufe, Kredite. Die Züge der Maschinen klingen ferner.',
