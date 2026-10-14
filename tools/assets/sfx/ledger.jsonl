@@ -64,3 +64,112 @@
 {"note": "fourth round: the counter settled", "take": "music-canal-iii-1", "seconds": 100.0, "before": 10689, "after": 12064, "spent": 1375}
 {"note": "fourth round: the counter settled", "take": "music-rail-i-1", "seconds": 100.0, "before": 12064, "after": 13439, "spent": 1375}
 {"note": "fourth round: the counter settled", "take": "music-rail-ii-1", "seconds": 100.0, "before": 13439, "after": 14814, "spent": 1375}
+{"take": "voice-wages-1", "seconds": 0.0, "before": 14814, "after": 14814, "spent": 0}
+{"take": "voice-seam-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-back-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-grand-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-weather-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-no-iron-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-ale-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-full-load-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-lock-1", "seconds": 0.0, "before": 14826, "after": 14826, "spent": 0}
+{"take": "voice-engines-1", "seconds": 0.0, "before": 14826, "after": 14927, "spent": 101}
+{"take": "voice-walk-on-1", "seconds": 0.0, "before": 14927, "after": 14927, "spent": 0}
+{"take": "voice-london-1", "seconds": 0.0, "before": 14927, "after": 14927, "spent": 0}
+{"take": "voice-furnace-1", "seconds": 0.0, "before": 14927, "after": 14927, "spent": 0}
+{"take": "voice-iron-dear-1", "seconds": 0.0, "before": 14927, "after": 14927, "spent": 0}
+{"take": "voice-lamp-1", "seconds": 0.0, "before": 14927, "after": 15000, "spent": 73}
+{"take": "voice-late-1", "seconds": 0.0, "before": 15000, "after": 15000, "spent": 0}
+{"take": "voice-sweet-1", "seconds": 0.0, "before": 15000, "after": 15000, "spent": 0}
+{"take": "voice-hands-1", "seconds": 0.0, "before": 15000, "after": 15000, "spent": 0}
+{"take": "voice-twelve-1", "seconds": 0.0, "before": 15000, "after": 15000, "spent": 0}
+{"take": "voice-docked-1", "seconds": 0.0, "before": 15000, "after": 15000, "spent": 0}
+{"take": "voice-whistle-1", "seconds": 0.0, "before": 15000, "after": 15079, "spent": 79}
+{"take": "voice-ribbon-1", "seconds": 0.0, "before": 15079, "after": 15079, "spent": 0}
+{"take": "voice-brew-1", "seconds": 0.0, "before": 15079, "after": 15079, "spent": 0}
+{"take": "voice-coal-dear-1", "seconds": 0.0, "before": 15079, "after": 15079, "spent": 0}
+{"take": "voice-soot-1", "seconds": 0.0, "before": 15079, "after": 15079, "spent": 0}
+{"take": "voice-that-lad-1", "seconds": 0.0, "before": 15079, "after": 15079, "spent": 0}
+{"take": "voice-kiln-1", "seconds": 0.0, "before": 15079, "after": 15159, "spent": 80}
+{"take": "voice-bread-1", "seconds": 0.0, "before": 15159, "after": 15159, "spent": 0}
+{"take": "voice-no-coal-1", "seconds": 0.0, "before": 15159, "after": 15159, "spent": 0}
+{"take": "voice-bread-price-1", "seconds": 0.0, "before": 15159, "after": 15159, "spent": 0}
+{"take": "voice-brummagem-1", "seconds": 0.0, "before": 15159, "after": 15159, "spent": 0}
+{"take": "voice-seam-2", "seconds": 0.0, "before": 15236, "after": 15236, "spent": 0}
+{"take": "voice-ale-2", "seconds": 0.0, "before": 15236, "after": 15236, "spent": 0}
+{"take": "voice-docked-2", "seconds": 0.0, "before": 15236, "after": 15236, "spent": 0}
+{"take": "voice-coal-dear-2", "seconds": 0.0, "before": 15236, "after": 15246, "spent": 10}
+{"take": "voice-soot-2", "seconds": 0.0, "before": 15246, "after": 15246, "spent": 0}
+{"take": "voice-seam-3", "seconds": 0.0, "before": 15312, "after": 15312, "spent": 0}
+{"take": "voice-ale-3", "seconds": 0.0, "before": 15312, "after": 15313, "spent": 1}
+{"take": "voice-docked-3", "seconds": 0.0, "before": 15313, "after": 15334, "spent": 21}
+{"take": "voice-ale-4", "seconds": 0.0, "before": 15334, "after": 15334, "spent": 0}
+{"take": "life-horse-1", "seconds": 7.0, "before": 15361, "after": 15361, "spent": 0}
+{"take": "life-lock-1", "seconds": 7.0, "before": 15361, "after": 15361, "spent": 0}
+{"take": "life-forge-1", "seconds": 5.0, "before": 15361, "after": 15570, "spent": 209}
+{"take": "life-bell-1", "seconds": 7.0, "before": 15570, "after": 15570, "spent": 0}
+{"take": "life-geese-1", "seconds": 5.0, "before": 15647, "after": 15647, "spent": 0}
+{"take": "life-call-1", "seconds": 4.0, "before": 15647, "after": 15647, "spent": 0}
+{"take": "life-hammer-1", "seconds": 6.0, "before": 15647, "after": 15812, "spent": 165}
+{"take": "life-steam-1", "seconds": 5.0, "before": 15812, "after": 15812, "spent": 0}
+{"take": "cast-ezra (three drafts)", "before": 15867, "after": 16062, "spent": 195}
+{"take": "cast-barnaby (three drafts)", "before": 16062, "after": 16240, "spent": 178}
+{"take": "cast-nellie (three drafts)", "before": 16240, "after": 16240, "spent": 0}
+{"take": "cast-hepzibah (three drafts)", "before": 16240, "after": 16407, "spent": 167}
+{"take": "cast-pomfrey (three drafts)", "before": 16407, "after": 16407, "spent": 0}
+{"take": "cast-kezia (three drafts)", "before": 16407, "after": 16908, "spent": 501}
+{"take": "cast-tom (three drafts)", "before": 16908, "after": 17047, "spent": 139}
+{"take": "cast-ezra: draft 1 kept", "before": 17047, "after": 17047, "spent": 0}
+{"take": "cast-barnaby: draft 1 kept", "before": 17047, "after": 17132, "spent": 85}
+{"take": "cast-nellie: draft 3 kept", "before": 17132, "after": 17132, "spent": 0}
+{"take": "cast-hepzibah: draft 1 kept", "before": 17132, "after": 17132, "spent": 0}
+{"take": "cast-pomfrey: draft 1 kept", "before": 17132, "after": 17132, "spent": 0}
+{"take": "cast-kezia: draft 3 kept", "before": 17132, "after": 17132, "spent": 0}
+{"take": "cast-tom: draft 2 kept", "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-ezra-dear-1", "seconds": 0.0, "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-ezra-knees-1", "seconds": 0.0, "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-ezra-blowup-1", "seconds": 0.0, "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-ezra-worse-1", "seconds": 0.0, "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-ezra-mud-1", "seconds": 0.0, "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-ezra-almost-1", "seconds": 0.0, "before": 17132, "after": 17132, "spent": 0}
+{"take": "bark-barnaby-wages-1", "seconds": 0.0, "before": 17132, "after": 17292, "spent": 160}
+{"take": "bark-barnaby-bess-1", "seconds": 0.0, "before": 17292, "after": 17292, "spent": 0}
+{"take": "bark-barnaby-lock-1", "seconds": 0.0, "before": 17292, "after": 17292, "spent": 0}
+{"take": "bark-barnaby-load-1", "seconds": 0.0, "before": 17292, "after": 17292, "spent": 0}
+{"take": "bark-barnaby-engines-1", "seconds": 0.0, "before": 17292, "after": 17292, "spent": 0}
+{"take": "bark-barnaby-rope-1", "seconds": 0.0, "before": 17292, "after": 17292, "spent": 0}
+{"take": "bark-nellie-overseer-1", "seconds": 0.0, "before": 17292, "after": 17292, "spent": 0}
+{"take": "bark-nellie-vicar-1", "seconds": 0.0, "before": 17292, "after": 17460, "spent": 168}
+{"take": "bark-nellie-hands-1", "seconds": 0.0, "before": 17460, "after": 17460, "spent": 0}
+{"take": "bark-nellie-twelve-1", "seconds": 0.0, "before": 17460, "after": 17460, "spent": 0}
+{"take": "bark-nellie-ribbon-1", "seconds": 0.0, "before": 17460, "after": 17460, "spent": 0}
+{"take": "bark-nellie-fluff-1", "seconds": 0.0, "before": 17460, "after": 17460, "spent": 0}
+{"take": "bark-hepzibah-finest-1", "seconds": 0.0, "before": 17460, "after": 17460, "spent": 0}
+{"take": "bark-hepzibah-pints-1", "seconds": 0.0, "before": 17460, "after": 17460, "spent": 0}
+{"take": "bark-hepzibah-watered-1", "seconds": 0.0, "before": 17460, "after": 17632, "spent": 172}
+{"take": "bark-hepzibah-testing-1", "seconds": 0.0, "before": 17632, "after": 17632, "spent": 0}
+{"take": "bark-hepzibah-soot-1", "seconds": 0.0, "before": 17632, "after": 17632, "spent": 0}
+{"take": "bark-pomfrey-time-1", "seconds": 0.0, "before": 17632, "after": 17681, "spent": 49}
+{"take": "bark-pomfrey-london-1", "seconds": 0.0, "before": 17681, "after": 17681, "spent": 0}
+{"take": "bark-pomfrey-idle-1", "seconds": 0.0, "before": 17681, "after": 17681, "spent": 0}
+{"take": "bark-pomfrey-iron-1", "seconds": 0.0, "before": 17681, "after": 17681, "spent": 0}
+{"take": "bark-pomfrey-triumph-1", "seconds": 0.0, "before": 17681, "after": 17681, "spent": 0}
+{"take": "bark-kezia-kiln-1", "seconds": 0.0, "before": 17681, "after": 17681, "spent": 0}
+{"take": "bark-kezia-bread-1", "seconds": 0.0, "before": 17681, "after": 17819, "spent": 138}
+{"take": "bark-kezia-price-1", "seconds": 0.0, "before": 17819, "after": 17819, "spent": 0}
+{"take": "bark-kezia-coal-1", "seconds": 0.0, "before": 17819, "after": 17819, "spent": 0}
+{"take": "bark-kezia-kettle-1", "seconds": 0.0, "before": 17819, "after": 17819, "spent": 0}
+{"take": "bark-tom-furnace-1", "seconds": 0.0, "before": 17819, "after": 17899, "spent": 80}
+{"take": "bark-tom-what-1", "seconds": 0.0, "before": 17899, "after": 17899, "spent": 0}
+{"take": "bark-tom-dear-1", "seconds": 0.0, "before": 17899, "after": 17899, "spent": 0}
+{"take": "bark-tom-sweet-1", "seconds": 0.0, "before": 17899, "after": 17899, "spent": 0}
+{"take": "bark-tom-late-1", "seconds": 0.0, "before": 17899, "after": 17899, "spent": 0}
+{"take": "bark-barnaby-rope-2", "seconds": 0.0, "before": 18045, "after": 18045, "spent": 0}
+{"take": "bark-hepzibah-finest-2", "seconds": 0.0, "before": 18045, "after": 18045, "spent": 0}
+{"take": "bark-hepzibah-finest-3", "seconds": 0.0, "before": 18045, "after": 18045, "spent": 0}
+{"take": "music-rail-iii-1", "seconds": 100.0, "before": 18125, "after": 18125, "spent": 0}
+{"note": "fifth round: the counter settled", "take": "voice-*-1..4 (first try, eleven_multilingual_v2, 40 takes) and their speech-to-text checks", "before": 14814, "after": 15361, "spent": 547}
+{"note": "fifth round: the counter settled", "take": "life-horse-1, life-lock-1, life-forge-1, life-bell-1, life-geese-1, life-call-1, life-hammer-1, life-steam-1", "seconds": 46.0, "before": 15361, "after": 15867, "spent": 506}
+{"note": "fifth round: the counter settled", "take": "cast-* (seven voice designs, three drafts each, eleven_ttv_v3) and the seven voices kept", "before": 15867, "after": 17132, "spent": 1265}
+{"note": "fifth round: the counter settled", "take": "bark-*-1..3 (41 takes, eleven_v3) and their speech-to-text checks", "before": 17132, "after": 18125, "spent": 993}
+{"note": "fifth round: the counter settled", "take": "music-rail-iii-1, and the speech-to-text check of life-call and life-geese", "seconds": 100.0, "before": 18125, "after": 19504, "spent": 1379}

@@ -28,6 +28,11 @@ Spends nothing: ffmpeg only.
                          the hum, a short fade at each end, levelled by a
                          plain gain like the first; stereo
   the rail's life        as the houses: a train somewhere off, now and then
+  the canal's life       likewise: the working waterway, now and then
+  the townsfolk          their lines (barks): the breath before and after
+                         cut, the chest and the lips off, a wall across the
+                         street, mono, levelled by loudness; no dehum (the
+                         speech model has no comb)
 
 The choice of take, and why, is in CHOIX.md.
 """
@@ -110,7 +115,45 @@ SHORT = {
     # an engine leaving: heavy chuffs with steam for 3 s, falling away; the
     # low hum after 4.5 s (under 80 Hz) left out
     'life-depart': ('life-depart-1', (0.0, 5.2), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.6, 'dehum': True, 'lufs': -26}),
+    # two more for the rail: an iron works across the town, an engine standing
+    # the steam hammer: five heavy blows over 3 s, then only its ring
+    'life-hammer': ('life-hammer-1', (0.2, 3.6), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 0.5, 'lufs': -27}),
+    # the safety valve: a roar held from 0.2 to 3 s, dying away by 4.2 s
+    'life-steam': ('life-steam-1', (0.2, 4.4), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.2, 'fadein': 0.4, 'dehum': True, 'lufs': -28}),
+    # the canal's life, heard over its birds: the same distance as the rail's
+    # a horse on the towpath: hooves and harness for 4.5 s, then going
+    'life-horse': ('life-horse-1', (0.0, 5.5), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.2, 'fadein': 0.3, 'dehum': True, 'lufs': -27}),
+    # a lock: the gates' creak, then the sluice for 4 s; the take stops the
+    # water short at 4.25 s, so it is faded over its last second
+    'life-lock': ('life-lock-1', (0.0, 4.3), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.0, 'dehum': True, 'lufs': -27}),
+    # the village smith: blows over 2.5 s and their ring
+    'life-forge': ('life-forge-1', (0.0, 3.6), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 0.8, 'lufs': -28}),
+    # the church bell: one stroke (three were asked) and its 6 s decay
+    'life-bell': ('life-bell-1', (0.0, 6.0), 'highpass=f=90,lowpass=f=5000,', PEAK, {'fade': 1.5, 'dehum': True, 'lufs': -29}),
+    # geese going over: honking from 0.5 to 3.3 s
+    'life-geese': ('life-geese-1', (0.4, 3.6), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 0.5, 'fadein': 0.1, 'dehum': True, 'lufs': -28}),
 }
+# the townsfolk's lines: name -> the take kept (the first unless a later
+# one said the words better; see CHOIX.md)
+BARKS = {n: f'{n}-1' for n in (
+    'bark-ezra-dear', 'bark-ezra-knees', 'bark-ezra-blowup', 'bark-ezra-worse', 'bark-ezra-mud', 'bark-ezra-almost',
+    'bark-barnaby-wages', 'bark-barnaby-bess', 'bark-barnaby-lock', 'bark-barnaby-load', 'bark-barnaby-engines',
+    'bark-nellie-overseer', 'bark-nellie-vicar', 'bark-nellie-hands', 'bark-nellie-twelve', 'bark-nellie-ribbon', 'bark-nellie-fluff',
+    'bark-hepzibah-pints', 'bark-hepzibah-watered', 'bark-hepzibah-testing', 'bark-hepzibah-soot',
+    'bark-pomfrey-time', 'bark-pomfrey-london', 'bark-pomfrey-idle', 'bark-pomfrey-iron', 'bark-pomfrey-triumph',
+    'bark-kezia-kiln', 'bark-kezia-bread', 'bark-kezia-price', 'bark-kezia-coal', 'bark-kezia-kettle',
+    'bark-tom-furnace', 'bark-tom-what', 'bark-tom-dear', 'bark-tom-sweet', 'bark-tom-late',
+)}
+BARKS['bark-barnaby-rope'] = 'bark-barnaby-rope-2'
+BARKS['bark-hepzibah-finest'] = 'bark-hepzibah-finest-3'
+# a line is heard in a town on the board, not in the ear: nothing under
+# 110 Hz (the chest of a close microphone), nothing over 7 kHz (the lips),
+# and one early reflection, a wall across the street. Levelled at -22 LUFS
+# (sfx.ts sets them under the gestures), the peak held at -3 dBFS
+BARK_FILTERS = 'highpass=f=110,highpass=f=110,lowpass=f=7000,aecho=0.8:0.6:30:0.15,'
+BARK_LUFS = -22.0
+for n, take in BARKS.items():
+    SHORT[n] = (take, None, BARK_FILTERS, PEAK, {'fade': 0.12, 'fadein': 0.01, 'lufs': BARK_LUFS})
 # name: (take, filters before the fold, integrated loudness in LUFS,
 #        compressor[, options])
 #   options: breathe  a slow swell of the take, +-dB, three times a loop
@@ -153,6 +196,9 @@ PIECES = {
     'music-rail-i': ('music-rail-i-1', 0.0, 98.3, 3.0, 'highpass=f=45,highpass=f=45', -20.0),
     # the strings' ostinato: a thick band at 150-400 Hz, softened by 2 dB
     'music-rail-ii': ('music-rail-ii-1', 0.0, 98.7, 2.0, 'highpass=f=45,highpass=f=45,lowshelf=f=250:g=-2', -20.0),
+    # the parlour waltz: harmonium, clarinet, cello and square piano; its own
+    # last chord dies from 96 s and is gone at 99.2 s
+    'music-rail-iii': ('music-rail-iii-1', 0.0, 99.3, 3.0, 'highpass=f=45,highpass=f=45', -20.0),
 }
 
 # a soft compressor for the few loud moments of a loop (a bird close by):

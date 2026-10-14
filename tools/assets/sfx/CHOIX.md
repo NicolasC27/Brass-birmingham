@@ -1,9 +1,10 @@
 # The table's sounds: takes and choices
 
 Generated with the ElevenLabs sound-effects model (`eleven_text_to_sound_v2`,
-Creator plan, commercial use allowed) by `generate.py`, and the eras' tunes
+Creator plan, commercial use allowed) by `generate.py`, the eras' tunes
 with the ElevenLabs music model (`music_v2_5`, `POST /v1/music`,
-instrumental forced), then trimmed,
+instrumental forced), and the townsfolk's voices with its voice-design
+(`eleven_ttv_v3`) and expressive speech (`eleven_v3`) models, then trimmed,
 levelled and served by `process.py` (ffmpeg only). The raw takes sit in
 `raw/`, the per-call ledger in `ledger.jsonl`.
 
@@ -25,7 +26,18 @@ levelled and served by `process.py` (ffmpeg only). The raw takes sit in
 | after music-canal-iii | 12 064 |
 | after music-rail-i | 13 439 |
 | after music-rail-ii | 14 814 |
-| **spent in all** | **11 731** (the fourth round's cap was 16 000 on the counter; `generate.py` now stops there) |
+| before the fifth round (the canal's life, the voices, a third rail tune) | 14 814 |
+| after the first try at the voices (plain lines, 40 takes, not served) | 15 361 |
+| after the canal's six events and the rail's two more | 15 867 |
+| after the seven characters' voices were designed and kept | 17 132 |
+| after the characters' 41 lines | 18 125 |
+| after music-rail-iii | 19 504 |
+| **spent in all** | **16 421** (the fifth round's cap: 42 500 on the counter, 5 000 of it kept in reserve; `generate.py` stops at 37 500) |
+
+The fifth round: 4 690 credits. Speech is a credit a character (the
+lines and their stage directions); a voice design, three drafts of a
+100-200 character sample, came to about 180. The speech-to-text checks
+(below) cost next to nothing: 6 credits for 31 takes.
 
 The fourth round: 6 105 credits. Each 100 s music take came to exactly
 1 375 again (13.75 a second). The five sound takes (55 s) came to 605, 11
@@ -165,6 +177,109 @@ Four short takes, one each, heard over the rail's bed now and then:
 and life-depart with amb-rail-4, 451.) All four are cut under 90 Hz and
 over 6 kHz, mono.
 
+## The fifth round: the canal's life, the townsfolk, a third rail tune
+
+The owner: something now and then in both eras, not only the rail; and
+voices, English, from time to time, workers grumbling or pleased as in a
+city builder, with a bubble in the town where it is said. Then, halfway
+through: not read but played — characters who come back, broad, funny,
+short, with the expressive model and its stage directions.
+
+### The canal's life, and two more for the rail
+
+One take each, judged by the envelope (0.25 s windows), loudness and a
+transcription where a voice might hide in it.
+
+| event | take, cut | what it is, and why kept |
+|---|---|---|
+| life-horse | life-horse-1, 0-5.5 s | steady hooves on gravel with the harness, -23 to -35 dB windows, going from 4.5 s. -29 LUFS (its peak stops it there) |
+| life-lock | life-lock-1, 0-4.3 s | a creak, then the sluice held at -16 to -21 dB; the take cuts the water off at 4.25 s, so the last second is faded. -28 LUFS |
+| life-forge | life-forge-1, 0-3.6 s | blows over 2.5 s and their ring. Knocks: no dehum. -28 LUFS |
+| life-bell | life-bell-1, 0-6 s | one stroke (three were asked) and a 6 s decay, LRA 29 LU. Top dulled at 5 kHz. -29 LUFS |
+| life-geese | life-geese-1, 0.4-3.6 s | honking from 0.5 to 3.3 s (transcribed "[geese honking]"). Crosses from one side to the other, like the passing train. -28 LUFS |
+| life-call | not used | a boatman's wordless call across the water: transcribed "[howling]". Heard as a dog or a wolf, it would be wrong over the canal. Bought, not used |
+| life-hammer (rail) | life-hammer-1, 0.2-3.6 s | a steam hammer: five heavy blows over 3 s. Knocks: no dehum. -27 LUFS |
+| life-steam (rail) | life-steam-1, 0.2-4.4 s | a safety valve blowing off, held 2.8 s, dying away by 4.2 s. -28 LUFS |
+
+All are cut under 90 Hz and over 6 kHz (the bell 5 kHz), mono, the
+textures rid of the 200 Hz comb.
+
+### music-rail-iii
+
+A parlour waltz in 3/4 (A major, 88 bpm): harmonium, clarinet, cello and
+square piano (`RAIL_III` in `generate.py`), unlike the march and the
+ostinato. One 100 s take, 1 375 credits. -12.6 LUFS, LRA 4.0, a dip of 5 to
+6 dB every 22 s (the phrases' breaths), its own last chord dying from 96 s,
+silent from 99.2 s. Served whole to 99.3 s, faded over the last 3 s, rid
+of the comb, nothing under 45 Hz, a plain gain of -7.4 dB to -20 LUFS (peak
+-7.4 dBFS). The rail's playlist now has three tunes.
+
+### The voices: a first try, read plainly (not served)
+
+Thirty-one lines, read by six voices of the shared library chosen for their
+regional English (a south-east Lancashire old man, a broad Lancashire
+boatman, a young Midlands man, a young northern woman, a Leeds landlady, a
+West Midlands woman), with `eleven_multilingual_v2`. Nothing can be judged
+here by ear, so every take was put through the speech-to-text model
+(`scribe_v1`) and compared with its line: 23 came back word for word, three
+more only by the accent ("Passes the lamp" for "Pass us the lamp",
+"Broomagem", "sut" for "soot"), five were wrong and taken again or
+reworded ("Ale's on me" heard as "Ali", then "All eyes on me"; "Good seam"
+as "sim", then "scene"). 547 credits. The owner then asked for characters
+instead, played broad: these takes stay in `raw/` (`voice-*`), unused.
+
+### The townsfolk: the character sheet
+
+Seven people who come back, each with a trade, a town and a comic turn.
+Each voice was drawn by the voice-design model from a description (in
+`generate.py`, `CHARACTERS`) saying a sample of their lines, three drafts
+at a time; the draft kept is the one whose transcription matched the sample
+and whose delivery was the most animated, measured as the widest loudness
+range (LRA).
+
+| character | trade, town | turn | lines | draft kept |
+|---|---|---|---|---|
+| Ezra Platt | old collier come down from Wigan; Cannock | the moaner: his knees, the price of coal, the railways, "in my day" | 6 | 1 of 3 (LRA 5.6 against 2.5 and 3.2; all three word for word) |
+| Barnaby Tuck | boatman on the Trent and Mersey; Stone | cheery, sweet on his horse Bess | 6 | 1 (LRA 12.0 with a laugh, against 3.8 and 5.1) |
+| Nellie Hartley | mill girl at the Belper mills | the gossip: gasps, whispers, giggles | 6 | 3 (LRA 6.4, the questions said as questions; 1 and 2 flat, 2.7 and 2.0) |
+| Mrs Hepzibah Blewitt | landlady of the Swan; Burton | proud of her brew, and tasting it: hiccups | 5 | 1 (LRA 6.7 against 2.5 and 5.3) |
+| Mr Josiah Pomfrey | overseer of a button works; Birmingham | pompous, clears his throat, splutters | 5 | 1 (LRA 2.9, the widest of three narrow ones) |
+| Kezia Dunn | potter's wife; Stoke (Burslem) | dry, tuts, calls everyone "duck" | 5 | 3 (1 split "Kiln came out. Lovely", 2 said "Keown") |
+| Tom Bellows | puddler at the iron works; Dudley | half deaf from the hammers: shouts everything, "What?" | 5 | 2 (tied with 1 at LRA 4.5; the louder of the two, -17.4 against -21.9 LUFS at the same settings: he is the shouter) |
+
+Their lines are short (2 to 9 words), grumbling, pleased or neither, some
+about a trade (said only where it is built, or when coal or iron is dear),
+some of one era only (the towpath in the canal, the engines and the soot in
+the rail). The full list, with the stage directions (`[grumbling]`,
+`[hiccups]`, `[shouting]`...), is `VOICES` in `generate.py`; the same lines
+without them are `LINES` in `app/src/gl/voices.ts`, and a test holds the
+two together.
+
+Said by `eleven_v3` at its loosest setting ('Creative', stability 0), each
+take put through the speech-to-text model as before: 36 of 38 word for word
+at the first take, the stage directions heard as such ("[laughs]",
+"[sighs]", "[gasps]", "[clears throat]", "[hiccups]"). Ezra's timing came
+of itself: a second's pause before "Almost." and before "We had mud."
+
+| line | takes | why |
+|---|---|---|
+| bark-barnaby-rope | 2 kept | take 1 "Morn the rope", take 2 "Mind the road": "Mind" now right, one consonant off, and the bubble shows the word |
+| bark-hepzibah-finest | 3 kept, reworded | "Finest ale" came out "Finest iron" twice in her broad vowels (as "ale" failed the first try's boatman): take 3 boasts of her "brew", word for word with its hiccup |
+| bark-kezia-price | 1 | an "Oh," of her own before the line, from the `[tuts]`: kept |
+| bark-hepzibah-soot | 1 | "I ask ya" for "I ask you": the accent, kept |
+| the others | 1 | word for word |
+
+993 credits for the 41 takes, 1 265 for the seven designs.
+
+The lines are levelled like the houses: the breath before and after cut,
+nothing under 110 Hz (a close microphone's chest) nor over 7 kHz, one early
+reflection 30 ms off at -16 dB (a wall across the street), mono, -22 LUFS
+with the peak held at -3 dBFS (Ezra's "Almost" and "Good coal" stop at
+-24.6 and -22.2 on their peak). No dehum: the speech model has no 200 Hz
+comb (in Ezra's pause, lifted 10 dB, the floor is -65 dBFS and 400 Hz stands
+7 dB under its neighbour at 450 Hz). 38 lines, 2 to 5 s each, about 30 kB
+each.
+
 ## The buzz under the ambience
 
 The owner heard a "bzzzz" under the table. Measured, not heard:
@@ -302,7 +417,7 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
   board settings (on, at 0.5, by default). Bus scale 0.18: at the default
   levels a tune sits about -41 LUFS against the canal ambience's -38.
   Each era has its playlist (`TUNES` in playlist.ts): the canal three, the
-  rail two. They play while a game is in the action phase of an era
+  rail three. They play while a game is in the action phase of an era
   (`tuneWanted` in useTableSounds.ts gives the era): the first tune 4 to
   10 s after the era opens, then each tune heard through (the canal's first
   air twice over, 137 s; the others once, 98 s or so), then the ambience
@@ -312,14 +427,38 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
   the canal era closes (the whistle is then heard alone) and at the end of
   the game, and within 1 s when its switch or the board's sound switch is
   shut. Nothing before the reader's first gesture on the page.
-- The rail's life: while the rail's ambience plays, one of the four events
-  every 40 to 120 s (drawn afresh after each), never two at once, never the
-  same twice running, on the ambience bus at 1.4 (the bed plays at 1.2),
-  panned to one side at random; the passing train crosses from that side
-  to the other. A moment of the game (the bell of a turn, the era's
-  whistle, the band) hushes it: an event already sounding fades out in
-  0.3 s, and none begins until 3 s after the moment has ended. The canal
-  has none: its birds are its life.
+- Each era's life: while the era's ambience plays, one of its events (the
+  canal's five, the rail's six) every 40 to 120 s (drawn afresh after
+  each), never two at once, never the same twice running, on the ambience
+  bus, panned to one side at random; the passing train and the geese cross
+  from that side to the other. The rail's play at 1.4 (its bed at 1.2), the
+  canal's at 2 (its birds at 1.4 and -22 LUFS leave the middle band free).
+  A moment of the game (the bell of a turn, the era's whistle, the band)
+  hushes it: an event already sounding fades out in 0.3 s, and none begins
+  until 3 s after the moment has ended. When the era turns, the canal's
+  event goes with its ambience.
+- The townsfolk (`app/src/gl/voices.ts`, sfx.ts, `VoiceBubble.tsx`): while an
+  era is played on the Midlands board, with the Voices switch on (the
+  board settings, on by default), a line every 60 to 180 s, one at a time,
+  never over a moment (it waits, and one speaking fades out), never the
+  line just heard. What the game did picks it: a works that paid off (its
+  tile turned) is answered by a pleased line about that trade in its town
+  (Kezia's kiln at a pottery, Tom's furnace at an iron works); coal or iron
+  bought dear (£4 and up for coal, £3 for iron) or a market emptied, by a
+  grumble in the buyer's town; a works built, a little less. Such a stir is
+  answered 3 to 8 s after it, but never sooner than a minute after the last
+  voice, and is kept two minutes. Otherwise anyone, anywhere a works
+  stands: pleased, grumbling or neither, half the time in the speaker's
+  own town. On the ambience's bus at 3.2: about -31 LUFS at the levels the
+  settings open on, a piece laid coming to -27 and the canal's birds to
+  -38. Panned by the town's place on the board, west to the left.
+- The bubble: cream paper over the town's cluster of tiles, the speaker's
+  name and trade in small capitals over the line in italics, English in
+  every language; up while the voice speaks and 1.5 s after, faded in and
+  out, the pointer passing through it, under the HUD. A town near the top
+  of the frame hangs its bubble below it instead. Checked in headless
+  Chrome at 1440x900: Tom at Dudley, Nellie at Belper (below), the bubble
+  gone 1.2 to 1.9 s after the voice.
 
 - A house: its recording once as the pointer arrives (no loop), on the
   gestures' bus at 0.6, faded in over 60 ms and out over 0.4 s when the
@@ -335,4 +474,7 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
     python3 tools/assets/sfx/generate.py         # only the takes not on disk
     python3 tools/assets/sfx/generate.py music-canal  # the tune: only when named
     python3 tools/assets/sfx/generate.py music-rail-i music-rail-ii  # likewise
+    python3 tools/assets/sfx/generate.py --design ezra   # three drafts of a voice
+    python3 tools/assets/sfx/generate.py --keep ezra 1   # the draft kept, as a voice
+    python3 tools/assets/sfx/generate.py bark-ezra-dear  # a line (the characters' voices)
     TMPDIR=/tmp python3 tools/assets/sfx/process.py
