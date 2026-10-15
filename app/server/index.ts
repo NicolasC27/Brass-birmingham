@@ -66,6 +66,8 @@ interface Client {
   /** when the register was last sent, and the push waiting to go */
   tablesAt: number;
   tablesTimer: ReturnType<typeof setTimeout> | null;
+  /** the socket was opened from this very machine, with no proxy between */
+  local: boolean;
   /** how much this socket may still say, and how often it has been told no */
   words: Bucket;
   claims: Bucket;
@@ -135,6 +137,12 @@ interface Attempts {
 }
 /** the counter's own reading of the letters and the box: only from this machine */
 const loopback = (req: IncomingMessage): boolean => ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
+/** the test bench's own reach: this machine, and nothing forwarded to it —
+ *  an office behind a proxy on the same host hears every stranger on the
+ *  loopback, with the stranger's address in the header */
+const benchReach = (req: IncomingMessage): boolean => loopback(req) && req.headers['x-forwarded-for'] === undefined && req.headers['x-real-ip'] === undefined;
+/** the longest stretch of a log the bench hands over in one frame */
+const BENCH_MOVES = 200;
 const sameToken = (a: string, b: string): boolean => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
 
 /* ----------------------- the office, per account ---------------------- */
@@ -232,6 +240,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   /* the counter's pages are for the developer's own machine: a house that
      forgets, or one told DEV_LETTERS=1, and only from this very machine */
   const dev = file === ':memory:' || process.env.DEV_LETTERS === '1';
+  /* the test bench (the dev pages' /admin) hands logs over whole: only an
+     office told DEV_LETTERS=1, a house that merely forgets is not enough */
+  const bench = process.env.DEV_LETTERS === '1';
   const feedbackToken = (process.env.FEEDBACK_TOKEN ?? '').trim();
   const trustProxy = options.trustProxy ?? process.env.TRUST_PROXY === '1';
   /* the origins a browser may speak from: a page elsewhere gets no socket */
@@ -472,7 +483,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   };
 
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, mark: `s-${++marks}`, ip: addressOf(req, trustProxy), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, mark: `s-${++marks}`, ip: addressOf(req, trustProxy), local: benchReach(req), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
@@ -788,6 +799,34 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'done', rid: m.rid });
           tellHome(who.id);
         }
+        return;
+      }
+      case 'dev.home.play': {
+        /* the test bench: a stretch of log at once, never the drip of the
+           anti-flood — and never anywhere but on the developer's machine */
+        if (!bench || !c.local) {
+          send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+          return;
+        }
+        const code = typeof m.code === 'string' ? normalizeCode(m.code) : '';
+        if (!code || !Number.isInteger(m.from) || m.from < 0 || !Array.isArray(m.actions) || m.actions.length > BENCH_MOVES) {
+          send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+          return;
+        }
+        /* each move read by the engine and written, exactly as one sent alone */
+        let over = false;
+        for (let i = 0; i < m.actions.length; i++) {
+          const r = home.act(who.id, code, m.from + i, m.actions[i]);
+          if (!r.ok) {
+            send(c, { t: 'refused', rid: m.rid, error: `${r.error} (move ${m.from + i})` });
+            tellHome(who.id);
+            return;
+          }
+          over = r.over;
+        }
+        send(c, { t: 'done', rid: m.rid });
+        tellHome(who.id);
+        if (over) for (const s of socketsOf(who.id)) pushDesk(s);
         return;
       }
       case 'analysis.get': {

@@ -62,8 +62,9 @@ export class Guest {
     this.name = name;
   }
 
-  async open(port: number): Promise<void> {
-    this.socket = new WebSocket(`ws://127.0.0.1:${port}`);
+  /** `headers`: what a proxy in front of the office would add */
+  async open(port: number, headers?: Record<string, string>): Promise<void> {
+    this.socket = new WebSocket(`ws://127.0.0.1:${port}`, headers ? { headers } : undefined);
     await new Promise<void>((ok, ko) => {
       this.socket.once('open', () => ok());
       this.socket.once('error', ko);

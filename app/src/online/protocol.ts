@@ -156,6 +156,11 @@ export type ClientMessage =
   | { t: 'home.undo'; rid: number; code: string; at: number }
   /** a game at home put away for good */
   | { t: 'home.forget'; rid: number; code: string }
+  /** the test bench only (an office started with DEV_LETTERS=1, a socket
+      from this very machine): a stretch of a game at home's log at once,
+      from its place `from`, each move read by the engine as `home.act`
+      reads it. Answered `done`, or `refused` at the first move that fails */
+  | { t: 'dev.home.play'; rid: number; code: string; from: number; actions: GameAction[] }
   /** what I wrote beside a game of mine: the towns pinned and the page kept */
   | { t: 'notes.get'; rid: number; code: string }
   | { t: 'notes.put'; code: string; body: unknown }
