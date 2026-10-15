@@ -76,7 +76,7 @@ export default function SoundBoard() {
   const [alone, setAlone] = useState<{ name: string; stop: () => void } | null>(null);
   const [preview, setPreview] = useState<Line | null>(null);
   const said = useSyncExternalStore(onSaid, saidNow, () => null);
-  const shown = said ?? (preview ? { name: CAST[preview.who].name, trade: CAST[preview.who].trade, text: preview.text } : null);
+  const shown = said ?? (preview ? { id: preview.id, name: CAST[preview.who].name, trade: CAST[preview.who].trade, text: preview.text } : null);
 
   const ambience = (era: Era) => {
     const next = amb === era ? null : era;

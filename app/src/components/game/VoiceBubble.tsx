@@ -4,6 +4,7 @@ import { TOWN_BY_ID } from '@/game/data';
 import { onSaid, saidNow } from '@/gl/sfx';
 import type { Said } from '@/gl/sfx';
 import type { AnchorRegistry } from './boardView';
+import { useLang, useT } from '@/i18n';
 import { townChrome } from './townChrome';
 
 /* ------------------------------------------------------------------ */
@@ -11,7 +12,8 @@ import { townChrome } from './townChrome';
 /* the line is heard, the speaker's name over it, while the voice      */
 /* speaks and a moment after (sfx.ts decides when). Hung from the map  */
 /* like the town's card, under the HUD, and never in the pointer's     */
-/* way. The line is English in every language: it is what was said.   */
+/* way. The line is English in every language: it is what was said;   */
+/* in any other language its sense follows under it, in small.        */
 /* ------------------------------------------------------------------ */
 
 /** a bubble whose top would come this close to the top of the frame (px),
@@ -37,7 +39,7 @@ function Bubble({ said, anchors }: { said: Said; anchors: AnchorRegistry }) {
     return off;
   }, [anchors, town]);
   return (
-    <div ref={box} className="group pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full data-[below=1]:translate-y-0" aria-live="polite" lang="en">
+    <div ref={box} className="group pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full data-[below=1]:translate-y-0" aria-live="polite">
       <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
         <BubbleFace said={said} />
       </motion.div>
@@ -45,15 +47,23 @@ function Bubble({ said, anchors }: { said: Said; anchors: AnchorRegistry }) {
   );
 }
 
-/** the paper of the bubble itself, the speaker over the line — hung over a
- *  town on the board, or shown on its own by the test bench */
-export function BubbleFace({ said }: { said: Pick<Said, 'name' | 'trade' | 'text'> }) {
+/** the paper of the bubble itself, the speaker over the line and, for a
+ *  reader of another language, its sense under it — hung over a town on
+ *  the board, or shown on its own by the test bench */
+export function BubbleFace({ said }: { said: Pick<Said, 'name' | 'trade' | 'text'> & { id?: string } }) {
+  const lang = useLang();
+  const t = useT();
+  const key = said.id ? `game.voices.${said.id}` : null;
+  const sense = lang !== 'en' && key && t(key) !== key ? t(key) : null;
   return (
     <div className="relative max-w-[210px] rounded-[10px] border border-brass-700/50 bg-cream-100 px-2.5 pb-1.5 pt-1 text-center text-ink-900 shadow-e4">
       <span className="block font-fell text-[10px] leading-tight tracking-wide text-ink-900/60">
         {said.name}, {said.trade}
       </span>
-      <span className="block font-serif text-[13px] italic leading-snug">{said.text}</span>
+      <span className="block font-serif text-[13px] italic leading-snug" lang="en">
+        {said.text}
+      </span>
+      {sense && <span className="mt-0.5 block border-t border-brass-700/25 pt-0.5 font-serif text-[10.5px] leading-snug text-ink-900/60">{sense}</span>}
       {/* the tail, pointing at the town: under the bubble, or over it when it hangs below */}
       <span
         aria-hidden
