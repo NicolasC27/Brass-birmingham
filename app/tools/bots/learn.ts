@@ -18,7 +18,7 @@
 /* game's points once the rails are laid.                              */
 /* ------------------------------------------------------------------ */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { cpus } from 'node:os';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -248,7 +248,10 @@ async function play(tag: string): Promise<void> {
     at += r.buffer.byteLength;
   }
   const file = resolve(DATA_DIR, `${STAMP}${tag}.f32`);
-  writeFileSync(file, all);
+  /* written aside and renamed once whole: a run killed in the middle of the
+     write once left a record cut at 24 MiB under a name that looked finished */
+  writeFileSync(`${file}.part`, all);
+  renameSync(`${file}.part`, file);
   const rows = total / 4 / ROW;
   const canal = results.reduce((a, r) => a + r.canal, 0) / results.length;
   log(`play ${tag}: ${GAMES} games, ${rows} positions, mean canal-era points ${canal.toFixed(1)}, ${Math.round((Date.now() - started) / 1000)} s`);
@@ -260,9 +263,16 @@ async function play(tag: string): Promise<void> {
 function loadSamples(): Float32Array {
   if (!existsSync(DATA_DIR)) return new Float32Array(0);
   const strangers = readdirSync(DATA_DIR).filter((f) => f.endsWith('.f32') && !f.startsWith(STAMP)).length;
-  if (strangers) console.warn(`${strangers} record${strangers > 1 ? 's were' : ' was'} written for a different reading and left unread: this one wants ${FEATURES} features`);
+  if (strangers) console.warn(`${strangers} record${strangers > 1 ? 's were' : ' was'} written for a different reading or other rules and left unread: this one wants ${STAMP}*`);
+  /* A record that is not a whole number of rows was cut short in the writing.
+     Read back to back with the others it would shift every row after it by a
+     fraction of a row, and every one of those rows would then be read as the
+     wrong numbers in the wrong places. It is left unread, and said aloud. */
+  const whole = (f: string): boolean => statSync(resolve(DATA_DIR, f)).size % (ROW * 4) === 0;
+  const cut = readdirSync(DATA_DIR).filter((f) => f.startsWith(STAMP) && f.endsWith('.f32') && !whole(f));
+  if (cut.length) console.warn(`${cut.length} record${cut.length > 1 ? 's are' : ' is'} not a whole number of rows and left unread: ${cut.join(', ')}`);
   const files = readdirSync(DATA_DIR)
-    .filter((f) => f.startsWith(STAMP) && f.endsWith('.f32'))
+    .filter((f) => f.startsWith(STAMP) && f.endsWith('.f32') && whole(f))
     .map((f) => ({ f, at: statSync(resolve(DATA_DIR, f)).mtimeMs }))
     .sort((a, b) => b.at - a.at)
     .map((x) => x.f);
