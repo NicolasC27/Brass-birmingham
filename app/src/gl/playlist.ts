@@ -63,8 +63,11 @@ export const VOICE_GAP: readonly [number, number] = [60, 180];
  *  dear): a voice is heard there this soon after, if the last one is at
  *  least VOICE_GAP's shortest span behind */
 export const VOICE_REACT: readonly [number, number] = [3, 8];
-/** the bubble stays up this long after the voice has finished */
-export const BUBBLE_AFTER_S = 1.5;
+/** the bubble stays up this long after the voice has finished: time to
+ *  read the line again, and its sense under it */
+export const BUBBLE_AFTER_S = 3;
+/** and never less than this in all, however short the line */
+export const BUBBLE_MIN_S = 5;
 
 /** when the next voice is due (ms): as planned; or, when a town has just
  *  stirred, a few seconds after it — never sooner than the planned time
@@ -77,7 +80,7 @@ export function voiceAt(planned: number, lastEnd: number, stirAt: number | null,
 }
 
 /** how long a line's bubble is shown, in seconds */
-export const bubbleSpan = (voiceSeconds: number): number => voiceSeconds + BUBBLE_AFTER_S;
+export const bubbleSpan = (voiceSeconds: number): number => Math.max(BUBBLE_MIN_S, voiceSeconds + BUBBLE_AFTER_S);
 
 /** when an event planned for `at` may sound: not while a moment of the game
  *  (the bell of a turn, the era's whistle, the band) is heard, nor just

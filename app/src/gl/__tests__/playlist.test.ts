@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BUBBLE_AFTER_S, LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, bubbleSpan, lifeAt, nextOf, spanOf, tuneOf, voiceAt } from '../playlist';
+import { BUBBLE_AFTER_S, BUBBLE_MIN_S, LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, bubbleSpan, lifeAt, nextOf, spanOf, tuneOf, voiceAt } from '../playlist';
 import type { Chance, Life } from '../playlist';
 
 /** a seeded chance (mulberry32), so a long run is the same every time */
@@ -126,8 +126,11 @@ describe('the townsfolk’s pace', () => {
     expect(voiceAt(62 * S, 0, 60 * S, 8)).toBe(62 * S);
   });
 
-  it('keeps the bubble up a moment after the voice', () => {
-    expect(BUBBLE_AFTER_S).toBe(1.5);
-    expect(bubbleSpan(2.4)).toBeCloseTo(3.9);
+  it('keeps the bubble up long enough to read, a while after the voice', () => {
+    expect(BUBBLE_AFTER_S).toBe(3);
+    expect(BUBBLE_MIN_S).toBe(5);
+    expect(bubbleSpan(2.4)).toBeCloseTo(5.4);
+    /* a short line is still read at leisure */
+    expect(bubbleSpan(1)).toBe(5);
   });
 });

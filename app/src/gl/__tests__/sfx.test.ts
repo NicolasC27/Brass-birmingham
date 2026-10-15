@@ -382,7 +382,7 @@ describe('the townsfolk', () => {
     /* nothing more while it speaks */
     await vi.advanceTimersByTimeAsync(300_000);
     expect(lines()).toHaveLength(1);
-    /* heard out (the fake recording runs 2 s): the bubble goes 1.5 s after it */
+    /* heard out (the fake recording runs 2 s): the bubble goes 3 s after it */
     lines()[0].onended?.();
     expect(saidNow()).toBeNull();
     expect(told).toBe(2);
