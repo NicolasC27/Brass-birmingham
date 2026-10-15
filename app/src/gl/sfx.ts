@@ -1092,7 +1092,6 @@ function playTune(era: Era, name: string): void {
       src.loopEnd = Math.min(buf.duration, t.loop);
       gain.gain.setValueAtTime(1, t0 + length - TUNE_END);
       gain.gain.linearRampToValueAtTime(0.0001, t0 + length);
-      src.stop(t0 + length + 0.05);
     }
     src.connect(gain).connect(busOf(ac, 'music'));
     /* heard to its end: the ambience alone for a while, then another */
@@ -1102,6 +1101,9 @@ function playTune(era: Era, name: string): void {
       waitTune(spanOf(TUNE_PAUSE, chance));
     };
     src.start(t0);
+    /* a loop is stopped after its turns — only once started: a source told
+       to stop before it starts throws, and the era's playlist died with it */
+    if (t.loop) src.stop(t0 + length + 0.05);
     tune = { era, name, src, gain };
     lastTune = name;
     if (import.meta.env.DEV && heard.push(name) > 40) heard.shift();
