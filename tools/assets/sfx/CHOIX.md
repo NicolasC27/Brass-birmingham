@@ -40,7 +40,19 @@ loudness, a listener model), its results in `judge/`.
 | after music-canal-vi-1 (a prompt) | 26 311 |
 | after music-canal-iv-2 (a prompt) | 28 580 |
 | after music-canal-v-2 (a prompt) | 30 849 |
-| **spent in all** | **27 766** (the sixth round's cap: 32 000 on the counter; `generate.py` stops there) |
+| before the seventh round (a canal piece, two rail pieces) | 30 849 |
+| after the first takes of the four slots (vii-1, viii-1, rail-iv-1, rail-v-1) | 40 063 |
+| after the second takes (vii-2, viii-2, rail-v-2) | 46 939 |
+| after the third takes (vii-3, viii-3, rail-v-3) | 53 815 |
+| after the fourth takes (vii-4, viii-4, rail-v-4) | 60 691 |
+| after the whistles again (six takes) and four low scorers again | 61 123 |
+| **spent in all** | **58 040** (the seventh round's cap: 83 000 on the counter; `generate.py` stops there) |
+
+The seventh round: 30 274 credits. The tunes: 29 842, thirteen takes, the
+canal's of 165 s at 2 269 each, the rail's of 170 s at 2 338 (13.75 a
+second, as before); every slot had had its four takes. The short sounds:
+432, ten takes (the whistles' 4 s at 44 each). 21 877 were left under the
+cap.
 
 The sixth round: 11 345 credits, five takes of 165 s at 2 269 each (13.75
 a second, as before; a composition plan costs the same as a prompt).
@@ -94,7 +106,7 @@ Nothing was judged by ear.
 | link-canal | link-canal-1 | two soft splashes, 0.87 s |
 | link-rail | link-rail-1 | a metallic clank with a low decay. The take was quiet (peak -25 dB), lifted by 22 dB |
 | sell | sell-1 | coins over 1.1 s, bright partials |
-| era-end | era-end-1 | a tonal whistle with a long fall. Low-passed at 4.2 kHz to sit in the distance |
+| era-end | **era-end-4** (was era-end-1) | see "The short sounds judged": one warm note at 580 Hz, blown twice in process.py. Low-passed at 4.2 kHz to sit in the distance |
 | victory | victory-1 | a brass fanfare, 3.5 s of sound, with a clear held chord |
 | defeat | victory-1, processed | the same fanfare muted: low-pass 900 Hz, high-pass 90 Hz, a short room echo, peak 6 dB under the win. No extra take bought |
 | loan | loan-1 | a paper rustle, then one leather thump |
@@ -182,7 +194,7 @@ Four short takes, one each, heard over the rail's bed now and then:
 
 | event | take, cut | counter | what it is, and why kept |
 |---|---|---|---|
-| life-whistle | life-whistle-1, 0-3.3 s | 8 709 / (8 863) | one whistle blast of 1.7 s (a stack of partials over 400 Hz) and its ring. Asked for two blasts: one came, kept. Given distance: under 3 kHz only, two slow echoes (230 and 470 ms), -27 LUFS |
+| life-whistle | life-whistle-1, 0-3.3 s (**life-whistle-4** since the seventh round, blown twice: see "The short sounds judged") | 8 709 / (8 863) | one whistle blast of 1.7 s (a stack of partials over 400 Hz) and its ring. Asked for two blasts: one came, kept. Given distance: under 3 kHz only, two slow echoes (230 and 470 ms), -27 LUFS |
 | life-passing | life-passing-1, 0.3-7.4 s | 8 709 / (8 863) | the clatter of rail joints swelling from 1 s, held from 3 s; the take stops short at 7.2 s, so it is faded over its last 1.3 s. -25.7 LUFS. Played crossing from one side to the other |
 | life-couple | life-couple-1, 0.1-2.1 s | 8 709 / 8 863 | a run of iron clanks (0.2-1.6 s, the loudest at 1.1 s) over a low floor, the floor cut under 90 Hz. -27 LUFS. Knocks: no dehum, as for the trades |
 | life-depart | life-depart-1, 0-5.2 s | 8 863 / (9 314) | heavy chuffs and steam for 3 s, falling away; the low hum after 4.5 s (under 80 Hz) cut. -25.9 LUFS |
@@ -451,6 +463,296 @@ where the old air's phrase came 8 times in a row every time it played.
 Neither was asked again: 1 151 credits were left under the round's cap,
 under the price of one take.
 
+## The seventh round: the walking air, the march and the waltz written through
+
+The owner: go, there are the credits for it. The canal's walking air (v,
+loopiness 65: each strain of its air played twice running) is replaced,
+and the waltz in A dorian (vi, 57) too should a take clearly beat it; the
+rail's march (i: content enjoyment 5.82, one phrase ten times in 98 s)
+and its waltz (iii: 74.6, a 57 s stretch heard again) are replaced by
+pieces written through, two and a half to three minutes each. The rail's
+ostinato (ii) stays.
+
+### The gate
+
+A take is kept when, as served: loopiness at most 40, content enjoyment
+(CE) at least 7.7, production quality (PQ) at least 7.9, the comb gone
+after dehum, a sensible loudness range (3 to 10 LU, as in the sixth
+round), no hole. Up to four takes a slot, each judged (`judge.py`, and
+per 10 s window) before the next was bought, its prompt answering what the
+last one's numbers said. The prompts are in `generate.py` (a list a
+piece, one prompt a take, each with what the judge said before it).
+Palettes: the canal's calm 1830s chamber and folk players (fiddle, wooden
+flute, English concertina, pedal harp, square piano, cello); the rail's
+busier, over a steady pulse like an engine's (strings, fortepiano, the
+winds and brass of the day), never a drum kit, a voice or anything modern.
+
+### The takes
+
+| take | asked as | counter before / after | loopiness | CE | PQ | LRA | what the judge shows | kept |
+|---|---|---|---|---|---|---|---|---|
+| music-canal-vii-1 | a fantasia, a new key a section, G major, 72 bpm | 30 849 / 33 118 | 54.3 | 7.49 | 7.89 | 7.0 | the harp's two-bar figure every 6.7 s over the first 70 s (a phrase 8 times), the air's return 60 s later | no |
+| music-canal-viii-1 | a romance in 3/4, F major, 76 bpm | 33 118 / 35 387 | 39.3 | 7.47 | 7.99 | 6.6 | repeats in order, but its opening 5 dB under the rest and scored lowest (7.2-7.4) | no |
+| music-rail-iv-1 | a fantasia: string quintet, fortepiano, cornet, euphonium over an engine's pulse, D minor, 112 bpm | 35 387 / 37 725 | 38.5 | 8.02 | 8.18 | 1.9 | the opening vamp of the pulse (4 s phrases over 20 s), then nothing heard again; 8.0 a window all through | **yes**, at the first take |
+| music-rail-v-1 | a fantasia for a brass band with strings, B-flat major, 100 bpm | 37 725 / 40 063 | 56.4 | 6.79 | 7.35 | 5.6 | the brass band scored as the march had (6.3-6.8 a window), a 19 s strain round and round, three holes | no |
+| music-canal-vii-2 | warmer and more flowing (88 bpm), the accompaniment asked to change its figure | 40 063 / 42 332 | 65.7 | 7.67 | 7.97 | 7.8 | the flute's strain twice running (22 s apart) and the air come back whole from 110 s, a 40 s stretch | no |
+| music-canal-viii-2 | 3/4 at 92 bpm, the whole group from the first bar | 42 332 / 44 601 | 28.7 | 7.48 | 7.93 | 4.5 | its opening strain four times (7.0-7.3 over the first 30 s), the body 7.5-7.8 | no |
+| music-rail-v-2 | led by the strings and the fortepiano, clarinet and horn, G major, 104 bpm | 44 601 / 46 939 | 64.8 | 7.68 | 7.89 | 3.4 | a 28 s strain twice running and again 70 s later | no |
+| music-canal-vii-3 | a chain of seven episodes of about 20 s, each its own melody, leader and key | 46 939 / 49 208 | 93.5 | 7.67 | 7.77 | 1.8 | one 22 s strain played round and round from 40 s to the end (15 times) | no |
+| music-canal-viii-3 | the chain, in 3/4 | 49 208 / 51 477 | 72.5 | 7.28 | 8.25 | 8.1 | the same: a 21 s strain from 70 s to the end | no |
+| music-rail-v-3 | the chain, with the pulse | 51 477 / 53 815 | 49.0 | 7.61 | 7.83 | 3.4 | an 18 s strain seven times from 55 s | no |
+| music-canal-vii-4 | a rhapsody: lines that wander and never settle into eight-bar phrases, 80 bpm | 53 815 / 56 084 | 45.6 | 7.71 | 8.04 | 8.0 | its opening phrase three times in 18 s, a 24 s strain four times from 37 s; the body 7.7-7.9 a window | **yes**, a strain heard once (below) |
+| music-canal-viii-4 | rail-iv-1's form (a pulse, a melody developing, the relative major, the melody transformed) with strings, flute and harp, A minor, 6/8 | 56 084 / 58 353 | 62.9 | 7.60 | 7.95 | 10.2 | the opening strain again and again, a 5 s figure from 110 s | no |
+| music-rail-v-4 | rail-iv-1's prompt in G minor with clarinet and horn, 108 bpm | 58 353 / 60 691 | 55.2 | 7.72 | 8.16 | 12.6 | its opening pulse alone 12 dB under the body (6.6), a 9 s phrase seven times from 90 s, 12 dB louder over its first 90 s | **yes**, trimmed, ridden and a phrase heard once (below) |
+
+(`judge/seventh-takes-raw.json`: the raw takes; `judge/seventh-splices.json`:
+the cuts tried; `judge/seventh.json`: the playlists as served.)
+
+What the prompts taught:
+
+- **The model plays a strain twice.** A folk air, a waltz, a march or a
+  romance comes back AABB whatever the prompt forbids ("never repeated",
+  "no AABB", "no refrain"). A fantasia with a key a section (vii-1,
+  viii-1, rail-iv-1) repeated least; asked for a chain of 20 s episodes,
+  the model heard "twenty seconds" as a strain and played one round and
+  round (vii-3 94, viii-3 73): the worst takes of the round.
+- **The players set the listener's score.** Strings and a fortepiano over
+  a pulse score 7.7 to 8.1 a window; a brass band 6.3 to 6.8 (rail-v-1,
+  as the march before it). The canal's calm pieces sit at 7.5 to 7.8 in
+  their body, their quiet openings lowest: the canal's CE gate is at the
+  top of what the model gives that music.
+- **A rhapsody** ("lines that wander, no eight-bar phrases") gave the
+  canal's best take (vii-4, CE 7.71), still with one strain four times.
+
+### A strain heard once
+
+What no prompt stopped is taken out afterwards. The judge's phrase
+matches give each repeat as a pair (a, b): what the take plays from b it
+played at a. Leaving out a to b drops one playing and keeps the music
+whole, since at b the take goes on as it did from a. b is set to the
+sample (`aligned`, as the old loop's fold), and over 0.5 s the first
+playing fades out under the second on equal-power curves scaled for how
+alike they are (`spliced` in process.py; the seventh element of a piece
+in `PIECES`). A weak opening that only repeats itself is cut too, the
+piece then starting on the phrase after it (the player fades each tune in
+over 5 s). The cuts tried:
+
+| piece | cut | length | loopiness | CE | PQ |
+|---|---|---|---|---|---|
+| vii-4 | 59.0-107.0 (two playings) | 117.0 | 34.6 | 7.65 | 8.07 |
+| vii-4 | 36.8-108.8 (three) | 93.0 | 17.8 | 7.59 | 8.11 |
+| vii-4 | 83.7-107.6 (one) | 141.1 | 39.1 | 7.67 | 8.02 |
+| vii-4 | from 18.5 s, 59.0-107.0 | 98.5 | 28.0 | 7.70 | 8.02 |
+| **vii-4** | **from 18.5 s, 83.7-107.6** | **122.6** | **37.6** | **7.71** | **7.98** |
+| rail-v-4 | from 18.4 s | 151.6 | 42.9 | 7.80 | 8.18 |
+| **rail-v-4** | **from 18.4 s, 133.4-142.3** | **142.7** | **31.2** | **7.81** | **8.19** |
+| rail-v-4 | from 18.4 s, 89.5-124.8 | 116.3 | 34.6 | 7.80 | 8.20 |
+| rail-v-2 | 40.9-68.6 | 142.3 | 35.5 | 7.65 | 7.87 |
+| rail-v-2 | from 18.0 s, 40.9-68.6 | 124.3 | 16.6 | 7.71 | 7.92 |
+
+Leaving more out lowers the loopiness but not the listener's score: the
+strains cut are among a piece's best windows, and what is left weighs its
+opening and its close the more. The shortest cut that passes is kept.
+Checked on the served files: the beat runs on across each splice (0.49 to
+0.53 s a beat around it in vii, 0.557 s in v, as elsewhere in each), and the
+level in 100 ms windows has no step.
+
+### Processing
+
+As the sixth round's pieces: dehum, nothing under 45 Hz, faded in over
+0.3 s and out at the end of the last chord, a plain gain to -20 LUFS.
+
+- **music-canal-vii** (take 4): from 18.5 s to 164.3 s, 83.7-107.6 s left
+  out: 121.9 s, peak -6.9 dBFS.
+- **music-rail-iv** (take 1): whole, its last bar stopping short at 167.3 s,
+  faded over 3 s: 168.5 s, peak -5.6 dBFS. From first bar to last a steady
+  tone at 87.2 Hz, -30 to -34 dBFS, 12 to 20 dB over the bass around it and
+  unmoved while the bass's own notes (D at 73 Hz, B-flat at 117 Hz) come
+  and go by 20 dB: the model's drone, as in vi, at the same pitch. The same
+  two 6 Hz notches take it to -57 to -62 dBFS, at or under its neighbours.
+  Its loudness range is 2.0 LU, under the gate's 3: a steady pulse, not a
+  pressed wall (crest 17.3 dB, the widest of the rail's). Kept.
+- **music-rail-v** (take 4): from 18.4 s to 168.5 s. It grew 12 dB louder
+  over its first 90 s: a slow ride of the gain, +8.5 dB to 25 s of the
+  take, nothing from 88 s, a straight line between (loudness range 12.6 to
+  3.5 LU). 133.4-142.3 s left out: 141.2 s, peak -5.5 dBFS.
+
+WebM 1.7, 2.1 and 1.8 MB, MP3 2.1, 3.3 and 2.7 MB. The retired pieces'
+served files (music-canal-v, music-rail-i, music-rail-iii) are removed,
+their raw takes kept, and their names are in process.py's `RETIRED`.
+
+### Before and after (judge/seventh.json)
+
+| tune | before: length, loopiness, CE, PQ | after | |
+|---|---|---|---|
+| canal | music-canal-iv 163.4 s, 31.8, 7.67, 7.82 | music-canal-iv, unchanged | kept |
+| canal | music-canal-v 162.8 s, 64.9, 7.65, 7.78 | **music-canal-vii 121.9 s, 37.1, 7.74, 8.04** | passes |
+| canal | music-canal-vi 161.8 s, 56.9, 7.62, 8.14 | music-canal-vi, unchanged | no take beat it (best: viii-2, 28.7 but 7.48, 7.93) |
+| canal | music-canal-ii 97.5 s, 31.0, 7.41, 7.94 | music-canal-ii, unchanged | kept |
+| rail | music-rail-i 98.3 s, 69.9, 5.82, 7.08 | **music-rail-iv 168.5 s, 31.2, 8.00, 8.23** | passes (LRA 2.0) |
+| rail | music-rail-ii 98.7 s, 29.0, 7.44, 7.85 | music-rail-ii, unchanged | kept |
+| rail | music-rail-iii 99.3 s, 74.6, 7.43, 7.17 | **music-rail-v 141.2 s, 27.2, 7.84, 8.22** | passes |
+
+| the era's music (weighted by length) | minutes | loopiness | CE | PQ |
+|---|---|---|---|---|
+| canal before | 9.8 | 47.8 | 7.61 | 7.92 |
+| canal after | 9.1 | 40.3 | 7.62 | 7.99 |
+| rail before | 4.9 | 57.9 | 6.90 | 7.37 |
+| rail after | 6.8 | 29.3 | 7.81 | 8.13 |
+
+The comb is gone from all three (-5.1 to -6.4 dB against the neighbours),
+none has a hole. vi stays: the four viii takes gave the loopiness or the
+listener's scores, never both (viii-2: 28.7 but CE 7.48).
+
+## The short sounds judged (the seventh round, after the tunes)
+
+The owner: score the other sounds too, the synthesised ones, the
+gestures, the moments, the canal's life...; the whistle, for one, is not
+great.
+
+### The judge (judge_sfx.py)
+
+`judge_sfx.py` runs in judge.py's environment and measures every sound
+served but the tunes (86: 16 gestures and 6 trades, 4 moments, 5 houses,
+11 events of the eras' life, 2 ambiences, 38 voices, and the 8 sounds
+synthesised in sfx.ts), grouped as the sound board of /admin groups them.
+The synthesised ones are rendered first, offline: the page on the dev
+server, `OfflineAudioContext` standing in for the page's context, each
+function of sfx.ts called as the board calls it, 48 kHz stereo, as the
+page hears it (`render_synth.mjs`; a headless Chrome and the dev server
+are all it needs). Each sound is measured on the part of it
+that sounds (the docstring has it all):
+
+- **level**: the peak, samples at full scale, the loudness (EBU R128, the
+  short ones padded with silence as process.py measures them), and as
+  heard: that loudness through the gains the game plays it at, at the
+  levels the settings open on (bus, bus scale, the cue's own level, read
+  from sfx.ts). A sound heard 4 LU or more off its family (the moves of the
+  hand, the trades, the interface's own noises, the moments, a house, an
+  era's life, the voices) is a defect.
+- **envelope**: attack, decay, a first sample already loud or a tail cut
+  off (a click), DC.
+- **noise**: the floor (the quietest 20 ms windows) and how much of it lies
+  over 6 kHz (hiss).
+- **spectrum**: five bands (more than half at 2-5 kHz: harsh; more than
+  three quarters under 250 Hz: lost on a laptop's speakers), the model's
+  200 Hz comb, measured against two combs that are not the model's (193
+  and 207 Hz) so that a voice's or a bell's own partials do not count;
+  over 5 dB is heard, as before.
+- **loops**: the step at the seam, the loudest 400 ms over the whole.
+- **whistles**: the blasts (0.2 s or more within 12 dB of the peak).
+- **the listener**: Audiobox Aesthetics, as for the tunes. It was trained
+  on clips of seconds to minutes: under a second or two its scores are a
+  hint, not a measure. Every gesture scores 2 to 4 for content enjoyment,
+  whatever it is.
+
+The sounds are ranked by their defects, then by the mean of CE and PQ.
+`judge/sfx-before.json` is the palette as it was, `judge/sfx.json` as it
+is now, worst first.
+
+### Before: the worst
+
+| rank | sound | CE | PQ | what the judge found |
+|---|---|---|---|---|
+| 1 | develop | 2.66 | 5.89 | after the knock (over by 0.2 s), 0.8 s of hiss at 15 kHz 18 dB under it; the comb 5.4 dB |
+| 2 | ind-manufacturer | 3.27 | 7.22 | 60 % of it at 2-5 kHz; its first crack stops it at -28 LUFS, heard 6.6 LU under the other trades |
+| 3 | link-rail | 3.30 | 7.21 | the comb 13 dB over its neighbours; 79 % of it under 250 Hz |
+| 4 | refuse | 4.12 | 6.45 | a low knock lifted 40 dB to its peak: -18.5 LUFS, 12 LU over the interface's other noises and louder than the stamp; all of it under 250 Hz |
+| 5 | victory | 5.42 | 7.70 | the comb 5.6 dB; 5.8 LU over the moments (the band at the end: meant) |
+| 6 | defeat | 5.98 | 7.18 | the comb 7.4 dB |
+| 7 | life-steam | 3.04 | 5.17 | "hiss": a safety valve blowing off is one; kept |
+| 8 | ind-brewery | 2.58 | 6.57 | heard 5.7 LU under the trades (its knock peaks first) |
+| - | the whistles | | | era-end: one long low blast at 390 Hz (CE 3.47, PQ 7.13); life-whistle: one blast where two were asked (4.26, 6.63); the synthesised one (the lobby, the platform's arrival, the era's fallback): three sawtooth reeds a fifth apart, a chord, once (4.98, 7.87) |
+
+30 defects on 24 sounds in all. The listener's lowest otherwise: loan
+(PQ 4.26), link-canal (4.80), life-passing (5.27), house-shrewsbury
+(5.30), all without a defect found.
+
+### The whistles
+
+An early engine (1830-1845) blew a small brass bell whistle: one note,
+not the chord of a later horn, and a driver's signal of a short blast and
+a long one. The sound model was asked four times for each of the two
+recorded whistles (`WHISTLE`, `WHISTLE2`, `WHISTLE3` in generate.py; 432
+credits for these and the four takes below):
+
+| take | asked | what came | CE | PQ | kept |
+|---|---|---|---|---|---|
+| era-end-2 | the small whistle, two blasts | one clear note at 1.14 kHz and its harmonics, one blast of 1.9 s | 2.52 | 6.66 | no |
+| era-end-3 | "toot... tooooot", two separate blasts | one blast of 0.7 s at 2.1 kHz, shrill, clipping | 3.43 | 6.00 | no |
+| era-end-4 | a mellow, round, mid-pitched note, two blasts | one warm note at 580 Hz for 0.8 s and its echo | 3.64 | 7.73 | **yes** |
+| life-whistle-2 | as era-end-2, very far | one blast of 2.4 s at 1.09 kHz, a floor at -35 dB after it | 2.51 | 5.90 | no |
+| life-whistle-3 | as era-end-3 | one blast of 1.25 s at 860 Hz | 3.42 | 7.13 | no |
+| life-whistle-4 | as era-end-4 | one warm note at 570 Hz for 1 s | 3.58 | 7.45 | **yes** |
+
+(raw takes; take 1 of each scored 3.49/7.18 and 4.02/7.53.) No take gave
+two blasts: the model does not count. The listener scored the clear high
+notes lowest and the warm one best. Two blasts are made in process.py
+(`twice`): the take's first 0.3 s (0.35 s far off), faded out over 50 ms,
+0.3 s of silence (0.45 s far off, where the hills' echo rings), then the
+take whole; the filters and the echo run over both. The era's whistle is
+now levelled by loudness (-16 LUFS; at its peak's -3 dBFS take 1 came to
+-13 LUFS, 8 LU over the turn's bell); the far one stays at -27.
+
+The synthesised whistle (`steamWhistle` in sfx.ts) is now one note, D at
+587 Hz (a triangle and two soft harmonics, a narrow breath of steam at the
+note and a wide hiss), blown twice, 0.24 s and 0.8 s with a long fall,
+one reflection off a wall, the note climbing as the steam comes up. Five
+versions were rendered and judged (a higher note, less breath, no echo, a
+sawtooth like the old one): the one kept has the best content enjoyment
+of all the whistles (5.57) but a production quality of 6.91 under the old
+chord's 7.87; the old is in the history should the owner prefer it.
+
+| whistle | before: blasts, CE, PQ | after |
+|---|---|---|
+| era-end (the canal's close) | one, 3.47, 7.13 | two, 3.26, 7.07 |
+| life-whistle (the rail's life) | one, 4.26, 6.63 | two, 3.97, 7.06 |
+| the synthesised one | one (a chord), 4.98, 7.87 | two (one note), 5.57, 6.91 |
+
+### The others
+
+- **develop**: cut at 0.6 s, the top taken off at 7 kHz: the hiss gone
+  (floor -33 to -57 dB), 2.66/5.89 to 3.11/6.23.
+- **the comb** where a sound rings long enough to carry it: dehum on
+  turn, link-rail, victory and defeat (it was left off every knock). Gone
+  from victory and defeat (-4 and under); only lowered in turn (13.4 to
+  10.4) and link-rail (13.3 to 11.5), whose lines are not all on the
+  notches: left as they are.
+- **sell**: levelled at -23 LUFS (was its peak, -18.7): heard 4.3 LU
+  quieter, with the other moves of the hand now.
+- **refuse**: levelled at -24 LUFS: 6 LU down, still the loudest of the
+  interface's noises (a refusal is to be noticed), no longer over the stamp.
+- **ind-manufacturer, ind-brewery**: their first crack stops them short of
+  the trades' -20 LUFS, and a compressor only made the ring the peak; sfx.ts
+  plays them 6 dB up (`TRADE_LEVEL * 2`). The chisel's ring 4 dB softer at
+  3.5 kHz. Heard within 3 LU of the other trades.
+- **life-hammer, life-forge**: 4 dB less at 3.5 kHz, no longer harsh.
+- **house-shrewsbury**: take 3, water at a barge and a rope's creaks,
+  denser and cleaner: 2.61/5.30 to 5.76/6.94.
+- Asked again and not kept: loan-2 (the same 5.6), link-canal-2 (came back
+  at -53 LUFS with the comb 21 dB), life-passing-2 (the same 6.7).
+
+### After
+
+14 defects on 12 sounds (30 on 24). What is left: the comb in turn,
+link-rail and life-bell (9 to 11 dB); refuse, panel-close and link-rail
+mostly under 250 Hz (knocks: their nature); life-steam's hiss (its
+nature); card, stamp, victory and scout off their family's level by
+design (the card well under the latch, the stamp the reference of every
+tile, the band at the end); synth-mug-clink all at 2-5 kHz (a clink).
+
+| before, worst five | CE, PQ, defects | after |
+|---|---|---|
+| develop | 2.66, 5.89, hiss and comb | 3.11, 6.23, none |
+| ind-manufacturer | 3.27, 7.22, harsh and 6.6 LU under | 3.17, 6.67, heard within 3 LU (its file still under its asked loudness) |
+| link-rail | 3.30, 7.21, comb 13.3 and dull | 3.53, 7.32, comb 11.5 and dull |
+| refuse | 4.12, 6.45, dull and 11.9 LU over | 4.14, 6.63, dull and 5.9 LU over |
+| victory | 5.42, 7.70, comb and over its moments | 5.45, 7.73, over its moments (meant) |
+
+The voices: all 38 within 0.3 LU of -22 LUFS but Ezra's "Almost" (-24.6,
+its peak), no clipping, no step, no hiss; none is broken, none was asked
+again.
+
 ## The buzz under the ambience
 
 The owner heard a "bzzzz" under the table. Measured, not heard:
@@ -590,11 +892,11 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
 - The tunes: on a fourth bus, `music`, with its own switch and level in the
   board settings (on, at 0.5, by default). Bus scale 0.18: at the default
   levels a tune sits about -41 LUFS against the canal ambience's -38.
-  Each era has its playlist (`TUNES` in playlist.ts): the canal three, the
+  Each era has its playlist (`TUNES` in playlist.ts): the canal four, the
   rail three. They play while a game is in the action phase of an era
   (`tuneWanted` in useTableSounds.ts gives the era): the first tune 4 to
   10 s after the era opens, then each tune heard through once (the canal's
-  about 163 s, the rail's 98 s or so), then the ambience
+  98 to 163 s, the rail's 99 to 169 s), then the ambience
   alone for 45 to 150 s, then another, never the one just heard. Pauses
   and choices are drawn by `spanOf` and `nextOf`, pure functions tested
   with a seeded chance. A tune comes in over 5 s, fades out over 4 s when
@@ -652,6 +954,7 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
     python3 tools/assets/sfx/generate.py --keep ezra 1   # the draft kept, as a voice
     python3 tools/assets/sfx/generate.py bark-ezra-dear  # a line (the characters' voices)
     python3 tools/assets/sfx/generate.py music-canal-iv  # a canal piece: take 1 a plan, take 2 a prompt
+    python3 tools/assets/sfx/generate.py music-rail-v    # a piece whose prompt is a list: take n asked with the n-th
     TMPDIR=/tmp python3 tools/assets/sfx/process.py      # every sound but the retired tunes
 
 The judge's environment, once (CPU-only torch first, to keep it small):
@@ -661,5 +964,7 @@ The judge's environment, once (CPU-only torch first, to keep it small):
     uv pip install --python tools/assets/sfx/.venv/bin/python numpy scipy librosa soundfile pyloudnorm audiobox_aesthetics
     tools/assets/sfx/.venv/bin/python tools/assets/sfx/judge.py                 # every tune served (judge/all.json)
     tools/assets/sfx/.venv/bin/python tools/assets/sfx/judge.py raw/music-canal-iv-2.mp3 --out take
+    node tools/assets/sfx/render_synth.mjs /tmp/synth                          # the synthesised sounds (headless Chrome on :9337, dev server on :3000)
+    tools/assets/sfx/.venv/bin/python tools/assets/sfx/judge_sfx.py --synth /tmp/synth   # every short sound (judge/sfx.json)
 
 **Kept after all:** music-canal-ii stays in the canal playlist as a fourth piece. Its loopiness (31.0) is among the lowest of all tunes, and a fourth piece spreads the rotation further, so the ear meets each air less often. It is out of `RETIRED` in `process.py`.

@@ -182,3 +182,43 @@
 {"note": "sixth round: the counter settled", "take": "music-canal-v-1 (composition plan, five sections)", "seconds": 165.0, "before": 21773, "after": 24042, "spent": 2269}
 {"note": "sixth round: the counter settled", "take": "music-canal-v-2 (prompt)", "seconds": 165.0, "before": 28580, "after": 30849, "spent": 2269}
 {"note": "sixth round: POST /v1/music/plan (one plan asked, to learn its form) costs nothing: the counter stayed at 19504", "take": "music-plan-probe", "before": 19504, "after": 19504, "spent": 0}
+{"take": "music-canal-vii-1", "seconds": 165.0, "before": 30849, "after": 30849, "spent": 0}
+{"take": "music-canal-viii-1", "seconds": 165.0, "before": 30849, "after": 35387, "spent": 4538}
+{"take": "music-rail-iv-1", "seconds": 170.0, "before": 35387, "after": 37725, "spent": 2338}
+{"take": "music-rail-v-1", "seconds": 170.0, "before": 37725, "after": 37725, "spent": 0}
+{"take": "music-canal-vii-2", "seconds": 165.0, "before": 40063, "after": 42332, "spent": 2269}
+{"take": "music-canal-viii-2", "seconds": 165.0, "before": 42332, "after": 42332, "spent": 0}
+{"take": "music-rail-v-2", "seconds": 170.0, "before": 42332, "after": 44601, "spent": 2269}
+{"take": "music-canal-vii-3", "seconds": 165.0, "before": 46939, "after": 46939, "spent": 0}
+{"take": "music-canal-viii-3", "seconds": 165.0, "before": 46939, "after": 51477, "spent": 4538}
+{"take": "music-rail-v-3", "seconds": 170.0, "before": 51477, "after": 53815, "spent": 2338}
+{"take": "music-canal-vii-4", "seconds": 165.0, "before": 53815, "after": 56084, "spent": 2269}
+{"take": "music-canal-viii-4", "seconds": 165.0, "before": 56084, "after": 56084, "spent": 0}
+{"take": "music-rail-v-4", "seconds": 170.0, "before": 56084, "after": 60691, "spent": 4607}
+{"note": "seventh round: the counter settled", "take": "music-canal-vii-1 (prompt, fantasia)", "seconds": 165.0, "before": 30849, "after": 33118, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-canal-viii-1 (prompt, fantasia)", "seconds": 165.0, "before": 33118, "after": 35387, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-rail-iv-1 (prompt, fantasia)", "seconds": 170.0, "before": 35387, "after": 37725, "spent": 2338}
+{"note": "seventh round: the counter settled", "take": "music-rail-v-1 (prompt, fantasia)", "seconds": 170.0, "before": 37725, "after": 40063, "spent": 2338}
+{"note": "seventh round: the counter settled", "take": "music-canal-vii-2 (prompt)", "seconds": 165.0, "before": 40063, "after": 42332, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-canal-viii-2 (prompt)", "seconds": 165.0, "before": 42332, "after": 44601, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-rail-v-2 (prompt)", "seconds": 170.0, "before": 44601, "after": 46939, "spent": 2338}
+{"note": "seventh round: the counter settled", "take": "music-canal-vii-3 (prompt, chain of episodes)", "seconds": 165.0, "before": 46939, "after": 49208, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-canal-viii-3 (prompt, chain of episodes)", "seconds": 165.0, "before": 49208, "after": 51477, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-rail-v-3 (prompt, chain of episodes)", "seconds": 170.0, "before": 51477, "after": 53815, "spent": 2338}
+{"note": "seventh round: the counter settled", "take": "music-canal-vii-4 (prompt, rhapsody)", "seconds": 165.0, "before": 53815, "after": 56084, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-canal-viii-4 (prompt)", "seconds": 165.0, "before": 56084, "after": 58353, "spent": 2269}
+{"note": "seventh round: the counter settled", "take": "music-rail-v-4 (prompt)", "seconds": 170.0, "before": 58353, "after": 60691, "spent": 2338}
+{"take": "era-end-2", "seconds": 4.0, "before": 60691, "after": 60691, "spent": 0}
+{"take": "life-whistle-2", "seconds": 4.0, "before": 60691, "after": 60779, "spent": 88}
+{"take": "era-end-3", "seconds": 4.0, "before": 60779, "after": 60779, "spent": 0}
+{"take": "life-whistle-3", "seconds": 4.0, "before": 60779, "after": 60867, "spent": 88}
+{"take": "era-end-4", "seconds": 4.0, "before": 60867, "after": 60867, "spent": 0}
+{"take": "life-whistle-4", "seconds": 4.0, "before": 60867, "after": 60867, "spent": 0}
+{"take": "loan-2", "seconds": 1.2, "before": 60955, "after": 60968, "spent": 13}
+{"take": "link-canal-2", "seconds": 1.5, "before": 60968, "after": 60968, "spent": 0}
+{"take": "life-passing-2", "seconds": 10.0, "before": 60968, "after": 60968, "spent": 0}
+{"take": "house-shrewsbury-3", "seconds": 2.5, "before": 60968, "after": 61123, "spent": 155}
+{"note": "seventh round, the short sounds: the counter settled", "take": "era-end-2 + life-whistle-2 (the small whistle, two blasts)", "seconds": 8.0, "before": 60691, "after": 60779, "spent": 88}
+{"note": "seventh round, the short sounds: the counter settled", "take": "era-end-3 + life-whistle-3 (\"toot... tooooot\")", "seconds": 8.0, "before": 60779, "after": 60867, "spent": 88}
+{"note": "seventh round, the short sounds: the counter settled", "take": "era-end-4 + life-whistle-4 (a mellow note)", "seconds": 8.0, "before": 60867, "after": 60955, "spent": 88}
+{"note": "seventh round, the short sounds: the counter settled", "take": "loan-2 + link-canal-2 + life-passing-2 + house-shrewsbury-3", "seconds": 15.2, "before": 60955, "after": 61123, "spent": 168}

@@ -23,10 +23,11 @@ Spends nothing: ffmpeg only.
                          take, its head folded over by the same place one
                          loop later (aligned to the sample), rid of the hum,
                          levelled by a plain gain; stereo (retired)
-  the other tunes        played through once, not looped: the take whole,
-                         from its first note to its own last chord, rid of
-                         the hum, a short fade at each end, levelled by a
-                         plain gain like the first; stereo
+  the other tunes        played through once, not looped: the take from its
+                         first note to its own last chord (a strain played
+                         twice running heard once, where one is listed:
+                         see spliced), rid of the hum, a short fade at each
+                         end, levelled by a plain gain like the first; stereo
   the rail's life        as the houses: a train somewhere off, now and then
   the canal's life       likewise: the working waterway, now and then
   the townsfolk          their lines (barks): the breath before and after
@@ -57,21 +58,35 @@ HUM = 200.0
 #            lufs  level by loudness instead, the peak still held at `peak`
 #            fadein the head's fade in seconds (none by default)
 SHORT = {
-    'turn': ('turn-1', None, '', PEAK),
+    # the seventh round's judge of the short sounds (judge_sfx.py, CHOIX.md):
+    # the bell, the fanfare and the rail's clank ring long enough for the
+    # model's 200 Hz comb to be heard in them (13, 6, 7 and 13 dB over the
+    # neighbours): taken out, as from the textures
+    'turn': ('turn-1', None, '', PEAK, {'dehum': True}),
     'stamp': ('stamp-1', None, '', PEAK),
     'link-canal': ('link-canal-1', None, '', PEAK),
-    'link-rail': ('link-rail-1', None, '', PEAK),
-    'sell': ('sell-1', None, '', PEAK),
-    # the whistle is heard across the fields: its top dulled a little
-    'era-end': ('era-end-1', None, 'lowpass=f=4200,', PEAK),
-    'victory': ('victory-1', None, '', PEAK),
+    'link-rail': ('link-rail-1', None, '', PEAK, {'dehum': True}),
+    # levelled at its peak, the coins came to -18.7 LUFS, 8 LU over the
+    # other moves of the hand: brought to the stamp's loudness less 3 LU
+    'sell': ('sell-1', None, '', PEAK, {'lufs': -23}),
+    # the whistle is heard across the fields: its top dulled a little. Take
+    # 4 (the seventh round, CHOIX.md): an early engine's whistle, one warm
+    # note at 580 Hz blown once for 0.8 s and its echo (no take of the four
+    # gave two blasts), blown twice here: its first 0.3 s, 0.3 s of
+    # silence, then whole. Levelled by loudness: a steady note has little
+    # crest, and at the peak's -3 dBFS take 1 came to -13 LUFS, 8 LU over
+    # the turn's bell
+    'era-end': ('era-end-4', (0.0, 3.4), 'highpass=f=150,lowpass=f=4200,', PEAK, {'twice': (0.3, 0.3), 'fade': 0.6, 'dehum': True, 'lufs': -16}),
+    'victory': ('victory-1', None, '', PEAK, {'dehum': True}),
     # the same band behind a door: the brightness taken off, the room kept,
     # and six decibels under the win
-    'defeat': ('victory-1', None, 'lowpass=f=900,highpass=f=90,aecho=0.8:0.6:60:0.25,', PEAK - 6),
+    'defeat': ('victory-1', None, 'lowpass=f=900,highpass=f=90,aecho=0.8:0.6:60:0.25,', PEAK - 6, {'dehum': True}),
     # the second take holds two clicks; the second, crisper one is kept
     'click': ('click-2', (0.27, 0.42), '', PEAK),
     'loan': ('loan-1', None, '', PEAK),
-    'develop': ('develop-1', None, '', PEAK),
+    # the knock is over by 0.2 s; after it, 0.8 s of hiss at 15 kHz, 18 dB
+    # under the knock: cut at 0.6 s, the top taken off at 7 kHz
+    'develop': ('develop-1', (0.0, 0.6), 'lowpass=f=7000,lowpass=f=7000,', PEAK, {'fade': 0.25}),
     # take 2, the card drawn and lifted: 110 ms of the slide, then the tick
     # of the pasteboard and its short decay; the second, smaller tick at
     # 0.33 s left out. The hiss of the slide softened over 7 kHz. It is heard
@@ -82,13 +97,20 @@ SHORT = {
     'scout': ('scout-1', None, '', PEAK),
     'panel-open': ('panel-open-1', None, '', PEAK),
     'panel-close': ('panel-close-1', None, '', PEAK),
-    'refuse': ('refuse-1', None, 'highpass=f=50,', PEAK),
+    # a dull low knock lifted by 40 dB to its peak: -18.5 LUFS, 12 LU over the
+    # interface's other noises and louder than the stamp; brought to -24
+    'refuse': ('refuse-1', None, 'highpass=f=50,', PEAK, {'lufs': -24}),
     # an industry laid: heard with the stamp, a little after it, and shorter
     # than a second; levelled by loudness so no trade is louder than another
     'ind-coal': ('ind-coal-1', (0.0, 0.8), 'highpass=f=60,', PEAK, {'fade': 0.2, 'lufs': -20}),
     'ind-iron': ('ind-iron-1', (0.0, 0.75), '', PEAK, {'fade': 0.3, 'lufs': -20}),
     'ind-cotton': ('ind-cotton-2', (0.0, 0.5), 'highpass=f=60,', PEAK, {'fade': 0.15, 'lufs': -20}),
-    'ind-manufacturer': ('ind-manufacturer-2', (0.05, 0.55), '', PEAK, {'fade': 0.12, 'lufs': -20}),
+    # the chisel's taps and the cask's knock: their peak comes first and
+    # stops them at -28 and -27 LUFS, 7 LU under the other trades; sfx.ts
+    # plays them 4 dB up instead (a compressor only made the ring the peak).
+    # A presence dip takes the edge off the chisel's ring, 60 % of it at
+    # 2-5 kHz (seventh round)
+    'ind-manufacturer': ('ind-manufacturer-2', (0.05, 0.55), 'equalizer=f=3500:t=o:w=1.5:g=-4,', PEAK, {'fade': 0.12, 'lufs': -20}),
     'ind-pottery': ('ind-pottery-1', (0.0, 0.8), 'highpass=f=60,', PEAK, {'fade': 0.25, 'lufs': -20}),
     'ind-brewery': ('ind-brewery-2', (0.0, 0.6), 'highpass=f=60,', PEAK, {'fade': 0.15, 'lufs': -20}),
     # a merchant's house under the pointer: two seconds of the town, soft.
@@ -97,16 +119,20 @@ SHORT = {
     # continuous takes (bell, winch) 5 LU over them
     'house-warrington': ('house-warrington-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     'house-nottingham': ('house-nottingham-2', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
-    'house-shrewsbury': ('house-shrewsbury-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
+    # take 3 (seventh round): water lapping at a barge and a rope's creaks,
+    # denser and cleaner than take 1 (the listener model: 5.6 and 6.9
+    # against 2.6 and 5.8)
+    'house-shrewsbury': ('house-shrewsbury-3', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     'house-oxford': ('house-oxford-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     'house-gloucester': ('house-gloucester-1', None, 'highpass=f=70,', HOUSE_PEAK, {'fade': 0.3, 'dehum': True, 'lufs': -25}),
     # the rail's life, heard over its ambience every minute or so: far off,
     # so nothing under 90 Hz (the model's floor, and the rumble the rail's
     # bed was too full of) and the top dulled. Levelled by loudness a little
     # over the bed (-25 LUFS), each on its own
-    # the whistle: one blast of 1.7 s and its ring; farther off than the
-    # era's own whistle, a slow echo off the hills
-    'life-whistle': ('life-whistle-1', (0.0, 3.3), 'highpass=f=90,lowpass=f=3000,aecho=0.8:0.5:230|470:0.22|0.12,', PEAK, {'fade': 0.8, 'dehum': True, 'lufs': -27}),
+    # the whistle: farther off than the era's own, a slow echo off the
+    # hills. Take 4 (seventh round): one warm note at 570 Hz for 1 s, blown
+    # twice as the era's is
+    'life-whistle': ('life-whistle-4', (0.25, 3.9), 'highpass=f=90,lowpass=f=3000,aecho=0.8:0.5:230|470:0.22|0.12,', PEAK, {'twice': (0.35, 0.45), 'fade': 0.8, 'dehum': True, 'lufs': -27}),
     # a train across the field: the clatter of the rail joints swells for 3 s
     # and holds; the take stops short at 7.2 s, so it is faded from 6.1 s
     'life-passing': ('life-passing-1', (0.3, 7.4), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.3, 'fadein': 0.8, 'dehum': True, 'lufs': -25}),
@@ -117,7 +143,7 @@ SHORT = {
     'life-depart': ('life-depart-1', (0.0, 5.2), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.6, 'dehum': True, 'lufs': -26}),
     # two more for the rail: an iron works across the town, an engine standing
     # the steam hammer: five heavy blows over 3 s, then only its ring
-    'life-hammer': ('life-hammer-1', (0.2, 3.6), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 0.5, 'lufs': -27}),
+    'life-hammer': ('life-hammer-1', (0.2, 3.6), 'highpass=f=90,lowpass=f=6000,equalizer=f=3500:t=o:w=1.5:g=-4,', PEAK, {'fade': 0.5, 'lufs': -27}),
     # the safety valve: a roar held from 0.2 to 3 s, dying away by 4.2 s
     'life-steam': ('life-steam-1', (0.2, 4.4), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.2, 'fadein': 0.4, 'dehum': True, 'lufs': -28}),
     # the canal's life, heard over its birds: the same distance as the rail's
@@ -127,7 +153,7 @@ SHORT = {
     # water short at 4.25 s, so it is faded over its last second
     'life-lock': ('life-lock-1', (0.0, 4.3), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 1.0, 'dehum': True, 'lufs': -27}),
     # the village smith: blows over 2.5 s and their ring
-    'life-forge': ('life-forge-1', (0.0, 3.6), 'highpass=f=90,lowpass=f=6000,', PEAK, {'fade': 0.8, 'lufs': -28}),
+    'life-forge': ('life-forge-1', (0.0, 3.6), 'highpass=f=90,lowpass=f=6000,equalizer=f=3500:t=o:w=1.5:g=-4,', PEAK, {'fade': 0.8, 'lufs': -28}),
     # the church bell: one stroke (three were asked) and its 6 s decay
     'life-bell': ('life-bell-1', (0.0, 6.0), 'highpass=f=90,lowpass=f=5000,', PEAK, {'fade': 1.5, 'dehum': True, 'lufs': -29}),
     # geese going over: honking from 0.5 to 3.3 s
@@ -215,13 +241,38 @@ PIECES = {
     # 27 dB over the bass around it, unmoved by the key changes: a drone of
     # the model's, not a player. Two notches 6 Hz wide take it down 25 dB
     'music-canal-vi': ('music-canal-vi-1', 0.0, 161.8, 1.5, 'highpass=f=45,highpass=f=45,bandreject=f=87:t=h:w=6,bandreject=f=87:t=h:w=6', -20.0),
+    # the seventh round (CHOIX.md, "The seventh round"). A seventh element,
+    # when there is one, lists the strains heard twice that are heard once:
+    # each (a, b), in the take's seconds, leaves out what it plays from a
+    # to b, b being where it plays again what it played at a (see spliced)
+    # vii: take 4, a rhapsody in G major, from 18.5 s: its opening strain
+    # played three times over the first 18 s is left out, and of its 24 s
+    # strain played four times from 37 s, one playing (83.7-107.6 s)
+    'music-canal-vii': ('music-canal-vii-4', 18.5, 164.3, 1.5, 'highpass=f=45,highpass=f=45', -20.0, [(83.7, 107.6347)]),
+    # the rail's march and waltz replaced by two pieces written through.
+    # iv: take 1, strings, fortepiano, cornet and euphonium over an engine's
+    # pulse, D minor; its last bar stops short at 167.3 s, so it is faded
+    # over three seconds. From its first bar to its last, a steady tone at
+    # 87.2 Hz, -30 to -34 dBFS and 12 to 20 dB over the bass around it,
+    # unmoved while the bass's own notes come and go: the model's drone, as
+    # in vi, taken down by the same two notches
+    'music-rail-iv': ('music-rail-iv-1', 0.0, 168.5, 3.0, 'highpass=f=45,highpass=f=45,bandreject=f=87:t=h:w=6,bandreject=f=87:t=h:w=6', -20.0),
+    # v: take 4, strings, fortepiano, clarinet and horn, G minor, from
+    # 18.4 s (the pulse alone before it, 12 dB under the body); it grows 12 dB
+    # louder over its first 90 s, ridden back: +8.5 dB to 25 s of the take,
+    # nothing from 88 s, a straight line between. One playing of a 9 s phrase
+    # heard twice running (133.4-142.3 s) is left out
+    'music-rail-v': ('music-rail-v-4', 18.4, 168.5, 1.5,
+                     "highpass=f=45,highpass=f=45,volume=eval=frame:volume='pow(10,8.5*clip((69.6-t)/63,0,1)/20)'", -20.0, [(133.4, 142.2927)]),
 }
 
-# the canal's first three tunes, retired in the sixth round (judge.py: the
-# air round and round, the jig's strains again and again, the strings' slow
-# air scored under the rest): kept here to say how they were cut, no longer
-# served nor made by a plain run
-RETIRED = {'music-canal', 'music-canal-iii'}
+# the canal's first air and its jig, retired in the sixth round (judge.py:
+# the air round and round, the jig's strains again and again); the canal's
+# walking air (v, its strains each played twice), the rail's march (one
+# phrase ten times, the weakest of all) and its waltz (a 57 s stretch heard
+# again), retired in the seventh: kept here to say how they were cut, no
+# longer served nor made by a plain run
+RETIRED = {'music-canal', 'music-canal-iii', 'music-canal-v', 'music-rail-i', 'music-rail-iii'}
 
 # a soft compressor for the few loud moments of a loop (a bird close by):
 # slow enough not to pump, over the bed's level so the bed is left alone
@@ -286,6 +337,15 @@ def short(name: str) -> None:
     src = os.path.join(RAW, f'{take}.mp3')
     tmp = os.path.join('/tmp' if not os.environ.get('TMPDIR') else os.environ['TMPDIR'], f'sfx-{name}.wav')
     trim = f'atrim={cut[0]}:{cut[1]},asetpts=PTS-STARTPTS,' if cut else ''
+    if opt.get('twice'):
+        # a whistle blown twice from a take that blows once: its first
+        # `head` seconds, faded out over 50 ms, `gap` seconds of silence,
+        # then the take whole; the filters (the echo) run over both
+        head, gap = opt['twice']
+        once = os.path.join(os.path.dirname(tmp), f'sfx-{name}-twice.wav')
+        run(['-y', '-i', src, '-ac', '1', '-ar', '48000', '-filter_complex',
+             f'[0:a]{trim}asplit[a][b];[a]atrim=0:{head},afade=t=out:st={head - 0.05:.3f}:d=0.05,apad=pad_dur={gap}[h];[h][b]concat=n=2:v=0:a=1', once])
+        src, trim = once, ''
     # silence off the head and the tail (the tail by turning the sound round)
     edge = 'silenceremove=start_periods=1:start_threshold=-55dB:start_silence=0.004'
     chain = f'{trim}{extra}{edge},areverse,{edge},areverse'
@@ -451,13 +511,43 @@ def tune(name: str) -> None:
     print(f'{name:12} {take:14} {keep / rate:.4f}s loop from {start}s, alike {r:.3f}, {measured:.1f} -> {lufs_of(lev):.1f} LUFS, gain {gain:+.1f} dB, peak {peak_of(lev):.1f} dBFS')
 
 
+SPLICE = 0.5
+
+
+def spliced(pcm: array.array, ch: int, rate: int, cuts: list) -> array.array:
+    """A strain played twice running, heard once: for each (a, b), in the
+    piece's seconds, what it plays from a is left out up to b, where it plays
+    again what it played at a. b is set to the sample (aligned); over SPLICE
+    seconds the first playing fades out under the second, on sine and
+    cosine curves scaled for how alike the two are, as a loop's fold."""
+    out = array.array('h')
+    pos, f = 0, int(SPLICE * rate)
+    for a_s, b_s in cuts:
+        a = int(a_s * rate)
+        b, r = aligned(pcm, ch, rate, a, int(b_s * rate))
+        out.extend(pcm[pos * ch : a * ch])
+        for t in range(f):
+            x = t / f
+            up, down = math.sin(0.5 * math.pi * x), math.cos(0.5 * math.pi * x)
+            k = 1 / math.sqrt(up * up + down * down + 2 * max(r, 0.0) * up * down)
+            for c in range(ch):
+                v = (pcm[(a + t) * ch + c] * down + pcm[(b + t) * ch + c] * up) * k
+                out.append(max(-32768, min(32767, int(round(v)))))
+        pos = b + f
+        print(f'  {a_s:.2f}s -> {b / rate:.4f}s, alike {r:.3f}')
+    out.extend(pcm[pos * ch :])
+    return out
+
+
 def piece(name: str) -> None:
-    take, start, end, fade, filters, target = PIECES[name]
+    take, start, end, fade, filters, target, *rest = PIECES[name]
     src = os.path.join(RAW, f'{take}.mp3')
     tmpdir = os.environ.get('TMPDIR') or '/tmp'
     rate, ch = 48000, 2
     cut = f'atrim={start}:{end},asetpts=PTS-STARTPTS,{filters}'
     pcm = dehum(pcm_of(src, ch, rate, cut), ch, rate)
+    if rest:
+        pcm = spliced(pcm, ch, rate, [(a - start, b - start) for a, b in rest[0]])
     raw = os.path.join(tmpdir, f'sfx-{name}.wav')
     wav_of(pcm, ch, raw, rate)
     dur = len(pcm) / ch / rate

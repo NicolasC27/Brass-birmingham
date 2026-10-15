@@ -37,12 +37,14 @@ RAW = os.path.join(HERE, 'raw')
 LEDGER = os.path.join(HERE, 'ledger.jsonl')
 API = 'https://api.elevenlabs.io/v1'
 
-# the owner's hard cap for the sixth round (the canal's tunes written
-# through) is 32 000 on the counter, 19 504 when it was begun. It was 42 500
+# the owner's hard cap for the seventh round (a canal piece and two rail
+# pieces written through again) is 83 000 on the counter, 30 849 when it
+# was begun. It was 32 000 for the sixth round (the canal's tunes written
+# through), 19 504 when that was begun; 42 500
 # for the fifth round (the canal's life, the voices, a third rail tune), 5 000
 # of it kept in reserve (37 500); 16 000 for the fourth round (the
 # playlists, the rail's life), 22 500 before
-CEILING = 32_000
+CEILING = 83_000
 # credits per second of sound: the first 20 calls came to about 10.7 a second;
 # the estimate errs a little high. The counter is read a few seconds late, so
 # the check also adds up this run's own estimates. (It was 40 until the fourth
@@ -51,15 +53,43 @@ PER_SECOND = 12
 
 ERA = 'England 1780-1840, period materials only, no music, no electronics, no modern sounds'
 
+# the seventh round: the four takes the listener model scored lowest
+# (loan, link-canal, life-passing, house-shrewsbury; judge_sfx.py) asked
+# again, a clean close recording asked outright
+CLEAN = 'clean close recording in a quiet room, low noise floor, '
+
+# an early engine's whistle, 1830-1845: a small brass bell whistle on the
+# boiler, one clear note (not the chord of a later horn), two blasts
+WHISTLE = ('an 1830s steam locomotive\'s small brass whistle: one clear pure high note, two clean blasts, a short one, '
+           'a brief gap, then a longer one, a puff of steam at each start, no horn, no chord, no voices, ')
+
+# its first takes gave the note but one blast: the count told another way
+WHISTLE2 = ('toot... tooooot: two separate blasts of an 1830s steam locomotive\'s small brass whistle, one clear high note, '
+            'a short toot, a second of silence, then a long toot, no horn, no chord, no voices, ')
+
+# the clear notes came back shrill (0.9 to 2.1 kHz): a warmer, lower one
+WHISTLE3 = ('a mellow steam whistle of an 1830s locomotive, a warm round mid-pitched note, not shrill, soft at the edges, '
+            'blown in two blasts, a short one and a longer one, the breath of steam in it, no horn, no chord, no voices, ')
+
 # name: (seconds, takes, prompt influence, loop, prompt) — in the order of
 # priority: if the room runs out the rest keeps its synthesised voice
 PLAN = {
     'turn': (2.0, 2, 0.6, False, 'a single small brass handbell rung once on a Victorian railway station platform, clear bright strike and natural ring-out, quiet open air, ' + ERA),
     'stamp': (1.0, 2, 0.6, False, 'a heavy wooden printer\'s block pressed firmly onto a sheet of paper on an oak table, one dull thump with a soft paper crush, close, dry room, ' + ERA),
-    'link-canal': (1.5, 1, 0.55, False, 'a small wooden canal boat nudging a stone lock wall, gentle water lapping and slosh, close, calm, ' + ERA),
+    'link-canal': (1.5, 1, 0.55, False, ['a small wooden canal boat nudging a stone lock wall, gentle water lapping and slosh, close, calm, ' + ERA,
+                  'a wooden narrowboat bumping gently against a stone lock wall, one soft knock of wood on stone and a small splash of water, clean close recording, low noise floor, ' + ERA]),
     'link-rail': (1.2, 1, 0.55, False, 'a short iron rail dropped into place on wooden sleepers, one metallic clank with a dull thud, outdoors, ' + ERA),
     'sell': (1.5, 1, 0.6, False, 'a few heavy copper and silver coins poured into a wooden counting tray, short clinking, close, ' + ERA),
-    'era-end': (4.0, 1, 0.55, False, 'a distant steam locomotive whistle blowing once far across the countryside, long and melancholic, soft reverb, ' + ERA),
+    # the seventh round: the owner found the whistles poor. Take 1 is one
+    # long blast, heard as a horn; the takes after it ask for the small
+    # brass whistle of an early engine, two clean blasts (WHISTLE, below)
+    'era-end': (4.0, 1, 0.55, False, ['a distant steam locomotive whistle blowing once far across the countryside, long and melancholic, soft reverb, ' + ERA,
+                                      WHISTLE + 'some distance away across open country, a little natural reverb, ' + ERA,
+                                      # take 2: the clear note wanted (1.1 kHz and its harmonics), but one blast of 1.9 s
+                                      WHISTLE2 + 'some distance away across open country, a little natural reverb, ' + ERA,
+                                      # take 3: one blast again, 2.1 kHz, shrill; the listener model scored
+                                      # the clear high notes under take 1's low hoot (PQ 6.0-6.7 against 7.2)
+                                      WHISTLE3 + 'some distance away across open country, a little natural reverb, ' + ERA]),
     'victory': (5.0, 1, 0.55, False, 'a short triumphant fanfare played on natural brass horns and a cornet, a few bright notes and a held final chord, a brass band in a hall, ' + ERA),
     # take 1 of each ambience was asked with an earlier prompt (see CHOIX.md):
     # its bed was a broad rumble that, lifted to the table's level, buzzed.
@@ -72,8 +102,15 @@ PLAN = {
     # engine at all: the railway is heard in the life events below instead
     'amb-rail': (30.0, 4, 0.5, True, 'a quiet green valley on a still grey afternoon, a light breeze in long grass, a few rooks calling far away, now and then a faint far-off clink of iron, long quiet gaps between sounds, sparse and calm, clean quiet recording with a very low noise floor, no hum, no drone, no rumble, no engine, no traffic, no voices, continuous, ' + ERA),
     # the rail's life: now and then, over its ambience, a train somewhere off
-    'life-whistle': (4.0, 1, 0.55, False, 'a steam locomotive whistle blown twice, a short blast then a long one, very far away across open fields, faint, with a soft echo off the hills, outdoors, ' + ERA),
-    'life-passing': (10.0, 1, 0.5, False, 'an early steam train with a few wooden carriages passing along a line some distance away across a field: its puffing and the clatter of the wheels on the rail joints swell as it comes, pass, and fade away into the distance, a gentle doppler, calm open air, no whistle, ' + ERA),
+    # take 1 gave one blast where two were asked (seventh round: asked again)
+    'life-whistle': (4.0, 1, 0.55, False, ['a steam locomotive whistle blown twice, a short blast then a long one, very far away across open fields, faint, with a soft echo off the hills, outdoors, ' + ERA,
+                                           WHISTLE + 'very far away across fields, faint, a soft echo off the hills, ' + ERA,
+                                           # take 2: one blast of 2.4 s again
+                                           WHISTLE2 + 'very far away across fields, faint, a soft echo off the hills, ' + ERA,
+                                           # take 3: one blast of 1.25 s at 860 Hz
+                                           WHISTLE3 + 'very far away across fields, faint, a soft echo off the hills, ' + ERA]),
+    'life-passing': (10.0, 1, 0.5, False, ['an early steam train with a few wooden carriages passing along a line some distance away across a field: its puffing and the clatter of the wheels on the rail joints swell as it comes, pass, and fade away into the distance, a gentle doppler, calm open air, no whistle, ' + ERA,
+                    'an early steam train with a few wooden carriages passing some distance away across a field: its puffing and the clatter of the wheels on the rail joints swell, pass and fade away, a gentle doppler, calm open air, clean recording, no whistle, ' + ERA]),
     'life-couple': (3.0, 1, 0.55, False, 'goods wagons shunted in a distant railway yard: the clank of iron buffers meeting and a chain coupling rattling, one wagon after another down the line, heard from a distance, outdoors, ' + ERA),
     'life-depart': (8.0, 1, 0.5, False, 'a steam locomotive starting slowly from a distant station: a few heavy slow chuffs of steam with a hiss, then quicker, fading away into the distance, outdoors, faint, ' + ERA),
     # the rail's life, two more: an iron works and an engine standing
@@ -87,7 +124,8 @@ PLAN = {
     'life-geese': (5.0, 1, 0.5, False, 'a small skein of wild geese flying over open fields honking, coming and going, a little distance away, outdoors, calm, no voices, ' + ERA),
     'life-call': (4.0, 1, 0.5, False, 'a boatman on a canal calling out once to the lock keeper far away across the water, a long wordless shout that echoes softly, then a distant answering call, outdoors, faint, ' + ERA),
     'click': (0.5, 2, 0.7, False, 'a single small brass latch click, crisp, close, very short, ' + ERA),
-    'loan': (1.2, 1, 0.6, False, 'a thick leather-bound ledger book closed shut on a wooden desk, one soft heavy thump of paper and leather, close, ' + ERA),
+    'loan': (1.2, 1, 0.6, False, ['a thick leather-bound ledger book closed shut on a wooden desk, one soft heavy thump of paper and leather, close, ' + ERA,
+            'a thick leather-bound ledger closed shut on an oak desk: one soft heavy thump of leather and paper, ' + CLEAN + ERA]),
     'develop': (1.0, 1, 0.6, False, 'a steel hammer striking a small iron chisel once on a workbench, one sharp metallic knock, close, ' + ERA),
     # take 1 was a card laid on the table (a swish, heard as a breath); takes
     # 2 and 3 ask for a card drawn out of the hand and lifted
@@ -106,7 +144,8 @@ PLAN = {
     # a merchant's house under the pointer: a glimpse of the town, soft
     'house-warrington': (2.5, 2, 0.5, False, 'a coaching inn yard in a market town: a horse\'s hooves stepping slowly on cobbles, a harness jingle, a wooden cart wheel creaking past, soft and distant, no voices, no speech, ' + ERA),
     'house-nottingham': (2.5, 2, 0.5, False, 'a market square on market day, soft and distant: a wooden stall shutter let down, a basket set on cobbles, a small hand bell rung once far off, no voices, no speech, ' + ERA),
-    'house-shrewsbury': (2.5, 2, 0.5, False, 'a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA),
+    'house-shrewsbury': (2.5, 2, 0.5, False, ['a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA, 'a river quay: water lapping against a moored wooden barge, a mooring rope creaking on a bollard, a gull far away, soft and calm, no voices, no speech, ' + ERA,
+                        'a river quay at Shrewsbury: water lapping gently against a moored wooden barge, a mooring rope creaking slowly, soft and calm, clean recording, no voices, no speech, ' + ERA]),
     'house-oxford': (2.5, 2, 0.5, False, 'a quiet old university town: a stagecoach rolling slowly over cobbles under a stone gateway, a chapel bell striking once in the distance, soft, no voices, no speech, ' + ERA),
     'house-gloucester': (2.5, 2, 0.5, False, 'an inland port dock on a river: a wooden crane winch creaking, a heavy sack set down on timber boards, water lapping, soft and distant, no voices, no speech, ' + ERA),
 }
@@ -154,7 +193,8 @@ RAIL_III = ('an instrumental slow waltz of the 1840s in 3/4, around 88 bpm, A ma
             'a cello answering it in the lower register and a square piano marking the waltz lightly; '
             'pensive, warm and hopeful, an evening in a new railway town; ' + PERIOD)
 
-# name: (seconds, takes, prompt) — asked of the music model, only when named
+# name: (seconds, takes, prompt) — asked of the music model, only when named;
+# the prompt may be a list, one a take (the takes then number as many)
 MUSIC = {
     # a short take first, to measure what a second of music costs
     'music-probe': (12.0, 1, TUNE),
@@ -227,6 +267,165 @@ CANAL_V = (THROUGH + 'a slow walking air of the 1830s in 4/4, around 72 bpm, F m
 # take 1 of each was the plan below, take 2 the prompt
 MUSIC['music-canal-iv'] = (165.0, 2, CANAL_IV)
 MUSIC['music-canal-v'] = (165.0, 2, CANAL_V)
+
+# the seventh round: v (loopiness 65, its air's strains twice running) is
+# replaced, vi (57) too if a take clearly beats it, and the rail's march
+# (content enjoyment 5.8, one phrase ten times) and waltz (a 57 s stretch
+# heard again) are written through like the canal's. A folk air, a march
+# or a waltz is heard by the model as strains played twice (AABB): these
+# are asked as a fantasia instead, each section in its own key, and every
+# take is judged before the next is bought. The prompt of each take is
+# its own (a list: take n is asked with the n-th), so what the judge said
+# of one can be answered in the next
+NEVER_AGAIN = ('an instrumental through-composed fantasia that unfolds once and never repeats itself: every phrase is new, '
+               'the melody is never played twice the same way, no repeated eight-bar strains, no AABB form, no refrain, no loop; '
+               'each section moves to a new key; ')
+RAIL_TAIL = ('background music for a long board game, even dynamics, intimate acoustic recording in a wooden hall; no big climax; '
+             'no drum kit, no percussion, no vocals, no choir, no synthesizer, no electric or modern instruments, not epic, not cinematic')
+# a folk strain lasts eight bars (22 s at 88 bpm) and the model plays it
+# twice (AABB) however the prompt forbids it: the third takes are asked as
+# a chain of short episodes, each one strain long, each with its own
+# melody, its own leader and its own key, so there is no strain to repeat
+CHAIN = ('an instrumental through-composed piece in the form of a chain of seven short episodes, about twenty seconds each, '
+         'played once from beginning to end: each episode has its own new melody, played once only, led by a different instrument, in a new key; '
+         'no melody ever comes back, no repeated strains, no AABB, no refrain, no loop; ')
+MUSIC['music-canal-vii'] = (165.0, 1, [
+    NEVER_AGAIN + 'a pastoral piece of the 1830s, around 72 bpm, for a small group of period instruments: '
+    'wooden flute, gut-strung fiddle, English concertina, pedal harp and cello. Five sections flowing into one another without pauses: '
+    'a brief opening of a few bars for harp and cello in G major; a long singing flute melody that keeps unfolding and developing; '
+    'a contrasting middle in E minor where the fiddle and the concertina weave new melodies in dialogue; '
+    'the opening melody transformed and varied on the cello in C major under a soft flute descant, then turning home; '
+    'a short closing of a few bars to a held final chord in G major. '
+    'Calm and gentle, a still morning on an English canal towpath, ' + CANAL_TAIL,
+    # vii-1: loopiness 54, the harp's two-bar figure every 6.7 s over the
+    # first 70 s, content enjoyment 7.49 (7.4-7.9 a window): take 2 asks a
+    # warmer, fuller and more flowing sound and an accompaniment that keeps
+    # changing its figure
+    NEVER_AGAIN + 'a gently flowing pastoral piece of the 1830s, around 88 bpm, for a small group of period instruments: '
+    'wooden flute, gut-strung fiddle, English concertina, pedal harp, square piano and cello, a warm full sound from the very first bar. '
+    'The harp and the square piano keep a soft flowing motion of broken chords that changes its figure with every phrase, '
+    'never the same two-bar accompaniment pattern twice; the harmony keeps moving. Five sections flowing into one another without pauses: '
+    'a single bar of opening in G major; a long singing flute melody that keeps unfolding, answered by the fiddle; '
+    'a contrasting middle in E minor where the concertina and the cello weave new melodies in dialogue; '
+    'a new, brighter episode in C major where the fiddle leads with fresh material over rippling harp; '
+    'a short closing of a few bars to a held final chord in G major. '
+    'Warm, gentle and quietly joyful, a sunny morning on an English canal towpath, ' + CANAL_TAIL,
+    # vii-2: content enjoyment 7.67 and production quality 7.97, but the
+    # flute's strain played twice (22 s apart) and the air come back whole
+    # from 110 s (loopiness 66)
+    CHAIN + 'a gently flowing pastoral piece of the 1830s, around 88 bpm, for a small group of period instruments: '
+    'wooden flute, gut-strung fiddle, English concertina, pedal harp, square piano and cello, a warm full sound from the very first bar, '
+    'the harp and the square piano keeping a soft flowing motion of broken chords under every episode. '
+    'The episodes: the flute in G major; the fiddle in E minor; the concertina in C major; the cello in A minor; '
+    'the flute and the fiddle together in D major; the concertina in B minor; the whole group in G major, ending on a held final chord. '
+    'Warm, gentle and quietly joyful, a sunny morning on an English canal towpath, ' + CANAL_TAIL,
+    # vii-3: the chain came back as one strain of 22 s played round and
+    # round (loopiness 94). Take 4 asks for no tune at all: a rhapsody whose
+    # lines wander and never settle into eight-bar phrases
+    NEVER_AGAIN + 'a free, rhapsodic pastoral fantasia of the 1830s, like a slow improvised prelude: long-breathed melodic lines '
+    'that keep wandering and never settle into a repeated tune, no regular eight-bar phrases, gentle rubato, around 80 bpm, '
+    'for a small group of period instruments: wooden flute, gut-strung fiddle, English concertina, pedal harp, square piano and cello, '
+    'a warm full sound from the very first bar, the harp and the square piano flowing in broken chords under the melody throughout. '
+    'It wanders from G major through E minor, C major and A minor and comes home to G major for a short close on a held chord, '
+    'the lead passing from the flute to the fiddle, the concertina and the cello and back. '
+    'Warm, gentle and quietly joyful, a sunny morning on an English canal towpath, ' + CANAL_TAIL,
+])
+MUSIC['music-canal-viii'] = (165.0, 1, [
+    NEVER_AGAIN + 'a slow pastoral romance of the 1830s in 3/4, around 76 bpm, for a small parlour group of period instruments: '
+    'English concertina, pedal harp, square piano, gut-strung fiddle and cello. Five sections flowing into one another without pauses: '
+    'a brief opening of a few bars for harp and concertina in F major; a long lyrical concertina melody over harp and cello that keeps developing; '
+    'a contrasting middle in D minor where the fiddle sings a new melody over the square piano; '
+    'the first melody transformed on the fiddle in B-flat major, the concertina answering it, then turning home; '
+    'a short closing of a few bars to a held final chord in F major. '
+    'Tender and unhurried, a quiet evening on a canal wharf, ' + CANAL_TAIL,
+    # viii-1: loopiness 39.3, production quality 7.99, but content enjoyment
+    # 7.47, its opening the weakest (7.2-7.4) and 5 dB under the rest: take 2
+    # asks the whole group from the first bar and a little more motion
+    NEVER_AGAIN + 'a lilting pastoral piece of the 1830s in 3/4, around 92 bpm, flowing one beat to the bar, '
+    'for a small parlour group of period instruments: English concertina, pedal harp, square piano, gut-strung fiddle, wooden flute and cello, '
+    'the whole group playing softly from the very first bar, a warm full sound. Five sections flowing into one another without pauses: '
+    'two bars of opening in F major; a long lyrical concertina melody over flowing harp arpeggios and cello that keeps developing; '
+    'a contrasting middle in D minor where the fiddle sings a new melody over the square piano; '
+    'a new episode in B-flat major where the flute and the concertina trade fresh phrases; '
+    'a short closing of a few bars to a held final chord in F major. '
+    'Tender, warm and gently moving, an evening on a canal wharf, ' + CANAL_TAIL,
+    # viii-2: loopiness 28.7, production quality 7.93, content enjoyment
+    # 7.48: its opening strain played four times (7.0-7.3 over the first
+    # 30 s), the body 7.5-7.8
+    CHAIN + 'a lilting pastoral piece of the 1830s in 3/4, around 92 bpm, flowing one beat to the bar, '
+    'for a small parlour group of period instruments: English concertina, pedal harp, square piano, gut-strung fiddle, wooden flute and cello, '
+    'the whole group playing softly from the very first bar, a warm full sound, flowing harp arpeggios under every episode. '
+    'The episodes: the concertina in F major; the fiddle in D minor; the flute in B-flat major; the cello in G minor; '
+    'the concertina and the fiddle together in C major; the flute in A minor; the whole group in F major, ending on a held final chord. '
+    'Tender, warm and gently moving, an evening on a canal wharf, ' + CANAL_TAIL,
+    # viii-3: the chain again one strain round and round (loopiness 73).
+    # Take 4 follows the form of rail-iv-1, the one take to pass at the
+    # first try (a pulse under the whole piece, a melody that keeps
+    # developing, a middle in the relative major, the melody transformed,
+    # then home), with the canal's strings, flute and harp
+    NEVER_AGAIN + 'a gently flowing pastoral piece of the 1830s in 6/8, around 100 bpm, for a small period ensemble: '
+    'a gut-strung string quartet, a wooden flute and a pedal harp. Soft flowing harp arpeggios and a gently rocking pulse in the viola '
+    'and the cello run under the whole piece. Five sections flowing into one another without pauses: '
+    'a brief opening where the harp starts its arpeggios in A minor; a long singing violin melody that keeps developing; '
+    'a brighter middle in C major where the flute and the cello take up new melodies over the harp; '
+    'the first melody transformed on the flute in E minor with the viola in counterpoint, then turning home; '
+    'a short closing, the arpeggios slowing to a final chord in A major. '
+    'Tender, warm and gently moving, an evening on a canal wharf, ' + CANAL_TAIL,
+])
+MUSIC['music-rail-iv'] = (170.0, 1, [
+    NEVER_AGAIN + 'a piece of the 1840s, around 112 bpm, for a small period ensemble: string quintet, fortepiano, '
+    'a cornet and a euphonium of an early brass band. A steady driving pulse of short bowed notes in the low strings and the fortepiano, '
+    'like the pistons of a steam engine, runs under the whole piece. Five sections flowing into one another without pauses: '
+    'a brief opening where the engine pulse starts on cello and fortepiano in D minor; a long determined violin melody that keeps developing; '
+    'a brighter middle in F major where the cornet and the euphonium take up new melodies over the strings\' pulse; '
+    'the first melody transformed on the violins in G minor with the cornet in counterpoint, then turning home; '
+    'a short closing, the pulse slowing to a final chord in D major. '
+    'Energetic but restrained, purposeful, the age of iron and the railway, ' + RAIL_TAIL,
+])
+MUSIC['music-rail-v'] = (170.0, 1, [
+    NEVER_AGAIN + 'a piece of the 1840s, around 100 bpm, for an early Victorian brass band with strings: '
+    'keyed bugle, cornet, tenor horn and ophicleide, a string quartet and a square piano. '
+    'A steady chugging pulse of repeated soft chords in the horns and the piano, like a locomotive on the line, runs under the whole piece. '
+    'Five sections flowing into one another without pauses: a brief opening of the pulse alone in B-flat major; '
+    'a long bold keyed bugle melody that keeps developing; a contrasting middle in G minor where the strings sing new melodies over the pulse; '
+    'the first melody transformed on the cornet in E-flat major with a violin counter-melody, then turning home; '
+    'a short closing to a final chord in B-flat major. '
+    'Busy, hopeful and industrious, a new railway town at work, ' + RAIL_TAIL,
+    # v-1: the brass band again scored as the march had (content
+    # enjoyment 6.8, production quality 7.35), a 19 s strain played round
+    # (loopiness 56) and three holes; iv-1, strings and fortepiano with a
+    # cornet, scored 8.0 and 8.2. Take 2 is led by the strings and the
+    # fortepiano, the brass a colour only
+    NEVER_AGAIN + 'a piece of the 1840s, around 104 bpm, for a fortepiano quintet with a clarinet and a natural horn: '
+    'two violins, viola, cello, double bass, fortepiano, clarinet in C and natural horn. '
+    'A steady rolling pulse of repeated eighth notes in the fortepiano\'s left hand and the viola, like carriage wheels on the rails, '
+    'runs under the whole piece. Five sections flowing into one another without pauses: a brief opening of the rolling pulse in G major; '
+    'a long hopeful violin melody that keeps developing, the clarinet answering; '
+    'a contrasting middle in E minor where the cello and the horn sing new melodies over the pulse; '
+    'a new, brighter episode in C major where the clarinet and the first violin trade fresh phrases; '
+    'a short closing to a final chord in G major. '
+    'Busy, hopeful and industrious, a new railway town at work, ' + RAIL_TAIL,
+    # v-2: content enjoyment 7.68, production quality 7.89, but a 28 s
+    # strain played twice running and again 70 s later (loopiness 65)
+    CHAIN + 'a piece of the 1840s, around 104 bpm, for a fortepiano quintet with a clarinet and a natural horn: '
+    'two violins, viola, cello, double bass, fortepiano, clarinet in C and natural horn. '
+    'A steady rolling pulse of repeated eighth notes in the fortepiano\'s left hand and the viola, like carriage wheels on the rails, '
+    'runs under every episode. The episodes: the first violin in G major; the clarinet in E minor; the cello in C major; '
+    'the horn and the viola in A minor; the two violins in D major; the clarinet and the cello in B minor; '
+    'the whole group in G major, ending on a final chord. '
+    'Busy, hopeful and industrious, a new railway town at work, ' + RAIL_TAIL,
+    # v-3: loopiness 49, content enjoyment 7.61, production quality 7.83,
+    # an 18 s strain again and again from 90 s. Take 4 is iv-1's prompt,
+    # the one that passed, in another key with other winds
+    NEVER_AGAIN + 'a piece of the 1840s, around 108 bpm, for a small period ensemble: string quintet, fortepiano, '
+    'a clarinet in C and a natural horn. A steady driving pulse of short bowed notes in the low strings and the fortepiano, '
+    'like the pistons of a steam engine, runs under the whole piece. Five sections flowing into one another without pauses: '
+    'a brief opening where the engine pulse starts on cello and fortepiano in G minor; a long determined violin melody that keeps developing; '
+    'a brighter middle in B-flat major where the clarinet and the horn take up new melodies over the strings\' pulse; '
+    'the first melody transformed on the violins in C minor with the clarinet in counterpoint, then turning home; '
+    'a short closing, the pulse slowing to a final chord in G major. '
+    'Energetic but restrained, purposeful, the age of iron and the railway, ' + RAIL_TAIL,
+])
 
 # name: (takes, sections) — asked of the music model as a plan, only when named
 PLANS = {
@@ -572,10 +771,15 @@ def main() -> None:
             influence, loop = 0.0, False
         else:
             seconds, takes, influence, loop, text = PLAN[name]
+        prompts = text if isinstance(text, list) else None
+        if prompts:
+            takes = len(prompts)
         for n in range(1, takes + 1):
             out = os.path.join(RAW, f'{name}-{n}.mp3')
             if os.path.exists(out):
                 continue
+            if prompts:
+                text = prompts[n - 1]
             # speech costs a credit a character
             estimate = len(text) if voice else int(seconds * (MUSIC_PER_SECOND if music else PER_SECOND) + 0.999)
             if dry:
