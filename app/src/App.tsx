@@ -32,6 +32,9 @@ const Defis = lazy(() => import("@/pages/Defis"));
 const Tableau = lazy(() => import("@/pages/Tableau"));
 const Glossaire = lazy(() => import("@/pages/Glossaire"));
 const Services = lazy(() => import("@/pages/Services"));
+/* the test bench, for the developer's own builds: the route does not exist
+   in a production build, and the import goes with it */
+const Admin = import.meta.env.DEV ? lazy(() => import("@/admin/AdminPage")) : null;
 
 /* a line while a page is fetched */
 function Arriving() {
@@ -98,6 +101,7 @@ export default function App() {
         <Route path="profile" element={<Profile />} />
         <Route path="comptoir" element={<Comptoir />} />
         <Route path="classement" element={<Classement />} />
+        {Admin && <Route path="admin" element={<Admin />} />}
         {/* the hall's old addresses lead to the club's rooms */}
         <Route path="play" element={<Navigate to="/online" replace />} />
         <Route path="tables" element={<Navigate to="/online#tables" replace />} />

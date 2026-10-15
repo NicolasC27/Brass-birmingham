@@ -38,23 +38,27 @@ function Bubble({ said, anchors }: { said: Said; anchors: AnchorRegistry }) {
   }, [anchors, town]);
   return (
     <div ref={box} className="group pointer-events-none absolute z-20 -translate-x-1/2 -translate-y-full data-[below=1]:translate-y-0" aria-live="polite" lang="en">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25, ease: 'easeOut' }}
-        className="relative max-w-[210px] rounded-[10px] border border-brass-700/50 bg-cream-100 px-2.5 pb-1.5 pt-1 text-center text-ink-900 shadow-e4"
-      >
-        <span className="block font-fell text-[10px] leading-tight tracking-wide text-ink-900/60">
-          {said.name}, {said.trade}
-        </span>
-        <span className="block font-serif text-[13px] italic leading-snug">{said.text}</span>
-        {/* the tail, pointing at the town: under the bubble, or over it when it hangs below */}
-        <span
-          aria-hidden
-          className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-[5px] rotate-45 border-b border-r border-brass-700/50 bg-cream-100 group-data-[below=1]:bottom-full group-data-[below=1]:top-auto group-data-[below=1]:translate-y-[5px] group-data-[below=1]:border-b-0 group-data-[below=1]:border-l group-data-[below=1]:border-r-0 group-data-[below=1]:border-t"
-        />
+      <motion.div initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25, ease: 'easeOut' }}>
+        <BubbleFace said={said} />
       </motion.div>
+    </div>
+  );
+}
+
+/** the paper of the bubble itself, the speaker over the line — hung over a
+ *  town on the board, or shown on its own by the test bench */
+export function BubbleFace({ said }: { said: Pick<Said, 'name' | 'trade' | 'text'> }) {
+  return (
+    <div className="relative max-w-[210px] rounded-[10px] border border-brass-700/50 bg-cream-100 px-2.5 pb-1.5 pt-1 text-center text-ink-900 shadow-e4">
+      <span className="block font-fell text-[10px] leading-tight tracking-wide text-ink-900/60">
+        {said.name}, {said.trade}
+      </span>
+      <span className="block font-serif text-[13px] italic leading-snug">{said.text}</span>
+      {/* the tail, pointing at the town: under the bubble, or over it when it hangs below */}
+      <span
+        aria-hidden
+        className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-[5px] rotate-45 border-b border-r border-brass-700/50 bg-cream-100 group-data-[below=1]:bottom-full group-data-[below=1]:top-auto group-data-[below=1]:translate-y-[5px] group-data-[below=1]:border-b-0 group-data-[below=1]:border-l group-data-[below=1]:border-r-0 group-data-[below=1]:border-t"
+      />
     </div>
   );
 }

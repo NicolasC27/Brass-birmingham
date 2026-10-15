@@ -20,6 +20,15 @@ Un essai complet d'une partie : bundler un script avec `esbuild --bundle --platf
 
 `google-chrome-stable --headless=new --remote-debugging-port=9333` puis un script CDP (patron : `capture.mjs` du scratchpad) : `Network.setUserAgentOverride` avec `acceptLanguage: 'fr-FR'` pour la langue, `Emulation.setDeviceMetricsOverride` pour la largeur, `?theme=dark&arrived=1` dans l'adresse, et de vraies secondes d'attente — `--virtual-time-budget` gèle les entrées Framer, `--lang` est ignoré. Assembler en une page HTML aux images embarquées (≈ 5 Mo à 800 px).
 
+## Le banc d'essai (`/admin`)
+
+Build de développement seulement : la route et le tiroir sont chargés sous `import.meta.env.DEV` (import paresseux), rien n'en arrive dans `dist/`. Code dans `app/src/admin/`, page en français sans passer par les dictionnaires.
+
+- **Scénarios** : une vraie partie à l'office pour le compte en cours (invité compris), jouée par les machines (heuristique, quelques millisecondes le coup) jusqu'au moment choisi — début, milieu, dernière manche, veille du décompte et cérémonie du canal ; début, fin (tuiles retournées), dernier tour du rail ; partie finie. 2 à 4 joueurs, siège du propriétaire, machines, graine. Le journal part d'un bloc par le message `dev.home.play`, que l'office n'entend que lancé avec `DEV_LETTERS=1`, depuis cette machine et sans en-tête de proxy ; chaque coup y est relu par le moteur comme `home.act`. Une seconde environ. « Ranger les parties d'essai » les retire du registre (200 au plus par compte).
+- **Table de mixage** : chaque cue, les sons synthétisés, les ambiances, les événements de chaque ère, les airs (seuls ou par le vrai programme), chaque voix par personnage avec sa bulle.
+- **Tiroir d'essai** à la table : F9 ou le petit onglet en bas à gauche. Forcer une voix (personnage, ligne, ville, ou au hasard comme la table), un événement, l'air suivant ; poser chaque sorte d'avis dans le carnet ; relancer un scénario à la taille de la table ; montrer les flèches d'approvisionnement d'une construction ; lire l'ordonnanceur du son (`window.__sfx`).
+- Tests : `src/admin/__tests__/scenario.test.ts` (où chaque moment s'arrête), `server/__tests__/bench.test.ts` (le message refusé sans `DEV_LETTERS=1` ou derrière un proxy).
+
 ## Les pièges
 
 - Le navigateur intégré (pane) gèle les animations quand il est caché : les captures montrent des entrées à mi-course ; vérifier la structure au DOM, le visuel en headless.

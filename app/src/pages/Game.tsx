@@ -64,6 +64,9 @@ import { cn } from '@/lib/utils';
 
 /* WebGL board renderer — lazy so pixi.js stays out of the main bundle */
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
+/* the test drawer (F9), in the developer's own builds only: a production
+   build has neither the drawer nor its import */
+const AdminDrawer = import.meta.env.DEV ? lazy(() => import('@/admin/AdminDrawer')) : null;
 
 /** the pause between two moves of a machine while the reader follows them */
 const FOLLOW_PACE_MS = 4000;
@@ -946,6 +949,11 @@ export default function Game() {
       {/* the title card over the whole table while the board is set; it
           lifts once the map is engraved */}
       <TitleCard stage={boardStage} game={game} code={titleCode} local={titleLocal} />
+      {AdminDrawer && (
+        <Suspense fallback={null}>
+          <AdminDrawer />
+        </Suspense>
+      )}
     </div>
   );
 }

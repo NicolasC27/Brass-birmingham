@@ -10,7 +10,7 @@ import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { GazettePaper } from './Gazette';
 import { lastRound } from './handFan';
-import { MAX_SHOWN, enqueue, fileWhere, filedOf, ordered, shownOf, useGazetteDesk } from './noticeQueue';
+import { MAX_SHOWN, enqueue, fileWhere, filedOf, onLaidNotices, ordered, shownOf, useGazetteDesk } from './noticeQueue';
 import type { Incoming, Notice } from './noticeQueue';
 import { ShapeChip } from './TownInspector';
 import { useHudInsets } from './useHudInsets';
@@ -201,6 +201,8 @@ function Notices() {
   const file = useCallback((id: string) => setNotes((n) => fileWhere(n, (x) => x.id === id)), []);
   const fileKind = useCallback((kind: Notice['kind']) => setNotes((n) => fileWhere(n, (x) => x.kind === kind)), []);
   const fileAll = useCallback(() => setNotes((n) => fileWhere(n, () => true)), []);
+  /* the test bench lays notices in by hand (dev builds only) */
+  useEffect(() => (import.meta.env.DEV ? onLaidNotices(post) : undefined), [post]);
 
   /* the ledger, read from where the reader last was */
   useEffect(() => {

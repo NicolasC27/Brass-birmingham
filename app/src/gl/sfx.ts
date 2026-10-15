@@ -17,7 +17,7 @@ import type { Era, IndustryType } from '@/game/types';
 import { LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, VOICE_REACT, bubbleSpan, lifeAt, nextOf, spanOf, tuneLength, tuneOf, voiceAt } from './playlist';
 import type { Chance, Life } from './playlist';
 import { CAST, panOf } from './voices';
-import type { Spoken } from './voices';
+import type { Line, Spoken } from './voices';
 
 let ctx: AudioContext | null = null;
 
@@ -240,8 +240,10 @@ export function closeAudio(): void {
   if (lifeTimer !== null) clearTimeout(lifeTimer);
   lifeTimer = null;
   lifeAsking = null;
+  lifeByHand = null;
   voice = null;
   voiceAsking = null;
+  voiceByHand = null;
   if (voiceTimer !== null) clearTimeout(voiceTimer);
   voiceTimer = null;
   say(null);
@@ -540,6 +542,8 @@ const BUS_OF: Record<Cue, Bus> = {
   'ind-pottery': 'gestures',
   'ind-brewery': 'gestures',
 };
+/** every cue of the palette, in the order of the table above (the sound board) */
+export const cueNames = (): Cue[] => Object.keys(BUS_OF) as Cue[];
 /** the interface's own small noises sit under the moves of the game, and a
  *  trade under the stamp it follows */
 const TRADE_LEVEL = 0.6;
@@ -732,8 +736,9 @@ const CROSSING: readonly Life[] = ['life-passing', 'life-geese'];
 let life: { era: 'canal' | 'rail'; name: Life; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 /** the wait for the next event */
 let lifeTimer: ReturnType<typeof setTimeout> | null = null;
-/** an event being fetched to be played */
+/** an event being fetched to be played; one asked for by hand */
 let lifeAsking: object | null = null;
+let lifeByHand: object | null = null;
 let lastLife: Life | null = null;
 /** no event before this time (Date.now()): a moment is being heard */
 let hushUntil = 0;
@@ -782,17 +787,26 @@ function playLife(): void {
     waitLife(at - now);
     return;
   }
-  const name = nextOf<Life>(LIFE[era], lastLife, chance);
+  soundLife(era, nextOf<Life>(LIFE[era], lastLife, chance), false);
+}
+
+/** an event heard now: the one the scheduler drew, or (`forced`) one asked
+ *  for by hand, which neither the switches nor a moment hold back */
+function soundLife(era: 'canal' | 'rail', name: Life, forced: boolean): void {
+  /* one asked for by hand waits on its own token: the scheduler, told the
+     switches moved, lets go of its own fetch and not of this one */
   const token = {};
-  lifeAsking = token;
+  if (forced) lifeByHand = token;
+  else lifeAsking = token;
   void context().then(async (ac) => {
     const buf = ac ? await sample(name) : null;
-    if (lifeAsking !== token) return;
-    lifeAsking = null;
+    if ((forced ? lifeByHand : lifeAsking) !== token) return;
+    if (forced) lifeByHand = null;
+    else lifeAsking = null;
     /* before the first gesture nothing waits: the first touch asks again */
-    if (!ac || !lifeWanted() || wantEra !== era) return;
+    if (!ac || (!forced && (!lifeWanted() || wantEra !== era))) return;
     /* the file could not be had, or a moment began meanwhile: later */
-    if (!buf || Date.now() < hushUntil) {
+    if (!buf || (!forced && Date.now() < hushUntil)) {
       applyLife();
       return;
     }
@@ -857,6 +871,7 @@ let voiceSource: VoiceSource | null = null;
 let voice: { id: string; src: AudioBufferSourceNode; gain: GainNode } | null = null;
 let voiceTimer: ReturnType<typeof setTimeout> | null = null;
 let voiceAsking: object | null = null;
+let voiceByHand: object | null = null;
 /** when the next voice is planned (Date.now()), when the last one ended,
  *  and the line it said */
 let voicePlanned = 0;
@@ -921,15 +936,24 @@ function playVoice(): void {
     applyVoices();
     return;
   }
+  sayLine(spoken, false);
+}
+
+/** a line said now in its town: the one the table picked, or (`forced`)
+ *  one asked for by hand, which neither the switches nor a moment hold back */
+function sayLine(spoken: Pick<Spoken, 'line' | 'town'>, forced: boolean): void {
+  /* a line asked for by hand waits on its own token, like an event */
   const token = {};
-  voiceAsking = token;
+  if (forced) voiceByHand = token;
+  else voiceAsking = token;
   void context().then(async (ac) => {
     const buf = ac ? await sample(spoken.line.id) : null;
-    if (voiceAsking !== token) return;
-    voiceAsking = null;
+    if ((forced ? voiceByHand : voiceAsking) !== token) return;
+    if (forced) voiceByHand = null;
+    else voiceAsking = null;
     /* before the first gesture nothing waits: the first touch asks again */
-    if (!ac || !voicesWanted()) return;
-    if (!buf || Date.now() < hushUntil) {
+    if (!ac || (!forced && !voicesWanted())) return;
+    if (!buf || (!forced && Date.now() < hushUntil)) {
       applyVoices();
       return;
     }
@@ -1055,6 +1079,7 @@ function waitTune(seconds: number): void {
   );
   /* fetched during the wait, so it is ready when its time comes */
   void sample(name);
+  if (import.meta.env.DEV) tuneDue = Date.now() + seconds * 1000;
   tuneTimer = setTimeout(() => {
     tuneTimer = null;
     playTune(era, name);
@@ -1128,6 +1153,81 @@ if (typeof window !== 'undefined' && typeof window.addEventListener === 'functio
   window.addEventListener('keydown', first, true);
 }
 
+/* ---------------- by hand: the test bench asks for a sound at once ---------------- */
+
+/** a line of the townsfolk said now in `town`, its bubble up, whatever the
+ *  scheduler had planned or the switches say; the next one is planned
+ *  afresh once it is over */
+export function sayNow(line: Line, town: string): void {
+  if (voiceTimer !== null) clearTimeout(voiceTimer);
+  voiceTimer = null;
+  if (voice) {
+    fadeOut(voice, 0.3);
+    voice = null;
+  }
+  sayLine({ line, town }, true);
+}
+
+/** one of an era's events heard now, with its era's level and its crossing */
+export function lifeNow(name: Life): void {
+  if (lifeTimer !== null) clearTimeout(lifeTimer);
+  lifeTimer = null;
+  if (life) {
+    fadeOut(life, 0.3);
+    life = null;
+  }
+  soundLife((LIFE.canal as readonly string[]).includes(name) ? 'canal' : 'rail', name, true);
+}
+
+/** the era's next tune at once: the pause cut short, or the tune playing
+ *  faded into the next. False when no era's tunes run (the music switch
+ *  shut, no era being played) */
+export function tuneNow(): boolean {
+  const era = tuneEra;
+  if (!era) return false;
+  if (tuneTimer !== null) clearTimeout(tuneTimer);
+  tuneTimer = null;
+  asking = null;
+  if (tune) {
+    fadeOut(tune, 1.5);
+    tune = null;
+  }
+  playTune(
+    era,
+    nextOf(
+      TUNES[era].map((t) => t.name),
+      lastTune,
+      chance,
+    ),
+  );
+  return true;
+}
+
+/** any recording of the palette heard once on a bus, whatever the switches
+ *  say (the sound board): a way to stop it and its length, or null when it
+ *  cannot be had */
+export async function playRecording(name: string, bus: Bus): Promise<{ stop: () => void; seconds: number } | null> {
+  const ac = await context();
+  if (!ac) return null;
+  const buf = decoded.get(name) ?? (await sample(name));
+  if (!buf) return null;
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  src.connect(busOf(ac, bus));
+  src.start();
+  if (import.meta.env.DEV && heard.push(`${name} (by hand)`) > 40) heard.shift();
+  return {
+    stop: () => {
+      try {
+        src.stop();
+      } catch {
+        /* already over */
+      }
+    },
+    seconds: buf.duration,
+  };
+}
+
 /* dev only: what is sounding right now and what is coming (window.__sfx
    .playing(), .ambience(), .life(), .music(), .voice(), .said(), .next(),
    .heard()), and a voice asked for at once (.speak()) */
@@ -1135,6 +1235,7 @@ const heard: string[] = [];
 /** the seconds until a wait ends, rounded, or null when nothing waits */
 const dueIn = (at: number | null): number | null => (at === null ? null : Math.round((at - Date.now()) / 100) / 10);
 let lifeDue: number | null = null;
+let tuneDue: number | null = null;
 if (import.meta.env.DEV && typeof window !== 'undefined')
   (window as unknown as { __sfx?: Record<string, () => unknown> }).__sfx = {
     playing: () => playing?.id ?? null,
@@ -1144,7 +1245,7 @@ if (import.meta.env.DEV && typeof window !== 'undefined')
     voice: () => voice?.id ?? null,
     said: () => said,
     /* what waits: the next event and the next voice, in seconds */
-    next: () => ({ life: life ? life.name : lifeTimer !== null ? dueIn(lifeDue) : null, voice: voice ? voice.id : voiceTimer !== null ? dueIn(voicePlanned) : null, hushedFor: hushUntil > Date.now() ? dueIn(hushUntil) : 0 }),
+    next: () => ({ life: life ? life.name : lifeTimer !== null ? dueIn(lifeDue) : null, voice: voice ? voice.id : voiceTimer !== null ? dueIn(voicePlanned) : null, tune: tune ? tune.name : tuneTimer !== null ? dueIn(tuneDue) : null, hushedFor: hushUntil > Date.now() ? dueIn(hushUntil) : 0 }),
     speak: () => {
       voicePlanned = Date.now();
       waitVoice(voicePlanned);

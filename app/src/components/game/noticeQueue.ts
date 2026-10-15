@@ -140,3 +140,22 @@ export const useGazetteDesk = create<{ issue: GazetteIssue | null; publish: (iss
   issue: null,
   publish: (issue) => set({ issue }),
 }));
+
+/* ------------------------------------------------------------------ */
+/* The test bench lays notices in by hand, to see the book without     */
+/* playing to the moment that says them (dev builds only: the table    */
+/* listens under import.meta.env.DEV).                                 */
+/* ------------------------------------------------------------------ */
+
+const hands = new Set<(items: Incoming[]) => void>();
+
+/** the book listens for notices laid in by hand */
+export function onLaidNotices(fn: (items: Incoming[]) => void): () => void {
+  hands.add(fn);
+  return () => hands.delete(fn);
+}
+
+/** notices laid in the open book by hand, as if the table had said them */
+export function layNotices(items: Incoming[]): void {
+  for (const fn of [...hands]) fn(items);
+}
