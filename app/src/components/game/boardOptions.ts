@@ -237,8 +237,10 @@ let state: BoardOptions = {
   hideUnbuilt: read('hideUnbuilt', false),
   bigChips: read('bigChips', true),
   greyFreeMerchants: read('greyFreeMerchants', false),
-  stockStyle: read('stockStyle', 'corner'),
-  tileArt: read('tileArt', {}),
+  /* the corner disc, the v3 tiles and the single band are the table's own
+     and no longer offered: a choice stored when they were is not read */
+  stockStyle: 'corner',
+  tileArt: {},
   matOrder: read('matOrder', [...MAT_ORDER_DEFAULT]),
   slotArt: read('slotArt', 'engraved'),
   /* on by default: oxblood and verdigris sit too close under deuteranopia
@@ -247,13 +249,14 @@ let state: BoardOptions = {
   sealTiles: read('sealTiles', true),
   sealLinks: read('sealLinks', true),
   cardGrain: read('cardGrain', true),
-  chipStyle: read('chipStyle', 'band'),
+  chipStyle: 'band',
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  /* a ground that is no longer offered — one of the eight that were tried
-     and dropped — falls back to the one the board opens on */
-  mapStyle: MAP_URL[read('mapStyle', 'relief')] ? read('mapStyle', 'relief') : 'relief',
+  /* the board opens on the English model and the ground is no longer
+     offered: only a rail painting worn from the counter brings the etched
+     ground it is painted for */
+  mapStyle: read('mapStyle', 'relief') === 'etched' ? 'etched' : 'relief',
   railPainting: read('railPainting', '2'),
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),

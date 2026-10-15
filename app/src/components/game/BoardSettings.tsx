@@ -1,38 +1,34 @@
 import { memo, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Flag, Keyboard, LayoutGrid, Map, MonitorCog, X } from 'lucide-react';
+import { Flag, Keyboard, Map, MonitorCog, Volume2, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { setLang, useLang, useT, LANGS } from '@/i18n';
 import type { Lang } from '@/i18n';
-import { MAP_STYLES, RAIL_PAINTINGS, setBoardOption, useBoardOptions } from './boardOptions';
+import { setBoardOption, useBoardOptions } from './boardOptions';
 import { narrowRailTop, useHudInsets } from './useHudInsets';
 import { useLayer } from './useLayer';
 import { useNarrow } from '@/hooks/use-narrow';
-import type { IncomeSide, MapStyle, MinimapSize, RailMode, RailPainting } from './boardOptions';
+import type { IncomeSide, MinimapSize, RailMode } from './boardOptions';
 import { RAIL_MODES } from './railLogic';
 import type { TrafficLevel } from '@/gl/ambiance';
 import { KEY_ACTIONS, RESERVED_KEYS, eventKey, keyLabel, resetKeybindings, setKeybinding, useKeybindings } from './keybindings';
 import type { KeyAction } from './keybindings';
-import { STOCK_STYLE_IDS } from './stockStyles';
-import { TILE_VARIANTS, variantFaceUrl } from '@/gl/faces';
-import type { TileVariant } from '@/gl/faces';
-import type { ChipStyle, SlotArt, StockStyle } from '@/gl/faces';
-import type { IndustryType } from '@/game/types';
+import type { SlotArt } from '@/gl/faces';
 import { useGame } from '@/game/store';
 import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
-/* Board settings — a centred dialog with a section rail on the left   */
-/* (tiles / board / interface / shortcuts) and, on the right, one row  */
-/* per option: label, a one-line hint, the control. Visual choices     */
-/* (slot art, income band, stock badge) carry a live mini preview so   */
-/* the reader can pick without trying each one on the board.          */
+/* Board settings — a panel docked beside the board, its sections     */
+/* across the top (board / sounds / interface / shortcuts), one row    */
+/* per option: label, a one-line hint, the control. The empty slots'   */
+/* art carries a live mini preview so the reader can pick without      */
+/* trying each one on the board.                                       */
 /* ------------------------------------------------------------------ */
 
-type SectionId = 'tiles' | 'board' | 'interface' | 'keys';
+type SectionId = 'board' | 'sounds' | 'interface' | 'keys';
 const SECTIONS: { id: SectionId; icon: LucideIcon }[] = [
-  { id: 'tiles', icon: LayoutGrid },
   { id: 'board', icon: Map },
+  { id: 'sounds', icon: Volume2 },
   { id: 'interface', icon: MonitorCog },
   { id: 'keys', icon: Keyboard },
 ];
@@ -40,16 +36,6 @@ const SECTIONS: { id: SectionId; icon: LucideIcon }[] = [
 /* ----------------------------- previews ---------------------------- */
 
 const CARD = 'relative block h-12 w-12 shrink-0 overflow-hidden rounded-md border';
-
-/** industry key → asset file stem ('manufacturer' vs file 'manufacture') */
-/** one painting variant of an industry on the dark tile ground */
-function VariantPreview({ industry, variant, active }: { industry: IndustryType; variant: TileVariant; active: boolean }) {
-  return (
-    <span aria-hidden className={cn(CARD, 'bg-[#12100C]', active ? 'border-brass-400' : 'border-brass-700/50')}>
-      <span className="absolute inset-1 bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${variantFaceUrl(variant, industry)})` }} />
-    </span>
-  );
-}
 
 /** the cotton mill painting: full colour, or the engraved sepia print */
 function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
@@ -63,58 +49,6 @@ function SlotPreview({ art, active }: { art: SlotArt; active: boolean }) {
           opacity: art === 'painted' ? 1 : 0.9,
         }}
       />
-    </span>
-  );
-}
-
-/** brass card with the income / VP layout */
-function ChipPreview({ style, active }: { style: ChipStyle; active: boolean }) {
-  const num = 'font-mono text-[6.5px] font-semibold text-[#F4ECD8]'; // picture-scale: a miniature of the chip, aria-hidden
-  return (
-    <span
-      aria-hidden
-      className={cn(CARD, active ? 'border-brass-400' : 'border-brass-700/50')}
-      style={{ background: 'radial-gradient(circle at 50% 40%, #D8B46A, #8C6F33)', boxShadow: 'inset 0 0 0 2px #C9A45C' }}
-    >
-      {style === 'band' ? (
-        <span className="absolute inset-x-[3px] bottom-[3px] flex h-3 items-center justify-between rounded-[2px] bg-[#0C0A08]/60 px-1">
-          <span className={num}>+2</span>
-          <span className={num}>3vp</span>
-        </span>
-      ) : (
-        <>
-          <span className={cn('absolute bottom-[3px] left-[3px] flex h-3 w-[18px] items-center justify-center rounded-[2px] bg-[#17110C] ring-1 ring-[#F4ECD8]/35', num)}>+2</span>
-          <span className={cn('absolute bottom-[3px] right-[3px] flex h-3 w-[18px] items-center justify-center rounded-[2px] bg-[#17110C] ring-1 ring-[#F4ECD8]/35', num)}>3vp</span>
-        </>
-      )}
-    </span>
-  );
-}
-
-/** tiny tile mock showing where the stock badge sits for a given style */
-function StockPreview({ style, active }: { style: StockStyle; active: boolean }) {
-  const badge = (() => {
-    const base = 'absolute flex items-center justify-center rounded-[3px] bg-[#17110C] font-mono font-bold text-[#F4ECD8] shadow-sm';
-    switch (style) {
-      case 'corner':
-        return <span className={`${base} right-0.5 top-0.5 h-4 w-4 rounded-full text-[9px] ring-1 ring-[#C9A45C]`}>3</span>;
-      case 'big':
-        return <span className={`${base} left-1/2 top-1/2 h-5 w-9 -translate-x-1/2 -translate-y-1/2 gap-0.5 text-[9px]`}>▪×3</span>;
-      case 'counter':
-        return <span className={`${base} left-1/2 top-1/2 h-3.5 w-7 -translate-x-1/2 -translate-y-1/2 text-[7px]`}>▪×3</span>; // picture-scale
-      case 'tag':
-        return <span className={`${base} right-0 top-1/2 h-3.5 w-7 -translate-y-1/2 translate-x-1 text-[7px]`}>▪×3</span>; // picture-scale
-      case 'top':
-        return <span className={`${base} left-1/2 top-0 h-3.5 w-7 -translate-x-1/2 -translate-y-1 text-[7px]`}>▪×3</span>; // picture-scale
-    }
-  })();
-  return (
-    <span
-      aria-hidden
-      className={cn(CARD, active ? 'border-brass-400' : 'border-brass-700/50')}
-      style={{ background: 'radial-gradient(circle at 50% 40%, #D8B46A, #8C6F33)' }}
-    >
-      {badge}
     </span>
   );
 }
@@ -386,7 +320,7 @@ function BoardSettings() {
   const game = useGame((s) => s.game);
   const online = useGame((s) => s.code !== null);
   const toggleFollowBots = useGame((s) => s.toggleFollowBots);
-  const [section, setSection] = useState<SectionId>('tiles');
+  const [section, setSection] = useState<SectionId>('board');
   const open = opts.settingsOpen;
   const insets = useHudInsets();
   const narrow = useNarrow();
@@ -454,24 +388,8 @@ function BoardSettings() {
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
                 <p className="mb-1 font-sans text-[11px] text-cream-100/50">{t(`game.settings.sectionHint.${section}`)}</p>
 
-                {section === 'tiles' && (
+                {section === 'board' && (
                   <>
-                    {(Object.entries(TILE_VARIANTS) as [IndustryType, NonNullable<(typeof TILE_VARIANTS)[IndustryType]>][]).map(([industry, variants], idx) => (
-                      <ChoiceCards<string>
-                        key={industry}
-                        label={idx === 0 ? t('game.settings.tileArt') : ''}
-                        hint={idx === 0 ? t('game.settings.tileArtHint') : undefined}
-                        sublabel={t(`game.settings.industry.${industry}`)}
-                        value={opts.tileArt[industry] ?? variants[0].id}
-                        onChange={(v) => setBoardOption('tileArt', { ...opts.tileArt, [industry]: v })}
-                        columns={3}
-                        options={variants.map((v) => ({
-                          id: v.id,
-                          label: t(`game.settings.variant.${v.id}`),
-                          preview: (active) => <VariantPreview industry={industry} variant={v} active={active} />,
-                        }))}
-                      />
-                    ))}
                     <ChoiceCards<SlotArt>
                       label={t('game.settings.slotArt')}
                       hint={t('game.settings.slotArtHint')}
@@ -483,34 +401,6 @@ function BoardSettings() {
                         preview: (active) => <SlotPreview art={id} active={active} />,
                       }))}
                     />
-                    <ChoiceCards<ChipStyle>
-                      label={t('game.settings.chipStyle')}
-                      hint={t('game.settings.chipStyleHint')}
-                      value={opts.chipStyle}
-                      onChange={(v) => setBoardOption('chipStyle', v)}
-                      options={(['band', 'chips'] as ChipStyle[]).map((id) => ({
-                        id,
-                        label: t(`game.settings.chip.${id}`),
-                        preview: (active) => <ChipPreview style={id} active={active} />,
-                      }))}
-                    />
-                    <ChoiceCards<StockStyle>
-                      label={t('game.settings.stockBadge')}
-                      hint={t('game.settings.stockBadgeHint')}
-                      value={opts.stockStyle}
-                      onChange={(v) => setBoardOption('stockStyle', v)}
-                      columns={3}
-                      options={STOCK_STYLE_IDS.map((id) => ({
-                        id,
-                        label: t(`board.stockStyle.${id}`),
-                        preview: (active) => <StockPreview style={id} active={active} />,
-                      }))}
-                    />
-                  </>
-                )}
-
-                {section === 'board' && (
-                  <>
                     <OptionRow label={t('game.settings.colorBlind')} hint={t('game.settings.colorBlindHint')}>
                       <Switch on={opts.colorBlind} onClick={() => setBoardOption('colorBlind', !opts.colorBlind)} label={t('game.settings.colorBlind')} />
                     </OptionRow>
@@ -524,28 +414,37 @@ function BoardSettings() {
                         </OptionRow>
                       </div>
                     )}
-                    <OptionRow label={t('game.settings.mapStyle')} hint={t('game.settings.mapStyleHint')}>
-                      <Segmented<MapStyle>
-                        value={opts.mapStyle}
-                        onChange={(v) => setBoardOption('mapStyle', v)}
-                        options={MAP_STYLES.map((id) => ({ id, label: t(`game.settings.map.${id}`) }))}
-                      />
-                    </OptionRow>
-                    {opts.mapStyle === 'etched' && (
-                      <OptionRow label={t('game.settings.railPainting')} hint={t('game.settings.railPaintingHint')}>
-                        <Segmented<RailPainting>
-                          value={opts.railPainting}
-                          onChange={(v) => setBoardOption('railPainting', v)}
-                          options={RAIL_PAINTINGS.map((id) => ({ id, label: t('game.settings.railPaint', { n: id }) }))}
-                        />
-                      </OptionRow>
-                    )}
                     <OptionRow label={t('game.settings.vpTrack')} hint={t('game.settings.vpTrackHint')}>
                       <Switch on={opts.vpTrack} onClick={() => setBoardOption('vpTrack', !opts.vpTrack)} label={t('game.settings.vpTrack')} />
                     </OptionRow>
                     <OptionRow label={t('game.settings.telegrams')} hint={t('game.settings.telegramsHint')}>
                       <Switch on={opts.telegrams} onClick={() => setBoardOption('telegrams', !opts.telegrams)} label={t('game.settings.telegrams')} />
                     </OptionRow>
+                    <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
+                      <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.beginnerAid')} hint={t(online ? 'game.settings.beginnerAidTable' : 'game.settings.beginnerAidHint')}>
+                      {online ? (
+                        <span className="font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-cream-100/50">{t(game?.assist ? 'setup.houseRules.assist.on' : 'setup.houseRules.assist.off')}</span>
+                      ) : (
+                        <Switch on={opts.beginnerAid} onClick={() => setBoardOption('beginnerAid', !opts.beginnerAid)} label={t('game.settings.beginnerAid')} />
+                      )}
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.traffic')} hint={t('game.settings.trafficHint')}>
+                      <Segmented<TrafficLevel>
+                        value={opts.traffic}
+                        onChange={(v) => setBoardOption('traffic', v)}
+                        options={(['none', 'light', 'busy'] as TrafficLevel[]).map((id) => ({ id, label: t(`game.settings.trafficLevel.${id}`) }))}
+                      />
+                    </OptionRow>
+                    <OptionRow label={t('game.settings.followBots')} hint={t('game.settings.followBotsHint')}>
+                      <Switch on={followBots} onClick={toggleFollowBots} label={t('game.settings.followBots')} />
+                    </OptionRow>
+                  </>
+                )}
+
+                {section === 'sounds' && (
+                  <>
                     <OptionRow label={t('game.settings.sound')} hint={t('game.settings.sounds.hint')}>
                       <Switch on={opts.sound} onClick={() => setBoardOption('sound', !opts.sound)} label={t('game.settings.sound')} />
                     </OptionRow>
@@ -579,26 +478,6 @@ function BoardSettings() {
                         </OptionRow>
                       </div>
                     )}
-                    <OptionRow label={t('game.settings.greyMerch')} hint={t('game.settings.greyMerchHint')}>
-                      <Switch on={opts.greyFreeMerchants} onClick={() => setBoardOption('greyFreeMerchants', !opts.greyFreeMerchants)} label={t('game.settings.greyMerch')} />
-                    </OptionRow>
-                    <OptionRow label={t('game.settings.beginnerAid')} hint={t(online ? 'game.settings.beginnerAidTable' : 'game.settings.beginnerAidHint')}>
-                      {online ? (
-                        <span className="font-sans text-[10px] font-bold uppercase tracking-[0.12em] text-cream-100/50">{t(game?.assist ? 'setup.houseRules.assist.on' : 'setup.houseRules.assist.off')}</span>
-                      ) : (
-                        <Switch on={opts.beginnerAid} onClick={() => setBoardOption('beginnerAid', !opts.beginnerAid)} label={t('game.settings.beginnerAid')} />
-                      )}
-                    </OptionRow>
-                    <OptionRow label={t('game.settings.traffic')} hint={t('game.settings.trafficHint')}>
-                      <Segmented<TrafficLevel>
-                        value={opts.traffic}
-                        onChange={(v) => setBoardOption('traffic', v)}
-                        options={(['none', 'light', 'busy'] as TrafficLevel[]).map((id) => ({ id, label: t(`game.settings.trafficLevel.${id}`) }))}
-                      />
-                    </OptionRow>
-                    <OptionRow label={t('game.settings.followBots')} hint={t('game.settings.followBotsHint')}>
-                      <Switch on={followBots} onClick={toggleFollowBots} label={t('game.settings.followBots')} />
-                    </OptionRow>
                   </>
                 )}
 
