@@ -6,7 +6,9 @@ with the ElevenLabs music model (`music_v2_5`, `POST /v1/music`,
 instrumental forced), and the townsfolk's voices with its voice-design
 (`eleven_ttv_v3`) and expressive speech (`eleven_v3`) models, then trimmed,
 levelled and served by `process.py` (ffmpeg only). The raw takes sit in
-`raw/`, the per-call ledger in `ledger.jsonl`.
+`raw/`, the per-call ledger in `ledger.jsonl`. Since the sixth round the
+tunes are also measured for the ear by `judge.py` (repetition, form,
+loudness, a listener model), its results in `judge/`.
 
 ## Credits
 
@@ -32,7 +34,19 @@ levelled and served by `process.py` (ffmpeg only). The raw takes sit in
 | after the seven characters' voices were designed and kept | 17 132 |
 | after the characters' 41 lines | 18 125 |
 | after music-rail-iii | 19 504 |
-| **spent in all** | **16 421** (the fifth round's cap: 42 500 on the counter, 5 000 of it kept in reserve; `generate.py` stops at 37 500) |
+| before the sixth round (the canal's tunes written through) | 19 504 |
+| after music-canal-iv-1 (a plan) | 21 773 |
+| after music-canal-v-1 (a plan) | 24 042 |
+| after music-canal-vi-1 (a prompt) | 26 311 |
+| after music-canal-iv-2 (a prompt) | 28 580 |
+| after music-canal-v-2 (a prompt) | 30 849 |
+| **spent in all** | **27 766** (the sixth round's cap: 32 000 on the counter; `generate.py` stops there) |
+
+The sixth round: 11 345 credits, five takes of 165 s at 2 269 each (13.75
+a second, as before; a composition plan costs the same as a prompt).
+Asking the model for a plan (`POST /v1/music/plan`) costs nothing. After
+the fifth take 1 151 were left under the cap: not enough for another
+(2 475 by `generate.py`'s estimate), so none was asked.
 
 The fifth round: 4 690 credits. Speech is a credit a character (the
 lines and their stage directions); a voice design, three drafts of a
@@ -280,6 +294,163 @@ comb (in Ezra's pause, lifted 10 dB, the floor is -65 dBFS and 400 Hz stands
 7 dB under its neighbour at 450 Hz). 38 lines, 2 to 5 s each, about 30 kB
 each.
 
+## The sixth round: the canal's tunes written through
+
+The owner: the canal's music sometimes goes round in a loop too much; is
+there no program to check whether it is pleasant to the ear?
+
+### The judge (judge.py)
+
+`judge.py` runs in its own environment (`.venv`, git-ignored, 1.3 GB:
+numpy, scipy, librosa, soundfile, pyloudnorm, torch for the CPU and Meta's
+`audiobox_aesthetics`; the listener model's 400 MB of weights come from
+Hugging Face on the first run). It reads the served files, and each tune
+also as the game plays it (a loop its turns over, read from playlist.ts),
+and writes a table and `judge/<name>.json`. Two runs on the same files
+give the same file. What it measures, in short (the docstring has it all):
+
+- **repetition.** A chroma (harmony) and MFCC (timbre) vector a beat, each
+  dimension standardised over the tune, 4 s of beats laid end to end and
+  compared with every earlier 4 s. Two passages at a cosine of 0.70 or
+  more are the same music: 0.70 was set on music-canal, whose loop is one
+  phrase of eight bars played four times. From that: the share of the
+  timeline that repeats something heard before, the longest stretch heard
+  again beat for beat, how often the most repeated phrase comes, and a
+  loopiness from 0 to 100 (the mean of the three, each capped: the share,
+  the stretch over 60 s, the count less one over 7).
+- **form.** A novelty curve over the beats (a checkerboard kernel along the
+  self-similarity), its peaks at least 12 s apart: the sections and their
+  lengths. It cuts finely (sections of 12 to 25 s) and is read as a hint.
+- **level.** Integrated loudness and loudness range (ffmpeg's EBU R128
+  meter, pyloudnorm as a check), peak and crest, the balance of five
+  bands, the model's 200 Hz comb (how far each multiple stands over its
+  neighbours, the median over 400 Hz to 5 kHz), holes (a second or more
+  25 dB under the tune's median: the piece seeming to stop), and at a loop
+  point the sample step over the 99th percentile of the steps.
+- **the listener.** Audiobox Aesthetics, a model trained on people's
+  ratings, scores each 10 s from 1 to 10: CE (content enjoyment), CU
+  (content usefulness), PC (production complexity), PQ (production
+  quality). The windows are laid evenly from the first sample to the last
+  (a scrap of last chord padded with silence scored 3.8 and dragged the
+  means down by 0.1). On one steady tune its windows spread by 0.1 to 0.2:
+  a difference under 0.1 between two tunes means nothing.
+
+### Before (judge/baseline.json)
+
+| tune | length | loopiness | share repeated | longest repeat | most repeated phrase | LRA | CE | PQ |
+|---|---|---|---|---|---|---|---|---|
+| music-canal (the loop file) | 68.5 s | 43.2 | 0.62 | 15 s | 4 times | 1.5 | 7.73 | 7.90 |
+| **music-canal as heard (twice)** | 137.1 s | **93.7** | 0.81 | **69 s** | **8 times** | 1.5 | 7.72 | 7.89 |
+| music-canal-ii | 97.5 s | 31.0 | 0.28 | 13 s | 4 | 8.0 | 7.41 | 7.94 |
+| music-canal-iii | 99.3 s | 77.6 | 0.64 | 41 s | 8 | 3.9 | 7.78 | 8.30 |
+| music-rail-i | 98.3 s | 69.9 | 0.69 | 25 s | 10 | 2.4 | 5.82 | 7.08 |
+| music-rail-ii | 98.7 s | 29.0 | 0.28 | 10 s | 4 | 3.2 | 7.44 | 7.85 |
+| music-rail-iii | 99.3 s | 74.6 | 0.71 | 57 s | 5 | 4.0 | 7.43 | 7.17 |
+
+Where the repeats lie (the nearest earlier match): music-canal 17 and 34 s
+back (its phrase, again and again); the jig and the march within 20 s (each
+strain played twice running); rail-iii 20 to 30 s back.
+
+### The pieces asked
+
+Each is one piece of 165 s asked in five sections: an introduction, an
+air, a middle in another key with other players, the air come back varied
+on other instruments, a coda. The first two were sent as composition plans
+(`chunks`, each with its own styles and length; `PLANS` in generate.py),
+the next three as a prompt telling the same form in words (`CANAL_IV`,
+`CANAL_V`, `CANAL_VI`), after iv-1 and v-1 came back with a production
+quality under the prompted takes. Palette: fiddle, wooden flute, English
+concertina, pedal harp, square piano, cello; no drums, no voice, nothing
+modern. One take judged before the next was bought.
+
+| take | asked as | counter before / after | length | loopiness | CE | PQ | LRA | what the judge shows | kept |
+|---|---|---|---|---|---|---|---|---|---|
+| music-canal-iv-1 | plan, D major 6/8 | 19 504 / 21 773 | 158.1 s | 27.5 | 7.49 | 7.73 | 6.9 | the middle dies to -49 dB over 6 s before the air comes back at full (a hole at 99.8 s); the lone harp introduction and the coda score 6.6 to 7.0 | no |
+| music-canal-v-1 | plan, F major 4/4 | 21 773 / 24 042 | 162.8 s | 64.9 | 7.65 | 7.78 | 5.3 | each strain of the air played twice running (20 to 30 s back), and the air come back whole after the middle | **yes** |
+| music-canal-vi-1 | prompt, A dorian 3/4 | 24 042 / 26 311 | 161.8 s | 57.4 | 7.66 | 8.17 | 7.6 | the strains twice running (under 20 s back); a steady tone at 87 Hz from 30 s (see below) | **yes** |
+| music-canal-iv-2 | prompt, D major 6/8 | 26 311 / 28 580 | 163.4 s | 30.6 | 7.66 | 7.84 | 14.6 | an introduction 10 dB under the body, with a hole in it (12.8 s), the air's return from 124 s 6 dB over it | **yes**, its gain ridden |
+| music-canal-v-2 | prompt, F major 4/4 | 28 580 / 30 849 | 162.9 s | 70.9 | 7.68 | 7.88 | 7.0 | the air's two strains each twice (AABB), then the whole again: a 38 s stretch heard again | no |
+
+(`judge/takes.json`: each take cut and levelled as it would be served;
+`judge/takes-raw.json`: the raw takes.)
+
+### The gate, and what came through it
+
+As set for this round: loopiness clearly under music-canal as heard
+(read as at most half of it, 47); content enjoyment and production
+quality at least those of the best canal tune (the jig: 7.78 and 8.30); no
+comb after dehum; a sensible loudness range (3 to 10 LU); no hole.
+
+No take passes all of it. iv passes the repetition; v and vi do not (57
+and 65: a folk air's strains played twice running, but no longer one
+phrase for two minutes). None reaches the jig's production quality, 8.30:
+it is the densest tune of all, and the calm, sparser pieces score 7.7 to
+8.2 on it, their introductions and codas lowest. The comb passes: 1.8 to
+4.7 dB over the neighbours in the raw takes, -6.0 to -6.3 served. The
+loudness range passes once iv-2's gain is ridden.
+
+What is served is therefore a judgement over the takes bought, not a
+pass: the three new pieces keep the listener's scores of the tunes they
+replace, and repeat far less.
+
+| the canal's music | tunes | minutes | loopiness (mean over time) | longest repeat | most repeated phrase | CE | PQ |
+|---|---|---|---|---|---|---|---|
+| before (music-canal twice, ii, iii) | 3 | 5.6 | 70.6 | 69 s | 8 times in 137 s | 7.65 | 8.03 |
+| after (iv, v, vi) | 3 | 8.1 | 51.2 | 25 s | 3 to 8 times in 163 s | 7.65 | 7.91 |
+
+ii (loopiness 31, CE 7.41) and iii (77.6) fail the gate and are retired
+with music-canal; ii is the one that could come back as a fourth piece (a
+line in playlist.ts, and out of `RETIRED` in process.py) should the owner
+want more variety.
+
+### Processing
+
+Each piece as the other tunes: from its first note to the end of its own
+last chord, rid of the comb (`dehum`), nothing under 45 Hz, faded in over
+0.3 s and out over 1.5 s, a plain gain to -20 LUFS (peaks -4.8 to -7.5
+dBFS). Two takes needed more:
+
+- **iv-2**: its introduction (0-28 s) sits 10 dB under its body, and the
+  air's return from 124 s 6 dB over it. A slow ride of the gain, +5 dB to
+  24 s and -5 dB from 126 s with 4 s ramps: loudness range 14.6 to 8.8 LU,
+  no hole left, the listener's scores unchanged (7.67, 7.82).
+- **vi-1**: the band under 90 Hz held -8 dB of the whole (the others -29
+  to -47). From 30 s to its last chord a steady tone at 87 Hz (85-89 Hz),
+  -25 dBFS, 27 dB over the bass around it, unmoved through the change to
+  C major: a drone of the model's, not a player. Two notches 6 Hz wide
+  take it down 25 dB (the strongest line left between 60 and 120 Hz
+  stands 10 dB over the bass); the band under 90 Hz is now -19 dB. Scores
+  after: loopiness 56.9, CE 7.62, PQ 8.14, LRA 7.2.
+
+WebM 2.3 MB each, MP3 2.8 to 2.9 MB (the canal's three were 3.9 MB of
+WebM in all, now 6.9), fetched only in the pause before a tune is due.
+
+### How they are played
+
+`TUNES.canal` is the three new pieces, each played once through; no tune
+is looped any more, and the loop's machinery (`loop`, `turns`,
+`tuneLength`, the fade of a loop's last bars) is gone from playlist.ts and
+sfx.ts. The rules stand: never the tune just heard, the ambience alone
+for 45 to 150 s between two. The pauses were left as they were: the
+pieces are longer, so music now fills about 62 % of the canal era (53 %
+before) and each piece is heard about 4.6 times an hour, once through,
+where the old air's phrase came 8 times in a row every time it played.
+
+### The rail: judged, not asked again
+
+- **music-rail-i**, the brass band's march, is the weakest tune of the six
+  by far: content enjoyment 5.82 (1.6 under every other), production
+  complexity 1.68, production quality 7.08, and a phrase heard 10 times in
+  98 s (loopiness 70). It is the one to replace, written through as the
+  canal's were (a prompt with the form told in words, 150-165 s: about
+  2 300 credits).
+- **music-rail-iii**, the waltz: loopiness 74.6, its first half heard again
+  almost whole (a 57 s stretch), production quality 7.17. Next after rail-i.
+- **music-rail-ii**: loopiness 29.0, 7.44 / 7.85: fine.
+
+Neither was asked again: 1 151 credits were left under the round's cap,
+under the price of one take.
+
 ## The buzz under the ambience
 
 The owner heard a "bzzzz" under the table. Measured, not heard:
@@ -341,6 +512,9 @@ the latch (click at 0.45 comes to -34 LUFS): asked -36 LUFS with the peak
 held at -12 dBFS, it comes to -40 LUFS, 0.15 s long.
 
 ## The canal's tune
+
+Retired in the sixth round (above): heard twice over, its one phrase came
+eight times in a row. Kept here for the record.
 
 Asked of the music model (prompt in `generate.py`, `TUNE`): an English
 country dance air of the late eighteenth century, a gavotte or Playford
@@ -419,8 +593,8 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
   Each era has its playlist (`TUNES` in playlist.ts): the canal three, the
   rail three. They play while a game is in the action phase of an era
   (`tuneWanted` in useTableSounds.ts gives the era): the first tune 4 to
-  10 s after the era opens, then each tune heard through (the canal's first
-  air twice over, 137 s; the others once, 98 s or so), then the ambience
+  10 s after the era opens, then each tune heard through once (the canal's
+  about 163 s, the rail's 98 s or so), then the ambience
   alone for 45 to 150 s, then another, never the one just heard. Pauses
   and choices are drawn by `spanOf` and `nextOf`, pure functions tested
   with a seeded chance. A tune comes in over 5 s, fades out over 4 s when
@@ -477,4 +651,15 @@ Served as `music-canal.webm` (Opus 96 kb/s, 1.1 MB) and `music-canal.mp3`
     python3 tools/assets/sfx/generate.py --design ezra   # three drafts of a voice
     python3 tools/assets/sfx/generate.py --keep ezra 1   # the draft kept, as a voice
     python3 tools/assets/sfx/generate.py bark-ezra-dear  # a line (the characters' voices)
-    TMPDIR=/tmp python3 tools/assets/sfx/process.py
+    python3 tools/assets/sfx/generate.py music-canal-iv  # a canal piece: take 1 a plan, take 2 a prompt
+    TMPDIR=/tmp python3 tools/assets/sfx/process.py      # every sound but the retired tunes
+
+The judge's environment, once (CPU-only torch first, to keep it small):
+
+    uv venv tools/assets/sfx/.venv
+    uv pip install --python tools/assets/sfx/.venv/bin/python torch torchaudio --index-url https://download.pytorch.org/whl/cpu
+    uv pip install --python tools/assets/sfx/.venv/bin/python numpy scipy librosa soundfile pyloudnorm audiobox_aesthetics
+    tools/assets/sfx/.venv/bin/python tools/assets/sfx/judge.py                 # every tune served (judge/all.json)
+    tools/assets/sfx/.venv/bin/python tools/assets/sfx/judge.py raw/music-canal-iv-2.mp3 --out take
+
+**Kept after all:** music-canal-ii stays in the canal playlist as a fourth piece. Its loopiness (31.0) is among the lowest of all tunes, and a fourth piece spreads the rotation further, so the ear meets each air less often. It is out of `RETIRED` in `process.py`.

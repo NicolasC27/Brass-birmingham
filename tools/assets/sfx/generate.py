@@ -6,6 +6,7 @@
     tools/assets/sfx/generate.py --dry      # the plan and its cost, no call
     tools/assets/sfx/generate.py music-canal # the canal's tune (music model)
     tools/assets/sfx/generate.py music-rail-i # a rail tune (music model)
+    tools/assets/sfx/generate.py music-canal-iv # a canal piece (a composition plan)
     tools/assets/sfx/generate.py --design ezra  # three drafts of a character's voice
     tools/assets/sfx/generate.py --keep ezra 1  # the draft kept, made a voice
     tools/assets/sfx/generate.py bark-ezra-dear # a line said (speech model)
@@ -36,11 +37,12 @@ RAW = os.path.join(HERE, 'raw')
 LEDGER = os.path.join(HERE, 'ledger.jsonl')
 API = 'https://api.elevenlabs.io/v1'
 
-# the owner's hard cap for the fifth round (the canal's life, the voices, a
-# third rail tune) is 42 500 on the counter, 14 814 when it was begun; 5 000
-# of it is kept in reserve. It was 16 000 for the fourth round (the
+# the owner's hard cap for the sixth round (the canal's tunes written
+# through) is 32 000 on the counter, 19 504 when it was begun. It was 42 500
+# for the fifth round (the canal's life, the voices, a third rail tune), 5 000
+# of it kept in reserve (37 500); 16 000 for the fourth round (the
 # playlists, the rail's life), 22 500 before
-CEILING = 37_500
+CEILING = 32_000
 # credits per second of sound: the first 20 calls came to about 10.7 a second;
 # the estimate errs a little high. The counter is read a few seconds late, so
 # the check also adds up this run's own estimates. (It was 40 until the fourth
@@ -162,6 +164,95 @@ MUSIC = {
     'music-rail-i': (100.0, 1, RAIL_I),
     'music-rail-ii': (100.0, 1, RAIL_II),
     'music-rail-iii': (100.0, 1, RAIL_III),
+}
+
+# the sixth round: the canal's tunes written through. The owner heard the
+# canal's music go round in a loop; judge.py agreed (music-canal as heard:
+# one phrase eight times, loopiness 94; the jig 78). Each piece below is
+# asked as a composition plan (the music model's `chunks`): five sections
+# of one piece, an introduction, an air, a contrasting middle in another
+# key and colour, the air come back varied with other players, and a coda,
+# about 2 min 45 s in all, so that nothing of it is ever looped by us.
+# The plan is sent instead of a prompt (the two cannot be combined, nor can
+# force_instrumental: the sections carry `[Instrumental]` and forbid voices)
+CANAL_NO = ['drums', 'percussion', 'vocals', 'singing', 'choir', 'humming', 'synthesizer', 'synth pads', 'electric instruments',
+            'modern production', 'epic', 'cinematic', 'orchestral swell', 'crescendo', 'big climax', 'loop', 'repetitive ostinato']
+CANAL_ROOM = ['instrumental', 'English folk chamber music of the 1830s', 'period acoustic instruments',
+              'intimate recording in a small wooden room', 'soft background music, gentle even dynamics']
+
+
+def section(label: str, seconds: float, styles: list, adherence: str = 'high') -> dict:
+    """One chunk of a composition plan: the section's own players and
+    colour first (the model weighs the first styles most), the era's room
+    after them, and what never belongs under the table."""
+    return {'text': f'[{label}]\n[Instrumental]', 'duration_ms': int(seconds * 1000), 'positive_styles': [*styles, *CANAL_ROOM],
+            'negative_styles': CANAL_NO, 'context_adherence': adherence}
+
+
+# iv-1 and v-1, asked as plans, came back with a production quality of
+# 7.7-7.8 (the prompted takes 7.9-8.3), and v-1 turned its air round again
+# and again (loopiness 65). The third piece is asked as a prompt that tells
+# the same form in words, to learn which of the two the model serves best
+THROUGH = ('an instrumental through-composed piece that unfolds once: each phrase is heard once and never repeated, '
+           'every section brings new melodic material, no strain is played twice; ')
+CANAL_TAIL = ('soft background music, intimate acoustic recording in a small wooden room; no crescendo, no big climax; '
+              'no drums, no percussion, no vocals, no choir, no synthesizer, no electric or modern instruments, not epic, not cinematic')
+CANAL_VI = ('an instrumental through-composed piece that unfolds once without repeating any section, '
+            'an English folk waltz of the 1830s in 3/4, around 84 bpm, A dorian, for a small parlour group of period instruments: '
+            'English concertina, wooden flute, gut-strung fiddle, pedal harp and cello. '
+            'A short introduction for concertina and harp; the waltz tune on the concertina over harp chords and a bowed cello; '
+            'a brighter middle in C major where the flute and the fiddle trade new phrases; '
+            'the tune coming back on the fiddle, varied and ornamented, over soft concertina chords; '
+            'a short coda slowing to a held final chord. Wistful and calm, a misty evening on a narrowboat, ' + CANAL_TAIL)
+MUSIC['music-canal-vi'] = (165.0, 1, CANAL_VI)
+# vi-1 came back with the production quality of the prompted takes (8.17)
+# but, like v-1, playing each strain of its tune twice running (loopiness
+# 57). The second takes of iv and v are asked the same way as vi, with the
+# plan's form told in words and each strain asked to be heard once (THROUGH)
+CANAL_IV = (THROUGH + 'a towpath air of the 1830s in 6/8, around 66 bpm, D major, for a small group of period instruments: '
+            'gut-strung fiddle, wooden flute, English concertina, pedal harp, square piano and cello. '
+            'A short introduction for harp and cello; a long lyrical air on the fiddle over harp and cello; '
+            'a sadder middle in B minor where the concertina sings a new melody and the cello answers it; '
+            'the air coming back on the flute, varied and ornamented, the fiddle adding a counter-melody, the square piano joining; '
+            'a short coda slowing to a held final chord, the music flowing on without pauses between sections. '
+            'Calm and pastoral, a spring morning on a canal towpath, ' + CANAL_TAIL)
+CANAL_V = (THROUGH + 'a slow walking air of the 1830s in 4/4, around 72 bpm, F major, for a small group of period instruments: '
+           'wooden flute, square piano, cello, gut-strung fiddle, English concertina and pedal harp. '
+           'A short introduction for square piano and cello; the flute sings a gentle melody over piano and cello; '
+           'a darker middle in D minor, a slow duet of fiddle and concertina over the piano; '
+           'the melody coming back on the cello, varied, with a high soft flute descant and light harp arpeggios; '
+           'a short coda to a warm held final chord, the music flowing on without pauses between sections. '
+           'Warm and unhurried, a grey afternoon by a canal wharf, ' + CANAL_TAIL)
+
+# take 1 of each was the plan below, take 2 the prompt
+MUSIC['music-canal-iv'] = (165.0, 2, CANAL_IV)
+MUSIC['music-canal-v'] = (165.0, 2, CANAL_V)
+
+# name: (takes, sections) — asked of the music model as a plan, only when named
+PLANS = {
+    # a towpath air in D major, 6/8, unhurried: the fiddle's tune, the
+    # concertina's minor middle, the flute taking the tune back
+    'music-canal-iv': (1, [
+        section('Intro', 15, ['a pedal harp alone playing slow broken chords in D major', '6/8 lilt, around 66 bpm', 'calm, pastoral, a spring morning on a canal towpath']),
+        section('Air', 45, ['a gut-strung fiddle playing a long lyrical folk air in D major', 'the harp and a cello accompanying softly', '6/8, around 66 bpm']),
+        section('Middle', 40, ['B minor', 'an English concertina takes a new, sadder melody', 'the cello answers it, the fiddle silent', 'thinner, more intimate texture', '6/8, around 66 bpm'], 'medium'),
+        section('Air returns', 45, ['back to D major', 'a wooden flute plays the air, varied and ornamented', 'the fiddle adds a quiet counter-melody', 'a square piano joins with light chords', '6/8, around 66 bpm']),
+        section('Coda', 20, ['slowing down, dying away', 'the harp and a last held note of the fiddle', 'a quiet final chord in D major, then silence']),
+    ]),
+    # take iv-1 was judged (judge.py): its body scored like the old air
+    # (content enjoyment 7.7 a window), its lone harp introduction and its
+    # coda 6.6-7.0, and the middle died to silence for 6 s before the air
+    # came back. The next two open with two players, keep the introduction
+    # and the coda short, and run each section into the next.
+    # a slow walking air in F major, 4/4: a square piano and a cello open,
+    # the flute sings, the middle turns to D minor with fiddle and concertina
+    'music-canal-v': (1, [
+        section('Intro', 10, ['a square piano and a cello, soft warm chords in F major', 'a slow walking pace, around 72 bpm, in four', 'warm, unhurried, a grey afternoon by a canal wharf', 'leading straight into the tune']),
+        section('Air', 45, ['a wooden transverse flute sings a gentle folk melody in F major', 'the square piano and the cello accompany softly', 'around 72 bpm']),
+        section('Middle', 45, ['D minor', 'a gut-strung fiddle and an English concertina in a slow duet over the square piano', 'no flute, a darker, reflective colour', 'around 72 bpm', 'flowing on without a pause'], 'medium'),
+        section('Air returns', 50, ['back to F major', 'the cello now carries the melody in its warm middle register', 'the flute plays a high soft descant above it', 'a pedal harp adds light arpeggios', 'around 72 bpm']),
+        section('Coda', 15, ['the flute and the square piano close the tune', 'slowing a little', 'a full warm final chord in F major, held and left to ring']),
+    ]),
 }
 
 # the first try (not served): lines read plainly by six voices of the shared library, chosen for
@@ -362,6 +453,18 @@ def compose(k: str, seconds: float, text: str) -> bytes:
         return r.read()
 
 
+def compose_plan(k: str, chunks: list) -> bytes:
+    body = {'composition_plan': {'chunks': chunks}, 'model_id': 'music_v2_5'}
+    req = urllib.request.Request(
+        API + '/music?output_format=mp3_44100_192',
+        data=json.dumps(body).encode(),
+        headers={'xi-api-key': k, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg'},
+        method='POST',
+    )
+    with urllib.request.urlopen(req, timeout=900) as r:
+        return r.read()
+
+
 def design(k: str, who: str) -> None:
     """Three voices drawn for a character by the voice-design model, each
     saying its sample; saved as raw/cast-<who>-<n>.mp3, their ids beside
@@ -453,9 +556,15 @@ def main() -> None:
     start = None
     asked = 0
     for name in names:
-        music = name in MUSIC
+        music = name in MUSIC or name in PLANS
         voice = name in VOICES
-        if voice:
+        # a piece's first takes may be asked as a plan (PLANS), the later
+        # ones as a prompt (MUSIC): `planned` takes come from the plan
+        planned = PLANS[name][0] if name in PLANS else 0
+        if name in PLANS and name not in MUSIC:
+            takes, chunks = PLANS[name]
+            seconds, influence, loop, text = sum(c['duration_ms'] for c in chunks) / 1000, 0.0, False, ''
+        elif voice:
             who, takes, text = VOICES[name]
             seconds, influence, loop = 0.0, 0.0, False
         elif music:
@@ -482,7 +591,7 @@ def main() -> None:
                 if voice:
                     audio = speak(k, CAST[who], text)
                 else:
-                    audio = compose(k, seconds, text) if music else ask(k, seconds, influence, loop, text)
+                    audio = compose_plan(k, PLANS[name][1]) if n <= planned else compose(k, seconds, text) if music else ask(k, seconds, influence, loop, text)
             except urllib.error.HTTPError as e:
                 print(f'{name}-{n}: HTTP {e.code} {e.read()[:300]!r}')
                 return

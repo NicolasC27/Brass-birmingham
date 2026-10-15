@@ -173,3 +173,12 @@
 {"note": "fifth round: the counter settled", "take": "cast-* (seven voice designs, three drafts each, eleven_ttv_v3) and the seven voices kept", "before": 15867, "after": 17132, "spent": 1265}
 {"note": "fifth round: the counter settled", "take": "bark-*-1..3 (41 takes, eleven_v3) and their speech-to-text checks", "before": 17132, "after": 18125, "spent": 993}
 {"note": "fifth round: the counter settled", "take": "music-rail-iii-1, and the speech-to-text check of life-call and life-geese", "seconds": 100.0, "before": 18125, "after": 19504, "spent": 1379}
+{"take": "music-canal-iv-1", "seconds": 165.0, "before": 19504, "after": 19504, "spent": 0}
+{"take": "music-canal-v-1", "seconds": 165.0, "before": 21773, "after": 21773, "spent": 0}
+{"take": "music-canal-vi-1", "seconds": 165.0, "before": 24042, "after": 26311, "spent": 2269}
+{"take": "music-canal-iv-2", "seconds": 165.0, "before": 26311, "after": 28580, "spent": 2269}
+{"take": "music-canal-v-2", "seconds": 165.0, "before": 28580, "after": 28580, "spent": 0}
+{"note": "sixth round: the counter settled", "take": "music-canal-iv-1 (composition plan, five sections)", "seconds": 165.0, "before": 19504, "after": 21773, "spent": 2269}
+{"note": "sixth round: the counter settled", "take": "music-canal-v-1 (composition plan, five sections)", "seconds": 165.0, "before": 21773, "after": 24042, "spent": 2269}
+{"note": "sixth round: the counter settled", "take": "music-canal-v-2 (prompt)", "seconds": 165.0, "before": 28580, "after": 30849, "spent": 2269}
+{"note": "sixth round: POST /v1/music/plan (one plan asked, to learn its form) costs nothing: the counter stayed at 19504", "take": "music-plan-probe", "before": 19504, "after": 19504, "spent": 0}

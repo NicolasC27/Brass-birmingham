@@ -3,7 +3,7 @@
 
     tools/assets/sfx/process.py          # every sound
     tools/assets/sfx/process.py turn     # only these
-    tools/assets/sfx/process.py music-canal
+    tools/assets/sfx/process.py music-canal-iv
     tools/assets/sfx/process.py music-rail-i
 
 Reads tools/assets/sfx/raw/ (see generate.py) and writes
@@ -19,10 +19,10 @@ Spends nothing: ffmpeg only.
                          seamlessly, holding the few loud moments; no limiter
   houses, industries     as the gestures, rid of the hum where the take is a
                          texture rather than a knock, levelled by loudness
-  the canal's tune       a whole number of the tune's phrases cut out of the
+  the canal's first tune a whole number of the tune's phrases cut out of the
                          take, its head folded over by the same place one
                          loop later (aligned to the sample), rid of the hum,
-                         levelled by a plain gain; stereo
+                         levelled by a plain gain; stereo (retired)
   the other tunes        played through once, not looped: the take whole,
                          from its first note to its own last chord, rid of
                          the hum, a short fade at each end, levelled by a
@@ -199,7 +199,29 @@ PIECES = {
     # the parlour waltz: harmonium, clarinet, cello and square piano; its own
     # last chord dies from 96 s and is gone at 99.2 s
     'music-rail-iii': ('music-rail-iii-1', 0.0, 99.3, 3.0, 'highpass=f=45,highpass=f=45', -20.0),
+    # the sixth round: the canal's pieces written through, each 2 min 40 s
+    # or so, heard once (CHOIX.md, "The sixth round"). iv: take 2 (asked as
+    # a prompt), a towpath air in D major. Its introduction sits 10 dB under
+    # its body and its return of the air, from 124 s, 6 dB over it: a slow
+    # ride of the gain, +5 dB to 24 s and -5 dB from 126 s, 4 s ramps
+    'music-canal-iv': ('music-canal-iv-2', 0.0, 163.4, 1.5,
+                       "highpass=f=45,highpass=f=45,volume=eval=frame:volume="
+                       "'if(lt(t,24),1.778,if(lt(t,28),1.778-0.778*(t-24)/4,if(lt(t,122),1,if(lt(t,126),1-0.4377*(t-122)/4,0.5623))))'", -20.0),
+    # v: take 1 (asked as a plan), a walking air in F major; its first note
+    # at 0.85 s, its last chord gone at 163.6 s
+    'music-canal-v': ('music-canal-v-1', 0.85, 163.6, 1.5, 'highpass=f=45,highpass=f=45', -20.0),
+    # vi: take 1 (a prompt), a waltz in A dorian; silent from 161.8 s. From
+    # 30 s to its last chord a steady tone at 87 Hz (85-89 Hz), -25 dBFS,
+    # 27 dB over the bass around it, unmoved by the key changes: a drone of
+    # the model's, not a player. Two notches 6 Hz wide take it down 25 dB
+    'music-canal-vi': ('music-canal-vi-1', 0.0, 161.8, 1.5, 'highpass=f=45,highpass=f=45,bandreject=f=87:t=h:w=6,bandreject=f=87:t=h:w=6', -20.0),
 }
+
+# the canal's first three tunes, retired in the sixth round (judge.py: the
+# air round and round, the jig's strains again and again, the strings' slow
+# air scored under the rest): kept here to say how they were cut, no longer
+# served nor made by a plain run
+RETIRED = {'music-canal', 'music-canal-iii'}
 
 # a soft compressor for the few loud moments of a loop (a bird close by):
 # slow enough not to pump, over the bed's level so the bed is left alone
@@ -450,7 +472,7 @@ def piece(name: str) -> None:
 
 
 def main() -> None:
-    names = sys.argv[1:] or [*SHORT, *LOOPS, *MUSIC, *PIECES]
+    names = sys.argv[1:] or [n for n in [*SHORT, *LOOPS, *MUSIC, *PIECES] if n not in RETIRED]
     for n in names:
         (tune if n in MUSIC else piece if n in PIECES else loop if n in LOOPS else short)(n)
 
