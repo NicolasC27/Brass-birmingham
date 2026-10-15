@@ -76,6 +76,17 @@ const CHECK_WORKERS = 8;
 const FIT_ROWS = Number(process.env.FIT_ROWS ?? 800000);
 /** how much of the field plays a style of its own while games are written down */
 const EXPLORE = Number(process.env.EXPLORE ?? 0.5);
+/** whether an exploring seat also plays with weights of its own, or follows
+ *  its opening and then plays as the trained reading does.
+ *
+ *  Tied together, the two teach the wrong lesson. A seat that opens by
+ *  developing and then plays the rest of the game with weights drawn at
+ *  random finishes badly for the second reason, and the record credits the
+ *  first: developing looks like a road to a poor score. Measured on the
+ *  shipped brain, a seat develops 0.95 times in the canal where strong
+ *  players develop three or four, and the network alone does no better
+ *  (1.14) — the lesson was never in the record to be learned. */
+const EXPLORE_STYLE = (process.env.EXPLORE_STYLE ?? '1') !== '0';
 const HIDDEN = (process.env.HIDDEN ?? '128,64').split(',').map(Number);
 /** how many networks make a brain */
 const NETS = Number(process.env.NETS ?? 3);
@@ -159,8 +170,9 @@ const EXPLORE_OPENINGS: (Opening | null)[] = [...OPENINGS, null];
 /** one game of four machines, every position of every seat written down;
  *  some seats play a style of their own, so the record shows more than one way */
 function playOne(seed: number, players: number): { rows: Float32Array; canal: number } {
-  const styles = Array.from({ length: players }, (_, k) => (mulberry(seed * 7 + k)() < EXPLORE ? style(seed * 13 + k) : TRAINED));
-  const openings: (Opening | null)[] = Array.from({ length: players }, (_, k) => (styles[k] === TRAINED ? null : EXPLORE_OPENINGS[Math.floor(mulberry(seed * 17 + k)() * EXPLORE_OPENINGS.length)]));
+  const explored = Array.from({ length: players }, (_, k) => mulberry(seed * 7 + k)() < EXPLORE);
+  const styles = explored.map((e, k) => (e && EXPLORE_STYLE ? style(seed * 13 + k) : TRAINED));
+  const openings: (Opening | null)[] = explored.map((e, k) => (e ? EXPLORE_OPENINGS[Math.floor(mulberry(seed * 17 + k)() * EXPLORE_OPENINGS.length)] : null));
   const setup: SetupPayload = {
     players: Array.from({ length: players }, (_, k) => ({ name: `P${k}`, color: COLORS[k], type: 'bot', persona: PERSONAS[k] })),
     options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
