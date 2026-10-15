@@ -19,6 +19,11 @@
 | Bandit à rivaux joués par le cerveau, 20 s par coup | 2/8, 40,4 contre 43,3 | quatrième forme d'anticipation sans gain ; retirée |
 | Ouvertures imposées à l'expert (livre) | à 3 : poterie +6 d'ère canal, les autres égales ou pires ; à 4 : toutes pires que rien | le bot choisit déjà ces lignes quand elles valent ; seule la poterie à trois est gardée |
 | Les cartes en main dans les traits (10 nombres) | −3,35 ± 2,68 apparié, 16/96 pour une par de 24 | l'évaluation ne voyait que le **nombre** de cartes : une main de six villes pleines et une main de six villes libres se lisaient pareil. Hypothèse raisonnable, mesurée proprement, sans effet. Le signe décisif est venu avant les parties : erreur retenue 6,60 en voyant la main contre 6,62 en aveugle. Retiré le 30 septembre |
+| Réentraîner sous l'édition 2 des règles (donne rail équitable, ventes entières) | +0,03 ± 1,16 contre le cerveau livré, appris sous l'édition 1 | le changement de règle ne l'avait pas handicapé ; rien à remplacer. Nouvel étalon, 4 lectures identiques : vainqueur 152,5, moyenne 138,8, record 172 |
+| Tout le menu des doubles rails au professeur (`PLAY_WIDE`) | édition 1 : +1,94 ± 1,25 ; **édition 2, corpus alternés : −0,80 ± 1,27** | le premier banc écrivait un corpus entier avant l'autre, sous une autre charge ; alternés tour par tour, l'écart disparaît |
+| Le réseau seul, sans les termes écrits à la main | 1,14 développement au canal contre 0,95 ; 133,5 de moyenne contre 134,5 | le réseau ne sait pas mieux que le mélange ; la leçon « développer » n'est pas noyée, elle n'est pas apprise |
+| Sièges explorateurs qui suivent l'ouverture puis jouent avec les vrais poids (`EXPLORE_STYLE=0`) | −1,89 ± 1,30 ; 1,08 développement au canal | les poids tirés au hasard n'empoisonnaient pas la leçon ; la variété qu'ils apportent aide plutôt |
+| Interdire les emprunts à l'ère du rail | **−4,52 ± 0,85** | les experts n'en prennent pas, mais ce bot en tire des points : l'argent finance ses doubles rails. Comme forcer le coton, corriger une habitude isolée pour ressembler à un expert coûte des points |
 
 ## Le crible qui coûte quinze minutes au lieu de quarante
 

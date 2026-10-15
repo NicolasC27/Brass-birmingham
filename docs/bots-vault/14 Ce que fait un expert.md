@@ -18,11 +18,11 @@ Nos 31 actions mesurées à quatre joueurs ([[13 Le budget d'actions]]) collent 
 
 | Poste, ère du canal | Expert | Notre bot |
 |---|---|---|
-| Actions de développement | 3 à 4 | 1,5 |
+| Actions de développement | 3 à 4 | 1,5 (0,95 sous l'édition 2, mesuré le 15 octobre sur 24 parties) |
 | Tuiles brûlées en développant | 5 à 6 | 1,8 |
 | Liaisons construites | 3 | 4,3 |
 | Surconstruction de ses propres mines | courante | 0,3 sur ~24 occasions |
-| Emprunts pris à l'ère du rail | ~0 | 1,7 |
+| Emprunts pris à l'ère du rail | ~0 | 1,7 (1,1 sous l'édition 2 — et les lui interdire coûte 4,5 points, voir [[07 Ce qui n'a pas marché]]) |
 
 La moitié de nos constructions sont de niveau 1, alors que la règle experte est de viser le niveau 2 ou plus dès l'ère du canal, puisqu'une industrie construite et vendue au canal **compte deux fois**.
 
