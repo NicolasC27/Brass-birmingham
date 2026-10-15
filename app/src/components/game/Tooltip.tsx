@@ -1,31 +1,41 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { placeTip } from './tooltipPlace';
 
 /**
  * Contextual tooltip (design.md §6.4) — dark plate, brass rule, 250ms hover
  * delay, 120ms fade + 4px rise. Mirrors content into an aria-live inspector.
  * The plate is laid at the body's level, placed from the anchor's box, so
  * a lane that clips its overflow (the tracks) or a dock above it (the
- * hand) never hides it.
+ * hand) never hides it, and slid back inside the screen when centring it
+ * on the anchor would cut it at an edge.
  */
 export default function Tooltip({
   title,
   children,
   content,
   side = 'top',
+  gap,
   className,
 }: {
   title?: string;
   content: ReactNode;
   children: ReactNode;
   side?: 'top' | 'bottom' | 'left' | 'right';
+  /** px between the plate and the anchor (8 by default) */
+  gap?: number;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [box, setBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  /* the plate's own size, measured as it mounts (before it is painted) */
+  const [plate, setPlate] = useState<{ w: number; h: number } | null>(null);
+  const measure = useCallback((el: HTMLSpanElement | null) => {
+    if (el) setPlate((was) => (was && was.w === el.offsetWidth && was.h === el.offsetHeight ? was : { w: el.offsetWidth, h: el.offsetHeight }));
+  }, []);
   const timer = useRef<number | null>(null);
   const anchor = useRef<HTMLSpanElement>(null);
 
@@ -47,20 +57,11 @@ export default function Tooltip({
   };
 
   /* where the plate goes, from the anchor's box on the screen: pinned by
-     the edge that faces the anchor, centred on it with the motion's own
-     transform (a style transform would be overwritten by the fade) */
-  const at = box
-    ? side === 'top'
-      ? { left: box.x + box.w / 2, bottom: window.innerHeight - box.y + 8 }
-      : side === 'bottom'
-        ? { left: box.x + box.w / 2, top: box.y + box.h + 8 }
-        : side === 'left'
-          ? { right: window.innerWidth - box.x + 8, top: box.y + box.h / 2 }
-          : { left: box.x + box.w + 8, top: box.y + box.h / 2 }
-    : null;
+     the edge that faces the anchor, centred on it, kept on the screen */
+  const at = box ? placeTip(side, box, plate, window.innerWidth, window.innerHeight, gap) : null;
   const vertical = side === 'top' || side === 'bottom';
-  const rest = vertical ? { x: '-50%', y: 0 } : { x: 0, y: '-50%' };
-  const from = vertical ? { x: '-50%', y: side === 'top' ? 4 : -4 } : { x: side === 'left' ? 4 : -4, y: '-50%' };
+  const rest = { x: 0, y: 0 };
+  const from = vertical ? { x: 0, y: side === 'top' ? 4 : -4 } : { x: side === 'left' ? 4 : -4, y: 0 };
 
   return (
     <span
@@ -81,6 +82,7 @@ export default function Tooltip({
           <AnimatePresence>
             {open && at && (
               <motion.span
+                ref={measure}
                 role="tooltip"
                 initial={{ opacity: 0, ...from }}
                 animate={{ opacity: 1, ...rest }}
