@@ -199,11 +199,11 @@ describe('the era’s tunes', () => {
     await vi.advanceTimersByTimeAsync(3000);
     expect(tunes()).toHaveLength(0);
     await vi.advanceTimersByTimeAsync(1500);
-    expect(tunes().map(named)).toEqual(['music-canal']);
-    /* the first air is a loop, heard twice over and then let go */
+    expect(tunes().map(named)).toEqual(['music-canal-iv']);
+    /* played through once, not looped, and left to end by itself */
     const first = tunes()[0];
-    expect(first.loop).toBe(true);
-    expect(first.stopAt).toBeCloseTo(2 * 68.5346 + 0.05, 3);
+    expect(first.loop).toBe(false);
+    expect(first.stopAt).toBeNull();
     /* asked again in the same era: still the one tune */
     tableMusic('canal');
     await vi.advanceTimersByTimeAsync(10_000);
@@ -213,14 +213,13 @@ describe('the era’s tunes', () => {
     await vi.advanceTimersByTimeAsync(44_000);
     expect(tunes()).toHaveLength(1);
     await vi.advanceTimersByTimeAsync(1500);
-    expect(tunes().map(named)).toEqual(['music-canal', 'music-canal-ii']);
-    /* played through once, not looped */
+    expect(tunes().map(named)).toEqual(['music-canal-iv', 'music-canal-v']);
     expect(tunes()[1].loop).toBe(false);
     expect(tunes()[1].stopAt).toBeNull();
     tunes()[1].onended?.();
     await vi.advanceTimersByTimeAsync(46_000);
     /* never the one just heard: the first of the others */
-    expect(tunes().map(named)).toEqual(['music-canal', 'music-canal-ii', 'music-canal']);
+    expect(tunes().map(named)).toEqual(['music-canal-iv', 'music-canal-v', 'music-canal-iv']);
   });
 
   it('fade out slowly when the canal era closes, and the rail brings its own', async () => {
@@ -237,7 +236,7 @@ describe('the era’s tunes', () => {
     /* the rail era's play */
     tableMusic('rail');
     await vi.advanceTimersByTimeAsync(5000);
-    expect(tunes().map(named)).toEqual(['music-canal', 'music-rail-i']);
+    expect(tunes().map(named)).toEqual(['music-canal-iv', 'music-rail-i']);
     /* the game over: gone again */
     tableMusic(null);
     expect(tunes()[1].stopAt).toBeCloseTo(4.05);

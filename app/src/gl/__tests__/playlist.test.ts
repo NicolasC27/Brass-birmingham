@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BUBBLE_AFTER_S, LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, bubbleSpan, lifeAt, nextOf, spanOf, tuneLength, tuneOf, voiceAt } from '../playlist';
+import { BUBBLE_AFTER_S, LIFE, LIFE_GAP, TUNES, TUNE_FIRST, TUNE_PAUSE, VOICE_GAP, bubbleSpan, lifeAt, nextOf, spanOf, tuneOf, voiceAt } from '../playlist';
 import type { Chance, Life } from '../playlist';
 
 /** a seeded chance (mulberry32), so a long run is the same every time */
@@ -17,7 +17,7 @@ const always = (v: number): Chance => () => v;
 
 describe('the playlists', () => {
   it('give the canal three tunes and the rail three of its own', () => {
-    expect(TUNES.canal.map((t) => t.name)).toEqual(['music-canal', 'music-canal-ii', 'music-canal-iii']);
+    expect(TUNES.canal.map((t) => t.name)).toEqual(['music-canal-iv', 'music-canal-v', 'music-canal-vi', 'music-canal-ii']);
     expect(TUNES.rail.map((t) => t.name)).toEqual(['music-rail-i', 'music-rail-ii', 'music-rail-iii']);
   });
 
@@ -63,14 +63,12 @@ describe('the playlists', () => {
     expect(spanOf(TUNE_PAUSE, always(0.5))).toBe(97.5);
   });
 
-  it('hear the canal’s first air twice over, and the others through once', () => {
-    const first = tuneOf('canal', 'music-canal')!;
-    expect(tuneLength(first, 68.6)).toBeCloseTo(137.07, 2);
-    expect(tuneLength(tuneOf('canal', 'music-canal-ii')!, 97.6)).toBe(97.6);
-    expect(tuneOf('rail', 'music-canal')).toBeUndefined();
-    /* every tune is heard for a minute and a half to three minutes */
-    expect(tuneLength(first, 68.6) / 60).toBeGreaterThanOrEqual(1.5);
-    expect(tuneLength(first, 68.6) / 60).toBeLessThanOrEqual(3);
+  it('find a tune in its own era only, and loop none of them', () => {
+    expect(tuneOf('canal', 'music-canal-iv')).toEqual({ name: 'music-canal-iv' });
+    expect(tuneOf('rail', 'music-canal-iv')).toBeUndefined();
+    /* the canal's old air, a loop heard twice over, is retired */
+    expect(tuneOf('canal', 'music-canal')).toBeUndefined();
+    for (const era of ['canal', 'rail'] as const) for (const t of TUNES[era]) expect(Object.keys(t)).toEqual(['name']);
   });
 });
 

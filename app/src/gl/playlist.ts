@@ -8,20 +8,20 @@ import type { Era } from '@/game/types';
 /** a number drawn evenly in [0, 1), as Math.random gives */
 export type Chance = () => number;
 
-/** one of the tunes of an era, as served under /sfx/ */
+/** one of the tunes of an era, as served under /sfx/: played through
+ *  once, never looped (a loop was heard as the same phrase over and over) */
 export interface Tune {
   name: string;
-  /** a file folded into a seamless loop of this many seconds, played
-   *  `turns` times over; a tune without it is played through once */
-  loop?: number;
-  turns?: number;
 }
 
-/** each era's playlist. The canal's first tune is a loop of four phrases
- *  of an air (68.5 s), heard twice; the others are played from their first
- *  note to their own last chord, about a minute and a half each */
+/** each era's playlist, each tune played from its first note to its own
+ *  last chord. Three of the canal's are written through, about 2 min 40 s
+ *  each: an introduction, an air, a middle in another key and colour, the
+ *  air come back on other instruments, a coda; nothing of them looped. The
+ *  fourth, slow strings of a minute and a half, is kept for the change it
+ *  brings. The rail's three run about a minute and a half */
 export const TUNES: Record<Era, readonly Tune[]> = {
-  canal: [{ name: 'music-canal', loop: 68.5346, turns: 2 }, { name: 'music-canal-ii' }, { name: 'music-canal-iii' }],
+  canal: [{ name: 'music-canal-iv' }, { name: 'music-canal-v' }, { name: 'music-canal-vi' }, { name: 'music-canal-ii' }],
   rail: [{ name: 'music-rail-i' }, { name: 'music-rail-ii' }, { name: 'music-rail-iii' }],
 };
 
@@ -54,10 +54,6 @@ export function nextOf<T>(names: readonly T[], last: T | null, chance: Chance): 
 
 /** the tune of this name in an era's playlist */
 export const tuneOf = (era: Era, name: string): Tune | undefined => TUNES[era].find((t) => t.name === name);
-
-/** how long a tune is heard: its loop as many turns as it is given, or the
- *  file through once */
-export const tuneLength = (t: Tune, fileSeconds: number): number => (t.loop ? t.loop * (t.turns ?? 1) : fileSeconds);
 
 /** between two of the townsfolk's voices: sparse, a minute to three */
 export const VOICE_GAP: readonly [number, number] = [60, 180];
