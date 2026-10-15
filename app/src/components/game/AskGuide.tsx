@@ -6,6 +6,7 @@ import { askedAs, consult, tell } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import { dictOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useHudInsets } from './useHudInsets';
 import { leftSheetStyle, useDockReserve, useLayer } from './useLayer';
 
 /* ------------------------------------------------------------------ */
@@ -48,6 +49,7 @@ export default function AskGuide({ className }: { className?: string }) {
   /* a sheet of the left edge, like the notebook: one of them at a time */
   const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   const reserve = useDockReserve();
+  const insets = useHudInsets();
   const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
   /* the newest answer is the one in view, like the guide's own lane */
   const lane = useRef<HTMLDivElement>(null);
@@ -81,8 +83,8 @@ export default function AskGuide({ className }: { className?: string }) {
             transition={{ duration: 0.16 }}
             role="dialog"
             aria-label={t('game.guide.ask.open')}
-            className="plate fixed left-3 z-[70] flex w-[340px] flex-col p-3 shadow-e4"
-            style={{ ...leftSheetStyle(reserve), maxHeight: `min(60vh, 520px, ${leftSheetStyle(reserve).maxHeight})` }}
+            className="plate fixed z-[70] flex w-[340px] flex-col p-3 shadow-e4"
+            style={{ ...leftSheetStyle(reserve, insets.left), maxHeight: `min(60vh, 520px, ${leftSheetStyle(reserve, insets.left).maxHeight})` }}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between">

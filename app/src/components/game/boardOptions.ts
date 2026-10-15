@@ -311,13 +311,30 @@ export const getBoardOptions = (): BoardOptions => state;
 /** track thickness (px): the VP track always runs along the top; the income
  *  track takes the bottom edge or the left edge depending on `incomeSide` */
 export const TRACK_H = 36;
-export const TRACK_W = 56;
+export const TRACK_W = 52;
 /** the income track at rest: a thin brass filet that opens into the full
  *  ruler (TRACK_H / TRACK_W) under the pointer or the keyboard */
 export const FILET_H = 20;
 export const FILET_W = 22;
+/** the room the HUD keeps from an edge nothing holds, and between a track
+ *  and what floats beside it */
+const HUD_GAP = 8;
+/** down the left edge the HUD stands this far in: the open ruler reaches
+ *  over the edge of the lantern's lane of the players' column but stops
+ *  short of the purses under the medallions (centred on the rings, they
+ *  widen with the figures: 139 £ | 126 still clears it), which it hid */
+const LEFT_TRACK_INSET = TRACK_W - 6;
 /** pixel insets every floating HUD element keeps from the screen edges: the
  *  income track is counted at rest, the ruler opens over the margin */
 export function hudInsets(o: BoardOptions, vpTrack = true, lane = 0): { left: number; bottom: number; top: number; right: number } {
-  return { top: vpTrack ? TRACK_H + 8 : 8, left: o.incomeSide === 'left' ? FILET_W + 8 : 12, bottom: o.incomeSide === 'bottom' ? FILET_H + 8 : 12, right: lane + 12 };
+  return {
+    top: vpTrack ? TRACK_H + HUD_GAP : HUD_GAP,
+    left: o.incomeSide === 'left' ? LEFT_TRACK_INSET : 12,
+    bottom: o.incomeSide === 'bottom' ? FILET_H + HUD_GAP : 12,
+    right: lane + 12,
+  };
 }
+/** where the income track down the left edge starts: under whatever holds
+ *  the top of the screen (the VP track, a read game's curve), else at the
+ *  very top, never under them nor leaving a gap above it */
+export const leftTrackTop = (insets: { top: number }): number => Math.max(0, insets.top - HUD_GAP);

@@ -36,14 +36,16 @@ const VERB_LABEL: Record<Verb, string> = {
 };
 
 /** the free band between the player rail and the market, measured from
- *  the elements themselves so the banner never rides over either */
-function useBand(marketOpen: boolean, players: number): { left: number; right: number } {
-  const [band, setBand] = useState({ left: 12, right: 12 });
+ *  the elements themselves so the banner never rides over either; on a
+ *  narrow table the rail lies under the banner, which starts at the HUD's
+ *  inset (beside the income track when it runs down the left edge) */
+function useBand(marketOpen: boolean, players: number, inset: number): { left: number; right: number } {
+  const [band, setBand] = useState({ left: inset, right: 12 });
   useLayoutEffect(() => {
     const rail = document.querySelector('[data-player-rail]');
     const measure = () => {
       const narrow = window.innerWidth < 1024;
-      const left = rail && !narrow ? Math.round(rail.getBoundingClientRect().right) + 12 : 12;
+      const left = rail && !narrow ? Math.round(rail.getBoundingClientRect().right) + 12 : inset;
       /* the quotation strip is always there; the tray opens under the
          banner's rows, so the band never changes with it */
       const pill = document.querySelector('[data-market-pill]')?.getBoundingClientRect();
@@ -63,7 +65,7 @@ function useBand(marketOpen: boolean, players: number): { left: number; right: n
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, [marketOpen, players]);
+  }, [marketOpen, players, inset]);
   return band;
 }
 
@@ -364,7 +366,8 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const room = useRoom({ status: statusRef, what: whatRef, price: priceRef, chip: chipRef, tokens: tokensRef });
   const game = useShownGame();
   const botHold = useGame((s) => s.botHold);
-  const band = useBand(marketOpen, game?.players.length ?? 0);
+  const insets = useHudInsets();
+  const band = useBand(marketOpen, game?.players.length ?? 0, insets.left);
   const mine = useGame((s) => s.planActor() >= 0);
   const planActor = useGame((s) => s.planActor());
   const preparing = useGame((s) => s.preparing);
@@ -391,7 +394,6 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const confirm = useGame((s) => s.confirm);
   const cancel = useGame((s) => s.cancel);
   const { beginnerAid } = useBoardOptions();
-  const insets = useHudInsets();
   if (!game) return null;
   /* the banner speaks for the seat the plan is made for: the one to act,
      or mine while a move is prepared out of turn */

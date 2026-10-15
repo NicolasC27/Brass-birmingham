@@ -118,7 +118,9 @@ export function useDockReserve(): number {
  *  to the guide): centred on the table, never taller than the room between
  *  the hand's reserve and its mirror at the top, so its foot always clears
  *  the hand. The centring rides on the panel's own `y: '-50%'` animation,
- *  since the entrance transform would overwrite a translate class. */
-export function leftSheetStyle(reserve: number): { top: string; maxHeight: string } {
-  return { top: '50%', maxHeight: `calc(100% - ${2 * (reserve + 8)}px)` };
+ *  since the entrance transform would overwrite a translate class. `left`
+ *  is the HUD's left inset, so the sheet stands beside an income track
+ *  run down that edge rather than over it. */
+export function leftSheetStyle(reserve: number, left: number): { left: number; top: string; maxHeight: string } {
+  return { left, top: '50%', maxHeight: `calc(100% - ${2 * (reserve + 8)}px)` };
 }

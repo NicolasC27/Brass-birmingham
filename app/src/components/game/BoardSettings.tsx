@@ -342,8 +342,9 @@ function BoardSettings() {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -14 }}
           transition={{ duration: 0.18, ease: 'easeOut' }}
-          className="plate fixed left-3 z-[70] flex w-[min(460px,calc(100vw-24px))] flex-col overflow-hidden shadow-e4"
-          style={{ top: narrow ? narrowRailTop(insets) : insets.top + 8, bottom: insets.bottom + 8 }}
+          className="plate fixed z-[70] flex flex-col overflow-hidden shadow-e4"
+          /* beside the income track when it runs down the left edge, not over it */
+          style={{ left: insets.left, width: `min(460px, calc(100vw - ${insets.left + 12}px))`, top: narrow ? narrowRailTop(insets) : insets.top + 8, bottom: insets.bottom + 8 }}
           ref={sheet}
           tabIndex={-1}
           role="dialog"

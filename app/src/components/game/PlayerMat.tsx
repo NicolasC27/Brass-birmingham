@@ -446,7 +446,7 @@ function PlayerMat() {
           className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
           style={
             narrow
-              ? /* under the player strip, full width */ { left: 12, right: 12, top: railBottom + 8, bottom: insets.bottom + 8 }
+              ? /* under the player strip, full width */ { left: insets.left, right: 12, top: railBottom + 8, bottom: insets.bottom + 8 }
               : wide
                 ? { left: insets.left + railW, right: 12, top: insets.top, maxHeight: `calc(100vh - ${insets.top + insets.bottom + 8}px)` }
                 : { left: insets.left + railW, top: insets.top, bottom: insets.bottom + 8, width: `min(400px, calc(100vw - ${insets.left + railW + 12}px))` }

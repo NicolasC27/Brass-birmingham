@@ -7,7 +7,8 @@ import { money, useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
 import { useReducedMotion } from './useReducedMotion';
-import { FILET_H, FILET_W, TRACK_H, TRACK_W, useBoardOptions } from './boardOptions';
+import { FILET_H, FILET_W, TRACK_H, TRACK_W, leftTrackTop, useBoardOptions } from './boardOptions';
+import { useHudInsets } from './useHudInsets';
 import { filetTicks } from './railLogic';
 
 /* ------------------------------------------------------------------ */
@@ -60,6 +61,15 @@ const CHIP = 16;
 /** the pawn on the filet: the same token, a size down */
 const CHIP_THIN = 13;
 const ZOOM_MAX = 6;
+
+/* down the left edge the ruler reads in three columns: the graduation and
+ * the tens against the screen's edge, the pawns, the payouts on the inner
+ * side. The filet is one line down its middle, the pawns threaded on it.
+ * Both measured from the lane's left, the track's border set aside. */
+const Y_FILET = (FILET_W - 1) / 2;
+const Y_PAWN = 21;
+/** the column the pawns stand in on the left edge, filet or ruler */
+const yLine = (thin: boolean) => (thin ? Y_FILET : Y_PAWN);
 
 /** place something at `pct` (0 = track start) along the lane's axis */
 function at(axis: Axis, pct: number, extra: CSSProperties = {}): CSSProperties {
@@ -202,18 +212,22 @@ function Pawn({
   const place: CSSProperties =
     axis === 'x'
       ? { top: '50%', marginLeft: fan - chip / 2, marginTop: -chip / 2 + zig, zIndex: 10 + fanIndex }
-      : { left: thin ? (FILET_W - chip) / 2 : 18, marginTop: fan - chip / 2, marginLeft: zig, zIndex: 10 + fanIndex };
+      : { marginTop: fan - chip / 2, marginLeft: zig - chip / 2, zIndex: 10 + fanIndex };
 
   return (
     <motion.div
       className="pointer-events-none absolute z-10 flex"
       initial={false}
-      animate={anim(axis, pct)}
+      /* down the left edge the pawn also slides across, from the filet's
+         line to its column on the ruler, as the track opens */
+      animate={axis === 'x' ? anim(axis, pct) : { ...anim(axis, pct), left: yLine(thin) }}
       transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 170, damping: 22 }}
       style={place}
     >
       <Tooltip
         side={kind === 'vp' ? 'bottom' : axis === 'x' ? 'top' : 'right'}
+        /* down the left edge the plate clears the ruler's payouts */
+        gap={axis === 'y' ? TRACK_W - Y_PAWN - CHIP / 2 + 8 : undefined}
         className="pointer-events-auto items-center"
         title={kind === 'vp' ? t('game.frame.vpPawnTitle', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnTitle', { name: p.name, lvl: incomeLevel(p.income), pay })}
         content={
@@ -260,11 +274,13 @@ function Pawn({
   );
 }
 
-/** "+3" that rises and fades from the landing cell, plus the run the pawn crossed */
-function MoveFx({ axis, move, pct, from, to, col, reduced }: { axis: Axis; move: Move; pct: number; from: number; to: number; col: string; reduced: boolean }) {
+/** "+3" that rises and fades from the landing cell, plus the run the pawn
+ *  crossed; down the left edge both run on the pawns' line (`line`, px),
+ *  inside the lane that clips them */
+function MoveFx({ axis, move, pct, from, to, col, reduced, line = 0 }: { axis: Axis; move: Move; pct: number; from: number; to: number; col: string; reduced: boolean; line?: number }) {
   const dur = reduced ? 0.01 : 1.1;
-  const runStyle: CSSProperties = axis === 'x' ? { ...span('x', from, to), top: '50%', height: 3, marginTop: -1.5 } : { ...span('y', from, to), left: 22, width: 3 };
-  const labelStyle: CSSProperties = axis === 'x' ? { ...at('x', pct), top: '50%' } : { ...at('y', pct), left: 36 };
+  const runStyle: CSSProperties = axis === 'x' ? { ...span('x', from, to), top: '50%', height: 3, marginTop: -1.5 } : { ...span('y', from, to), left: line - 1.5, width: 3 };
+  const labelStyle: CSSProperties = axis === 'x' ? { ...at('x', pct), top: '50%' } : { ...at('y', pct), left: line };
   return (
     <>
       <motion.span
@@ -277,10 +293,13 @@ function MoveFx({ axis, move, pct, from, to, col, reduced }: { axis: Axis; move:
       />
       <motion.span
         aria-hidden
-        className={`pointer-events-none absolute z-20 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] font-black ${move.delta < 0 ? 'text-rust-500 brightness-150' : 'text-bottle-600 brightness-[1.8]'}`}
+        className={`pointer-events-none absolute z-20 whitespace-nowrap font-mono text-[11px] font-black ${move.delta < 0 ? 'text-rust-500 brightness-150' : 'text-bottle-600 brightness-[1.8]'}`}
         style={{ ...labelStyle, textShadow: '0 1px 2px rgba(0,0,0,.95)' }}
-        initial={{ y: -8, opacity: 1 }}
-        animate={{ y: -26, opacity: 0 }}
+        /* centred by the motion's own transform (a class's would be lost
+           under it); down the left edge it rises from just above the pawn,
+           along the lane rather than out of it */
+        initial={{ x: '-50%', y: axis === 'x' ? -8 : -26, opacity: 1 }}
+        animate={{ x: '-50%', y: axis === 'x' ? -26 : -46, opacity: 0 }}
         transition={{ duration: dur, ease: 'easeOut' }}
       >
         {move.delta > 0 ? `+${move.delta}` : move.delta}
@@ -303,6 +322,8 @@ function EdgeTracks() {
   const t = useT();
   const reduced = useReducedMotion();
   const incAxis: Axis = incomeSide === 'left' ? 'y' : 'x';
+  /* down the left edge the track starts under whatever holds the top */
+  const leftTop = leftTrackTop(useHudInsets());
   /* the filet opens into the ruler while the pointer rests on it, while
      the keyboard is inside, and while a loan's landing is on show */
   const [hot, setHot] = useState(false);
@@ -389,7 +410,9 @@ function EdgeTracks() {
           pct={kind === 'vp' ? vpPct(p.vp) : lvlPct(p.income)}
           fanIndex={list.indexOf(i)}
           fanSize={list.length}
-          showLabel={list[list.length - 1] === i && !(crowded && axis === 'x')}
+          /* down the left edge the payout is printed beside the pawn
+             already, on its bracket: a second figure only overprinted it */
+          showLabel={axis === 'x' && list[list.length - 1] === i && !crowded}
           spot={spotlight === i}
           onToggle={() => toggle(i)}
           reduced={reduced}
@@ -405,7 +428,7 @@ function EdgeTracks() {
         const col = PLAYER_COLORS[game.players[m.idx].color]?.hex ?? '#C9A45C';
         const f = kind === 'vp' ? vpPct(m.from) : lvlPct(m.from);
         const to = kind === 'vp' ? vpPct(m.to) : lvlPct(m.to);
-        return <MoveFx key={m.id} axis={axis} move={m} pct={to} from={f} to={to} col={col} reduced={reduced} />;
+        return <MoveFx key={m.id} axis={axis} move={m} pct={to} from={f} to={to} col={col} reduced={reduced} line={yLine(!ruler)} />;
       });
 
   /* loan preview: a dashed ghost at the landing space while the note is on the table */
@@ -469,7 +492,7 @@ function EdgeTracks() {
           the ruler it has always been */}
       <div
         className={`fixed ${ruler ? `z-[65] ${belt}` : 'z-[58] border-brass-700/25 bg-coal-950/60 backdrop-blur-sm'} ${reduced ? '' : 'transition-[height,width,background-color] duration-200 ease-out'} ${incAxis === 'x' ? 'inset-x-0 bottom-0 border-t' : 'bottom-0 left-0 border-r'}`}
-        style={incAxis === 'x' ? { height: ruler ? TRACK_H : FILET_H } : { width: ruler ? TRACK_W : FILET_W, top: TRACK_H }}
+        style={incAxis === 'x' ? { height: ruler ? TRACK_H : FILET_H } : { width: ruler ? TRACK_W : FILET_W, top: leftTop }}
         aria-label={t('game.incomeRail.aria')}
         data-lens="income"
         onPointerEnter={() => {
@@ -486,11 +509,21 @@ function EdgeTracks() {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusIn(false);
         }}
       >
-        <span aria-hidden className={`absolute font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${incAxis === 'x' ? 'bottom-[3px] left-1.5' : 'left-1.5 top-[3px]'} ${ruler ? '' : 'hidden'}`}>
-          {t('game.incomeRail.trackShort')}
-          {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
-        </span>
-        <div ref={incLane.ref} className={`relative overflow-hidden ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-4 h-[calc(100%-28px)]'} ${grab(incLane)}`} {...incLane.handlers}>
+        {incAxis === 'x' ? (
+          <span aria-hidden className={`absolute bottom-[3px] left-1.5 font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${ruler ? '' : 'hidden'}`}>
+            {t('game.incomeRail.trackShort')}
+            {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
+          </span>
+        ) : (
+          /* the column is too narrow for the title in spaced capitals, or
+             for the title and the zoom on one line (Einkommen, Ingresos):
+             the title in its own letters over the column, the zoom under */
+          <span aria-hidden className={`absolute inset-x-0 top-[4px] flex-col items-center gap-[3px] font-semibold leading-none ${ruler ? 'flex' : 'hidden'}`}>
+            <span className="whitespace-nowrap font-sans text-[9px] text-brass-400/70">{t('game.incomeRail.trackShort')}</span>
+            {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="font-mono text-[9px] text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
+          </span>
+        )}
+        <div ref={incLane.ref} className={`relative overflow-hidden ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-7 h-[calc(100%-40px)]'} ${grab(incLane)}`} {...incLane.handlers}>
           <div style={incLane.inner}>
             {!ruler && (
               /* the filet: one brass line, a graduation every five spaces,
@@ -513,10 +546,12 @@ function EdgeTracks() {
                 {filetTicks(INCOME_MAX)
                   .filter((k) => k.major)
                   .map(({ space }) => (
+                    /* down the left edge the figure sits across the line,
+                       just over its graduation, the line broken under it */
                     <span
                       key={`n${space}`}
-                      className="absolute font-mono text-[9px] leading-none text-cream-100/30"
-                      style={incAxis === 'x' ? { ...at('x', lvlPct(space)), top: 1, marginLeft: 3 } : { ...at('y', lvlPct(space)), left: 1, marginTop: 2 }}
+                      className={`absolute font-mono text-[9px] leading-none text-cream-100/30 ${incAxis === 'y' ? 'rounded-[2px] bg-coal-950 px-px' : ''}`}
+                      style={incAxis === 'x' ? { ...at('x', lvlPct(space)), top: 1, marginLeft: 3 } : { ...at('y', lvlPct(space)), left: Y_FILET, transform: 'translate(-50%, calc(-100% - 5px))' }}
                     >
                       {space}
                     </span>
@@ -530,15 +565,18 @@ function EdgeTracks() {
               const who = game.players.filter((p) => p.income >= b.from && p.income <= b.to).map((p) => p.name);
               const a0 = (lvlStart(b.from) / UNITS) * 100;
               const a1 = ((lvlStart(b.from) + bandUnits(b)) / UNITS) * 100;
+              /* down the left edge the loan's ghost has no room for its
+                 figure: the bracket it lands on is washed instead */
+              const landing = incAxis === 'y' && (loanConfirm || loanPeek) && ghostLvl >= b.from && ghostLvl <= b.to;
               return (
                 <div
                   key={b.from}
-                  className={`absolute transition-colors hover:bg-brass-500/15 ${incAxis === 'x' ? 'bottom-0 top-0 border-r' : 'left-0 right-0 border-t'} border-brass-700/50 ${b.pay < 0 ? 'bg-rust-500/10' : ''}`}
+                  className={`absolute transition-colors hover:bg-brass-500/15 ${incAxis === 'x' ? 'bottom-0 top-0 border-r' : 'left-0 right-0 border-t'} border-brass-700/50 ${landing ? 'bg-rust-500/25' : b.pay < 0 ? 'bg-rust-500/10' : ''}`}
                   style={span(incAxis, a0, a1)}
                 >
                   <Tooltip
                     side={incAxis === 'x' ? 'top' : 'right'}
-                    className={`absolute inset-0 !flex ${incAxis === 'x' ? 'items-start justify-center' : 'items-center justify-end pr-1'}`}
+                    className={`absolute inset-0 !flex ${incAxis === 'x' ? 'items-start justify-center' : 'items-center justify-end pr-[3px]'}`}
                     title={t('game.incomeRail.bandTitle', { levels: String(incomeLevel(b.from)), pay: money(b.pay) })}
                     content={who.length ? t('game.incomeRail.bandWho', { names: who.join(', ') }) : t('game.incomeRail.bandEmpty')}
                   >
@@ -584,14 +622,16 @@ function EdgeTracks() {
                 initial={{ opacity: 0, ...anim(incAxis, lvlPct(cur.income)) }}
                 animate={{ opacity: 1, ...anim(incAxis, lvlPct(ghostLvl)) }}
                 transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 170, damping: 22 }}
-                style={incAxis === 'x' ? { top: '50%', marginLeft: -CHIP / 2, marginTop: -CHIP / 2 } : { left: 18, marginTop: -CHIP / 2 }}
+                style={incAxis === 'x' ? { top: '50%', marginLeft: -CHIP / 2, marginTop: -CHIP / 2 } : { left: Y_PAWN - CHIP / 2, marginTop: -CHIP / 2 }}
               >
                 <span className="flex items-center justify-center rounded-full border border-dashed" style={{ width: CHIP, height: CHIP, borderColor: ghostCol, background: `${ghostCol}22` }}>
                   <ShapeChip color={cur.color} size={9} />
                 </span>
-                <span className="ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold text-[#C4644F]" style={{ textShadow: '0 1px 1px rgba(0,0,0,.95)' }}>
-                  {t('game.incomeRail.loanGhost', { pay: money(INCOME_PAYOUT[ghostLvl]) })}
-                </span>
+                {incAxis === 'x' && (
+                  <span className="ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold text-[#C4644F]" style={{ textShadow: '0 1px 1px rgba(0,0,0,.95)' }}>
+                    {t('game.incomeRail.loanGhost', { pay: money(INCOME_PAYOUT[ghostLvl]) })}
+                  </span>
+                )}
               </motion.div>
             )}
             {pawns('income', incAxis, !ruler)}

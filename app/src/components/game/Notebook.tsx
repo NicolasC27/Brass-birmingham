@@ -4,6 +4,7 @@ import { NotebookPen, X } from 'lucide-react';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { useHudInsets } from './useHudInsets';
 import { leftSheetStyle, useDockReserve, useLayer } from './useLayer';
 
 /* ------------------------------------------------------------------ */
@@ -32,6 +33,7 @@ export default function NotebookButton({ className }: { className?: string }) {
      Escape (heard by the table, ahead of the page's own keys) puts it away */
   const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   const reserve = useDockReserve();
+  const insets = useHudInsets();
   const filled = shown.trim().length > 0;
   return (
     <>
@@ -51,8 +53,8 @@ export default function NotebookButton({ className }: { className?: string }) {
             transition={{ duration: 0.16 }}
             role="dialog"
             aria-label={t('board.notebook.title')}
-            className="plate fixed left-3 z-[70] flex h-[min(46vh,420px)] w-[320px] flex-col p-3 shadow-e4"
-            style={leftSheetStyle(reserve)}
+            className="plate fixed z-[70] flex h-[min(46vh,420px)] w-[320px] flex-col p-3 shadow-e4"
+            style={leftSheetStyle(reserve, insets.left)}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between">
