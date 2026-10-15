@@ -28,3 +28,4 @@ app/backups/
 
 # the audio judge's Python environment and model weights
 tools/assets/sfx/.venv/
+tools/assets/sfx/__pycache__/

@@ -1,0 +1,3974 @@
+{
+ "open_levels": {
+  "ambience": 0.5,
+  "gestures": 0.8,
+  "moments": 0.8,
+  "music": 0.5
+ },
+ "sounds": [
+  {
+   "defects": [
+    "hiss: floor -33.4 dB under the peak, 96 % of it over 6 kHz",
+    "the 200 Hz comb, 5.4 dB over its neighbours"
+   ],
+   "envelope": {
+    "attack_ms": 4.0,
+    "dc": 0.0001,
+    "decay_ms": 56.0,
+    "first_sample_db": -47.3,
+    "tail_5ms_db": -50.1
+   },
+   "group": "gestures",
+   "length_s": 1.0,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -36.3,
+    "lufs": -29.2,
+    "off_group_lu": -2.7,
+    "peak_db": -2.8
+   },
+   "listener": {
+    "CE": 2.66,
+    "CU": 5.5,
+    "PC": 2.24,
+    "PQ": 5.89
+   },
+   "noise": {
+    "floor_db": -33.4,
+    "floor_over_6k": 0.958
+   },
+   "sound": "develop",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.234,
+     "low90-250": 0.146,
+     "mid250-2k": 0.478,
+     "pres2k-5k": 0.137,
+     "sub<90": 0.005
+    },
+    "centroid_hz": 4163,
+    "comb_db": 5.4
+   }
+  },
+  {
+   "defects": [
+    "harsh: 60 % of it at 2-5 kHz",
+    "heard under its trades by 6.6 LU"
+   ],
+   "envelope": {
+    "attack_ms": 14.0,
+    "dc": 0.0001,
+    "decay_ms": 20.0,
+    "first_sample_db": -59.3,
+    "tail_5ms_db": -62.5
+   },
+   "group": "gestures",
+   "length_s": 0.297,
+   "level": {
+    "asked": {
+     "lufs": -20,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -39.7,
+    "lufs": -28.1,
+    "off_group_lu": -6.6,
+    "peak_db": -3.5
+   },
+   "listener": {
+    "CE": 3.27,
+    "CU": 6.55,
+    "PC": 2.29,
+    "PQ": 7.22
+   },
+   "noise": {
+    "floor_db": -69.0,
+    "floor_over_6k": 0.167
+   },
+   "sound": "ind-manufacturer",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.015,
+     "low90-250": 0.001,
+     "mid250-2k": 0.38,
+     "pres2k-5k": 0.602,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 1877,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "the 200 Hz comb, 13.3 dB over its neighbours",
+    "dull: 79 % of it under 250 Hz (lost on small speakers)"
+   ],
+   "envelope": {
+    "attack_ms": 2.0,
+    "dc": 5e-05,
+    "decay_ms": 109.0,
+    "first_sample_db": -21.9,
+    "tail_5ms_db": -79.9
+   },
+   "group": "gestures",
+   "length_s": 1.18,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -33.6,
+    "lufs": -26.5,
+    "off_group_lu": 0.0,
+    "peak_db": -3.2
+   },
+   "listener": {
+    "CE": 3.3,
+    "CU": 6.51,
+    "PC": 2.23,
+    "PQ": 7.21
+   },
+   "noise": {
+    "floor_db": -52.0,
+    "floor_over_6k": 0.095
+   },
+   "sound": "link-rail",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.004,
+     "low90-250": 0.273,
+     "mid250-2k": 0.152,
+     "pres2k-5k": 0.052,
+     "sub<90": 0.519
+    },
+    "centroid_hz": 367,
+    "comb_db": 13.3
+   }
+  },
+  {
+   "defects": [
+    "dull: 100 % of it under 250 Hz (lost on small speakers)",
+    "heard over its interface by 11.9 LU"
+   ],
+   "envelope": {
+    "attack_ms": 36.0,
+    "dc": 0.00393,
+    "decay_ms": 72.0,
+    "first_sample_db": -31.4,
+    "tail_5ms_db": -32.1
+   },
+   "group": "gestures",
+   "length_s": 0.118,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -10.2,
+    "heard_lufs": -28.7,
+    "lufs": -18.5,
+    "off_group_lu": 11.9,
+    "peak_db": -2.6
+   },
+   "listener": {
+    "CE": 4.12,
+    "CU": 6.4,
+    "PC": 2.23,
+    "PQ": 6.45
+   },
+   "noise": {},
+   "sound": "refuse",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.663,
+     "mid250-2k": 0.001,
+     "pres2k-5k": 0.0,
+     "sub<90": 0.335
+    },
+    "centroid_hz": 94,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "the 200 Hz comb, 5.6 dB over its neighbours",
+    "heard over its moments by 5.8 LU"
+   ],
+   "envelope": {
+    "attack_ms": 1050.0,
+    "dc": 1e-05,
+    "decay_ms": 1447.0,
+    "first_sample_db": -28.0,
+    "tail_5ms_db": -68.5
+   },
+   "group": "moments",
+   "length_s": 3.65,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -8.0,
+    "heard_lufs": -19.3,
+    "lufs": -11.3,
+    "off_group_lu": 5.8,
+    "peak_db": -1.9
+   },
+   "listener": {
+    "CE": 5.42,
+    "CU": 7.85,
+    "PC": 2.18,
+    "PQ": 7.7
+   },
+   "noise": {
+    "floor_db": -53.2,
+    "floor_over_6k": 0.0
+   },
+   "sound": "victory",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.008,
+     "low90-250": 0.001,
+     "mid250-2k": 0.87,
+     "pres2k-5k": 0.122,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1376,
+    "comb_db": 5.6
+   }
+  },
+  {
+   "defects": [
+    "the 200 Hz comb, 7.4 dB over its neighbours",
+    "heard under its moments by 4.8 LU"
+   ],
+   "envelope": {
+    "attack_ms": 630.0,
+    "dc": 1e-05,
+    "decay_ms": 1371.0,
+    "first_sample_db": -40.4,
+    "tail_5ms_db": -76.5
+   },
+   "group": "moments",
+   "length_s": 3.235,
+   "level": {
+    "asked": {
+     "peak": -9.0
+    },
+    "full_scale": 0,
+    "gain_db": -8.0,
+    "heard_lufs": -29.9,
+    "lufs": -21.9,
+    "off_group_lu": -4.8,
+    "peak_db": -8.9
+   },
+   "listener": {
+    "CE": 5.98,
+    "CU": 7.73,
+    "PC": 2.48,
+    "PQ": 7.18
+   },
+   "noise": {
+    "floor_db": -42.7,
+    "floor_over_6k": 0.0
+   },
+   "sound": "defeat",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.002,
+     "mid250-2k": 0.993,
+     "pres2k-5k": 0.005,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 849,
+    "comb_db": 7.4
+   }
+  },
+  {
+   "defects": [
+    "hiss: floor -39.7 dB under the peak, 53 % of it over 6 kHz"
+   ],
+   "envelope": {
+    "attack_ms": 350.0,
+    "dc": 0.0,
+    "decay_ms": 2726.0,
+    "first_sample_db": -186.4,
+    "tail_5ms_db": -110.5
+   },
+   "group": "rail life",
+   "length_s": 3.861,
+   "level": {
+    "asked": {
+     "lufs": -28,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -44.1,
+    "lufs": -27.9,
+    "off_group_lu": -0.9,
+    "peak_db": -16.4
+   },
+   "listener": {
+    "CE": 3.04,
+    "CU": 5.57,
+    "PC": 1.97,
+    "PQ": 5.17
+   },
+   "noise": {
+    "floor_db": -39.7,
+    "floor_over_6k": 0.533
+   },
+   "sound": "life-steam",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.689,
+     "low90-250": 0.001,
+     "mid250-2k": 0.026,
+     "pres2k-5k": 0.285,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 6137,
+    "comb_db": -6.0
+   }
+  },
+  {
+   "defects": [
+    "heard under its trades by 5.7 LU"
+   ],
+   "envelope": {
+    "attack_ms": 25.0,
+    "dc": 0.00021,
+    "decay_ms": 36.0,
+    "first_sample_db": -41.4,
+    "tail_5ms_db": -75.8
+   },
+   "group": "gestures",
+   "length_s": 0.363,
+   "level": {
+    "asked": {
+     "lufs": -20,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -38.8,
+    "lufs": -27.2,
+    "off_group_lu": -5.7,
+    "peak_db": -2.8
+   },
+   "listener": {
+    "CE": 2.58,
+    "CU": 6.35,
+    "PC": 2.29,
+    "PQ": 6.57
+   },
+   "noise": {
+    "floor_db": -48.0,
+    "floor_over_6k": 0.005
+   },
+   "sound": "ind-brewery",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.044,
+     "mid250-2k": 0.948,
+     "pres2k-5k": 0.007,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 609,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "heard under its gestures by 4.1 LU"
+   ],
+   "envelope": {
+    "attack_ms": 111.0,
+    "dc": 1e-05,
+    "decay_ms": 25.0,
+    "first_sample_db": -72.5,
+    "tail_5ms_db": -73.9
+   },
+   "group": "gestures",
+   "length_s": 1.194,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -37.7,
+    "lufs": -30.6,
+    "off_group_lu": -4.1,
+    "peak_db": -2.9
+   },
+   "listener": {
+    "CE": 2.91,
+    "CU": 6.07,
+    "PC": 2.34,
+    "PQ": 6.52
+   },
+   "noise": {
+    "floor_db": -57.7,
+    "floor_over_6k": 0.471
+   },
+   "sound": "scout",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.39,
+     "low90-250": 0.047,
+     "mid250-2k": 0.115,
+     "pres2k-5k": 0.445,
+     "sub<90": 0.003
+    },
+    "centroid_hz": 4852,
+    "comb_db": 0.1
+   }
+  },
+  {
+   "defects": [
+    "harsh: 59 % of it at 2-5 kHz"
+   ],
+   "envelope": {
+    "attack_ms": 191.0,
+    "dc": 0.0,
+    "decay_ms": 195.0,
+    "first_sample_db": -57.8,
+    "tail_5ms_db": -102.2
+   },
+   "group": "rail life",
+   "length_s": 3.108,
+   "level": {
+    "asked": {
+     "lufs": -27,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -43.2,
+    "lufs": -27.0,
+    "off_group_lu": 0.0,
+    "peak_db": -14.9
+   },
+   "listener": {
+    "CE": 3.39,
+    "CU": 6.42,
+    "PC": 1.89,
+    "PQ": 6.2
+   },
+   "noise": {
+    "floor_db": -51.1,
+    "floor_over_6k": 0.002
+   },
+   "sound": "life-hammer",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.012,
+     "low90-250": 0.002,
+     "mid250-2k": 0.398,
+     "pres2k-5k": 0.588,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 2426,
+    "comb_db": 0.5
+   }
+  },
+  {
+   "defects": [
+    "heard under its interface by 6.5 LU"
+   ],
+   "envelope": {
+    "attack_ms": 85.0,
+    "dc": 3e-05,
+    "decay_ms": 19.0,
+    "first_sample_db": -68.1,
+    "tail_5ms_db": -60.7
+   },
+   "group": "gestures",
+   "length_s": 0.146,
+   "level": {
+    "asked": {
+     "lufs": -36,
+     "peak": -12.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -47.1,
+    "lufs": -40.0,
+    "off_group_lu": -6.5,
+    "peak_db": -12.1
+   },
+   "listener": {
+    "CE": 3.43,
+    "CU": 6.08,
+    "PC": 2.26,
+    "PQ": 6.48
+   },
+   "noise": {},
+   "sound": "card",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.189,
+     "low90-250": 0.227,
+     "mid250-2k": 0.084,
+     "pres2k-5k": 0.488,
+     "sub<90": 0.012
+    },
+    "centroid_hz": 3015,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "heard over its gestures by 6.3 LU"
+   ],
+   "envelope": {
+    "attack_ms": 32.0,
+    "dc": 0.00041,
+    "decay_ms": 62.0,
+    "first_sample_db": -80.6,
+    "tail_5ms_db": -78.2
+   },
+   "group": "gestures",
+   "length_s": 0.242,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -27.3,
+    "lufs": -20.2,
+    "off_group_lu": 6.3,
+    "peak_db": -2.6
+   },
+   "listener": {
+    "CE": 3.8,
+    "CU": 6.46,
+    "PC": 2.66,
+    "PQ": 6.85
+   },
+   "noise": {
+    "floor_db": -49.7,
+    "floor_over_6k": 0.003
+   },
+   "sound": "stamp",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.008,
+     "low90-250": 0.146,
+     "mid250-2k": 0.557,
+     "pres2k-5k": 0.276,
+     "sub<90": 0.013
+    },
+    "centroid_hz": 1557,
+    "comb_db": null
+   }
+  },
+  {
+   "blasts": [
+    [
+     0.0,
+     1.66
+    ]
+   ],
+   "defects": [
+    "one blast (1 over 0.2 s within 12 dB of the peak), two asked"
+   ],
+   "envelope": {
+    "attack_ms": 226.0,
+    "dc": 0.0,
+    "decay_ms": 1601.0,
+    "first_sample_db": -28.0,
+    "tail_5ms_db": -159.4
+   },
+   "group": "rail life",
+   "length_s": 2.451,
+   "level": {
+    "asked": {
+     "lufs": -27,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -43.2,
+    "lufs": -27.0,
+    "off_group_lu": 0.0,
+    "peak_db": -16.5
+   },
+   "listener": {
+    "CE": 4.26,
+    "CU": 7.49,
+    "PC": 2.14,
+    "PQ": 6.63
+   },
+   "noise": {
+    "floor_db": -44.4,
+    "floor_over_6k": 0.0
+   },
+   "sound": "life-whistle",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.972,
+     "pres2k-5k": 0.027,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 672,
+    "comb_db": -4.1
+   }
+  },
+  {
+   "defects": [
+    "heard over its gestures by 7.8 LU"
+   ],
+   "envelope": {
+    "attack_ms": 576.0,
+    "dc": 0.0,
+    "decay_ms": 306.0,
+    "first_sample_db": -44.7,
+    "tail_5ms_db": -92.4
+   },
+   "group": "gestures",
+   "length_s": 1.185,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -25.8,
+    "lufs": -18.7,
+    "off_group_lu": 7.8,
+    "peak_db": -3.4
+   },
+   "listener": {
+    "CE": 3.73,
+    "CU": 7.38,
+    "PC": 2.18,
+    "PQ": 7.2
+   },
+   "noise": {
+    "floor_db": -50.7,
+    "floor_over_6k": 0.914
+   },
+   "sound": "sell",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.978,
+     "low90-250": 0.0,
+     "mid250-2k": 0.005,
+     "pres2k-5k": 0.016,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 9732,
+    "comb_db": 3.8
+   }
+  },
+  {
+   "defects": [
+    "the 200 Hz comb, 13.4 dB over its neighbours"
+   ],
+   "envelope": {
+    "attack_ms": 0.0,
+    "dc": 0.0,
+    "decay_ms": 616.0,
+    "first_sample_db": -24.0,
+    "tail_5ms_db": -76.5
+   },
+   "group": "moments",
+   "length_s": 1.949,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -8.0,
+    "heard_lufs": -29.0,
+    "lufs": -21.0,
+    "off_group_lu": -3.9,
+    "peak_db": -3.1
+   },
+   "listener": {
+    "CE": 3.47,
+    "CU": 7.59,
+    "PC": 1.67,
+    "PQ": 7.46
+   },
+   "noise": {
+    "floor_db": -63.0,
+    "floor_over_6k": 0.041
+   },
+   "sound": "turn",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.584,
+     "low90-250": 0.0,
+     "mid250-2k": 0.001,
+     "pres2k-5k": 0.413,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 6390,
+    "comb_db": 13.4
+   }
+  },
+  {
+   "defects": [
+    "dull: 90 % of it under 250 Hz (lost on small speakers)"
+   ],
+   "envelope": {
+    "attack_ms": 222.0,
+    "dc": 0.00059,
+    "decay_ms": 50.0,
+    "first_sample_db": -48.2,
+    "tail_5ms_db": -90.6
+   },
+   "group": "gestures",
+   "length_s": 0.613,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -15.1,
+    "heard_lufs": -37.1,
+    "lufs": -22.0,
+    "off_group_lu": 3.5,
+    "peak_db": -3.0
+   },
+   "listener": {
+    "CE": 3.98,
+    "CU": 7.17,
+    "PC": 2.75,
+    "PQ": 7.0
+   },
+   "noise": {
+    "floor_db": -57.7,
+    "floor_over_6k": 0.001
+   },
+   "sound": "panel-close",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.871,
+     "mid250-2k": 0.096,
+     "pres2k-5k": 0.002,
+     "sub<90": 0.031
+    },
+    "centroid_hz": 197,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "the 200 Hz comb, 9.1 dB over its neighbours"
+   ],
+   "envelope": {
+    "attack_ms": 3.0,
+    "dc": 0.0,
+    "decay_ms": 1049.0,
+    "first_sample_db": -39.8,
+    "tail_5ms_db": -227.6
+   },
+   "group": "canal life",
+   "length_s": 4.359,
+   "level": {
+    "asked": {
+     "lufs": -29,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -13.2,
+    "heard_lufs": -42.2,
+    "lufs": -29.0,
+    "off_group_lu": -1.0,
+    "peak_db": -12.4
+   },
+   "listener": {
+    "CE": 3.79,
+    "CU": 7.3,
+    "PC": 1.5,
+    "PQ": 7.43
+   },
+   "noise": {
+    "floor_db": -52.1,
+    "floor_over_6k": 0.0
+   },
+   "sound": "life-bell",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.949,
+     "pres2k-5k": 0.051,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1358,
+    "comb_db": 9.1
+   }
+  },
+  {
+   "defects": [
+    "heard over its synthesised by 4.7 LU"
+   ],
+   "envelope": {
+    "attack_ms": 10.0,
+    "dc": 1e-05,
+    "decay_ms": 326.0,
+    "first_sample_db": -225.2,
+    "tail_5ms_db": -225.2
+   },
+   "group": "synthesised",
+   "length_s": 1.276,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -28.9,
+    "lufs": -28.9,
+    "off_group_lu": 4.7,
+    "peak_db": -14.8
+   },
+   "listener": {
+    "CE": 4.48,
+    "CU": 7.27,
+    "PC": 1.82,
+    "PQ": 7.0
+   },
+   "noise": {
+    "floor_db": -52.0,
+    "floor_over_6k": 0.0
+   },
+   "sound": "synth-station-bell",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.997,
+     "pres2k-5k": 0.003,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 631,
+    "comb_db": -0.0
+   }
+  },
+  {
+   "defects": [
+    "harsh: 53 % of it at 2-5 kHz"
+   ],
+   "envelope": {
+    "attack_ms": 1418.0,
+    "dc": 1e-05,
+    "decay_ms": 1107.0,
+    "first_sample_db": -62.0,
+    "tail_5ms_db": -223.4
+   },
+   "group": "canal life",
+   "length_s": 3.274,
+   "level": {
+    "asked": {
+     "lufs": -28,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -13.2,
+    "heard_lufs": -41.2,
+    "lufs": -28.0,
+    "off_group_lu": 0.0,
+    "peak_db": -16.6
+   },
+   "listener": {
+    "CE": 3.63,
+    "CU": 7.99,
+    "PC": 1.76,
+    "PQ": 8.01
+   },
+   "noise": {
+    "floor_db": -42.5,
+    "floor_over_6k": 0.028
+   },
+   "sound": "life-forge",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.043,
+     "low90-250": 0.002,
+     "mid250-2k": 0.422,
+     "pres2k-5k": 0.533,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 2583,
+    "comb_db": 3.1
+   }
+  },
+  {
+   "defects": [
+    "harsh: 100 % of it at 2-5 kHz"
+   ],
+   "envelope": {
+    "attack_ms": 2.0,
+    "dc": 0.0,
+    "decay_ms": 110.0,
+    "first_sample_db": -223.6,
+    "tail_5ms_db": -223.6
+   },
+   "group": "synthesised",
+   "length_s": 0.217,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -30.6,
+    "lufs": -30.6,
+    "off_group_lu": 3.0,
+    "peak_db": -16.4
+   },
+   "listener": {
+    "CE": 3.96,
+    "CU": 7.62,
+    "PC": 2.03,
+    "PQ": 7.77
+   },
+   "noise": {
+    "floor_db": -50.3,
+    "floor_over_6k": 0.0
+   },
+   "sound": "synth-mug-clink",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.004,
+     "low90-250": 0.0,
+     "mid250-2k": 0.0,
+     "pres2k-5k": 0.996,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 3088,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "heard under its synthesised by 6.2 LU"
+   ],
+   "envelope": {
+    "attack_ms": 3.0,
+    "dc": 0.0,
+    "decay_ms": 127.0,
+    "first_sample_db": -215.2,
+    "tail_5ms_db": -215.2
+   },
+   "group": "synthesised",
+   "length_s": 0.3,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -39.8,
+    "lufs": -39.8,
+    "off_group_lu": -6.2,
+    "peak_db": -24.8
+   },
+   "listener": {
+    "CE": 4.5,
+    "CU": 7.46,
+    "PC": 1.8,
+    "PQ": 8.15
+   },
+   "noise": {
+    "floor_db": -59.4,
+    "floor_over_6k": 0.0
+   },
+   "sound": "synth-ping-tap",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.998,
+     "pres2k-5k": 0.002,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 598,
+    "comb_db": null
+   }
+  },
+  {
+   "blasts": [
+    [
+     0.09,
+     0.92
+    ]
+   ],
+   "defects": [
+    "one blast (1 over 0.2 s within 12 dB of the peak), two asked"
+   ],
+   "envelope": {
+    "attack_ms": 278.0,
+    "dc": 0.0,
+    "decay_ms": 644.0,
+    "first_sample_db": -130.3,
+    "tail_5ms_db": -214.9
+   },
+   "group": "synthesised",
+   "length_s": 1.688,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -32.6,
+    "lufs": -32.6,
+    "off_group_lu": 1.0,
+    "peak_db": -25.1
+   },
+   "listener": {
+    "CE": 4.98,
+    "CU": 7.72,
+    "PC": 1.69,
+    "PQ": 7.87
+   },
+   "noise": {
+    "floor_db": -60.2,
+    "floor_over_6k": 0.0
+   },
+   "sound": "synth-steam-whistle",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.0,
+     "mid250-2k": 0.924,
+     "pres2k-5k": 0.075,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1089,
+    "comb_db": 0.9
+   }
+  },
+  {
+   "defects": [
+    "heard under its synthesised by 4.5 LU"
+   ],
+   "envelope": {
+    "attack_ms": 4.0,
+    "dc": 0.00081,
+    "decay_ms": 50.0,
+    "first_sample_db": -26.6,
+    "tail_5ms_db": -221.0
+   },
+   "group": "synthesised",
+   "length_s": 0.11,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -38.1,
+    "lufs": -38.1,
+    "off_group_lu": -4.5,
+    "peak_db": -19.0
+   },
+   "listener": {
+    "CE": 5.99,
+    "CU": 7.27,
+    "PC": 2.87,
+    "PQ": 7.4
+   },
+   "noise": {},
+   "sound": "synth-press-tile",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.046,
+     "low90-250": 0.712,
+     "mid250-2k": 0.039,
+     "pres2k-5k": 0.19,
+     "sub<90": 0.013
+    },
+    "centroid_hz": 1042,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [
+    "heard under its synthesised by 8.6 LU"
+   ],
+   "envelope": {
+    "attack_ms": 4.0,
+    "dc": 0.00049,
+    "decay_ms": 53.0,
+    "first_sample_db": -24.5,
+    "tail_5ms_db": -216.5
+   },
+   "group": "synthesised",
+   "length_s": 0.11,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -42.2,
+    "lufs": -42.2,
+    "off_group_lu": -8.6,
+    "peak_db": -23.5
+   },
+   "listener": {
+    "CE": 6.17,
+    "CU": 7.48,
+    "PC": 2.75,
+    "PQ": 7.7
+   },
+   "noise": {},
+   "sound": "synth-press-link",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.079,
+     "low90-250": 0.692,
+     "mid250-2k": 0.021,
+     "pres2k-5k": 0.196,
+     "sub<90": 0.013
+    },
+    "centroid_hz": 1340,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 5.0,
+    "dc": 3e-05,
+    "decay_ms": 28.0,
+    "first_sample_db": -58.5,
+    "tail_5ms_db": -72.9
+   },
+   "group": "gestures",
+   "length_s": 0.363,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -32.9,
+    "lufs": -25.8,
+    "off_group_lu": 0.7,
+    "peak_db": -3.1
+   },
+   "listener": {
+    "CE": 2.12,
+    "CU": 3.38,
+    "PC": 2.61,
+    "PQ": 4.26
+   },
+   "noise": {
+    "floor_db": -49.5,
+    "floor_over_6k": 0.152
+   },
+   "sound": "loan",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.541,
+     "mid250-2k": 0.446,
+     "pres2k-5k": 0.003,
+     "sub<90": 0.01
+    },
+    "centroid_hz": 324,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 425.0,
+    "dc": 0.0,
+    "decay_ms": 45.0,
+    "first_sample_db": -47.0,
+    "tail_5ms_db": -69.4
+   },
+   "group": "gestures",
+   "length_s": 0.861,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -7.1,
+    "heard_lufs": -34.9,
+    "lufs": -27.8,
+    "off_group_lu": -1.3,
+    "peak_db": -3.0
+   },
+   "listener": {
+    "CE": 2.97,
+    "CU": 5.07,
+    "PC": 2.89,
+    "PQ": 4.8
+   },
+   "noise": {
+    "floor_db": -46.3,
+    "floor_over_6k": 0.019
+   },
+   "sound": "link-canal",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.007,
+     "mid250-2k": 0.978,
+     "pres2k-5k": 0.013,
+     "sub<90": 0.002
+    },
+    "centroid_hz": 762,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1139.0,
+    "dc": 2e-05,
+    "decay_ms": 24.0,
+    "first_sample_db": -51.7,
+    "tail_5ms_db": -82.5
+   },
+   "group": "houses",
+   "length_s": 2.371,
+   "level": {
+    "asked": {
+     "lufs": -25,
+     "peak": -2.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -36.6,
+    "lufs": -25.0,
+    "off_group_lu": 0.0,
+    "peak_db": -2.3
+   },
+   "listener": {
+    "CE": 2.61,
+    "CU": 4.66,
+    "PC": 2.84,
+    "PQ": 5.3
+   },
+   "noise": {
+    "floor_db": -38.3,
+    "floor_over_6k": 0.004
+   },
+   "sound": "house-shrewsbury",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.004,
+     "low90-250": 0.023,
+     "mid250-2k": 0.645,
+     "pres2k-5k": 0.312,
+     "sub<90": 0.016
+    },
+    "centroid_hz": 1708,
+    "comb_db": -11.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 4421.0,
+    "dc": 1e-05,
+    "decay_ms": 458.0,
+    "first_sample_db": -196.1,
+    "tail_5ms_db": -109.0
+   },
+   "group": "rail life",
+   "length_s": 6.461,
+   "level": {
+    "asked": {
+     "lufs": -25,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -41.8,
+    "lufs": -25.6,
+    "off_group_lu": 1.4,
+    "peak_db": -4.3
+   },
+   "listener": {
+    "CE": 2.71,
+    "CU": 5.06,
+    "PC": 2.46,
+    "PQ": 5.27
+   },
+   "noise": {
+    "floor_db": -42.9,
+    "floor_over_6k": 0.05
+   },
+   "sound": "life-passing",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.125,
+     "low90-250": 0.214,
+     "mid250-2k": 0.356,
+     "pres2k-5k": 0.302,
+     "sub<90": 0.003
+    },
+    "centroid_hz": 2219,
+    "comb_db": -10.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 478.0,
+    "dc": 0.0,
+    "decay_ms": 104.0,
+    "first_sample_db": -54.0,
+    "tail_5ms_db": -90.8
+   },
+   "group": "rail life",
+   "length_s": 1.554,
+   "level": {
+    "asked": {
+     "lufs": -27,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -43.2,
+    "lufs": -27.0,
+    "off_group_lu": 0.0,
+    "peak_db": -8.9
+   },
+   "listener": {
+    "CE": 2.71,
+    "CU": 5.37,
+    "PC": 2.45,
+    "PQ": 5.48
+   },
+   "noise": {
+    "floor_db": -54.3,
+    "floor_over_6k": 0.001
+   },
+   "sound": "life-couple",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.006,
+     "low90-250": 0.007,
+     "mid250-2k": 0.775,
+     "pres2k-5k": 0.211,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1421,
+    "comb_db": 1.4
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 395.0,
+    "dc": 3e-05,
+    "decay_ms": 3526.0,
+    "first_sample_db": -56.2,
+    "tail_5ms_db": -90.1
+   },
+   "group": "rail life",
+   "length_s": 5.052,
+   "level": {
+    "asked": {
+     "lufs": -26,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -42.1,
+    "lufs": -25.9,
+    "off_group_lu": 1.1,
+    "peak_db": -13.7
+   },
+   "listener": {
+    "CE": 2.69,
+    "CU": 5.61,
+    "PC": 2.27,
+    "PQ": 5.59
+   },
+   "noise": {
+    "floor_db": -37.1,
+    "floor_over_6k": 0.024
+   },
+   "sound": "life-depart",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.129,
+     "low90-250": 0.227,
+     "mid250-2k": 0.421,
+     "pres2k-5k": 0.221,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 2017,
+    "comb_db": -6.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 5.0,
+    "dc": 8e-05,
+    "decay_ms": 84.0,
+    "first_sample_db": -68.7,
+    "tail_5ms_db": -80.6
+   },
+   "group": "gestures",
+   "length_s": 0.365,
+   "level": {
+    "asked": {
+     "lufs": -20,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -34.0,
+    "lufs": -22.4,
+    "off_group_lu": -0.9,
+    "peak_db": -2.8
+   },
+   "listener": {
+    "CE": 2.63,
+    "CU": 6.09,
+    "PC": 2.31,
+    "PQ": 6.28
+   },
+   "noise": {
+    "floor_db": -51.1,
+    "floor_over_6k": 0.0
+   },
+   "sound": "ind-cotton",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.276,
+     "mid250-2k": 0.692,
+     "pres2k-5k": 0.03,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 612,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 192.0,
+    "dc": 2e-05,
+    "decay_ms": 342.0,
+    "first_sample_db": -38.9,
+    "tail_5ms_db": -93.2
+   },
+   "group": "gestures",
+   "length_s": 0.703,
+   "level": {
+    "asked": {
+     "lufs": -20,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -31.6,
+    "lufs": -20.0,
+    "off_group_lu": 1.5,
+    "peak_db": -3.7
+   },
+   "listener": {
+    "CE": 3.21,
+    "CU": 6.46,
+    "PC": 2.43,
+    "PQ": 5.8
+   },
+   "noise": {
+    "floor_db": -42.2,
+    "floor_over_6k": 0.044
+   },
+   "sound": "ind-coal",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.07,
+     "low90-250": 0.006,
+     "mid250-2k": 0.484,
+     "pres2k-5k": 0.44,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 2356,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 861.0,
+    "dc": 1e-05,
+    "decay_ms": 29.0,
+    "first_sample_db": -57.0,
+    "tail_5ms_db": -64.8
+   },
+   "group": "houses",
+   "length_s": 1.914,
+   "level": {
+    "asked": {
+     "lufs": -25,
+     "peak": -2.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -37.1,
+    "lufs": -25.5,
+    "off_group_lu": -0.5,
+    "peak_db": -3.2
+   },
+   "listener": {
+    "CE": 2.54,
+    "CU": 5.97,
+    "PC": 2.22,
+    "PQ": 6.51
+   },
+   "noise": {
+    "floor_db": -35.4,
+    "floor_over_6k": 0.005
+   },
+   "sound": "house-oxford",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.003,
+     "low90-250": 0.117,
+     "mid250-2k": 0.854,
+     "pres2k-5k": 0.024,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 681,
+    "comb_db": -6.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 687.0,
+    "dc": 0.0,
+    "decay_ms": 86.0,
+    "first_sample_db": -53.8,
+    "tail_5ms_db": -71.1
+   },
+   "group": "canal life",
+   "length_s": 4.293,
+   "level": {
+    "asked": {
+     "lufs": -27,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -13.2,
+    "heard_lufs": -41.1,
+    "lufs": -27.9,
+    "off_group_lu": 0.1,
+    "peak_db": -10.1
+   },
+   "listener": {
+    "CE": 2.65,
+    "CU": 6.11,
+    "PC": 2.22,
+    "PQ": 6.48
+   },
+   "noise": {
+    "floor_db": -39.5,
+    "floor_over_6k": 0.001
+   },
+   "sound": "life-lock",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.073,
+     "mid250-2k": 0.849,
+     "pres2k-5k": 0.078,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1054,
+    "comb_db": -9.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 2.0,
+    "dc": 0.0,
+    "decay_ms": 413.0,
+    "first_sample_db": -34.9,
+    "tail_5ms_db": -75.1
+   },
+   "group": "gestures",
+   "length_s": 0.631,
+   "level": {
+    "asked": {
+     "lufs": -20,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -32.2,
+    "lufs": -20.6,
+    "off_group_lu": 0.9,
+    "peak_db": -2.9
+   },
+   "listener": {
+    "CE": 2.97,
+    "CU": 6.75,
+    "PC": 1.94,
+    "PQ": 6.24
+   },
+   "noise": {
+    "floor_db": -48.1,
+    "floor_over_6k": 0.009
+   },
+   "sound": "ind-iron",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.485,
+     "low90-250": 0.001,
+     "mid250-2k": 0.019,
+     "pres2k-5k": 0.494,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 4897,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 206.0,
+    "dc": 1e-05,
+    "decay_ms": 35.0,
+    "first_sample_db": -56.2,
+    "tail_5ms_db": -70.6
+   },
+   "group": "gestures",
+   "length_s": 0.554,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -15.1,
+    "heard_lufs": -40.6,
+    "lufs": -25.5,
+    "off_group_lu": 0.0,
+    "peak_db": -3.1
+   },
+   "listener": {
+    "CE": 3.2,
+    "CU": 5.82,
+    "PC": 2.49,
+    "PQ": 6.4
+   },
+   "noise": {
+    "floor_db": -47.3,
+    "floor_over_6k": 0.001
+   },
+   "sound": "panel-open",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.004,
+     "low90-250": 0.052,
+     "mid250-2k": 0.781,
+     "pres2k-5k": 0.158,
+     "sub<90": 0.004
+    },
+    "centroid_hz": 1406,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 328.0,
+    "dc": 0.00025,
+    "decay_ms": 123.0,
+    "first_sample_db": -48.4,
+    "tail_5ms_db": -89.7
+   },
+   "group": "gestures",
+   "length_s": 0.662,
+   "level": {
+    "asked": {
+     "lufs": -20,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -31.7,
+    "lufs": -20.1,
+    "off_group_lu": 1.4,
+    "peak_db": -4.6
+   },
+   "listener": {
+    "CE": 3.41,
+    "CU": 5.81,
+    "PC": 3.35,
+    "PQ": 6.24
+   },
+   "noise": {
+    "floor_db": -45.5,
+    "floor_over_6k": 0.0
+   },
+   "sound": "ind-pottery",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.007,
+     "low90-250": 0.223,
+     "mid250-2k": 0.595,
+     "pres2k-5k": 0.174,
+     "sub<90": 0.001
+    },
+    "centroid_hz": 1287,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 925.0,
+    "dc": 0.0,
+    "decay_ms": 153.0,
+    "first_sample_db": -85.4,
+    "tail_5ms_db": -90.8
+   },
+   "group": "houses",
+   "length_s": 1.829,
+   "level": {
+    "asked": {
+     "lufs": -25,
+     "peak": -2.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -36.4,
+    "lufs": -24.8,
+    "off_group_lu": 0.2,
+    "peak_db": -7.1
+   },
+   "listener": {
+    "CE": 3.17,
+    "CU": 6.83,
+    "PC": 2.3,
+    "PQ": 7.16
+   },
+   "noise": {
+    "floor_db": -43.8,
+    "floor_over_6k": 0.011
+   },
+   "sound": "house-gloucester",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.014,
+     "low90-250": 0.131,
+     "mid250-2k": 0.796,
+     "pres2k-5k": 0.052,
+     "sub<90": 0.007
+    },
+    "centroid_hz": 857,
+    "comb_db": -7.8
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 114.0,
+    "dc": 0.0,
+    "decay_ms": 127.0,
+    "first_sample_db": -74.8,
+    "tail_5ms_db": -78.1
+   },
+   "group": "voices",
+   "length_s": 2.491,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -6.6
+   },
+   "listener": {
+    "CE": 5.05,
+    "CU": 5.48,
+    "PC": 1.52,
+    "PQ": 5.35
+   },
+   "noise": {
+    "floor_db": -50.2,
+    "floor_over_6k": 0.114
+   },
+   "sound": "bark-pomfrey-idle",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.0,
+     "mid250-2k": 0.821,
+     "pres2k-5k": 0.178,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1216,
+    "comb_db": 1.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 193.0,
+    "dc": 1e-05,
+    "decay_ms": 1300.0,
+    "first_sample_db": -54.8,
+    "tail_5ms_db": -84.4
+   },
+   "group": "moments",
+   "length_s": 3.421,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -8.0,
+    "heard_lufs": -21.2,
+    "lufs": -13.2,
+    "off_group_lu": 3.9,
+    "peak_db": -3.0
+   },
+   "listener": {
+    "CE": 3.47,
+    "CU": 6.97,
+    "PC": 1.79,
+    "PQ": 7.13
+   },
+   "noise": {
+    "floor_db": -60.5,
+    "floor_over_6k": 0.001
+   },
+   "sound": "era-end",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.997,
+     "pres2k-5k": 0.003,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 458,
+    "comb_db": 2.6
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1162.0,
+    "dc": 0.0,
+    "decay_ms": 53.0,
+    "first_sample_db": -98.4,
+    "tail_5ms_db": -99.7
+   },
+   "group": "canal life",
+   "length_s": 5.28,
+   "level": {
+    "asked": {
+     "lufs": -27,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -13.2,
+    "heard_lufs": -42.2,
+    "lufs": -29.0,
+    "off_group_lu": -1.0,
+    "peak_db": -3.1
+   },
+   "listener": {
+    "CE": 3.73,
+    "CU": 7.32,
+    "PC": 2.67,
+    "PQ": 7.29
+   },
+   "noise": {
+    "floor_db": -53.7,
+    "floor_over_6k": 0.015
+   },
+   "sound": "life-horse",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.017,
+     "low90-250": 0.036,
+     "mid250-2k": 0.554,
+     "pres2k-5k": 0.393,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1847,
+    "comb_db": -9.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 146.0,
+    "dc": 2e-05,
+    "decay_ms": 219.0,
+    "first_sample_db": -56.9,
+    "tail_5ms_db": -74.2
+   },
+   "group": "voices",
+   "length_s": 2.208,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -6.6
+   },
+   "listener": {
+    "CE": 4.37,
+    "CU": 5.62,
+    "PC": 1.41,
+    "PQ": 6.78
+   },
+   "noise": {
+    "floor_db": -31.6,
+    "floor_over_6k": 0.064
+   },
+   "sound": "bark-hepzibah-watered",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.014,
+     "low90-250": 0.003,
+     "mid250-2k": 0.816,
+     "pres2k-5k": 0.166,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 996,
+    "comb_db": -0.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 4675.0,
+    "dc": 0.0,
+    "decay_ms": 89.0,
+    "first_sample_db": -82.3,
+    "tail_5ms_db": -72.7
+   },
+   "group": "voices",
+   "length_s": 5.185,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.2
+   },
+   "listener": {
+    "CE": 4.95,
+    "CU": 5.31,
+    "PC": 1.52,
+    "PQ": 6.25
+   },
+   "noise": {
+    "floor_db": -72.4,
+    "floor_over_6k": 0.065
+   },
+   "sound": "bark-ezra-mud",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.005,
+     "low90-250": 0.02,
+     "mid250-2k": 0.944,
+     "pres2k-5k": 0.031,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 949,
+    "comb_db": 3.4
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 2978.0,
+    "dc": 0.0,
+    "decay_ms": 299.0,
+    "first_sample_db": -71.1,
+    "tail_5ms_db": -70.4
+   },
+   "group": "voices",
+   "length_s": 4.615,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -8.5
+   },
+   "listener": {
+    "CE": 4.46,
+    "CU": 5.86,
+    "PC": 1.52,
+    "PQ": 6.78
+   },
+   "noise": {
+    "floor_db": -34.0,
+    "floor_over_6k": 0.01
+   },
+   "sound": "bark-ezra-knees",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.01,
+     "low90-250": 0.003,
+     "mid250-2k": 0.855,
+     "pres2k-5k": 0.131,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 910,
+    "comb_db": 1.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 62.0,
+    "dc": 0.0,
+    "decay_ms": 93.0,
+    "first_sample_db": -74.1,
+    "tail_5ms_db": -81.5
+   },
+   "group": "voices",
+   "length_s": 2.744,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.2,
+    "lufs": -22.1,
+    "off_group_lu": -0.1,
+    "peak_db": -8.0
+   },
+   "listener": {
+    "CE": 4.88,
+    "CU": 5.72,
+    "PC": 1.66,
+    "PQ": 6.43
+   },
+   "noise": {
+    "floor_db": -40.0,
+    "floor_over_6k": 0.237
+   },
+   "sound": "bark-hepzibah-pints",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.007,
+     "low90-250": 0.0,
+     "mid250-2k": 0.855,
+     "pres2k-5k": 0.137,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1173,
+    "comb_db": 2.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 293.0,
+    "dc": 1e-05,
+    "decay_ms": 145.0,
+    "first_sample_db": -96.4,
+    "tail_5ms_db": -76.6
+   },
+   "group": "voices",
+   "length_s": 3.858,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -6.2
+   },
+   "listener": {
+    "CE": 5.04,
+    "CU": 5.56,
+    "PC": 1.43,
+    "PQ": 6.42
+   },
+   "noise": {
+    "floor_db": -49.9,
+    "floor_over_6k": 0.008
+   },
+   "sound": "bark-ezra-dear",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.002,
+     "mid250-2k": 0.882,
+     "pres2k-5k": 0.114,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1024,
+    "comb_db": 0.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 451.0,
+    "dc": 0.0,
+    "decay_ms": 379.0,
+    "first_sample_db": -80.9,
+    "tail_5ms_db": -73.5
+   },
+   "group": "voices",
+   "length_s": 3.025,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -30.9,
+    "lufs": -21.8,
+    "off_group_lu": 0.2,
+    "peak_db": -7.1
+   },
+   "listener": {
+    "CE": 5.34,
+    "CU": 6.16,
+    "PC": 1.47,
+    "PQ": 6.12
+   },
+   "noise": {
+    "floor_db": -44.6,
+    "floor_over_6k": 0.02
+   },
+   "sound": "bark-pomfrey-iron",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.0,
+     "mid250-2k": 0.853,
+     "pres2k-5k": 0.145,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1283,
+    "comb_db": 1.4
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 99.0,
+    "dc": 0.0,
+    "decay_ms": 119.0,
+    "first_sample_db": -85.2,
+    "tail_5ms_db": -74.9
+   },
+   "group": "voices",
+   "length_s": 2.477,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -9.8
+   },
+   "listener": {
+    "CE": 4.69,
+    "CU": 6.05,
+    "PC": 1.46,
+    "PQ": 6.79
+   },
+   "noise": {
+    "floor_db": -69.7,
+    "floor_over_6k": 0.017
+   },
+   "sound": "bark-tom-what",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.007,
+     "low90-250": 0.001,
+     "mid250-2k": 0.847,
+     "pres2k-5k": 0.145,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1499,
+    "comb_db": 2.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1350.0,
+    "dc": 0.0,
+    "decay_ms": 55.0,
+    "first_sample_db": -78.0,
+    "tail_5ms_db": -70.8
+   },
+   "group": "voices",
+   "length_s": 2.581,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -6.3
+   },
+   "listener": {
+    "CE": 5.43,
+    "CU": 5.94,
+    "PC": 1.69,
+    "PQ": 6.06
+   },
+   "noise": {
+    "floor_db": -39.5,
+    "floor_over_6k": 0.005
+   },
+   "sound": "bark-nellie-fluff",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.0,
+     "mid250-2k": 0.888,
+     "pres2k-5k": 0.11,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1024,
+    "comb_db": 2.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 14.0,
+    "dc": 0.0001,
+    "decay_ms": 10.0,
+    "first_sample_db": -76.6,
+    "tail_5ms_db": -62.2
+   },
+   "group": "gestures",
+   "length_s": 0.072,
+   "level": {
+    "asked": {
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -14.1,
+    "heard_lufs": -41.4,
+    "lufs": -27.3,
+    "off_group_lu": -0.8,
+    "peak_db": -3.1
+   },
+   "listener": {
+    "CE": 4.05,
+    "CU": 7.22,
+    "PC": 1.74,
+    "PQ": 7.45
+   },
+   "noise": {},
+   "sound": "click",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.964,
+     "low90-250": 0.0,
+     "mid250-2k": 0.0,
+     "pres2k-5k": 0.035,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 9224,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1318.0,
+    "dc": 0.0,
+    "decay_ms": 51.0,
+    "first_sample_db": -72.9,
+    "tail_5ms_db": -70.6
+   },
+   "group": "voices",
+   "length_s": 2.105,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -30.8,
+    "lufs": -21.7,
+    "off_group_lu": 0.3,
+    "peak_db": -9.1
+   },
+   "listener": {
+    "CE": 5.15,
+    "CU": 6.03,
+    "PC": 1.55,
+    "PQ": 6.39
+   },
+   "noise": {
+    "floor_db": -34.4,
+    "floor_over_6k": 0.211
+   },
+   "sound": "bark-nellie-hands",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.0,
+     "mid250-2k": 0.817,
+     "pres2k-5k": 0.181,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1132,
+    "comb_db": 3.8
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 184.0,
+    "dc": 0.0,
+    "decay_ms": 116.0,
+    "first_sample_db": -63.8,
+    "tail_5ms_db": -79.0
+   },
+   "group": "voices",
+   "length_s": 2.097,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -4.3
+   },
+   "listener": {
+    "CE": 5.49,
+    "CU": 6.07,
+    "PC": 1.45,
+    "PQ": 6.14
+   },
+   "noise": {
+    "floor_db": -39.6,
+    "floor_over_6k": 0.018
+   },
+   "sound": "bark-pomfrey-triumph",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.01,
+     "low90-250": 0.001,
+     "mid250-2k": 0.879,
+     "pres2k-5k": 0.11,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1197,
+    "comb_db": 3.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 416.0,
+    "dc": 1e-05,
+    "decay_ms": 180.0,
+    "first_sample_db": -72.3,
+    "tail_5ms_db": -74.1
+   },
+   "group": "voices",
+   "length_s": 2.049,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.4
+   },
+   "listener": {
+    "CE": 5.22,
+    "CU": 6.12,
+    "PC": 1.46,
+    "PQ": 6.46
+   },
+   "noise": {
+    "floor_db": -37.9,
+    "floor_over_6k": 0.004
+   },
+   "sound": "bark-tom-sweet",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.004,
+     "low90-250": 0.011,
+     "mid250-2k": 0.592,
+     "pres2k-5k": 0.393,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1697,
+    "comb_db": 0.6
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1495.0,
+    "dc": 1e-05,
+    "decay_ms": 168.0,
+    "first_sample_db": -70.5,
+    "tail_5ms_db": -76.4
+   },
+   "group": "voices",
+   "length_s": 2.387,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -8.1
+   },
+   "listener": {
+    "CE": 4.88,
+    "CU": 5.5,
+    "PC": 1.57,
+    "PQ": 6.85
+   },
+   "noise": {
+    "floor_db": -37.9,
+    "floor_over_6k": 0.023
+   },
+   "sound": "bark-barnaby-bess",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.004,
+     "low90-250": 0.005,
+     "mid250-2k": 0.763,
+     "pres2k-5k": 0.228,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1261,
+    "comb_db": -0.6
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1840.0,
+    "dc": 0.0,
+    "decay_ms": 336.0,
+    "first_sample_db": -74.0,
+    "tail_5ms_db": -78.5
+   },
+   "group": "voices",
+   "length_s": 2.635,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -7.5
+   },
+   "listener": {
+    "CE": 5.48,
+    "CU": 6.13,
+    "PC": 1.67,
+    "PQ": 6.32
+   },
+   "noise": {
+    "floor_db": -42.4,
+    "floor_over_6k": 0.206
+   },
+   "sound": "bark-nellie-twelve",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.0,
+     "mid250-2k": 0.968,
+     "pres2k-5k": 0.03,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 818,
+    "comb_db": 1.1
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1070.0,
+    "dc": 0.0,
+    "decay_ms": 237.0,
+    "first_sample_db": -72.6,
+    "tail_5ms_db": -87.8
+   },
+   "group": "voices",
+   "length_s": 2.786,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.0,
+    "lufs": -21.9,
+    "off_group_lu": 0.1,
+    "peak_db": -6.0
+   },
+   "listener": {
+    "CE": 5.18,
+    "CU": 5.92,
+    "PC": 1.63,
+    "PQ": 6.62
+   },
+   "noise": {
+    "floor_db": -61.2,
+    "floor_over_6k": 0.011
+   },
+   "sound": "bark-pomfrey-time",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.012,
+     "mid250-2k": 0.681,
+     "pres2k-5k": 0.305,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1437,
+    "comb_db": 3.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1802.0,
+    "dc": 1e-05,
+    "decay_ms": 204.0,
+    "first_sample_db": -91.4,
+    "tail_5ms_db": -79.3
+   },
+   "group": "voices",
+   "length_s": 2.507,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -8.6
+   },
+   "listener": {
+    "CE": 5.34,
+    "CU": 6.16,
+    "PC": 1.53,
+    "PQ": 6.47
+   },
+   "noise": {
+    "floor_db": -50.9,
+    "floor_over_6k": 0.072
+   },
+   "sound": "bark-nellie-vicar",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.0,
+     "mid250-2k": 0.925,
+     "pres2k-5k": 0.073,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 850,
+    "comb_db": 4.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 2.0,
+    "dc": 0.0,
+    "decay_ms": 145.0,
+    "first_sample_db": -220.8,
+    "tail_5ms_db": -220.8
+   },
+   "group": "synthesised",
+   "length_s": 0.294,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -31.7,
+    "lufs": -31.7,
+    "off_group_lu": 1.9,
+    "peak_db": -19.2
+   },
+   "listener": {
+    "CE": 3.74,
+    "CU": 7.65,
+    "PC": 1.79,
+    "PQ": 8.13
+   },
+   "noise": {
+    "floor_db": -54.0,
+    "floor_over_6k": 0.0
+   },
+   "sound": "synth-counter-bell",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.96,
+     "pres2k-5k": 0.04,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1859,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 150.0,
+    "dc": 1e-05,
+    "decay_ms": 369.0,
+    "first_sample_db": -99.3,
+    "tail_5ms_db": -77.6
+   },
+   "group": "voices",
+   "length_s": 2.478,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -6.6
+   },
+   "listener": {
+    "CE": 5.52,
+    "CU": 6.02,
+    "PC": 1.45,
+    "PQ": 6.4
+   },
+   "noise": {
+    "floor_db": -34.8,
+    "floor_over_6k": 0.013
+   },
+   "sound": "bark-tom-dear",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.006,
+     "mid250-2k": 0.836,
+     "pres2k-5k": 0.156,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1372,
+    "comb_db": 1.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 4.0,
+    "dc": 1e-05,
+    "decay_ms": 182.0,
+    "first_sample_db": -219.7,
+    "tail_5ms_db": -219.7
+   },
+   "group": "synthesised",
+   "length_s": 0.377,
+   "level": {
+    "full_scale": 0,
+    "gain_db": 0.0,
+    "heard_lufs": -34.6,
+    "lufs": -34.6,
+    "off_group_lu": -1.0,
+    "peak_db": -20.3
+   },
+   "listener": {
+    "CE": 3.71,
+    "CU": 7.6,
+    "PC": 1.66,
+    "PQ": 8.21
+   },
+   "noise": {
+    "floor_db": -55.6,
+    "floor_over_6k": 0.0
+   },
+   "sound": "synth-house-bell",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.0,
+     "low90-250": 0.0,
+     "mid250-2k": 0.994,
+     "pres2k-5k": 0.006,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 893,
+    "comb_db": null
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 129.0,
+    "dc": 1e-05,
+    "decay_ms": 629.0,
+    "first_sample_db": -98.1,
+    "tail_5ms_db": -82.2
+   },
+   "group": "voices",
+   "length_s": 1.692,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.0,
+    "lufs": -21.9,
+    "off_group_lu": 0.1,
+    "peak_db": -7.9
+   },
+   "listener": {
+    "CE": 5.45,
+    "CU": 5.92,
+    "PC": 1.45,
+    "PQ": 6.52
+   },
+   "noise": {
+    "floor_db": -47.5,
+    "floor_over_6k": 0.018
+   },
+   "sound": "bark-kezia-bread",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.02,
+     "low90-250": 0.081,
+     "mid250-2k": 0.809,
+     "pres2k-5k": 0.09,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 838,
+    "comb_db": 4.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 79.0,
+    "dc": 1e-05,
+    "decay_ms": 840.0,
+    "first_sample_db": -59.6,
+    "tail_5ms_db": -90.5
+   },
+   "group": "houses",
+   "length_s": 1.153,
+   "level": {
+    "asked": {
+     "lufs": -25,
+     "peak": -2.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -36.6,
+    "lufs": -25.0,
+    "off_group_lu": 0.0,
+    "peak_db": -10.5
+   },
+   "listener": {
+    "CE": 4.16,
+    "CU": 7.88,
+    "PC": 2.08,
+    "PQ": 7.87
+   },
+   "noise": {
+    "floor_db": -47.5,
+    "floor_over_6k": 0.681
+   },
+   "sound": "house-nottingham",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.744,
+     "low90-250": 0.001,
+     "mid250-2k": 0.035,
+     "pres2k-5k": 0.219,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 7110,
+    "comb_db": -3.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1093.0,
+    "dc": 0.0,
+    "decay_ms": 70.0,
+    "first_sample_db": -87.8,
+    "tail_5ms_db": -85.4
+   },
+   "group": "canal life",
+   "length_s": 2.968,
+   "level": {
+    "asked": {
+     "lufs": -28,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -13.2,
+    "heard_lufs": -40.9,
+    "lufs": -27.7,
+    "off_group_lu": 0.3,
+    "peak_db": -11.1
+   },
+   "listener": {
+    "CE": 5.11,
+    "CU": 6.99,
+    "PC": 2.09,
+    "PQ": 6.95
+   },
+   "noise": {
+    "floor_db": -52.1,
+    "floor_over_6k": 0.001
+   },
+   "sound": "life-geese",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.0,
+     "mid250-2k": 0.815,
+     "pres2k-5k": 0.184,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1659,
+    "comb_db": -6.1
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 843.0,
+    "dc": 0.0,
+    "decay_ms": 398.0,
+    "first_sample_db": -75.2,
+    "tail_5ms_db": -73.5
+   },
+   "group": "voices",
+   "length_s": 2.383,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -9.0
+   },
+   "listener": {
+    "CE": 5.52,
+    "CU": 6.39,
+    "PC": 1.81,
+    "PQ": 6.61
+   },
+   "noise": {
+    "floor_db": -53.9,
+    "floor_over_6k": 0.096
+   },
+   "sound": "bark-nellie-ribbon",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.003,
+     "low90-250": 0.0,
+     "mid250-2k": 0.814,
+     "pres2k-5k": 0.184,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 991,
+    "comb_db": 4.8
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1334.0,
+    "dc": 1e-05,
+    "decay_ms": 633.0,
+    "first_sample_db": -76.6,
+    "tail_5ms_db": -78.1
+   },
+   "group": "voices",
+   "length_s": 2.613,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.4
+   },
+   "listener": {
+    "CE": 5.72,
+    "CU": 6.33,
+    "PC": 1.48,
+    "PQ": 6.5
+   },
+   "noise": {
+    "floor_db": -42.5,
+    "floor_over_6k": 0.0
+   },
+   "sound": "bark-kezia-price",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.036,
+     "low90-250": 0.088,
+     "mid250-2k": 0.809,
+     "pres2k-5k": 0.067,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 894,
+    "comb_db": 3.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 69.0,
+    "dc": 0.0,
+    "decay_ms": 188.0,
+    "first_sample_db": -85.9,
+    "tail_5ms_db": -73.4
+   },
+   "group": "voices",
+   "length_s": 2.49,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.9
+   },
+   "listener": {
+    "CE": 5.42,
+    "CU": 5.91,
+    "PC": 1.46,
+    "PQ": 6.83
+   },
+   "noise": {
+    "floor_db": -40.6,
+    "floor_over_6k": 0.164
+   },
+   "sound": "bark-hepzibah-finest",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.012,
+     "low90-250": 0.005,
+     "mid250-2k": 0.826,
+     "pres2k-5k": 0.157,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1288,
+    "comb_db": 1.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1807.0,
+    "dc": 0.0,
+    "decay_ms": 389.0,
+    "first_sample_db": -90.4,
+    "tail_5ms_db": -77.7
+   },
+   "group": "voices",
+   "length_s": 2.805,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.4
+   },
+   "listener": {
+    "CE": 5.08,
+    "CU": 6.02,
+    "PC": 1.43,
+    "PQ": 7.19
+   },
+   "noise": {
+    "floor_db": -38.9,
+    "floor_over_6k": 0.077
+   },
+   "sound": "bark-hepzibah-soot",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.01,
+     "low90-250": 0.001,
+     "mid250-2k": 0.855,
+     "pres2k-5k": 0.133,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1157,
+    "comb_db": 3.2
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1163.0,
+    "dc": 2e-05,
+    "decay_ms": 26.0,
+    "first_sample_db": -68.1,
+    "tail_5ms_db": -107.8
+   },
+   "group": "houses",
+   "length_s": 2.295,
+   "level": {
+    "asked": {
+     "lufs": -25,
+     "peak": -2.0
+    },
+    "full_scale": 0,
+    "gain_db": -11.6,
+    "heard_lufs": -37.9,
+    "lufs": -26.3,
+    "off_group_lu": -1.3,
+    "peak_db": -1.8
+   },
+   "listener": {
+    "CE": 5.63,
+    "CU": 6.53,
+    "PC": 4.5,
+    "PQ": 6.68
+   },
+   "noise": {
+    "floor_db": -45.8,
+    "floor_over_6k": 0.004
+   },
+   "sound": "house-warrington",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.088,
+     "mid250-2k": 0.89,
+     "pres2k-5k": 0.018,
+     "sub<90": 0.003
+    },
+    "centroid_hz": 791,
+    "comb_db": -8.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 59.0,
+    "dc": 1e-05,
+    "decay_ms": 137.0,
+    "first_sample_db": -84.4,
+    "tail_5ms_db": -83.6
+   },
+   "group": "voices",
+   "length_s": 2.002,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -6.7
+   },
+   "listener": {
+    "CE": 5.52,
+    "CU": 6.19,
+    "PC": 1.46,
+    "PQ": 6.81
+   },
+   "noise": {
+    "floor_db": -48.9,
+    "floor_over_6k": 0.141
+   },
+   "sound": "bark-barnaby-wages",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.0,
+     "mid250-2k": 0.799,
+     "pres2k-5k": 0.198,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1440,
+    "comb_db": 3.1
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 81.0,
+    "dc": 1e-05,
+    "decay_ms": 439.0,
+    "first_sample_db": -77.9,
+    "tail_5ms_db": -78.9
+   },
+   "group": "voices",
+   "length_s": 2.521,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -7.9
+   },
+   "listener": {
+    "CE": 5.5,
+    "CU": 6.26,
+    "PC": 1.48,
+    "PQ": 6.85
+   },
+   "noise": {
+    "floor_db": -48.7,
+    "floor_over_6k": 0.011
+   },
+   "sound": "bark-tom-late",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.005,
+     "mid250-2k": 0.816,
+     "pres2k-5k": 0.178,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1364,
+    "comb_db": 3.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1236.0,
+    "dc": 7e-05,
+    "decay_ms": 71.0,
+    "first_sample_db": -24.5,
+    "tail_5ms_db": -28.1
+   },
+   "group": "ambiences",
+   "length_s": 27.0,
+   "level": {
+    "asked": {
+     "lufs": -26.0
+    },
+    "full_scale": 0,
+    "gain_db": -17.6,
+    "heard_lufs": -43.6,
+    "lufs": -26.0,
+    "peak_db": -9.3
+   },
+   "listener": {
+    "CE": 5.27,
+    "CU": 7.24,
+    "PC": 3.11,
+    "PQ": 7.09
+   },
+   "loop": {
+    "loudest_400ms_over_whole_lu": 5.5,
+    "seam_over_p99": 0.03
+   },
+   "noise": {
+    "floor_db": -23.4,
+    "floor_over_6k": 0.006
+   },
+   "sound": "amb-rail",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.017,
+     "low90-250": 0.592,
+     "mid250-2k": 0.015,
+     "pres2k-5k": 0.008,
+     "sub<90": 0.368
+    },
+    "centroid_hz": 240,
+    "comb_db": -7.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 577.0,
+    "dc": 0.0,
+    "decay_ms": 261.0,
+    "first_sample_db": -99.2,
+    "tail_5ms_db": -90.6
+   },
+   "group": "voices",
+   "length_s": 2.237,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -7.3
+   },
+   "listener": {
+    "CE": 5.7,
+    "CU": 6.3,
+    "PC": 1.55,
+    "PQ": 6.66
+   },
+   "noise": {
+    "floor_db": -35.3,
+    "floor_over_6k": 0.117
+   },
+   "sound": "bark-nellie-overseer",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.005,
+     "low90-250": 0.0,
+     "mid250-2k": 0.893,
+     "pres2k-5k": 0.101,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 744,
+    "comb_db": 2.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 658.0,
+    "dc": 1e-05,
+    "decay_ms": 102.0,
+    "first_sample_db": -77.7,
+    "tail_5ms_db": -80.2
+   },
+   "group": "voices",
+   "length_s": 1.473,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.2,
+    "lufs": -22.1,
+    "off_group_lu": -0.1,
+    "peak_db": -7.6
+   },
+   "listener": {
+    "CE": 5.37,
+    "CU": 6.21,
+    "PC": 1.45,
+    "PQ": 7.03
+   },
+   "noise": {
+    "floor_db": -39.2,
+    "floor_over_6k": 0.008
+   },
+   "sound": "bark-barnaby-rope",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.003,
+     "low90-250": 0.003,
+     "mid250-2k": 0.844,
+     "pres2k-5k": 0.15,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1326,
+    "comb_db": 1.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 2050.0,
+    "dc": 1e-05,
+    "decay_ms": 176.0,
+    "first_sample_db": -73.5,
+    "tail_5ms_db": -70.0
+   },
+   "group": "voices",
+   "length_s": 3.258,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -4.0
+   },
+   "listener": {
+    "CE": 5.55,
+    "CU": 6.04,
+    "PC": 1.65,
+    "PQ": 6.9
+   },
+   "noise": {
+    "floor_db": -69.3,
+    "floor_over_6k": 0.041
+   },
+   "sound": "bark-ezra-worse",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.048,
+     "mid250-2k": 0.918,
+     "pres2k-5k": 0.032,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 680,
+    "comb_db": 0.6
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1255.0,
+    "dc": 3e-05,
+    "decay_ms": 102.0,
+    "first_sample_db": -93.2,
+    "tail_5ms_db": -76.0
+   },
+   "group": "voices",
+   "length_s": 2.816,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.1
+   },
+   "listener": {
+    "CE": 5.8,
+    "CU": 6.0,
+    "PC": 1.47,
+    "PQ": 6.85
+   },
+   "noise": {
+    "floor_db": -55.1,
+    "floor_over_6k": 0.002
+   },
+   "sound": "bark-kezia-kettle",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.06,
+     "mid250-2k": 0.848,
+     "pres2k-5k": 0.091,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 832,
+    "comb_db": 1.4
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 84.0,
+    "dc": 1e-05,
+    "decay_ms": 491.0,
+    "first_sample_db": -75.1,
+    "tail_5ms_db": -78.6
+   },
+   "group": "voices",
+   "length_s": 2.182,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -7.1
+   },
+   "listener": {
+    "CE": 5.9,
+    "CU": 6.25,
+    "PC": 1.4,
+    "PQ": 6.77
+   },
+   "noise": {
+    "floor_db": -35.9,
+    "floor_over_6k": 0.037
+   },
+   "sound": "bark-tom-furnace",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.003,
+     "low90-250": 0.008,
+     "mid250-2k": 0.733,
+     "pres2k-5k": 0.255,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1546,
+    "comb_db": 1.0
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1507.0,
+    "dc": 3e-05,
+    "decay_ms": 55.0,
+    "first_sample_db": -89.1,
+    "tail_5ms_db": -57.5
+   },
+   "group": "voices",
+   "length_s": 4.971,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -33.7,
+    "lufs": -24.6,
+    "off_group_lu": -2.6,
+    "peak_db": -3.1
+   },
+   "listener": {
+    "CE": 5.63,
+    "CU": 6.15,
+    "PC": 1.54,
+    "PQ": 7.11
+   },
+   "noise": {
+    "floor_db": -70.0,
+    "floor_over_6k": 0.078
+   },
+   "sound": "bark-ezra-almost",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.006,
+     "low90-250": 0.045,
+     "mid250-2k": 0.908,
+     "pres2k-5k": 0.04,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 811,
+    "comb_db": 2.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1726.0,
+    "dc": 1e-05,
+    "decay_ms": 144.0,
+    "first_sample_db": -95.2,
+    "tail_5ms_db": -76.5
+   },
+   "group": "voices",
+   "length_s": 2.414,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -30.9,
+    "lufs": -21.8,
+    "off_group_lu": 0.2,
+    "peak_db": -3.5
+   },
+   "listener": {
+    "CE": 5.75,
+    "CU": 6.35,
+    "PC": 1.39,
+    "PQ": 7.11
+   },
+   "noise": {
+    "floor_db": -53.9,
+    "floor_over_6k": 0.021
+   },
+   "sound": "bark-barnaby-lock",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.009,
+     "low90-250": 0.012,
+     "mid250-2k": 0.855,
+     "pres2k-5k": 0.124,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1188,
+    "comb_db": 1.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 2870.0,
+    "dc": 0.0,
+    "decay_ms": 325.0,
+    "first_sample_db": -78.5,
+    "tail_5ms_db": -78.8
+   },
+   "group": "voices",
+   "length_s": 4.39,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.3,
+    "lufs": -22.2,
+    "off_group_lu": -0.2,
+    "peak_db": -4.8
+   },
+   "listener": {
+    "CE": 5.69,
+    "CU": 6.14,
+    "PC": 1.4,
+    "PQ": 7.25
+   },
+   "noise": {
+    "floor_db": -70.0,
+    "floor_over_6k": 0.02
+   },
+   "sound": "bark-ezra-blowup",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.002,
+     "low90-250": 0.015,
+     "mid250-2k": 0.952,
+     "pres2k-5k": 0.031,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 743,
+    "comb_db": 2.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 1330.0,
+    "dc": 0.0,
+    "decay_ms": 117.0,
+    "first_sample_db": -66.1,
+    "tail_5ms_db": -76.1
+   },
+   "group": "voices",
+   "length_s": 2.364,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -5.2
+   },
+   "listener": {
+    "CE": 5.8,
+    "CU": 6.61,
+    "PC": 1.42,
+    "PQ": 7.16
+   },
+   "noise": {
+    "floor_db": -61.6,
+    "floor_over_6k": 0.033
+   },
+   "sound": "bark-barnaby-engines",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.013,
+     "low90-250": 0.014,
+     "mid250-2k": 0.713,
+     "pres2k-5k": 0.259,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1643,
+    "comb_db": 0.7
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 932.0,
+    "dc": 1e-05,
+    "decay_ms": 777.0,
+    "first_sample_db": -108.7,
+    "tail_5ms_db": -73.5
+   },
+   "group": "voices",
+   "length_s": 2.31,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -30.9,
+    "lufs": -21.8,
+    "off_group_lu": 0.2,
+    "peak_db": -8.4
+   },
+   "listener": {
+    "CE": 5.92,
+    "CU": 6.88,
+    "PC": 1.48,
+    "PQ": 7.16
+   },
+   "noise": {
+    "floor_db": -31.6,
+    "floor_over_6k": 0.013
+   },
+   "sound": "bark-kezia-kiln",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.089,
+     "mid250-2k": 0.848,
+     "pres2k-5k": 0.062,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 661,
+    "comb_db": 3.1
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 2326.0,
+    "dc": 1e-05,
+    "decay_ms": 105.0,
+    "first_sample_db": -79.6,
+    "tail_5ms_db": -77.6
+   },
+   "group": "voices",
+   "length_s": 3.425,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.0,
+    "lufs": -21.9,
+    "off_group_lu": 0.1,
+    "peak_db": -5.0
+   },
+   "listener": {
+    "CE": 5.94,
+    "CU": 6.71,
+    "PC": 1.55,
+    "PQ": 7.15
+   },
+   "noise": {
+    "floor_db": -46.3,
+    "floor_over_6k": 0.081
+   },
+   "sound": "bark-barnaby-load",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.007,
+     "low90-250": 0.003,
+     "mid250-2k": 0.885,
+     "pres2k-5k": 0.106,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1257,
+    "comb_db": 1.3
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 589.0,
+    "dc": 1e-05,
+    "decay_ms": 142.0,
+    "first_sample_db": -63.6,
+    "tail_5ms_db": -88.2
+   },
+   "group": "voices",
+   "length_s": 3.582,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -9.9
+   },
+   "listener": {
+    "CE": 6.07,
+    "CU": 6.71,
+    "PC": 1.5,
+    "PQ": 7.02
+   },
+   "noise": {
+    "floor_db": -39.7,
+    "floor_over_6k": 0.002
+   },
+   "sound": "bark-kezia-coal",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.114,
+     "mid250-2k": 0.857,
+     "pres2k-5k": 0.028,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 618,
+    "comb_db": 1.5
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 283.0,
+    "dc": 0.0,
+    "decay_ms": 156.0,
+    "first_sample_db": -85.7,
+    "tail_5ms_db": -76.9
+   },
+   "group": "voices",
+   "length_s": 3.174,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -8.0
+   },
+   "listener": {
+    "CE": 5.78,
+    "CU": 6.5,
+    "PC": 1.45,
+    "PQ": 7.31
+   },
+   "noise": {
+    "floor_db": -73.2,
+    "floor_over_6k": 0.005
+   },
+   "sound": "bark-pomfrey-london",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.001,
+     "low90-250": 0.001,
+     "mid250-2k": 0.916,
+     "pres2k-5k": 0.082,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 919,
+    "comb_db": -0.2
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 579.0,
+    "dc": 3e-05,
+    "decay_ms": 393.0,
+    "first_sample_db": -67.4,
+    "tail_5ms_db": -75.8
+   },
+   "group": "voices",
+   "length_s": 2.733,
+   "level": {
+    "asked": {
+     "lufs": -22.0,
+     "peak": -3.0
+    },
+    "full_scale": 0,
+    "gain_db": -9.1,
+    "heard_lufs": -31.1,
+    "lufs": -22.0,
+    "off_group_lu": 0.0,
+    "peak_db": -4.8
+   },
+   "listener": {
+    "CE": 5.54,
+    "CU": 6.8,
+    "PC": 1.43,
+    "PQ": 7.62
+   },
+   "noise": {
+    "floor_db": -76.4,
+    "floor_over_6k": 0.063
+   },
+   "sound": "bark-hepzibah-testing",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.019,
+     "low90-250": 0.084,
+     "mid250-2k": 0.782,
+     "pres2k-5k": 0.115,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 1067,
+    "comb_db": 0.9
+   }
+  },
+  {
+   "defects": [],
+   "envelope": {
+    "attack_ms": 20583.0,
+    "dc": 0.0,
+    "decay_ms": 310.0,
+    "first_sample_db": -44.4,
+    "tail_5ms_db": -37.4
+   },
+   "group": "ambiences",
+   "length_s": 27.0,
+   "level": {
+    "asked": {
+     "lufs": -20.0
+    },
+    "full_scale": 0,
+    "gain_db": -16.2,
+    "heard_lufs": -38.3,
+    "lufs": -22.1,
+    "peak_db": -1.3
+   },
+   "listener": {
+    "CE": 7.01,
+    "CU": 7.76,
+    "PC": 3.47,
+    "PQ": 7.56
+   },
+   "loop": {
+    "loudest_400ms_over_whole_lu": 9.8,
+    "seam_over_p99": 0.03
+   },
+   "noise": {
+    "floor_db": -44.6,
+    "floor_over_6k": 0.263
+   },
+   "sound": "amb-canal",
+   "spectrum": {
+    "bands": {
+     "air>5k": 0.639,
+     "low90-250": 0.0,
+     "mid250-2k": 0.005,
+     "pres2k-5k": 0.356,
+     "sub<90": 0.0
+    },
+    "centroid_hz": 5370,
+    "comb_db": -6.5
+   }
+  }
+ ]
+}
