@@ -15,14 +15,16 @@ export interface Tune {
 }
 
 /** each era's playlist, each tune played from its first note to its own
- *  last chord. Three of the canal's are written through, about 2 min 40 s
- *  each: an introduction, an air, a middle in another key and colour, the
- *  air come back on other instruments, a coda; nothing of them looped. The
- *  fourth, slow strings of a minute and a half, is kept for the change it
- *  brings. The rail's three run about a minute and a half */
+ *  last chord. Three of the canal's are written through, two to nearly
+ *  three minutes each, every section in its own key and colour, a strain
+ *  heard twice running heard once; nothing of them looped. The fourth,
+ *  slow strings of a minute and a half, is kept for the change it brings.
+ *  Two of the rail's are written through the same way over an engine's
+ *  steady pulse, 2 min 20 s and 2 min 50 s; the strings' ostinato of a
+ *  minute and a half is kept between them */
 export const TUNES: Record<Era, readonly Tune[]> = {
-  canal: [{ name: 'music-canal-iv' }, { name: 'music-canal-v' }, { name: 'music-canal-vi' }, { name: 'music-canal-ii' }],
-  rail: [{ name: 'music-rail-i' }, { name: 'music-rail-ii' }, { name: 'music-rail-iii' }],
+  canal: [{ name: 'music-canal-iv' }, { name: 'music-canal-vii' }, { name: 'music-canal-vi' }, { name: 'music-canal-ii' }],
+  rail: [{ name: 'music-rail-iv' }, { name: 'music-rail-ii' }, { name: 'music-rail-v' }],
 };
 
 /** the first tune comes a few seconds after the era opens */

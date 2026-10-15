@@ -16,9 +16,9 @@ const seeded = (seed: number): Chance => {
 const always = (v: number): Chance => () => v;
 
 describe('the playlists', () => {
-  it('give the canal three tunes and the rail three of its own', () => {
-    expect(TUNES.canal.map((t) => t.name)).toEqual(['music-canal-iv', 'music-canal-v', 'music-canal-vi', 'music-canal-ii']);
-    expect(TUNES.rail.map((t) => t.name)).toEqual(['music-rail-i', 'music-rail-ii', 'music-rail-iii']);
+  it('give the canal four tunes and the rail three of its own', () => {
+    expect(TUNES.canal.map((t) => t.name)).toEqual(['music-canal-iv', 'music-canal-vii', 'music-canal-vi', 'music-canal-ii']);
+    expect(TUNES.rail.map((t) => t.name)).toEqual(['music-rail-iv', 'music-rail-ii', 'music-rail-v']);
   });
 
   it('never play the same tune twice in a row, and play every one', () => {
@@ -66,8 +66,10 @@ describe('the playlists', () => {
   it('find a tune in its own era only, and loop none of them', () => {
     expect(tuneOf('canal', 'music-canal-iv')).toEqual({ name: 'music-canal-iv' });
     expect(tuneOf('rail', 'music-canal-iv')).toBeUndefined();
-    /* the canal's old air, a loop heard twice over, is retired */
-    expect(tuneOf('canal', 'music-canal')).toBeUndefined();
+    /* the canal's old air, a loop heard twice over, is retired, and so
+       are the pieces that played their strains twice running */
+    for (const gone of ['music-canal', 'music-canal-v']) expect(tuneOf('canal', gone)).toBeUndefined();
+    for (const gone of ['music-rail-i', 'music-rail-iii']) expect(tuneOf('rail', gone)).toBeUndefined();
     for (const era of ['canal', 'rail'] as const) for (const t of TUNES[era]) expect(Object.keys(t)).toEqual(['name']);
   });
 });

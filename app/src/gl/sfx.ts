@@ -367,55 +367,81 @@ export function stationBell(): void {
   });
 }
 
-/** the steam whistle: two reeds a fifth apart with breath in them, a
- *  rising attack and a long fall — the train leaves */
+/** the whistle of an early engine: a small brass bell whistle sounding one
+ *  note (a chord belongs to later horns), with the steam's breath in it,
+ *  blown twice — a short blast, then a long one with a long fall — the
+ *  train leaves */
+const WHISTLE_HZ = 587;
+const BLASTS: readonly (readonly [number, number, number])[] = [
+  /* start, hold, fall (s) */
+  [0, 0.24, 0.25],
+  [0.62, 0.8, 0.8],
+];
 export function steamWhistle(): void {
   void context().then((ac) => {
     if (!ac) return;
-    const now = ac.currentTime;
-    const master = ac.createGain();
-    master.gain.setValueAtTime(0.0001, now);
-    master.gain.exponentialRampToValueAtTime(0.08, now + 0.12);
-    master.gain.setValueAtTime(0.08, now + 0.9);
-    master.gain.exponentialRampToValueAtTime(0.0001, now + 1.6);
+    const t0 = ac.currentTime;
+    /* a little distance: the top dulled, one reflection off a wall */
     const tone = ac.createBiquadFilter();
     tone.type = 'lowpass';
-    tone.frequency.setValueAtTime(2400, now);
-    tone.connect(master).connect(ac.destination);
-    for (const [f, level] of [
-      [587, 1],
-      [880, 0.7],
-      [1175, 0.25],
-    ] as const) {
-      const o = ac.createOscillator();
-      o.type = 'sawtooth';
-      /* the note climbs as the steam comes up, then holds */
-      o.frequency.setValueAtTime(f * 0.94, now);
-      o.frequency.exponentialRampToValueAtTime(f, now + 0.18);
-      o.frequency.exponentialRampToValueAtTime(f * 0.985, now + 1.6);
-      const g = ac.createGain();
-      g.gain.setValueAtTime(level * 0.35, now);
-      o.connect(g).connect(tone);
-      o.start(now);
-      o.stop(now + 1.7);
-    }
-    /* the breath: filtered noise under the reeds */
-    const seconds = 1.7;
-    const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * seconds), ac.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+    tone.frequency.setValueAtTime(3600, t0);
+    const echo = ac.createDelay(0.5);
+    echo.delayTime.setValueAtTime(0.19, t0);
+    const back = ac.createGain();
+    back.gain.setValueAtTime(0.18, t0);
+    tone.connect(ac.destination);
+    tone.connect(echo).connect(back).connect(ac.destination);
+    for (const [at, hold, fall] of BLASTS) blast(ac, tone, t0 + at, hold, fall);
+  });
+}
+/** one blast: the note climbs as the steam comes up, holds, and sags a
+ *  little as it is shut off; a narrow breath at the note and a wide hiss */
+function blast(ac: AudioContext, out: AudioNode, now: number, hold: number, fall: number): void {
+  const end = now + hold + fall;
+  const master = ac.createGain();
+  master.gain.setValueAtTime(0.0001, now);
+  master.gain.exponentialRampToValueAtTime(0.09, now + 0.06);
+  master.gain.setValueAtTime(0.09, now + hold);
+  master.gain.exponentialRampToValueAtTime(0.0001, end);
+  master.connect(out);
+  for (const [ratio, level, type] of [
+    [1, 0.5, 'triangle'],
+    [2, 0.12, 'sine'],
+    [3, 0.05, 'sine'],
+  ] as const) {
+    const o = ac.createOscillator();
+    o.type = type;
+    const f = WHISTLE_HZ * ratio;
+    o.frequency.setValueAtTime(f * 0.94, now);
+    o.frequency.exponentialRampToValueAtTime(f, now + 0.08);
+    o.frequency.setValueAtTime(f, now + hold);
+    o.frequency.exponentialRampToValueAtTime(f * 0.97, end);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(level, now);
+    o.connect(g).connect(master);
+    o.start(now);
+    o.stop(end + 0.02);
+  }
+  const seconds = hold + fall + 0.05;
+  const buf = ac.createBuffer(1, Math.floor(ac.sampleRate * seconds), ac.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  for (const [f, q, level] of [
+    [WHISTLE_HZ, 12, 0.12],
+    [2200, 0.9, 0.012],
+  ] as const) {
     const noise = ac.createBufferSource();
     noise.buffer = buf;
     const band = ac.createBiquadFilter();
     band.type = 'bandpass';
-    band.frequency.setValueAtTime(1600, now);
-    band.Q.setValueAtTime(0.8, now);
+    band.frequency.setValueAtTime(f, now);
+    band.Q.setValueAtTime(q, now);
     const ng = ac.createGain();
-    ng.gain.setValueAtTime(0.18, now);
-    noise.connect(band).connect(ng).connect(tone);
+    ng.gain.setValueAtTime(level, now);
+    noise.connect(band).connect(ng).connect(master);
     noise.start(now);
     noise.stop(now + seconds);
-  });
+  }
 }
 
 
@@ -545,7 +571,9 @@ const BUS_OF: Record<Cue, Bus> = {
 /** every cue of the palette, in the order of the table above (the sound board) */
 export const cueNames = (): Cue[] => Object.keys(BUS_OF) as Cue[];
 /** the interface's own small noises sit under the moves of the game, and a
- *  trade under the stamp it follows */
+ *  trade under the stamp it follows. The chisel's taps and the cask's knock
+ *  peak at their first crack, which stopped them 7 LU under the other
+ *  trades when they were levelled: they are played 6 dB up */
 const TRADE_LEVEL = 0.6;
 const CUE_LEVEL: Partial<Record<Cue, number>> = {
   click: 0.45,
@@ -555,9 +583,9 @@ const CUE_LEVEL: Partial<Record<Cue, number>> = {
   'ind-coal': TRADE_LEVEL,
   'ind-iron': TRADE_LEVEL,
   'ind-cotton': TRADE_LEVEL,
-  'ind-manufacturer': TRADE_LEVEL,
+  'ind-manufacturer': TRADE_LEVEL * 2,
   'ind-pottery': TRADE_LEVEL,
-  'ind-brewery': TRADE_LEVEL,
+  'ind-brewery': TRADE_LEVEL * 2,
 };
 /** the trade comes in just behind the thump of the stamp, not on top of it */
 const TRADE_AFTER_S = 0.07;
