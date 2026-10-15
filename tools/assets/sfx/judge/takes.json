@@ -1,0 +1,364 @@
+{
+ "params": {
+  "dup": 0.7,
+  "min_section_s": 12.0,
+  "phrase_s": 4.0,
+  "same": 0.8
+ },
+ "tunes": [
+  {
+   "length_s": 158.1,
+   "level": {
+    "bands_db": {
+     "air>6k": -36.2,
+     "low90-250": -4.4,
+     "mid250-2k": -2.2,
+     "pres2k-6k": -15.3,
+     "sub<90": -39.8
+    },
+    "centroid_hz": 449,
+    "crest_db": 17.3,
+    "head_db": -98.8,
+    "holes": [
+     [
+      99.75,
+      1.0
+     ]
+    ],
+    "hum_db": -6.9,
+    "hum_max_db": 2.9,
+    "lra": 6.9,
+    "lufs": -20.0,
+    "lufs_pyln": -20.1,
+    "peak_db": -6.0,
+    "tail_db": -124.2
+   },
+   "listener": {
+    "CE": 7.49,
+    "CE_min": 6.78,
+    "CU": 7.82,
+    "PC": 4.47,
+    "PQ": 7.73
+   },
+   "repetition": {
+    "beat_s": 0.511,
+    "dup": 0.163,
+    "loopy": 27.5,
+    "mean_best": 0.547,
+    "phrase_beats": 8,
+    "recur": 4,
+    "run_s": 14.0
+   },
+   "structure": {
+    "distinct": 9,
+    "form": "AABCDCEFGHI",
+    "lengths_s": [
+     17.6,
+     12.1,
+     15.3,
+     11.7,
+     12.0,
+     11.7,
+     12.5,
+     12.9,
+     19.7,
+     14.4,
+     18.3
+    ],
+    "sections": 11
+   },
+   "tune": "music-canal-iv-1.webm"
+  },
+  {
+   "length_s": 163.4,
+   "level": {
+    "bands_db": {
+     "air>6k": -33.6,
+     "low90-250": -13.4,
+     "mid250-2k": -0.3,
+     "pres2k-6k": -15.5,
+     "sub<90": -38.5
+    },
+    "centroid_hz": 711,
+    "crest_db": 16.4,
+    "head_db": -240.0,
+    "holes": [
+     [
+      12.75,
+      1.5
+     ]
+    ],
+    "hum_db": -6.3,
+    "hum_max_db": 3.7,
+    "lra": 14.6,
+    "lufs": -20.0,
+    "lufs_pyln": -20.0,
+    "peak_db": -7.1,
+    "tail_db": -126.9
+   },
+   "listener": {
+    "CE": 7.66,
+    "CE_min": 6.61,
+    "CU": 8.03,
+    "PC": 4.25,
+    "PQ": 7.84
+   },
+   "repetition": {
+    "beat_s": 0.58,
+    "dup": 0.252,
+    "loopy": 30.6,
+    "mean_best": 0.544,
+    "phrase_beats": 7,
+    "recur": 3,
+    "run_s": 22.8
+   },
+   "structure": {
+    "distinct": 8,
+    "form": "AABCDEFGHH",
+    "lengths_s": [
+     14.0,
+     14.2,
+     27.1,
+     12.0,
+     21.6,
+     16.2,
+     12.3,
+     14.7,
+     16.9,
+     14.5
+    ],
+    "sections": 10
+   },
+   "tune": "music-canal-iv-2-plain.webm"
+  },
+  {
+   "length_s": 163.4,
+   "level": {
+    "bands_db": {
+     "air>6k": -32.2,
+     "low90-250": -10.7,
+     "mid250-2k": -0.6,
+     "pres2k-6k": -14.3,
+     "sub<90": -36.9
+    },
+    "centroid_hz": 630,
+    "crest_db": 18.2,
+    "head_db": -240.0,
+    "holes": [],
+    "hum_db": -6.3,
+    "hum_max_db": 4.8,
+    "lra": 8.8,
+    "lufs": -20.0,
+    "lufs_pyln": -20.1,
+    "peak_db": -5.2,
+    "tail_db": -129.7
+   },
+   "listener": {
+    "CE": 7.67,
+    "CE_min": 6.83,
+    "CU": 8.02,
+    "PC": 4.24,
+    "PQ": 7.82
+   },
+   "repetition": {
+    "beat_s": 0.604,
+    "dup": 0.268,
+    "loopy": 31.8,
+    "mean_best": 0.544,
+    "phrase_beats": 7,
+    "recur": 3,
+    "run_s": 24.1
+   },
+   "structure": {
+    "distinct": 11,
+    "form": "ABCDEFGHIJK",
+    "lengths_s": [
+     14.4,
+     13.8,
+     12.0,
+     15.1,
+     12.0,
+     21.6,
+     16.2,
+     12.0,
+     15.0,
+     16.9,
+     14.5
+    ],
+    "sections": 11
+   },
+   "tune": "music-canal-iv-2.webm"
+  },
+  {
+   "length_s": 162.8,
+   "level": {
+    "bands_db": {
+     "air>6k": -43.5,
+     "low90-250": -8.4,
+     "mid250-2k": -0.7,
+     "pres2k-6k": -23.2,
+     "sub<90": -28.8
+    },
+    "centroid_hz": 549,
+    "crest_db": 15.3,
+    "head_db": -143.6,
+    "holes": [],
+    "hum_db": -6.0,
+    "hum_max_db": -0.5,
+    "lra": 5.3,
+    "lufs": -20.0,
+    "lufs_pyln": -20.1,
+    "peak_db": -7.7,
+    "tail_db": -132.5
+   },
+   "listener": {
+    "CE": 7.65,
+    "CE_min": 7.33,
+    "CU": 8.05,
+    "PC": 3.61,
+    "PQ": 7.78
+   },
+   "repetition": {
+    "beat_s": 0.418,
+    "dup": 0.526,
+    "loopy": 64.9,
+    "mean_best": 0.635,
+    "phrase_beats": 10,
+    "recur": 8,
+    "run_s": 25.2
+   },
+   "structure": {
+    "distinct": 9,
+    "form": "ABCDEAFGHI",
+    "lengths_s": [
+     13.3,
+     16.6,
+     16.5,
+     22.3,
+     14.4,
+     16.3,
+     16.6,
+     13.3,
+     13.2,
+     20.3
+    ],
+    "sections": 10
+   },
+   "tune": "music-canal-v-1.webm"
+  },
+  {
+   "length_s": 162.9,
+   "level": {
+    "bands_db": {
+     "air>6k": -43.0,
+     "low90-250": -7.9,
+     "mid250-2k": -0.9,
+     "pres2k-6k": -21.5,
+     "sub<90": -16.7
+    },
+    "centroid_hz": 616,
+    "crest_db": 17.3,
+    "head_db": -102.2,
+    "holes": [],
+    "hum_db": -5.1,
+    "hum_max_db": 6.0,
+    "lra": 7.0,
+    "lufs": -20.0,
+    "lufs_pyln": -20.0,
+    "peak_db": -5.9,
+    "tail_db": -135.6
+   },
+   "listener": {
+    "CE": 7.68,
+    "CE_min": 7.51,
+    "CU": 7.99,
+    "PC": 3.65,
+    "PQ": 7.88
+   },
+   "repetition": {
+    "beat_s": 0.418,
+    "dup": 0.638,
+    "loopy": 70.9,
+    "mean_best": 0.711,
+    "phrase_beats": 10,
+    "recur": 7,
+    "run_s": 37.9
+   },
+   "structure": {
+    "distinct": 5,
+    "form": "AABBCDEABBD",
+    "lengths_s": [
+     13.4,
+     13.3,
+     13.3,
+     12.5,
+     14.2,
+     13.4,
+     16.7,
+     23.3,
+     13.4,
+     12.5,
+     17.0
+    ],
+    "sections": 11
+   },
+   "tune": "music-canal-v-2.webm"
+  },
+  {
+   "length_s": 161.8,
+   "level": {
+    "bands_db": {
+     "air>6k": -41.5,
+     "low90-250": -7.0,
+     "mid250-2k": -2.0,
+     "pres2k-6k": -18.2,
+     "sub<90": -8.1
+    },
+    "centroid_hz": 481,
+    "crest_db": 17.4,
+    "head_db": -240.0,
+    "holes": [],
+    "hum_db": -5.9,
+    "hum_max_db": 1.1,
+    "lra": 7.6,
+    "lufs": -20.0,
+    "lufs_pyln": -20.1,
+    "peak_db": -5.1,
+    "tail_db": -126.3
+   },
+   "listener": {
+    "CE": 7.66,
+    "CE_min": 7.3,
+    "CU": 8.12,
+    "PC": 4.32,
+    "PQ": 8.17
+   },
+   "repetition": {
+    "beat_s": 0.72,
+    "dup": 0.592,
+    "loopy": 57.4,
+    "mean_best": 0.732,
+    "phrase_beats": 6,
+    "recur": 6,
+    "run_s": 25.0
+   },
+   "structure": {
+    "distinct": 5,
+    "form": "AABCCDDEE",
+    "lengths_s": [
+     12.9,
+     21.4,
+     12.9,
+     17.2,
+     21.4,
+     12.9,
+     21.4,
+     12.9,
+     28.9
+    ],
+    "sections": 9
+   },
+   "tune": "music-canal-vi-1.webm"
+  }
+ ]
+}

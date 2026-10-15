@@ -25,3 +25,6 @@ AGENTS.md
 
 # copies of the office register
 app/backups/
+
+# the audio judge's Python environment and model weights
+tools/assets/sfx/.venv/
