@@ -1,20 +1,34 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'framer-motion';
 import { Ticket } from 'lucide-react';
 import { dictOf, useLang, useT } from '@/i18n';
-import { useTheme } from '@/platform/theme';
 import { inputClass } from '@/components/site/PageShell';
 import { cn } from '@/lib/utils';
-import { toOffice } from './office';
+import { toOffice, toTheTicket } from './office';
 
 /* ------------------------------------------------------------------ */
-/* The preview's front page: the engraving, the game in a headline and */
-/* a standfirst, the waiting list as a ticket to fill, and the two     */
-/* eras printed side by side above three short columns.                */
+/* The preview's front page. It sells the game with the game itself:   */
+/* the board in the hero, a table annotated, the turn of the eras, the */
+/* business up close, the machines, what follows a game — and the      */
+/* waiting list twice, at the top and at the foot. Every picture is a  */
+/* capture of a real game played out by the machines on the WebGL      */
+/* board, the v3 tiles, the day register.                              */
 /* ------------------------------------------------------------------ */
 
 const ease = 'easeOut' as const;
+const MACHINES = [
+  { id: 'boulton', name: 'Mr Boulton' },
+  { id: 'wedgwood', name: 'Mrs Wedgwood' },
+  { id: 'arkwright', name: 'Miss Arkwright' },
+  { id: 'watt', name: 'Mr Watt' },
+] as const;
+/** where the three marks of the annotated table stand, in % of the capture */
+const MARKS = [
+  { x: 22, y: 77 },
+  { x: 5.5, y: 3 },
+  { x: 79.5, y: 77 },
+];
 
 /** where this visitor came from: the link's own `?via=`, else the site that sent them */
 function viaOf(): string {
@@ -30,9 +44,10 @@ function viaOf(): string {
 
 type Sending = 'idle' | 'sending' | 'sent';
 
-function WaitForm() {
+function WaitForm({ className }: { className?: string }) {
   const t = useT();
   const lang = useLang();
+  const id = useId();
   const [email, setEmail] = useState('');
   const [trap, setTrap] = useState('');
   const [state, setState] = useState<Sending>('idle');
@@ -54,9 +69,9 @@ function WaitForm() {
 
   if (state === 'sent') {
     return (
-      <div role="status" className="grid gap-2">
+      <div role="status" className={cn('grid gap-2 border-l-2 border-brass-300 pl-4', className)}>
         <p className="title-card">{t('landing.sent.title')}</p>
-        <p className="font-serif text-[14px] italic leading-relaxed text-paper-300">{t('landing.sent.text')}</p>
+        <p className="font-serif text-[15px] leading-relaxed text-paper-300">{t('landing.sent.text')}</p>
         <button
           type="button"
           onClick={() => {
@@ -72,13 +87,13 @@ function WaitForm() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-3">
-      <label htmlFor="wait-email" className="micro-label text-paper-300">
+    <form onSubmit={submit} noValidate className={cn('grid gap-3', className)}>
+      <label htmlFor={`${id}-email`} className="sr-only">
         {t('landing.form.label')}
       </label>
       <div className="flex flex-wrap gap-3">
         <input
-          id="wait-email"
+          id={`${id}-email`}
           type="email"
           inputMode="email"
           autoComplete="email"
@@ -88,22 +103,22 @@ function WaitForm() {
           onChange={(e) => setEmail(e.target.value)}
           placeholder={t('landing.form.placeholder')}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error ? 'wait-error' : 'wait-note'}
-          className={cn(inputClass, 'h-10 min-w-0 flex-1 basis-[240px] rounded-none')}
+          aria-describedby={error ? `${id}-error` : `${id}-note`}
+          className={cn(inputClass, 'h-[52px] min-w-0 flex-1 basis-[240px] rounded-none text-[15px]')}
         />
         {/* no person sees this field: a machine that fills it is thanked and forgotten */}
         <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden value={trap} onChange={(e) => setTrap(e.target.value)} className="absolute -left-[9999px] h-px w-px opacity-0" />
-        <button type="submit" disabled={state === 'sending'} className={cn('gz-ticket gz-ticket-brass', state === 'sending' && 'is-off')}>
+        <button type="submit" disabled={state === 'sending'} className={cn('gz-ticket gz-ticket-brass !h-[52px] !px-7 !text-[12px]', state === 'sending' && 'is-off')}>
           <Ticket aria-hidden />
           {t(state === 'sending' ? 'landing.form.sending' : 'landing.form.submit')}
         </button>
       </div>
       {error && (
-        <p id="wait-error" role="alert" className="font-ui text-[13px] text-rust-400">
+        <p id={`${id}-error`} role="alert" className="font-ui text-[13px] text-rust-400">
           {error}
         </p>
       )}
-      <p id="wait-note" className="font-ui text-[12.5px] leading-relaxed text-iron-400">
+      <p id={`${id}-note`} className="font-ui text-[12.5px] leading-relaxed text-iron-400">
         {t('landing.form.note')}{' '}
         <Link to="/legal#privacy" className="text-paper-300 underline decoration-[var(--gz-ink-soft)] underline-offset-4 hover:text-paper-100">
           {t('landing.form.privacy')}
@@ -113,64 +128,224 @@ function WaitForm() {
   );
 }
 
+/** a capture of the board, framed as a plate of the journal */
+function Plate({ src, alt, className, eager }: { src: string; alt: string; className?: string; eager?: boolean }) {
+  return (
+    <div className={cn('border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]', className)}>
+      <img src={src} alt={alt} loading={eager ? 'eager' : 'lazy'} className="block h-auto w-full" />
+    </div>
+  );
+}
+
+/** the canal era and the rail era on the same board and the same frame:
+ *  the canal plate is cut back as the handle moves right */
+function EraSlider() {
+  const t = useT();
+  const [at, setAt] = useState(50);
+  return (
+    <figure>
+      <div className="relative select-none overflow-hidden border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]">
+        <div className="relative">
+          <img src="/landing-era-rail.webp" alt={t('landing.twist.railAlt')} loading="lazy" className="block h-auto w-full" draggable={false} />
+          <img src="/landing-era-canal.webp" alt={t('landing.twist.canalAlt')} loading="lazy" className="absolute inset-0 block h-full w-full" style={{ clipPath: `inset(0 ${100 - at}% 0 0)` }} draggable={false} />
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 w-0.5 bg-brass-300" style={{ left: `${at}%` }}>
+            <span className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[rgb(var(--lacquer-900))] bg-brass-300 px-2 py-1 font-ui text-[12px] font-semibold text-[rgb(var(--ink-on-brass))] shadow-lg">⇆</span>
+          </div>
+          <span className="eyebrow-fell pointer-events-none absolute left-3 top-3 bg-[rgb(var(--lacquer-900)/.92)] px-2.5 py-1">{t('landing.twist.canalCaption')}</span>
+          <span className="eyebrow-fell pointer-events-none absolute right-3 top-3 bg-[rgb(var(--lacquer-900)/.92)] px-2.5 py-1">{t('landing.twist.railLabel')}</span>
+          <input type="range" min={0} max={100} value={at} onChange={(e) => setAt(Number(e.target.value))} aria-label={t('landing.twist.slider')} className="absolute inset-0 h-full w-full cursor-ew-resize opacity-0" />
+        </div>
+      </div>
+      <figcaption className="eyebrow-fell mt-3 text-center">{t('landing.twist.railCaption')}</figcaption>
+    </figure>
+  );
+}
+
+function SectionHead({ plate, title, text, center }: { plate?: string; title: string; text?: string; center?: boolean }) {
+  return (
+    <header className={cn('max-w-[720px]', center && 'mx-auto text-center')}>
+      {plate && <p className="eyebrow-fell">{plate}</p>}
+      <h2 className="mt-2 font-fraunces text-[28px] font-normal leading-[1.15] text-paper-100 min-[900px]:text-[34px]">{title}</h2>
+      {text && <p className="mt-3 font-serif text-[16.5px] leading-relaxed text-paper-300">{text}</p>}
+    </header>
+  );
+}
+
+type Point = { h: string; p: string };
+
 export default function Front() {
   const t = useT();
   const lang = useLang();
-  const theme = useTheme();
-  const points = (dictOf(lang).landing as { points: { h: string; p: string }[] }).points;
-  const night = theme === 'dark';
-  return (
-    <div className="gz-measure pb-10">
-      <motion.figure initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, ease }} className="gz-engraving mt-6 h-[200px] min-[900px]:h-[320px]">
-        <img src={night ? '/plate-night-country.webp' : '/hero-diorama.webp'} alt="" style={{ objectPosition: 'center 40%' }} />
-      </motion.figure>
+  const d = dictOf(lang).landing as {
+    table: { marks: Point[] };
+    economy: { points: Point[] };
+    line: { points: Point[] };
+    faq: { items: { q: string; a: string }[] };
+  };
 
-      <div className="mt-8 grid gap-10 min-[1100px]:grid-cols-12 min-[1100px]:gap-x-7">
-        <section className="flex flex-col gap-5 min-[1100px]:col-span-7">
-          <p className="eyebrow-fell">{t('landing.eyebrow')}</p>
-          <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.24, ease, delay: 0.06 }} className="-mt-2 max-w-[600px] font-fraunces text-[30px] font-normal italic leading-[1.15] text-paper-100 min-[900px]:text-[38px]">
-            {t('landing.headline')}
+  return (
+    <div className="pb-6">
+      {/* the hero: the promise, the ticket and Mr Watt on the left; the board,
+          up close, running off the right edge of the window */}
+      <section className="grid items-center gap-10 min-[1100px]:grid-cols-[minmax(0,6fr)_minmax(0,7fr)] min-[1100px]:gap-x-12">
+        <div className="px-4 sm:px-8 min-[1100px]:py-14 min-[1100px]:pl-[max(32px,calc((100vw-1240px)/2+32px))] min-[1100px]:pr-0">
+          <p className="eyebrow-fell">{t('landing.hero.eyebrow')}</p>
+          <motion.h1 initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease }} className="mt-3 font-fraunces text-[34px] font-normal italic leading-[1.1] text-paper-100 min-[900px]:text-[42px]">
+            {t('landing.hero.title')}
           </motion.h1>
-          <p className="max-w-[600px] font-serif text-[16px] italic leading-relaxed text-paper-300">{t('landing.lede')}</p>
-          {/* the game's three claims, under the standfirst: the column is as
-              long as the ticket beside it, and says what the ticket is for */}
-          <div className="mt-3 grid gap-6 border-t border-[var(--gz-ink-soft)] pt-6 min-[700px]:grid-cols-3 min-[700px]:gap-x-6">
-            {points.map((p) => (
-              <section key={p.h}>
-                <h2 className="title-card">{p.h}</h2>
-                <p className="mt-2 font-serif text-[14px] leading-relaxed text-paper-300">{p.p}</p>
-              </section>
+          <p className="mt-5 max-w-[560px] font-serif text-[17px] leading-relaxed text-paper-300">{t('landing.hero.subhead')}</p>
+          <WaitForm className="mt-7 max-w-[600px]" />
+          <div className="mt-7 flex max-w-[600px] items-center gap-4 border-t border-[var(--gz-ink-soft)] pt-5">
+            <img src="/portrait-watt.webp" alt={t('landing.machines.portrait', { name: 'Mr Watt' })} className="h-16 w-16 shrink-0 rounded-full border-2 border-brass-300 object-cover" />
+            <p className="font-fraunces text-[17px] italic leading-snug text-paper-100">{t('landing.hero.watt')}</p>
+          </div>
+        </div>
+        <motion.figure initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, ease, delay: 0.1 }} className="relative order-first mx-4 mt-4 sm:mx-8 min-[1100px]:order-none min-[1100px]:mx-0 min-[1100px]:mt-0">
+          {/* on the wide page the plate runs off the right edge and melts into the paper on the left,
+              so no town is seen cut off; above the words on a tablet, a short band of the board */}
+          <img src="/landing-hero.webp" alt={t('landing.hero.alt')} className="block h-[280px] w-full object-cover shadow-[0_24px_60px_-24px_rgba(20,14,6,0.6)] min-[1100px]:h-[640px] min-[1100px]:shadow-none min-[1100px]:[mask-image:linear-gradient(to_right,transparent,#000_16%)]" />
+          <figcaption className="eyebrow-fell absolute bottom-4 left-4 bg-[rgb(var(--lacquer-900)/.92)] px-3 py-1.5 min-[1100px]:left-auto min-[1100px]:right-8">{t('landing.hero.plate')}</figcaption>
+        </motion.figure>
+      </section>
+
+      {/* a table, annotated: this is a game, and here is how a turn is played */}
+      <section className="gz-measure mt-24">
+        <SectionHead plate={t('landing.table.plate')} title={t('landing.table.title')} text={t('landing.table.text')} />
+        <figure className="relative mt-8">
+          <Plate src="/landing-table.webp" alt={t('landing.table.alt')} />
+          {MARKS.map((m, i) => (
+            <span
+              key={i}
+              aria-hidden
+              className="absolute grid h-8 w-8 place-items-center rounded-full border-2 border-[rgb(var(--lacquer-900))] bg-brass-300 font-fraunces text-[15px] font-semibold text-[rgb(var(--ink-on-brass))] shadow-lg"
+              style={{ left: `${m.x}%`, top: `${m.y}%` }}
+            >
+              {i + 1}
+            </span>
+          ))}
+        </figure>
+        <ol className="mt-6 grid gap-6 min-[900px]:grid-cols-3 min-[900px]:gap-x-7">
+          {d.table.marks.map((m, i) => (
+            <li key={m.h} className="flex gap-3">
+              <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brass-300 font-fraunces text-[14px] font-semibold text-[rgb(var(--ink-on-brass))]">
+                {i + 1}
+              </span>
+              <div>
+                <h3 className="title-card">{m.h}</h3>
+                <p className="mt-1 font-serif text-[15px] leading-relaxed text-paper-300">{m.p}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      {/* the turn of the eras: the same board, canals then rails, under one slider */}
+      <section className="gz-measure mt-24 grid gap-10 min-[1100px]:grid-cols-12 min-[1100px]:gap-x-10">
+        <div className="min-[1100px]:col-span-4">
+          <SectionHead plate={t('landing.twist.plate')} title={t('landing.twist.title')} text={t('landing.twist.text')} />
+          <figure className="mt-8 max-w-[360px]">
+            <Plate src="/landing-ceremony.webp" alt={t('landing.twist.ceremonyAlt')} />
+            <figcaption className="eyebrow-fell mt-3 text-center">{t('landing.twist.ceremonyCaption')}</figcaption>
+          </figure>
+        </div>
+        <div className="min-[1100px]:col-span-8">
+          <EraSlider />
+        </div>
+      </section>
+
+      {/* the business, up close: one close-up at full width, the four trades under it */}
+      <section className="gz-measure mt-24">
+        <SectionHead plate={t('landing.economy.plate')} title={t('landing.economy.title')} />
+        <Plate src="/landing-close-stoke.webp" alt={t('landing.economy.stokeAlt')} className="mt-8" />
+        <div className="mt-8 grid gap-6 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-4 min-[1100px]:gap-x-7">
+          {d.economy.points.map((p) => (
+            <div key={p.h} className="border-t border-[var(--gz-ink-soft)] pt-4">
+              <h3 className="title-card">{p.h}</h3>
+              <p className="mt-1 font-serif text-[15px] leading-relaxed text-paper-300">{p.p}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* the machines */}
+      <section className="gz-measure mt-24">
+        <SectionHead plate={t('landing.machines.plate')} title={t('landing.machines.title')} text={t('landing.machines.text')} center />
+        <ul className="mt-10 flex flex-wrap items-end justify-center gap-8 min-[900px]:gap-14">
+          {MACHINES.map((m) => {
+            const watt = m.id === 'watt';
+            return (
+              <li key={m.id} className="flex flex-col items-center text-center">
+                <img
+                  src={`/portrait-${m.id}.webp`}
+                  alt={t('landing.machines.portrait', { name: m.name })}
+                  loading="lazy"
+                  className={cn('rounded-full border-2 object-cover shadow-[0_12px_30px_-12px_rgba(20,14,6,0.6)]', watt ? 'h-40 w-40 border-brass-300' : 'h-28 w-28 border-[var(--gz-ink-soft)]')}
+                />
+                <p className={cn('mt-3 font-fraunces text-paper-100', watt ? 'text-[20px]' : 'text-[17px]')}>{m.name}</p>
+                {watt && <p className="micro-label mt-1 text-brass-300">{t('landing.machines.watt')}</p>}
+              </li>
+            );
+          })}
+        </ul>
+        <div className="mt-10 flex justify-center">
+          <button type="button" onClick={toTheTicket} className="gz-ticket gz-ticket-brass !h-[52px] !px-7 !text-[12px]">
+            <Ticket aria-hidden />
+            {t('landing.machines.cta')}
+          </button>
+        </div>
+      </section>
+
+      {/* what follows a game */}
+      <section className="gz-measure mt-24">
+        <div className="gz-rule-double" aria-hidden />
+        <div className="mt-8">
+          <SectionHead title={t('landing.line.title')} />
+        </div>
+        <div className="mt-8 grid gap-x-7 gap-y-8 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-4">
+          {d.line.points.map((p) => (
+            <div key={p.h}>
+              <h3 className="title-card">{p.h}</h3>
+              <p className="mt-1 font-serif text-[15px] leading-relaxed text-paper-300">{p.p}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* for every level, then the questions at the counter */}
+      <section className="gz-measure mt-24 grid gap-12 min-[1100px]:grid-cols-12 min-[1100px]:gap-x-10">
+        <div className="min-[1100px]:col-span-5">
+          <SectionHead title={t('landing.levels.title')} text={t('landing.levels.text')} />
+        </div>
+        <div className="min-[1100px]:col-span-7">
+          <h2 className="eyebrow-fell">{t('landing.faq.title')}</h2>
+          <div className="mt-3 border-t border-[var(--gz-ink-soft)]">
+            {d.faq.items.map((f) => (
+              <details key={f.q} className="group border-b border-[var(--gz-ink-soft)] py-4">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-fraunces text-[18px] text-paper-100 [&::-webkit-details-marker]:hidden">
+                  {f.q}
+                  <span aria-hidden className="text-brass-300 transition-transform group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-2 font-serif text-[15.5px] leading-relaxed text-paper-300">{f.a}</p>
+              </details>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        <aside className="gz-col-rule min-[1100px]:col-span-5 min-[1100px]:col-start-8">
-          <section className="console console-ruled p-5 min-[900px]:p-6" aria-labelledby="trial-title">
-            <h2 id="trial-title" className="title-card">
-              {t('landing.trial.title')}
-            </h2>
-            <div className="mb-4 mt-3 h-px bg-brass-hairline" />
-            <p className="mb-5 font-serif text-[14px] italic leading-relaxed text-paper-300">{t('landing.trial.text')}</p>
+      {/* the ticket again, over the works at Stoke */}
+      <section className="relative mt-24 overflow-hidden">
+        <img src="/landing-close-stoke.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        <div aria-hidden className="absolute inset-0 bg-[rgba(14,11,7,0.78)]" />
+        <div className="gz-measure relative flex flex-col items-center py-20 text-center">
+          <h2 className="max-w-[720px] font-fraunces text-[30px] font-normal italic leading-[1.15] text-[#f4eee1] min-[900px]:text-[38px]">{t('landing.final.title')}</h2>
+          {/* the ticket on its own panel, in the page's register, over the darkened plate */}
+          <div className="console mt-8 w-full max-w-[600px] p-6 text-left">
             <WaitForm />
-          </section>
-        </aside>
-      </div>
-
-      <div className="mt-[72px] grid gap-6 min-[700px]:grid-cols-2">
-        {(
-          [
-            ['canal', night ? '/plate-night-canal.webp' : '/era-canal-banner.webp'],
-            ['rail', night ? '/plate-night-rail.webp' : '/era-rail-banner.webp'],
-          ] as const
-        ).map(([era, src]) => (
-          <figure key={era}>
-            <div className="gz-engraving h-[180px] min-[900px]:h-[220px]">
-              <img src={src} alt="" loading="lazy" />
-            </div>
-            <figcaption className="eyebrow-fell mt-3 text-center">{t(`landing.eras.${era}`)}</figcaption>
-          </figure>
-        ))}
-      </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

@@ -1,23 +1,95 @@
 /* ------------------------------------------------------------------ */
-/* The front page before the line opens: the game in a few lines, the  */
-/* waiting list, and the letters the office writes to it.             */
+/* The front page before the line opens: what is done at a table,      */
+/* shown on the board itself, the waiting list twice over, and the     */
+/* letters the office writes to it.                                    */
 /* ------------------------------------------------------------------ */
 const landing = {
-  ear: 'Preview',
-  eyebrow: 'Soon at the station',
-  headline: 'Build the Midlands, canal by canal, rail by rail.',
-  lede: 'An economic strategy game for two to four, set in the Black Country from 1770 to 1865. Canals first, then the railway: raise mills and collieries, sell to the merchants, and hold your own against the machines — or your friends.',
-  trial: {
-    title: 'The trial run',
-    text: 'Before the line opens, a few travellers will try the game first. Leave your address and we will write when your seat is ready.',
+  motto: 'Canals, coal & iron — a journal of the Midlands',
+  hero: {
+    eyebrow: 'Closed beta · sign-ups open',
+    title: 'Build the Midlands in the age of canals. Rebuild them for the railway.',
+    subhead: 'Demanding economic strategy for 2 to 4 players, in the browser. Build, connect, sell — against your friends, or against Mr Watt, who never gives anything away.',
+    watt: 'Mr Watt always plays at full strength. Will you take a seat at his table?',
+    plate: 'Plate I — the canal era',
+    alt: 'The Blackrail board in the canal era: Midlands towns, miniature factories and canals over painted countryside',
   },
   form: {
     label: 'Your email address',
     placeholder: 'you@example.com',
-    submit: 'Reserve my seat',
+    submit: 'Get my ticket for the trial',
     sending: 'Sending…',
-    note: 'One letter to confirm, then one when the trial opens. Nothing else, and a way out in every letter.',
+    note: 'Two letters, nothing else: the confirmation, then the opening. Computer and tablet.',
     privacy: 'What we do with your address',
+  },
+  table: {
+    plate: 'Plate II — a table',
+    title: 'Each turn: two cards, two actions.',
+    text: 'Build, connect, develop, sell, borrow, scout. Your cards name the place; everything else is your call.',
+    alt: 'A game in progress: a hand of eight cards, the six actions, the players and the overview map',
+    marks: [
+      { h: 'Your hand', p: 'Towns and industries to play, six actions to serve them.' },
+      { h: 'Your rivals', p: 'Everyone’s money, points and income, always in view.' },
+      { h: 'The overview', p: 'The whole network at a glance: nothing that is afoot escapes you.' },
+    ],
+  },
+  twist: {
+    plate: 'Plate III — the turn',
+    title: 'End of the canal era: the first network goes to the scrapyard.',
+    text: 'Canals and first-level industries are swept away. The railway starts again on cleared ground: what you prepared survives, the rest goes up in smoke.',
+    slider: 'Slide to go from the canals to the railway',
+    canalCaption: 'The canal era',
+    railLabel: 'The rail era',
+    canalAlt: 'The board in the canal era: a network of coloured canals joins the towns',
+    ceremonyAlt: 'The end-of-era count: “And so water gives way to steam…”, each player’s points',
+    ceremonyCaption: 'The canal era is counted',
+    railAlt: 'The board in the rail era: railway lines join the towns',
+    railCaption: 'The rail era: the ground cleared, the race starts again',
+  },
+  economy: {
+    plate: 'Plate IV — business',
+    title: 'A real economy, not a backdrop.',
+    points: [
+      { h: 'Real towns', p: 'Stoke, Dudley, Coventry, Birmingham: set up collieries, ironworks, cotton mills, manufactories, potteries and breweries.' },
+      { h: 'Markets that move', p: 'Coal and iron trade on shared markets: every purchase raises the price for your rivals.' },
+      { h: 'Merchants to win', p: 'Cotton, goods and pottery leave for Warrington, Oxford, Gloucester, Nottingham or Shrewsbury.' },
+      { h: 'Tiles that flip', p: 'An industry that has served flips over: it pays income and victory points.' },
+    ],
+    stokeAlt: 'Close-up: the Stoke-on-Trent pottery and the Warrington merchant',
+  },
+  machines: {
+    plate: 'Plate V — the machines',
+    title: 'Four mechanical rivals. One of them will leave you nothing.',
+    text: 'Mr Boulton, Mrs Wedgwood, Miss Arkwright and Mr Watt each have a character of their own. Behind them, a real search intelligence weighs every move — and Mr Watt always plays at full strength.',
+    portrait: 'Painted portrait of {name}',
+    cta: 'Take on Mr Watt in the trial',
+    watt: 'always at full strength',
+  },
+  line: {
+    title: 'The game is over; the line runs on.',
+    points: [
+      { h: 'Quick or ranked', p: 'A leaderboard every season, companies to join, friends to invite.' },
+      { h: 'The weekly challenge', p: 'The same deal for everyone, harsh conditions, and Mr Watt always at the table.' },
+      { h: 'The judge', p: 'Replay every game move by move; the judge shows you where it turned.' },
+      { h: 'Letters from the machines', p: 'After the game, your mechanical opponents write to you.' },
+    ],
+  },
+  levels: {
+    title: 'Never played a game this deep?',
+    text: 'The evening course teaches you the rules, the glossary follows you everywhere, and your first game is guided. Seasoned players keep the full fog of the table: no aid that cheats.',
+  },
+  faq: {
+    title: 'Questions at the counter',
+    items: [
+      { q: 'What does it run on?', a: 'In the browser, on computer and tablet. Not on phones.' },
+      { q: 'Do I need friends to play?', a: 'No. Play the four machines, or online in quick or ranked games.' },
+      { q: 'Is it for beginners?', a: 'Yes, with the evening course and a guided first game. But it is a demanding strategy game, on purpose.' },
+      { q: 'How many letters will I get?', a: 'Two: one to confirm your address, one when the trial opens.' },
+      { q: 'When, and at what price?', a: 'Neither the date nor the price is set yet. Those on the list will hear first.' },
+    ],
+  },
+  bar: 'Get my ticket',
+  final: {
+    title: 'The first train leaves soon. Keep your seat.',
   },
   sent: {
     title: 'A letter is on its way',
@@ -29,15 +101,6 @@ const landing = {
     busy: 'Too many tries from here. Try again in a few minutes.',
     down: 'The office is not answering just now. Try again in a moment.',
   },
-  eras: {
-    canal: 'The canal era',
-    rail: 'The rail era',
-  },
-  points: [
-    { h: 'Two eras', p: 'The canals, then the railway: what was built first gives way, and the network decides everything.' },
-    { h: 'Four machines', p: 'Boulton, Wedgwood, Arkwright and Watt each play their own game. Watt always plays to win.' },
-    { h: 'Tables online', p: 'Play with others, quick or ranked, and read every game again move by move.' },
-  ],
   confirm: {
     eyebrow: 'Waiting list',
     working: 'One moment…',

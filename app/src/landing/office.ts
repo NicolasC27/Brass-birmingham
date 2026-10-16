@@ -24,3 +24,10 @@ export async function toOffice(path: string, body: Record<string, unknown>): Pro
     return 0;
   }
 }
+
+/** back up to the first ticket on the page, its field ready to be written in */
+export function toTheTicket(): void {
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: still ? 'auto' : 'smooth' });
+  window.setTimeout(() => document.querySelector<HTMLInputElement>('input[type=email]')?.focus({ preventScroll: true }), still ? 0 : 450);
+}
