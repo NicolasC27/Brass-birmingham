@@ -4,6 +4,7 @@ import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
+import type { Audience, WaitBook } from './waitlist';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -177,6 +178,13 @@ export type ClientMessage =
   | { t: 'queue'; mode: 'quick' | 'ranked'; on: boolean }
   /** buy an item at the counter with the guineas earned at the tables */
   | { t: 'buy'; rid: number; item: string }
+  /* the direction only (an address BLACKRAIL_ADMINS names, verified): the
+     waiting list read whole, a line struck, a circular written or stopped.
+     `trial` sends the circular to the direction's own address and no further */
+  | { t: 'admin.book'; rid: number }
+  | { t: 'admin.strike'; rid: number; id: string }
+  | { t: 'admin.circular'; rid: number; subject: string; body: string; audience: Audience; trial?: boolean }
+  | { t: 'admin.stop'; rid: number; id: string }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -236,6 +244,8 @@ export type ServerMessage =
   | { t: 'notes'; rid: number; code: string; body: unknown }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */
   | { t: 'queue'; state: QueueState | null }
+  /** the waiting list, as the direction reads it */
+  | { t: 'admin.book'; rid: number; book: WaitBook }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */

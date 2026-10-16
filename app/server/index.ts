@@ -27,7 +27,9 @@ import { Home } from './home';
 import { DEFAULT_PACE } from './game';
 import type { Pace } from './game';
 import type { Waits } from './queue';
-import { letters, mailerFromEnv } from './mail';
+import { letters, mailerFromEnv, waitLetters } from './mail';
+import { Waitlist } from './waitlist';
+import { MAX_BODY, MAX_SUBJECT, audienceOf } from '@/online/waitlist';
 import type { Mailer } from './mail';
 import { Store } from './store';
 import type { Account } from './store';
@@ -144,6 +146,41 @@ const benchReach = (req: IncomingMessage): boolean => loopback(req) && req.heade
 /** the longest stretch of a log the bench hands over in one frame */
 const BENCH_MOVES = 200;
 const sameToken = (a: string, b: string): boolean => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
+/** a small body, whole — null past the limit, or when the request breaks off */
+const bodyOf = (req: IncomingMessage, limit = 4096): Promise<string | null> =>
+  new Promise((done) => {
+    let size = 0;
+    const parts: Buffer[] = [];
+    req.on('data', (b: Buffer) => {
+      size += b.length;
+      if (size > limit) {
+        done(null);
+        req.destroy();
+      } else parts.push(b);
+    });
+    req.on('end', () => done(Buffer.concat(parts).toString('utf8')));
+    req.on('error', () => done(null));
+  });
+/** a body read as JSON: an object, or an empty one */
+const fieldsOf = (raw: string | null): Record<string, unknown> => {
+  try {
+    const v = JSON.parse(raw ?? '') as unknown;
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+  } catch {
+    return {};
+  }
+};
+
+/* ------------------------- the waiting list ------------------------- */
+
+/** addresses left from one machine: five, then one every two minutes */
+const ENTRIES_PER_IP = { size: 5, perSecond: 1 / 120 };
+/** circular letters posted a minute at most, under the day's cap */
+const CIRCULAR_BATCH = 10;
+/** the circular letters a day, unless MAIL_DAILY_CAP says otherwise: under
+ *  Resend's free hundred, with room left for the account letters */
+const MAIL_DAILY_CAP = 80;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /* ----------------------- the office, per account ---------------------- */
 
@@ -198,6 +235,15 @@ export interface ServeOptions {
   origins?: string[];
   /** the addresses come from a trusted proxy's x-forwarded-for (TRUST_PROXY=1) */
   trustProxy?: boolean;
+  /** the addresses of the direction (BLACKRAIL_ADMINS, comma-separated): their
+   *  accounts, once verified, read and write to the waiting list */
+  admins?: string[];
+  /** circular letters a day at most (MAIL_DAILY_CAP, 80 by default) */
+  mailCap?: number;
+  /** how often the waiting circulars are looked at (0: never) */
+  circularEvery?: number;
+  /** the office's own public address, for the one-click way out (OFFICE_URL) */
+  officeUrl?: string;
 }
 
 export interface Serving {
@@ -234,7 +280,14 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const file = options.file ?? 'brassworks.db';
   const feedbackFile = options.feedbackFile === undefined ? (process.env.FEEDBACK_FILE ?? (file === ':memory:' ? null : path.join(path.dirname(file), 'feedback.md'))) : options.feedbackFile;
   const clients = new Set<Client>();
-  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, portrait: a.portrait, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest });
+  /* the direction: a few addresses, named by the environment, never by the register */
+  const admins = new Set((options.admins ?? (process.env.BLACKRAIL_ADMINS ?? '').split(',')).map((e) => e.trim().toLowerCase()).filter(Boolean));
+  const isAdmin = (a: { email: string | null; verified: boolean }): boolean => a.verified && !!a.email && admins.has(a.email.trim().toLowerCase());
+  const me = (a: Account): Me => ({ id: a.id, name: a.name, email: a.email, verified: a.verified, motto: a.motto, favoriteColor: a.favoriteColor, portrait: a.portrait, createdAt: a.createdAt, newsletter: a.newsletter, guest: a.guest, ...(isAdmin(a) ? { admin: true } : {}) });
+  const waitlist = new Waitlist(file);
+  const waitLetter = waitLetters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000', options.officeUrl ?? process.env.OFFICE_URL ?? '');
+  const mailCap = options.mailCap ?? (Number.parseInt(process.env.MAIL_DAILY_CAP ?? '', 10) || MAIL_DAILY_CAP);
+  const entriesByIp = new Map<string, Bucket>();
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
@@ -280,8 +333,63 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     return !!a && a.n >= limit && Date.now() - a.at < ATTEMPTS.forMs;
   };
   const faultTimes = new WeakMap<object, number[]>();
+  /** the front page's requests: the address left, the letter answered, the way out */
+  const waitDesk = async (req: IncomingMessage, res: ServerResponse, url: URL): Promise<void> => {
+    const origin = typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+    const allowed = originAllowed(origin);
+    const answer = (status: number, body: Record<string, unknown> | null) => {
+      res.writeHead(status, {
+        ...(body ? { 'content-type': 'application/json; charset=utf-8' } : {}),
+        'x-content-type-options': 'nosniff',
+        'cache-control': 'no-store',
+        ...(origin && allowed ? { 'access-control-allow-origin': origin, vary: 'origin' } : {}),
+      });
+      res.end(body ? JSON.stringify(body) : undefined);
+    };
+    if (req.method === 'OPTIONS') {
+      if (!allowed) return answer(403, null);
+      res.writeHead(204, { 'access-control-allow-origin': origin ?? '*', 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '86400', vary: 'origin' });
+      res.end();
+      return;
+    }
+    if (req.method !== 'POST') return answer(405, { error: 'post-only' });
+    /* a page elsewhere may not write to the list; the post's one-click way out comes with no page at all */
+    if (!allowed) return answer(403, { error: 'origin' });
+    const ip = addressOf(req, trustProxy);
+    const now = Date.now();
+    for (const [k, b] of entriesByIp) if (now - b.at > 10 * 60 * 1000) entriesByIp.delete(k);
+    let b = entriesByIp.get(ip);
+    if (!b) entriesByIp.set(ip, (b = bucket(ENTRIES_PER_IP.size)));
+    if (!drip(b, ENTRIES_PER_IP.size, ENTRIES_PER_IP.perSecond)) return answer(429, { error: 'busy' });
+    const raw = await bodyOf(req);
+    if (raw === null) return answer(413, { error: 'too-long' });
+    if (url.pathname === '/waitlist/leave') {
+      /* the page's button sends the token in the body; the mail service's
+         one-click request names it in the address, with a form for a body */
+      const t = url.searchParams.get('t') ?? String(fieldsOf(raw).token ?? '');
+      return waitlist.leave(t) ? answer(200, { ok: true }) : answer(404, { error: 'unknown' });
+    }
+    const f = fieldsOf(raw);
+    if (url.pathname === '/waitlist/confirm') return waitlist.confirm(String(f.token ?? '')) ? answer(200, { ok: true }) : answer(404, { error: 'unknown' });
+    if (url.pathname !== '/waitlist') return answer(404, { error: 'unknown' });
+    /* the field no person sees: a machine that fills it is thanked, and nothing is kept */
+    if (typeof f.website === 'string' && f.website !== '') return answer(202, { ok: true });
+    const entry = waitlist.enter(String(f.email ?? ''), String(f.lang ?? ''), String(f.via ?? ''), ip);
+    if (entry.kind === 'bad-email') return answer(400, { error: 'bad-email' });
+    if (entry.kind === 'letter') post.send(waitLetter.confirm(entry.email, entry.lang, entry.token)).catch((e: unknown) => console.error(`waitlist: the letter to ${entry.email} failed:`, (e as Error).message));
+    answer(202, { ok: true });
+  };
+
   const http = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://blackrail');
+    if (url.pathname === '/waitlist' || url.pathname.startsWith('/waitlist/')) {
+      void waitDesk(req, res, url).catch((e: unknown) => {
+        console.error('waitlist:', (e as Error).message);
+        if (!res.headersSent) res.writeHead(500);
+        res.end();
+      });
+      return;
+    }
     const own = dev && loopback(req);
     /* a member's likeness, by account id: the picture itself, or nothing */
     if (url.pathname.startsWith('/portrait/')) {
@@ -647,6 +755,17 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     const who = c.me;
     if (!who) {
       send(c, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: 'sign-in-first' });
+      return;
+    }
+    /* the direction's desk: the waiting list and its circulars. The account
+       is read again, so an address changed since the socket opened counts */
+    if (m.t.startsWith('admin.')) {
+      const account = store.account(who.id);
+      if (!account || !isAdmin(account)) {
+        send(c, { t: 'refused', rid: 'rid' in m ? m.rid : undefined, error: 'not-allowed' });
+        return;
+      }
+      await direction(c, account, m);
       return;
     }
     switch (m.t) {
@@ -1096,6 +1215,72 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
 
   /** the game a reading is of: the table's own, or the record of one played
    *  out at it — and null when this socket has no business reading it */
+  /** a request of the direction's, from an account already found to be of it */
+  async function direction(c: Client, account: Account, m: ClientMessage): Promise<void> {
+    const book = (rid: number) => send(c, { t: 'admin.book', rid, book: waitlist.book(mailCap) });
+    switch (m.t) {
+      case 'admin.book':
+        book(m.rid);
+        return;
+      case 'admin.strike':
+        waitlist.strike(String(m.id));
+        book(m.rid);
+        return;
+      case 'admin.stop':
+        waitlist.stop(String(m.id));
+        book(m.rid);
+        return;
+      case 'admin.circular': {
+        const subject = String(m.subject ?? '').trim();
+        const body = String(m.body ?? '').trim();
+        const audience = audienceOf(m.audience);
+        if (!subject || subject.length > MAX_SUBJECT || !body || body.length > MAX_BODY || !audience) {
+          send(c, { t: 'refused', rid: m.rid, error: 'bad-circular' });
+          return;
+        }
+        /* a proof, to the direction's own address, at once and outside the day's count */
+        if (m.trial) {
+          if (!account.email) return;
+          await post.send(waitLetter.circular(account.email, audience.lang ?? 'fr', '0'.repeat(48), `[essai] ${subject}`, body));
+          send(c, { t: 'done', rid: m.rid });
+          return;
+        }
+        if (!waitlist.write(subject, body, audience)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'nobody' });
+          return;
+        }
+        console.log(`waitlist: ${account.name} wrote a circular « ${subject} »`);
+        book(m.rid);
+        void postCirculars();
+        return;
+      }
+    }
+  }
+
+  /* the circulars leave a few letters at a time, under the day's cap: a new
+     sender that floods the post is read as a spammer, and the free tier of
+     the post would turn the rest down anyway */
+  let posting = false;
+  const postCirculars = async (): Promise<void> => {
+    if (posting) return;
+    posting = true;
+    try {
+      const room = Math.min(CIRCULAR_BATCH, mailCap - waitlist.sentSince(Date.now() - DAY_MS));
+      for (const d of waitlist.due(room)) {
+        try {
+          await post.send(waitLetter.circular(d.email, d.lang, d.leave, d.subject, d.body));
+          waitlist.posted(d.circularId, d.entrantId, null);
+        } catch (e) {
+          const why = e instanceof Error ? e.message : String(e);
+          waitlist.posted(d.circularId, d.entrantId, why);
+          console.warn(`waitlist: a circular letter to ${d.email} did not leave: ${why}`);
+        }
+      }
+    } finally {
+      posting = false;
+    }
+  };
+
   function reading(c: Client, m: { code: string; v: number; judge: JudgeId }): { id: Id; facts: Facts } | null {
     const code = normalizeCode(m.code);
     if (!isJudge(m.judge) || !isVersion(m.v)) return null;
@@ -1124,6 +1309,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           store.sweepPrivacy();
           store.sweepGuests();
           readings.sweep();
+          waitlist.sweep();
         }, every)
       : null;
   store.sweepPrivacy();
@@ -1150,6 +1336,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const editionEvery = options.editionEvery ?? 10 * 60 * 1000;
   const postman = editionEvery > 0 ? setInterval(monday, editionEvery) : null;
   if (editionEvery > 0) monday();
+  const circularEvery = options.circularEvery ?? 60_000;
+  const circulars = circularEvery > 0 ? setInterval(() => void postCirculars(), circularEvery) : null;
   const queueEvery = options.queueEvery ?? QUEUE_EVERY_MS;
   const usher = queueEvery > 0 ? setInterval(() => hall.matchQueues(), queueEvery) : null;
   /* the pulse: every socket is pinged, and each table in play hears its seats' lines */
@@ -1177,6 +1365,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           new Promise<void>((done) => {
             if (janitor) clearInterval(janitor);
             if (postman) clearInterval(postman);
+            if (circulars) clearInterval(circulars);
             telegraph.close();
             if (usher) clearInterval(usher);
             clearInterval(pulses);
@@ -1188,6 +1377,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
             wss.close(() =>
               http.close(() => {
                 store.close();
+                waitlist.close();
                 done();
               }),
             );

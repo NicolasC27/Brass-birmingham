@@ -8,10 +8,15 @@
 /* enough to run the house on one machine and follow the link by hand. */
 /* ------------------------------------------------------------------ */
 
+import { trIn } from '@/i18n';
+import type { Lang } from '@/i18n';
+
 export interface Mail {
   to: string;
   subject: string;
   text: string;
+  /** headers of the post's own, such as the one-click way out of a list */
+  headers?: Record<string, string>;
 }
 
 export interface Mailer {
@@ -66,6 +71,35 @@ export function letters(appUrl: string): Letters {
   };
 }
 
+/** the letters to the waiting list, each in its reader's language: the
+ *  one that asks the address to answer, and a circular with its way out.
+ *  With the office's public address known, a circular also carries the
+ *  one-click way out the mail services read (RFC 8058) */
+export interface WaitLetters {
+  confirm(to: string, lang: Lang, token: string): Mail;
+  circular(to: string, lang: Lang, leave: string, subject: string, body: string): Mail;
+}
+
+export function waitLetters(appUrl: string, officeUrl = ''): WaitLetters {
+  const base = appUrl.replace(/\/+$/, '');
+  const office = officeUrl.replace(/\/+$/, '');
+  return {
+    confirm: (to, lang, token) => ({
+      to,
+      subject: trIn(lang, 'landing.letter.confirmSubject'),
+      text: trIn(lang, 'landing.letter.confirmText', { link: `${base}/avant-premiere/confirmer/${token}` }),
+    }),
+    circular: (to, lang, leave, subject, body) => ({
+      to,
+      subject,
+      text: `${body.trim()}\n\n--\n${trIn(lang, 'landing.letter.footer', { link: `${base}/avant-premiere/retrait/${leave}` })}\n`,
+      headers: office
+        ? { 'List-Unsubscribe': `<${office}/waitlist/leave?t=${leave}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+        : undefined,
+    }),
+  };
+}
+
 /** the post as the environment configures it */
 export function mailerFromEnv(env: NodeJS.ProcessEnv = process.env): Mailer {
   const key = env.RESEND_API_KEY?.trim();
@@ -84,6 +118,7 @@ export function consoleMailer(out: (line: string) => void = (l) => console.log(l
       kept.unshift(mail);
       kept.splice(50);
       out(`--- letter to ${mail.to} · ${mail.subject}`);
+      for (const [k, v] of Object.entries(mail.headers ?? {})) out(`    ${k}: ${v}`);
       for (const line of mail.text.split('\n')) out(`    ${line}`);
       out('---');
     },
@@ -97,7 +132,7 @@ export function resendMailer(apiKey: string, from: string): Mailer {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ from, to: [mail.to], subject: mail.subject, text: mail.text }),
+        body: JSON.stringify({ from, to: [mail.to], subject: mail.subject, text: mail.text, ...(mail.headers ? { headers: mail.headers } : {}) }),
       });
       if (!res.ok) throw new Error(`resend: ${res.status} ${await res.text().catch(() => '')}`);
     },

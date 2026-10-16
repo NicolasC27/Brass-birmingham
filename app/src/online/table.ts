@@ -76,6 +76,8 @@ export interface Me extends Identity {
    *  be written: it plays and it keeps, and it becomes a member when its
    *  owner gives it a name and an address */
   guest: boolean;
+  /** of the direction: the waiting list and its circulars are open to it */
+  admin?: boolean;
 }
 
 /** a paper the office keeps for an account: what the browser wrote, as it wrote it */
