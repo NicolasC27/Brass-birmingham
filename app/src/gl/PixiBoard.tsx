@@ -38,7 +38,7 @@ import { HOVERED, stateInk } from '@/components/game/stateInks';
 import type { Ambiance } from './ambiance';
 
 const TILE_R = TILE_HALF;
-/** the files a map style lays on the table */
+/** the files the ground lays on the table */
 const sheetList = (u: ReturnType<typeof mapUrls>): string[] => [u.canal, u.rail, ...(u.etch ? [u.etch.canal, u.etch.rail] : [])];
 /** the whole printed table, bleed included, in world units: the one area a
  *  veil or the night is laid over, so the filter never walks the sheet's
@@ -382,7 +382,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   /* board display options — shared store (also driven from the settings
      panel in Game.tsx); C hides unbuilt link traces, F fullscreen */
   const opts = useBoardOptions();
-  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, mapStyle, railPainting, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
+  const { hideUnbuilt, bigChips, greyFreeMerchants: greyFreeMerch, stockStyle, traffic, tileArt, slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle, sound } = opts;
   /* the house's own sound while the pointer rests on it: its recording in
      a loop, or a bell over the door (board option) — hushed at once when
      the sound is turned off under the pointer */
@@ -482,35 +482,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   useEffect(() => {
     sceneRef.current?.setTileLook({ slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle });
   }, [slotArt, colorBlind, sealTiles, sealLinks, cardGrain, chipStyle]);
-  /* map painting switch: swap both era textures under the live scene */
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    let cancelled = false;
-    void (async () => {
-      const { Assets, Texture } = await import('pixi.js');
-      const urls = mapUrls(mapStyle, railPainting, activeBoard().id);
-      const [canal, rail, etchCanal, etchRail] = await Promise.all([
-        Assets.load(urls.canal),
-        Assets.load(urls.rail),
-        urls.etch ? Assets.load(urls.etch.canal) : Texture.EMPTY,
-        urls.etch ? Assets.load(urls.etch.rail) : Texture.EMPTY,
-      ]);
-      if (cancelled) return;
-      scene.setVillages(mapStyle === 'engraved' || mapStyle === 'inked' ? 'engraved' : 'painted', mapStyle === 'relief' ? activeBoard().id : null);
-      for (const [sp, tex] of [[scene.bgCanal, canal], [scene.bgRail, rail], [scene.etchCanal, etchCanal], [scene.etchRail, etchRail]] as const) {
-        sp.texture = tex;
-        sp.width = WORLD_W + 2 * BLEED_X;
-        sp.height = WORLD_H + 2 * BLEED_Y;
-      }
-      /* the sheets they replace go back to the loader */
-      wearSheets(sheetList(urls));
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mapStyle, railPainting]);
-
   /* the orders shown: the table turns sepia but for the overlay (where the
      orders and the tiles still to flip are painted) and the FX */
   useEffect(() => {
@@ -722,7 +693,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       const { Assets, Sprite, Texture } = await import('pixi.js');
       const bootOpts = getBoardOptions();
       /* both paintings carry a bleed of countryside around the play area */
-      const bgUrls = mapUrls(bootOpts.mapStyle, bootOpts.railPainting, activeBoard().id);
+      const bgUrls = mapUrls(activeBoard().id);
       const [canalTex, railTex, etchCanalTex, etchRailTex] = await Promise.all([
         Assets.load(bgUrls.canal),
         Assets.load(bgUrls.rail),
@@ -751,7 +722,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);
       scene.setStockStyle(bootOpts.stockStyle);
-      scene.setVillages(bootOpts.mapStyle === 'engraved' || bootOpts.mapStyle === 'inked' ? 'engraved' : 'painted', bootOpts.mapStyle === 'relief' ? activeBoard().id : null);
+      scene.setVillages('painted', activeBoard().id);
       if (Object.keys(bootOpts.tileArt).length) void scene.setTileArt(bootOpts.tileArt);
       scene.setTileLook({ slotArt: bootOpts.slotArt, colorBlind: bootOpts.colorBlind, sealTiles: bootOpts.sealTiles, sealLinks: bootOpts.sealLinks, cardGrain: bootOpts.cardGrain, chipStyle: bootOpts.chipStyle });
       a.stage.addChild(scene.world);

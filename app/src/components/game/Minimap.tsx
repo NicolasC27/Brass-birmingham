@@ -48,8 +48,8 @@ export default function Minimap({
   const plate = useRef<HTMLDivElement>(null);
   const tracking = useRef(false);
   const boardOpts = useBoardOptions();
-  const { minimapSize, mapStyle, railPainting } = boardOpts;
-  const maps = mapUrls(mapStyle, railPainting, activeBoard().id);
+  const { minimapSize } = boardOpts;
+  const maps = mapUrls(activeBoard().id);
   const insets = useHudInsets();
   const t = useT();
   const MM_W = minimapWidth(boardOpts);

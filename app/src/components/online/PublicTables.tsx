@@ -176,7 +176,7 @@ function SketchPlate({ table }: { table: CardTable }) {
   const colorOf = (owner: number) => PLAYER_COLORS[table.seats[owner]?.color ?? '']?.vivid ?? '#C9A45C';
   const held = new Map<string, string>();
   for (const [town, owner] of sk.towns) if (!held.has(town)) held.set(town, colorOf(owner));
-  const maps = MAP_URL.relief;
+  const maps = MAP_URL;
   return (
     <figure className="gz-engraving w-[300px] max-w-full shrink-0" aria-label={t('platform.play.tables.sketch')}>
       <svg viewBox={`0 0 ${WORLD_W} ${WORLD_H}`} className="block h-auto w-full" style={{ padding: 5 }}>

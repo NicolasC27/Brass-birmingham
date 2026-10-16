@@ -26,51 +26,24 @@ export const MAT_STYLES: MatStyle[] = ['cards', 'compact', 'chips'];
 export type RailMode = 'medals' | 'cards' | 'slip';
 /** where the income track runs: along the bottom edge or down the left edge */
 export type IncomeSide = 'bottom' | 'left';
-/** the ground under the board: a period engraved map drawn from the geometry
- *  (the default), the painted terrain with etched waterways and its rail-era
- *  paintings, the fully painted countryside with its canals and rails, or the
- *  same land at dusk, or the wooded country aged from one era into the next,
- *  both dark enough for the painted tiles */
-/** the ground under the board. Three are offered: the plaster model the
- *  board opens on, the engraved sheet drawn from the geometry itself, and
- *  the inked atlas. `etched` is not among them — it is the ground a rail-era
- *  painting bought at the counter is shown on, and a reader who owns one
- *  keeps it. */
-export type MapStyle = 'relief' | 'engraved' | 'inked' | 'etched';
-/** a ground's paintings per era, and for the relief model the survey — cart
- *  roads, towpaths, the rail era's railways — served as a layer of its own
- *  so hiding the traces (key C) hides it too; the water stays in the land */
+/** the ground under the board: a ground's paintings per era, and for the
+ *  relief model the survey — cart roads, towpaths, the rail era's railways —
+ *  served as a layer of its own so hiding the traces (key C) hides it too;
+ *  the water stays in the land */
 export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail: string } };
-export const MAP_URL: Record<MapStyle, MapSet> = {
-  /* the country as a made thing: a painted plaster model of low English
-     swells under a raking light, a shelf cut in it for every town, the rail
-     era the same model gone grey with a century of smoke settled on it */
-  relief: { canal: '/map-relief-canal.webp', rail: '/map-relief-rail.webp', etch: { canal: '/map-relief-canal-etch.webp', rail: '/map-relief-rail-etch.webp' } },
-  /* a period engraved map, drawn from the geometry and nothing else */
-  engraved: { canal: '/map-engraved-canal.webp', rail: '/map-engraved-rail.webp' },
-  /* an inked map: hill mounds and tiny trees drawn in sepia on parchment,
-     washed in green and ochre — the old-atlas charm, calm and legible */
-  inked: { canal: '/map-inked-canal.webp', rail: '/map-inked-rail.webp' },
-  /* the etched terrain, kept for the paintings the counter sells */
-  etched: { canal: '/map-era-canal.webp', rail: '/map-era-rail.webp' },
-};
-/** the three offered in the settings; `etched` arrives with a painting */
-export const MAP_STYLES: MapStyle[] = ['relief', 'engraved', 'inked'];
-/** the rail era has three paintings to choose from (etched terrain only) */
-export type RailPainting = '1' | '2' | '3';
-export const RAIL_PAINTINGS: RailPainting[] = ['1', '2', '3'];
-/* every ground above is a painting of the Midlands. A second board is a
-   second country, so its grounds are its own: it is served the one style
-   painted for it, whatever the reader has chosen for home. */
+/* the country as a made thing: a painted plaster model of low English
+   swells under a raking light, a shelf cut in it for every town, the rail
+   era the same model gone grey with a century of smoke settled on it. The
+   board is always this English model: no other ground is offered. */
+export const MAP_URL: MapSet = { canal: '/map-relief-canal.webp', rail: '/map-relief-rail.webp', etch: { canal: '/map-relief-canal-etch.webp', rail: '/map-relief-rail-etch.webp' } };
+/* the model above is a painting of the Midlands. A second board is a
+   second country, so its grounds are its own: it is served the one
+   painted for it. */
 const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
   veneto: { canal: '/map-veneto-canal.webp', rail: '/map-veneto-rail.webp' },
 };
 
-export const mapUrls = (style: MapStyle, rail: RailPainting, board?: string): MapSet => {
-  const other = board ? OTHER_BOARDS[board] : undefined;
-  if (other) return other;
-  return style === 'etched' && rail !== '1' ? { canal: MAP_URL.etched.canal, rail: `/map-era-rail-${rail}.webp` } : MAP_URL[style];
-};
+export const mapUrls = (board?: string): MapSet => (board && OTHER_BOARDS[board]) || MAP_URL;
 
 /* the minimap's plate: the small preset stands level with the open hand
    dock (180px tall); a width dragged by hand overrides the preset */
@@ -126,9 +99,6 @@ export interface BoardOptions {
   /** a width set by dragging the minimap's corner (0: the preset size) */
   minimapWidth: number;
   incomeSide: IncomeSide;
-  mapStyle: MapStyle;
-  /** which rail-era painting lies under the etched terrain */
-  railPainting: RailPainting;
   /** boats and trains on built links */
   traffic: TrafficLevel;
   /** beginner aid: dim unplayable slots while planning, itemised price tags */
@@ -184,8 +154,6 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   minimapSize: 'brassworks.minimapSize',
   minimapWidth: 'brassworks.minimapWidth',
   incomeSide: 'brassworks.incomeSide',
-  mapStyle: 'brassworks.mapStyle',
-  railPainting: 'brassworks.railPainting',
   traffic: 'brassworks.traffic',
   beginnerAid: 'brassworks.beginnerAid',
   railMode: 'brassworks.railMode',
@@ -253,11 +221,8 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
-  /* the board opens on the English model and the ground is no longer
-     offered: only a rail painting worn from the counter brings the etched
-     ground it is painted for */
-  mapStyle: read('mapStyle', 'relief') === 'etched' ? 'etched' : 'relief',
-  railPainting: read('railPainting', '2'),
+  /* the ground is no longer a choice (the English model for everyone): a
+     `mapStyle` or `railPainting` stored when it was is not read */
   traffic: read('traffic', 'light'),
   beginnerAid: read('beginnerAid', false),
   railMode: sanitizeRailMode(read('railMode', 'medals')),
