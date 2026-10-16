@@ -906,6 +906,7 @@ const platform: typeof enPlatform = {
             "Ihr Konto: der Name, die E-Mail-Adresse, das Passwort (nie im Klartext: ein scrypt-Hash), das Eröffnungsdatum, das Datum der Annahme dieser Erklärung und die IP-Adresse, von der das Konto eröffnet wurde. Das braucht es, um Sie zu erkennen und Ihnen zu schreiben.",
             "Ihre Partien: die Züge, die Ergebnisse, die Rangliste, Freunde und Einladungen. Das ist der Dienst selbst.",
                   "In Ihrem Browser: das Sitzungstoken, das Thema und die Sprache, im lokalen Speicher. Kein Cookie, kein Tracker, keine Reichweitenmessung.",
+            "Auf der Warteliste der Vorpremiere: die E-Mail-Adresse, die Sprache der Seite, die Seite, von der Sie kamen, sofern bekannt, das Datum der Eintragung und das der Bestätigung. Die IP-Adresse der Eintragung wird bis zur Bestätigung aufbewahrt und dann gelöscht. Mehr braucht es nicht, um Ihnen zu schreiben, wenn die Probefahrt beginnt.",
             "Mehr sammeln wir nicht. Kein bürgerlicher Name, keine Postanschrift, kein Zahlungsmittel.",
           ],
         },
@@ -913,12 +914,13 @@ const platform: typeof enPlatform = {
           h: "Auf welcher Grundlage",
           p: [
             "Konto und Partien: die Erbringung des Dienstes, den Sie verlangt haben. Die Aufbewahrung der Anmeldeadresse: die gesetzliche Pflicht der Hosts (französisches Gesetz über das Vertrauen in die digitale Wirtschaft und seine Durchführungsverordnung). Die Begrenzung der Anmeldeversuche: unser berechtigtes Interesse, die Seite und ihre Mitglieder zu schützen.",
+            "Die Warteliste: Ihre Einwilligung, gegeben durch die Bestätigung der Adresse und jederzeit widerrufbar über den Link in jedem Brief.",
           ],
         },
         {
           h: "Wer Ihre Daten sonst sieht",
           p: [
-                  "Resend (USA) befördert die Briefe der Seite: Adressbestätigung und neues Passwort. Es erhält Ihre E-Mail-Adresse und Ihren Namen.",
+                  "Resend (USA) befördert die Briefe der Seite: Adressbestätigung, neues Passwort und die Briefe der Warteliste. Es erhält Ihre E-Mail-Adresse und Ihren Namen.",
             "Die Schriften werden von Google Fonts geladen: Ihr Browser übermittelt dabei Ihre IP-Adresse an Google.",
             "Der Discord-Server des Clubs ist ein Dienst von Discord Inc.: was Sie dort schreiben, unterliegt dessen eigener Datenschutzerklärung und gelangt nie in das Register der Seite. Sonst hat niemand Zugang zum Register.",
           ],
@@ -929,6 +931,7 @@ const platform: typeof enPlatform = {
             "Das Konto, solange es offen ist. Eine Sitzung, dreißig Tage ohne Nutzung. Ein Brief zur Bestätigung oder zum Passwort, eine Stunde.",
             "Partien, solange die Seite besteht: sie sind die Geschichte des Clubs und werden von mehreren gelesen.",
             "Nach Schließung eines Kontos werden Name und E-Mail-Adresse fünf Jahre beiseitegelegt, außerhalb jeder Nutzung, weil das Gesetz es von Hosts verlangt; dann werden sie gelöscht.",
+            "Eine nie bestätigte Adresse der Warteliste: sieben Tage. Eine bestätigte Adresse: bis Sie die Liste verlassen — ein Klick, in jedem Brief — oder spätestens sechs Monate nach der Eröffnung des Spiels.",
           ],
         },
         {

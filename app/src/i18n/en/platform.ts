@@ -904,6 +904,7 @@ const platform = {
             "Your account: the name, the e-mail address, the password (never in the clear: a scrypt hash), the opening date, the date this policy was accepted, and the IP address the account was opened from. That is what it takes to recognise you and write to you.",
             "Your games: the moves, the results, the ranking, friends and invitations. That is the service itself.",
                   "In your browser: the session token, the theme and the language, in local storage. No cookie, no tracker, no analytics.",
+            "On the preview’s waiting list: the e-mail address, the page’s language, the site you came from when it is known, the date you joined and the date you confirmed. The address you joined from (IP) is kept until you confirm, then erased. This is what it takes to write to you when the trial run opens.",
             "We collect nothing else. No legal name, no postal address, no means of payment.",
           ],
         },
@@ -911,12 +912,13 @@ const platform = {
           h: "On what grounds",
           p: [
             "The account and the games: performance of the service you asked for. Keeping the sign-up address: the legal obligation on hosts (the French law on confidence in the digital economy and its implementing decree). Limiting sign-in attempts: our legitimate interest in protecting the site and its members.",
+            "The waiting list: your consent, given by confirming the address, and withdrawn at any time through the link in every letter.",
           ],
         },
         {
           h: "Who else sees your data",
           p: [
-                  "Resend (United States) carries the site’s letters: address verification and password reset. It receives your e-mail address and your name.",
+                  "Resend (United States) carries the site’s letters: address verification, password reset and the waiting list’s letters. It receives your e-mail address and your name.",
             "Fonts are loaded from Google Fonts: your browser then sends your IP address to Google.",
             "The club’s Discord server is a service of Discord Inc.: what you write there falls under its own privacy policy and never enters the site’s register. Nobody else has access to the register.",
           ],
@@ -927,6 +929,7 @@ const platform = {
             "The account, as long as it is open. A session, thirty days without use. A verification or password letter, one hour.",
             "Games, as long as the site exists: they are the club’s history and are read by several.",
             "After an account is closed, the name and e-mail address are set aside for five years, out of any use, because the law asks it of hosts; then they are erased.",
+            "An address on the waiting list never confirmed, seven days. A confirmed address, until you leave the list — one click, in every letter — or at the latest six months after the game opens.",
           ],
         },
         {

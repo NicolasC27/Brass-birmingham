@@ -904,6 +904,7 @@ const platform = {
             "Su cuenta: el nombre, la dirección de correo, la contraseña (nunca en claro: un hash scrypt), la fecha de apertura, la fecha de aceptación de esta política y la dirección IP desde la que se abrió la cuenta. Es lo necesario para reconocerte y escribirte.",
             "Sus partidas: las jugadas, los resultados, la clasificación, los amigos y las invitaciones. Es el servicio mismo.",
                   "En su navegador: el token de sesión, el tema y el idioma, en almacenamiento local. Ninguna cookie, ningún rastreador, ninguna medición de audiencia.",
+            "En la lista de espera del preestreno: la dirección de correo, el idioma de la página, el sitio del que llegó si se conoce, la fecha de inscripción y la de confirmación. La dirección IP de inscripción se guarda hasta la confirmación y luego se borra. Es lo necesario para escribirle cuando abra el viaje de prueba.",
             "No recogemos nada más. Ni nombre civil, ni dirección postal, ni medio de pago.",
           ],
         },
@@ -911,12 +912,13 @@ const platform = {
           h: "Con qué fundamento",
           p: [
             "La cuenta y las partidas: la prestación del servicio que ha pedido. La conservación de la dirección de alta: la obligación legal de los alojadores (ley francesa para la confianza en la economía digital y su decreto de aplicación). La limitación de los intentos de conexión: nuestro interés legítimo en proteger el sitio y a sus socios.",
+            "La lista de espera: su consentimiento, dado al confirmar la dirección y retirado en cualquier momento con el enlace de cada carta.",
           ],
         },
         {
           h: "Quién más ve sus datos",
           p: [
-                  "Resend (Estados Unidos) lleva las cartas del sitio: la verificación de la dirección y la nueva contraseña. Recibe su dirección de correo y su nombre.",
+                  "Resend (Estados Unidos) lleva las cartas del sitio: la verificación de la dirección, la nueva contraseña y las cartas de la lista de espera. Recibe su dirección de correo y su nombre.",
             "Las fuentes tipográficas se cargan desde Google Fonts: su navegador transmite entonces su dirección IP a Google.",
             "El servidor Discord del club es un servicio de Discord Inc.: lo que escriba allí depende de su propia política de privacidad y nunca entra en el registro del sitio. Nadie más tiene acceso al registro.",
           ],
@@ -927,6 +929,7 @@ const platform = {
             "La cuenta, mientras esté abierta. Una sesión, treinta días sin uso. Una carta de verificación o de contraseña, una hora.",
             "Las partidas, mientras exista el sitio: son la historia del club y se leen entre varios.",
             "Tras el cierre de una cuenta, el nombre y la dirección de correo se apartan durante cinco años, fuera de todo uso, porque la ley lo exige a los alojadores; después se borran.",
+            "Una dirección de la lista de espera nunca confirmada, siete días. Una dirección confirmada, hasta que salga de la lista — un clic, en cada carta — o como mucho seis meses después de la apertura del juego.",
           ],
         },
         {

@@ -904,6 +904,7 @@ const platform = {
             "Votre compte : le pseudo, l’adresse e-mail, le mot de passe (jamais en clair : une empreinte scrypt), la date d’ouverture, la date d’acceptation de cette politique et l’adresse IP d’où le compte a été ouvert. C’est ce qu’il faut pour vous reconnaître et vous écrire.",
             "Vos parties : les coups joués, les résultats, le classement, les amis et les invitations. C’est le service lui-même.",
                   "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local. Aucun cookie, aucun traceur, aucune mesure d’audience.",
+            "Sur la liste d’attente de l’avant-première : l’adresse e-mail, la langue de la page, le site d’où vous êtes venu s’il est connu, la date d’inscription et celle de la confirmation. L’adresse IP d’inscription est gardée jusqu’à la confirmation, puis effacée. C’est ce qu’il faut pour vous écrire quand le voyage d’essai ouvre.",
             "Nous ne collectons rien d’autre. Pas de nom civil, pas d’adresse postale, pas de moyen de paiement.",
           ],
         },
@@ -911,12 +912,13 @@ const platform = {
           h: "Sur quel fondement",
           p: [
             "Le compte et les parties : l’exécution du service que vous avez demandé. La conservation de l’adresse d’inscription : l’obligation légale faite aux hébergeurs (loi pour la confiance dans l’économie numérique et son décret d’application). La limitation des tentatives de connexion : notre intérêt légitime à protéger le site et ses membres.",
+            "La liste d’attente : votre consentement, donné en confirmant l’adresse, et retiré à tout moment par le lien présent dans chaque lettre.",
           ],
         },
         {
           h: "Qui d’autre voit vos données",
           p: [
-                  "Resend (États-Unis) achemine les lettres du site : la vérification de l’adresse et le nouveau mot de passe. Il reçoit votre adresse e-mail et votre pseudo.",
+                  "Resend (États-Unis) achemine les lettres du site : la vérification de l’adresse, le nouveau mot de passe et les lettres de la liste d’attente. Il reçoit votre adresse e-mail et votre pseudo.",
             "Les polices de caractères sont chargées depuis Google Fonts : votre navigateur transmet alors votre adresse IP à Google.",
             "Le serveur Discord du club est un service de Discord Inc. : ce que vous y écrivez relève de sa propre politique de confidentialité, et n’entre pas dans le registre du site. Personne d’autre n’a accès au registre.",
           ],
@@ -927,6 +929,7 @@ const platform = {
             "Le compte, tant qu’il est ouvert. Une session, trente jours sans usage. Une lettre de vérification ou de mot de passe, une heure.",
             "Les parties, tant que le site existe : elles sont l’histoire du club et se lisent à plusieurs.",
             "Après la fermeture d’un compte, le pseudo et l’adresse e-mail sont mis à part pendant cinq ans, hors de tout usage, parce que la loi le demande aux hébergeurs ; puis ils sont effacés.",
+            "Une adresse de la liste d’attente jamais confirmée, sept jours. Une adresse confirmée, jusqu’à ce que vous quittiez la liste — un clic, dans chaque lettre — ou au plus tard six mois après l’ouverture du jeu.",
           ],
         },
         {

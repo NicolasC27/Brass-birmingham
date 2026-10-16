@@ -12,7 +12,7 @@ import { localeOf, useLang, useT } from '@/i18n';
 /* ------------------------------------------------------------------ */
 
 /** the date this policy was last changed — bump it with the text */
-export const POLICY_DATE = '2026-09-13';
+export const POLICY_DATE = '2026-10-16';
 
 const env = (key: string): string => String((import.meta.env as Record<string, unknown>)[key] ?? '').trim();
 
