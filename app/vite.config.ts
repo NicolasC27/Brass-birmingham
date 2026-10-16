@@ -27,7 +27,8 @@ export default defineConfig({
             name: 'blackrail-lean-public',
             generateBundle(this: { emitFile: (f: { type: 'asset'; fileName: string; source: Buffer }) => void }) {
               const dir = path.resolve(__dirname, 'public');
-              const kept = /^(landing-.+\.webp|portrait-(boulton|wedgwood|arkwright|watt)\.webp|logo-blackrail\.svg|icon-192\.png|og-preview\.jpg)$/;
+              /* the stylesheet's paper and grain textures come too: its classes name them */
+              const kept = /^(landing-.+\.webp|portrait-(boulton|wedgwood|arkwright|watt)\.webp|logo-blackrail\.svg|icon-192\.png|og-preview\.jpg|tex-[a-z]+\.webp|texture-[a-z-]+\.png|table-felt\.webp|market-brick\.png)$/;
               for (const name of fs.readdirSync(dir)) if (kept.test(name)) this.emitFile({ type: 'asset', fileName: name, source: fs.readFileSync(path.join(dir, name)) });
             },
             writeBundle(o: { dir?: string }) {
