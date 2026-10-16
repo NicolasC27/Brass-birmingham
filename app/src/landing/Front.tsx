@@ -23,11 +23,20 @@ const MACHINES = [
   { id: 'arkwright', name: 'Miss Arkwright' },
   { id: 'watt', name: 'Mr Watt' },
 ] as const;
+/** the widths each capture is printed at: the small one for an ordinary
+ *  screen, the large one (from a 3840×2160 capture) for a dense screen or
+ *  a 4K window — the browser takes the one it needs */
+const WIDTHS: Record<string, [number, number]> = { hero: [1000, 2000], ceremony: [700, 1296], 'close-stoke': [1050, 2100] };
+const pic = (name: string, sizes = '100vw') => {
+  const [sm, lg] = WIDTHS[name] ?? [1280, 2560];
+  return { src: `/landing-${name}.webp`, srcSet: `/landing-${name}-sm.webp ${sm}w, /landing-${name}.webp ${lg}w`, sizes };
+};
+
 /** where the three marks of the annotated table stand, in % of the capture */
 const MARKS = [
-  { x: 22, y: 77 },
-  { x: 5.5, y: 3 },
-  { x: 79.5, y: 77 },
+  { x: 30.5, y: 80.5 },
+  { x: 5, y: 2.5 },
+  { x: 82.5, y: 80.5 },
 ];
 
 /** where this visitor came from: the link's own `?via=`, else the site that sent them */
@@ -129,10 +138,10 @@ function WaitForm({ className }: { className?: string }) {
 }
 
 /** a capture of the board, framed as a plate of the journal */
-function Plate({ src, alt, className, eager }: { src: string; alt: string; className?: string; eager?: boolean }) {
+function Plate({ name, sizes, alt, className, eager }: { name: string; sizes?: string; alt: string; className?: string; eager?: boolean }) {
   return (
     <div className={cn('border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]', className)}>
-      <img src={src} alt={alt} loading={eager ? 'eager' : 'lazy'} className="block h-auto w-full" />
+      <img {...pic(name, sizes)} alt={alt} loading={eager ? 'eager' : 'lazy'} className="block h-auto w-full" />
     </div>
   );
 }
@@ -146,8 +155,8 @@ function EraSlider() {
     <figure>
       <div className="relative select-none overflow-hidden border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]">
         <div className="relative">
-          <img src="/landing-era-rail.webp" alt={t('landing.twist.railAlt')} loading="lazy" className="block h-auto w-full" draggable={false} />
-          <img src="/landing-era-canal.webp" alt={t('landing.twist.canalAlt')} loading="lazy" className="absolute inset-0 block h-full w-full" style={{ clipPath: `inset(0 ${100 - at}% 0 0)` }} draggable={false} />
+          <img {...pic('era-rail', '(min-width: 1100px) 800px, 100vw')} alt={t('landing.twist.railAlt')} loading="lazy" className="block h-auto w-full" draggable={false} />
+          <img {...pic('era-canal', '(min-width: 1100px) 800px, 100vw')} alt={t('landing.twist.canalAlt')} loading="lazy" className="absolute inset-0 block h-full w-full" style={{ clipPath: `inset(0 ${100 - at}% 0 0)` }} draggable={false} />
           <div aria-hidden className="pointer-events-none absolute inset-y-0 w-0.5 bg-brass-300" style={{ left: `${at}%` }}>
             <span className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[rgb(var(--lacquer-900))] bg-brass-300 px-2 py-1 font-ui text-[12px] font-semibold text-[rgb(var(--ink-on-brass))] shadow-lg">⇆</span>
           </div>
@@ -203,7 +212,7 @@ export default function Front() {
         <motion.figure initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, ease, delay: 0.1 }} className="relative order-first mx-4 mt-4 sm:mx-8 min-[1100px]:order-none min-[1100px]:mx-0 min-[1100px]:mt-0">
           {/* on the wide page the plate runs off the right edge and melts into the paper on the left,
               so no town is seen cut off; above the words on a tablet, a short band of the board */}
-          <img src="/landing-hero.webp" alt={t('landing.hero.alt')} className="block h-[280px] w-full object-cover shadow-[0_24px_60px_-24px_rgba(20,14,6,0.6)] min-[1100px]:h-[640px] min-[1100px]:shadow-none min-[1100px]:[mask-image:linear-gradient(to_right,transparent,#000_16%)]" />
+          <img {...pic('hero', '(min-width: 1100px) 55vw, 100vw')} alt={t('landing.hero.alt')} className="block h-[280px] w-full object-cover shadow-[0_24px_60px_-24px_rgba(20,14,6,0.6)] min-[1100px]:h-[640px] min-[1100px]:shadow-none min-[1100px]:[mask-image:linear-gradient(to_right,transparent,#000_16%)]" />
           <figcaption className="eyebrow-fell absolute bottom-4 left-4 bg-[rgb(var(--lacquer-900)/.92)] px-3 py-1.5 min-[1100px]:left-auto min-[1100px]:right-8">{t('landing.hero.plate')}</figcaption>
         </motion.figure>
       </section>
@@ -212,7 +221,7 @@ export default function Front() {
       <section className="gz-measure mt-24">
         <SectionHead plate={t('landing.table.plate')} title={t('landing.table.title')} text={t('landing.table.text')} />
         <figure className="relative mt-8">
-          <Plate src="/landing-table.webp" alt={t('landing.table.alt')} />
+          <Plate name="table" sizes="(min-width: 1240px) 1180px, 100vw" alt={t('landing.table.alt')} />
           {MARKS.map((m, i) => (
             <span
               key={i}
@@ -244,7 +253,7 @@ export default function Front() {
         <div className="min-[1100px]:col-span-4">
           <SectionHead plate={t('landing.twist.plate')} title={t('landing.twist.title')} text={t('landing.twist.text')} />
           <figure className="mt-8 max-w-[360px]">
-            <Plate src="/landing-ceremony.webp" alt={t('landing.twist.ceremonyAlt')} />
+            <Plate name="ceremony" sizes="360px" alt={t('landing.twist.ceremonyAlt')} />
             <figcaption className="eyebrow-fell mt-3 text-center">{t('landing.twist.ceremonyCaption')}</figcaption>
           </figure>
         </div>
@@ -256,7 +265,7 @@ export default function Front() {
       {/* the business, up close: one close-up at full width, the four trades under it */}
       <section className="gz-measure mt-24">
         <SectionHead plate={t('landing.economy.plate')} title={t('landing.economy.title')} />
-        <Plate src="/landing-close-stoke.webp" alt={t('landing.economy.stokeAlt')} className="mt-8" />
+        <Plate name="close-stoke" sizes="(min-width: 1240px) 1180px, 100vw" alt={t('landing.economy.stokeAlt')} className="mt-8" />
         <div className="mt-8 grid gap-6 min-[700px]:grid-cols-2 min-[1100px]:grid-cols-4 min-[1100px]:gap-x-7">
           {d.economy.points.map((p) => (
             <div key={p.h} className="border-t border-[var(--gz-ink-soft)] pt-4">
@@ -336,7 +345,7 @@ export default function Front() {
 
       {/* the ticket again, over the works at Stoke */}
       <section className="relative mt-24 overflow-hidden">
-        <img src="/landing-close-stoke.webp" alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        <img {...pic('close-stoke')} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
         <div aria-hidden className="absolute inset-0 bg-[rgba(14,11,7,0.78)]" />
         <div className="gz-measure relative flex flex-col items-center py-20 text-center">
           <h2 className="max-w-[720px] font-fraunces text-[30px] font-normal italic leading-[1.15] text-[#f4eee1] min-[900px]:text-[38px]">{t('landing.final.title')}</h2>
