@@ -99,6 +99,8 @@ export interface BoardOptions {
   /** a width set by dragging the minimap's corner (0: the preset size) */
   minimapWidth: number;
   incomeSide: IncomeSide;
+  /** the income track kept open as the full ruler, the HUD standing clear of it */
+  incomePinned: boolean;
   /** boats and trains on built links */
   traffic: TrafficLevel;
   /** beginner aid: dim unplayable slots while planning, itemised price tags */
@@ -154,6 +156,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   minimapSize: 'brassworks.minimapSize',
   minimapWidth: 'brassworks.minimapWidth',
   incomeSide: 'brassworks.incomeSide',
+  incomePinned: 'brassworks.incomePinned',
   traffic: 'brassworks.traffic',
   beginnerAid: 'brassworks.beginnerAid',
   railMode: 'brassworks.railMode',
@@ -221,6 +224,7 @@ let state: BoardOptions = {
   minimapSize: read('minimapSize', 's'),
   minimapWidth: Number(read('minimapWidth', 0 as never)) || 0,
   incomeSide: read('incomeSide', 'bottom'),
+  incomePinned: read('incomePinned', false),
   /* the ground is no longer a choice (the English model for everyone): a
      `mapStyle` or `railPainting` stored when it was is not read */
   traffic: read('traffic', 'light'),
@@ -290,12 +294,13 @@ const HUD_GAP = 8;
  *  widen with the figures: 139 £ | 126 still clears it), which it hid */
 const LEFT_TRACK_INSET = TRACK_W - 6;
 /** pixel insets every floating HUD element keeps from the screen edges: the
- *  income track is counted at rest, the ruler opens over the margin */
+ *  income track is counted at rest, the ruler opens over the margin; a
+ *  pinned track is the ruler for good, and the HUD stands clear of all of it */
 export function hudInsets(o: BoardOptions, vpTrack = true, lane = 0): { left: number; bottom: number; top: number; right: number } {
   return {
     top: vpTrack ? TRACK_H + HUD_GAP : HUD_GAP,
-    left: o.incomeSide === 'left' ? LEFT_TRACK_INSET : 12,
-    bottom: o.incomeSide === 'bottom' ? FILET_H + HUD_GAP : 12,
+    left: o.incomeSide === 'left' ? (o.incomePinned ? TRACK_W + HUD_GAP : LEFT_TRACK_INSET) : 12,
+    bottom: o.incomeSide === 'bottom' ? (o.incomePinned ? TRACK_H : FILET_H) + HUD_GAP : 12,
     right: lane + 12,
   };
 }

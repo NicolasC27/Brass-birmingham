@@ -511,6 +511,9 @@ function BoardSettings() {
                         options={(['bottom', 'left'] as IncomeSide[]).map((id) => ({ id, label: t(`game.settings.side.${id}`) }))}
                       />
                     </OptionRow>
+                    <OptionRow label={t('game.settings.incomePinned')} hint={t('game.settings.incomePinnedHint')}>
+                      <Switch on={opts.incomePinned} onClick={() => setBoardOption('incomePinned', !opts.incomePinned)} label={t('game.settings.incomePinned')} />
+                    </OptionRow>
                     <OptionRow label={t('game.settings.fullscreen')} hint={t('game.settings.fullscreenHint')}>
                       <button
                         type="button"

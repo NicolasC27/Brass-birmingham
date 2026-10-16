@@ -6,7 +6,7 @@ import { INCOME_PAYOUT, PLAYER_COLORS, incomeLevel } from '@/game/data';
 import { ArrowDownRight, ChevronsLeft, ChevronsRight, Coins, Eye, LayoutGrid, PanelLeftClose, TrendingUp, Trophy } from 'lucide-react';
 import { useGame, useShownGame } from '@/game/store';
 import { projectEraScores, projectedOrder } from '@/game/engine';
-import { FILET_W, setBoardOption, useBoardOptions } from './boardOptions';
+import { FILET_W, TRACK_W, setBoardOption, useBoardOptions } from './boardOptions';
 import type { RailMode } from './boardOptions';
 import { useHudInsets, narrowRailTop } from './useHudInsets';
 import { TelegramPlaque } from './Telegrams';
@@ -578,7 +578,7 @@ function PlayerRail({ tools }: { tools?: ReactNode }) {
   const insets = useHudInsets();
   const narrow = useNarrow();
   const reduced = useReducedMotion();
-  const { railMode, focus, incomeSide } = useBoardOptions();
+  const { railMode, focus, incomeSide, incomePinned } = useBoardOptions();
   const [cardSeat, setCardSeat] = useState<number | null>(null);
   const [openSeat, setOpenSeat] = useState<number | null>(null);
   const [peek, setPeek] = useState<number | null>(null);
@@ -594,7 +594,7 @@ function PlayerRail({ tools }: { tools?: ReactNode }) {
   if (mode === 'slip') {
     return (
       <AnimatePresence>
-        <Slip key="slip" order={game.order} players={game.players} lit={lit === null ? null : game.order[lit]} left={incomeSide === 'left' ? FILET_W : 0} top={narrow ? narrowRailTop(insets) : insets.top + 4} reduced={reduced} />
+        <Slip key="slip" order={game.order} players={game.players} lit={lit === null ? null : game.order[lit]} left={incomeSide === 'left' ? (incomePinned ? TRACK_W : FILET_W) : 0} top={narrow ? narrowRailTop(insets) : insets.top + 4} reduced={reduced} />
       </AnimatePresence>
     );
   }

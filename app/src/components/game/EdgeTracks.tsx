@@ -1,15 +1,17 @@
 import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { Pin, PinOff } from 'lucide-react';
 import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, incomeLevel, levelTopSpace, loanLanding } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
 import { money, useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
 import { useReducedMotion } from './useReducedMotion';
-import { FILET_H, FILET_W, TRACK_H, TRACK_W, leftTrackTop, useBoardOptions } from './boardOptions';
+import { FILET_H, FILET_W, TRACK_H, TRACK_W, leftTrackTop, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { filetTicks } from './railLogic';
+import { FLAG_CHIP, FLAG_FAN, FLAG_GAP, flagSpec, incomeLeaders, rungs, spreadFlags } from './incomeFlags';
 
 /* ------------------------------------------------------------------ */
 /* Two STRAIGHT tracks, one per scale:                                  */
@@ -17,8 +19,10 @@ import { filetTicks } from './railLogic';
 /*  • income: graduated by PAYOUT bracket, along the BOTTOM edge or     */
 /*    down the LEFT edge (board option `incomeSide`). At rest the      */
 /*    income track is a thin brass filet: the pawns, a graduation every */
-/*    five spaces, the tens' figures barely there. Under the pointer or */
-/*    the keyboard it opens into the full ruler, never taller than it.  */
+/*    five spaces, the tens' figures barely there, and beside the pawns */
+/*    of each rung what it pays, so who earns what reads at a glance.   */
+/*    Under the pointer or the keyboard it opens into the full ruler,   */
+/*    never taller than it; pinned, it stays open.                      */
 /* Both tracks ZOOM under the mouse wheel (up to ×6, around the cursor),*/
 /* pan by dragging, and reset on double-click. Every position is a      */
 /* fraction of the track, so the same code lays out either axis.       */
@@ -59,7 +63,7 @@ const BANDS: Band[] = (() => {
 
 const CHIP = 16;
 /** the pawn on the filet: the same token, a size down */
-const CHIP_THIN = 13;
+const CHIP_THIN = FLAG_CHIP;
 const ZOOM_MAX = 6;
 
 /* down the left edge the ruler reads in three columns: the graduation and
@@ -161,7 +165,7 @@ function useLaneZoom(axis: Axis, window?: [number, number]) {
     axis === 'x'
       ? { position: 'absolute', top: 0, bottom: 0, left: 0, width: `${zoom * 100}%`, transform: `translateX(${-offset}px)` }
       : { position: 'absolute', left: 0, right: 0, top: 0, height: `${zoom * 100}%`, transform: `translateY(${-offset}px)` };
-  return { ref, zoom, size, inner, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onDoubleClick: reset }, grabbing: zoom > 1 };
+  return { ref, zoom, size, offset, inner, handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerCancel: onPointerUp, onDoubleClick: reset }, grabbing: zoom > 1 };
 }
 
 /* ------------------------------ pawns ------------------------------ */
@@ -180,6 +184,8 @@ function Pawn({
   onToggle,
   reduced,
   thin = false,
+  mine = false,
+  figure,
 }: {
   axis: Axis;
   idx: number;
@@ -191,8 +197,13 @@ function Pawn({
   spot: boolean;
   onToggle: () => void;
   reduced: boolean;
-  /** seated on the thin filet: smaller, and no figure beside it */
+  /** seated on the thin filet: smaller, its figure only when it wears its rung's */
   thin?: boolean;
+  /** the reader's own seat: a cream ring round the token */
+  mine?: boolean;
+  /** on the filet, the pawn that wears its rung's pay: the reader's own
+   *  rung underlined, the leader's figure in gold */
+  figure?: { mine: boolean; lead: boolean };
 }) {
   const game = useShownGame()!;
   const t = useT();
@@ -206,9 +217,11 @@ function Pawn({
   const toNext = lvl >= 30 ? 0 : levelTopSpace(lvl) + 1 - p.income;
   const nextPay = money(INCOME_PAYOUT[Math.min(INCOME_MAX, levelTopSpace(lvl) + 1)]);
   const chip = thin ? CHIP_THIN : CHIP;
-  const fan = (fanIndex - (fanSize - 1) / 2) * (thin ? 8 : 10);
+  const fan = (fanIndex - (fanSize - 1) / 2) * (thin ? FLAG_FAN : 10);
   const zig = fanSize > 1 ? (fanIndex % 2 ? (thin ? 2 : 4) : thin ? -2 : -4) : 0;
   const label = kind === 'vp' ? String(p.vp) : pay;
+  const owes = kind === 'income' && INCOME_PAYOUT[p.income] < 0;
+  const ring = mine ? `, 0 0 0 3px rgba(242,234,214,.85)` : '';
   const place: CSSProperties =
     axis === 'x'
       ? { top: '50%', marginLeft: fan - chip / 2, marginTop: -chip / 2 + zig, zIndex: 10 + fanIndex }
@@ -246,7 +259,7 @@ function Pawn({
           whileHover={{ scale: 1.25 }}
           whileTap={{ scale: 0.9 }}
           animate={{
-            boxShadow: spot ? [`0 0 0 1.5px ${col}, 0 0 6px ${col}`, `0 0 0 2px ${col}, 0 0 14px ${col}`] : `0 0 0 1.5px ${col}, 0 1px 3px rgba(0,0,0,.8)`,
+            boxShadow: spot ? [`0 0 0 1.5px ${col}, 0 0 6px ${col}`, `0 0 0 2px ${col}, 0 0 14px ${col}`] : `0 0 0 1.5px ${col}${ring}, 0 1px 3px rgba(0,0,0,.8)`,
           }}
           transition={spot ? { boxShadow: { repeat: Infinity, repeatType: 'reverse', duration: 0.9 } } : undefined}
           aria-pressed={spot}
@@ -263,10 +276,23 @@ function Pawn({
         {showLabel && !thin && (
           <span
             aria-hidden
-            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${kind === 'income' && INCOME_PAYOUT[p.income] < 0 ? 'text-[#C4644F]' : 'text-cream-100'}`}
+            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${owes ? 'text-[#C4644F]' : 'text-cream-100'}`}
             style={{ textShadow: '0 1px 1px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.8)' }}
           >
             {label}
+          </span>
+        )}
+        {figure && thin && (
+          /* the rung's pay after its pawns along the bottom; down the left
+             edge beside them, off the column, level with the middle of the fan */
+          <span
+            aria-hidden
+            className={`ml-[3px] whitespace-nowrap rounded-[2px] border-b bg-coal-950/85 px-[2px] pb-px pt-[2px] font-mono font-bold leading-none ${axis === 'x' ? 'text-[11px]' : 'text-[10px]'} ${
+              owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : figure.mine ? 'text-cream-100' : 'text-cream-100/75'
+            } ${figure.mine ? 'border-cream-100/80' : 'border-transparent'}`}
+            style={axis === 'y' ? { position: 'relative', top: -fan } : undefined}
+          >
+            {pay}
           </span>
         )}
       </Tooltip>
@@ -316,7 +342,8 @@ function EdgeTracks() {
   const setSpotlight = useGame((s) => s.setSpotlight);
   const loanConfirm = useGame((s) => s.loanConfirm);
   const loanPeek = useGame((s) => s.loanPeek);
-  const { incomeSide, vpTrack: vpTrackOn } = useBoardOptions();
+  const { incomeSide, incomePinned, vpTrack: vpTrackOn } = useBoardOptions();
+  const seat = useGame((s) => s.seat);
   /* a game being read: the analysis's curve takes the top edge */
   const reading = useGame((s) => s.debriefOpen && s.game?.phase === 'game-over');
   const t = useT();
@@ -325,12 +352,13 @@ function EdgeTracks() {
   /* down the left edge the track starts under whatever holds the top */
   const leftTop = leftTrackTop(useHudInsets());
   /* the filet opens into the ruler while the pointer rests on it, while
-     the keyboard is inside, and while a loan's landing is on show */
+     the keyboard is inside, while a loan's landing is on show, and for
+     good once pinned */
   const [hot, setHot] = useState(false);
   const [focusIn, setFocusIn] = useState(false);
   const cool = useRef<number | null>(null);
   useEffect(() => () => { if (cool.current !== null) window.clearTimeout(cool.current); }, []);
-  const ruler = hot || focusIn || loanConfirm || loanPeek;
+  const ruler = incomePinned || hot || focusIn || loanConfirm || loanPeek;
 
   /* the VP lane frames every pawn: the ruler stretches with the leader and
      the lane zooms on the pack, 6 points of air either side, never narrower
@@ -395,28 +423,53 @@ function EdgeTracks() {
   const vpAt = groups('vp');
   const incAt = groups('income');
 
+  /* the filet at a glance: a flag per rung a seat stands on — its pawns
+     and what it pays — laid in the lane's pixels, pushed apart where
+     rungs crowd, then handed back to the pawns as places on the track */
+  const incSpan = Math.max(1, incLane.size * incLane.zoom);
+  const toPx = (pct: number) => (incAxis === 'x' ? pct / 100 : 1 - pct / 100) * incSpan - incLane.offset;
+  const toPct = (px: number) => (incAxis === 'x' ? ((px + incLane.offset) / incSpan) * 100 : 100 - ((px + incLane.offset) / incSpan) * 100);
+  const onRungs = rungs(game.players.map((p) => p.income));
+  const flagAt = spreadFlags(
+    onRungs.map((r) => flagSpec(incAxis, toPx(lvlPct(r.space)), r.seats.length, money(INCOME_PAYOUT[r.space]))),
+    FLAG_GAP,
+    0,
+    incLane.size,
+  );
+  const filetPct = new Map<number, number>();
+  onRungs.forEach((r, k) => r.seats.forEach((i) => filetPct.set(i, toPct(flagAt[k]))));
+  const leaders = incomeLeaders(game.players.map((p) => p.income));
+  /* the reader's own seat: the one taken at an online table, at home the
+     one human among the machines (none when several share the screen) */
+  const humans = game.players.flatMap((p, i) => (p.isBot ? [] : [i]));
+  const me = seat !== null ? seat : humans.length === 1 ? humans[0] : -1;
+  const incPct = (i: number) => (ruler ? lvlPct(game.players[i].income) : filetPct.get(i) ?? lvlPct(game.players[i].income));
+
   const pawns = (kind: Kind, axis: Axis, thin = false) =>
     game.players.map((p, i) => {
       const map = kind === 'vp' ? vpAt : incAt;
       const key = kind === 'vp' ? p.vp : p.income;
       const list = map.get(key) ?? [i];
       const crowded = kind === 'vp' ? map.has(key + 1) || map.has(key + 2) : key > 10 ? map.has(key + 1) || map.has(key + 2) : map.has(key + 1);
+      const wears = list[list.length - 1] === i;
       return (
         <Pawn
           key={`${kind}-${i}`}
           axis={axis}
           idx={i}
           kind={kind}
-          pct={kind === 'vp' ? vpPct(p.vp) : lvlPct(p.income)}
+          pct={kind === 'vp' ? vpPct(p.vp) : incPct(i)}
           fanIndex={list.indexOf(i)}
           fanSize={list.length}
           /* down the left edge the payout is printed beside the pawn
              already, on its bracket: a second figure only overprinted it */
-          showLabel={axis === 'x' && list[list.length - 1] === i && !crowded}
+          showLabel={axis === 'x' && wears && !crowded}
           spot={spotlight === i}
           onToggle={() => toggle(i)}
           reduced={reduced}
           thin={thin}
+          mine={kind === 'income' && i === me}
+          figure={kind === 'income' && thin && wears ? { mine: list.includes(me), lead: list.some((s) => leaders.includes(s)) } : undefined}
         />
       );
     });
@@ -426,8 +479,9 @@ function EdgeTracks() {
       .filter((m) => m.kind === kind)
       .map((m) => {
         const col = PLAYER_COLORS[game.players[m.idx].color]?.hex ?? '#C9A45C';
+        /* on the filet the run ends where the pawn stands, its flag's place */
         const f = kind === 'vp' ? vpPct(m.from) : lvlPct(m.from);
-        const to = kind === 'vp' ? vpPct(m.to) : lvlPct(m.to);
+        const to = kind === 'vp' ? vpPct(m.to) : incPct(m.idx);
         return <MoveFx key={m.id} axis={axis} move={m} pct={to} from={f} to={to} col={col} reduced={reduced} line={yLine(!ruler)} />;
       });
 
@@ -438,6 +492,8 @@ function EdgeTracks() {
 
   const pxPerUnit = (incLane.size * incLane.zoom) / UNITS;
   const fits = (b: Band) => (incAxis === 'x' ? bandUnits(b) * pxPerUnit >= money(b.pay).length * 5.2 + 4 : bandUnits(b) * pxPerUnit >= 12);
+
+  const pinLabel = t(incomePinned ? 'game.incomeRail.unpin' : 'game.incomeRail.pin');
 
   const grab = (lane: ReturnType<typeof useLaneZoom>) => (lane.grabbing ? 'cursor-grab active:cursor-grabbing' : '');
 
@@ -509,6 +565,28 @@ function EdgeTracks() {
           if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setFocusIn(false);
         }}
       >
+        {/* the pin keeps the ruler open; hidden on the filet but still in
+            the keyboard's path, where reaching it opens the ruler */}
+        <Tooltip
+          side={incAxis === 'x' ? 'top' : 'right'}
+          title={pinLabel}
+          content={t('game.incomeRail.pinHint')}
+          className={`absolute z-[15] ${incAxis === 'x' ? 'left-1.5 top-[3px]' : 'left-[5px] top-[17px]'} ${ruler ? '' : 'pointer-events-none opacity-0'}`}
+        >
+          <button
+            type="button"
+            aria-pressed={incomePinned}
+            aria-label={pinLabel}
+            onClick={() => setBoardOption('incomePinned', !incomePinned)}
+            onPointerDown={(e) => e.stopPropagation()}
+            /* drawn at 16px, its hit zone runs 4px further all round */
+            className={`relative flex h-4 w-4 items-center justify-center rounded-full border outline-none transition-colors before:absolute before:-inset-1 before:rounded-full before:content-[''] focus-visible:ring-2 focus-visible:ring-brass-400 ${
+              incomePinned ? 'border-brass-400 bg-brass-500/25 text-brass-300' : 'border-brass-700/60 text-brass-500/70 hover:text-brass-300'
+            }`}
+          >
+            {incomePinned ? <Pin aria-hidden className="h-2.5 w-2.5" /> : <PinOff aria-hidden className="h-2.5 w-2.5" />}
+          </button>
+        </Tooltip>
         {incAxis === 'x' ? (
           <span aria-hidden className={`absolute bottom-[3px] left-1.5 font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${ruler ? '' : 'hidden'}`}>
             {t('game.incomeRail.trackShort')}
@@ -517,13 +595,22 @@ function EdgeTracks() {
         ) : (
           /* the column is too narrow for the title in spaced capitals, or
              for the title and the zoom on one line (Einkommen, Ingresos):
-             the title in its own letters over the column, the zoom under */
-          <span aria-hidden className={`absolute inset-x-0 top-[4px] flex-col items-center gap-[3px] font-semibold leading-none ${ruler ? 'flex' : 'hidden'}`}>
+             the title in its own letters over the column, under it the
+             pin and the zoom */
+          <span aria-hidden className={`absolute inset-x-0 top-[4px] flex-col items-center font-semibold leading-none ${ruler ? 'flex' : 'hidden'}`}>
             <span className="whitespace-nowrap font-sans text-[9px] text-brass-400/70">{t('game.incomeRail.trackShort')}</span>
-            {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="font-mono text-[9px] text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
+            {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="mt-[5px] self-end pr-[5px] font-mono text-[9px] text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
           </span>
         )}
-        <div ref={incLane.ref} className={`relative overflow-hidden ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-7 h-[calc(100%-40px)]'} ${grab(incLane)}`} {...incLane.handlers}>
+        {/* the lane cuts what runs off its ends, not what stands beside the
+            line: the figures of the filet off the left column, a "+3"
+            rising over the bottom one */}
+        <div
+          ref={incLane.ref}
+          className={`relative ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-9 h-[calc(100%-48px)]'} ${grab(incLane)}`}
+          style={incAxis === 'x' ? { overflowX: 'clip', overflowY: 'visible' } : { overflowY: 'clip', overflowX: 'visible' }}
+          {...incLane.handlers}
+        >
           <div style={incLane.inner}>
             {!ruler && (
               /* the filet: one brass line, a graduation every five spaces,

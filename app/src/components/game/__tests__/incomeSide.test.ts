@@ -4,6 +4,7 @@ import type { BoardOptions } from '../boardOptions';
 import { leftSheetStyle } from '../useLayer';
 import { REVIEW_CURVE_H } from '../guideKeys';
 import { TIP_GAP, TIP_MARGIN, placeTip } from '../tooltipPlace';
+import { FLAG_GAP, fanLength, flagSpec, incomeLeaders, rungs, spreadFlags } from '../incomeFlags';
 
 /* ------------------------------------------------------------------ */
 /* The income track along the bottom or down the left edge: the room   */
@@ -11,7 +12,7 @@ import { TIP_GAP, TIP_MARGIN, placeTip } from '../tooltipPlace';
 /* on the screen.                                                       */
 /* ------------------------------------------------------------------ */
 
-const opts = (incomeSide: BoardOptions['incomeSide']): BoardOptions => ({ ...getBoardOptions(), incomeSide });
+const opts = (incomeSide: BoardOptions['incomeSide'], incomePinned = false): BoardOptions => ({ ...getBoardOptions(), incomeSide, incomePinned });
 
 describe('the room the HUD leaves the income track', () => {
   it('along the bottom: the filet is counted at the foot, the left is a plain margin', () => {
@@ -34,6 +35,27 @@ describe('the room the HUD leaves the income track', () => {
       expect(hudInsets(opts(side), true).top).toBe(TRACK_H + 8);
       expect(hudInsets(opts(side), false).top).toBe(8);
       expect(hudInsets(opts(side), false, 300).right).toBe(312);
+    }
+  });
+});
+
+describe('the room a pinned track takes', () => {
+  it('along the bottom: the whole open ruler is kept, and a gap over it', () => {
+    expect(hudInsets(opts('bottom', true), false).bottom).toBe(TRACK_H + 8);
+    expect(hudInsets(opts('bottom', true), false).left).toBe(12);
+  });
+
+  it('down the left edge: the whole open ruler, the lantern’s lane no longer under it', () => {
+    const i = hudInsets(opts('left', true), false);
+    expect(i.left).toBe(TRACK_W + 8);
+    expect(i.left).toBeGreaterThan(hudInsets(opts('left'), false).left);
+    expect(i.bottom).toBe(12);
+  });
+
+  it('leaves the top and the right as they were', () => {
+    for (const side of ['bottom', 'left'] as const) {
+      expect(hudInsets(opts(side, true), true).top).toBe(hudInsets(opts(side), true).top);
+      expect(hudInsets(opts(side, true), false, 300).right).toBe(312);
     }
   });
 });
@@ -85,5 +107,70 @@ describe('a tooltip plate', () => {
 
   it('is laid by the middle alone before it has been measured', () => {
     expect(placeTip('bottom', { x: 100, y: 10, w: 20, h: 20 }, null, vw, vh)).toEqual({ left: 110, top: 30 + TIP_GAP });
+  });
+});
+
+describe('the folded track at a glance', () => {
+  /* flags never overprint: each begins after the last one ends, by the gap */
+  const apart = (specs: ReturnType<typeof flagSpec>[], at: number[]) => {
+    const boxes = specs.map((f, i) => ({ start: at[i] - f.lead, end: at[i] - f.lead + f.len })).sort((a, b) => a.start - b.start);
+    return boxes.every((b, k) => k === 0 || b.start >= boxes[k - 1].end + FLAG_GAP - 1e-6);
+  };
+
+  it('leaves a flag on its rung when it has room', () => {
+    const specs = [flagSpec('x', 100, 1, '£2'), flagSpec('x', 400, 1, '£15')];
+    expect(spreadFlags(specs, FLAG_GAP, 0, 1000)).toEqual([100, 400]);
+  });
+
+  it('pushes neighbouring rungs apart, the cluster centred on them', () => {
+    const specs = [flagSpec('x', 300, 1, '£10'), flagSpec('x', 312, 1, '£11'), flagSpec('x', 336, 2, '£11')];
+    const at = spreadFlags(specs, FLAG_GAP, 0, 1000);
+    expect(apart(specs, at)).toBe(true);
+    /* the order along the track is kept */
+    expect(at[0]).toBeLessThan(at[1]);
+    expect(at[1]).toBeLessThan(at[2]);
+    /* the pushes balance out: the cluster sits where its rungs are */
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    const wants = specs.map((f) => f.at - f.lead);
+    const starts = at.map((a, i) => a - specs[i].lead);
+    const offs = [0, specs[0].len + FLAG_GAP, specs[0].len + specs[1].len + 2 * FLAG_GAP];
+    expect(mean(starts.map((s, i) => s - offs[i]))).toBeCloseTo(mean(wants.map((w, i) => w - offs[i])), 6);
+  });
+
+  it('keeps a cluster inside the lane at either end', () => {
+    const lo = [flagSpec('x', 2, 1, '−£10'), flagSpec('x', 8, 1, '−£9')];
+    const at = spreadFlags(lo, FLAG_GAP, 0, 1000);
+    expect(at[0] - lo[0].lead).toBeGreaterThanOrEqual(0);
+    expect(apart(lo, at)).toBe(true);
+    const hi = [flagSpec('x', 990, 1, '£29'), flagSpec('x', 996, 1, '£30')];
+    const bt = spreadFlags(hi, FLAG_GAP, 0, 1000);
+    expect(bt[1] - hi[1].lead + hi[1].len).toBeLessThanOrEqual(1000);
+    expect(apart(hi, bt)).toBe(true);
+  });
+
+  it('stacks down the left edge by the tokens alone, the figure standing beside them', () => {
+    const specs = [flagSpec('y', 500, 1, '−10 £'), flagSpec('y', 504, 1, '−9 £'), flagSpec('y', 508, 3, '−8 £')];
+    expect(specs[0].len).toBe(fanLength(1));
+    expect(specs[2].len).toBe(fanLength(3));
+    const at = spreadFlags(specs, FLAG_GAP, 0, 800);
+    expect(apart(specs, at)).toBe(true);
+  });
+
+  it('gives a longer figure a longer flag along the bottom', () => {
+    expect(flagSpec('x', 0, 1, '−10\u00a0£').len).toBeGreaterThan(flagSpec('x', 0, 1, '£2').len);
+  });
+
+  it('shares one flag between the seats of one rung', () => {
+    expect(rungs([10, 12, 10, 3])).toEqual([
+      { space: 10, seats: [0, 2] },
+      { space: 12, seats: [1] },
+      { space: 3, seats: [3] },
+    ]);
+  });
+
+  it('names the leader, or leaders, and nobody while all stand level', () => {
+    expect(incomeLeaders([10, 25, 12, 25])).toEqual([1, 3]);
+    expect(incomeLeaders([10, 10, 10])).toEqual([]);
+    expect(incomeLeaders([0, 0, 4])).toEqual([2]);
   });
 });
