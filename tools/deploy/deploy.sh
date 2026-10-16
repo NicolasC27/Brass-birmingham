@@ -13,6 +13,12 @@ set -euo pipefail
 HOST=${BLACKRAIL_HOST:-blackrail}
 APP_URL=${APP_URL:-https://playblackrail.com}
 OFFICE_WS=${OFFICE_WS:-wss://office.playblackrail.com}
+# the legal notice's particulars (public: they are printed on /legal). The
+# publisher, not a professional, stays anonymous under LCEN art. 6-III-2:
+# the host holds its identity
+export VITE_LEGAL_OPERATOR=${VITE_LEGAL_OPERATOR:-"Blackrail — éditeur non professionnel, identité déclarée à l’hébergeur (LCEN, art. 6-III-2)"}
+export VITE_LEGAL_CONTACT=${VITE_LEGAL_CONTACT:-contact@playblackrail.com}
+export VITE_LEGAL_HOST=${VITE_LEGAL_HOST:-"OVH SAS, 2 rue Kellermann, 59100 Roubaix, France — +33 9 72 10 10 07"}
 SSH=(ssh -o IdentitiesOnly=yes ${BLACKRAIL_KEY:+-i "$BLACKRAIL_KEY"})
 here=$(cd "$(dirname "$0")" && pwd)
 cd "$here/../../app"
