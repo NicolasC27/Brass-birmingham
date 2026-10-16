@@ -5,9 +5,10 @@ import { hydratePapers } from "@/platform/papers";
 import { onlineWire } from "@/online/net";
 import Unreachable from "@/components/platform/Unreachable";
 import Boundary from "@/components/platform/Boundary";
-import { Routes, Route, Navigate } from "react-router";
+import { Routes, Route, Navigate, useLocation } from "react-router";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
+import { PRELAUNCH } from "@/landing/office";
 
 /* the front page and the shell come with the paper; every other page is
    fetched when first opened, so the journal opens light */
@@ -32,6 +33,8 @@ const Defis = lazy(() => import("@/pages/Defis"));
 const Tableau = lazy(() => import("@/pages/Tableau"));
 const Glossaire = lazy(() => import("@/pages/Glossaire"));
 const Services = lazy(() => import("@/pages/Services"));
+/* the preview and its waiting list: a sheet of its own, which never opens the socket */
+const LandingRoutes = lazy(() => import("@/landing/LandingRoutes"));
 /* the test bench, for the developer's own builds: the route does not exist
    in a production build, and the import goes with it */
 const Admin = import.meta.env.DEV ? lazy(() => import("@/admin/AdminPage")) : null;
@@ -41,7 +44,28 @@ function Arriving() {
   return <p className="mx-auto max-w-[1240px] px-8 py-16 text-center font-serif text-[14px] italic text-paper-300">…</p>;
 }
 
+/* before the line opens, every address is the preview's but the direction's
+   own way in: its desk, and the account page it signs in on */
+const BACKSTAGE = /^\/(direction|account)(\/|$)/;
+
 export default function App() {
+  const { pathname } = useLocation();
+  const preview = pathname === "/avant-premiere" || pathname.startsWith("/avant-premiere/") || (PRELAUNCH && !BACKSTAGE.test(pathname));
+  if (preview) {
+    return (
+      <MotionConfig reducedMotion="user">
+        <Boundary>
+          <Suspense fallback={<Arriving />}>
+            <LandingRoutes />
+          </Suspense>
+        </Boundary>
+      </MotionConfig>
+    );
+  }
+  return <Journal />;
+}
+
+function Journal() {
   /* the register of games at home and the papers that follow the account are
      the office's: both are read once, here, before any page asks what is on
      them. A browser that cannot reach the office simply has none */
