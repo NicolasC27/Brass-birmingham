@@ -8,7 +8,7 @@ import Modal from '@/components/platform/Modal';
 import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import PageShell from '@/components/site/PageShell';
 import Toast, { type ToastData } from '@/components/platform/Toast';
-import { setBoardOption, useBoardOptions, type BoardOptions, type RailPainting } from '@/components/game/boardOptions';
+import { setBoardOption, useBoardOptions, type BoardOptions } from '@/components/game/boardOptions';
 import type { SlotArt } from '@/gl/faces';
 import { CATALOG, COUNTER_OPEN, SHOWN_CATEGORIES, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
 import { equip, useWallet, type Wallet } from '@/platform/wallet';
@@ -48,9 +48,6 @@ const PIC: Record<string, string> = {
   'sign-gloucester': '/merchant-house-gloucester.webp',
   'sign-nottingham': '/merchant-house-nottingham.webp',
   'sign-warrington': '/merchant-house-warrington.webp',
-  'painting-rail-1': '/map-era-rail.webp',
-  'painting-rail-2': '/map-era-rail-2.webp',
-  'painting-rail-3': '/map-era-rail-3.webp',
   'portrait-1': '/portrait-1.webp',
   'portrait-2': '/portrait-2.webp',
   'portrait-3': '/portrait-3.webp',
@@ -62,13 +59,12 @@ const PIC: Record<string, string> = {
 /** les catégories dont le choix équipé est une préférence locale (carte de membre) */
 const LOCAL_WEAR: ReadonlySet<Category> = new Set<Category>(['avatar', 'frame', 'title']);
 /** celles qui s'affichent avec une description sous le nom */
-const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'painting', 'portrait', 'tiles']);
+const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'portrait', 'tiles']);
 
-type BoardWear = { key: 'railPainting'; value: RailPainting } | { key: 'slotArt'; value: SlotArt };
+type BoardWear = { key: 'slotArt'; value: SlotArt };
 
 /** ce que porter un objet change sur le plateau, quand ça change quelque chose */
 function boardWear(item: ShopItem): BoardWear | null {
-  if (item.category === 'painting') return { key: 'railPainting', value: item.id.slice(-1) as RailPainting };
   if (item.id === 'tiles-mono') return { key: 'slotArt', value: 'mono' };
   if (item.id === 'tiles-engraved') return { key: 'slotArt', value: 'engraved' };
   return null;
@@ -132,7 +128,7 @@ function ItemVisual({ item, equippedAvatar }: { item: ShopItem; equippedAvatar: 
       </span>
     );
   }
-  /* enseigne, peinture, portrait, tuiles : l'image du hall */
+  /* enseigne, portrait, tuiles : l'image du hall */
   const tiles = item.category === 'tiles';
   return (
     <span className={cn('block w-full overflow-hidden border border-brass-hairline bg-enamel-900', tiles ? 'flex h-32 items-center justify-center' : 'aspect-[4/3]')}>
@@ -353,12 +349,8 @@ export default function Comptoir() {
   const doEquip = (item: ShopItem) => {
     const w = boardWear(item);
     if (w) {
-      /* peinture ou tuiles : c'est le plateau qui les porte ; une peinture
-         ne se voit que sur le terrain gravé, on y bascule avec elle */
-      if (w.key === 'railPainting') {
-        setBoardOption('railPainting', w.value);
-        setBoardOption('mapStyle', 'etched');
-      } else setBoardOption('slotArt', w.value);
+      /* les tuiles : c'est le plateau qui les porte */
+      setBoardOption(w.key, w.value);
       showToast(tr('platform.comptoir.toastEquipped', { name: itemName(item.id) }), 'info');
       return;
     }

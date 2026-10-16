@@ -1516,11 +1516,24 @@ export class Store {
 
   /* ----------------------------- the purse ------------------------- */
 
-  /** the guineas earned and what they bought — the free items are everyone's */
+  /** the guineas earned and what they bought — the free items are everyone's.
+   *  An id the counter no longer sells (the rail paintings, withdrawn) stays
+   *  in the register but is not reported */
   purse(accountId: string): Purse {
+    const { guineas, bought } = this.purseRow(accountId);
+    return { guineas, owned: [...new Set([...FREE_ITEMS, ...bought.filter((i) => COUNTER_BY_ID[i] !== undefined)])] };
+  }
+
+  /** the purse as the register holds it, withdrawn items and all */
+  private purseRow(accountId: string): { guineas: number; bought: string[] } {
     const row = this.db.prepare('select guineas, owned from purses where accountId = ?').get(accountId) as { guineas: number; owned: string } | undefined;
-    const owned = row ? (JSON.parse(row.owned) as string[]) : [];
-    return { guineas: row?.guineas ?? 0, owned: [...new Set([...FREE_ITEMS, ...owned])] };
+    let bought: unknown = [];
+    try {
+      bought = row ? JSON.parse(row.owned) : [];
+    } catch {
+      /* a spoilt list is read as nothing bought */
+    }
+    return { guineas: row?.guineas ?? 0, bought: Array.isArray(bought) ? bought.filter((i): i is string => typeof i === 'string') : [] };
   }
 
   earn(accountId: string, guineas: number): void {
@@ -1533,7 +1546,8 @@ export class Store {
     if (!wanted) return 'refused';
     const purse = this.purse(accountId);
     if (purse.owned.includes(item) || purse.guineas < wanted.price) return 'refused';
-    const owned = JSON.stringify([...purse.owned.filter((i) => !FREE_ITEMS.includes(i)), item]);
+    /* the register keeps what it held, a withdrawn item included */
+    const owned = JSON.stringify([...this.purseRow(accountId).bought.filter((i) => !FREE_ITEMS.includes(i)), item]);
     this.db.prepare('insert into purses (accountId, guineas, owned) values (?, ?, ?) on conflict (accountId) do update set guineas = guineas - ?, owned = ?').run(accountId, -wanted.price, owned, wanted.price, owned);
     return null;
   }

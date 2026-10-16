@@ -1,8 +1,10 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { GameState, SetupPayload } from '@/game/types';
+import { FREE_ITEMS } from '@/online/counter';
 import type { Table } from '@/online/table';
 import { Store } from '../store';
 
@@ -171,5 +173,24 @@ describe('the register', () => {
     expect((await store.signInAsync('ADA', 'analytical-engine-1843'))?.name).toBe('Ada');
     expect(await store.signInAsync('Ada', 'wrong')).toBeNull();
     expect(store.signIn('Ada', 'analytical-engine-1843')?.name).toBe('Ada');
+  });
+
+  it('passes over a withdrawn item in a purse, and keeps it on the register', () => {
+    const { dir, store } = open();
+    const made = store.signUp('Ada', 'ada@example.test', 'analytical-engine-1843');
+    if (!('account' in made)) throw new Error('no account');
+    const id = made.account.id;
+    store.earn(id, 500);
+    /* a purse written when the rail paintings were still for sale */
+    const old = new DatabaseSync(path.join(dir, 'test.db'));
+    old.prepare('update purses set owned = ? where accountId = ?').run(JSON.stringify(['painting-rail-1', 'tiles-mono', 'painting-rail-3']), id);
+    old.close();
+    expect(store.purse(id)).toEqual({ guineas: 500, owned: [...FREE_ITEMS, 'tiles-mono'] });
+    /* no longer sold, so not sold again */
+    expect(store.buy(id, 'painting-rail-1')).toBe('refused');
+    expect(store.buy(id, 'sign-oxford')).toBeNull();
+    expect(store.purse(id)).toEqual({ guineas: 380, owned: [...FREE_ITEMS, 'tiles-mono', 'sign-oxford'] });
+    /* the register still holds what it held */
+    expect(JSON.parse((store.exportOf(id)!.purse as { owned: string }).owned)).toEqual(['painting-rail-1', 'tiles-mono', 'painting-rail-3', 'sign-oxford']);
   });
 });

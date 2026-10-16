@@ -17,10 +17,10 @@ export interface ShopItem {
   rarity: Rarity;
 }
 
-export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'painting', 'portrait', 'tiles'];
+export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'portrait', 'tiles'];
 
 /* ------------------------------------------------------------------ */
-/* Le comptoir est en veille : rien ne se vend encore. Les trois       */
+/* Le comptoir est en veille : rien ne se vend encore. Les deux        */
 /* rayons dont les images sont prêtes restent en vitrine — on les      */
 /* regarde, on ne les achète pas. Ouvrir la boutique, c'est passer     */
 /* COUNTER_OPEN à true.                                                */
@@ -29,7 +29,7 @@ export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'pain
 export const COUNTER_OPEN: boolean = false;
 
 /** les rayons montrés tant que le comptoir est en veille */
-export const PREVIEW_CATEGORIES: Category[] = ['painting', 'portrait', 'tiles'];
+export const PREVIEW_CATEGORIES: Category[] = ['portrait', 'tiles'];
 
 /** les rayons visibles, boutique ouverte ou non */
 export const SHOWN_CATEGORIES: Category[] = COUNTER_OPEN ? CATEGORIES : PREVIEW_CATEGORIES;
@@ -60,7 +60,6 @@ export const DEFAULT_EQUIPPED: Record<Category, string> = {
   frame: 'frame-none',
   title: 'title-none',
   sign: 'sign-shrewsbury',
-  painting: 'painting-rail-2',
   portrait: 'portrait-1',
   tiles: 'tiles-engraved',
 };

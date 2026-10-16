@@ -1,11 +1,13 @@
 /* ------------------------------------------------------------------ */
 /* The counter: what the guineas earned at the tables can buy. Only    */
-/* looks — a merchant's painted sign, a painting under the rails, a    */
-/* portrait, a set of tiles. The office keeps the purse; this list is  */
-/* the same on both sides of the wire.                                 */
+/* looks — a merchant's painted sign, a portrait, a set of tiles. The  */
+/* office keeps the purse; this list is the same on both sides of the  */
+/* wire. An id no longer on it (the rail paintings, withdrawn: the     */
+/* board is the English model for everyone) may linger in an old       */
+/* purse or outfit; both sides pass over it when they read.            */
 /* ------------------------------------------------------------------ */
 
-export type CounterKind = 'sign' | 'painting' | 'portrait' | 'tiles' | 'avatar' | 'frame' | 'title';
+export type CounterKind = 'sign' | 'portrait' | 'tiles' | 'avatar' | 'frame' | 'title';
 
 export interface CounterItem {
   id: string;
@@ -20,9 +22,6 @@ export const COUNTER: CounterItem[] = [
   { id: 'sign-gloucester', kind: 'sign', price: 120 },
   { id: 'sign-nottingham', kind: 'sign', price: 120 },
   { id: 'sign-warrington', kind: 'sign', price: 120 },
-  { id: 'painting-rail-2', kind: 'painting', price: 0 },
-  { id: 'painting-rail-1', kind: 'painting', price: 200 },
-  { id: 'painting-rail-3', kind: 'painting', price: 200 },
   { id: 'portrait-1', kind: 'portrait', price: 0 },
   { id: 'portrait-2', kind: 'portrait', price: 80 },
   { id: 'portrait-3', kind: 'portrait', price: 80 },
