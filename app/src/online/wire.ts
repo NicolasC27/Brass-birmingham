@@ -1,6 +1,7 @@
 import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
+import type { Audience, WaitBook } from './waitlist';
 import type { GameAction } from '@/game/actions';
 import type { SetupPayload } from '@/game/types';
 
@@ -306,6 +307,34 @@ export class Wire {
 
   async buy(item: string): Promise<void> {
     await this.ask((rid) => ({ t: 'buy', rid, item }));
+  }
+
+  /* the direction's desk: each request answers with the waiting list whole */
+  private async book(make: (rid: number) => ClientMessage): Promise<WaitBook> {
+    const m = await this.ask(make);
+    if (m.t !== 'admin.book') throw new Error('no-book');
+    return m.book;
+  }
+
+  adminBook(): Promise<WaitBook> {
+    return this.book((rid) => ({ t: 'admin.book', rid }));
+  }
+
+  adminStrike(id: string): Promise<WaitBook> {
+    return this.book((rid) => ({ t: 'admin.strike', rid, id }));
+  }
+
+  adminStop(id: string): Promise<WaitBook> {
+    return this.book((rid) => ({ t: 'admin.stop', rid, id }));
+  }
+
+  adminCircular(subject: string, body: string, audience: Audience): Promise<WaitBook> {
+    return this.book((rid) => ({ t: 'admin.circular', rid, subject, body, audience }));
+  }
+
+  /** the circular as a proof, to the direction's own address only */
+  async adminTrial(subject: string, body: string, audience: Audience): Promise<void> {
+    await this.ask((rid) => ({ t: 'admin.circular', rid, subject, body, audience, trial: true }));
   }
 
   /** a fault of this page, for the office's log: goes even before sign-in,
