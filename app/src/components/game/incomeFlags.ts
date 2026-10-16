@@ -9,7 +9,52 @@
 /* layout can be held to account without a browser.                    */
 /* ------------------------------------------------------------------ */
 
+import { INCOME_MAX, incomeLevel, levelTopSpace } from '@/game/data';
+import { money } from '@/i18n';
+import type { Lang } from '@/i18n';
+
 export type FlagAxis = 'x' | 'y';
+
+/* ------------------------------ rungs ------------------------------ */
+/* A tile flipped moves the marker by SPACES; the pay only rises when   */
+/* the marker crosses into the next rung (a level: one space up to the  */
+/* start, then two, three, four spaces). Plain arithmetic on the board, */
+/* public to every seat.                                                */
+
+/** the spaces a level spans on the track, its lowest and its highest */
+export function levelSpan(level: number): { from: number; to: number } {
+  const l = Math.max(-10, Math.min(30, level));
+  return { from: l <= -10 ? 0 : levelTopSpace(l - 1) + 1, to: levelTopSpace(l) };
+}
+
+/** where a marker stands: its level, that level's spaces, and how many
+ *  spaces are left before the next level pays (0 at the ceiling) */
+export function incomeSpot(space: number): { level: number; from: number; to: number; toNext: number } {
+  const sp = Math.max(0, Math.min(INCOME_MAX, space));
+  const level = incomeLevel(sp);
+  const { from, to } = levelSpan(level);
+  return { level, from, to, toNext: level >= 30 ? 0 : to + 1 - sp };
+}
+
+/** the level a move from one space to another lands on when it changes
+ *  the pay, else null: a flip inside its rung pays nothing more yet */
+export function crossedTo(from: number, to: number): number | null {
+  const a = incomeLevel(from);
+  const b = incomeLevel(to);
+  return a === b ? null : b;
+}
+
+/** what a rung pays, as the folded track prints it by its tokens: signed,
+ *  so a debt and a gain read apart ("+3 £", "−2 £"), and a quiet "±0"
+ *  where the rung pays nothing rather than a bare "0 £" */
+export function payFigure(pay: number, l?: Lang): string {
+  if (pay === 0) return '±0';
+  return pay > 0 ? `+${money(pay, l)}` : money(pay, l);
+}
+
+/** what a rung pays in a sentence ("… par paie"): signed, the pound kept,
+ *  the sign joined to its figure so a line never breaks between them */
+export const payWords = (pay: number, l?: Lang): string => (pay > 0 ? `+\u2060${money(pay, l)}` : money(pay, l));
 
 /** the token on the folded track, and the step between tokens fanned on one rung */
 export const FLAG_CHIP = 13;

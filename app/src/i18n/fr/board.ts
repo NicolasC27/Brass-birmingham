@@ -105,7 +105,7 @@ const fr: typeof enboard = {
     vpChip: '{vp} PV',
     flipped: 'retournée',
     flippedSuffix: ' · RETOURNÉE',
-    builtTitle: '{industry} N{level} · {name}{flipped} · revenu +{income} · {vp} PV',
+    builtTitle: '{industry} N{level} · {name}{flipped} · revenu +{income} [income|case|cases] · {vp} PV',
   },
   slot: {
     targetTitle: '{industry} N{level} — {total} £ ({status})',
@@ -126,7 +126,7 @@ const fr: typeof enboard = {
     level: 'Niveau {level}',
     paid: 'A payé · {vp} PV',
     unsold: 'à vendre',
-    worth: '{vp} PV · revenu +{income}',
+    worth: '{vp} PV · revenu +{income} [income|case|cases]',
     stock: { coal: '{n} [n|charbon|charbons]', iron: '{n} [n|fer|fers]', beer: '{n} [n|bière|bières]' },
     close: "Fermer l’inspecteur",
     zoomHere: 'Zoomer ici',

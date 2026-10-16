@@ -103,7 +103,7 @@ const board = {
     vpChip: '{vp}vp',
     flipped: 'flipped',
     flippedSuffix: ' · FLIPPED',
-    builtTitle: '{industry} L{level} · {name}{flipped} · +{income} income · {vp} VP',
+    builtTitle: '{industry} L{level} · {name}{flipped} · +{income} income [income|space|spaces] · {vp} VP',
   },
   slot: {
     targetTitle: '{industry} L{level} — £{total} ({status})',
@@ -123,7 +123,7 @@ const board = {
     level: 'Level {level}',
     paid: 'Paid · {vp} VP',
     unsold: 'to sell',
-    worth: '{vp} VP · income +{income}',
+    worth: '{vp} VP · income +{income} [income|space|spaces]',
     stock: { coal: '{n} coal', iron: '{n} iron', beer: '{n} beer' },
     ariaLabel: '{name} inspector',
     close: 'Close inspector',

@@ -105,7 +105,7 @@ const es: typeof enboard = {
     vpChip: '{vp} PV',
     flipped: 'volteada',
     flippedSuffix: ' · VOLTEADA',
-    builtTitle: '{industry} N{level} · {name}{flipped} · ingresos +{income} · {vp} PV',
+    builtTitle: '{industry} N{level} · {name}{flipped} · ingresos +{income} [income|casilla|casillas] · {vp} PV',
   },
   slot: {
     targetTitle: '{industry} N{level} — {total} £ ({status})',
@@ -126,7 +126,7 @@ const es: typeof enboard = {
     level: 'Nivel {level}',
     paid: 'Pagado · {vp} PV',
     unsold: 'por vender',
-    worth: '{vp} PV · ingresos +{income}',
+    worth: '{vp} PV · ingresos +{income} [income|casilla|casillas]',
     stock: { coal: '{n} [n|carbón|carbones]', iron: '{n} [n|hierro|hierros]', beer: '{n} [n|cerveza|cervezas]' },
     close: 'Cerrar el inspector',
     zoomHere: 'Ampliar aquí',

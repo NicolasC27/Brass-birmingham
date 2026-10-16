@@ -4,7 +4,8 @@ import type { BoardOptions } from '../boardOptions';
 import { leftSheetStyle } from '../useLayer';
 import { REVIEW_CURVE_H } from '../guideKeys';
 import { TIP_GAP, TIP_MARGIN, placeTip } from '../tooltipPlace';
-import { FLAG_GAP, FLAG_PLATE_H, FLAG_PLATE_MARGIN, FLAG_SPACE, fanLength, flagSpec, incomeLeaders, plateWidth, rungs, spreadFlags, underFlags } from '../incomeFlags';
+import { FLAG_GAP, FLAG_PLATE_H, FLAG_PLATE_MARGIN, FLAG_SPACE, crossedTo, fanLength, flagSpec, incomeLeaders, incomeSpot, levelSpan, payFigure, payWords, plateWidth, rungs, spreadFlags, underFlags } from '../incomeFlags';
+import { INCOME_MAX, incomeLevel } from '@/game/data';
 import { LANGS, money } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
@@ -200,5 +201,72 @@ describe('the folded track at a glance', () => {
     expect(incomeLeaders([10, 25, 12, 25])).toEqual([1, 3]);
     expect(incomeLeaders([10, 10, 10])).toEqual([]);
     expect(incomeLeaders([0, 0, 4])).toEqual([2]);
+  });
+});
+
+describe('the rungs of the income track', () => {
+  it('spans each level over its own spaces, the whole track covered once', () => {
+    expect(levelSpan(-10)).toEqual({ from: 0, to: 0 });
+    expect(levelSpan(0)).toEqual({ from: 10, to: 10 });
+    expect(levelSpan(1)).toEqual({ from: 11, to: 12 });
+    expect(levelSpan(5)).toEqual({ from: 19, to: 20 });
+    expect(levelSpan(10)).toEqual({ from: 29, to: 30 });
+    expect(levelSpan(11)).toEqual({ from: 31, to: 33 });
+    expect(levelSpan(21)).toEqual({ from: 61, to: 64 });
+    expect(levelSpan(29)).toEqual({ from: 93, to: 96 });
+    expect(levelSpan(30)).toEqual({ from: 97, to: 99 });
+    /* every space falls in the span of the level it pays, and in no other */
+    for (let sp = 0; sp <= INCOME_MAX; sp++) {
+      const { from, to } = levelSpan(incomeLevel(sp));
+      expect(sp >= from && sp <= to).toBe(true);
+    }
+    for (let l = -10; l < 30; l++) expect(levelSpan(l + 1).from).toBe(levelSpan(l).to + 1);
+  });
+
+  it('tells where a marker stands and the spaces left to the next rung', () => {
+    expect(incomeSpot(10)).toEqual({ level: 0, from: 10, to: 10, toNext: 1 });
+    expect(incomeSpot(17)).toEqual({ level: 4, from: 17, to: 18, toNext: 2 });
+    expect(incomeSpot(18)).toEqual({ level: 4, from: 17, to: 18, toNext: 1 });
+    expect(incomeSpot(31).toNext).toBe(3);
+    expect(incomeSpot(61).toNext).toBe(4);
+    /* the ceiling: nowhere further to go */
+    expect(incomeSpot(97)).toEqual({ level: 30, from: 97, to: 99, toNext: 0 });
+    expect(incomeSpot(99).toNext).toBe(0);
+    /* the spaces left always land the marker on the next rung's first space */
+    for (let sp = 0; sp < 97; sp++) {
+      const s = incomeSpot(sp);
+      expect(incomeLevel(sp + s.toNext)).toBe(s.level + 1);
+      expect(incomeLevel(sp + s.toNext - 1)).toBe(s.level);
+    }
+  });
+
+  it('knows when a move crosses into another rung, and which', () => {
+    /* inside a rung: the pay stays */
+    expect(crossedTo(17, 18)).toBeNull();
+    expect(crossedTo(31, 33)).toBeNull();
+    /* over its edge: the new rung */
+    expect(crossedTo(18, 19)).toBe(5);
+    expect(crossedTo(10, 15)).toBe(3);
+    expect(crossedTo(30, 36)).toBe(12);
+    /* a loan goes the other way */
+    expect(crossedTo(20, 14)).toBe(2);
+    expect(crossedTo(10, 10)).toBeNull();
+  });
+
+  it('prints a rung’s pay signed, a rung that pays nothing as a quiet ±0', () => {
+    for (const l of LANGS) {
+      expect(payFigure(0, l)).toBe('±0');
+      expect(payFigure(3, l)).toBe(`+${money(3, l)}`);
+      expect(payFigure(-2, l)).toBe(money(-2, l));
+      expect(payFigure(-2, l).startsWith('−')).toBe(true);
+    }
+    expect(payFigure(3, 'fr')).toBe('+3\u00a0£');
+    expect(payFigure(3, 'en')).toBe('+£3');
+    expect(payWords(0, 'fr')).toBe('0\u00a0£');
+    expect(payWords(6, 'en')).toBe('+\u2060£6');
+  });
+
+  it('fits the widest signed pay on a plate inside the left lane', () => {
+    for (const l of LANGS) for (const n of [-10, 30]) expect(plateWidth(payFigure(n, l))).toBeLessThanOrEqual(FILET_W - 2 * FLAG_PLATE_MARGIN);
   });
 });

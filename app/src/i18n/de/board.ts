@@ -105,7 +105,7 @@ const de: typeof enboard = {
     vpChip: '{vp} SP',
     flipped: 'umgedreht',
     flippedSuffix: ' · UMGEDREHT',
-    builtTitle: '{industry} Stufe {level} · {name}{flipped} · Einkommen +{income} · {vp} SP',
+    builtTitle: '{industry} Stufe {level} · {name}{flipped} · Einkommen +{income} [income|Feld|Felder] · {vp} SP',
   },
   slot: {
     targetTitle: '{industry} Stufe {level} — £{total} ({status})',
@@ -126,7 +126,7 @@ const de: typeof enboard = {
     level: 'Stufe {level}',
     paid: 'Bezahlt · {vp} SP',
     unsold: 'zu verkaufen',
-    worth: '{vp} SP · Einkommen +{income}',
+    worth: '{vp} SP · Einkommen +{income} [income|Feld|Felder]',
     stock: { coal: '{n} Kohle', iron: '{n} Eisen', beer: '{n} Bier' },
     close: 'Inspektor schließen',
     zoomHere: 'Hierher zoomen',

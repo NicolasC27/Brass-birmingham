@@ -6,7 +6,7 @@ import { INDUSTRY_ICON, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { ledgerParts } from '@/game/ledgerText';
 import { useGame } from '@/game/store';
 import type { Era, GameState, IndustryType, LedgerEntry } from '@/game/types';
-import { useT } from '@/i18n';
+import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { GazettePaper } from './Gazette';
 import { lastRound } from './handFan';
@@ -515,7 +515,7 @@ function Notices() {
               className="font-fell text-[40px] tracking-wide text-bottle-600 brightness-150"
               style={{ textShadow: '0 2px 0 rgba(0,0,0,.8), 0 0 24px rgba(95,163,122,.55)' }}
             >
-              {t('game.notice.income', { n: f.n })}
+              {t('game.notice.income', { pay: money(f.n) })}
             </motion.div>
           ))}
         </AnimatePresence>

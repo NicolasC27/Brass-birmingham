@@ -2,16 +2,16 @@ import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Pin, PinOff } from 'lucide-react';
-import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, incomeLevel, levelTopSpace, loanLanding } from '@/game/data';
+import { INCOME_MAX, INCOME_PAYOUT, LOAN_AMOUNT, PLAYER_COLORS, incomeLevel, loanLanding } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
-import { money, useT } from '@/i18n';
+import { useT } from '@/i18n';
 import Tooltip from './Tooltip';
 import { ShapeChip } from './TownInspector';
 import { useReducedMotion } from './useReducedMotion';
 import { FILET_H, FILET_W, TRACK_H, TRACK_W, leftTrackTop, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { filetTicks } from './railLogic';
-import { FLAG_CHIP, FLAG_FAN, FLAG_GAP, FLAG_PLATE_MARGIN, FLAG_SPACE, flagSpec, incomeLeaders, rungs, spreadFlags, underFlags } from './incomeFlags';
+import { FLAG_CHIP, FLAG_FAN, FLAG_GAP, FLAG_PLATE_MARGIN, FLAG_SPACE, crossedTo, flagSpec, incomeLeaders, incomeSpot, payFigure, payWords, rungs, spreadFlags, underFlags } from './incomeFlags';
 
 /* ------------------------------------------------------------------ */
 /* Two STRAIGHT tracks, one per scale:                                  */
@@ -210,18 +210,22 @@ function Pawn({
   const t = useT();
   const p = game.players[idx];
   const col = PLAYER_COLORS[p.color]?.hex ?? '#C9A45C';
-  const pay = money(INCOME_PAYOUT[p.income]);
+  /* the figure by the tokens, and the same pay in a sentence */
+  const figureText = payFigure(INCOME_PAYOUT[p.income]);
+  const pay = payWords(INCOME_PAYOUT[p.income]);
   const after = loanLanding(p.income) ?? p.income;
-  /* the climb ahead: how many spaces the pawn still has to cross before
-     the next level pays, or the ceiling */
-  const lvl = incomeLevel(p.income);
-  const toNext = lvl >= 30 ? 0 : levelTopSpace(lvl) + 1 - p.income;
-  const nextPay = money(INCOME_PAYOUT[Math.min(INCOME_MAX, levelTopSpace(lvl) + 1)]);
+  /* where exactly the pawn stands in its rung, and the climb ahead: how
+     many spaces it still has to cross before the next rung pays */
+  const stand = incomeSpot(p.income);
+  const where = stand.from === stand.to ? t('game.incomeRail.pawnSpot', { space: p.income }) : t('game.incomeRail.pawnSpan', { space: p.income, from: stand.from, to: stand.to });
+  const nextPay = payWords(INCOME_PAYOUT[Math.min(INCOME_MAX, stand.to + 1)]);
   const chip = thin ? CHIP_THIN : CHIP;
   const fan = (fanIndex - (fanSize - 1) / 2) * (thin ? FLAG_FAN : 10);
   const zig = fanSize > 1 ? (fanIndex % 2 ? (thin ? 2 : 4) : thin ? -2 : -4) : 0;
-  const label = kind === 'vp' ? String(p.vp) : pay;
+  const label = kind === 'vp' ? String(p.vp) : figureText;
   const owes = kind === 'income' && INCOME_PAYOUT[p.income] < 0;
+  /* a rung that pays nothing says so quietly */
+  const nil = kind === 'income' && INCOME_PAYOUT[p.income] === 0;
   const ring = mine ? `, 0 0 0 3px rgba(242,234,214,.85)` : '';
   const place: CSSProperties =
     axis === 'x'
@@ -243,14 +247,14 @@ function Pawn({
         /* down the left edge the plate clears the ruler's payouts */
         gap={axis === 'y' ? TRACK_W - Y_PAWN - CHIP / 2 + 8 : undefined}
         className="pointer-events-auto items-center"
-        title={kind === 'vp' ? t('game.frame.vpPawnTitle', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnTitle', { name: p.name, lvl: incomeLevel(p.income), pay })}
+        title={kind === 'vp' ? t('game.frame.vpPawnTitle', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnTitle', { name: p.name, pay })}
         content={
           kind === 'vp' ? (
             t('game.frame.vpPawnHint', { money: p.money, built: p.stats.built, links: p.stats.links })
           ) : (
             <>
-              <span className="block font-semibold text-cream-100">{toNext > 0 ? t('game.incomeRail.pawnNext', { n: toNext, lvl: lvl + 1, pay: nextPay }) : t('game.incomeRail.pawnTop')}</span>
-              <span className="mt-1 block">{t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after: incomeLevel(after), pay: money(INCOME_PAYOUT[after]) })}</span>
+              <span className="block font-semibold text-cream-100">{stand.toNext > 0 ? t('game.incomeRail.pawnNext', { where, n: stand.toNext, pay: nextPay }) : t('game.incomeRail.pawnTop', { where })}</span>
+              <span className="mt-1 block">{t('game.incomeRail.pawnHint', { amount: LOAN_AMOUNT, after: incomeLevel(after), pay: payWords(INCOME_PAYOUT[after]) })}</span>
             </>
           )
         }
@@ -264,7 +268,7 @@ function Pawn({
           }}
           transition={spot ? { boxShadow: { repeat: Infinity, repeatType: 'reverse', duration: 0.9 } } : undefined}
           aria-pressed={spot}
-          aria-label={kind === 'vp' ? t('game.frame.vpPawnAria', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnAria', { name: p.name, lvl: incomeLevel(p.income), pay })}
+          aria-label={kind === 'vp' ? t('game.frame.vpPawnAria', { name: p.name, vp: p.vp }) : t('game.incomeRail.pawnAria', { name: p.name, space: p.income, pay })}
           onClick={onToggle}
           onPointerDown={(e) => e.stopPropagation()}
           /* the pawn is painted at 16px; its hit zone runs 4px further all
@@ -277,7 +281,7 @@ function Pawn({
         {showLabel && !thin && (
           <span
             aria-hidden
-            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${owes ? 'text-[#C4644F]' : 'text-cream-100'}`}
+            className={`ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold leading-none ${owes ? 'text-[#C4644F]' : nil ? 'text-cream-100/60' : 'text-cream-100'}`}
             style={{ textShadow: '0 1px 1px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.8)' }}
           >
             {label}
@@ -288,10 +292,10 @@ function Pawn({
           <span
             aria-hidden
             className={`ml-[3px] whitespace-nowrap rounded-[2px] border-b bg-coal-950/85 px-[2px] pb-px pt-[2px] font-mono text-[11px] font-bold leading-none ${
-              owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : figure.mine ? 'text-cream-100' : 'text-cream-100/75'
+              owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : nil ? 'text-cream-100/55' : figure.mine ? 'text-cream-100' : 'text-cream-100/75'
             } ${figure.mine ? 'border-cream-100/80' : 'border-transparent'}`}
           >
-            {pay}
+            {figureText}
           </span>
         )}
         {figure && thin && axis === 'y' && (
@@ -301,11 +305,11 @@ function Pawn({
           <span
             aria-hidden
             className={`absolute -translate-x-1/2 whitespace-nowrap rounded-sm border bg-coal-950/95 px-[2px] text-center font-mono text-[10px] font-bold leading-[12px] tabular-nums ${
-              owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : figure.mine ? 'text-cream-100' : 'text-cream-100/80'
-            } ${figure.mine ? 'border-cream-100/70' : figure.lead ? 'border-brass-500/80' : 'border-brass-700/70'}`}
+              owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : nil ? 'text-cream-100/55' : figure.mine ? 'text-cream-100' : 'text-cream-100/80'
+            } ${figure.mine ? 'border-cream-100/70' : figure.lead ? 'border-brass-500/80' : nil ? 'border-brass-700/40' : 'border-brass-700/70'}`}
             style={{ top: chip + FLAG_SPACE, left: `calc(50% - ${zig}px)`, width: FILET_W - 2 * FLAG_PLATE_MARGIN, boxShadow: '0 1px 2px rgba(0,0,0,.7)' }}
           >
-            {pay}
+            {figureText}
           </span>
         )}
       </Tooltip>
@@ -315,11 +319,16 @@ function Pawn({
 
 /** "+3" that rises and fades from the landing cell, plus the run the pawn
  *  crossed; down the left edge both run on the pawns' line (`line`, px),
- *  inside the lane that clips them */
-function MoveFx({ axis, move, pct, from, to, col, reduced, line = 0 }: { axis: Axis; move: Move; pct: number; from: number; to: number; col: string; reduced: boolean; line?: number }) {
-  const dur = reduced ? 0.01 : 1.1;
+ *  inside the lane that clips them. On the income track the figure counts
+ *  SPACES ("+3 cases"), and a move that changes the pay says what the new
+ *  rung pays ("→ +6 £"): it reads longer, so it stays up longer, and down
+ *  the left edge it sets off from the lane's edge, over the board, the
+ *  pay under the spaces. */
+function MoveFx({ axis, move, pct, from, to, col, reduced, line = 0, spaces, pay }: { axis: Axis; move: Move; pct: number; from: number; to: number; col: string; reduced: boolean; line?: number; spaces?: string; pay?: string }) {
+  const dur = reduced ? 0.01 : move.kind === 'income' ? MOVE_INCOME_S : 1.1;
   const runStyle: CSSProperties = axis === 'x' ? { ...span('x', from, to), top: '50%', height: 3, marginTop: -1.5 } : { ...span('y', from, to), left: line - 1.5, width: 3 };
-  const labelStyle: CSSProperties = axis === 'x' ? { ...at('x', pct), top: '50%' } : { ...at('y', pct), left: line };
+  const labelStyle: CSSProperties = axis === 'x' ? { ...at('x', pct), top: '50%' } : { ...at('y', pct), left: 2 };
+  const shift = axis === 'x' ? '-50%' : 0;
   return (
     <>
       <motion.span
@@ -332,20 +341,38 @@ function MoveFx({ axis, move, pct, from, to, col, reduced, line = 0 }: { axis: A
       />
       <motion.span
         aria-hidden
-        className={`pointer-events-none absolute z-20 whitespace-nowrap font-mono text-[11px] font-black ${move.delta < 0 ? 'text-rust-500 brightness-150' : 'text-bottle-600 brightness-[1.8]'}`}
+        /* on the income track it rises over the neighbours' flags: a backing keeps it read */
+        className={`pointer-events-none absolute z-20 whitespace-nowrap font-mono font-black ${move.kind !== 'income' ? 'text-[11px]' : `rounded-sm bg-coal-950/85 px-[3px] ${axis === 'y' ? 'text-[10px] leading-[12px]' : 'text-[11px] leading-[14px]'}`} ${move.delta < 0 ? 'text-rust-500 brightness-150' : 'text-bottle-600 brightness-[1.8]'}`}
         style={{ ...labelStyle, textShadow: '0 1px 2px rgba(0,0,0,.95)' }}
         /* centred by the motion's own transform (a class's would be lost
            under it); down the left edge it rises from just above the pawn,
            along the lane rather than out of it */
-        initial={{ x: '-50%', y: axis === 'x' ? -8 : -26, opacity: 1 }}
-        animate={{ x: '-50%', y: axis === 'x' ? -26 : -46, opacity: 0 }}
-        transition={{ duration: dur, ease: 'easeOut' }}
+        initial={{ x: shift, y: axis === 'x' ? -8 : -26, opacity: 1 }}
+        animate={{ x: shift, y: axis === 'x' ? -26 : -46, opacity: [1, 1, 0] }}
+        transition={{ duration: dur, ease: 'easeOut', opacity: { duration: dur, times: [0, 0.6, 1] } }}
       >
-        {move.delta > 0 ? `+${move.delta}` : move.delta}
+        {axis === 'y' && spaces ? (
+          /* down the left edge the lane is narrow: the figure, its word
+             under it, the new pay under that */
+          <>
+            <span className="block">{spaces.slice(0, spaces.indexOf(' '))}</span>
+            <span className="block text-[9px] font-bold">{spaces.slice(spaces.indexOf(' ') + 1)}</span>
+            {pay && <span className="block text-brass-300">→ {pay}</span>}
+          </>
+        ) : (
+          <>
+            {spaces ?? (move.delta > 0 ? `+${move.delta}` : move.delta)}
+            {pay && <span className="ml-1 text-brass-300">→ {pay}</span>}
+          </>
+        )}
       </motion.span>
     </>
   );
 }
+
+/** how long an income move's figure stays up, in seconds: long enough
+ *  to read "+3 cases → +6 £" */
+const MOVE_INCOME_S = 1.9;
 
 /* ------------------------------ tracks ----------------------------- */
 
@@ -414,7 +441,7 @@ function EdgeTracks() {
     if (!fresh.length) return;
     setMoves((m) => [...m, ...fresh]);
     const ids = new Set(fresh.map((f) => f.id));
-    const h = window.setTimeout(() => setMoves((m) => m.filter((x) => !ids.has(x.id))), 1300);
+    const h = window.setTimeout(() => setMoves((m) => m.filter((x) => !ids.has(x.id))), fresh.some((f) => f.kind === 'income') ? MOVE_INCOME_S * 1000 + 200 : 1300);
     return () => window.clearTimeout(h);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig]);
@@ -443,7 +470,7 @@ function EdgeTracks() {
   const toPx = (pct: number) => (incAxis === 'x' ? pct / 100 : 1 - pct / 100) * incSpan - incLane.offset;
   const toPct = (px: number) => (incAxis === 'x' ? ((px + incLane.offset) / incSpan) * 100 : 100 - ((px + incLane.offset) / incSpan) * 100);
   const onRungs = rungs(game.players.map((p) => p.income));
-  const flags = onRungs.map((r) => flagSpec(incAxis, toPx(lvlPct(r.space)), r.seats.length, money(INCOME_PAYOUT[r.space])));
+  const flags = onRungs.map((r) => flagSpec(incAxis, toPx(lvlPct(r.space)), r.seats.length, payFigure(INCOME_PAYOUT[r.space])));
   const flagAt = spreadFlags(flags, FLAG_GAP, 0, incLane.size);
   const filetPct = new Map<number, number>();
   onRungs.forEach((r, k) => r.seats.forEach((i) => filetPct.set(i, toPct(flagAt[k]))));
@@ -491,7 +518,11 @@ function EdgeTracks() {
         /* on the filet the run ends where the pawn stands, its flag's place */
         const f = kind === 'vp' ? vpPct(m.from) : lvlPct(m.from);
         const to = kind === 'vp' ? vpPct(m.to) : incPct(m.idx);
-        return <MoveFx key={m.id} axis={axis} move={m} pct={to} from={f} to={to} col={col} reduced={reduced} line={yLine(!ruler)} />;
+        /* the income track counts spaces; the pay only when it changed */
+        const n = Math.abs(m.delta);
+        const spaces = kind === 'income' ? t('game.incomeRail.moveSpaces', { sign: m.delta < 0 ? '−' : '+', n }) : undefined;
+        const lands = kind === 'income' ? crossedTo(m.from, m.to) : null;
+        return <MoveFx key={m.id} axis={axis} move={m} pct={to} from={f} to={to} col={col} reduced={reduced} line={yLine(!ruler)} spaces={spaces} pay={lands === null ? undefined : payWords(INCOME_PAYOUT[m.to])} />;
       });
 
   /* loan preview: a dashed ghost at the landing space while the note is on the table */
@@ -500,7 +531,7 @@ function EdgeTracks() {
   const ghostCol = PLAYER_COLORS[cur.color]?.hex ?? '#C9A45C';
 
   const pxPerUnit = (incLane.size * incLane.zoom) / UNITS;
-  const fits = (b: Band) => (incAxis === 'x' ? bandUnits(b) * pxPerUnit >= money(b.pay).length * 5.2 + 4 : bandUnits(b) * pxPerUnit >= 12);
+  const fits = (b: Band) => (incAxis === 'x' ? bandUnits(b) * pxPerUnit >= payFigure(b.pay).length * 5.2 + 4 : bandUnits(b) * pxPerUnit >= 12);
 
   const pinLabel = t(incomePinned ? 'game.incomeRail.unpin' : 'game.incomeRail.pin');
 
@@ -597,17 +628,22 @@ function EdgeTracks() {
           </button>
         </Tooltip>
         {incAxis === 'x' ? (
-          <span aria-hidden className={`absolute bottom-[3px] left-1.5 font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70 ${ruler ? '' : 'hidden'}`}>
-            {t('game.incomeRail.trackShort')}
-            {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
-          </span>
+          /* the title tells, under the pointer, how the track is climbed */
+          <Tooltip side="top" title={t('game.incomeRail.aria')} content={t('game.incomeRail.climb')} className={`absolute bottom-[3px] left-1.5 ${ruler ? '' : 'hidden'}`}>
+            <span aria-hidden className="font-sans text-[9px] font-semibold uppercase tracking-[0.18em] text-brass-400/70">
+              {t('game.incomeRail.trackShort')}
+              {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="ml-1 text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
+            </span>
+          </Tooltip>
         ) : (
           /* the column is too narrow for the title in spaced capitals, or
              for the title and the zoom on one line (Einkommen, Ingresos):
              the title in its own letters over the column, under it the
              pin and the zoom */
           <span aria-hidden className={`absolute inset-x-0 top-[4px] flex-col items-center font-semibold leading-none ${ruler ? 'flex' : 'hidden'}`}>
-            <span className="whitespace-nowrap font-sans text-[9px] text-brass-400/70">{t('game.incomeRail.trackShort')}</span>
+            <Tooltip side="right" title={t('game.incomeRail.aria')} content={t('game.incomeRail.climb')} className="pointer-events-auto">
+              <span className="whitespace-nowrap font-sans text-[9px] text-brass-400/70">{t('game.incomeRail.trackShort')}</span>
+            </Tooltip>
             {incLane.zoom > 1.01 && <span title={t('game.frame.zoomTip')} className="mt-[5px] self-end pr-[5px] font-mono text-[9px] text-cream-100/50">×{incLane.zoom.toFixed(1)}</span>}
           </span>
         )}
@@ -660,7 +696,10 @@ function EdgeTracks() {
             <motion.div className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: reduced ? 0 : 0.16 }}>
             {/* payout brackets */}
             {BANDS.map((b) => {
-              const who = game.players.filter((p) => p.income >= b.from && p.income <= b.to).map((p) => p.name);
+              /* who stands on the rung, and on which of its spaces when it has several */
+              const who = game.players
+                .filter((p) => p.income >= b.from && p.income <= b.to)
+                .map((p) => (b.from === b.to ? p.name : t('game.incomeRail.bandSeat', { name: p.name, space: p.income })));
               const a0 = (lvlStart(b.from) / UNITS) * 100;
               const a1 = ((lvlStart(b.from) + bandUnits(b)) / UNITS) * 100;
               /* down the left edge the loan's ghost has no room for its
@@ -675,12 +714,17 @@ function EdgeTracks() {
                   <Tooltip
                     side={incAxis === 'x' ? 'top' : 'right'}
                     className={`absolute inset-0 !flex ${incAxis === 'x' ? 'items-start justify-center' : 'items-center justify-end pr-[3px]'}`}
-                    title={t('game.incomeRail.bandTitle', { levels: String(incomeLevel(b.from)), pay: money(b.pay) })}
-                    content={who.length ? t('game.incomeRail.bandWho', { names: who.join(', ') }) : t('game.incomeRail.bandEmpty')}
+                    title={b.from === b.to ? t('game.incomeRail.bandTitleOne', { pay: payWords(b.pay), from: b.from }) : t('game.incomeRail.bandTitle', { pay: payWords(b.pay), from: b.from, to: b.to })}
+                    content={
+                      <>
+                        <span className="block">{who.length ? t('game.incomeRail.bandWho', { names: who.join(', ') }) : t('game.incomeRail.bandEmpty')}</span>
+                        <span className="mt-1 block text-cream-100/60">{t('game.incomeRail.climb')}</span>
+                      </>
+                    }
                   >
                     {fits(b) && (
-                      <span className={`${incAxis === 'x' ? 'mt-[2px]' : ''} font-mono text-[9px] font-bold leading-none ${b.pay < 0 ? 'text-[#C4644F]' : 'text-brass-400'}`}>
-                        {money(b.pay)}
+                      <span className={`${incAxis === 'x' ? 'mt-[2px]' : ''} font-mono text-[9px] font-bold leading-none ${b.pay < 0 ? 'text-[#C4644F]' : b.pay === 0 ? 'text-brass-400/60' : 'text-brass-400'}`}>
+                        {payFigure(b.pay)}
                       </span>
                     )}
                   </Tooltip>
@@ -727,7 +771,7 @@ function EdgeTracks() {
                 </span>
                 {incAxis === 'x' && (
                   <span className="ml-1 whitespace-nowrap font-mono text-[9.5px] font-bold text-[#C4644F]" style={{ textShadow: '0 1px 1px rgba(0,0,0,.95)' }}>
-                    {t('game.incomeRail.loanGhost', { pay: money(INCOME_PAYOUT[ghostLvl]) })}
+                    {t('game.incomeRail.loanGhost', { pay: payWords(INCOME_PAYOUT[ghostLvl]) })}
                   </span>
                 )}
               </motion.div>
