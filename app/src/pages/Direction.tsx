@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useParams } from 'react-router';
 import { Download, RefreshCw, Send, TestTube2 } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { onlineWire } from '@/online/net';
-import { useSession } from '@/online/session';
+import type { Me } from '@/online/table';
 import { MAX_BODY, MAX_SUBJECT, WAIT_LANGS, reach } from '@/online/waitlist';
 import type { Audience, Circular, Entrant, WaitBook, WaitLang } from '@/online/waitlist';
 import { cn } from '@/lib/utils';
@@ -316,10 +316,110 @@ function Book({ entrants, onStrike }: { entrants: Entrant[]; onStrike: (e: Entra
   );
 }
 
+/* ------------------------------ the door ------------------------------ */
+
+/* the desk signs in on its own, straight on the wire: the account page and
+   the session hooks carry the game's store with them, and the preview is
+   built without a line of the game */
+const never = () => () => {};
+function useMe(): Me | null {
+  return useSyncExternalStore(
+    (cb) => onlineWire()?.onSession(cb) ?? never(),
+    () => onlineWire()?.session ?? null,
+    () => null,
+  );
+}
+
+function Door({ me }: { me: Me | null }) {
+  /* the first time, the direction opens its account here: the address
+     BLACKRAIL_ADMINS names, then the letter answered */
+  const [opening, setOpening] = useState(false);
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const enter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const w = onlineWire();
+    if (!w || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      if (opening) await w.signUp(name.trim(), email.trim(), password);
+      else await w.signIn(name.trim(), password);
+    } catch (err) {
+      const m = (err as Error).message;
+      setError(m === 'offline' ? 'L’office ne répond pas.' : opening ? `L’office refuse ce compte : ${m}` : 'Nom, adresse ou mot de passe refusé.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <PageShell eyebrow="La direction" title="Accès réservé" width="narrow">
+      {me ? (
+        <div className="grid gap-4">
+          <p className="font-serif text-[15px] italic text-paper-300">
+            {me.verified ? `Ce bureau est celui de la direction. Le compte « ${me.name} » n’en fait pas partie.` : `Une lettre est partie vers ${me.email ?? 'votre adresse'} : suivez son lien, et le bureau s’ouvre.`}
+          </p>
+          <button type="button" className={cn(button, 'w-fit')} onClick={() => onlineWire()?.signOut()}>
+            Changer de compte
+          </button>
+        </div>
+      ) : (
+        <form onSubmit={enter} className="grid max-w-[420px] gap-4">
+          {opening && (
+            <Field id="d-email" label="Adresse e-mail de la direction">
+              <input id="d-email" type="email" className={inputClass} autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            </Field>
+          )}
+          <Field id="d-name" label={opening ? 'Nom' : 'Nom ou adresse e-mail'}>
+            <input id="d-name" className={inputClass} autoComplete="username" value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+          <Field id="d-password" label="Mot de passe">
+            <input id="d-password" type="password" className={inputClass} autoComplete={opening ? 'new-password' : 'current-password'} value={password} onChange={(e) => setPassword(e.target.value)} />
+          </Field>
+          <button type="submit" disabled={busy || !name.trim() || !password} className={cn('gz-ticket gz-ticket-brass w-fit', (busy || !name.trim() || !password) && 'is-off')}>
+            {opening ? 'Créer le compte' : 'Ouvrir le bureau'}
+          </button>
+          <button type="button" className="micro-label w-fit py-1 text-iron-400 underline underline-offset-4 hover:text-paper-100" onClick={() => setOpening((o) => !o)}>
+            {opening ? 'J’ai déjà un compte' : 'Première fois : créer le compte'}
+          </button>
+          <Refusal text={error} />
+        </form>
+      )}
+    </PageShell>
+  );
+}
+
+/** the letter's link, answered: the account's address is verified and the
+ *  desk opens (before the line opens there is no account page to land on) */
+export function DirectionVerify() {
+  const { token = '' } = useParams();
+  const [state, setState] = useState<'working' | 'ok' | 'bad'>('working');
+  const asked = useRef(false);
+  useEffect(() => {
+    if (asked.current) return;
+    asked.current = true;
+    const w = onlineWire();
+    if (!w) return;
+    w.verify(token).then(
+      () => setState('ok'),
+      () => setState('bad'),
+    );
+  }, [token]);
+  if (state === 'ok') return <Direction />;
+  return (
+    <PageShell eyebrow="La direction" title={state === 'working' ? 'Un instant…' : 'Lien refusé'} width="narrow">
+      {state === 'bad' && <p className="font-serif text-[15px] italic text-paper-300">Ce lien ne vaut plus : il a servi, ou il a plus d’une heure. Ouvrez le bureau et demandez une autre lettre.</p>}
+    </PageShell>
+  );
+}
+
 /* -------------------------------- the desk ---------------------------- */
 
 export default function Direction() {
-  const session = useSession();
+  const session = useMe();
   const [book, setBook] = useState<WaitBook | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [at, setAt] = useState(0);
@@ -361,20 +461,7 @@ export default function Direction() {
     return { confirmed: confirmed.length, pending: e.length - confirmed.length, week, written, top, langs };
   }, [book, at]);
 
-  if (!session || !admin) {
-    return (
-      <PageShell eyebrow="La direction" title="Accès réservé" width="narrow">
-        <p className="font-serif text-[15px] italic text-paper-300">
-          {session ? 'Ce bureau est celui de la direction. Votre compte n’en fait pas partie.' : 'Signez le registre avec un compte de la direction pour ouvrir ce bureau.'}
-        </p>
-        {!session && (
-          <Link to="/account" className="gz-ticket gz-ticket-brass mt-6 w-fit">
-            Signer le registre
-          </Link>
-        )}
-      </PageShell>
-    );
-  }
+  if (!session || !admin) return <Door me={session} />;
 
   return (
     <PageShell
