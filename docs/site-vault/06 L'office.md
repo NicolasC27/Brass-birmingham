@@ -36,3 +36,8 @@ Une partie à la maison entre dans `historyFor` (l'onglet Historique) mais sort 
 ## Le lundi et le télégraphe
 
 `server/edition.ts` écrit l'édition en français à partir du dictionnaire `fr`. Toutes les 10 min (`editionEvery`), `index.ts` regarde si la semaine passée a été envoyée (`claimMailing('edition:<semaine>')`) ; sinon : Discord (`server/discord.ts`, `DISCORD_WEBHOOK_URL`, paquets de 8 lignes/minute) et courriel aux abonnés vérifiés (`store.subscribers()`, via le courrier existant : Resend ou console).
+
+## La liste d'attente
+
+`server/waitlist.ts`, sa propre connexion au même fichier : tables `waitlist` (l'adresse, la langue, la provenance, le jeton de confirmation scellé, le jeton de sortie en clair), `circulars` et `circular_post` (une lettre par adresse, `sentAt`, trois essais au plus). HTTP sans socket : `POST /waitlist` (champ piège `website`, cinq par adresse IP puis une toutes les deux minutes), `/waitlist/confirm`, `/waitlist/leave` (aussi le clic unique RFC 8058). Messages de la direction, refusés à qui n'est pas dans `BLACKRAIL_ADMINS` : `admin.book`, `admin.strike`, `admin.circular` (`trial` : un essai à sa propre adresse), `admin.stop` — chacun répond `admin.book`. Les types partagés et `reach()` (qui compte le public d'une circulaire des deux côtés) sont dans `src/online/waitlist.ts`.
+
