@@ -237,6 +237,7 @@ export const ES: Tongue = {
       what: 'Los ingresos son el dinero que cobras al final de cada ronda. El marcador tiene 100 casillas, y cada una muestra un nivel de −10 a 30: empiezas en el nivel 0. Voltear una loseta avanza tu marcador las casillas impresas —las casillas se estrechan al subir— y un préstamo lo baja 3 niveles. Unos ingresos negativos se pagan al banco.',
       how: 'Los ingresos solo suben con losetas volteadas —una obra vendida, una mina, fundición o cervecería vaciada— y con la bonificación de Oxford (2 casillas). Solo bajan con el préstamo (3 niveles). El cobro llega al final de cada ronda, salvo la última de la partida.',
       gain: 'Al final de cada ronda cobras tantas libras como tu nivel de ingresos, o las pagas si es negativo. La última ronda de la partida no tiene cobro.',
+      whyNot: 'La cifra de una loseta volteada cuenta casillas de la pista, no libras: tu marcador avanza esas casillas, y el cobro solo sube cuando cruza el límite de un nivel. Hasta la casilla 10 cada casilla es un nivel; después un nivel ocupa 2 casillas, luego 3 desde la casilla 31 y 4 desde la 61. Así, una loseta de +2 puede dejar el cobro igual si el marcador se queda en el mismo nivel. Pasa el puntero por la pista de ingresos: cada peldaño muestra sus casillas, y cada peón cuántas le faltan para el siguiente.',
     },
     shortfall: {
       topic: 'la bancarrota',

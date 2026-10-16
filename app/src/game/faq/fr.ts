@@ -248,6 +248,7 @@ export const FR: Tongue = {
       what: 'Le revenu, c’est l’argent que vous touchez à chaque fin de manche. La piste compte 100 espaces, et chaque espace montre un niveau de −10 à 30 : vous partez au niveau 0. Retourner une tuile avance votre marqueur du nombre d’espaces imprimé — les espaces se resserrent en montant — et un emprunt le fait reculer de 3 niveaux. Un revenu négatif se paie à la banque.',
       how: 'Le revenu ne monte que par les tuiles retournées — un ouvrage vendu, une mine, une forge ou une brasserie vidée — et par le bonus d’Oxford (2 espaces). Il ne baisse que par l’emprunt (3 niveaux). La paie tombe à chaque fin de manche, sauf la toute dernière de la partie.',
       gain: 'À chaque fin de manche, vous touchez autant de livres que votre niveau de revenu — ou vous les payez s’il est négatif. La dernière manche de la partie n’a pas de paie.',
+      whyNot: 'Le chiffre d’une tuile retournée compte des espaces sur la piste, pas des livres : votre marqueur avance d’autant d’espaces, et la paie ne monte que lorsqu’il franchit la limite d’un niveau. Jusqu’à l’espace 10, chaque espace est un niveau ; au-delà, un niveau s’étend sur 2 espaces, puis 3 à partir de l’espace 31, puis 4 à partir du 61. Une tuile à +2 peut donc laisser la paie où elle était, si le marqueur reste dans le même niveau. Survolez la piste de revenu : chaque cran montre ses cases, et chaque pion combien il lui en manque pour le suivant.',
     },
     shortfall: {
       topic: 'la faillite',

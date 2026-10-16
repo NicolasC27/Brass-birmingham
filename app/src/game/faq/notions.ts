@@ -160,6 +160,7 @@ export const FAQ_NOTION: Record<string, NotionId> = {
   progressBands: 'income',
   markersStart: 'income',
   spacesVsLevels: 'income',
+  flipNoRaise: 'income',
   roundEndOrder: 'eras',
   paydayShortfall: 'shortfall',
   noTileSale: 'shortfall',

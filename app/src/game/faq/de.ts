@@ -236,6 +236,7 @@ export const DE: Tongue = {
       what: 'Das Einkommen ist das Geld, das du am Ende jeder Runde bekommst. Die Leiste hat 100 Felder, jedes zeigt eine Stufe von −10 bis 30: Du beginnst auf Stufe 0. Ein umgedrehtes Plättchen rückt deinen Marker um die aufgedruckten Felder vor — nach oben werden die Felder enger —, und ein Kredit senkt ihn um 3 Stufen. Negatives Einkommen zahlt man an die Bank.',
       how: 'Das Einkommen steigt nur durch umgedrehte Plättchen — ein verkauftes Gewerbe, eine geleerte Mine, Hütte oder Brauerei — und durch den Bonus von Oxford (2 Felder). Es sinkt nur durch den Kredit (3 Stufen). Ausgezahlt wird am Ende jeder Runde, außer der allerletzten der Partie.',
       gain: 'Am Ende jeder Runde bekommst du so viele Pfund wie deine Einkommensstufe — oder zahlst sie, wenn sie negativ ist. Die letzte Runde der Partie hat keine Auszahlung.',
+      whyNot: 'Die Zahl auf einem umgedrehten Plättchen zählt Felder der Leiste, keine Pfund: Dein Marker rückt so viele Felder vor, und die Auszahlung steigt erst, wenn er die Grenze einer Stufe überschreitet. Bis Feld 10 ist jedes Feld eine Stufe; danach umfasst eine Stufe 2 Felder, ab Feld 31 dann 3 und ab Feld 61 4. Ein Plättchen mit +2 kann die Auszahlung also unverändert lassen, wenn der Marker in derselben Stufe bleibt. Fahre mit dem Zeiger über die Einkommensleiste: Jede Stufe zeigt ihre Felder, und jeder Stein, wie viele ihm bis zur nächsten fehlen.',
     },
     shortfall: {
       topic: 'der Bankrott',

@@ -236,6 +236,7 @@ export const EN: Tongue = {
       what: 'Income is the money you collect at the end of every round. The track has 100 spaces, and each shows a level from −10 to 30: you start at level 0. Flipping a tile moves your marker the printed number of spaces — the spaces tighten as you climb — and a loan drops it 3 levels. Negative income is paid to the bank.',
       how: 'Income only rises through flipped tiles — a works sold, a mine, iron works or brewery emptied — and through Oxford’s bonus (2 spaces). It only falls through a loan (3 levels). Payday comes at the end of every round, except the game’s very last.',
       gain: 'At the end of every round you collect as many pounds as your income level — or pay them if it is negative. The game’s last round has no payday.',
+      whyNot: 'The number on a flipped tile counts spaces on the track, not pounds: your marker moves on that many spaces, and your pay only rises when it crosses into the next level. Up to space 10 every space is a level; beyond it a level spans 2 spaces, then 3 from space 31, then 4 from space 61. So a tile worth +2 can leave your pay where it was if the marker stays inside the same level. Hover the income track: each rung shows its spaces, and each pawn how many it still needs for the next.',
     },
     shortfall: {
       topic: 'running short',

@@ -532,6 +532,23 @@ describe('the case in four tongues', () => {
     }
   });
 
+  it('tells why a flip did not raise the pay, in every tongue', () => {
+    const asks: [Lang, string][] = [
+      ['fr', 'pourquoi mon revenu n’a pas augmenté après avoir retourné une tuile ?'],
+      ['fr', 'j’ai retourné une tuile et mon revenu n’a pas monté'],
+      ['en', 'why didn’t my income go up after flipping a tile?'],
+      ['en', 'I flipped a tile but my income did not rise'],
+      ['es', '¿por qué mis ingresos no subieron al voltear una loseta?'],
+      ['de', 'warum ist mein einkommen nach dem umdrehen nicht gestiegen?'],
+    ];
+    for (const [lang, q] of asks) {
+      const own = faqFor(lang).find((e) => e.id === 'flipNoRaise')!;
+      expect(`${q} → ${consult(q, lang).answer === own.answer ? 'flipNoRaise' : consult(q, lang).notion}`).toBe(`${q} → flipNoRaise`);
+    }
+    /* asked why not, the notion itself says it too */
+    for (const t of [FR, EN, ES, DE]) expect(t.notions.income.whyNot).toMatch(/10.*31.*61/);
+  });
+
   it('never advises a move nor projects a score', () => {
     /* the guide explains; it does not play for the reader */
     const advice = /\b(vous devriez|je vous conseille|il vaut mieux|you should|we recommend|deberías|te recomiendo|sie sollten|ich empfehle)\b/i;
