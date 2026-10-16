@@ -11,7 +11,7 @@ import { useReducedMotion } from './useReducedMotion';
 import { FILET_H, FILET_W, TRACK_H, TRACK_W, leftTrackTop, setBoardOption, useBoardOptions } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { filetTicks } from './railLogic';
-import { FLAG_CHIP, FLAG_FAN, FLAG_GAP, flagSpec, incomeLeaders, rungs, spreadFlags } from './incomeFlags';
+import { FLAG_CHIP, FLAG_FAN, FLAG_GAP, FLAG_PLATE_MARGIN, FLAG_SPACE, flagSpec, incomeLeaders, rungs, spreadFlags, underFlags } from './incomeFlags';
 
 /* ------------------------------------------------------------------ */
 /* Two STRAIGHT tracks, one per scale:                                  */
@@ -19,7 +19,7 @@ import { FLAG_CHIP, FLAG_FAN, FLAG_GAP, flagSpec, incomeLeaders, rungs, spreadFl
 /*  • income: graduated by PAYOUT bracket, along the BOTTOM edge or     */
 /*    down the LEFT edge (board option `incomeSide`). At rest the      */
 /*    income track is a thin brass filet: the pawns, a graduation every */
-/*    five spaces, the tens' figures barely there, and beside the pawns */
+/*    five spaces, the tens' figures barely there, and by the pawns     */
 /*    of each rung what it pays, so who earns what reads at a glance.   */
 /*    Under the pointer or the keyboard it opens into the full ruler,   */
 /*    never taller than it; pinned, it stays open.                      */
@@ -202,7 +202,8 @@ function Pawn({
   /** the reader's own seat: a cream ring round the token */
   mine?: boolean;
   /** on the filet, the pawn that wears its rung's pay: the reader's own
-   *  rung underlined, the leader's figure in gold */
+   *  rung underlined along the bottom, edged in cream down the left edge,
+   *  the leader's figure in gold */
   figure?: { mine: boolean; lead: boolean };
 }) {
   const game = useShownGame()!;
@@ -282,15 +283,27 @@ function Pawn({
             {label}
           </span>
         )}
-        {figure && thin && (
-          /* the rung's pay after its pawns along the bottom; down the left
-             edge beside them, off the column, level with the middle of the fan */
+        {figure && thin && axis === 'x' && (
+          /* the rung's pay after its pawns along the bottom */
           <span
             aria-hidden
-            className={`ml-[3px] whitespace-nowrap rounded-[2px] border-b bg-coal-950/85 px-[2px] pb-px pt-[2px] font-mono font-bold leading-none ${axis === 'x' ? 'text-[11px]' : 'text-[10px]'} ${
+            className={`ml-[3px] whitespace-nowrap rounded-[2px] border-b bg-coal-950/85 px-[2px] pb-px pt-[2px] font-mono text-[11px] font-bold leading-none ${
               owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : figure.mine ? 'text-cream-100' : 'text-cream-100/75'
             } ${figure.mine ? 'border-cream-100/80' : 'border-transparent'}`}
-            style={axis === 'y' ? { position: 'relative', top: -fan } : undefined}
+          >
+            {pay}
+          </span>
+        )}
+        {figure && thin && axis === 'y' && (
+          /* down the left edge the pay hangs under the lowest pawn, on a
+             plate centred on the line (the pawn's zigzag undone), inside
+             the lane: the reader's own edged in cream, the leader's in gold */
+          <span
+            aria-hidden
+            className={`absolute -translate-x-1/2 whitespace-nowrap rounded-sm border bg-coal-950/95 px-[2px] text-center font-mono text-[10px] font-bold leading-[12px] tabular-nums ${
+              owes ? 'text-[#C4644F]' : figure.lead ? 'text-brass-300' : figure.mine ? 'text-cream-100' : 'text-cream-100/80'
+            } ${figure.mine ? 'border-cream-100/70' : figure.lead ? 'border-brass-500/80' : 'border-brass-700/70'}`}
+            style={{ top: chip + FLAG_SPACE, left: `calc(50% - ${zig}px)`, width: FILET_W - 2 * FLAG_PLATE_MARGIN, boxShadow: '0 1px 2px rgba(0,0,0,.7)' }}
           >
             {pay}
           </span>
@@ -430,12 +443,8 @@ function EdgeTracks() {
   const toPx = (pct: number) => (incAxis === 'x' ? pct / 100 : 1 - pct / 100) * incSpan - incLane.offset;
   const toPct = (px: number) => (incAxis === 'x' ? ((px + incLane.offset) / incSpan) * 100 : 100 - ((px + incLane.offset) / incSpan) * 100);
   const onRungs = rungs(game.players.map((p) => p.income));
-  const flagAt = spreadFlags(
-    onRungs.map((r) => flagSpec(incAxis, toPx(lvlPct(r.space)), r.seats.length, money(INCOME_PAYOUT[r.space]))),
-    FLAG_GAP,
-    0,
-    incLane.size,
-  );
+  const flags = onRungs.map((r) => flagSpec(incAxis, toPx(lvlPct(r.space)), r.seats.length, money(INCOME_PAYOUT[r.space])));
+  const flagAt = spreadFlags(flags, FLAG_GAP, 0, incLane.size);
   const filetPct = new Map<number, number>();
   onRungs.forEach((r, k) => r.seats.forEach((i) => filetPct.set(i, toPct(flagAt[k]))));
   const leaders = incomeLeaders(game.players.map((p) => p.income));
@@ -603,8 +612,8 @@ function EdgeTracks() {
           </span>
         )}
         {/* the lane cuts what runs off its ends, not what stands beside the
-            line: the figures of the filet off the left column, a "+3"
-            rising over the bottom one */}
+            line: a pawn swelling under the pointer, a "+3" rising over the
+            bottom one */}
         <div
           ref={incLane.ref}
           className={`relative ${incAxis === 'x' ? 'mx-12 h-full' : 'mx-0 mb-3 mt-9 h-[calc(100%-48px)]'} ${grab(incLane)}`}
@@ -631,14 +640,16 @@ function EdgeTracks() {
                   />
                 ))}
                 {filetTicks(INCOME_MAX)
-                  .filter((k) => k.major)
+                  /* down the left edge a figure a flag stands over is left
+                     out rather than peeking round its tokens */
+                  .filter((k) => k.major && (incAxis === 'x' || !underFlags(flags, flagAt, toPx(lvlPct(k.space)), 5)))
                   .map(({ space }) => (
-                    /* down the left edge the figure sits across the line,
-                       just over its graduation, the line broken under it */
+                    /* down the left edge the figure stands before its
+                       graduation, towards the screen's edge, as on the ruler */
                     <span
                       key={`n${space}`}
-                      className={`absolute font-mono text-[9px] leading-none text-cream-100/30 ${incAxis === 'y' ? 'rounded-[2px] bg-coal-950 px-px' : ''}`}
-                      style={incAxis === 'x' ? { ...at('x', lvlPct(space)), top: 1, marginLeft: 3 } : { ...at('y', lvlPct(space)), left: Y_FILET, transform: 'translate(-50%, calc(-100% - 5px))' }}
+                      className="absolute font-mono text-[9px] leading-none text-cream-100/30"
+                      style={incAxis === 'x' ? { ...at('x', lvlPct(space)), top: 1, marginLeft: 3 } : { ...at('y', lvlPct(space)), left: Y_FILET - 8, transform: 'translate(-100%, -50%)' }}
                     >
                       {space}
                     </span>

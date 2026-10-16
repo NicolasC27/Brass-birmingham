@@ -1,11 +1,12 @@
 /* ------------------------------------------------------------------ */
 /* The folded income track, read at a glance: every rung a seat stands */
 /* on carries a flag — the seats' tokens, fanned, and what the rung    */
-/* pays. Seats on one rung share their flag (they earn the same); two  */
-/* flags never overprint each other: neighbours are pushed apart along */
-/* the line, a cluster centred on its rungs, the whole kept inside the */
-/* lane. Plain functions of positions in pixels, so the layout can be  */
-/* held to account without a browser.                                  */
+/* pays: after them along the bottom, on a plate under them down the   */
+/* left edge. Seats on one rung share their flag (they earn the same); */
+/* two flags never overprint each other: neighbours are pushed apart   */
+/* along the line, a cluster centred on its rungs, the whole kept      */
+/* inside the lane. Plain functions of positions in pixels, so the     */
+/* layout can be held to account without a browser.                    */
 /* ------------------------------------------------------------------ */
 
 export type FlagAxis = 'x' | 'y';
@@ -14,15 +15,21 @@ export type FlagAxis = 'x' | 'y';
 export const FLAG_CHIP = 13;
 export const FLAG_FAN = 8;
 /** the pay's figure: along the bottom it follows the tokens on the line,
- *  down the left edge it stands beside them, off the narrow column */
+ *  down the left edge it hangs under them, on the line, inside the lane */
 export const FLAG_FONT: Record<FlagAxis, number> = { x: 11, y: 10 };
 /** between the tokens and the figure, and between two flags */
 export const FLAG_SPACE = 3;
 export const FLAG_GAP = 4;
+/** down the left edge the figure's plate: a 12 px line and its edge, as
+ *  wide as the lane but a margin either side, so the plates make a column */
+export const FLAG_PLATE_H = 14;
+export const FLAG_PLATE_MARGIN = 3;
 
 /** a figure's width in the track's monospace (IBM Plex Mono: 0.6 em a
  *  glyph), its backing's padding included */
 export const figureWidth = (text: string, px: number): number => Math.ceil(text.length * 0.6 * px) + 4;
+/** what a figure asks of its plate down the left edge, its edge included */
+export const plateWidth = (text: string): number => figureWidth(text, FLAG_FONT.y) + 2;
 
 /** the tokens fanned on one rung: their run along the line */
 export const fanLength = (n: number): number => FLAG_CHIP + FLAG_FAN * Math.max(0, n - 1);
@@ -36,15 +43,13 @@ export interface FlagSpec {
   len: number;
 }
 
-/** a rung's flag: `n` tokens, then the figure after them along the bottom;
- *  down the left edge the figure stands beside them and takes no length */
+/** a rung's flag: `n` tokens, then the figure after them along the bottom,
+ *  or under them down the left edge (the lane runs from the top there, so
+ *  after them again), the rung at the middle of the tokens */
 export function flagSpec(axis: FlagAxis, at: number, n: number, figure: string): FlagSpec {
   const fan = fanLength(n);
-  if (axis === 'y') {
-    const len = Math.max(fan, FLAG_FONT.y + 2);
-    return { at, lead: len / 2, len };
-  }
-  return { at, lead: fan / 2, len: fan + FLAG_SPACE + figureWidth(figure, FLAG_FONT.x) };
+  const figureLen = axis === 'y' ? FLAG_PLATE_H : figureWidth(figure, FLAG_FONT.x);
+  return { at, lead: fan / 2, len: fan + FLAG_SPACE + figureLen };
 }
 
 /**
@@ -77,6 +82,12 @@ export function spreadFlags(flags: readonly FlagSpec[], gap: number, lo: number,
   const out = new Array<number>(flags.length);
   for (const b of blocks) b.idx.forEach((i, k) => (out[i] = b.start + b.off[k] + flags[i].lead));
   return out;
+}
+
+/** whether a mark `half` px either side of `pos` (px along the lane)
+ *  falls within the run of one of the flags laid at `at` */
+export function underFlags(flags: readonly FlagSpec[], at: readonly number[], pos: number, half: number): boolean {
+  return flags.some((f, k) => pos + half > at[k] - f.lead && pos - half < at[k] - f.lead + f.len);
 }
 
 /** the seats on each rung, rungs in the order first met */

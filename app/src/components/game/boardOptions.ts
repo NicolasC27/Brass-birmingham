@@ -282,17 +282,20 @@ export const getBoardOptions = (): BoardOptions => state;
 export const TRACK_H = 36;
 export const TRACK_W = 52;
 /** the income track at rest: a thin brass filet that opens into the full
- *  ruler (TRACK_H / TRACK_W) under the pointer or the keyboard */
+ *  ruler (TRACK_H / TRACK_W) under the pointer or the keyboard; down the
+ *  left edge its lane holds each rung's pay on a plate under the tokens,
+ *  the widest (−10 £) with room either side */
 export const FILET_H = 20;
-export const FILET_W = 22;
+export const FILET_W = 42;
 /** the room the HUD keeps from an edge nothing holds, and between a track
  *  and what floats beside it */
 const HUD_GAP = 8;
-/** down the left edge the HUD stands this far in: the open ruler reaches
- *  over the edge of the lantern's lane of the players' column but stops
- *  short of the purses under the medallions (centred on the rings, they
- *  widen with the figures: 139 £ | 126 still clears it), which it hid */
-const LEFT_TRACK_INSET = TRACK_W - 6;
+/** down the left edge the HUD stands clear of the filet's lane, its pays
+ *  included; the open ruler reaches a little over the edge of the
+ *  lantern's lane of the players' column but stops short of the purses
+ *  under the medallions (centred on the rings, they widen with the
+ *  figures: 139 £ | 126 still clears it), which it hid */
+const LEFT_TRACK_INSET = FILET_W + HUD_GAP;
 /** pixel insets every floating HUD element keeps from the screen edges: the
  *  income track is counted at rest, the ruler opens over the margin; a
  *  pinned track is the ruler for good, and the HUD stands clear of all of it */

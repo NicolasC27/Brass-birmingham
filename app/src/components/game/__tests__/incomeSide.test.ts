@@ -4,7 +4,8 @@ import type { BoardOptions } from '../boardOptions';
 import { leftSheetStyle } from '../useLayer';
 import { REVIEW_CURVE_H } from '../guideKeys';
 import { TIP_GAP, TIP_MARGIN, placeTip } from '../tooltipPlace';
-import { FLAG_GAP, fanLength, flagSpec, incomeLeaders, rungs, spreadFlags } from '../incomeFlags';
+import { FLAG_GAP, FLAG_PLATE_H, FLAG_PLATE_MARGIN, FLAG_SPACE, fanLength, flagSpec, incomeLeaders, plateWidth, rungs, spreadFlags, underFlags } from '../incomeFlags';
+import { LANGS, money } from '@/i18n';
 
 /* ------------------------------------------------------------------ */
 /* The income track along the bottom or down the left edge: the room   */
@@ -21,10 +22,10 @@ describe('the room the HUD leaves the income track', () => {
     expect(i.left).toBe(12);
   });
 
-  it('down the left edge: the HUD stands clear of the filet and nearly all of the open ruler', () => {
+  it('down the left edge: the HUD stands clear of the filet and its pays, and nearly all of the open ruler', () => {
     const i = hudInsets(opts('left'), false);
     expect(i.bottom).toBe(12);
-    expect(i.left).toBeGreaterThan(FILET_W + 8);
+    expect(i.left).toBeGreaterThanOrEqual(FILET_W + 8);
     /* the ruler reaches over the lantern's lane only (16 px), not the rings */
     expect(TRACK_W - i.left).toBeGreaterThanOrEqual(0);
     expect(TRACK_W - i.left).toBeLessThan(16);
@@ -148,12 +149,39 @@ describe('the folded track at a glance', () => {
     expect(apart(hi, bt)).toBe(true);
   });
 
-  it('stacks down the left edge by the tokens alone, the figure standing beside them', () => {
+  it('stacks down the left edge by the tokens and the plate hung under them', () => {
     const specs = [flagSpec('y', 500, 1, '−10 £'), flagSpec('y', 504, 1, '−9 £'), flagSpec('y', 508, 3, '−8 £')];
-    expect(specs[0].len).toBe(fanLength(1));
-    expect(specs[2].len).toBe(fanLength(3));
+    expect(specs[0].len).toBe(fanLength(1) + FLAG_SPACE + FLAG_PLATE_H);
+    expect(specs[2].len).toBe(fanLength(3) + FLAG_SPACE + FLAG_PLATE_H);
+    /* the rung is the middle of the tokens, not of the flag */
+    expect(specs[2].lead).toBe(fanLength(3) / 2);
     const at = spreadFlags(specs, FLAG_GAP, 0, 800);
     expect(apart(specs, at)).toBe(true);
+    expect(at[0]).toBeLessThan(at[1]);
+  });
+
+  it('keeps the plates inside the left lane at either end', () => {
+    const top = [flagSpec('y', 3, 2, '30 £'), flagSpec('y', 9, 1, '30 £')];
+    const at = spreadFlags(top, FLAG_GAP, 0, 800);
+    expect(at[0] - top[0].lead).toBeGreaterThanOrEqual(0);
+    const foot = [flagSpec('y', 790, 1, '−9 £'), flagSpec('y', 797, 1, '−10 £')];
+    const bt = spreadFlags(foot, FLAG_GAP, 0, 800);
+    expect(bt[1] - foot[1].lead + foot[1].len).toBeLessThanOrEqual(800);
+    expect(apart(foot, bt)).toBe(true);
+  });
+
+  it('fits the widest pay in every language on a plate inside the left lane', () => {
+    for (const l of LANGS) expect(plateWidth(money(-10, l))).toBeLessThanOrEqual(FILET_W - 2 * FLAG_PLATE_MARGIN);
+  });
+
+  it('leaves out a tens figure a flag stands over', () => {
+    const specs = [flagSpec('y', 400, 1, '5 £')];
+    const at = spreadFlags(specs, FLAG_GAP, 0, 800);
+    expect(underFlags(specs, at, 400, 5)).toBe(true);
+    /* under the plate as well as by the token */
+    expect(underFlags(specs, at, 400 + fanLength(1) / 2 + FLAG_SPACE + FLAG_PLATE_H / 2, 5)).toBe(true);
+    expect(underFlags(specs, at, 360, 5)).toBe(false);
+    expect(underFlags(specs, at, 440, 5)).toBe(false);
   });
 
   it('gives a longer figure a longer flag along the bottom', () => {
