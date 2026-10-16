@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "build:server": "node server/build.mjs",
+    "build:prelaunch": "VITE_PRELAUNCH=1 vite build --outDir dist-prelaunch --emptyOutDir",
     "server": "node server/build.mjs && node server/dist/blackrail-server.mjs",
     "office:restore": "node --no-warnings server/restore.mjs",
     "server:dev": "node server/build.mjs --watch & node --watch server/dist/blackrail-server.mjs",

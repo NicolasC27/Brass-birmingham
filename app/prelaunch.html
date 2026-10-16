@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- the preview before the line opens: the landing, the law and the
+         direction's desk, built alone (npm run build:prelaunch) so no line
+         of the game itself is served -->
+    <script>
+      /* Anti-FOUC theme bootstrap (platform « registre de jour »). Poses
+         data-theme on <html> before first paint; every themed variable is
+         scoped to .platform-root, so /game and legacy overlays are inert.
+         Must mirror the resolution logic of src/platform/theme.ts. */
+      (function () {
+        /* nothing asked: the lamps go by the hour — the night's from eight to seven */
+        var h = new Date().getHours();
+        var t = h >= 20 || h < 7 ? 'dark' : 'light';
+        /* a link may name the register (?theme=light|dark) and skip the
+           arrival (?arrived): kept, so the choice holds on the next page */
+        try {
+          var q = new URLSearchParams(location.search);
+          var asked = q.get('theme');
+          if (asked === 'dark' || asked === 'light') localStorage.setItem('brassworks.theme.v1', asked);
+        } catch (e) {
+          /* private mode */
+        }
+        try {
+          var saved = localStorage.getItem('brassworks.theme.v1');
+          if (saved === 'dark' || saved === 'light') t = saved;
+        } catch (e) {
+          /* private mode: the hour decides */
+        }
+        document.documentElement.setAttribute('data-theme', t);
+        /* the sheet is set in the reader's language before the first line is
+           printed — the choice kept, else the tongue the browser speaks.
+           Must mirror the resolution logic of src/i18n/index.ts. */
+        var langs = ['fr', 'en', 'es', 'de'];
+        var lg = '';
+        try {
+          lg = localStorage.getItem('brassworks.lang') || '';
+        } catch (e) {
+          /* private mode: the browser decides */
+        }
+        if (langs.indexOf(lg) < 0) lg = (navigator.language || 'en').slice(0, 2).toLowerCase();
+        document.documentElement.lang = langs.indexOf(lg) < 0 ? 'en' : lg;
+        /* the masthead waits for its face rather than jumping from the
+           fallback: the wordmark fades in once the fonts are there */
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(function () { document.documentElement.classList.add('fonts-ready'); });
+        } else {
+          document.documentElement.classList.add('fonts-ready');
+        }
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/logo-blackrail.svg" />
+    <title>Blackrail — a strategy game of canals, coal and rail</title>
+    <meta
+      name="description"
+      content="Blackrail: a demanding economic strategy game for 2 to 4 players, in your browser. Build the Midlands in the age of canals, rebuild them for the railway. Closed beta: join the waiting list."
+    />
+    <!-- the card a link shows elsewhere: the board itself. __APP_URL__ is
+         filled from VITE_APP_URL at build time (vite.config.ts) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Blackrail" />
+    <meta property="og:title" content="Blackrail — build the Midlands, canal by canal, rail by rail" />
+    <meta property="og:description" content="A demanding economic strategy game for 2 to 4 players, in your browser. Closed beta: join the waiting list." />
+    <meta property="og:image" content="__APP_URL__/og-preview.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#EFE8D6" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/prelaunch.tsx"></script>
+  </body>
+</html>

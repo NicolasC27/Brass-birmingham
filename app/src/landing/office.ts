@@ -1,4 +1,3 @@
-import { ONLINE_URL } from '@/online/net';
 
 /* ------------------------------------------------------------------ */
 /* The preview speaks to the office over plain HTTP, not the socket:   */
@@ -6,7 +5,9 @@ import { ONLINE_URL } from '@/online/net';
 /* office's address is the socket's, read as http.                     */
 /* ------------------------------------------------------------------ */
 
-export const OFFICE_HTTP = ONLINE_URL.replace(/^ws(s?):/, 'http$1:').replace(/\/+$/, '');
+/* read from the build's own setting, not from the wire's module: the page
+   that only leaves an address has no reason to carry the socket */
+export const OFFICE_HTTP = String(import.meta.env.VITE_ONLINE_URL ?? '').trim().replace(/^ws(s?):/, 'http$1:').replace(/\/+$/, '');
 
 /** before the line opens, the preview is the whole site but the direction's way in */
 export const PRELAUNCH = String(import.meta.env.VITE_PRELAUNCH ?? '') === '1';

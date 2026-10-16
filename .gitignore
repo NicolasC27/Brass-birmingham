@@ -9,6 +9,7 @@ verify-*.png
 # build output and dependencies
 app/node_modules/
 app/dist/
+app/dist-prelaunch/
 
 # backups of generated art
 *.orig.png
