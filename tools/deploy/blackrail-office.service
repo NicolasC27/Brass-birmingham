@@ -1,0 +1,24 @@
+# The office: tables, accounts and the waiting list, on 127.0.0.1:8787
+# behind Caddy. Settings in /etc/blackrail/office.env (see office.env.example).
+[Unit]
+Description=Blackrail office
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=blackrail
+Group=blackrail
+WorkingDirectory=/srv/blackrail/data
+EnvironmentFile=/etc/blackrail/office.env
+ExecStart=/usr/bin/node /srv/blackrail/office/blackrail-server.mjs
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/blackrail/data
+
+[Install]
+WantedBy=multi-user.target

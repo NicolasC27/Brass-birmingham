@@ -1,0 +1,28 @@
+# Blackrail on one machine: the site as files, the office behind a proxy.
+# Caddy asks Let's Encrypt for every name here on its own.
+
+playblackrail.com {
+	root * /srv/blackrail/site
+	encode zstd gzip
+	try_files {path} /index.html
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		X-Frame-Options DENY
+	}
+	# the built files carry their hash: kept a year; the pictures a week; the page never
+	header /assets/* Cache-Control "public, max-age=31536000, immutable"
+	@pictures path *.webp *.jpg *.png *.svg
+	header @pictures Cache-Control "public, max-age=604800"
+	header /index.html Cache-Control "no-cache"
+	file_server
+}
+
+www.playblackrail.com {
+	redir https://playblackrail.com{uri} permanent
+}
+
+office.playblackrail.com {
+	reverse_proxy 127.0.0.1:8787
+}
