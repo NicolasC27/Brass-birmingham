@@ -220,6 +220,12 @@ export function tr(key: string, vars?: Record<string, string | number>): string 
   return fmt(lookup(dict, key) ?? lookup(en as AnyDict, key) ?? key, vars, lang);
 }
 
+/** translate in a language named, not the page's — the office writes each
+ *  letter in its reader's language (English fallback) */
+export function trIn(l: Lang, key: string, vars?: Record<string, string | number>): string {
+  return fmt(lookup(dictOf(l), key) ?? lookup(en as AnyDict, key) ?? key, vars, l);
+}
+
 /** React hook: t('game.topbar.toAct', { name }) re-renders on language change */
 export function useT(): (key: string, vars?: Record<string, string | number>) => string {
   const l = useLang();
