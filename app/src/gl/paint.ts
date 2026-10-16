@@ -92,8 +92,9 @@ export interface BoardScene {
   ground: Container;
   /** the sheet the links are drawn on; the ambiance goes right above it */
   linksLayer: Container;
-  bgCanal: Sprite;
-  bgRail: Sprite;
+  /** each era's painting, with the apron of ground laid round it */
+  bgCanal: Container;
+  bgRail: Container;
   /** the survey laid over each era's ground, hidden with the traces */
   etchCanal: Sprite;
   etchRail: Sprite;
@@ -813,7 +814,7 @@ function makeRibbon(labelText: string, cx: number, cy: number, w: number, h: num
   return { box, plaque };
 }
 
-export function buildBoardScene(bgCanal: Sprite, bgRail: Sprite, etchCanal: Sprite, etchRail: Sprite): BoardScene {
+export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal: Sprite, etchRail: Sprite): BoardScene {
   /* the sheets, bottom to top, each named: nothing on the table is found by
      its rank among its siblings */
   const world = new Container();

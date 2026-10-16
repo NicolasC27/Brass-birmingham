@@ -1,5 +1,5 @@
-import { WORLD_H, WORLD_W, centeredOn, clampK, clampPan, fitScale, fitView, kToCentre, zoomAt } from '@/components/game/boardView';
-import type { View } from '@/components/game/boardView';
+import { WORLD_H, WORLD_W, WORLD_RECT, centeredOn, clampPan, fitScale, fitView, kToCentre, zoomAt } from '@/components/game/boardView';
+import type { View, WorldRect } from '@/components/game/boardView';
 
 /* ------------------------------------------------------------------ */
 /* Camera — inertial pan/zoom for the WebGL board.                     */
@@ -9,7 +9,8 @@ import type { View } from '@/components/game/boardView';
 /* every tick) is both the simplest and the smoothest approach.        */
 /* ------------------------------------------------------------------ */
 
-const clampView = (v: View, w: number, h: number) => clampPan({ ...v, k: clampK(v.k) }, w, h);
+/* the zoom is held at the frame's floor before the pan, in clampPan */
+const clampView = clampPan;
 
 export class Camera {
   view: View = { k: 1, x: 0, y: 0 };
@@ -29,23 +30,35 @@ export class Camera {
   /** two fingers on the glass: their last spread and midpoint, in frame pixels */
   private pinch: { d: number; mx: number; my: number } | null = null;
   private lastCommit = 0;
-  /** the opening view has been set: the whole board, framed on the room
+  /** the opening view has been set: the play area, framed on the room
    *  the HUD leaves (a frame with no size yet is framed on its first tick) */
   private opened = false;
+  /** the camera still stands where the table opened it (or where the fit
+   *  key put it back): a frame that changes shape frames it again, rather
+   *  than only holding it inside the new bounds */
+  private framed = true;
   private readonly getSize: () => { w: number; h: number };
+  /** the towns and the merchants, the box the opening view frames */
+  private readonly area: WorldRect;
 
-  constructor(getSize: () => { w: number; h: number }) {
+  constructor(getSize: () => { w: number; h: number }, area: WorldRect = WORLD_RECT) {
     this.getSize = getSize;
+    this.area = area;
     this.open();
   }
 
-  /** the table opens on the whole board, above the hand */
+  /** the table opens on the play area, above the hand */
   private open(): void {
     const { w, h } = this.getSize();
     if (this.opened || w <= 0 || h <= 0) return;
     this.opened = true;
-    this.view = fitView(w, h);
+    this.view = fitView(w, h, this.area);
     this.target = { ...this.view };
+  }
+
+  /** the reader (or a flight) moved the camera: a new frame only holds it */
+  private leave(): void {
+    this.framed = false;
   }
 
   /** call every ticker frame */
@@ -131,6 +144,7 @@ export class Camera {
     this.lastManual = Date.now();
     this.gliding = false;
     this.interrupt();
+    this.leave();
     const { w, h } = this.getSize();
     const factor = Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.04 : 0.0017));
     this.target = zoomAt(this.target, e.clientX - rect.left, e.clientY - rect.top, factor, w, h);
@@ -159,6 +173,7 @@ export class Camera {
       this.drag.lt = now;
     }
     this.drag.moved = this.drag.moved || Math.abs(e.clientX - this.drag.sx) + Math.abs(e.clientY - this.drag.sy) > 4;
+    if (this.drag.moved) this.leave();
     this.drag.lx = e.clientX;
     this.drag.ly = e.clientY;
     return this.drag.moved;
@@ -178,6 +193,7 @@ export class Camera {
     this.lastManual = Date.now();
     this.gliding = false;
     this.interrupt();
+    this.leave();
     this.drag = null;
     this.pinch = { d: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
   }
@@ -207,6 +223,7 @@ export class Camera {
   dblclick(sx: number, sy: number, out: boolean): void {
     this.lastManual = Date.now();
     this.interrupt();
+    this.leave();
     const { w, h } = this.getSize();
     this.target = zoomAt(this.target, sx, sy, out ? 1 / 1.6 : 1.6, w, h);
   }
@@ -215,31 +232,42 @@ export class Camera {
 
   zoomStep(factor: number): void {
     this.interrupt();
+    this.leave();
     const { w, h } = this.getSize();
     this.target = zoomAt(this.target, w / 2, h / 2, factor, w, h);
   }
 
-  /** the whole board, framed on the room the HUD leaves it */
+  /** back to the opening view: the play area, framed on the room the HUD leaves it */
   fit(): void {
     const { w, h } = this.getSize();
-    this.glide(fitView(w, h), 600);
+    this.framed = true;
+    this.glide(fitView(w, h, this.area), 600);
   }
 
   /** the frame changed shape (a resize, the guide's lane, the hand coming
-   *  or going): the camera is held back inside the new bounds, so the
-   *  table's black never shows past the bleed. `snap` moves the view at
-   *  once (the frame itself jumped); otherwise the chase carries it there */
+   *  or going): a camera still on the opening view is framed again on the
+   *  new room; one the reader moved is held back inside the new bounds,
+   *  zoomed in if need be, so the table's black never shows past the
+   *  painting. `snap` moves the view at once (the frame itself jumped);
+   *  otherwise the chase carries it there */
   reclamp(snap = false): void {
     const { w, h } = this.getSize();
     if (w <= 0 || h <= 0) return;
     this.open();
-    if (this.fly) this.fly = { ...this.fly, to: clampView(this.fly.to, w, h) };
-    this.target = clampView(this.target, w, h);
-    if (snap && !this.fly && !this.drag && !this.pinch) this.view = clampView(this.view, w, h);
+    if (this.framed && !this.drag && !this.pinch) {
+      const to = fitView(w, h, this.area);
+      if (this.fly) this.fly = { ...this.fly, to };
+      this.target = { ...to };
+    } else {
+      if (this.fly) this.fly = { ...this.fly, to: clampView(this.fly.to, w, h) };
+      this.target = clampView(this.target, w, h);
+    }
+    if (snap && !this.fly && !this.drag && !this.pinch) this.view = this.framed ? { ...this.target } : clampView(this.view, w, h);
   }
 
   /** back to k=1 keeping the current world centre on screen */
   hundred(): void {
+    this.leave();
     const { w, h } = this.getSize();
     const s = fitScale(w, h) * this.view.k;
     if (s === 0) return;
@@ -249,6 +277,7 @@ export class Camera {
   }
 
   flyTo(wx: number, wy: number, k = 1.6): void {
+    this.leave();
     const { w, h } = this.getSize();
     /* a point near the edge cannot sit in the middle at a wide view: come closer */
     const to = centeredOn(wx, wy, Math.max(this.target.k, k, kToCentre(wx, wy, w, h)), w, h);
@@ -264,12 +293,14 @@ export class Camera {
     this.lastManual = Date.now();
     this.gliding = false;
     this.interrupt();
+    this.leave();
     const { w, h } = this.getSize();
     this.target = clampPan({ k: this.target.k, x: this.target.x + dx, y: this.target.y + dy }, w, h);
   }
 
   /** instant jump (minimap drag) */
   centerOn(wx: number, wy: number): void {
+    this.leave();
     const { w, h } = this.getSize();
     this.gliding = false;
     this.fly = null;

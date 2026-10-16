@@ -12,7 +12,9 @@ export const WORLD_W = 3200;
 export const WORLD_H = 1800;
 /* zoom is a factor over the fit: 1 shows the whole world, and the board
    never zooms out past it — a smaller map only pushed plaques and tiles
-   below what the eye can read and left empty space around. */
+   below what the eye can read and left empty space around. On a frame of
+   another shape than the paintings the floor is higher still: the least
+   zoom at which the painting covers the frame (minK). */
 export const MIN_K = 1;
 export const MAX_K = 3;
 
@@ -73,37 +75,105 @@ function liftFor(s: number, ch: number): number {
   return Math.max(0, (WORLD_H * s) / 2 + fitReserve - ch / 2);
 }
 
-/** clamp pan so at least `margin` px of the map stays reachable on each axis */
 /** the paintings run BLEED px of countryside past the play area on every
  *  side; the camera may drift into that margin but never past it, so the
  *  table's black never shows */
 export const BLEED_X = 480;
 export const BLEED_Y = 270;
+/** the painting, bleed included, in world units */
+export const PAINT_W = WORLD_W + 2 * BLEED_X;
+export const PAINT_H = WORLD_H + 2 * BLEED_Y;
+/** past the painting the ground runs on, its bleed laid again mirrored,
+ *  twice the bleed deep: what the camera shows while it rises to lift the
+ *  southern towns clear of the hand, or overshoots an edge in a flight */
+export const APRON_X = 2 * BLEED_X;
+export const APRON_Y = 2 * BLEED_Y;
+
+/** the least zoom (over the fit) at which the painting covers the whole
+ *  frame: a frame wider or taller than the painting would otherwise show
+ *  the table's black beside it */
+export function minK(cw: number, ch: number): number {
+  if (cw <= 0 || ch <= 0) return MIN_K;
+  const cover = Math.max(cw / PAINT_W, ch / PAINT_H) / fitScale(cw, ch);
+  return Math.min(MAX_K, Math.max(MIN_K, cover));
+}
+
+/** a zoom held between the frame's floor and the ceiling */
+export const clampKFor = (k: number, cw: number, ch: number): number => Math.min(MAX_K, Math.max(minK(cw, ch), k));
+
+/** clamp the pan so the painting always covers the frame: its edges never
+ *  come inside, but for the rise that lifts the southern towns clear of
+ *  the hand, which the apron covers. The zoom is held at the frame's
+ *  floor first, so no pan is ever asked of a painting smaller than the frame */
 export function clampPan(v: View, cw: number, ch: number): View {
-  const s = fitScale(cw, ch) * v.k;
-  const mx = Math.max(0, (WORLD_W * s) / 2 + BLEED_X * s - cw / 2);
-  const my = Math.max(0, (WORLD_H * s) / 2 + BLEED_Y * s - ch / 2);
-  /* upward, the map may always rise far enough to show its southern towns
-     above the hand, even where the bleed alone would not allow it */
-  const up = Math.max(my, liftFor(s, ch));
+  const k = clampKFor(v.k, cw, ch);
+  const s = fitScale(cw, ch) * k;
+  const mx = Math.max(0, (PAINT_W * s) / 2 - cw / 2);
+  const my = Math.max(0, (PAINT_H * s) / 2 - ch / 2);
+  /* upward, the map may rise far enough to show its southern towns above
+     the hand, even where the bleed alone would not allow it — over the
+     apron, never past it */
+  const up = Math.max(my, Math.min(liftFor(s, ch), my + APRON_Y * s));
   /* while the whole play area fits in the strip above the hand, it stays
      in that strip: nothing of it is ever pushed under the dock at a view
      that could show it all */
   const free = ch - fitReserve;
   const hh = (WORLD_H * s) / 2;
-  const [lo, hi] = 2 * hh <= free ? [hh - ch / 2, free - hh - ch / 2] : [-up, my];
+  let [lo, hi] = [-up, my];
+  if (2 * hh <= free && Math.max(lo, hh - ch / 2) <= Math.min(hi, free - hh - ch / 2)) {
+    lo = Math.max(lo, hh - ch / 2);
+    hi = Math.min(hi, free - hh - ch / 2);
+  }
   return {
-    k: clampK(v.k),
+    k,
     x: Math.min(mx, Math.max(-mx, v.x)),
     y: Math.min(hi, Math.max(lo, v.y)),
   };
 }
 
-/** the whole-board view framed on the room the HUD leaves: the world at the
- *  fit, its centre raised to the middle of the free strip above the hand.
- *  The camera's fit and its opening view are meant to use this. */
-export function fitView(cw: number, ch: number): View {
-  return clampPan({ k: 1, x: 0, y: -fitReserve / 2 }, cw, ch);
+/** a rectangle of the world, in world units */
+export interface WorldRect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export const WORLD_RECT: WorldRect = { x0: 0, y0: 0, x1: WORLD_W, y1: WORLD_H };
+
+/** the room a town takes round its centre: its sockets, its plaque under
+ *  them, a merchant's gate and its row of beer */
+const PLACE_PAD = { x: 130, top: 120, bottom: 130 };
+
+/** what is played on: the box round the towns and the merchants, their
+ *  sockets and plaques included, never past the world */
+export function playArea(places: readonly { x: number; y: number }[]): WorldRect {
+  if (!places.length) return WORLD_RECT;
+  const xs = places.map((p) => p.x);
+  const ys = places.map((p) => p.y);
+  return {
+    x0: Math.max(0, Math.min(...xs) - PLACE_PAD.x),
+    y0: Math.max(0, Math.min(...ys) - PLACE_PAD.top),
+    x1: Math.min(WORLD_W, Math.max(...xs) + PLACE_PAD.x),
+    y1: Math.min(WORLD_H, Math.max(...ys) + PLACE_PAD.bottom),
+  };
+}
+
+/** the opening view: the play area framed on the room the HUD leaves
+ *  (the frame above the hand), as close as that allows — and never wider
+ *  than the painting covering the frame. The camera's fit and its opening
+ *  view are meant to use this. */
+export function fitView(cw: number, ch: number, area: WorldRect = WORLD_RECT): View {
+  const fit = fitScale(cw, ch);
+  const roomH = Math.max(ch - fitReserve, ch / 2);
+  const aw = Math.max(1, area.x1 - area.x0);
+  const ah = Math.max(1, area.y1 - area.y0);
+  const k = clampKFor(Math.min(cw / aw, roomH / ah) / fit, cw, ch);
+  const s = fit * k;
+  /* the area's centre on the centre of the room above the hand */
+  const x = (WORLD_W / 2 - (area.x0 + area.x1) / 2) * s;
+  const y = roomH / 2 - ch / 2 + (WORLD_H / 2 - (area.y0 + area.y1) / 2) * s;
+  return clampPan({ k, x, y }, cw, ch);
 }
 
 /** world (viewBox) coords → container pixels */
@@ -121,7 +191,7 @@ export function screenToWorld(sx: number, sy: number, v: View, cw: number, ch: n
 
 /** zoom by `factor`, keeping the world point under container point (sx,sy) fixed */
 export function zoomAt(v: View, sx: number, sy: number, factor: number, cw: number, ch: number): View {
-  const k2 = clampK(v.k * factor);
+  const k2 = clampKFor(v.k * factor, cw, ch);
   const r = k2 / v.k;
   const cx = cw / 2;
   const cy = ch / 2;
@@ -140,12 +210,12 @@ export function kToCentre(wx: number, wy: number, cw: number, ch: number): numbe
   if (fit <= 0) return 1;
   const roomX = Math.max(1, (WORLD_W / 2 + BLEED_X - Math.abs(wx - WORLD_W / 2)) * fit);
   const roomY = Math.max(1, (WORLD_H / 2 + BLEED_Y - Math.abs(wy - WORLD_H / 2)) * fit);
-  return clampK(Math.max(cw / 2 / roomX, ch / 2 / roomY) * 1.03);
+  return clampKFor(Math.max(cw / 2 / roomX, ch / 2 / roomY) * 1.03, cw, ch);
 }
 
 /** view that centres world point (wx,wy) at zoom k */
 export function centeredOn(wx: number, wy: number, k: number, cw: number, ch: number): View {
-  const k2 = clampK(k);
+  const k2 = clampKFor(k, cw, ch);
   const s = fitScale(cw, ch) * k2;
   return clampPan({ k: k2, x: -(wx - WORLD_W / 2) * s, y: -(wy - WORLD_H / 2) * s }, cw, ch);
 }

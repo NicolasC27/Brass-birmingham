@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Application, Assets, ColorMatrixFilter, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
+import { Application, Assets, ColorMatrixFilter, Container, FillGradient, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { AnimatePresence, motion } from 'framer-motion';
 import { activeBoard, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TOWN_BY_ID } from '@/game/data';
 import { merchantBarrelSlots, merchantBeerLeft, merchantDemand, merchantOpen, networkTowns, sellTargets, tileKey } from '@/game/engine';
@@ -12,7 +12,7 @@ import { WhyLink } from '@/components/game/RulesOverlay';
 import { money, onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
-import { WORLD_H, WORLD_W, farDetail, fitScale, placeAnchor, ribbonLabelScale, screenToWorld, subscribeFitReserve, worldToScreen, BLEED_X, BLEED_Y, GLIMPSE_MS } from '@/components/game/boardView';
+import { WORLD_H, WORLD_W, farDetail, fitScale, placeAnchor, playArea, ribbonLabelScale, screenToWorld, subscribeFitReserve, worldToScreen, APRON_X, APRON_Y, BLEED_X, BLEED_Y, GLIMPSE_MS, PAINT_W } from '@/components/game/boardView';
 import type { AnchorRegistry, MapAnchor, View } from '@/components/game/boardView';
 import { RIBBON_FONT, TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
@@ -40,10 +40,57 @@ import type { Ambiance } from './ambiance';
 const TILE_R = TILE_HALF;
 /** the files the ground lays on the table */
 const sheetList = (u: ReturnType<typeof mapUrls>): string[] => [u.canal, u.rail, ...(u.etch ? [u.etch.canal, u.etch.rail] : [])];
-/** the whole printed table, bleed included, in world units: the one area a
- *  veil or the night is laid over, so the filter never walks the sheet's
- *  children for its bounds each frame */
-const TABLE_AREA = new Rectangle(-BLEED_X, -BLEED_Y, WORLD_W + 2 * BLEED_X, WORLD_H + 2 * BLEED_Y);
+/** the whole printed table, bleed and apron included, in world units: the
+ *  one area a veil or the night is laid over, so the filter never walks the
+ *  sheet's children for its bounds each frame */
+const TABLE_AREA = new Rectangle(-BLEED_X - APRON_X, -BLEED_Y - APRON_Y, WORLD_W + 2 * (BLEED_X + APRON_X), WORLD_H + 2 * (BLEED_Y + APRON_Y));
+
+/** one axis of a painting laid with its apron: the painting in the middle,
+ *  and on either side its bleed laid again twice, mirrored against the
+ *  edge and then mirrored back, so every seam meets its own pixels and no
+ *  town is ever repeated — [source start, source length, world position,
+ *  direction], in texture pixels and world units, `u` pixels a unit */
+function apronCells(len: number, bleed: number, u: number): [number, number, number, 1 | -1][] {
+  const full = (len + 2 * bleed) * u;
+  const edge = bleed * u;
+  return [
+    [0, edge, -3 * bleed, 1],
+    [0, edge, -bleed, -1],
+    [0, full, -bleed, 1],
+    [full - edge, edge, len + 2 * bleed, -1],
+    [full - edge, edge, len + 2 * bleed, 1],
+  ];
+}
+
+/** the haze a painting fades into at its edges: the mean of its outer
+ *  ring, read once off a thumbnail of it (a sage grey if it cannot be) */
+function edgeHaze(tex: Texture): { r: number; g: number; b: number } {
+  const fallback = { r: 150, g: 156, b: 128 };
+  try {
+    const n = 16;
+    const cv = document.createElement('canvas');
+    cv.width = n;
+    cv.height = n;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return fallback;
+    ctx.drawImage(tex.source.resource as CanvasImageSource, 0, 0, n, n);
+    const px = ctx.getImageData(0, 0, n, n).data;
+    let [r, g, b, k] = [0, 0, 0, 0];
+    for (let y = 0; y < n; y++) {
+      for (let x = 0; x < n; x++) {
+        if (x > 0 && y > 0 && x < n - 1 && y < n - 1) continue;
+        const i = (y * n + x) * 4;
+        r += px[i];
+        g += px[i + 1];
+        b += px[i + 2];
+        k++;
+      }
+    }
+    return { r: Math.round(r / k), g: Math.round(g / k), b: Math.round(b / k) };
+  } catch {
+    return fallback;
+  }
+}
 /** how long the table dims for another seat's move (its last half-second a
  *  fade): kept well under the pace the machines are played at, whatever
  *  that pace is (GLIMPSE_MS, the store's own clock for the glimpse) */
@@ -708,8 +755,47 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         s.position.set(-BLEED_X, -BLEED_Y);
         return s;
       };
-      const bgCanal = sheet(canalTex);
-      const bgRail = sheet(railTex);
+      /* the painting and its apron: the camera covers the frame with the
+         painting, but rises past its southern edge to lift the last towns
+         clear of the hand, and a flight may overshoot an edge a moment —
+         the ground runs on there instead of the table's black */
+      const ground = (tex: typeof canalTex) => {
+        const c = new Container();
+        const u = tex.width / PAINT_W;
+        const f = tex.frame;
+        for (const [sy, sh, wy, dy] of apronCells(WORLD_H, BLEED_Y, u)) {
+          for (const [sx, sw, wx, dx] of apronCells(WORLD_W, BLEED_X, u)) {
+            const s = new Sprite(new Texture({ source: tex.source, frame: new Rectangle(f.x + sx, f.y + sy, sw, sh) }));
+            s.position.set(wx, wy);
+            s.scale.set(dx / u, dy / u);
+            s.eventMode = 'none';
+            c.addChild(s);
+          }
+        }
+        /* the mirrored ground would read as a mirror far out: it is
+           drowned in the painting's own haze, clear at the edge, thick a
+           bleed further on */
+        const { r, g, b } = edgeHaze(tex);
+        const haze = (a: number) => ({ r, g, b, a });
+        const outer = { x: BLEED_X + APRON_X, y: BLEED_Y + APRON_Y };
+        const mist = new Graphics();
+        for (const [x, y, w, h, from, to] of [
+          [-outer.x, WORLD_H + BLEED_Y, WORLD_W + 2 * outer.x, APRON_Y, { x: 0, y: 0 }, { x: 0, y: 1 }],
+          [-outer.x, -outer.y, WORLD_W + 2 * outer.x, APRON_Y, { x: 0, y: 1 }, { x: 0, y: 0 }],
+          [WORLD_W + BLEED_X, -outer.y, APRON_X, WORLD_H + 2 * outer.y, { x: 0, y: 0 }, { x: 1, y: 0 }],
+          [-outer.x, -outer.y, APRON_X, WORLD_H + 2 * outer.y, { x: 1, y: 0 }, { x: 0, y: 0 }],
+        ] as const) {
+          const fade = new FillGradient({ type: 'linear', start: from, end: to, textureSpace: 'local' });
+          fade.addColorStop(0, haze(0)).addColorStop(0.5, haze(0.85)).addColorStop(1, haze(1));
+          mist.rect(x, y, w, h).fill(fade);
+        }
+        mist.eventMode = 'none';
+        c.addChild(mist);
+        c.eventMode = 'none';
+        return c;
+      };
+      const bgCanal = ground(canalTex);
+      const bgRail = ground(railTex);
       const etchCanal = sheet(etchCanalTex);
       const etchRail = sheet(etchRailTex);
       etchCanal.eventMode = 'none';
@@ -738,7 +824,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
          links, whatever sheets lie under them */
       scene.land.addChildAt(ambiance.layer, scene.land.getChildIndex(scene.linksLayer) + 1);
 
-      const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }));
+      const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }), playArea([...TOWNS, ...MERCHANTS]));
       cameraRef.current = cam;
       cam.onCommit = (v) => setView(v);
       setView({ ...cam.view });

@@ -10,20 +10,21 @@ describe('the board is framed on the room the hand leaves', () => {
     expect(fitScale(1440, 900)).toBeCloseTo((900 - 225) / WORLD_H, 6);
   });
 
-  it('keeps the whole map above the hand at the fitted view', () => {
+  it('keeps the whole map above the hand at the fitted view, where the room allows it', () => {
+    /* 1920×1080: the painting covering the frame leaves the world room above the hand */
     setFitReserve(225);
-    const v = fitView(1440, 900);
-    const [, north] = worldToScreen(0, 0, v, 1440, 900);
-    const [, south] = worldToScreen(0, WORLD_H, v, 1440, 900);
+    const v = fitView(1920, 1080);
+    const [, north] = worldToScreen(0, 0, v, 1920, 1080);
+    const [, south] = worldToScreen(0, WORLD_H, v, 1920, 1080);
     expect(north).toBeGreaterThanOrEqual(-0.5);
-    expect(south).toBeLessThanOrEqual(900 - 225 + 0.5);
+    expect(south).toBeLessThanOrEqual(1080 - 225 + 0.5);
   });
 
   it('pulls a centred map up out from under the hand', () => {
     setFitReserve(225);
-    const v = clampPan({ k: 1, x: 0, y: 0 }, 1440, 900);
-    const [, south] = worldToScreen(0, WORLD_H, v, 1440, 900);
-    expect(south).toBeLessThanOrEqual(900 - 225 + 0.5);
+    const v = clampPan({ k: 1, x: 0, y: 0 }, 1920, 1080);
+    const [, south] = worldToScreen(0, WORLD_H, v, 1920, 1080);
+    expect(south).toBeLessThanOrEqual(1080 - 225 + 0.5);
   });
 
   it('keeps screen and world exact inverses under the reserve', () => {
