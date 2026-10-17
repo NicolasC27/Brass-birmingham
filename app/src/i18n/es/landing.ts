@@ -106,6 +106,7 @@ const landing: Dict['landing'] = {
   confirm: {
     eyebrow: 'Lista de espera',
     working: 'Un momento…',
+    badTitle: 'Este enlace ya no funciona',
     title: 'Tu plaza está reservada',
     text: 'Gracias. Te escribiremos a esta dirección en cuanto abra el viaje de prueba.',
     bad: 'Este enlace ya no funciona: quizá ya se usó, o la dirección se borró tras una semana sin respuesta.',

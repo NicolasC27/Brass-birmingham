@@ -104,6 +104,7 @@ const landing = {
   confirm: {
     eyebrow: 'Waiting list',
     working: 'One moment…',
+    badTitle: 'This link no longer works',
     title: 'Your seat is reserved',
     text: 'Thank you. We will write to this address as soon as the trial run opens.',
     bad: 'This link no longer works: it may have been used already, or the address was struck after a week without an answer.',

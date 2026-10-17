@@ -47,7 +47,7 @@ export function Confirm() {
       </Sheet>
     );
   return (
-    <Sheet title={t('landing.sent.title')}>
+    <Sheet title={t(outcome === 'bad' ? 'landing.confirm.badTitle' : 'landing.confirm.working')}>
       <Said text={t(outcome === 'bad' ? 'landing.confirm.bad' : 'landing.errors.down')} />
     </Sheet>
   );
