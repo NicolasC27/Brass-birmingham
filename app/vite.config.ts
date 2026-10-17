@@ -6,7 +6,10 @@ import { inspectAttr } from 'plugin-inspect-react-code'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  /* relative for the desktop shell; the preview is served from a domain's
+     root and opened on deep links (/avant-premiere/confirmer/…), so its
+     files are addressed from the root */
+  base: process.env.VITE_PRELAUNCH === '1' ? '/' : './',
   plugins: [
     /* the preview carries only the words it prints: the game's, the rules'
        and the results' dictionaries are left out of its build (a missing key
@@ -38,7 +41,9 @@ export default defineConfig({
           },
         ]
       : []),
-    inspectAttr(),
+    /* the inspector's source paths stay on the developer's pages: the
+       preview is public, and says nothing of how the code is laid out */
+    ...(process.env.VITE_PRELAUNCH === '1' ? [] : [inspectAttr()]),
     react(),
     /* the address the cards a link shows point at: VITE_APP_URL, else the root */
     {
