@@ -6,11 +6,13 @@ import type { Dict } from '../en';
 /* Briefe, die das Kontor ihr schreibt.                                */
 /* ------------------------------------------------------------------ */
 const landing: Dict['landing'] = {
+  pageTitle: 'Blackrail | Online-Alternative zu Brass: Birmingham',
   motto: 'Kanäle, Kohle & Eisen — Journal der Midlands',
   hero: {
     eyebrow: 'Geschlossene Beta · Anmeldung offen',
     title: 'Baue die Midlands im Zeitalter der Kanäle. Baue sie neu für die Eisenbahn.',
     subhead: 'Anspruchsvolle Wirtschaftsstrategie für 2 bis 4 Spieler, im Browser. Bauen, verbinden, verkaufen — gegen deine Freunde oder gegen Mr Watt, der nichts verschenkt.',
+    kicker: 'Eine unabhängige, inoffizielle Online-Alternative zu Brass: Birmingham.',
     watt: 'Mr Watt spielt immer mit voller Kraft. Nimmst du an seinem Tisch Platz?',
     plate: 'Tafel I — die Kanal-Ära',
     alt: 'Das Blackrail-Brett in der Kanal-Ära: Städte der Midlands, Miniaturfabriken und Kanäle auf gemalter Landschaft',

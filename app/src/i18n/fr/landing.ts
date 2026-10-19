@@ -6,11 +6,13 @@ import type { Dict } from '../en';
 /* lettres que l'office lui écrit.                                     */
 /* ------------------------------------------------------------------ */
 const landing: Dict['landing'] = {
+  pageTitle: 'Blackrail | Alternative en ligne à Brass: Birmingham',
   motto: 'Canaux, charbon & fer — journal des Midlands',
   hero: {
     eyebrow: 'Bêta fermée · inscriptions ouvertes',
     title: 'Bâtissez les Midlands au temps des canaux. Rebâtissez-les pour le rail.',
     subhead: 'Stratégie économique exigeante, de 2 à 4 joueurs, dans le navigateur. Construisez, reliez, vendez — contre vos amis, ou contre Mr Watt, qui ne fait jamais de cadeau.',
+    kicker: 'Une alternative en ligne à Brass: Birmingham, indépendante et non officielle.',
     watt: 'Mr Watt joue toujours à pleine force. Prendrez-vous place à sa table ?',
     plate: 'Planche I — l’ère des canaux',
     alt: 'Plateau de Blackrail à l’ère des canaux : villes des Midlands, usines miniatures et canaux sur une campagne peinte',

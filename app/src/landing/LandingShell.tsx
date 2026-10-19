@@ -34,6 +34,10 @@ export default function LandingShell() {
   usePageTitle();
   const Icon = theme === 'dark' ? Sun : Moon;
   const { pathname } = useLocation();
+  /* the front page keeps the title the search engines read, in the reader's language */
+  useEffect(() => {
+    if (pathname === PREVIEW) document.title = t('landing.pageTitle');
+  }, [pathname, t]);
   /* once the hero and its ticket have scrolled away, the bar carries a small one */
   const [far, setFar] = useState(false);
   useEffect(() => {

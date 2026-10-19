@@ -210,6 +210,7 @@ export default function Front() {
             {t('landing.hero.title')}
           </motion.h1>
           <p className="mt-5 max-w-[560px] font-serif text-[17px] leading-relaxed text-paper-300">{t('landing.hero.subhead')}</p>
+          <p className="mt-3 max-w-[560px] font-ui text-[13px] text-iron-400">{t('landing.hero.kicker')}</p>
           <WaitForm className="mt-7 max-w-[600px]" />
           <div className="mt-7 flex max-w-[600px] items-center gap-4 border-t border-[var(--gz-ink-soft)] pt-5">
             <img src="/portrait-watt.webp" alt={t('landing.machines.portrait', { name: 'Mr Watt' })} className="h-16 w-16 shrink-0 rounded-full border-2 border-brass-300 object-cover" />

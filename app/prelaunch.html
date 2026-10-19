@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -53,26 +53,65 @@
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/logo-blackrail.svg" />
-    <title>Blackrail — a strategy game of canals, coal and rail</title>
+    <title>Blackrail | Online Alternative to Brass: Birmingham — Canal &amp; Railway Strategy Game</title>
     <meta
       name="description"
-      content="Blackrail: a demanding economic strategy game for 2 to 4 players, in your browser. Build the Midlands in the age of canals, rebuild them for the railway. Closed beta: join the waiting list."
+      content="An online alternative to the board game Brass: Birmingham, in your browser. Build industries, canals and railways across the Midlands, 2–4 players or against AI rivals. Independent and unofficial. Closed beta: join the waiting list."
     />
-    <!-- the card a link shows elsewhere: the board itself. __APP_URL__ is
-         filled from VITE_APP_URL at build time (vite.config.ts) -->
+    <link rel="canonical" href="__APP_URL__/" />
+    <!-- the page the search engines and the link cards read: the board itself.
+         __APP_URL__ is filled from VITE_APP_URL at build time (vite.config.ts) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Blackrail" />
-    <meta property="og:title" content="Blackrail — build the Midlands, canal by canal, rail by rail" />
-    <meta property="og:description" content="A demanding economic strategy game for 2 to 4 players, in your browser. Closed beta: join the waiting list." />
+    <meta property="og:url" content="__APP_URL__/" />
+    <meta property="og:title" content="Blackrail | Online Alternative to Brass: Birmingham" />
+    <meta property="og:description" content="An online alternative to the board game Brass: Birmingham: canals, coal and railways for 2–4 players, in your browser. Independent and unofficial. Closed beta: join the waiting list." />
     <meta property="og:image" content="__APP_URL__/og-preview.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta name="twitter:title" content="Blackrail | Online Alternative to Brass: Birmingham" />
+    <meta property="og:image:alt" content="The Blackrail board in the canal era: Midlands towns, miniature factories and coloured canals" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#EFE8D6" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <!-- the hero is the page's largest picture: asked for before the script runs -->
+    <link rel="preload" as="image" href="/landing-hero-sm.webp" imagesrcset="/landing-hero-sm.webp 1000w, /landing-hero.webp 2000w" imagesizes="(min-width: 1100px) 55vw, 100vw" fetchpriority="high" />
+    <!-- what the game is, for the engines that read structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Blackrail",
+        "url": "__APP_URL__/",
+        "image": "__APP_URL__/og-preview.jpg",
+        "description": "An independent, unofficial online alternative to the board game Brass: Birmingham: an economic strategy game set in the English Midlands from 1770 to 1865. Build industries, link them by canal, then rebuild the network with railways. For 2 to 4 players, online or against AI rivals, in the browser.",
+        "genre": ["Strategy", "Economic simulation", "Board game"],
+        "gamePlatform": ["Web browser", "PC", "Tablet"],
+        "applicationCategory": "Game",
+        "operatingSystem": "Any (web browser)",
+        "numberOfPlayers": { "@type": "QuantitativeValue", "minValue": 2, "maxValue": 4 },
+        "playMode": ["MultiPlayer", "SinglePlayer"],
+        "inLanguage": ["en", "fr", "es", "de"]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- the page in plain words, for a reader without the script (a search
+         engine, a link preview); the app replaces it as soon as it runs -->
+    <div id="root">
+      <main style="max-width: 720px; margin: 64px auto; padding: 0 16px; font-family: Georgia, serif; color: #2a2118">
+        <h1>Blackrail — an online alternative to Brass: Birmingham</h1>
+        <p>Build the Midlands in the age of canals, rebuild them for the railway. An independent, unofficial browser game inspired by the board game Brass: Birmingham.</p>
+        <p>A demanding economic strategy game for 2 to 4 players, in your browser. Raise mills, collieries, ironworks, potteries and breweries in real Midlands towns, sell to the merchants, and link it all by canal. Halfway through, the canal era ends: the old network is swept away and the race starts again with railways.</p>
+        <ul>
+          <li>Two eras: canals, then railways</li>
+          <li>Shared coal and iron markets whose prices move with every purchase</li>
+          <li>Four AI rivals, including Mr Watt, who always plays at full strength</li>
+          <li>Quick and ranked games online, a weekly challenge, and a move-by-move replay of every game</li>
+        </ul>
+        <p>Closed beta coming soon — join the waiting list at playblackrail.com.</p>
+      </main>
+    </div>
     <script type="module" src="/src/prelaunch.tsx"></script>
   </body>
 </html>

@@ -4,11 +4,13 @@
 /* letters the office writes to it.                                    */
 /* ------------------------------------------------------------------ */
 const landing = {
+  pageTitle: 'Blackrail | Online Alternative to Brass: Birmingham',
   motto: 'Canals, coal & iron — a journal of the Midlands',
   hero: {
     eyebrow: 'Closed beta · sign-ups open',
     title: 'Build the Midlands in the age of canals. Rebuild them for the railway.',
     subhead: 'Demanding economic strategy for 2 to 4 players, in the browser. Build, connect, sell — against your friends, or against Mr Watt, who never gives anything away.',
+    kicker: 'An independent, unofficial online alternative to Brass: Birmingham.',
     watt: 'Mr Watt always plays at full strength. Will you take a seat at his table?',
     plate: 'Plate I — the canal era',
     alt: 'The Blackrail board in the canal era: Midlands towns, miniature factories and canals over painted countryside',
