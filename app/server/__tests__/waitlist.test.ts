@@ -27,11 +27,12 @@ describe('the list', () => {
     expect(again.kind).toBe('letter');
     if (first.kind !== 'letter' || again.kind !== 'letter') throw new Error('no letter');
     expect(again.lang).toBe('fr');
-    expect(w.confirm(first.token)).toBe(false);
+    expect(w.confirm(first.token)).toBe(0);
     expect(w.enter('not an address', 'fr', '', '', 0).kind).toBe('bad-email');
     expect(reach(w.entrants(), { lang: null, fresh: false, limit: null })).toHaveLength(0);
-    expect(w.confirm(again.token)).toBe(true);
-    expect(w.confirm(again.token)).toBe(false);
+    expect(w.confirm(again.token)).toBe(1);
+    expect(w.confirm(again.token)).toBe(0);
+    expect(w.seatsLeft()).toBe(99);
     expect(w.enter('ada@example.test', 'fr', '', '', 10 ** 13).kind).toBe('known');
     const [ada] = w.entrants();
     expect(ada).toMatchObject({ email: 'Ada@Example.test', lang: 'fr', source: 'forum', letters: 0, awaiting: 0 });
@@ -114,8 +115,13 @@ describe('the front desk and the direction', () => {
     await until('the letter', () => sent.length === 1);
     expect(sent[0].subject).toContain('Blackrail');
     expect(sent[0].text).toContain('https://blackrail.example/avant-premiere/confirmer/');
-    expect((await at('/waitlist/confirm', { token: tokenOf(sent[0], 'confirmer') })).status).toBe(200);
+    const answered = await at('/waitlist/confirm', { token: tokenOf(sent[0], 'confirmer') });
+    expect(answered.status).toBe(200);
+    /* the first to answer is the first founder, and a seat is gone */
+    expect(await answered.json()).toMatchObject({ rank: 1, founder: true });
     expect((await at('/waitlist/confirm', { token: tokenOf(sent[0], 'confirmer') })).status).toBe(404);
+    const seats = await fetch(`http://127.0.0.1:${server!.port}/waitlist/seats`, { headers: { origin: 'https://blackrail.example' } });
+    expect(await seats.json()).toEqual({ left: 99, of: 100 });
     /* a page elsewhere writes nothing, and a machine filling the hidden field keeps nothing */
     expect((await at('/waitlist', { email: 'x@example.test' }, 'https://elsewhere.example')).status).toBe(403);
     expect((await at('/waitlist', { email: 'bot@example.test', website: 'spam' })).status).toBe(202);

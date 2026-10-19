@@ -31,7 +31,7 @@ import { letters, mailerFromEnv, waitLetters } from './mail';
 import { Waitlist } from './waitlist';
 import { locateFromEnv } from './geo';
 import type { Locate } from './geo';
-import { MAX_BODY, MAX_SUBJECT, audienceOf } from '@/online/waitlist';
+import { FOUNDERS, MAX_BODY, MAX_SUBJECT, audienceOf } from '@/online/waitlist';
 import type { Mailer } from './mail';
 import { Store } from './store';
 import type { Account } from './store';
@@ -357,6 +357,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       res.end();
       return;
     }
+    /* the founders' seats still free, for the front page's counter */
+    if (req.method === 'GET' && url.pathname === '/waitlist/seats') return answer(200, { left: waitlist.seatsLeft(), of: FOUNDERS });
     if (req.method !== 'POST') return answer(405, { error: 'post-only' });
     /* a page elsewhere may not write to the list; the post's one-click way out comes with no page at all */
     if (!allowed) return answer(403, { error: 'origin' });
@@ -375,7 +377,10 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       return waitlist.leave(t) ? answer(200, { ok: true }) : answer(404, { error: 'unknown' });
     }
     const f = fieldsOf(raw);
-    if (url.pathname === '/waitlist/confirm') return waitlist.confirm(String(f.token ?? '')) ? answer(200, { ok: true }) : answer(404, { error: 'unknown' });
+    if (url.pathname === '/waitlist/confirm') {
+      const rank = waitlist.confirm(String(f.token ?? ''));
+      return rank ? answer(200, { ok: true, rank, founder: rank <= FOUNDERS }) : answer(404, { error: 'unknown' });
+    }
     if (url.pathname !== '/waitlist') return answer(404, { error: 'unknown' });
     /* the field no person sees: a machine that fills it is thanked, and nothing is kept */
     if (typeof f.website === 'string' && f.website !== '') return answer(202, { ok: true });

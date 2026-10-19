@@ -62,6 +62,21 @@ export interface WaitBook {
   sentToday: number;
 }
 
+/** the founders: the first addresses to answer their letter get a year of
+ *  Premium when it opens, counted in the order the letters were answered */
+export const FOUNDERS = 100;
+
+/** the founders among a book's lines: the first FOUNDERS confirmed, by the moment they answered */
+export function founders(entrants: readonly Entrant[]): Set<string> {
+  return new Set(
+    entrants
+      .filter((e) => e.confirmedAt !== null)
+      .sort((a, b) => (a.confirmedAt ?? 0) - (b.confirmedAt ?? 0) || a.createdAt - b.createdAt)
+      .slice(0, FOUNDERS)
+      .map((e) => e.id),
+  );
+}
+
 export const MAX_SUBJECT = 140;
 export const MAX_BODY = 20_000;
 /** a circular is written to this many addresses at most */

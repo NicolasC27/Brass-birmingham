@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomBytes } from 'node:crypto';
-import { WAIT_LANGS, reach } from '@/online/waitlist';
+import { FOUNDERS, WAIT_LANGS, reach } from '@/online/waitlist';
 import type { Audience, Circular, Entrant, WaitBook, WaitLang } from '@/online/waitlist';
 
 /* ------------------------------------------------------------------ */
@@ -155,12 +155,22 @@ export class Waitlist {
     return { kind: 'letter', token: t, email: address, lang: l, leave };
   }
 
-  /** the letter answered: true when the token named a line */
-  confirm(t: string, now = Date.now()): boolean {
-    if (typeof t !== 'string' || !/^[0-9a-f]{48}$/.test(t)) return false;
+  /** the letter answered: the line's place among the confirmed (1 is the
+   *  first to have answered), 0 when the token names no line */
+  confirm(t: string, now = Date.now()): number {
+    if (typeof t !== 'string' || !/^[0-9a-f]{48}$/.test(t)) return 0;
+    const row = this.db.prepare('select id, createdAt from waitlist where confirmSeal = ?').get(sealed(t)) as { id: string; createdAt: number } | undefined;
+    if (!row) return 0;
     /* the address that answers is kept, not the machine it answered from */
-    const r = this.db.prepare('update waitlist set confirmedAt = ?, confirmSeal = null, ip = null where confirmSeal = ?').run(now, sealed(t));
-    return Number(r.changes) > 0;
+    this.db.prepare('update waitlist set confirmedAt = ?, confirmSeal = null, ip = null where id = ?').run(now, row.id);
+    const before = this.db.prepare('select count(*) as n from waitlist where confirmedAt is not null and id != ? and (confirmedAt < ? or (confirmedAt = ? and createdAt <= ?))').get(row.id, now, now, row.createdAt) as { n: number };
+    return Number(before.n) + 1;
+  }
+
+  /** the founders' seats still free */
+  seatsLeft(): number {
+    const n = Number((this.db.prepare('select count(*) as n from waitlist where confirmedAt is not null').get() as { n: number }).n);
+    return Math.max(0, FOUNDERS - n);
   }
 
   /** the way out taken: the line is struck */
