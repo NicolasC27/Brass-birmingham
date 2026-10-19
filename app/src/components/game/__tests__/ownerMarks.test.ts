@@ -10,9 +10,15 @@ import { levelMark, tileMark } from '../levelMark';
 /* ------------------------------------------------------------------ */
 
 describe('an owner told without colour', () => {
-  it('wears the shapes by default, for the owners colour alone cannot part', () => {
-    /* no stored choice (none can be read here): the default stands */
-    expect(getBoardOptions().colorBlind).toBe(true);
+  it('leaves the large shapes to be asked for: the small seal is always there', () => {
+    /* no stored choice (none can be read here): the default stands. Every
+       built tile keeps its owner's seal whatever the setting; colour-blind
+       mode only seats it larger */
+    expect(getBoardOptions().colorBlind).toBe(false);
+  });
+
+  it('prints the empty slots in black ink by default', () => {
+    expect(getBoardOptions().slotArt).toBe('mono');
   });
 });
 

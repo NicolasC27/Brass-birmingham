@@ -213,10 +213,12 @@ let state: BoardOptions = {
   stockStyle: 'corner',
   tileArt: {},
   matOrder: read('matOrder', [...MAT_ORDER_DEFAULT]),
-  slotArt: read('slotArt', 'engraved'),
+  /* the empty slots print in black ink by default: the sepia plate stays a choice */
+  slotArt: read('slotArt', 'mono'),
   /* on by default: oxblood and verdigris sit too close under deuteranopia
      and protanopia for colour alone to tell the owners apart */
-  colorBlind: read('colorBlind', true),
+  /* colour-blind seals are asked for, not imposed */
+  colorBlind: read('colorBlind', false),
   sealTiles: read('sealTiles', true),
   sealLinks: read('sealLinks', true),
   cardGrain: read('cardGrain', true),
