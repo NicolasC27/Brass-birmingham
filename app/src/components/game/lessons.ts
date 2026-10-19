@@ -251,7 +251,6 @@ export function fromIndices(step: number, reached: number, code: string | null):
 
 /** the progress written in this visit, for a browser whose storage refuses it */
 let kept: Progress | null = null;
-let writes = 0;
 const listeners = new Set<() => void>();
 
 /** what this browser holds of the guided game: its record, or the old
@@ -270,19 +269,21 @@ export function readProgress(): Progress | null {
   }
 }
 
+/** what the disk holds for a table, as a key the last reading is kept by */
+const shelfKey = (code: string | null): string => {
+  try {
+    return `${code}\n${[PROGRESS_KEY, STEP_KEY, REACH_KEY].map((k) => localStorage.getItem(k) ?? '').join('\n')}`;
+  } catch {
+    return `${code}\n`;
+  }
+};
 let memo: { key: string; p: Progress } | null = null;
 
 /** the progress at this table: its own record, the old indices taken up
  *  once, or a fresh start for a table that is not the one on record. The
  *  same object while nothing changes, so a render can subscribe to it */
 export function progressAt(code: string): Progress {
-  let raw: string;
-  try {
-    raw = [PROGRESS_KEY, STEP_KEY, REACH_KEY].map((k) => localStorage.getItem(k) ?? '').join('\n');
-  } catch {
-    raw = '';
-  }
-  const key = `${code}\n${writes}\n${raw}`;
+  const key = shelfKey(code);
   if (memo?.key === key) return memo.p;
   const p = readProgress();
   const at = !p ? freshProgress(code) : p.code === code ? p : p.code === null ? { ...p, code } : freshProgress(code);
@@ -293,7 +294,6 @@ export function progressAt(code: string): Progress {
 /** write the progress down, and say so to whoever reads it */
 export function saveProgress(p: Progress): void {
   kept = p;
-  writes++;
   try {
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
     /* the old indices are read once, into the record */
@@ -302,6 +302,9 @@ export function saveProgress(p: Progress): void {
   } catch {
     /* the record lives for this visit only */
   }
+  /* read back as the very record written — even where the disk refused it,
+     the next reading must not undo this one */
+  memo = { key: shelfKey(p.code), p };
   for (const f of listeners) f();
 }
 

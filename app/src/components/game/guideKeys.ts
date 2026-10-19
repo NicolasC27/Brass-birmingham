@@ -2,7 +2,7 @@
  * from the table. Their own file, so the launcher of a guided game and the
  * page that lays out the board can read them without pulling the panel in. */
 
-/** the lesson the note is folded on, or -1 */
+/** the lesson the note is folded on, by its id */
 export const MINI_KEY = 'brassworks.guide.mini';
 /** the spot the note was dragged to */
 export const POS_KEY = 'brassworks.guide.pos';

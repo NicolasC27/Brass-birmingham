@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
@@ -24,6 +24,8 @@ import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
+import { LAST_LESSON, LESSONS, back as readBack, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
+import type { LessonCtx, Review, Show } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -50,50 +52,12 @@ interface Ctx {
 
 /* ------------------------------- lessons ----------------------------- */
 
-/** what a lesson may point at on the screen */
-type Show = 'mat' | 'market' | 'vp';
-
-interface Step {
-  id: string;
-  /** done by the state (a 'do' step), or by reading on (a 'read' step);
-   *  `ack` says the machine's latest move has been read and understood */
-  done?: (g: GameState, me: number, sel: string | null, mat: number | null, ack: boolean) => boolean;
-  show?: Show;
-  /** a read step that only makes sense once this holds */
-  when?: (g: GameState, me: number) => boolean;
-}
+/* the lessons themselves, and how far the reader has come, are kept in
+   lessons.ts: by id, for the guided table */
 
 const WORKS = ['cotton', 'manufacturer', 'pottery'];
-
-const STEPS: Step[] = [
-  { id: 'welcome' },
-  { id: 'board' },
-  { id: 'goal', show: 'vp' },
-  { id: 'money' },
-  { id: 'mat', show: 'mat', done: (_g, _me, _sel, mat) => mat !== null },
-  { id: 'matRead', show: 'mat' },
-  { id: 'hand', done: (_g, _me, sel) => sel !== null },
-  { id: 'coal', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'coal') },
-  /* read while the table waits: her turn comes once it has been read */
-  { id: 'botTurn' },
-  { id: 'payday', when: (g) => g.round >= 2 },
-  { id: 'link', done: (g, me) => Object.values(g.links).some((l) => l.owner === me) },
-  { id: 'iron', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'iron') },
-  { id: 'develop' },
-  { id: 'works', done: (g, me) => Object.values(g.tiles).some((t) => t.owner === me && WORKS.includes(t.industry)) },
-  { id: 'market', show: 'market' },
-  { id: 'beer' },
-  { id: 'sell', done: (g, me) => g.players[me].stats.sold > 0 },
-  { id: 'flipped', when: (g, me) => g.players[me].stats.sold > 0 },
-  { id: 'loan', done: (g, me) => g.players[me].loans > 0 },
-  { id: 'eraEnd' },
-  { id: 'plan' },
-  { id: 'tips' },
-  { id: 'onward' },
-];
-
-const STEP_KEY = 'brassworks.tutorial.step';
-const REACH_KEY = 'brassworks.tutorial.reached';
+/** the progress outside the guided game: nothing to settle, nothing to write */
+const NO_PROGRESS = freshProgress(null);
 
 type Pos = { x: number; y: number };
 const readPos = (): Pos => {
@@ -301,7 +265,6 @@ function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
   return null;
 }
-const LOAN_AT = STEPS.findIndex((x) => x.id === 'loan');
 
 /* ----------------------------- the alerts ---------------------------- */
 
@@ -380,6 +343,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const verb = useGame((s) => s.verb);
   const buildPick = useGame((s) => s.buildPick);
   const tutorial = useGame((s) => s.tutorial);
+  /* the guided game's table, which its progress is kept for */
+  const table = useGame((s) => s.local);
   const endTutorial = useGame((s) => s.endTutorial);
   const matPlayer = useGame((s) => s.matPlayer);
   const openMat = useGame((s) => s.openMat);
@@ -412,11 +377,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the note can be dragged by its head, and folded to a strip; a new
      lesson unfolds it */
   const [pos, setPos] = useState<Pos>(readPos);
-  const [miniAt, setMiniAt] = useState<number>(() => {
+  const [miniAt, setMiniAt] = useState<string>(() => {
     try {
-      return Number(localStorage.getItem(MINI_KEY) ?? -1);
+      return localStorage.getItem(MINI_KEY) ?? '';
     } catch {
-      return -1;
+      return '';
     }
   });
   const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos; t0: number } | null>(null);
@@ -447,20 +412,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the box moves under the pointer without a render: the state is
      written once, when it is let go */
   const box = useRef<HTMLDivElement>(null);
-  const [readPast, setReadPast] = useState<number>(() => {
-    try {
-      return Number(localStorage.getItem(STEP_KEY) ?? 0);
-    } catch {
-      return 0;
-    }
-  });
 
   /* my seat: online the one the table gave me; at home the first human at the table */
   const me = seat ?? Math.max(0, game?.players.findIndex((p) => !p.isBot) ?? 0);
   const myTurn = !!game && game.phase === 'action' && game.current === me && !game.players[me].isBot;
   const aid = !!game && me >= 0 && aidOn(game.assist, code !== null);
-  const botNow = useMemo(() => (game ? botReason(game, me, t) : null), [game, me, t]);
-  const ack = !!botNow && botHidden === botNow.id;
   /* the turns of the table, and the highest entry read of them */
   const happens = useMemo(() => (game && aid ? happenings(game, me, t) : []), [game, aid, me, t]);
   const [eventsSeen, setEventsSeen] = useState(-1);
@@ -475,13 +431,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the rules codex, flattened once into the passages a question searches */
   const lang = useLang();
   const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
-  /* the lane reads like a conversation: the newest turn is the one in view */
-  useEffect(() => {
-    const el = box.current;
-    if (dock && el) el.scrollTop = el.scrollHeight;
-  }, [dock, said.length, readPast, game?.ledgerSeq]);
   /* a lesson the reader went back to: held until they read forward again */
-  const [review, setReview] = useState<number | null>(null);
+  const [review, setReview] = useState<Review | null>(null);
   /* the sheet of progress points at a lesson: the motif that came back most
      over the last games, and the step of the guide that teaches against it */
   const [adviceSeen, setAdviceSeen] = useState(false);
@@ -491,64 +442,21 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const back = recurring(listProgress(), 10)[0];
     if (!back) return null;
     const LESSON: Record<Motif, string> = { singleRail: 'link', buildOverLink: 'link', linkOverBuild: 'works', loanOverBuild: 'loan', sellLate: 'sell', buildOverDevelop: 'develop', developOverBuild: 'develop', wrongTown: 'works', wrongIndustry: 'works', passed: 'tips' };
-    const index = STEPS.findIndex((x) => x.id === LESSON[back.motif]);
-    return index >= 0 ? { motif: back.motif, times: back.times, index } : null;
+    const id = LESSON[back.motif];
+    return lessonOf(id) ? { motif: back.motif, times: back.times, id } : null;
   }, []);
-  /* the lesson whose deed was already done when it came up: it stays a page
-     to read on from, even if the reader undoes the deed meanwhile */
-  const [arrived, setArrived] = useState<{ at: number; done: boolean }>({ at: -1, done: false });
   const news = happens.filter((x) => x.id > eventsSeen);
 
-  /* the lesson: the first step not done — a read step is done once read past,
-     and a step once passed stays passed (closing the mat again is no reason
-     to teach the mat again) */
-  const [reached, setReached] = useState<number>(() => {
-    try {
-      return Number(localStorage.getItem(REACH_KEY) ?? 0);
-    } catch {
-      return 0;
-    }
-  });
-  /* the first lesson not done, and the first one waiting on the game
-     before it: that one is not passed, it comes up when its time comes */
-  const lesson = (): { rawIndex: number; pending: number } => {
-    if (!game || !tutorial) return { rawIndex: -1, pending: -1 };
-    let pending = -1;
-    for (let i = 0; i < STEPS.length; i++) {
-      const s = STEPS[i];
-      if (i < reached) continue;
-      if (s.done) {
-        /* a deed done passes its lesson — unless it was already done when
-           the lesson came up, and then the lesson is still to be read */
-        const done = s.done(game, me, selectedCardId, matPlayer, ack);
-        const beforehand = arrived.at === i && arrived.done;
-        if (done && (!beforehand || i < readPast)) continue;
-      } else if (i < readPast) continue;
-      /* a read step waiting on the game: skipped until it makes sense */
-      if (!s.done && s.when && !s.when(game, me)) {
-        if (pending < 0) pending = i;
-        continue;
-      }
-      return { rawIndex: i, pending };
-    }
-    return { rawIndex: STEPS.length, pending };
-  };
-  const { rawIndex, pending } = review !== null ? { rawIndex: review, pending: -1 } : lesson();
+  /* the lessons: the progress kept for this table, settled against the
+     table as it stands — a deed seen undone and now done is passed, and a
+     lesson once passed stays passed (closing the mat again is no reason to
+     teach the mat again) */
+  const kept = useSyncExternalStore(onProgress, () => (tutorial && table ? progressAt(table) : NO_PROGRESS));
+  const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer } : null), [game, me, selectedCardId, matPlayer]);
+  const settled = useMemo(() => (tutorial && lctx ? settle(kept, lctx) : kept), [tutorial, lctx, kept]);
+  const owed = useMemo(() => (tutorial && lctx ? dueNow(settled, lctx) : null), [tutorial, lctx, settled]);
   /* the lesson on show, for the tips that must not repeat it */
-  const dueId = tutorial && rawIndex >= 0 && rawIndex < STEPS.length ? STEPS[rawIndex].id : null;
-  const stepIndex = rawIndex < 0 ? -1 : review !== null ? review : Math.max(rawIndex, reached);
-  const reachable = pending >= 0 ? Math.min(rawIndex, pending) : rawIndex;
-  if (tutorial && review === null && reachable > reached) setReached(reachable);
-  /* the furthest lesson is kept for the next visit from an effect: a render
-     may be thrown away, a line written to the disk may not */
-  useEffect(() => {
-    if (!tutorial) return;
-    try {
-      localStorage.setItem(REACH_KEY, String(reached));
-    } catch {
-      /* non-fatal */
-    }
-  }, [tutorial, reached]);
+  const dueId = review ? review.id : (owed?.id ?? null);
 
   const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, step: dueId, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, dueId, selectedCardId, verb, buildPick]);
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
@@ -560,9 +468,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const setPage = (p: number) => setPaged({ key: situation, page: p });
 
   /* the machine's next move waits while its last one is being read (guided game only) */
-  const lessonNow = tutorial && stepIndex >= 0 && stepIndex < STEPS.length ? STEPS[stepIndex] : null;
-  /* a lesson still to be read holds the table: the reader sets the pace */
-  const unread = !!lessonNow && !lessonNow.done;
+  /* a lesson still to be read holds the table: the reader sets the pace —
+     a page, a deed done beforehand or a lesson read back, not a deed to do */
+  const unread = !!owed && (review !== null || owed.mode === 'read' || owed.mode === 'already');
   const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0));
   useEffect(() => {
     setBotHold(holdWanted);
@@ -573,16 +481,32 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the lesson on show, worked out before the note decides whether to
      show at all: the thread files away whatever it replaces */
   const onTable = !!game && game.phase === 'action';
-  const showSteps = onTable && tutorial && stepIndex >= 0;
-  const due = showSteps ? STEPS[Math.min(stepIndex, STEPS.length - 1)] : null;
-  const finished = showSteps && stepIndex >= STEPS.length;
-  /* the deed the lesson asks for, when the table does not allow it now;
-     when money is what is missing and the loan is still to be taught, the
-     guide takes that lesson first and comes back to this one after */
-  const block = game && due?.done && !finished && review === null ? blockedBy(due.id, game, me, t) : null;
-  const detour = !!game && !!block?.money && due!.id !== 'loan' && stepIndex < LOAN_AT && !STEPS[LOAN_AT].done!(game, me, selectedCardId, matPlayer, ack) && canLoan(game, me).ok;
-  const step = detour ? STEPS[LOAN_AT] : due;
-  const shownIndex = detour ? LOAN_AT : stepIndex;
+  const showSteps = onTable && !!owed;
+  const finished = showSteps && review === null && owed.mode === 'finished';
+  /* the lesson due, and the deed it asks for when the table does not allow
+     it now; when money is what is missing and the loan is still to be
+     taught, the guide takes that lesson first and comes back to this one after */
+  const dueStep = owed?.id ? lessonOf(owed.id)! : null;
+  const block = game && owed?.mode === 'do' && review === null ? blockedBy(owed.id!, game, me, t) : null;
+  const detour = !!(lctx && owed && block?.money && detourOf(settled, owed, lctx, true, canLoan(lctx.g, me).ok));
+  /* what is on show: the lesson read back, the loan first, the lesson due —
+     and once they are all passed, the last one, to close the guide on */
+  const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? LAST_LESSON);
+  const step = showSteps ? lessonOf(shownId)! : null;
+  const shownIndex = finished ? LESSONS.length : lessonIndex(shownId);
+  /* a deed on show, still undone, is noted as seen: doing it passes it,
+     wherever the reader has read to meanwhile */
+  const live = useMemo(() => (showSteps && review === null && !finished && lctx ? see(settled, shownId, lctx) : settled), [showSteps, review, finished, lctx, settled, shownId]);
+  /* the progress is written from an effect: a render may be thrown away,
+     a line written to the disk may not */
+  useEffect(() => {
+    if (tutorial && live !== kept) saveProgress(live);
+  }, [tutorial, live, kept]);
+  /* the lane reads like a conversation: the newest turn is the one in view */
+  useEffect(() => {
+    const el = box.current;
+    if (dock && el) el.scrollTop = el.scrollHeight;
+  }, [dock, said.length, shownId, game?.ledgerSeq]);
 
   /* a lesson, a move of hers or an event that is no longer the live one
      is filed into the thread, worded as it was when it was read: one pure
@@ -607,11 +531,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   if (!game || game.phase !== 'action') return null;
   const blocked = detour ? null : (block?.text ?? null);
   /* folded for the lesson on show only: the next one unfolds the note */
-  const mini = miniAt === shownIndex;
+  const mini = miniAt === shownId;
   const lean = pos;
-  const doneNow = !!step?.done && step.done(game, me, selectedCardId, matPlayer, ack);
-  if (shownIndex >= 0 && arrived.at !== shownIndex) setArrived({ at: shownIndex, done: doneNow });
-  const already = doneNow || (arrived.at === shownIndex && arrived.done);
+  /* the deed was done before its lesson came up: a page to read on from */
+  const already = review === null && !detour && owed?.mode === 'already';
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
@@ -630,25 +553,31 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const waiting = theirTurn ? t('game.guide.waitingTurn', { name: game.players[game.current]?.name ?? '', n: Math.min(maxActions - game.actionsLeft + 1, maxActions), max: maxActions }) : null;
   if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
 
-  const advance = (to: number) => {
-    setReview(null);
-    /* reading on does not pass a lesson still waiting on the game */
-    const reach = pending >= 0 && pending < to ? pending : to;
+  /* a lesson passed by the reader: read on from, or skipped. A page
+     waiting on the game is not passed by reading on — it keeps its place */
+  const passOn = (id: string) => {
+    if (!lctx) return;
+    const after = pass(live, id);
+    saveProgress(after);
     /* the lesson on the hand wants the hand in view: the mat goes */
-    if (STEPS[to]?.id === 'hand' && matPlayer !== null) closeMat();
-    setReadPast(to);
-    setReached(reach);
-    try {
-      localStorage.setItem(STEP_KEY, String(to));
-      localStorage.setItem(REACH_KEY, String(reach));
-    } catch {
-      /* non-fatal */
-    }
+    if (dueNow(after, lctx).id === 'hand' && matPlayer !== null) closeMat();
   };
+  /* Next: read back, it walks forward through what was passed and passes
+     nothing; on the live lesson it passes it, and the last one closes the guide */
+  const next = () => {
+    if (review) {
+      setReview(readForward(settled, review));
+      return;
+    }
+    if (!finished) passOn(shownId);
+    if (finished || shownId === LAST_LESSON) endTutorial();
+  };
+  /* Back walks the lessons passed, newest first */
+  const behind = showSteps ? readBack(settled, review) : null;
   const fold = (to: boolean) => {
-    setMiniAt(to ? shownIndex : -1);
+    setMiniAt(to ? shownId : '');
     try {
-      localStorage.setItem(MINI_KEY, String(to ? shownIndex : -1));
+      localStorage.setItem(MINI_KEY, to ? shownId : '');
     } catch {
       /* non-fatal */
     }
@@ -863,7 +792,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      guide has come, a dot when the machine or the table has something to
      say; the lesson's lens still lights the board */
   if (dock === GUIDE_RAIL) {
-    const n = Math.min(shownIndex + 1, STEPS.length);
+    const n = Math.min(shownIndex + 1, LESSONS.length);
     const unread = !!bot || news.length > 0;
     return (
       <>
@@ -876,11 +805,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
           <GraduationCap className="h-4 w-4 text-cream-100/60" aria-hidden />
           {showSteps && (
             <>
-              <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: STEPS.length })}>
-                {n}/{STEPS.length}
+              <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: LESSONS.length })}>
+                {n}/{LESSONS.length}
               </span>
               <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
-                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(n / STEPS.length) * 100}%` }} />
+                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(n / LESSONS.length) * 100}%` }} />
               </span>
             </>
           )}
@@ -904,7 +833,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
         <div className="flex shrink-0 items-center gap-2 pb-1">
           <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
           <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.guide.aria')}</span>
-          {showSteps && !finished && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>}
+          {showSteps && !finished && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
           <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
             <ChevronRight className="h-3.5 w-3.5" />
@@ -934,7 +863,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
-              {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</span>}
+              {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
             {(!reading || mini) && !theirTurn && (
@@ -965,7 +894,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
-                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, STEPS.length), total: STEPS.length })}</p>
+                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</p>
                           <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
                         {!dock && (
@@ -981,14 +910,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                               {t('game.guide.advice.lede', { n: sheetAdvice.times })} <span className="font-semibold">{t(`game.debrief.motifs.${sheetAdvice.motif}`)}</span>
                             </p>
                             <div className="mt-1 flex items-center gap-2">
-                              <button type="button" onClick={() => { setReview(sheetAdvice.index); setAdviceSeen(true); }} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-                                {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.title`, stepVars()) })}
+                              <button type="button" onClick={() => { setReview(reread(settled, sheetAdvice.id)); setAdviceSeen(true); }} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                                {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(sheetAdvice.id)}.title`, stepVars()) })}
                               </button>
                               <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
                             </div>
                           </div>
                         )}
-                        {detour && block && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(due!.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
+                        {detour && block && dueStep && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
                       {/* what the chosen card allows, what the pick costs: the
@@ -1003,8 +932,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           {w.text}
                         </p>
                       ))}
-                      {!step.done && !finished && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
-                      {step.done && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {unread && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
+                      {step.done && review === null && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                       {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
                       </div>
                     </div>
@@ -1015,8 +944,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
                       <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
                         {t('game.guide.leave')}
                       </button>
-                      {stepIndex > 0 && (
-                        <button type="button" onClick={() => setReview(Math.max(0, shownIndex - 1))} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                      {behind && (
+                        <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
                           <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                         </button>
                       )}
@@ -1033,14 +962,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         </button>
                       )}
                       {blocked && myTurn && !already && (
-                        <button type="button" onClick={() => advance(stepIndex + 1)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                        <button type="button" onClick={() => owed?.id && passOn(owed.id)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           {t('game.guide.skip')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      {(!step.done || finished || review !== null || already) && (
-                        <button type="button" onClick={finished || stepIndex === STEPS.length - 1 ? endTutorial : () => advance(Math.max(stepIndex + 1, reached))} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
-                          {finished || stepIndex === STEPS.length - 1 ? t('game.guide.done') : t('game.guide.next')}
+                      {(!step.done || finished || review !== null || already || (!!step.optional && !detour)) && (
+                        <button type="button" onClick={next} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
+                          {finished || (review === null && shownId === LAST_LESSON) ? t('game.guide.done') : t('game.guide.next')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
@@ -1094,13 +1023,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 </p>
                 {adviceOpen ? (
                   <div className="mt-1.5">
-                    <p className="font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.title`, stepVars())}</p>
-                    <Paragraphs text={t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.body`, stepVars())} />
+                    <p className="font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(sheetAdvice.id)}.title`, stepVars())}</p>
+                    <Paragraphs text={t(`game.guide.steps.${stepKey(sheetAdvice.id)}.body`, stepVars())} />
                   </div>
                 ) : (
                   <div className="mt-1 flex items-center gap-2">
                     <button type="button" onClick={() => setAdviceOpen(true)} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-                      {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(STEPS[sheetAdvice.index].id)}.title`, stepVars()) })}
+                      {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(sheetAdvice.id)}.title`, stepVars()) })}
                     </button>
                     <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
                   </div>
@@ -1197,7 +1126,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         return closed ? ` ${t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[closed].name })}` : null;
                       })()}
                     </p>
-                    {due?.done && !finished && !asked(due.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(due.id)}.title`, stepVars()) })}</p>}
+                    {dueStep && owed?.mode === 'do' && !asked(dueStep.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
                   <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none', { name: machine })}</p>
