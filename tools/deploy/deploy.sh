@@ -18,6 +18,8 @@ OFFICE_WS=${OFFICE_WS:-wss://office.playblackrail.com}
 # the host holds its identity
 export VITE_LEGAL_OPERATOR=${VITE_LEGAL_OPERATOR:-"Blackrail — éditeur non professionnel, identité déclarée à l’hébergeur (LCEN, art. 6-III-2)"}
 export VITE_LEGAL_CONTACT=${VITE_LEGAL_CONTACT:-contact@playblackrail.com}
+# the club's Discord, shown in the preview's bar, after a sign-up and on a confirmed seat
+export VITE_DISCORD_URL=${VITE_DISCORD_URL:-https://discord.gg/qj9tVr9wRC}
 export VITE_LEGAL_HOST=${VITE_LEGAL_HOST:-"OVH SAS, 2 rue Kellermann, 59100 Roubaix, France — +33 9 72 10 10 07"}
 SSH=(ssh -o IdentitiesOnly=yes ${BLACKRAIL_KEY:+-i "$BLACKRAIL_KEY"})
 here=$(cd "$(dirname "$0")" && pwd)
