@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { useT } from '@/i18n';
 import { startTutorial } from '@/game/quickplay';
 import { personaName } from '@/game/data';
-import { LESSONS, lessonsReached, lessonsToRedo } from '@/platform/cours';
+import { LESSONS, lessonsRead, lessonsToRedo } from '@/platform/cours';
 import { getChapters } from '@/components/rules/rulesData';
 import PageShell from '@/components/site/PageShell';
 import ProgressCard from '@/components/desk/ProgressCard';
@@ -20,10 +20,10 @@ import ProgressCard from '@/components/desk/ProgressCard';
 export default function Cours() {
   const t = useT();
   const navigate = useNavigate();
-  const [reached] = useState(lessonsReached);
+  const [passed] = useState(lessonsRead);
   const [redo] = useState(lessonsToRedo);
-  const begun = reached > 0;
-  const done = reached >= LESSONS.length;
+  const begun = passed.length > 0;
+  const done = passed.length >= LESSONS.length;
   /* the syllabus is the register's own table of contents — all twelve
      chapters, glossary and approximations included — not a copy of ten */
   const chapters = getChapters();
@@ -38,7 +38,7 @@ export default function Cours() {
           <p className="mt-3 font-serif text-[14px] italic text-paper-300">{t('platform.cours.guidedCopy')}</p>
           <ol className="mt-4 grid gap-x-8 min-[760px]:grid-cols-2">
             {LESSONS.map((id, i) => {
-              const read = i < reached;
+              const read = passed.includes(id);
               return (
                 <li key={id} className="flex items-baseline gap-3 border-b border-[var(--gz-ink-faint)] py-2">
                   {/* a mark of the record, not a box to tick: the lozenge of
@@ -62,7 +62,7 @@ export default function Cours() {
               <GraduationCap aria-hidden />
               {t(done ? 'platform.cours.again' : begun ? 'platform.cours.resume' : 'platform.cours.begin')}
             </button>
-            <span className="data-text text-iron-400 tnums">{t('platform.cours.reached', { done: reached, total: LESSONS.length })}</span>
+            <span className="data-text text-iron-400 tnums">{t('platform.cours.reached', { done: passed.length, total: LESSONS.length })}</span>
           </div>
 
           {/* the sheet of progress keeps to the lessons' column: alone under
