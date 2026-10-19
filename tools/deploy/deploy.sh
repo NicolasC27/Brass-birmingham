@@ -29,12 +29,16 @@ VITE_ONLINE_URL=$OFFICE_WS VITE_APP_URL=$APP_URL npm run build:prelaunch
 rsync -az --delete -e "${SSH[*]}" dist-prelaunch/ "$HOST:/srv/blackrail/site/"
 rsync -az -e "${SSH[*]}" server/dist/blackrail-server.mjs "$HOST:/srv/blackrail/office/blackrail-server.mjs"
 rsync -az -e "${SSH[*]}" "$here/office-package.json" "$HOST:/srv/blackrail/office/package.json"
-rsync -az -e "${SSH[*]}" "$here/Caddyfile" "$here/blackrail-office.service" "$HOST:/tmp/"
+rsync -az -e "${SSH[*]}" "$here/Caddyfile" "$here/blackrail-office.service" "$here/geo-update.sh" "$here/blackrail-geo.service" "$here/blackrail-geo.timer" "$HOST:/tmp/"
 "${SSH[@]}" "$HOST" 'set -e
   cd /srv/blackrail/office && npm install --omit=dev --no-audit --no-fund --loglevel=error
   sudo install -m 644 /tmp/Caddyfile /etc/caddy/Caddyfile
   sudo install -m 644 /tmp/blackrail-office.service /etc/systemd/system/blackrail-office.service
+  sudo install -m 755 /tmp/geo-update.sh /usr/local/bin/blackrail-geo-update
+  sudo install -m 644 /tmp/blackrail-geo.service /tmp/blackrail-geo.timer /etc/systemd/system/
   sudo systemctl daemon-reload
+  sudo systemctl enable --now blackrail-geo.timer >/dev/null 2>&1
+  [ -f /srv/blackrail/data/geo/country.mmdb ] || sudo /usr/local/bin/blackrail-geo-update
   sudo systemctl enable blackrail-office >/dev/null 2>&1
   sudo systemctl restart blackrail-office
   sudo systemctl reload caddy

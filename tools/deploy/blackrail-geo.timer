@@ -1,0 +1,10 @@
+[Unit]
+Description=Blackrail: refresh the country database each month
+
+[Timer]
+OnCalendar=*-*-03 04:30
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,8 @@
+[Unit]
+Description=Blackrail: refresh the country database
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/blackrail-geo-update
