@@ -1035,6 +1035,7 @@ const game: typeof engame = {
     canBuild: 'Mit dieser Karte lässt sich jetzt etwas bauen',
     foldHint: 'Ein Klick auf die Notiz klappt sie zu einer Zeile ein; ziehe den Kopf, um sie zu verschieben.',
     detour: 'Ein Umweg vor « {lesson} »:',
+    already: 'Das hast du schon getan — hier steht, was es ändert.',
     suggest: {
       closedMerchant: '{merchant} hat an diesem Tisch keinen Händler, doch der Ort behält seine zwei Verbindungssymbole für die Wertung und seinen Zugang zum Kohlemarkt.',
       aria: 'Was die Maschine an deiner Stelle spielen würde',

@@ -1033,6 +1033,7 @@ const game = {
     canBuild: 'This card can build something now',
     foldHint: 'A click on the note folds it to a line; drag its head to move it.',
     detour: 'A detour before « {lesson} »:',
+    already: 'You have already done this: here is what it changes.',
     suggest: {
       closedMerchant: '{merchant} has no merchant at this table, but the place keeps its two link icons for the era’s scoring and its way to the coal market.',
       aria: 'What the machine would play in your seat',

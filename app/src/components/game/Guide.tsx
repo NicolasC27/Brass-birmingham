@@ -918,6 +918,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           </div>
                         )}
                         {detour && block && dueStep && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
+                        {already && <p className="mb-1.5 font-serif text-[13px] leading-snug text-bottle-600">{t('game.guide.already')}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
                       {/* what the chosen card allows, what the pick costs: the

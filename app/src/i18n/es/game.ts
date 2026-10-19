@@ -1035,6 +1035,7 @@ const game: typeof engame = {
     canBuild: 'Esta carta puede construir algo ahora',
     foldHint: 'Un clic en la nota la pliega en una línea; arrastra su cabecera para moverla.',
     detour: 'Un desvío antes de « {lesson} »:',
+    already: 'Ya lo has hecho: esto es lo que cambia.',
     suggest: {
       closedMerchant: '{merchant} no tiene mercader en esta mesa, pero el lugar conserva sus dos iconos de enlace para el recuento de la era y su acceso al mercado del carbón.',
       aria: 'Lo que la máquina jugaría en tu lugar',
