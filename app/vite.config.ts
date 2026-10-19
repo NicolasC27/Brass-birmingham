@@ -11,35 +11,20 @@ export default defineConfig({
      files are addressed from the root */
   base: process.env.VITE_PRELAUNCH === '1' ? '/' : './',
   plugins: [
-    /* the preview carries only the words it prints: the game's, the rules'
-       and the results' dictionaries are left out of its build (a missing key
-       reads as the key, and none of these is ever asked for there) */
+    /* the preview is the landing and a two-round taste of the game: the
+       game's words and pictures come with it, fetched only when played.
+       The page is written out as index.html, beside what the search
+       engines read first */
     ...(process.env.VITE_PRELAUNCH === '1'
       ? [
           {
-            name: 'blackrail-lean-words',
-            enforce: 'pre' as const,
-            resolveId: (source: string, importer?: string) =>
-              importer && /[\\/]src[\\/]i18n[\\/](en|fr|es|de)\.ts$/.test(importer) && /^\.\/(en|fr|es|de)\/(game|rules|results|board|setup|home|online|site)$/.test(source) ? '\0blackrail-lean-words' : null,
-            load: (id: string) => (id === '\0blackrail-lean-words' ? 'export default {}' : null),
-          },
-          {
-            /* and only the pictures it prints: the board's art, the cards and
-               the tiles stay off the server until the line opens. The page
-               itself is written out as index.html */
-            name: 'blackrail-lean-public',
+            name: 'blackrail-preview-page',
             generateBundle(this: { emitFile: (f: { type: 'asset'; fileName: string; source: Buffer }) => void }) {
-              const dir = path.resolve(__dirname, 'public');
-              /* the stylesheet's paper and grain textures come too: its classes name them */
-              const kept = /^(landing-.+\.webp|portrait-(boulton|wedgwood|arkwright|watt)\.webp|logo-blackrail\.svg|icon-192\.png|og-preview\.jpg|tex-[a-z]+\.webp|texture-[a-z-]+\.png|table-felt\.webp|market-brick\.png)$/;
-              for (const name of fs.readdirSync(dir)) if (kept.test(name)) this.emitFile({ type: 'asset', fileName: name, source: fs.readFileSync(path.join(dir, name)) });
-              /* and what the search engines read first: the site's two pages */
               const app = (process.env.VITE_APP_URL ?? '').replace(/\/+$/, '');
-              if (app) {
-                this.emitFile({ type: 'asset', fileName: 'robots.txt', source: Buffer.from(`User-agent: *\nAllow: /\nDisallow: /direction\nDisallow: /avant-premiere/\n\nSitemap: ${app}/sitemap.xml\n`) });
-                const urls = ['/', '/legal'].map((u) => `  <url><loc>${app}${u}</loc></url>`).join('\n');
-                this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`) });
-              }
+              if (!app) return;
+              this.emitFile({ type: 'asset', fileName: 'robots.txt', source: Buffer.from(`User-agent: *\nAllow: /\nDisallow: /direction\nDisallow: /demo\nDisallow: /avant-premiere/\n\nSitemap: ${app}/sitemap.xml\n`) });
+              const urls = ['/', '/legal'].map((u) => `  <url><loc>${app}${u}</loc></url>`).join('\n');
+              this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`) });
             },
             writeBundle(o: { dir?: string }) {
               const page = path.join(o.dir ?? 'dist', 'prelaunch.html');
@@ -64,7 +49,6 @@ export default defineConfig({
   /* the preview before the line opens is its own page (prelaunch.html): built
      alone, it carries nothing of the game (npm run build:prelaunch) */
   build: process.env.VITE_PRELAUNCH === '1' ? { rollupOptions: { input: path.resolve(__dirname, 'prelaunch.html') } } : undefined,
-  publicDir: process.env.VITE_PRELAUNCH === '1' ? false : undefined,
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

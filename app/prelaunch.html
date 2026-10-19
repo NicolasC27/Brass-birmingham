@@ -3,9 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- the preview before the line opens: the landing, the law and the
-         direction's desk, built alone (npm run build:prelaunch) so no line
-         of the game itself is served -->
+    <!-- the preview before the line opens: the landing, a two-round taste of
+         the game, the law and the direction's desk, built alone (npm run
+         build:prelaunch); no other room of the site is reachable -->
     <script>
       /* Anti-FOUC theme bootstrap (platform « registre de jour »). Poses
          data-theme on <html> before first paint; every themed variable is
@@ -53,6 +53,10 @@
       })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/logo-blackrail.svg" />
+    <!-- the game's own faces, for the demo's table (the journal's are bundled) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Blackrail | Online Alternative to Brass: Birmingham — Canal &amp; Railway Strategy Game</title>
     <meta
       name="description"
