@@ -4,7 +4,7 @@ import { Download, RefreshCw, Send, TestTube2 } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { onlineWire } from '@/online/net';
 import type { Me } from '@/online/table';
-import { MAX_BODY, MAX_SUBJECT, WAIT_LANGS, reach } from '@/online/waitlist';
+import { FOUNDERS, MAX_BODY, MAX_SUBJECT, WAIT_LANGS, founders, reach } from '@/online/waitlist';
 import type { Audience, Circular, Entrant, WaitBook, WaitLang } from '@/online/waitlist';
 import { cn } from '@/lib/utils';
 
@@ -29,11 +29,11 @@ const stamp = (t: number) => new Date(t).toLocaleString('fr-FR', { day: '2-digit
 const plural = (n: number, one: string, many: string) => `${n.toLocaleString('fr-FR')} ${Math.abs(n) < 2 ? one : many}`;
 
 /** the book as a spreadsheet: one line an address, the fields quoted */
-function csvOf(rows: Entrant[]): string {
+function csvOf(rows: Entrant[], premium: Set<string>): string {
   const cell = (v: string | number | null) => `"${String(v ?? '').replaceAll('"', '""')}"`;
-  const head = ['email', 'langue', 'provenance', 'inscrit', 'confirme', 'lettres'];
+  const head = ['email', 'langue', 'pays', 'provenance', 'inscrit', 'confirme', 'lettres', 'premium_offert'];
   const iso = (t: number | null) => (t === null ? '' : new Date(t).toISOString());
-  return [head.map(cell).join(','), ...rows.map((e) => [e.email, e.lang, e.source, iso(e.createdAt), iso(e.confirmedAt), e.letters].map(cell).join(','))].join('\n') + '\n';
+  return [head.map(cell).join(','), ...rows.map((e) => [e.email, e.lang, e.country, e.source, iso(e.createdAt), iso(e.confirmedAt), e.letters, premium.has(e.id) ? 'oui' : ''].map(cell).join(','))].join('\n') + '\n';
 }
 
 function download(name: string, text: string): void {
@@ -296,6 +296,8 @@ function Book({ entrants, onStrike }: { entrants: Entrant[]; onStrike: (e: Entra
     return entrants.filter((e) => (show === 'all' || (show === 'confirmed') === (e.confirmedAt !== null)) && (!needle || e.email.toLowerCase().includes(needle) || e.source.toLowerCase().includes(needle)));
   }, [entrants, q, show]);
   const shown = rows.slice(0, 500);
+  /* the founders: the first confirmed, who were promised a year of Premium */
+  const premium = useMemo(() => founders(entrants), [entrants]);
   return (
     <Panel title="La liste" meta={plural(rows.length, 'adresse', 'adresses')}>
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -305,7 +307,7 @@ function Book({ entrants, onStrike }: { entrants: Entrant[]; onStrike: (e: Entra
           <option value="confirmed">Confirmées</option>
           <option value="pending">Sans réponse</option>
         </select>
-        <button type="button" className={button} disabled={!rows.length} onClick={() => download(`blackrail-liste-${new Date().toISOString().slice(0, 10)}.csv`, csvOf(rows))}>
+        <button type="button" className={button} disabled={!rows.length} onClick={() => download(`blackrail-liste-${new Date().toISOString().slice(0, 10)}.csv`, csvOf(rows, premium))}>
           <Download aria-hidden /> Exporter en CSV
         </button>
       </div>
@@ -323,7 +325,10 @@ function Book({ entrants, onStrike }: { entrants: Entrant[]; onStrike: (e: Entra
           <tbody>
             {shown.map((e) => (
               <tr key={e.id} className="border-b border-[var(--gz-ink-faint)]">
-                <td className="max-w-[280px] truncate px-2 py-2 text-paper-100">{e.email}</td>
+                <td className="max-w-[280px] truncate px-2 py-2 text-paper-100">
+                  {e.email}
+                  {premium.has(e.id) && <span className="micro-label ml-2 border border-brass-300/70 px-1.5 py-0.5 text-brass-300" title={`Parmi les ${FOUNDERS} premiers confirmés : un an de Premium offert`}>Premium</span>}
+                </td>
                 <td className="px-2 py-2 uppercase text-paper-300">{e.lang}</td>
                 <td className="max-w-[160px] truncate px-2 py-2 text-paper-300">{e.source || '—'}</td>
                 <td className="whitespace-nowrap px-2 py-2 tabular-nums text-paper-300">{date(e.createdAt)}</td>
