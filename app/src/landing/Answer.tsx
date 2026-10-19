@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useT } from '@/i18n';
-import { PREVIEW, toOffice } from './office';
+import { PREVIEW, askOffice, toOffice } from './office';
 import { DISCORD_URL, DiscordTicket } from './Discord';
 
 /* ------------------------------------------------------------------ */
@@ -33,18 +33,26 @@ export function Confirm() {
   const t = useT();
   const { token = '' } = useParams();
   const [outcome, setOutcome] = useState<Outcome>('working');
+  /* the seat's place among the confirmed, when it is one of the founders' */
+  const [founder, setFounder] = useState<number | null>(null);
   /* one answer per link, even when the page is drawn twice */
   const asked = useRef(false);
   useEffect(() => {
     if (asked.current) return;
     asked.current = true;
-    void toOffice('/waitlist/confirm', { token }).then((s) => setOutcome(s === 200 ? 'ok' : s === 404 ? 'bad' : 'down'));
+    void askOffice('/waitlist/confirm', { token }).then(({ status, said }) => {
+      if (said.founder === true && typeof said.rank === 'number') setFounder(said.rank);
+      setOutcome(status === 200 ? 'ok' : status === 404 ? 'bad' : 'down');
+    });
   }, [token]);
   if (outcome === 'working') return <Sheet title={t('landing.confirm.working')}>{null}</Sheet>;
   if (outcome === 'ok')
     return (
       <Sheet title={t('landing.confirm.title')}>
         <Said text={t('landing.confirm.text')} />
+        {founder !== null && (
+          <p className="border-l-2 border-brass-300 pl-4 font-fraunces text-[18px] leading-snug text-paper-100">{t('landing.confirm.founder', { rank: founder })}</p>
+        )}
         {DISCORD_URL && (
           <>
             <Said text={t('landing.discord.seat')} />

@@ -51,7 +51,7 @@ const BACKSTAGE = /^\/(direction|account)(\/|$)/;
 
 export default function App() {
   const { pathname } = useLocation();
-  const preview = pathname === "/avant-premiere" || pathname.startsWith("/avant-premiere/") || (PRELAUNCH && !BACKSTAGE.test(pathname));
+  const preview = pathname === "/avant-premiere" || pathname.startsWith("/avant-premiere/") || pathname === "/demo" || (PRELAUNCH && !BACKSTAGE.test(pathname));
   if (preview) {
     return (
       <MotionConfig reducedMotion="user">

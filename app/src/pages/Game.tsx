@@ -88,7 +88,7 @@ const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center 
  * board fills 100% of the screen; every HUD element floats above it and
  * collapses out of the way (Steam-version style).
  */
-export default function Game() {
+export default function Game({ demo = false }: { demo?: boolean } = {}) {
   const t = useT();
   const navigate = useNavigate();
   /* /game/ABCD is a table on the server, /game/local/ABCD a game of this
@@ -260,6 +260,11 @@ export default function Game() {
 
   /* ------------------------- lifecycle ------------------------- */
   useEffect(() => {
+    /* the preview's taste: a table dealt and played here, the office never asked */
+    if (demo) {
+      useGame.getState().startDemo();
+      return () => useGame.setState({ game: null });
+    }
     if (!tableCode && !localCode) {
       /* the old address of the game at home: the one last touched, else a
          new deal — and the office is the one that names it */
@@ -275,7 +280,7 @@ export default function Game() {
       if (tableCode) leaveOnlineTable();
       else leaveHomeTable();
     };
-  }, [init, tableCode, localCode, navigate]);
+  }, [init, tableCode, localCode, navigate, demo]);
   /* the office named the game something else than the address did — a game
      carried in a link, or a rematch: the address follows the office, which
      is the only place the code means anything */

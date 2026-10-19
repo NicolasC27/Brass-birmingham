@@ -8,6 +8,8 @@ import { PRELAUNCH, PREVIEW } from './office';
 
 /* the direction's desk rides with the preview only before the line opens:
    after, the journal carries it */
+/* the game itself, fetched only when a visitor asks to play */
+const Demo = lazy(() => import('./Demo'));
 const Direction = PRELAUNCH ? lazy(() => import('@/pages/Direction')) : null;
 const DirectionVerify = PRELAUNCH ? lazy(() => import('@/pages/Direction').then((m) => ({ default: m.DirectionVerify }))) : null;
 
@@ -23,6 +25,14 @@ const DirectionVerify = PRELAUNCH ? lazy(() => import('@/pages/Direction').then(
 export default function LandingRoutes() {
   return (
     <Routes>
+      <Route
+        path="demo"
+        element={
+          <Suspense fallback={null}>
+            <Demo />
+          </Suspense>
+        }
+      />
       <Route element={<LandingShell />}>
         <Route path="avant-premiere" element={<Front />} />
         <Route path="avant-premiere/confirmer/:token" element={<Confirm />} />

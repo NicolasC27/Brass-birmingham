@@ -1,11 +1,11 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router';
 import { motion } from 'framer-motion';
-import { Ticket } from 'lucide-react';
+import { Maximize2, Play, Ticket } from 'lucide-react';
 import { dictOf, useLang, useT } from '@/i18n';
 import { inputClass } from '@/components/site/PageShell';
 import { cn } from '@/lib/utils';
-import { toOffice, toTheTicket } from './office';
+import { seatsLeft, toOffice, toTheTicket } from './office';
 import { DISCORD_URL, DiscordTicket } from './Discord';
 
 /* ------------------------------------------------------------------ */
@@ -144,6 +144,60 @@ function WaitForm({ className }: { className?: string }) {
   );
 }
 
+/** the founders' offer: the first hundred confirmed get a year of Premium.
+ *  No count is printed; the office only says when the seats are gone */
+function FoundersOffer({ className }: { className?: string }) {
+  const t = useT();
+  const [left, setLeft] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    void seatsLeft().then((n) => live && setLeft(n));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const over = left === 0;
+  return (
+    <div className={cn('border border-brass-300/70 bg-[rgb(var(--brass-300)/.08)] px-4 py-3', className)}>
+      <p className="eyebrow-fell">{t('landing.offer.badge')}</p>
+      <p className="mt-1 font-fraunces text-[18px] leading-snug text-paper-100">{over ? t('landing.offer.ended') : t('landing.offer.title')}</p>
+      {!over && <p className="mt-1 font-ui text-[12px] leading-relaxed text-iron-400">{t('landing.offer.note')}</p>}
+    </div>
+  );
+}
+
+/** the taste of the game: a picture of the table and a button until the
+ *  visitor asks, then the real table in a frame — the game's code and art
+ *  are fetched only then */
+function DemoFrame() {
+  const t = useT();
+  const [on, setOn] = useState(false);
+  if (!on) {
+    return (
+      <button type="button" onClick={() => setOn(true)} className="group relative block w-full overflow-hidden border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 text-left shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]">
+        <img {...pic('table', '(min-width: 1240px) 1180px, 100vw')} alt="" loading="lazy" className="block h-auto w-full transition duration-300 group-hover:brightness-75" />
+        <span className="absolute inset-0 grid place-items-center">
+          <span className="gz-ticket gz-ticket-brass !h-14 !px-8 !text-[13px] shadow-2xl transition group-hover:scale-105">
+            <Play aria-hidden />
+            {t('landing.demo.play')}
+          </span>
+        </span>
+      </button>
+    );
+  }
+  return (
+    <div>
+      <div className="border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]">
+        <iframe src="/demo" title={t('landing.demo.title')} className="block h-[min(82vh,760px)] w-full border-0 bg-black" allow="fullscreen" />
+      </div>
+      <a href="/demo" target="_blank" rel="noreferrer" className="micro-label mt-3 inline-flex items-center gap-1.5 py-1 text-iron-400 transition-colors hover:text-paper-100">
+        <Maximize2 className="h-3.5 w-3.5" aria-hidden />
+        {t('landing.demo.full')}
+      </a>
+    </div>
+  );
+}
+
 /** a capture of the board, framed as a plate of the journal */
 function Plate({ name, sizes, alt, className, eager }: { name: string; sizes?: string; alt: string; className?: string; eager?: boolean }) {
   return (
@@ -191,6 +245,10 @@ type Point = { h: string; p: string };
 
 export default function Front() {
   const t = useT();
+  /* the demo's last card sends the player back here, to the ticket */
+  useEffect(() => {
+    if (window.location.hash === '#ticket') toTheTicket();
+  }, []);
   const lang = useLang();
   const d = dictOf(lang).landing as {
     table: { marks: Point[] };
@@ -211,7 +269,8 @@ export default function Front() {
           </motion.h1>
           <p className="mt-5 max-w-[560px] font-serif text-[17px] leading-relaxed text-paper-300">{t('landing.hero.subhead')}</p>
           <p className="mt-3 max-w-[560px] font-ui text-[13px] text-iron-400">{t('landing.hero.kicker')}</p>
-          <WaitForm className="mt-7 max-w-[600px]" />
+          <FoundersOffer className="mt-6 max-w-[600px]" />
+          <WaitForm className="mt-4 max-w-[600px]" />
           <div className="mt-7 flex max-w-[600px] items-center gap-4 border-t border-[var(--gz-ink-soft)] pt-5">
             <img src="/portrait-watt.webp" alt={t('landing.machines.portrait', { name: 'Mr Watt' })} className="h-16 w-16 shrink-0 rounded-full border-2 border-brass-300 object-cover" />
             <p className="font-fraunces text-[17px] italic leading-snug text-paper-100">{t('landing.hero.watt')}</p>
@@ -223,6 +282,14 @@ export default function Front() {
           <img {...pic('hero', '(min-width: 1100px) 55vw, 100vw')} alt={t('landing.hero.alt')} className="block h-[280px] w-full object-cover shadow-[0_24px_60px_-24px_rgba(20,14,6,0.6)] min-[1100px]:h-[640px] min-[1100px]:shadow-none min-[1100px]:[mask-image:linear-gradient(to_right,transparent,#000_16%)]" />
           <figcaption className="eyebrow-fell absolute bottom-4 left-4 bg-[rgb(var(--lacquer-900)/.92)] px-3 py-1.5 min-[1100px]:left-auto min-[1100px]:right-8">{t('landing.hero.plate')}</figcaption>
         </motion.figure>
+      </section>
+
+      {/* the taste: two rounds of the real game, on this very page */}
+      <section className="gz-measure mt-20">
+        <SectionHead plate={t('landing.demo.kicker')} title={t('landing.demo.title')} text={t('landing.demo.text')} />
+        <div className="mt-8">
+          <DemoFrame />
+        </div>
       </section>
 
       {/* a table, annotated: this is a game, and here is how a turn is played */}
@@ -359,6 +426,7 @@ export default function Front() {
           <h2 className="max-w-[720px] font-fraunces text-[30px] font-normal italic leading-[1.15] text-[#f4eee1] min-[900px]:text-[38px]">{t('landing.final.title')}</h2>
           {/* the ticket on its own panel, in the page's register, over the darkened plate */}
           <div className="console mt-8 w-full max-w-[600px] p-6 text-left">
+            <FoundersOffer className="mb-4" />
             <WaitForm />
           </div>
         </div>

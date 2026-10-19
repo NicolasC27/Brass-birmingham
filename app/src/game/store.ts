@@ -5,12 +5,12 @@
 /* ------------------------------------------------------------------ */
 
 import { create } from 'zustand';
-import { actionsFor, beerShort, beginRailEra, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, planIronFrom, salesThatStand, scoreEra, sellTargets, tileKey, withCoal, withIron, withLinkCoal } from './engine';
+import { actionsFor, beerShort, beginRailEra, newGame, buildTargets, canLoan, canScout, developOptions, developTwice, doubleLinkPlan, linkTargets, marketSaleOnBuild, planIronFrom, salesThatStand, scoreEra, sellTargets, tileKey, withCoal, withIron, withLinkCoal } from './engine';
 import type { BuildTarget, LinkTarget, SellTarget, SupplyPlan } from './engine';
 import { chooseBotAction, isExpert } from './search';
 import { readForm, recordForm } from './form';
 import { reasonText, tr } from '@/i18n';
-import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman } from './actions';
+import { actorOf, applyAction, canUndoNow, fallbackAction, humanActionIndices, setupOf, undoLastHuman, withEdition } from './actions';
 import type { UndoMark } from './actions';
 import type { GameAction } from './actions';
 import { INDUSTRIES, LINKS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, setBoard } from './data';
@@ -235,6 +235,9 @@ interface GameStore {
   /** `code` names an online table; `local` a game of this device's register
    *  (without either, a new one is opened there) */
   init: (code?: string, local?: string) => void;
+  /** the preview's taste of the game: a table dealt here and played here,
+   *  against two machines, never written to the office */
+  startDemo: (seed?: number) => void;
   /** is the seat to act mine? (always, when the game is played here) */
   myTurn: () => boolean;
   /** the player whose hand this screen shows */
@@ -747,6 +750,19 @@ export const useGame = create<GameStore>((set, get) => ({
     /* a frozen candle does not burn */
     if (get().mood.frozen) return c.msLeft;
     return Math.max(0, c.msLeft - (Date.now() - c.at));
+  },
+
+  startDemo: (seed = Math.floor(Math.random() * 1e9)) => {
+    homeDeafen?.();
+    const setup = withEdition({
+      players: [
+        { name: tr('landing.demo.you'), color: 'brass', type: 'human' },
+        { name: 'Mr Watt', color: 'steel', type: 'bot', persona: 'watt' },
+        { name: 'Mrs Wedgwood', color: 'oxblood', type: 'bot', persona: 'wedgwood' },
+      ],
+      options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
+    });
+    set({ ...clearSelection, ...freshTable, ...freshGame, game: newGame(setup, seed), code: null, local: null, seat: null, movedTo: null, homeTrouble: null, pins: {}, notebook: '' });
   },
 
   reset: () => {
