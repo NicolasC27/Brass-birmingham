@@ -90,20 +90,43 @@ describe('the lesson due', () => {
     expect(settle(p, ctx(built))).toBe(p);
   });
 
-  it('passes a deed seen while another lesson is on show', () => {
+  it('sees no deed on her turn: a canal built under payday is read as done', () => {
     const g = guided();
-    /* the canal was shown during her first turn; payday comes first in round 2 */
+    /* botTurn read: the canal is due while she plays her first turn, and
+       the guide says no more than whose turn it is */
     let p = upTo('payday');
-    expect(due(p, ctx(g))).toMatchObject({ id: 'link', mode: 'do' });
-    p = see(p, 'link', ctx(g));
-    const r2 = theirs(mine(g));
+    const hers = mine(g);
+    expect(hers.players[hers.current].isBot).toBe(true);
+    expect(due(p, ctx(hers))).toMatchObject({ id: 'link', mode: 'do' });
+    expect(see(p, 'link', ctx(hers))).toBe(p);
+    /* round 2 opens on payday, the reader first; a canal built meanwhile */
+    const r2 = theirs(hers);
     expect(r2.round).toBe(2);
+    expect(r2.current).toBe(0);
     expect(due(p, ctx(r2))).toMatchObject({ id: 'payday', mode: 'read' });
     const canal = linkTargets(r2, 0).find((x) => x.valid)!;
     const linked = play(r2, { kind: 'network', card: r2.players[0].hand[0].id, link: canal.link.id });
-    p = settle(p, ctx(linked));
-    expect(p.passed).toContain('link');
-    expect(due(p, ctx(linked))).toMatchObject({ id: 'payday' });
+    expect(settle(p, ctx(linked))).toBe(p);
+    /* payday read on: the canal lesson is a page, not skipped unread */
+    p = pass(p, 'payday');
+    expect(due(p, ctx(linked))).toMatchObject({ id: 'link', mode: 'already' });
+    p = pass(p, 'link');
+    expect(due(p, ctx(linked))).toMatchObject({ id: 'iron', mode: 'do' });
+  });
+
+  it('passes a deed seen while another lesson is on show', () => {
+    const g = guided();
+    /* the sale skipped, flipped waits and the loan is shown undone */
+    let p = pass(upTo('sell'), 'sell');
+    expect(due(p, ctx(g))).toMatchObject({ id: 'loan', mode: 'do' });
+    p = see(p, 'loan', ctx(g));
+    /* a first sale brings flipped up; a loan taken while it is read */
+    const sold = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
+    expect(due(p, ctx(sold))).toMatchObject({ id: 'flipped', mode: 'read' });
+    const borrowed = { ...sold, players: sold.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
+    p = settle(p, ctx(borrowed));
+    expect(p.passed.at(-1)).toBe('loan');
+    expect(due(p, ctx(borrowed))).toMatchObject({ id: 'flipped' });
   });
 
   it('keeps a page waiting on the game in its place, however far the reader reads', () => {

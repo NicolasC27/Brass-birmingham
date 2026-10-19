@@ -134,10 +134,13 @@ export function due(p: Progress, c: LessonCtx): Due {
   return { id: null, index: LESSONS.length, mode: 'finished' };
 }
 
-/** a deed on show, noted while it is still undone: doing it now passes it */
+/** a deed on show, noted while it is still undone: doing it now passes it.
+ *  Only on the reader's own turn — on the machine's the guide says no more
+ *  than whose turn it is, and a deed done under the next page is read as done */
 export function see(p: Progress, id: string, c: LessonCtx): Progress {
   const l = lessonOf(id);
   if (!l?.done || p.seen[id] || l.done(c)) return p;
+  if (c.g.phase !== 'action' || c.g.current !== c.me) return p;
   return { ...p, seen: { ...p.seen, [id]: { at: c.g.actions.length, round: roundOf(c.g) } } };
 }
 

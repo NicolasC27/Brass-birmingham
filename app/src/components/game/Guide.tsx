@@ -494,9 +494,17 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? LAST_LESSON);
   const step = showSteps ? lessonOf(shownId)! : null;
   const shownIndex = finished ? LESSONS.length : lessonIndex(shownId);
+  const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
+  /* the machine's fresh move is on show: the lesson folds to its strip
+     so the plate reads first, until it is understood — every move of
+     hers, in the guided game; an older plate is a line */
+  const reading = !!(tutorial && showBot && bot?.fresh);
   /* a deed on show, still undone, is noted as seen: doing it passes it,
-     wherever the reader has read to meanwhile */
-  const live = useMemo(() => (showSteps && review === null && !finished && lctx ? see(settled, shownId, lctx) : settled), [showSteps, review, finished, lctx, settled, shownId]);
+     wherever the reader has read to meanwhile. On show means in the
+     note: not behind the folded rail, nor under her move's plate, nor
+     on her turn, when the note only says whose turn it is (see) */
+  const inView = showSteps && review === null && !finished && dock !== GUIDE_RAIL && !reading;
+  const live = useMemo(() => (inView && lctx ? see(settled, shownId, lctx) : settled), [inView, lctx, settled, shownId]);
   /* the progress is written from an effect: a render may be thrown away,
      a line written to the disk may not */
   useEffect(() => {
@@ -538,13 +546,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
-  const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
   /* the guided game waits: the machine's next move comes once this one is read */
   const holding = !!(tutorial && showBot && bot?.fresh && game.players[game.current]?.isBot);
-  /* the machine's fresh move is on show: the lesson folds to its strip
-     so the plate reads first, until it is understood — every move of
-     hers, in the guided game; an older plate is a line */
-  const reading = !!(tutorial && showBot && bot?.fresh);
   /* the reader asked for the lesson back while the plate is on show */
   const unfolded = unfoldAt === bot?.id;
   /* her turn is running: the note steps back to a line that says so */
