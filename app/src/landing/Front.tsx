@@ -176,6 +176,7 @@ function DemoFrame() {
     return (
       <button type="button" onClick={() => setOn(true)} className="group relative block w-full overflow-hidden border border-[var(--gz-ink-soft)] bg-[rgb(var(--enamel-850))] p-1.5 text-left shadow-[0_18px_40px_-18px_rgba(20,14,6,0.55)]">
         <img {...pic('table', '(min-width: 1240px) 1180px, 100vw')} alt="" loading="lazy" className="block h-auto w-full transition duration-300 group-hover:brightness-75" />
+        <span className="micro-label absolute left-4 top-4 border border-brass-300/70 bg-[rgba(12,9,6,0.72)] px-2.5 py-1 text-brass-300">{t('landing.demo.alpha')}</span>
         <span className="absolute inset-0 grid place-items-center">
           <span className="gz-ticket gz-ticket-brass !h-14 !px-8 !text-[13px] shadow-2xl transition group-hover:scale-105">
             <Play aria-hidden />

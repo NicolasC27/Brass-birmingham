@@ -30,6 +30,7 @@ const landing = {
     privacy: 'What we do with your address',
   },
   demo: {
+    alpha: 'Alpha — two-round demo',
     you: 'You',
     kicker: 'Try it now',
     title: 'Two rounds, right here.',

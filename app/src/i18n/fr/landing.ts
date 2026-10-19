@@ -32,6 +32,7 @@ const landing: Dict['landing'] = {
     privacy: 'Ce que nous faisons de votre adresse',
   },
   demo: {
+    alpha: 'Alpha — démo de deux manches',
     you: 'Vous',
     kicker: 'Essayez maintenant',
     title: 'Deux manches, ici même.',
