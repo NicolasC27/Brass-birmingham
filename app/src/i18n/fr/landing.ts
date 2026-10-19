@@ -93,6 +93,11 @@ const landing: Dict['landing'] = {
   final: {
     title: 'Le premier convoi part bientôt. Gardez votre place.',
   },
+  discord: {
+    join: 'Rejoindre le Discord',
+    wait: 'En attendant, venez parler canaux et rails avec les autres voyageurs.',
+    seat: 'Le quai est sur Discord : les nouvelles de l’essai, les premiers joueurs, et l’équipe au travail.',
+  },
   sent: {
     title: 'Une lettre est en route',
     text: 'Ouvrez-la et suivez le lien pour confirmer votre place. Rien reçu ? Regardez dans les indésirables.',

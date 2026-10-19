@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router';
 import { useT } from '@/i18n';
 import { PREVIEW, toOffice } from './office';
+import { DISCORD_URL, DiscordTicket } from './Discord';
 
 /* ------------------------------------------------------------------ */
 /* The two pages a letter to the waiting list leads to: the seat       */
@@ -44,6 +45,12 @@ export function Confirm() {
     return (
       <Sheet title={t('landing.confirm.title')}>
         <Said text={t('landing.confirm.text')} />
+        {DISCORD_URL && (
+          <>
+            <Said text={t('landing.discord.seat')} />
+            <DiscordTicket label={t('landing.discord.join')} className="gz-ticket-brass" />
+          </>
+        )}
       </Sheet>
     );
   return (

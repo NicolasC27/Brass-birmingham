@@ -91,6 +91,11 @@ const landing = {
   final: {
     title: 'The first train leaves soon. Keep your seat.',
   },
+  discord: {
+    join: 'Join the Discord',
+    wait: 'While you wait, come and talk canals and rails with the other passengers.',
+    seat: 'The platform is on Discord: news of the trial, the first players, and the crew at work.',
+  },
   sent: {
     title: 'A letter is on its way',
     text: 'Open it and follow the link to confirm your seat. Nothing there? Look in the spam folder.',

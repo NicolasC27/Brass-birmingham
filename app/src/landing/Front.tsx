@@ -6,6 +6,7 @@ import { dictOf, useLang, useT } from '@/i18n';
 import { inputClass } from '@/components/site/PageShell';
 import { cn } from '@/lib/utils';
 import { toOffice, toTheTicket } from './office';
+import { DISCORD_URL, DiscordTicket } from './Discord';
 
 /* ------------------------------------------------------------------ */
 /* The preview's front page. It sells the game with the game itself:   */
@@ -81,6 +82,12 @@ function WaitForm({ className }: { className?: string }) {
       <div role="status" className={cn('grid gap-2 border-l-2 border-brass-300 pl-4', className)}>
         <p className="title-card">{t('landing.sent.title')}</p>
         <p className="font-serif text-[15px] leading-relaxed text-paper-300">{t('landing.sent.text')}</p>
+        {DISCORD_URL && (
+          <div className="mt-2 grid gap-2 border-t border-[var(--gz-ink-soft)] pt-3">
+            <p className="font-serif text-[15px] italic leading-relaxed text-paper-300">{t('landing.discord.wait')}</p>
+            <DiscordTicket label={t('landing.discord.join')} className="gz-ticket-brass" />
+          </div>
+        )}
         <button
           type="button"
           onClick={() => {
