@@ -906,7 +906,7 @@ const platform: typeof enPlatform = {
             "Ihr Konto: der Name, die E-Mail-Adresse, das Passwort (nie im Klartext: ein scrypt-Hash), das Eröffnungsdatum, das Datum der Annahme dieser Erklärung und die IP-Adresse, von der das Konto eröffnet wurde. Das braucht es, um Sie zu erkennen und Ihnen zu schreiben.",
             "Ihre Partien: die Züge, die Ergebnisse, die Rangliste, Freunde und Einladungen. Das ist der Dienst selbst.",
                   "In Ihrem Browser: das Sitzungstoken, das Thema und die Sprache, im lokalen Speicher. Kein Cookie, kein Tracker, keine Reichweitenmessung.",
-            "Auf der Warteliste der Vorpremiere: die E-Mail-Adresse, die Sprache der Seite, die Seite, von der Sie kamen, sofern bekannt, das Datum der Eintragung und das der Bestätigung. Die IP-Adresse der Eintragung wird bis zur Bestätigung aufbewahrt und dann gelöscht. Mehr braucht es nicht, um Ihnen zu schreiben, wenn die Probefahrt beginnt.",
+            "Auf der Warteliste der Vorpremiere: die E-Mail-Adresse, die Sprache der Seite, die Seite, von der Sie kamen, sofern bekannt, das Datum der Eintragung und das der Bestätigung. Die IP-Adresse der Eintragung wird bis zur Bestätigung aufbewahrt und dann gelöscht; nur das daraus auf unserem eigenen Server (DB-IP-Datenbank) abgeleitete Land bleibt gespeichert. Mehr braucht es nicht, um Ihnen zu schreiben, wenn die Probefahrt beginnt.",
             "Mehr sammeln wir nicht. Kein bürgerlicher Name, keine Postanschrift, kein Zahlungsmittel.",
           ],
         },

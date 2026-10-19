@@ -904,7 +904,7 @@ const platform = {
             "Su cuenta: el nombre, la dirección de correo, la contraseña (nunca en claro: un hash scrypt), la fecha de apertura, la fecha de aceptación de esta política y la dirección IP desde la que se abrió la cuenta. Es lo necesario para reconocerte y escribirte.",
             "Sus partidas: las jugadas, los resultados, la clasificación, los amigos y las invitaciones. Es el servicio mismo.",
                   "En su navegador: el token de sesión, el tema y el idioma, en almacenamiento local. Ninguna cookie, ningún rastreador, ninguna medición de audiencia.",
-            "En la lista de espera del preestreno: la dirección de correo, el idioma de la página, el sitio del que llegó si se conoce, la fecha de inscripción y la de confirmación. La dirección IP de inscripción se guarda hasta la confirmación y luego se borra. Es lo necesario para escribirle cuando abra el viaje de prueba.",
+            "En la lista de espera del preestreno: la dirección de correo, el idioma de la página, el sitio del que llegó si se conoce, la fecha de inscripción y la de confirmación. La dirección IP de inscripción se guarda hasta la confirmación y luego se borra; solo se conserva el país que se deduce de ella, en nuestro propio servidor (base DB-IP). Es lo necesario para escribirle cuando abra el viaje de prueba.",
             "No recogemos nada más. Ni nombre civil, ni dirección postal, ni medio de pago.",
           ],
         },

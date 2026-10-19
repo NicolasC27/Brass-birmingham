@@ -904,7 +904,7 @@ const platform = {
             "Votre compte : le pseudo, l’adresse e-mail, le mot de passe (jamais en clair : une empreinte scrypt), la date d’ouverture, la date d’acceptation de cette politique et l’adresse IP d’où le compte a été ouvert. C’est ce qu’il faut pour vous reconnaître et vous écrire.",
             "Vos parties : les coups joués, les résultats, le classement, les amis et les invitations. C’est le service lui-même.",
                   "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local. Aucun cookie, aucun traceur, aucune mesure d’audience.",
-            "Sur la liste d’attente de l’avant-première : l’adresse e-mail, la langue de la page, le site d’où vous êtes venu s’il est connu, la date d’inscription et celle de la confirmation. L’adresse IP d’inscription est gardée jusqu’à la confirmation, puis effacée. C’est ce qu’il faut pour vous écrire quand le voyage d’essai ouvre.",
+            "Sur la liste d’attente de l’avant-première : l’adresse e-mail, la langue de la page, le site d’où vous êtes venu s’il est connu, la date d’inscription et celle de la confirmation. L’adresse IP d’inscription est gardée jusqu’à la confirmation, puis effacée ; seul le pays qu’on en déduit, sur notre propre serveur (base DB-IP), est conservé. C’est ce qu’il faut pour vous écrire quand le voyage d’essai ouvre.",
             "Nous ne collectons rien d’autre. Pas de nom civil, pas d’adresse postale, pas de moyen de paiement.",
           ],
         },

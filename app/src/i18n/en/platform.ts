@@ -904,7 +904,7 @@ const platform = {
             "Your account: the name, the e-mail address, the password (never in the clear: a scrypt hash), the opening date, the date this policy was accepted, and the IP address the account was opened from. That is what it takes to recognise you and write to you.",
             "Your games: the moves, the results, the ranking, friends and invitations. That is the service itself.",
                   "In your browser: the session token, the theme and the language, in local storage. No cookie, no tracker, no analytics.",
-            "On the preview’s waiting list: the e-mail address, the page’s language, the site you came from when it is known, the date you joined and the date you confirmed. The address you joined from (IP) is kept until you confirm, then erased. This is what it takes to write to you when the trial run opens.",
+            "On the preview’s waiting list: the e-mail address, the page’s language, the site you came from when it is known, the date you joined and the date you confirmed. The address you joined from (IP) is kept until you confirm, then erased; only the country read from it, on our own server (DB-IP database), is kept. This is what it takes to write to you when the trial run opens.",
             "We collect nothing else. No legal name, no postal address, no means of payment.",
           ],
         },
