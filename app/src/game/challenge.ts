@@ -157,7 +157,6 @@ export async function startChallenge(c: Challenge, me: string): Promise<string> 
   };
   try {
     localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(setup));
-    localStorage.removeItem('brassworks.tutorial.v1');
   } catch {
     /* storage unavailable — the game page falls back to its default table */
   }

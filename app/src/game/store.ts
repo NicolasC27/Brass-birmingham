@@ -29,7 +29,7 @@ import type {
 } from './types';
 
 import { ledgerText } from './ledgerText';
-import { TUTORIAL_KEY } from './quickplay';
+import { TUTORIAL_KEY, guidedTable } from './quickplay';
 import { cloneState } from './clone';
 import { forkHomeGame, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
 import type { HomeMiss, Recorded } from './home';
@@ -413,16 +413,9 @@ async function fetchHome(code: string): Promise<void> {
   /* whatever road the game came by, the board it stands on goes in play
      before anything is drawn on it */
   setBoard(game.board);
-  /* the guided game: a fixed deal, remembered by its seed so a reload keeps
-     the guide — and never a table opened from the week's notice */
-  const wanted = (() => {
-    try {
-      return localStorage.getItem(TUTORIAL_KEY);
-    } catch {
-      return null;
-    }
-  })();
-  const tutorial = challengeSeedFor(at) === null && !!wanted && /^\d+$/.test(wanted) && game.seed === Number(wanted);
+  /* the guided game: the table it was opened at, remembered by its code so
+     a reload keeps the guide — and never a table opened from the week's notice */
+  const tutorial = challengeSeedFor(at) === null && guidedTable(at, game.seed);
   const coached = (() => {
     try {
       return localStorage.getItem('brassworks.coached.v1') === '1';
