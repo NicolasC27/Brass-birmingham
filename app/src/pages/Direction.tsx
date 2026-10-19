@@ -102,6 +102,43 @@ function Arrivals({ entrants }: { entrants: Entrant[] }) {
   );
 }
 
+/** the confirmed addresses by country, the largest first: one brass bar
+ *  each, the count at its end; the unknown ones (left before the countries
+ *  were read, or from an address no database places) come last */
+function Countries({ entrants }: { entrants: Entrant[] }) {
+  const rows = useMemo(() => {
+    const names = new Intl.DisplayNames(['fr'], { type: 'region' });
+    const by = new Map<string, number>();
+    for (const e of entrants) if (e.confirmedAt !== null) by.set(e.country, (by.get(e.country) ?? 0) + 1);
+    const known = [...by].filter(([c]) => c).sort((a, b) => b[1] - a[1]);
+    const shown = known.slice(0, 12);
+    const others = known.slice(12).reduce((n, [, k]) => n + k, 0);
+    const out = shown.map(([c, n]) => ({ key: c, label: names.of(c) ?? c, code: c, n }));
+    if (others) out.push({ key: 'others', label: `Autres pays (${known.length - 12})`, code: '', n: others });
+    if (by.get('')) out.push({ key: 'unknown', label: 'Inconnu', code: '', n: by.get('') ?? 0 });
+    return out;
+  }, [entrants]);
+  if (!rows.length) return <p className="font-serif text-[14px] italic text-paper-300">Rien encore.</p>;
+  const top = Math.max(...rows.map((r) => r.n));
+  const total = rows.reduce((n, r) => n + r.n, 0);
+  return (
+    <ol className="grid gap-2.5">
+      {rows.map((r) => (
+        <li key={r.key} className="grid grid-cols-[minmax(0,9rem)_1fr_auto] items-center gap-3 font-ui text-[13px]" title={`${r.label} — ${plural(r.n, 'inscrit', 'inscrits')}, ${Math.round((r.n / total) * 100)} %`}>
+          <span className={cn('truncate', r.code ? 'text-paper-100' : 'text-iron-400')}>
+            {r.code && <span className="mr-1.5 font-mono text-[11px] text-iron-400">{r.code}</span>}
+            {r.label}
+          </span>
+          <span className="h-3 bg-[var(--gz-ink-faint)]">
+            <span className={cn('block h-full rounded-r-[3px]', r.code ? 'bg-brass-300' : 'bg-iron-400/60')} style={{ width: `${(r.n / top) * 100}%` }} />
+          </span>
+          <span className="tabular-nums text-paper-300">{r.n}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /* ------------------------------ circulars ----------------------------- */
 
 function Composer({ book, onBook }: { book: WaitBook; onBook: (b: WaitBook) => void }) {
@@ -487,10 +524,19 @@ export default function Direction() {
           </div>
 
           <div className="grid gap-8 min-[1100px]:grid-cols-12 min-[1100px]:gap-x-7">
-            <Panel title="Inscriptions, 30 jours" className="min-[1100px]:col-span-8">
+            <Panel title="Inscriptions, 30 jours" className="min-[1100px]:col-span-12">
               <Arrivals entrants={book.entrants} />
             </Panel>
-            <Panel title="Provenances" className="min-[1100px]:col-span-4">
+            <Panel title="Pays" meta="confirmées" className="min-[1100px]:col-span-7">
+              <Countries entrants={book.entrants} />
+              <p className="mt-4 font-ui text-[12px] leading-relaxed text-iron-400">
+                Déduit de l’adresse IP à l’inscription, qui n’est pas gardée.{' '}
+                <a href="https://db-ip.com" target="_blank" rel="noreferrer" className="underline underline-offset-4 hover:text-paper-100">
+                  IP Geolocation by DB-IP
+                </a>
+              </p>
+            </Panel>
+            <Panel title="Provenances" className="min-[1100px]:col-span-5">
               {figures.top.length ? (
                 <ol className="grid gap-2">
                   {figures.top.map(([s, n]) => (
