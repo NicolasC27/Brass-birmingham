@@ -24,6 +24,9 @@ create table if not exists waitlist (
   emailFolded   text not null unique,
   lang          text not null,
   source        text not null default '',
+  /* the country the address was left from (ISO code, '' unknown): the
+     address itself is kept only until the letter is answered */
+  country       text not null default '',
   ip            text,
   createdAt     integer not null,
   /* the letter's link, sealed as the account letters are; null once answered */
@@ -92,6 +95,7 @@ interface EntrantRow {
   email: string;
   lang: string;
   source: string;
+  country: string;
   createdAt: number;
   confirmedAt: number | null;
   letters: number;
@@ -119,6 +123,9 @@ export class Waitlist {
     this.db = new DatabaseSync(file);
     this.db.exec('pragma busy_timeout = 5000');
     this.db.exec(SCHEMA);
+    /* a list from before the countries learns the column */
+    const cols = (this.db.prepare('pragma table_info(waitlist)').all() as { name: string }[]).map((c) => c.name);
+    if (!cols.includes('country')) this.db.exec("alter table waitlist add column country text not null default ''");
   }
 
   close(): void {
@@ -126,7 +133,7 @@ export class Waitlist {
   }
 
   /** an address left on the front page */
-  enter(email: string, lang: string, source: string, ip: string, now = Date.now()): Entry {
+  enter(email: string, lang: string, source: string, ip: string, now = Date.now(), country = ''): Entry {
     const address = String(email ?? '').trim();
     if (address.length > MAX_EMAIL || !EMAIL_RULE.test(address)) return { kind: 'bad-email' };
     const folded = foldEmail(address);
@@ -143,8 +150,8 @@ export class Waitlist {
     const leave = token();
     const l = langOf(lang);
     this.db
-      .prepare('insert into waitlist (id, email, emailFolded, lang, source, ip, createdAt, confirmSeal, confirmSentAt, confirmedAt, leave) values (?, ?, ?, ?, ?, ?, ?, ?, ?, null, ?)')
-      .run(id, address, folded, l, String(source ?? '').slice(0, 120), ip || null, now, sealed(t), now, leave);
+      .prepare('insert into waitlist (id, email, emailFolded, lang, source, country, ip, createdAt, confirmSeal, confirmSentAt, confirmedAt, leave) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, null, ?)')
+      .run(id, address, folded, l, String(source ?? '').slice(0, 120), /^[A-Z]{2}$/.test(country) ? country : '', ip || null, now, sealed(t), now, leave);
     return { kind: 'letter', token: t, email: address, lang: l, leave };
   }
 
@@ -178,14 +185,14 @@ export class Waitlist {
   entrants(): Entrant[] {
     const rows = this.db
       .prepare(
-        `select w.id, w.email, w.lang, w.source, w.createdAt, w.confirmedAt,
+        `select w.id, w.email, w.lang, w.source, w.country, w.createdAt, w.confirmedAt,
            (select count(*) from circular_post p where p.entrantId = w.id and p.sentAt is not null) as letters,
            (select count(*) from circular_post p join circulars c on c.id = p.circularId
               where p.entrantId = w.id and p.sentAt is null and p.tries < ${TRIES} and c.stoppedAt is null) as awaiting
          from waitlist w order by w.createdAt desc`,
       )
       .all() as unknown as EntrantRow[];
-    return rows.map((r) => ({ id: r.id, email: r.email, lang: langOf(r.lang), source: r.source, createdAt: r.createdAt, confirmedAt: r.confirmedAt, letters: Number(r.letters), awaiting: Number(r.awaiting) }));
+    return rows.map((r) => ({ id: r.id, email: r.email, lang: langOf(r.lang), source: r.source, country: r.country, createdAt: r.createdAt, confirmedAt: r.confirmedAt, letters: Number(r.letters), awaiting: Number(r.awaiting) }));
   }
 
   circulars(): Circular[] {

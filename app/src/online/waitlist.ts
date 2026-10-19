@@ -18,6 +18,8 @@ export interface Entrant {
   lang: WaitLang;
   /** where the visitor came from: the `?via=` of the link, or the referring site */
   source: string;
+  /** the country it was left from (ISO 3166 code), '' when unknown */
+  country: string;
   createdAt: number;
   /** the address answered its letter (null: not yet) */
   confirmedAt: number | null;

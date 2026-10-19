@@ -29,6 +29,8 @@ import type { Pace } from './game';
 import type { Waits } from './queue';
 import { letters, mailerFromEnv, waitLetters } from './mail';
 import { Waitlist } from './waitlist';
+import { locateFromEnv } from './geo';
+import type { Locate } from './geo';
 import { MAX_BODY, MAX_SUBJECT, audienceOf } from '@/online/waitlist';
 import type { Mailer } from './mail';
 import { Store } from './store';
@@ -244,6 +246,8 @@ export interface ServeOptions {
   circularEvery?: number;
   /** the office's own public address, for the one-click way out (OFFICE_URL) */
   officeUrl?: string;
+  /** the country of an address (BLACKRAIL_GEO_DB's database when absent) */
+  locate?: Locate;
 }
 
 export interface Serving {
@@ -288,6 +292,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const waitLetter = waitLetters(options.appUrl ?? process.env.APP_URL ?? 'http://localhost:3000', options.officeUrl ?? process.env.OFFICE_URL ?? '');
   const mailCap = options.mailCap ?? (Number.parseInt(process.env.MAIL_DAILY_CAP ?? '', 10) || MAIL_DAILY_CAP);
   const entriesByIp = new Map<string, Bucket>();
+  const locate = options.locate ?? locateFromEnv();
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
@@ -374,7 +379,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (url.pathname !== '/waitlist') return answer(404, { error: 'unknown' });
     /* the field no person sees: a machine that fills it is thanked, and nothing is kept */
     if (typeof f.website === 'string' && f.website !== '') return answer(202, { ok: true });
-    const entry = waitlist.enter(String(f.email ?? ''), String(f.lang ?? ''), String(f.via ?? ''), ip);
+    const entry = waitlist.enter(String(f.email ?? ''), String(f.lang ?? ''), String(f.via ?? ''), ip, Date.now(), locate(ip));
     if (entry.kind === 'bad-email') return answer(400, { error: 'bad-email' });
     if (entry.kind === 'letter') post.send(waitLetter.confirm(entry.email, entry.lang, entry.token)).catch((e: unknown) => console.error(`waitlist: the letter to ${entry.email} failed:`, (e as Error).message));
     answer(202, { ok: true });
