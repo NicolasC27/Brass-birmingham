@@ -1260,6 +1260,12 @@ export const useGame = create<GameStore>((set, get) => ({
         });
       }
     }
+    /* and its word is on the reader's move, read before the machine plays
+       on: the machine's move sends it away, with any word still on its way */
+    if (st.tutorial && action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && g.players[g.current].isBot) {
+      hushCoach();
+      if (get().coached) set({ coached: null });
+    }
     return true;
   },
 

@@ -1,15 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { LESSON_IDS, freshProgress, lessonIndex, saveProgress, see } from '@/components/game/lessons';
-import { withEdition } from '../actions';
+import { fallbackAction, withEdition } from '../actions';
 import type { GameAction } from '../actions';
+import type { Coached } from '../coach';
 import { buildTargets, newGame } from '../engine';
 import { useGame } from '../store';
 import type { GameState, SetupPayload } from '../types';
 
 /* ------------------------------------------------------------------ */
 /* The coach at the guided table: the deed a lesson asks for is not    */
-/* graded. The coach and the office are stand-ins that count what the  */
+/* graded, and the word on the reader's move goes when the machine     */
+/* plays. The coach and the office are stand-ins that count what the   */
 /* store asks of them.                                                 */
 /* ------------------------------------------------------------------ */
 
@@ -79,5 +81,25 @@ describe('the coach at the guided table', () => {
     useGame.setState({ game: g, tutorial: false, humanMarks: [], coached: null });
     await play(mineOf(g));
     expect(coach.asked).toBe(2);
+  });
+
+  it('sends its word away when the machine plays', async () => {
+    const g = guided();
+    saveProgress(upTo('botTurn'));
+    useGame.setState({ game: g, tutorial: true, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null });
+    await play(mineOf(g));
+    const after = useGame.getState().game!;
+    expect(after.players[after.current].isBot).toBe(true);
+    /* the word on the reader's mine, read while the machine thinks */
+    const word = { at: g.actions.length, seat: 0, verdict: {} } as unknown as Coached;
+    useGame.setState({ coached: word });
+    const hushed = coach.hushed;
+    await play(fallbackAction(after, after.current));
+    expect(useGame.getState().coached).toBeNull();
+    expect(coach.hushed).toBe(hushed + 1);
+    /* away from the guided table the word stays over her move */
+    useGame.setState({ game: after, tutorial: false, coached: word });
+    await play(fallbackAction(after, after.current));
+    expect(useGame.getState().coached).toBe(word);
   });
 });
