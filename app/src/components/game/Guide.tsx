@@ -271,7 +271,9 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
   const out: { id: string; text: string }[] = [];
   const last = g.ledger[g.ledger.length - 1];
   const level = incomeLevel(p.income);
-  if (p.money < 8 && p.loans === 0) out.push({ id: 'broke', text: t('game.guide.alerts.broke', { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT, level, after: Math.max(-10, level - LOAN_INCOME_HIT) }) });
+  /* a short game counts the purse and the income level at its close: a loan
+     is weighed there, not written off as late */
+  if (p.money < 8 && p.loans === 0) out.push({ id: 'broke', text: t(g.eraLength === 'short' ? 'game.guide.alerts.brokeShort' : 'game.guide.alerts.broke', { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT, level, after: Math.max(-10, level - LOAN_INCOME_HIT) }) });
   else if (p.money < 8) out.push({ id: 'brokeAgain', text: t('game.guide.alerts.brokeAgain', { money: p.money, level }) });
   if (last?.key === 'payday') out.push({ id: 'payday', text: t(level >= 0 ? 'game.guide.alerts.payday' : 'game.guide.alerts.paydayOwed', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
   if (g.deck.length === 0 && p.hand.length > 0) out.push({ id: 'deckOut', text: t('game.guide.alerts.deckOut', { cards: p.hand.length }) });
@@ -715,6 +717,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
     : true;
   const whyKey = (a: GameAction): string => {
     if (a.kind === 'build') return a.industry === 'coal' || a.industry === 'iron' || a.industry === 'brewery' ? a.industry : 'works';
+    /* a loan late in a short game is weighed at the close, where the purse counts */
+    if (a.kind === 'loan' && game.eraLength === 'short') return 'loanShort';
     return a.kind;
   };
   /* the lesson's words, when the table asks for another telling of it:
