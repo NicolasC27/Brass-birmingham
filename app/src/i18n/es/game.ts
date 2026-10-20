@@ -1072,7 +1072,8 @@ const game: typeof engame = {
       restockMine: 'Tu {industry} ha vendido {n} [n|cubo|cubos] sobrantes al mercado de inmediato, por {gain} £ — dinero gratis, y el mercado reabastecido para todos.',
       bonus: 'Has bebido el barril de {merchant}: su bonificación es tuya — {bits}. Cada barril se bebe una vez por era, y un mercader lleva un barril por loseta no vacía — así que a veces dos.',
       sellOff: 'Los ingresos no cubrían la deuda: tu {industry} de {town} se ha vendido por {value} £ para cubrirla. Sale del tablero y no puntuará nada.',
-      short: 'Faltaban {amount} £ y no quedaba nada que vender: {amount} [amount|punto|puntos] de victoria menos. Y al cierre, un nivel de ingresos negativo quita otros tantos puntos — sube por la pista.',
+      short: 'Faltaban {amount} £ y no quedaba nada que vender: {amount} [amount|punto|puntos] de victoria menos. Unos ingresos negativos seguirán costando en cada paga — sube por la pista.',
+      shortBooks: 'Faltaban {amount} £ y no quedaba nada que vender: {amount} [amount|punto|puntos] de victoria menos. Unos ingresos negativos seguirán costando en cada paga, y al cierre de esta partida corta un nivel de ingresos negativo se resta de tus puntos — sube por la pista.',
     },
     thread: { aria: 'Lo que el guía ya ha dicho' },
     ask: {

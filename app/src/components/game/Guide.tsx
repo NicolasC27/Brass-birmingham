@@ -210,7 +210,8 @@ function happenings(g: GameState, me: number, t: T): { id: number; text: string 
         if (e.player === me) out.push({ id: e.id, text: t('game.guide.happens.sellOff', vars) });
         break;
       case 'short':
-        if (e.player === me) out.push({ id: e.id, text: t('game.guide.happens.short', vars) });
+        /* only a short game counts the income level at its close */
+        if (e.player === me) out.push({ id: e.id, text: t(g.eraLength === 'short' ? 'game.guide.happens.shortBooks' : 'game.guide.happens.short', vars) });
         break;
       default:
         break;

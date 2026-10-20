@@ -1072,7 +1072,8 @@ const fr: typeof engame = {
       restockMine: 'Votre {industry} a écoulé {n} [n|cube|cubes] à la bourse en se posant, pour {gain} £ — de l’argent gratuit, et la bourse regarnie pour tout le monde.',
       bonus: 'Vous avez bu le baril de {merchant} : son bonus est à vous — {bits}. Chaque baril ne se boit qu’une fois par ère, et un marchand porte un baril par tuile non vierge — donc parfois deux.',
       sellOff: 'Le revenu ne couvrait pas la dette : votre {industry} de {town} a été cédée {value} £ pour combler le manque. Elle quitte le plateau et ne marquera rien.',
-      short: 'Il manquait {amount} £ et plus rien à céder : {amount} [amount|point|points] de victoire en moins. Et à la clôture, un revenu négatif retranche encore autant de points — remontez la piste.',
+      short: 'Il manquait {amount} £ et plus rien à céder : {amount} [amount|point|points] de victoire en moins. Un revenu négatif continuera de coûter à chaque paie — remontez la piste.',
+      shortBooks: 'Il manquait {amount} £ et plus rien à céder : {amount} [amount|point|points] de victoire en moins. Un revenu négatif continuera de coûter à chaque paie, et à la clôture de cette partie courte un niveau de revenu négatif se retranche de vos points — remontez la piste.',
     },
     thread: { aria: 'Ce que le guide a déjà dit' },
     ask: {

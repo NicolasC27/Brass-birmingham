@@ -1072,7 +1072,8 @@ const game: typeof engame = {
       restockMine: 'Deine {industry} hat sofort {n} [n|überzähligen Würfel|überzählige Würfel] für £{gain} an den Markt verkauft — Geld geschenkt, und der Markt für alle wieder aufgefüllt.',
       bonus: 'Du hast das Fass von {merchant} getrunken: sein Bonus gehört dir — {bits}. Jedes Fass wird einmal je Zeit getrunken, und ein Händler trägt ein Fass je nicht leerem Plättchen — also manchmal zwei.',
       sellOff: 'Das Einkommen deckte die Schuld nicht: deine {industry} in {town} wurde für £{value} abgegeben, um sie zu decken. Sie verlässt den Spielplan und wertet nichts.',
-      short: '£{amount} fehlten und nichts blieb zum Abgeben: {amount} [amount|Siegpunkt|Siegpunkte] weniger. Und beim Abschluss zieht eine negative Einkommensstufe noch einmal so viele Punkte ab — klettere die Leiste wieder hinauf.',
+      short: '£{amount} fehlten und nichts blieb zum Abgeben: {amount} [amount|Siegpunkt|Siegpunkte] weniger. Ein negatives Einkommen kostet weiter bei jedem Zahltag — klettere die Leiste wieder hinauf.',
+      shortBooks: '£{amount} fehlten und nichts blieb zum Abgeben: {amount} [amount|Siegpunkt|Siegpunkte] weniger. Ein negatives Einkommen kostet weiter bei jedem Zahltag, und beim Abschluss dieser kurzen Partie wird eine negative Einkommensstufe von deinen Punkten abgezogen — klettere die Leiste wieder hinauf.',
     },
     thread: { aria: 'Was das Tutorial schon gesagt hat' },
     ask: {
