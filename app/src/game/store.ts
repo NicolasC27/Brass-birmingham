@@ -44,7 +44,7 @@ import { readShared, sharedMoment } from './share';
 import { coachMove, hushCoach } from './coach';
 import type { Coached } from './coach';
 import { aidOn } from '@/components/game/boardOptions';
-import { deedOf, progressAt } from '@/components/game/lessons';
+import { deedOf } from '@/components/game/lessons';
 import type { JudgeId } from './analysis';
 
 export interface Shake {
@@ -1250,7 +1250,7 @@ export const useGame = create<GameStore>((set, get) => ({
       /* at the guided table the deed a lesson asks for is the lesson's:
          the coach does not grade it, nor tell of an older move after it */
       const reader = (s: GameState) => ({ g: s, me: g.current, sel: null, mat: null });
-      if (st.tutorial && st.local && deedOf(progressAt(st.local), reader(g), reader(mut))) {
+      if (st.tutorial && deedOf(reader(g), reader(mut))) {
         hushCoach();
       } else {
         coachMove(g, g.current, action, (c) => {

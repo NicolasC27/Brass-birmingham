@@ -164,11 +164,13 @@ export function mayLater(p: Progress, id: string, c: LessonCtx): boolean {
   return !!lessonOf(id)?.deferrable && !!s && c.g.ledger.some((e) => e.player === c.me && (e.at ?? -1) >= s.at && e.verb !== 'system' && e.verb !== 'score');
 }
 
-/** the lesson a move did the deed of: the first not passed whose deed did
- *  not hold before the move and holds after it. At the guided table that
- *  move is the lesson's, not the coach's to grade */
-export function deedOf(p: Progress, before: LessonCtx, after: LessonCtx): string | null {
-  return LESSONS.find((l) => l.done && !p.passed.includes(l.id) && !l.done(before) && l.done(after))?.id ?? null;
+/** the lesson a move did the deed of: the first whose deed did not hold
+ *  before the move and holds after it. At the guided table that move is
+ *  the lesson's, not the coach's to grade — passed or not: a deed taken
+ *  back and done again is the lesson's still, though the lesson stays
+ *  passed. The deeds are firsts, so this spares a move or two a lesson */
+export function deedOf(before: LessonCtx, after: LessonCtx): string | null {
+  return LESSONS.find((l) => l.done && !l.done(before) && l.done(after))?.id ?? null;
 }
 
 const LOAN_AT = lessonIndex('loan');

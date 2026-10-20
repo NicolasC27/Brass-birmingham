@@ -224,24 +224,20 @@ describe('a lesson set aside', () => {
 });
 
 describe('the deed of a move', () => {
-  it('names the lesson a move did, due or ahead of its turn, and none once it is passed', () => {
+  it('names the lesson whose deed a move did, whatever the progress', () => {
     const g = guided();
     const built = mine(g);
-    /* the mine the lesson asks for */
-    expect(deedOf(see(upTo('coal'), 'coal', ctx(g)), ctx(g), ctx(built))).toBe('coal');
-    /* built before its lesson came up, it is the lesson's all the same */
-    expect(deedOf(upTo('hand'), ctx(g), ctx(built))).toBe('coal');
-    /* a mine once its lesson is passed teaches nothing new, nor does a
-       move after which a mine stands that stood already */
-    expect(deedOf(upTo('botTurn'), ctx(g), ctx(built))).toBeNull();
-    expect(deedOf(upTo('coal'), ctx(built), ctx(built))).toBeNull();
-    /* the loan, whenever it is taken before its lesson is passed */
+    /* the mine the lesson asks for, before its lesson or after, and again
+       once taken back: the progress is no part of it */
+    expect(deedOf(ctx(g), ctx(built))).toBe('coal');
+    /* a move after which a mine stands that stood already */
+    expect(deedOf(ctx(built), ctx(built))).toBeNull();
+    /* the first loan, whenever it is taken */
     const borrowed = play(g, { kind: 'loan', card: g.players[0].hand[0].id });
-    expect(deedOf(upTo('coal'), ctx(g), ctx(borrowed))).toBe('loan');
-    expect(deedOf(pass(upTo('coal'), 'loan'), ctx(g), ctx(borrowed))).toBeNull();
+    expect(deedOf(ctx(g), ctx(borrowed))).toBe('loan');
     /* a move that is no lesson's deed */
     const scouted = play(g, fallbackAction(g, 0));
-    expect(deedOf(upTo('coal'), ctx(g), ctx(scouted))).toBeNull();
+    expect(deedOf(ctx(g), ctx(scouted))).toBeNull();
   });
 });
 

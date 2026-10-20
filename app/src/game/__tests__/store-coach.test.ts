@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
-import { LESSON_IDS, freshProgress, lessonIndex, saveProgress, see } from '@/components/game/lessons';
-import { fallbackAction, withEdition } from '../actions';
+import { LESSON_IDS, freshProgress, lessonIndex, progressAt, saveProgress, see, settle } from '@/components/game/lessons';
+import { applyAction, fallbackAction, withEdition } from '../actions';
 import type { GameAction } from '../actions';
 import type { Coached } from '../coach';
 import { buildTargets, newGame } from '../engine';
@@ -25,7 +25,7 @@ vi.mock('../coach', () => ({
   },
   dismissCoach: () => undefined,
 }));
-vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()), recordMove: async () => 'kept' as const }));
+vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()), recordMove: async () => 'kept' as const, recordUndo: async () => undefined }));
 
 const CODE = 'GWE5';
 
@@ -70,14 +70,30 @@ describe('the coach at the guided table', () => {
     expect(coach.hushed).toBeGreaterThan(0);
   });
 
-  it('grades the same move once its lesson is passed, or away from the guided table', async () => {
+  it('leaves the deed ungraded when it is taken back and done again', async () => {
+    /* the second round, where the reader has two actions and may take the
+       first back */
+    let g = guided();
+    while (g.round < 2 || g.players[g.current].isBot) g = applyAction(g, g.current, fallbackAction(g, g.current)).state!;
+    saveProgress(see(upTo('coal'), 'coal', { g, me: 0, sel: null, mat: null }));
+    useGame.setState({ game: g, tutorial: true, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null });
+    await play(mineOf(g));
+    /* the guide passes the lesson on the mine, and it stays passed */
+    saveProgress(settle(progressAt(CODE), { g: useGame.getState().game!, me: 0, sel: null, mat: null }));
+    expect(progressAt(CODE).passed).toContain('coal');
+    expect(useGame.getState().undo()).toBe(true);
+    expect(useGame.getState().game!.actions).toHaveLength(g.actions.length);
+    await play(mineOf(g));
+    expect(coach.asked).toBe(0);
+  });
+
+  it('grades a move that is no lesson\'s deed, and every move away from the guided table', async () => {
     const g = guided();
     saveProgress(upTo('botTurn'));
     useGame.setState({ game: g, tutorial: true, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null });
-    await play(mineOf(g));
+    await play(fallbackAction(g, g.current));
     expect(coach.asked).toBe(1);
     /* the guide closed: every move is the coach's again */
-    saveProgress(upTo('coal'));
     useGame.setState({ game: g, tutorial: false, humanMarks: [], coached: null });
     await play(mineOf(g));
     expect(coach.asked).toBe(2);
