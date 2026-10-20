@@ -307,6 +307,9 @@ interface GameStore {
   /** the last move the coach judged, at a home table with the aid on */
   coached: Coached | null;
   setCoached: (c: Coached | null) => void;
+  /** at the guided table the machine waits on the coach's word on the
+   *  reader's move: while it comes, and a moment once it is shown */
+  coachHold: boolean;
   setReviewAt: (at: number | null) => void;
   /* ---- reading a game again, together: one seat shows, the others follow ---- */
   /** what a seat of this table is showing in its analysis: the move, the
@@ -462,6 +465,20 @@ let inFlight: Promise<Recorded> | null = null;
 let rereading: Promise<void> | null = null;
 /** stop hearing the office about the game at home */
 let homeDeafen: (() => void) | null = null;
+
+/* how long the machine waits at the guided table for the coach's word on
+   the reader's move, and then for it to be read: a word slower than that
+   is dropped when she plays, and the × lets her play at once */
+const COACH_WAIT_MS = 6000;
+const COACH_READ_MS = 3000;
+let coachTimer: ReturnType<typeof setTimeout> | undefined;
+
+/** the machine held for the coach's word, for so long — or let go at 0 */
+function holdForCoach(ms: number): void {
+  clearTimeout(coachTimer);
+  if (useGame.getState().coachHold !== ms > 0) useGame.setState({ coachHold: ms > 0 });
+  if (ms > 0) coachTimer = setTimeout(() => useGame.setState({ coachHold: false }), ms);
+}
 
 /** a game at home that may not take a move just now: the office has not
  *  read the last one yet, or the two logs have drifted apart and the board
@@ -645,6 +662,7 @@ export const freshGame = {
   reviewAt: null as number | null,
   debriefOpen: false,
   coached: null as Coached | null,
+  coachHold: false,
   serverUndo: false,
   movedTo: null as string | null,
   ceremony: null as 'canal-end' | null,
@@ -1252,11 +1270,16 @@ export const useGame = create<GameStore>((set, get) => ({
       const reader = (s: GameState) => ({ g: s, me: g.current, sel: null, mat: null });
       if (st.tutorial && deedOf(reader(g), reader(mut))) {
         hushCoach();
+        holdForCoach(0);
       } else {
+        /* there the machine waits for the word, and gives it a moment */
+        if (st.tutorial) holdForCoach(COACH_WAIT_MS);
         coachMove(g, g.current, action, (c) => {
           /* the same game, the same move: the machines may have played on meanwhile */
           const now = get().game;
-          if (c && now && now.seed === g.seed && now.actions[c.at] === action) set({ coached: c });
+          const fresh = !!c && !!now && now.seed === g.seed && now.actions[c.at] === action;
+          if (fresh) set({ coached: c });
+          if (st.tutorial) holdForCoach(fresh ? COACH_READ_MS : 0);
         });
       }
     }
@@ -1264,6 +1287,7 @@ export const useGame = create<GameStore>((set, get) => ({
        on: the machine's move sends it away, with any word still on its way */
     if (st.tutorial && action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && g.players[g.current].isBot) {
       hushCoach();
+      holdForCoach(0);
       if (get().coached) set({ coached: null });
     }
     return true;
@@ -1300,6 +1324,7 @@ export const useGame = create<GameStore>((set, get) => ({
     if (!back) return false;
     /* and the coach's word on the move taken back goes with it */
     set({ ...clearSelection, game: back, humanMarks: marks.slice(0, -1), ceremony: back.phase === 'scoring-canal' ? 'canal-end' : null, gameOverOpen: false, coached: null });
+    holdForCoach(0);
     /* the office cuts its log where the board now stands */
     const at = get().local;
     if (at) void recordUndo(at, back.actions.length).catch(() => undefined);
@@ -1343,7 +1368,12 @@ export const useGame = create<GameStore>((set, get) => ({
   reviewAt: null,
   setReviewAt: (at) => set({ reviewAt: at }),
   coached: null,
-  setCoached: (c) => set({ coached: c }),
+  setCoached: (c) => {
+    set({ coached: c });
+    /* the word sent away: the machine need not wait on it */
+    if (!c) holdForCoach(0);
+  },
+  coachHold: false,
   shown: null,
   sharing: false,
   following: false,

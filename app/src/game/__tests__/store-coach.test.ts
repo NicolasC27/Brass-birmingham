@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { LESSON_IDS, freshProgress, lessonIndex, progressAt, saveProgress, see, settle } from '@/components/game/lessons';
 import { applyAction, fallbackAction, withEdition } from '../actions';
@@ -10,15 +10,16 @@ import type { GameState, SetupPayload } from '../types';
 
 /* ------------------------------------------------------------------ */
 /* The coach at the guided table: the deed a lesson asks for is not    */
-/* graded, and the word on the reader's move goes when the machine     */
-/* plays. The coach and the office are stand-ins that count what the   */
-/* store asks of them.                                                 */
+/* graded, the machine waits a moment on the word on the reader's      */
+/* move, and the word goes when she plays. The coach and the office    */
+/* are stand-ins that count what the store asks of them.               */
 /* ------------------------------------------------------------------ */
 
-const coach = vi.hoisted(() => ({ asked: 0, hushed: 0 }));
+const coach = vi.hoisted(() => ({ asked: 0, hushed: 0, tell: null as ((c: Coached | null) => void) | null }));
 vi.mock('../coach', () => ({
-  coachMove: () => {
+  coachMove: (_before: unknown, _seat: number, _played: unknown, tell: (c: Coached | null) => void) => {
     coach.asked += 1;
+    coach.tell = tell;
   },
   hushCoach: () => {
     coach.hushed += 1;
@@ -58,6 +59,7 @@ beforeEach(() => {
   stubStorage();
   coach.asked = 0;
   coach.hushed = 0;
+  coach.tell = null;
 });
 
 describe('the coach at the guided table', () => {
@@ -108,14 +110,79 @@ describe('the coach at the guided table', () => {
     expect(after.players[after.current].isBot).toBe(true);
     /* the word on the reader's mine, read while the machine thinks */
     const word = { at: g.actions.length, seat: 0, verdict: {} } as unknown as Coached;
-    useGame.setState({ coached: word });
+    useGame.setState({ coached: word, coachHold: true });
     const hushed = coach.hushed;
     await play(fallbackAction(after, after.current));
     expect(useGame.getState().coached).toBeNull();
+    expect(useGame.getState().coachHold).toBe(false);
     expect(coach.hushed).toBe(hushed + 1);
     /* away from the guided table the word stays over her move */
     useGame.setState({ game: after, tutorial: false, coached: word });
     await play(fallbackAction(after, after.current));
     expect(useGame.getState().coached).toBe(word);
+  });
+  describe('holding the machine for its word', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    /** the reader's first move, no lesson's deed, played through the store:
+     *  it ends the turn, and the machine is to play */
+    async function closeTurn(tutorial = true): Promise<{ g: GameState; move: GameAction }> {
+      const g = guided();
+      saveProgress(upTo('botTurn'));
+      useGame.setState({ game: g, tutorial, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null, coachHold: false });
+      const move = fallbackAction(g, g.current);
+      expect(useGame.getState().dispatch(move)).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      const after = useGame.getState().game!;
+      expect(after.players[after.current].isBot).toBe(true);
+      return { g, move };
+    }
+    const word = (g: GameState) => ({ at: g.actions.length, seat: 0, verdict: {} }) as unknown as Coached;
+
+    it('while the word comes, and a moment once it is shown', async () => {
+      const { g } = await closeTurn();
+      expect(useGame.getState().coachHold).toBe(true);
+      await vi.advanceTimersByTimeAsync(1000);
+      coach.tell!(word(g));
+      expect(useGame.getState().coached).toEqual(word(g));
+      await vi.advanceTimersByTimeAsync(2900);
+      expect(useGame.getState().coachHold).toBe(true);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(useGame.getState().coachHold).toBe(false);
+      /* the word itself stays until she plays */
+      expect(useGame.getState().coached).not.toBeNull();
+    });
+
+    it('no longer for a word too slow, one sent away, or none', async () => {
+      await closeTurn();
+      await vi.advanceTimersByTimeAsync(6000);
+      expect(useGame.getState().coachHold).toBe(false);
+      /* the × on the word lets her play at once */
+      const { g } = await closeTurn();
+      coach.tell!(word(g));
+      useGame.getState().setCoached(null);
+      expect(useGame.getState().coachHold).toBe(false);
+      /* a coach that could not read the move */
+      await closeTurn();
+      coach.tell!(null);
+      expect(useGame.getState().coachHold).toBe(false);
+    });
+
+    it('never for a lesson\'s deed, nor away from the guided table', async () => {
+      const g = guided();
+      saveProgress(see(upTo('coal'), 'coal', { g, me: 0, sel: null, mat: null }));
+      useGame.setState({ game: g, tutorial: true, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null, coachHold: false });
+      expect(useGame.getState().dispatch(mineOf(g))).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(useGame.getState().coachHold).toBe(false);
+      await closeTurn(false);
+      expect(coach.asked).toBe(1);
+      expect(useGame.getState().coachHold).toBe(false);
+    });
   });
 });

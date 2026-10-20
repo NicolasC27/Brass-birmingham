@@ -374,6 +374,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      position: the index of the action to come names it */
   const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean } | null>(null);
   const setBotHold = useGame((s) => s.setBotHold);
+  const coachHold = useGame((s) => s.coachHold);
   const setGlimpse = useGame((s) => s.setGlimpse);
   /* G folds the guide to a rail down the right edge, and back */
   useEffect(() => {
@@ -484,9 +485,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
 
   /* the machine's next move waits while its last one is being read (guided game only) */
   /* a lesson still to be read holds the table: the reader sets the pace —
-     a page, a deed done beforehand or a lesson read back, not a deed to do */
+     a page, a deed done beforehand or a lesson read back, not a deed to do.
+     So does the coach's word on the reader's last move, a moment */
   const unread = !!owed && (review !== null || owed.mode === 'read' || owed.mode === 'already');
-  const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0));
+  const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0 || coachHold));
   useEffect(() => {
     setBotHold(holdWanted);
     return () => setBotHold(false);

@@ -228,6 +228,7 @@ describe('sitting at another table', () => {
       reviewAt: 4,
       debriefOpen: true,
       coached: { at: 2 } as never,
+      coachHold: true,
       serverUndo: true,
       movedTo: 'XXXX',
       ceremony: 'canal-end' as const,
