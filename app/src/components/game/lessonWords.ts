@@ -25,3 +25,14 @@ export function stepKeyOf(id: string, g: GameState, me: number): string {
   if (id === 'payday') return incomeLevel(g.players[me].income) < 0 ? 'paydayOwed' : 'payday';
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
 }
+
+/** below this a purse builds little: a loan taken with less was for want of money */
+export const LOW_PURSE = 15;
+
+/** the words for a machine's loan, told by the purse it was taken from:
+ *  its last card of a short game borrows for the close, a thin purse for
+ *  want of money, a full one to build dear without waiting for payday */
+export function loanWords(g: GameState, seat: number, purse: number): 'loanClose' | 'loanLow' | 'loanAhead' {
+  if (g.eraLength === 'short' && g.deck.length === 0 && g.players[seat].hand.length === 0) return 'loanClose';
+  return purse < LOW_PURSE ? 'loanLow' : 'loanAhead';
+}

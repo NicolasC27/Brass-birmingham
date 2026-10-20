@@ -26,7 +26,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { stepKeyOf } from './lessonWords';
+import { loanWords, stepKeyOf } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -124,9 +124,13 @@ function botReason(g: GameState, me: number, t: T): { id: number; seat: number; 
       why = t('game.guide.bot.sell', facts) + (bits.length ? ` ${t('game.guide.bot.sellBonus', { ...facts, bits: bits.join(' · ') })}` : '');
       break;
     }
-    case 'loan':
-      why = t('game.guide.bot.loan', facts);
+    case 'loan': {
+      /* told by the purse it was taken from: the ledger keeps it, and an
+         older line did not — today's purse still holds the loan on top */
+      const purse = typeof v.purse === 'number' ? v.purse : p.money - LOAN_AMOUNT;
+      why = t(`game.guide.bot.${loanWords(g, e.player, purse)}`, { ...facts, before: purse });
       break;
+    }
     case 'develop':
       why = t('game.guide.bot.develop', facts);
       break;
