@@ -17,7 +17,8 @@ function LessonHalo() {
   useEffect(() => {
     if (!hud) return;
     const measure = () => {
-      const el = document.querySelector<HTMLElement>(`[data-lens="${hud}"]`);
+      /* a mark is a word of the element's list: a disc may stand for two parts */
+      const el = document.querySelector<HTMLElement>(`[data-lens~="${hud}"]`);
       if (!el) {
         setBox(null);
         return;

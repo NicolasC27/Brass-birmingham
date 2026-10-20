@@ -383,7 +383,9 @@ function Medal({ p, index, active, nextRank, nowRank, open, onToggle, onClose, o
         aria-label={label}
         aria-expanded={open}
         aria-current={active ? 'true' : undefined}
-        data-lens={p.isBot ? 'rail-bot' : 'rail'}
+        /* folded, the disc is the way to the mat too: the card it unfolds
+           holds the mat's button, which takes the mark over once open */
+        data-lens={p.isBot ? 'rail-bot' : open ? 'rail' : 'rail mat'}
         onClick={() => {
           showPlate(false);
           onToggle();
