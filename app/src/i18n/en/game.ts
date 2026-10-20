@@ -1135,7 +1135,7 @@ const game = {
     done: 'Play on',
     show: { mat: 'Open my mat', market: 'Show the market', vp: 'The points ruler is at the top' },
     tips: {
-      firstRound: 'First round: one action only. Every action costs a card from your hand — the card is the price of acting, whatever the action.',
+      firstRound: 'First round: one action only. Every action costs a card from your hand — except Scout, which discards three.',
       select: 'Pick a card. A location card builds in its town; an industry card builds that industry on your network. Cards with a hammer can build right now. Any card at all pays for a link, a loan, a sale or a development.',
       location: 'A location card: build any industry the town allows — {n} [n|slot|slots] lit for you. A location card builds in its town even off your network.',
       industry: 'An industry card: build that industry in a town of your network — {n} [n|slot|slots] possible. With nothing on the board yet, the whole map is your network.',

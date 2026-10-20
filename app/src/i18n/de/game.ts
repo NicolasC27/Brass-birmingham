@@ -1137,7 +1137,7 @@ const game: typeof engame = {
     done: 'Weiterspielen',
     show: { mat: 'Mein Tableau öffnen', market: 'Den Markt zeigen', vp: 'Die Punkteleiste ist oben' },
     tips: {
-      firstRound: 'Erste Runde: nur eine Aktion. Jede Aktion kostet eine Karte aus deiner Hand — die Karte ist der Preis der Aktion, welche auch immer.',
+      firstRound: 'Erste Runde: nur eine Aktion. Jede Aktion kostet eine Karte aus deiner Hand — außer Erkunden, das drei abwirft.',
       select: 'Wähle eine Karte. Eine Ortskarte baut in ihrer Stadt; eine Industriekarte baut diese Industrie in deinem Netzwerk. Karten mit Hammer können sofort bauen. Jede beliebige Karte bezahlt eine Verbindung, einen Kredit, einen Verkauf oder ein Entwickeln.',
       location: 'Eine Ortskarte: baue, was die Stadt erlaubt — {n} [n|Bauplatz|Bauplätze] für dich beleuchtet. Eine Ortskarte baut in ihrer Stadt, auch außerhalb deines Netzwerks.',
       industry: 'Eine Industriekarte: baue sie in einer Stadt deines Netzwerks — {n} [n|Bauplatz|Bauplätze] möglich. Solange nichts auf dem Spielplan liegt, ist die ganze Karte dein Netzwerk.',

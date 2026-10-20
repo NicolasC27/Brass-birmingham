@@ -1137,7 +1137,7 @@ const fr: typeof engame = {
     done: 'Continuer la partie',
     show: { mat: 'Ouvrir mon tapis', market: 'Montrer le marché', vp: 'La règle des points est en haut' },
     tips: {
-      firstRound: 'Première manche : une seule action. Chaque action coûte une carte de votre main — la carte est le prix de l’action, quelle qu’elle soit.',
+      firstRound: 'Première manche : une seule action. Chaque action coûte une carte de votre main — sauf la prospection, qui en défausse trois.',
       select: 'Choisissez une carte. Une carte lieu construit dans sa ville ; une carte industrie construit cette industrie sur votre réseau. Les cartes au marteau peuvent construire tout de suite. N’importe quelle carte paie une liaison, un emprunt, une vente ou un développement.',
       location: 'Une carte lieu : construisez ce que la ville accepte — {n} [n|emplacement|emplacements] [n|allumé|allumés] pour vous. Une carte lieu construit dans sa ville même hors de votre réseau.',
       industry: 'Une carte industrie : construisez-la dans une ville de votre réseau — {n} [n|emplacement|emplacements] [n|possible|possibles]. Sans rien sur le plateau, toute la carte est votre réseau.',

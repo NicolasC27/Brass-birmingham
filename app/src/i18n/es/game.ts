@@ -1137,7 +1137,7 @@ const game: typeof engame = {
     done: 'Seguir la partida',
     show: { mat: 'Abrir mi tapete', market: 'Mostrar el mercado', vp: 'La regla de los puntos está arriba' },
     tips: {
-      firstRound: 'Primera ronda: una sola acción. Cada acción cuesta una carta de tu mano — la carta es el precio de la acción, sea cual sea.',
+      firstRound: 'Primera ronda: una sola acción. Cada acción cuesta una carta de tu mano — salvo Explorar, que descarta tres.',
       select: 'Elige una carta. Una carta de lugar construye en su ciudad; una carta de industria construye esa industria en tu red. Las cartas con martillo pueden construir ahora mismo. Cualquier carta paga una conexión, un préstamo, una venta o un desarrollo.',
       location: 'Una carta de lugar: construye lo que la ciudad admita — {n} [n|casilla|casillas] [n|iluminada|iluminadas] para ti. Una carta de lugar construye en su ciudad aunque esté fuera de tu red.',
       industry: 'Una carta de industria: constrúyela en una ciudad de tu red — {n} [n|casilla|casillas] [n|posible|posibles]. Sin nada en el tablero, todo el mapa es tu red.',
