@@ -1,5 +1,5 @@
-import { eraRounds, incomeLevel } from '@/game/data';
-import type { GameState, IndustryType } from '@/game/types';
+import { MERCHANTS, eraRounds, incomeLevel } from '@/game/data';
+import type { GameState, IndustryType, Merchant } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* The words a lesson is said in. The guided game is a short one — the */
@@ -36,6 +36,13 @@ export function stepKeyOf(id: string, g: GameState, me: number): string {
     return level < 0 ? 'paydayOwed' : level === 0 ? 'paydayZero' : 'payday';
   }
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
+}
+
+/** the merchants of this table who keep a barrel — a tile of theirs that
+ *  is not blank — and what drinking one gives: the lesson on beer names
+ *  them from the table, never from one deal written down */
+export function barrelBonuses(g: GameState): { merchant: string; bonus: Merchant['bonus'] }[] {
+  return MERCHANTS.filter((m) => (g.merchantTiles[m.id] ?? []).some((x) => x !== 'blank')).map((m) => ({ merchant: m.name, bonus: m.bonus }));
 }
 
 /** below this a purse builds little: a loan taken with less was for want of money */

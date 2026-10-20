@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, closingWords, firstPayday, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, closingWords, firstPayday, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -150,5 +150,22 @@ describe('the words of the era’s last rounds', () => {
     /* all flipped: no count of nought unflipped */
     const done = closingWords(late('standard', { 'belper:0': tile('coal', 1, true) }), 0)!;
     expect(done.mine?.key).toBe('eraEndMineFlipped');
+  });
+});
+
+describe('the merchants’ barrels', () => {
+  it('are read off the table: every merchant with a tile that is not blank', () => {
+    const g = table();
+    expect(barrelBonuses(g)).toEqual([
+      { merchant: 'Shrewsbury', bonus: { vp: 4 } },
+      { merchant: 'Oxford', bonus: { income: 2 } },
+      { merchant: 'Gloucester', bonus: { develop: true } },
+    ]);
+  });
+
+  it('leave out a merchant dealt only blank tiles, who keeps no barrel', () => {
+    const g = structuredClone(table());
+    g.merchantTiles['m-gloucester'] = ['blank', 'blank'];
+    expect(barrelBonuses(g).map((x) => x.merchant)).toEqual(['Shrewsbury', 'Oxford']);
   });
 });
