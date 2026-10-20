@@ -9,7 +9,7 @@ Ce que l'office garde pour le compte, écrit à la fin d'une partie à la maison
 | Feuilleton | `platform/feuilleton.ts` | `feuilleton` | la dernière partie en 3 moments (`swingsFor`), la partie dans le fragment `#g=…&at=N` |
 | Lignes | `platform/lines.ts` | `lines` | villes bâties (parties locales) ; l'office ajoute ses tallies à l'affichage |
 | Défi | `game/challenge.ts` | `challenge` | tables et essais |
-| Cours | `platform/cours.ts` | `brassworks.tutorial.reached` (lecture) | leçons lues, motifs du juge → chapitres |
+| Cours | `platform/cours.ts` | `brassworks.tutorial.progress` (lecture, dans le navigateur) | leçons passées, par id ; motifs du juge → chapitres |
 
 S'y ajoutent `progress` (la feuille du juge, `game/progress.ts`), `form` (la forme des machines, `game/form.ts`) et `equipped` (la tenue, `platform/wallet.ts`).
 
@@ -19,4 +19,4 @@ L'office décide : plus de repli d'une copie dans l'autre. `hydratePapers()` rem
 
 ## Ce qui reste dans le navigateur
 
-Les réglages de l'appareil seulement : `brassworks.theme.v1`, `brassworks.lang`, `brassworks.keys.v1`, `brassworks.arrived.v1`, les options du plateau, la position du guide — plus `brassworks.setup.v1` (le formulaire de table, pas un enregistrement) et `brassworks.session.v1` (le jeton).
+Les réglages de l'appareil seulement : `brassworks.theme.v1`, `brassworks.lang`, `brassworks.keys.v1`, `brassworks.arrived.v1`, les options du plateau, la position du guide — plus `brassworks.setup.v1` (le formulaire de table, pas un enregistrement) et `brassworks.session.v1` (le jeton). La partie guidée y garde aussi sa table (`brassworks.tutorial.table`, le code) et sa progression (`brassworks.tutorial.progress`, les leçons par id, pour cette table) ; les anciennes clés `.step` et `.reached` sont reprises une fois puis effacées.
