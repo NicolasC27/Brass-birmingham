@@ -1159,7 +1159,10 @@ const fr: typeof engame = {
       negative: 'Votre revenu est au niveau {level} : chaque paie vous coûte {pay} £. Vendez un ouvrage ou videz une mine pour retourner une tuile et remonter.',
       deckOut: 'La pioche est vide : votre main ne se recomplète plus et fond d’une carte par action — il vous reste {cards} [cards|carte|cartes]. L’ère s’arrête quand toutes les mains sont vides : comptez vos dernières actions et retournez ce qui peut l’être.',
       eraEndMine: 'Le balayage prendra, chez vous : {list}. {unsold} [unsold|n’est|ne sont] pas [unsold|retournée|retournées] et ne [unsold|marquera|marqueront] rien — vendez ou videz ce que vous pouvez tant qu’il est temps.',
+      eraEndMineFlipped: 'Le balayage prendra {n} [n|tuile|tuiles] de niveau 1 chez vous, déjà [n|retournée|retournées] : {list}. [n|Elle marquera ses|Elles marqueront leurs] points avant de partir.',
       eraEnd: 'L’ère canal se termine : toutes les tuiles de niveau 1 quittent le plateau, retournées ou non — celles qui ne l’étaient pas n’auront rien marqué — et chaque liaison part une fois comptée. Vendez ce que vous pouvez.',
+      eraEndShort: 'Dernières manches : la partie s’arrête après la manche {total}, sans dernière paie. Parmi vos industries, seules les tuiles retournées marquent, quel que soit leur niveau : vendez ou videz ce que vous pouvez. Vos canaux, eux, marquent les icônes lien des deux lieux qu’ils relient. À la clôture, 4 £ valent 1 PV (15 au plus), votre niveau de revenu compte en points, et vos tuiles retournées de niveau 2 ou plus comptent deux fois.',
+      eraEndMineShort: '{n} de vos tuiles [n|n’est|ne sont] pas encore [n|retournée|retournées] et ne [n|marquera|marqueront] rien si [n|elle le reste|elles le restent] : {list}.',
     },
     bot: {
       build: {

@@ -1159,7 +1159,10 @@ const game: typeof engame = {
       negative: 'Dein Einkommen liegt auf Stufe {level}: jeder Zahltag kostet dich £{pay}. Verkaufe einen Betrieb oder leere eine Mine, um ein Plättchen umzudrehen und wieder zu steigen.',
       deckOut: 'Der Nachziehstapel ist leer: deine Hand füllt sich nicht mehr auf und schmilzt um eine Karte je Aktion — {cards} [cards|Karte|Karten] übrig. Die Zeit endet, sobald alle Hände leer sind: zähle deine letzten Aktionen und drehe um, was sich noch umdrehen lässt.',
       eraEndMine: 'Von dir nimmt das Abräumen: {list}. {unsold} davon [unsold|ist|sind] nicht umgedreht und [unsold|wertet|werten] nichts — verkaufe oder leere, was du kannst, solange Zeit ist.',
+      eraEndMineFlipped: 'Das Abräumen nimmt dir {n} [n|Plättchen|Plättchen] der Stufe 1, schon umgedreht: {list}. [n|Es wertet seine|Sie werten ihre] Punkte vorher noch.',
       eraEnd: 'Die Kanalzeit endet: jedes Plättchen der Stufe 1 verlässt den Spielplan, umgedreht oder nicht — die nicht umgedrehten haben nichts gezählt — und jede Verbindung geht nach der Wertung ab. Verkaufe, was du kannst.',
+      eraEndShort: 'Letzte Runden: die Partie endet nach Runde {total}, ohne letzten Zahltag. Von deinen Industrien werten nur die umgedrehten Plättchen, egal welcher Stufe: verkaufe oder leere, was du kannst. Deine Kanäle werten die Verbindungssymbole der beiden Orte, die sie verbinden. Beim Abschluss sind £4 einen SP wert (höchstens 15), deine Einkommensstufe zählt als Punkte, und deine umgedrehten Plättchen ab Stufe 2 werten doppelt.',
+      eraEndMineShort: '{n} deiner Plättchen [n|ist|sind] noch nicht umgedreht und [n|wertet|werten] nichts, wenn [n|es|sie] so [n|bleibt|bleiben]: {list}.',
     },
     bot: {
       build: {

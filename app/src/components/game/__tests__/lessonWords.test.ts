@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, withEdition } from '@/game/actions';
-import { newGame } from '@/game/engine';
-import type { GameState, SetupPayload } from '@/game/types';
-import { LOW_PURSE, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { eraRounds, newGame } from '@/game/engine';
+import type { GameState, SetupPayload, TileState } from '@/game/types';
+import { LOW_PURSE, closingWords, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -65,5 +65,49 @@ describe('the words for a machine’s loan', () => {
     const r = applyAction(g, seat, { kind: 'loan', card: g.players[seat].hand[0].id });
     const line = r.state!.ledger.find((e) => e.key === 'loan');
     expect(line?.vars?.purse).toBe(before);
+  });
+});
+
+describe('the words of the era’s last rounds', () => {
+  const tile = (industry: TileState['industry'], level: number, flipped: boolean): TileState => ({ owner: 0, industry, level, flipped, cubes: 0 });
+  /** the table in its round before the last, with the reader's tiles on it */
+  const late = (eraLength: 'short' | 'standard', tiles: Record<string, TileState>): GameState => {
+    const g = structuredClone(table(eraLength));
+    g.round = eraRounds(g.players.length) - 1;
+    g.tiles = { ...tiles, 'derby:0': { ...tile('coal', 1, false), owner: 1 } };
+    return g;
+  };
+
+  it('wait for the round before the last', () => {
+    const g = late('short', {});
+    g.round -= 1;
+    expect(closingWords(g, 0)).toBeNull();
+  });
+
+  it('name in a short game every tile still unflipped, whatever its level', () => {
+    const g = late('short', { 'belper:0': tile('coal', 1, true), 'stoke:1': tile('pottery', 2, false), 'dudley:0': tile('iron', 1, false) });
+    const words = closingWords(g, 0)!;
+    expect(words.era).toBe('eraEndShort');
+    expect(words.mine?.key).toBe('eraEndMineShort');
+    /* the machine's tiles are its own business */
+    expect(words.mine?.tiles).toEqual([
+      { industry: 'pottery', town: 'stoke' },
+      { industry: 'iron', town: 'dudley' },
+    ]);
+  });
+
+  it('say nothing of the reader’s tiles when all are flipped', () => {
+    const words = closingWords(late('short', { 'belper:0': tile('coal', 1, true) }), 0)!;
+    expect(words.era).toBe('eraEndShort');
+    expect(words.mine).toBeNull();
+  });
+
+  it('warn a full game of the sweep of its level-1 tiles, flipped or not', () => {
+    const open = closingWords(late('standard', { 'belper:0': tile('coal', 1, false), 'stoke:1': tile('pottery', 2, false) }), 0)!;
+    expect(open.era).toBe('eraEnd');
+    expect(open.mine).toEqual({ key: 'eraEndMine', tiles: [{ industry: 'coal', town: 'belper' }], unflipped: 1 });
+    /* all flipped: no count of nought unflipped */
+    const done = closingWords(late('standard', { 'belper:0': tile('coal', 1, true) }), 0)!;
+    expect(done.mine?.key).toBe('eraEndMineFlipped');
   });
 });

@@ -1159,7 +1159,10 @@ const game: typeof engame = {
       negative: 'Tus ingresos están en el nivel {level}: cada paga te cuesta {pay} £. Vende una industria o vacía una mina para voltear una loseta y remontar.',
       deckOut: 'El mazo está vacío: tu mano ya no se repone y mengua una carta por acción — te [cards|queda|quedan] {cards} [cards|carta|cartas]. La era acaba cuando todas las manos están vacías: cuenta tus últimas acciones y voltea lo que aún pueda voltearse.',
       eraEndMine: 'De lo tuyo, la limpieza se llevará: {list}. {unsold} no [unsold|está volteada|están volteadas] y no [unsold|contará|contarán] nada — vende o vacía lo que puedas mientras hay tiempo.',
+      eraEndMineFlipped: 'La limpieza se llevará {n} [n|loseta tuya|losetas tuyas] de nivel 1, ya [n|volteada|volteadas]: {list}. [n|Puntuará|Puntuarán] antes de salir.',
       eraEnd: 'La era del canal termina: todas las losetas de nivel 1 salen del tablero, volteadas o no — las que no lo estén no habrán contado nada — y cada conexión sale una vez puntuada. Vende lo que puedas.',
+      eraEndShort: 'Últimas rondas: la partida se detiene tras la ronda {total}, sin última paga. De tus industrias, solo puntúan las losetas volteadas, sea cual sea su nivel: vende o vacía lo que puedas. Tus canales puntúan los iconos de enlace de los dos lugares que unen. Al cierre, 4 £ valen 1 PV (hasta 15), tu nivel de ingresos cuenta como puntos, y tus losetas volteadas de nivel 2 o más puntúan dos veces.',
+      eraEndMineShort: '{n} de tus losetas aún no [n|está volteada|están volteadas] y no [n|puntuará|puntuarán] nada si [n|sigue|siguen] así: {list}.',
     },
     bot: {
       build: {

@@ -26,7 +26,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { loanWords, stepKeyOf } from './lessonWords';
+import { closingWords, loanWords, stepKeyOf } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -275,6 +275,14 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
   const out: { id: string; text: string }[] = [];
   const last = g.ledger[g.ledger.length - 1];
   const level = incomeLevel(p.income);
+  /* the era's last rounds come first: two lines to a page, and they must
+     not fall to the second */
+  const closing = closingWords(g, me);
+  if (closing) {
+    out.push({ id: 'eraEnd', text: t(`game.guide.alerts.${closing.era}`, { total: eraRounds(g.players.length) }) });
+    const named = closing.mine;
+    if (named) out.push({ id: 'eraEndMine', text: t(`game.guide.alerts.${named.key}`, { list: named.tiles.map((x) => `${t(`game.log.industry.${x.industry}`)} (${TOWN_BY_ID[x.town]?.name ?? x.town})`).join(', '), n: named.tiles.length, unsold: named.unflipped }) });
+  }
   /* a short game counts the purse and the income level at its close: a loan
      is weighed there, not written off as late */
   if (p.money < 8 && p.loans === 0) out.push({ id: 'broke', text: t(g.eraLength === 'short' ? 'game.guide.alerts.brokeShort' : 'game.guide.alerts.broke', { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT, level, after: Math.max(-10, level - LOAN_INCOME_HIT) }) });
@@ -282,12 +290,6 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
   if (last?.key === 'payday') out.push({ id: 'payday', text: t(level >= 0 ? 'game.guide.alerts.payday' : 'game.guide.alerts.paydayOwed', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
   if (g.deck.length === 0 && p.hand.length > 0) out.push({ id: 'deckOut', text: t('game.guide.alerts.deckOut', { cards: p.hand.length }) });
   if (level < 0) out.push({ id: 'negative', text: t('game.guide.alerts.negative', { level, pay: Math.abs(INCOME_PAYOUT[p.income]) }) });
-  if (g.era === 'canal' && g.round >= eraRounds(g.players.length) - 1) {
-    out.push({ id: 'eraEnd', text: t('game.guide.alerts.eraEnd') });
-    /* the tiles of theirs the sweep is about to take, named */
-    const doomed = Object.entries(g.tiles).filter(([, x]) => x.owner === me && x.level === 1);
-    if (doomed.length) out.push({ id: 'eraEndMine', text: t('game.guide.alerts.eraEndMine', { list: doomed.map(([key, x]) => `${t(`game.log.industry.${x.industry}`)} (${TOWN_BY_ID[key.split(':')[0]]?.name ?? key})`).join(', '), n: doomed.length, unsold: doomed.filter(([, x]) => !x.flipped).length }) });
-  }
   return out;
 }
 

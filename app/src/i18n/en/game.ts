@@ -1157,7 +1157,10 @@ const game = {
       negative: 'Your income is at level {level}: each payday costs you £{pay}. Sell a works or empty a mine to flip a tile and climb.',
       deckOut: 'The draw pile is empty: your hand no longer refills and melts by one card per action — {cards} [cards|card|cards] left. The era ends once every hand is empty, so count your last actions and flip what can still be flipped.',
       eraEndMine: 'Of yours, the sweep will take: {list}. {unsold} of [unsold|them is|them are] not flipped and will score nothing — sell or empty what you can while there is time.',
+      eraEndMineFlipped: 'The sweep will take {n} level-1 [n|tile|tiles] of yours, already flipped: {list}. [n|It scores its|They score their] points before leaving.',
       eraEnd: 'The Canal Era is ending: every level-1 tile leaves the board, flipped or not — the unflipped ones will have scored nothing — and every link comes off once scored. Sell what you can.',
+      eraEndShort: 'Last rounds: the game stops after round {total}, with no last payday. Of your industries, only the flipped tiles score, whatever their level: sell or empty what you can. Your canals score the link icons of the two places they join. At the close, £4 is worth 1 VP (up to 15), your income level counts as points, and your flipped tiles of level 2 and above score twice.',
+      eraEndMineShort: '{n} of your tiles [n|is|are] not flipped yet and will score nothing if [n|it stays|they stay] so: {list}.',
     },
     bot: {
       build: {
