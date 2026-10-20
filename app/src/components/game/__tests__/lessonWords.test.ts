@@ -23,6 +23,7 @@ describe('the entry a lesson is said under', () => {
   it('is its own in a short game where the rules differ', () => {
     const g = table();
     expect(stepKeyOf('goal', g, 0)).toBe('goalShort');
+    expect(stepKeyOf('develop', g, 0)).toBe('developShort');
     expect(stepKeyOf('loan', g, 0)).toBe('loanShort');
     expect(stepKeyOf('eraEnd', g, 0)).toBe('eraEndShort');
     /* the rest read the same in either game */

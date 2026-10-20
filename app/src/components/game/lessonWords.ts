@@ -12,6 +12,7 @@ import type { GameState, IndustryType } from '@/game/types';
 /** the lessons a short game tells in words of its own */
 const SHORT: Readonly<Record<string, string>> = {
   goal: 'goalShort',
+  develop: 'developShort',
   loan: 'loanShort',
   eraEnd: 'eraEndShort',
 };
