@@ -20,10 +20,21 @@ const SHORT: Readonly<Record<string, string>> = {
 /** a lesson's entry in a short game — the guided game is one */
 export const shortKeyOf = (id: string): string => SHORT[id] ?? id;
 
-/** the lesson's entry in the dictionary: some lessons read otherwise in
- *  debt, or in a short game */
+/** the reader's income level at the first payday of the game, as it was
+ *  paid — the account book keeps it; null before that payday */
+export function firstPayday(g: GameState, me: number): number | null {
+  const h = g.history.find((x) => x.era === 'canal' && x.round === 1);
+  return h?.income[me] ?? null;
+}
+
+/** the lesson's entry in the dictionary: the first payday reads as it was
+ *  paid — owed, nought or drawn — and a short game tells some lessons in
+ *  its own words */
 export function stepKeyOf(id: string, g: GameState, me: number): string {
-  if (id === 'payday') return incomeLevel(g.players[me].income) < 0 ? 'paydayOwed' : 'payday';
+  if (id === 'payday') {
+    const level = firstPayday(g, me) ?? incomeLevel(g.players[me].income);
+    return level < 0 ? 'paydayOwed' : level === 0 ? 'paydayZero' : 'payday';
+  }
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
 }
 

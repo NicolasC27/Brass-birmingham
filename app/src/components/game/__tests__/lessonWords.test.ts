@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { applyAction, withEdition } from '@/game/actions';
-import { eraRounds, newGame } from '@/game/engine';
+import { applyAction, fallbackAction, withEdition } from '@/game/actions';
+import type { GameAction } from '@/game/actions';
+import { incomeLevel } from '@/game/data';
+import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, closingWords, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, closingWords, firstPayday, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -40,6 +42,44 @@ describe('the entry a lesson is said under', () => {
   it('gives the evening course the guided game’s own titles', () => {
     expect(shortKeyOf('goal')).toBe('goalShort');
     expect(shortKeyOf('welcome')).toBe('welcome');
+  });
+});
+
+const play = (g: GameState, a: GameAction): GameState => {
+  const r = applyAction(g, g.current, a);
+  if (!r.state) throw new Error(r.error);
+  return r.state;
+};
+/** the first round played through: the reader's mine, then the machine's move */
+const firstRound = (g: GameState): GameState => {
+  const at = g.players[0].hand.flatMap((c) => buildTargets(g, 0, c).filter((x) => x.valid && x.industry === 'coal').map((x) => ({ card: c.id, x })))[0];
+  let s = play(g, { kind: 'build', card: at.card, town: at.x.town, slot: at.x.slot, industry: 'coal' });
+  while (s.round === 1) s = play(s, fallbackAction(s, s.current));
+  return s;
+};
+
+describe('the first payday', () => {
+  it('is read as it was paid, not as the purse stands', () => {
+    const g = table();
+    expect(firstPayday(g, 0)).toBeNull();
+    const s = firstRound(g);
+    /* nothing of the reader's flipped in the first round: the payday paid nought */
+    expect(firstPayday(s, 0)).toBe(0);
+    expect(stepKeyOf('payday', s, 0)).toBe('paydayZero');
+    /* a loan since sinks the level below nought; the first payday stays what it was */
+    let mine = s;
+    while (mine.current !== 0) mine = play(mine, fallbackAction(mine, mine.current));
+    const later = play(mine, { kind: 'loan', card: mine.players[0].hand[0].id });
+    expect(incomeLevel(later.players[0].income)).toBeLessThan(0);
+    expect(stepKeyOf('payday', later, 0)).toBe('paydayZero');
+  });
+
+  it('owed, when the income stood below nought', () => {
+    const g = structuredClone(firstRound(table()));
+    g.history[0].income[0] = -3;
+    expect(stepKeyOf('payday', g, 0)).toBe('paydayOwed');
+    g.history[0].income[0] = 2;
+    expect(stepKeyOf('payday', g, 0)).toBe('payday');
   });
 });
 
