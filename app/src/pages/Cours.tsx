@@ -6,6 +6,7 @@ import { useT } from '@/i18n';
 import { startTutorial } from '@/game/quickplay';
 import { personaName } from '@/game/data';
 import { LESSONS, lessonsRead, lessonsToRedo } from '@/platform/cours';
+import { shortKeyOf } from '@/components/game/lessonWords';
 import { getChapters } from '@/components/rules/rulesData';
 import PageShell from '@/components/site/PageShell';
 import ProgressCard from '@/components/desk/ProgressCard';
@@ -50,8 +51,9 @@ export default function Cours() {
                   </span>
                   <span className="sr-only">{t(read ? 'platform.cours.markRead' : 'platform.cours.markUnread')}</span>
                   <span className="data-text w-6 shrink-0 text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
+                  {/* the guided game is a short one: its lessons go by the titles it gives them */}
                   <span className={cn('font-fraunces text-[14px] font-medium', read ? 'text-paper-100' : 'text-paper-300')}>
-                    {t(`game.guide.steps.${id}.title`, { bot: personaName('wedgwood') })}
+                    {t(`game.guide.steps.${shortKeyOf(id)}.title`, { bot: personaName('wedgwood') })}
                   </span>
                 </li>
               );

@@ -26,6 +26,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
+import { stepKeyOf } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -77,11 +78,6 @@ const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
   const down = Math.max(0, h - 220);
   return { x: clamp(p.x, -left, 0), y: clamp(p.y, Math.min(0, -90), down) };
 };
-/** the lesson's entry in the dictionary: some lessons read otherwise in debt, or in a short era */
-function stepKeyOf(id: string, game: GameState, me: number): string {
-  return id === 'payday' && incomeLevel(game.players[me].income) < 0 ? 'paydayOwed' : id === 'eraEnd' && game.eraLength === 'short' ? 'eraEndShort' : id;
-}
-
 /** the figures a lesson's text is written with */
 function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string): Record<string, string | number> {
   const p = game.players[me];
