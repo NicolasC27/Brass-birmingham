@@ -795,9 +795,21 @@ function paySupply(s: GameState, p: PlayerState, plan: SupplyPlan) {
   }
 }
 
-function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]) {
+/** what the merchants' barrels gave with the beer: their bonus alone. A
+ *  brewery of the drinker's own that pours its last barrel on the way
+ *  raises the income too, but as a flip, told on its own line */
+interface BarrelBonus {
+  said: string;
+  vp: number;
+  money: number;
+  /** income levels gained */
+  income: number;
+  develop: boolean;
+}
+
+function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]): BarrelBonus {
   const p = s.players[playerIdx];
-  let bonus = '';
+  const bonus: BarrelBonus = { said: '', vp: 0, money: 0, income: 0, develop: false };
   for (const b of sources) {
     if (b.kind === 'brewery') {
       const key = tileKey(b.town!, b.slot!);
@@ -812,9 +824,15 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]) {
       s.merchantBeer[barrelKey(mid, b.slot!)] = 0;
       if (merchantBeerLeft(s, mid) === 0) s.merchantBonusTaken[mid] = true;
       const bn = MERCHANT_BY_ID[mid].bonus;
-      if (bn.vp) { p.vp += bn.vp; bonus += ` · +${bn.vp} VP`; }
-      if (bn.income) { advanceIncome(s, playerIdx, bn.income); bonus += ` · +${bn.income} income`; }
-      if (bn.money) { p.money += bn.money; bonus += ` · £${bn.money}`; }
+      if (bn.vp) { p.vp += bn.vp; bonus.vp += bn.vp; bonus.said += ` · +${bn.vp} VP`; }
+      if (bn.income) {
+        /* measured here, around the barrel's own step on the track */
+        const before = incomeLevel(p.income);
+        advanceIncome(s, playerIdx, bn.income);
+        bonus.income += incomeLevel(p.income) - before;
+        bonus.said += ` · +${bn.income} income`;
+      }
+      if (bn.money) { p.money += bn.money; bonus.money += bn.money; bonus.said += ` · £${bn.money}`; }
       if (bn.develop) {
         // Gloucester: remove one lowest-level tile from the mat, no iron, lightbulbs excluded
         let bestInd: IndustryType | null = null;
@@ -826,7 +844,8 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]) {
         if (bestInd) {
           const lvl = p.stacks[bestInd].shift()!;
           p.stats.developed += 1;
-          bonus += ` · free develop (−${INDUSTRY_LABEL[bestInd]} L${lvl})`;
+          bonus.develop = true;
+          bonus.said += ` · free develop (−${INDUSTRY_LABEL[bestInd]} L${lvl})`;
         }
       }
     }
@@ -1134,33 +1153,27 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (st
   if (!reachable(s, target.town, s.era, null).has(target.merchant)) return false;
   const beer = planSaleBeer(s, playerIdx, target.town, target.merchant, target.tile.industry, lv.beerToSell, named);
   if (beer.shortage > 0) return false;
-  const vpBefore = p.vp;
-  const moneyBefore = p.money;
-  const incomeBefore = incomeLevel(p.income);
   /* beer drawn from another player's brewery: their loss to know about */
   const beerFrom = beer.sources
     .filter((b) => b.kind === 'brewery' && s.tiles[tileKey(b.town!, b.slot!)]?.owner !== playerIdx)
     .map((b) => `${s.tiles[tileKey(b.town!, b.slot!)].owner}:${b.town}`)
     .join(',');
   const bonus = drinkBeer(s, playerIdx, beer.sources);
-  const bonusVp = p.vp - vpBefore;
-  const bonusMoney = p.money - moneyBefore;
-  const bonusIncome = incomeLevel(p.income) - incomeBefore;
   flipTile(s, key, 'merchant', MERCHANT_BY_ID[target.merchant].name);
   p.stats.sold += 1;
   s.fxSeq += 1;
   s.lastFx = { kind: 'sell', at: slotXY(target.town, target.slot), player: playerIdx };
-  log(s, playerIdx, 'sell', `${p.name} sells ${INDUSTRY_LABEL[tile.industry]} L${tile.level} to ${MERCHANT_BY_ID[target.merchant].name} (${lv.beerToSell} beer${bonus})`, target.town, 'sell', {
+  log(s, playerIdx, 'sell', `${p.name} sells ${INDUSTRY_LABEL[tile.industry]} L${tile.level} to ${MERCHANT_BY_ID[target.merchant].name} (${lv.beerToSell} beer${bonus.said})`, target.town, 'sell', {
     name: p.name,
     industry: tile.industry,
     level: tile.level,
     merchant: MERCHANT_BY_ID[target.merchant].name,
     merchantId: target.merchant,
     beer: lv.beerToSell,
-    bonusVp,
-    bonusMoney,
-    bonusIncome,
-    bonusDevelop: bonus.includes('develop') ? 1 : 0,
+    bonusVp: bonus.vp,
+    bonusMoney: bonus.money,
+    bonusIncome: bonus.income,
+    bonusDevelop: bonus.develop ? 1 : 0,
     beerFrom,
   });
   return true;

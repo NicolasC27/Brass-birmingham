@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, replay, setupOf } from '../actions';
 import type { GameAction } from '../actions';
-import { INDUSTRIES } from '../data';
+import { INDUSTRIES, LINKS, incomeLevel } from '../data';
 import { RULES_EDITION, buildTargets, eraRounds, linkTargets, newGame, sellTargets, serialize } from '../engine';
 import type { Era, GameState, SetupPayload } from '../types';
 
 /* ------------------------------------------------------------------ */
 /* The rules the engine once read wrongly, held to brass/game-data.md: */
 /* the rail deal (§4.3, §5.13), a sale short of beer (§5.5, §5.6), the  */
-/* coal a player may choose (§5.3), and what payday takes from a purse  */
-/* that cannot pay (§5.12).                                             */
+/* bonus a sale owes a merchant's barrel alone (§1.3, §5.5), the coal a */
+/* player may choose (§5.3), and what payday takes from a purse that    */
+/* cannot pay (§5.12).                                                  */
 /* ------------------------------------------------------------------ */
 
 const SEATS: SetupPayload['players'] = [
@@ -146,6 +147,45 @@ describe('a sale short of beer', () => {
     const r = applyAction(s, me, both);
     expect(r.state).not.toBeNull();
     expect([r.state!.tiles['worcester:0'].flipped, r.state!.tiles['worcester:1'].flipped]).toEqual([true, false]);
+  });
+});
+
+describe('a merchant\'s bonus on a sale', () => {
+  /* a manufacturer of mine in Redditch, a canal to Oxford (+2 income on
+     its barrel): the beer from Oxford's barrel, or from my own brewery on
+     its last barrel, which flips and raises the income on its own */
+  const table = (barrel: boolean): { s: GameState; me: number } => {
+    const s = newGame(setup(4), 42);
+    const me = s.current;
+    s.tiles['redditch:0'] = { owner: me, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    s.links[LINKS.find((l) => l.a === 'redditch' && l.b === 'm-oxford')!.id] = { owner: me, era: 'canal' };
+    s.merchantTiles['m-oxford'] = ['all'];
+    s.merchantBeer = barrel ? { 'm-oxford:0': 1 } : {};
+    for (const k of Object.keys(s.tiles)) if (s.tiles[k].industry === 'brewery') delete s.tiles[k];
+    if (!barrel) s.tiles['stone:0'] = { owner: me, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    s.players[me].hand = [{ id: 'any-1', kind: 'wild-location' }];
+    return { s, me };
+  };
+  const sell: GameAction = { kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] };
+  const saleLine = (s: GameState) => s.ledger.filter((e) => e.key === 'sell').at(-1)!.vars!;
+
+  it('is the barrel\'s: a sale that drinks it reports the income it gave', () => {
+    const { s, me } = table(true);
+    const income = s.players[me].income;
+    const after = applyAction(s, me, sell).state!;
+    expect(after.merchantBeer['m-oxford:0']).toBe(0);
+    expect(saleLine(after)).toMatchObject({ bonusIncome: incomeLevel(income + 2) - incomeLevel(income), bonusVp: 0, bonusMoney: 0, bonusDevelop: 0 });
+  });
+
+  it('is nothing when my own brewery empties and flips on the way', () => {
+    const { s, me } = table(false);
+    const income = s.players[me].income;
+    const after = applyAction(s, me, sell).state!;
+    expect(after.tiles['stone:0']).toMatchObject({ cubes: 0, flipped: true });
+    /* the brewery's flip raised the income all the same, on its own line */
+    expect(after.players[me].income).toBe(income + INDUSTRIES.brewery[0].incomeDelta + INDUSTRIES.manufacturer[0].incomeDelta);
+    expect(after.ledger.some((e) => e.key === 'flip' && e.vars?.why === 'barrel')).toBe(true);
+    expect(saleLine(after)).toMatchObject({ bonusIncome: 0, bonusVp: 0, bonusMoney: 0, bonusDevelop: 0 });
   });
 });
 
