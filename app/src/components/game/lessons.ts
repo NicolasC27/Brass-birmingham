@@ -167,10 +167,10 @@ export function mayLater(p: Progress, id: string, c: LessonCtx): boolean {
 const LOAN_AT = lessonIndex('loan');
 
 /** the lesson shown in place of the one due: when money is what its deed
- *  lacks and the loan is still to be taught, the loan comes first, and the
- *  lesson due comes back after it */
-export function detourOf(p: Progress, d: Due, c: LessonCtx, short: boolean, loanOk: boolean): string | null {
-  if (!short || !loanOk || d.mode !== 'do' || d.id === null || d.index >= LOAN_AT) return null;
+ *  lacks (moneyShort) and the loan is still to be taught, the loan comes
+ *  first, and the lesson due comes back after it */
+export function detourOf(p: Progress, d: Due, c: LessonCtx, moneyShort: boolean, loanOk: boolean): string | null {
+  if (!moneyShort || !loanOk || d.mode !== 'do' || d.id === null || d.index >= LOAN_AT) return null;
   if (p.passed.includes('loan') || LESSONS[LOAN_AT].done!(c)) return null;
   return 'loan';
 }
