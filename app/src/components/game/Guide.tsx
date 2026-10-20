@@ -6,7 +6,7 @@ import { aidOn, getBoardOptions, setBoardOption } from '@/components/game/boardO
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
-import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
+import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, START_INCOME_SPACE, START_MONEY, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
 import { carries, faqBest, faqFor, passagesOf } from '@/game/faq';
@@ -78,11 +78,13 @@ const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
   const down = Math.max(0, h - 220);
   return { x: clamp(p.x, -left, 0), y: clamp(p.y, Math.min(0, -90), down) };
 };
-/** the figures a lesson's text is written with */
+/** the figures a lesson's text is written with: the table as it stands,
+ *  and what it started from — a lesson read again later still says how
+ *  the game began */
 function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string): Record<string, string | number> {
   const p = game.players[me];
   const k = getKeybindings();
-  return { name: p.name, money: p.money, level: incomeLevel(p.income), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  return { name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */
