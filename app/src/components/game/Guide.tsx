@@ -734,7 +734,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     : true;
   const whyKey = (a: GameAction): string => {
     if (a.kind === 'build') return a.industry === 'coal' || a.industry === 'iron' || a.industry === 'brewery' ? a.industry : 'works';
-    /* a loan late in a short game is weighed at the close, where the purse counts */
+    /* a short game tells the loan in its own words: the purse and the income level count at its close */
     if (a.kind === 'loan' && game.eraLength === 'short') return 'loanShort';
     return a.kind;
   };
