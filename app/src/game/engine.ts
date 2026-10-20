@@ -1198,6 +1198,8 @@ export function applyLoan(s: GameState, playerIdx: number, card?: Card): boolean
   const p = s.players[playerIdx];
   const landing = loanLanding(p.income);
   if (landing === null) return false;
+  /* the purse it was taken from, for whoever explains the loan */
+  const purse = p.money;
   p.money += LOAN_AMOUNT;
   const before = incomeLevel(p.income);
   p.income = landing;
@@ -1206,7 +1208,7 @@ export function applyLoan(s: GameState, playerIdx: number, card?: Card): boolean
   p.incomeHistory.push(p.income);
   if (card) discardCard(s, p, card.id);
   else if (p.hand[0]) discardCard(s, p, p.hand[0].id); // APPROX: the engine discards the first card
-  log(s, playerIdx, 'loan', `${p.name} borrows £${LOAN_AMOUNT} — income falls from level ${before} to ${incomeLevel(p.income)}`, undefined, 'loan', { name: p.name, amount: LOAN_AMOUNT, from: before, to: incomeLevel(p.income) });
+  log(s, playerIdx, 'loan', `${p.name} borrows £${LOAN_AMOUNT} — income falls from level ${before} to ${incomeLevel(p.income)}`, undefined, 'loan', { name: p.name, amount: LOAN_AMOUNT, from: before, to: incomeLevel(p.income), purse });
   return true;
 }
 
