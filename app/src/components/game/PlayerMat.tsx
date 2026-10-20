@@ -42,14 +42,15 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
   const ref = useRef<HTMLLIElement>(null);
   const [tip, setTip] = useState<{ x: number; y: number; up: boolean } | null>(null);
   const timer = useRef<number | null>(null);
+  const place = () => {
+    const r = ref.current?.getBoundingClientRect();
+    if (!r) return;
+    const up = r.bottom + 150 > window.innerHeight;
+    setTip({ x: r.left + r.width / 2, y: up ? r.top - 6 : r.bottom + 6, up });
+  };
   const show = () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
-      const r = ref.current?.getBoundingClientRect();
-      if (!r) return;
-      const up = r.bottom + 150 > window.innerHeight;
-      setTip({ x: r.left + r.width / 2, y: up ? r.top - 6 : r.bottom + 6, up });
-    }, 180);
+    timer.current = window.setTimeout(place, 180);
   };
   const hide = () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
@@ -57,6 +58,22 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
     setTip(null);
   };
   useEffect(() => () => { if (timer.current !== null) window.clearTimeout(timer.current); }, []);
+  /* a finger has no hover — its leave comes as it lifts: a tap opens the
+     sheet, a second tap on the tile or a touch anywhere else closes it */
+  const tap = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch') return;
+    if (tip) hide();
+    else place();
+  };
+  const open = tip !== null;
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setTip(null);
+    };
+    document.addEventListener('pointerdown', away, true);
+    return () => document.removeEventListener('pointerdown', away, true);
+  }, [open]);
   const canalOnly = !lv.eras.includes('rail');
   const railOnly = !lv.eras.includes('canal');
   const face = `url(${tileFaceUrl(ind, tileArt, color)})`;
@@ -77,8 +94,10 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
   return (
     <li
       ref={ref}
-      onPointerEnter={show}
-      onPointerLeave={hide}
+      onPointerEnter={(e) => { if (e.pointerType !== 'touch') show(); }}
+      onPointerLeave={(e) => { if (e.pointerType !== 'touch') hide(); }}
+      onPointerUp={tap}
+      onPointerCancel={(e) => { if (e.pointerType === 'touch') hide(); }}
       className={cn('group relative cursor-help', cards ? 'h-[68px] w-[74px]' : chips ? 'h-[22px]' : 'h-[52px] w-[76px]')}
       style={{ marginRight: behind * STEP, marginTop: behind * STEP }}
     >
