@@ -1181,7 +1181,7 @@ const game: typeof engame = {
       sellBonus: 'La cerveza bebida era el barril del mercader: {name} se ha llevado su bonificación — {bits}.',
       loanLow: 'La caja estaba baja: un préstamo da 30 £ ahora y baja los ingresos 3 niveles, hasta {to}. El dinero construye losetas que se voltearán y recuperarán los ingresos.',
       loanAhead: '{name} pide prestado con {before} £ ya en caja: lo bastante para encadenar construcciones caras sin esperar a la paga — a cambio de 3 niveles de ingresos, hasta {to}.',
-      loanClose: '{name} pide prestado con la última acción de la partida: en esta partida corta, el dinero en caja cuenta al cierre — 1 PV por cada 4 £, hasta 15 — y el nivel de ingresos también. 30 £ más a cambio de 3 niveles menos, hasta {to}.',
+      loanClose: '{name} pide prestado con su última acción de la partida: en esta partida corta, el dinero en caja cuenta al cierre — 1 PV por cada 4 £, hasta 15 — y el nivel de ingresos también. 30 £ más a cambio de 3 niveles menos, hasta {to}.',
       develop: 'Desarrollar retira una o dos losetas débiles del tapete, un hierro por loseta: {name} alcanza antes los niveles fuertes — más ingresos, más puntos — sin malgastar una construcción en una loseta mediocre.',
       scout: 'Explorar descarta tres cartas a cambio de dos comodines: la mano de {name} no tenía nada útil, y un comodín construye lo que sea, donde sea.',
       pass: '{name} no tenía nada que mereciera la pena y ha descartado una carta para pasar: una acción saltada vale más que una loseta mala.',

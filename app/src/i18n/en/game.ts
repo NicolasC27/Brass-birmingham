@@ -1179,7 +1179,7 @@ const game = {
       sellBonus: 'The barrel drunk was the merchant’s, so {name} took its bonus: {bits}.',
       loanLow: 'The purse was low: a loan gives £30 now and lowers income by 3 levels, to {to}. The money builds tiles that will flip and win the income back.',
       loanAhead: '{name} borrows with £{before} already in the purse: enough to chain dear builds without waiting for payday — at the price of 3 income levels, down to {to}.',
-      loanClose: '{name} borrows with the last action of the game: in this short game the money in the purse counts at the close — 1 VP per £4, up to 15 — and so does the income level. £30 more against 3 levels less, down to {to}.',
+      loanClose: '{name} spends one last action on a loan: in this short game the money in the purse counts at the close — 1 VP per £4, up to 15 — and so does the income level. £30 more against 3 levels less, down to {to}.',
       develop: 'Developing removes one or two weak tiles from the mat, one iron each: {name} reaches the stronger levels sooner — more income, more points — without wasting a build on a poor tile.',
       scout: 'Scouting discards three cards for two wild cards: {name}’s hand had nothing useful, and a wild card builds anything, anywhere.',
       pass: '{name} had nothing worth playing and discarded a card to pass: an action skipped is better than a bad tile.',

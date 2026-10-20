@@ -1181,7 +1181,7 @@ const game: typeof engame = {
       sellBonus: 'Das getrunkene Bier war das Fass des Händlers: {name} hat seinen Bonus genommen — {bits}.',
       loanLow: 'Die Kasse war knapp: ein Kredit gibt jetzt £30 und senkt das Einkommen um 3 Stufen, auf {to}. Das Geld baut Plättchen, die sich umdrehen und das Einkommen zurückholen.',
       loanAhead: '{name} nimmt einen Kredit mit schon £{before} in der Kasse: genug, um teure Bauten aneinanderzureihen, ohne auf den Zahltag zu warten — zum Preis von 3 Einkommensstufen, auf {to}.',
-      loanClose: '{name} nimmt mit der letzten Aktion der Partie einen Kredit: in dieser kurzen Partie zählt das Geld in der Kasse beim Abschluss — 1 SP je £4, höchstens 15 — und die Einkommensstufe ebenso. £30 mehr gegen 3 Stufen weniger, auf {to}.',
+      loanClose: '{name} nutzt eine letzte Aktion für einen Kredit: in dieser kurzen Partie zählt das Geld in der Kasse beim Abschluss — 1 SP je £4, höchstens 15 — und die Einkommensstufe ebenso. £30 mehr gegen 3 Stufen weniger, auf {to}.',
       develop: 'Entwickeln entfernt ein oder zwei schwache Plättchen vom Tableau, je ein Eisen: {name} erreicht die starken Stufen früher — mehr Einkommen, mehr Punkte — ohne einen Bau an ein mageres Plättchen zu verschwenden.',
       scout: 'Erkunden wirft drei Karten für zwei Joker ab: die Hand von {name} hatte nichts Brauchbares, und ein Joker baut alles, überall.',
       pass: '{name} hatte nichts, was sich lohnt, und hat eine Karte abgeworfen, um zu passen: eine ausgelassene Aktion ist besser als ein schlechtes Plättchen.',
