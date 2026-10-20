@@ -56,6 +56,11 @@ export function loanWords(g: GameState, seat: number, purse: number): 'loanClose
   return purse < LOW_PURSE ? 'loanLow' : 'loanAhead';
 }
 
+/** the round the draw pile is empty from: an era ends once the pile and
+ *  the hands are both empty, and the eight cards of a hand last its last
+ *  four rounds (game-data §4.3) */
+export const dryRound = (players: number): number => eraRounds(players) - 3;
+
 /** a tile of the reader's, named by the era's last words */
 export interface Named {
   industry: IndustryType;

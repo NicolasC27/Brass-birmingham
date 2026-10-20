@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, closingWords, firstPayday, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, closingWords, dryRound, firstPayday, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -167,5 +167,31 @@ describe('the merchants’ barrels', () => {
     const g = structuredClone(table());
     g.merchantTiles['m-gloucester'] = ['blank', 'blank'];
     expect(barrelBonuses(g).map((x) => x.merchant)).toEqual(['Shrewsbury', 'Oxford']);
+  });
+});
+
+describe('the round the draw pile runs dry', () => {
+  /** a canal era played through plainly, at a table of this size: the
+   *  round each one opened with an empty pile, and the era's last round */
+  const era = (seats: number) => {
+    const setup = {
+      players: Array.from({ length: seats }, (_, i) => ({ name: `P${i}`, color: ['brass', 'oxblood', 'verdigris', 'steel'][i], type: 'bot', persona: 'wedgwood' })),
+      options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core', assist: false },
+    } as SetupPayload;
+    let g = newGame(withEdition(setup), 5);
+    const dry: number[] = [];
+    let last = g.round;
+    while (g.phase === 'action') {
+      if (g.turnPos === 0 && g.deck.length === 0 && !dry.includes(g.round)) dry.push(g.round);
+      last = g.round;
+      g = play(g, fallbackAction(g, g.current));
+    }
+    return { dry, last };
+  };
+
+  it.each([2, 3, 4])('comes four rounds before the end at %i seats', (seats) => {
+    const { dry, last } = era(seats);
+    expect(last).toBe(eraRounds(seats));
+    expect(dry[0]).toBe(dryRound(seats));
   });
 });
