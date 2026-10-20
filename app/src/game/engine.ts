@@ -802,7 +802,7 @@ interface BarrelBonus {
   said: string;
   vp: number;
   money: number;
-  /** income levels gained */
+  /** income spaces gained, as the merchant's sign counts them */
   income: number;
   develop: boolean;
 }
@@ -826,10 +826,11 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]): Barr
       const bn = MERCHANT_BY_ID[mid].bonus;
       if (bn.vp) { p.vp += bn.vp; bonus.vp += bn.vp; bonus.said += ` · +${bn.vp} VP`; }
       if (bn.income) {
-        /* measured here, around the barrel's own step on the track */
-        const before = incomeLevel(p.income);
+        /* measured here, around the barrel's own step on the track, in
+           spaces: two of them may stay within one level */
+        const before = p.income;
         advanceIncome(s, playerIdx, bn.income);
-        bonus.income += incomeLevel(p.income) - before;
+        bonus.income += p.income - before;
         bonus.said += ` · +${bn.income} income`;
       }
       if (bn.money) { p.money += bn.money; bonus.money += bn.money; bonus.said += ` · £${bn.money}`; }

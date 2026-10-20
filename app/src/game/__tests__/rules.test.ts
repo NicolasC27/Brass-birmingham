@@ -171,10 +171,20 @@ describe('a merchant\'s bonus on a sale', () => {
 
   it('is the barrel\'s: a sale that drinks it reports the income it gave', () => {
     const { s, me } = table(true);
-    const income = s.players[me].income;
     const after = applyAction(s, me, sell).state!;
     expect(after.merchantBeer['m-oxford:0']).toBe(0);
-    expect(saleLine(after)).toMatchObject({ bonusIncome: incomeLevel(income + 2) - incomeLevel(income), bonusVp: 0, bonusMoney: 0, bonusDevelop: 0 });
+    /* in spaces, as the merchant's sign counts them */
+    expect(saleLine(after)).toMatchObject({ bonusIncome: 2, bonusVp: 0, bonusMoney: 0, bonusDevelop: 0 });
+  });
+
+  it('is told high on the track too, where two spaces stay within one level', () => {
+    const { s, me } = table(true);
+    /* the barrel is drunk before the manufacturer flips: from space 31,
+       level 11, to space 33, level 11 still */
+    s.players[me].income = 31;
+    const after = applyAction(s, me, sell).state!;
+    expect(incomeLevel(33)).toBe(incomeLevel(31));
+    expect(saleLine(after).bonusIncome).toBe(2);
   });
 
   it('is nothing when my own brewery empties and flips on the way', () => {
