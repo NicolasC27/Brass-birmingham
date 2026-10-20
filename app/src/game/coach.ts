@@ -73,6 +73,12 @@ export function coachMove(before: GameState, seat: number, played: GameAction, t
   w.postMessage({ setup: setupOf(before), seed: before.seed, actions: before.actions, me: seat, played, judge: LONG_JUDGE, key });
 }
 
+/** the move waiting on the coach is to be told nothing: its note, when it
+ *  comes, is read by nobody. The worker stays for the next move */
+export function hushCoach(): void {
+  waiting = null;
+}
+
 /** the coach leaves the table */
 export function dismissCoach(): void {
   waiting = null;

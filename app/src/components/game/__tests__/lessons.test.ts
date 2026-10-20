@@ -4,7 +4,7 @@ import { applyAction, fallbackAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { buildTargets, linkTargets, newGame } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
-import { LAST_LESSON, LESSON_IDS, back, detourOf, due, forward, freshProgress, lessonIndex, mayLater, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle } from '../lessons';
+import { LAST_LESSON, LESSON_IDS, back, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle } from '../lessons';
 import type { LessonCtx, Progress } from '../lessons';
 
 /* the lessons of the guided game, played on the guided table itself: you
@@ -220,6 +220,28 @@ describe('a lesson set aside', () => {
     expect(pass(p, 'works').later).toEqual({});
     /* no lesson of today's allows it yet */
     expect(mayLater(p, 'works', ctx(g3))).toBe(false);
+  });
+});
+
+describe('the deed of a move', () => {
+  it('names the lesson a move did, due or ahead of its turn, and none once it is passed', () => {
+    const g = guided();
+    const built = mine(g);
+    /* the mine the lesson asks for */
+    expect(deedOf(see(upTo('coal'), 'coal', ctx(g)), ctx(g), ctx(built))).toBe('coal');
+    /* built before its lesson came up, it is the lesson's all the same */
+    expect(deedOf(upTo('hand'), ctx(g), ctx(built))).toBe('coal');
+    /* a mine once its lesson is passed teaches nothing new, nor does a
+       move after which a mine stands that stood already */
+    expect(deedOf(upTo('botTurn'), ctx(g), ctx(built))).toBeNull();
+    expect(deedOf(upTo('coal'), ctx(built), ctx(built))).toBeNull();
+    /* the loan, whenever it is taken before its lesson is passed */
+    const borrowed = play(g, { kind: 'loan', card: g.players[0].hand[0].id });
+    expect(deedOf(upTo('coal'), ctx(g), ctx(borrowed))).toBe('loan');
+    expect(deedOf(pass(upTo('coal'), 'loan'), ctx(g), ctx(borrowed))).toBeNull();
+    /* a move that is no lesson's deed */
+    const scouted = play(g, fallbackAction(g, 0));
+    expect(deedOf(upTo('coal'), ctx(g), ctx(scouted))).toBeNull();
   });
 });
 

@@ -5,7 +5,7 @@ import { LINKS, TOWNS } from '../data';
 import { newGame, reachable } from '../engine';
 import { edgeOf, edgesOf, followToTurn, playOut, winChance, winChances } from '../analysis';
 import { legalActions, playListed } from '../search';
-import { coachMove, dismissCoach } from '../coach';
+import { coachMove, dismissCoach, hushCoach } from '../coach';
 import type { Coached } from '../coach';
 import type { GameState, SetupPayload } from '../types';
 
@@ -197,5 +197,19 @@ describe('the coach', () => {
     w.say({ kind: 'one', key, verdict: { at: 0 } });
     expect(heard).toEqual([`second:${at.actions.length}`]);
     expect(w.gone).toBe(false);
+  });
+
+  it('tells nobody of a move hushed, and keeps its worker for the next', () => {
+    globalThis.Worker = FakeWorker as unknown as typeof Worker;
+    const heard: string[] = [];
+    coachMove(at, at.current, move, () => heard.push('hushed'));
+    hushCoach();
+    const w = FakeWorker.made[0];
+    w.say({ kind: 'one', key: (w.sent[0] as { key: string }).key, verdict: { at: 0 } });
+    expect(heard).toEqual([]);
+    coachMove(at, at.current, move, () => heard.push('next'));
+    expect(FakeWorker.made).toHaveLength(1);
+    w.say({ kind: 'one', key: (w.sent[1] as { key: string }).key, verdict: { at: 0 } });
+    expect(heard).toEqual(['next']);
   });
 });
