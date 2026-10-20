@@ -28,6 +28,8 @@ describe('the entry a lesson is said under', () => {
     expect(stepKeyOf('develop', g, 0)).toBe('developShort');
     expect(stepKeyOf('loan', g, 0)).toBe('loanShort');
     expect(stepKeyOf('eraEnd', g, 0)).toBe('eraEndShort');
+    expect(stepKeyOf('plan', g, 0)).toBe('planShort');
+    expect(stepKeyOf('tips', g, 0)).toBe('tipsShort');
     /* the rest read the same in either game */
     expect(stepKeyOf('coal', g, 0)).toBe('coal');
   });
