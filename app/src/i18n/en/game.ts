@@ -1070,8 +1070,8 @@ const game = {
       restockMine: 'Your {industry} sold {n} spare [n|cube|cubes] to the exchange at once, for £{gain} — free money, and the exchange restocked for everyone.',
       bonus: 'You drank {merchant}’s barrel: its bonus is yours — {bits}. Each barrel is drunk once an era, and a merchant carries one barrel per non-blank tile — so sometimes two.',
       sellOff: 'The income did not cover the debt: your {industry} at {town} was sold for £{value} to make it up. It leaves the board and will score nothing.',
-      short: '£{amount} short and nothing left to sell: {amount} victory [amount|point|points] gone. A negative income will keep costing at every payday — climb back up the track.',
-      shortBooks: '£{amount} short and nothing left to sell: {amount} victory [amount|point|points] gone. A negative income will keep costing at every payday, and at the close of this short game a negative income level comes off your points — climb back up the track.',
+      short: '£{amount} short and nothing left to sell: {amount} victory [amount|point|points] gone. While your income stays negative, every payday costs you instead of paying you — climb back up the track.',
+      shortBooks: '£{amount} short and nothing left to sell: {amount} victory [amount|point|points] gone. While your income stays negative, every payday costs you instead of paying you, and at the close of this short game a negative income level comes off your points — climb back up the track.',
     },
     thread: { aria: 'What the guide has already said' },
     ask: {
