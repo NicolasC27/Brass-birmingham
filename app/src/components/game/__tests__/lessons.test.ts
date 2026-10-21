@@ -4,7 +4,7 @@ import { applyAction, fallbackAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { buildTargets, linkTargets, newGame } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
-import { LAST_LESSON, LESSON_IDS, back, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle } from '../lessons';
+import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle } from '../lessons';
 import type { LessonCtx, Progress } from '../lessons';
 
 /* the lessons of the guided game, played on the guided table itself: you
@@ -219,6 +219,37 @@ describe('reading back', () => {
       const p = upTo(id);
       expect(detourOf(p, due(p, c), c, true, true)).toBe('loan');
     }
+  });
+});
+
+describe('the loan that can wait', () => {
+  it('may be passed while the purse pays for the cheapest works the hand allows', () => {
+    const g = guided();
+    const purse = (money: number, s: GameState = g): GameState => ({ ...s, players: s.players.map((x, i) => (i === 0 ? { ...x, money } : x)) });
+    /* a cotton mill on a location card, £12: the cheapest works of the deal */
+    expect(cheapestWorks(g, 0)).toBe(12);
+    expect(optionalNow('loan', ctx(g))).toBe(true);
+    expect(optionalNow('loan', ctx(purse(12)))).toBe(true);
+    /* a pound short, and the works still counts: the loan is the lesson */
+    expect(cheapestWorks(purse(11), 0)).toBe(12);
+    expect(optionalNow('loan', ctx(purse(11)))).toBe(false);
+    /* a hand that builds no works at all: the loan cannot wait on one */
+    const bare = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, hand: [] } : x)) };
+    expect(cheapestWorks(bare, 0)).toBeNull();
+    expect(optionalNow('loan', ctx(bare))).toBe(false);
+    /* the other deeds are never to be passed so */
+    expect(optionalNow('works', ctx(g))).toBe(false);
+    expect(optionalNow('welcome', ctx(g))).toBe(false);
+  });
+
+  it('stays the lesson due until it is passed or taken', () => {
+    const g = guided();
+    const p = pass(upTo('develop'), 'develop');
+    /* a spare loan is a deed all the same: Next passes it, a loan does too */
+    expect(due(p, ctx(g))).toMatchObject({ id: 'loan', mode: 'do' });
+    expect(due(pass(p, 'loan'), ctx(g))).toMatchObject({ id: 'works', mode: 'do' });
+    const borrowed = play(g, { kind: 'loan', card: g.players[0].hand[0].id });
+    expect(settle(see(p, 'loan', ctx(g)), ctx(borrowed)).passed.at(-1)).toBe('loan');
   });
 });
 

@@ -22,6 +22,12 @@ const SHORT: Readonly<Record<string, string>> = {
 /** a lesson's entry in a short game — the guided game is one */
 export const shortKeyOf = (id: string): string => SHORT[id] ?? id;
 
+/** the lessons told otherwise when the reader may pass them as things
+ *  stand: the loan, when the purse already pays for the next works */
+const SPARE: Readonly<Record<string, string>> = {
+  loan: 'loanSpare',
+};
+
 /** the reader's income level at the first payday of the game, as it was
  *  paid — the account book keeps it; null before that payday */
 export function firstPayday(g: GameState, me: number): number | null {
@@ -30,13 +36,15 @@ export function firstPayday(g: GameState, me: number): number | null {
 }
 
 /** the lesson's entry in the dictionary: the first payday reads as it was
- *  paid — owed, nought or drawn — and a short game tells some lessons in
- *  its own words */
-export function stepKeyOf(id: string, g: GameState, me: number): string {
+ *  paid — owed, nought or drawn — a lesson the reader may pass as things
+ *  stand says so (spare), and a short game tells some lessons in its own
+ *  words */
+export function stepKeyOf(id: string, g: GameState, me: number, spare = false): string {
   if (id === 'payday') {
     const level = firstPayday(g, me) ?? incomeLevel(g.players[me].income);
     return level < 0 ? 'paydayOwed' : level === 0 ? 'paydayZero' : 'payday';
   }
+  if (spare && SPARE[id]) return SPARE[id];
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
 }
 

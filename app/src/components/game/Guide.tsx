@@ -24,7 +24,7 @@ import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
-import { LAST_LESSON, LESSONS, back as readBack, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
+import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, closingWords, dryRound, firstPayday, loanWords, stepKeyOf } from './lessonWords';
 
@@ -80,8 +80,9 @@ const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
 };
 /** the figures a lesson's text is written with: the table as it stands,
  *  and what it started from — a lesson read again later still says how
- *  the game began */
-function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string): Record<string, string | number> {
+ *  the game began. `need` is what the next works would cost, worked out
+ *  only for the lesson that speaks of it */
+function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string, need: number | null = null): Record<string, string | number> {
   const p = game.players[me];
   const k = getKeybindings();
   const first = firstPayday(game, me) ?? incomeLevel(p.income);
@@ -92,7 +93,7 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
     : bonus.money ? t('game.guide.barrels.money', { merchant, n: bonus.money })
     : t('game.guide.barrels.develop', { merchant }),
   );
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */
@@ -511,6 +512,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? LAST_LESSON);
   const step = showSteps ? lessonOf(shownId)! : null;
   const shownIndex = finished ? LESSONS.length : lessonIndex(shownId);
+  /* a deed the reader may pass as the table stands — the loan, when the
+     purse already pays for the next works: it says so, and what that
+     works costs. Not in the detour: there money is what is missing */
+  const spare = useMemo(() => (lctx && showSteps && !detour && optionalNow(shownId, lctx) ? { need: cheapestWorks(lctx.g, me) } : null), [lctx, showSteps, detour, shownId, me]);
   const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
@@ -542,8 +547,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
         ? {
             at: shownIndex,
             word: () => {
-              const vars = stepVarsOf(game, me, t);
-              const key = stepKeyOf(step.id, game, me);
+              const vars = stepVarsOf(game, me, t, spare?.need);
+              const key = stepKeyOf(step.id, game, me, !!spare);
               return { head: t(`game.guide.steps.${key}.title`, vars), body: t(`game.guide.steps.${key}.body`, vars) };
             },
           }
@@ -741,8 +746,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
     return a.kind;
   };
   /* the lesson's words, when the table asks for another telling of it:
-     a payday owed rather than paid, a short game that ends here */
-  const stepKey = (id: string): string => stepKeyOf(id, game, me);
+     a payday owed rather than paid, a short game that ends here, a loan
+     on show that can wait */
+  const stepKey = (id: string): string => stepKeyOf(id, game, me, id === shownId && !!spare);
   /* the question about this table the words point at, and how long the
      phrase matched was — the same measure the written answers use, so the
      surest of the two wins rather than whichever was tried first */
@@ -808,7 +814,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* a notion taken up from the ones offered: asked by its name, answered
      plainly */
   const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang())));
-  const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t);
+  const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
 
   /* folded: a rail down the right edge — the lesson's number, how far the
      guide has come, a dot when the machine or the table has something to
@@ -990,7 +996,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      {(!step.done || finished || review !== null || already || (!!step.optional && !detour)) && (
+                      {(!step.done || finished || review !== null || already || !!spare) && (
                         <button type="button" onClick={next} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
                           {finished || (review === null && shownId === LAST_LESSON) ? t('game.guide.done') : t('game.guide.next')}
                           <ChevronRight className="h-3.5 w-3.5" />

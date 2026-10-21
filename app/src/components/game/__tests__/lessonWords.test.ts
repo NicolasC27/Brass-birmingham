@@ -41,6 +41,15 @@ describe('the entry a lesson is said under', () => {
     expect(stepKeyOf('eraEnd', g, 0)).toBe('eraEnd');
   });
 
+  it('tells a loan the reader may pass in words of its own, in either game', () => {
+    for (const g of [table(), table('standard')]) {
+      expect(stepKeyOf('loan', g, 0, true)).toBe('loanSpare');
+      /* a lesson with no such words keeps its own */
+      expect(stepKeyOf('coal', g, 0, true)).toBe('coal');
+    }
+    expect(stepKeyOf('goal', table(), 0, true)).toBe('goalShort');
+  });
+
   it('gives the evening course the guided game’s own titles', () => {
     expect(shortKeyOf('goal')).toBe('goalShort');
     expect(shortKeyOf('welcome')).toBe('welcome');

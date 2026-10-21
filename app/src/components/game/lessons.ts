@@ -1,3 +1,4 @@
+import { buildTargets } from '@/game/engine';
 import type { GameState } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -35,7 +36,7 @@ export interface Lesson {
   /** a lesson that only makes sense once this holds: it waits in its place */
   when?: (c: LessonCtx) => boolean;
   /** a deed the reader may pass as things stand */
-  optional?: boolean;
+  optional?: (c: LessonCtx) => boolean;
   /** a deed the reader may set aside until the next round, once they have
    *  played an action since it came up */
   deferrable?: boolean;
@@ -44,6 +45,21 @@ export interface Lesson {
 
 const WORKS = ['cotton', 'manufacturer', 'pottery'];
 const built = (c: LessonCtx, industries: string[]) => Object.values(c.g.tiles).some((t) => t.owner === c.me && industries.includes(t.industry));
+
+/** what the cheapest works the hand allows would cost: a build only the
+ *  purse stands in the way of counts; null when the hand allows none at
+ *  all, whatever the purse */
+export function cheapestWorks(g: GameState, me: number): number | null {
+  const p = g.players[me];
+  const costs = p.hand.flatMap((card) => buildTargets(g, me, card)).filter((x) => WORKS.includes(x.industry) && (x.valid || x.total > p.money)).map((x) => x.total);
+  return costs.length ? Math.min(...costs) : null;
+}
+
+/** the purse already pays for the next works: the loan can wait */
+const worksPaid = (c: LessonCtx): boolean => {
+  const need = cheapestWorks(c.g, c.me);
+  return need !== null && c.g.players[c.me].money >= need;
+};
 
 /** the lessons, in the order the guide gives them */
 export const LESSONS: readonly Lesson[] = [
@@ -62,8 +78,9 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'iron', done: (c) => built(c, ['iron']) },
   { id: 'develop' },
   /* a mine, a canal and a forge leave the purse too thin for a works:
-     the loan is taught before it, not met as a detour on the way */
-  { id: 'loan', done: (c) => c.g.players[c.me].loans > 0 },
+     the loan is taught before it, not met as a detour on the way — and a
+     purse that already pays for one may pass it */
+  { id: 'loan', done: (c) => c.g.players[c.me].loans > 0, optional: worksPaid },
   { id: 'works', done: (c) => built(c, WORKS) },
   { id: 'market', show: 'market' },
   { id: 'beer' },
@@ -81,6 +98,8 @@ export const LAST_LESSON = LESSON_IDS[LESSON_IDS.length - 1];
 
 export const lessonIndex = (id: string): number => LESSON_IDS.indexOf(id);
 export const lessonOf = (id: string): Lesson | undefined => LESSONS[lessonIndex(id)];
+/** a deed the reader may pass as the table stands */
+export const optionalNow = (id: string, c: LessonCtx): boolean => !!lessonOf(id)?.optional?.(c);
 
 /* ------------------------------ progress ----------------------------- */
 
