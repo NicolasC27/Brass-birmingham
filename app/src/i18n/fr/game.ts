@@ -1085,7 +1085,7 @@ const fr: typeof engame = {
       },
     },
     nth: { first: 'Première', second: 'Seconde' },
-    coalAvoid: 'Évitez {list} : aucun canal n’en mène à une forge.',
+    coalAvoid: 'Ne posez pas votre mine à {list} : aucun canal n’en mène à une forge.',
     linkAstray: 'Aucun canal ne mène de votre mine à une ville à forge libre : posez-le plutôt vers un marchand, et votre forge prendra le charbon d’une autre mine, ou du marché.',
     barrels: { line: 'À cette table, les barils des marchands rapportent : {list}.', vp: '{merchant} ({n} PV)', income: '{merchant} ({n} [n|case|cases] de revenu)', money: '{merchant} ({n} £)', develop: '{merchant} (un développement gratuit)' },
     buyers: { all: '{merchant} tout', some: '{merchant} {goods}', cotton: 'le coton', manufacturer: 'les manufactures', pottery: 'la poterie' },

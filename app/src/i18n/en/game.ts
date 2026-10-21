@@ -1083,7 +1083,7 @@ const game = {
       },
     },
     nth: { first: 'First', second: 'Second' },
-    coalAvoid: 'Avoid {list}: no canal leads from there to an iron works.',
+    coalAvoid: 'Do not put your mine in {list}: no canal leads from there to an iron works.',
     linkAstray: 'No canal leads from your mine to a town with a free iron works slot: lay it toward a merchant instead, and your iron works will take its coal from another mine, or from the market.',
     barrels: { line: 'At this table the merchants’ barrels give: {list}.', vp: '{merchant} ({n} VP)', income: '{merchant} ({n} income [n|space|spaces])', money: '{merchant} (£{n})', develop: '{merchant} (a free development)' },
     buyers: { all: '{merchant} everything', some: '{merchant} {goods}', cotton: 'cotton', manufacturer: 'manufactured goods', pottery: 'pottery' },

@@ -1085,7 +1085,7 @@ const game: typeof engame = {
       },
     },
     nth: { first: 'Erste', second: 'Zweite' },
-    coalAvoid: 'Meide {list}: von dort führt kein Kanal zu einer Eisenhütte.',
+    coalAvoid: 'Bau deine Mine nicht in {list}: von dort führt kein Kanal zu einer Eisenhütte.',
     linkAstray: 'Von deiner Mine führt kein Kanal zu einer Stadt mit freiem Eisenhüttenplatz: baue ihn lieber zu einem Händler, dann nimmt deine Eisenhütte die Kohle aus einer anderen Mine oder vom Markt.',
     barrels: { line: 'An diesem Tisch bringen die Händlerfässer: {list}.', vp: '{merchant} ({n} SP)', income: '{merchant} ({n} [n|Feld|Felder] Einkommen)', money: '{merchant} (£{n})', develop: '{merchant} (ein kostenloses Entwickeln)' },
     buyers: { all: '{merchant} alles', some: '{merchant} {goods}', cotton: 'Baumwolle', manufacturer: 'Manufakturwaren', pottery: 'Keramik' },

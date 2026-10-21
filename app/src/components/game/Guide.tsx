@@ -98,7 +98,7 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   );
   /* where a first mine feeds a forge of the reader's, read off the board */
   const ways = forgeWays(game, me);
-  const avoid = ways.deadEnds.length ? t('game.guide.coalAvoid', { list: townList(ways.deadEnds, 'conjunction') }) : '';
+  const avoid = ways.deadEnds.length ? t('game.guide.coalAvoid', { list: townList(ways.deadEnds, 'disjunction') }) : '';
   /* and where the reader's own mine sends its canal — or, a mine no canal
      leads from to a forge, what to do instead */
   const toward = forgesFromMines(game, me);

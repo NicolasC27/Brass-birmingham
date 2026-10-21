@@ -1085,7 +1085,7 @@ const game: typeof engame = {
       },
     },
     nth: { first: 'Primera', second: 'Segunda' },
-    coalAvoid: 'Evita {list}: ningún canal lleva de allí a una fundición.',
+    coalAvoid: 'No pongas tu mina en {list}: ningún canal lleva de allí a una fundición.',
     linkAstray: 'Ningún canal lleva de tu mina a una ciudad con casilla de fundición libre: tiéndelo mejor hacia un mercader, y tu fundición tomará el carbón de otra mina, o del mercado.',
     barrels: { line: 'En esta mesa, los barriles de los mercaderes dan: {list}.', vp: '{merchant} ({n} PV)', income: '{merchant} ({n} [n|espacio|espacios] de ingresos)', money: '{merchant} ({n} £)', develop: '{merchant} (un desarrollo gratis)' },
     buyers: { all: '{merchant} todo', some: '{merchant} {goods}', cotton: 'el algodón', manufacturer: 'las manufacturas', pottery: 'la cerámica' },
