@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -91,6 +91,27 @@ describe('the first payday', () => {
     expect(stepKeyOf('payday', g, 0)).toBe('paydayOwed');
     g.history[0].income[0] = 2;
     expect(stepKeyOf('payday', g, 0)).toBe('payday');
+  });
+});
+
+describe('who buys what at the table', () => {
+  it('is read off the merchants’ tiles, those buying everything last', () => {
+    /* seed 3: cotton at Shrewsbury, everything and a blank at Oxford, a
+       blank and manufactured goods at Gloucester */
+    expect(buyersOf(table())).toEqual([
+      { merchant: 'Shrewsbury', goods: ['cotton'] },
+      { merchant: 'Gloucester', goods: ['manufacturer'] },
+      { merchant: 'Oxford', goods: 'all' },
+    ]);
+  });
+
+  it('names two goods of one merchant, and leaves out a merchant of blanks', () => {
+    const g = structuredClone(table());
+    g.merchantTiles = { 'm-shrewsbury': ['blank'], 'm-oxford': ['pottery', 'cotton'], 'm-gloucester': ['all', 'manufacturer'] };
+    expect(buyersOf(g)).toEqual([
+      { merchant: 'Oxford', goods: ['cotton', 'pottery'] },
+      { merchant: 'Gloucester', goods: 'all' },
+    ]);
   });
 });
 

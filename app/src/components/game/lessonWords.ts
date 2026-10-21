@@ -1,4 +1,5 @@
 import { LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
+import { merchantDemand } from '@/game/engine';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -89,6 +90,16 @@ export function forgesFromMines(g: GameState, me: number): string[] {
  *  them from the table, never from one deal written down */
 export function barrelBonuses(g: GameState): { merchant: string; bonus: Merchant['bonus'] }[] {
   return MERCHANTS.filter((m) => (g.merchantTiles[m.id] ?? []).some((x) => x !== 'blank')).map((m) => ({ merchant: m.name, bonus: m.bonus }));
+}
+
+/** who buys what at this table, from the merchants' tiles: each merchant
+ *  that buys anything, and the goods it buys — all three said as one. The
+ *  lesson on works names them from the table, never from one deal; the
+ *  merchants that buy everything come last */
+export function buyersOf(g: GameState): { merchant: string; goods: IndustryType[] | 'all' }[] {
+  const buying = MERCHANTS.map((m) => ({ merchant: m.name, buys: merchantDemand(g, m.id) })).filter((x) => x.buys.length > 0);
+  const all = (x: { buys: IndustryType[] }) => x.buys.length === 3;
+  return [...buying.filter((x) => !all(x)), ...buying.filter(all)].map((x) => ({ merchant: x.merchant, goods: all(x) ? 'all' : x.buys }));
 }
 
 /** below this a purse builds little: a loan taken with less was for want of money */

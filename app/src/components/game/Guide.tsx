@@ -26,7 +26,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf } from './lessonWords';
+import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -103,7 +103,11 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
      leads from to a forge, what to do instead */
   const toward = forgesFromMines(game, me);
   const mined = Object.values(game.tiles).some((x) => x.owner === me && x.industry === 'coal');
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', astray: mined && !toward.length ? t('game.guide.linkAstray') : '', name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  /* who buys what at this table: "Shrewsbury le coton, Oxford tout" */
+  const buyers = buyersOf(game).map(({ merchant, goods }) =>
+    goods === 'all' ? t('game.guide.buyers.all', { merchant }) : t('game.guide.buyers.some', { merchant, goods: new Intl.ListFormat(localeOf(getLang()), { type: 'conjunction' }).format(goods.map((x) => t(`game.guide.buyers.${x}`))) }),
+  );
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', astray: mined && !toward.length ? t('game.guide.linkAstray') : '', buyers: buyers.join(', '), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */
