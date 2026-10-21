@@ -177,7 +177,7 @@ const game = {
     beginnerAid: 'Placement aid (beginners)',
     beginnerAidHint: 'Card in hand: unplayable slots fade and the price itemises market coal and iron.',
     traffic: 'Traffic on links',
-    trafficHint: 'Barges and locomotives on built canals and rails.',
+    trafficHint: 'Barges and locomotives on built canals and rails, and the smoke of the works. None keeps the board still between moves.',
     trafficLevel: { none: 'None', light: 'Light', busy: 'Busy' },
     followBots: 'Follow the other players',
     followBotsHint: 'The camera glides to the town a bot, or a rival online, just played in, and the machines leave four seconds between two moves.',

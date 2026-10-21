@@ -179,7 +179,7 @@ const game: typeof engame = {
     beginnerAid: 'Ayuda de colocación (principiantes)',
     beginnerAidHint: 'Con una carta en mano, las casillas injugables se atenúan y el precio detalla el carbón y el hierro del mercado.',
     traffic: 'Tráfico en las conexiones',
-    trafficHint: 'Barcazas y locomotoras en los canales y vías construidos.',
+    trafficHint: 'Barcazas y locomotoras en los canales y vías construidos, y el humo de las industrias. Ninguno deja el tablero quieto entre jugadas.',
     trafficLevel: { none: 'Ninguno', light: 'Ligero', busy: 'Denso' },
     followBots: 'Seguir a los demás jugadores',
     followBotsHint: 'La cámara se desliza hacia la ciudad donde un bot, o un rival en línea, acaba de jugar, y las máquinas dejan cuatro segundos entre dos jugadas.',

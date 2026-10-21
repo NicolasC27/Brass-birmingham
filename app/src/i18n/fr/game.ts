@@ -179,7 +179,7 @@ const fr: typeof engame = {
     beginnerAid: 'Aide au placement (débutants)',
     beginnerAidHint: 'Carte en main : les cases injouables s’estompent et le prix détaille charbon et fer de bourse.',
     traffic: 'Trafic sur les liaisons',
-    trafficHint: 'Péniches et locomotives sur les canaux et rails construits.',
+    trafficHint: 'Péniches et locomotives sur les canaux et rails construits, et la fumée des industries. Aucun garde la carte immobile entre deux coups.',
     trafficLevel: { none: 'Aucun', light: 'Léger', busy: 'Dense' },
     followBots: 'Suivre les autres joueurs',
     followBotsHint: 'La caméra glisse vers la ville où un bot, ou un rival en ligne, vient de jouer, et les machines laissent quatre secondes entre deux coups.',

@@ -29,6 +29,7 @@ import { closeAudio, houseHover, pingTap, stampThud } from './sfx';
 import { ROW_SCALE, rowLift, rowWidth } from './merchantRow';
 import { EMPTY_PROVENANCE, provenance, slotAt as slotPos } from './provenance';
 import { STAMP_IMPACT_S, STAMP_S, freshPieces, inkBloom, stampPose } from './stamp';
+import { freshFlips } from './living';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
@@ -564,8 +565,15 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     }
     scene.ground.filters = night ? [night] : null;
     scene.ground.filterArea = night ? TABLE_AREA : undefined;
-    const ambiance = ambianceRef.current?.layer;
+    const amb = ambianceRef.current;
+    const ambiance = amb?.layer;
     if (ambiance) ambiance.alpha = night ? 0.25 : 1;
+    /* the night of a game read again is the ground's own: no dusk over it,
+       and the smoke and the lamps step back with the rest */
+    if (amb) {
+      amb.showDusk(!night);
+      amb.high.alpha = night ? 0.25 : 1;
+    }
     /* the camera on the orders: close on them when they sit together, the
        whole table when they are spread out */
     if (preview) {
@@ -616,6 +624,10 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.land.filters = null;
       scene.ground.filters = null;
       if (ambiance) ambiance.alpha = 1;
+      if (amb) {
+        amb.showDusk(true);
+        amb.high.alpha = 1;
+      }
       veil?.destroy();
       night?.destroy();
     };
@@ -817,12 +829,23 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         onLangChange(() => scene.redraw(gameRef.current)),
       );
 
-      const ambiance = buildAmbiance(reduced);
+      const ambiance = buildAmbiance(reduced, scene.ground);
       ambiance.setTraffic(bootOpts.traffic);
       ambianceRef.current = ambiance;
-      /* mist + halos under the towns, smoke + traffic above: right over the
-         links, whatever sheets lie under them */
+      /* mist, halos and traffic under the towns: right over the links,
+         whatever sheets lie under them */
       scene.land.addChildAt(ambiance.layer, scene.land.getChildIndex(scene.linksLayer) + 1);
+      /* the works' smoke and the lit windows sit over the towns' houses,
+         under their names (the land's last sheet) */
+      scene.land.addChildAt(ambiance.high, scene.land.children.length - 1);
+      /* a tab out of sight draws nothing: the ticker waits for it */
+      const onVisibility = () => {
+        if (document.hidden) a.ticker.stop();
+        /* a context lost keeps its ticker stopped until the board is set again */
+        else if (!destroyed && !(a.renderer as unknown as { gl?: WebGLRenderingContext }).gl?.isContextLost()) a.ticker.start();
+      };
+      document.addEventListener('visibilitychange', onVisibility);
+      cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
 
       const cam = new Camera(() => ({ w: a.screen.width, h: a.screen.height }), playArea([...TOWNS, ...MERCHANTS]));
       cameraRef.current = cam;
@@ -858,6 +881,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           store: () => useGame.getState(),
           /* probe helper: replace the whole game state (visual tests) */
           setGame: (g: GameState) => useGame.setState({ game: g }),
+          /* probe helper: the living board's sheets (plumes, dusk, traffic) */
+          ambiance: () => ambianceRef.current,
           /* probe helper: switch the stock-badge layout (A-B tests) */
           setStockStyle: (s: string) => sceneRef.current?.setStockStyle(s as StockStyle),
           verbs: () => verbsForCard({ game: useGame.getState().game, selectedCardId: useGame.getState().selectedCardId }),
@@ -1024,6 +1049,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const seen = gameRef.current;
         if (seen !== stampSeen) {
           const fresh = freshPieces(stampSeen, seen);
+          /* a tile turned over flares, as the sale is heard */
+          for (const key of freshFlips(stampSeen, seen)) ambiance.flare(key, clock);
           stampSeen = seen;
           const struck = fresh.tiles.length + fresh.links.length;
           if (struck && getBoardOptions().sound) {
@@ -1038,6 +1065,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
               const pos = slotPos(key);
               if (!sv || !pos) continue;
               stamps.push({ t0: clock, box: sv.box, ink: inkGfx(fxLayer), specks: tileSpecks(pos[0], pos[1]), rim: pos });
+              /* the works' first breath, as the block meets the paper */
+              ambiance.strike(key, seen.tiles[key].industry, clock + STAMP_IMPACT_S);
             }
             fresh.links.forEach((id, i) => {
               const def = LINKS.find((l) => l.id === id);
@@ -1110,7 +1139,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             fx.g.circle(0, 0, 6 + age * 85).stroke({ width: 2.5, color: 0xc9a45c, alpha: 0.9 * (1 - age / 0.55) });
           }
         }
-        ambiance.tick(clock, gameRef.current);
+        ambiance.tick(clock, gameRef.current, cam.view.k);
         railAlphaTarget = gameRef.current.era === 'rail' ? 1 : 0;
         /* a reading shown to the table: where this camera sits on the map and
            where the pointer is, a few times a second and no oftener */
@@ -1579,6 +1608,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       cleanups.push(() => ro.disconnect());
       /* the hand comes or goes: the frame follows the room it leaves */
       cleanups.push(subscribeFitReserve(() => cam.reclamp()));
+      /* the photo mode borrows the stage, the scene and the camera (photo.ts) */
     };
 
     void boot();

@@ -101,7 +101,7 @@ export interface BoardOptions {
   incomeSide: IncomeSide;
   /** the income track kept open as the full ruler, the HUD standing clear of it */
   incomePinned: boolean;
-  /** boats and trains on built links */
+  /** boats and trains on built links, and the works' smoke (none: all still) */
   traffic: TrafficLevel;
   /** beginner aid: dim unplayable slots while planning, itemised price tags */
   beginnerAid: boolean;

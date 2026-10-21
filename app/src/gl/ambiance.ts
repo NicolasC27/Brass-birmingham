@@ -2,15 +2,20 @@ import { Container, FillGradient, Graphics, Sprite, Texture } from 'pixi.js';
 import { LINKS, MERCHANTS, PLAYER_COLORS, TOWNS } from '@/game/data';
 import { useGame } from '@/game/store';
 import { routeFor } from '@/components/game/routePaths';
-import type { GameState } from '@/game/types';
-import { displayPosFor } from '@/components/game/townChrome';
+import type { GameState, IndustryType } from '@/game/types';
+import { admitCrossing, trafficCap, trafficLinks } from './living';
+import type { TrafficLevel } from './living';
+import { buildPlumes } from './plumes';
+
+export type { TrafficLevel } from './living';
 
 const hex = (s: string): number => parseInt(s.replace('#', ''), 16);
 
 /* ------------------------------------------------------------------ */
 /* ambiance.ts — living-board effects as GPU sprites: drifting mist,   */
-/* breathing lamplight halos, chimney smoke, boats/trains on built     */
-/* links, river sheen, and the canal-end rail etch reveal. All         */
+/* breathing lamplight halos, the works' plumes and the dusk           */
+/* (plumes.ts), boats/trains on built links, river sheen, and the      */
+/* canal-end rail etch reveal. All                                     */
 /* animation runs in the ticker on transform/alpha only — the GPU way  */
 /* (no CSS, no DOM, no re-raster); the few Graphics redraws are        */
 /* stepped at ~4 Hz like the SVG reference.                            */
@@ -293,17 +298,24 @@ export function underWay(tt: Timetable, t: number): number | null {
 /** the vehicle shows itself at the quay while still slow, and fades at the next */
 export const quayAlpha = (p: Passage, s: number): number => Math.max(0, Math.min(1, s / QUAY_FADE_S, (p.dur - s) / QUAY_FADE_S));
 
-/** how much traffic runs on built links: none, a light trickle (one vehicle
- *  per link, moored most of the time) or the busy two-per-link parade */
-export type TrafficLevel = 'none' | 'light' | 'busy';
-
 export interface Ambiance {
+  /** over the links, under the towns */
   layer: Container;
-  tick: (t: number, game: GameState | null) => void;
+  /** over the towns, under their names: lit windows, a turned tile's flare */
+  high: Container;
+  /** `k` is the camera's zoom (1 = the whole table) */
+  tick: (t: number, game: GameState | null, k: number) => void;
   setTraffic: (level: TrafficLevel) => void;
+  /** a works struck on the table: its first breath at clock time `at` */
+  strike: (key: string, industry: IndustryType, at: number) => void;
+  /** a tile turned over: its flare at clock time `at` */
+  flare: (key: string, at: number) => void;
+  /** the dusk laid on the ground or held off it (a game read at night) */
+  showDusk: (on: boolean) => void;
 }
 
-export function buildAmbiance(reduced: boolean): Ambiance {
+/** `ground` is the table's painted ground, which the dusk tints */
+export function buildAmbiance(reduced: boolean, ground: Container): Ambiance {
   const layer = new Container();
   const glow = glowTexture();
   const animated: Animated[] = [];
@@ -419,20 +431,12 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     }
   };
 
-  /* ---------------- chimney smoke + traffic (dynamic) ---------------- */
-  const smokeLayer = new Container();
+  /* ----------------- the works' plumes + traffic (dynamic) ----------- */
+  const plumes = buildPlumes(reduced, ground);
   const wakeLayer = new Container(); // ripples + smoke puffs, under the hulls
   const trafficLayer = new Container();
-  layer.addChild(smokeLayer, wakeLayer, trafficLayer);
+  layer.addChild(plumes.low, wakeLayer, trafficLayer);
 
-  interface Wisp {
-    s: Sprite;
-    x: number;
-    y: number;
-    ph: number;
-    dx: number;
-  }
-  let wisps: Wisp[] = [];
   interface Puff {
     s: Sprite;
     born: number;
@@ -450,9 +454,26 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     puffs: Puff[];
     lastPuff: number;
     len: number;
+    /** the gate's key: link, era and which of the link's two vehicles */
+    gate: string;
+    /** the crossing the gate last ruled on, whether it let it go, and
+     *  whether it was the link's maiden voyage (which takes no one's room) */
+    gateK: number;
+    gateOpen: boolean;
+    gateMaiden: boolean;
+    /** when the link's maiden voyage cast off (it always sails) */
+    maiden: number | undefined;
   }
   let vehicles: Vehicle[] = [];
   let traffic: TrafficLevel = 'light';
+  /** vehicles let go on the lines at once (maiden voyages aside) */
+  let cap = 0;
+  /** the gate's rulings, kept across rebuilds so a vehicle under way when
+   *  another link is laid carries on rather than vanishing */
+  const gates = new Map<string, { k: number; open: boolean; maiden: boolean }>();
+  /** the table and the traffic level the scene was last built from */
+  let seenGame: GameState | null = null;
+  let seenTraffic: TrafficLevel | null = null;
   /** links seen at the last rebuild (null until the first game is seen) */
   let knownLinks: Set<string> | null = null;
   /** when each freshly laid link saw its first vehicle cast off: the link
@@ -551,41 +572,20 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     c.eventMode = 'none';
     return c;
   };
-  let smokeKey = '';
   let trafficKey = '';
 
   const rebuildDynamic = (t: number, game: GameState | null, iconCanal: Texture | null, iconRail: Texture | null) => {
     if (!game) return;
-    /* smoke: two wisps per unflipped built works */
-    const emitters: [number, number][] = [];
-    for (const [key, tile] of Object.entries(game.tiles)) {
-      if (tile.flipped) continue;
-      const [townId, si] = key.split(':');
-      const town = TOWNS.find((t) => t.id === townId);
-      const sp = town?.slots[Number(si)];
-      if (sp) emitters.push(displayPosFor(sp.x, sp.y));
-    }
-    const eKey = emitters.map((e) => `${e[0]},${e[1]}`).join('|');
-    if (eKey !== smokeKey) {
-      smokeKey = eKey;
-      smokeLayer.removeChildren();
-      wisps = [];
-      if (!reduced) {
-        for (const [x, y] of emitters) {
-          for (let i = 0; i < 2; i++) {
-            const s = new Sprite(glow);
-            s.anchor.set(0.5);
-            s.tint = 0xd6cebc;
-            s.blendMode = 'screen';
-            smokeLayer.addChild(s);
-            wisps.push({ s, x, y, ph: i * 2.6 + (hashId(`${x},${y}`) % 100) / 50, dx: (i % 2 === 0 ? 1 : -1) * 12 });
-          }
-        }
-      }
-    }
-    /* traffic: one vehicle per built link, following its polyline */
-    const links = Object.entries(game.links);
+    /* the table only changes with a move: between two, nothing below runs */
+    if (game === seenGame && traffic === seenTraffic) return;
+    seenGame = game;
+    seenTraffic = traffic;
+    /* the works breathe what they make; the light goes as the era closes */
+    plumes.sync(game, traffic === 'busy');
+    /* traffic: one vehicle per link laid in this era, following its polyline */
+    const links = trafficLinks(game).map((id) => [id, game.links[id]] as const);
     const seen = links.map(([id, l]) => `${id}:${l.era}`);
+    cap = trafficCap(traffic, links.length);
     const tKey = traffic + '|' + seen.join('|');
     if (tKey !== trafficKey && iconCanal && iconRail) {
       trafficKey = tKey;
@@ -599,6 +599,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
       }
       knownLinks = new Set(seen);
       for (const m of [maidens, joined]) for (const k of [...m.keys()]) if (!knownLinks.has(k)) m.delete(k);
+      for (const k of [...gates.keys()]) if (!knownLinks.has(k.slice(0, k.lastIndexOf(':')))) gates.delete(k);
       for (const child of trafficLayer.removeChildren()) child.destroy({ children: true });
       for (const child of wakeLayer.removeChildren()) child.destroy();
       vehicles = [];
@@ -625,7 +626,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
           const rest = traffic === 'light' ? pass.dur * (1.5 + ((h >> 3) % 10) / 10) : boat ? 4 : 2.5;
           const cycle = pass.dur + rest;
           if (traffic === 'none' && maiden !== undefined && t >= maiden + pass.dur) continue;
-          const spawn = (reverse: boolean, ph: number, from: number) => {
+          const spawn = (reverse: boolean, ph: number, from: number, second: boolean) => {
             const c = boat ? makeBoat(col) : makeTrain(col);
             c.scale.set(boat ? 1.3 : 1.25);
             c.visible = false;
@@ -645,7 +646,9 @@ export function buildAmbiance(reduced: boolean): Ambiance {
               puffs.push({ s, born: -99, x: 0, y: 0 });
             }
             const until = traffic === 'none' && maiden !== undefined ? maiden + pass.dur : Infinity;
-            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until });
+            const gate = `${id}:${l.era}:${second ? 1 : 0}`;
+            const ruled = gates.get(gate);
+            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until, gate, gateK: ruled?.k ?? NaN, gateOpen: ruled?.open ?? false, gateMaiden: ruled?.maiden ?? false, maiden: second ? undefined : maiden });
           };
           const first = h % 2 === 0;
           /* a maiden voyage starts its cycle right now; an older link keeps
@@ -655,13 +658,13 @@ export function buildAmbiance(reduced: boolean): Ambiance {
              cast-off on, never halfway down the line */
           const join = joined.get(`${id}:${l.era}`);
           const fromFor = (p: number): number => (join === undefined ? -Infinity : nextCastOff(join, { pass, rest, ph: p }));
-          spawn(first, ph, maiden ?? fromFor(ph));
+          spawn(first, ph, maiden ?? fromFor(ph), false);
           /* busy traffic: two vehicles per link, half a cycle apart, so the
              line never looks idle. Barges run in opposite directions and
              pass each other mid-canal; trains follow one another the same
              way down the line. On a new link the second waits its turn. */
           const ph2 = mod(ph - cycle / 2, cycle);
-          if (traffic === 'busy') spawn(boat ? !first : first, ph2, maiden !== undefined ? maiden + cycle / 2 : fromFor(ph2));
+          if (traffic === 'busy') spawn(boat ? !first : first, ph2, maiden !== undefined ? maiden + cycle / 2 : fromFor(ph2), true);
         }
       }
     }
@@ -731,12 +734,19 @@ export function buildAmbiance(reduced: boolean): Ambiance {
     }
   };
 
+  let lastT = 0;
   return {
     layer,
+    high: plumes.high,
     setTraffic(level: TrafficLevel) {
       traffic = level; // the next tick rebuilds the vehicles (tKey changes)
     },
-    tick(t: number, game: GameState | null) {
+    strike: (key, industry, at) => plumes.strike(key, industry, at),
+    flare: (key, at) => plumes.flare(key, at),
+    showDusk: (on) => plumes.showDusk(on),
+    tick(t: number, game: GameState | null, k: number) {
+      const dt = Math.max(0, Math.min(0.25, t - lastT));
+      lastT = t;
       for (const a of animated) a.tick(t);
       for (const fx of rivers) {
         if (!fx.dashes) continue;
@@ -748,19 +758,29 @@ export function buildAmbiance(reduced: boolean): Ambiance {
       }
       rebuildDynamic(t, game, iconCanal, iconRail);
       updateEtch(t, game);
-      for (const w of wisps) {
-        const cycle = 5.2;
-        const p = ((t + w.ph) % cycle) / cycle;
-        const rise = p * 52;
-        w.s.position.set(w.x + w.dx * p, w.y - rise);
-        const sc = 14 + p * 22;
-        w.s.width = w.s.height = sc;
-        w.s.alpha = p < 0.18 ? (p / 0.18) * 0.3 : 0.3 * (1 - p);
-      }
+      /* the columns stand still with the traffic off: the glows stay lit */
+      plumes.tick(t, dt, k, traffic !== 'none');
+      /* the vehicles under way on the lines, for the gate below */
+      let sailing = 0;
+      for (const v of vehicles) if (v.gateOpen && !v.gateMaiden && underWay(v, t) !== null && v.gateK === Math.floor((t + v.ph) / (v.pass.dur + v.rest))) sailing++;
       for (const v of vehicles) {
         /* moored spell between two crossings (or a maiden voyage not yet
            begun, or over): out of sight, wake and smoke off */
-        const inCycle = underWay(v, t);
+        let inCycle = underWay(v, t);
+        if (inCycle !== null) {
+          /* a new crossing: let go if the lines have room for it, else the
+             vehicle stays moored until its next turn */
+          const k = Math.floor((t + v.ph) / (v.pass.dur + v.rest));
+          if (k !== v.gateK) {
+            const maiden = v.maiden !== undefined && Math.abs(t - inCycle - v.maiden) < 0.5;
+            v.gateK = k;
+            v.gateOpen = admitCrossing(sailing, cap, maiden);
+            v.gateMaiden = maiden;
+            if (v.gateOpen && !maiden) sailing++;
+            gates.set(v.gate, { k, open: v.gateOpen, maiden });
+          }
+          if (!v.gateOpen) inCycle = null;
+        }
         if (inCycle === null) {
           if (v.c.visible) {
             v.c.visible = false;
@@ -789,7 +809,7 @@ export function buildAmbiance(reduced: boolean): Ambiance {
         v.wake.clear();
         if (v.boat) {
           const dirSign = v.reverse ? 1 : -1;
-          for (const side of [-1, 1]) {
+          for (let side = -1; side <= 1; side += 2) {
             let first = true;
             for (let k = 0; k <= 5; k++) {
               const back = v.len * 0.65 + k * 11;

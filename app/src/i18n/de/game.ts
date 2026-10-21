@@ -179,7 +179,7 @@ const game: typeof engame = {
     beginnerAid: 'Bauhilfe (Anfänger)',
     beginnerAidHint: 'Karte in der Hand: unspielbare Bauplätze verblassen und der Preis schlüsselt Kohle und Eisen vom Markt auf.',
     traffic: 'Verkehr auf Verbindungen',
-    trafficHint: 'Kähne und Lokomotiven auf gebauten Kanälen und Bahnstrecken.',
+    trafficHint: 'Kähne und Lokomotiven auf gebauten Kanälen und Bahnstrecken, dazu der Rauch der Betriebe. Keiner hält das Brett zwischen den Zügen still.',
     trafficLevel: { none: 'Keiner', light: 'Leicht', busy: 'Dicht' },
     followBots: 'Den anderen Spielern folgen',
     followBotsHint: 'Die Kamera gleitet zur Stadt, in der ein Bot oder ein Rivale online gerade gespielt hat, und die Maschinen lassen vier Sekunden zwischen zwei Zügen.',
