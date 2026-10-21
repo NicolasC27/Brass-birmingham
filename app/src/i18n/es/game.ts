@@ -1060,6 +1060,7 @@ const game: typeof engame = {
     canBuild: 'Esta carta puede construir algo ahora',
     foldHint: 'Un clic en la nota la pliega en una línea; arrastra su cabecera para moverla.',
     detour: 'Un desvío antes de « {lesson} »:',
+    detourOut: 'Sin préstamo, sáltala y vuelve a ella después de la paga.',
     already: 'Ya lo has hecho: esto es lo que cambia.',
     aside: 'Lección aplazada: « {lesson} » vuelve en la próxima ronda.',
     suggest: {
@@ -1139,6 +1140,7 @@ const game: typeof engame = {
       },
     },
     skip: 'Saltar esta lección',
+    skipLesson: 'Saltar « {lesson} »',
     later: 'Más tarde',
     laterHint: 'La lección vuelve en la próxima ronda, en su lugar.',
     blocked: {

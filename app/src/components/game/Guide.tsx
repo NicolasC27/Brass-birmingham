@@ -1007,7 +1007,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                             </div>
                           </div>
                         )}
-                        {detour && block && dueStep && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })} {lower(block.short)}</p>}
+                        {detour && block && dueStep && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })} {lower(block.short)} {t('game.guide.detourOut')}</p>}
                         {already && <p className="mb-1.5 font-serif text-[13px] leading-snug text-bottle-600">{t('game.guide.already')}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
@@ -1059,10 +1059,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         </button>
                       )}
                       {/* Skip: the deed the table does not allow now, or one
-                          played past in the last round */}
-                      {(blocked || way === 'skip') && myTurn && !already && (
+                          played past in the last round — in the loan's
+                          detour, the lesson that led there */}
+                      {(blocked || detour || way === 'skip') && myTurn && !already && (
                         <button type="button" onClick={() => owed?.id && passOn(owed.id)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
-                          {t('game.guide.skip')}
+                          {detour && dueStep ? t('game.guide.skipLesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) }) : t('game.guide.skip')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}

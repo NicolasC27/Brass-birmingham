@@ -1058,6 +1058,7 @@ const game = {
     canBuild: 'This card can build something now',
     foldHint: 'A click on the note folds it to a line; drag its head to move it.',
     detour: 'A detour before « {lesson} »:',
+    detourOut: 'Without a loan, skip it and come back to it once the payday has come.',
     already: 'You have already done this: here is what it changes.',
     aside: 'Lesson set aside: « {lesson} » comes back next round.',
     suggest: {
@@ -1137,6 +1138,7 @@ const game = {
       },
     },
     skip: 'Skip this lesson',
+    skipLesson: 'Skip « {lesson} »',
     later: 'Later',
     laterHint: 'The lesson comes back next round, in its place.',
     blocked: {
