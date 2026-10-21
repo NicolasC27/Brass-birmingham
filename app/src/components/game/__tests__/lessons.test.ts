@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { applyAction, fallbackAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { buildTargets, linkTargets, newGame } from '@/game/engine';
+import { buildTargets, canLoan, linkTargets, newGame } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
-import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle } from '../lessons';
+import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
 import type { LessonCtx, Progress } from '../lessons';
 
 /* the lessons of the guided game, played on the guided table itself: you
@@ -37,12 +37,25 @@ const mine = (g: GameState): GameState => {
   const at = g.players[0].hand.flatMap((c) => buildTargets(g, 0, c).filter((x) => x.valid && x.industry === 'coal').map((x) => ({ card: c.id, x })))[0];
   return play(g, { kind: 'build', card: at.card, town: at.x.town, slot: at.x.slot, industry: 'coal' });
 };
+/** the works the hand builds now, each with the card that builds it */
+const worksAt = (g: GameState) => g.players[0].hand.flatMap((c) => buildTargets(g, 0, c).filter((x) => x.valid && ['cotton', 'manufacturer', 'pottery'].includes(x.industry)).map((x) => ({ card: c.id, x })));
+/** an action of the reader's that is no lesson's deed: a pass, paid with
+ *  a card no works of the hand needs */
+const idle = (g: GameState): GameState => {
+  const needed = new Set(worksAt(g).map((w) => w.card));
+  const card = g.players[0].hand.find((c) => !needed.has(c.id)) ?? g.players[0].hand[0];
+  return play(g, { kind: 'pass', card: card.id });
+};
 /** the machine's turn played through, plainly */
 const theirs = (g: GameState): GameState => {
   let s = g;
   while (s.phase === 'action' && s.players[s.current].isBot) s = play(s, fallbackAction(s, s.current));
   return s;
 };
+
+/** round 2 of the guided table, a mine of the reader's standing: her turn
+ *  is played, and the reader's two actions close the round */
+const round2 = (): GameState => theirs(mine(guided()));
 
 beforeEach(() => {
   stubStorage();
@@ -260,21 +273,129 @@ describe('the loan that can wait', () => {
 });
 
 describe('a lesson set aside', () => {
-  it('comes back in its place the next round', () => {
-    const g3 = { ...guided(), round: 3 };
-    let p = see(upTo('works'), 'works', ctx(g3));
-    p = setAside(p, 'works', ctx(g3));
-    expect(due(p, ctx(g3))).toMatchObject({ id: 'market' });
-    p = pass(p, 'market');
-    expect(due(p, ctx(g3))).toMatchObject({ id: 'beer' });
-    expect(due(p, ctx({ ...g3, round: 4 }))).toMatchObject({ id: 'works', mode: 'do' });
-    /* done meanwhile, it passes all the same: it was seen undone */
-    const done = { ...g3, tiles: { 'x:0': { owner: 0, industry: 'pottery' } } } as unknown as GameState;
-    expect(settle(p, ctx(done)).passed).toContain('works');
+  it('is offered once an action was played past it, and comes back in its place the next round', () => {
+    const r2 = round2();
+    expect(r2.round).toBe(2);
+    let p = upTo('works');
+    expect(due(p, ctx(r2))).toMatchObject({ id: 'works', mode: 'do' });
+    p = see(p, 'works', ctx(r2));
+    /* on show, nothing played yet: the deed is the reader's to try first */
+    expect(mayLater(p, 'works', ctx(r2))).toBe(false);
+    const played = idle(r2);
+    expect(played.current).toBe(0);
+    expect(mayLater(p, 'works', ctx(played))).toBe(true);
+    p = setAside(p, 'works', ctx(played));
+    /* the lessons after it go on meanwhile */
+    expect(due(p, ctx(played))).toMatchObject({ id: 'market', mode: 'read' });
+    p = pass(pass(p, 'market'), 'beer');
+    expect(due(p, ctx(played))).toMatchObject({ id: 'sell', mode: 'do' });
+    /* set aside, it is neither seen again nor offered to set aside again */
+    expect(see(p, 'works', ctx(played))).toBe(p);
+    expect(mayLater(p, 'works', ctx(played))).toBe(false);
+    /* nor passed: the evening course does not count it */
+    expect(p.passed).not.toContain('works');
+    /* the round played out: it comes back before the sale, a deed to do */
+    const r3 = theirs(idle(played));
+    expect(r3.round).toBe(3);
+    expect(due(p, ctx(r3))).toMatchObject({ id: 'works', index: lessonIndex('works'), mode: 'do' });
+    /* seen anew, it passes once done; played past already, it may wait
+       again at once */
+    p = see(p, 'works', ctx(r3));
+    expect(p.seen.works).toEqual({ at: r3.actions.length, round: 3 });
+    expect(mayLater(p, 'works', ctx(r3))).toBe(true);
     /* passed, it is no longer set aside */
     expect(pass(p, 'works').later).toEqual({});
-    /* no lesson of today's allows it yet */
-    expect(mayLater(p, 'works', ctx(g3))).toBe(false);
+  });
+
+  it('comes back as a page that says so when its deed was done meanwhile', () => {
+    const r2 = round2();
+    let p = see(upTo('works'), 'works', ctx(r2));
+    const played = idle(r2);
+    p = setAside(p, 'works', ctx(played));
+    /* the works built with the second action, the lesson set aside: the
+       round is the reader's to close, and she opens the next one */
+    const w = worksAt(played)[0];
+    const built = play(played, { kind: 'build', card: w.card, town: w.x.town, slot: w.x.slot, industry: w.x.industry });
+    expect(built.round).toBe(3);
+    /* not passed unread, since it was set aside before it was done: it
+       comes back in its place as a page that says it is done */
+    expect(settle(p, ctx(built))).toBe(p);
+    expect(due(p, ctx(built))).toMatchObject({ id: 'works', mode: 'already' });
+    /* a page to read: nothing to see, and nothing to set aside */
+    const r3 = theirs(built);
+    expect(see(p, 'works', ctx(r3))).toBe(p);
+    expect(mayLater(p, 'works', ctx(r3))).toBe(false);
+    expect(due(pass(p, 'works'), ctx(r3))).toMatchObject({ id: 'market' });
+  });
+
+  it('is offered on the deeds from the canal on, and turns to Skip in the last round', () => {
+    const r2 = round2();
+    const after = idle(r2);
+    for (const id of ['link', 'iron', 'loan', 'works', 'sell']) expect(mayLater(see(upTo(id), id, ctx(r2)), id, ctx(after))).toBe(true);
+    /* the mine is the first round's one action, and the lessons after it
+       are read off it: it does not wait */
+    const q = see(upTo('coal'), 'coal', ctx(guided()));
+    expect(q.seen.coal).toBeDefined();
+    expect(mayLater(q, 'coal', ctx(after))).toBe(false);
+    /* a page never waits: it is read on from */
+    expect(mayLater(upTo('develop'), 'develop', ctx(after))).toBe(false);
+    /* no round after the last for it to come back in: it is skipped */
+    const works = see(upTo('works'), 'works', ctx(r2));
+    expect(wayOn(works, 'works', ctx({ ...after, round: 9 }))).toBe('later');
+    expect(wayOn(works, 'works', ctx({ ...after, round: 10 }))).toBe('skip');
+    expect(mayLater(works, 'works', ctx({ ...after, round: 10 }))).toBe(false);
+    /* a full game's canal era is not the last: the rail's first round is next */
+    expect(wayOn(works, 'works', ctx({ ...after, round: 10, eraLength: 'standard' }))).toBe('later');
+    expect(wayOn(works, 'works', ctx({ ...after, round: 10, eraLength: 'standard', era: 'rail' }))).toBe('skip');
+    /* before an action is played past it, there is no way on but the deed */
+    expect(wayOn(works, 'works', ctx(r2))).toBeNull();
+  });
+
+  it('holds the last lesson back, and leaves nothing to read meanwhile', () => {
+    const r2 = round2();
+    const played = idle(r2);
+    /* every lesson passed but the loan, set aside, and the closing one */
+    let p = see({ ...freshProgress('GWE5'), passed: LESSON_IDS.filter((id) => id !== 'loan' && id !== LAST_LESSON) }, 'loan', ctx(r2));
+    p = setAside(p, 'loan', ctx(played));
+    /* the last lesson would close the guide: it waits, and the note is
+       idle — a mode that neither teaches nor holds the machine */
+    const d = due(p, ctx(played));
+    expect(d).toEqual({ id: 'loan', index: lessonIndex('loan'), mode: 'idle' });
+    expect(see(p, 'loan', ctx(played))).toBe(p);
+    /* the round over, the loan is the lesson due again */
+    const r3 = theirs(idle(played));
+    expect(due(p, ctx(r3))).toMatchObject({ id: 'loan', mode: 'do' });
+    /* passed, the last lesson comes */
+    expect(due(pass(p, 'loan'), ctx(played))).toMatchObject({ id: LAST_LESSON, mode: 'read' });
+  });
+});
+
+describe('the loan, never a trap', () => {
+  it('always leaves a way on: Next while the purse pays, Later once played past, no detour while set aside', () => {
+    const r2 = round2();
+    const purse = (money: number, s: GameState): GameState => ({ ...s, players: s.players.map((x, i) => (i === 0 ? { ...x, money } : x)) });
+    let p = upTo('loan');
+    /* the purse pays for the next works: the loan may be passed at once */
+    expect(optionalNow('loan', ctx(r2))).toBe(true);
+    /* a thin purse, and no loan wanted: once an action is played past it,
+       it may wait for the next round */
+    const thin = purse(4, r2);
+    expect(optionalNow('loan', ctx(thin))).toBe(false);
+    expect(canLoan(thin, 0).ok).toBe(true);
+    p = see(p, 'loan', ctx(thin));
+    expect(due(p, ctx(thin))).toMatchObject({ id: 'loan', mode: 'do' });
+    expect(mayLater(p, 'loan', ctx(thin))).toBe(false);
+    const played = idle(thin);
+    expect(mayLater(p, 'loan', ctx(played))).toBe(true);
+    const q = setAside(p, 'loan', ctx(played));
+    expect(due(q, ctx(played))).toMatchObject({ id: 'works', mode: 'do' });
+    /* a forge short of money with the loan set aside: no detour leads
+       back to it — the forge's own lesson is shown, and its Skip */
+    const f = setAside(upTo('iron'), 'loan', ctx(played));
+    const broke = purse(0, played);
+    expect(detourOf(upTo('iron'), due(upTo('iron'), ctx(broke)), ctx(broke), true, true)).toBe('loan');
+    expect(detourOf(f, due(f, ctx(broke)), ctx(broke), true, true)).toBeNull();
+    expect(due(f, ctx(broke))).toMatchObject({ id: 'iron', mode: 'do' });
   });
 });
 

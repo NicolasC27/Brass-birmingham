@@ -1,4 +1,4 @@
-import { buildTargets } from '@/game/engine';
+import { buildTargets, eraRounds } from '@/game/engine';
 import type { GameState } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -72,21 +72,25 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'mat', show: 'mat', done: (c) => c.mat !== null },
   { id: 'matRead', show: 'mat' },
   { id: 'hand', done: (c) => c.sel !== null },
+  /* not to be set aside: in the first round the mine is the reader's one
+     action, so "Later" could come no sooner than the round after — and
+     the canal and the forge that follow are read off that mine */
   { id: 'coal', done: (c) => built(c, ['coal']) },
   /* read while the table waits: her turn comes once it has been read */
   { id: 'botTurn' },
   { id: 'payday', when: (c) => c.g.round >= 2 },
-  { id: 'link', done: (c) => Object.values(c.g.links).some((l) => l.owner === c.me) },
-  { id: 'iron', done: (c) => built(c, ['iron']) },
+  { id: 'link', done: (c) => Object.values(c.g.links).some((l) => l.owner === c.me), deferrable: true },
+  { id: 'iron', done: (c) => built(c, ['iron']), deferrable: true },
   { id: 'develop' },
   /* a mine, a canal and a forge leave the purse too thin for a works:
-     the loan is taught before it, not met as a detour on the way — and a
-     purse that already pays for one may pass it */
-  { id: 'loan', done: (c) => c.g.players[c.me].loans > 0, optional: worksPaid },
-  { id: 'works', done: (c) => built(c, WORKS) },
+     the loan is taught before it, not met as a detour on the way — a
+     purse that already pays for one may pass it, and a reader who wants
+     none sets it aside like any deed */
+  { id: 'loan', done: (c) => c.g.players[c.me].loans > 0, optional: worksPaid, deferrable: true },
+  { id: 'works', done: (c) => built(c, WORKS), deferrable: true },
   { id: 'market', show: 'market' },
   { id: 'beer' },
-  { id: 'sell', done: (c) => c.g.players[c.me].stats.sold > 0 },
+  { id: 'sell', done: (c) => c.g.players[c.me].stats.sold > 0, deferrable: true },
   { id: 'flipped', when: (c) => c.g.players[c.me].stats.sold > 0 },
   { id: 'eraEnd' },
   { id: 'plan' },
@@ -127,17 +131,25 @@ export const roundOf = (g: GameState): number => (g.era === 'rail' ? 100 : 0) + 
 const earned = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.done && !!p.seen[l.id] && l.done(c);
 /** set aside, and the round it was set aside in not over yet */
 const aside = (p: Progress, id: string, c: LessonCtx): boolean => p.later[id] !== undefined && roundOf(c.g) <= p.later[id];
+/** a lesson set aside and not passed: the last lesson, which closes the
+ *  guide, waits for it */
+const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) => !p.passed.includes(l.id) && aside(p, l.id, c));
+/** the last round of the game: no round comes after it for a lesson set
+ *  aside to come back in */
+const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.players.length) && (g.era === 'rail' || g.eraLength === 'short');
 
 /** every deed seen undone that now holds, passed — in the lessons' order;
  *  the same progress when nothing moved */
 export function settle(p: Progress, c: LessonCtx): Progress {
   const now = LESSONS.filter((l) => !p.passed.includes(l.id) && earned(p, l, c)).map((l) => l.id);
-  return now.length ? { ...p, passed: [...p.passed, ...now] } : p;
+  return now.reduce((q, id) => pass(q, id), p);
 }
 
 /** how the lesson due is given: a page to read, a deed to do, a deed done
- *  beforehand (a page, with a word that it is done), or nothing left */
-export type Mode = 'read' | 'do' | 'already' | 'finished';
+ *  beforehand (a page, with a word that it is done), nothing due this
+ *  round but a lesson set aside (idle: its id, which comes back next
+ *  round), or nothing left */
+export type Mode = 'read' | 'do' | 'already' | 'idle' | 'finished';
 
 export interface Due {
   id: string | null;
@@ -145,15 +157,20 @@ export interface Due {
   mode: Mode;
 }
 
-/** the lesson due: the first not passed, not set aside, and not waiting on the game */
+/** the lesson due: the first not passed, not set aside, and not waiting
+ *  on the game. The last one closes the guide: it waits while a lesson is
+ *  set aside, so that one comes back first */
 export function due(p: Progress, c: LessonCtx): Due {
+  const held = heldBack(p, c);
   for (let i = 0; i < LESSONS.length; i++) {
     const l = LESSONS[i];
     if (p.passed.includes(l.id) || earned(p, l, c) || aside(p, l.id, c)) continue;
     if (l.when && !l.when(c)) continue;
+    if (l.id === LAST_LESSON && held >= 0) continue;
     if (!l.done) return { id: l.id, index: i, mode: 'read' };
     return { id: l.id, index: i, mode: l.done(c) ? 'already' : 'do' };
   }
+  if (held >= 0) return { id: LESSONS[held].id, index: held, mode: 'idle' };
   return { id: null, index: LESSONS.length, mode: 'finished' };
 }
 
@@ -162,7 +179,7 @@ export function due(p: Progress, c: LessonCtx): Due {
  *  than whose turn it is, and a deed done under the next page is read as done */
 export function see(p: Progress, id: string, c: LessonCtx): Progress {
   const l = lessonOf(id);
-  if (!l?.done || p.seen[id] || l.done(c)) return p;
+  if (!l?.done || p.seen[id] || l.done(c) || aside(p, id, c)) return p;
   if (c.g.phase !== 'action' || c.g.current !== c.me) return p;
   return { ...p, seen: { ...p.seen, [id]: { at: c.g.actions.length, round: roundOf(c.g) } } };
 }
@@ -175,17 +192,31 @@ export function pass(p: Progress, id: string): Progress {
   return { ...p, passed: [...p.passed, id], later };
 }
 
-/** the lesson set aside until the next round; it comes back in its place */
+/** the lesson set aside until the next round; it comes back in its place
+ *  as if new: shown undone, it is seen again — done meanwhile, it comes
+ *  back as a page that says so, not passed unread */
 export function setAside(p: Progress, id: string, c: LessonCtx): Progress {
-  return { ...p, later: { ...p.later, [id]: roundOf(c.g) } };
+  const seen = { ...p.seen };
+  delete seen[id];
+  return { ...p, later: { ...p.later, [id]: roundOf(c.g) }, seen };
 }
 
-/** "Later" is offered on a deed that allows it, once the reader has
- *  played an action since the lesson first came up */
-export function mayLater(p: Progress, id: string, c: LessonCtx): boolean {
+/** the way on from a deed that allows it, still undone, once the reader
+ *  has played an action since it first came up — back from a round set
+ *  aside, it was played past already: Later, which brings it back next
+ *  round in its place, or Skip in the last round, with no round after it
+ *  to come back in. Null while the deed is still the reader's to try */
+export function wayOn(p: Progress, id: string, c: LessonCtx): 'later' | 'skip' | null {
+  const l = lessonOf(id);
+  if (!l?.deferrable || !l.done || l.done(c) || aside(p, id, c)) return null;
   const s = p.seen[id];
-  return !!lessonOf(id)?.deferrable && !!s && c.g.ledger.some((e) => e.player === c.me && (e.at ?? -1) >= s.at && e.verb !== 'system' && e.verb !== 'score');
+  const past = p.later[id] !== undefined || (!!s && c.g.ledger.some((e) => e.player === c.me && (e.at ?? -1) >= s.at && e.verb !== 'system' && e.verb !== 'score'));
+  if (!past) return null;
+  return lastRound(c.g) ? 'skip' : 'later';
 }
+
+/** "Later" is offered on the deed on show (see wayOn) */
+export const mayLater = (p: Progress, id: string, c: LessonCtx): boolean => wayOn(p, id, c) === 'later';
 
 /** the lesson a move did the deed of: the first whose deed did not hold
  *  before the move and holds after it. At the guided table that move is
@@ -200,10 +231,11 @@ const LOAN_AT = lessonIndex('loan');
 
 /** the lesson shown in place of the one due: when money is what its deed
  *  lacks (moneyShort) and the loan is still to be taught, the loan comes
- *  first, and the lesson due comes back after it */
+ *  first, and the lesson due comes back after it. A loan set aside is not
+ *  wanted this round: no detour leads to it */
 export function detourOf(p: Progress, d: Due, c: LessonCtx, moneyShort: boolean, loanOk: boolean): string | null {
   if (!moneyShort || !loanOk || d.mode !== 'do' || d.id === null || d.index >= LOAN_AT) return null;
-  if (p.passed.includes('loan') || LESSONS[LOAN_AT].done!(c)) return null;
+  if (p.passed.includes('loan') || LESSONS[LOAN_AT].done!(c) || aside(p, 'loan', c)) return null;
   return 'loan';
 }
 
