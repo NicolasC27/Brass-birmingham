@@ -970,7 +970,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           {x.text}
                         </p>
                       ))}
-                      {warnings.filter((w) => (['negative', 'eraEnd', 'eraEndMine', 'deckOut'].includes(w.id) || ((w.id === 'broke' || w.id === 'brokeAgain') && !block))).map((w) => (
+                      {/* the purse's alert says the loan lesson over again: not under it */}
+                      {warnings.filter((w) => (['negative', 'eraEnd', 'eraEndMine', 'deckOut'].includes(w.id) || ((w.id === 'broke' || w.id === 'brokeAgain') && !block && step.id !== 'loan'))).map((w) => (
                         <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
                           {w.text}
                         </p>
