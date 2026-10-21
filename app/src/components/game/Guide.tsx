@@ -106,7 +106,11 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   const buyers = buyersOf(game).map(({ merchant, goods }) =>
     goods === 'all' ? t('game.guide.buyers.all', { merchant }) : t('game.guide.buyers.some', { merchant, goods: new Intl.ListFormat(localeOf(getLang()), { type: 'conjunction' }).format(goods.map((x) => t(`game.guide.buyers.${x}`))) }),
   );
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  /* who else lays links and drinks barrels: the one rival by name — the
+     machine, at the guided table — else another player, never a blank */
+  const others = game.players.filter((_, i) => i !== me);
+  const rival = others.length === 1 ? others[0].name : t('game.guide.rival');
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */
