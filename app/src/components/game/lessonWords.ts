@@ -1,5 +1,5 @@
-import { MERCHANTS, eraRounds, incomeLevel } from '@/game/data';
-import type { GameState, IndustryType, Merchant } from '@/game/types';
+import { LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
+import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* The words a lesson is said in. The guided game is a short one — the */
@@ -46,6 +46,35 @@ export function stepKeyOf(id: string, g: GameState, me: number, spare = false): 
   }
   if (spare && SPARE[id]) return SPARE[id];
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
+}
+
+const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
+/** a slot of the town that takes this industry and holds no tile yet */
+const freeSlot = (g: GameState, town: string, industry: IndustryType): boolean => !!TOWN_BY_ID[town]?.slots.some((sp, i) => sp.allows.includes(industry) && !g.tiles[`${town}:${i}`]);
+/** a town where the reader already has a tile of theirs */
+const holds = (g: GameState, me: number, town: string): boolean => Object.entries(g.tiles).some(([key, x]) => x.owner === me && key.split(':')[0] === town);
+/** the towns among these, in the board's own order */
+const inBoardOrder = (towns: Iterable<string>): string[] => {
+  const set = new Set(towns);
+  return TOWNS.map((t) => t.id).filter((id) => set.has(id));
+};
+
+/** the towns one canal from `town` with a forge slot still free, where the
+ *  reader has no tile yet: in the canal era a player keeps one tile to a
+ *  town, so the forge a mine feeds stands in another. Any canal counts,
+ *  laid or not, whoever laid it: a laid one carries the coal all the same */
+export function forgesFrom(g: GameState, me: number, town: string): string[] {
+  return inBoardOrder(LINKS.filter((l) => l.canal && ends(l).includes(town)).flatMap((l) => ends(l).filter((x) => x !== town && freeSlot(g, x, 'iron') && !holds(g, me, x))));
+}
+
+/** where a first mine may stand for its coal to feed a forge of the
+ *  reader's: the forge towns a canal leads to from a free mine slot, and
+ *  the mine towns from which no canal leads to one. Read off the board,
+ *  never written down for one map */
+export function forgeWays(g: GameState, me: number): { forges: string[]; deadEnds: string[] } {
+  const mines = TOWNS.filter((t) => freeSlot(g, t.id, 'coal') && !holds(g, me, t.id)).map((t) => t.id);
+  const reach = mines.map((m) => ({ m, to: forgesFrom(g, me, m) }));
+  return { forges: inBoardOrder(reach.flatMap((x) => x.to)), deadEnds: reach.filter((x) => x.to.length === 0).map((x) => x.m) };
 }
 
 /** the merchants of this table who keep a barrel — a tile of theirs that

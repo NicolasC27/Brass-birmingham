@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, closingWords, dryRound, firstPayday, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -91,6 +91,36 @@ describe('the first payday', () => {
     expect(stepKeyOf('payday', g, 0)).toBe('paydayOwed');
     g.history[0].income[0] = 2;
     expect(stepKeyOf('payday', g, 0)).toBe('payday');
+  });
+});
+
+describe('where a first mine feeds a forge', () => {
+  const tile = (owner: number, industry: TileState['industry']): TileState => ({ owner, industry, level: 1, flipped: false, cubes: 0 });
+
+  it('reads the forge towns and the dead ends off the board', () => {
+    const g = table();
+    /* the towns a canal leads to from a mine slot, and the three mine
+       towns no canal leads from to a forge (review, a01v) */
+    expect(forgeWays(g, 0)).toEqual({ forges: ['derby', 'stoke', 'walsall', 'coalbrookdale', 'dudley', 'birmingham'], deadEnds: ['coalbrookdale', 'nuneaton', 'redditch'] });
+    expect(forgesFrom(g, 0, 'wolverhampton')).toEqual(['walsall', 'coalbrookdale', 'dudley']);
+    expect(forgesFrom(g, 0, 'dudley')).toEqual(['birmingham']);
+    /* Nuneaton's one canal goes to Tamworth; its ways to Coventry and Birmingham are rails */
+    expect(forgesFrom(g, 0, 'nuneaton')).toEqual([]);
+  });
+
+  it('leaves out a town the reader already holds, and a forge slot taken', () => {
+    const g = structuredClone(table());
+    /* one tile to a town in the canal era: a works of the reader's in
+       Birmingham leaves a Dudley mine no forge of theirs by canal */
+    g.tiles = { 'birmingham:0': tile(0, 'cotton') };
+    expect(forgesFrom(g, 0, 'dudley')).toEqual([]);
+    expect(forgeWays(g, 0).deadEnds).toContain('dudley');
+    /* the machine's forge on Birmingham's one forge slot: the same */
+    g.tiles = { 'birmingham:2': tile(1, 'iron') };
+    expect(forgesFrom(g, 0, 'dudley')).toEqual([]);
+    /* the machine's works elsewhere in the town leaves the slot free */
+    g.tiles = { 'birmingham:0': tile(1, 'cotton') };
+    expect(forgesFrom(g, 0, 'dudley')).toEqual(['birmingham']);
   });
 });
 
