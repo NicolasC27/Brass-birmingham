@@ -861,10 +861,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
 
   /* folded: a rail down the right edge — the lesson's number, how far the
-     guide has come, a dot when the machine or the table has something to
-     say; the lesson's lens still lights the board */
+     guide has come (the lessons passed: one set aside is not), a dot when
+     the machine or the table has something to say; the lesson's lens
+     still lights the board */
   if (dock === GUIDE_RAIL) {
     const n = Math.min(shownIndex + 1, LESSONS.length);
+    const come = settled.passed.length;
     const unread = !!bot || news.length > 0;
     return (
       <>
@@ -881,7 +883,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 {n}/{LESSONS.length}
               </span>
               <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
-                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(n / LESSONS.length) * 100}%` }} />
+                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(come / LESSONS.length) * 100}%` }} />
               </span>
             </>
           )}
