@@ -62,7 +62,9 @@ export function fileThread(th: Thread, now: LiveNow): Thread {
   };
   if (now.lesson && th.lesson?.at !== now.lesson.at) {
     const n = edit();
-    if (th.lesson) n.said.push({ key: `l${th.lesson.at}`, kind: 'lesson', head: th.lesson.head, body: th.lesson.body });
+    /* a lesson may be filed twice — set aside and back, read again —
+       and each filing is its own turn of the thread */
+    if (th.lesson) n.said.push({ key: `l${th.lesson.at}.${n.said.length}`, kind: 'lesson', head: th.lesson.head, body: th.lesson.body });
     n.lesson = { at: now.lesson.at, ...now.lesson.word() };
   }
   if (now.bot && th.bot?.id !== now.bot.id) {
