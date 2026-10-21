@@ -8,8 +8,8 @@ import { useSyncExternalStore } from 'react';
 /* keys stay fixed: they mirror the hand and the camera, not a panel.  */
 /* ------------------------------------------------------------------ */
 
-export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit' | 'focus' | 'survey' | 'lastMove' | 'vpTrack' | 'analysis';
-export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'vpTrack', 'hand', 'links', 'focus', 'survey', 'lastMove', 'analysis', 'fullscreen', 'rules', 'fit'];
+export type KeyAction = 'undo' | 'replay' | 'fullscreen' | 'links' | 'market' | 'ledger' | 'mat' | 'matWide' | 'matStyle' | 'settings' | 'hand' | 'rules' | 'fit' | 'focus' | 'survey' | 'lastMove' | 'vpTrack' | 'analysis' | 'photo';
+export const KEY_ACTIONS: KeyAction[] = ['undo', 'replay', 'mat', 'matWide', 'matStyle', 'settings', 'market', 'ledger', 'vpTrack', 'hand', 'links', 'focus', 'survey', 'lastMove', 'analysis', 'fullscreen', 'photo', 'rules', 'fit'];
 
 export const DEFAULT_KEYS: Record<KeyAction, string> = {
   undo: 'z',
@@ -31,6 +31,8 @@ export const DEFAULT_KEYS: Record<KeyAction, string> = {
   vpTrack: 'b',
   /* the analysis, once the game is played out */
   analysis: 'q',
+  /* the photo mode: the table without its HUD, to be printed */
+  photo: 'i',
 };
 
 const KEY = 'brassworks.keys.v1';

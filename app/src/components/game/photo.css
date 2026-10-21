@@ -1,0 +1,40 @@
+/* The photo mode (PhotoMode.tsx): while <html> carries data-photo, the
+   table's whole HUD fades away and lets the pointer through — the panels
+   beside the board, the guide's lane, what the board hangs over its own
+   canvas (the minimap, the bubbles, the tooltips, the lamp's vignette),
+   and whatever a panel sent to the foot of the page. The board and the
+   photo toolbar alone stay. Leaving, the mark reads "leaving" for the
+   fade back, then goes. */
+
+html[data-photo] [data-table] > :not([data-board-frame]),
+html[data-photo] [data-table] ~ :not([data-photo-bar]),
+html[data-photo] [data-board-frame] [role='application'] > :not(canvas),
+html[data-photo] body > :not(#root) {
+  transition: opacity 0.35s ease !important;
+}
+
+html[data-photo='on'] [data-table] > :not([data-board-frame]),
+html[data-photo='on'] [data-table] ~ :not([data-photo-bar]),
+html[data-photo='on'] [data-board-frame] [role='application'] > :not(canvas),
+html[data-photo='on'] body > :not(#root) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition:
+    opacity 0.35s ease,
+    visibility 0s linear 0.35s !important;
+}
+
+/* the board takes the whole window: the guide's lane is given back */
+html[data-photo='on'] [data-table] {
+  right: 0 !important;
+}
+
+/* the pointer frames the picture: a hand, whatever lies under it */
+html[data-photo='on'] [data-board-frame] [role='application'] {
+  cursor: grab !important;
+}
+
+html[data-photo='on'] [data-board-frame] [role='application']:active {
+  cursor: grabbing !important;
+}

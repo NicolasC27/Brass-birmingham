@@ -18,6 +18,18 @@ export const WORLD_H = 1800;
 export const MIN_K = 1;
 export const MAX_K = 3;
 
+/* the ceiling the zoom is held under: MAX_K at the table, higher while the
+   table is photographed (photo.ts), where one comes closer than play needs */
+let ceiling = MAX_K;
+
+/** lift the zoom's ceiling (null: back to MAX_K); the camera is clamped
+ *  again by whoever lifts it */
+export function setZoomCeiling(k: number | null): void {
+  ceiling = k === null ? MAX_K : Math.max(MAX_K, k);
+}
+
+export const zoomCeiling = (): number => ceiling;
+
 export interface View {
   k: number;
   x: number;
@@ -44,15 +56,31 @@ export const clampK = (k: number): number => Math.min(MAX_K, Math.max(MIN_K, k))
 export const FIT_PAD_BOTTOM = 88;
 
 let fitReserve = FIT_PAD_BOTTOM;
+/* what the dock asks for, and what the photo mode holds it at while the
+   HUD is away (null: nothing held, the dock's word stands) */
+let askedReserve = FIT_PAD_BOTTOM;
+let heldReserve: number | null = null;
 const reserveListeners = new Set<() => void>();
+
+function applyReserve(): void {
+  const next = heldReserve ?? askedReserve;
+  if (next === fitReserve) return;
+  fitReserve = next;
+  for (const fn of [...reserveListeners]) fn();
+}
 
 /** the height (px, from the bottom of the frame) the HUD holds over the
  *  board; called by the hand dock, never by the board itself */
 export function setFitReserve(px: number): void {
-  const next = Math.max(0, Math.round(px));
-  if (next === fitReserve) return;
-  fitReserve = next;
-  for (const fn of [...reserveListeners]) fn();
+  askedReserve = Math.max(0, Math.round(px));
+  applyReserve();
+}
+
+/** hold the reserve at `px` whatever the dock says (the photo mode, with
+ *  no hand on the table); null lets the dock's word stand again */
+export function holdFitReserve(px: number | null): void {
+  heldReserve = px === null ? null : Math.max(0, Math.round(px));
+  applyReserve();
 }
 
 export const getFitReserve = (): number => fitReserve;
@@ -95,11 +123,11 @@ export const APRON_Y = 2 * BLEED_Y;
 export function minK(cw: number, ch: number): number {
   if (cw <= 0 || ch <= 0) return MIN_K;
   const cover = Math.max(cw / PAINT_W, ch / PAINT_H) / fitScale(cw, ch);
-  return Math.min(MAX_K, Math.max(MIN_K, cover));
+  return Math.min(ceiling, Math.max(MIN_K, cover));
 }
 
 /** a zoom held between the frame's floor and the ceiling */
-export const clampKFor = (k: number, cw: number, ch: number): number => Math.min(MAX_K, Math.max(minK(cw, ch), k));
+export const clampKFor = (k: number, cw: number, ch: number): number => Math.min(ceiling, Math.max(minK(cw, ch), k));
 
 /** clamp the pan so the painting always covers the frame: its edges never
  *  come inside, but for the rise that lifts the southern towns clear of

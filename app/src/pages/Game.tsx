@@ -9,6 +9,7 @@ import Debrief from '@/components/game/Debrief';
 import Boundary from '@/components/platform/Boundary';
 import ReviewHand from '@/components/game/ReviewHand';
 import AskGuide from '@/components/game/AskGuide';
+import PhotoMode, { PhotoButton } from '@/components/game/PhotoMode';
 import { readable } from '@/game/analysis';
 import { readGame, stopReading } from '@/game/analysisRun';
 import { ghostFromPlan } from '@/game/ghost';
@@ -680,7 +681,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
       {/* the board fills 100% of the screen and stays interactive
           wherever no floating panel is open; panels float over it and
           never move it */}
-      <div ref={boardHost} className="absolute inset-0">
+      <div ref={boardHost} data-board-frame className="absolute inset-0">
         <Suspense fallback={<div className="flex h-full items-center justify-center font-fell text-brass-400">{t('game.page.loadingGl')}</div>}>
           <PixiBoard
             game={review?.state ?? finalBoard ?? game}
@@ -950,6 +951,8 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
           being read, the analysis has it */}
       {!analysisPane && <Guide dock={dock} />}
       {tutorial && <LessonHalo />}
+      {/* the photo mode: the HUD away, the board framed and printed */}
+      <PhotoMode game={review?.state ?? finalBoard ?? game} />
 
       {/* the title card over the whole table while the board is set; it
           lifts once the map is engraved */}
@@ -1084,8 +1087,8 @@ function CoachChip() {
 }
 
 /** the tools under the players: the bots' pace while they play, then the
-    wire, the notebook, a question, settings, ideas, the table and the
-    ledger — the ledger counts what others did since the reader last looked.
+    wire, the notebook, a question, the camera, settings, ideas, the table
+    and the ledger — the ledger counts what others did since the reader last looked.
     Nothing at the right edge, where the exchange unfolds. */
 function TableTools({ skipAnim, onSkip, ledgerOpen, unread, onLedger }: { skipAnim: boolean; onSkip: () => void; ledgerOpen: boolean; unread: number; onLedger: () => void }) {
   const t = useT();
@@ -1114,6 +1117,7 @@ function TableTools({ skipAnim, onSkip, ledgerOpen, unread, onLedger }: { skipAn
       <TelegramButton className={TOOL} />
       <NotebookButton className={TOOL} />
       <AskGuide className={TOOL} />
+      <PhotoButton className={TOOL} />
       {/* the settings take the left edge; the spike sends away what held it */}
       <button type="button" onClick={() => setBoardOption('settingsOpen', !settingsOpen)} aria-pressed={settingsOpen} aria-label={t('board.options.settingsAria')} title={t('game.page.settingsChip')} className={TOOL}>
         <Settings2 className="h-4 w-4" />

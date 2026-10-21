@@ -33,6 +33,7 @@ import { freshFlips } from './living';
 import { cn } from '@/lib/utils';
 import type { StockStyle } from './paint';
 import { buildAmbiance } from './ambiance';
+import { attachPhoto } from './photo';
 import { flooredScale } from './floor';
 import { isKey, typing } from '@/components/game/keybindings';
 import { HOVERED, stateInk } from '@/components/game/stateInks';
@@ -1609,6 +1610,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       /* the hand comes or goes: the frame follows the room it leaves */
       cleanups.push(subscribeFitReserve(() => cam.reclamp()));
       /* the photo mode borrows the stage, the scene and the camera (photo.ts) */
+      cleanups.push(attachPhoto({ app: a, scene, cam, game: () => gameRef.current }));
     };
 
     void boot();
