@@ -1,5 +1,5 @@
 import { LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
-import { merchantDemand } from '@/game/engine';
+import { hasPresence, merchantDemand, networkTowns } from '@/game/engine';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -38,14 +38,19 @@ export function firstPayday(g: GameState, me: number): number | null {
 
 /** the lesson's entry in the dictionary: the first payday reads as it was
  *  paid — owed, nought or drawn — a lesson the reader may pass as things
- *  stand says so (spare), and a short game tells some lessons in its own
- *  words */
+ *  stand says so (spare), a mine no canal of the reader's can lead to a
+ *  forge from, or a network with no town for one, sends the canal and
+ *  the forge another way, and a short game tells some lessons in its
+ *  own words */
 export function stepKeyOf(id: string, g: GameState, me: number, spare = false): string {
   if (id === 'payday') {
     const level = firstPayday(g, me) ?? incomeLevel(g.players[me].income);
     return level < 0 ? 'paydayOwed' : level === 0 ? 'paydayZero' : 'payday';
   }
   if (spare && SPARE[id]) return SPARE[id];
+  if (id === 'link' && mines(g, me).length > 0 && forgesFromMines(g, me).length === 0) return 'linkAstray';
+  /* with nothing on the board the forge card builds anywhere */
+  if (id === 'iron' && hasPresence(g, me) && forgesInReach(g, me).length === 0) return 'ironAstray';
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
 }
 
@@ -92,6 +97,13 @@ export function forgeWays(g: GameState, me: number): { forges: string[]; deadEnd
  *  back still says where the canal went */
 export function forgesFromMines(g: GameState, me: number): string[] {
   return inBoardOrder(mines(g, me).flatMap((m) => [...forgesFrom(g, me, m), ...openCanals(g, me, m).flatMap((l) => ends(l).filter((x) => x !== m && forgeOf(g, me, x)))]));
+}
+
+/** the forge towns the reader's network touches, where the forge card
+ *  builds: a forge slot free in a town with no tile of theirs, or a forge
+ *  of theirs already standing */
+export function forgesInReach(g: GameState, me: number): string[] {
+  return inBoardOrder([...networkTowns(g, me)].filter((x) => (freeSlot(g, x, 'iron') && !holds(g, me, x)) || forgeOf(g, me, x)));
 }
 
 /** the merchants of this table who keep a barrel — a tile of theirs that

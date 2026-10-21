@@ -169,6 +169,42 @@ describe('where a first mine feeds a forge', () => {
     /* the reader's forge built at the far end: the canal still went there */
     g.tiles['dudley:1'] = tile(0, 'iron');
     expect(forgesFromMines(g, 0)).toEqual(['walsall', 'coalbrookdale', 'dudley']);
+    expect(stepKeyOf('link', g, 0)).toBe('link');
+  });
+});
+
+describe('a canal and a forge sent another way', () => {
+  const tile = (owner: number, industry: TileState['industry']): TileState => ({ owner, industry, level: 1, flipped: false, cubes: 0 });
+
+  it('sends the canal toward a merchant from a mine no canal leads to a forge from', () => {
+    const g = structuredClone(table());
+    /* no mine yet: the plain words */
+    expect(stepKeyOf('link', g, 0)).toBe('link');
+    g.tiles = { 'wolverhampton:1': tile(0, 'coal') };
+    expect(stepKeyOf('link', g, 0)).toBe('link');
+    g.tiles = { 'redditch:0': tile(0, 'coal') };
+    expect(stepKeyOf('link', g, 0)).toBe('linkAstray');
+    /* the one free canal to a forge taken by the machine: the same */
+    g.tiles = { 'dudley:0': tile(0, 'coal') };
+    g.links = { 'birmingham--dudley': { owner: 1, era: 'canal' } };
+    expect(stepKeyOf('link', g, 0)).toBe('linkAstray');
+  });
+
+  it('builds the forge on a location card when the network touches no forge town', () => {
+    const g = structuredClone(table());
+    /* nothing on the board: the forge card builds anywhere */
+    expect(stepKeyOf('iron', g, 0)).toBe('iron');
+    /* a canal from the mine to a forge town */
+    g.tiles = { 'wolverhampton:1': tile(0, 'coal') };
+    g.links = { 'wolverhampton--dudley': { owner: 0, era: 'canal' } };
+    expect(stepKeyOf('iron', g, 0)).toBe('iron');
+    /* a Redditch mine and its canal to Oxford: no forge town in the network */
+    g.tiles = { 'redditch:0': tile(0, 'coal') };
+    g.links = { 'redditch--m-oxford': { owner: 0, era: 'canal' } };
+    expect(stepKeyOf('iron', g, 0)).toBe('ironAstray');
+    /* read back once the forge stands: the plain words again */
+    g.tiles['dudley:1'] = tile(0, 'iron');
+    expect(stepKeyOf('iron', g, 0)).toBe('iron');
   });
 });
 

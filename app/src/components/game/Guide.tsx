@@ -99,15 +99,14 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   /* where a first mine feeds a forge of the reader's, read off the board */
   const ways = forgeWays(game, me);
   const avoid = ways.deadEnds.length ? t('game.guide.coalAvoid', { list: townList(ways.deadEnds, 'disjunction') }) : '';
-  /* and where the reader's own mine sends its canal — or, a mine no canal
-     leads from to a forge, what to do instead */
+  /* and where the reader's own mine sends its canal (a mine no canal
+     leads from to a forge has a lesson of its own: stepKeyOf) */
   const toward = forgesFromMines(game, me);
-  const mined = Object.values(game.tiles).some((x) => x.owner === me && x.industry === 'coal');
   /* who buys what at this table: "Shrewsbury le coton, Oxford tout" */
   const buyers = buyersOf(game).map(({ merchant, goods }) =>
     goods === 'all' ? t('game.guide.buyers.all', { merchant }) : t('game.guide.buyers.some', { merchant, goods: new Intl.ListFormat(localeOf(getLang()), { type: 'conjunction' }).format(goods.map((x) => t(`game.guide.buyers.${x}`))) }),
   );
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', astray: mined && !toward.length ? t('game.guide.linkAstray') : '', buyers: buyers.join(', '), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */
