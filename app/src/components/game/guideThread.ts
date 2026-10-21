@@ -47,6 +47,9 @@ export const EMPTY_THREAD: Thread = { said: [], lesson: null, bot: null, filed: 
 export interface LiveNow {
   /** the lesson on show, and its words — asked for only when it is new */
   lesson: { at: number; word: () => { head: string; body: string } } | null;
+  /** no lesson on show while the guide goes on — the one left is set
+   *  aside till the next round: the last one read is filed */
+  rest?: boolean;
   bot: LiveBot | null;
   /** the table's news the reader has already seen */
   news: { id: number; text: string }[];
@@ -60,12 +63,12 @@ export function fileThread(th: Thread, now: LiveNow): Thread {
     if (next === th) next = { ...th, said: [...th.said] };
     return next;
   };
-  if (now.lesson && th.lesson?.at !== now.lesson.at) {
+  if (now.lesson ? th.lesson?.at !== now.lesson.at : now.rest && th.lesson) {
     const n = edit();
     /* a lesson may be filed twice — set aside and back, read again —
        and each filing is its own turn of the thread */
     if (th.lesson) n.said.push({ key: `l${th.lesson.at}.${n.said.length}`, kind: 'lesson', head: th.lesson.head, body: th.lesson.body });
-    n.lesson = { at: now.lesson.at, ...now.lesson.word() };
+    n.lesson = now.lesson ? { at: now.lesson.at, ...now.lesson.word() } : null;
   }
   if (now.bot && th.bot?.id !== now.bot.id) {
     const n = edit();

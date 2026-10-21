@@ -25,6 +25,21 @@ describe("the guide's thread", () => {
     expect(new Set(th.said.map((s) => s.key)).size).toBe(3);
   });
 
+  it('files the last lesson read when only one set aside is left', () => {
+    const a = fileThread(EMPTY_THREAD, { lesson: lesson(21), bot: null, news: [] });
+    /* the note folded or undocked: nothing is filed */
+    expect(fileThread(a, { lesson: null, bot: null, news: [] })).toBe(a);
+    /* at rest: the page read last joins the thread, once */
+    const b = fileThread(a, { lesson: null, rest: true, bot: null, news: [] });
+    expect(b.said.map((s) => s.head)).toEqual(['h21']);
+    expect(b.lesson).toBeNull();
+    expect(fileThread(b, { lesson: null, rest: true, bot: null, news: [] })).toBe(b);
+    /* the lesson set aside back the next round: live again */
+    const c = fileThread(b, { lesson: lesson(14), bot: null, news: [] });
+    expect(c.lesson?.at).toBe(14);
+    expect(c.said).toHaveLength(1);
+  });
+
   it('files each piece of news once', () => {
     const news = [{ id: 1, text: 'a' }, { id: 2, text: 'b' }];
     const a = fileThread(EMPTY_THREAD, { lesson: null, bot: null, news });

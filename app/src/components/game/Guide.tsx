@@ -587,6 +587,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             },
           }
         : null,
+    rest: !!(dock && aside),
     bot: dock && bot ? { id: bot.id, head: bot.what, body: bot.why, seat: bot.seat } : null,
     news: dock ? happens.filter((x) => x.id <= eventsSeen) : [],
   });
