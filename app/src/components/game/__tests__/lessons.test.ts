@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { applyAction, fallbackAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { buildTargets, canLoan, linkTargets, newGame } from '@/game/engine';
+import { buildTargets, canLoan, linkTargets, newGame, sellTargets } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
 import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
 import type { LessonCtx, Progress } from '../lessons';
@@ -396,6 +396,38 @@ describe('the loan, never a trap', () => {
     expect(detourOf(upTo('iron'), due(upTo('iron'), ctx(broke)), ctx(broke), true, true)).toBe('loan');
     expect(detourOf(f, due(f, ctx(broke)), ctx(broke), true, true)).toBeNull();
     expect(due(f, ctx(broke))).toMatchObject({ id: 'iron', mode: 'do' });
+  });
+
+  it('leaves the works and the sale after it a way to wait, not Skip alone', () => {
+    const r2 = round2();
+    const thin = { ...r2, players: r2.players.map((x, i) => (i === 0 ? { ...x, money: 4 } : x)) };
+    let p = see(upTo('loan'), 'loan', ctx(thin));
+    const played = idle(thin);
+    p = setAside(p, 'loan', ctx(played));
+    /* the works come up at once, and the thin purse builds none */
+    expect(due(p, ctx(played))).toMatchObject({ id: 'works', mode: 'do' });
+    expect(worksAt(played)).toEqual([]);
+    p = see(p, 'works', ctx(played));
+    /* nothing played past it, but nothing to try either: it may wait at
+       once, as the block's advice says — come back after payday */
+    expect(wayOn(p, 'works', ctx(played))).toBeNull();
+    expect(wayOn(p, 'works', ctx(played), true)).toBe('later');
+    p = setAside(p, 'works', ctx(played));
+    expect(p.passed).not.toContain('works');
+    /* the sale, with no works to sell: the same */
+    p = pass(pass(p, 'market'), 'beer');
+    expect(due(p, ctx(played))).toMatchObject({ id: 'sell', mode: 'do' });
+    expect(sellTargets(played, 0).some((x) => x.valid)).toBe(false);
+    const sell = see(p, 'sell', ctx(played));
+    expect(mayLater(sell, 'sell', ctx(played), true)).toBe(true);
+    /* in the last round it is skipped, with no round to come back in */
+    expect(wayOn(sell, 'sell', ctx({ ...played, round: 10 }), true)).toBe('skip');
+    /* the mine never waits: blocked, it keeps the guide's Skip */
+    expect(wayOn(see(upTo('coal'), 'coal', ctx(guided())), 'coal', ctx(guided()), true)).toBeNull();
+    /* the round over, the loan and then the works come back in their place */
+    const r3 = theirs(idle(played));
+    expect(due(setAside(sell, 'sell', ctx(played)), ctx(r3))).toMatchObject({ id: 'loan', mode: 'do' });
+    expect(due(pass(sell, 'loan'), ctx(r3))).toMatchObject({ id: 'works', mode: 'do' });
   });
 });
 

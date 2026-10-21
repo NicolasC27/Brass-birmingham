@@ -74,7 +74,11 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'hand', done: (c) => c.sel !== null },
   /* not to be set aside: in the first round the mine is the reader's one
      action, so "Later" could come no sooner than the round after — and
-     the canal and the forge that follow are read off that mine */
+     the canal and the forge that follow are read off that mine. A mine
+     the table does not allow may be skipped (the guide's Skip); one it
+     allows that the reader will not build keeps the lesson on show round
+     after round — on purpose: a mine costs little, and without one the
+     lessons after it would speak of nothing */
   { id: 'coal', done: (c) => built(c, ['coal']) },
   /* read while the table waits: her turn comes once it has been read */
   { id: 'botTurn' },
@@ -203,20 +207,22 @@ export function setAside(p: Progress, id: string, c: LessonCtx): Progress {
 
 /** the way on from a deed that allows it, still undone, once the reader
  *  has played an action since it first came up — back from a round set
- *  aside, it was played past already: Later, which brings it back next
- *  round in its place, or Skip in the last round, with no round after it
- *  to come back in. Null while the deed is still the reader's to try */
-export function wayOn(p: Progress, id: string, c: LessonCtx): 'later' | 'skip' | null {
+ *  aside, it was played past already, and one the table does not allow
+ *  now (blocked) has nothing to try first: Later, which brings it back
+ *  next round in its place, or Skip in the last round, with no round
+ *  after it to come back in. Null while the deed is still the reader's
+ *  to try */
+export function wayOn(p: Progress, id: string, c: LessonCtx, blocked = false): 'later' | 'skip' | null {
   const l = lessonOf(id);
   if (!l?.deferrable || !l.done || l.done(c) || aside(p, id, c)) return null;
   const s = p.seen[id];
-  const past = p.later[id] !== undefined || (!!s && c.g.ledger.some((e) => e.player === c.me && (e.at ?? -1) >= s.at && e.verb !== 'system' && e.verb !== 'score'));
+  const past = blocked || p.later[id] !== undefined || (!!s && c.g.ledger.some((e) => e.player === c.me && (e.at ?? -1) >= s.at && e.verb !== 'system' && e.verb !== 'score'));
   if (!past) return null;
   return lastRound(c.g) ? 'skip' : 'later';
 }
 
 /** "Later" is offered on the deed on show (see wayOn) */
-export const mayLater = (p: Progress, id: string, c: LessonCtx): boolean => wayOn(p, id, c) === 'later';
+export const mayLater = (p: Progress, id: string, c: LessonCtx, blocked = false): boolean => wayOn(p, id, c, blocked) === 'later';
 
 /** the lesson a move did the deed of: the first whose deed did not hold
  *  before the move and holds after it. At the guided table that move is
