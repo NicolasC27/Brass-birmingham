@@ -26,7 +26,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, loanWords, stepKeyOf } from './lessonWords';
+import { barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -99,7 +99,11 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   /* where a first mine feeds a forge of the reader's, read off the board */
   const ways = forgeWays(game, me);
   const avoid = ways.deadEnds.length ? t('game.guide.coalAvoid', { list: townList(ways.deadEnds, 'conjunction') }) : '';
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  /* and where the reader's own mine sends its canal — or, a mine no canal
+     leads from to a forge, what to do instead */
+  const toward = forgesFromMines(game, me);
+  const mined = Object.values(game.tiles).some((x) => x.owner === me && x.industry === 'coal');
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', astray: mined && !toward.length ? t('game.guide.linkAstray') : '', name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */

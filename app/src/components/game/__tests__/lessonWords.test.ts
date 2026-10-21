@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -121,6 +121,18 @@ describe('where a first mine feeds a forge', () => {
     /* the machine's works elsewhere in the town leaves the slot free */
     g.tiles = { 'birmingham:0': tile(1, 'cotton') };
     expect(forgesFrom(g, 0, 'dudley')).toEqual(['birmingham']);
+  });
+
+  it('sends the canal from the reader’s own mine, and nowhere from a dead end', () => {
+    const g = structuredClone(table());
+    expect(forgesFromMines(g, 0)).toEqual([]);
+    g.tiles = { 'wolverhampton:1': tile(0, 'coal') };
+    expect(forgesFromMines(g, 0)).toEqual(['walsall', 'coalbrookdale', 'dudley']);
+    /* the machine's mine is not the reader's */
+    g.tiles = { 'wolverhampton:1': tile(1, 'coal') };
+    expect(forgesFromMines(g, 0)).toEqual([]);
+    g.tiles = { 'redditch:0': tile(0, 'coal') };
+    expect(forgesFromMines(g, 0)).toEqual([]);
   });
 });
 

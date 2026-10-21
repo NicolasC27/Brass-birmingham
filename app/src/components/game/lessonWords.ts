@@ -77,6 +77,13 @@ export function forgeWays(g: GameState, me: number): { forges: string[]; deadEnd
   return { forges: inBoardOrder(reach.flatMap((x) => x.to)), deadEnds: reach.filter((x) => x.to.length === 0).map((x) => x.m) };
 }
 
+/** the forge towns a canal leads to from the reader's own mines: where
+ *  the lesson on canals sends the first one */
+export function forgesFromMines(g: GameState, me: number): string[] {
+  const mines = Object.entries(g.tiles).filter(([, x]) => x.owner === me && x.industry === 'coal').map(([key]) => key.split(':')[0]);
+  return inBoardOrder(mines.flatMap((m) => forgesFrom(g, me, m)));
+}
+
 /** the merchants of this table who keep a barrel — a tile of theirs that
  *  is not blank — and what drinking one gives: the lesson on beer names
  *  them from the table, never from one deal written down */
