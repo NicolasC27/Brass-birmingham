@@ -17,6 +17,7 @@ import { searchTurn } from '@/game/search';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { dictOf, getLang, localeOf, useLang, useT } from '@/i18n';
+import { roman } from '@/gl/roman';
 import { cn } from '@/lib/utils';
 import { useHudRects } from './useHudRects';
 import { EMPTY_THREAD, askThread, fileThread } from './guideThread';
@@ -26,7 +27,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf } from './lessonWords';
+import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf, worksOnMat } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -78,8 +79,10 @@ const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
   const down = Math.max(0, h - 220);
   return { x: clamp(p.x, -left, 0), y: clamp(p.y, Math.min(0, -90), down) };
 };
-/** towns named as the reader's language lists them: "A, B ou C" */
-const townList = (ids: string[], type: 'conjunction' | 'disjunction'): string => new Intl.ListFormat(localeOf(getLang()), { type }).format(ids.map((id) => TOWN_BY_ID[id]?.name ?? id));
+/** words listed as the reader's language lists them: "A, B ou C" */
+const listed = (items: string[], type: 'conjunction' | 'disjunction'): string => new Intl.ListFormat(localeOf(getLang()), { type }).format(items);
+/** towns named so */
+const townList = (ids: string[], type: 'conjunction' | 'disjunction'): string => listed(ids.map((id) => TOWN_BY_ID[id]?.name ?? id), type);
 
 /** the figures a lesson's text is written with: the table as it stands,
  *  and what it started from — a lesson read again later still says how
@@ -104,13 +107,17 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   const toward = forgesFromMines(game, me);
   /* who buys what at this table: "Shrewsbury le coton, Oxford tout" */
   const buyers = buyersOf(game).map(({ merchant, goods }) =>
-    goods === 'all' ? t('game.guide.buyers.all', { merchant }) : t('game.guide.buyers.some', { merchant, goods: new Intl.ListFormat(localeOf(getLang()), { type: 'conjunction' }).format(goods.map((x) => t(`game.guide.buyers.${x}`))) }),
+    goods === 'all' ? t('game.guide.buyers.all', { merchant }) : t('game.guide.buyers.some', { merchant, goods: listed(goods.map((x) => t(`game.guide.buyers.${x}`)), 'conjunction') }),
+  );
+  /* the works the mat offers next, priced: "filature I (12 £), …" */
+  const tiles = worksOnMat(game, me).map(({ industry, level, cost, coal, iron }) =>
+    t('game.guide.worksTile.line', { industry: t(`game.guide.worksTile.${industry}`), level: roman(level), cost: listed([t('game.guide.worksTile.money', { n: cost }), ...(coal ? [t('game.guide.worksTile.coal', { n: coal })] : []), ...(iron ? [t('game.guide.worksTile.iron', { n: iron })] : [])], 'conjunction') }),
   );
   /* who else lays links and drinks barrels: the one rival by name — the
      machine, at the guided table — else another player, never a blank */
   const others = game.players.filter((_, i) => i !== me);
   const rival = others.length === 1 ? others[0].name : t('game.guide.rival');
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a sentence that follows a colon starts low */

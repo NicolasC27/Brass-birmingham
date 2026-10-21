@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, shortKeyOf, stepKeyOf } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -112,6 +112,29 @@ describe('who buys what at the table', () => {
       { merchant: 'Oxford', goods: ['cotton', 'pottery'] },
       { merchant: 'Gloucester', goods: 'all' },
     ]);
+  });
+});
+
+describe('the works the mat offers next', () => {
+  it('are its lowest tiles, priced as the tiles print them', () => {
+    expect(worksOnMat(table(), 0)).toEqual([
+      { industry: 'cotton', level: 1, cost: 12, coal: 0, iron: 0 },
+      { industry: 'manufacturer', level: 1, cost: 8, coal: 1, iron: 0 },
+      { industry: 'pottery', level: 1, cost: 17, coal: 0, iron: 1 },
+    ]);
+  });
+
+  it('follow a development, and leave out a tile the era does not build', () => {
+    const g = structuredClone(table());
+    /* the cotton mills of level I developed away */
+    g.players[0].stacks.cotton = g.players[0].stacks.cotton.filter((l) => l > 1);
+    expect(worksOnMat(g, 0)[0]).toEqual({ industry: 'cotton', level: 2, cost: 14, coal: 1, iron: 0 });
+    /* the rail era builds no level I cotton mill or manufactory */
+    g.era = 'rail';
+    expect(worksOnMat(g, 0).map((x) => `${x.industry} ${x.level}`)).toEqual(['cotton 2', 'pottery 1']);
+    /* all built: nothing to quote */
+    g.players[0].stacks = { ...g.players[0].stacks, cotton: [], manufacturer: [], pottery: [] };
+    expect(worksOnMat(g, 0)).toEqual([]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
+import { INDUSTRIES, LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
 import { hasPresence, merchantDemand, networkTowns } from '@/game/engine';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
 
@@ -121,6 +121,30 @@ export function buyersOf(g: GameState): { merchant: string; goods: IndustryType[
   const buying = MERCHANTS.map((m) => ({ merchant: m.name, buys: merchantDemand(g, m.id) })).filter((x) => x.buys.length > 0);
   const all = (x: { buys: IndustryType[] }) => x.buys.length === 3;
   return [...buying.filter((x) => !all(x)), ...buying.filter(all)].map((x) => ({ merchant: x.merchant, goods: all(x) ? 'all' : x.buys }));
+}
+
+/** a works tile as the mat offers it next, and what building it asks */
+export interface MatWorks {
+  industry: IndustryType;
+  level: number;
+  cost: number;
+  coal: number;
+  iron: number;
+}
+
+/** the works the reader's mat offers next: the lowest tile left of the
+ *  cotton mills, the manufactories and the potteries, with its price.
+ *  The lesson on works quotes them off the mat, since a development may
+ *  already have taken a level I away; a tile the era does not build is
+ *  left out, unless no other is left to quote */
+export function worksOnMat(g: GameState, me: number): MatWorks[] {
+  const tops = (['cotton', 'manufacturer', 'pottery'] as const).flatMap((industry): MatWorks[] => {
+    const level = g.players[me].stacks[industry][0];
+    const tile = level === undefined ? undefined : INDUSTRIES[industry][level - 1];
+    return tile ? [{ industry, level, cost: tile.cost, coal: tile.coal, iron: tile.iron }] : [];
+  });
+  const now = tops.filter((x) => INDUSTRIES[x.industry][x.level - 1].eras.includes(g.era));
+  return now.length ? now : tops;
 }
 
 /** below this a purse builds little: a loan taken with less was for want of money */
