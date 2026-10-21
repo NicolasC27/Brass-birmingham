@@ -19,9 +19,9 @@ describe('the lessons of the evening course', () => {
 
   it('count the lessons passed, in the course’s order', () => {
     expect(lessonsRead()).toEqual([]);
-    saveProgress({ ...freshProgress('GWE5'), passed: ['welcome', 'board', 'loan', 'sell'] });
-    /* whatever order they were passed in */
-    expect(lessonsRead()).toEqual(['welcome', 'board', 'sell', 'loan']);
+    saveProgress({ ...freshProgress('GWE5'), passed: ['welcome', 'board', 'sell', 'loan'] });
+    /* whatever order they were passed in: the loan comes before the works */
+    expect(lessonsRead()).toEqual(['welcome', 'board', 'loan', 'sell']);
   });
 
   it('read the old index once, until the guided table writes its record', () => {

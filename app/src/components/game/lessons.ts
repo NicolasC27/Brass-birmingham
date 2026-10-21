@@ -61,12 +61,14 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'link', done: (c) => Object.values(c.g.links).some((l) => l.owner === c.me) },
   { id: 'iron', done: (c) => built(c, ['iron']) },
   { id: 'develop' },
+  /* a mine, a canal and a forge leave the purse too thin for a works:
+     the loan is taught before it, not met as a detour on the way */
+  { id: 'loan', done: (c) => c.g.players[c.me].loans > 0 },
   { id: 'works', done: (c) => built(c, WORKS) },
   { id: 'market', show: 'market' },
   { id: 'beer' },
   { id: 'sell', done: (c) => c.g.players[c.me].stats.sold > 0 },
   { id: 'flipped', when: (c) => c.g.players[c.me].stats.sold > 0 },
-  { id: 'loan', done: (c) => c.g.players[c.me].loans > 0 },
   { id: 'eraEnd' },
   { id: 'plan' },
   { id: 'tips' },

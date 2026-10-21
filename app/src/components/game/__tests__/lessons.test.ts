@@ -21,6 +21,9 @@ function guided(): GameState {
   return newGame(withEdition(setup), 3);
 }
 
+/** the order the old indices counted in: the loan came after the sale */
+const V1 = ['welcome', 'board', 'goal', 'money', 'mat', 'matRead', 'hand', 'coal', 'botTurn', 'payday', 'link', 'iron', 'develop', 'works', 'market', 'beer', 'sell', 'flipped', 'loan', 'eraEnd', 'plan', 'tips', 'onward'];
+
 const ctx = (g: GameState, ui: Partial<Omit<LessonCtx, 'g' | 'me'>> = {}): LessonCtx => ({ g, me: 0, sel: null, mat: null, ...ui });
 /** every lesson before this one passed, in order */
 const upTo = (id: string, code: string | null = 'GWE5'): Progress => ({ ...freshProgress(code), passed: LESSON_IDS.slice(0, lessonIndex(id)) });
@@ -116,17 +119,17 @@ describe('the lesson due', () => {
 
   it('passes a deed seen while another lesson is on show', () => {
     const g = guided();
-    /* the sale skipped, flipped waits and the loan is shown undone */
-    let p = pass(upTo('sell'), 'sell');
+    /* the first payday still waits on round 2, and the loan is shown undone */
+    let p = { ...upTo('loan'), passed: upTo('loan').passed.filter((id) => id !== 'payday') };
     expect(due(p, ctx(g))).toMatchObject({ id: 'loan', mode: 'do' });
     p = see(p, 'loan', ctx(g));
-    /* a first sale brings flipped up; a loan taken while it is read */
-    const sold = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
-    expect(due(p, ctx(sold))).toMatchObject({ id: 'flipped', mode: 'read' });
-    const borrowed = { ...sold, players: sold.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
+    /* round 2 brings payday up; a loan taken while it is read */
+    const r2 = { ...g, round: 2 };
+    expect(due(p, ctx(r2))).toMatchObject({ id: 'payday', mode: 'read' });
+    const borrowed = { ...r2, players: r2.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
     p = settle(p, ctx(borrowed));
     expect(p.passed.at(-1)).toBe('loan');
-    expect(due(p, ctx(borrowed))).toMatchObject({ id: 'flipped' });
+    expect(due(p, ctx(borrowed))).toMatchObject({ id: 'payday' });
   });
 
   it('keeps a page waiting on the game in its place, however far the reader reads', () => {
@@ -134,8 +137,8 @@ describe('the lesson due', () => {
     /* the sale skipped: what a flipped tile is waits for the first sale */
     let p = upTo('sell');
     p = pass(p, 'sell');
-    expect(due(p, ctx(g))).toMatchObject({ id: 'loan' });
-    for (const id of ['loan', 'eraEnd', 'plan', 'tips']) p = pass(p, id);
+    expect(due(p, ctx(g))).toMatchObject({ id: 'eraEnd' });
+    for (const id of ['eraEnd', 'plan', 'tips']) p = pass(p, id);
     expect(due(p, ctx(g))).toMatchObject({ id: 'onward' });
     const sold = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
     expect(due(p, ctx(sold))).toMatchObject({ id: 'flipped', index: lessonIndex('flipped'), mode: 'read' });
@@ -157,17 +160,17 @@ describe('reading back', () => {
     const g = guided();
     const broke = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, money: 0 } : x)) };
     const c = ctx(broke);
-    /* round 3, the works lesson short of money: the loan is taught first */
-    const p = upTo('works');
+    /* round 2, the forge short of money: the loan is taught first */
+    const p = upTo('iron');
     const d = due(p, c);
-    expect(d).toMatchObject({ id: 'works', mode: 'do' });
+    expect(d).toMatchObject({ id: 'iron', mode: 'do' });
     expect(detourOf(p, d, c, true, true)).toBe('loan');
     const before = JSON.stringify(p);
     /* Back, Back, Next, Next: the live lesson again */
     const b1 = back(p, null);
-    expect(b1).toEqual({ id: 'develop', at: lessonIndex('develop') });
+    expect(b1).toEqual({ id: 'link', at: lessonIndex('link') });
     const b2 = back(p, b1);
-    expect(b2).toEqual({ id: 'iron', at: lessonIndex('iron') });
+    expect(b2).toEqual({ id: 'payday', at: lessonIndex('payday') });
     expect(forward(p, b2)).toEqual(b1);
     expect(forward(p, b1)).toBeNull();
     /* nothing was passed or lost on the way */
@@ -180,18 +183,18 @@ describe('reading back', () => {
   });
 
   it('opens a lesson not yet passed out of turn, and comes back from it', () => {
-    const p = upTo('works');
+    const p = upTo('iron');
     const r = reread(p, 'loan');
     expect(r).toEqual({ id: 'loan', at: p.passed.length });
     expect(forward(p, r)).toBeNull();
-    expect(back(p, r)).toEqual({ id: 'develop', at: p.passed.length - 1 });
-    expect(reread(p, 'iron')).toEqual({ id: 'iron', at: lessonIndex('iron') });
+    expect(back(p, r)).toEqual({ id: 'link', at: p.passed.length - 1 });
+    expect(reread(p, 'coal')).toEqual({ id: 'coal', at: lessonIndex('coal') });
   });
 
   it('takes no detour once the loan is taught, taken, or not the want', () => {
     const g = guided();
     const c = ctx(g);
-    const p = upTo('works');
+    const p = upTo('iron');
     const d = due(p, c);
     expect(detourOf(p, d, c, false, true)).toBeNull();
     expect(detourOf(p, d, c, true, false)).toBeNull();
@@ -201,6 +204,21 @@ describe('reading back', () => {
     /* the loan itself due: it is the lesson, not a detour */
     const q = upTo('loan');
     expect(detourOf(q, due(q, c), c, true, true)).toBeNull();
+    /* the works come after the loan: no detour leads back to it */
+    const w = upTo('works');
+    expect(detourOf(w, due(w, c), c, true, true)).toBeNull();
+  });
+
+  it('teaches the loan before the works, and detours to it from the mine, the canal and the forge', () => {
+    const g = guided();
+    const c = ctx(g);
+    expect(lessonIndex('loan')).toBe(lessonIndex('works') - 1);
+    expect(due(pass(upTo('develop'), 'develop'), c)).toMatchObject({ id: 'loan', mode: 'do' });
+    /* a deed before the loan short of money: the loan comes first */
+    for (const id of ['coal', 'link', 'iron']) {
+      const p = upTo(id);
+      expect(detourOf(p, due(p, c), c, true, true)).toBe('loan');
+    }
   });
 });
 
@@ -275,11 +293,12 @@ describe('the progress on the disk', () => {
   it('reads the old indices past a waiting page without losing it', () => {
     const store = stubStorage();
     const g = guided();
-    /* flipped waited for a sale; the loan, done beforehand, was read past */
+    /* flipped waited for a sale; the loan, done beforehand, was read past —
+       counted in the order the indices were written in, the loan last */
     store.set('brassworks.tutorial.step', '19');
     store.set('brassworks.tutorial.reached', '17');
     const p = progressAt('GWE5');
-    expect(p.passed).toEqual(LESSON_IDS.slice(0, 17));
+    expect(p.passed).toEqual(V1.slice(0, 17));
     expect(p.passed).not.toContain('flipped');
     const borrowed = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
     const q = settle(p, ctx(borrowed));
