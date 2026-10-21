@@ -634,12 +634,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
   };
   /* Back walks the lessons passed, newest first */
   const behind = guided ? readBack(settled, review) : null;
-  /* the way on from a deed on show the reader has played past, or that
-     the table does not allow now: Later sets it aside, and it comes back
-     next round in its place; in the last round, with none to come, Skip.
-     Not on a deed the reader may pass (Next says so), nor on one read back */
-  const way = lctx && showSteps && review === null && owed?.mode === 'do' && !spare ? wayOn(live, shownId, lctx, !!blocked) : null;
-  const later = way === 'later' ? shownId : null;
+  /* the way on from the deed due, once the reader has played past it or
+     the table does not allow it now: Later sets it aside, and it comes
+     back next round in its place; in the last round, with none to come,
+     Skip. In the loan's detour it is the lesson that led there, which
+     money stops: it may wait for the payday. Not on a deed the reader may
+     pass (Next says so), nor on one read back */
+  const way = lctx && showSteps && review === null && owed?.mode === 'do' && owed.id && !spare ? wayOn(live, owed.id, lctx, !!block) : null;
+  const later = way === 'later' ? (owed?.id ?? null) : null;
   const putAside = (id: string) => {
     if (lctx) saveProgress(setAside(live, id, lctx));
   };
@@ -1007,7 +1009,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                             </div>
                           </div>
                         )}
-                        {detour && block && dueStep && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })} {lower(block.short)} {t('game.guide.detourOut')}</p>}
+                        {detour && block && dueStep && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{t('game.guide.detour', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })} {lower(block.short)} {t(later ? 'game.guide.detourLater' : 'game.guide.detourOut')}</p>}
                         {already && <p className="mb-1.5 font-serif text-[13px] leading-snug text-bottle-600">{t('game.guide.already')}</p>}
                         {blocked && <p className="mb-1.5 font-serif text-[13px] leading-snug text-rust-500">{blocked}</p>}
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
@@ -1055,14 +1057,15 @@ function Guide({ dock = 0 }: { dock?: number }) {
                       )}
                       {later && (
                         <button type="button" onClick={() => putAside(later)} title={t('game.guide.laterHint')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
-                          <Clock className="h-3.5 w-3.5" /> {t('game.guide.later')}
+                          <Clock className="h-3.5 w-3.5" /> {detour && dueStep ? t('game.guide.laterLesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) }) : t('game.guide.later')}
                         </button>
                       )}
                       {/* Skip: a deed the table does not allow now, for a
                           reader who gives it up — beside Later when it may
                           wait — or one played past in the last round; in
-                          the loan's detour, the lesson that led there */}
-                      {(blocked || detour || way === 'skip') && myTurn && !already && (
+                          the loan's detour, the lesson that led there when
+                          it cannot wait */}
+                      {(blocked || (detour && !later) || way === 'skip') && myTurn && !already && (
                         <button type="button" onClick={() => owed?.id && passOn(owed.id)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           {detour && dueStep ? t('game.guide.skipLesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) }) : t('game.guide.skip')}
                           <ChevronRight className="h-3.5 w-3.5" />

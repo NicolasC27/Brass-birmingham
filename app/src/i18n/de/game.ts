@@ -1060,7 +1060,8 @@ const game: typeof engame = {
     canBuild: 'Mit dieser Karte lässt sich jetzt etwas bauen',
     foldHint: 'Ein Klick auf die Notiz klappt sie zu einer Zeile ein; ziehe den Kopf, um sie zu verschieben.',
     detour: 'Ein Umweg vor « {lesson} »:',
-    detourOut: 'Ohne Kredit: überspring sie und komm nach dem Zahltag darauf zurück.',
+    detourOut: 'Ohne Kredit: überspring sie.',
+    detourLater: 'Ohne Kredit: verschieb sie — sie kommt nach dem Zahltag wieder.',
     already: 'Das hast du schon getan — hier steht, was es ändert.',
     aside: 'Lektion zurückgestellt: « {lesson} » kommt in der nächsten Runde wieder.',
     suggest: {
@@ -1142,6 +1143,7 @@ const game: typeof engame = {
     skip: 'Diese Lektion überspringen',
     skipLesson: '« {lesson} » überspringen',
     later: 'Später',
+    laterLesson: '« {lesson} » verschieben',
     laterHint: 'Die Lektion kommt in der nächsten Runde an ihrer Stelle wieder.',
     blocked: {
       coalMoney: 'Keine Mine ist jetzt baubar: die billigste verlangt £{need} und du hast £{money}.',

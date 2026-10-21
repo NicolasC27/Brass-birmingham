@@ -1060,7 +1060,8 @@ const fr: typeof engame = {
     canBuild: 'Cette carte peut construire quelque chose maintenant',
     foldHint: 'Un clic sur la note la replie en une ligne ; glissez son en-tête pour la déplacer.',
     detour: 'Un détour avant « {lesson} » :',
-    detourOut: 'Sans emprunt, passez-la et revenez-y après la paie.',
+    detourOut: 'Sans emprunt, passez-la.',
+    detourLater: 'Sans emprunt, reportez-la : elle revient après la paie.',
     already: 'Vous l’avez déjà fait : voici ce que ça change.',
     aside: 'Leçon mise de côté : « {lesson} » revient à la prochaine manche.',
     suggest: {
@@ -1142,6 +1143,7 @@ const fr: typeof engame = {
     skip: 'Passer cette leçon',
     skipLesson: 'Passer « {lesson} »',
     later: 'Plus tard',
+    laterLesson: 'Reporter « {lesson} »',
     laterHint: 'La leçon revient à la prochaine manche, à sa place.',
     blocked: {
       coalMoney: 'Aucune mine n’est constructible maintenant : la moins chère demande {need} £ et vous avez {money} £.',

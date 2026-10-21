@@ -429,6 +429,31 @@ describe('the loan, never a trap', () => {
     expect(due(setAside(sell, 'sell', ctx(played)), ctx(r3))).toMatchObject({ id: 'loan', mode: 'do' });
     expect(due(pass(sell, 'loan'), ctx(r3))).toMatchObject({ id: 'works', mode: 'do' });
   });
+
+  it('lets the lesson that led to the detour wait for the payday, not drop it', () => {
+    const r2 = round2();
+    const broke = { ...r2, players: r2.players.map((x, i) => (i === 0 ? { ...x, money: 0 } : x)) };
+    const p = upTo('link');
+    expect(detourOf(p, due(p, ctx(broke)), ctx(broke), true, true)).toBe('loan');
+    /* money is what stops the canal: it may wait at once, and the forge
+       comes up meanwhile */
+    expect(wayOn(p, 'link', ctx(broke), true)).toBe('later');
+    const q = setAside(p, 'link', ctx(broke));
+    expect(due(q, ctx(broke))).toMatchObject({ id: 'iron', mode: 'do' });
+    expect(q.passed).not.toContain('link');
+    /* after the payday it is the lesson due again, in its place */
+    const r3 = theirs(idle(idle(broke)));
+    expect(r3.round).toBe(3);
+    expect(due(q, ctx(r3))).toMatchObject({ id: 'link', mode: 'do' });
+    /* the last round has no payday to wait for, and the mine never waits:
+       both are skipped from the detour */
+    expect(wayOn(p, 'link', ctx({ ...broke, round: 10 }), true)).toBe('skip');
+    const g = guided();
+    const bare = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, money: 0 } : x)) };
+    const m = upTo('coal');
+    expect(detourOf(m, due(m, ctx(bare)), ctx(bare), true, true)).toBe('loan');
+    expect(wayOn(m, 'coal', ctx(bare), true)).toBeNull();
+  });
 });
 
 describe('the deed of a move', () => {
