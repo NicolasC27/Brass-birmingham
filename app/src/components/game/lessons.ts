@@ -55,10 +55,12 @@ export function cheapestWorks(g: GameState, me: number): number | null {
   return costs.length ? Math.min(...costs) : null;
 }
 
-/** the purse already pays for the next works: the loan can wait */
+/** no loan taken yet, and the purse already pays for the next works: the
+ *  loan can wait. Once one is taken there is nothing left to wait for */
 const worksPaid = (c: LessonCtx): boolean => {
+  const p = c.g.players[c.me];
   const need = cheapestWorks(c.g, c.me);
-  return need !== null && c.g.players[c.me].money >= need;
+  return p.loans === 0 && need !== null && p.money >= need;
 };
 
 /** the lessons, in the order the guide gives them */

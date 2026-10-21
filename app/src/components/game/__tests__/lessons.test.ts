@@ -251,6 +251,12 @@ describe('the loan that can wait', () => {
     const borrowed = play(g, { kind: 'loan', card: g.players[0].hand[0].id });
     expect(settle(see(p, 'loan', ctx(g)), ctx(borrowed)).passed.at(-1)).toBe('loan');
   });
+
+  it('is no longer one to wait for once a loan is taken, however full the purse', () => {
+    const borrowed = play(guided(), { kind: 'loan', card: guided().players[0].hand[0].id });
+    expect(borrowed.players[0].money).toBeGreaterThanOrEqual(cheapestWorks(borrowed, 0)!);
+    expect(optionalNow('loan', ctx(borrowed))).toBe(false);
+  });
 });
 
 describe('a lesson set aside', () => {

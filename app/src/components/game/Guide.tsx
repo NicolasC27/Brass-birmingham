@@ -528,8 +528,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const shownIndex = finished ? LESSONS.length : lessonIndex(shownId);
   /* a deed the reader may pass as the table stands — the loan, when the
      purse already pays for the next works: it says so, and what that
-     works costs. Not in the detour: there money is what is missing */
-  const spare = useMemo(() => (lctx && showSteps && !detour && optionalNow(shownId, lctx) ? { need: cheapestWorks(lctx.g, me) } : null), [lctx, showSteps, detour, shownId, me]);
+     works costs. Only the live deed, still undone: not in the detour,
+     where money is what is missing, nor read back, nor done beforehand */
+  const spare = useMemo(() => (lctx && showSteps && review === null && !detour && owed?.mode === 'do' && owed.id === shownId && optionalNow(shownId, lctx) ? { need: cheapestWorks(lctx.g, me) } : null), [lctx, showSteps, review, detour, owed, shownId, me]);
   const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
