@@ -155,6 +155,21 @@ describe('where a first mine feeds a forge', () => {
     g.tiles = { 'redditch:0': tile(0, 'coal') };
     expect(forgesFromMines(g, 0)).toEqual([]);
   });
+
+  it('counts the canals the reader may still lay or has laid, not another’s', () => {
+    const g = structuredClone(table());
+    g.tiles = { 'wolverhampton:1': tile(0, 'coal') };
+    /* the machine's canal to Dudley carries the coal, but Dudley is not
+       in the reader's network for it: the forge card cannot build there */
+    g.links = { 'wolverhampton--dudley': { owner: 1, era: 'canal' } };
+    expect(forgesFromMines(g, 0)).toEqual(['walsall', 'coalbrookdale']);
+    expect(forgesFrom(g, 0, 'wolverhampton')).toEqual(['walsall', 'coalbrookdale']);
+    g.links = { 'wolverhampton--dudley': { owner: 0, era: 'canal' } };
+    expect(forgesFromMines(g, 0)).toEqual(['walsall', 'coalbrookdale', 'dudley']);
+    /* the reader's forge built at the far end: the canal still went there */
+    g.tiles['dudley:1'] = tile(0, 'iron');
+    expect(forgesFromMines(g, 0)).toEqual(['walsall', 'coalbrookdale', 'dudley']);
+  });
 });
 
 describe('the words for a machine’s loan', () => {

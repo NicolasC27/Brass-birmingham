@@ -54,18 +54,26 @@ const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoCo
 const freeSlot = (g: GameState, town: string, industry: IndustryType): boolean => !!TOWN_BY_ID[town]?.slots.some((sp, i) => sp.allows.includes(industry) && !g.tiles[`${town}:${i}`]);
 /** a town where the reader already has a tile of theirs */
 const holds = (g: GameState, me: number, town: string): boolean => Object.entries(g.tiles).some(([key, x]) => x.owner === me && key.split(':')[0] === town);
+/** a town where the reader's own forge stands */
+const forgeOf = (g: GameState, me: number, town: string): boolean => Object.entries(g.tiles).some(([key, x]) => x.owner === me && x.industry === 'iron' && key.split(':')[0] === town);
+/** the towns of the reader's mines */
+const mines = (g: GameState, me: number): string[] => Object.entries(g.tiles).filter(([, x]) => x.owner === me && x.industry === 'coal').map(([key]) => key.split(':')[0]);
+/** the canals from `town` that may still be the reader's: not laid, or
+ *  laid by them. Another's canal carries the coal all the same, but puts
+ *  no town in the reader's network, where the forge card builds */
+const openCanals = (g: GameState, me: number, town: string): LinkDef[] => LINKS.filter((l) => l.canal && ends(l).includes(town) && (!g.links[l.id] || g.links[l.id].owner === me));
 /** the towns among these, in the board's own order */
 const inBoardOrder = (towns: Iterable<string>): string[] => {
   const set = new Set(towns);
   return TOWNS.map((t) => t.id).filter((id) => set.has(id));
 };
 
-/** the towns one canal from `town` with a forge slot still free, where the
+/** the towns one canal of the reader's could lead to from `town` — not
+ *  laid yet, or laid by them — with a forge slot still free, where the
  *  reader has no tile yet: in the canal era a player keeps one tile to a
- *  town, so the forge a mine feeds stands in another. Any canal counts,
- *  laid or not, whoever laid it: a laid one carries the coal all the same */
+ *  town, so the forge a mine feeds stands in another */
 export function forgesFrom(g: GameState, me: number, town: string): string[] {
-  return inBoardOrder(LINKS.filter((l) => l.canal && ends(l).includes(town)).flatMap((l) => ends(l).filter((x) => x !== town && freeSlot(g, x, 'iron') && !holds(g, me, x))));
+  return inBoardOrder(openCanals(g, me, town).flatMap((l) => ends(l).filter((x) => x !== town && freeSlot(g, x, 'iron') && !holds(g, me, x))));
 }
 
 /** where a first mine may stand for its coal to feed a forge of the
@@ -78,11 +86,12 @@ export function forgeWays(g: GameState, me: number): { forges: string[]; deadEnd
   return { forges: inBoardOrder(reach.flatMap((x) => x.to)), deadEnds: reach.filter((x) => x.to.length === 0).map((x) => x.m) };
 }
 
-/** the forge towns a canal leads to from the reader's own mines: where
- *  the lesson on canals sends the first one */
+/** the forge towns a canal of the reader's could lead to from their own
+ *  mines: where the lesson on canals sends the first one. A forge of
+ *  theirs already standing at the far end counts, so the lesson read
+ *  back still says where the canal went */
 export function forgesFromMines(g: GameState, me: number): string[] {
-  const mines = Object.entries(g.tiles).filter(([, x]) => x.owner === me && x.industry === 'coal').map(([key]) => key.split(':')[0]);
-  return inBoardOrder(mines.flatMap((m) => forgesFrom(g, me, m)));
+  return inBoardOrder(mines(g, me).flatMap((m) => [...forgesFrom(g, me, m), ...openCanals(g, me, m).flatMap((l) => ends(l).filter((x) => x !== m && forgeOf(g, me, x)))]));
 }
 
 /** the merchants of this table who keep a barrel — a tile of theirs that
