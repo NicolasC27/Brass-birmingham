@@ -531,6 +531,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
      works costs. Only the live deed, still undone: not in the detour,
      where money is what is missing, nor read back, nor done beforehand */
   const spare = useMemo(() => (lctx && showSteps && review === null && !detour && owed?.mode === 'do' && owed.id === shownId && optionalNow(shownId, lctx) ? { need: cheapestWorks(lctx.g, me) } : null), [lctx, showSteps, review, detour, owed, shownId, me]);
+  /* what the lesson lights on the table: a deed that can wait is read
+     past, so its button is not rung */
+  const lensId = showSteps && !finished && !spare ? step?.id : null;
   const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
@@ -839,7 +842,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const unread = !!bot || news.length > 0;
     return (
       <>
-        <LessonLens stepId={showSteps && !finished ? step?.id : null} active={showSteps} />
+        <LessonLens stepId={lensId} active={showSteps} />
         <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
           <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold')} title={t('game.guide.rail.unfold')} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
             <ChevronLeft className="h-4 w-4" />
@@ -871,7 +874,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       )}
       style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
     >
-      <LessonLens stepId={showSteps && !finished ? step?.id : null} active={showSteps} />
+      <LessonLens stepId={lensId} active={showSteps} />
       {dock > 0 && (
         <div className="flex shrink-0 items-center gap-2 pb-1">
           <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
@@ -978,7 +981,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         </p>
                       ))}
                       {unread && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
-                      {step.done && review === null && !finished && !blocked && !already && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {step.done && review === null && !finished && !blocked && !already && !spare && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                       {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
                       </div>
                     </div>
@@ -1171,7 +1174,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         return closed ? ` ${t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[closed].name })}` : null;
                       })()}
                     </p>
-                    {dueStep && owed?.mode === 'do' && !asked(dueStep.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
+                    {dueStep && owed?.mode === 'do' && !spare && !asked(dueStep.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
                   <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none', { name: machine })}</p>
