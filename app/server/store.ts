@@ -14,6 +14,7 @@ import { fresh, ratingOf, seasonAt, settle } from './rating';
 import type { Standing } from './rating';
 import { MEETINGS_CAP } from './watch';
 import type { Flag } from './watch';
+import type { Finished } from './rivals';
 
 /** the first moment of a season id such as 2026-Q3 */
 function seasonStart(id: string): number {
@@ -1072,7 +1073,32 @@ export class Store {
    *  against */
   finishHomeGame(ownerId: string, code: string, state: GameState, tallies?: Tally[]): void {
     if (!this.homeRow(ownerId, code)) return;
-    this.db.prepare('update games set finishedAt = ?, result = ?, updatedAt = ? where code = ?').run(Date.now(), JSON.stringify(resultOf(state, tallies)), Date.now(), code);
+    /* the points at the canal's close go with the standings: the only way
+       back to them once the log has been read is to read it again */
+    const result = { ...resultOf(state, tallies), ...(state.canalScores ? { canal: state.canalScores.slice() } : {}) };
+    this.db.prepare('update games set finishedAt = ?, result = ?, updatedAt = ? where code = ?').run(Date.now(), JSON.stringify(result), Date.now(), code);
+  }
+
+  /** this account's games at home played out, with their deal and their
+   *  standings — what the characters remember of it */
+  finishedHome(ownerId: string): Finished[] {
+    const rows = this.db.prepare('select code, setup, finishedAt, result from games where home = 1 and ownerId = ? and finishedAt is not null and result is not null').all(ownerId) as { code: string; setup: string; finishedAt: number; result: string }[];
+    const out: Finished[] = [];
+    for (const r of rows) {
+      try {
+        out.push({ code: r.code, finishedAt: r.finishedAt, setup: JSON.parse(r.setup) as SetupPayload, result: JSON.parse(r.result) as Finished['result'] });
+      } catch {
+        /* a row that no longer reads is not remembered */
+      }
+    }
+    return out;
+  }
+
+  /** a mark that moves whenever a game at home of this account is played
+   *  out or put away */
+  finishedHomeStamp(ownerId: string): string {
+    const row = this.db.prepare('select count(*) as n, max(finishedAt) as at from games where home = 1 and ownerId = ? and finishedAt is not null').get(ownerId) as { n: number; at: number | null };
+    return `${row.n}:${row.at ?? 0}`;
   }
 
   /** the account a game at home belongs to, or nothing when no game at home

@@ -998,6 +998,10 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         tellHome(who.id);
         for (const s of socketsOf(who.id)) pushDesk(s);
         return;
+      case 'rivals':
+        /* the characters' memory of this account, counted from its games at home */
+        send(c, { t: 'rivals', rid: m.rid, rivals: home.rivals(who.id) });
+        return;
       case 'companies':
         send(c, { t: 'companies', rid: m.rid, board: store.companies(seasonAt(), who.id) });
         return;

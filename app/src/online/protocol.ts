@@ -2,6 +2,7 @@ import type { PlayerColor, SetupOptions } from '@/components/setup/constants';
 import type { GameAction } from '@/game/actions';
 import type { JudgeId } from '@/game/analysis';
 import type { Held, ReadingPart } from '@/game/analysisMerge';
+import type { Rivalry } from '@/game/rivalry';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 import type { Audience, WaitBook } from './waitlist';
@@ -157,6 +158,8 @@ export type ClientMessage =
   | { t: 'home.undo'; rid: number; code: string; at: number }
   /** a game at home put away for good */
   | { t: 'home.forget'; rid: number; code: string }
+  /** what the characters remember of my games at home against them */
+  | { t: 'rivals'; rid: number }
   /** the test bench only (an office started with DEV_LETTERS=1, a socket
       from this very machine): a stretch of a game at home's log at once,
       from its place `from`, each move read by the engine as `home.act`
@@ -240,6 +243,8 @@ export type ServerMessage =
   | { t: 'home.dealt'; rid: number; table: HomeTable }
   /** the office turned a move at home down: the browser reads the game back */
   | { t: 'home.refused'; code: string; at: number; error: string }
+  /** each character's memory of my games at home against it */
+  | { t: 'rivals'; rid: number; rivals: Rivalry[] }
   /** my notes beside a game (null: I kept none) */
   | { t: 'notes'; rid: number; code: string; body: unknown }
   /** the queue moved (null: I left it, or the office sat me — a `seated` follows) */

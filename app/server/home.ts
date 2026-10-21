@@ -5,6 +5,8 @@ import { tallyGame } from '@/game/tally';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { PlayerColor } from '@/components/setup/constants';
 import type { HomeSave, HomeTable } from '@/online/table';
+import type { Rivalry } from '@/game/rivalry';
+import { Rivals } from './rivals';
 import type { Brief, Store } from './store';
 
 /* ------------------------------------------------------------------ */
@@ -55,9 +57,19 @@ export function briefOf(state: GameState): Brief {
 export class Home {
   private held = new Map<string, Held>();
   private store: Store;
+  private rivalries: Rivals;
 
   constructor(store: Store) {
     this.store = store;
+    this.rivalries = new Rivals(
+      (ownerId) => store.finishedHome(ownerId),
+      (ownerId) => store.finishedHomeStamp(ownerId),
+    );
+  }
+
+  /** what the characters remember of this account's games at home */
+  rivals(ownerId: string): Rivalry[] {
+    return this.rivalries.of(ownerId);
   }
 
   /** this account's register, the last touched first */

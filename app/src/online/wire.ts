@@ -3,6 +3,7 @@ import type { ClientMessage, ServerMessage } from './protocol';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 import type { Audience, WaitBook } from './waitlist';
 import type { GameAction } from '@/game/actions';
+import type { Rivalry } from '@/game/rivalry';
 import type { SetupPayload } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -217,6 +218,12 @@ export class Wire {
 
   async forgetHome(code: string): Promise<void> {
     await this.ask((rid) => ({ t: 'home.forget', rid, code }));
+  }
+
+  /** what the characters remember of my games at home against them */
+  async askRivals(): Promise<Rivalry[]> {
+    const m = await this.ask((rid) => ({ t: 'rivals', rid }));
+    return m.t === 'rivals' ? m.rivals : [];
   }
 
   /** what I wrote beside a game of mine */
