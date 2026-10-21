@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronDown, ChevronLeft, ChevronRight, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
+import { Bot, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
 import { aidOn, getBoardOptions, setBoardOption } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
@@ -25,7 +25,7 @@ import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
-import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, settle } from './lessons';
+import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf, worksOnMat } from './lessonWords';
 
@@ -496,8 +496,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer } : null), [game, me, selectedCardId, matPlayer]);
   const settled = useMemo(() => (tutorial && lctx ? settle(kept, lctx) : kept), [tutorial, lctx, kept]);
   const owed = useMemo(() => (tutorial && lctx ? dueNow(settled, lctx) : null), [tutorial, lctx, settled]);
+  /* nothing due this round but a lesson set aside: no lesson on show, a
+     line that says when it comes back */
+  const idle = owed?.mode === 'idle' && review === null;
   /* the lesson on show, for the tips that must not repeat it */
-  const dueId = review ? review.id : (owed?.id ?? null);
+  const dueId = review ? review.id : idle ? null : (owed?.id ?? null);
 
   const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, step: dueId, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, dueId, selectedCardId, verb, buildPick]);
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
@@ -523,7 +526,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the lesson on show, worked out before the note decides whether to
      show at all: the thread files away whatever it replaces */
   const onTable = !!game && game.phase === 'action';
-  const showSteps = onTable && !!owed;
+  /* the guided game's note is up: a lesson on show, or the line of one set aside */
+  const guided = onTable && !!owed;
+  const showSteps = guided && !idle;
+  const aside = guided && idle;
   const finished = showSteps && review === null && owed.mode === 'finished';
   /* the lesson due, and the deed it asks for when the table does not allow
      it now; when money is what is missing and the loan is still to be
@@ -544,7 +550,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
   const lensId = showSteps && !finished && !spare ? step?.id : null;
-  const showBot = bot && botHidden !== bot.id && (showSteps || !hidden);
+  const showBot = bot && botHidden !== bot.id && (guided || !hidden);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
      hers, in the guided game; an older plate is a line */
@@ -604,7 +610,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const theirTurn = !!(tutorial && game.phase === 'action' && game.players[game.current]?.isBot && !unread);
   const maxActions = game.round === 1 && game.era === 'canal' ? 1 : 2;
   const waiting = theirTurn ? t('game.guide.waitingTurn', { name: game.players[game.current]?.name ?? '', n: Math.min(maxActions - game.actionsLeft + 1, maxActions), max: maxActions }) : null;
-  if (!showSteps && (hidden || lines.length === 0) && !showBot) return null;
+  if (!guided && (hidden || lines.length === 0) && !showBot) return null;
 
   /* a lesson passed by the reader: read on from, or skipped. A page
      waiting on the game is not passed by reading on — it keeps its place */
@@ -626,7 +632,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (finished || shownId === LAST_LESSON) endTutorial();
   };
   /* Back walks the lessons passed, newest first */
-  const behind = showSteps ? readBack(settled, review) : null;
+  const behind = guided ? readBack(settled, review) : null;
+  /* the way on from a deed on show the reader has played past: Later sets
+     it aside, and it comes back next round in its place; in the last
+     round, with none to come, Skip. Not on a deed the reader may pass
+     (Next says so), nor on one read back */
+  const way = lctx && showSteps && review === null && owed?.mode === 'do' && !spare ? wayOn(live, shownId, lctx) : null;
+  const later = way === 'later' ? shownId : null;
+  const putAside = (id: string) => {
+    if (lctx) saveProgress(setAside(live, id, lctx));
+  };
   const fold = (to: boolean) => {
     setMiniAt(to ? shownId : '');
     try {
@@ -859,7 +874,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             {unread && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
           </button>
           <GraduationCap className="h-4 w-4 text-cream-100/60" aria-hidden />
-          {showSteps && (
+          {guided && (
             <>
               <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: LESSONS.length })}>
                 {n}/{LESSONS.length}
@@ -914,6 +929,22 @@ function Guide({ dock = 0 }: { dock?: number }) {
         </div>
       )}
       <AnimatePresence initial={false} mode="popLayout">
+        {/* a lesson set aside, and nothing else due this round: a line
+            that says when it comes back */}
+        {aside && (
+          <motion.aside key="aside" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3">
+            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
+            <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 flex-1 items-center gap-2')}>
+              <Clock className="h-4 w-4 shrink-0 text-ink-900/70" />
+              <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) })}</span>
+            </div>
+            {behind && (
+              <button type="button" onClick={() => setReview(behind)} className="relative inline-flex shrink-0 items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
+              </button>
+            )}
+          </motion.aside>
+        )}
         {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
           <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={(reading || theirTurn) && !mini ? undefined : t('game.guide.expand')} onClick={(reading || theirTurn) && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
@@ -1019,7 +1050,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
                         </button>
                       )}
-                      {blocked && myTurn && !already && (
+                      {later && (
+                        <button type="button" onClick={() => putAside(later)} title={t('game.guide.laterHint')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                          <Clock className="h-3.5 w-3.5" /> {t('game.guide.later')}
+                        </button>
+                      )}
+                      {/* Skip: the deed the table does not allow now, or one
+                          played past in the last round */}
+                      {(blocked || way === 'skip') && myTurn && !already && (
                         <button type="button" onClick={() => owed?.id && passOn(owed.id)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           {t('game.guide.skip')}
                           <ChevronRight className="h-3.5 w-3.5" />
@@ -1205,7 +1243,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       </AnimatePresence>
 
       {/* a question to the guide, answered from the table as it stands */}
-      {dock > 0 && showSteps && (
+      {dock > 0 && guided && (
         <form
           onSubmit={(e) => {
             e.preventDefault();

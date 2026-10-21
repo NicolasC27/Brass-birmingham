@@ -1059,6 +1059,7 @@ const game = {
     foldHint: 'A click on the note folds it to a line; drag its head to move it.',
     detour: 'A detour before « {lesson} »:',
     already: 'You have already done this: here is what it changes.',
+    aside: 'Lesson set aside: « {lesson} » comes back next round.',
     suggest: {
       closedMerchant: '{merchant} has no merchant at this table, but the place keeps its two link icons for the era’s scoring and its way to the coal market.',
       aria: 'What the machine would play in your seat',
@@ -1136,6 +1137,8 @@ const game = {
       },
     },
     skip: 'Skip this lesson',
+    later: 'Later',
+    laterHint: 'The lesson comes back next round, in its place.',
     blocked: {
       coalMoney: 'No mine can be built right now: the cheapest asks £{need} and you hold £{money}.',
       coalCard: 'No card in your hand builds a mine right now: a location card of a town with a free coal slot, or the coal card once a town of your network has one.',

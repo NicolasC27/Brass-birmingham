@@ -1061,6 +1061,7 @@ const game: typeof engame = {
     foldHint: 'Ein Klick auf die Notiz klappt sie zu einer Zeile ein; ziehe den Kopf, um sie zu verschieben.',
     detour: 'Ein Umweg vor « {lesson} »:',
     already: 'Das hast du schon getan — hier steht, was es ändert.',
+    aside: 'Lektion zurückgestellt: « {lesson} » kommt in der nächsten Runde wieder.',
     suggest: {
       closedMerchant: '{merchant} hat an diesem Tisch keinen Händler, doch der Ort behält seine zwei Verbindungssymbole für die Wertung und seinen Zugang zum Kohlemarkt.',
       aria: 'Was die Maschine an deiner Stelle spielen würde',
@@ -1138,6 +1139,8 @@ const game: typeof engame = {
       },
     },
     skip: 'Diese Lektion überspringen',
+    later: 'Später',
+    laterHint: 'Die Lektion kommt in der nächsten Runde an ihrer Stelle wieder.',
     blocked: {
       coalMoney: 'Keine Mine ist jetzt baubar: die billigste verlangt £{need} und du hast £{money}.',
       coalCard: 'Keine Karte auf deiner Hand baut jetzt eine Mine: es braucht eine Ortskarte einer Stadt mit freiem Kohleplatz, oder die Kohlekarte, sobald eine Stadt deines Netzwerks einen hat.',

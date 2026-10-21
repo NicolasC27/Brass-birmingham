@@ -1061,6 +1061,7 @@ const fr: typeof engame = {
     foldHint: 'Un clic sur la note la replie en une ligne ; glissez son en-tête pour la déplacer.',
     detour: 'Un détour avant « {lesson} » :',
     already: 'Vous l’avez déjà fait : voici ce que ça change.',
+    aside: 'Leçon mise de côté : « {lesson} » revient à la prochaine manche.',
     suggest: {
       closedMerchant: '{merchant} n’a pas de marchand à cette table, mais la place garde ses deux icônes lien pour la fin d’ère et son accès au marché du charbon.',
       aria: 'Ce que la machine jouerait à votre place',
@@ -1138,6 +1139,8 @@ const fr: typeof engame = {
       },
     },
     skip: 'Passer cette leçon',
+    later: 'Plus tard',
+    laterHint: 'La leçon revient à la prochaine manche, à sa place.',
     blocked: {
       coalMoney: 'Aucune mine n’est constructible maintenant : la moins chère demande {need} £ et vous avez {money} £.',
       coalCard: 'Aucune carte de votre main ne bâtit une mine maintenant : il faut une carte lieu d’une ville à emplacement charbon libre, ou la carte charbon quand une ville de votre réseau en a un.',

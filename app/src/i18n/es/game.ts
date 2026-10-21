@@ -1061,6 +1061,7 @@ const game: typeof engame = {
     foldHint: 'Un clic en la nota la pliega en una línea; arrastra su cabecera para moverla.',
     detour: 'Un desvío antes de « {lesson} »:',
     already: 'Ya lo has hecho: esto es lo que cambia.',
+    aside: 'Lección aplazada: « {lesson} » vuelve en la próxima ronda.',
     suggest: {
       closedMerchant: '{merchant} no tiene mercader en esta mesa, pero el lugar conserva sus dos iconos de enlace para el recuento de la era y su acceso al mercado del carbón.',
       aria: 'Lo que la máquina jugaría en tu lugar',
@@ -1138,6 +1139,8 @@ const game: typeof engame = {
       },
     },
     skip: 'Saltar esta lección',
+    later: 'Más tarde',
+    laterHint: 'La lección vuelve en la próxima ronda, en su lugar.',
     blocked: {
       coalMoney: 'Ninguna mina se puede construir ahora: la más barata pide {need} £ y tienes {money} £.',
       coalCard: 'Ninguna carta de tu mano construye una mina ahora: hace falta una carta de lugar de una ciudad con casilla de carbón libre, o la carta de carbón cuando una ciudad de tu red tenga una.',
