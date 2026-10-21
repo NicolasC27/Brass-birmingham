@@ -4,12 +4,14 @@ import { useT } from '@/i18n';
 import { PERSONAS, personaName } from '@/game/data';
 import { useEdition, useSession } from '@/online/session';
 import { weekOf } from '@/platform/almanac';
+import { useRivals } from '@/platform/rivals';
 import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The portrait of the week: one of the four machines in turn, its     */
 /* portrait, three lines of a life of the era, and its record against  */
-/* the club this week as the office counted it.                        */
+/* the club this week as the office counted it — and against the       */
+/* reader, when they have met it at home.                              */
 /* ------------------------------------------------------------------ */
 
 export default function Portrait() {
@@ -19,6 +21,8 @@ export default function Portrait() {
   const persona = PERSONAS[week % PERSONAS.length];
   const edition = useEdition(week);
   const record = edition?.machines.find((m) => m.name === persona.name) ?? null;
+  const rivals = useRivals();
+  const mine = session ? (rivals?.find((r) => r.persona === persona.id && r.games > 0) ?? null) : null;
   return (
     <section aria-label={t('platform.portrait.eyebrow')} className="gz-classified !items-start !p-5 !text-left">
       <h2 className="micro-label text-paper-100">
@@ -41,6 +45,7 @@ export default function Portrait() {
       <p className={cn('mt-3 text-[10.5px] text-iron-400', record ? 'data-text tnums' : 'font-ui')}>
         {!session ? t('platform.portrait.signIn') : record ? t('platform.portrait.record', { won: record.won, lost: record.lost }) : t('platform.portrait.none')}
       </p>
+      {mine && <p className="mt-1 data-text tnums text-[10.5px] text-iron-400">{t('rivals.record', { games: mine.games, won: mine.won })}</p>}
     </section>
   );
 }

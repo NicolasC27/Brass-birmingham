@@ -1,5 +1,9 @@
+import { DEFAULT_BOARD } from '@/game/boards';
+import { foldGame, pickPs } from '@/game/rivalry';
+import type { PsKey } from '@/game/rivalry';
 import type { BotPersona, GameState } from '@/game/types';
 import { paper, writePaper } from './papers';
+import { rivalsNow } from './rivals';
 
 /* ------------------------------------------------------------------ */
 /* The post. When a game at home ends, one of the machines writes to   */
@@ -7,7 +11,9 @@ import { paper, writePaper } from './papers';
 /* to grumble — three lines in its own voice, printed in the journal's */
 /* courrier. The lines live in the dictionaries under                  */
 /* platform.letters.<persona>.<won|lost>.<n>; the last few letters     */
-/* are one of the office's papers.                                     */
+/* are one of the office's papers. The writer closes on a postscript   */
+/* when the office has told what it remembers of the player: a first   */
+/* game, a run of results, or the count between them.                  */
 /* ------------------------------------------------------------------ */
 
 const KEPT = 5;
@@ -26,7 +32,13 @@ export interface Letter {
   theirs: number;
   /** the player's name, as the letter addresses it */
   me: string;
+  /** the postscript: the history between the writer and the player, this
+   *  game counted in (the line under rivals.<persona>.ps.<key>) */
+  ps?: { key: PsKey; vars: Record<string, number> };
 }
+
+/** the key of a letter's postscript, when it has one */
+export const psKey = (l: Letter): string | null => (l.ps ? `rivals.${l.persona}.ps.${l.ps.key}` : null);
 
 const readAll = (): Letter[] => {
   const v = paper<unknown>('letters', null);
@@ -68,6 +80,14 @@ export function writeLetter(g: GameState, table: string): Letter | null {
     theirs: best.p.vp,
     me: g.players[me].name,
   };
+  /* the writer's memory of the player, as the office told it when the
+     game was opened, with this game folded in. None heard, no postscript */
+  const rivals = rivalsNow();
+  if (rivals) {
+    const had = rivals.find((r) => r.persona === best.p.persona) ?? null;
+    const now = foldGame(had, best.p.persona, { code: table, at: letter.at, map: g.board ?? DEFAULT_BOARD, won: !won, vp: letter.vp, theirs: letter.theirs });
+    letter.ps = pickPs(now);
+  }
   writePaper('letters', [letter, ...readAll().filter((l) => l.id !== letter.id)].slice(0, KEPT));
   return letter;
 }

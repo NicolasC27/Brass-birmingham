@@ -4,18 +4,18 @@ import { onlineWire } from '@/online/net';
 /* The papers that follow the account.                                 */
 /*                                                                     */
 /* The judge's sheet, the feuilleton, the patents, the machines'       */
-/* letters, the towns built, the form and the week's notice: none of   */
-/* them is a game, and all of them are a record of having played. The  */
-/* office keeps them, one row an account and a kind, and this browser  */
-/* keeps a mirror — read once as the application opens, so a page may  */
-/* still ask for a paper without waiting, and written through to the   */
-/* office the moment it changes.                                       */
+/* letters and their words at the table, the towns built, the form and */
+/* the week's notice: none of them is a game, and all of them are a    */
+/* record of having played. The office keeps them, one row an account  */
+/* and a kind, and this browser keeps a mirror — read once as the      */
+/* application opens, so a page may still ask for a paper without      */
+/* waiting, and written through to the office the moment it changes.   */
 /*                                                                     */
 /* The office decides. There is no folding of one copy into another    */
 /* any more: what the office hands over is what the papers are.        */
 /* ------------------------------------------------------------------ */
 
-export const PAPER_KINDS = ['progress', 'feuilleton', 'patents', 'letters', 'lines', 'form', 'challenge', 'equipped'] as const;
+export const PAPER_KINDS = ['progress', 'feuilleton', 'patents', 'letters', 'lines', 'form', 'challenge', 'equipped', 'rivals'] as const;
 export type Kind = (typeof PAPER_KINDS)[number];
 
 const shelf = new Map<Kind, unknown>();

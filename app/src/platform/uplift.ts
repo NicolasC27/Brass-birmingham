@@ -44,6 +44,8 @@ const OLD_PAPERS: Record<Kind, string> = {
   form: 'brassworks.form.v1',
   challenge: 'brassworks.challenge.v1',
   equipped: 'brassworks.equipped.v1',
+  /* the rivals' words were never kept in a browser: nothing is found under it */
+  rivals: 'brassworks.rivals.v1',
 };
 /** the purse of before the office kept it: only the outfit is worth taking */
 const OLD_WALLET = 'brassworks.wallet.v1';

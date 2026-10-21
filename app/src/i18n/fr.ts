@@ -10,5 +10,6 @@ import online from './fr/online';
 import site from './fr/site';
 import platform from './fr/platform';
 import landing from './fr/landing';
+import rivals from './fr/rivals';
 
-export const fr: Dict = { common, home, setup, game, board, rules, results, online, site, platform, landing };
+export const fr: Dict = { common, home, setup, game, board, rules, results, online, site, platform, landing, rivals };

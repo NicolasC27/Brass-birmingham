@@ -16,6 +16,7 @@ import { ShapeChip } from './TownInspector';
 import { useHudInsets } from './useHudInsets';
 import { useLayer } from './useLayer';
 import { useReducedMotion } from './useReducedMotion';
+import { useRivalWord } from './useRivalWord';
 import { useHudRects } from './useHudRects';
 import type { HudRect } from './useHudRects';
 
@@ -131,7 +132,10 @@ function placePile(o: {
 function Mark({ note, color }: { note: Notice; color: string | null }) {
   const industry = note.industry && note.industry in INDUSTRY_ICON ? (note.industry as IndustryType) : null;
   let inner: ReactNode;
-  if (industry) {
+  if (note.portrait) {
+    /* a character speaking: its face in a small medallion */
+    inner = <img src={note.portrait} alt="" className="h-5 w-5 rounded-full object-cover ring-1 ring-brass-600/70" />;
+  } else if (industry) {
     const url = `url(${INDUSTRY_ICON[industry]})`;
     inner = (
       <span
@@ -201,6 +205,8 @@ function Notices() {
   const file = useCallback((id: string) => setNotes((n) => fileWhere(n, (x) => x.id === id)), []);
   const fileKind = useCallback((kind: Notice['kind']) => setNotes((n) => fileWhere(n, (x) => x.kind === kind)), []);
   const fileAll = useCallback(() => setNotes((n) => fileWhere(n, () => true)), []);
+  /* a rival's word as a game at home opens */
+  useRivalWord(post);
   /* the test bench lays notices in by hand (dev builds only) */
   useEffect(() => (import.meta.env.DEV ? onLaidNotices(post) : undefined), [post]);
 

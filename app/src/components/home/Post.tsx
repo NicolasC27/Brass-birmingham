@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useLang, useT } from '@/i18n';
 import { personaName } from '@/game/data';
 import { tableTitle } from '@/online/tableNames';
-import { letterKey, listLetters } from '@/platform/letters';
+import { letterKey, listLetters, psKey } from '@/platform/letters';
 import GlossMark from '@/components/platform/GlossMark';
 
 /* ------------------------------------------------------------------ */
 /* The post: the last letters the machines wrote after a game at home, */
-/* the latest first, each with its sender and the table it concerns.  */
+/* the latest first, each with its sender, the table it concerns and   */
+/* a postscript on the games between them.                             */
 /* ------------------------------------------------------------------ */
 
 const SHOWN = 2;
@@ -37,6 +38,8 @@ export default function Post() {
               <p className="mt-2 font-serif text-[14px] leading-relaxed text-paper-300">
                 {t(letterKey(l), { me: l.me, table: tableTitle(l.table, lang), vp: l.vp, theirs: l.theirs })}
               </p>
+              {/* the postscript: what lies between the writer and the reader */}
+              {l.ps && <p className="mt-1.5 font-serif text-[13px] italic leading-relaxed text-paper-300">{t(psKey(l)!, { ...l.ps.vars, me: l.me })}</p>}
             </article>
           ))
         )}

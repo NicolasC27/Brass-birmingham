@@ -9,6 +9,7 @@ import online from './en/online';
 import site from './en/site';
 import platform from './en/platform';
 import landing from './en/landing';
+import rivals from './en/rivals';
 
-export const en = { common, home, setup, game, board, rules, results, online, site, platform, landing };
+export const en = { common, home, setup, game, board, rules, results, online, site, platform, landing, rivals };
 export type Dict = typeof en;

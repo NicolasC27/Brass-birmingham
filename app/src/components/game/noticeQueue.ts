@@ -22,7 +22,7 @@ import type { Era } from '@/game/types';
 /*    them.                                                             */
 /* ------------------------------------------------------------------ */
 
-export type NoticeKind = 'flip' | 'beer' | 'pin' | 'overbuilt' | 'lastRound' | 'turn' | 'gazette';
+export type NoticeKind = 'flip' | 'beer' | 'pin' | 'overbuilt' | 'lastRound' | 'turn' | 'gazette' | 'rival';
 
 /** 2: it touches the reader; 1: the table's news; 0: the round's paper */
 export type NoticeRank = 0 | 1 | 2;
@@ -40,6 +40,8 @@ export interface Notice {
   rank: NoticeRank;
   /** the seat it is about: its mark stands by the notice */
   owner?: number;
+  /** a character speaking: its portrait stands for the mark */
+  portrait?: string;
   industry?: string;
   title: string;
   detail: string;
