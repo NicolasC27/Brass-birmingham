@@ -60,6 +60,16 @@ export function stepKeyOf(id: string, g: GameState, me: number, spare = false): 
   return g.eraLength === 'short' ? shortKeyOf(id) : id;
 }
 
+/** the lessons told otherwise at a plain table, where the sheet of
+ *  progress sends a player back to one: a sale there is any sale, not
+ *  the guided game's first */
+const PLAIN: Readonly<Record<string, string>> = {
+  sell: 'sellAny',
+};
+
+/** a lesson's entry read at a plain table */
+export const plainKeyOf = (id: string, g: GameState, me: number): string => PLAIN[id] ?? stepKeyOf(id, g, me);
+
 const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
 /** a slot of the town that takes this industry and holds no tile yet */
 const freeSlot = (g: GameState, town: string, industry: IndustryType): boolean => !!TOWN_BY_ID[town]?.slots.some((sp, i) => sp.allows.includes(industry) && !g.tiles[`${town}:${i}`]);

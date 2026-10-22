@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
+import { LOW_PURSE, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -50,6 +50,15 @@ describe('the entry a lesson is said under', () => {
     expect(stepKeyOf('goal', g, 0)).toBe('goal');
     expect(stepKeyOf('loan', g, 0)).toBe('loan');
     expect(stepKeyOf('eraEnd', g, 0)).toBe('eraEnd');
+  });
+
+  it('reads the sale at a plain table as any sale, not the guided game\'s first', () => {
+    for (const g of [table(), table('standard')]) {
+      expect(stepKeyOf('sell', g, 0)).toBe('sell');
+      expect(plainKeyOf('sell', g, 0)).toBe('sellAny');
+      /* the others read as the game would have them */
+      expect(plainKeyOf('loan', g, 0)).toBe(stepKeyOf('loan', g, 0));
+    }
   });
 
   it('tells a loan the reader may pass in words of its own, in either game', () => {

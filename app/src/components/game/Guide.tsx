@@ -27,7 +27,7 @@ import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf, worksOnMat } from './lessonWords';
+import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
 
 /* ------------------------------------------------------------------ */
@@ -763,6 +763,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
      a payday owed rather than paid, a short game that ends here, a loan
      on show that can wait */
   const stepKey = (id: string): string => stepKeyOf(id, game, me, id === shownId && !!spare);
+  /* the sheet's advice at a plain table: the lesson read for its rule, not its moment */
+  const plainKey = (id: string): string => plainKeyOf(id, game, me);
   /* a question is answered from the table as it stands when that is the
      surer match, else from the guide's case — and, when nothing there is
      close, with the notions it might mean */
@@ -1055,13 +1057,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 </p>
                 {adviceOpen ? (
                   <div className="mt-1.5">
-                    <p className="font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${stepKey(sheetAdvice.id)}.title`, stepVars())}</p>
-                    <Paragraphs text={t(`game.guide.steps.${stepKey(sheetAdvice.id)}.body`, stepVars())} />
+                    <p className="font-display text-[13px] font-bold text-ink-900">{t(`game.guide.steps.${plainKey(sheetAdvice.id)}.title`, stepVars())}</p>
+                    <Paragraphs text={t(`game.guide.steps.${plainKey(sheetAdvice.id)}.body`, stepVars())} />
                   </div>
                 ) : (
                   <div className="mt-1 flex items-center gap-2">
                     <button type="button" onClick={() => setAdviceOpen(true)} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
-                      {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(sheetAdvice.id)}.title`, stepVars()) })}
+                      {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${plainKey(sheetAdvice.id)}.title`, stepVars()) })}
                     </button>
                     <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
                   </div>
