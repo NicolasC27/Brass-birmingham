@@ -4,7 +4,9 @@ import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
 import { asksTheRules, consult, mend } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
+import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
 import type { GameState } from '@/game/types';
+import { reasonText } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { lastRound } from './lessons';
 
@@ -13,10 +15,13 @@ import { lastRound } from './lessons';
 /* cannot be done right now, and the questions a player puts about    */
 /* their own game — the purse, the rounds left, what can be sold. The  */
 /* guide's lane and the question tool both ask here, so a question has */
-/* one answer at every width. Pure: the words come in with `t`.        */
+/* one answer at every width. Pure: the words come in with `t`, and    */
+/* the engine's own refusals in the reader's tongue with `say`.        */
 /* ------------------------------------------------------------------ */
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
+/** an engine refusal, said in the reader's tongue */
+type Say = (reason: string) => string;
 
 const WORKS = ['cotton', 'manufacturer', 'pottery'];
 
@@ -27,14 +32,28 @@ const short = (r?: string) => !!r && r.startsWith('Needs £');
 /** the reason alone, and the reason with the advice that follows it */
 export type Block = { short: string; text: string; money: boolean };
 
+/** the engine's own refusal of the place a deed came nearest to, as the
+ *  table gives it — at that town, when it is the one town it holds in */
+function tableSays<X extends { valid: boolean; reason?: string }>(reason: string, all: readonly X[], townOf: (x: X) => string, t: T, say: Say): string {
+  const towns = new Set(all.filter((x) => !x.valid && x.reason === reason).map(townOf));
+  const why = say(reason);
+  if (towns.size !== 1) return t('game.guide.blocked.why', { why });
+  const [town] = towns;
+  return t('game.guide.blocked.whyAt', { town: TOWN_BY_ID[town]?.name ?? town, why });
+}
+
 /** why the lesson's deed cannot be done at this table right now, said
  *  with the player's own figures, and whether money is what is missing;
- *  null when it can */
-export function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
+ *  null when it can. Money short, the loan is the way; else the table's
+ *  own reason is given — no connected coal, one tile to a town, no beer —
+ *  and only a hand whose every card names another town or industry is
+ *  told that no card will do */
+export function blockedBy(id: string, g: GameState, me: number, t: T, say: Say = reasonText): Block | null {
   const p = g.players[me];
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
   /* the loan, or the payday to come back after — none follows the last round */
   const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
+  const plain = (why: string): Block => ({ short: why, text: why, money: false });
   if (id === 'coal' || id === 'iron' || id === 'works') {
     const inds = id === 'coal' ? ['coal'] : id === 'iron' ? ['iron'] : WORKS;
     const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
@@ -44,19 +63,27 @@ export function blockedBy(id: string, g: GameState, me: number, t: T): Block | n
       const why = t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...dear.map((x) => x.total)) });
       return { short: why, text: `${why} ${advice()}`, money: true };
     }
-    const why = t(`game.guide.blocked.${id}Card`, vars);
-    return { short: why, text: why, money: false };
+    const best = refusalOf(targets)?.reason;
+    if (!best || onTheCard(best)) return plain(t(`game.guide.blocked.${id}Card`, vars));
+    return plain(`${t(`game.guide.blocked.${id}Now`)} ${tableSays(best, targets, (x) => x.town, t, say)}`);
   }
   if (id === 'link') {
     const targets = linkTargets(g, me);
     if (targets.some((x) => x.valid)) return null;
-    const dear = targets.some((x) => short(x.reason));
-    const why = t(dear ? 'game.guide.blocked.linkMoney' : 'game.guide.blocked.link', vars);
-    return { short: why, text: dear ? `${why} ${advice()}` : why, money: dear };
+    if (targets.some((x) => short(x.reason))) {
+      const why = t('game.guide.blocked.linkMoney', vars);
+      return { short: why, text: `${why} ${advice()}`, money: true };
+    }
+    /* every link that touches the network is laid; a rail may lack its coal */
+    const why = whyNoLink(targets);
+    return plain(why === NO_FREE_LINK ? t('game.guide.blocked.link', vars) : `${t('game.guide.blocked.linkNow')} ${t('game.guide.blocked.why', { why: say(why) })}`);
   }
-  const plain = (why: string): Block => ({ short: why, text: why, money: false });
   if (id === 'sell') {
-    if (sellTargets(g, me).some((x) => x.valid)) return null;
+    const targets = sellTargets(g, me);
+    if (targets.some((x) => x.valid)) return null;
+    /* a works joined to its buyer, and no beer to drink with it */
+    const dry = targets.find((x) => x.reason)?.reason;
+    if (dry) return plain(`${t('game.guide.blocked.sellNow')} ${tableSays(dry, targets, (x) => x.town, t, say)}`);
     /* the unsold works, and the merchants who buy their goods */
     const mine = Object.entries(g.tiles).filter(([, x]) => x.owner === me && !x.flipped && WORKS.includes(x.industry));
     const lines = mine.map(([key, x]) => {

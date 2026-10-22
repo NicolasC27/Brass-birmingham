@@ -52,6 +52,10 @@ export function refusalOf<T extends Refused>(targets: readonly T[], rank: Rank =
   return best?.x ?? null;
 }
 
+/** a refusal the card itself gives — it names another town or another
+ *  industry: nothing on the board would change it */
+export const onTheCard = (reason: string | undefined): boolean => !!reason && /^This card builds |^Farm breweries take/.test(reason);
+
 /** why no site takes the card */
 export function whyNoBuild(targets: readonly BuildTarget[]): string {
   return refusalOf(targets)?.reason ?? 'No valid construction site for this card';
