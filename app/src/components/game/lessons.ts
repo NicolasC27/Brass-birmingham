@@ -138,9 +138,9 @@ const aside = (p: Progress, id: string, c: LessonCtx): boolean => p.later[id] !=
 /** a lesson set aside and not passed: the last lesson, which closes the
  *  guide, waits for it */
 const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) => !p.passed.includes(l.id) && aside(p, l.id, c));
-/** the last round of the game: no round comes after it for a lesson set
- *  aside to come back in */
-const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.players.length) && (g.era === 'rail' || g.eraLength === 'short');
+/** the last round of the game: no payday follows it, and no round for a
+ *  lesson set aside to come back in */
+export const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.players.length) && (g.era === 'rail' || g.eraLength === 'short');
 
 /** every deed seen undone that now holds, passed — in the lessons' order;
  *  the same progress when nothing moved */

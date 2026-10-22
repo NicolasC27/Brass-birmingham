@@ -25,7 +25,7 @@ import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
-import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
+import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf, worksOnMat } from './lessonWords';
 
@@ -266,6 +266,8 @@ type Block = { short: string; text: string; money: boolean };
 function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
   const p = g.players[me];
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
+  /* the loan, or the payday to come back after — none follows the last round */
+  const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
   if (id === 'coal' || id === 'iron' || id === 'works') {
     const inds = id === 'coal' ? ['coal'] : id === 'iron' ? ['iron'] : WORKS;
     const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
@@ -273,7 +275,7 @@ function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
     const short = targets.filter((x) => money(x.reason));
     if (short.length) {
       const why = t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...short.map((x) => x.total)) });
-      return { short: why, text: `${why} ${t('game.guide.blocked.loanAdvice', vars)}`, money: true };
+      return { short: why, text: `${why} ${advice()}`, money: true };
     }
     const why = t(`game.guide.blocked.${id}Card`, vars);
     return { short: why, text: why, money: false };
@@ -283,7 +285,7 @@ function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
     if (targets.some((x) => x.valid)) return null;
     const short = targets.some((x) => money(x.reason));
     const why = t(short ? 'game.guide.blocked.linkMoney' : 'game.guide.blocked.link', vars);
-    return { short: why, text: short ? `${why} ${t('game.guide.blocked.loanAdvice', vars)}` : why, money: short };
+    return { short: why, text: short ? `${why} ${advice()}` : why, money: short };
   }
   const plain = (why: string): Block => ({ short: why, text: why, money: false });
   if (id === 'sell') {

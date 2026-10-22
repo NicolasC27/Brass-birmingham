@@ -1154,6 +1154,7 @@ const fr: typeof engame = {
       worksCard: 'Aucune carte de votre main ne bâtit un ouvrage maintenant : il faut une carte lieu d’une ville à emplacement libre, ou une carte industrie pour une ville de votre réseau. Un canal vers une telle ville, ou l’action Prospection, ouvre la voie.',
       linkMoney: 'Un canal coûte 3 £ et vous avez {money} £.',
       loanAdvice: 'Un emprunt (une carte dont vous n’aurez pas besoin, puis Emprunt) donne {amount} £ tout de suite, contre {hit} [hit|niveau|niveaux] de revenu — ou revenez-y après la paie.',
+      loanAdviceLast: 'Un emprunt (une carte dont vous n’aurez pas besoin, puis Emprunt) donne {amount} £ tout de suite, contre {hit} [hit|niveau|niveaux] de revenu.',
       link: 'Aucun canal ne peut partir de votre réseau maintenant.',
       sell: 'Rien ne peut se vendre maintenant : il faut un ouvrage à vous relié à un marchand qui achète ces biens, et une bière à boire.',
       sellWorks: 'Votre {industry} de {town} est achetée par : {buyers}.',

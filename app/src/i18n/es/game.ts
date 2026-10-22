@@ -1154,6 +1154,7 @@ const game: typeof engame = {
       worksCard: 'Ninguna carta de tu mano construye una fábrica ahora: hace falta una carta de lugar de una ciudad con casilla libre, o una carta de industria para una ciudad de tu red. Un canal hacia esa ciudad, o la acción Explorar, abre el camino.',
       linkMoney: 'Un canal cuesta 3 £ y tienes {money} £.',
       loanAdvice: 'Un préstamo (una carta que no vayas a necesitar, luego Préstamo) da {amount} £ al instante, a cambio de {hit} [hit|nivel|niveles] de ingresos — o vuelve a esto después de la paga.',
+      loanAdviceLast: 'Un préstamo (una carta que no vayas a necesitar, luego Préstamo) da {amount} £ al instante, a cambio de {hit} [hit|nivel|niveles] de ingresos.',
       link: 'Ningún canal puede salir de tu red ahora.',
       sell: 'Nada se puede vender ahora: hace falta una fábrica tuya conectada con un mercader que compre esos bienes, y una cerveza que beber.',
       sellWorks: 'Tu {industry} de {town} la compra: {buyers}.',

@@ -1152,6 +1152,7 @@ const game = {
       worksCard: 'No card in your hand builds a works right now: a location card of a town with a free slot, or an industry card for a town of your network. A canal toward such a town, or the Scout action, opens the way.',
       linkMoney: 'A canal costs £3 and you hold £{money}.',
       loanAdvice: 'A loan (a card you will not need, then Loan) gives £{amount} at once, for {hit} income [hit|level|levels] — or come back to this once the payday has come.',
+      loanAdviceLast: 'A loan (a card you will not need, then Loan) gives £{amount} at once, for {hit} income [hit|level|levels].',
       link: 'No canal can be laid from your network right now.',
       sell: 'Nothing can be sold right now: it takes a works of yours connected to a merchant who buys those goods, and a beer to drink.',
       sellWorks: 'Your {industry} at {town} is bought by: {buyers}.',
