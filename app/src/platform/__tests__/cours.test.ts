@@ -25,7 +25,9 @@ describe('the lessons of the evening course', () => {
   });
 
   it('read the old index once, until the guided table writes its record', () => {
+    /* the first five of the old order: the lesson on money, which the
+       goal took in, is no longer one to count */
     store.set('brassworks.tutorial.reached', '5');
-    expect(lessonsRead()).toEqual(LESSON_IDS.slice(0, 5));
+    expect(lessonsRead()).toEqual(['welcome', 'board', 'goal', 'mat']);
   });
 });

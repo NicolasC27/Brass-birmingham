@@ -505,7 +505,9 @@ describe('the progress on the disk', () => {
     store.set('brassworks.tutorial.reached', '9');
     const p = progressAt('GWE5');
     expect(p.code).toBe('GWE5');
-    expect(p.passed).toEqual(LESSON_IDS.slice(0, 9));
+    /* the lesson on money is the goal's now: a record of it is dropped */
+    expect(p.passed).toEqual(V1.slice(0, 9).filter((id) => id !== 'money'));
+    expect(p.passed).toEqual(LESSON_IDS.slice(0, 8));
     expect(due(p, ctx(g))).toMatchObject({ id: 'link' });
     expect(due(p, ctx({ ...g, round: 2 }))).toMatchObject({ id: 'payday' });
     saveProgress(p);
@@ -522,7 +524,7 @@ describe('the progress on the disk', () => {
     store.set('brassworks.tutorial.step', '19');
     store.set('brassworks.tutorial.reached', '17');
     const p = progressAt('GWE5');
-    expect(p.passed).toEqual(V1.slice(0, 17));
+    expect(p.passed).toEqual(V1.slice(0, 17).filter((id) => id !== 'money'));
     expect(p.passed).not.toContain('flipped');
     const borrowed = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
     const q = settle(p, ctx(borrowed));

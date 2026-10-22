@@ -25,8 +25,6 @@ export function lensFor(stepId: string | null | undefined, g: GameState, me: num
   switch (stepId) {
     case 'goal':
       return { hud: 'vp' };
-    case 'money':
-      return { hud: 'rail' };
     case 'mat':
     case 'matRead':
       return { hud: 'mat' };

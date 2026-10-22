@@ -67,8 +67,8 @@ const worksPaid = (c: LessonCtx): boolean => {
 export const LESSONS: readonly Lesson[] = [
   { id: 'welcome' },
   { id: 'board' },
+  /* the points, and the purse and the income that buy them: one lesson */
   { id: 'goal', show: 'vp' },
-  { id: 'money' },
   { id: 'mat', show: 'mat', done: (c) => c.mat !== null },
   { id: 'matRead', show: 'mat' },
   { id: 'hand', done: (c) => c.sel !== null },
