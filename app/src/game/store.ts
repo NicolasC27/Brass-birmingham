@@ -45,6 +45,7 @@ import { coachMove, hushCoach } from './coach';
 import type { Coached } from './coach';
 import { aidOn } from '@/components/game/boardOptions';
 import { deedOf } from '@/components/game/lessons';
+import { whyNoBuild } from './refusals';
 import type { JudgeId } from './analysis';
 
 export interface Shake {
@@ -1675,37 +1676,6 @@ export function cardLabel(card: Card): string {
   if (card.kind === 'industry') return card.industry2 ? `${industry(card.industry!)} / ${industry(card.industry2)}` : industry(card.industry!);
   if (card.kind === 'wild-location') return tr('game.confirm.wildLocation');
   return tr('game.confirm.wildIndustry');
-}
-
-/** the one refusal worth telling when no site takes the card: the most
- *  actionable reason among the sites the card could otherwise reach —
- *  missing coal or iron, money, network — before the merely structural
- *  ones (wrong slot, occupied) that apply to every other slot on the map */
-const BUILD_REASON_RANK: (string | RegExp)[] = [
-  'No connected coal — reach a mine or a merchant',
-  'No coal left anywhere',
-  'No iron available anywhere',
-  /^Needs £/,
-  'Not in your network',
-  'Canal Era: one tile per location',
-  /overbuil/,
-  'Occupied by another industry',
-  /era$/,
-  /tiles left$/,
-];
-export function whyNoBuild(targets: BuildTarget[]): string {
-  let best: { rank: number; n: number; reason: string } | null = null;
-  const seen = new Map<string, number>();
-  for (const t of targets) {
-    if (t.valid || !t.reason) continue;
-    seen.set(t.reason, (seen.get(t.reason) ?? 0) + 1);
-  }
-  for (const [reason, n] of seen) {
-    let rank = BUILD_REASON_RANK.findIndex((r) => (typeof r === 'string' ? r === reason : r.test(reason)));
-    if (rank < 0) rank = BUILD_REASON_RANK.length;
-    if (!best || rank < best.rank || (rank === best.rank && n > best.n)) best = { rank, n, reason };
-  }
-  return best?.reason ?? 'No valid construction site for this card';
 }
 
 /** the verbs a selected card allows. `tryable` marks the ones the hand still
