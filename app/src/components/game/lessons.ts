@@ -75,6 +75,11 @@ export function cheapestWorks(g: GameState, me: number): number | null {
 export const playedSince = (c: LessonCtx, at: number): number =>
   new Set(c.g.ledger.filter((e) => e.player === c.me && (e.at ?? -1) >= at && e.verb !== 'system' && e.verb !== 'score').map((e) => e.at)).size;
 
+/** a works of the reader's flipped — which a sale alone does: any of
+ *  their works, to any merchant who buys its goods, by whoever's links,
+ *  with whatever beer. The sales are counted, so a works swept off the
+ *  board at an era's end still counts */
+const worksFlipped = (c: LessonCtx): boolean => c.g.players[c.me].stats.sold > 0;
 /** a works of the reader's, not sold yet, that links join to a merchant
  *  buying its goods — whoever laid them */
 const linkedWorks = (c: LessonCtx): boolean => sellTargets(c.g, c.me).length > 0;
@@ -125,6 +130,12 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'botTurn' },
   { id: 'payday', when: (c) => c.g.round >= 2 },
   { id: 'link', done: (c) => Object.values(c.g.links).some((l) => l.owner === c.me), deferrable: true },
+  /* a forge, not "a forge or a brewery": a brewery costs as much but
+     burns an iron, not a coal, so the mine and the canal the two lessons
+     before laid for a forge would feed nothing, and what a forge teaches
+     — its bars sold to the market, the iron left for developing — would
+     go untaught. The lessons on developing and on beer would read true
+     either way; the chain before them would not */
   { id: 'iron', done: (c) => built(c, ['iron']), deferrable: true },
   { id: 'develop' },
   /* a mine, a canal and a forge leave the purse too thin for a works:
@@ -135,8 +146,11 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'works', done: (c) => built(c, WORKS), deferrable: true },
   { id: 'market', show: 'market' },
   { id: 'beer' },
-  { id: 'sell', done: (c) => c.g.players[c.me].stats.sold > 0, deferrable: true },
-  { id: 'flipped', when: (c) => c.g.players[c.me].stats.sold > 0 },
+  /* the first works flipped, whichever it is — the one the lesson on
+     works built, or another. The move is a sale all the same: the
+     lesson's to teach, not an aim for the coach to grade */
+  { id: 'sell', done: worksFlipped, deferrable: true },
+  { id: 'flipped', when: worksFlipped },
   { id: 'eraEnd' },
   /* the second half: a turn's worth of actions played with no word from
      the guide — the reader's own round */

@@ -537,6 +537,32 @@ describe('the last rounds', () => {
   });
 });
 
+describe('the first works flipped', () => {
+  it('passes the sale lesson by any works of the reader\'s sold, and by no other tile flipped', () => {
+    const OXFORD = LINKS.find((l) => l.a === 'redditch' && l.b === 'm-oxford')!.id;
+    /* a manufacturer the lesson on works never asked for, joined to
+       Oxford by the machine's canal, Oxford's barrel standing */
+    const g = structuredClone(round2());
+    g.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    g.merchantTiles['m-oxford'] = ['all'];
+    g.merchantBeer = { 'm-oxford:0': 1 };
+    g.links[OXFORD] = { owner: 1, era: 'canal' };
+    let p = upTo('sell');
+    expect(due(p, ctx(g))).toMatchObject({ id: 'sell', mode: 'do' });
+    p = see(p, 'sell', ctx(g));
+    /* the reader's mine emptied: a tile of theirs flipped, not a works */
+    const mined = structuredClone(g);
+    const pit = Object.keys(mined.tiles).find((k) => mined.tiles[k].owner === 0 && mined.tiles[k].industry === 'coal')!;
+    mined.tiles[pit] = { ...mined.tiles[pit], cubes: 0, flipped: true };
+    expect(settle(p, ctx(mined))).toBe(p);
+    /* the manufacturer sold: the lesson passes, and the page on a flipped tile follows */
+    const sold = play(g, { kind: 'sell', card: g.players[0].hand[0].id, sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] });
+    p = settle(p, ctx(sold));
+    expect(p.passed.at(-1)).toBe('sell');
+    expect(due(p, ctx(sold))).toMatchObject({ id: 'flipped', mode: 'read' });
+  });
+});
+
 describe('the aims of the second half', () => {
   /* round 2, the reader to play: a manufacturer of theirs in Redditch,
      Oxford buying everything with its barrel standing, and — when asked
