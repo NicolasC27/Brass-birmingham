@@ -1064,6 +1064,7 @@ const game: typeof engame = {
     detourLater: 'Sin préstamo, aplázala: vuelve después de la paga.',
     already: 'Ya lo has hecho: esto es lo que cambia.',
     aside: 'Lección aplazada: « {lesson} » vuelve en la próxima ronda.',
+    rest: 'La guía calla hasta su próxima lección — como muy tarde, hasta el recuento final.',
     suggest: {
       closedMerchant: '{merchant} no tiene mercader en esta mesa, pero el lugar conserva sus dos iconos de enlace para el recuento de la era y su acceso al mercado del carbón.',
       aria: 'Lo que la máquina jugaría en tu lugar',
@@ -1171,7 +1172,6 @@ const game: typeof engame = {
     leave: 'Salir de la guía',
     back: 'Atrás',
     next: 'Siguiente',
-    done: 'Seguir la partida',
     show: { mat: 'Abrir mi tapete', market: 'Mostrar el mercado', vp: 'La regla de los puntos está arriba' },
     tips: {
       firstRound: 'Primera ronda: una sola acción. Cada acción cuesta una carta de tu mano — salvo Explorar, que descarta tres.',
@@ -1257,7 +1257,7 @@ const game: typeof engame = {
       tips: { title: 'Cuatro hábitos que lo cambian todo', body: 'Tu recurso escaso son las acciones: apunta a cinco puntos por acción, y cuéntalas antes de tender un canal más. Desarrolla tus niveles 1 en vez de construirlos, guardando una mina o una fundición para sobreconstruir.\nPide prestado pronto y no temas los ingresos negativos: una mina o una fundición los remonta rápido. Y vigila las casillas de cervecería, que se roban: guarda tus cartas de cerveza hasta tener las tuyas colocadas.' },
       tipsShort: { title: 'Tres hábitos que lo cambian todo', body: 'Tus acciones están contadas: antes de jugar, pregúntate qué te dará la carta — un canal más solo merece la pena si lleva a alguna parte. El préstamo: pronto, construye losetas que vuelven a subir los ingresos; tarde, se juzga en el cierre, donde cuentan tanto el dinero en caja como el nivel de ingresos. Una temporada bajo cero se recupera volteando losetas: lo que puntúa es el nivel del final.\nY ten tu cerveza: no gastes tus cartas de cervecería en otra cosa hasta tener tus cervecerías colocadas — sus casillas se roban.' },
       eraEndShort: { title: 'El final de esta partida corta', body: 'El mazo está vacío desde la ronda {dry}; luego tus manos menguan una carta por acción, y la partida se detiene cuando están vacías, tras la ronda {rounds}, sin última paga. Entonces se puntúa la era: cada loseta volteada da sus puntos, cada conexión los iconos de enlace de los dos lugares que une.\nEsta partida corta acaba ahí en vez de abrir la era del ferrocarril, y cierra con una bonificación: 1 PV por cada 4 £ en caja, hasta 15, más tu nivel de ingresos en puntos — un nivel negativo resta — y tus losetas volteadas de nivel 2 o más puntúan por segunda vez. Una loseta sin voltear no puntúa nada, sea cual sea su nivel.' },
-      onward: { title: 'Ya conoces el juego', body: 'Dinero para construir, conexiones para llegar, losetas que se voltean por ingresos y puntos, un préstamo cuando la caja está vacía, cerveza para vender. Juega hasta el final de la era; los consejos y las razones de la máquina siguen contigo.\nDespués, abre una mesa de verdad desde tu despacho — e invita a un amigo.' },
+      onward: { title: 'Ya conoces el juego', body: 'Dinero para construir, conexiones para llegar, losetas que se voltean por ingresos y puntos, un préstamo cuando la caja está vacía, cerveza para vender: ese es todo el juego.\nDespués, relee una lección en el curso nocturno, o abre una mesa de verdad desde la oficina del jefe de estación — e invita a un amigo.' },
     },
   },
   mood: {

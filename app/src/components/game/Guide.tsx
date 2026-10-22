@@ -498,11 +498,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer } : null), [game, me, selectedCardId, matPlayer]);
   const settled = useMemo(() => (tutorial && lctx ? settle(kept, lctx) : kept), [tutorial, lctx, kept]);
   const owed = useMemo(() => (tutorial && lctx ? dueNow(settled, lctx) : null), [tutorial, lctx, settled]);
-  /* nothing due this round but a lesson set aside: no lesson on show, a
-     line that says when it comes back */
+  /* nothing due now but a lesson still to come — set aside, or waiting on
+     its time: no lesson on show, a line that says so */
   const idle = owed?.mode === 'idle' && review === null;
+  /* every lesson passed: the table is a plain one again */
+  const over = owed?.mode === 'finished' && review === null;
   /* the lesson on show, for the tips that must not repeat it */
-  const dueId = review ? review.id : idle ? null : (owed?.id ?? null);
+  const dueId = review ? review.id : idle || over ? null : (owed?.id ?? null);
 
   const ctx = useMemo<Ctx | null>(() => (game ? { g: game, me, step: dueId, card: selectedCardId ? (game.players[me]?.hand.find((c) => c.id === selectedCardId) ?? null) : null, verb, buildPick: buildPick ? { industry: buildPick.industry, level: buildPick.level, town: buildPick.town } : null } : null), [game, me, dueId, selectedCardId, verb, buildPick]);
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
@@ -528,22 +530,23 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the lesson on show, worked out before the note decides whether to
      show at all: the thread files away whatever it replaces */
   const onTable = !!game && game.phase === 'action';
-  /* the guided game's note is up: a lesson on show, or the line of one set aside */
-  const guided = onTable && !!owed;
+  /* the guided game's note is up: a lesson on show, or the line of the guide at rest */
+  const guided = onTable && !!owed && !over;
   const showSteps = guided && !idle;
   const aside = guided && idle;
-  const finished = showSteps && review === null && owed.mode === 'finished';
   /* the lesson due, and the deed it asks for when the table does not allow
      it now; when money is what is missing and the loan is still to be
      taught, the guide takes that lesson first and comes back to this one after */
   const dueStep = owed?.id ? lessonOf(owed.id)! : null;
   const block = game && owed?.mode === 'do' && review === null ? blockedBy(owed.id!, game, me, t) : null;
   const detour = !!(lctx && owed && block?.money && detourOf(settled, owed, lctx, true, canLoan(lctx.g, me).ok));
-  /* what is on show: the lesson read back, the loan first, the lesson due —
-     and once they are all passed, the last one, to close the guide on */
+  /* what is on show: the lesson read back, the loan first, the lesson due
+     — or, at rest, the one to come */
   const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? LAST_LESSON);
   const step = showSteps ? lessonOf(shownId)! : null;
-  const shownIndex = finished ? LESSONS.length : lessonIndex(shownId);
+  const shownIndex = lessonIndex(shownId);
+  /* at rest, a lesson set aside says it comes back; one waiting on its time does not */
+  const setAsideNow = aside && settled.later[shownId] !== undefined;
   /* a deed the reader may pass as the table stands — the loan, when the
      purse already pays for the next works: it says so, and what that
      works costs. Only the live deed, still undone: not in the detour,
@@ -551,7 +554,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const spare = useMemo(() => (lctx && showSteps && review === null && !detour && owed?.mode === 'do' && owed.id === shownId && optionalNow(shownId, lctx) ? { need: cheapestWorks(lctx.g, me) } : null), [lctx, showSteps, review, detour, owed, shownId, me]);
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
-  const lensId = showSteps && !finished && !spare ? step?.id : null;
+  const lensId = showSteps && !spare ? step?.id : null;
   const showBot = bot && botHidden !== bot.id && (guided || !hidden);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
@@ -561,7 +564,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      wherever the reader has read to meanwhile. On show means in the
      note: not behind the folded rail, nor under her move's plate, nor
      on her turn, when the note only says whose turn it is (see) */
-  const inView = showSteps && review === null && !finished && dock !== GUIDE_RAIL && !reading;
+  const inView = showSteps && review === null && dock !== GUIDE_RAIL && !reading;
   const live = useMemo(() => (inView && lctx ? see(settled, shownId, lctx) : settled), [inView, lctx, settled, shownId]);
   /* the progress is written from an effect: a render may be thrown away,
      a line written to the disk may not */
@@ -625,14 +628,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (dueNow(after, lctx).id === 'hand' && matPlayer !== null) closeMat();
   };
   /* Next: read back, it walks forward through what was passed and passes
-     nothing; on the live lesson it passes it, and the last one closes the guide */
+     nothing; on the live lesson it passes it. The guide ends with the game,
+     on the final ledger, not here */
   const next = () => {
     if (review) {
       setReview(readForward(settled, review));
       return;
     }
-    if (!finished) passOn(shownId);
-    if (finished || shownId === LAST_LESSON) endTutorial();
+    passOn(shownId);
   };
   /* Back walks the lessons passed, newest first */
   const behind = guided ? readBack(settled, review) : null;
@@ -872,6 +875,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const n = Math.min(shownIndex + 1, LESSONS.length);
     const come = settled.passed.length;
     const unread = !!bot || news.length > 0;
+    /* the lesson's number while one is on show or set aside; at rest, the bar alone */
+    const numbered = showSteps || setAsideNow;
     return (
       <>
         <LessonLens stepId={lensId} active={showSteps} />
@@ -883,9 +888,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
           <GraduationCap className="h-4 w-4 text-cream-100/60" aria-hidden />
           {guided && (
             <>
-              <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: LESSONS.length })}>
-                {n}/{LESSONS.length}
-              </span>
+              {numbered && (
+                <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: LESSONS.length })}>
+                  {n}/{LESSONS.length}
+                </span>
+              )}
               <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
                 <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(come / LESSONS.length) * 100}%` }} />
               </span>
@@ -911,7 +918,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
         <div className="flex shrink-0 items-center gap-2 pb-1">
           <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
           <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.guide.aria')}</span>
-          {showSteps && !finished && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
+          {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
           <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
             <ChevronRight className="h-3.5 w-3.5" />
@@ -936,14 +943,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
         </div>
       )}
       <AnimatePresence initial={false} mode="popLayout">
-        {/* a lesson set aside, and nothing else due this round: a line
-            that says when it comes back */}
+        {/* nothing due now: a line that says when the guide speaks again —
+            the lesson set aside next round, or the next one in its time */}
         {aside && (
           <motion.aside key="aside" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full flex-col gap-1 px-3 py-1.5 shadow-e3">
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
-              <Clock className="h-4 w-4 shrink-0 text-ink-900/70" />
-              <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) })}</span>
+              {setAsideNow ? <Clock className="h-4 w-4 shrink-0 text-ink-900/70" /> : <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />}
+              <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{setAsideNow ? t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) }) : t('game.guide.rest')}</span>
             </div>
             {/* the guide may be left from here too, as from any lesson */}
             <div className="relative flex items-center gap-x-3 pl-6">
@@ -1035,7 +1042,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         </p>
                       ))}
                       {unread && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
-                      {step.done && review === null && !finished && !blocked && !already && !spare && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
+                      {step.done && review === null && !blocked && !already && !spare && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                       {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
                       </div>
                     </div>
@@ -1079,9 +1086,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
-                      {(!step.done || finished || review !== null || already || !!spare) && (
+                      {(!step.done || review !== null || already || !!spare) && (
                         <button type="button" onClick={next} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
-                          {finished || (review === null && shownId === LAST_LESSON) ? t('game.guide.done') : t('game.guide.next')}
+                          {t('game.guide.next')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}

@@ -1064,6 +1064,7 @@ const game: typeof engame = {
     detourLater: 'Ohne Kredit: verschieb sie — sie kommt nach dem Zahltag wieder.',
     already: 'Das hast du schon getan — hier steht, was es ändert.',
     aside: 'Lektion zurückgestellt: « {lesson} » kommt in der nächsten Runde wieder.',
+    rest: 'Das Tutorial schweigt bis zu seiner nächsten Lektion — spätestens bis zur Schlusswertung.',
     suggest: {
       closedMerchant: '{merchant} hat an diesem Tisch keinen Händler, doch der Ort behält seine zwei Verbindungssymbole für die Wertung und seinen Zugang zum Kohlemarkt.',
       aria: 'Was die Maschine an deiner Stelle spielen würde',
@@ -1171,7 +1172,6 @@ const game: typeof engame = {
     leave: 'Tutorial verlassen',
     back: 'Zurück',
     next: 'Weiter',
-    done: 'Weiterspielen',
     show: { mat: 'Mein Tableau öffnen', market: 'Den Markt zeigen', vp: 'Die Punkteleiste ist oben' },
     tips: {
       firstRound: 'Erste Runde: nur eine Aktion. Jede Aktion kostet eine Karte aus deiner Hand — außer Erkunden, das drei abwirft.',
@@ -1257,7 +1257,7 @@ const game: typeof engame = {
       tips: { title: 'Vier Gewohnheiten, die alles ändern', body: 'Deine knappe Ressource sind Aktionen: ziele auf fünf Punkte je Aktion, und zähle sie, bevor du noch einen Kanal legst. Entwickle deine Stufe-1-Plättchen weg, statt sie zu bauen, und behalte eine Mine oder eine Hütte zum Überbauen.\nNimm früh einen Kredit und fürchte kein negatives Einkommen: eine Mine oder eine Hütte holt es schnell zurück. Und achte auf die Brauereiplätze, die gestohlen werden: halte deine Bierkarten, bis deine stehen.' },
       tipsShort: { title: 'Drei Gewohnheiten, die alles ändern', body: 'Deine Aktionen sind gezählt: frage dich vor dem Spielen, was die Karte bringt — ein Kanal mehr lohnt nur, wenn er irgendwohin führt. Der Kredit: früh baut er Plättchen, die das Einkommen wieder heben; spät zeigt erst der Abschluss, was er wert war, denn dort zählen das Geld in der Kasse und die Einkommensstufe beide. Eine Weile unter null holst du auf, indem du Plättchen umdrehst: als Punkte zählt die Stufe am Ende.\nUnd sorge für dein Bier: gib deine Brauereikarten für nichts anderes aus, bevor deine Brauereien stehen — ihre Plätze werden gestohlen.' },
       eraEndShort: { title: 'Das Ende dieser kurzen Partie', body: 'Der Nachziehstapel ist ab Runde {dry} leer; danach schmelzen deine Hände um eine Karte je Aktion, und die Partie endet, sobald sie leer sind, nach Runde {rounds}, ohne letzten Zahltag. Dann wird die Zeit gewertet: jedes umgedrehte Plättchen bringt seine Punkte, jede Verbindung die Verbindungssymbole der beiden Orte, die sie verbindet.\nDiese kurze Partie endet dort, statt die Eisenbahnzeit zu eröffnen, und sie schließt mit einem Bonus: 1 SP je £4 in der Kasse, höchstens 15, plus deine Einkommensstufe in Punkten — eine negative Stufe zieht ab — und deine umgedrehten Plättchen ab Stufe 2 werten ein zweites Mal. Ein nicht umgedrehtes Plättchen wertet nichts, egal welcher Stufe.' },
-      onward: { title: 'Du kennst das Spiel', body: 'Geld zum Bauen, Verbindungen zum Erreichen, Plättchen, die sich für Einkommen und Punkte umdrehen, ein Kredit bei leerer Kasse, Bier zum Verkaufen. Spiel bis zum Ende der Zeit; die Tipps und die Gründe der Maschine bleiben bei dir.\nDanach eröffne einen echten Tisch von deinem Kontor aus — und lade einen Freund ein.' },
+      onward: { title: 'Du kennst das Spiel', body: 'Geld zum Bauen, Verbindungen zum Erreichen, Plättchen, die sich für Einkommen und Punkte umdrehen, ein Kredit bei leerer Kasse, Bier zum Verkaufen: das ist das ganze Spiel.\nDanach lies eine Lektion im Abendkurs noch einmal, oder eröffne einen echten Tisch im Büro des Bahnhofsvorstehers — und lade einen Freund ein.' },
     },
   },
   mood: {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import { GraduationCap } from 'lucide-react';
 import { PLAYER_COLORS, incomeLevel } from '@/game/data';
 import { keepFinal, keepTableOf } from '@/game/final';
 import { buildFinalPayload, leaveOnlineTable, useGame } from '@/game/store';
@@ -9,6 +10,7 @@ import type { GameState, PlayerState } from '@/game/types';
 import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { setBoardOption } from './boardOptions';
+import { LAST_LESSON, LESSONS, pass, progressAt, saveProgress } from './lessons';
 import { PortraitMedallion } from './PlayerRail';
 import { useReducedMotion } from './useReducedMotion';
 import { useLayer } from './useLayer';
@@ -85,8 +87,19 @@ export default function GameOverModal({
   const online = useGame((s) => s.code !== null);
   const local = useGame((s) => s.local);
   const code = useGame((s) => s.code);
+  /* the guided table: the guide's closing word is told here */
+  const guided = useGame((s) => s.tutorial);
   const navigate = useNavigate();
   const shown = open && !!game && game.phase === 'game-over';
+  /* the last lesson is this closing word, on the ledger of a game played
+     to its end: shown, it is passed — the lessons the game never came to
+     stay unread */
+  useEffect(() => {
+    if (!shown || !guided || !local) return;
+    const p = progressAt(local);
+    const q = pass(p, LAST_LESSON);
+    if (q !== p) saveProgress(q);
+  }, [shown, guided, local]);
   /* Escape lowers the plate to a strip and the finished board shows: the
      strip brings it back */
   const sheet = useLayer(shown, closeGameOver, { modal: true });
@@ -375,6 +388,34 @@ export default function GameOverModal({
             </tbody>
           </table>
         </div>
+
+        {/* the guided game ends here: the guide's last lesson, on its own
+            paper, with the roads it names */}
+        {guided && !abandoned && (
+          <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="paper relative mt-5 px-4 py-3 text-left shadow-e3">
+            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
+            <div className="relative flex items-start gap-2">
+              <GraduationCap aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
+              <div className="min-w-0 flex-1">
+                <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: LESSONS.length, total: LESSONS.length })}</p>
+                <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${LAST_LESSON}.title`)}</h3>
+                {t(`game.guide.steps.${LAST_LESSON}.body`).split('\n').map((line, i) => (
+                  <p key={i} className={cn('font-serif text-[13.5px] leading-snug text-ink-900/85', i > 0 ? 'mt-1.5' : 'mt-1')}>
+                    {line}
+                  </p>
+                ))}
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => navigate('/cours')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                    {t('platform.home.shortcuts.guided')}
+                  </button>
+                  <button type="button" onClick={() => navigate('/desk')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                    {t('platform.home.shortcuts.desk')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
           {/* a rematch reshuffles this browser's own game: at an online

@@ -1062,6 +1062,7 @@ const game = {
     detourLater: 'Without a loan, put it off: it comes back once the payday has come.',
     already: 'You have already done this: here is what it changes.',
     aside: 'Lesson set aside: « {lesson} » comes back next round.',
+    rest: 'The guide keeps quiet until its next lesson — at the latest, at the final count.',
     suggest: {
       closedMerchant: '{merchant} has no merchant at this table, but the place keeps its two link icons for the era’s scoring and its way to the coal market.',
       aria: 'What the machine would play in your seat',
@@ -1169,7 +1170,6 @@ const game = {
     leave: 'Leave the guide',
     back: 'Back',
     next: 'Next',
-    done: 'Play on',
     show: { mat: 'Open my mat', market: 'Show the market', vp: 'The points ruler is at the top' },
     tips: {
       firstRound: 'First round: one action only. Every action costs a card from your hand — except Scout, which discards three.',
@@ -1255,7 +1255,7 @@ const game = {
       tips: { title: 'Four habits that change everything', body: 'Your scarce resource is actions: aim for five points an action, and count them before laying one more canal. Develop your level-1 tiles away rather than build them, keeping one mine or one forge to overbuild with.\nBorrow early and do not fear a negative income: a mine or a forge climbs back fast. And watch the brewery slots, which get stolen: hold your beer cards until yours are laid.' },
       tipsShort: { title: 'Three habits that change everything', body: 'Your actions are counted: before you play, ask what the card will bring — one more canal is only worth it if it leads somewhere. The loan: early, it builds tiles that raise the income back; late, it is weighed at the close, where the money in the purse and the income level both count. A spell below zero is made up by flipping tiles: it is the level at the end that counts as points.\nAnd have your beer: do not spend your brewery cards on anything else until your breweries are laid — their slots get stolen.' },
       eraEndShort: { title: 'The end of this short game', body: 'The draw pile is empty from round {dry}; after that your hands melt by one card per action, and the game stops once they are empty, after round {rounds}, with no last payday. The era is then scored: every flipped tile scores its points, every link the link icons of the two places it joins.\nThis short game closes there rather than opening the Rail Era, and it closes on a bonus: 1 VP for every £4 you hold, up to 15, plus your income level in points — a negative level subtracts — and your flipped tiles of level 2 and above score a second time. A tile left unflipped scores nothing, whatever its level.' },
-      onward: { title: 'You know the game', body: 'Money to build, links to reach, tiles that flip for income and points, a loan when the purse is empty, beer to sell. Play on to the end of the era; the tips and the machine’s reasons stay with you.\nThen open a real table from your desk — and ask a friend.' },
+      onward: { title: 'You know the game', body: 'Money to build, links to reach, tiles that flip for income and points, a loan when the purse is empty, beer to sell: that is the whole game.\nThen read a lesson again at the evening course, or open a real table from the stationmaster’s office — and ask a friend.' },
     },
   },
   mood: {

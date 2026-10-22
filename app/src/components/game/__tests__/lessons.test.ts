@@ -152,7 +152,8 @@ describe('the lesson due', () => {
     p = pass(p, 'sell');
     expect(due(p, ctx(g))).toMatchObject({ id: 'eraEnd' });
     for (const id of ['eraEnd', 'plan', 'tips']) p = pass(p, id);
-    expect(due(p, ctx(g))).toMatchObject({ id: 'onward' });
+    /* nothing due: the guide rests, the first lesson to come named */
+    expect(due(p, ctx(g))).toEqual({ id: 'flipped', index: lessonIndex('flipped'), mode: 'idle' });
     const sold = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
     expect(due(p, ctx(sold))).toMatchObject({ id: 'flipped', index: lessonIndex('flipped'), mode: 'read' });
     /* payday in the first round: the canal is taught meanwhile, payday is not lost */
@@ -161,10 +162,18 @@ describe('the lesson due', () => {
     expect(due(q, ctx({ ...g, round: 2 }))).toMatchObject({ id: 'payday' });
   });
 
+  it('keeps the closing word for the final ledger', () => {
+    const g = guided();
+    const p = { ...freshProgress('GWE5'), passed: LESSON_IDS.filter((id) => id !== LAST_LESSON) };
+    expect(LAST_LESSON).toBe('onward');
+    /* while the game is played, the guide rests until its end */
+    expect(due(p, ctx(g))).toEqual({ id: LAST_LESSON, index: lessonIndex(LAST_LESSON), mode: 'idle' });
+    expect(due(p, ctx({ ...g, phase: 'game-over' }))).toMatchObject({ id: LAST_LESSON, mode: 'read' });
+  });
+
   it('is finished once every lesson is passed', () => {
     const p = { ...freshProgress('GWE5'), passed: [...LESSON_IDS] };
     expect(due(p, ctx(guided()))).toEqual({ id: null, index: LESSON_IDS.length, mode: 'finished' });
-    expect(LAST_LESSON).toBe('onward');
   });
 });
 
@@ -351,22 +360,22 @@ describe('a lesson set aside', () => {
     expect(wayOn(works, 'works', ctx(r2))).toBeNull();
   });
 
-  it('holds the last lesson back, and leaves nothing to read meanwhile', () => {
+  it('leaves nothing to read while only a lesson set aside is left', () => {
     const r2 = round2();
     const played = idle(r2);
     /* every lesson passed but the loan, set aside, and the closing one */
     let p = see({ ...freshProgress('GWE5'), passed: LESSON_IDS.filter((id) => id !== 'loan' && id !== LAST_LESSON) }, 'loan', ctx(r2));
     p = setAside(p, 'loan', ctx(played));
-    /* the last lesson would close the guide: it waits, and the note is
-       idle — a mode that neither teaches nor holds the machine */
+    /* the note is idle — a mode that neither teaches nor holds the
+       machine — and names the lesson set aside, not the closing word */
     const d = due(p, ctx(played));
     expect(d).toEqual({ id: 'loan', index: lessonIndex('loan'), mode: 'idle' });
     expect(see(p, 'loan', ctx(played))).toBe(p);
     /* the round over, the loan is the lesson due again */
     const r3 = theirs(idle(played));
     expect(due(p, ctx(r3))).toMatchObject({ id: 'loan', mode: 'do' });
-    /* passed, the last lesson comes */
-    expect(due(pass(p, 'loan'), ctx(played))).toMatchObject({ id: LAST_LESSON, mode: 'read' });
+    /* passed, the guide rests until the final ledger */
+    expect(due(pass(p, 'loan'), ctx(played))).toMatchObject({ id: LAST_LESSON, mode: 'idle' });
   });
 });
 

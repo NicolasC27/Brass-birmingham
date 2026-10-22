@@ -1064,6 +1064,7 @@ const fr: typeof engame = {
     detourLater: 'Sans emprunt, reportez-la : elle revient après la paie.',
     already: 'Vous l’avez déjà fait : voici ce que ça change.',
     aside: 'Leçon mise de côté : « {lesson} » revient à la prochaine manche.',
+    rest: 'Le guide se tait jusqu’à sa prochaine leçon — au plus tard, au décompte final.',
     suggest: {
       closedMerchant: '{merchant} n’a pas de marchand à cette table, mais la place garde ses deux icônes lien pour la fin d’ère et son accès au marché du charbon.',
       aria: 'Ce que la machine jouerait à votre place',
@@ -1171,7 +1172,6 @@ const fr: typeof engame = {
     leave: 'Quitter le guide',
     back: 'Retour',
     next: 'Suivant',
-    done: 'Continuer la partie',
     show: { mat: 'Ouvrir mon tapis', market: 'Montrer le marché', vp: 'La règle des points est en haut' },
     tips: {
       firstRound: 'Première manche : une seule action. Chaque action coûte une carte de votre main — sauf la prospection, qui en défausse trois.',
@@ -1257,7 +1257,7 @@ const fr: typeof engame = {
       tips: { title: 'Quatre habitudes qui changent tout', body: 'Votre ressource rare, ce sont les actions : visez cinq points par action, et comptez-les avant de poser un canal de plus. Développez vos niveaux 1 plutôt que de les bâtir, sauf une mine ou une forge que vous garderez pour surconstruire.\nEmpruntez tôt et sans crainte du revenu négatif : une mine ou une forge le remonte vite. Et surveillez les emplacements de brasserie, qui se volent : gardez vos cartes bière jusqu’à ce que les vôtres soient posées.' },
       tipsShort: { title: 'Trois habitudes qui changent tout', body: 'Vos actions sont comptées : avant de jouer, demandez-vous ce que la carte rapportera — un canal de plus ne vaut la peine que s’il mène quelque part. L’emprunt : tôt, il bâtit des tuiles qui remontent le revenu ; tard, il se juge à la clôture, où l’argent en caisse et le niveau de revenu comptent tous deux. Un moment sous zéro se rattrape en retournant des tuiles : c’est le niveau de la fin qui compte en points.\nEt ayez votre bière : ne dépensez pas vos cartes brasserie à autre chose tant que vos brasseries ne sont pas posées — leurs emplacements se volent.' },
       eraEndShort: { title: 'La fin de cette partie courte', body: 'La pioche est vide dès la manche {dry} ; ensuite vos mains fondent d’une carte par action, et la partie s’arrête quand elles sont vides, après la manche {rounds}, sans dernière paie. L’ère est alors comptée : chaque tuile retournée marque ses points, chaque liaison les icônes lien des deux lieux qu’elle relie.\nCette partie courte s’arrête là au lieu d’ouvrir l’ère rail, et se clôt sur un bonus : 1 PV par tranche de 4 £ en caisse, 15 au plus, plus votre niveau de revenu en points — un niveau négatif retranche — et vos tuiles retournées de niveau 2 ou plus comptent une seconde fois. Une tuile non retournée ne marque rien, quel que soit son niveau.' },
-      onward: { title: 'Vous connaissez le jeu', body: 'De l’argent pour bâtir, des liaisons pour atteindre, des tuiles qui se retournent pour du revenu et des points, un emprunt quand la caisse est vide, de la bière pour vendre. Jouez jusqu’à la fin de l’ère ; les conseils et les raisons de la machine restent avec vous.\nEnsuite, ouvrez une vraie table depuis votre bureau — et invitez un ami.' },
+      onward: { title: 'Vous connaissez le jeu', body: 'De l’argent pour bâtir, des liaisons pour atteindre, des tuiles qui se retournent pour du revenu et des points, un emprunt quand la caisse est vide, de la bière pour vendre : c’est tout le jeu.\nEnsuite : relisez une leçon au Cours du soir, ou ouvrez une vraie table depuis le bureau du chef de gare — et invitez un ami.' },
     },
   },
   mood: {

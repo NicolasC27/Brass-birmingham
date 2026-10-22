@@ -24,7 +24,10 @@ export default function Cours() {
   const [passed] = useState(lessonsRead);
   const [redo] = useState(lessonsToRedo);
   const begun = passed.length > 0;
-  const done = passed.length >= LESSONS.length;
+  /* the guided game played to its end: its closing word, told on the
+     final ledger, is passed — a lesson the game never came to stays
+     unmarked, and the course is done all the same */
+  const done = passed.includes(LESSONS[LESSONS.length - 1]);
   /* the syllabus is the register's own table of contents — all twelve
      chapters, glossary and approximations included — not a copy of ten */
   const chapters = getChapters();

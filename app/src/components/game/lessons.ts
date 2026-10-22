@@ -99,11 +99,13 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'eraEnd' },
   { id: 'plan' },
   { id: 'tips' },
-  { id: 'onward' },
+  /* the closing word, told on the final ledger and passed there: the
+     game is played to its end with the guide beside it */
+  { id: 'onward', when: (c) => c.g.phase === 'game-over' },
 ];
 
 export const LESSON_IDS: readonly string[] = LESSONS.map((l) => l.id);
-/** the last lesson: reading on from it closes the guide */
+/** the last lesson: the closing word of the final ledger */
 export const LAST_LESSON = LESSON_IDS[LESSON_IDS.length - 1];
 
 export const lessonIndex = (id: string): number => LESSON_IDS.indexOf(id);
@@ -135,8 +137,7 @@ export const roundOf = (g: GameState): number => (g.era === 'rail' ? 100 : 0) + 
 const earned = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.done && !!p.seen[l.id] && l.done(c);
 /** set aside, and the round it was set aside in not over yet */
 const aside = (p: Progress, id: string, c: LessonCtx): boolean => p.later[id] !== undefined && roundOf(c.g) <= p.later[id];
-/** a lesson set aside and not passed: the last lesson, which closes the
- *  guide, waits for it */
+/** the first lesson set aside and not passed */
 const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) => !p.passed.includes(l.id) && aside(p, l.id, c));
 /** the last round of the game: no payday follows it, and no round for a
  *  lesson set aside to come back in */
@@ -150,9 +151,9 @@ export function settle(p: Progress, c: LessonCtx): Progress {
 }
 
 /** how the lesson due is given: a page to read, a deed to do, a deed done
- *  beforehand (a page, with a word that it is done), nothing due this
- *  round but a lesson set aside (idle: its id, which comes back next
- *  round), or nothing left */
+ *  beforehand (a page, with a word that it is done), nothing due now but
+ *  a lesson still to come (idle: the one set aside, which comes back next
+ *  round, else the first waiting on its time), or nothing left */
 export type Mode = 'read' | 'do' | 'already' | 'idle' | 'finished';
 
 export interface Due {
@@ -162,19 +163,19 @@ export interface Due {
 }
 
 /** the lesson due: the first not passed, not set aside, and not waiting
- *  on the game. The last one closes the guide: it waits while a lesson is
- *  set aside, so that one comes back first */
+ *  on the game. Nothing due, the guide rests until the next one comes —
+ *  the last of all on the final ledger */
 export function due(p: Progress, c: LessonCtx): Due {
-  const held = heldBack(p, c);
-  for (let i = 0; i < LESSONS.length; i++) {
+  const left = (l: Lesson): boolean => !p.passed.includes(l.id) && !earned(p, l, c);
+  const i = LESSONS.findIndex((l) => left(l) && !aside(p, l.id, c) && (!l.when || l.when(c)));
+  if (i >= 0) {
     const l = LESSONS[i];
-    if (p.passed.includes(l.id) || earned(p, l, c) || aside(p, l.id, c)) continue;
-    if (l.when && !l.when(c)) continue;
-    if (l.id === LAST_LESSON && held >= 0) continue;
     if (!l.done) return { id: l.id, index: i, mode: 'read' };
     return { id: l.id, index: i, mode: l.done(c) ? 'already' : 'do' };
   }
-  if (held >= 0) return { id: LESSONS[held].id, index: held, mode: 'idle' };
+  const held = heldBack(p, c);
+  const next = held >= 0 ? held : LESSONS.findIndex(left);
+  if (next >= 0) return { id: LESSONS[next].id, index: next, mode: 'idle' };
   return { id: null, index: LESSONS.length, mode: 'finished' };
 }
 
