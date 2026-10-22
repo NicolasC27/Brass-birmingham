@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, replay, setupOf } from '../actions';
 import type { GameAction } from '../actions';
-import { INDUSTRIES, LINKS, incomeLevel } from '../data';
+import { INCOME_MAX, INDUSTRIES, LINKS, incomeLevel } from '../data';
 import { RULES_EDITION, buildTargets, eraRounds, linkTargets, newGame, sellTargets, serialize } from '../engine';
 import type { Era, GameState, SetupPayload } from '../types';
 
@@ -174,7 +174,7 @@ describe('a merchant\'s bonus on a sale', () => {
     const after = applyAction(s, me, sell).state!;
     expect(after.merchantBeer['m-oxford:0']).toBe(0);
     /* in spaces, as the merchant's sign counts them */
-    expect(saleLine(after)).toMatchObject({ bonusIncome: 2, bonusVp: 0, bonusMoney: 0, bonusDevelop: 0 });
+    expect(saleLine(after)).toMatchObject({ bonusIncome: 2, bonusVp: 0, bonusMoney: 0, bonusDevelop: 0, barrels: 1 });
   });
 
   it('is told high on the track too, where two spaces stay within one level', () => {
@@ -187,6 +187,14 @@ describe('a merchant\'s bonus on a sale', () => {
     expect(saleLine(after).bonusIncome).toBe(2);
   });
 
+  it('is drunk all the same when the top of the track leaves it nothing to give', () => {
+    const { s, me } = table(true);
+    s.players[me].income = INCOME_MAX;
+    const after = applyAction(s, me, sell).state!;
+    expect(after.merchantBeer['m-oxford:0']).toBe(0);
+    expect(saleLine(after)).toMatchObject({ bonusIncome: 0, barrels: 1 });
+  });
+
   it('is nothing when my own brewery empties and flips on the way', () => {
     const { s, me } = table(false);
     const income = s.players[me].income;
@@ -195,7 +203,7 @@ describe('a merchant\'s bonus on a sale', () => {
     /* the brewery's flip raised the income all the same, on its own line */
     expect(after.players[me].income).toBe(income + INDUSTRIES.brewery[0].incomeDelta + INDUSTRIES.manufacturer[0].incomeDelta);
     expect(after.ledger.some((e) => e.key === 'flip' && e.vars?.why === 'barrel')).toBe(true);
-    expect(saleLine(after)).toMatchObject({ bonusIncome: 0, bonusVp: 0, bonusMoney: 0, bonusDevelop: 0 });
+    expect(saleLine(after)).toMatchObject({ bonusIncome: 0, bonusVp: 0, bonusMoney: 0, bonusDevelop: 0, barrels: 0 });
   });
 });
 

@@ -805,11 +805,15 @@ interface BarrelBonus {
   /** income spaces gained, as the merchant's sign counts them */
   income: number;
   develop: boolean;
+  /** the merchants' barrels drunk: a barrel may give nothing it can
+   *  show — a free development with none left to take, income at the
+   *  top of the track — and is drunk all the same */
+  barrels: number;
 }
 
 function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]): BarrelBonus {
   const p = s.players[playerIdx];
-  const bonus: BarrelBonus = { said: '', vp: 0, money: 0, income: 0, develop: false };
+  const bonus: BarrelBonus = { said: '', vp: 0, money: 0, income: 0, develop: false, barrels: 0 };
   for (const b of sources) {
     if (b.kind === 'brewery') {
       const key = tileKey(b.town!, b.slot!);
@@ -822,6 +826,7 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]): Barr
     } else {
       const mid = b.merchant!;
       s.merchantBeer[barrelKey(mid, b.slot!)] = 0;
+      bonus.barrels += 1;
       if (merchantBeerLeft(s, mid) === 0) s.merchantBonusTaken[mid] = true;
       const bn = MERCHANT_BY_ID[mid].bonus;
       if (bn.vp) { p.vp += bn.vp; bonus.vp += bn.vp; bonus.said += ` · +${bn.vp} VP`; }
@@ -1175,6 +1180,7 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (st
     bonusMoney: bonus.money,
     bonusIncome: bonus.income,
     bonusDevelop: bonus.develop ? 1 : 0,
+    barrels: bonus.barrels,
     beerFrom,
   });
   return true;
