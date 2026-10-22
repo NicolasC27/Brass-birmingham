@@ -89,28 +89,28 @@ describe('a deed the table does not allow', () => {
   });
 
   it('gives the table\'s own reason when money is not what stops it', () => {
-    setLang('fr');
     const g = guided();
     const now = fr('game.guide.blocked.ironNow');
     /* the forge on a bare board: no coal reaches any town it could go to */
-    const bare = blockedBy('iron', g, 0, fr)!;
+    const bare = blockedBy('iron', g, 0, fr, 'fr')!;
     expect(bare).toMatchObject({ money: false });
-    expect(bare.text).toBe(`${now} ${fr('game.guide.blocked.why', { why: reasonText('No connected coal — reach a mine or a merchant') })}`);
+    expect(bare.text).toBe(`${now} ${fr('game.guide.blocked.why', { why: reasonText('No connected coal — reach a mine or a merchant', 'fr') })}`);
     expect(bare.text).toContain('Pas de charbon relié');
     /* a mine of the reader's at Coalbrookdale, and that town's card alone:
        one tile to a town, told at the town */
     const held = structuredClone(g);
     held.tiles['coalbrookdale:2'] = { owner: 0, industry: 'coal', level: 1, flipped: false, cubes: 2 };
     held.players[0].hand = [{ id: 'x1', kind: 'location', town: 'coalbrookdale' } as Card];
-    expect(blockedBy('iron', held, 0, fr)!.text).toBe(`${now} ${fr('game.guide.blocked.whyAt', { town: 'Coalbrookdale', why: reasonText('Canal Era: one tile per location') })}`);
+    expect(blockedBy('iron', held, 0, fr, 'fr')!.text).toBe(`${now} ${fr('game.guide.blocked.whyAt', { town: 'Coalbrookdale', why: reasonText('Canal Era: one tile per location', 'fr') })}`);
     /* every card names another industry: no card will do, and the lesson's criteria say why */
     const brewer = structuredClone(g);
     brewer.players[0].hand = [{ id: 'x2', kind: 'industry', industry: 'brewery' } as Card];
-    expect(blockedBy('iron', brewer, 0, fr)!.text).toBe(fr('game.guide.blocked.ironCard'));
+    expect(blockedBy('iron', brewer, 0, fr, 'fr')!.text).toBe(fr('game.guide.blocked.ironCard'));
   });
 
   it('tells a works joined to its buyer that it lacks its beer, and answers so', () => {
-    setLang('fr');
+    /* the page may be read in another tongue: the question's own is kept */
+    setLang('en');
     const dry = structuredClone(guided());
     dry.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
     dry.merchantTiles['m-oxford'] = ['all'];
@@ -118,9 +118,10 @@ describe('a deed the table does not allow', () => {
     /* not joined yet: the works and who buys it */
     expect(blockedBy('sell', dry, 0, fr)!.text).toContain(fr('game.guide.blocked.sell'));
     dry.links[LINKS.find((l) => l.a === 'redditch' && l.b === 'm-oxford')!.id] = { owner: 1, era: 'canal' };
-    const b = blockedBy('sell', dry, 0, fr)!;
+    const b = blockedBy('sell', dry, 0, fr, 'fr')!;
     expect(b.text.startsWith(`${fr('game.guide.blocked.sellNow')} À Redditch,`)).toBe(true);
     expect(b.text).toContain('Il faut 1 bière');
-    expect(answerTo('sell', dry, 0, fr)).toBe(b.text);
+    expect(answerTo('sell', dry, 0, fr, 'fr')).toBe(b.text);
+    expect(answerQuestion('je peux vendre ?', { g: dry, me: 0 }, fr, 'fr', passages('fr')).answer).toBe(b.text);
   });
 });

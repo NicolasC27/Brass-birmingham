@@ -6,7 +6,7 @@ import { asksTheRules, consult, mend } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
 import type { GameState } from '@/game/types';
-import { reasonText } from '@/i18n';
+import { getLang, reasonText } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { lastRound } from './lessons';
 
@@ -16,7 +16,7 @@ import { lastRound } from './lessons';
 /* their own game — the purse, the rounds left, what can be sold. The  */
 /* guide's lane and the question tool both ask here, so a question has */
 /* one answer at every width. Pure: the words come in with `t`, and    */
-/* the engine's own refusals in the reader's tongue with `say`.        */
+/* the engine's own refusals are said in `lang`, the tongue of `t`.    */
 /* ------------------------------------------------------------------ */
 
 type T = (key: string, vars?: Record<string, string | number>) => string;
@@ -48,8 +48,9 @@ function tableSays<X extends { valid: boolean; reason?: string }>(reason: string
  *  own reason is given — no connected coal, one tile to a town, no beer —
  *  and only a hand whose every card names another town or industry is
  *  told that no card will do */
-export function blockedBy(id: string, g: GameState, me: number, t: T, say: Say = reasonText): Block | null {
+export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang = getLang()): Block | null {
   const p = g.players[me];
+  const say: Say = (reason) => reasonText(reason, lang);
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
   /* the loan, or the payday to come back after — none follows the last round */
   const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
@@ -123,18 +124,18 @@ export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number 
 }
 
 /** the answer, read off the table as it stands */
-export function answerTo(id: Ask, g: GameState, me: number, t: T): string {
+export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang()): string {
   const p = g.players[me];
   const level = incomeLevel(p.income);
   switch (id) {
     case 'sell': {
       const ok = sellTargets(g, me).find((x) => x.valid);
       if (ok) return t('game.guide.ask.answer.sellYes', { industry: t(`game.log.industry.${ok.tile.industry}`), town: TOWN_BY_ID[ok.town]?.name ?? ok.town, merchant: MERCHANT_BY_ID[ok.merchant]?.name ?? ok.merchant });
-      return blockedBy('sell', g, me, t)?.text ?? t('game.guide.ask.answer.sellNo');
+      return blockedBy('sell', g, me, t, lang)?.text ?? t('game.guide.ask.answer.sellNo');
     }
     case 'build': {
       const n = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => x.valid).length;
-      return n > 0 ? t('game.guide.ask.answer.buildYes', { n }) : (blockedBy('works', g, me, t)?.text ?? t('game.guide.ask.answer.buildNo'));
+      return n > 0 ? t('game.guide.ask.answer.buildYes', { n }) : (blockedBy('works', g, me, t, lang)?.text ?? t('game.guide.ask.answer.buildNo'));
     }
     case 'coal':
       return t('game.guide.ask.answer.coal', { left: g.market.coal, mine: Object.values(g.tiles).filter((x) => x.industry === 'coal' && !x.flipped).length });
@@ -163,7 +164,7 @@ export function answerQuestion(q: string, game: { g: GameState; me: number } | n
   const table = game ? intentOf(q, t, lang) : null;
   const written = faqBest(q, faqFor(lang));
   const id = game && table && (!written || table.score >= written.score) ? table.id : null;
-  if (id && game) return { answer: answerTo(id, game.g, game.me, t), intent: id, near: [] };
+  if (id && game) return { answer: answerTo(id, game.g, game.me, t, lang), intent: id, near: [] };
   const found = consult(q, lang, passages);
   return { answer: found.answer, intent: null, near: found.kind === 'near' ? found.near : [] };
 }

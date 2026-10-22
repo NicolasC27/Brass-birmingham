@@ -106,15 +106,16 @@ function fmt(s: string, vars?: Record<string, string | number>, l: Lang = lang):
 /** an engine refusal in the reader's language: the English sentence, or
  *  the office's code, is the key. A refusal the sheets do not know is said
  *  as a plain sentence, and its raw words go to the console, never to the
- *  player's bubble. */
-export function reasonText(text: string | null | undefined): string {
+ *  player's bubble. In the reader's tongue, or in `l` when the words
+ *  around it are said in another. */
+export function reasonText(text: string | null | undefined, l: Lang = lang): string {
   if (!text) return '';
-  const dict = dictOf(lang);
+  const dict = dictOf(l);
   const said = (dict.game as AnyDict | undefined)?.reasons as Record<string, string> | undefined;
-  const known = knownReason(text, dict, said);
+  const known = knownReason(text, dict, said, l);
   if (known !== null) return known;
-  if (sheetsSay(text, lang)) return text;
-  const seen = `${lang}\n${text}`;
+  if (sheetsSay(text, l)) return text;
+  const seen = `${l}\n${text}`;
   if (!confessed.has(seen)) {
     confessed.add(seen);
     console.error(`[refusal] no sentence for: ${text}`);
@@ -174,7 +175,7 @@ function sheetsSay(text: string, l: Lang): boolean {
   return said;
 }
 
-function knownReason(text: string, dict: AnyDict, said: Record<string, string> | undefined): string | null {
+function knownReason(text: string, dict: AnyDict, said: Record<string, string> | undefined, l: Lang): string | null {
   if (said?.[text]) return said[text];
   /* a code followed by its detail, "out-of-step: the log stands at 12":
      the code is said, the detail is for the console */
@@ -185,9 +186,9 @@ function knownReason(text: string, dict: AnyDict, said: Record<string, string> |
   }
   /* the few refusals that carry a number: match on the words around it */
   const owed = text.match(/^Needs £(\d+) — you hold £(\d+)$/);
-  if (owed && said?.needsMoney) return fmt(said.needsMoney, { need: owed[1], have: owed[2] });
+  if (owed && said?.needsMoney) return fmt(said.needsMoney, { need: owed[1], have: owed[2] }, l);
   const beer = text.match(/^Needs (\d+) beer — a brewery of yours, one connected here, or the merchant's barrel$/);
-  if (beer && said?.needsBeer) return fmt(said.needsBeer, { n: beer[1] }, lang);
+  if (beer && said?.needsBeer) return fmt(said.needsBeer, { n: beer[1] }, l);
   /* the refusals that carry a name — a town, an industry, an era */
   const board = dict.board as AnyDict | undefined;
   const refusal = board?.refusal as (Record<string, string> & { plain?: Record<string, string> }) | undefined;
@@ -196,11 +197,11 @@ function knownReason(text: string, dict: AnyDict, said: Record<string, string> |
   const industry = (id: string) => lookup(dict, `game.log.industry.${id}`) ?? lookup(en as AnyDict, `game.log.industry.${id}`) ?? id;
   const era = (id: string) => lookup(dict, `board.era.${id}`) ?? id;
   let m: RegExpMatchArray | null;
-  if ((m = text.match(/^This card builds in (\S+) only$/))) return fmt(refusal.cardTown, { town: TOWN_BY_ID[m[1]]?.name ?? m[1] });
-  if ((m = text.match(/^This card builds (.+) only$/))) return fmt(refusal.cardIndustry, { list: m[1].split(' or ').map(industry).join(' / ') });
-  if ((m = text.match(/^No (\w+) tiles left$/))) return fmt(refusal.noTiles, { industry: industry(m[1]) });
-  if ((m = text.match(/^(\w+) L(\d) cannot be built in the (\w+) era$/))) return fmt(refusal.wrongEra, { industry: industry(m[1]), level: m[2], era: era(m[3]) });
-  if ((m = text.match(/^Opponent's tile can only be overbuilt once no (\w+) is left anywhere$/))) return fmt(refusal.overbuildOnce, { resource: industry(m[1]) });
+  if ((m = text.match(/^This card builds in (\S+) only$/))) return fmt(refusal.cardTown, { town: TOWN_BY_ID[m[1]]?.name ?? m[1] }, l);
+  if ((m = text.match(/^This card builds (.+) only$/))) return fmt(refusal.cardIndustry, { list: m[1].split(' or ').map(industry).join(' / ') }, l);
+  if ((m = text.match(/^No (\w+) tiles left$/))) return fmt(refusal.noTiles, { industry: industry(m[1]) }, l);
+  if ((m = text.match(/^(\w+) L(\d) cannot be built in the (\w+) era$/))) return fmt(refusal.wrongEra, { industry: industry(m[1]), level: m[2], era: era(m[3]) }, l);
+  if ((m = text.match(/^Opponent's tile can only be overbuilt once no (\w+) is left anywhere$/))) return fmt(refusal.overbuildOnce, { resource: industry(m[1]) }, l);
   return null;
 }
 
