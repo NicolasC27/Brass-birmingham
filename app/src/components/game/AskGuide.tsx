@@ -57,7 +57,10 @@ export default function AskGuide({ className }: { className?: string }) {
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const online = useGame((s) => s.code !== null);
-  const table = game && game.phase === 'action' && aidOn(game.assist, online) ? { g: game, me: seat ?? Math.max(0, game.players.findIndex((p) => !p.isBot)) } : null;
+  /* the reader's seat: the one the table gave, or at home the first human
+     at the table; a spectator has none, and is answered from the rules */
+  const me = seat ?? Math.max(0, game?.players.findIndex((p) => !p.isBot) ?? 0);
+  const table = game && me >= 0 && game.phase === 'action' && aidOn(game.assist, online) ? { g: game, me } : null;
   /* a sheet of the left edge, like the notebook: one of them at a time */
   const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   const reserve = useDockReserve();
