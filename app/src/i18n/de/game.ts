@@ -628,6 +628,7 @@ const game: typeof engame = {
     'Link must touch your network': 'Die Verbindung muss dein Netzwerk berühren',
     'Double links are a Rail Era option': 'Doppelverbindungen gibt es erst in der Eisenbahnzeit',
     'No connected coal for the second link': 'Keine verbundene Kohle für die zweite Verbindung',
+    'No connected coal for the locomotives': 'Keine verbundene Kohle für die Lokomotiven',
     'Needs 1 beer from a brewery (yours anywhere, or one connected to the second link)': 'Braucht 1 Bier aus einer Brauerei (deine irgendwo, oder eine, die mit der zweiten Verbindung verbunden ist)',
     'The game is not in play': 'Die Partie läuft nicht',
     'Not your turn': 'Du bist nicht am Zug',

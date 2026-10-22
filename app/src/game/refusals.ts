@@ -27,9 +27,10 @@ const BUILD_RANK: Rank = [
   /tiles left$/,
 ];
 
-/** a link refused: the coal a rail burns, the money, then the network it
- *  must touch */
-const LINK_RANK: Rank = ['No connected coal for the locomotives', 'No coal left anywhere', /^Needs £/, 'Link must touch your network'];
+/** a link refused: the money first — a link refused for it has its coal,
+ *  and a loan lays it, as the guide's own block says — then the coal a
+ *  rail burns, then the network it must touch */
+const LINK_RANK: Rank = [/^Needs £/, 'No connected coal for the locomotives', 'No coal left anywhere', 'Link must touch your network'];
 
 /** no link the network could take: every one that touches it is laid */
 export const NO_FREE_LINK = 'No free link touches your network';

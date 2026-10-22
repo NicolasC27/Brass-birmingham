@@ -626,6 +626,7 @@ const game = {
     'Link must touch your network': 'Link must touch your network',
     'Double links are a Rail Era option': 'Double links are a Rail Era option',
     'No connected coal for the second link': 'No connected coal for the second link',
+    'No connected coal for the locomotives': 'No connected coal for the locomotives',
     'Needs 1 beer from a brewery (yours anywhere, or one connected to the second link)': 'Needs 1 beer from a brewery (yours anywhere, or one connected to the second link)',
     'The game is not in play': 'The game is not in play',
     'Not your turn': 'Not your turn',

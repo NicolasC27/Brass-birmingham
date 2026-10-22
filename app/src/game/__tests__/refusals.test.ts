@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { withEdition } from '../actions';
 import { LINKS } from '../data';
 import { buildTargets, linkTargets, newGame, sellTargets } from '../engine';
-import type { BuildTarget } from '../engine';
+import type { BuildTarget, LinkTarget } from '../engine';
 import type { GameState, SetupPayload } from '../types';
 import { NO_FREE_LINK, refusalOf, whyNoBuild, whyNoLink, whyNoSale } from '../refusals';
+import { dictOf, reasonText, setLang } from '@/i18n';
+import type { Lang } from '@/i18n';
 
 /* the one refusal worth telling, among the reasons the engine gives for
    every place it was asked about */
@@ -65,6 +67,22 @@ describe('a link or a sale refused', () => {
     expect(whyNoLink(linkTargets(walled, 0))).toBe(NO_FREE_LINK);
     /* a canal left free, and no money for it: the money */
     expect(whyNoLink(linkTargets(table(false, 1), 0))).toBe('Needs £3 — you hold £1');
+  });
+
+  it('tells a rail with no coal to burn why, in every tongue — and money before it', () => {
+    /* the rail era, a cotton mill of the reader's at Leek, no link and no mine on the board */
+    const g = structuredClone(guided());
+    Object.assign(g, { era: 'rail', eraLength: 'standard', links: {}, tiles: { 'leek:0': { owner: 0, industry: 'cotton', level: 1, flipped: false, cubes: 0 } } });
+    g.players[0].money = 30;
+    const why = whyNoLink(linkTargets(g, 0));
+    expect(why).toBe('No connected coal for the locomotives');
+    for (const l of ['fr', 'en', 'de', 'es'] as Lang[]) {
+      setLang(l);
+      expect(reasonText(why)).not.toBe(((dictOf(l).game as Record<string, unknown>).reasons as Record<string, string>).unknown);
+    }
+    /* a rail the purse cannot pay has its coal: a loan lays it */
+    const mixed = [{ valid: false, reason: 'No connected coal for the locomotives' }, { valid: false, reason: 'Needs £7 — you hold £4' }] as LinkTarget[];
+    expect(whyNoLink(mixed)).toBe('Needs £7 — you hold £4');
   });
 
   it('tells a works joined to its buyer that it lacks its beer', () => {

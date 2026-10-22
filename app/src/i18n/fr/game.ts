@@ -628,6 +628,7 @@ const fr: typeof engame = {
     'Link must touch your network': 'La liaison doit toucher votre réseau',
     'Double links are a Rail Era option': 'La double liaison est une option de l’ère rail',
     'No connected coal for the second link': 'Pas de charbon relié pour la seconde liaison',
+    'No connected coal for the locomotives': 'Pas de charbon relié pour les locomotives',
     'Needs 1 beer from a brewery (yours anywhere, or one connected to the second link)': 'Il faut 1 bière d’une brasserie (la vôtre n’importe où, ou une reliée à la seconde liaison)',
     'The game is not in play': 'La partie n’est pas en cours',
     'Not your turn': 'Ce n’est pas votre tour',
