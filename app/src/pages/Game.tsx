@@ -666,8 +666,10 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
 
   /* the guide's lane down the right edge: a rail when folded (key G) */
   /* the board's own lane: beside the guide while a lesson runs, and beside
-     the analysis while a game is read again — never under either */
-  const dock = analysisPane || (tutorial && wide ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
+     the analysis while a game is read again — never under either. The
+     guide speaks only while moves are played: through the era's count and
+     on the final ledger its lane would stand empty, and the table has it */
+  const dock = analysisPane || (tutorial && wide && game.phase === 'action' ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">
