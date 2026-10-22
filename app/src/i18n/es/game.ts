@@ -114,7 +114,7 @@ const game: typeof engame = {
         build: 'Esta carta no puede construir nada: vende, desarrolla o pasa con ella',
         network: 'Ninguna conexión posible desde tu red: juega esta carta de otro modo',
         sell: 'Nada que vender aún: conecta una fábrica con su comprador o construye una cervecería',
-        develop: 'Nada que desarrollar: no hay hierro al alcance',
+        develop: 'Nada que desarrollar por ahora: hace falta un hierro, y con qué pagarlo en el mercado',
       },
       coalMarket: 'El carbón viene del mercado: ninguna mina está conectada con {town}. Una conexión hacia {mine} lo habría hecho gratis.',
     },

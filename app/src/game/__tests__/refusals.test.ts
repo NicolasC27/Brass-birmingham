@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { withEdition } from '../actions';
 import { LINKS } from '../data';
-import { buildTargets, linkTargets, newGame, sellTargets } from '../engine';
+import { buildTargets, developOptions, linkTargets, newGame, sellTargets } from '../engine';
 import type { BuildTarget, LinkTarget } from '../engine';
 import type { GameState, SetupPayload } from '../types';
-import { NO_FREE_LINK, refusalOf, whyNoBuild, whyNoLink, whyNoSale } from '../refusals';
+import { NO_FREE_LINK, refusalOf, whyNoBuild, whyNoDevelop, whyNoLink, whyNoSale } from '../refusals';
 import { dictOf, reasonText, setLang } from '@/i18n';
 import type { Lang } from '@/i18n';
 
@@ -89,5 +89,19 @@ describe('a link or a sale refused', () => {
     expect(whyNoSale(sellTargets(table(false), 0))).toBe('No goods connected to a demanding merchant');
     /* the machine's canal to Oxford joins it: no barrel, no brewery */
     expect(whyNoSale(sellTargets(table(true), 0))).toMatch(/^Needs 1 beer/);
+  });
+});
+
+describe('nothing to develop', () => {
+  it('tells an empty purse the money, not the iron the market holds', () => {
+    const g = structuredClone(guided());
+    g.players[0].money = 0;
+    expect(g.market.iron).toBeGreaterThan(0);
+    expect(whyNoDevelop(developOptions(g, 0))).toBe('Cannot afford the iron');
+    /* an emptied market still sells, at its dearest */
+    g.market.iron = 0;
+    g.players[0].money = 5;
+    expect(whyNoDevelop(developOptions(g, 0))).toBe('Cannot afford the iron');
+    expect(whyNoDevelop([])).toBe('Nothing worth developing (needs iron)');
   });
 });

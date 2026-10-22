@@ -114,7 +114,7 @@ const game: typeof engame = {
         build: 'Mit dieser Karte lässt sich nichts bauen: verkaufe, entwickle oder passe damit',
         network: 'Keine Verbindung von deinem Netzwerk aus möglich: spiele diese Karte anders',
         sell: 'Noch nichts zu verkaufen: verbinde einen Betrieb mit seinem Abnehmer oder baue eine Brauerei',
-        develop: 'Nichts zu entwickeln: kein Eisen in Reichweite',
+        develop: 'Vorerst nichts zu entwickeln: es braucht ein Eisen, und am Markt das Geld dafür',
       },
       coalMarket: 'Die Kohle kommt vom Markt: keine Mine ist mit {town} verbunden. Eine Verbindung nach {mine} hätte sie gratis gemacht.',
     },

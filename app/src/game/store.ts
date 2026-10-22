@@ -45,7 +45,7 @@ import { coachMove, hushCoach } from './coach';
 import type { Coached } from './coach';
 import { aidOn } from '@/components/game/boardOptions';
 import { deedOf } from '@/components/game/lessons';
-import { whyNoBuild, whyNoLink, whyNoSale } from './refusals';
+import { whyNoBuild, whyNoDevelop, whyNoLink, whyNoSale } from './refusals';
 import type { JudgeId } from './analysis';
 
 export interface Shake {
@@ -1699,11 +1699,13 @@ export function verbsForCard(st: { game: GameState | null; selectedCardId: strin
   const sites = buildTargets(g, i, card);
   const links = linkTargets(g, i);
   const sales = sellTargets(g, i);
+  const tiles = developOptions(g, i);
   return [
     { verb: 'build', ok: sites.some((t) => t.valid), reason: whyNoBuild(sites), tryable: true },
     /* a purse that pays for a canal hears what else stands in the way */
     { verb: 'network', ok: links.some((t) => t.valid), reason: whyNoLink(links), tryable: true },
-    { verb: 'develop', ok: developOptions(g, i).some((d) => d.valid), reason: 'Nothing worth developing (needs iron)', tryable: true },
+    /* the iron is on the market and the purse is empty: the money, not the iron */
+    { verb: 'develop', ok: tiles.some((d) => d.valid), reason: whyNoDevelop(tiles), tryable: true },
     /* a works joined to its buyer that cannot sell lacks its beer */
     { verb: 'sell', ok: sales.some((t) => t.valid), reason: whyNoSale(sales), tryable: true },
     { verb: 'loan', ok: canLoan(g, i).ok, reason: canLoan(g, i).reason },

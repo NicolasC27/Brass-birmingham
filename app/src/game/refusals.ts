@@ -32,6 +32,10 @@ const BUILD_RANK: Rank = [
  *  rail burns, then the network it must touch */
 const LINK_RANK: Rank = [/^Needs £/, 'No connected coal for the locomotives', 'No coal left anywhere', 'Link must touch your network'];
 
+/** a tile kept from developing: no iron to be had, then no money for
+ *  the market's, then the lightbulb no iron lifts */
+const DEVELOP_RANK: Rank = ['No iron available anywhere', 'Cannot afford the iron', /^Lightbulb/];
+
 /** no link the network could take: every one that touches it is laid */
 export const NO_FREE_LINK = 'No free link touches your network';
 
@@ -67,6 +71,12 @@ export function whyNoBuild(targets: readonly BuildTarget[]): string {
 export function whyNoLink(targets: readonly LinkTarget[]): string {
   const best = refusalOf(targets, LINK_RANK)?.reason;
   return best && best !== 'Link must touch your network' ? best : NO_FREE_LINK;
+}
+
+/** why nothing can be developed: the iron, or the money the market asks
+ *  for it — the lightbulb only when every tile left carries one */
+export function whyNoDevelop(options: readonly Refused[]): string {
+  return refusalOf(options, DEVELOP_RANK)?.reason ?? 'Nothing worth developing (needs iron)';
 }
 
 /** why nothing sells: the beer a works joined to its buyer lacks, else no

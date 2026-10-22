@@ -112,7 +112,7 @@ const game = {
         build: 'This card can build nowhere: sell, develop, or pass with it',
         network: 'No link possible from your network: play this card another way',
         sell: 'Nothing to sell yet: link a works to its buyer or build a brewery',
-        develop: 'Nothing to develop: no iron within reach',
+        develop: 'Nothing to develop for now: it takes an iron, and the money for it at the market',
       },
       coalMarket: 'The coal comes from the market: no mine is linked to {town}. A link toward {mine} would have made it free.',
     },
