@@ -1172,6 +1172,8 @@ const fr: typeof engame = {
       loan: 'Aucun emprunt possible : le revenu ne peut pas descendre sous −10.',
       why: 'La table répond : « {why} ».',
       whyAt: 'À {town}, la table répond : « {why} ».',
+      cardAt: 'C’est la carte qui vous manque : avec une carte qui l’autorise, vous bâtiriez à {towns}.',
+      cardIn: 'C’est la carte qui vous manque : avec une carte qui l’autorise, vous bâtiriez dans votre réseau.',
     },
     minify: 'Réduire la leçon',
     expand: 'Agrandir la leçon',

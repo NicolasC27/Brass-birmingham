@@ -1170,6 +1170,8 @@ const game = {
       loan: 'No loan is possible: the income cannot sink below −10.',
       why: 'The table answers: “{why}”.',
       whyAt: 'At {town}, the table answers: “{why}”.',
+      cardAt: 'It is the card you lack: with a card that allows it, you would build at {towns}.',
+      cardIn: 'It is the card you lack: with a card that allows it, you would build in your network.',
     },
     minify: 'Fold the lesson',
     expand: 'Unfold the lesson',

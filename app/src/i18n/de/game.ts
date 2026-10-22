@@ -1172,6 +1172,8 @@ const game: typeof engame = {
       loan: 'Kein Darlehen möglich: das Einkommen kann nicht unter −10 sinken.',
       why: 'Der Tisch antwortet: „{why}“.',
       whyAt: 'In {town} antwortet der Tisch: „{why}“.',
+      cardAt: 'Dir fehlt die Karte: Mit einer Karte, die es erlaubt, könntest du in {towns} bauen.',
+      cardIn: 'Dir fehlt die Karte: Mit einer Karte, die es erlaubt, könntest du in deinem Netzwerk bauen.',
     },
     minify: 'Lektion einklappen',
     expand: 'Lektion ausklappen',

@@ -5,8 +5,8 @@ import type { Passage } from '@/game/faq';
 import { asksTheRules, consult, mend } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
-import type { GameState } from '@/game/types';
-import { getLang, reasonText } from '@/i18n';
+import type { Card, GameState } from '@/game/types';
+import { getLang, localeOf, reasonText } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { lastRound } from './lessons';
 
@@ -22,6 +22,8 @@ import { lastRound } from './lessons';
 type T = (key: string, vars?: Record<string, string | number>) => string;
 /** an engine refusal, said in the reader's tongue */
 type Say = (reason: string) => string;
+/** towns named in a line, as the reader's tongue lists them */
+type List = (towns: string[], type: 'conjunction' | 'disjunction') => string;
 
 const WORKS = ['cotton', 'manufacturer', 'pottery'];
 
@@ -32,25 +34,37 @@ const short = (r?: string) => !!r && r.startsWith('Needs £');
 /** the reason alone, and the reason with the advice that follows it */
 export type Block = { short: string; text: string; money: boolean };
 
-/** the engine's own refusal of the place a deed came nearest to, as the
- *  table gives it — at that town, when it is the one town it holds in */
-function tableSays<X extends { valid: boolean; reason?: string }>(reason: string, all: readonly X[], townOf: (x: X) => string, t: T, say: Say): string {
-  const towns = new Set(all.filter((x) => !x.valid && x.reason === reason).map(townOf));
+/** the most towns a line names; past them the table speaks for the map */
+const NAMED = 3;
+const nameOf = (town: string): string => TOWN_BY_ID[town]?.name ?? town;
+
+/** the engine's own refusal of the places a deed came nearest to, as the
+ *  table gives it — at those towns, when they are few enough to name */
+function tableSays<X extends { valid: boolean; reason?: string }>(reason: string, all: readonly X[], townOf: (x: X) => string, t: T, say: Say, list: List): string {
+  const towns = [...new Set(all.filter((x) => !x.valid && x.reason === reason).map(townOf))];
   const why = say(reason);
-  if (towns.size !== 1) return t('game.guide.blocked.why', { why });
-  const [town] = towns;
-  return t('game.guide.blocked.whyAt', { town: TOWN_BY_ID[town]?.name ?? town, why });
+  if (towns.length === 0 || towns.length > NAMED) return t('game.guide.blocked.why', { why });
+  return t('game.guide.blocked.whyAt', { town: list(towns.map(nameOf), 'conjunction'), why });
+}
+
+/** the towns of the reader's network where the deed could be built now
+ *  with a card they do not hold: there, the card alone is missing */
+function openedByACard(g: GameState, me: number, inds: string[]): string[] {
+  const any: Card = { id: 'any', kind: 'wild-industry' };
+  return [...new Set(buildTargets(g, me, any).filter((x) => x.valid && inds.includes(x.industry)).map((x) => x.town))];
 }
 
 /** why the lesson's deed cannot be done at this table right now, said
  *  with the player's own figures, and whether money is what is missing;
  *  null when it can. Money short, the loan is the way; else the table's
  *  own reason is given — no connected coal, one tile to a town, no beer —
- *  and only a hand whose every card names another town or industry is
- *  told that no card will do */
+ *  with the towns of the network a card the reader lacks would open, and
+ *  only a hand whose every card names another town or industry is told
+ *  that no card will do */
 export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang = getLang()): Block | null {
   const p = g.players[me];
   const say: Say = (reason) => reasonText(reason, lang);
+  const list: List = (towns, type) => new Intl.ListFormat(localeOf(lang), { type }).format(towns);
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
   /* the loan, or the payday to come back after — none follows the last round */
   const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
@@ -66,7 +80,10 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
     }
     const best = refusalOf(targets)?.reason;
     if (!best || onTheCard(best)) return plain(t(`game.guide.blocked.${id}Card`, vars));
-    return plain(`${t(`game.guide.blocked.${id}Now`)} ${tableSays(best, targets, (x) => x.town, t, say)}`);
+    /* the cards in hand point elsewhere, and a town of the network waits for one */
+    const opens = openedByACard(g, me, inds);
+    const card = !opens.length ? '' : opens.length > NAMED ? ` ${t('game.guide.blocked.cardIn')}` : ` ${t('game.guide.blocked.cardAt', { towns: list(opens.map(nameOf), 'disjunction') })}`;
+    return plain(`${t(`game.guide.blocked.${id}Now`)} ${tableSays(best, targets, (x) => x.town, t, say, list)}${card}`);
   }
   if (id === 'link') {
     const targets = linkTargets(g, me);
@@ -84,7 +101,7 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
     if (targets.some((x) => x.valid)) return null;
     /* a works joined to its buyer, and no beer to drink with it */
     const dry = targets.find((x) => x.reason)?.reason;
-    if (dry) return plain(`${t('game.guide.blocked.sellNow')} ${tableSays(dry, targets, (x) => x.town, t, say)}`);
+    if (dry) return plain(`${t('game.guide.blocked.sellNow')} ${tableSays(dry, targets, (x) => x.town, t, say, list)}`);
     /* the unsold works, and the merchants who buy their goods */
     const mine = Object.entries(g.tiles).filter(([, x]) => x.owner === me && !x.flipped && WORKS.includes(x.industry));
     const lines = mine.map(([key, x]) => {

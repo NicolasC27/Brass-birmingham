@@ -102,10 +102,29 @@ describe('a deed the table does not allow', () => {
     held.tiles['coalbrookdale:2'] = { owner: 0, industry: 'coal', level: 1, flipped: false, cubes: 2 };
     held.players[0].hand = [{ id: 'x1', kind: 'location', town: 'coalbrookdale' } as Card];
     expect(blockedBy('iron', held, 0, fr, 'fr')!.text).toBe(`${now} ${fr('game.guide.blocked.whyAt', { town: 'Coalbrookdale', why: reasonText('Canal Era: one tile per location', 'fr') })}`);
+    /* the same mine, and the forge card: Coalbrookdale, in the network, is
+       nearer than the forge towns out of it */
+    held.players[0].hand = [{ id: 'x3', kind: 'industry', industry: 'iron' } as Card];
+    expect(blockedBy('iron', held, 0, fr, 'fr')!.text).toContain('À Coalbrookdale, la table répond');
     /* every card names another industry: no card will do, and the lesson's criteria say why */
     const brewer = structuredClone(g);
     brewer.players[0].hand = [{ id: 'x2', kind: 'industry', industry: 'brewery' } as Card];
     expect(blockedBy('iron', brewer, 0, fr, 'fr')!.text).toBe(fr('game.guide.blocked.ironCard'));
+  });
+
+  it('names the towns the cards reach, and the one a card would open', () => {
+    /* a mine at Belper, a canal to Derby and its free forge slot — and cards
+       for three towns no coal reaches */
+    const g = structuredClone(guided());
+    g.tiles['belper:1'] = { owner: 0, industry: 'coal', level: 1, flipped: false, cubes: 1 };
+    g.links[LINKS.find((l) => l.canal && [l.a, l.b].includes('belper') && [l.a, l.b].includes('derby'))!.id] = { owner: 0, era: 'canal' };
+    g.players[0].hand = ['redditch', 'coventry', 'dudley'].map((town) => ({ id: town, kind: 'location', town }) as Card);
+    const b = blockedBy('iron', g, 0, fr, 'fr')!;
+    const why = fr('game.guide.blocked.whyAt', { town: 'Redditch, Coventry et Dudley', why: reasonText('No connected coal — reach a mine or a merchant', 'fr') });
+    expect(b.text).toBe(`${fr('game.guide.blocked.ironNow')} ${why} ${fr('game.guide.blocked.cardAt', { towns: 'Derby' })}`);
+    /* with the Derby card in hand the forge can be built: nothing blocks */
+    g.players[0].hand.push({ id: 'derby', kind: 'location', town: 'derby' } as Card);
+    expect(blockedBy('iron', g, 0, fr, 'fr')).toBeNull();
   });
 
   it('tells a works joined to its buyer that it lacks its beer, and answers so', () => {
