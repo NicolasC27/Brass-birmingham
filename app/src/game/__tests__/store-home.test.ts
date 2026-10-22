@@ -234,6 +234,7 @@ describe('sitting at another table', () => {
       ceremony: 'canal-end' as const,
       gameOverOpen: true,
       tutorial: true,
+      guideLane: true,
       sheetOpened: true,
       coachStep: 3,
       shown: { from: 1, at: 2 },
@@ -262,6 +263,14 @@ describe('sitting at another table', () => {
     const fetched = pick();
     expect(useGame.getState().game?.seed).toBe(5);
     expect({ ...fetched, coachStep: -1 }).toEqual(freshGame);
+  });
+
+  it('keeps the guide\'s lane for the game once the guide is left, and for that game only', () => {
+    useGame.setState({ tutorial: true, guideLane: false });
+    useGame.getState().endTutorial();
+    expect(useGame.getState()).toMatchObject({ tutorial: false, guideLane: true });
+    useGame.getState().init(undefined, undefined);
+    expect(useGame.getState().guideLane).toBe(false);
   });
 
   it('takes the coach\'s word back with the move it was about', () => {

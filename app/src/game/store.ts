@@ -228,7 +228,11 @@ interface GameStore {
   coachStep: number; // -1 hidden
   /** this game is the guided one: the guide's steps show */
   tutorial: boolean;
-  /** the guide is done with: the game goes on as a plain one */
+  /** the guided game's lessons are left, and its lane stays for the rest of
+   *  the game: the thread, the machine's reasons and the questions */
+  guideLane: boolean;
+  /** the guide is done with: the game goes on as a plain one, beside the
+   *  lane the guide leaves */
   endTutorial: () => void;
   /** the guide holds the machine: it explains one move before the next is played */
   botHold: boolean;
@@ -672,6 +676,7 @@ export const freshGame = {
   ceremony: null as 'canal-end' | null,
   gameOverOpen: false,
   tutorial: false,
+  guideLane: false,
   sheetOpened: false,
   coachStep: -1,
   shown: null as GameStore['shown'],
@@ -708,6 +713,7 @@ export const useGame = create<GameStore>((set, get) => ({
   flyTo: null,
   followBots: true,
   tutorial: false,
+  guideLane: false,
   sheetOpened: false,
   botHold: false,
   setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
@@ -1429,7 +1435,7 @@ export const useGame = create<GameStore>((set, get) => ({
     } catch {
       /* non-fatal */
     }
-    set({ tutorial: false });
+    set({ tutorial: false, guideLane: true });
   },
 
   pauseTable: (want) => {

@@ -120,6 +120,8 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
   const surveyEmpires = useGame((s) => s.surveyEmpires);
   const glimpse = useGame((s) => s.glimpse);
   const tutorial = useGame((s) => s.tutorial);
+  /* the guide left, its lane stays for the game: the thread and the questions */
+  const guideLane = useGame((s) => s.guideLane);
   /* the room the guide takes from the table: a lane of its own when the
      window can spare it, nothing when it cannot */
   const wide = useWide();
@@ -669,7 +671,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
      the analysis while a game is read again — never under either. The
      guide speaks only while moves are played: through the era's count and
      on the final ledger its lane would stand empty, and the table has it */
-  const dock = analysisPane || (tutorial && wide && game.phase === 'action' ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
+  const dock = analysisPane || ((tutorial || guideLane) && wide && game.phase === 'action' ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">

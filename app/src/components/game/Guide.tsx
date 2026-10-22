@@ -547,7 +547,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             },
           }
         : null,
-    rest: !!(dock && aside),
+    rest: !!dock && !showSteps,
     bot: dock && bot ? { id: bot.id, head: bot.what, body: bot.why, seat: bot.seat } : null,
     news: dock ? happens.filter((x) => x.id <= eventsSeen) : [],
   });
@@ -1170,8 +1170,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
         )}
       </AnimatePresence>
 
-      {/* a question to the guide, answered from the table as it stands */}
-      {dock > 0 && guided && (
+      {/* a question to the guide, answered from the table as it stands —
+          in the lane for as long as it stands, the guide left or not */}
+      {dock > 0 && (
         <form
           onSubmit={(e) => {
             e.preventDefault();

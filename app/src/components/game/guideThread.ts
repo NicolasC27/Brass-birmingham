@@ -47,8 +47,8 @@ export const EMPTY_THREAD: Thread = { said: [], lesson: null, bot: null, filed: 
 export interface LiveNow {
   /** the lesson on show, and its words — asked for only when it is new */
   lesson: { at: number; word: () => { head: string; body: string } } | null;
-  /** no lesson on show while the guide goes on — the one left is set
-   *  aside till the next round: the last one read is filed */
+  /** no lesson on show while the lane stays — the guide at rest, or
+   *  left: the last one read is filed */
   rest?: boolean;
   bot: LiveBot | null;
   /** the table's news the reader has already seen */
