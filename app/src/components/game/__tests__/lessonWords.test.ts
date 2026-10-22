@@ -34,6 +34,17 @@ describe('the entry a lesson is said under', () => {
     expect(stepKeyOf('coal', g, 0)).toBe('coal');
   });
 
+  it('promises no payday in a short game\'s last round', () => {
+    const g = table();
+    const last = { ...g, round: 10 };
+    expect(stepKeyOf('loan', last, 0)).toBe('loanShortLast');
+    /* whether the purse may spare it or not: there is no later */
+    expect(stepKeyOf('loan', last, 0, true)).toBe('loanShortLast');
+    expect(stepKeyOf('loan', { ...g, round: 9 }, 0)).toBe('loanShort');
+    /* a full game's canal ends on a payday: the rail is still to come */
+    expect(stepKeyOf('loan', { ...table('standard'), round: 10 }, 0)).toBe('loan');
+  });
+
   it('is the plain one in a full game', () => {
     const g = table('standard');
     expect(stepKeyOf('goal', g, 0)).toBe('goal');

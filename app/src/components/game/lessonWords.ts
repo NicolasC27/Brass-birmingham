@@ -1,6 +1,7 @@
 import { INDUSTRIES, LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
 import { hasPresence, merchantDemand, networkTowns } from '@/game/engine';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
+import { lastRound } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* The words a lesson is said in. The guided game is a short one — the */
@@ -43,13 +44,15 @@ export function firstPayday(g: GameState, me: number): number | null {
  *  paid — owed, nought or drawn — a lesson the reader may pass as things
  *  stand says so (spare), a mine no canal of the reader's can lead to a
  *  forge from, or a network with no town for one, sends the canal and
- *  the forge another way, and a short game tells some lessons in its
- *  own words */
+ *  the forge another way, a short game tells some lessons in its own
+ *  words — and the loan, in its last round, promises no payday */
 export function stepKeyOf(id: string, g: GameState, me: number, spare = false): string {
   if (id === 'payday') {
     const level = firstPayday(g, me) ?? incomeLevel(g.players[me].income);
     return level < 0 ? 'paydayOwed' : level === 0 ? 'paydayZero' : 'payday';
   }
+  /* no payday to come back after: whether it can wait or not, it is weighed now */
+  if (id === 'loan' && g.eraLength === 'short' && lastRound(g)) return 'loanShortLast';
   if (spare && SPARE[id]) return SPARE[id];
   if (id === 'link' && mines(g, me).length > 0 && forgesFromMines(g, me).length === 0) return 'linkAstray';
   /* with nothing on the board the forge card builds anywhere */
