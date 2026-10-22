@@ -51,12 +51,13 @@ export default function AskGuide({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState<{ q: string; a: string; near?: NearNotion[] }[]>([]);
-  /* the table as it stands answers too, where the assistance is on: what
-     can be sold, the purse, the rounds left are decision aids */
+  /* the table as it stands answers too, while moves are played and where
+     the assistance is on: what can be sold, the purse, the rounds left are
+     decision aids — and a finished game has no next payday nor round */
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const online = useGame((s) => s.code !== null);
-  const table = game && aidOn(game.assist, online) ? { g: game, me: seat ?? Math.max(0, game.players.findIndex((p) => !p.isBot)) } : null;
+  const table = game && game.phase === 'action' && aidOn(game.assist, online) ? { g: game, me: seat ?? Math.max(0, game.players.findIndex((p) => !p.isBot)) } : null;
   /* a sheet of the left edge, like the notebook: one of them at a time */
   const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   const reserve = useDockReserve();
