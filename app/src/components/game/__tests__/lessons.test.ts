@@ -510,6 +510,22 @@ describe('the advice for the rounds left', () => {
   });
 });
 
+describe('the last rounds', () => {
+  it('come in the game\'s last two rounds, before an aim still open', () => {
+    const r2 = round2();
+    const p = see(upTo('reach'), 'reach', ctx(r2));
+    expect(due(p, ctx({ ...r2, round: 8 }))).toMatchObject({ id: 'reach', mode: 'do' });
+    expect(due(p, ctx({ ...r2, round: 9 }))).toMatchObject({ id: 'lastRounds', index: lessonIndex('lastRounds'), mode: 'read' });
+    /* read, the aim is the lesson due again */
+    expect(due(pass(p, 'lastRounds'), ctx({ ...r2, round: 9 }))).toMatchObject({ id: 'reach', mode: 'do' });
+    /* a full game's canal era ends on a sweep, not the game: the alerts
+       tell it; the lesson waits for the rail's last rounds */
+    expect(due(p, ctx({ ...r2, round: 9, eraLength: 'standard' }))).toMatchObject({ id: 'reach' });
+    expect(due(p, ctx({ ...r2, round: 9, eraLength: 'standard', era: 'rail' }))).toMatchObject({ id: 'lastRounds' });
+    expect(stepKeyOf('lastRounds', r2, 0)).toBe('lastRoundsShort');
+  });
+});
+
 describe('the aims of the second half', () => {
   /* round 2, the reader to play: a manufacturer of theirs in Redditch,
      Oxford buying everything with its barrel standing, and — when asked

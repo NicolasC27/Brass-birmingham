@@ -18,6 +18,7 @@ const SHORT: Readonly<Record<string, string>> = {
   eraEnd: 'eraEndShort',
   plan: 'planShort',
   tips: 'tipsShort',
+  lastRounds: 'lastRoundsShort',
 };
 
 /** a lesson's entry in a short game — the guided game is one */

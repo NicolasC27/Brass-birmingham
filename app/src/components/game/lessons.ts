@@ -52,6 +52,9 @@ export interface Lesson {
   /** an aim with many ways to it rather than one move asked for: the
    *  coach grades the move that meets it */
   aim?: boolean;
+  /** a page whose time, once come, will not wait behind a lesson due
+   *  before it: it is given first */
+  urgent?: boolean;
   show?: Show;
 }
 
@@ -88,6 +91,9 @@ const barrelsLeft = (c: LessonCtx): boolean => Object.values(c.g.merchantBeer).s
 /** the second half of the era, or the rail's: advice for the rounds left
  *  is given when they are the rounds left */
 const halfway = (c: LessonCtx): boolean => c.g.era === 'rail' || c.g.round >= Math.ceil(eraRounds(c.g.players.length) / 2);
+
+/** the game's last two rounds: the rail's, or a short game's canal */
+const closing = (c: LessonCtx): boolean => (c.g.era === 'rail' || c.g.eraLength === 'short') && c.g.round >= eraRounds(c.g.players.length) - 1;
 
 /** no loan taken yet, and the purse already pays for the next works: the
  *  loan can wait. Once one is taken there is nothing left to wait for */
@@ -142,6 +148,9 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
   { id: 'plan', when: halfway },
   { id: 'tips', when: halfway },
+  /* what each last action should do: it comes when they are the last,
+     before an aim still open */
+  { id: 'lastRounds', when: closing, urgent: true },
   /* the closing word, told on the final ledger and passed there: the
      game is played to its end with the guide beside it */
   { id: 'onward', when: (c) => c.g.phase === 'game-over' },
@@ -206,11 +215,14 @@ export interface Due {
 }
 
 /** the lesson due: the first not passed, not set aside, and not waiting
- *  on the game. Nothing due, the guide rests until the next one comes —
- *  the last of all on the final ledger */
+ *  on the game — a page whose time has come and will not wait before
+ *  it. Nothing due, the guide rests until the next one comes, the last
+ *  of all on the final ledger */
 export function due(p: Progress, c: LessonCtx): Due {
   const left = (l: Lesson): boolean => !p.passed.includes(l.id) && !earned(p, l, c);
-  const i = LESSONS.findIndex((l) => left(l) && !aside(p, l.id, c) && (!l.when || l.when(c)));
+  const open = (l: Lesson): boolean => left(l) && !aside(p, l.id, c) && (!l.when || l.when(c));
+  const urgent = LESSONS.findIndex((l) => l.urgent && open(l));
+  const i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
   if (i >= 0) {
     const l = LESSONS[i];
     if (!l.done) return { id: l.id, index: i, mode: 'read' };
