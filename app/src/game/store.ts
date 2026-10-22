@@ -201,6 +201,10 @@ interface GameStore {
   rulesOpen: boolean;
   /** player whose mat (remaining tiles) is open, null = closed */
   matPlayer: number | null;
+  /** a tile's sheet has been opened on a mat at this table: the guide's
+   *  lesson on reading a tile asks for that gesture */
+  sheetOpened: boolean;
+  noteSheet: () => void;
   marketFocus: boolean;
   /** everything, one player's doings (`p<seat>`), the money or the map */
   ledgerFilter: 'all' | 'economy' | 'network' | `p${number}`;
@@ -668,6 +672,7 @@ export const freshGame = {
   ceremony: null as 'canal-end' | null,
   gameOverOpen: false,
   tutorial: false,
+  sheetOpened: false,
   coachStep: -1,
   shown: null as GameStore['shown'],
   sharing: false,
@@ -703,6 +708,7 @@ export const useGame = create<GameStore>((set, get) => ({
   flyTo: null,
   followBots: true,
   tutorial: false,
+  sheetOpened: false,
   botHold: false,
   setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
   spotlight: null,
@@ -1147,6 +1153,9 @@ export const useGame = create<GameStore>((set, get) => ({
   setRulesOpen: (open) => set({ rulesOpen: open }),
   openMat: (i) => set({ matPlayer: i }),
   closeMat: () => set({ matPlayer: null }),
+  noteSheet: () => {
+    if (!get().sheetOpened) set({ sheetOpened: true });
+  },
   setMarketFocus: (on) => set({ marketFocus: on }),
   setLedgerFilter: (f) => set({ ledgerFilter: f }),
   flyToRegion: (key) => set({ flyTo: { key, at: Date.now() } }),

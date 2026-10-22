@@ -47,6 +47,8 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
     if (!r) return;
     const up = r.bottom + 150 > window.innerHeight;
     setTip({ x: r.left + r.width / 2, y: up ? r.top - 6 : r.bottom + 6, up });
+    /* a sheet read, by hover or by tap: the guide's lesson on reading a tile */
+    useGame.getState().noteSheet();
   };
   const show = () => {
     if (timer.current !== null) window.clearTimeout(timer.current);

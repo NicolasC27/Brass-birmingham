@@ -234,6 +234,7 @@ describe('sitting at another table', () => {
       ceremony: 'canal-end' as const,
       gameOverOpen: true,
       tutorial: true,
+      sheetOpened: true,
       coachStep: 3,
       shown: { from: 1, at: 2 },
       sharing: true,

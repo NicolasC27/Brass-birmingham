@@ -389,6 +389,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const table = useGame((s) => s.local);
   const endTutorial = useGame((s) => s.endTutorial);
   const matPlayer = useGame((s) => s.matPlayer);
+  const sheetOpened = useGame((s) => s.sheetOpened);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
@@ -495,7 +496,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      lesson once passed stays passed (closing the mat again is no reason to
      teach the mat again) */
   const kept = useSyncExternalStore(onProgress, () => (tutorial && table ? progressAt(table) : NO_PROGRESS));
-  const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer } : null), [game, me, selectedCardId, matPlayer]);
+  const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer, sheet: sheetOpened } : null), [game, me, selectedCardId, matPlayer, sheetOpened]);
   const settled = useMemo(() => (tutorial && lctx ? settle(kept, lctx) : kept), [tutorial, lctx, kept]);
   const owed = useMemo(() => (tutorial && lctx ? dueNow(settled, lctx) : null), [tutorial, lctx, settled]);
   /* nothing due now but a lesson still to come — set aside, or waiting on

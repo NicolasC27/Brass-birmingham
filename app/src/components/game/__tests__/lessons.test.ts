@@ -90,6 +90,20 @@ describe('the lesson due', () => {
     expect(due(upTo('coal'), ctx(mine(g)))).toMatchObject({ id: 'coal', mode: 'already' });
   });
 
+  it('reads a tile by opening its sheet on the mat, by hover or by tap', () => {
+    const g = guided();
+    let p = upTo('matRead');
+    expect(due(p, ctx(g, { mat: 0 }))).toMatchObject({ id: 'matRead', mode: 'do' });
+    p = see(p, 'matRead', ctx(g, { mat: 0 }));
+    p = settle(p, ctx(g, { mat: 0, sheet: true }));
+    expect(p.passed.at(-1)).toBe('matRead');
+    expect(due(p, ctx(g, { mat: 0, sheet: true }))).toMatchObject({ id: 'hand', mode: 'do' });
+    /* a sheet read before its lesson came up: a page that says so */
+    expect(due(upTo('matRead'), ctx(g, { sheet: true }))).toMatchObject({ id: 'matRead', mode: 'already' });
+    /* no move ever reads a sheet: the coach's grades are not the lesson's */
+    expect(deedOf(ctx(g), ctx(mine(g)))).toBe('coal');
+  });
+
   it('passes a deed seen undone as soon as it is done, and for good', () => {
     const g = guided();
     let p = upTo('coal');

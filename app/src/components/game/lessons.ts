@@ -21,12 +21,14 @@ import type { GameState } from '@/game/types';
 export type Show = 'mat' | 'market' | 'vp';
 
 /** what a lesson reads: the table, the reader's seat, the card chosen in
- *  the hand and the seat whose mat is open */
+ *  the hand, the seat whose mat is open, and whether a tile's sheet has
+ *  been opened on a mat */
 export interface LessonCtx {
   g: GameState;
   me: number;
   sel: string | null;
   mat: number | null;
+  sheet?: boolean;
 }
 
 export interface Lesson {
@@ -70,7 +72,8 @@ export const LESSONS: readonly Lesson[] = [
   /* the points, and the purse and the income that buy them: one lesson */
   { id: 'goal', show: 'vp' },
   { id: 'mat', show: 'mat', done: (c) => c.mat !== null },
-  { id: 'matRead', show: 'mat' },
+  /* read by doing: a tile's sheet opened on the mat, by hover or by tap */
+  { id: 'matRead', show: 'mat', done: (c) => !!c.sheet },
   { id: 'hand', done: (c) => c.sel !== null },
   /* not to be set aside: in the first round the mine is the reader's one
      action, so "Later" could come no sooner than the round after — and
