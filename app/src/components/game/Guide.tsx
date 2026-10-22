@@ -550,9 +550,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const setAsideNow = aside && settled.later[shownId] !== undefined;
   /* a deed the reader may pass as the table stands — the loan, when the
      purse already pays for the next works: it says so, and what that
-     works costs. Only the live deed, still undone: not in the detour,
-     where money is what is missing, nor read back, nor done beforehand */
-  const spare = useMemo(() => (lctx && showSteps && review === null && !detour && owed?.mode === 'do' && owed.id === shownId && optionalNow(shownId, lctx) ? { need: cheapestWorks(lctx.g, me) } : null), [lctx, showSteps, review, detour, owed, shownId, me]);
+     works costs; the barrel, when none is left. Only the live deed, still
+     undone: not in the detour, where money is what is missing, nor read
+     back, nor done beforehand */
+  const spare = useMemo(() => (lctx && showSteps && review === null && !detour && owed?.mode === 'do' && owed.id === shownId && optionalNow(shownId, lctx) ? { need: shownId === 'loan' ? cheapestWorks(lctx.g, me) : null } : null), [lctx, showSteps, review, detour, owed, shownId, me]);
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
   const lensId = showSteps && !spare ? step?.id : null;

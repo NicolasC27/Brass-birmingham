@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { applyAction, fallbackAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
+import { LINKS } from '@/game/data';
 import { buildTargets, canLoan, linkTargets, newGame, sellTargets } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
 import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
+import { stepKeyOf } from '../lessonWords';
 import type { LessonCtx, Progress } from '../lessons';
 
 /* the lessons of the guided game, played on the guided table itself: you
@@ -493,6 +495,59 @@ describe('the reader\'s own round', () => {
     expect(settle(p, ctx(two)).passed.at(-1)).toBe('onYourOwn');
     /* no move is its deed: the coach grades the round */
     expect(deedOf(ctx(one), ctx(two))).toBeNull();
+  });
+});
+
+describe('the aims of the second half', () => {
+  /* round 2, the reader to play: a manufacturer of theirs in Redditch,
+     Oxford buying everything with its barrel standing, and — when asked
+     for — a canal from Redditch to Oxford laid by the machine */
+  const OXFORD = LINKS.find((l) => l.a === 'redditch' && l.b === 'm-oxford')!.id;
+  const table = (canal: boolean, barrel = true): GameState => {
+    const g = structuredClone(round2());
+    g.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    g.merchantTiles['m-oxford'] = ['all'];
+    g.merchantBeer = barrel ? { 'm-oxford:0': 1 } : {};
+    if (canal) g.links[OXFORD] = { owner: 1, era: 'canal' };
+    return g;
+  };
+  const sale = (g: GameState): GameState => play(g, { kind: 'sell', card: g.players[0].hand[0].id, sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] });
+
+  it('meets the buyer by whoever\'s canal, and leaves the move to the coach', () => {
+    const cut = table(false);
+    const joined = table(true);
+    expect(sellTargets(joined, 0).some((x) => x.merchant === 'm-oxford')).toBe(true);
+    let p = upTo('reach');
+    expect(due(p, ctx(cut))).toMatchObject({ id: 'reach', mode: 'do' });
+    /* a works already within reach of its buyer: a page that says so */
+    expect(due(p, ctx(joined))).toMatchObject({ id: 'reach', mode: 'already' });
+    p = see(p, 'reach', ctx(cut));
+    expect(settle(p, ctx(joined)).passed.at(-1)).toBe('reach');
+    expect(deedOf(ctx(cut), ctx(joined))).toBeNull();
+    /* an aim may wait like any deed */
+    expect(wayOn(p, 'reach', ctx(idle(cut)))).toBe('later');
+  });
+
+  it('counts a merchant\'s barrel drunk, not the reader\'s own beer', () => {
+    const drunk = sale(table(true));
+    expect(drunk.merchantBeer['m-oxford:0']).toBe(0);
+    let p = upTo('barrel');
+    expect(due(p, ctx(table(true)))).toMatchObject({ id: 'barrel', mode: 'do' });
+    expect(due(p, ctx(drunk))).toMatchObject({ id: 'barrel', mode: 'already' });
+    p = see(p, 'barrel', ctx(table(true)));
+    expect(settle(p, ctx(drunk)).passed.at(-1)).toBe('barrel');
+    /* the same sale on a brewery of the reader's: no barrel of a merchant */
+    const dry = table(true, false);
+    dry.tiles['stone:0'] = { owner: 0, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    expect(settle(p, ctx(sale(dry)))).toBe(p);
+  });
+
+  it('may be passed once no barrel is left to drink, and says so', () => {
+    const none = table(true, false);
+    expect(optionalNow('barrel', ctx(table(true)))).toBe(false);
+    expect(optionalNow('barrel', ctx(none))).toBe(true);
+    expect(stepKeyOf('barrel', none, 0, true)).toBe('barrelGone');
+    expect(stepKeyOf('barrel', none, 0)).toBe('barrel');
   });
 });
 

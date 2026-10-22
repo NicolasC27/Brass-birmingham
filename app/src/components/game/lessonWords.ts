@@ -24,9 +24,11 @@ const SHORT: Readonly<Record<string, string>> = {
 export const shortKeyOf = (id: string): string => SHORT[id] ?? id;
 
 /** the lessons told otherwise when the reader may pass them as things
- *  stand: the loan, when the purse already pays for the next works */
+ *  stand: the loan, when the purse already pays for the next works; the
+ *  barrel, when none is left to drink */
 const SPARE: Readonly<Record<string, string>> = {
   loan: 'loanSpare',
+  barrel: 'barrelGone',
 };
 
 /** the reader's income level at the first payday of the game, as it was

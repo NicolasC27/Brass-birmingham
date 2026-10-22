@@ -1,4 +1,4 @@
-import { buildTargets, eraRounds } from '@/game/engine';
+import { buildTargets, eraRounds, sellTargets } from '@/game/engine';
 import type { GameState } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
@@ -72,6 +72,19 @@ export function cheapestWorks(g: GameState, me: number): number | null {
 export const playedSince = (c: LessonCtx, at: number): number =>
   new Set(c.g.ledger.filter((e) => e.player === c.me && (e.at ?? -1) >= at && e.verb !== 'system' && e.verb !== 'score').map((e) => e.at)).size;
 
+/** a works of the reader's, not sold yet, that links join to a merchant
+ *  buying its goods — whoever laid them */
+const linkedWorks = (c: LessonCtx): boolean => sellTargets(c.g, c.me).length > 0;
+/** a merchant's barrel drunk by a sale of the reader's; a sale logged
+ *  before the log counted barrels tells by its bonus */
+const drankBarrel = (c: LessonCtx): boolean =>
+  c.g.ledger.some((e) => {
+    const v = e.vars ?? {};
+    return e.player === c.me && e.key === 'sell' && (v.barrels !== undefined ? Number(v.barrels) > 0 : !!(v.bonusVp || v.bonusMoney || v.bonusIncome || v.bonusDevelop));
+  });
+/** a barrel still standing at a merchant of this table */
+const barrelsLeft = (c: LessonCtx): boolean => Object.values(c.g.merchantBeer).some((n) => n > 0);
+
 /** no loan taken yet, and the purse already pays for the next works: the
  *  loan can wait. Once one is taken there is nothing left to wait for */
 const worksPaid = (c: LessonCtx): boolean => {
@@ -118,6 +131,11 @@ export const LESSONS: readonly Lesson[] = [
   /* the second half: a turn's worth of actions played with no word from
      the guide — the reader's own round */
   { id: 'onYourOwn', done: (c, s) => !!s && playedSince(c, s.at) >= 2, aim: true },
+  /* then aims, met in the reader's own way and set aside like any deed: a
+     works within reach of its buyer, by whoever's links; a merchant's
+     barrel drunk — with none left standing, one to pass */
+  { id: 'reach', done: linkedWorks, deferrable: true, aim: true },
+  { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
   { id: 'plan' },
   { id: 'tips' },
   /* the closing word, told on the final ledger and passed there: the
