@@ -9,8 +9,8 @@ import { getKeybindings, keyLabel } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, START_INCOME_SPACE, START_MONEY, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
-import { carries, faqBest, faqFor, passagesOf } from '@/game/faq';
-import { askedAs, asksTheRules, consult, mend, tell } from '@/game/faq/consult';
+import { passagesOf } from '@/game/faq';
+import { askedAs, tell } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import { describeAction, useGame } from '@/game/store';
 import { searchTurn } from '@/game/search';
@@ -25,9 +25,10 @@ import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
-import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
+import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, stepKeyOf, worksOnMat } from './lessonWords';
+import { answerQuestion, blockedBy } from './tableAnswers';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -249,60 +250,12 @@ function happenings(g: GameState, me: number, t: T): { id: number; text: string 
 
 /* the thread itself is kept in guideThread.ts */
 
-/** the questions the guide knows, in the order they are tried */
-const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win'] as const;
-type Ask = (typeof ASKS)[number];
+/* the questions about the table, and their answers, are kept in
+   tableAnswers.ts: the question tool asks there too */
 
 /* ----------------------------- the block ----------------------------- */
 
-const money = (r?: string) => !!r && r.startsWith('Needs £');
-
-/** the reason alone, and the reason with the advice that follows it */
-type Block = { short: string; text: string; money: boolean };
-
-/** why the lesson's deed cannot be done at this table right now, said
- *  with the player's own figures, and whether money is what is missing;
- *  null when it can */
-function blockedBy(id: string, g: GameState, me: number, t: T): Block | null {
-  const p = g.players[me];
-  const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
-  /* the loan, or the payday to come back after — none follows the last round */
-  const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
-  if (id === 'coal' || id === 'iron' || id === 'works') {
-    const inds = id === 'coal' ? ['coal'] : id === 'iron' ? ['iron'] : WORKS;
-    const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
-    if (targets.some((x) => x.valid)) return null;
-    const short = targets.filter((x) => money(x.reason));
-    if (short.length) {
-      const why = t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...short.map((x) => x.total)) });
-      return { short: why, text: `${why} ${advice()}`, money: true };
-    }
-    const why = t(`game.guide.blocked.${id}Card`, vars);
-    return { short: why, text: why, money: false };
-  }
-  if (id === 'link') {
-    const targets = linkTargets(g, me);
-    if (targets.some((x) => x.valid)) return null;
-    const short = targets.some((x) => money(x.reason));
-    const why = t(short ? 'game.guide.blocked.linkMoney' : 'game.guide.blocked.link', vars);
-    return { short: why, text: short ? `${why} ${advice()}` : why, money: short };
-  }
-  const plain = (why: string): Block => ({ short: why, text: why, money: false });
-  if (id === 'sell') {
-    if (sellTargets(g, me).some((x) => x.valid)) return null;
-    /* the unsold works, and the merchants who buy their goods */
-    const mine = Object.entries(g.tiles).filter(([, x]) => x.owner === me && !x.flipped && WORKS.includes(x.industry));
-    const lines = mine.map(([key, x]) => {
-      const buyers = Object.entries(g.merchantTiles)
-        .filter(([, tiles]) => tiles.some((m) => m === 'all' || m === x.industry))
-        .map(([id]) => MERCHANT_BY_ID[id]?.name ?? id);
-      return t('game.guide.blocked.sellWorks', { industry: t(`game.log.industry.${x.industry}`), town: TOWN_BY_ID[key.split(':')[0]]?.name ?? key, buyers: buyers.join(', ') || '—' });
-    });
-    return plain([t('game.guide.blocked.sell', vars), ...lines].join(' '));
-  }
-  if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
-  return null;
-}
+/* why a deed cannot be done now (blockedBy) is kept in tableAnswers.ts */
 
 /* ----------------------------- the alerts ---------------------------- */
 
@@ -802,67 +755,17 @@ function Guide({ dock = 0 }: { dock?: number }) {
      a payday owed rather than paid, a short game that ends here, a loan
      on show that can wait */
   const stepKey = (id: string): string => stepKeyOf(id, game, me, id === shownId && !!spare);
-  /* the question about this table the words point at, and how long the
-     phrase matched was — the same measure the written answers use, so the
-     surest of the two wins rather than whichever was tried first */
-  const intentOf = (q: string): { id: Ask; score: number } | null => {
-    let best: { id: Ask; score: number; phrase: string } | null = null;
-    /* as typed, and as mended — "jai combien dargent" is still the purse */
-    const readings = [q, mend(q, lang)];
-    for (const id of ASKS) {
-      for (const phrase of t(`game.guide.ask.words.${id}`).split(',')) {
-        const score = Math.max(...readings.map((r) => carries(r, phrase)));
-        if (score && (!best || score > best.score)) best = { id, score, phrase };
-      }
-    }
-    /* "c'est quoi la bière" is the rules' question, "j'ai de la bière" the
-       table's: the table's phrase alone cannot tell them apart */
-    return best && !asksTheRules(q, lang, best.phrase) ? { id: best.id, score: best.score } : null;
-  };
-  /* the answer, read off the table as it stands */
-  const answerTo = (id: Ask): string => {
-    const p = game.players[me];
-    const level = incomeLevel(p.income);
-    switch (id) {
-      case 'sell': {
-        const ok = sellTargets(game, me).find((x) => x.valid);
-        if (ok) return t('game.guide.ask.answer.sellYes', { industry: t(`game.log.industry.${ok.tile.industry}`), town: TOWN_BY_ID[ok.town]?.name ?? ok.town, merchant: MERCHANT_BY_ID[ok.merchant]?.name ?? ok.merchant });
-        return blockedBy('sell', game, me, t)?.text ?? t('game.guide.ask.answer.sellNo');
-      }
-      case 'build': {
-        const n = p.hand.flatMap((c) => buildTargets(game, me, c)).filter((x) => x.valid).length;
-        return n > 0 ? t('game.guide.ask.answer.buildYes', { n }) : (blockedBy('works', game, me, t)?.text ?? t('game.guide.ask.answer.buildNo'));
-      }
-      case 'coal':
-        return t('game.guide.ask.answer.coal', { left: game.market.coal, mine: Object.values(game.tiles).filter((x) => x.industry === 'coal' && !x.flipped).length });
-      case 'beer':
-        return t('game.guide.ask.answer.beer', { mine: Object.values(game.tiles).filter((x) => x.owner === me && x.industry === 'brewery' && !x.flipped).length, merchant: Object.values(game.merchantBeer).reduce((a, b) => a + b, 0) });
-      case 'money':
-        return t(level >= 0 ? 'game.guide.ask.answer.money' : 'game.guide.ask.answer.moneyOwed', { money: p.money, level, pay: Math.abs(INCOME_PAYOUT[p.income]) });
-      case 'rounds':
-        return t('game.guide.ask.answer.rounds', { left: Math.max(0, eraRounds(game.players.length) - game.round + 1), round: game.round, total: eraRounds(game.players.length), actions: game.actionsLeft });
-      case 'win':
-        return t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...game.players.map((x) => x.vp)) });
-      case 'do':
-      default:
-        return t('game.guide.ask.answer.do', { name: machine });
-    }
-  };
-  /* a question is answered in two tries: the table as it stands, then the
-     guide's case — the notions of the game, the written answers, the rules
-     codex — and, when nothing there is close, the notions it might mean */
+  /* a question is answered from the table as it stands when that is the
+     surer match, else from the guide's case — and, when nothing there is
+     close, with the notions it might mean */
   const putQuestion = () => {
     const q = question.trim();
     if (!q) return;
     setQuestion('');
-    const table = intentOf(q);
-    const written = faqBest(q, faqFor(getLang()));
-    /* the table answers when it is the surer match; the rules when they are */
-    const id = table && (!written || table.score >= written.score) ? table.id : null;
-    const found = id ? null : consult(q, getLang(), passages);
-    if (found?.kind === 'near') setNearFor((prev) => ({ ...prev, [q]: found.near }));
-    setThread((prev) => askThread(prev, q, id ? answerTo(id) : found!.answer));
-    if (id === 'do' && myTurn && !advised) ask();
+    const got = answerQuestion(q, { g: game, me }, t, getLang(), passages);
+    if (got.near.length) setNearFor((prev) => ({ ...prev, [q]: got.near }));
+    setThread((prev) => askThread(prev, q, got.answer));
+    if (got.intent === 'do' && myTurn && !advised) ask();
   };
   /* a notion taken up from the ones offered: asked by its name, answered
      plainly */
