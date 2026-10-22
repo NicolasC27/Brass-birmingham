@@ -91,15 +91,17 @@ export default function GameOverModal({
   const guided = useGame((s) => s.tutorial);
   const navigate = useNavigate();
   const shown = open && !!game && game.phase === 'game-over';
+  /* a game given up closes on the ledger too, with no closing word */
+  const abandoned = !!game?.abandoned;
   /* the last lesson is this closing word, on the ledger of a game played
      to its end: shown, it is passed — the lessons the game never came to
-     stay unread */
+     stay unread, and a game given up passes nothing */
   useEffect(() => {
-    if (!shown || !guided || !local) return;
+    if (!shown || !guided || !local || abandoned) return;
     const p = progressAt(local);
     const q = pass(p, LAST_LESSON);
     if (q !== p) saveProgress(q);
-  }, [shown, guided, local]);
+  }, [shown, guided, local, abandoned]);
   /* Escape lowers the plate to a strip and the finished board shows: the
      strip brings it back */
   const sheet = useLayer(shown, closeGameOver, { modal: true });
@@ -128,7 +130,6 @@ export default function GameOverModal({
      it, the era's figures coming in, then the order settles and the master
      is named. Reduced motion, a game reopened or given up: the ledger as it
      stands, at once */
-  const abandoned = !!game?.abandoned;
   const seed = game?.seed ?? null;
   const seats = game?.players.length ?? 0;
   const [counted, setCounted] = useState<number | null>(null);
