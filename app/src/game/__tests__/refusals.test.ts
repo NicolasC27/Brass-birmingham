@@ -29,6 +29,12 @@ describe('the refusal worth telling', () => {
     expect(whyNoBuild(targets.slice(1, 2))).toBe('This card builds in stoke only');
   });
 
+  it('tells a place of the network before a place out of it', () => {
+    const targets = [no('Not in your network', 'a'), no('Not in your network', 'b'), no('Canal Era: one tile per location', 'c'), no('This card builds in stoke only', 'd')];
+    expect(refusalOf(targets)?.town).toBe('c');
+    expect(whyNoBuild([no('Not in your network', 'a'), no('Occupied by another industry', 'b')])).toBe('Occupied by another industry');
+  });
+
   it('takes, among reasons ranked alike, the one most places give — and the first place to give it', () => {
     const targets = [no('This card builds in stoke only', 'a'), no('This card builds coal only', 'b'), no('This card builds coal only', 'c')];
     expect(refusalOf(targets)?.town).toBe('b');

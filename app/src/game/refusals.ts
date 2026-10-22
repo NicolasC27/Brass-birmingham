@@ -13,16 +13,18 @@ import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 type Refused = { valid: boolean; reason?: string };
 type Rank = readonly (string | RegExp)[];
 
-/** a build refused, the most actionable reason first */
+/** a build refused, the most actionable reason first; then the nearest —
+ *  what stands in the way at a place of the network (one tile to a town,
+ *  a tile there already) before a place out of it */
 const BUILD_RANK: Rank = [
   'No connected coal — reach a mine or a merchant',
   'No coal left anywhere',
   'No iron available anywhere',
   /^Needs £/,
-  'Not in your network',
   'Canal Era: one tile per location',
   /overbuil/,
   'Occupied by another industry',
+  'Not in your network',
   /era$/,
   /tiles left$/,
 ];
