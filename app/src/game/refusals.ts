@@ -1,4 +1,4 @@
-import type { BuildTarget } from './engine';
+import type { BuildTarget, LinkTarget, SellTarget } from './engine';
 
 /* ------------------------------------------------------------------ */
 /* The one refusal worth telling when nothing takes a verb. The engine  */
@@ -27,6 +27,13 @@ const BUILD_RANK: Rank = [
   /tiles left$/,
 ];
 
+/** a link refused: the coal a rail burns, the money, then the network it
+ *  must touch */
+const LINK_RANK: Rank = ['No connected coal for the locomotives', 'No coal left anywhere', /^Needs £/, 'Link must touch your network'];
+
+/** no link the network could take: every one that touches it is laid */
+export const NO_FREE_LINK = 'No free link touches your network';
+
 /** the refused target whose reason is the one worth telling: the best
  *  ranked, and among reasons ranked alike the one most targets give —
  *  the first target to give it. Null when none was refused */
@@ -48,4 +55,17 @@ export function refusalOf<T extends Refused>(targets: readonly T[], rank: Rank =
 /** why no site takes the card */
 export function whyNoBuild(targets: readonly BuildTarget[]): string {
   return refusalOf(targets)?.reason ?? 'No valid construction site for this card';
+}
+
+/** why no link can be laid: the coal or the money it lacks — else, money
+ *  in hand, no free link is left that touches the network */
+export function whyNoLink(targets: readonly LinkTarget[]): string {
+  const best = refusalOf(targets, LINK_RANK)?.reason;
+  return best && best !== 'Link must touch your network' ? best : NO_FREE_LINK;
+}
+
+/** why nothing sells: the beer a works joined to its buyer lacks, else no
+ *  works joined to one */
+export function whyNoSale(targets: readonly SellTarget[]): string {
+  return targets.find((x) => !x.valid && x.reason)?.reason ?? 'No goods connected to a demanding merchant';
 }
