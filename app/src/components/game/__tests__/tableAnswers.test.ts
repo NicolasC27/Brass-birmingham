@@ -45,6 +45,22 @@ describe('a question about the table', () => {
     expect(answerTo('sell', g, 0, fr)).toBe(blockedBy('sell', g, 0, fr)!.text);
   });
 
+  it('promises no payday in the last round', () => {
+    const g = guided();
+    expect(answerTo('money', g, 0, fr)).toBe(fr('game.guide.ask.answer.money', { money: START_MONEY, level: 0, pay: 0 }));
+    /* the short game's last round: the purse and the level count at its close */
+    const last = { ...g, round: 10 };
+    expect(answerTo('money', last, 0, fr)).toBe(fr('game.guide.ask.answer.moneyLastShort', { money: START_MONEY, level: 0 }));
+    expect(answerTo('money', last, 0, fr)).toContain('aucune paie');
+    expect(answerTo('money', last, 0, en)).not.toMatch(/next payday/);
+    /* a full game's last round is the rail's: money counts for nothing */
+    const rail = { ...last, era: 'rail' as const, eraLength: 'standard' as const };
+    expect(answerTo('money', rail, 0, fr)).toBe(fr('game.guide.ask.answer.moneyLast', { money: START_MONEY, level: 0 }));
+    expect(answerTo('money', rail, 0, fr)).toContain('ne compte pas');
+    /* the canal's last round of a full game still ends on a payday */
+    expect(answerTo('money', { ...last, eraLength: 'standard' as const }, 0, fr)).toBe(answerTo('money', g, 0, fr));
+  });
+
   it('goes to the table while a game is on, and to the rules otherwise', () => {
     const g = guided();
     const asked = answerQuestion('combien j ai d argent', { g, me: 0 }, fr, 'fr', passages('fr'));

@@ -114,6 +114,9 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T): string {
     case 'beer':
       return t('game.guide.ask.answer.beer', { mine: Object.values(g.tiles).filter((x) => x.owner === me && x.industry === 'brewery' && !x.flipped).length, merchant: Object.values(g.merchantBeer).reduce((a, b) => a + b, 0) });
     case 'money':
+      /* no payday follows the last round: a short game counts the purse
+         and the level at its close, a full one counts neither */
+      if (lastRound(g)) return t(g.eraLength === 'short' ? 'game.guide.ask.answer.moneyLastShort' : 'game.guide.ask.answer.moneyLast', { money: p.money, level });
       return t(level >= 0 ? 'game.guide.ask.answer.money' : 'game.guide.ask.answer.moneyOwed', { money: p.money, level, pay: Math.abs(INCOME_PAYOUT[p.income]) });
     case 'rounds':
       return t('game.guide.ask.answer.rounds', { left: Math.max(0, eraRounds(g.players.length) - g.round + 1), round: g.round, total: eraRounds(g.players.length), actions: g.actionsLeft });
