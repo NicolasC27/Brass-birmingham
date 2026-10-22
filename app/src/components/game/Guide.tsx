@@ -513,7 +513,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
   const lensId = showSteps && !spare ? step?.id : null;
-  const showBot = bot && botHidden !== bot.id && (guided || !hidden);
+  /* × on the tips note hides the tips alone: in the lane the machine's
+     reasons are its turns of the conversation, and stay */
+  const showBot = bot && botHidden !== bot.id && (guided || dock > 0 || !hidden);
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
      hers, in the guided game; an older plate is a line */
@@ -574,7 +576,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const theirTurn = !!(tutorial && game.phase === 'action' && game.players[game.current]?.isBot && !unread);
   const maxActions = game.round === 1 && game.era === 'canal' ? 1 : 2;
   const waiting = theirTurn ? t('game.guide.waitingTurn', { name: game.players[game.current]?.name ?? '', n: Math.min(maxActions - game.actionsLeft + 1, maxActions), max: maxActions }) : null;
-  if (!guided && (hidden || lines.length === 0) && !showBot) return null;
+  /* the lane stands for as long as the table keeps it — the guide left,
+     the machine to play, the tips put away: its thread and its question
+     field are still there. The floating note has nothing to show */
+  if (!guided && !dock && (hidden || lines.length === 0) && !showBot) return null;
 
   /* a lesson passed by the reader: read on from, or skipped. A page
      waiting on the game is not passed by reading on — it keeps its place */
