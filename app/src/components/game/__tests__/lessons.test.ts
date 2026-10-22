@@ -502,11 +502,22 @@ describe('the advice for the rounds left', () => {
   it('waits for the second half of the era, never lost meanwhile', () => {
     const r2 = round2();
     const p = upTo('plan');
-    expect(due(p, ctx(r2))).toEqual({ id: 'plan', index: lessonIndex('plan'), mode: 'idle' });
+    /* the aims are given meanwhile; with none open, the guide rests */
+    expect(due(p, ctx(r2))).toMatchObject({ id: 'reach', mode: 'do' });
+    expect(due(pass(pass(p, 'reach'), 'barrel'), ctx(r2))).toEqual({ id: 'plan', index: lessonIndex('plan'), mode: 'idle' });
     expect(due(p, ctx({ ...r2, round: 5 }))).toMatchObject({ id: 'plan', mode: 'read' });
     expect(due(pass(p, 'plan'), ctx({ ...r2, round: 5 }))).toMatchObject({ id: 'tips', mode: 'read' });
     /* the rail era is past the canal's half */
     expect(due(p, ctx({ ...r2, era: 'rail', round: 1, eraLength: 'standard' }))).toMatchObject({ id: 'plan', mode: 'read' });
+  });
+
+  it('cuts in ahead of an aim the reader leaves open', () => {
+    const r2 = round2();
+    /* the aim on show since round 2, never met nor set aside */
+    const p = see(upTo('plan'), 'reach', ctx(r2));
+    expect(due(p, ctx({ ...r2, round: 4 }))).toMatchObject({ id: 'reach', mode: 'do' });
+    expect(due(p, ctx({ ...r2, round: 5 }))).toMatchObject({ id: 'plan', mode: 'read' });
+    expect(due(pass(pass(p, 'plan'), 'tips'), ctx({ ...r2, round: 5 }))).toMatchObject({ id: 'reach', mode: 'do' });
   });
 });
 

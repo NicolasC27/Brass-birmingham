@@ -141,13 +141,16 @@ export const LESSONS: readonly Lesson[] = [
   /* the second half: a turn's worth of actions played with no word from
      the guide — the reader's own round */
   { id: 'onYourOwn', done: (c, s) => !!s && playedSince(c, s.at) >= 2, aim: true },
+  /* the plan for the rounds left and the habits, once they are the rounds
+     left: ahead of the aims, which a reader may leave open all game, so
+     they cut in when their time comes rather than wait behind them */
+  { id: 'plan', when: halfway },
+  { id: 'tips', when: halfway },
   /* then aims, met in the reader's own way and set aside like any deed: a
      works within reach of its buyer, by whoever's links; a merchant's
      barrel drunk — with none left standing, one to pass */
   { id: 'reach', done: linkedWorks, deferrable: true, aim: true },
   { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
-  { id: 'plan', when: halfway },
-  { id: 'tips', when: halfway },
   /* what each last action should do: it comes when they are the last,
      before an aim still open */
   { id: 'lastRounds', when: closing, urgent: true },
