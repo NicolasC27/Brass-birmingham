@@ -31,10 +31,17 @@ export interface LessonCtx {
   sheet?: boolean;
 }
 
+/** when a deed was first shown undone: the action it came up at, and the round */
+export interface Sight {
+  at: number;
+  round: number;
+}
+
 export interface Lesson {
   id: string;
-  /** the deed the lesson asks for, read off the table; none for a page */
-  done?: (c: LessonCtx) => boolean;
+  /** the deed the lesson asks for, read off the table — and, once shown
+   *  undone, off what was played since (seen); none for a page */
+  done?: (c: LessonCtx, seen?: Sight) => boolean;
   /** a lesson that only makes sense once this holds: it waits in its place */
   when?: (c: LessonCtx) => boolean;
   /** a deed the reader may pass as things stand */
@@ -42,6 +49,9 @@ export interface Lesson {
   /** a deed the reader may set aside until the next round, once they have
    *  played an action since it came up */
   deferrable?: boolean;
+  /** an aim with many ways to it rather than one move asked for: the
+   *  coach grades the move that meets it */
+  aim?: boolean;
   show?: Show;
 }
 
@@ -56,6 +66,11 @@ export function cheapestWorks(g: GameState, me: number): number | null {
   const costs = p.hand.flatMap((card) => buildTargets(g, me, card)).filter((x) => WORKS.includes(x.industry) && (x.valid || x.total > p.money)).map((x) => x.total);
   return costs.length ? Math.min(...costs) : null;
 }
+
+/** the reader's actions played since this action of the table, each
+ *  counted once however many lines of the log it wrote */
+export const playedSince = (c: LessonCtx, at: number): number =>
+  new Set(c.g.ledger.filter((e) => e.player === c.me && (e.at ?? -1) >= at && e.verb !== 'system' && e.verb !== 'score').map((e) => e.at)).size;
 
 /** no loan taken yet, and the purse already pays for the next works: the
  *  loan can wait. Once one is taken there is nothing left to wait for */
@@ -100,6 +115,9 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'sell', done: (c) => c.g.players[c.me].stats.sold > 0, deferrable: true },
   { id: 'flipped', when: (c) => c.g.players[c.me].stats.sold > 0 },
   { id: 'eraEnd' },
+  /* the second half: a turn's worth of actions played with no word from
+     the guide — the reader's own round */
+  { id: 'onYourOwn', done: (c, s) => !!s && playedSince(c, s.at) >= 2, aim: true },
   { id: 'plan' },
   { id: 'tips' },
   /* the closing word, told on the final ledger and passed there: the
@@ -127,7 +145,7 @@ export interface Progress {
   /** the lessons set aside, by the round they were set aside in */
   later: Record<string, number>;
   /** the deeds shown undone, by the action and the round they first came up at */
-  seen: Record<string, { at: number; round: number }>;
+  seen: Record<string, Sight>;
 }
 
 export const freshProgress = (code: string | null): Progress => ({ v: 2, code, passed: [], later: {}, seen: {} });
@@ -137,7 +155,7 @@ export const freshProgress = (code: string | null): Progress => ({ v: 2, code, p
 export const roundOf = (g: GameState): number => (g.era === 'rail' ? 100 : 0) + g.round;
 
 /** a deed that holds after its lesson was shown undone: as good as passed */
-const earned = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.done && !!p.seen[l.id] && l.done(c);
+const earned = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.done && !!p.seen[l.id] && l.done(c, p.seen[l.id]);
 /** set aside, and the round it was set aside in not over yet */
 const aside = (p: Progress, id: string, c: LessonCtx): boolean => p.later[id] !== undefined && roundOf(c.g) <= p.later[id];
 /** the first lesson set aside and not passed */
@@ -174,7 +192,7 @@ export function due(p: Progress, c: LessonCtx): Due {
   if (i >= 0) {
     const l = LESSONS[i];
     if (!l.done) return { id: l.id, index: i, mode: 'read' };
-    return { id: l.id, index: i, mode: l.done(c) ? 'already' : 'do' };
+    return { id: l.id, index: i, mode: l.done(c, p.seen[l.id]) ? 'already' : 'do' };
   }
   const held = heldBack(p, c);
   const next = held >= 0 ? held : LESSONS.findIndex(left);
@@ -218,9 +236,9 @@ export function setAside(p: Progress, id: string, c: LessonCtx): Progress {
  *  to try */
 export function wayOn(p: Progress, id: string, c: LessonCtx, blocked = false): 'later' | 'skip' | null {
   const l = lessonOf(id);
-  if (!l?.deferrable || !l.done || l.done(c) || aside(p, id, c)) return null;
   const s = p.seen[id];
-  const past = blocked || p.later[id] !== undefined || (!!s && c.g.ledger.some((e) => e.player === c.me && (e.at ?? -1) >= s.at && e.verb !== 'system' && e.verb !== 'score'));
+  if (!l?.deferrable || !l.done || l.done(c, s) || aside(p, id, c)) return null;
+  const past = blocked || p.later[id] !== undefined || (!!s && playedSince(c, s.at) > 0);
   if (!past) return null;
   return lastRound(c.g) ? 'skip' : 'later';
 }
@@ -232,9 +250,10 @@ export const mayLater = (p: Progress, id: string, c: LessonCtx, blocked = false)
  *  before the move and holds after it. At the guided table that move is
  *  the lesson's, not the coach's to grade — passed or not: a deed taken
  *  back and done again is the lesson's still, though the lesson stays
- *  passed. The deeds are firsts, so this spares a move or two a lesson */
+ *  passed. The deeds are firsts, so this spares a move or two a lesson;
+ *  an aim is met in the reader's own way, and graded like any move */
 export function deedOf(before: LessonCtx, after: LessonCtx): string | null {
-  return LESSONS.find((l) => l.done && !l.done(before) && l.done(after))?.id ?? null;
+  return LESSONS.find((l) => l.done && !l.aim && !l.done(before) && l.done(after))?.id ?? null;
 }
 
 const LOAN_AT = lessonIndex('loan');
@@ -294,7 +313,7 @@ const known = (id: unknown): id is string => typeof id === 'string' && lessonInd
 const keep = <V>(o: unknown, ok: (v: unknown) => v is V): Record<string, V> =>
   Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([k, v]) => known(k) && ok(v))) as Record<string, V>;
 const isRound = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
-const isSight = (v: unknown): v is { at: number; round: number } => !!v && typeof v === 'object' && isRound((v as { at: unknown }).at) && isRound((v as { round: unknown }).round);
+const isSight = (v: unknown): v is Sight => !!v && typeof v === 'object' && isRound((v as { at: unknown }).at) && isRound((v as { round: unknown }).round);
 
 /** a record read back, or null when it is not one */
 function parse(raw: string | null): Progress | null {

@@ -165,7 +165,7 @@ describe('the lesson due', () => {
     let p = upTo('sell');
     p = pass(p, 'sell');
     expect(due(p, ctx(g))).toMatchObject({ id: 'eraEnd' });
-    for (const id of ['eraEnd', 'plan', 'tips']) p = pass(p, id);
+    for (const id of LESSON_IDS.slice(lessonIndex('eraEnd'), -1)) p = pass(p, id);
     /* nothing due: the guide rests, the first lesson to come named */
     expect(due(p, ctx(g))).toEqual({ id: 'flipped', index: lessonIndex('flipped'), mode: 'idle' });
     const sold = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
@@ -476,6 +476,23 @@ describe('the loan, never a trap', () => {
     const m = upTo('coal');
     expect(detourOf(m, due(m, ctx(bare)), ctx(bare), true, true)).toBe('loan');
     expect(wayOn(m, 'coal', ctx(bare), true)).toBeNull();
+  });
+});
+
+describe('the reader\'s own round', () => {
+  it('passes once a turn\'s worth of actions is played with no word from the guide', () => {
+    const r2 = round2();
+    let p = upTo('onYourOwn');
+    expect(due(p, ctx(r2))).toMatchObject({ id: 'onYourOwn', mode: 'do' });
+    /* never done beforehand: it counts from the moment it is shown */
+    expect(due(p, ctx(idle(idle(r2))))).toMatchObject({ id: 'onYourOwn', mode: 'do' });
+    p = see(p, 'onYourOwn', ctx(r2));
+    const one = idle(r2);
+    expect(settle(p, ctx(one))).toBe(p);
+    const two = idle(one);
+    expect(settle(p, ctx(two)).passed.at(-1)).toBe('onYourOwn');
+    /* no move is its deed: the coach grades the round */
+    expect(deedOf(ctx(one), ctx(two))).toBeNull();
   });
 });
 
