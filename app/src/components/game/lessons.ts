@@ -85,6 +85,10 @@ const drankBarrel = (c: LessonCtx): boolean =>
 /** a barrel still standing at a merchant of this table */
 const barrelsLeft = (c: LessonCtx): boolean => Object.values(c.g.merchantBeer).some((n) => n > 0);
 
+/** the second half of the era, or the rail's: advice for the rounds left
+ *  is given when they are the rounds left */
+const halfway = (c: LessonCtx): boolean => c.g.era === 'rail' || c.g.round >= Math.ceil(eraRounds(c.g.players.length) / 2);
+
 /** no loan taken yet, and the purse already pays for the next works: the
  *  loan can wait. Once one is taken there is nothing left to wait for */
 const worksPaid = (c: LessonCtx): boolean => {
@@ -136,8 +140,8 @@ export const LESSONS: readonly Lesson[] = [
      barrel drunk — with none left standing, one to pass */
   { id: 'reach', done: linkedWorks, deferrable: true, aim: true },
   { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
-  { id: 'plan' },
-  { id: 'tips' },
+  { id: 'plan', when: halfway },
+  { id: 'tips', when: halfway },
   /* the closing word, told on the final ledger and passed there: the
      game is played to its end with the guide beside it */
   { id: 'onward', when: (c) => c.g.phase === 'game-over' },

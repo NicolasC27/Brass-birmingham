@@ -498,6 +498,18 @@ describe('the reader\'s own round', () => {
   });
 });
 
+describe('the advice for the rounds left', () => {
+  it('waits for the second half of the era, never lost meanwhile', () => {
+    const r2 = round2();
+    const p = upTo('plan');
+    expect(due(p, ctx(r2))).toEqual({ id: 'plan', index: lessonIndex('plan'), mode: 'idle' });
+    expect(due(p, ctx({ ...r2, round: 5 }))).toMatchObject({ id: 'plan', mode: 'read' });
+    expect(due(pass(p, 'plan'), ctx({ ...r2, round: 5 }))).toMatchObject({ id: 'tips', mode: 'read' });
+    /* the rail era is past the canal's half */
+    expect(due(p, ctx({ ...r2, era: 'rail', round: 1, eraLength: 'standard' }))).toMatchObject({ id: 'plan', mode: 'read' });
+  });
+});
+
 describe('the aims of the second half', () => {
   /* round 2, the reader to play: a manufacturer of theirs in Redditch,
      Oxford buying everything with its barrel standing, and — when asked
