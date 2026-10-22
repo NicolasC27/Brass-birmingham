@@ -2,19 +2,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, MessageCircleQuestion, X } from 'lucide-react';
 import { passagesOf } from '@/game/faq';
-import { askedAs, consult, tell } from '@/game/faq/consult';
+import { askedAs, tell } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
+import { useGame } from '@/game/store';
 import { dictOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { aidOn } from './boardOptions';
+import { answerQuestion } from './tableAnswers';
 import { useHudInsets } from './useHudInsets';
 import { leftSheetStyle, useDockReserve, useLayer } from './useLayer';
 
 /* ------------------------------------------------------------------ */
-/* A question to the guide, at any table: the guided game's column has  */
-/* gone, but the rules it knows have not. A small plate opened from the */
-/* tools, answered from the guide's case — every notion of the game,    */
-/* read through slips of the pen — and, when nothing there is close,    */
-/* with the two or three notions the question might have meant.         */
+/* A question to the guide, at any table and any width — whether the   */
+/* guided game's lane is there or not. A small plate opened from the    */
+/* tools, answered as the lane answers: from the table as it stands,    */
+/* where the assistance is on, and from the guide's case — every notion */
+/* of the game, read through slips of the pen — and, when nothing there */
+/* is close, with the two or three notions the question might have     */
+/* meant.                                                               */
 /* ------------------------------------------------------------------ */
 
 /** the notions offered under an answer that found nothing close: each one
@@ -46,6 +51,12 @@ export default function AskGuide({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState<{ q: string; a: string; near?: NearNotion[] }[]>([]);
+  /* the table as it stands answers too, where the assistance is on: what
+     can be sold, the purse, the rounds left are decision aids */
+  const game = useGame((s) => s.game);
+  const seat = useGame((s) => s.seat);
+  const online = useGame((s) => s.code !== null);
+  const table = game && aidOn(game.assist, online) ? { g: game, me: seat ?? Math.max(0, game.players.findIndex((p) => !p.isBot)) } : null;
   /* a sheet of the left edge, like the notebook: one of them at a time */
   const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   const reserve = useDockReserve();
@@ -61,8 +72,12 @@ export default function AskGuide({ className }: { className?: string }) {
     const q = question.trim();
     if (!q) return;
     setQuestion('');
-    const found = consult(q, lang, passages);
-    setThread((prev) => [...prev.slice(-5), { q, a: found.answer, near: found.kind === 'near' ? found.near : undefined }]);
+    const got = answerQuestion(q, table, t, lang, passages);
+    /* what to play is the note's to answer, on the reader's turn: its
+       plate, not this one, carries the machine's move */
+    const machine = game?.players.find((p) => p.isBot)?.name ?? '';
+    const a = got.intent === 'do' ? t('game.guide.ask.answer.doTool', { ask: t('game.guide.suggest.ask', { name: machine }) }) : got.answer;
+    setThread((prev) => [...prev.slice(-5), { q, a, near: got.near.length ? got.near : undefined }]);
   };
   /* a notion taken up from the ones offered: asked by its name */
   const takeUp = (n: NearNotion) => setThread((prev) => [...prev.slice(-5), { q: askedAs(n), a: tell(n.id, lang) }]);
@@ -94,7 +109,7 @@ export default function AskGuide({ className }: { className?: string }) {
               </button>
             </div>
             <div ref={lane} className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {thread.length === 0 && <p className="font-serif text-[12.5px] leading-snug text-cream-100/60">{t('game.guide.ask.hint')}</p>}
+              {thread.length === 0 && <p className="font-serif text-[12.5px] leading-snug text-cream-100/60">{t(table ? 'game.guide.ask.hintTable' : 'game.guide.ask.hint')}</p>}
               {thread.map((m, i) => (
                 <div key={i} className="flex flex-col gap-1">
                   <p className="ml-6 rounded-md border border-bottle-600/50 bg-bottle-600/10 px-2.5 py-1.5 font-serif text-[12px] text-bottle-400">{m.q}</p>
