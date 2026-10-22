@@ -939,17 +939,23 @@ function Guide({ dock = 0 }: { dock?: number }) {
         {/* a lesson set aside, and nothing else due this round: a line
             that says when it comes back */}
         {aside && (
-          <motion.aside key="aside" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3">
+          <motion.aside key="aside" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full flex-col gap-1 px-3 py-1.5 shadow-e3">
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
-            <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 flex-1 items-center gap-2')}>
+            <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <Clock className="h-4 w-4 shrink-0 text-ink-900/70" />
               <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) })}</span>
             </div>
-            {behind && (
-              <button type="button" onClick={() => setReview(behind)} className="relative inline-flex shrink-0 items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
-                <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
+            {/* the guide may be left from here too, as from any lesson */}
+            <div className="relative flex items-center gap-x-3 pl-6">
+              <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                {t('game.guide.leave')}
               </button>
-            )}
+              {behind && (
+                <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                  <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
+                </button>
+              )}
+            </div>
           </motion.aside>
         )}
         {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
