@@ -101,6 +101,21 @@ describe('the lens of the lesson on works', () => {
   });
 });
 
+describe('the lens of the lesson on selling', () => {
+  it('lights the works that will sell, never one that will not', () => {
+    const g = table();
+    g.tiles['worcester:0'] = tile(0, 'cotton');
+    g.tiles['coventry:1'] = tile(0, 'manufacturer');
+    link(g, 'birmingham--worcester', 0);
+    link(g, 'birmingham--m-oxford', 1);
+    const card = g.players[0].hand[0].id;
+    expect(lensFor('sell', ctx(g))).toEqual({ slots: ['worcester:0'], at: 'worcester', hud: 'hand' });
+    expect(lensFor('sell', ctx(g, card, 'sell'))).toEqual({ slots: ['worcester:0'], at: 'worcester' });
+    /* another move chosen: the lens leaves it its own places */
+    expect(lensFor('sell', ctx(g, card, 'build'))).toEqual({ hud: 'sell' });
+  });
+});
+
 describe('the lens of the lesson on beer', () => {
   it('lights the breweries, and leaves a sale being chosen its own places', () => {
     const g = table();

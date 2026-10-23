@@ -1,7 +1,7 @@
 import { LINKS, MERCHANTS } from '@/game/data';
-import { buildTargets, merchantDemand, merchantOpen, tileKey } from '@/game/engine';
+import { buildTargets, merchantDemand, merchantOpen, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
-import type { Lens } from '@/game/store';
+import type { HudLens, Lens } from '@/game/store';
 import type { GameState, IndustryType, LinkDef } from '@/game/types';
 import type { LessonCtx } from './lessons';
 import { forgesFrom } from './lessonWords';
@@ -18,6 +18,7 @@ import { forgesFrom } from './lessonWords';
 
 const WORKS: readonly string[] = ['cotton', 'manufacturer', 'pottery'];
 
+const townOf = (key: string): string => key.split(':')[0];
 const unique = (keys: string[]): string[] => [...new Set(keys)];
 const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
 const ofEra = (g: GameState, l: LinkDef): boolean => (g.era === 'canal' ? l.canal : l.rail);
@@ -124,10 +125,12 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return keys.length ? { slots: keys, at: keys[0].split(':')[0] } : null;
     }
     case 'sell': {
-      if (!card) return { hud: 'hand' };
-      if (verb !== 'sell') return { hud: 'sell' };
-      const keys = mine((t) => WORKS.includes(t.industry) && !t.flipped);
-      return keys.length ? { slots: keys, at: keys[0].split(':')[0] } : null;
+      /* the works that will sell — never one that will not */
+      const ok = unique(sellTargets(g, me).filter((x) => x.valid).map((x) => tileKey(x.town, x.slot)));
+      if (!ok.length) return verb === 'sell' ? null : { hud: card ? 'sell' : 'hand' };
+      if (verb && verb !== 'sell') return card ? { hud: 'sell' } : null;
+      const hud: HudLens | undefined = !card ? 'hand' : verb ? undefined : 'sell';
+      return { slots: ok, at: townOf(ok[0]), ...(hud ? { hud } : {}) };
     }
     case 'flipped': {
       const keys = mine((t) => t.flipped);
