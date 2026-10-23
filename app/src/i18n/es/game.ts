@@ -622,7 +622,7 @@ const game: typeof engame = {
     'Canal Era: one tile per location': 'Era del canal: una loseta tuya por lugar',
     'Lightbulb tile — cannot be developed': 'Loseta con bombilla: no se puede desarrollar',
     'Cannot afford the iron': 'No alcanza para pagar el hierro',
-    needsBeer: 'Hacen falta {n} [n|cerveza|cervezas] — una cervecería tuya, una conectada aquí, o el barril del mercader',
+    needsBeer: '[n|Hace|Hacen] falta {n} [n|cerveza|cervezas] — una cervecería tuya, una conectada aquí, o el barril del mercader',
     'No iron available anywhere': 'No hay hierro disponible en ninguna parte',
     'The second link must touch your network': 'La segunda conexión debe tocar tu red',
     'Link must touch your network': 'La conexión debe tocar tu red',
@@ -653,7 +653,7 @@ const game: typeof engame = {
     unknown: 'Las reglas no permiten esta jugada',
     'You are not seated at this table': 'No estás sentado a esta mesa',
     'No game at this table': 'No hay partida en esta mesa',
-    needsMoney: 'Hacen falta {need} £ — tienes {have} £',
+    needsMoney: '[need|Hace|Hacen] falta {need} £ — tienes {have} £',
   },
   /* the "why?" beside a refusal: the rule it rests on */
   why: {
