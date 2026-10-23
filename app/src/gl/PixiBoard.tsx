@@ -1712,8 +1712,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
 
     /* the lesson's light (lensFor.ts): the lamp's warm glow under the
        places its advice would take first, along the link it points to and
-       round the merchants it names — under the marks of the move being
-       chosen, whose other candidates step back a little */
+       round the merchants it names — steady, where the candidates breathe,
+       and under the marks of the move being chosen, whose other
+       candidates step back a little */
     const firstSlots = new Set(lens?.first ?? []);
     const firstLinks = new Set((lens?.links ?? []).filter((id) => linkTargetsList.some((x) => x.valid && x.link.id === id)));
     if (lens && !preview) {
@@ -1721,18 +1722,17 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const [townId, si] = key.split(':');
         const town = TOWN_BY_ID[townId];
         const pos = town ? townChrome(town).slots[Number(si)] : undefined;
-        if (pos) pulse(lampSlot(pos.x, pos.y), 1);
+        if (pos) overlay.addChild(lampSlot(pos.x, pos.y));
       }
       for (const id of lens.links ?? []) {
         const def = LINKS.find((l) => l.id === id);
         if (!def) continue;
         const pts = routeFor(def, game.era).pts;
-        pulse(lampRoute(pts), 1);
-        overlay.addChild(lampDashes(pts));
+        overlay.addChild(lampRoute(pts), lampDashes(pts));
       }
       for (const id of lens.merchants ?? []) {
         const m = MERCHANT_BY_ID[id];
-        if (m) pulse(lampMerchant(m), 1);
+        if (m) overlay.addChild(lampMerchant(m));
       }
     }
 
