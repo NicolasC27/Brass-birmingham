@@ -26,7 +26,7 @@ import { CASING, boardAssetTally, buildBoardScene, drawOwnerMedallion, holdBoard
 import type { Prepared } from '@/game/store';
 import type { GameAction } from '@/game/actions';
 import { closeAudio, houseHover, pingTap, stampThud } from './sfx';
-import { ROW_SCALE, rowLift, rowWidth } from './merchantRow';
+import { MT, ROW_SCALE, rowLift, rowWidth } from './merchantRow';
 import { EMPTY_PROVENANCE, provenance, slotAt as slotPos } from './provenance';
 import { STAMP_IMPACT_S, STAMP_S, freshPieces, inkBloom, stampPose } from './stamp';
 import { freshFlips } from './living';
@@ -282,6 +282,71 @@ function linkDashes(pts: number[][]): Graphics {
   d.stroke({ width: 2.4, color: 0xddbe7e, cap: 'round', join: 'round' });
   d.eventMode = 'none';
   return d;
+}
+
+/* ------------- the lesson's light: what the guide points at ------------- */
+/* The lamp's warm light, the one the orders are shown under, laid by the
+   guide's lesson under what its advice would take first: a place, a link
+   to lay, a merchant to sell to. It is no state of a pick — the marks of
+   the move being chosen keep their grammar on top of it. */
+
+const LAMP = 0xffd98a;
+const LAMP_WARM = 0xe8b25a;
+/** the dark edge the lamp's rim is laid on, so it reads on meadow and parchment alike */
+const LAMP_EDGE = 0x2a2118;
+
+/** a lit rim round a box: the dark edge under it, the lamp's light on
+ *  top — `weight` thickens it for what is read at the map's widest view */
+function lampRim(g: Graphics, x: number, y: number, w: number, h: number, r: number, weight = 1): Graphics {
+  return g
+    .roundRect(x, y, w, h, r)
+    .stroke({ width: 7 * weight, color: LAMP_EDGE, alpha: 0.55 })
+    .roundRect(x, y, w, h, r)
+    .stroke({ width: 3.5 * weight, color: LAMP });
+}
+
+/** a place the lesson would take first: a warm pool and a lit rim round the slot */
+function lampSlot(x: number, y: number): Graphics {
+  const r = TILE_R + 11;
+  const g = new Graphics().roundRect(x - r - 10, y - r - 10, (r + 10) * 2, (r + 10) * 2, 22).fill({ color: LAMP_WARM, alpha: 0.22 });
+  lampRim(g, x - r, y - r, r * 2, r * 2, 15);
+  g.eventMode = 'none';
+  return g;
+}
+
+/** a link the lesson points to: a warm band along its route */
+function lampRoute(pts: number[][]): Graphics {
+  const g = new Graphics();
+  trace(g, pts);
+  g.stroke({ width: 34, color: LAMP_WARM, alpha: 0.2, cap: 'round', join: 'round' });
+  trace(g, pts);
+  g.stroke({ width: 16, color: LAMP_WARM, alpha: 0.3, cap: 'round', join: 'round' });
+  g.eventMode = 'none';
+  return g;
+}
+
+/** the link's own line in the lamp's light: the canal to lay, dashed */
+function lampDashes(pts: number[][]): Graphics {
+  const d = new Graphics();
+  dashPath(d, pts, 11, 8);
+  d.stroke({ width: 9, color: LAMP_EDGE, alpha: 0.55, cap: 'round', join: 'round' });
+  dashPath(d, pts, 11, 8);
+  d.stroke({ width: 5, color: LAMP, cap: 'round', join: 'round' });
+  d.eventMode = 'none';
+  return d;
+}
+
+/** a merchant the lesson names: its row, tiles, barrels and medallion, in the light */
+function lampMerchant(m: Pick<(typeof MERCHANTS)[number], 'x' | 'y' | 'slots'>): Graphics {
+  const w = (rowWidth(m.slots) + 16) * ROW_SCALE;
+  const top = (-MT / 2 - 8) * ROW_SCALE;
+  const h = (MT + 34) * ROW_SCALE;
+  const x = m.x - w / 2;
+  const y = m.y - rowLift(m) + top;
+  const g = new Graphics().roundRect(x - 12, y - 12, w + 24, h + 24, 26).fill({ color: LAMP_WARM, alpha: 0.16 });
+  lampRim(g, x, y, w, h, 16, 1.6);
+  g.eventMode = 'none';
+  return g;
 }
 
 /* ------------- the supply arrows: where a move's goods come from ------------- */
@@ -656,6 +721,8 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const planActor = useGame((s) => s.planActor());
   const preparing = useGame((s) => s.preparing);
   const queued = useGame((s) => s.queued);
+  /* what the guide's lesson lights (lensFor.ts) */
+  const lens = useGame((s) => s.lens);
   const idle = !selectedCardId;
   /* where the goods of the move being prepared come from, read on the
      table the plan is made on (with moves already prepared, the one they
@@ -1643,6 +1710,32 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     };
     const tag = (cx: number, cy: number, w: number, h: number, label: string) => overlay.addChild(...priceTag(cx, cy, w, h, label));
 
+    /* the lesson's light (lensFor.ts): the lamp's warm glow under the
+       places its advice would take first, along the link it points to and
+       round the merchants it names — under the marks of the move being
+       chosen, whose other candidates step back a little */
+    const firstSlots = new Set(lens?.first ?? []);
+    const firstLinks = new Set((lens?.links ?? []).filter((id) => linkTargetsList.some((x) => x.valid && x.link.id === id)));
+    if (lens && !preview) {
+      for (const key of firstSlots) {
+        const [townId, si] = key.split(':');
+        const town = TOWN_BY_ID[townId];
+        const pos = town ? townChrome(town).slots[Number(si)] : undefined;
+        if (pos) pulse(lampSlot(pos.x, pos.y), 1);
+      }
+      for (const id of lens.links ?? []) {
+        const def = LINKS.find((l) => l.id === id);
+        if (!def) continue;
+        const pts = routeFor(def, game.era).pts;
+        pulse(lampRoute(pts), 1);
+        overlay.addChild(lampDashes(pts));
+      }
+      for (const id of lens.merchants ?? []) {
+        const m = MERCHANT_BY_ID[id];
+        if (m) pulse(lampMerchant(m), 1);
+      }
+    }
+
     if (verb === 'build' && selectedCardId) {
       const seen = new Set<string>();
       for (const t of targets) {
@@ -1654,7 +1747,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         /* a place you may build on wears the state ink; the one picked, pale and full */
         const g = slotMark(pos.x, pos.y, picked, true);
         if (picked) overlay.addChild(g);
-        else pulse(g, 0.8);
+        else pulse(g, firstSlots.size && !firstSlots.has(key) ? 0.4 : 0.8);
       }
     }
 
@@ -1666,7 +1759,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         const picked = linkPick?.link.id === def.id || secondLinkPick?.link.id === def.id;
         const g = linkMark(pts, picked);
         if (picked) overlay.addChild(g);
-        else pulse(g, 0.55);
+        else pulse(g, firstLinks.size && !firstLinks.has(def.id) ? 0.3 : 0.55);
         /* the picked link: flowing dashes and its £-plaque at mid-route (a
            hovered one gets the same on the hover layer) */
         if (picked) {
@@ -1687,7 +1780,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
            its halo and ring only, its face left clear to read */
         const g = slotMark(pos.x, pos.y, picked, false);
         if (picked) overlay.addChild(g);
-        else pulse(g, 0.9);
+        else pulse(g, firstSlots.size && !firstSlots.has(tileKey(t.town, t.slot)) ? 0.45 : 0.9);
       }
     }
 
@@ -1977,7 +2070,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     return () => {
       alive = false;
     };
-  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, supply, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt, sceneSeq]);
+  }, [verb, selectedCardId, targets, linkTargetsList, sellTargetsList, ghost, supply, hideUnbuilt, buildPick, linkPick, secondLinkPick, sellPick, sellPicks, idle, game.ledgerSeq, pings, pins, preview, opts.tileArt, sceneSeq, lens]);
 
   /* everything the pointer alone decides lives on its own layer, so a
      hover never rebuilds the overlay: the cream edge and the £-plaque of
@@ -2146,7 +2239,6 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
   const aidHere = aidOn(game.assist, code !== null);
   const sellableHere = aidHere && hoverMerchantDef && viewerIdx >= 0 ? sellTargets(game, viewerIdx).filter((s) => s.merchant === hoverMerchantDef.id) : [];
   const netPeek = useGame((s) => s.netPeek);
-  const lens = useGame((s) => s.lens);
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene) return;
@@ -2156,8 +2248,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
        plan dims nothing: its candidates wear their own marks */
     const aid = aidOn(game.assist, code !== null);
     if (lens?.slots?.length) {
-      /* the guide's lesson names the places it is about: they alone stay lit */
-      scene.setHighlight(lens.slots);
+      /* the guide's lesson names the places it is about: they alone stay
+         lit, the ones its advice would take first at full strength */
+      scene.setHighlight(lens.slots, lens.first);
     } else if (aid && selectedCardId && verb === 'build') {
       scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
     } else if (aid && selectedCardId && verb === 'sell') {

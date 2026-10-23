@@ -109,8 +109,9 @@ export interface BoardScene {
   ribbons: Container[];
   redraw: (game: GameState) => void;
   setSpotlight: (player: number | null) => void;
-  /** light only these slots (null = back to the spotlight rule) */
-  setHighlight: (keys: string[] | null) => void;
+  /** light only these slots (null = back to the spotlight rule); when
+   *  `first` names some of them, those alone at full strength */
+  setHighlight: (keys: string[] | null, first?: string[] | null) => void;
   /** hide unbuilt link traces (board option, keyboard C) */
   setHideUnbuilt: (hide: boolean) => void;
   /** larger income/VP chips on built tiles (board option) */
@@ -1679,8 +1680,12 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
   };
 
   let spotlight: number | null = null;
-  /* a transient highlight (merchant hover): only these slot keys stay lit */
+  /* a transient highlight (merchant hover, a lesson): only these slot
+     keys stay lit — and when some come first, the others a step back */
   let highlight: Set<string> | null = null;
+  let first: Set<string> | null = null;
+  /** a slot lit after the ones that come first: still clear of the dimmed */
+  const LIT_SECOND = 0.5;
   const applySpotlight = (game: GameState | null) => {
     if (!game) return;
     for (const def of LINKS) {
@@ -1696,7 +1701,7 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
         /* spotlight = only the player's possessions stay at full strength:
            others' tiles AND empty slots step back */
         const key = tileKey(town.id, si);
-        view.slots[si].spotAlpha = highlight ? (highlight.has(key) ? 1 : 0.28) : spotlight === null ? 1 : tile && tile.owner === spotlight ? 1 : 0.3;
+        view.slots[si].spotAlpha = highlight ? (highlight.has(key) ? (!first || first.has(key) ? 1 : LIT_SECOND) : 0.28) : spotlight === null ? 1 : tile && tile.owner === spotlight ? 1 : 0.3;
       }
     }
   };
@@ -1729,8 +1734,9 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       spotlight = player;
       applySpotlight(lastGame);
     },
-    setHighlight(keys: string[] | null) {
+    setHighlight(keys: string[] | null, firstKeys?: string[] | null) {
       highlight = keys ? new Set(keys) : null;
+      first = keys && firstKeys?.length ? new Set(firstKeys) : null;
       applySpotlight(lastGame);
     },
     setHideUnbuilt(hide: boolean) {
