@@ -192,7 +192,10 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       if (!ok.length) return toBuyer() ?? (verb === 'sell' ? null : { hud: card ? 'sell' : 'hand' });
       if (verb && verb !== 'sell') return card ? { hud: 'sell' } : null;
       const hud: HudLens | undefined = !card ? 'hand' : verb ? undefined : 'sell';
-      return { slots: ok, at: townOf(ok[0]), ...(hud ? { hud } : {}) };
+      /* the rest of the board dims on her turn, or once a card is chosen;
+         the machine's moves land in full light, the works under the lamp */
+      const dims = !!card || (g.phase === 'action' && g.current === me);
+      return { ...(dims ? { slots: ok } : { first: ok }), at: townOf(ok[0]), ...(hud ? { hud } : {}) };
     }
     case 'flipped': {
       if (choosing) return null;

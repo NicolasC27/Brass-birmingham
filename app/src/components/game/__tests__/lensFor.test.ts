@@ -141,6 +141,17 @@ describe('the lens of the lesson on selling', () => {
     expect(lensFor('sell', ctx(g, card, 'build'))).toEqual({ hud: 'sell' });
   });
 
+  it('dims nothing on the machine’s turn: the works that sell under the lamp', () => {
+    const g = table();
+    g.tiles['worcester:0'] = tile(0, 'cotton');
+    link(g, 'birmingham--worcester', 0);
+    link(g, 'birmingham--m-oxford', 1);
+    g.current = 1;
+    expect(lensFor('sell', ctx(g))).toEqual({ first: ['worcester:0'], at: 'worcester', hud: 'hand' });
+    /* a sale prepared meanwhile: its own places, the rest dimmed */
+    expect(lensFor('sell', ctx(g, g.players[0].hand[0].id, 'sell'))).toEqual({ slots: ['worcester:0'], at: 'worcester' });
+  });
+
   it('lights the canal missing toward the buyer, when nothing sells', () => {
     const g = table();
     g.tiles['worcester:0'] = tile(0, 'cotton');
