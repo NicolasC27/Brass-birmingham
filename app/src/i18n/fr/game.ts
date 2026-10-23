@@ -112,7 +112,7 @@ const fr: typeof engame = {
       count: '{n} [n|possible|possibles]',
       none: {
         build: 'Cette carte ne peut rien bâtir : vendez, développez ou passez avec',
-        network: 'Aucune liaison possible depuis votre réseau : jouez cette carte autrement',
+        network: 'Jouez cette carte autrement : construisez, vendez, développez ou passez avec',
         sell: 'Rien à vendre pour l’instant : reliez un ouvrage à son acheteur ou bâtissez une brasserie',
         develop: 'Rien à développer pour l’instant : il faut un fer, et de quoi le payer au marché',
       },

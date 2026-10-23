@@ -110,7 +110,7 @@ const game = {
       count: '{n} possible',
       none: {
         build: 'This card can build nowhere: sell, develop, or pass with it',
-        network: 'No link possible from your network: play this card another way',
+        network: 'Play this card another way: build, sell, develop, or pass with it',
         sell: 'Nothing to sell yet: link a works to its buyer or build a brewery',
         develop: 'Nothing to develop for now: it takes an iron, and the money for it at the market',
       },
