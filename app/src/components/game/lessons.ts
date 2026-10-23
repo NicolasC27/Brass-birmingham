@@ -92,6 +92,8 @@ export const playedSince = (c: LessonCtx, at: number): number =>
  *  with whatever beer. The sales are counted, so a works swept off the
  *  board at an era's end still counts */
 const worksFlipped = (c: LessonCtx): boolean => c.g.players[c.me].stats.sold > 0;
+/** a works of the reader's on the board, not sold yet: something to sell */
+const unsoldWorks = (c: LessonCtx): boolean => Object.values(c.g.tiles).some((t) => t.owner === c.me && WORKS.includes(t.industry) && !t.flipped);
 /** a works of the reader's, not sold yet, that links join to a merchant
  *  buying its goods — whoever laid them */
 const linkedWorks = (c: LessonCtx): boolean => sellTargets(c.g, c.me).length > 0;
@@ -168,8 +170,10 @@ export const LESSONS: readonly Lesson[] = [
      often; else before the works, whose coal and iron may come from it */
   { id: 'market', show: 'market', cue: buysAtMarket },
   { id: 'works', done: (c) => built(c, WORKS), deferrable: true },
-  /* read the first time the reader chooses Sell, else as the sale comes up */
-  { id: 'beer', cue: (c) => c.verb === 'sell' },
+  /* read the first time the reader chooses Sell with a works to sell —
+     Sell tried with none is no sale, and would spend the page on nothing —
+     else as the sale comes up */
+  { id: 'beer', cue: (c) => c.verb === 'sell' && unsoldWorks(c) },
   /* the first works flipped, whichever it is — the one the lesson on
      works built, or another. The move is a sale all the same: the
      lesson's to teach, not an aim for the coach to grade */

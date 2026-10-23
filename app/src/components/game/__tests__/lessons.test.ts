@@ -620,20 +620,26 @@ describe('the pages the table calls for', () => {
     expect(due(q, ctx(g))).toMatchObject({ id: 'coal', mode: 'do' });
   });
 
-  it('cuts the beer in the first time Sell is chosen, else as the sale comes up', () => {
+  it('cuts the beer in the first time Sell is chosen with a works to sell, else as the sale comes up', () => {
     const r2 = round2();
-    let p = see(upTo('works'), 'works', ctx(r2));
+    let p = see(upTo('link'), 'link', ctx(r2));
     const card = r2.players[0].hand[0].id;
-    /* Sell chosen, the works still to build: the page on beer first */
-    const selling = ctx(r2, { sel: card, verb: 'sell' });
+    /* Sell tried with no works on the board: no sale, and no page spent on it */
+    expect(due(p, ctx(r2, { sel: card, verb: 'sell' }))).toMatchObject({ id: 'link', mode: 'do' });
+    expect(settle(p, ctx(r2, { sel: card, verb: 'sell' }))).toBe(p);
+    /* a works of the reader's standing, built ahead of its lesson: the page on beer first */
+    const g = structuredClone(r2);
+    g.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    const selling = ctx(g, { sel: card, verb: 'sell' });
     expect(due(p, selling)).toMatchObject({ id: 'beer', mode: 'read' });
     p = settle(p, selling);
-    /* Sell let go: the page stays until read, then the works again */
-    expect(due(p, ctx(r2, { sel: card }))).toMatchObject({ id: 'beer', mode: 'read' });
+    /* Sell let go: the page stays until read, then the canal again */
+    expect(due(p, ctx(g, { sel: card }))).toMatchObject({ id: 'beer', mode: 'read' });
     p = pass(p, 'beer');
-    expect(due(p, selling)).toMatchObject({ id: 'works', mode: 'do' });
+    expect(due(p, selling)).toMatchObject({ id: 'link', mode: 'do' });
     /* read once: the sale follows the works with no second page */
-    expect(due(pass(p, 'works'), ctx(r2))).toMatchObject({ id: 'sell', mode: 'do' });
+    const on = LESSON_IDS.slice(lessonIndex('link'), lessonIndex('sell')).reduce((q, id) => pass(q, id), p);
+    expect(due(on, ctx(g))).toMatchObject({ id: 'sell', mode: 'do' });
     /* never chosen, it comes as the sale does, just before it */
     expect(lessonIndex('beer')).toBe(lessonIndex('sell') - 1);
     expect(due(pass(upTo('works'), 'works'), ctx(r2))).toMatchObject({ id: 'beer', mode: 'read' });
