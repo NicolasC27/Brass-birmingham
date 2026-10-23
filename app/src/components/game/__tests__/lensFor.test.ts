@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { withEdition } from '@/game/actions';
 import { newGame } from '@/game/engine';
-import type { GameState, SetupPayload, TileState, Verb } from '@/game/types';
-import { lensFor } from '../lensFor';
+import type { Card, GameState, SetupPayload, TileState, Verb } from '@/game/types';
+import { lensFor, linksToBuyer } from '../lensFor';
 
 /* The lens of each lesson, on the guided game's deal (seed 3, two seats):
    Shrewsbury buys cotton, by Coalbrookdale; Oxford buys everything, by
@@ -22,6 +22,14 @@ function table(): GameState {
 }
 
 const tile = (owner: number, industry: TileState['industry'], extra: Partial<TileState> = {}): TileState => ({ owner, industry, level: 1, flipped: false, cubes: 0, ...extra });
+const link = (g: GameState, id: string, owner: number) => {
+  g.links[id] = { owner, era: 'canal' } as GameState['links'][string];
+};
+/** a card put in the reader's hand */
+const give = (g: GameState, card: Card): string => {
+  g.players[0].hand.push(card);
+  return card.id;
+};
 const ctx = (g: GameState, sel: string | null = null, verb: Verb | null = null, mat: number | null = null) => ({ g, me: 0, sel, mat, verb });
 const coalCard = (g: GameState) => g.players[0].hand.find((c) => c.kind === 'industry' && c.industry === 'coal')!.id;
 
@@ -52,6 +60,44 @@ describe('the lens of the lesson on coal', () => {
     const g = table();
     /* Wolverhampton: Walsall, Coalbrookdale and Dudley by one canal each */
     expect(lensFor('coal', ctx(g, coalCard(g), 'build'))!.at).toBe('wolverhampton');
+  });
+});
+
+describe('the lens of the lesson on works', () => {
+  const wild = (g: GameState) => give(g, { id: 'wl', kind: 'wild-location' });
+
+  it('lights first the works one canal from its buyer, when none is linked yet', () => {
+    const g = table();
+    const lens = lensFor('works', ctx(g, wild(g), 'build'))!;
+    /* cotton, the one works a bare board lets the card build: Birmingham
+       is a canal from Oxford, every other cotton slot further */
+    expect(lens.slots).toContain('worcester:0');
+    expect(lens.first).toEqual(['birmingham:0']);
+    expect(lens.at).toBe('birmingham');
+  });
+
+  it('lights first the works whose buyer the links laid reach, whoever laid them', () => {
+    const g = table();
+    link(g, 'birmingham--m-oxford', 1);
+    link(g, 'birmingham--worcester', 1);
+    const lens = lensFor('works', ctx(g, wild(g), 'build'))!;
+    /* Birmingham's manufactories too, their coal bought at the market by Oxford */
+    expect(lens.first).toEqual(['worcester:0', 'worcester:1', 'birmingham:0', 'birmingham:1', 'birmingham:3']);
+    expect(lens.slots).toContain('kidderminster:1');
+    /* the camera to the cheapest: a manufactory, £8 and a cube */
+    expect(lens.at).toBe('birmingham');
+  });
+
+  it('counts the links laid by anyone, and free links one each', () => {
+    const g = table();
+    const cotton = linksToBuyer(g, 'cotton');
+    expect(cotton.get('m-oxford')).toBe(0);
+    expect(cotton.get('birmingham')).toBe(1);
+    expect(cotton.get('worcester')).toBe(2);
+    link(g, 'birmingham--worcester', 1);
+    expect(linksToBuyer(g, 'cotton').get('worcester')).toBe(1);
+    /* Gloucester buys no cotton */
+    expect(linksToBuyer(g, 'manufacturer').get('m-gloucester')).toBe(0);
   });
 });
 

@@ -1,7 +1,8 @@
-import { buildTargets, tileKey } from '@/game/engine';
+import { LINKS, MERCHANTS } from '@/game/data';
+import { buildTargets, merchantDemand, merchantOpen, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import type { Lens } from '@/game/store';
-import type { GameState } from '@/game/types';
+import type { GameState, IndustryType, LinkDef } from '@/game/types';
 import type { LessonCtx } from './lessons';
 import { forgesFrom } from './lessonWords';
 
@@ -18,12 +19,39 @@ import { forgesFrom } from './lessonWords';
 const WORKS: readonly string[] = ['cotton', 'manufacturer', 'pottery'];
 
 const unique = (keys: string[]): string[] => [...new Set(keys)];
+const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
+const ofEra = (g: GameState, l: LinkDef): boolean => (g.era === 'canal' ? l.canal : l.rail);
 
 /** the first of these by the score, the board's order breaking a tie */
 function bestOf<X>(xs: readonly X[], score: (x: X) => number): X | undefined {
   let best: X | undefined;
   for (const x of xs) if (best === undefined || score(x) > score(best)) best = x;
   return best;
+}
+
+/** how many links still to lay, at the fewest, from each place of the map
+ *  to a merchant who buys `industry`: a link laid, by anyone, costs
+ *  nothing — a sale runs along any player's links — and a free one of
+ *  the era costs one. A place no link can bring to a buyer is left out */
+export function linksToBuyer(g: GameState, industry: IndustryType): Map<string, number> {
+  const dist = new Map<string, number>();
+  for (const m of MERCHANTS) if (merchantOpen(g, m.id) && merchantDemand(g, m.id).includes(industry)) dist.set(m.id, 0);
+  const links = LINKS.filter((l) => ofEra(g, l)).map((l) => ({ ends: ends(l), cost: g.links[l.id] ? 0 : 1 }));
+  /* a few dozen links: relaxed until nothing moves */
+  for (let moved = true; moved; ) {
+    moved = false;
+    for (const l of links) {
+      const near = Math.min(...l.ends.map((x) => dist.get(x) ?? Infinity));
+      if (near === Infinity) continue;
+      for (const x of l.ends) {
+        if ((dist.get(x) ?? Infinity) > near + l.cost) {
+          dist.set(x, near + l.cost);
+          moved = true;
+        }
+      }
+    }
+  }
+  return dist;
 }
 
 /** the places a card builds the lesson's tiles on, those the advice
@@ -51,6 +79,20 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     const all = buildTargets(g, me, card).filter((t) => t.valid && inds.includes(t.industry));
     return places(all, (t) => score(t, all));
   };
+  /* a works where the links laid already run to its buyer — else where
+     one more link would; the cheapest of them for the camera */
+  const works = (): Lens | null => {
+    const near = new Map<string, Map<string, number>>();
+    const dist = (t: BuildTarget) => {
+      if (!near.has(t.industry)) near.set(t.industry, linksToBuyer(g, t.industry));
+      return near.get(t.industry)!.get(t.town) ?? Infinity;
+    };
+    let nearest: number | null = null;
+    return sites(WORKS, (t, all) => {
+      nearest ??= Math.min(...all.map(dist));
+      return (dist(t) === nearest && nearest <= 1 ? 1 : 0) - t.total / 1000;
+    });
+  };
   switch (stepId) {
     case 'goal':
       return { hud: 'vp' };
@@ -72,7 +114,7 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     case 'link':
       return card && verb === 'network' ? null : { hud: 'network' };
     case 'works':
-      return sites(WORKS, () => 0);
+      return works();
     case 'market':
       return { hud: 'market' };
     case 'beer': {
