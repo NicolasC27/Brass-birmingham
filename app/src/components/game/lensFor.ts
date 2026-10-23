@@ -1,5 +1,5 @@
 import { LINKS, MERCHANTS } from '@/game/data';
-import { buildTargets, linkTargets, merchantDemand, merchantOpen, reachable, sellTargets, tileKey } from '@/game/engine';
+import { buildTargets, linkTargets, merchantBeerLeft, merchantDemand, merchantOpen, reachable, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import type { HudLens, Lens } from '@/game/store';
 import type { GameState, IndustryType, LinkDef } from '@/game/types';
@@ -13,7 +13,8 @@ import { forgesFrom } from './lessonWords';
 /* part. Computed from the state, so a lesson that says "build a mine"  */
 /* lights the very places a mine may go right now — the ones its advice */
 /* would take lit first, the others still lit, weaker: the lens guides, */
-/* it forbids nothing.                                                  */
+/* it forbids nothing. A move the reader is choosing lights its own     */
+/* places; a lesson about something else then steps aside.              */
 /* ------------------------------------------------------------------ */
 
 const WORKS: readonly string[] = ['cotton', 'manufacturer', 'pottery'];
@@ -137,7 +138,12 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     const hud: HudLens | undefined = !card ? 'hand' : verb === 'network' ? undefined : 'network';
     return { links, at: links[0], ...(hud ? { hud } : {}) };
   };
+  /* the merchants who keep a barrel */
+  const barrels = (): string[] => MERCHANTS.filter((m) => merchantOpen(g, m.id) && merchantBeerLeft(g, m.id) > 0).map((m) => m.id);
   switch (stepId) {
+    case 'board':
+      /* the merchants at the edges, their tiles and their barrels */
+      return choosing ? null : { merchants: MERCHANTS.filter((m) => merchantOpen(g, m.id)).map((m) => m.id) };
     case 'goal':
       return { hud: 'vp' };
     case 'mat':
@@ -167,10 +173,12 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return { hud: 'market' };
     case 'beer': {
       if (choosing) return null;
-      /* the breweries with beer left */
+      /* the breweries with beer left, and the merchants' barrels */
       const keys = Object.entries(g.tiles).filter(([, t]) => t.industry === 'brewery' && !t.flipped && t.cubes > 0).map(([k]) => k);
       const own = keys.find((k) => g.tiles[k].owner === me);
-      return keys.length ? { slots: keys, ...(own ? { at: townOf(own) } : {}) } : null;
+      const merchants = barrels();
+      if (!keys.length && !merchants.length) return null;
+      return { ...(keys.length ? { slots: keys } : {}), ...(merchants.length ? { merchants } : {}), ...(own ? { at: townOf(own) } : {}) };
     }
     case 'sell': {
       /* the works that will sell — never one that will not */
@@ -189,6 +197,17 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     case 'reach':
       /* a works built where its buyer is linked, or the link to lay */
       return card && verb === 'build' ? works() : toBuyer();
+    case 'barrel': {
+      const merchants = barrels();
+      if (card && verb === 'sell') {
+        /* the sales that drink a merchant's barrel first */
+        const sales = sellTargets(g, me).filter((x) => x.valid);
+        const slots = unique(sales.map((x) => tileKey(x.town, x.slot)));
+        const first = unique(sales.filter((x) => x.beer.some((b) => b.kind === 'merchant')).map((x) => tileKey(x.town, x.slot)));
+        return slots.length ? { slots, ...(first.length && first.length < slots.length ? { first } : {}), at: townOf(first[0] ?? slots[0]), merchants } : null;
+      }
+      return choosing || !merchants.length ? null : { merchants };
+    }
     case 'loan':
       return { hud: 'loan' };
     case 'develop':
@@ -197,4 +216,3 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return null;
   }
 }
-

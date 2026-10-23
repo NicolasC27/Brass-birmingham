@@ -151,15 +151,33 @@ describe('the lens of the aims', () => {
     const card = give(g, { id: 'wl', kind: 'wild-location' });
     expect(lensFor('reach', ctx(g, card, 'build'))?.first).toEqual(['birmingham:0']);
   });
+
+  it('barrel: the merchants who keep one, and the sales that drink it first', () => {
+    const g = table();
+    expect(lensFor('barrel', ctx(g))).toEqual({ merchants: ['m-shrewsbury', 'm-oxford', 'm-gloucester'] });
+    /* Oxford's barrel drunk: a cotton sold there drinks the reader's
+       brewery; one sold at Shrewsbury drinks its barrel */
+    g.merchantBeer['m-oxford:0'] = 0;
+    g.tiles['stone:0'] = tile(0, 'brewery', { cubes: 2 });
+    g.tiles['worcester:0'] = tile(0, 'cotton');
+    g.tiles['kidderminster:1'] = tile(0, 'cotton');
+    link(g, 'birmingham--worcester', 0);
+    link(g, 'birmingham--m-oxford', 1);
+    link(g, 'coalbrookdale--kidderminster', 0);
+    link(g, 'coalbrookdale--m-shrewsbury', 1);
+    const card = g.players[0].hand[0].id;
+    expect(lensFor('barrel', ctx(g, card, 'sell'))).toEqual({ slots: ['worcester:0', 'kidderminster:1'], first: ['kidderminster:1'], at: 'kidderminster', merchants: ['m-shrewsbury', 'm-gloucester'] });
+    expect(lensFor('barrel', ctx(g, card, 'build'))).toBeNull();
+  });
 });
 
 describe('the lens steps aside for a move being chosen', () => {
-  it('beer: the breweries with beer left, until a move is chosen', () => {
+  it('beer: the breweries and the merchants’ barrels, until a move is chosen', () => {
     const g = table();
     g.tiles['stone:0'] = tile(1, 'brewery', { cubes: 1 });
     const card = g.players[0].hand[0].id;
-    expect(lensFor('beer', ctx(g))).toEqual({ slots: ['stone:0'] });
-    expect(lensFor('beer', ctx(g, card))).toEqual({ slots: ['stone:0'] });
+    expect(lensFor('beer', ctx(g))).toEqual({ slots: ['stone:0'], merchants: ['m-shrewsbury', 'm-oxford', 'm-gloucester'] });
+    expect(lensFor('beer', ctx(g, card))).toEqual({ slots: ['stone:0'], merchants: ['m-shrewsbury', 'm-oxford', 'm-gloucester'] });
     /* Build or Sell chosen: their own places stay lit */
     expect(lensFor('beer', ctx(g, card, 'build'))).toBeNull();
     expect(lensFor('beer', ctx(g, card, 'sell'))).toBeNull();
@@ -172,5 +190,11 @@ describe('the lens steps aside for a move being chosen', () => {
     const card = g.players[0].hand[0].id;
     expect(lensFor('flipped', ctx(g))).toEqual({ slots: ['belper:1', 'worcester:0'], at: 'worcester' });
     expect(lensFor('flipped', ctx(g, card, 'build'))).toBeNull();
+  });
+
+  it('board: the merchants, never over a move', () => {
+    const g = table();
+    expect(lensFor('board', ctx(g))).toEqual({ merchants: ['m-shrewsbury', 'm-oxford', 'm-gloucester'] });
+    expect(lensFor('board', ctx(g, g.players[0].hand[0].id, 'build'))).toBeNull();
   });
 });
