@@ -84,9 +84,14 @@ export type Spared =
   | { action: GameAction; played: string[]; kept: string[]; lesson: string | null }
   | { action: null; played: []; kept: string[]; lesson: string };
 
+/** a brewery card, while the reader has no brewery on the board: the
+ *  guide's own habit keeps it (tips), so a card is changed for it last */
+const beerCard = (g: GameState, me: number, c: Card): boolean => names(c, 'brewery') && !Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'brewery');
+
 /** the same move, paid with cards the lessons do not keep, when the
  *  engine allows one; the card each time the one best spared, as the
- *  search itself chooses it (fewest builds, wilds last) */
+ *  search itself chooses it (fewest builds, wilds last) — a brewery card
+ *  not yet built only when no other card will do */
 export function spareFor(g: GameState, me: number, a: GameAction, keeps: readonly (Keep | null)[]): Spared {
   const held = keeps.filter((k): k is Keep => !!k && breaks(k, a));
   if (!held.length) return { action: a, played: [], kept: [], lesson: null };
@@ -102,7 +107,8 @@ export function spareFor(g: GameState, me: number, a: GameAction, keeps: readonl
     const used = new Set([...spentBy(move), ...played]);
     const tried = g.players[me].hand.filter((c) => !off.has(c.id) && !used.has(c.id)).map((c) => ({ card: c, move: withCard(move, out, c.id) }));
     const legal = tried.filter((x) => !!applyAction(g, me, x.move).state);
-    const best = spareCard(g, me, legal.map((x) => x.card));
+    const rather = legal.filter((x) => !beerCard(g, me, x.card));
+    const best = spareCard(g, me, (rather.length ? rather : legal).map((x) => x.card));
     if (!best) return { action: null, played: [], kept: swaps, lesson };
     move = legal.find((x) => x.card.id === best.id)!.move;
     played.push(best.id);

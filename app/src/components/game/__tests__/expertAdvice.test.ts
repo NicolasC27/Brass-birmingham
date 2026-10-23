@@ -85,13 +85,31 @@ describe('the move set up in the hand', () => {
     expect(got.action).not.toBeNull();
     expect(got.action).toMatchObject({ kind: 'network', link: 'birmingham--dudley' });
     expect(spentBy(got.action!)).not.toContain(forge(g));
-    /* the card the search itself would spare, of the ones left */
-    const others = hand(g).filter((c) => c.id !== forge(g));
+    /* the card the search itself would spare, of the ones left — not the
+       brewery card, which the guide's habits keep while no brewery stands */
+    const others = hand(g).filter((c) => c.id !== forge(g) && !(c.kind === 'industry' && c.industry === 'brewery'));
     expect(got.played).toEqual([spareCard(g, 0, others)!.id]);
     expect(got.kept).toEqual([forge(g)]);
     expect(got.lesson).toBe('link');
     /* and the engine takes it */
     expect(applyAction(g, 0, got.action!).state).not.toBeNull();
+  });
+
+  it('pays with the brewery card only when no other card will do, or a brewery stands', () => {
+    const g = dudley();
+    const beer = cardOf(g, (c) => c.kind === 'industry' && c.industry === 'brewery');
+    const canal: GameAction = { kind: 'network', card: forge(g), link: 'birmingham--dudley' };
+    /* the brewery card is the one the search would spare: fewest builds */
+    expect(spareCard(g, 0, hand(g).filter((c) => c.id !== forge(g)))!.id).toBe(beer);
+    expect(spareFor(g, 0, canal, [keepOf('link', g, 0)]).played).not.toContain(beer);
+    /* the forge card and the brewery card alone: the brewery card pays */
+    const two = dudley();
+    two.players[0].hand = hand(two).filter((c) => c.id === forge(two) || c.id === beer);
+    expect(spareFor(two, 0, canal, [keepOf('link', two, 0)]).played).toEqual([beer]);
+    /* a brewery of the reader's on the board: the card is spared like any other */
+    const built = dudley();
+    built.tiles['birmingham:0'] = { owner: 0, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    expect(spareFor(built, 0, canal, [keepOf('link', built, 0)]).played).toEqual([spareCard(built, 0, hand(built).filter((c) => c.id !== forge(built)))!.id]);
   });
 
   it('spares the forge card from a loan and a pass as well', () => {
