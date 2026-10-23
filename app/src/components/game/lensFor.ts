@@ -89,15 +89,16 @@ function forgeCanals(g: GameState, me: number): string[] {
   return LINKS.filter((l) => ofEra(g, l) && !g.links[l.id] && mines.some((m) => ends(l).includes(m) && ends(l).some((x) => x !== m && forgesFrom(g, me, m).includes(x)))).map((l) => l.id);
 }
 
-/** the places a card builds the lesson's tiles on, those the advice
- *  would take first scoring above nought: the first lit strongest, and
- *  the camera sent to the best of them */
-function places(targets: readonly BuildTarget[], score: (t: BuildTarget) => number): Lens | null {
-  if (!targets.length) return null;
-  const slots = unique(targets.map((t) => tileKey(t.town, t.slot)));
-  const first = unique(targets.filter((t) => score(t) > 0).map((t) => tileKey(t.town, t.slot)));
-  const best = bestOf(targets, score)!;
-  return { slots, ...(first.length && first.length < slots.length ? { first } : {}), at: best.town };
+/** every place a card builds on stays lit — the lens forbids none — and
+ *  the lesson's own lit strongest: those its advice would take first,
+ *  scoring above nought, else all of them; the camera sent to the best */
+function places(all: readonly BuildTarget[], ours: readonly BuildTarget[], score: (t: BuildTarget) => number): Lens | null {
+  if (!ours.length) return null;
+  const slots = unique(all.map((t) => tileKey(t.town, t.slot)));
+  const taken = ours.filter((t) => score(t) > 0);
+  const first = unique((taken.length ? taken : ours).map((t) => tileKey(t.town, t.slot)));
+  const best = bestOf(ours, score)!;
+  return { slots, ...(first.length < slots.length ? { first } : {}), at: best.town };
 }
 
 export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens | null {
@@ -108,13 +109,15 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
   /* a move being chosen: its own places are lit, by the board */
   const choosing = !!card && !!verb;
   const mine = (pred: (t: GameState['tiles'][string]) => boolean) => Object.entries(g.tiles).filter(([, t]) => t.owner === me && pred(t)).map(([k]) => k);
-  /* the lesson's tiles where the card chosen builds them: the hand rung
-     until a card is chosen, the verb until it is Build */
-  const sites = (inds: readonly string[], score: (t: BuildTarget, all: readonly BuildTarget[]) => number): Lens | null => {
+  /* the lesson's tiles where the card chosen builds them, among the
+     other places it builds on: the hand rung until a card is chosen, the
+     verb until it is Build */
+  const sites = (inds: readonly string[], score: (t: BuildTarget, ours: readonly BuildTarget[]) => number): Lens | null => {
     if (!card) return { hud: 'hand' };
     if (verb !== 'build') return { hud: 'build' };
-    const all = buildTargets(g, me, card).filter((t) => t.valid && inds.includes(t.industry));
-    return places(all, (t) => score(t, all));
+    const all = buildTargets(g, me, card).filter((t) => t.valid);
+    const ours = all.filter((t) => inds.includes(t.industry));
+    return places(all, ours, (t) => score(t, ours));
   };
   /* a works where the links laid already run to its buyer — else where
      one more link would; the cheapest of them for the camera */
@@ -125,8 +128,8 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return near.get(t.industry)!.get(t.town) ?? Infinity;
     };
     let nearest: number | null = null;
-    return sites(WORKS, (t, all) => {
-      nearest ??= Math.min(...all.map(dist));
+    return sites(WORKS, (t, ours) => {
+      nearest ??= Math.min(...ours.map(dist));
       return (dist(t) === nearest && nearest <= 1 ? 1 : 0) - t.total / 1000;
     });
   };

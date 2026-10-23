@@ -61,6 +61,19 @@ describe('the lens of the lesson on coal', () => {
     /* Wolverhampton: Walsall, Coalbrookdale and Dudley by one canal each */
     expect(lensFor('coal', ctx(g, coalCard(g), 'build'))!.at).toBe('wolverhampton');
   });
+
+  it('leaves every other place of the card lit, the mines first', () => {
+    const g = table();
+    const wild = give(g, { id: 'wl', kind: 'wild-location' });
+    const lens = lensFor('coal', ctx(g, wild, 'build'))!;
+    /* a brewery's place is no mine's, and stays open all the same */
+    expect(lens.slots).toContain('uttoxeter:0');
+    expect(lens.first).not.toContain('uttoxeter:0');
+    expect(lens.first).toContain('wolverhampton:1');
+    /* no mine of the town leads to a forge: its mine comes first all the same */
+    const town = give(g, { id: 'cb', kind: 'location', town: 'coalbrookdale' });
+    expect(lensFor('coal', ctx(g, town, 'build'))).toEqual({ slots: ['coalbrookdale:0', 'coalbrookdale:2'], first: ['coalbrookdale:2'], at: 'coalbrookdale' });
+  });
 });
 
 describe('the lens of the lesson on links', () => {
@@ -149,7 +162,10 @@ describe('the lens of the aims', () => {
     g.tiles['worcester:0'] = tile(0, 'cotton');
     expect(lensFor('reach', ctx(g))?.links).toEqual(['birmingham--worcester']);
     const card = give(g, { id: 'wl', kind: 'wild-location' });
-    expect(lensFor('reach', ctx(g, card, 'build'))?.first).toEqual(['birmingham:0']);
+    const lens = lensFor('reach', ctx(g, card, 'build'))!;
+    expect(lens.first).toEqual(['birmingham:0']);
+    /* the card's other places, a brewery's among them, stay lit */
+    expect(lens.slots).toContain('stafford:0');
   });
 
   it('barrel: the merchants who keep one, and the sales that drink it first', () => {
