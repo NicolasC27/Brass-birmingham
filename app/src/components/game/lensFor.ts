@@ -1,5 +1,5 @@
 import { LINKS, MERCHANTS } from '@/game/data';
-import { buildTargets, merchantDemand, merchantOpen, sellTargets, tileKey } from '@/game/engine';
+import { buildTargets, linkTargets, merchantDemand, merchantOpen, reachable, sellTargets, tileKey } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import type { HudLens, Lens } from '@/game/store';
 import type { GameState, IndustryType, LinkDef } from '@/game/types';
@@ -17,6 +17,8 @@ import { forgesFrom } from './lessonWords';
 /* ------------------------------------------------------------------ */
 
 const WORKS: readonly string[] = ['cotton', 'manufacturer', 'pottery'];
+/** the refusal of a link out of the reader's reach: no network touches it */
+const OUT_OF_REACH = 'Link must touch your network';
 
 const townOf = (key: string): string => key.split(':')[0];
 const unique = (keys: string[]): string[] => [...new Set(keys)];
@@ -55,6 +57,30 @@ export function linksToBuyer(g: GameState, industry: IndustryType): Map<string, 
   return dist;
 }
 
+/** the links the reader could lay that bring a works of theirs, unsold
+ *  and with no buyer at the end of the links laid, one link nearer to
+ *  one: the missing canal, when a single one will do — the first of the
+ *  way, when more are wanted. Only a link that touches the reader's
+ *  network: another's is theirs to lay */
+export function missingLinks(g: GameState, me: number): string[] {
+  const layable = new Set(linkTargets(g, me).filter((x) => x.reason !== OUT_OF_REACH).map((x) => x.link.id));
+  const out: string[] = [];
+  for (const [key, tile] of Object.entries(g.tiles)) {
+    if (tile.owner !== me || tile.flipped || !WORKS.includes(tile.industry)) continue;
+    const dist = linksToBuyer(g, tile.industry);
+    const town = townOf(key);
+    const d = dist.get(town);
+    if (d === undefined || d === 0) continue;
+    const here = reachable(g, town, g.era, null);
+    for (const l of LINKS) {
+      if (!layable.has(l.id) || out.includes(l.id)) continue;
+      const e = ends(l);
+      if (e.some((x) => here.has(x)) && e.some((x) => !here.has(x) && dist.get(x) === d - 1)) out.push(l.id);
+    }
+  }
+  return out;
+}
+
 /** the places a card builds the lesson's tiles on, those the advice
  *  would take first scoring above nought: the first lit strongest, and
  *  the camera sent to the best of them */
@@ -71,6 +97,8 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
   if (!stepId || me < 0 || !g.players[me]) return null;
   const card = c.sel ? (g.players[me].hand.find((x) => x.id === c.sel) ?? null) : null;
   const verb = c.verb ?? null;
+  /* a move being chosen: its own places are lit, by the board */
+  const choosing = !!card && !!verb;
   const mine = (pred: (t: GameState['tiles'][string]) => boolean) => Object.entries(g.tiles).filter(([, t]) => t.owner === me && pred(t)).map(([k]) => k);
   /* the lesson's tiles where the card chosen builds them: the hand rung
      until a card is chosen, the verb until it is Build */
@@ -93,6 +121,14 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       nearest ??= Math.min(...all.map(dist));
       return (dist(t) === nearest && nearest <= 1 ? 1 : 0) - t.total / 1000;
     });
+  };
+  /* the canal that is missing toward a buyer: Network rung, the canal lit */
+  const toBuyer = (): Lens | null => {
+    const links = missingLinks(g, me);
+    if (!links.length) return null;
+    if (choosing && verb !== 'network' && verb !== 'sell') return { hud: 'network' };
+    const hud: HudLens | undefined = !card ? 'hand' : verb === 'network' ? undefined : 'network';
+    return { links, at: links[0], ...(hud ? { hud } : {}) };
   };
   switch (stepId) {
     case 'goal':
@@ -127,7 +163,7 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     case 'sell': {
       /* the works that will sell — never one that will not */
       const ok = unique(sellTargets(g, me).filter((x) => x.valid).map((x) => tileKey(x.town, x.slot)));
-      if (!ok.length) return verb === 'sell' ? null : { hud: card ? 'sell' : 'hand' };
+      if (!ok.length) return toBuyer() ?? (verb === 'sell' ? null : { hud: card ? 'sell' : 'hand' });
       if (verb && verb !== 'sell') return card ? { hud: 'sell' } : null;
       const hud: HudLens | undefined = !card ? 'hand' : verb ? undefined : 'sell';
       return { slots: ok, at: townOf(ok[0]), ...(hud ? { hud } : {}) };
@@ -136,6 +172,9 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       const keys = mine((t) => t.flipped);
       return keys.length ? { slots: keys, at: keys[0].split(':')[0] } : null;
     }
+    case 'reach':
+      /* a works built where its buyer is linked, or the link to lay */
+      return card && verb === 'build' ? works() : toBuyer();
     case 'loan':
       return { hud: 'loan' };
     case 'develop':

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { withEdition } from '@/game/actions';
 import { newGame } from '@/game/engine';
 import type { Card, GameState, SetupPayload, TileState, Verb } from '@/game/types';
-import { lensFor, linksToBuyer } from '../lensFor';
+import { lensFor, linksToBuyer, missingLinks } from '../lensFor';
 
 /* The lens of each lesson, on the guided game's deal (seed 3, two seats):
    Shrewsbury buys cotton, by Coalbrookdale; Oxford buys everything, by
@@ -113,6 +113,30 @@ describe('the lens of the lesson on selling', () => {
     expect(lensFor('sell', ctx(g, card, 'sell'))).toEqual({ slots: ['worcester:0'], at: 'worcester' });
     /* another move chosen: the lens leaves it its own places */
     expect(lensFor('sell', ctx(g, card, 'build'))).toEqual({ hud: 'sell' });
+  });
+
+  it('lights the canal missing toward the buyer, when nothing sells', () => {
+    const g = table();
+    g.tiles['worcester:0'] = tile(0, 'cotton');
+    const card = g.players[0].hand[0].id;
+    expect(missingLinks(g, 0)).toEqual(['birmingham--worcester']);
+    expect(lensFor('sell', ctx(g))).toEqual({ links: ['birmingham--worcester'], at: 'birmingham--worcester', hud: 'hand' });
+    expect(lensFor('sell', ctx(g, card, 'network'))).toEqual({ links: ['birmingham--worcester'], at: 'birmingham--worcester' });
+    /* Sell chosen with nothing to sell: the canal, and Network rung */
+    expect(lensFor('sell', ctx(g, card, 'sell'))).toEqual({ links: ['birmingham--worcester'], at: 'birmingham--worcester', hud: 'network' });
+    /* one canal laid, the next one on the way */
+    link(g, 'birmingham--worcester', 0);
+    expect(missingLinks(g, 0)).toEqual(['birmingham--m-oxford']);
+  });
+});
+
+describe('the lens of the aims', () => {
+  it('reach: the missing link, or a works built where its buyer is linked', () => {
+    const g = table();
+    g.tiles['worcester:0'] = tile(0, 'cotton');
+    expect(lensFor('reach', ctx(g))?.links).toEqual(['birmingham--worcester']);
+    const card = give(g, { id: 'wl', kind: 'wild-location' });
+    expect(lensFor('reach', ctx(g, card, 'build'))?.first).toEqual(['birmingham:0']);
   });
 });
 
