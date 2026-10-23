@@ -78,9 +78,8 @@ export default function AskGuide({ className }: { className?: string }) {
     setQuestion('');
     const got = answerQuestion(q, table, t, lang, passages);
     /* what to play is the note's to answer, on the reader's turn: its
-       plate, not this one, carries the machine's move */
-    const machine = game?.players.find((p) => p.isBot)?.name ?? '';
-    const a = got.intent === 'do' ? t('game.guide.ask.answer.doTool', { ask: t('game.guide.suggest.ask', { name: machine }) }) : got.answer;
+       plate, not this one, carries the expert's move */
+    const a = got.intent === 'do' ? t('game.guide.ask.answer.doTool', { ask: t('game.guide.suggest.ask') }) : got.answer;
     setThread((prev) => [...prev.slice(-5), { q, a, near: got.near.length ? got.near : undefined }]);
   };
   /* a notion taken up from the ones offered: asked by its name */

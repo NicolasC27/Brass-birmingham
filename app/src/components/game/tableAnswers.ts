@@ -169,7 +169,7 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
       return t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...g.players.map((x) => x.vp)) });
     case 'do':
     default:
-      return t('game.guide.ask.answer.do', { name: g.players.find((x) => x.isBot)?.name ?? '' });
+      return t('game.guide.ask.answer.do');
   }
 }
 

@@ -355,8 +355,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
      log: the length of the log moves with every entry and would bring
      the plate back after each move of one's own */
   const [botHidden, setBotHidden] = useState<number>(-1);
-  /* what the machine would play in the reader's seat, asked for one
-     position: the index of the action to come names it */
+  /* what an expert would play in the reader's seat — the search at full
+     strength, not the machine at the table — asked for one position: the
+     index of the action to come names it */
   const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean } | null>(null);
   const setBotHold = useGame((s) => s.setBotHold);
   const coachHold = useGame((s) => s.coachHold);
@@ -679,7 +680,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
   };
-  /* the machine's name at the table, for the words of the advice */
+  /* the machine's name at the table, for the note's word that it waits */
   const machine = game.players.find((x) => x.isBot)?.name ?? '';
   const here = game.actions.length;
   const advised = advice && advice.at === here ? advice : null;
@@ -978,7 +979,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                       )}
                       {myTurn && !advised && (
                         <button type="button" onClick={ask} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-bottle-600 hover:text-ink-900">
-                          <Sparkles className="h-3 w-3" /> {t('game.guide.suggest.ask', { name: machine })}
+                          <Sparkles className="h-3 w-3" /> {t('game.guide.suggest.ask')}
                         </button>
                       )}
                     </div>
@@ -1033,7 +1034,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                       <X className="h-3.5 w-3.5" />
                     </button>
                     {myTurn && !advised && (
-                      <button type="button" onClick={ask} aria-label={t('game.guide.suggest.ask', { name: machine })} title={t('game.guide.suggest.ask', { name: machine })} className="rounded-full p-0.5 text-bottle-600 hover:text-ink-900">
+                      <button type="button" onClick={ask} aria-label={t('game.guide.suggest.ask')} title={t('game.guide.suggest.ask')} className="rounded-full p-0.5 text-bottle-600 hover:text-ink-900">
                         <Sparkles className="h-3.5 w-3.5" />
                       </button>
                     )}
@@ -1142,20 +1143,20 @@ function Guide({ dock = 0 }: { dock?: number }) {
           </motion.aside>
         )}
 
-        {/* what the machine would play in the reader's seat, on request */}
+        {/* what an expert would play in the reader's seat, on request */}
         {advised && myTurn && (
           <motion.aside key={`advice-${here}`} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.suggest.aria')} style={{ maxHeight: dock ? undefined : band.height }} className="plate pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-2.5">
             <div className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-bottle-400" />
               <div className="min-w-0 flex-1">
-                <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-bottle-400">{t('game.guide.suggest.title', { name: machine })}</p>
+                <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-bottle-400">{t('game.guide.suggest.title')}</p>
                 {advised.busy ? (
-                  <p className="mt-0.5 font-serif text-[13px] italic text-cream-100/70">{t('game.guide.suggest.thinking', { name: machine })}</p>
+                  <p className="mt-0.5 font-serif text-[13px] italic text-cream-100/70">{t('game.guide.suggest.thinking')}</p>
                 ) : advised.action ? (
                   <>
                     <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{describeAction(advised.action)}</p>
                     <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">
-                      {t(`game.guide.suggest.why.${whyKey(advised.action)}`, { name: machine })}
+                      {t(`game.guide.suggest.why.${whyKey(advised.action)}`)}
                       {(() => {
                         /* a link to a merchant place with no merchant at this table: worth its
                            two link icons and the coal market all the same — say so */
@@ -1168,7 +1169,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     {dueStep && owed?.mode === 'do' && !spare && !asked(dueStep.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
-                  <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none', { name: machine })}</p>
+                  <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none')}</p>
                 )}
               </div>
               <button type="button" onClick={() => setAdvice(null)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
