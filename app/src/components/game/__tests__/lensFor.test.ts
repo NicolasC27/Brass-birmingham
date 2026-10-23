@@ -63,6 +63,19 @@ describe('the lens of the lesson on coal', () => {
   });
 });
 
+describe('the lens of the lesson on links', () => {
+  it('lights the canal from the reader’s mine to a forge town', () => {
+    const g = table();
+    g.tiles['wolverhampton:1'] = tile(0, 'coal', { cubes: 2 });
+    const card = g.players[0].hand[0].id;
+    const ways = ['walsall--wolverhampton', 'wolverhampton--coalbrookdale', 'wolverhampton--dudley'];
+    expect(lensFor('link', ctx(g))).toEqual({ hud: 'network', links: ways, at: ways[0] });
+    expect(lensFor('link', ctx(g, card, 'network'))).toEqual({ links: ways, at: ways[0] });
+    /* another move chosen: its own places, the verb rung */
+    expect(lensFor('link', ctx(g, card, 'build'))).toEqual({ hud: 'network' });
+  });
+});
+
 describe('the lens of the lesson on works', () => {
   const wild = (g: GameState) => give(g, { id: 'wl', kind: 'wild-location' });
 

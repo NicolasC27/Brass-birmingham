@@ -81,6 +81,13 @@ export function missingLinks(g: GameState, me: number): string[] {
   return out;
 }
 
+/** the canals that would carry the coal of a mine of the reader's to a
+ *  town with a forge slot free: the canal the lesson on links asks for */
+function forgeCanals(g: GameState, me: number): string[] {
+  const mines = Object.entries(g.tiles).filter(([, x]) => x.owner === me && x.industry === 'coal').map(([key]) => townOf(key));
+  return LINKS.filter((l) => ofEra(g, l) && !g.links[l.id] && mines.some((m) => ends(l).includes(m) && ends(l).some((x) => x !== m && forgesFrom(g, me, m).includes(x)))).map((l) => l.id);
+}
+
 /** the places a card builds the lesson's tiles on, those the advice
  *  would take first scoring above nought: the first lit strongest, and
  *  the camera sent to the best of them */
@@ -148,8 +155,12 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return { hud: 'rail-bot' };
     case 'payday':
       return { hud: 'income' };
-    case 'link':
-      return card && verb === 'network' ? null : { hud: 'network' };
+    case 'link': {
+      /* the canal from the reader's mine to a forge town, over the others */
+      const links = forgeCanals(g, me);
+      if (card && verb === 'network') return links.length ? { links, at: links[0] } : null;
+      return choosing ? { hud: 'network' } : { hud: 'network', ...(links.length ? { links, at: links[0] } : {}) };
+    }
     case 'works':
       return works();
     case 'market':
