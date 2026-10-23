@@ -122,6 +122,10 @@ describe('a deed the table does not allow', () => {
     const b = blockedBy('iron', g, 0, fr, 'fr')!;
     const why = fr('game.guide.blocked.whyAt', { town: 'Redditch, Coventry et Dudley', why: reasonText('No connected coal — reach a mine or a merchant', 'fr') });
     expect(b.text).toBe(`${fr('game.guide.blocked.ironNow')} ${why} ${fr('game.guide.blocked.cardAt', { towns: 'Derby' })}`);
+    /* no card in hand for a forge at all: the criteria, and the town all the same */
+    const brewer = structuredClone(g);
+    brewer.players[0].hand = [{ id: 'x4', kind: 'industry', industry: 'brewery' } as Card];
+    expect(blockedBy('iron', brewer, 0, fr, 'fr')!.text).toBe(`${fr('game.guide.blocked.ironCard')} ${fr('game.guide.blocked.cardAt', { towns: 'Derby' })}`);
     /* with the Derby card in hand the forge can be built: nothing blocks */
     g.players[0].hand.push({ id: 'derby', kind: 'location', town: 'derby' } as Card);
     expect(blockedBy('iron', g, 0, fr, 'fr')).toBeNull();

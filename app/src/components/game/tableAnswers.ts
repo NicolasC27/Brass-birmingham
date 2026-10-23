@@ -78,11 +78,11 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
       const why = t(`game.guide.blocked.${id}Money`, { ...vars, need: Math.min(...dear.map((x) => x.total)) });
       return { short: why, text: `${why} ${advice()}`, money: true };
     }
-    const best = refusalOf(targets)?.reason;
-    if (!best || onTheCard(best)) return plain(t(`game.guide.blocked.${id}Card`, vars));
     /* the cards in hand point elsewhere, and a town of the network waits for one */
     const opens = openedByACard(g, me, inds);
     const card = !opens.length ? '' : opens.length > NAMED ? ` ${t('game.guide.blocked.cardIn')}` : ` ${t('game.guide.blocked.cardAt', { towns: list(opens.map(nameOf), 'disjunction') })}`;
+    const best = refusalOf(targets)?.reason;
+    if (!best || onTheCard(best)) return plain(`${t(`game.guide.blocked.${id}Card`, vars)}${card}`);
     return plain(`${t(`game.guide.blocked.${id}Now`)} ${tableSays(best, targets, (x) => x.town, t, say, list)}${card}`);
   }
   if (id === 'link') {
