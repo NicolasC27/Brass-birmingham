@@ -2244,12 +2244,14 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     if (!scene) return;
     /* what stays lit, by priority: the beginner aid's playable slots while
        planning, a hovered player's network, and with the aid the tiles a
-       hovered merchant would buy — otherwise everything. Without the aid a
-       plan dims nothing: its candidates wear their own marks */
+       hovered merchant would buy — then the places the guide's lesson is
+       about — otherwise everything. Without the aid a plan dims nothing:
+       its candidates wear their own marks */
     const aid = aidOn(game.assist, code !== null);
-    if (lens?.slots?.length) {
-      /* the guide's lesson names the places it is about: they alone stay
-         lit, the ones its advice would take first at full strength */
+    const planning = !!selectedCardId && (verb === 'build' || verb === 'sell');
+    if (planning && lens?.slots?.length) {
+      /* the lesson grades the move's places: the ones its advice would
+         take first at full strength, the others a little weaker */
       scene.setHighlight(lens.slots, lens.first);
     } else if (aid && selectedCardId && verb === 'build') {
       scene.setHighlight([...new Set(targets.filter((t) => t.valid).map((t) => tileKey(t.town, t.slot)))]);
@@ -2262,6 +2264,9 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
     } else if (aid && hoverMerchantDef && merchantOpen(game, hoverMerchantDef.id) && viewerIdx >= 0) {
       const keys = [...new Set(sellableHere.map((s) => tileKey(s.town, s.slot)))];
       scene.setHighlight(keys);
+    } else if (lens?.slots?.length) {
+      /* the places the lesson is about, while no hover asks for others */
+      scene.setHighlight(lens.slots, lens.first);
     } else scene.setHighlight(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoverMerchant, game.ledgerSeq, idle, netPeek, opts.beginnerAid, game.assist, code, selectedCardId, verb, targets, sellTargetsList, lens]);
