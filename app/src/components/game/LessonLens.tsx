@@ -9,21 +9,22 @@ export default function LessonLens({ stepId, active }: { stepId: string | null |
   const seat = useGame((s) => s.seat);
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
+  const matPlayer = useGame((s) => s.matPlayer);
   const setLens = useGame((s) => s.setLens);
   const flyToRegion = useGame((s) => s.flyToRegion);
   const me = seat ?? (game ? game.players.findIndex((p) => !p.isBot) : -1);
-  const lens = useMemo(() => (active && game ? lensFor(stepId, game, me, selectedCardId, verb) : null), [active, game, me, stepId, selectedCardId, verb]);
+  const lens = useMemo(() => (active && game ? lensFor(stepId, { g: game, me, sel: selectedCardId, mat: matPlayer, verb }) : null), [active, game, me, stepId, selectedCardId, matPlayer, verb]);
   useEffect(() => {
     setLens(lens);
     return () => setLens(null);
   }, [lens, setLens]);
-  /* the camera comes to the lesson's town when the lesson changes, not at
-     every move — nor away from a place already picked, when the lesson
-     comes back from a page its build called for */
-  const town = lens?.town ?? null;
+  /* the camera comes to the lesson's best place when the lesson changes,
+     not at every move — nor away from a place already picked, when the
+     lesson comes back from a page its build called for */
+  const at = lens?.at ?? null;
   useEffect(() => {
-    if (town && !useGame.getState().buildPick) flyToRegion(town);
+    if (at && !useGame.getState().buildPick) flyToRegion(at);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stepId, !!town]);
+  }, [stepId, !!at]);
   return null;
 }

@@ -1834,11 +1834,12 @@ export const useShownGame = (): GameState | null => useGame((s) => s.review?.sta
 
 /** a part of the HUD a lesson points at (a `data-lens` mark on the element) */
 export type HudLens = 'vp' | 'market' | 'mat' | 'hand' | 'rail' | 'rail-bot' | 'income' | 'ledger' | 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
-/** what a lesson lights: slots of the map (their keys), a part of the HUD, a town to fly to */
+/** what a lesson lights: slots of the map (their keys), a part of the
+ *  HUD, and where the camera comes: a town, a merchant or a link */
 export interface Lens {
   slots?: string[];
   hud?: HudLens;
-  town?: string;
+  at?: string;
 }
 
 export interface Unless {

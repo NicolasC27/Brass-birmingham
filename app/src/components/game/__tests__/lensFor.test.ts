@@ -23,9 +23,10 @@ function table(): GameState {
 describe('the lens of the lesson on beer', () => {
   it('lights the breweries, and leaves a sale being chosen its own places', () => {
     const g = table();
-    const card = g.players[0].hand[0].id;
-    expect(lensFor('beer', g, 0, card, null)).toEqual({ slots: ['stone:0'], town: 'stone' });
-    expect(lensFor('beer', g, 0, card, 'build')).toEqual({ slots: ['stone:0'], town: 'stone' });
-    expect(lensFor('beer', g, 0, card, 'sell')).toBeNull();
+    const sel = g.players[0].hand[0].id;
+    const c = { g, me: 0, sel, mat: null };
+    expect(lensFor('beer', { ...c, verb: null })).toEqual({ slots: ['stone:0'], at: 'stone' });
+    expect(lensFor('beer', { ...c, verb: 'build' })).toEqual({ slots: ['stone:0'], at: 'stone' });
+    expect(lensFor('beer', { ...c, verb: 'sell' })).toBeNull();
   });
 });
