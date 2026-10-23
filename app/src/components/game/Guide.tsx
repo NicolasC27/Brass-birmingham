@@ -29,6 +29,7 @@ import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
+import { hasPlace, placeLens } from './expertAdvice';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -357,8 +358,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const [botHidden, setBotHidden] = useState<number>(-1);
   /* what an expert would play in the reader's seat — the search at full
      strength, not the machine at the table — asked for one position: the
-     index of the action to come names it */
-  const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean } | null>(null);
+     index of the action to come names it. Given by degrees: the reason,
+     then, asked again, the place; the move set up in the hand last */
+  const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean; place: boolean } | null>(null);
   const setBotHold = useGame((s) => s.setBotHold);
   const coachHold = useGame((s) => s.coachHold);
   const setGlimpse = useGame((s) => s.setGlimpse);
@@ -517,6 +519,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
   const lensId = showSteps && !spare ? step?.id : null;
+  /* the expert's move, its place once asked for: lit in the lesson's
+     stead while the plate is up */
+  const placeLit = useMemo(() => (aid && myTurn && game && advice?.place && advice.action && advice.at === game.actions.length ? placeLens(advice.action) : null), [aid, myTurn, game, advice]);
   /* × on the tips note hides the tips alone: in the lane the machine's
      reasons are its turns of the conversation, and stay */
   const showBot = bot && botHidden !== bot.id && (guided || dock > 0 || !hidden);
@@ -535,11 +540,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
   useEffect(() => {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
-  /* the lane reads like a conversation: the newest turn is the one in view */
+  /* the lane reads like a conversation: the newest turn is the one in view
+     — and the expert's plate, as it answers and at each degree asked */
   useEffect(() => {
     const el = box.current;
     if (dock && el) el.scrollTop = el.scrollHeight;
-  }, [dock, said.length, shownId, game?.ledgerSeq]);
+  }, [dock, said.length, shownId, game?.ledgerSeq, advice]);
 
   /* a lesson, a move of hers or an event that is no longer the live one
      is filed into the thread, worded as it was when it was read: one pure
@@ -684,8 +690,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const machine = game.players.find((x) => x.isBot)?.name ?? '';
   const here = game.actions.length;
   const advised = advice && advice.at === here ? advice : null;
+  const move = advised?.action ?? null;
   const ask = () => {
-    setAdvice({ at: here, action: null, busy: true });
+    setAdvice({ at: here, action: null, busy: true, place: false });
     /* the search thinks on the thread that paints: let the note say so first */
     window.setTimeout(() => {
       const g = useGame.getState().game;
@@ -693,8 +700,15 @@ function Guide({ dock = 0 }: { dock?: number }) {
       /* the search itself, at full strength: the machines' own entry point
          caps a human seat under assist and blurs its reading */
       const a = searchTurn(g, me, { budgetMs: 400, strength: 1 })?.action ?? null;
-      setAdvice({ at: here, action: a, busy: false });
+      setAdvice({ at: here, action: a, busy: false, place: false });
     }, 30);
+  };
+  /* the second degree: where the move is played, lit on the board and
+     the camera brought there */
+  const showPlace = () => {
+    setAdvice((prev) => (prev ? { ...prev, place: true } : prev));
+    const at = move ? placeLens(move)?.at : undefined;
+    if (at) useGame.getState().flyToRegion(at);
   };
   /* the advised move, set up in the hand as if the reader had chosen it;
      the confirm bar is theirs */
@@ -779,7 +793,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const got = answerQuestion(q, { g: game, me }, t, getLang(), passages);
     if (got.near.length) setNearFor((prev) => ({ ...prev, [q]: got.near }));
     setThread((prev) => askThread(prev, q, got.answer));
-    if (got.intent === 'do' && myTurn && !advised) ask();
+    if (got.intent === 'do' && aid && myTurn && !advised) ask();
   };
   /* a notion taken up from the ones offered: asked by its name, answered
      plainly */
@@ -832,7 +846,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       )}
       style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
     >
-      <LessonLens stepId={lensId} active={showSteps} />
+      <LessonLens stepId={lensId} active={showSteps} over={placeLit} />
       {dock > 0 && (
         <div className="flex shrink-0 items-center gap-2 pb-1">
           <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
@@ -977,7 +991,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                         </button>
                       )}
-                      {myTurn && !advised && (
+                      {aid && myTurn && !advised && (
                         <button type="button" onClick={ask} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-bottle-600 hover:text-ink-900">
                           <Sparkles className="h-3 w-3" /> {t('game.guide.suggest.ask')}
                         </button>
@@ -1033,7 +1047,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     <button type="button" onClick={() => setHidden(true)} aria-label={t('game.guide.hide')} title={t('game.guide.hide')} className="rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                       <X className="h-3.5 w-3.5" />
                     </button>
-                    {myTurn && !advised && (
+                    {aid && myTurn && !advised && (
                       <button type="button" onClick={ask} aria-label={t('game.guide.suggest.ask')} title={t('game.guide.suggest.ask')} className="rounded-full p-0.5 text-bottle-600 hover:text-ink-900">
                         <Sparkles className="h-3.5 w-3.5" />
                       </button>
@@ -1152,21 +1166,22 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-bottle-400">{t('game.guide.suggest.title')}</p>
                 {advised.busy ? (
                   <p className="mt-0.5 font-serif text-[13px] italic text-cream-100/70">{t('game.guide.suggest.thinking')}</p>
-                ) : advised.action ? (
+                ) : move ? (
                   <>
-                    <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{describeAction(advised.action)}</p>
+                    {/* the reason first; the move itself, and where, once asked for */}
+                    {advised.place && <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{describeAction(move)}</p>}
                     <p className="mt-1 font-serif text-[13px] leading-snug text-cream-100/90">
-                      {t(`game.guide.suggest.why.${whyKey(advised.action)}`)}
-                      {(() => {
+                      {t(`game.guide.suggest.why.${whyKey(move)}`)}
+                      {advised.place && (() => {
                         /* a link to a merchant place with no merchant at this table: worth its
                            two link icons and the coal market all the same — say so */
-                        if (advised.action.kind !== 'network') return null;
-                        const ends = [advised.action.link, advised.action.second].flatMap((id) => (id ? [LINKS.find((l) => l.id === id)] : [])).flatMap((l) => (l ? [l.a, l.b] : []));
+                        if (move.kind !== 'network') return null;
+                        const ends = [move.link, move.second].flatMap((id) => (id ? [LINKS.find((l) => l.id === id)] : [])).flatMap((l) => (l ? [l.a, l.b] : []));
                         const closed = ends.find((n) => MERCHANT_BY_ID[n] && !(game.merchantTiles[n]?.length));
                         return closed ? ` ${t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[closed].name })}` : null;
                       })()}
                     </p>
-                    {dueStep && owed?.mode === 'do' && !spare && !asked(dueStep.id, advised.action) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
+                    {dueStep && owed?.mode === 'do' && !spare && !asked(dueStep.id, move) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
                   <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none')}</p>
@@ -1176,8 +1191,15 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            {!advised.busy && advised.action && (
-              <button type="button" onClick={() => prepare(advised.action!)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+            {/* one degree more at each click: the place, then the move set up */}
+            {!advised.busy && move && !advised.place && (
+              <button type="button" onClick={showPlace} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+                {t(hasPlace(move) ? 'game.guide.suggest.where' : 'game.guide.suggest.show')}
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {!advised.busy && advised.place && move && (
+              <button type="button" onClick={() => prepare(move)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
                 {t('game.guide.suggest.prepare')}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

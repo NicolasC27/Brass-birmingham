@@ -1072,6 +1072,8 @@ const game = {
       title: 'In your seat, an expert would play',
       none: 'An expert sees nothing better than passing.',
       prepare: 'Set it up',
+      where: 'Show where',
+      show: 'Show the move',
       lesson: 'The lesson, for its part, asks for: {lesson}.',
       why: {
         coal: 'A cheap mine: its cubes feed the builds around it, and once they are gone it flips for income and points.',
@@ -1140,7 +1142,7 @@ const game = {
         moneyLastShort: 'You hold £{money}, and your income is at level {level}: this is the last round, and no payday will come any more. At the close of this short game £4 make 1 VP (up to 15), and that level is added to your points — or taken off them below zero.',
         rounds: 'Round {round} of {total}, so {left} to come in this era, and {actions} [actions|action|actions] left in your turn.',
         win: 'Points come from flipped tiles and from the link icons of the places your links touch. You are on {mine}, the table’s best is {best}.',
-        do: 'An expert is thinking it over in your seat — the answer comes up as a card below.',
+        do: 'An expert is thinking it over in your seat — the reason comes up as a card below; the place after, if you ask for it.',
         doTool: 'For advice on the move to play, ask the guide’s note on your turn: “{ask}”',
       },
     },

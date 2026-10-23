@@ -1074,6 +1074,8 @@ const fr: typeof engame = {
       title: 'À votre place, un expert jouerait',
       none: 'Un expert ne voit rien de mieux que passer.',
       prepare: 'Préparer ce coup',
+      where: 'Montrer où',
+      show: 'Montrer le coup',
       lesson: 'La leçon, elle, demande : {lesson}.',
       why: {
         coal: 'Une mine bon marché : ses cubes nourrissent les constructions autour, et une fois partis elle se retourne pour du revenu et des points.',
@@ -1142,7 +1144,7 @@ const fr: typeof engame = {
         moneyLastShort: 'Vous avez {money} £ en caisse, et un revenu de niveau {level} : c’est la dernière manche, aucune paie ne viendra plus. À la clôture de cette partie courte, 4 £ valent 1 PV (15 au plus), et ce niveau s’ajoute à vos points — ou s’en retranche sous zéro.',
         rounds: 'Manche {round} sur {total}, donc {left} à venir dans cette ère, et {actions} [actions|action restante|actions restantes] dans votre tour.',
         win: 'Les points viennent des tuiles retournées et des icônes lien des lieux que vos liaisons touchent. Vous en êtes à {mine}, le meilleur de la table à {best}.',
-        do: 'Un expert réfléchit à votre place — la réponse arrive en plaque juste en dessous.',
+        do: 'Un expert réfléchit à votre place — sa raison arrive en plaque juste en dessous ; le lieu ensuite, si vous le demandez.',
         doTool: 'Pour un conseil sur le coup à jouer, demandez-le à la note du guide, à votre tour : « {ask} »',
       },
     },

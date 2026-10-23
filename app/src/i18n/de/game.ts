@@ -1074,6 +1074,8 @@ const game: typeof engame = {
       title: 'An deiner Stelle würde ein Experte spielen',
       none: 'Ein Experte sieht nichts Besseres als Passen.',
       prepare: 'Zug vorbereiten',
+      where: 'Zeigen, wo',
+      show: 'Den Zug zeigen',
       lesson: 'Die Lektion verlangt ihrerseits: {lesson}.',
       why: {
         coal: 'Eine billige Mine: ihre Würfel versorgen die Bauten ringsum, und sind sie weg, dreht sie sich um für Einkommen und Punkte.',
@@ -1142,7 +1144,7 @@ const game: typeof engame = {
         moneyLastShort: 'Du hast £{money} in der Kasse, und dein Einkommen steht auf Stufe {level}: dies ist die letzte Runde, kein Zahltag kommt mehr. Beim Abschluss dieser kurzen Partie bringen je £4 1 SP (höchstens 15), und diese Stufe wird deinen Punkten zugezählt — unter null von ihnen abgezogen.',
         rounds: 'Runde {round} von {total}, also {left} noch in dieser Zeit, und {actions} [actions|Aktion|Aktionen] in deinem Zug.',
         win: 'Punkte kommen von umgedrehten Plättchen und von den Verbindungssymbolen der Orte, die deine Verbindungen berühren. Du stehst bei {mine}, der Beste am Tisch bei {best}.',
-        do: 'Ein Experte überlegt an deiner Stelle — die Antwort kommt gleich darunter als Tafel.',
+        do: 'Ein Experte überlegt an deiner Stelle — der Grund kommt gleich darunter als Tafel; der Ort danach, wenn du ihn wissen willst.',
         doTool: 'Für einen Rat zum nächsten Zug frag die Notiz des Tutorials, wenn du am Zug bist: „{ask}“',
       },
     },

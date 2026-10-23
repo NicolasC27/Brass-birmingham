@@ -1,10 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import { projectQueued, useGame } from '@/game/store';
+import type { Lens } from '@/game/store';
 import { lensFor } from './lensFor';
 
 
-/** keeps the store's lens on the lesson at hand, and flies the camera to it once */
-export default function LessonLens({ stepId, active }: { stepId: string | null | undefined; active: boolean }) {
+/** keeps the store's lens on the lesson at hand, and flies the camera to it
+ *  once — or on `over`, the place of a move the guide was asked to show,
+ *  which lights in the lesson's stead while it is shown */
+export default function LessonLens({ stepId, active, over = null }: { stepId: string | null | undefined; active: boolean; over?: Lens | null }) {
   const game = useGame((s) => s.game);
   const seat = useGame((s) => s.seat);
   const selectedCardId = useGame((s) => s.selectedCardId);
@@ -18,7 +21,7 @@ export default function LessonLens({ stepId, active }: { stepId: string | null |
   /* the table the plan is made on, as the board's marks are: with moves
      already prepared, the one they leave */
   const plan = useMemo(() => (game && preparing && queued.length && me >= 0 && game.phase === 'action' ? projectQueued(game, me, queued) : game), [game, preparing, queued, me]);
-  const lens = useMemo(() => (active && plan ? lensFor(stepId, { g: plan, me, sel: selectedCardId, mat: matPlayer, verb }) : null), [active, plan, me, stepId, selectedCardId, matPlayer, verb]);
+  const lens = useMemo(() => over ?? (active && plan ? lensFor(stepId, { g: plan, me, sel: selectedCardId, mat: matPlayer, verb }) : null), [over, active, plan, me, stepId, selectedCardId, matPlayer, verb]);
   useEffect(() => {
     setLens(lens);
     return () => setLens(null);

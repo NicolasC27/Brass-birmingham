@@ -1074,6 +1074,8 @@ const game: typeof engame = {
       title: 'En tu lugar, un experto jugaría',
       none: 'Un experto no ve nada mejor que pasar.',
       prepare: 'Preparar la jugada',
+      where: 'Mostrar dónde',
+      show: 'Mostrar la jugada',
       lesson: 'La lección, por su parte, pide: {lesson}.',
       why: {
         coal: 'Una mina barata: sus cubos alimentan las construcciones de alrededor, y cuando se van se voltea para ingresos y puntos.',
@@ -1142,7 +1144,7 @@ const game: typeof engame = {
         moneyLastShort: 'Tienes {money} £ en caja, y tus ingresos están en el nivel {level}: es la última ronda, ya no vendrá ninguna paga. Al cierre de esta partida corta, cada 4 £ valen 1 PV (hasta 15), y ese nivel se suma a tus puntos — o se resta de ellos, bajo cero.',
         rounds: 'Ronda {round} de {total}, así que {left} por venir en esta era, y {actions} [actions|acción|acciones] en tu turno.',
         win: 'Los puntos vienen de las losetas volteadas y de los iconos de enlace de los lugares que tocan tus conexiones. Vas por {mine}, el mejor de la mesa por {best}.',
-        do: 'Un experto lo está pensando en tu lugar — la respuesta llega en una placa justo debajo.',
+        do: 'Un experto lo está pensando en tu lugar — la razón llega en una placa justo debajo; el lugar después, si lo pides.',
         doTool: 'Para un consejo sobre la jugada, pídeselo a la nota de la guía en tu turno: «{ask}»',
       },
     },
