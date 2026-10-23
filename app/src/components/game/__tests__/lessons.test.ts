@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { applyAction, fallbackAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { LINKS } from '@/game/data';
-import { buildTargets, canLoan, linkTargets, newGame, sellTargets } from '@/game/engine';
+import { LINKS, TOWNS } from '@/game/data';
+import { buildTargets, canLoan, ironSources, linkTargets, newGame, sellTargets } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
 import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
 import { stepKeyOf } from '../lessonWords';
@@ -625,6 +625,31 @@ describe('the pages the table calls for', () => {
     /* never chosen, it comes as the sale does, just before it */
     expect(lessonIndex('beer')).toBe(lessonIndex('sell') - 1);
     expect(due(pass(upTo('works'), 'works'), ctx(r2))).toMatchObject({ id: 'beer', mode: 'read' });
+  });
+
+  it('gives developing once an iron is within reach, or at once when Develop is chosen', () => {
+    const g = guided();
+    const purse = (money: number, s: GameState = g): GameState => ({ ...s, players: s.players.map((x, i) => (i === 0 ? { ...x, money } : x)) });
+    const p = upTo('develop');
+    /* no forge yet, but the market's iron at £2 and a purse that pays it */
+    expect(ironSources(g)).toEqual([]);
+    expect(due(p, ctx(g))).toMatchObject({ id: 'develop', mode: 'read' });
+    /* a purse that cannot: the page waits in its place, the loan goes on */
+    const broke = purse(1);
+    expect(due(p, ctx(broke))).toMatchObject({ id: 'loan', mode: 'do' });
+    /* a forge's iron on the board, whoever's, is free: it comes */
+    const forged = structuredClone(broke);
+    const at = TOWNS.flatMap((t) => t.slots.map((s, i) => ({ key: `${t.id}:${i}`, s }))).find((x) => x.s.allows.includes('iron'))!.key;
+    forged.tiles[at] = { owner: 1, industry: 'iron', level: 1, flipped: false, cubes: 2 };
+    expect(due(p, ctx(forged))).toMatchObject({ id: 'develop', mode: 'read' });
+    /* at the latest with the second half, whose advice is to develop */
+    expect(due(p, ctx({ ...broke, round: 5 }))).toMatchObject({ id: 'develop', mode: 'read' });
+    expect(lessonIndex('develop')).toBeLessThan(lessonIndex('plan'));
+    /* Develop chosen, however early and however broke: it is read then */
+    const q = see(upTo('coal'), 'coal', ctx(g));
+    const developing = ctx(broke, { sel: g.players[0].hand[0].id, verb: 'develop' });
+    expect(due(q, developing)).toMatchObject({ id: 'develop', mode: 'read' });
+    expect(settle(q, developing).seen.develop).toBeDefined();
   });
 });
 

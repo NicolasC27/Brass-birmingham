@@ -1,4 +1,5 @@
-import { buildTargets, eraRounds, sellTargets } from '@/game/engine';
+import { marketBuyPrice } from '@/game/data';
+import { buildTargets, eraRounds, ironSources, sellTargets } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import type { GameState, Verb } from '@/game/types';
 
@@ -111,6 +112,9 @@ const halfway = (c: LessonCtx): boolean => c.g.era === 'rail' || c.g.round >= Ma
 /** the game's last two rounds: the rail's, or a short game's canal */
 const closing = (c: LessonCtx): boolean => (c.g.era === 'rail' || c.g.eraLength === 'short') && c.g.round >= eraRounds(c.g.players.length) - 1;
 
+/** an iron the reader could take now: a forge's on the board, whoever's —
+ *  iron ships freely — or the market's, at a price the purse pays */
+const ironInReach = (c: LessonCtx): boolean => ironSources(c.g).length > 0 || c.g.players[c.me].money >= marketBuyPrice('iron', c.g.market.iron);
 /** the build being prepared buys a cube of its coal or its iron at the market */
 const buysAtMarket = (c: LessonCtx): boolean => !!c.pick && [...c.pick.coalPlan.sources, ...c.pick.ironPlan.sources].some((x) => x.kind === 'market');
 
@@ -151,7 +155,10 @@ export const LESSONS: readonly Lesson[] = [
      go untaught. The lessons on developing and on beer would read true
      either way; the chain before them would not */
   { id: 'iron', done: (c) => built(c, ['iron']), deferrable: true },
-  { id: 'develop' },
+  /* read once an iron is within reach — the forge's just built, as a
+     rule; with none it waits, at the latest for the second half, whose
+     advice is to develop. Develop chosen as a move calls for it at once */
+  { id: 'develop', when: (c) => ironInReach(c) || halfway(c), cue: (c) => c.verb === 'develop' },
   /* a mine, a canal and a forge leave the purse too thin for a works:
      the loan is taught before it, not met as a detour on the way — a
      purse that already pays for one may pass it, and a reader who wants
