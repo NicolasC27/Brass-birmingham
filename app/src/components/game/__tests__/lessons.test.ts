@@ -250,7 +250,9 @@ describe('reading back', () => {
   it('teaches the loan before the works, and detours to it from the mine, the canal and the forge', () => {
     const g = guided();
     const c = ctx(g);
-    expect(lessonIndex('loan')).toBe(lessonIndex('works') - 1);
+    /* at the latest, the market's page comes between: the works buy
+       their coal and their iron there when no mine or forge has any */
+    expect(LESSON_IDS.slice(lessonIndex('loan'), lessonIndex('works') + 1)).toEqual(['loan', 'market', 'works']);
     expect(due(pass(upTo('develop'), 'develop'), c)).toMatchObject({ id: 'loan', mode: 'do' });
     /* a deed before the loan short of money: the loan comes first */
     for (const id of ['coal', 'link', 'iron']) {
@@ -285,7 +287,7 @@ describe('the loan that can wait', () => {
     const p = pass(upTo('develop'), 'develop');
     /* a spare loan is a deed all the same: Next passes it, a loan does too */
     expect(due(p, ctx(g))).toMatchObject({ id: 'loan', mode: 'do' });
-    expect(due(pass(p, 'loan'), ctx(g))).toMatchObject({ id: 'works', mode: 'do' });
+    expect(due(pass(pass(p, 'loan'), 'market'), ctx(g))).toMatchObject({ id: 'works', mode: 'do' });
     const borrowed = play(g, { kind: 'loan', card: g.players[0].hand[0].id });
     expect(settle(see(p, 'loan', ctx(g)), ctx(borrowed)).passed.at(-1)).toBe('loan');
   });
@@ -311,8 +313,8 @@ describe('a lesson set aside', () => {
     expect(mayLater(p, 'works', ctx(played))).toBe(true);
     p = setAside(p, 'works', ctx(played));
     /* the lessons after it go on meanwhile */
-    expect(due(p, ctx(played))).toMatchObject({ id: 'market', mode: 'read' });
-    p = pass(pass(p, 'market'), 'beer');
+    expect(due(p, ctx(played))).toMatchObject({ id: 'beer', mode: 'read' });
+    p = pass(p, 'beer');
     expect(due(p, ctx(played))).toMatchObject({ id: 'sell', mode: 'do' });
     /* set aside, it is neither seen again nor offered to set aside again */
     expect(see(p, 'works', ctx(played))).toBe(p);
@@ -350,7 +352,7 @@ describe('a lesson set aside', () => {
     const r3 = theirs(built);
     expect(see(p, 'works', ctx(r3))).toBe(p);
     expect(mayLater(p, 'works', ctx(r3))).toBe(false);
-    expect(due(pass(p, 'works'), ctx(r3))).toMatchObject({ id: 'market' });
+    expect(due(pass(p, 'works'), ctx(r3))).toMatchObject({ id: 'beer' });
   });
 
   it('is offered on the deeds from the canal on, and turns to Skip in the last round', () => {
@@ -413,7 +415,8 @@ describe('the loan, never a trap', () => {
     const played = idle(thin);
     expect(mayLater(p, 'loan', ctx(played))).toBe(true);
     const q = setAside(p, 'loan', ctx(played));
-    expect(due(q, ctx(played))).toMatchObject({ id: 'works', mode: 'do' });
+    expect(due(q, ctx(played))).toMatchObject({ id: 'market', mode: 'read' });
+    expect(due(pass(q, 'market'), ctx(played))).toMatchObject({ id: 'works', mode: 'do' });
     /* a forge short of money with the loan set aside: no detour leads
        back to it — the forge's own lesson is shown, and its Skip */
     const f = setAside(upTo('iron'), 'loan', ctx(played));
@@ -428,7 +431,7 @@ describe('the loan, never a trap', () => {
     const thin = { ...r2, players: r2.players.map((x, i) => (i === 0 ? { ...x, money: 4 } : x)) };
     let p = see(upTo('loan'), 'loan', ctx(thin));
     const played = idle(thin);
-    p = setAside(p, 'loan', ctx(played));
+    p = pass(setAside(p, 'loan', ctx(played)), 'market');
     /* the works come up at once, and the thin purse builds none */
     expect(due(p, ctx(played))).toMatchObject({ id: 'works', mode: 'do' });
     expect(worksAt(played)).toEqual([]);
@@ -440,7 +443,7 @@ describe('the loan, never a trap', () => {
     p = setAside(p, 'works', ctx(played));
     expect(p.passed).not.toContain('works');
     /* the sale, with no works to sell: the same */
-    p = pass(pass(p, 'market'), 'beer');
+    p = pass(p, 'beer');
     expect(due(p, ctx(played))).toMatchObject({ id: 'sell', mode: 'do' });
     expect(sellTargets(played, 0).some((x) => x.valid)).toBe(false);
     const sell = see(p, 'sell', ctx(played));
@@ -534,6 +537,75 @@ describe('the last rounds', () => {
     expect(due(p, ctx({ ...r2, round: 9, eraLength: 'standard' }))).toMatchObject({ id: 'reach' });
     expect(due(p, ctx({ ...r2, round: 9, eraLength: 'standard', era: 'rail' }))).toMatchObject({ id: 'lastRounds' });
     expect(stepKeyOf('lastRounds', r2, 0)).toBe('lastRoundsShort');
+  });
+});
+
+describe('the pages the table calls for', () => {
+  /* the opening hand holds a brewery card: a brewery burns an iron, and
+     with no forge on the board the market sells it */
+  const brewing = (g: GameState) => {
+    const card = g.players[0].hand.find((c) => c.kind === 'industry' && c.industry === 'brewery')!;
+    const pick = buildTargets(g, 0, card).find((x) => x.valid && x.ironPlan.sources.some((s) => s.kind === 'market'))!;
+    return ctx(g, { sel: card.id, verb: 'build', pick });
+  };
+
+  it('cuts the market in as a build being prepared buys there, until it is read', () => {
+    const g = guided();
+    let p = see(upTo('coal'), 'coal', ctx(g));
+    /* a mine buys nothing: the lesson due stays */
+    const card = g.players[0].hand.find((c) => c.kind === 'industry' && c.industry === 'coal')!;
+    const pit = ctx(g, { sel: card.id, verb: 'build', pick: buildTargets(g, 0, card).find((x) => x.valid)! });
+    expect(due(p, pit)).toMatchObject({ id: 'coal', mode: 'do' });
+    expect(settle(p, pit)).toBe(p);
+    /* a brewery whose iron the market sells: its page first */
+    const buying = brewing(g);
+    expect(due(p, buying)).toMatchObject({ id: 'market', index: lessonIndex('market'), mode: 'read' });
+    p = settle(p, buying);
+    expect(p.seen.market).toEqual({ at: 0, round: 1 });
+    /* the build let go, or another move made: the page keeps its turn,
+       and the deed seen before it still passes under it */
+    expect(due(p, ctx(g))).toMatchObject({ id: 'market', mode: 'read' });
+    const built = mine(g);
+    p = settle(p, ctx(built));
+    expect(p.passed.at(-1)).toBe('coal');
+    expect(due(p, ctx(built))).toMatchObject({ id: 'market', mode: 'read' });
+    /* read, the lessons go on in their order, and it is not called again */
+    p = pass(p, 'market');
+    expect(due(p, ctx(built))).toMatchObject({ id: 'botTurn' });
+    expect(settle(p, buying)).toBe(p);
+    /* never called, it comes in its place: before the works */
+    const q = pass(upTo('loan'), 'loan');
+    expect(due(q, ctx(g))).toMatchObject({ id: 'market', mode: 'read' });
+    expect(due(pass(q, 'market'), ctx(g))).toMatchObject({ id: 'works', mode: 'do' });
+  });
+
+  it('hears a call on the reader\'s own turn only', () => {
+    const g = guided();
+    const hers = mine(g);
+    expect(hers.players[hers.current].isBot).toBe(true);
+    /* the same build prepared ahead on her turn calls for nothing yet */
+    const p = upTo('botTurn');
+    const ahead = { ...brewing(g), g: hers };
+    expect(due(p, ahead)).toMatchObject({ id: 'botTurn', mode: 'read' });
+    expect(settle(p, ahead)).toBe(p);
+  });
+
+  it('reads back past a page called for without passing it, and keeps it over a reload', () => {
+    const g = guided();
+    let p = see(upTo('coal'), 'coal', ctx(g));
+    p = settle(p, brewing(g));
+    /* Back walks what was read; Next comes back and passes nothing */
+    const b = back(p, null);
+    expect(b).toEqual({ id: 'hand', at: lessonIndex('hand') });
+    expect(forward(p, b)).toBeNull();
+    expect(p.passed).not.toContain('market');
+    expect(due(p, ctx(g))).toMatchObject({ id: 'market', mode: 'read' });
+    saveProgress(p);
+    expect(due(progressAt('GWE5'), ctx(g))).toMatchObject({ id: 'market', mode: 'read' });
+    /* read, it takes its place in the history, where it was read */
+    const q = pass(p, 'market');
+    expect(back(q, null)).toEqual({ id: 'market', at: q.passed.length - 1 });
+    expect(due(q, ctx(g))).toMatchObject({ id: 'coal', mode: 'do' });
   });
 });
 

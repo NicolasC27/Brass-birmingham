@@ -452,7 +452,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
      lesson once passed stays passed (closing the mat again is no reason to
      teach the mat again) */
   const kept = useSyncExternalStore(onProgress, () => (tutorial && table ? progressAt(table) : NO_PROGRESS));
-  const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer, sheet: sheetOpened } : null), [game, me, selectedCardId, matPlayer, sheetOpened]);
+  /* the move in the making is read too: a build that buys at the market,
+     a sale chosen, call for the page that tells of it */
+  const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer, sheet: sheetOpened, verb, pick: buildPick } : null), [game, me, selectedCardId, matPlayer, sheetOpened, verb, buildPick]);
   const settled = useMemo(() => (tutorial && lctx ? settle(kept, lctx) : kept), [tutorial, lctx, kept]);
   const owed = useMemo(() => (tutorial && lctx ? dueNow(settled, lctx) : null), [tutorial, lctx, settled]);
   /* nothing due now but a lesson still to come — set aside, or waiting on

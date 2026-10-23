@@ -1,5 +1,6 @@
 import { buildTargets, eraRounds, sellTargets } from '@/game/engine';
-import type { GameState } from '@/game/types';
+import type { BuildTarget } from '@/game/engine';
+import type { GameState, Verb } from '@/game/types';
 
 /* ------------------------------------------------------------------ */
 /* The lessons of the guided game, and how far the reader has come.     */
@@ -10,6 +11,8 @@ import type { GameState } from '@/game/types';
 /* page to read, with a word that it is already done. A page waiting on */
 /* the game keeps its place until its time comes, however far the       */
 /* reader reads on, and a lesson set aside comes back the next round.   */
+/* A page the move being prepared calls for cuts in as it is called and */
+/* keeps its turn until read; never called, it comes in its place.      */
 /*                                                                      */
 /* The progress is kept by id, for the one table the guided game is     */
 /* played at, and a lesson passed stays passed: undoing a move does not */
@@ -21,17 +24,20 @@ import type { GameState } from '@/game/types';
 export type Show = 'mat' | 'market' | 'vp';
 
 /** what a lesson reads: the table, the reader's seat, the card chosen in
- *  the hand, the seat whose mat is open, and whether a tile's sheet has
- *  been opened on a mat */
+ *  the hand, the seat whose mat is open, whether a tile's sheet has been
+ *  opened on a mat, the verb chosen and the build being prepared */
 export interface LessonCtx {
   g: GameState;
   me: number;
   sel: string | null;
   mat: number | null;
   sheet?: boolean;
+  verb?: Verb | null;
+  pick?: BuildTarget | null;
 }
 
-/** when a deed was first shown undone: the action it came up at, and the round */
+/** when a deed was first shown undone, or a page called for by the
+ *  table: the action it came up at, and the round */
 export interface Sight {
   at: number;
   round: number;
@@ -55,6 +61,11 @@ export interface Lesson {
   /** a page whose time, once come, will not wait behind a lesson due
    *  before it: it is given first */
   urgent?: boolean;
+  /** a page the table calls for: once this holds on the reader's turn,
+   *  it cuts in as an urgent one does, and keeps its turn until read —
+   *  whatever became of what called it. Never called, it comes in its
+   *  place, the latest it may come */
+  cue?: (c: LessonCtx) => boolean;
   show?: Show;
 }
 
@@ -100,6 +111,9 @@ const halfway = (c: LessonCtx): boolean => c.g.era === 'rail' || c.g.round >= Ma
 /** the game's last two rounds: the rail's, or a short game's canal */
 const closing = (c: LessonCtx): boolean => (c.g.era === 'rail' || c.g.eraLength === 'short') && c.g.round >= eraRounds(c.g.players.length) - 1;
 
+/** the build being prepared buys a cube of its coal or its iron at the market */
+const buysAtMarket = (c: LessonCtx): boolean => !!c.pick && [...c.pick.coalPlan.sources, ...c.pick.ironPlan.sources].some((x) => x.kind === 'market');
+
 /** no loan taken yet, and the purse already pays for the next works: the
  *  loan can wait. Once one is taken there is nothing left to wait for */
 const worksPaid = (c: LessonCtx): boolean => {
@@ -143,8 +157,10 @@ export const LESSONS: readonly Lesson[] = [
      purse that already pays for one may pass it, and a reader who wants
      none sets it aside like any deed */
   { id: 'loan', done: (c) => c.g.players[c.me].loans > 0, optional: worksPaid, deferrable: true },
+  /* read as a build being prepared buys at the market — the forge's coal,
+     often; else before the works, whose coal and iron may come from it */
+  { id: 'market', show: 'market', cue: buysAtMarket },
   { id: 'works', done: (c) => built(c, WORKS), deferrable: true },
-  { id: 'market', show: 'market' },
   { id: 'beer' },
   /* the first works flipped, whichever it is — the one the lesson on
      works built, or another. The move is a sale all the same: the
@@ -192,7 +208,8 @@ export interface Progress {
   passed: string[];
   /** the lessons set aside, by the round they were set aside in */
   later: Record<string, number>;
-  /** the deeds shown undone, by the action and the round they first came up at */
+  /** the deeds shown undone, and the pages the table called for, by the
+   *  action and the round they first came up at */
   seen: Record<string, Sight>;
 }
 
@@ -212,11 +229,22 @@ const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) =>
  *  lesson set aside to come back in */
 export const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.players.length) && (g.era === 'rail' || g.eraLength === 'short');
 
-/** every deed seen undone that now holds, passed — in the lessons' order;
- *  the same progress when nothing moved */
+/** a page's cue, heard on the reader's own turn: what they choose on
+ *  hers, preparing a move ahead, calls for nothing yet */
+const heard = (l: Lesson, c: LessonCtx): boolean => !!l.cue && c.g.phase === 'action' && c.g.current === c.me && l.cue(c);
+/** a page the table calls for now, or called for once and not read yet */
+const called = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.cue && (!!p.seen[l.id] || heard(l, c));
+
+/** every deed seen undone that now holds, passed — in the lessons' order —
+ *  and every page the table calls for now, noted: it keeps its turn until
+ *  read. The same progress when nothing moved */
 export function settle(p: Progress, c: LessonCtx): Progress {
   const now = LESSONS.filter((l) => !p.passed.includes(l.id) && earned(p, l, c)).map((l) => l.id);
-  return now.reduce((q, id) => pass(q, id), p);
+  const q = now.reduce((q, id) => pass(q, id), p);
+  const calls = LESSONS.filter((l) => !q.passed.includes(l.id) && !q.seen[l.id] && heard(l, c));
+  if (!calls.length) return q;
+  const at: Sight = { at: c.g.actions.length, round: roundOf(c.g) };
+  return { ...q, seen: { ...q.seen, ...Object.fromEntries(calls.map((l) => [l.id, at])) } };
 }
 
 /** how the lesson due is given: a page to read, a deed to do, a deed done
@@ -233,12 +261,12 @@ export interface Due {
 
 /** the lesson due: the first not passed, not set aside, and not waiting
  *  on the game — a page whose time has come and will not wait before
- *  it. Nothing due, the guide rests until the next one comes, the last
- *  of all on the final ledger */
+ *  it, or one the table called for. Nothing due, the guide rests until
+ *  the next one comes, the last of all on the final ledger */
 export function due(p: Progress, c: LessonCtx): Due {
   const left = (l: Lesson): boolean => !p.passed.includes(l.id) && !earned(p, l, c);
-  const open = (l: Lesson): boolean => left(l) && !aside(p, l.id, c) && (!l.when || l.when(c));
-  const urgent = LESSONS.findIndex((l) => l.urgent && open(l));
+  const open = (l: Lesson): boolean => left(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c));
+  const urgent = LESSONS.findIndex((l) => (l.urgent || called(p, l, c)) && open(l));
   const i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
   if (i >= 0) {
     const l = LESSONS[i];
