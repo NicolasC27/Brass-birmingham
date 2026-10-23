@@ -1,0 +1,194 @@
+import { describe, expect, it } from 'vitest';
+import { applyAction, withEdition } from '@/game/actions';
+import type { GameAction } from '@/game/actions';
+import { spareCard } from '@/game/bot';
+import { buildTargets, newGame } from '@/game/engine';
+import type { Card, GameState, SetupPayload } from '@/game/types';
+import { keepOf, placeLens, spareFor, spentBy } from '../expertAdvice';
+
+/* What an expert would play, set up without spending the card the lesson
+   due asks the reader to keep — on the guided game's deal (seed 3, two
+   seats), opened as the review found it: a mine at Dudley, then the
+   canal of the second round, which the search paid with the forge card */
+
+function table(): GameState {
+  const setup = {
+    players: [
+      { name: 'Vous', color: 'brass', type: 'human' },
+      { name: 'Wedgwood', color: 'oxblood', type: 'bot', persona: 'wedgwood' },
+    ],
+    options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core', assist: true },
+  } as SetupPayload;
+  return newGame(withEdition(setup), 3);
+}
+
+const played = (g: GameState, a: GameAction): GameState => {
+  const r = applyAction(g, g.current, a);
+  if (!r.state) throw new Error(`refused: ${JSON.stringify(a)} (${r.error})`);
+  return r.state;
+};
+const hand = (g: GameState): Card[] => g.players[0].hand;
+const cardOf = (g: GameState, pred: (c: Card) => boolean): string => hand(g).find(pred)!.id;
+const forge = (g: GameState) => cardOf(g, (c) => c.kind === 'industry' && c.industry === 'iron');
+const coalCard = (g: GameState) => cardOf(g, (c) => c.kind === 'industry' && c.industry === 'coal');
+
+/** the Dudley opening: the reader's mine there, the machine passing until
+ *  the reader's first turn of the second round */
+function dudley(): GameState {
+  let g = table();
+  g = played(g, { kind: 'build', card: cardOf(g, (c) => c.kind === 'location' && c.town === 'dudley'), town: 'dudley', slot: 0, industry: 'coal' });
+  while (g.current !== 0) g = played(g, { kind: 'pass', card: g.players[g.current].hand[0].id });
+  return g;
+}
+
+describe('the cards a lesson keeps', () => {
+  it('keeps the forge card through the canal, and the card of the deed itself', () => {
+    const g = dudley();
+    expect(g.round).toBe(2);
+    expect(keepOf('link', g, 0)).toMatchObject({ lesson: 'link', cards: [forge(g)], every: false });
+    expect(keepOf('iron', g, 0)?.cards).toEqual([forge(g)]);
+    expect(keepOf('coal', g, 0)?.cards).toEqual([coalCard(g)]);
+    /* a works: the cards that build one as the table stands */
+    const works = keepOf('works', g, 0)!;
+    expect(works.cards.length).toBeGreaterThan(0);
+    for (const id of works.cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => t.valid && ['cotton', 'manufacturer', 'pottery'].includes(t.industry))).toBe(true);
+    /* a page, a sale, an aim: nothing to keep */
+    expect(keepOf('sell', g, 0)).toBeNull();
+    expect(keepOf('beer', g, 0)).toBeNull();
+    expect(keepOf('reach', g, 0)).toBeNull();
+  });
+
+  it('with no forge card in hand, keeps for the forge the cards that build one now', () => {
+    const g = dudley();
+    g.players[0].hand = hand(g).filter((c) => c.id !== forge(g));
+    const cards = keepOf('iron', g, 0)?.cards ?? [];
+    for (const id of cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => t.valid && t.industry === 'iron')).toBe(true);
+    expect(cards.length).toBe(hand(g).filter((c) => buildTargets(g, 0, c).some((t) => t.valid && t.industry === 'iron')).length);
+  });
+
+  it('under the loan, keeps every card of a town already linked to a merchant', () => {
+    const g = dudley();
+    /* anyone's canal will do: a sale runs along any player's links */
+    g.links['redditch--m-oxford'] = { owner: 1, era: 'canal' } as GameState['links'][string];
+    const redditch = cardOf(g, (c) => c.kind === 'location' && c.town === 'redditch');
+    expect(keepOf('loan', g, 0)).toMatchObject({ lesson: 'loan', cards: [redditch], every: true });
+    /* no town linked to a merchant yet: nothing to keep */
+    expect(keepOf('loan', dudley(), 0)).toBeNull();
+  });
+});
+
+describe('the move set up in the hand', () => {
+  it('pays the canal with another card than the forge card the link lesson keeps', () => {
+    const g = dudley();
+    const canal: GameAction = { kind: 'network', card: forge(g), link: 'birmingham--dudley' };
+    const got = spareFor(g, 0, canal, [keepOf('link', g, 0)]);
+    expect(got.action).not.toBeNull();
+    expect(got.action).toMatchObject({ kind: 'network', link: 'birmingham--dudley' });
+    expect(spentBy(got.action!)).not.toContain(forge(g));
+    /* the card the search itself would spare, of the ones left */
+    const others = hand(g).filter((c) => c.id !== forge(g));
+    expect(got.played).toEqual([spareCard(g, 0, others)!.id]);
+    expect(got.kept).toEqual([forge(g)]);
+    expect(got.lesson).toBe('link');
+    /* and the engine takes it */
+    expect(applyAction(g, 0, got.action!).state).not.toBeNull();
+  });
+
+  it('spares the forge card from a loan and a pass as well', () => {
+    const g = dudley();
+    const keep = [keepOf('link', g, 0)];
+    for (const a of [{ kind: 'loan', card: forge(g) }, { kind: 'pass', card: forge(g) }] as GameAction[]) {
+      const got = spareFor(g, 0, a, keep);
+      expect(got.action?.kind).toBe(a.kind);
+      expect(spentBy(got.action!)).not.toContain(forge(g));
+      expect(applyAction(g, 0, got.action!).state).not.toBeNull();
+    }
+  });
+
+  it('leaves a move as it is when it spends no card the lesson keeps', () => {
+    const g = dudley();
+    const other = cardOf(g, (c) => c.kind === 'location' && c.town === 'worcester');
+    const canal: GameAction = { kind: 'network', card: other, link: 'birmingham--dudley' };
+    expect(spareFor(g, 0, canal, [keepOf('link', g, 0)])).toEqual({ action: canal, played: [], kept: [], lesson: null });
+    /* nor when no lesson keeps anything */
+    const loan: GameAction = { kind: 'loan', card: forge(g) };
+    expect(spareFor(g, 0, loan, [keepOf('sell', g, 0), null])).toEqual({ action: loan, played: [], kept: [], lesson: null });
+  });
+
+  it('lets the forge card build the forge: that is what it is kept for', () => {
+    let g = dudley();
+    g = played(g, { kind: 'network', card: cardOf(g, (c) => c.kind === 'industry' && c.industry === 'brewery'), link: 'birmingham--dudley' });
+    const forgeAt = buildTargets(g, 0, hand(g).find((c) => c.id === forge(g))!).find((t) => t.valid && t.industry === 'iron')!;
+    const build: GameAction = { kind: 'build', card: forge(g), town: forgeAt.town, slot: forgeAt.slot, industry: 'iron' };
+    expect(spareFor(g, 0, build, [keepOf('link', g, 0), keepOf('iron', g, 0)]).action).toBe(build);
+  });
+
+  it('keeps one of the cards that build the deed, not all of them', () => {
+    const g = dudley();
+    g.players[0].hand = hand(g).filter((c) => c.id !== coalCard(g));
+    const keep = keepOf('coal', g, 0)!;
+    /* two cards or more build a mine: one may go, the others still build it */
+    expect(keep.cards.length).toBeGreaterThan(1);
+    const canal: GameAction = { kind: 'network', card: keep.cards[0], link: 'birmingham--dudley' };
+    expect(spareFor(g, 0, canal, [keep]).action).toBe(canal);
+    /* the last of them may not */
+    g.players[0].hand = hand(g).filter((c) => c.id === keep.cards[0] || !keep.cards.includes(c.id));
+    const last = spareFor(g, 0, canal, [keepOf('coal', g, 0)]);
+    expect(spentBy(last.action!)).not.toContain(keep.cards[0]);
+    expect(last.kept).toEqual([keep.cards[0]]);
+  });
+
+  it('under the loan, spares every card of a town linked to a merchant, save for a works there', () => {
+    const g = dudley();
+    g.links['redditch--m-oxford'] = { owner: 1, era: 'canal' } as GameState['links'][string];
+    const redditch = cardOf(g, (c) => c.kind === 'location' && c.town === 'redditch');
+    const keep = [keepOf('loan', g, 0)];
+    const loan = spareFor(g, 0, { kind: 'loan', card: redditch }, keep);
+    expect(loan.action).toMatchObject({ kind: 'loan' });
+    expect(spentBy(loan.action!)).not.toContain(redditch);
+    /* a works built with it at Redditch is what it is kept for */
+    const works: GameAction = { kind: 'build', card: redditch, town: 'redditch', slot: 0, industry: 'manufacturer' };
+    expect(spareFor(g, 0, works, keep).action).toBe(works);
+  });
+
+  it('sets nothing up when no other card of the hand plays the move, and says which card it keeps', () => {
+    const g = dudley();
+    g.players[0].hand = hand(g).filter((c) => c.id === forge(g));
+    const canal: GameAction = { kind: 'network', card: forge(g), link: 'birmingham--dudley' };
+    expect(spareFor(g, 0, canal, [keepOf('link', g, 0)])).toEqual({ action: null, played: [], kept: [forge(g)], lesson: 'link' });
+  });
+
+  it('changes a scout\'s kept card for another', () => {
+    const g = dudley();
+    const others = hand(g).filter((c) => c.id !== forge(g));
+    const scout: GameAction = { kind: 'scout', cards: [forge(g), others[0].id, others[1].id] };
+    const got = spareFor(g, 0, scout, [keepOf('link', g, 0)]);
+    expect(got.action?.kind).toBe('scout');
+    expect(spentBy(got.action!)).toHaveLength(3);
+    expect(spentBy(got.action!)).not.toContain(forge(g));
+    expect(spentBy(got.action!)).toEqual(expect.arrayContaining([others[0].id, others[1].id]));
+  });
+});
+
+describe('the place of the move', () => {
+  it('lights the slot of a build under a lamp, and brings the camera to its town', () => {
+    expect(placeLens({ kind: 'build', card: 'x', town: 'dudley', slot: 1, industry: 'iron' })).toEqual({ first: ['dudley:1'], at: 'dudley' });
+  });
+
+  it('lights the link of a canal, or both of a double rail', () => {
+    expect(placeLens({ kind: 'network', card: 'x', link: 'birmingham--dudley' })).toEqual({ links: ['birmingham--dudley'], at: 'birmingham--dudley' });
+    expect(placeLens({ kind: 'network', card: 'x', link: 'a--b', second: 'b--c' })?.links).toEqual(['a--b', 'b--c']);
+  });
+
+  it('lights the works sold and their buyers', () => {
+    const sale: GameAction = { kind: 'sell', card: 'x', sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }, { town: 'worcester', slot: 1, merchant: 'm-oxford' }] };
+    expect(placeLens(sale)).toEqual({ first: ['redditch:0', 'worcester:1'], merchants: ['m-oxford'], at: 'redditch' });
+  });
+
+  it('rings the button of a move off the map, and shows nothing for a pass', () => {
+    expect(placeLens({ kind: 'develop', card: 'x', industries: ['pottery'] })).toEqual({ hud: 'develop' });
+    expect(placeLens({ kind: 'loan', card: 'x' })).toEqual({ hud: 'loan' });
+    expect(placeLens({ kind: 'scout', cards: ['x', 'y', 'z'] })).toEqual({ hud: 'scout' });
+    expect(placeLens({ kind: 'pass', card: 'x' })).toBeNull();
+  });
+});
