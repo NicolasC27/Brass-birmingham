@@ -817,6 +817,19 @@ describe('the progress on the disk', () => {
     expect(due(q, ctx(borrowed))).toMatchObject({ id: 'eraEnd' });
   });
 
+  it('passes the pages read past that only wait on the game now', () => {
+    const store = stubStorage();
+    const g = guided();
+    /* the forge still to build, read past to the habits: developing, the
+       plan and the habits were read then, the page on a flipped tile was not */
+    store.set('brassworks.tutorial.step', '22');
+    store.set('brassworks.tutorial.reached', '11');
+    const p = progressAt('GWE5');
+    expect(p.passed).toEqual([...V1.slice(0, 11).filter((id) => id !== 'money'), 'develop', 'market', 'beer', 'eraEnd', 'plan', 'tips']);
+    expect(Object.keys(p.seen)).toEqual(['iron', 'works', 'sell', 'loan']);
+    expect(due(p, ctx(g))).toMatchObject({ id: 'iron', mode: 'do' });
+  });
+
   it('starts afresh at a second guided table', () => {
     const p = upTo('works', 'AAAA');
     saveProgress(p);

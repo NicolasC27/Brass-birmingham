@@ -402,6 +402,9 @@ const REACH_KEY = 'brassworks.tutorial.reached';
 /** the order those indices counted in, kept as it was whatever the
  *  lessons become */
 const V1_ORDER = ['welcome', 'board', 'goal', 'money', 'mat', 'matRead', 'hand', 'coal', 'botTurn', 'payday', 'link', 'iron', 'develop', 'works', 'market', 'beer', 'sell', 'flipped', 'loan', 'eraEnd', 'plan', 'tips', 'onward'];
+/** the pages that waited on the game in that order: read past, they may
+ *  never have been shown. The others were read, whatever they wait on now */
+const V1_WAITED = ['payday', 'flipped'];
 
 const known = (id: unknown): id is string => typeof id === 'string' && lessonIndex(id) >= 0;
 const keep = <V>(o: unknown, ok: (v: unknown) => v is V): Record<string, V> =>
@@ -423,8 +426,8 @@ function parse(raw: string | null): Progress | null {
 
 /** the old indices read into a record: what lay below the first lesson
  *  not passed is passed; between it and the index read past, a page is
- *  passed, a deed is seen (it passes once it holds), and a page waiting
- *  on the game keeps its place */
+ *  passed, a deed is seen (it passes once it holds), and a page that
+ *  waited on the game then keeps its place */
 export function fromIndices(step: number, reached: number, code: string | null): Progress {
   const cut = (n: number) => Math.max(0, Math.min(V1_ORDER.length, Math.floor(Number.isFinite(n) ? n : 0)));
   const p = freshProgress(code);
@@ -432,7 +435,7 @@ export function fromIndices(step: number, reached: number, code: string | null):
   p.passed = V1_ORDER.slice(0, r).filter(known);
   for (const id of V1_ORDER.slice(r, Math.max(r, cut(step)))) {
     const l = lessonOf(id);
-    if (!l || l.when) continue;
+    if (!l || V1_WAITED.includes(id)) continue;
     if (l.done) p.seen[id] = { at: 0, round: 0 };
     else p.passed.push(id);
   }
