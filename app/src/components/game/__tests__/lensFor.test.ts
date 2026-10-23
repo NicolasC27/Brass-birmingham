@@ -153,13 +153,24 @@ describe('the lens of the aims', () => {
   });
 });
 
-describe('the lens of the lesson on beer', () => {
-  it('lights the breweries, and leaves a sale being chosen its own places', () => {
+describe('the lens steps aside for a move being chosen', () => {
+  it('beer: the breweries with beer left, until a move is chosen', () => {
     const g = table();
     g.tiles['stone:0'] = tile(1, 'brewery', { cubes: 1 });
     const card = g.players[0].hand[0].id;
-    expect(lensFor('beer', ctx(g, card))).toEqual({ slots: ['stone:0'], at: 'stone' });
-    expect(lensFor('beer', ctx(g, card, 'build'))).toEqual({ slots: ['stone:0'], at: 'stone' });
+    expect(lensFor('beer', ctx(g))).toEqual({ slots: ['stone:0'] });
+    expect(lensFor('beer', ctx(g, card))).toEqual({ slots: ['stone:0'] });
+    /* Build or Sell chosen: their own places stay lit */
+    expect(lensFor('beer', ctx(g, card, 'build'))).toBeNull();
     expect(lensFor('beer', ctx(g, card, 'sell'))).toBeNull();
+  });
+
+  it('flipped: the reader’s flipped tiles, the sold works for the camera', () => {
+    const g = table();
+    g.tiles['belper:1'] = tile(0, 'coal', { flipped: true });
+    g.tiles['worcester:0'] = tile(0, 'cotton', { flipped: true });
+    const card = g.players[0].hand[0].id;
+    expect(lensFor('flipped', ctx(g))).toEqual({ slots: ['belper:1', 'worcester:0'], at: 'worcester' });
+    expect(lensFor('flipped', ctx(g, card, 'build'))).toBeNull();
   });
 });

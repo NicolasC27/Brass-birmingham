@@ -166,10 +166,11 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     case 'market':
       return { hud: 'market' };
     case 'beer': {
-      /* read as a sale is being chosen: the sale's own places stay lit */
-      if (verb === 'sell') return null;
-      const keys = Object.entries(g.tiles).filter(([, t]) => t.industry === 'brewery' && !t.flipped).map(([k]) => k);
-      return keys.length ? { slots: keys, at: keys[0].split(':')[0] } : null;
+      if (choosing) return null;
+      /* the breweries with beer left */
+      const keys = Object.entries(g.tiles).filter(([, t]) => t.industry === 'brewery' && !t.flipped && t.cubes > 0).map(([k]) => k);
+      const own = keys.find((k) => g.tiles[k].owner === me);
+      return keys.length ? { slots: keys, ...(own ? { at: townOf(own) } : {}) } : null;
     }
     case 'sell': {
       /* the works that will sell — never one that will not */
@@ -180,8 +181,10 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return { slots: ok, at: townOf(ok[0]), ...(hud ? { hud } : {}) };
     }
     case 'flipped': {
+      if (choosing) return null;
       const keys = mine((t) => t.flipped);
-      return keys.length ? { slots: keys, at: keys[0].split(':')[0] } : null;
+      const sold = keys.find((k) => WORKS.includes(g.tiles[k].industry)) ?? keys[0];
+      return keys.length ? { slots: keys, at: townOf(sold) } : null;
     }
     case 'reach':
       /* a works built where its buyer is linked, or the link to lay */
