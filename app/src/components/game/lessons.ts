@@ -161,7 +161,8 @@ export const LESSONS: readonly Lesson[] = [
      often; else before the works, whose coal and iron may come from it */
   { id: 'market', show: 'market', cue: buysAtMarket },
   { id: 'works', done: (c) => built(c, WORKS), deferrable: true },
-  { id: 'beer' },
+  /* read the first time the reader chooses Sell, else as the sale comes up */
+  { id: 'beer', cue: (c) => c.verb === 'sell' },
   /* the first works flipped, whichever it is — the one the lesson on
      works built, or another. The move is a sale all the same: the
      lesson's to teach, not an aim for the coach to grade */
