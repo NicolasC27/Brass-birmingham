@@ -237,11 +237,14 @@ const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) =>
  *  lesson set aside to come back in */
 export const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.players.length) && (g.era === 'rail' || g.eraLength === 'short');
 
-/** a page's cue, heard on the reader's own turn: what they choose on
- *  hers, preparing a move ahead, calls for nothing yet */
-const heard = (l: Lesson, c: LessonCtx): boolean => !!l.cue && c.g.phase === 'action' && c.g.current === c.me && l.cue(c);
+/** a page's cue, heard on the reader's own turn once the hand is taught:
+ *  the pages before it tell of the table, not of a move, and a page called
+ *  for would cut in ahead of them. What the reader chooses on hers,
+ *  preparing a move ahead, calls for nothing yet */
+const heard = (p: Progress, l: Lesson, c: LessonCtx): boolean =>
+  !!l.cue && p.passed.includes('hand') && c.g.phase === 'action' && c.g.current === c.me && l.cue(c);
 /** a page the table calls for now, or called for once and not read yet */
-const called = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.cue && (!!p.seen[l.id] || heard(l, c));
+const called = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.cue && (!!p.seen[l.id] || heard(p, l, c));
 
 /** every deed seen undone that now holds, passed — in the lessons' order —
  *  and every page the table calls for now, noted: it keeps its turn until
@@ -249,7 +252,7 @@ const called = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.cue && (!!
 export function settle(p: Progress, c: LessonCtx): Progress {
   const now = LESSONS.filter((l) => !p.passed.includes(l.id) && earned(p, l, c)).map((l) => l.id);
   const q = now.reduce((q, id) => pass(q, id), p);
-  const calls = LESSONS.filter((l) => !q.passed.includes(l.id) && !q.seen[l.id] && heard(l, c));
+  const calls = LESSONS.filter((l) => !q.passed.includes(l.id) && !q.seen[l.id] && heard(q, l, c));
   if (!calls.length) return q;
   const at: Sight = { at: c.g.actions.length, round: roundOf(c.g) };
   return { ...q, seen: { ...q.seen, ...Object.fromEntries(calls.map((l) => [l.id, at])) } };

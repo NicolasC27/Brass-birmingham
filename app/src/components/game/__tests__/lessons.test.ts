@@ -590,6 +590,18 @@ describe('the pages the table calls for', () => {
     expect(settle(p, ahead)).toBe(p);
   });
 
+  it('hears no call before the hand is taught', () => {
+    const g = guided();
+    /* a brewery picked while the opening pages are read: they are not cut */
+    for (const id of ['welcome', 'goal', 'hand']) {
+      const p = upTo(id);
+      expect(due(p, brewing(g))).toMatchObject({ id });
+      expect(settle(p, brewing(g))).toBe(p);
+    }
+    /* the hand taught, the same pick calls for the market */
+    expect(due(upTo('coal'), brewing(g))).toMatchObject({ id: 'market', mode: 'read' });
+  });
+
   it('reads back past a page called for without passing it, and keeps it over a reload', () => {
     const g = guided();
     let p = see(upTo('coal'), 'coal', ctx(g));
