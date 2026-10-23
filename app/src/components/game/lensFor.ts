@@ -145,10 +145,13 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       /* the merchants at the edges, their tiles and their barrels */
       return choosing ? null : { merchants: MERCHANTS.filter((m) => merchantOpen(g, m.id)).map((m) => m.id) };
     case 'goal':
-      return { hud: 'vp' };
+      /* the points, and the income that pays: the points' ruler hidden,
+         its toggle is rung instead (the guide's own Show) */
+      return { hud: ['vp', 'income'] };
     case 'mat':
     case 'matRead':
-      return { hud: 'mat' };
+      /* the mat's button, then the mat itself once open */
+      return { hud: c.mat !== null ? 'mat-open' : 'mat' };
     case 'hand':
       return { hud: 'hand' };
     case 'coal':

@@ -1833,17 +1833,17 @@ export interface Review {
 export const useShownGame = (): GameState | null => useGame((s) => s.review?.state ?? s.game);
 
 /** a part of the HUD a lesson points at (a `data-lens` mark on the element) */
-export type HudLens = 'vp' | 'market' | 'mat' | 'hand' | 'rail' | 'rail-bot' | 'income' | 'ledger' | 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
+export type HudLens = 'vp' | 'market' | 'mat' | 'mat-open' | 'hand' | 'rail' | 'rail-bot' | 'income' | 'ledger' | 'build' | 'network' | 'develop' | 'sell' | 'loan' | 'scout';
 /** what a lesson lights: slots of the map (their keys) — the ones its
  *  advice would take first lit strongest — links and merchants to look
- *  at, a part of the HUD, and where the camera comes: a town, a merchant
+ *  at, parts of the HUD, and where the camera comes: a town, a merchant
  *  or a link */
 export interface Lens {
   slots?: string[];
   first?: string[];
   links?: string[];
   merchants?: string[];
-  hud?: HudLens;
+  hud?: HudLens | HudLens[];
   at?: string;
 }
 

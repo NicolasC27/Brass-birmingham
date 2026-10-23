@@ -463,6 +463,7 @@ function PlayerMat() {
           tabIndex={-1}
           role="dialog"
           data-player-mat
+          data-lens="mat-open"
           aria-label={t('game.mat.title', { name: game.players[matPlayer].name })}
           className="plate fixed z-[78] flex flex-col overflow-hidden shadow-e4"
           style={

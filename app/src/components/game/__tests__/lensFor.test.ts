@@ -198,3 +198,14 @@ describe('the lens steps aside for a move being chosen', () => {
     expect(lensFor('board', ctx(g, g.players[0].hand[0].id, 'build'))).toBeNull();
   });
 });
+
+describe('the halos of the lessons', () => {
+  it('ring the points and the income track for the goal, the mat or the mat open', () => {
+    const g = table();
+    expect(lensFor('goal', ctx(g))).toEqual({ hud: ['vp', 'income'] });
+    expect(lensFor('payday', ctx(g))).toEqual({ hud: 'income' });
+    expect(lensFor('mat', ctx(g))).toEqual({ hud: 'mat' });
+    expect(lensFor('matRead', ctx(g, null, null, 0))).toEqual({ hud: 'mat-open' });
+    expect(lensFor('matRead', ctx(g, null, null, 1))).toEqual({ hud: 'mat-open' });
+  });
+});

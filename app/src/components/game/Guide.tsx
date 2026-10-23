@@ -2,7 +2,7 @@ import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
-import { aidOn, getBoardOptions, setBoardOption } from '@/components/game/boardOptions';
+import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
 import { getKeybindings, keyLabel } from '@/components/game/keybindings';
@@ -345,6 +345,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const table = useGame((s) => s.local);
   const endTutorial = useGame((s) => s.endTutorial);
   const matPlayer = useGame((s) => s.matPlayer);
+  const { vpTrack } = useBoardOptions();
   const sheetOpened = useGame((s) => s.sheetOpened);
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
@@ -982,8 +983,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
                       )}
                     </div>
                     <div className="ml-auto flex items-center gap-2">
-                      {step.show && !(step.show === 'mat' && matPlayer !== null) && (
-                        <button type="button" onClick={() => show(step.show!)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                      {/* Show, while what it shows is not on show: the points'
+                          ruler hidden, the lesson's halo rings this toggle */}
+                      {step.show && !(step.show === 'mat' && matPlayer !== null) && !(step.show === 'vp' && vpTrack) && (
+                        <button type="button" onClick={() => show(step.show!)} data-lens={step.show === 'vp' ? 'vp' : undefined} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
                         </button>
                       )}
