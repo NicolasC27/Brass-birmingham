@@ -152,6 +152,19 @@ describe('the lens of the lesson on selling', () => {
     expect(lensFor('sell', ctx(g, g.players[0].hand[0].id, 'sell'))).toEqual({ slots: ['worcester:0'], at: 'worcester' });
   });
 
+  it('lights the merchants who keep a barrel, when the buyer is joined and the beer lacks', () => {
+    const g = table();
+    g.tiles['worcester:0'] = tile(0, 'cotton');
+    link(g, 'birmingham--worcester', 0);
+    link(g, 'birmingham--m-oxford', 1);
+    /* Oxford's barrel drunk, no brewery on the board: Shrewsbury keeps one for cotton */
+    g.merchantBeer['m-oxford:0'] = 0;
+    const card = g.players[0].hand[0].id;
+    expect(lensFor('sell', ctx(g))).toEqual({ merchants: ['m-shrewsbury'], hud: 'hand' });
+    expect(lensFor('sell', ctx(g, card, 'sell'))).toEqual({ merchants: ['m-shrewsbury'] });
+    expect(lensFor('sell', ctx(g, card, 'build'))).toEqual({ hud: 'sell' });
+  });
+
   it('lights the canal missing toward the buyer, when nothing sells', () => {
     const g = table();
     g.tiles['worcester:0'] = tile(0, 'cotton');

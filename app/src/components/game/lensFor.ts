@@ -188,8 +188,16 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     }
     case 'sell': {
       /* the works that will sell — never one that will not */
-      const ok = unique(sellTargets(g, me).filter((x) => x.valid).map((x) => tileKey(x.town, x.slot)));
-      if (!ok.length) return toBuyer() ?? (verb === 'sell' ? null : { hud: card ? 'sell' : 'hand' });
+      const sales = sellTargets(g, me);
+      const ok = unique(sales.filter((x) => x.valid).map((x) => tileKey(x.town, x.slot)));
+      if (!ok.length) {
+        /* a works joined to its buyer, and no beer to drink: the merchants
+           who still keep a barrel for its goods */
+        const dry = new Set(sales.map((x) => x.tile.industry));
+        const merchants = verb && verb !== 'sell' ? [] : barrels().filter((m) => merchantDemand(g, m).some((x) => dry.has(x)));
+        const hud: HudLens | undefined = verb === 'sell' ? undefined : card ? 'sell' : 'hand';
+        return toBuyer() ?? (merchants.length || hud ? { ...(merchants.length ? { merchants } : {}), ...(hud ? { hud } : {}) } : null);
+      }
       if (verb && verb !== 'sell') return card ? { hud: 'sell' } : null;
       const hud: HudLens | undefined = !card ? 'hand' : verb ? undefined : 'sell';
       /* the rest of the board dims on her turn, or once a card is chosen;
