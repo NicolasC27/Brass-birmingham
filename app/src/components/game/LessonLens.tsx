@@ -17,10 +17,12 @@ export default function LessonLens({ stepId, active }: { stepId: string | null |
     setLens(lens);
     return () => setLens(null);
   }, [lens, setLens]);
-  /* the camera comes to the lesson's town when the lesson changes, not at every move */
+  /* the camera comes to the lesson's town when the lesson changes, not at
+     every move — nor away from a place already picked, when the lesson
+     comes back from a page its build called for */
   const town = lens?.town ?? null;
   useEffect(() => {
-    if (town) flyToRegion(town);
+    if (town && !useGame.getState().buildPick) flyToRegion(town);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepId, !!town]);
   return null;

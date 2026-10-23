@@ -46,6 +46,8 @@ export function lensFor(stepId: string | null | undefined, g: GameState, me: num
     case 'market':
       return { hud: 'market' };
     case 'beer': {
+      /* read as a sale is being chosen: the sale's own places stay lit */
+      if (verb === 'sell') return null;
       const keys = Object.entries(g.tiles).filter(([, t]) => t.industry === 'brewery' && !t.flipped).map(([k]) => k);
       return keys.length ? { slots: keys, town: keys[0].split(':')[0] } : null;
     }
