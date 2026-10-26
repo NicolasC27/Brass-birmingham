@@ -97,6 +97,8 @@ const game = {
     held: '{name} waits: the machines are held',
     playsRest: 'plays',
     thinksRest: 'is thinking…',
+    waitsReadRest: 'waits for you to read…',
+    heldRest: 'waits: the machines are held',
     noteEmpty: 'Note',
     noteWaits: 'the note will be written here',
     stub: { played: 'Action played', current: 'Action in hand', next: 'Action to come' },

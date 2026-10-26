@@ -99,6 +99,8 @@ const game: typeof engame = {
     held: '{name} wartet: Maschinen angehalten',
     playsRest: 'spielt',
     thinksRest: 'überlegt…',
+    waitsReadRest: 'wartet, bis du gelesen hast…',
+    heldRest: 'wartet: Maschinen angehalten',
     noteEmpty: 'Notiz',
     noteWaits: 'die Notiz erscheint hier',
     stub: { played: 'Aktion gespielt', current: 'Aktion läuft', next: 'Nächste Aktion' },

@@ -493,7 +493,9 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
      while a place is looked for, the player while they play */
   const sentence = (() => {
     if (stage === 'theirs') {
-      const rest = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t('game.topbar.thinksRest') : t('game.topbar.playsRest');
+      /* a machine held thinks of nothing: it waits on the guide's page, or
+         on the reader's own pause */
+      const rest = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t(guideHold ? 'game.topbar.waitsReadRest' : botHold ? 'game.topbar.heldRest' : 'game.topbar.thinksRest') : t('game.topbar.playsRest');
       return (
         <>
           <b className="font-semibold" style={{ color }}>{game.phase !== 'action' ? '' : p.name}</b>
