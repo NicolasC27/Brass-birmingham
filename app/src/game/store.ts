@@ -323,7 +323,8 @@ interface GameStore {
   coached: Coached | null;
   setCoached: (c: Coached | null) => void;
   /** at the guided table the machine waits on the coach's word on the
-   *  reader's move: while it comes, and a moment once it is shown */
+   *  reader's move: while it comes, and a moment once it is shown — or,
+   *  let play on, does not, and the word keeps that time over her move */
   coachHold: boolean;
   setReviewAt: (at: number | null) => void;
   /* ---- reading a game again, together: one seat shows, the others follow ---- */
@@ -1308,8 +1309,11 @@ export const useGame = create<GameStore>((set, get) => ({
       }
     }
     /* and its word is on the reader's move, read before the machine plays
-       on: the machine's move sends it away, with any word still on its way */
-    if (st.tutorial && action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && g.players[g.current].isBot) {
+       on: the machine's move sends it away, with any word still on its way
+       — once it has had its moment. A machine let play on (Guide.tsx) does
+       not wait for it: a word still awaited, or still being read, stays
+       its moment out over her move, or it would go unread */
+    if (st.tutorial && !st.coachHold && action.kind !== 'concede' && action.kind !== 'resign' && g.phase === 'action' && g.players[g.current].isBot) {
       hushCoach();
       holdForCoach(0);
       if (get().coached) set({ coached: null });

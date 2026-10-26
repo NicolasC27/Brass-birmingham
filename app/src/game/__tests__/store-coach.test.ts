@@ -108,9 +108,10 @@ describe('the coach at the guided table', () => {
     await play(mineOf(g));
     const after = useGame.getState().game!;
     expect(after.players[after.current].isBot).toBe(true);
-    /* the word on the reader's mine, read while the machine thinks */
+    /* the word on the reader's mine, read while the machine waited: its
+       moment is over */
     const word = { at: g.actions.length, seat: 0, verdict: {} } as unknown as Coached;
-    useGame.setState({ coached: word, coachHold: true });
+    useGame.setState({ coached: word, coachHold: false });
     const hushed = coach.hushed;
     await play(fallbackAction(after, after.current));
     expect(useGame.getState().coached).toBeNull();
@@ -156,6 +157,29 @@ describe('the coach at the guided table', () => {
       expect(useGame.getState().coachHold).toBe(false);
       /* the word itself stays until she plays */
       expect(useGame.getState().coached).not.toBeNull();
+    });
+
+    it('lets a word the machine played past without waiting stay its moment out', async () => {
+      /* let play on, the machine does not wait on the word: it moves while
+         the word is still on its way, which lands over her move all the same */
+      const { g } = await closeTurn();
+      const theirs = useGame.getState().game!;
+      const hushed = coach.hushed;
+      expect(useGame.getState().dispatch(fallbackAction(theirs, theirs.current))).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(coach.hushed).toBe(hushed);
+      coach.tell!(word(g));
+      expect(useGame.getState().coached).toEqual(word(g));
+      expect(useGame.getState().coachHold).toBe(true);
+      /* its moment over, it stays until a move sends it away: hers */
+      await vi.advanceTimersByTimeAsync(3000);
+      expect(useGame.getState().coachHold).toBe(false);
+      expect(useGame.getState().coached).toEqual(word(g));
+      useGame.setState({ game: theirs });
+      expect(useGame.getState().dispatch(fallbackAction(theirs, theirs.current))).toBe(true);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(useGame.getState().coached).toBeNull();
+      expect(coach.hushed).toBe(hushed + 1);
     });
 
     it('no longer for a word too slow, one sent away, or none', async () => {
