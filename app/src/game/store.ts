@@ -666,6 +666,9 @@ const freshTable = {
   previewQueue: false,
   surveySeat: null as number | null,
   unlessPick: null as number | null,
+  /* the reader's pause of the machines is this table's: the next one
+     starts with its machines free */
+  botHold: false,
 };
 
 /* what belongs to one game and goes with it: every place that sits the

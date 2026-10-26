@@ -273,6 +273,15 @@ describe('sitting at another table', () => {
     expect(useGame.getState().guideLane).toBe(false);
   });
 
+  it('lifts the reader\'s pause of the machines at the next table', () => {
+    useGame.getState().setBotHold(true);
+    useGame.getState().init(undefined, undefined);
+    expect(useGame.getState().botHold).toBe(false);
+    useGame.getState().setBotHold(true);
+    useGame.getState().init('ONLN');
+    expect(useGame.getState().botHold).toBe(false);
+  });
+
   it('takes the coach\'s word back with the move it was about', () => {
     const g = newGame(setup, 9);
     /* two actions this turn: the move taken back is still the turn's */
