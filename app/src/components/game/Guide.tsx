@@ -545,11 +545,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
   /* the lane reads like a conversation: the newest turn is the one in view
-     — and the expert's plate, as it answers and at each degree asked */
+     — and the expert's plate, as it answers and at each degree asked, and
+     the lesson as the card and the action chosen lengthen it */
   useEffect(() => {
     const el = box.current;
     if (dock && el) el.scrollTop = el.scrollHeight;
-  }, [dock, said.length, shownId, game?.ledgerSeq, advice]);
+  }, [dock, said.length, shownId, game?.ledgerSeq, advice, selectedCardId, verb]);
 
   /* a lesson, a move of hers or an event that is no longer the live one
      is filed into the thread, worded as it was when it was read: one pure
