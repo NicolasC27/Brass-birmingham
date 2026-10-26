@@ -10,12 +10,13 @@ import type { Progress } from './lessons';
 /* ------------------------------------------------------------------ */
 /* What an expert would play in the reader's seat, given by degrees:    */
 /* the reason first, then the place, then the move set up in the hand.  */
-/* The search that finds it plays at full strength — it is not the      */
-/* machine at the table — and pays with whichever card it can best      */
-/* spare; at the guided table that may be the very card the lesson due  */
-/* asks the reader to keep (the forge card, spent on the canal). The    */
-/* move is then set up with another card that plays it, or not at all,  */
-/* and the plate says why.                                              */
+/* The search that finds it plays at full strength for the reader's     */
+/* seat: it is not the move of the table's machine, which plays at its  */
+/* character's own strength. It pays with whichever card it can best    */
+/* spare; at the guided table that may be the very card a lesson asks   */
+/* the reader to keep (the forge card, spent on the canal). The move is */
+/* then set up with another card that plays it, or not at all, and the  */
+/* plate says why.                                                      */
 /* ------------------------------------------------------------------ */
 
 const WORKS: readonly IndustryType[] = ['cotton', 'manufacturer', 'pottery'];
