@@ -29,6 +29,8 @@ import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
+import { holdFor } from './guideHold';
+import type { Reading } from './guideHold';
 import { hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
 
 /* ------------------------------------------------------------------ */
@@ -478,12 +480,19 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const page = paged.key === situation ? paged.page : 0;
   const setPage = (p: number) => setPaged({ key: situation, page: p });
 
-  /* the machine's next move waits while its last one is being read (guided game only) */
-  /* a lesson still to be read holds the table: the reader sets the pace —
-     a page, a deed done beforehand or a lesson read back, not a deed to do.
-     So does the coach's word on the reader's last move, a moment */
+  /* a lesson still to be read: a page, a deed done beforehand or a
+     lesson read back, not a deed to do */
   const unread = !!owed && (review !== null || owed.mode === 'read' || owed.mode === 'already');
-  const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0 || coachHold));
+  /* what the reader may not have read yet: her fresh move's plate, the
+     table's news, the lesson's page, the coach's word on their last move */
+  const toRead: Reading = { plate: !!(bot && bot.fresh && botHidden !== bot.id), news: news.length > 0, page: owed?.mode ?? null, review: review !== null, coach: coachHold };
+  /* at the guided table the machine's next move waits while it is read:
+     the reader sets the pace (guideHold.ts) */
+  const machineUp = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot);
+  const hold = machineUp ? holdFor(toRead) : null;
+  /* the lesson's own part in it, which its note says */
+  const pageHold = machineUp && holdFor({ ...toRead, plate: false, news: false, coach: false }) !== null;
+  const holdWanted = hold !== null;
   /* the guide's own hold: the reader's pause of the machines is theirs */
   useEffect(() => {
     setGuideHold(holdWanted);
@@ -585,7 +594,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
   /* the guided game waits: the machine's next move comes once this one is read */
-  const holding = !!(tutorial && showBot && bot?.fresh && game.players[game.current]?.isBot);
+  const holding = hold === 'plate';
   /* the reader asked for the lesson back while the plate is on show */
   const unfolded = unfoldAt === bot?.id;
   /* her turn is running: the note steps back to a line that says so */
@@ -988,7 +997,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           {w.text}
                         </p>
                       ))}
-                      {unread && game.players[game.current]?.isBot && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
+                      {pageHold && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.botHeld', { name: machine })}</p>}
                       {step.done && review === null && !blocked && !already && !spare && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{myTurn ? t('game.guide.yourTurn') : t('game.guide.wait')}</p>}
                       {blocked && !myTurn && <p className="mt-1.5 font-sans text-[10.5px] font-semibold uppercase tracking-[0.14em] text-bottle-600">{t('game.guide.wait')}</p>}
                       </div>
