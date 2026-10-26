@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { buildTargets, newGame } from '@/game/engine';
+import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Card, GameState, SetupPayload } from '@/game/types';
 import { keepOf, placeLens, spareFor, spentBy } from '../expertAdvice';
@@ -53,11 +53,13 @@ describe('the cards a lesson keeps', () => {
   it('keeps the forge card through the canal, and the card of the deed itself', () => {
     const g = dudley();
     expect(g.round).toBe(2);
-    expect(keepOf('link', g, 0)).toMatchObject({ lesson: 'link', cards: [forge(g)], every: false });
-    expect(keepOf('iron', g, 0)?.cards).toEqual([forge(g)]);
-    expect(keepOf('coal', g, 0)?.cards).toEqual([coalCard(g)]);
+    /* named by the lesson whose deed it is kept for: the forge's */
+    expect(keepOf('link', g, 0)).toMatchObject({ lesson: 'iron', cards: [forge(g)], every: false });
+    expect(keepOf('iron', g, 0)).toMatchObject({ lesson: 'iron', cards: [forge(g)] });
+    expect(keepOf('coal', g, 0)).toMatchObject({ lesson: 'coal', cards: [coalCard(g)] });
     /* a works: the cards that build one as the table stands, or will once paid for */
     const works = keepOf('works', g, 0)!;
+    expect(works.lesson).toBe('works');
     expect(works.cards.length).toBeGreaterThan(0);
     for (const id of works.cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => (t.valid || onlyMoney(t)) && WORKS.includes(t.industry))).toBe(true);
     /* a page, a sale, an aim: nothing to keep */
@@ -93,9 +95,12 @@ describe('the cards a lesson keeps', () => {
     /* anyone's canal will do: a sale runs along any player's links */
     g.links['redditch--m-oxford'] = { owner: 1, era: 'canal' } as GameState['links'][string];
     const redditch = cardOf(g, (c) => c.kind === 'location' && c.town === 'redditch');
-    expect(keepOf('loan', g, 0)).toMatchObject({ lesson: 'loan', cards: [redditch], every: true });
+    /* kept for a works that sells there: the works lesson is named */
+    expect(keepOf('loan', g, 0)).toMatchObject({ lesson: 'works', cards: [redditch], every: true });
     /* no town linked to a merchant yet: nothing to keep */
     expect(keepOf('loan', dudley(), 0)).toBeNull();
+    /* the last round: the loan's page asks for no card */
+    expect(keepOf('loan', { ...g, round: eraRounds(2) }, 0)).toBeNull();
   });
 });
 
@@ -111,7 +116,7 @@ describe('the move set up in the hand', () => {
     expect(hand(g).filter(coventry)).toHaveLength(2);
     expect(coventry(hand(g).find((c) => c.id === got.played[0])!)).toBe(true);
     expect(got.kept).toEqual([forge(g)]);
-    expect(got.lesson).toBe('link');
+    expect(got.lesson).toBe('iron');
     /* and the engine takes it */
     expect(applyAction(g, 0, got.action!).state).not.toBeNull();
   });
@@ -216,7 +221,7 @@ describe('the move set up in the hand', () => {
     const g = dudley();
     g.players[0].hand = hand(g).filter((c) => c.id === forge(g));
     const canal: GameAction = { kind: 'network', card: forge(g), link: 'birmingham--dudley' };
-    expect(spareFor(g, 0, canal, [keepOf('link', g, 0)])).toEqual({ action: null, played: [], kept: [forge(g)], lesson: 'link' });
+    expect(spareFor(g, 0, canal, [keepOf('link', g, 0)])).toEqual({ action: null, played: [], kept: [forge(g)], lesson: 'iron' });
   });
 
   it('changes a scout\'s kept card for another', () => {

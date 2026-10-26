@@ -4,6 +4,7 @@ import { buildTargets, isWild, merchantOpen, reachable, tileKey } from '@/game/e
 import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Lens } from '@/game/store';
 import type { Card, GameState, IndustryType } from '@/game/types';
+import { lastRound } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* What an expert would play in the reader's seat, given by degrees:    */
@@ -18,8 +19,9 @@ import type { Card, GameState, IndustryType } from '@/game/types';
 
 const WORKS: readonly IndustryType[] = ['cotton', 'manufacturer', 'pottery'];
 
-/** the cards a lesson asks the reader to keep through a move, and what
- *  they are kept for: a move that does that may spend them */
+/** the cards the guided game asks the reader to keep through a move, the
+ *  lesson whose deed they are kept for (the one the plate names), and
+ *  that deed: a move that does it may spend them */
 export interface Keep {
   lesson: string;
   cards: string[];
@@ -44,24 +46,26 @@ const deedCards = (g: GameState, me: number, industry: IndustryType): string[] =
 /** a town that links laid, by anyone, join to a merchant of this table */
 const nearBuyer = (g: GameState, town: string): boolean => [...reachable(g, town, g.era, null)].some((n) => merchantOpen(g, n));
 
-/** what the lesson due asks the reader to keep: the card its own deed is
- *  done with, spent by another move — and, under the canal, the forge card
- *  the next action wants; under the loan, the cards of towns already
- *  linked to a merchant, which build a works that sells there */
+/** what a lesson asks the reader to keep: the card its own deed is done
+ *  with, spent by another move — and, under the canal, the forge card,
+ *  kept for the forge that follows; under the loan, the cards of towns
+ *  already linked to a merchant, which build a works that sells there
+ *  (not in the last round, where the loan's page asks for no card) */
 export function keepOf(id: string, g: GameState, me: number): Keep | null {
   const hand = g.players[me].hand;
-  const keep = (cards: string[], every: boolean, purpose: (a: GameAction) => boolean): Keep | null => (cards.length ? { lesson: id, cards, every, for: purpose } : null);
+  const keep = (lesson: string, cards: string[], every: boolean, purpose: (a: GameAction) => boolean): Keep | null => (cards.length ? { lesson, cards, every, for: purpose } : null);
   switch (id) {
     case 'coal':
-      return keep(deedCards(g, me, 'coal'), false, builds(['coal']));
+      return keep('coal', deedCards(g, me, 'coal'), false, builds(['coal']));
     case 'link':
-      return keep(hand.filter((c) => names(c, 'iron')).map((c) => c.id), false, builds(['iron']));
+      return keep('iron', hand.filter((c) => names(c, 'iron')).map((c) => c.id), false, builds(['iron']));
     case 'iron':
-      return keep(deedCards(g, me, 'iron'), false, builds(['iron']));
+      return keep('iron', deedCards(g, me, 'iron'), false, builds(['iron']));
     case 'works':
-      return keep(hand.filter((c) => buildsNow(g, me, c, WORKS)).map((c) => c.id), false, builds(WORKS));
+      return keep('works', hand.filter((c) => buildsNow(g, me, c, WORKS)).map((c) => c.id), false, builds(WORKS));
     case 'loan':
-      return keep(hand.filter((c) => c.kind === 'location' && !!c.town && nearBuyer(g, c.town)).map((c) => c.id), true, builds(WORKS));
+      if (lastRound(g)) return null;
+      return keep('works', hand.filter((c) => c.kind === 'location' && !!c.town && nearBuyer(g, c.town)).map((c) => c.id), true, builds(WORKS));
     default:
       return null;
   }
