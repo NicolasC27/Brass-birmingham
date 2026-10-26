@@ -1041,7 +1041,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
             <div className="relative flex min-h-0 flex-col">
               {showSteps && step ? (
                 <>
-                  <div className={cn('flex items-start gap-2', !dock && 'min-h-0')}>
+                  {/* floating, the note is held to the room left under the
+                      top bar: the text column takes the row's height, not
+                      its own, and scrolls in it — else it runs on under
+                      the buttons below */}
+                  <div className={cn('flex gap-2', dock ? 'items-start' : 'min-h-0 items-stretch')}>
                     <GraduationCap className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
                     <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                       <div className="flex items-start justify-between gap-2">
