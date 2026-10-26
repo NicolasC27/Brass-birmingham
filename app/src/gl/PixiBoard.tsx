@@ -1269,7 +1269,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
           const other = e?.player !== undefined && (s.game.players[e.player]?.isBot || (s.seat !== null && e.player !== s.seat));
           /* a guided table holds the machine while its reasons are read: the
              look at the board waits for that reading, not for this instant */
-          if (e && other && !s.botHold && at !== lastGlimpseAt && Date.now() - cam.lastManual > 4000) {
+          if (e && other && !s.guideHold && !s.botHold && at !== lastGlimpseAt && Date.now() - cam.lastManual > 4000) {
             lastGlimpseAt = at;
             /* shown the survey's way for a moment: the table dims, the move
                stands in colour, the camera comes to it (see the preview effect) */

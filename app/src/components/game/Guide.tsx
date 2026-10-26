@@ -361,7 +361,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      index of the action to come names it. Given by degrees: the reason,
      then, asked again, the place; the move set up in the hand last */
   const [advice, setAdvice] = useState<{ at: number; action: GameAction | null; busy: boolean; place: boolean } | null>(null);
-  const setBotHold = useGame((s) => s.setBotHold);
+  const setGuideHold = useGame((s) => s.setGuideHold);
   const coachHold = useGame((s) => s.coachHold);
   const setGlimpse = useGame((s) => s.setGlimpse);
   /* G folds the guide to a rail down the right edge, and back */
@@ -484,10 +484,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
      So does the coach's word on the reader's last move, a moment */
   const unread = !!owed && (review !== null || owed.mode === 'read' || owed.mode === 'already');
   const holdWanted = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot && ((bot && bot.fresh && botHidden !== bot.id) || unread || news.length > 0 || coachHold));
+  /* the guide's own hold: the reader's pause of the machines is theirs */
   useEffect(() => {
-    setBotHold(holdWanted);
-    return () => setBotHold(false);
-  }, [holdWanted, setBotHold]);
+    setGuideHold(holdWanted);
+    return () => setGuideHold(false);
+  }, [holdWanted, setGuideHold]);
 
 
   /* the lesson on show, worked out before the note decides whether to

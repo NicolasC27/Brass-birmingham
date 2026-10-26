@@ -173,6 +173,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
   const runBot = useGame((s) => s.runBot);
   const pass = useGame((s) => s.pass);
   const botHold = useGame((s) => s.botHold);
+  const guideHold = useGame((s) => s.guideHold);
     const takeLoan = useGame((s) => s.takeLoan);
   const ceremony = useGame((s) => s.ceremony);
   const gameOverOpen = useGame((s) => s.gameOverOpen);
@@ -316,14 +317,15 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
 
   /* --------------------------- bots ----------------------------- */
   useEffect(() => {
-    /* online the table plays its own bots */
-    if (!game || seat !== null || game.phase !== 'action' || ceremony || passTo || botHold) return;
+    /* online the table plays its own bots; at home they wait while the
+       reader holds them, and while the guide has a move read */
+    if (!game || seat !== null || game.phase !== 'action' || ceremony || passTo || botHold || guideHold) return;
     const p = game.players[game.current];
     if (!p.isBot) return;
     /* followed, a machine leaves the reader the time to see its move */
     const t = window.setTimeout(() => runBot(), skipAnim ? 180 : useGame.getState().followBots ? FOLLOW_PACE_MS : 1350);
     return () => window.clearTimeout(t);
-  }, [game, seat, ceremony, passTo, skipAnim, runBot, botHold]);
+  }, [game, seat, ceremony, passTo, skipAnim, runBot, botHold, guideHold]);
 
   /* --------------------------- timer ---------------------------- */
   useEffect(() => {

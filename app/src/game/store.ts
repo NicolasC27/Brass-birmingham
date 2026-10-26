@@ -235,9 +235,15 @@ interface GameStore {
   /** the guide is done with: the game goes on as a plain one, beside the
    *  lane the guide leaves */
   endTutorial: () => void;
-  /** the guide holds the machine: it explains one move before the next is played */
+  /** the reader holds the machines, from the table's tools: time to look,
+   *  or to prepare a move — a switch of theirs, which the guide never lifts */
   botHold: boolean;
   setBotHold: (on: boolean) => void;
+  /** the guide holds the machine at the guided table: a move is read
+   *  before the next is played. Its own switch: the reader's pause does
+   *  not lift it, nor it the reader's pause */
+  guideHold: boolean;
+  setGuideHold: (on: boolean) => void;
   ceremony: 'canal-end' | null;
   gameOverOpen: boolean;
 
@@ -718,6 +724,8 @@ export const useGame = create<GameStore>((set, get) => ({
   sheetOpened: false,
   botHold: false,
   setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
+  guideHold: false,
+  setGuideHold: (on) => set((s) => (s.guideHold === on ? s : { guideHold: on })),
   spotlight: null,
   lens: null,
   debriefOpen: false,
