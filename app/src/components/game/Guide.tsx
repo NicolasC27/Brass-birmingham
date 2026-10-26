@@ -495,8 +495,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const toRead: Reading = { plate: !!(bot && bot.fresh && botHidden !== bot.id), news: news.length > 0, page: owed?.mode ?? null, review: review !== null, coach: coachHold };
   /* at the guided table the machine's next move waits while it is read:
      the reader sets the pace — and, the first rounds played, may let it
-     play on, held by a new page alone (guideHold.ts) */
-  const playOn = !!settled.playOn;
+     play on, held by a new page alone (guideHold.ts). Beside the lane
+     only, whose thread keeps what goes by unheld: the floating note has
+     no thread, and a plate played past there would be lost unread */
+  const playOn = dock > 0 && !!settled.playOn;
   const machineUp = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot);
   const hold = machineUp ? holdFor(toRead, playOn) : null;
   /* the lesson's own part in it, which its note says */
@@ -649,8 +651,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (lctx) saveProgress(setAside(live, id, lctx));
   };
   /* the machine let play on, offered once the first rounds are played —
-     and kept offered to a reader who took it, to take it back */
-  const offerPlayOn = tutorial && (playOn || mayPlayOn(game));
+     and kept offered to a reader who took it, to take it back. Beside
+     the lane alone, as the choice holds there alone (see playOn) */
+  const offerPlayOn = tutorial && dock > 0 && (playOn || mayPlayOn(game));
   const letPlay = (on: boolean) => {
     if (tutorial) saveProgress(letPlayOn(live, on));
   };
