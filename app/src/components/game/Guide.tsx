@@ -29,7 +29,7 @@ import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
-import { holdFor, mayPlayOn } from './guideHold';
+import { holdFor, mayPlayOn, unreadOf } from './guideHold';
 import type { Reading } from './guideHold';
 import { hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
 
@@ -840,13 +840,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
 
   /* folded: a rail down the right edge — the lesson's number, how far the
-     guide has come (the lessons passed: one set aside is not), a dot when
-     the machine or the table has something to say; the lesson's lens
-     still lights the board */
+     guide has come (the lessons passed: one set aside is not), a dot while
+     something waits to be read (her fresh move, the news, a page); the
+     lesson's lens still lights the board */
   if (dock === GUIDE_RAIL) {
     const n = Math.min(shownIndex + 1, LESSONS.length);
     const come = settled.passed.length;
-    const unread = !!bot || news.length > 0;
+    const unread = unreadOf(toRead) !== null;
     /* the lesson's number while one is on show or set aside; at rest, the bar alone */
     const numbered = showSteps || setAsideNow;
     return (

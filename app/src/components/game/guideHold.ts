@@ -2,7 +2,7 @@ import type { GameState } from '@/game/types';
 import type { Mode } from './lessons';
 
 /* ------------------------------------------------------------------ */
-/* The guide's hold on the machine.                                    */
+/* The guide's hold on the machine, and what is still unread.          */
 /*                                                                     */
 /* At the guided table the machine waits while the reader reads: its   */
 /* last move's plate, the table's news, a lesson's page, a moment for  */
@@ -37,9 +37,10 @@ export interface Reading {
   coach: boolean;
 }
 
-/** what the machine waits on: the plate, the news, a page not read
- *  yet, a lesson read back, the coach */
-export type Hold = 'plate' | 'news' | 'page' | 'review' | 'coach';
+/** what is still unread: the plate, the news, a page not read yet */
+export type Unread = 'plate' | 'news' | 'page';
+/** what the machine waits on: what is unread, a lesson read back, the coach */
+export type Hold = Unread | 'review' | 'coach';
 
 /** a page the reader has not read yet: a lesson to read, or a deed done
  *  beforehand, whose page says what it changes */
@@ -56,4 +57,13 @@ export function holdFor(r: Reading, playOn = false): Hold | null {
   if (newPage(r)) return 'page';
   if (r.review) return 'review';
   return r.coach ? 'coach' : null;
+}
+
+/** what the folded rail calls unread, and answers with its button — the
+ *  plate first, as the note shows it first. Not a lesson read back, which
+ *  the reader chose to read, nor the coach's word, which the table shows */
+export function unreadOf(r: Reading): Unread | null {
+  if (r.plate) return 'plate';
+  if (r.news) return 'news';
+  return newPage(r) ? 'page' : null;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { GameState } from '@/game/types';
-import { PLAY_ON_FROM, holdFor, mayPlayOn } from '../guideHold';
+import { PLAY_ON_FROM, holdFor, mayPlayOn, unreadOf } from '../guideHold';
 import type { Reading } from '../guideHold';
 
 /** nothing on show: the guide at rest, a deed to do */
@@ -39,6 +39,21 @@ describe("the guide's hold on the machine", () => {
     expect(holdFor(at({ coach: true, page: 'already' }), true)).toBe('page');
     /* a lesson read back while a page waits: the page holds, not the reading back */
     expect(holdFor(at({ review: true, page: 'read' }), true)).toBe('page');
+  });
+});
+
+describe("the rail's unread", () => {
+  it('is the plate, the news or a new page, in that order', () => {
+    expect(unreadOf(quiet)).toBeNull();
+    expect(unreadOf(at({ plate: true, news: true, page: 'read' }))).toBe('plate');
+    expect(unreadOf(at({ news: true, page: 'already' }))).toBe('news');
+    expect(unreadOf(at({ page: 'read' }))).toBe('page');
+    expect(unreadOf(at({ page: 'already' }))).toBe('page');
+  });
+
+  it('is not a lesson read back, the coach, a deed to do or the guide at rest', () => {
+    expect(unreadOf(at({ review: true, coach: true }))).toBeNull();
+    for (const page of ['do', 'idle', 'finished', null] as const) expect(unreadOf(at({ page }))).toBeNull();
   });
 });
 
