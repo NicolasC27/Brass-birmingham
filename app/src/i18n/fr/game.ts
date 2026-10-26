@@ -1043,6 +1043,7 @@ const fr: typeof engame = {
     botWhy: 'Pourquoi {name} fait ça',
     botNext: 'Compris, {name} peut continuer',
     botOk: 'Compris',
+    playOn: { let: 'Laisser {name} jouer sans m’attendre', hold: 'Faire de nouveau attendre {name}', hint: '{name} joue sans attendre votre lecture : ses plaques ne la retiennent plus. Seule une leçon nouvelle la fait encore attendre.' },
     seeMove: 'Touche {key} pour revoir le coup de {name} sur la carte',
     readPlate: 'Attendez le coup de {bot}, lisez pourquoi, puis « Compris ».',
     turn: {

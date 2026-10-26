@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, X } from 'lucide-react';
+import { Bot, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
@@ -25,11 +25,11 @@ import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import type { Motif } from '@/game/progress';
-import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
+import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
-import { holdFor } from './guideHold';
+import { holdFor, mayPlayOn } from './guideHold';
 import type { Reading } from './guideHold';
 import { hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
 
@@ -487,11 +487,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
      table's news, the lesson's page, the coach's word on their last move */
   const toRead: Reading = { plate: !!(bot && bot.fresh && botHidden !== bot.id), news: news.length > 0, page: owed?.mode ?? null, review: review !== null, coach: coachHold };
   /* at the guided table the machine's next move waits while it is read:
-     the reader sets the pace (guideHold.ts) */
+     the reader sets the pace — and, the first rounds played, may let it
+     play on, held by a new page alone (guideHold.ts) */
+  const playOn = !!settled.playOn;
   const machineUp = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot);
-  const hold = machineUp ? holdFor(toRead) : null;
+  const hold = machineUp ? holdFor(toRead, playOn) : null;
   /* the lesson's own part in it, which its note says */
-  const pageHold = machineUp && holdFor({ ...toRead, plate: false, news: false, coach: false }) !== null;
+  const pageHold = machineUp && holdFor({ ...toRead, plate: false, news: false, coach: false }, playOn) !== null;
   const holdWanted = hold !== null;
   /* the guide's own hold: the reader's pause of the machines is theirs */
   useEffect(() => {
@@ -638,6 +640,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const putAside = (id: string) => {
     if (lctx) saveProgress(setAside(live, id, lctx));
   };
+  /* the machine let play on, offered once the first rounds are played —
+     and kept offered to a reader who took it, to take it back */
+  const offerPlayOn = tutorial && (playOn || mayPlayOn(game));
+  const letPlay = (on: boolean) => {
+    if (tutorial) saveProgress(letPlayOn(live, on));
+  };
   const fold = (to: boolean) => {
     setMiniAt(to ? shownId : '');
     try {
@@ -703,6 +711,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   };
   /* the machine's name at the table, for the note's word that it waits */
   const machine = game.players.find((x) => x.isBot)?.name ?? '';
+  /* the switch that lets it play on, in the lane's head and on the rail */
+  const playOnSwitch = (box: string) =>
+    offerPlayOn && (
+      <button type="button" onClick={() => letPlay(!playOn)} aria-pressed={playOn} aria-label={t('game.guide.playOn.let', { name: machine })} title={t(playOn ? 'game.guide.playOn.hold' : 'game.guide.playOn.let', { name: machine })} className={cn(box, 'rounded-md border border-brass-700/50 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400', playOn && '!border-brass-400 bg-brass-500/20 !text-brass-300')}>
+        <TimerOff className="h-3.5 w-3.5" />
+      </button>
+    );
   const here = game.actions.length;
   const advised = advice && advice.at === here ? advice : null;
   /* the move as it would be set up: the lesson's card kept, when another
@@ -852,6 +867,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
               <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
                 <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(come / LESSONS.length) * 100}%` }} />
               </span>
+              {playOnSwitch('flex h-8 w-8 shrink-0 items-center justify-center')}
             </>
           )}
         </aside>
@@ -876,6 +892,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.guide.aria')}</span>
           {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
+          {playOnSwitch('p-1')}
           <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
@@ -1152,6 +1169,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
               >
                 {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                 <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
+            {/* after the first rounds its moves may go by unheld: said here,
+                where the waiting is felt, and taken back the same way */}
+            {reading && offerPlayOn && (
+              <button type="button" onClick={() => letPlay(!playOn)} title={t('game.guide.playOn.hint', { name: bot.name })} className="mt-1.5 self-center font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400">
+                {t(playOn ? 'game.guide.playOn.hold' : 'game.guide.playOn.let', { name: bot.name })}
               </button>
             )}
           </motion.aside>

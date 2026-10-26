@@ -5,7 +5,7 @@ import type { GameAction } from '@/game/actions';
 import { LINKS, TOWNS } from '@/game/data';
 import { buildTargets, canLoan, ironSources, linkTargets, newGame, sellTargets } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
-import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
+import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, letPlayOn, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
 import { stepKeyOf } from '../lessonWords';
 import type { LessonCtx, Progress } from '../lessons';
 
@@ -837,10 +837,33 @@ describe('the progress on the disk', () => {
     expect(progressAt('AAAA')).toEqual(p);
   });
 
+  it('keeps the machine let play on with its own table', () => {
+    const p = letPlayOn(upTo('works', 'AAAA'), true);
+    expect(p.playOn).toBe(true);
+    expect(letPlayOn(p, true)).toBe(p);
+    saveProgress(p);
+    expect(readProgress()).toEqual(p);
+    expect(progressAt('AAAA').playOn).toBe(true);
+    /* the lessons go on as they were, and the choice with them */
+    const g = guided();
+    expect(pass(p, 'works').playOn).toBe(true);
+    expect(settle(see(p, 'works', ctx(g)), ctx(g)).playOn).toBe(true);
+    expect(setAside(p, 'works', ctx(g)).playOn).toBe(true);
+    /* held again, the record no longer says it */
+    const q = letPlayOn(p, false);
+    expect('playOn' in q).toBe(false);
+    expect(q.passed).toEqual(p.passed);
+    /* a second guided table starts held */
+    expect(progressAt('BBBB').playOn).toBeUndefined();
+  });
+
   it('keeps only the lessons it knows, once each', () => {
     const store = stubStorage();
     store.set('brassworks.tutorial.progress', JSON.stringify({ v: 2, code: 'GWE5', passed: ['welcome', 'nope', 'welcome', 'board'], later: { nope: 3, works: 2 }, seen: { coal: { at: 1, round: 1 }, bad: 1 } }));
     expect(readProgress()).toEqual({ v: 2, code: 'GWE5', passed: ['welcome', 'board'], later: { works: 2 }, seen: { coal: { at: 1, round: 1 } } });
+    store.set('brassworks.tutorial.progress', JSON.stringify({ v: 2, code: 'GWE5', passed: [], later: {}, seen: {}, playOn: 'yes' }));
+    expect(readProgress()).toEqual({ v: 2, code: 'GWE5', passed: [], later: {}, seen: {} });
+    expect(readProgress()).not.toHaveProperty('playOn');
     store.set('brassworks.tutorial.progress', '{not json');
     expect(readProgress()).toBeNull();
   });

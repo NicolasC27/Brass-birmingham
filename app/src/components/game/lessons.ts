@@ -223,6 +223,10 @@ export interface Progress {
   /** the deeds shown undone, and the pages the table called for, by the
    *  action and the round they first came up at */
   seen: Record<string, Sight>;
+  /** the machine let play on: its moves no longer wait to be read, only
+   *  a page not read yet holds it (guideHold.ts). Kept with the table's
+   *  lessons, so a fresh guided game starts held again */
+  playOn?: true;
 }
 
 export const freshProgress = (code: string | null): Progress => ({ v: 2, code, passed: [], later: {}, seen: {} });
@@ -303,6 +307,15 @@ export function see(p: Progress, id: string, c: LessonCtx): Progress {
   if (!l?.done || p.seen[id] || l.done(c) || aside(p, id, c)) return p;
   if (c.g.phase !== 'action' || c.g.current !== c.me) return p;
   return { ...p, seen: { ...p.seen, [id]: { at: c.g.actions.length, round: roundOf(c.g) } } };
+}
+
+/** the machine let play on, or held for the reader's reading again */
+export function letPlayOn(p: Progress, on: boolean): Progress {
+  if (!!p.playOn === on) return p;
+  const q = { ...p };
+  if (on) q.playOn = true;
+  else delete q.playOn;
+  return q;
 }
 
 /** the lesson passed: read on from, done, or skipped */
@@ -419,7 +432,7 @@ function parse(raw: string | null): Progress | null {
   try {
     const v = JSON.parse(raw) as Partial<Progress> | null;
     if (!v || v.v !== 2 || !Array.isArray(v.passed)) return null;
-    return { v: 2, code: typeof v.code === 'string' ? v.code : null, passed: [...new Set(v.passed.filter(known))], later: keep(v.later, isRound), seen: keep(v.seen, isSight) };
+    return { v: 2, code: typeof v.code === 'string' ? v.code : null, passed: [...new Set(v.passed.filter(known))], later: keep(v.later, isRound), seen: keep(v.seen, isSight), ...(v.playOn === true ? { playOn: true as const } : {}) };
   } catch {
     return null;
   }

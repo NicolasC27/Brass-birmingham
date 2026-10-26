@@ -1043,6 +1043,7 @@ const game: typeof engame = {
     botWhy: 'Warum {name} das tut',
     botNext: 'Verstanden, {name} darf weitermachen',
     botOk: 'Verstanden',
+    playOn: { let: '{name} spielen lassen, ohne auf mich zu warten', hold: '{name} wieder auf mich warten lassen', hint: '{name} spielt, ohne auf dein Lesen zu warten: Die Tafeln halten die Maschine nicht mehr auf. Nur eine neue Lektion lässt sie noch warten.' },
     seeMove: 'Taste {key} zeigt den Zug von {name} auf dem Spielplan',
     readPlate: 'Warte auf den Zug von {bot}, lies warum, dann Verstanden.',
     turn: {
