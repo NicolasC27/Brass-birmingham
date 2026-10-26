@@ -4,12 +4,14 @@ import type { GameAction } from '@/game/actions';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Card, GameState, SetupPayload } from '@/game/types';
-import { keepOf, placeLens, spareFor, spentBy } from '../expertAdvice';
+import { keepOf, keepsFor, placeLens, spareFor, spentBy } from '../expertAdvice';
+import { LESSON_IDS, freshProgress, lessonIndex, roundOf } from '../lessons';
 
-/* What an expert would play, set up without spending the card the lesson
-   due asks the reader to keep — on the guided game's deal (seed 3, two
-   seats), opened as the review found it: a mine at Dudley, then the
-   canal of the second round, which the search paid with the forge card */
+/* What an expert would play, set up without spending a card the guided
+   game asks the reader to keep — on its deal (seed 3, two seats), as the
+   reviews found it: the canal to Oxford that opens the first round, and
+   the canal of the second after a mine at Dudley, both paid by the search
+   with the forge card */
 
 function table(): GameState {
   const setup = {
@@ -48,6 +50,8 @@ const dudley = (): GameState => opened('dudley', 0, (c) => c.kind === 'location'
 /** the Coventry opening, with the coal card, as the lesson asks: the
  *  two Coventry cards left build nothing new there in the canal era */
 const coventryOpening = (): GameState => opened('coventry', 1, (c) => c.kind === 'industry' && c.industry === 'coal');
+/** the guided game's progress with every lesson before this one passed */
+const upTo = (id: string) => ({ ...freshProgress('TEST'), passed: LESSON_IDS.slice(0, lessonIndex(id)) });
 
 describe('the cards a lesson keeps', () => {
   it('keeps the forge card through the canal, and the card of the deed itself', () => {
@@ -101,6 +105,52 @@ describe('the cards a lesson keeps', () => {
     expect(keepOf('loan', dudley(), 0)).toBeNull();
     /* the last round: the loan's page asks for no card */
     expect(keepOf('loan', { ...g, round: eraRounds(2) }, 0)).toBeNull();
+  });
+});
+
+describe('the cards the guided game keeps as it stands', () => {
+  it('keeps the coal and forge cards from the first page of the opening', () => {
+    const g = table();
+    expect(g.current).toBe(0);
+    const keeps = keepsFor(upTo('coal'), g, 0, 'coal', false);
+    expect(keeps.map((k) => [k.lesson, k.cards])).toEqual([['coal', [coalCard(g)]], ['iron', [forge(g)]]]);
+    /* a page read before the mine keeps them just the same */
+    expect(keepsFor(upTo('welcome'), g, 0, null, false).map((k) => k.lesson)).toEqual(['coal', 'iron']);
+  });
+
+  it('pays the expert\'s first canal with another card than the forge card', () => {
+    /* round 1 of the guided deal, the coal lesson due: the search opens
+       with a canal to Oxford, paid with the forge card */
+    const g = table();
+    const canal: GameAction = { kind: 'network', card: forge(g), link: 'birmingham--m-oxford' };
+    const got = spareFor(g, 0, canal, keepsFor(upTo('coal'), g, 0, 'coal', false));
+    expect(got.action).toMatchObject({ kind: 'network', link: 'birmingham--m-oxford' });
+    expect(spentBy(got.action!)).not.toContain(forge(g));
+    expect(spentBy(got.action!)).not.toContain(coalCard(g));
+    expect(got).toMatchObject({ kept: [forge(g)], lesson: 'iron' });
+    expect(applyAction(g, 0, got.action!).state).not.toBeNull();
+  });
+
+  it('lets each opening card go once its deed is done, passed or set aside', () => {
+    const g = dudley();
+    /* the mine stands: the coal card is free, the forge card is not */
+    expect(keepsFor(upTo('link'), g, 0, 'link', false).map((k) => k.lesson)).toEqual(['iron']);
+    /* the forge lesson passed, or set aside this round: free as well */
+    expect(keepsFor({ ...upTo('develop') }, g, 0, null, false)).toEqual([]);
+    expect(keepsFor({ ...upTo('iron'), later: { iron: roundOf(g) } }, g, 0, null, false)).toEqual([]);
+    /* set aside last round, it is back: the card is kept again */
+    expect(keepsFor({ ...upTo('iron'), later: { iron: roundOf(g) - 1 } }, g, 0, null, false).map((k) => k.lesson)).toEqual(['iron']);
+    /* a forge of the reader's standing: nothing left to keep it for */
+    const built = dudley();
+    built.tiles['birmingham:2'] = { owner: 0, industry: 'iron', level: 1, flipped: false, cubes: 0 };
+    expect(keepsFor(upTo('iron'), built, 0, null, false)).toEqual([]);
+  });
+
+  it('keeps the loan\'s cards in the detour to it, before the lesson due\'s', () => {
+    const g = dudley();
+    g.links['redditch--m-oxford'] = { owner: 1, era: 'canal' } as GameState['links'][string];
+    const keeps = keepsFor(upTo('link'), g, 0, 'link', true);
+    expect(keeps.map((k) => [k.lesson, k.every])).toEqual([['works', true], ['iron', false]]);
   });
 });
 

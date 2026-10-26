@@ -4,7 +4,8 @@ import { buildTargets, isWild, merchantOpen, reachable, tileKey } from '@/game/e
 import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Lens } from '@/game/store';
 import type { Card, GameState, IndustryType } from '@/game/types';
-import { lastRound } from './lessons';
+import { asideNow, lastRound } from './lessons';
+import type { Progress } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* What an expert would play in the reader's seat, given by degrees:    */
@@ -69,6 +70,24 @@ export function keepOf(id: string, g: GameState, me: number): Keep | null {
     default:
       return null;
   }
+}
+
+/** the opening's deeds, by the lesson that teaches each, the keep that
+ *  holds its card, and the tile it builds */
+const OPENING: readonly (readonly [lesson: string, keep: string, industry: IndustryType])[] = [
+  ['coal', 'coal', 'coal'],
+  ['iron', 'link', 'iron'],
+];
+
+/** what the guided game keeps as it stands: the cards of the lesson due
+ *  (and of the loan, in the detour to it) — and, whatever page is on
+ *  show, the opening's: the coal card until the mine, the forge card
+ *  until the forge, each until its lesson is passed or set aside */
+export function keepsFor(p: Progress, g: GameState, me: number, deed: string | null, detour: boolean): Keep[] {
+  const built = (industry: IndustryType): boolean => Object.values(g.tiles).some((t) => t.owner === me && t.industry === industry);
+  const opening = OPENING.filter(([lesson, , industry]) => !p.passed.includes(lesson) && !asideNow(p, lesson, g) && !built(industry)).map(([, id]) => id);
+  const ids = [...new Set([...(detour ? ['loan'] : []), ...(deed ? [deed] : []), ...opening])];
+  return ids.map((id) => keepOf(id, g, me)).filter((k): k is Keep => !!k);
 }
 
 /** the cards a move spends */

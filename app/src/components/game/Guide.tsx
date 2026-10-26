@@ -29,7 +29,7 @@ import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
-import { hasPlace, keepOf, placeLens, spareFor } from './expertAdvice';
+import { hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -519,12 +519,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
   const lensId = showSteps && !spare ? step?.id : null;
-  /* the expert's move, set up without the card the lesson due asks the
-     reader to keep — the forge card, under the canal — and its place,
-     once asked for, lit in the lesson's stead while the plate is up */
+  /* the expert's move, set up without the card a lesson asks the reader
+     to keep — the lesson due's, and through the opening the coal and
+     forge cards, whatever page is on show — and its place, once asked
+     for, lit in the lesson's stead while the plate is up */
   const deed = tutorial && owed?.mode === 'do' ? owed.id : null;
-  const keeps = useMemo(() => (game && deed ? [...new Set([...(detour ? ['loan'] : []), deed])].map((id) => keepOf(id, game, me)) : []), [game, deed, detour, me]);
-  const counsel = useMemo(() => (game && advice?.action && advice.at === game.actions.length ? spareFor(game, me, advice.action, keeps) : null), [game, advice, keeps, me]);
+  const counsel = useMemo(() => (game && advice?.action && advice.at === game.actions.length ? spareFor(game, me, advice.action, tutorial ? keepsFor(settled, game, me, deed, detour) : []) : null), [game, advice, tutorial, settled, me, deed, detour]);
   const placeLit = useMemo(() => (aid && myTurn && advice?.place && counsel ? placeLens(counsel.action ?? advice.action!) : null), [aid, myTurn, advice, counsel]);
   /* × on the tips note hides the tips alone: in the lane the machine's
      reasons are its turns of the conversation, and stay */

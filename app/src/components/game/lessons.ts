@@ -234,7 +234,8 @@ export const roundOf = (g: GameState): number => (g.era === 'rail' ? 100 : 0) + 
 /** a deed that holds after its lesson was shown undone: as good as passed */
 const earned = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.done && !!p.seen[l.id] && l.done(c, p.seen[l.id]);
 /** set aside, and the round it was set aside in not over yet */
-const aside = (p: Progress, id: string, c: LessonCtx): boolean => p.later[id] !== undefined && roundOf(c.g) <= p.later[id];
+export const asideNow = (p: Progress, id: string, g: GameState): boolean => p.later[id] !== undefined && roundOf(g) <= p.later[id];
+const aside = (p: Progress, id: string, c: LessonCtx): boolean => asideNow(p, id, c.g);
 /** the first lesson set aside and not passed */
 const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) => !p.passed.includes(l.id) && aside(p, l.id, c));
 /** the last round of the game: no payday follows it, and no round for a
