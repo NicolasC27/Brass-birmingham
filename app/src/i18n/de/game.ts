@@ -96,6 +96,7 @@ const game: typeof engame = {
     plays: '{name} spielt',
     thinks: '{name} überlegt…',
     waitsRead: '{name} wartet, bis du gelesen hast…',
+    held: '{name} wartet: Maschinen angehalten',
     playsRest: 'spielt',
     thinksRest: 'überlegt…',
     noteEmpty: 'Notiz',

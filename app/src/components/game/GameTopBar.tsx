@@ -433,7 +433,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   let blocked: string | null = null;
   let blockedWhy: string | undefined;
   if (stage === 'theirs') {
-    line = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t(guideHold || botHold ? 'game.topbar.waitsRead' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
+    line = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t(guideHold ? 'game.topbar.waitsRead' : botHold ? 'game.topbar.held' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
   } else if (stage === 'ready') {
     line = preparing ? t('game.topbar.hint.prepared') : t('game.topbar.hint.ready');
   } else if (stage === 'target') {
