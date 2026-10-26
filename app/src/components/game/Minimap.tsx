@@ -8,7 +8,7 @@ import { activeBoard, LINKS, MERCHANTS, MERCHANT_BY_ID, PLAYER_COLORS, TOWNS, TO
 import { merchantOpen } from '@/game/engine';
 import { tileKey } from '@/game/engine';
 import type { GameState } from '@/game/types';
-import { MM_MAX_W, MM_MIN_W, MM_W_FOR, mapUrls, minimapWidth, setBoardOption, useBoardOptions } from './boardOptions';
+import { MM_MAX_W, MM_MIN_W, MM_W_FOR, mapUrls, minimapWidth, setBoardOption, useBoardOptions, useTableWidth } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { useT } from '@/i18n';
 import { ShapeChip } from './TownInspector';
@@ -52,7 +52,9 @@ export default function Minimap({
   const maps = mapUrls(activeBoard().id);
   const insets = useHudInsets();
   const t = useT();
-  const MM_W = minimapWidth(boardOpts);
+  /* the plate yields to the hand on a narrow table: read from the table as it changes */
+  const table = useTableWidth();
+  const MM_W = minimapWidth(boardOpts, table);
   const resizing = useRef<{ x: number; w: number } | null>(null);
   const MM_H = Math.round((MM_W * WORLD_H) / WORLD_W);
   /* possession marks grow with the plate: 6 / 7 / 9 px, never under 6 */

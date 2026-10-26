@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { ChipStyle, SlotArt, StockStyle, TileArt } from '@/gl/faces';
 import type { TrafficLevel } from '@/gl/ambiance';
 import type { IndustryType } from '@/game/types';
@@ -56,17 +56,37 @@ export const tableWidth = (): number => {
   return Math.round(document.querySelector('[data-table]')?.getBoundingClientRect().width || window.innerWidth);
 };
 
+/** the room the table has, followed as it changes: the table itself is
+ *  watched, not the window alone — a guide lane opened or folded beside
+ *  it, or a tablet turned, changes it after the window's own resize, once
+ *  the page has laid the lane out again */
+export function useTableWidth(): number {
+  const [width, setWidth] = useState(tableWidth);
+  useEffect(() => {
+    const read = () => setWidth(tableWidth());
+    const table = document.querySelector('[data-table]');
+    const watch = table && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(read) : null;
+    if (table) watch?.observe(table);
+    window.addEventListener('resize', read);
+    read();
+    return () => {
+      watch?.disconnect();
+      window.removeEventListener('resize', read);
+    };
+  }, []);
+  return width;
+}
+
 /** what the plate leaves the hand beside it once the table is wide */
 const MM_HAND_ROOM = 880;
 
-export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number; focus?: boolean }): number => {
+export const minimapWidth = (o: { minimapSize: MinimapSize; minimapWidth: number; focus?: boolean }, table = tableWidth()): number => {
   if (o.focus) return MM_MIN_W;
   const wanted = o.minimapWidth ? Math.min(MM_MAX_W, Math.max(MM_MIN_W, o.minimapWidth)) : MM_W_FOR[o.minimapSize];
   /* on a tablet the plate yields to the hand: a fifth of the table at most.
      On a desktop the cap is the room the hand leaves instead, for a fifth
      of 1440 px was already under the small preset and the corner could no
      longer widen the plate */
-  const table = tableWidth();
   const cap = Math.max(MM_MIN_W, Math.floor(table * 0.22), table - MM_HAND_ROOM);
   return Math.min(wanted, cap);
 };

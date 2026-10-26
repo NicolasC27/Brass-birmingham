@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { ShapeChip } from '@/components/game/TownInspector';
 import { seatInk } from '@/components/results/ink';
 import EmptyNotice from '@/components/results/EmptyNotice';
-import { minimapWidth, tableWidth, useBoardOptions } from '@/components/game/boardOptions';
+import { minimapWidth, useBoardOptions, useTableWidth } from '@/components/game/boardOptions';
 
 const PixiBoard = lazy(() => import('@/gl/PixiBoard'));
 
@@ -74,13 +74,8 @@ export default function Replay() {
      does at the table: centred on the screen, it ran under the plate on a
      tablet. The plate's width follows the window, so a resize re-reads it */
   const boardOpts = useBoardOptions();
-  const [, setVw] = useState(tableWidth);
-  useEffect(() => {
-    const onResize = () => setVw(tableWidth());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-  const reelRight = minimapWidth(boardOpts) + 28;
+  const table = useTableWidth();
+  const reelRight = minimapWidth(boardOpts, table) + 28;
 
   /* auto-play: one action every 1.2 s at ×1 */
   useEffect(() => {

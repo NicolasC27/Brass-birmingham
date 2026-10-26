@@ -14,7 +14,7 @@ import { INDUSTRY_COLOR } from './townChrome';
 import { industryFaceUrl } from '@/gl/faces';
 import Tooltip from './Tooltip';
 import { cn } from '@/lib/utils';
-import { minimapWidth, tableWidth, useBoardOptions } from './boardOptions';
+import { minimapWidth, useBoardOptions, useTableWidth } from './boardOptions';
 import { useHudInsets } from './useHudInsets';
 import { isKey, keyLabel, typing, useKeybindings } from './keybindings';
 import { FIT_PAD_BOTTOM, setFitReserve } from './boardView';
@@ -458,17 +458,13 @@ function HandDock() {
   const insets = useHudInsets();
   /* the dock lives in the band between the left edge and the minimap, and
      takes what it needs of it, centred */
-  const bandRight = minimapWidth(boardOpts) + 28;
+  /* the room the hand has is the table's, which a guide lane may narrow —
+     and widen again, folded or gone, with no resize of the window */
+  const vw = useTableWidth();
+  const bandRight = minimapWidth(boardOpts, vw) + 28;
   /* the dock sits in the middle of the screen when the rail and the minimap
      leave it room there; when they do not (a wide minimap), it takes the
      middle of what is left between them instead of squeezing its cards */
-  /* the room the hand has is the table's, which a guide lane may narrow */
-  const [vw, setVw] = useState(tableWidth);
-  useEffect(() => {
-    const onResize = () => setVw(tableWidth());
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
   const centredRoom = vw - 2 * Math.max(insets.left, bandRight);
   const centredOnScreen = centredRoom >= 780;
   /* the fan scrolls sideways with a plain mouse wheel (no shift needed) */
