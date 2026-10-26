@@ -3,6 +3,7 @@ import { applyAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { spareCard } from '@/game/bot';
 import { buildTargets, newGame } from '@/game/engine';
+import { onlyMoney } from '@/game/search';
 import type { Card, GameState, SetupPayload } from '@/game/types';
 import { keepOf, placeLens, spareFor, spentBy } from '../expertAdvice';
 
@@ -48,10 +49,10 @@ describe('the cards a lesson keeps', () => {
     expect(keepOf('link', g, 0)).toMatchObject({ lesson: 'link', cards: [forge(g)], every: false });
     expect(keepOf('iron', g, 0)?.cards).toEqual([forge(g)]);
     expect(keepOf('coal', g, 0)?.cards).toEqual([coalCard(g)]);
-    /* a works: the cards that build one as the table stands */
+    /* a works: the cards that build one as the table stands, or will once paid for */
     const works = keepOf('works', g, 0)!;
     expect(works.cards.length).toBeGreaterThan(0);
-    for (const id of works.cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => t.valid && ['cotton', 'manufacturer', 'pottery'].includes(t.industry))).toBe(true);
+    for (const id of works.cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => (t.valid || onlyMoney(t)) && ['cotton', 'manufacturer', 'pottery'].includes(t.industry))).toBe(true);
     /* a page, a sale, an aim: nothing to keep */
     expect(keepOf('sell', g, 0)).toBeNull();
     expect(keepOf('beer', g, 0)).toBeNull();
@@ -64,6 +65,20 @@ describe('the cards a lesson keeps', () => {
     const cards = keepOf('iron', g, 0)?.cards ?? [];
     for (const id of cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => t.valid && t.industry === 'iron')).toBe(true);
     expect(cards.length).toBe(hand(g).filter((c) => buildTargets(g, 0, c).some((t) => t.valid && t.industry === 'iron')).length);
+  });
+
+  it('keeps the cards a short purse alone stops from building', () => {
+    const g = dudley();
+    const rich = keepOf('works', g, 0)!.cards;
+    g.players[0].money = 0;
+    /* nothing builds now, yet the same cards will once the purse allows */
+    expect(hand(g).some((c) => buildTargets(g, 0, c).some((t) => t.valid))).toBe(false);
+    expect(keepOf('works', g, 0)?.cards).toEqual(rich);
+    const noCoal = dudley();
+    noCoal.players[0].hand = hand(noCoal).filter((c) => c.id !== coalCard(noCoal));
+    const mines = keepOf('coal', noCoal, 0)!.cards;
+    noCoal.players[0].money = 0;
+    expect(keepOf('coal', noCoal, 0)?.cards).toEqual(mines);
   });
 
   it('under the loan, keeps every card of a town already linked to a merchant', () => {

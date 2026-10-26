@@ -158,7 +158,7 @@ function cardWorth(card: Card, uses: Map<string, BuildTarget[]>, later: Map<stri
 }
 
 /** a build this card names that only the purse forbids */
-const onlyMoney = (t: BuildTarget): boolean => !t.valid && !!t.reason?.startsWith('Needs £');
+export const onlyMoney = (t: BuildTarget): boolean => !t.valid && !!t.reason?.startsWith('Needs £');
 
 /* A few moves can only be offered once the engine has played them — a
    naming of one's own works, a double rail drinking from one's own brewery,

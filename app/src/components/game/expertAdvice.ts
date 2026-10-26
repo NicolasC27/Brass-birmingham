@@ -2,6 +2,7 @@ import { applyAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
 import { spareCard } from '@/game/bot';
 import { buildTargets, merchantOpen, reachable, tileKey } from '@/game/engine';
+import { onlyMoney } from '@/game/search';
 import type { Lens } from '@/game/store';
 import type { Card, GameState, IndustryType } from '@/game/types';
 
@@ -31,7 +32,9 @@ export interface Keep {
 const builds = (inds: readonly IndustryType[]) => (a: GameAction): boolean => a.kind === 'build' && inds.includes(a.industry);
 /** the industry card that names this industry: "la carte forge" */
 const names = (c: Card, industry: IndustryType): boolean => c.kind === 'industry' && (c.industry === industry || c.industry2 === industry);
-const buildsNow = (g: GameState, me: number, c: Card, inds: readonly IndustryType[]): boolean => buildTargets(g, me, c).some((t) => t.valid && inds.includes(t.industry));
+/** the card builds one of these as the table stands, or will once the
+ *  purse allows: a short purse keeps the card all the same */
+const buildsNow = (g: GameState, me: number, c: Card, inds: readonly IndustryType[]): boolean => buildTargets(g, me, c).some((t) => (t.valid || onlyMoney(t)) && inds.includes(t.industry));
 /** the card the lesson names when the hand holds it, else any card that
  *  builds the lesson's tile as the table stands */
 const deedCards = (g: GameState, me: number, industry: IndustryType): string[] => {
