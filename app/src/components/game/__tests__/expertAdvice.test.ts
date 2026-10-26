@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { spareCard } from '@/game/bot';
 import { buildTargets, newGame } from '@/game/engine';
-import { onlyMoney } from '@/game/search';
+import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Card, GameState, SetupPayload } from '@/game/types';
 import { keepOf, placeLens, spareFor, spentBy } from '../expertAdvice';
 
@@ -33,14 +32,22 @@ const cardOf = (g: GameState, pred: (c: Card) => boolean): string => hand(g).fin
 const forge = (g: GameState) => cardOf(g, (c) => c.kind === 'industry' && c.industry === 'iron');
 const coalCard = (g: GameState) => cardOf(g, (c) => c.kind === 'industry' && c.industry === 'coal');
 
-/** the Dudley opening: the reader's mine there, the machine passing until
- *  the reader's first turn of the second round */
-function dudley(): GameState {
+const coventry = (c: Card) => c.kind === 'location' && c.town === 'coventry';
+const WORKS = ['cotton', 'manufacturer', 'pottery'];
+
+/** an opening: the reader's mine built, the machine passing until the
+ *  reader's first turn of the second round */
+function opened(town: string, slot: number, card: (c: Card) => boolean): GameState {
   let g = table();
-  g = played(g, { kind: 'build', card: cardOf(g, (c) => c.kind === 'location' && c.town === 'dudley'), town: 'dudley', slot: 0, industry: 'coal' });
+  g = played(g, { kind: 'build', card: cardOf(g, card), town, slot, industry: 'coal' });
   while (g.current !== 0) g = played(g, { kind: 'pass', card: g.players[g.current].hand[0].id });
   return g;
 }
+/** the Dudley opening, with the Dudley card: two Coventry cards in hand */
+const dudley = (): GameState => opened('dudley', 0, (c) => c.kind === 'location' && c.town === 'dudley');
+/** the Coventry opening, with the coal card, as the lesson asks: the
+ *  two Coventry cards left build nothing new there in the canal era */
+const coventryOpening = (): GameState => opened('coventry', 1, (c) => c.kind === 'industry' && c.industry === 'coal');
 
 describe('the cards a lesson keeps', () => {
   it('keeps the forge card through the canal, and the card of the deed itself', () => {
@@ -52,7 +59,7 @@ describe('the cards a lesson keeps', () => {
     /* a works: the cards that build one as the table stands, or will once paid for */
     const works = keepOf('works', g, 0)!;
     expect(works.cards.length).toBeGreaterThan(0);
-    for (const id of works.cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => (t.valid || onlyMoney(t)) && ['cotton', 'manufacturer', 'pottery'].includes(t.industry))).toBe(true);
+    for (const id of works.cards) expect(buildTargets(g, 0, hand(g).find((c) => c.id === id)!).some((t) => (t.valid || onlyMoney(t)) && WORKS.includes(t.industry))).toBe(true);
     /* a page, a sale, an aim: nothing to keep */
     expect(keepOf('sell', g, 0)).toBeNull();
     expect(keepOf('beer', g, 0)).toBeNull();
@@ -100,31 +107,52 @@ describe('the move set up in the hand', () => {
     expect(got.action).not.toBeNull();
     expect(got.action).toMatchObject({ kind: 'network', link: 'birmingham--dudley' });
     expect(spentBy(got.action!)).not.toContain(forge(g));
-    /* the card the search itself would spare, of the ones left — not the
-       brewery card, which the guide's habits keep while no brewery stands */
-    const others = hand(g).filter((c) => c.id !== forge(g) && !(c.kind === 'industry' && c.industry === 'brewery'));
-    expect(got.played).toEqual([spareCard(g, 0, others)!.id]);
+    /* the second of the two Coventry cards: the hand does without it */
+    expect(hand(g).filter(coventry)).toHaveLength(2);
+    expect(coventry(hand(g).find((c) => c.id === got.played[0])!)).toBe(true);
     expect(got.kept).toEqual([forge(g)]);
     expect(got.lesson).toBe('link');
     /* and the engine takes it */
     expect(applyAction(g, 0, got.action!).state).not.toBeNull();
   });
 
+  it('pays with the card of a town the canal era closes, not the works card', () => {
+    const g = coventryOpening();
+    const pottery = cardOf(g, (c) => c.kind === 'industry' && c.industry === 'pottery');
+    const canal: GameAction = { kind: 'network', card: forge(g), link: 'coventry--birmingham' };
+    /* the search's own order would spend the pottery card: it builds nothing yet */
+    const pool = hand(g).filter((c) => c.id !== forge(g) && !(c.kind === 'industry' && c.industry === 'brewery'));
+    expect(sparedFirst(g, 0, pool)[0].id).toBe(pottery);
+    const got = spareFor(g, 0, canal, [keepOf('link', g, 0)]);
+    expect(coventry(hand(g).find((c) => c.id === got.played[0])!)).toBe(true);
+    /* one Coventry card only, no pair: the mine there still closes the town */
+    const one = coventryOpening();
+    const second = hand(one).filter(coventry)[1].id;
+    one.players[0].hand = hand(one).filter((c) => c.id !== second);
+    const alone = spareFor(one, 0, canal, [keepOf('link', one, 0)]);
+    expect(alone.played).toEqual([hand(one).find(coventry)!.id]);
+    expect(applyAction(one, 0, alone.action!).state).not.toBeNull();
+  });
+
   it('pays with the brewery card only when no other card will do, or a brewery stands', () => {
     const g = dudley();
     const beer = cardOf(g, (c) => c.kind === 'industry' && c.industry === 'brewery');
     const canal: GameAction = { kind: 'network', card: forge(g), link: 'birmingham--dudley' };
-    /* the brewery card is the one the search would spare: fewest builds */
-    expect(spareCard(g, 0, hand(g).filter((c) => c.id !== forge(g)))!.id).toBe(beer);
+    const pottery = cardOf(g, (c) => c.kind === 'industry' && c.industry === 'pottery');
+    /* the brewery card is the one the search would spare first */
+    expect(sparedFirst(g, 0, hand(g).filter((c) => c.id !== forge(g)))[0].id).toBe(beer);
     expect(spareFor(g, 0, canal, [keepOf('link', g, 0)]).played).not.toContain(beer);
     /* the forge card and the brewery card alone: the brewery card pays */
     const two = dudley();
     two.players[0].hand = hand(two).filter((c) => c.id === forge(two) || c.id === beer);
     expect(spareFor(two, 0, canal, [keepOf('link', two, 0)]).played).toEqual([beer]);
-    /* a brewery of the reader's on the board: the card is spared like any other */
-    const built = dudley();
-    built.tiles['birmingham:0'] = { owner: 0, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
-    expect(spareFor(built, 0, canal, [keepOf('link', built, 0)]).played).toEqual([spareCard(built, 0, hand(built).filter((c) => c.id !== forge(built)))!.id]);
+    /* with the pottery card beside them, the pottery card pays — until a
+       brewery of the reader's stands: the card is spared like any other */
+    const three = dudley();
+    three.players[0].hand = hand(three).filter((c) => c.id === forge(three) || c.id === beer || c.id === pottery);
+    expect(spareFor(three, 0, canal, [keepOf('link', three, 0)]).played).toEqual([pottery]);
+    three.tiles['birmingham:0'] = { owner: 0, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    expect(spareFor(three, 0, canal, [keepOf('link', three, 0)]).played).toEqual([sparedFirst(three, 0, hand(three).filter((c) => c.id !== forge(three)))[0].id]);
   });
 
   it('spares the forge card from a loan and a pass as well', () => {

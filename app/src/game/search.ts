@@ -160,6 +160,26 @@ function cardWorth(card: Card, uses: Map<string, BuildTarget[]>, later: Map<stri
 /** a build this card names that only the purse forbids */
 export const onlyMoney = (t: BuildTarget): boolean => !t.valid && !!t.reason?.startsWith('Needs £');
 
+/** what each card of a hand unlocks: the builds it allows now, and those
+ *  only the purse forbids, weighed for later */
+function handWorth(s: GameState, i: number, cards: readonly Card[]): { uses: Map<string, BuildTarget[]>; later: Map<string, number> } {
+  const uses = new Map<string, BuildTarget[]>();
+  const later = new Map<string, number>();
+  for (const card of cards) {
+    const all = buildTargets(s, i, card);
+    uses.set(card.id, all.filter((t) => t.valid));
+    later.set(card.id, weights.cardLater ? weights.cardLater * all.filter(onlyMoney).length : 0);
+  }
+  return { uses, later };
+}
+
+/** the cards, the one best spared first: the order the listing pays in
+ *  for every move that is not a build */
+export function sparedFirst(s: GameState, i: number, cards: readonly Card[]): Card[] {
+  const { uses, later } = handWorth(s, i, cards);
+  return [...cards].sort((a, b) => cardWorth(a, uses, later) - cardWorth(b, uses, later));
+}
+
 /* A few moves can only be offered once the engine has played them — a
    naming of one's own works, a double rail drinking from one's own brewery,
    a development taken twice — and the table the engine hands back was
@@ -186,7 +206,6 @@ export function playListed(s: GameState, i: number, action: GameAction): GameSta
  *  all at once and one by one; the developments; a loan, a scout, a pass */
 export function legalActions(s: GameState, i: number, o: SearchOptions = {}): GameAction[] {
   const p = s.players[i];
-  const w = weights;
   if (s.phase !== 'action' || s.current !== i || !p.hand.length) return [];
   const out: GameAction[] = [];
   /* a move only the engine can vouch for: played once, its table kept */
@@ -196,13 +215,7 @@ export function legalActions(s: GameState, i: number, o: SearchOptions = {}): Ga
     proofs.set(action, { from: s, seat: i, after });
     return true;
   };
-  const uses = new Map<string, BuildTarget[]>();
-  const later = new Map<string, number>();
-  for (const card of p.hand) {
-    const all = buildTargets(s, i, card);
-    uses.set(card.id, all.filter((t) => t.valid));
-    later.set(card.id, w.cardLater ? w.cardLater * all.filter(onlyMoney).length : 0);
-  }
+  const { uses, later } = handWorth(s, i, p.hand);
   const byWorth = [...p.hand].sort((a, b) => cardWorth(a, uses, later) - cardWorth(b, uses, later));
   const spare = byWorth[0];
 

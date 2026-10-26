@@ -1,8 +1,7 @@
 import { applyAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { spareCard } from '@/game/bot';
-import { buildTargets, merchantOpen, reachable, tileKey } from '@/game/engine';
-import { onlyMoney } from '@/game/search';
+import { buildTargets, isWild, merchantOpen, reachable, tileKey } from '@/game/engine';
+import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Lens } from '@/game/store';
 import type { Card, GameState, IndustryType } from '@/game/types';
 
@@ -91,10 +90,22 @@ export type Spared =
  *  guide's own habit keeps it (tips), so a card is changed for it last */
 const beerCard = (g: GameState, me: number, c: Card): boolean => names(c, 'brewery') && !Object.values(g.tiles).some((t) => t.owner === me && t.industry === 'brewery');
 
+/** a card the hand does without: the second of a pair, or, in the canal
+ *  era, the card of a town the reader already has a tile in — one tile
+ *  a town, it builds nothing new there before the rail */
+const idle = (g: GameState, me: number, c: Card): boolean => {
+  if (isWild(c)) return false;
+  const twin = g.players[me].hand.some((x) => x.id !== c.id && x.kind === c.kind && (c.kind === 'location' ? x.town === c.town : x.industry === c.industry && x.industry2 === c.industry2));
+  const closed = g.era === 'canal' && c.kind === 'location' && Object.entries(g.tiles).some(([k, t]) => t.owner === me && k.split(':')[0] === c.town);
+  return twin || closed;
+};
+
 /** the same move, paid with cards the lessons do not keep, when the
- *  engine allows one; the card each time the one best spared, as the
- *  search itself chooses it (fewest builds, wilds last) — a brewery card
- *  not yet built only when no other card will do */
+ *  engine allows one; the card each time the one the hand best does
+ *  without — the second of a pair, or a town the canal era closes to the
+ *  reader, first; else as the search itself spares a card (what it
+ *  unlocks, now or once paid for; wilds last) — a brewery card not yet
+ *  built only when no other card will do */
 export function spareFor(g: GameState, me: number, a: GameAction, keeps: readonly (Keep | null)[]): Spared {
   const held = keeps.filter((k): k is Keep => !!k && breaks(k, a));
   if (!held.length) return { action: a, played: [], kept: [], lesson: null };
@@ -111,7 +122,8 @@ export function spareFor(g: GameState, me: number, a: GameAction, keeps: readonl
     const tried = g.players[me].hand.filter((c) => !off.has(c.id) && !used.has(c.id)).map((c) => ({ card: c, move: withCard(move, out, c.id) }));
     const legal = tried.filter((x) => !!applyAction(g, me, x.move).state);
     const rather = legal.filter((x) => !beerCard(g, me, x.card));
-    const best = spareCard(g, me, (rather.length ? rather : legal).map((x) => x.card));
+    const order = sparedFirst(g, me, (rather.length ? rather : legal).map((x) => x.card));
+    const best = order.find((c) => idle(g, me, c)) ?? order[0];
     if (!best) return { action: null, played: [], kept: swaps, lesson };
     move = legal.find((x) => x.card.id === best.id)!.move;
     played.push(best.id);
