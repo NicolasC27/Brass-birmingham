@@ -15,7 +15,7 @@
 /** a turn of the conversation, kept once it is no longer the live one */
 export interface Said {
   key: string;
-  kind: 'lesson' | 'bot' | 'news' | 'ask' | 'answer';
+  kind: 'lesson' | 'bot' | 'news' | 'ask' | 'answer' | 'note';
   head?: string;
   body: string;
   /** the seat whose move this was, for the look back at the board */
@@ -97,4 +97,10 @@ export function fileThread(th: Thread, now: LiveNow): Thread {
 export function askThread(th: Thread, q: string, answer: string): Thread {
   const at = th.said.length;
   return { ...th, said: [...th.said, { key: `q${at}`, kind: 'ask', body: q }, { key: `a${at}`, kind: 'answer', body: answer }] };
+}
+
+/** a word of the guide's own, added to the thread: what a switch the
+ *  reader has just turned changes at the table */
+export function noteThread(th: Thread, body: string): Thread {
+  return { ...th, said: [...th.said, { key: `s${th.said.length}`, kind: 'note', body }] };
 }

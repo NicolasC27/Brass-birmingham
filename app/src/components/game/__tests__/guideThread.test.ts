@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EMPTY_THREAD, askThread, fileThread } from '../guideThread';
+import { EMPTY_THREAD, askThread, fileThread, noteThread } from '../guideThread';
 
 const lesson = (at: number) => ({ at, word: () => ({ head: `h${at}`, body: `b${at}` }) });
 
@@ -81,5 +81,14 @@ describe("the guide's thread", () => {
   it('keeps a question and its answer together', () => {
     const a = askThread(EMPTY_THREAD, 'q?', 'a.');
     expect(a.said.map((s) => s.kind)).toEqual(['ask', 'answer']);
+  });
+
+  it('adds a word of its own under a key of its own', () => {
+    const a = noteThread(askThread(EMPTY_THREAD, 'q?', 'a.'), 'n.');
+    const b = noteThread(a, 'n.');
+    expect(b.said.map((s) => s.kind)).toEqual(['ask', 'answer', 'note', 'note']);
+    expect(new Set(b.said.map((s) => s.key)).size).toBe(4);
+    /* and the live items are left as they were */
+    expect(fileThread(b, { lesson: null, bot: null, news: [] })).toBe(b);
   });
 });

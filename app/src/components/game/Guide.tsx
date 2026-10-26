@@ -20,7 +20,7 @@ import { dictOf, getLang, localeOf, useLang, useT } from '@/i18n';
 import { roman } from '@/gl/roman';
 import { cn } from '@/lib/utils';
 import { useHudRects } from './useHudRects';
-import { EMPTY_THREAD, askThread, fileThread } from './guideThread';
+import { EMPTY_THREAD, askThread, fileThread, noteThread } from './guideThread';
 import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
@@ -652,12 +652,18 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const putAside = (id: string) => {
     if (lctx) saveProgress(setAside(live, id, lctx));
   };
+  /* the machine's name at the table, for the note's word that it waits */
+  const machine = game.players.find((x) => x.isBot)?.name ?? '';
   /* the machine let play on, offered once the first rounds are played —
      and kept offered to a reader who took it, to take it back. Beside
      the lane alone, as the choice holds there alone (see playOn) */
   const offerPlayOn = tutorial && dock > 0 && (playOn || mayPlayOn(game));
   const letPlay = (on: boolean) => {
-    if (tutorial) saveProgress(letPlayOn(live, on));
+    if (!tutorial) return;
+    saveProgress(letPlayOn(live, on));
+    /* what it changes, said in the thread: the switches are icons, and
+       their titles are never seen under a finger */
+    if (on) setThread((prev) => noteThread(prev, t('game.guide.playOn.hint', { name: machine })));
   };
   const fold = (to: boolean) => {
     setMiniAt(to ? shownId : '');
@@ -722,8 +728,6 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
   };
-  /* the machine's name at the table, for the note's word that it waits */
-  const machine = game.players.find((x) => x.isBot)?.name ?? '';
   /* the switch that lets it play on, in the lane's head and on the rail */
   const playOnSwitch = (box: string) =>
     offerPlayOn && (
