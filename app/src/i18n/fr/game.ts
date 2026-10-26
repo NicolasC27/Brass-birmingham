@@ -1076,6 +1076,9 @@ const fr: typeof engame = {
       prepare: 'Préparer ce coup',
       where: 'Montrer où',
       show: 'Montrer le coup',
+      card: 'la carte {card}',
+      spared: 'Jouez-le avec {card} : la leçon « {lesson} » vous demande de garder {kept}.',
+      kept: 'Ce coup dépense {kept}, que la leçon « {lesson} » vous demande de garder, et aucune autre carte de votre main ne le permet : le guide ne le prépare pas.',
       lesson: 'La leçon, elle, demande : {lesson}.',
       why: {
         coal: 'Une mine bon marché : ses cubes nourrissent les constructions autour, et une fois partis elle se retourne pour du revenu et des points.',

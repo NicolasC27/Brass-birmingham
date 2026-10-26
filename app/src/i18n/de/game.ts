@@ -1076,6 +1076,9 @@ const game: typeof engame = {
       prepare: 'Zug vorbereiten',
       where: 'Zeigen, wo',
       show: 'Den Zug zeigen',
+      card: 'die Karte {card}',
+      spared: 'Nimm dafür {card}: Die Lektion „{lesson}“ bittet dich, {kept} zu behalten.',
+      kept: 'Dieser Zug verbraucht {kept}, die du laut der Lektion „{lesson}“ behalten sollst, und keine andere Karte deiner Hand erlaubt ihn: Das Tutorial bereitet ihn nicht vor.',
       lesson: 'Die Lektion verlangt ihrerseits: {lesson}.',
       why: {
         coal: 'Eine billige Mine: ihre Würfel versorgen die Bauten ringsum, und sind sie weg, dreht sie sich um für Einkommen und Punkte.',

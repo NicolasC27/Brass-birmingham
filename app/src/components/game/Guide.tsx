@@ -12,7 +12,7 @@ import { ledgerText } from '@/game/ledgerText';
 import { passagesOf } from '@/game/faq';
 import { askedAs, tell } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
-import { describeAction, useGame } from '@/game/store';
+import { cardLabel, describeAction, useGame } from '@/game/store';
 import { searchTurn } from '@/game/search';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
@@ -29,7 +29,7 @@ import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, loanWords, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
-import { hasPlace, placeLens } from './expertAdvice';
+import { hasPlace, keepOf, placeLens, spareFor } from './expertAdvice';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -519,9 +519,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* what the lesson lights on the table: a deed that can wait is read
      past, so its button is not rung */
   const lensId = showSteps && !spare ? step?.id : null;
-  /* the expert's move, its place once asked for: lit in the lesson's
-     stead while the plate is up */
-  const placeLit = useMemo(() => (aid && myTurn && game && advice?.place && advice.action && advice.at === game.actions.length ? placeLens(advice.action) : null), [aid, myTurn, game, advice]);
+  /* the expert's move, set up without the card the lesson due asks the
+     reader to keep — the forge card, under the canal — and its place,
+     once asked for, lit in the lesson's stead while the plate is up */
+  const deed = tutorial && owed?.mode === 'do' ? owed.id : null;
+  const keeps = useMemo(() => (game && deed ? [...new Set([...(detour ? ['loan'] : []), deed])].map((id) => keepOf(id, game, me)) : []), [game, deed, detour, me]);
+  const counsel = useMemo(() => (game && advice?.action && advice.at === game.actions.length ? spareFor(game, me, advice.action, keeps) : null), [game, advice, keeps, me]);
+  const placeLit = useMemo(() => (aid && myTurn && advice?.place && counsel ? placeLens(counsel.action ?? advice.action!) : null), [aid, myTurn, advice, counsel]);
   /* × on the tips note hides the tips alone: in the lane the machine's
      reasons are its turns of the conversation, and stay */
   const showBot = bot && botHidden !== bot.id && (guided || dock > 0 || !hidden);
@@ -690,7 +694,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const machine = game.players.find((x) => x.isBot)?.name ?? '';
   const here = game.actions.length;
   const advised = advice && advice.at === here ? advice : null;
-  const move = advised?.action ?? null;
+  /* the move as it would be set up: the lesson's card kept, when another
+     card plays it — else the expert's own, which is then not set up */
+  const move = advised?.action ? (counsel?.action ?? advised.action) : null;
+  /* cards named as the hand names them: "la carte Worcester et la carte Forge" */
+  const cardsNamed = (ids: string[]): string => listed(ids.map((id) => {
+    const c = game.players[me].hand.find((x) => x.id === id);
+    return t('game.guide.suggest.card', { card: c ? cardLabel(c) : id });
+  }), 'conjunction');
   const ask = () => {
     setAdvice({ at: here, action: null, busy: true, place: false });
     /* the search thinks on the thread that paints: let the note say so first */
@@ -1181,6 +1192,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         return closed ? ` ${t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[closed].name })}` : null;
                       })()}
                     </p>
+                    {/* the card the lesson keeps: another plays the move, or none does */}
+                    {advised.place && counsel?.lesson && (
+                      <p className="mt-1 font-serif text-[12.5px] leading-snug text-cream-100/80">
+                        {counsel.action
+                          ? t('game.guide.suggest.spared', { card: cardsNamed(counsel.played), kept: cardsNamed(counsel.kept), lesson: t(`game.guide.steps.${stepKey(counsel.lesson)}.title`, stepVars()) })
+                          : t('game.guide.suggest.kept', { kept: cardsNamed(counsel.kept), lesson: t(`game.guide.steps.${stepKey(counsel.lesson)}.title`, stepVars()) })}
+                      </p>
+                    )}
                     {dueStep && owed?.mode === 'do' && !spare && !asked(dueStep.id, move) && <p className="mt-1 font-serif text-[12.5px] italic leading-snug text-cream-100/65">{t('game.guide.suggest.lesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) })}</p>}
                   </>
                 ) : (
@@ -1191,15 +1210,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            {/* one degree more at each click: the place, then the move set up */}
+            {/* one degree more at each click: the place, then the move set
+                up — never with the card the lesson keeps */}
             {!advised.busy && move && !advised.place && (
               <button type="button" onClick={showPlace} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
                 {t(hasPlace(move) ? 'game.guide.suggest.where' : 'game.guide.suggest.show')}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
             )}
-            {!advised.busy && advised.place && move && (
-              <button type="button" onClick={() => prepare(move)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+            {!advised.busy && advised.place && counsel?.action && (
+              <button type="button" onClick={() => prepare(counsel.action!)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
                 {t('game.guide.suggest.prepare')}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>

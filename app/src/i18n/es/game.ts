@@ -1076,6 +1076,9 @@ const game: typeof engame = {
       prepare: 'Preparar la jugada',
       where: 'Mostrar dónde',
       show: 'Mostrar la jugada',
+      card: 'la carta {card}',
+      spared: 'Juégala con {card}: la lección «{lesson}» te pide guardar {kept}.',
+      kept: 'Esta jugada gasta {kept}, que la lección «{lesson}» te pide guardar, y ninguna otra carta de tu mano la permite: la guía no la prepara.',
       lesson: 'La lección, por su parte, pide: {lesson}.',
       why: {
         coal: 'Una mina barata: sus cubos alimentan las construcciones de alrededor, y cuando se van se voltea para ingresos y puntos.',

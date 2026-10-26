@@ -1074,6 +1074,9 @@ const game = {
       prepare: 'Set it up',
       where: 'Show where',
       show: 'Show the move',
+      card: 'the {card} card',
+      spared: 'Play it with {card}: the lesson “{lesson}” asks you to keep {kept}.',
+      kept: 'This move spends {kept}, which the lesson “{lesson}” asks you to keep, and no other card in your hand allows it: the guide does not set it up.',
       lesson: 'The lesson, for its part, asks for: {lesson}.',
       why: {
         coal: 'A cheap mine: its cubes feed the builds around it, and once they are gone it flips for income and points.',
