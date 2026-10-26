@@ -1,8 +1,9 @@
 /* ------------------------------------------------------------------ */
 /* The guide's thread: everything already said, oldest first, and what */
 /* is still live — the lesson on show, the machine's last move, the     */
-/* table's news already read. A live item replaced by a new one is      */
-/* filed into the thread, worded as it was when it was read.            */
+/* table's news. A live item replaced by a new one is filed into the    */
+/* thread, worded as it was when it was read; the news, once read, or   */
+/* once the table has played on past them unread.                       */
 /*                                                                      */
 /* One pure step, `fileThread`, takes the thread and what is live now,  */
 /* and hands back the same thread when nothing has moved: the guide     */
@@ -38,11 +39,13 @@ export interface Thread {
   said: Said[];
   lesson: LiveLesson | null;
   bot: LiveBot | null;
+  /** the table's news on show, not read yet */
+  news: { id: number; text: string }[];
   /** the last piece of news filed */
   filed: number;
 }
 
-export const EMPTY_THREAD: Thread = { said: [], lesson: null, bot: null, filed: -1 };
+export const EMPTY_THREAD: Thread = { said: [], lesson: null, bot: null, news: [], filed: -1 };
 
 export interface LiveNow {
   /** the lesson on show, and its words — asked for only when it is new */
@@ -53,6 +56,9 @@ export interface LiveNow {
   bot: LiveBot | null;
   /** the table's news the reader has already seen */
   news: { id: number; text: string }[];
+  /** and the news on show, not read yet: gone unread — the machine let
+   *  play on, the reader's next move played — they are filed all the same */
+  unread?: { id: number; text: string }[];
 }
 
 /** the thread once what is live now has been taken in: the same object
@@ -75,12 +81,15 @@ export function fileThread(th: Thread, now: LiveNow): Thread {
     if (th.bot) n.said.push({ key: `b${th.bot.id}`, kind: 'bot', head: th.bot.head, body: th.bot.body, seat: th.bot.seat });
     n.bot = now.bot;
   }
-  const toFile = now.news.filter((x) => x.id > th.filed);
+  const unread = now.unread ?? [];
+  const gone = th.news.filter((x) => !unread.some((y) => y.id === x.id) && !now.news.some((y) => y.id === x.id));
+  const toFile = [...gone, ...now.news].filter((x) => x.id > th.filed).sort((a, b) => a.id - b.id);
   if (toFile.length) {
     const n = edit();
     n.said.push(...toFile.map((x) => ({ key: `n${x.id}`, kind: 'news' as const, body: x.text })));
     n.filed = toFile[toFile.length - 1].id;
   }
+  if (th.news.length !== unread.length || th.news.some((x, i) => x.id !== unread[i].id)) edit().news = unread;
   return next;
 }
 

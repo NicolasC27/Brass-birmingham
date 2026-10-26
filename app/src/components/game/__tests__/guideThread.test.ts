@@ -47,6 +47,31 @@ describe("the guide's thread", () => {
     expect(fileThread(a, { lesson: null, bot: null, news })).toBe(a);
   });
 
+  it('files the news the table played on past unread', () => {
+    const news = [{ id: 5, text: 'a' }, { id: 6, text: 'b' }];
+    /* on show, not read: nothing filed yet */
+    const a = fileThread(EMPTY_THREAD, { lesson: null, bot: null, news: [], unread: news });
+    expect(a.said).toEqual([]);
+    expect(fileThread(a, { lesson: null, bot: null, news: [], unread: news })).toBe(a);
+    /* the machine played on: they are gone from the table, filed as they were */
+    const b = fileThread(a, { lesson: null, bot: null, news: [], unread: [{ id: 9, text: 'c' }] });
+    expect(b.said.map((s) => s.key)).toEqual(['n5', 'n6']);
+    expect(b.said.map((s) => s.body)).toEqual(['a', 'b']);
+    /* read at last, the next ones are filed once, not twice */
+    const c = fileThread(b, { lesson: null, bot: null, news: [{ id: 9, text: 'c' }], unread: [] });
+    expect(c.said.map((s) => s.key)).toEqual(['n5', 'n6', 'n9']);
+    expect(fileThread(c, { lesson: null, bot: null, news: [], unread: [] }).said).toHaveLength(3);
+  });
+
+  it('files news read on show once, when they are read', () => {
+    const news = [{ id: 3, text: 'a' }];
+    const a = fileThread(EMPTY_THREAD, { lesson: null, bot: null, news: [], unread: news });
+    const b = fileThread(a, { lesson: null, bot: null, news, unread: [] });
+    expect(b.said.map((s) => s.key)).toEqual(['n3']);
+    /* and gone from the table afterwards, not again */
+    expect(fileThread(b, { lesson: null, bot: null, news: [], unread: [] }).said).toHaveLength(1);
+  });
+
   it("files the machine's last move when a new one comes", () => {
     const a = fileThread(EMPTY_THREAD, { lesson: null, bot: { id: 3, head: 'w', body: 'y', seat: 1 }, news: [] });
     const b = fileThread(a, { lesson: null, bot: { id: 4, head: 'w2', body: 'y2', seat: 2 }, news: [] });

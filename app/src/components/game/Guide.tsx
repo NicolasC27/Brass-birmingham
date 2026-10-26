@@ -582,6 +582,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     rest: !!dock && !showSteps,
     bot: dock && bot ? { id: bot.id, head: bot.what, body: bot.why, seat: bot.seat } : null,
     news: dock ? happens.filter((x) => x.id <= eventsSeen) : [],
+    unread: dock ? news : [],
   });
   if (filedNow !== thread) setThread(filedNow);
 
