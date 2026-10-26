@@ -24,7 +24,7 @@ const game: typeof engame = {
     spectatingKeys: '{last}: letzter Zug eines Spielers · {survey}: das Reich des Spielers am Zug',
     spectatingLeave: 'Kontor',
     holdBots: 'Maschinen anhalten (Zeit, einen Zug vorzubereiten)',
-    resumeBots: 'Maschinen weiterspielen lassen',
+    resumeBots: 'Maschinen wieder anwerfen',
     skipBots: 'Bot-Animation überspringen',
     reconnecting: 'Verbindung zum Tisch wird wiederhergestellt…',
     passDevice: 'Gib das Gerät an {name} weiter',

@@ -22,7 +22,7 @@ const game = {
     spectatingKeys: '{last}: a player’s last move · {survey}: the acting player’s empire',
     spectatingLeave: 'Desk',
     holdBots: 'Hold the machines (time to prepare a move)',
-    resumeBots: 'Let the machines play on',
+    resumeBots: 'Resume the machines',
     skipBots: 'Skip bot animation',
     reconnecting: 'Reconnecting to the table…',
     passDevice: 'Pass the device to {name}',
