@@ -956,8 +956,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
       style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
     >
       <LessonLens stepId={lensId} active={showSteps} over={placeLit} />
+      {/* the lane's head stays at the top as the thread scrolls under it:
+          the fold is always in reach, under a finger as under the G key */}
       {dock > 0 && (
-        <div className="flex shrink-0 items-center gap-2 pb-1">
+        <div className="sticky -top-3 z-10 -mx-3 -mt-3 flex shrink-0 items-center gap-2 bg-coal-950 px-3 pb-1 pt-3">
           <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
           <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.guide.aria')}</span>
           {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
