@@ -169,7 +169,9 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
       return t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...g.players.map((x) => x.vp)) });
     case 'do':
     default:
-      return t('game.guide.ask.answer.do');
+      /* the note asks the expert on the reader's own turn only: off it, the
+         answer promises no plate, it says where and when to ask */
+      return g.phase === 'action' && g.current === me && !p.isBot ? t('game.guide.ask.answer.do') : t('game.guide.ask.answer.doTool', { ask: t('game.guide.suggest.ask') });
   }
 }
 

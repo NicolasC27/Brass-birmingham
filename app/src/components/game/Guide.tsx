@@ -801,7 +801,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const q = question.trim();
     if (!q) return;
     setQuestion('');
-    const got = answerQuestion(q, { g: game, me }, t, getLang(), passages);
+    /* the table answers where the assistance is on, as the tools' plate does */
+    const got = answerQuestion(q, aid ? { g: game, me } : null, t, getLang(), passages);
     if (got.near.length) setNearFor((prev) => ({ ...prev, [q]: got.near }));
     setThread((prev) => askThread(prev, q, got.answer));
     if (got.intent === 'do' && aid && myTurn && !advised) ask();

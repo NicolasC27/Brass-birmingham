@@ -61,6 +61,17 @@ describe('a question about the table', () => {
     expect(answerTo('money', { ...last, eraLength: 'standard' as const }, 0, fr)).toBe(answerTo('money', g, 0, fr));
   });
 
+  it('promises the expert\'s plate on the reader\'s turn only', () => {
+    const g = guided();
+    expect(g.current).toBe(0);
+    expect(answerTo('do', g, 0, fr)).toBe(fr('game.guide.ask.answer.do'));
+    /* the machine's turn: the note asks nothing, the answer says when to */
+    const theirs = { ...g, current: 1 };
+    expect(answerTo('do', theirs, 0, fr)).toBe(fr('game.guide.ask.answer.doTool', { ask: fr('game.guide.suggest.ask') }));
+    expect(answerTo('do', theirs, 0, fr)).not.toContain('plaque');
+    expect(answerTo('do', theirs, 0, en)).toContain('What would an expert play?');
+  });
+
   it('goes to the table while a game is on, and to the rules otherwise', () => {
     const g = guided();
     const asked = answerQuestion('combien j ai d argent', { g, me: 0 }, fr, 'fr', passages('fr'));
