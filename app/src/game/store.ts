@@ -244,6 +244,10 @@ interface GameStore {
    *  not lift it, nor it the reader's pause */
   guideHold: boolean;
   setGuideHold: (on: boolean) => void;
+  /** the guide has the reader's eyes at the guided table — a lesson on
+   *  show, her plate, the news: the table's notices wait meanwhile */
+  guideSpeaks: boolean;
+  setGuideSpeaks: (on: boolean) => void;
   ceremony: 'canal-end' | null;
   gameOverOpen: boolean;
 
@@ -730,6 +734,8 @@ export const useGame = create<GameStore>((set, get) => ({
   setBotHold: (on) => set((s) => (s.botHold === on ? s : { botHold: on })),
   guideHold: false,
   setGuideHold: (on) => set((s) => (s.guideHold === on ? s : { guideHold: on })),
+  guideSpeaks: false,
+  setGuideSpeaks: (on) => set((s) => (s.guideSpeaks === on ? s : { guideSpeaks: on })),
   spotlight: null,
   lens: null,
   debriefOpen: false,

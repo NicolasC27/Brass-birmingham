@@ -165,6 +165,8 @@ function Notices() {
   const seat = useGame((s) => s.seat);
   const code = useGame((s) => s.code);
   const pins = useGame((s) => s.pins);
+  /* at the guided table the guide speaks first: the book waits, folded */
+  const hush = useGame((s) => s.tutorial && s.guideSpeaks);
   const issue = useGazetteDesk((s) => s.issue);
   const insets = useHudInsets();
   const { vw, vh } = useViewport();
@@ -419,7 +421,7 @@ function Notices() {
   };
 
   const hasPages = notes.length > 0;
-  const folded = !leafing && open.length === 0;
+  const folded = !leafing && (open.length === 0 || hush);
   const list = leafing ? open : shown;
 
   return (
@@ -436,16 +438,18 @@ function Notices() {
           style={{ width: place.width }}
         >
           {folded ? (
-            /* nothing open: the book is a stud of brass, the pages kept inside */
+            /* nothing open, or the guide speaking: the book is a stud of
+               brass, the pages kept inside — a dot while some wait unread */
             <button
               type="button"
               onClick={() => setLeafing(true)}
               aria-label={t('game.notice.book')}
               aria-expanded={false}
               title={t('game.notice.book')}
-              className="plaque pointer-events-auto flex h-8 w-8 items-center justify-center rounded-full text-brass-400/80 transition-colors hover:text-brass-300"
+              className="plaque pointer-events-auto relative flex h-8 w-8 items-center justify-center rounded-full text-brass-400/80 transition-colors hover:text-brass-300"
             >
               <BookOpen className="h-4 w-4" strokeWidth={1.75} />
+              {open.length > 0 && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
             </button>
           ) : (
             <div className="plaque pointer-events-auto flex w-full flex-col overflow-hidden rounded-lg" style={{ maxHeight: leafing ? place.tall : undefined }}>

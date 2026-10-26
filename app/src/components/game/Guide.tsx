@@ -574,6 +574,17 @@ function Guide({ dock = 0 }: { dock?: number }) {
   useEffect(() => {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
+  /* the guide has the reader's eyes — a lesson open, her plate, the
+     news: at the guided table the table's notices (the paper, the call
+     to play) wait until it is done. Not while it is folded to the rail
+     or its strip, nor on her turn, when the note only says whose turn */
+  const setGuideSpeaks = useGame((s) => s.setGuideSpeaks);
+  const quiet = miniAt === shownId || (machineUp && !unread);
+  const speaks = !!tutorial && dock !== GUIDE_RAIL && ((showSteps && !quiet) || reading || news.length > 0);
+  useEffect(() => {
+    setGuideSpeaks(speaks);
+    return () => setGuideSpeaks(false);
+  }, [speaks, setGuideSpeaks]);
   /* the lane reads like a conversation: the newest turn is the one in
      view. Whatever comes in lengthens it — a lesson filed and the next,
      her plate, the news, a Skip the table now calls for, the expert's
