@@ -1,4 +1,4 @@
-import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
@@ -408,6 +408,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the box moves under the pointer without a render: the state is
      written once, when it is let go */
   const box = useRef<HTMLDivElement>(null);
+  /* and it is watched while it stands (see below): its coming and going
+     is state too, so the watch starts with the box, whenever it shows */
+  const [boxOn, setBoxOn] = useState(false);
+  const boxRef = useCallback((el: HTMLDivElement | null) => {
+    box.current = el;
+    setBoxOn(el !== null);
+  }, []);
 
   /* my seat: online the one the table gave me; at home the first human at the table */
   const me = seat ?? Math.max(0, game?.players.findIndex((p) => !p.isBot) ?? 0);
@@ -567,13 +574,38 @@ function Guide({ dock = 0 }: { dock?: number }) {
   useEffect(() => {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
-  /* the lane reads like a conversation: the newest turn is the one in view
-     — and the expert's plate, as it answers and at each degree asked, and
-     the lesson as the card and the action chosen lengthen it */
+  /* the lane reads like a conversation: the newest turn is the one in
+     view. Whatever comes in lengthens it — a lesson filed and the next,
+     her plate, the news, a Skip the table now calls for, the expert's
+     next degree, the lesson grown with the card chosen — and brings its
+     foot into view, where the newest stands. Read off the page itself,
+     not off a list of what may come in: a list forgets one. The floating
+     note, held to the room under the top bar, scrolls the same way */
   useEffect(() => {
     const el = box.current;
-    if (dock && el) el.scrollTop = el.scrollHeight;
-  }, [dock, said.length, shownId, game?.ledgerSeq, advice, selectedCardId, verb]);
+    if (!boxOn || !el) return;
+    let tall = el.scrollHeight;
+    let frame = 0;
+    const look = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        const now = el.scrollHeight;
+        if (now > tall) el.scrollTop = now;
+        tall = now;
+      });
+    };
+    const grown = new MutationObserver(look);
+    grown.observe(el, { childList: true, subtree: true, characterData: true });
+    const sized = new ResizeObserver(look);
+    sized.observe(el);
+    el.scrollTop = el.scrollHeight;
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      grown.disconnect();
+      sized.disconnect();
+    };
+  }, [boxOn]);
 
   /* a lesson, a move of hers or an event that is no longer the live one
      is filed into the thread, worded as it was when it was read: one pure
@@ -915,7 +947,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
 
   return (
     <div
-      ref={box}
+      ref={boxRef}
       data-guide
       className={cn(
         'z-[80] flex min-h-0 flex-col items-stretch gap-2 overflow-y-auto overscroll-contain',
@@ -1302,7 +1334,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             e.preventDefault();
             putQuestion();
           }}
-          className="sticky bottom-0 mt-auto flex shrink-0 items-center gap-2 pt-2"
+          className="sticky -bottom-3 z-10 -mx-3 -mb-3 mt-auto flex shrink-0 items-center gap-2 bg-coal-950 px-3 pb-3 pt-2"
         >
           <input
             value={question}
