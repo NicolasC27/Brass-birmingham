@@ -20,7 +20,7 @@ import { FeedbackButton } from '@/components/site/Feedback';
 import TableMood, { TableMenu } from '@/components/game/TableMood';
 import Guide from '@/components/game/Guide';
 import { guideDock, GUIDE_RAIL } from '@/components/game/guideKeys';
-import { useWide } from '@/hooks/use-narrow';
+import { useWide, useWindowMeasure } from '@/hooks/use-narrow';
 import Notices from '@/components/game/Notices';
 import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
 import Gazette from '@/components/game/Gazette';
@@ -125,6 +125,9 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
   /* the room the guide takes from the table: a lane of its own when the
      window can spare it, nothing when it cannot */
   const wide = useWide();
+  /* and how wide it is: a window resized or a tablet turned narrows or
+     widens the lane without crossing the line above */
+  const laneRoom = useWindowMeasure(guideDock);
   const setGlimpse = useGame((s) => s.setGlimpse);
   const setSurveySeat = useGame((s) => s.setSurveySeat);
   const cycleSurveySeat = useGame((s) => s.cycleSurveySeat);
@@ -673,7 +676,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
      the analysis while a game is read again — never under either. The
      guide speaks only while moves are played: through the era's count and
      on the final ledger its lane would stand empty, and the table has it */
-  const dock = analysisPane || ((tutorial || guideLane) && wide && game.phase === 'action' ? (boardOpts.guideFolded ? GUIDE_RAIL : guideDock()) : 0);
+  const dock = analysisPane || ((tutorial || guideLane) && wide && game.phase === 'action' ? (boardOpts.guideFolded ? GUIDE_RAIL : laneRoom) : 0);
 
   return (
     <div className="fixed inset-0 z-[60] select-none overflow-hidden bg-coal-950">

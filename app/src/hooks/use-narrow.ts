@@ -39,3 +39,18 @@ export function useWide(): boolean {
     () => false,
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* A measure of the window, followed as it is resized or a tablet      */
+/* turned: the lanes that take a share of it are measured again, and   */
+/* the page renders only when the measure itself changes.              */
+/* ------------------------------------------------------------------ */
+
+const onResize = (cb: () => void) => {
+  window.addEventListener('resize', cb);
+  return () => window.removeEventListener('resize', cb);
+};
+
+export function useWindowMeasure<T extends number | string | boolean>(measure: (width: number) => T): T {
+  return useSyncExternalStore(onResize, () => measure(window.innerWidth), () => measure(1280));
+}
