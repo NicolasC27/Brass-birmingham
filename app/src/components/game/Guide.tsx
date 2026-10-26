@@ -429,9 +429,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
   /* a lesson the reader went back to: held until they read forward again */
   const [review, setReview] = useState<Review | null>(null);
-  /* G folds the guide to a rail down the right edge, and back. Folded, a
-     lesson read back is put down: the rail answers what is unread, and
-     the reader reads on from the lesson due when the note comes back */
+  /* folded to the rail, a lesson read back is put down, however the rail
+     came — the G key, the chevron, a window widened with the guide left
+     folded: the rail answers what is unread, and the reader reads on from
+     the lesson due when the note comes back. The rail has no Back, so
+     nothing sets it again there */
+  if (dock === GUIDE_RAIL && review !== null) setReview(null);
+  /* G folds the guide to a rail down the right edge, and back */
   useEffect(() => {
     if (!dock) return;
     const onKey = (e: KeyboardEvent) => {
@@ -439,9 +443,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
       if (e.key.toLowerCase() !== 'g' || e.ctrlKey || e.metaKey || e.altKey) return;
       e.preventDefault();
-      const fold = !getBoardOptions().guideFolded;
-      if (fold) setReview(null);
-      setBoardOption('guideFolded', fold);
+      setBoardOption('guideFolded', !getBoardOptions().guideFolded);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -925,16 +927,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
           {playOnSwitch('p-1')}
-          <button
-            type="button"
-            onClick={() => {
-              setReview(null);
-              setBoardOption('guideFolded', true);
-            }}
-            aria-label={t('game.guide.rail.fold')}
-            title={t('game.guide.rail.fold')}
-            className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400"
-          >
+          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
