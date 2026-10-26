@@ -1037,7 +1037,7 @@ const game = {
   },
   guide: {
     advice: { lede: 'Your last games, {n} [n|time|times]:', open: 'Read “{lesson}” again', later: 'Later' },
-    rail: { fold: 'Fold the guide (G)', unfold: 'Unfold the guide (G)', aria: 'The guide, folded' },
+    rail: { fold: 'Fold the guide (G)', unfold: 'Unfold the guide (G)', aria: 'The guide, folded', next: 'Next: “{lesson}”' },
     aria: 'The guide',
     botAria: 'Why the machine played that',
     botWhy: 'Why {name} did that',

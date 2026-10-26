@@ -1,7 +1,7 @@
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
+import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
@@ -123,6 +123,9 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   const rival = others.length === 1 ? others[0].name : t('game.guide.rival');
   return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
+
+/** a look at a seat's last move, from this moment */
+const glimpseNow = (seat: number) => ({ seat, at: Date.now() });
 
 /** a sentence that follows a colon starts low */
 const lower = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
@@ -366,19 +369,6 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const setGuideHold = useGame((s) => s.setGuideHold);
   const coachHold = useGame((s) => s.coachHold);
   const setGlimpse = useGame((s) => s.setGlimpse);
-  /* G folds the guide to a rail down the right edge, and back */
-  useEffect(() => {
-    if (!dock) return;
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      if (e.key.toLowerCase() !== 'g' || e.ctrlKey || e.metaKey || e.altKey) return;
-      e.preventDefault();
-      setBoardOption('guideFolded', !getBoardOptions().guideFolded);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [dock]);
   const [paged, setPaged] = useState({ key: '', page: 0 });
   /* the note can be dragged by its head, and folded to a strip; a new
      lesson unfolds it */
@@ -439,6 +429,23 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const passages = useMemo(() => passagesOf((dictOf(lang) as { rules?: unknown }).rules), [lang]);
   /* a lesson the reader went back to: held until they read forward again */
   const [review, setReview] = useState<Review | null>(null);
+  /* G folds the guide to a rail down the right edge, and back. Folded, a
+     lesson read back is put down: the rail answers what is unread, and
+     the reader reads on from the lesson due when the note comes back */
+  useEffect(() => {
+    if (!dock) return;
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.key.toLowerCase() !== 'g' || e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      const fold = !getBoardOptions().guideFolded;
+      if (fold) setReview(null);
+      setBoardOption('guideFolded', fold);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [dock]);
   /* the sheet of progress points at a lesson: the motif that came back most
      over the last games, and the step of the guide that teaches against it */
   const [adviceSeen, setAdviceSeen] = useState(false);
@@ -839,6 +846,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang())));
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
 
+  /* her move read: the plate goes, and the board shows the move itself */
+  const readPlate = (b: NonNullable<typeof bot>) => {
+    setBotHidden(b.id);
+    if (b.seat >= 0) setGlimpse(glimpseNow(b.seat));
+  };
+  const readNews = () => setEventsSeen(news[news.length - 1].id);
+
   /* folded: a rail down the right edge — the lesson's number, how far the
      guide has come (the lessons passed: one set aside is not), a dot while
      something waits to be read (her fresh move, the news, a page); the
@@ -846,17 +860,31 @@ function Guide({ dock = 0 }: { dock?: number }) {
   if (dock === GUIDE_RAIL) {
     const n = Math.min(shownIndex + 1, LESSONS.length);
     const come = settled.passed.length;
-    const unread = unreadOf(toRead) !== null;
+    const due = unreadOf(toRead);
     /* the lesson's number while one is on show or set aside; at rest, the bar alone */
     const numbered = showSteps || setAsideNow;
+    /* what is unread has its answer on the rail, as in the note: Understood
+       for her move or the news, Next for a page — the machine need not
+       wait on a note folded out of sight */
+    const answer =
+      due === 'plate' && bot ? { go: () => readPlate(bot), word: t('game.guide.botOk'), say: t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name }) }
+      : due === 'news' && news.length ? { go: readNews, word: t('game.guide.botOk'), say: t('game.guide.botOk') }
+      : due === 'page' ? { go: next, word: t('game.guide.next'), say: t('game.guide.rail.next', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) }) }
+      : null;
     return (
       <>
         <LessonLens stepId={lensId} active={showSteps} />
         <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
           <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold')} title={t('game.guide.rail.unfold')} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
             <ChevronLeft className="h-4 w-4" />
-            {unread && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
+            {due && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
           </button>
+          {answer && (
+            <button type="button" onClick={answer.go} aria-label={answer.say} title={answer.say} className="flex w-8 shrink-0 flex-col items-center gap-1.5 rounded-md border border-brass-400 bg-brass-500/20 py-2 text-brass-300 transition-colors hover:bg-brass-500/35">
+              {due === 'page' ? <ChevronRight className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
+              <span className="font-sans text-[9.5px] font-bold uppercase tracking-[0.14em] [writing-mode:vertical-rl]">{answer.word}</span>
+            </button>
+          )}
           <GraduationCap className="h-4 w-4 text-cream-100/60" aria-hidden />
           {guided && (
             <>
@@ -894,7 +922,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
           {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
           {playOnSwitch('p-1')}
-          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
+          <button
+            type="button"
+            onClick={() => {
+              setReview(null);
+              setBoardOption('guideFolded', true);
+            }}
+            aria-label={t('game.guide.rail.fold')}
+            title={t('game.guide.rail.fold')}
+            className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400"
+          >
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -1159,15 +1196,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             </div>
             {holding && <p className="mt-1.5 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
             {reading && (
-              <button
-                type="button"
-                onClick={() => {
-                  setBotHidden(bot.id);
-                  /* the words were read: the board now shows the move itself */
-                  if (bot.seat >= 0) setGlimpse({ seat: bot.seat, at: Date.now() });
-                }}
-                className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]"
-              >
+              <button type="button" onClick={() => readPlate(bot)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
                 {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -1198,7 +1227,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 </div>
               </div>
             </div>
-            <button type="button" onClick={() => setEventsSeen(news[news.length - 1].id)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+            <button type="button" onClick={readNews} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
               {t('game.guide.botOk')}
               <ChevronRight className="h-3.5 w-3.5" />
             </button>

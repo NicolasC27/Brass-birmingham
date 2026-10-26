@@ -1039,7 +1039,7 @@ const game: typeof engame = {
   },
   guide: {
     advice: { lede: 'Deine letzten Partien, {n}-mal:', open: '„{lesson}“ noch einmal lesen', later: 'Später' },
-    rail: { fold: 'Den Guide einklappen (G)', unfold: 'Den Guide ausklappen (G)', aria: 'Der Guide, eingeklappt' },
+    rail: { fold: 'Den Guide einklappen (G)', unfold: 'Den Guide ausklappen (G)', aria: 'Der Guide, eingeklappt', next: 'Weiter: „{lesson}“' },
     aria: 'Das Tutorial',
     botAria: 'Warum die Maschine das gespielt hat',
     botWhy: 'Warum {name} das tut',
