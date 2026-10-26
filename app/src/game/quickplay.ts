@@ -1,3 +1,4 @@
+import { setBoardOption } from '@/components/game/boardOptions';
 import { MINI_KEY } from '@/components/game/guideKeys';
 import { freshProgress, saveProgress } from '@/components/game/lessons';
 import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
@@ -90,6 +91,8 @@ export async function startTutorial(): Promise<string> {
     /* storage unavailable — the guide stays with this visit */
   }
   saveProgress(freshProgress(code));
+  /* nor a lane folded at the last table: the welcome is read in the open */
+  setBoardOption('guideFolded', false);
   return code;
 }
 
