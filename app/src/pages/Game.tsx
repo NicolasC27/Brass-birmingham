@@ -644,6 +644,16 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drawsFromMarket]);
+  /* the tray asked for by name — the guide's Show, as the M key does —
+     opens lit; put away by any hand, it is lit no longer, so the next
+     call opens it again */
+  const marketFocus = useGame((s) => s.marketFocus);
+  useEffect(() => {
+    if (marketFocus) setMarketOpen(true);
+  }, [marketFocus]);
+  useEffect(() => {
+    if (!marketOpen) setMarketFocus(false);
+  }, [marketOpen, setMarketFocus]);
 
   /* read up to: the drawer's last closing, or the reader's own last move —
      one walk of the ledger per new entry, not one per pointer move */
