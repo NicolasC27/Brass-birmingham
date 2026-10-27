@@ -589,11 +589,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
      so the plate reads first, until it is understood — every move of
      hers, in the guided game; an older plate is a line */
   const reading = !!(tutorial && showBot && bot?.fresh);
+  /* the reader asked for the lesson back while her plate is on show */
+  const unfolded = reading && unfoldAt === bot?.id;
   /* a deed on show, still undone, is noted as seen: doing it passes it,
      wherever the reader has read to meanwhile. On show means in the
-     note: not behind the folded rail, nor under her move's plate, nor
-     on her turn, when the note only says whose turn it is (see) */
-  const inView = showSteps && review === null && dock !== GUIDE_RAIL && !reading;
+     note: not behind the folded rail, nor under her move's plate unless
+     asked back, nor on her turn, when the note only says whose turn it
+     is (see) */
+  const inView = showSteps && review === null && dock !== GUIDE_RAIL && (!reading || unfolded);
   const live = useMemo(() => (inView && lctx ? see(settled, shownId, lctx) : settled), [inView, lctx, settled, shownId]);
   /* the progress is written from an effect: a render may be thrown away,
      a line written to the disk may not */
@@ -681,8 +684,6 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const shown = lines.slice(page * 2, page * 2 + 2);
   /* the guided game waits: the machine's next move comes once this one is read */
   const holding = hold === 'plate';
-  /* the reader asked for the lesson back while the plate is on show */
-  const unfolded = unfoldAt === bot?.id;
   /* her turn is running: the note steps back to a line that says so */
   const theirTurn = !!(tutorial && game.phase === 'action' && game.players[game.current]?.isBot && !unread);
   const maxActions = game.round === 1 && game.era === 'canal' ? 1 : 2;
@@ -745,6 +746,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
       /* non-fatal */
     }
   };
+  /* the lesson down to its strip: folded by the reader, or under her
+     plate while it is read; and on her turn stepped back to a line that
+     says so — unless asked back over her plate */
+  const stripped = mini || (reading && !unfolded);
+  const stepBack = theirTurn && !unfolded;
+  /* and back in full — over her plate too, which stays under it */
+  const unfold = () => {
+    fold(false);
+    if (reading && bot) setUnfoldAt(bot.id);
+  };
   const grab = (e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
     grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y, at: pos, t0: e.timeStamp };
@@ -790,7 +801,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
       return;
     }
     if (el.closest('button, a') || window.getSelection()?.toString()) return;
-    fold(!mini);
+    if (stripped) unfold();
+    else fold(true);
   };
   const grabProps = dock ? {} : { onPointerDown: grab, onPointerMove: drag, onPointerUp: drop, onPointerCancel: drop, onDoubleClick: home, title: t('game.guide.move') };
   const grabClass = dock ? '' : 'cursor-grab touch-none select-none active:cursor-grabbing';
@@ -1050,22 +1062,22 @@ function Guide({ dock = 0 }: { dock?: number }) {
             </div>
           </motion.aside>
         )}
-        {showSteps && step && (mini || theirTurn || (reading && !unfolded)) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={(reading || theirTurn) && !mini ? undefined : t('game.guide.expand')} onClick={(reading || theirTurn) && !mini ? undefined : tap} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', !reading && 'cursor-pointer')}>
+        {showSteps && step && (stripped || stepBack) && (
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={stripped ? t('game.guide.expand') : undefined} onClick={stripped ? tap : undefined} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', stripped && 'cursor-pointer')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
               {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
-            {(!reading || mini) && !theirTurn && (
-              <button type="button" onClick={() => (reading ? setUnfoldAt(bot?.id ?? -1) : fold(false))} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+            {stripped && (
+              <button type="button" onClick={unfold} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             )}
           </motion.aside>
         )}
-        {(showSteps || lines.length > 0) && !holding && !(showSteps && (mini || theirTurn || reading)) && (
+        {(showSteps ? !(stripped || stepBack) : lines.length > 0 && !holding) && (
           <motion.aside
             key="note"
             layout
