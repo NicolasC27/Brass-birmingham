@@ -59,7 +59,7 @@ describe('the table’s shortcuts', () => {
     setKeybinding('guide', 'j');
     expect(isKey(press('j'), 'guide')).toBe(true);
     expect(isKey(press('g'), 'guide')).toBe(false);
-    /* moved onto the ledger's L: the ledger takes the G it gave up */
+    /* moved onto the ledger's L: the ledger takes the J the guide gave up */
     setKeybinding('guide', 'l');
     expect(getKeybindings().ledger).toBe('j');
   });
