@@ -1,4 +1,4 @@
-import { LAST_LESSON, LESSON_IDS, readProgress } from '@/components/game/lessons';
+import { LAST_LESSON, LESSON_IDS, readLearnt } from '@/components/game/lessons';
 import { listProgress, recurring, type Motif } from '@/game/progress';
 
 /* ------------------------------------------------------------------ */
@@ -30,15 +30,15 @@ export const CHAPTER_OF: Record<Motif, ChapterId> = {
 };
 
 /** the lessons of the guided game passed, in the guide's order: a lesson
- *  counts once it is passed, wherever the reader passed it from. A guided
- *  game played to its end, its closing word told, counts whole: a page the
- *  game never called for — no sale, no merchant's barrel — is behind the
- *  reader all the same */
+ *  counts once it is passed, wherever the reader passed it from, at
+ *  whichever guided table — one dealt afresh starts its lessons over, not
+ *  the course's marks. A guided game played to its end, its closing word
+ *  told, counts whole: a page the game never called for — no sale, no
+ *  merchant's barrel — is behind the reader all the same */
 export function lessonsRead(): string[] {
-  const p = readProgress();
-  if (!p) return [];
-  if (p.passed.includes(LAST_LESSON)) return [...LESSONS];
-  return LESSONS.filter((id) => p.passed.includes(id));
+  const read = readLearnt();
+  if (read.includes(LAST_LESSON)) return [...LESSONS];
+  return LESSONS.filter((id) => read.includes(id));
 }
 
 /** the lessons to take again: the judge's recurring motifs over the last games */

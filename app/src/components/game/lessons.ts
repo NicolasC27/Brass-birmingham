@@ -500,10 +500,36 @@ export function progressAt(code: string): Progress {
   return at;
 }
 
+/** the evening course's own marks: every lesson passed at any guided
+ *  table this browser has sat at. A new deal starts the table's record
+ *  afresh — the course keeps what was read all the same */
+export const LEARNT_KEY = 'brassworks.tutorial.learnt';
+
+/** the course's marks as the disk holds them */
+function learntOnDisk(): string[] {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(LEARNT_KEY) ?? '[]');
+    return Array.isArray(v) ? v.filter(known) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** every lesson passed here, at the tables before and at the one on
+ *  record: what the evening course marks read */
+export function readLearnt(): string[] {
+  return [...new Set([...learntOnDisk(), ...(readProgress()?.passed ?? [])])];
+}
+
 /** write the progress down, and say so to whoever reads it */
 export function saveProgress(p: Progress): void {
+  /* what the record held, and what it now holds, go to the course's marks
+     first: the record of a new table replaces the last one's */
+  const had = learntOnDisk();
+  const learnt = [...new Set([...readLearnt(), ...p.passed])];
   kept = p;
   try {
+    if (learnt.length > had.length) localStorage.setItem(LEARNT_KEY, JSON.stringify(learnt));
     localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
     /* the old indices are read once, into the record */
     localStorage.removeItem(STEP_KEY);
