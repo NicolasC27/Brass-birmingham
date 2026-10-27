@@ -260,6 +260,7 @@ const game: typeof engame = {
       focus: 'Fokusansicht: der Spielplan und das Wesentliche',
       survey: 'Überblick der Aufträge: mein Reich und meine vorbereiteten Züge auf dem Spielplan',
       lastMove: 'Letzter Zug eines Spielers (erneut drücken: nächster Spieler)',
+      guide: 'Den Guide ein- / ausklappen',
       cards: 'Karte 1–8 wählen',
       hand: 'Hand anheften / lösen',
       tracks: 'Eine Punkteleiste zoomen (Doppelklick: zurücksetzen)',
@@ -1039,7 +1040,7 @@ const game: typeof engame = {
   },
   guide: {
     advice: { lede: 'Deine letzten Partien, {n}-mal:', open: '„{lesson}“ noch einmal lesen', later: 'Später' },
-    rail: { fold: 'Den Guide einklappen (G)', unfold: 'Den Guide ausklappen (G)', aria: 'Der Guide, eingeklappt', next: 'Weiter: „{lesson}“' },
+    rail: { fold: 'Den Guide einklappen ({key})', unfold: 'Den Guide ausklappen ({key})', aria: 'Der Guide, eingeklappt', next: 'Weiter: „{lesson}“' },
     aria: 'Das Tutorial',
     botAria: 'Warum die Maschine das gespielt hat',
     botWhy: 'Warum {name} das tut',

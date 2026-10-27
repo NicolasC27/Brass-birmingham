@@ -258,6 +258,7 @@ const game = {
       focus: 'Focus view: the board and the essentials',
       survey: 'Survey of the orders: my empire and my prepared moves on the board',
       lastMove: 'A player’s last move (press again: next player)',
+      guide: 'Fold / unfold the guide',
       cards: 'Select card 1–8',
       hand: 'Pin / unpin the hand',
       tracks: 'Zoom a score track (double-click resets)',
@@ -1037,7 +1038,7 @@ const game = {
   },
   guide: {
     advice: { lede: 'Your last games, {n} [n|time|times]:', open: 'Read “{lesson}” again', later: 'Later' },
-    rail: { fold: 'Fold the guide (G)', unfold: 'Unfold the guide (G)', aria: 'The guide, folded', next: 'Next: “{lesson}”' },
+    rail: { fold: 'Fold the guide ({key})', unfold: 'Unfold the guide ({key})', aria: 'The guide, folded', next: 'Next: “{lesson}”' },
     aria: 'The guide',
     botAria: 'Why the machine played that',
     botWhy: 'Why {name} did that',

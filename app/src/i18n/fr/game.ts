@@ -260,6 +260,7 @@ const fr: typeof engame = {
       focus: 'Vue épurée : le plateau et l’essentiel',
       survey: 'Relevé des ordres : mon empire et mes coups préparés sur le plateau',
       lastMove: 'Dernier coup d’un joueur (appuis successifs : joueur suivant)',
+      guide: 'Replier / déplier le guide',
       cards: 'Choisir la carte 1–8',
       hand: 'Épingler / libérer la main',
       tracks: 'Zoomer une piste de score (double-clic : réinitialise)',
@@ -1039,7 +1040,7 @@ const fr: typeof engame = {
   },
   guide: {
     advice: { lede: 'Vos dernières parties, {n} fois :', open: 'Relire « {lesson} »', later: 'Plus tard' },
-    rail: { fold: 'Replier le guide (G)', unfold: 'Déplier le guide (G)', aria: 'Le guide, replié', next: 'Suivant : « {lesson} »' },
+    rail: { fold: 'Replier le guide ({key})', unfold: 'Déplier le guide ({key})', aria: 'Le guide, replié', next: 'Suivant : « {lesson} »' },
     aria: 'Le guide',
     botAria: 'Pourquoi la machine a joué cela',
     botWhy: 'Pourquoi {name} fait ça',

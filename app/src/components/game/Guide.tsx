@@ -5,7 +5,7 @@ import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, Graduat
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
-import { getKeybindings, keyLabel } from '@/components/game/keybindings';
+import { getKeybindings, isKey, keyLabel, typing } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, START_INCOME_SPACE, START_MONEY, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
@@ -468,13 +468,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
      the lesson due when the note comes back. The rail has no Back, so
      nothing sets it again there */
   if (dock === GUIDE_RAIL && review !== null) setReview(null);
-  /* G folds the guide to a rail down the right edge, and back */
+  /* G — or the key the reader gave it — folds the guide to a rail down
+     the right edge, and back */
   useEffect(() => {
     if (!dock) return;
     const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
-      if (e.key.toLowerCase() !== 'g' || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (!isKey(e, 'guide') || typing(e)) return;
       e.preventDefault();
       setBoardOption('guideFolded', !getBoardOptions().guideFolded);
     };
@@ -673,6 +672,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const blocked = detour ? null : (block?.text ?? null);
   /* folded for the lesson on show only: the next one unfolds the note */
   const mini = miniAt === shownId;
+  /* the key that folds the lane to its rail, as the reader has bound it */
+  const foldKey = keyLabel(getKeybindings().guide);
   const lean = pos;
   /* the deed was done before its lesson came up: a page to read on from */
   const already = review === null && !detour && owed?.mode === 'already';
@@ -968,7 +969,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       <>
         <LessonLens stepId={lensId} active={showSteps} />
         <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
-          <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold')} title={t('game.guide.rail.unfold')} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
+          <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold', { key: foldKey })} title={t('game.guide.rail.unfold', { key: foldKey })} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
             <ChevronLeft className="h-4 w-4" />
             {due && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
           </button>
@@ -1017,7 +1018,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
           {playOnSwitch('p-1')}
-          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold')} title={t('game.guide.rail.fold')} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
+          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold', { key: foldKey })} title={t('game.guide.rail.fold', { key: foldKey })} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>

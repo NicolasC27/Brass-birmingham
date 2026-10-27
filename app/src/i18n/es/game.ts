@@ -260,6 +260,7 @@ const game: typeof engame = {
       focus: 'Vista limpia: el tablero y lo esencial',
       survey: 'Repaso de las órdenes: mi imperio y mis jugadas preparadas en el tablero',
       lastMove: 'Última jugada de un jugador (pulsaciones sucesivas: siguiente jugador)',
+      guide: 'Plegar / desplegar la guía',
       cards: 'Elegir la carta 1–8',
       hand: 'Fijar / soltar la mano',
       tracks: 'Ampliar una pista de puntuación (doble clic: restablece)',
@@ -1039,7 +1040,7 @@ const game: typeof engame = {
   },
   guide: {
     advice: { lede: 'Tus últimas partidas, {n} [n|vez|veces]:', open: 'Releer «{lesson}»', later: 'Más tarde' },
-    rail: { fold: 'Plegar la guía (G)', unfold: 'Desplegar la guía (G)', aria: 'La guía, plegada', next: 'Siguiente: «{lesson}»' },
+    rail: { fold: 'Plegar la guía ({key})', unfold: 'Desplegar la guía ({key})', aria: 'La guía, plegada', next: 'Siguiente: «{lesson}»' },
     aria: 'La guía',
     botAria: 'Por qué la máquina ha jugado eso',
     botWhy: 'Por qué {name} hace esto',

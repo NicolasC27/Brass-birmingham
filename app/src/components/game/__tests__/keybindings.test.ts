@@ -51,6 +51,18 @@ describe('the table’s shortcuts', () => {
   it('answers ? to shift and slash', () => {
     expect(isKey(press('/', { shiftKey: true }), 'rules')).toBe(true);
   });
+
+  it('folds the guide on G, or on the key the player gave it', () => {
+    expect(isKey(press('g'), 'guide')).toBe(true);
+    expect(isKey(press('g', { ctrlKey: true }), 'guide')).toBe(false);
+    /* moved to J: G no longer folds it, and nothing else takes J */
+    setKeybinding('guide', 'j');
+    expect(isKey(press('j'), 'guide')).toBe(true);
+    expect(isKey(press('g'), 'guide')).toBe(false);
+    /* moved onto the ledger's L: the ledger takes the G it gave up */
+    setKeybinding('guide', 'l');
+    expect(getKeybindings().ledger).toBe('j');
+  });
 });
 
 describe('keys kept from an older table', () => {
@@ -61,6 +73,12 @@ describe('keys kept from an older table', () => {
     const keys = reconcileKeys(before);
     expect(keys.mat).toBe('q');
     expect(keys.analysis).toBe('p');
+  });
+
+  it('gives the guide its G when a table from before it had none', () => {
+    const { guide: _gone, ...before } = DEFAULT_KEYS;
+    void _gone;
+    expect(reconcileKeys(before).guide).toBe('g');
   });
 
   it('parts two actions stored on one key, the first in the list keeping it', () => {
