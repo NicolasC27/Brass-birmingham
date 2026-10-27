@@ -356,7 +356,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
-  const [hidden, setHidden] = useState(false);
+  /* × on the tips note puts away the lines it holds, for the round: an
+     alert or a tip not yet said still comes, the next round they may all
+     come back, and the machine's plates keep their own × */
+  const [muted, setMuted] = useState<{ ids: string[]; round: string }>({ ids: [], round: '' });
   /* the machine's move that was read and understood, by its entry in the
      log: the length of the log moves with every entry and would bring
      the plate back after each move of one's own */
@@ -556,9 +559,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const deed = tutorial && owed?.mode === 'do' ? owed.id : null;
   const counsel = useMemo(() => (game && advice?.action && advice.at === game.actions.length ? spareFor(game, me, advice.action, tutorial ? keepsFor(settled, game, me, deed, detour) : []) : null), [game, advice, tutorial, settled, me, deed, detour]);
   const placeLit = useMemo(() => (aid && myTurn && advice?.place && counsel ? placeLens(counsel.action ?? advice.action!) : null), [aid, myTurn, advice, counsel]);
-  /* × on the tips note hides the tips alone: in the lane the machine's
-     reasons are its turns of the conversation, and stay */
-  const showBot = bot && botHidden !== bot.id && (guided || dock > 0 || !hidden);
+  /* the machine's reasons are its turns of the conversation: put away
+     one by one, never with the tips */
+  const showBot = bot && botHidden !== bot.id;
   /* the machine's fresh move is on show: the lesson folds to its strip
      so the plate reads first, until it is understood — every move of
      hers, in the guided game; an older plate is a line */
@@ -647,7 +650,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const lean = pos;
   /* the deed was done before its lesson came up: a page to read on from */
   const already = review === null && !detour && owed?.mode === 'already';
-  const lines = [...warnings.map((w) => w.text), ...tips.map((x) => x.text)];
+  const round = `${game.era}:${game.round}`;
+  const put = muted.round === round ? muted.ids : [];
+  const told = [...warnings, ...tips].filter((x) => !put.includes(x.id));
+  const lines = told.map((x) => x.text);
   const pages = Math.max(1, Math.ceil(lines.length / 2));
   const shown = lines.slice(page * 2, page * 2 + 2);
   /* the guided game waits: the machine's next move comes once this one is read */
@@ -661,7 +667,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the lane stands for as long as the table keeps it — the guide left,
      the machine to play, the tips put away: its thread and its question
      field are still there. The floating note has nothing to show */
-  if (!guided && !dock && (hidden || lines.length === 0) && !showBot) return null;
+  if (!guided && !dock && lines.length === 0 && !showBot) return null;
 
   /* a lesson passed by the reader: read on from, or skipped. A page
      waiting on the game is not passed by reading on — it keeps its place */
@@ -1036,7 +1042,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             )}
           </motion.aside>
         )}
-        {(showSteps || lines.length > 0) && !(hidden && !showSteps) && !holding && !(showSteps && (mini || theirTurn || reading)) && (
+        {(showSteps || lines.length > 0) && !holding && !(showSteps && (mini || theirTurn || reading)) && (
           <motion.aside
             key="note"
             layout
@@ -1171,7 +1177,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     ))}
                   </ul>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <button type="button" onClick={() => setHidden(true)} aria-label={t('game.guide.hide')} title={t('game.guide.hide')} className="rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                    <button type="button" onClick={() => setMuted({ ids: [...put, ...told.map((x) => x.id)], round })} aria-label={t('game.guide.hide')} title={t('game.guide.hide')} className="rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
                       <X className="h-3.5 w-3.5" />
                     </button>
                     {aid && myTurn && !advised && (
