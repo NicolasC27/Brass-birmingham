@@ -59,6 +59,23 @@ export function guidedTable(code: string, seed: number): boolean {
   }
 }
 
+/** the guided table to go back to: the one the guide is bound to, while the
+ *  register keeps it and it is not played out. None, and the course deals
+ *  a new one */
+export function resumeOf(bound: string | null, tables: readonly HomeTable[]): string | null {
+  if (!bound) return null;
+  return tables.some((t) => t.code === bound && !t.over) ? bound : null;
+}
+
+/** the guided table left unfinished, as the register now stands */
+export function guidedResume(tables: readonly HomeTable[] = listHomeGames()): string | null {
+  try {
+    return resumeOf(localStorage.getItem(TUTORIAL_KEY), tables);
+  } catch {
+    return null;
+  }
+}
+
 export function tutorialSetup(): StoredSetup {
   return {
     players: [

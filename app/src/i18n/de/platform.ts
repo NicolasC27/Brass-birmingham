@@ -491,6 +491,7 @@ const platform: typeof enPlatform = {
       title: 'Neu im Club?',
       copy: 'Eine erste geführte Partie: die Kanalzeit gegen eine sanfte Maschine, der Führer an Ihrer Seite für die ersten Züge.',
       cta: 'Geführte Partie starten',
+      resume: 'Geführte Partie fortsetzen',
     },
     tabs: {
       tables: 'Meine Tische',
@@ -1195,6 +1196,7 @@ const platform: typeof enPlatform = {
     begin: "Lektion beginnen",
     resume: "Lektion fortsetzen",
     again: "Noch einmal von vorn",
+    waits: "Ihr Tisch „{name}“ wartet auf Sie, in Runde {round}.",
     reached: "{done}/{total} Lektionen gelesen",
     syllabus: "Das Register, Kapitel für Kapitel",
     read: "Lesen",

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import { GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useT } from '@/i18n';
-import { startTutorial } from '@/game/quickplay';
+import { useLang, useT } from '@/i18n';
 import { personaName } from '@/game/data';
+import { tableTitle } from '@/online/tableNames';
+import { useGuidedGame } from '@/hooks/use-guided-game';
 import { LESSONS, lessonsRead, lessonsToRedo } from '@/platform/cours';
 import { shortKeyOf } from '@/components/game/lessonWords';
 import { getChapters } from '@/components/rules/rulesData';
@@ -20,14 +21,15 @@ import ProgressCard from '@/components/desk/ProgressCard';
 
 export default function Cours() {
   const t = useT();
-  const navigate = useNavigate();
+  const lang = useLang();
   const [passed] = useState(lessonsRead);
   const [redo] = useState(lessonsToRedo);
   const begun = passed.length > 0;
-  /* the guided game played to its end: its closing word, told on the
-     final ledger, is passed — a lesson the game never came to stays
-     unmarked, and the course is done all the same */
-  const done = passed.includes(LESSONS[LESSONS.length - 1]);
+  /* the guided table left unfinished is taken up where it stands; with
+     none — never begun, played out, the guide left there — the lessons
+     start over at a new one, as they do when the reader asks */
+  const guided = useGuidedGame();
+  const { table } = guided;
   /* the syllabus is the register's own table of contents — all twelve
      chapters, glossary and approximations included — not a copy of ten */
   const chapters = getChapters();
@@ -63,12 +65,19 @@ export default function Cours() {
             })}
           </ol>
           <div className="mt-5 flex flex-wrap items-center gap-4">
-            <button type="button" onClick={() => void startTutorial().then((code) => navigate(`/game/local/${code}`))} className="gz-ticket gz-ticket-brass">
+            <button type="button" onClick={() => guided.open()} className="gz-ticket gz-ticket-brass">
               <GraduationCap aria-hidden />
-              {t(done ? 'platform.cours.again' : begun ? 'platform.cours.resume' : 'platform.cours.begin')}
+              {t(table ? 'platform.cours.resume' : begun ? 'platform.cours.again' : 'platform.cours.begin')}
             </button>
+            {/* the table waits, and a reader some way into it may still start over */}
+            {table && begun && (
+              <button type="button" onClick={() => guided.open(true)} className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-500 transition-colors hover:text-paper-100">
+                {t('platform.cours.again')}
+              </button>
+            )}
             <span className="data-text text-iron-400 tnums">{t('platform.cours.reached', { done: passed.length, total: LESSONS.length })}</span>
           </div>
+          {table && <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.cours.waits', { name: tableTitle(table.name, lang), round: table.round })}</p>}
 
           {/* the sheet of progress keeps to the lessons' column: alone under
               the grid it was a 1176px cartouche for two lines */}

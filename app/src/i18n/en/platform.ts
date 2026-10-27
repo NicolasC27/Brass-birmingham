@@ -489,6 +489,7 @@ const platform = {
       title: 'New to the club?',
       copy: 'A guided first game: the Canal Era against one gentle machine, the guide at your side for your first turns.',
       cta: 'Start the guided game',
+      resume: 'Resume the guided game',
     },
     tabs: {
       tables: 'My tables',
@@ -1193,6 +1194,7 @@ const platform = {
     begin: "Begin the lesson",
     resume: "Resume the lesson",
     again: "Take it again from the start",
+    waits: "Your table “{name}” is waiting, at round {round}.",
     reached: "{done}/{total} lessons read",
     syllabus: "The register, chapter by chapter",
     read: "Read",

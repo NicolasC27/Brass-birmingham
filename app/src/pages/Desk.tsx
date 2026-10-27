@@ -23,12 +23,12 @@ import LinesMap from '@/components/desk/LinesMap';
 import Ticket from '@/components/results/Ticket';
 import type { FinalResult } from '@/components/results/types';
 import type { HomeTable } from '@/game/home';
-import { startTutorial } from '@/game/quickplay';
 import { isOnline, lobby } from '@/online/lobby';
 import { answerInvitation, befriend, invite, unfriend, useDesk, useSession, useStranger } from '@/online/session';
 import type { Friend, Invitation, PastGame, Rating, Season, TableSummary } from '@/online/table';
 import { localeOf, useLang, useT, tr } from '@/i18n';
 import { memberSince } from '@/components/site/memberSince';
+import { useGuidedGame } from '@/hooks/use-guided-game';
 import { tableTitle } from '@/online/tableNames';
 import { cn } from '@/lib/utils';
 
@@ -180,9 +180,11 @@ function MemberHeader() {
 
 /* ------------------------------ Bandeau tutoriel ------------------------------ */
 
+/* the guided game: back to its table when one is left unfinished, else a
+   new one */
 function TutorialStrip() {
   const t = useT();
-  const navigate = useNavigate();
+  const guided = useGuidedGame();
   return (
     <div className="mt-6 flex flex-wrap items-center gap-4 console px-5 py-4">
       <GraduationCap size={20} aria-hidden className="shrink-0 text-brass-300" />
@@ -190,12 +192,8 @@ function TutorialStrip() {
         <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.tutorial.title')}</p>
         <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
       </div>
-      <Button
-        variant="ghost"
-        className="shrink-0"
-        onClick={() => void startTutorial().then((code) => navigate(`/game/local/${code}`))}
-      >
-        {t('platform.desk.tutorial.cta')}
+      <Button variant="ghost" className="shrink-0" onClick={() => guided.open()}>
+        {t(guided.table ? 'platform.desk.tutorial.resume' : 'platform.desk.tutorial.cta')}
       </Button>
     </div>
   );

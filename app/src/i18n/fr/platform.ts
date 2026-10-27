@@ -489,6 +489,7 @@ const platform = {
       title: 'Nouveau au club ?',
       copy: 'Une première partie guidée : l’ère du canal contre une machine douce, le guide à vos côtés pour vos premiers tours.',
       cta: 'Lancer la partie guidée',
+      resume: 'Reprendre la partie guidée',
     },
     tabs: {
       tables: 'Mes tables',
@@ -1193,6 +1194,7 @@ const platform = {
     begin: "Commencer la leçon",
     resume: "Reprendre la leçon",
     again: "Reprendre depuis le début",
+    waits: "Votre table « {name} » vous attend, manche {round}.",
     reached: "{done}/{total} leçons lues",
     syllabus: "Le registre, chapitre par chapitre",
     read: "Lire",

@@ -5,7 +5,8 @@ import { MINI_KEY } from '@/components/game/guideKeys';
 import { LESSON_IDS, freshProgress, letPlayOn, progressAt, saveProgress } from '@/components/game/lessons';
 import { SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
-import { TUTORIAL_KEY, TUTORIAL_SEED, guidedTable, quickSetup, startQuickGame, startTutorial } from '../quickplay';
+import type { HomeTable } from '../home';
+import { TUTORIAL_KEY, TUTORIAL_SEED, guidedResume, guidedTable, quickSetup, resumeOf, startQuickGame, startTutorial } from '../quickplay';
 
 /* the office deals the guided table its code; nothing leaves this test */
 vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()), openHomeGame: async () => ({ code: 'NEW1' }) }));
@@ -47,6 +48,29 @@ describe('the guided table', () => {
     expect(await startQuickGame()).toBe('NEW1');
     expect(store.get(TUTORIAL_KEY)).toBe('GWE5');
     expect(guidedTable('NEW1', TUTORIAL_SEED)).toBe(false);
+  });
+});
+
+/* the evening course's « resume »: the guided table left unfinished, not a
+   new deal that starts the lessons over */
+describe('the guided table to resume', () => {
+  const table = (code: string, over?: boolean): HomeTable => ({ code, name: 'Soho', startedAt: 0, updatedAt: 0, era: 'canal', round: 4, seats: [], ...(over ? { over } : {}) });
+
+  it('is the table the guide is bound to, while it is still played', () => {
+    expect(resumeOf('GWE5', [table('QK7P'), table('GWE5')])).toBe('GWE5');
+  });
+
+  it('is none when no table is bound, the register lost it, or it is played out', () => {
+    expect(resumeOf(null, [table('GWE5')])).toBeNull();
+    expect(resumeOf('GWE5', [table('QK7P')])).toBeNull();
+    expect(resumeOf('GWE5', [table('GWE5', true)])).toBeNull();
+    expect(resumeOf('GWE5', [])).toBeNull();
+  });
+
+  it('is read from the table the browser keeps the guide at', () => {
+    expect(guidedResume([table('GWE5')])).toBeNull();
+    store.set(TUTORIAL_KEY, 'GWE5');
+    expect(guidedResume([table('GWE5')])).toBe('GWE5');
   });
 });
 
