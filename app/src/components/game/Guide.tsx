@@ -5,7 +5,7 @@ import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, Graduat
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
-import { getKeybindings, isKey, keyLabel, typing } from '@/components/game/keybindings';
+import { getKeybindings, isKey, keyLabel, typing, useKeybindings } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, START_INCOME_SPACE, START_MONEY, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
@@ -367,6 +367,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const ledgerOpen = useGame((s) => s.ledgerOpen);
   /* a finger for a pointer: no key to name */
   const finger = useCoarse();
+  /* the keys as the reader has bound them: a key rebound in the settings
+     is named at once, here and in the lesson's words */
+  const keys = useKeybindings();
   const setLedgerOpen = useGame((s) => s.setLedgerOpen);
   /* what was read at this table, kept over a reload (guideRead.ts): the
      page reloaded brings back neither her plates nor the news already
@@ -715,7 +718,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* folded for the lesson on show only: the next one unfolds the note */
   const mini = miniAt === shownId;
   /* the key that folds the lane to its rail, as the reader has bound it */
-  const foldKey = keyLabel(getKeybindings().guide);
+  const foldKey = keyLabel(keys.guide);
   /* where the note stands: where it was put, or stepped left of a sheet
      opened at the edge — never off the window's left */
   const lean = !dock && sheetAside < 0 ? { x: Math.max(-(window.innerWidth - laneWidth() - 20), Math.min(pos.x, sheetAside)), y: pos.y } : pos;
@@ -1339,7 +1342,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     <Eye className="h-3 w-3 shrink-0" />
                     <span>
                       {t('game.guide.seeMove', { name: bot.name })}
-                      {!finger && <kbd className="ml-1 font-mono tracking-normal text-brass-400/50">({keyLabel(getKeybindings().lastMove)})</kbd>}
+                      {!finger && <kbd className="ml-1 font-mono tracking-normal text-brass-400/50">({keyLabel(keys.lastMove)})</kbd>}
                     </span>
                   </button>
                 )}
