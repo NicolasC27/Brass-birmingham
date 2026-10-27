@@ -909,6 +909,47 @@ function Guide({ dock = 0 }: { dock?: number }) {
     setLeaving(false);
     endTutorial();
   };
+  /* leave the guide? Said to be final before it is: the lessons end at
+     this table for good, the assistance stays. In the lane it hangs under
+     the head, by the way out that asked it: the head stays put while the
+     lane runs to its foot, whatever grows under it meanwhile — a plate,
+     the news. Floating, it stands over the note, at the column's top */
+  const leaveAsk = (
+    <motion.aside
+      key="leave"
+      ref={leaveBox}
+      tabIndex={-1}
+      layout={!dock}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      role="alertdialog"
+      aria-labelledby="guide-leave-title"
+      aria-describedby="guide-leave-body"
+      className="paper pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-3 shadow-e3 outline-none"
+    >
+      <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
+      <div className="relative flex items-start gap-2">
+        <LogOut className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
+        <div className="min-w-0 flex-1">
+          <h3 id="guide-leave-title" className="font-display text-[16px] font-bold leading-tight text-ink-900">
+            {t('game.guide.leaveAsk.title')}
+          </h3>
+          <div id="guide-leave-body" className="mt-1">
+            <Paragraphs text={t('game.guide.leaveAsk.body', { name: machine })} />
+          </div>
+        </div>
+      </div>
+      <div className="relative mt-2 flex flex-wrap items-center justify-end gap-2">
+        <button type="button" onClick={leave} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+          {t('game.guide.leaveAsk.go')}
+        </button>
+        <button ref={stay} type="button" onClick={() => setLeaving(false)} className="btn-strike !min-h-[32px] coarse:!min-h-[44px] !px-4 !py-1 !text-[10.5px]">
+          {t('game.guide.leaveAsk.stay')}
+        </button>
+      </div>
+    </motion.aside>
+  );
   const here = game.actions.length;
   const advised = advice && advice.at === here ? advice : null;
   /* the move as it would be set up: the lesson's card kept, when another
@@ -1115,16 +1156,20 @@ function Guide({ dock = 0 }: { dock?: number }) {
       {/* the lane's head stays at the top as the thread scrolls under it:
           the fold is always in reach, under a finger as under the G key */}
       {dock > 0 && (
-        <div className="sticky -top-3 z-10 -mx-3 -mt-3 flex shrink-0 items-center gap-2 bg-coal-950 px-3 pb-1 pt-3">
-          <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
-          <span className="min-w-0 truncate font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60 coarse:hidden">{t('game.guide.aria')}</span>
-          {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
-          <span className="flex-1" />
-          {guided && leaveButton('rounded-md p-1 text-cream-100/45 transition-colors hover:text-cream-100 coarse:p-3.5')}
-          {playOnSwitch('p-1 coarse:p-3.5')}
-          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold', { key: foldKey })} title={t('game.guide.rail.fold', { key: foldKey })} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400 coarse:p-3.5">
-            <ChevronRight className="h-3.5 w-3.5" />
-          </button>
+        <div className={cn('sticky -top-3 z-10 -mx-3 -mt-3 flex shrink-0 flex-col gap-2 bg-coal-950 px-3 pt-3', confirming ? 'pb-2' : 'pb-1')}>
+          <div className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
+            <span className="min-w-0 truncate font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60 coarse:hidden">{t('game.guide.aria')}</span>
+            {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
+            <span className="flex-1" />
+            {guided && leaveButton('rounded-md p-1 text-cream-100/45 transition-colors hover:text-cream-100 coarse:p-3.5')}
+            {playOnSwitch('p-1 coarse:p-3.5')}
+            <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold', { key: foldKey })} title={t('game.guide.rail.fold', { key: foldKey })} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400 coarse:p-3.5">
+              <ChevronRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          {/* the question to leave, under the way out that asked it */}
+          {confirming && leaveAsk}
         </div>
       )}
       {/* what has already been said, kept so a reader can look back at it */}
@@ -1145,44 +1190,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
         </div>
       )}
       <AnimatePresence initial={false} mode="popLayout">
-        {/* leave the guide? Said to be final before it is: the lessons end
-            at this table for good, the assistance stays */}
-        {confirming && (
-          <motion.aside
-            key="leave"
-            ref={leaveBox}
-            tabIndex={-1}
-            layout
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            role="alertdialog"
-            aria-labelledby="guide-leave-title"
-            aria-describedby="guide-leave-body"
-            className="paper pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-3 shadow-e3 outline-none"
-          >
-            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
-            <div className="relative flex items-start gap-2">
-              <LogOut className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
-              <div className="min-w-0 flex-1">
-                <h3 id="guide-leave-title" className="font-display text-[16px] font-bold leading-tight text-ink-900">
-                  {t('game.guide.leaveAsk.title')}
-                </h3>
-                <div id="guide-leave-body" className="mt-1">
-                  <Paragraphs text={t('game.guide.leaveAsk.body', { name: machine })} />
-                </div>
-              </div>
-            </div>
-            <div className="relative mt-2 flex flex-wrap items-center justify-end gap-2">
-              <button type="button" onClick={leave} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
-                {t('game.guide.leaveAsk.go')}
-              </button>
-              <button ref={stay} type="button" onClick={() => setLeaving(false)} className="btn-strike !min-h-[32px] coarse:!min-h-[44px] !px-4 !py-1 !text-[10.5px]">
-                {t('game.guide.leaveAsk.stay')}
-              </button>
-            </div>
-          </motion.aside>
-        )}
+        {/* floating, the question to leave stands first, over the strip */}
+        {!dock && confirming && leaveAsk}
         {/* nothing due now: a line that says when the guide speaks again —
             the lesson set aside next round, or the next one in its time */}
         {aside && (
