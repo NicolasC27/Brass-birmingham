@@ -182,14 +182,16 @@ function MemberHeader() {
 
 /* the guided game: back to its table when one is left unfinished, else a
    new one — and a word when the office does not deal it */
-function TutorialStrip() {
+function TutorialStrip({ className }: { className?: string }) {
   const t = useT();
   const guided = useGuidedGame();
   return (
-    <div className="mt-6 console px-5 py-4">
+    <div className={cn('console px-5 py-4', className)}>
       <div className="flex flex-wrap items-center gap-4">
         <GraduationCap size={20} aria-hidden className="shrink-0 text-brass-300" />
-        <div className="min-w-0 flex-1">
+        {/* the words keep a reading measure: in a narrow box the button
+            goes under them rather than squeezing them to a column */}
+        <div className="min-w-[15rem] flex-1">
           <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.tutorial.title')}</p>
           <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
         </div>
@@ -1053,6 +1055,9 @@ export default function Desk() {
             </Button>
           </div>
         </motion.div>
+        {/* no account is needed to learn: the guided game is dealt to a
+            visitor too, who plays it as a guest */}
+        <TutorialStrip className="mx-auto mt-6 max-w-md" />
       </div>
     );
   }
@@ -1076,7 +1081,7 @@ export default function Desk() {
   return (
     <div className="gz-measure pb-24 pt-10">
       <MemberHeader />
-      <TutorialStrip />
+      <TutorialStrip className="mt-6" />
       <div className="mt-4">
         <VerifyBanner />
       </div>
