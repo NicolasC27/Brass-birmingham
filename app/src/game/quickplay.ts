@@ -70,15 +70,11 @@ export function tutorialSetup(): StoredSetup {
 }
 
 /** dress the guided table and open it on the register — the caller then opens
- *  /game/local/<code>, where the guide takes over */
+ *  /game/local/<code>, where the guide takes over. The dress goes to the
+ *  office with the deal and nowhere else: the table form this browser keeps
+ *  is the player's own, and quick play dresses its tables from it */
 export async function startTutorial(): Promise<string> {
-  const setup = tutorialSetup();
-  try {
-    localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(setup));
-  } catch {
-    /* storage unavailable — the game page falls back to its default table */
-  }
-  const { code } = await openHomeGame(TUTORIAL_SEED, setup as unknown as SetupPayload);
+  const { code } = await openHomeGame(TUTORIAL_SEED, tutorialSetup() as unknown as SetupPayload);
   /* the guide goes with the table the office dealt, and the lessons start
      afresh there — only once it is dealt, so a table the office never
      opened takes nothing of the last one */

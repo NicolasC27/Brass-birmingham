@@ -3,7 +3,9 @@ import { stubStorage } from '@/platform/__tests__/storage';
 import { getBoardOptions, setBoardOption } from '@/components/game/boardOptions';
 import { MINI_KEY } from '@/components/game/guideKeys';
 import { LESSON_IDS, freshProgress, letPlayOn, progressAt, saveProgress } from '@/components/game/lessons';
-import { TUTORIAL_KEY, TUTORIAL_SEED, guidedTable, startTutorial } from '../quickplay';
+import { SETUP_STORAGE_KEY } from '@/components/setup/constants';
+import type { StoredSetup } from '@/components/setup/constants';
+import { TUTORIAL_KEY, TUTORIAL_SEED, guidedTable, quickSetup, startQuickGame, startTutorial } from '../quickplay';
 
 /* the office deals the guided table its code; nothing leaves this test */
 vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()), openHomeGame: async () => ({ code: 'NEW1' }) }));
@@ -39,6 +41,13 @@ describe('the guided table', () => {
     /* from then on, only that table */
     expect(guidedTable('ZZ12', TUTORIAL_SEED)).toBe(false);
   });
+
+  it('stays bound through a quick game', async () => {
+    store.set(TUTORIAL_KEY, 'GWE5');
+    expect(await startQuickGame()).toBe('NEW1');
+    expect(store.get(TUTORIAL_KEY)).toBe('GWE5');
+    expect(guidedTable('NEW1', TUTORIAL_SEED)).toBe(false);
+  });
 });
 
 describe('a fresh guided game', () => {
@@ -53,5 +62,24 @@ describe('a fresh guided game', () => {
     expect(store.has(MINI_KEY)).toBe(false);
     expect(progressAt('NEW1')).toEqual(freshProgress('NEW1'));
     expect(progressAt('NEW1').playOn).toBeUndefined();
+  });
+
+  it('leaves the player’s own table form alone', async () => {
+    /* the player's table: three machines, a full game */
+    const mine: StoredSetup = {
+      players: [
+        { name: 'Ada', color: 'steel', type: 'human' },
+        { name: 'Watt', color: 'brass', type: 'bot', persona: 'watt' },
+        { name: 'Arkwright', color: 'verdigris', type: 'bot', persona: 'arkwright' },
+        { name: 'Boulton', color: 'oxblood', type: 'bot', persona: 'boulton' },
+      ],
+      options: { eraLength: 'standard', marketTemper: 'standard', timerMinutes: null, fidelity: 'core' },
+    };
+    store.set(SETUP_STORAGE_KEY, JSON.stringify(mine));
+    await startTutorial();
+    expect(JSON.parse(store.get(SETUP_STORAGE_KEY)!)).toEqual(mine);
+    /* and play now dresses that table, not the guided one */
+    expect(quickSetup().players.map((p) => p.name)).toEqual(['Ada', 'Watt', 'Arkwright', 'Boulton']);
+    expect(quickSetup().options.eraLength).toBe('standard');
   });
 });
