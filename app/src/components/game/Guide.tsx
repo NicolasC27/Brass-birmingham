@@ -1,10 +1,11 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
+import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, LogOut, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
+import { useLayer } from './useLayer';
 import { getKeybindings, isKey, keyLabel, typing, useKeybindings } from '@/components/game/keybindings';
 import { INCOME_PAYOUT, INDUSTRIES, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, START_INCOME_SPACE, START_MONEY, TOWN_BY_ID, incomeLevel, LINKS } from '@/game/data';
 import { buildTargets, canLoan, eraRounds, linkTargets, marketSaleOnBuild, sellTargets } from '@/game/engine';
@@ -659,6 +660,19 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (at && at !== document.body && !box.current?.contains(at)) return;
     (answerAt.startsWith('p') ? plateOk : newsOk).current?.focus({ preventScroll: true });
   }, [answerAt]);
+  /* leaving the guide is final for this table: the table forgets it was
+     the guided one. So it is asked first, from a control of its own well
+     away from Back, and the keyboard lands on Stay; Escape stays too.
+     Folded to the rail, the question is dropped, not kept to spring up
+     again when the lane comes back */
+  const [leaving, setLeaving] = useState(false);
+  if (leaving && dock === GUIDE_RAIL) setLeaving(false);
+  const confirming = leaving && guided;
+  const leaveBox = useLayer<HTMLElement>(confirming, () => setLeaving(false), { focus: false });
+  const stay = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (confirming) stay.current?.focus();
+  }, [confirming]);
   /* the lane reads like a conversation: the newest turn is the one in
      view. Whatever comes in lengthens it — a lesson filed and the next,
      her plate, the news, a Skip the table now calls for, the expert's
@@ -884,6 +898,17 @@ function Guide({ dock = 0 }: { dock?: number }) {
         <TimerOff className="h-3.5 w-3.5" />
       </button>
     );
+  /* the way out of the guide: in the lane's head, or at the floating
+     note's top by its fold — never in the row of Back and Next */
+  const leaveButton = (box: string) => (
+    <button type="button" onClick={() => setLeaving(true)} aria-label={t('game.guide.leave')} title={t('game.guide.leave')} aria-haspopup="dialog" aria-expanded={confirming} className={box}>
+      <LogOut className="h-3.5 w-3.5" />
+    </button>
+  );
+  const leave = () => {
+    setLeaving(false);
+    endTutorial();
+  };
   const here = game.actions.length;
   const advised = advice && advice.at === here ? advice : null;
   /* the move as it would be set up: the lesson's card kept, when another
@@ -1095,6 +1120,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           <span className="min-w-0 truncate font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60 coarse:hidden">{t('game.guide.aria')}</span>
           {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
+          {guided && leaveButton('rounded-md p-1 text-cream-100/45 transition-colors hover:text-cream-100 coarse:p-3.5')}
           {playOnSwitch('p-1 coarse:p-3.5')}
           <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold', { key: foldKey })} title={t('game.guide.rail.fold', { key: foldKey })} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400 coarse:p-3.5">
             <ChevronRight className="h-3.5 w-3.5" />
@@ -1119,26 +1145,65 @@ function Guide({ dock = 0 }: { dock?: number }) {
         </div>
       )}
       <AnimatePresence initial={false} mode="popLayout">
+        {/* leave the guide? Said to be final before it is: the lessons end
+            at this table for good, the assistance stays */}
+        {confirming && (
+          <motion.aside
+            key="leave"
+            ref={leaveBox}
+            tabIndex={-1}
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            role="alertdialog"
+            aria-labelledby="guide-leave-title"
+            aria-describedby="guide-leave-body"
+            className="paper pointer-events-auto relative flex w-full shrink-0 flex-col px-4 py-3 shadow-e3 outline-none"
+          >
+            <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
+            <div className="relative flex items-start gap-2">
+              <LogOut className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
+              <div className="min-w-0 flex-1">
+                <h3 id="guide-leave-title" className="font-display text-[16px] font-bold leading-tight text-ink-900">
+                  {t('game.guide.leaveAsk.title')}
+                </h3>
+                <div id="guide-leave-body" className="mt-1">
+                  <Paragraphs text={t('game.guide.leaveAsk.body', { name: machine })} />
+                </div>
+              </div>
+            </div>
+            <div className="relative mt-2 flex flex-wrap items-center justify-end gap-2">
+              <button type="button" onClick={leave} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                {t('game.guide.leaveAsk.go')}
+              </button>
+              <button ref={stay} type="button" onClick={() => setLeaving(false)} className="btn-strike !min-h-[32px] coarse:!min-h-[44px] !px-4 !py-1 !text-[10.5px]">
+                {t('game.guide.leaveAsk.stay')}
+              </button>
+            </div>
+          </motion.aside>
+        )}
         {/* nothing due now: a line that says when the guide speaks again —
             the lesson set aside next round, or the next one in its time */}
         {aside && (
           <motion.aside key="aside" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} className="paper pointer-events-auto relative flex max-w-full flex-col gap-1 px-3 py-1.5 shadow-e3">
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
-            <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
-              {setAsideNow ? <Clock className="h-4 w-4 shrink-0 text-ink-900/70" /> : <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />}
-              <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{setAsideNow ? t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) }) : t('game.guide.rest')}</span>
+            {/* floating, the guide may be left from here too, by the line's
+                end: in the lane its head holds the way out */}
+            <div className="relative flex items-start gap-2">
+              <div {...grabProps} className={cn(grabClass, 'flex min-w-0 flex-1 items-center gap-2')}>
+                {setAsideNow ? <Clock className="h-4 w-4 shrink-0 text-ink-900/70" /> : <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />}
+                <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{setAsideNow ? t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) }) : t('game.guide.rest')}</span>
+              </div>
+              {!dock && leaveButton('shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5')}
             </div>
-            {/* the guide may be left from here too, as from any lesson */}
-            <div className="relative flex items-center gap-x-3 pl-6">
-              <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
-                {t('game.guide.leave')}
-              </button>
-              {behind && (
+            {behind && (
+              <div className="relative flex items-center gap-x-3 pl-6">
                 <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
                   <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
           </motion.aside>
         )}
         {/* floating, the strip keeps to its own width at the right edge:
@@ -1186,10 +1251,15 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</p>
                           <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
+                        {/* floating, the way out stands by the fold, far from
+                            Back: under a finger the two keep a thumb apart */}
                         {!dock && (
-                          <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex shrink-0 items-center gap-1.5 coarse:gap-7">
+                            {leaveButton('rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5')}
+                            <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
+                              <Minus className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         )}
                       </div>
                       <div className={cn('mt-1', !dock && 'min-h-0 flex-1 overflow-y-auto pr-1')}>
@@ -1232,9 +1302,6 @@ function Guide({ dock = 0 }: { dock?: number }) {
                   {shownIndex === 0 && !dock && <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>}
                   <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
-                        {t('game.guide.leave')}
-                      </button>
                       {behind && (
                         <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
                           <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}

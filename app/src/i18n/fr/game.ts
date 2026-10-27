@@ -1194,6 +1194,7 @@ const fr: typeof engame = {
     yourTurn: 'À vous — la machine attend.',
     wait: 'La machine joue ; votre tour vient ensuite.',
     leave: 'Quitter le guide',
+    leaveAsk: { title: 'Quitter le guide ?', body: 'C’est définitif pour cette table : les leçons s’arrêtent ici et ne reviennent pas, même si vous rouvrez la partie. L’assistance (emplacements allumés, prix, conseils) et les raisons de {name} restent.\nPour suivre les leçons une autre fois, le Cours du soir dresse une nouvelle table guidée.', go: 'Quitter le guide', stay: 'Rester' },
     back: 'Retour',
     next: 'Suivant',
     show: { mat: 'Ouvrir mon tapis', market: 'Montrer le marché', vp: 'La règle des points est en haut', ledger: 'Ouvrir le registre' },

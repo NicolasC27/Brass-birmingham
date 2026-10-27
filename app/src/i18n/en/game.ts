@@ -1192,6 +1192,7 @@ const game = {
     yourTurn: 'Your move — the machine waits.',
     wait: 'The machine is playing; your move comes next.',
     leave: 'Leave the guide',
+    leaveAsk: { title: 'Leave the guide?', body: 'It is final for this table: the lessons stop here and do not come back, even if you reopen the game. The assistance (lit slots, prices, tips) and {name}’s reasons stay.\nTo follow the lessons another time, the Evening course sets a new guided table.', go: 'Leave the guide', stay: 'Stay' },
     back: 'Back',
     next: 'Next',
     show: { mat: 'Open my mat', market: 'Show the market', vp: 'The points ruler is at the top', ledger: 'Open the ledger' },

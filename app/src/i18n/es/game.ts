@@ -1194,6 +1194,7 @@ const game: typeof engame = {
     yourTurn: 'Te toca — la máquina espera.',
     wait: 'La máquina juega; tu turno viene después.',
     leave: 'Salir de la guía',
+    leaveAsk: { title: '¿Salir de la guía?', body: 'Es definitivo en esta mesa: las lecciones terminan aquí y no vuelven, aunque vuelvas a abrir la partida. La asistencia (casillas iluminadas, precios, consejos) y las razones de {name} siguen.\nPara seguir las lecciones otra vez, el Curso nocturno prepara una nueva mesa guiada.', go: 'Salir de la guía', stay: 'Quedarme' },
     back: 'Atrás',
     next: 'Siguiente',
     show: { mat: 'Abrir mi tapete', market: 'Mostrar el mercado', vp: 'La regla de los puntos está arriba', ledger: 'Abrir el registro' },

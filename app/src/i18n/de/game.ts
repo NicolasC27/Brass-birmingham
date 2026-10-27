@@ -1194,6 +1194,7 @@ const game: typeof engame = {
     yourTurn: 'Du bist dran — die Maschine wartet.',
     wait: 'Die Maschine spielt; danach bist du dran.',
     leave: 'Tutorial verlassen',
+    leaveAsk: { title: 'Tutorial verlassen?', body: 'An diesem Tisch ist das endgültig: Die Lektionen enden hier und kommen nicht zurück, auch wenn du die Partie wieder öffnest. Die Hilfen (beleuchtete Bauplätze, Preise, Tipps) und die Begründungen von {name} bleiben.\nUm die Lektionen ein andermal zu verfolgen, deckt der Abendkurs einen neuen geführten Tisch.', go: 'Tutorial verlassen', stay: 'Bleiben' },
     back: 'Zurück',
     next: 'Weiter',
     show: { mat: 'Mein Tableau öffnen', market: 'Den Markt zeigen', vp: 'Die Punkteleiste ist oben', ledger: 'Das Register öffnen' },
