@@ -20,7 +20,9 @@ import { dictOf, getLang, localeOf, useLang, useT } from '@/i18n';
 import { roman } from '@/gl/roman';
 import { cn } from '@/lib/utils';
 import { useHudRects } from './useHudRects';
-import { EMPTY_THREAD, askThread, fileThread, noteThread } from './guideThread';
+import { askThread, fileThread, noteThread } from './guideThread';
+import { NOTHING_READ, READ_KEY, readAt, shelve, threadOf } from './guideRead';
+import type { Read } from './guideRead';
 import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
@@ -356,6 +358,18 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
+  /* what was read at this table, kept over a reload (guideRead.ts): the
+     page reloaded brings back neither her plates nor the news already
+     read, and keeps the thread. Read once, as the guide opens: the page
+     opens a new guide for another table */
+  const readHere = table ?? code;
+  const [before] = useState<Read>(() => {
+    try {
+      return readHere ? readAt(localStorage.getItem(READ_KEY), readHere) : NOTHING_READ;
+    } catch {
+      return NOTHING_READ;
+    }
+  });
   /* × on the tips note puts away the lines it holds, for the round: an
      alert or a tip not yet said still comes, the next round they may all
      come back, and the machine's plates keep their own × */
@@ -363,7 +377,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the machine's move that was read and understood, by its entry in the
      log: the length of the log moves with every entry and would bring
      the plate back after each move of one's own */
-  const [botHidden, setBotHidden] = useState<number>(-1);
+  const [botHidden, setBotHidden] = useState<number>(before.plate);
   /* what an expert would play in the reader's seat — the search at full
      strength, not the machine at the table — asked for one position: the
      index of the action to come names it. Given by degrees: the reason,
@@ -425,12 +439,21 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const aid = !!game && me >= 0 && aidOn(game.assist, code !== null);
   /* the turns of the table, and the highest entry read of them */
   const happens = useMemo(() => (game && aid ? happenings(game, me, t) : []), [game, aid, me, t]);
-  const [eventsSeen, setEventsSeen] = useState(-1);
+  const [eventsSeen, setEventsSeen] = useState(before.news);
   /* the machine's move whose reading the reader has set aside to see the lesson */
   const [unfoldAt, setUnfoldAt] = useState(-1);
   /* everything already said, oldest first, and what is still live */
-  const [thread, setThread] = useState<Thread>(EMPTY_THREAD);
+  const [thread, setThread] = useState<Thread>(() => threadOf(before));
   const said = thread.said;
+  /* and kept as it goes: written from an effect, never from a render */
+  useEffect(() => {
+    if (!readHere) return;
+    try {
+      localStorage.setItem(READ_KEY, shelve(localStorage.getItem(READ_KEY), readHere, { plate: botHidden, news: eventsSeen, said: thread.said, filed: thread.filed }));
+    } catch {
+      /* non-fatal: a reload reads the table afresh */
+    }
+  }, [readHere, botHidden, eventsSeen, thread.said, thread.filed]);
   const [question, setQuestion] = useState('');
   /* the notions offered under a question nothing matched, by the question */
   const [nearFor, setNearFor] = useState<Record<string, NearNotion[]>>({});

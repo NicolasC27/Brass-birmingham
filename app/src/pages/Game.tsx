@@ -968,7 +968,9 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
       )}
       {/* the guide and the analysis share the right lane: while a game is
           being read, the analysis has it */}
-      {!analysisPane && <Guide dock={dock} />}
+      {/* a guide of its own for each table: what was read at the last one
+          is not carried over to the next (a rematch, a table moved) */}
+      {!analysisPane && <Guide key={storeLocal ?? tableCode ?? ''} dock={dock} />}
       {tutorial && <LessonHalo />}
       {/* the photo mode: the HUD away, the board framed and printed */}
       <PhotoMode game={review?.state ?? finalBoard ?? game} />
