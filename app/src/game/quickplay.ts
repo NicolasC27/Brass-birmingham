@@ -5,7 +5,7 @@ import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants
 import type { StoredSetup } from '@/components/setup/constants';
 import { personaName } from '@/game/data';
 import { tr } from '@/i18n';
-import { listHomeGames, openHomeGame } from './home';
+import { homeKnown, homeSnapshot, listHomeGames, openHomeGame, refreshHome } from './home';
 import type { HomeTable } from './home';
 import type { SetupPayload } from './types';
 
@@ -67,13 +67,29 @@ export function resumeOf(bound: string | null, tables: readonly HomeTable[]): st
   return tables.some((t) => t.code === bound && !t.over) ? bound : null;
 }
 
-/** the guided table left unfinished, as the register now stands */
-export function guidedResume(tables: readonly HomeTable[] = listHomeGames()): string | null {
+/** the code of the table the guide is bound to, if any */
+export function guidedBound(): string | null {
   try {
-    return resumeOf(localStorage.getItem(TUTORIAL_KEY), tables);
+    return localStorage.getItem(TUTORIAL_KEY);
   } catch {
     return null;
   }
+}
+
+/** the guided table left unfinished, as the register now stands */
+export function guidedResume(tables: readonly HomeTable[] = listHomeGames()): string | null {
+  return resumeOf(guidedBound(), tables);
+}
+
+/** the guided table to open: the one left unfinished — the register read
+ *  first when it has not been, so that a table the office still keeps is
+ *  never dealt over — or, with none, or asked `again`, a new one */
+export async function openGuided(again = false): Promise<string> {
+  if (!again) {
+    const left = guidedResume(homeKnown() ? homeSnapshot() : await refreshHome());
+    if (left) return left;
+  }
+  return startTutorial();
 }
 
 export function tutorialSetup(): StoredSetup {

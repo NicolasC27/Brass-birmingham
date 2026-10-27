@@ -196,7 +196,7 @@ function TutorialStrip({ className }: { className?: string }) {
           <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
         </div>
         <Button variant="ghost" className="shrink-0" onClick={() => guided.open()} disabled={guided.busy} aria-busy={guided.busy}>
-          {guided.busy ? t('game.page.settingTable') : t(guided.table ? 'platform.desk.tutorial.resume' : 'platform.desk.tutorial.cta')}
+          {guided.busy ? t('game.page.settingTable') : t(guided.unfinished ? 'platform.desk.tutorial.resume' : 'platform.desk.tutorial.cta')}
         </Button>
       </div>
       <Refusal text={guided.failed ? t('platform.desk.tutorial.failed') : null} />

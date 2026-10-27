@@ -30,10 +30,15 @@ const watchers = new Set<() => void>();
 /** the mirror as an unchanging object while the register does not move,
  *  so `useSyncExternalStore` may hold on to it */
 let snapshot: HomeTable[] = register;
+/** the office's register has been read into the mirror — or there is none
+ *  to read, nobody having signed in. Until then an empty mirror is a
+ *  question not yet answered, not the register's word that it is empty */
+let known = false;
 
 function settle(games: HomeTable[]): void {
   register = [...games].sort((a, b) => b.updatedAt - a.updatedAt);
   snapshot = register;
+  known = true;
   for (const cb of watchers) cb();
 }
 
@@ -50,6 +55,9 @@ export const homeSnapshot = (): HomeTable[] => snapshot;
 export const listHomeGames = (): HomeTable[] => register.filter((t) => !t.over);
 
 export const homeGame = (code: string): HomeTable | null => register.find((t) => t.code === code) ?? null;
+
+/** has the mirror been filled from the office? (see `known`) */
+export const homeKnown = (): boolean => known;
 
 /** the setup the last table was dealt from — the form this browser filled in,
  *  which is a preference of this device and not a record of play */
@@ -79,12 +87,25 @@ export async function hydrateHome(): Promise<void> {
   if (hasOldStuff()) await liftBrowser().catch(() => 0);
   /* nobody has signed in, no session is waiting and nothing was carried up:
      this browser has played nothing, and no account is opened to say so */
-  if (wire.stranger) return;
+  if (wire.stranger) {
+    known = true;
+    return;
+  }
   try {
     settle(await wire.askHome());
   } catch {
-    /* the office is not answering: the register stands empty for now */
+    /* the office is not answering: the register stands empty for now,
+       and unread — it comes in with the office's next word on it */
   }
+}
+
+/** the register asked of the office again, into the mirror: for a page that
+ *  must not take a mirror never filled for an empty register */
+export async function refreshHome(): Promise<HomeTable[]> {
+  const wire = onlineWire();
+  if (!wire) throw new Error('offline');
+  settle(await wire.askHome());
+  return register;
 }
 
 /** a new game at home. The office deals the code — this browser proposes the

@@ -29,7 +29,7 @@ export default function Cours() {
      none — never begun, played out, the guide left there — the lessons
      start over at a new one, as they do when the reader asks */
   const guided = useGuidedGame();
-  const { table } = guided;
+  const { table, unfinished } = guided;
   /* the syllabus is the register's own table of contents — all twelve
      chapters, glossary and approximations included — not a copy of ten */
   const chapters = getChapters();
@@ -67,10 +67,10 @@ export default function Cours() {
           <div className="mt-5 flex flex-wrap items-center gap-4">
             <button type="button" onClick={() => guided.open()} disabled={guided.busy} aria-busy={guided.busy} className="gz-ticket gz-ticket-brass">
               <GraduationCap aria-hidden />
-              {guided.busy ? t('game.page.settingTable') : t(table ? 'platform.cours.resume' : begun ? 'platform.cours.again' : 'platform.cours.begin')}
+              {guided.busy ? t('game.page.settingTable') : t(unfinished ? 'platform.cours.resume' : begun ? 'platform.cours.again' : 'platform.cours.begin')}
             </button>
             {/* the table waits, and a reader some way into it may still start over */}
-            {table && begun && !guided.busy && (
+            {unfinished && begun && !guided.busy && (
               <button type="button" onClick={() => guided.open(true)} className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-500 transition-colors hover:text-paper-100">
                 {t('platform.cours.again')}
               </button>
