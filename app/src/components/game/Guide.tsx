@@ -425,7 +425,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const top = Math.max(bar?.bottom || 80, over(rail) ? rail!.bottom : 0, over(matHead) ? matHead!.bottom : 0) + 12;
     /* the lane runs down to whatever the right edge already holds */
     const feet = [map?.top, dockBox && dockBox.right > w - laneWidth(w) - 40 ? dockBox.top : undefined, h - 40].filter((x): x is number => typeof x === 'number' && x > top);
-    return { top, height: Math.max(220, Math.round(Math.min(...feet) - top - 12)) };
+    return { top, height: Math.max(220, Math.round(Math.min(...feet) - top - 12)), mat: over(matHead) };
   }, [bar, map, dockBox, rail, matHead]);
   /* a sheet opened down the right edge — the ledger, the exchange's tray —
      is read beside the floating note, not under it: the note steps left
@@ -470,6 +470,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const [eventsSeen, setEventsSeen] = useState(before.news);
   /* the machine's move whose reading the reader has set aside to see the lesson */
   const [unfoldAt, setUnfoldAt] = useState(-1);
+  /* the lesson the reader opened again over a mat spread under the
+     floating note: kept open until the mat is closed */
+  const [overMat, setOverMat] = useState(false);
+  if (matPlayer === null && overMat) setOverMat(false);
   /* everything already said, oldest first, and what is still live */
   const [thread, setThread] = useState<Thread>(() => threadOf(before));
   const said = thread.said;
@@ -794,10 +798,17 @@ function Guide({ dock = 0 }: { dock?: number }) {
       /* non-fatal */
     }
   };
-  /* the lesson down to its strip: folded by the reader, or under her
-     plate while it is read; and on her turn stepped back to a line that
-     says so — unless asked back over her plate */
-  const stripped = mini || (reading && !unfolded);
+  /* a mat spread across the floating note's column is the reader's to
+     work on — its rows run under the note: the live lesson steps down
+     to its strip, and back when the mat closes. Not a lesson read with
+     the mat open — the mat's own, and the tile to read, whose NEXT tile
+     leads its row at the left, clear of the note — nor one read back,
+     nor one the reader opens again over it */
+  const matAside = !dock && band.mat && review === null && step?.show !== 'mat' && !overMat;
+  /* the lesson down to its strip: folded by the reader, under her plate
+     while it is read, or beside the mat; and on her turn stepped back to
+     a line that says so — unless asked back over her plate */
+  const stripped = mini || (reading && !unfolded) || matAside;
   const stepBack = theirTurn && !unfolded;
   /* the strip opens only where opening shows something: on her turn,
      with no plate of hers to read the lesson over, it stays the line
@@ -807,6 +818,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const unfold = () => {
     fold(false);
     if (reading && bot) setUnfoldAt(bot.id);
+    if (matAside) setOverMat(true);
   };
   const grab = (e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
