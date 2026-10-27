@@ -271,5 +271,11 @@ module.exports = {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [
+    require("tailwindcss-animate"),
+    /* coarse: under a finger (a tablet), where a control wants some 44 px */
+    function ({ addVariant }) {
+      addVariant("coarse", "@media (pointer: coarse)");
+    },
+  ],
 }

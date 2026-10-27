@@ -328,6 +328,11 @@ const TIPS: { id: string; when: (c: Ctx) => boolean; vars?: (c: Ctx) => Record<s
 
 /* ------------------------------ the note ----------------------------- */
 
+/* under a finger (the coarse: variant, a tablet) each control of the
+   note wants some 44 px: the small icons reach past what they show, a
+   margin taking back what they grow, and the words and buttons stand
+   taller */
+
 function Paragraphs({ text, className }: { text: string; className?: string }) {
   return (
     <>
@@ -996,12 +1001,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
         <LessonLens stepId={lensId} active={showSteps} />
         {heard}
         <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
-          <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold', { key: foldKey })} title={t('game.guide.rail.unfold', { key: foldKey })} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
+          <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold', { key: foldKey })} title={t('game.guide.rail.unfold', { key: foldKey })} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400 coarse:h-10 coarse:w-10">
             <ChevronLeft className="h-4 w-4" />
             {due && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
           </button>
           {answer && (
-            <button type="button" onClick={answer.go} aria-label={answer.say} title={answer.say} className="flex w-8 shrink-0 flex-col items-center gap-1.5 rounded-md border border-brass-400 bg-brass-500/20 py-2 text-brass-300 transition-colors hover:bg-brass-500/35">
+            <button type="button" onClick={answer.go} aria-label={answer.say} title={answer.say} className="flex w-8 shrink-0 flex-col items-center gap-1.5 rounded-md border border-brass-400 bg-brass-500/20 py-2 coarse:w-10 text-brass-300 transition-colors hover:bg-brass-500/35">
               {due === 'page' ? <ChevronRight className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}
               <span className="font-sans text-[9.5px] font-bold uppercase tracking-[0.14em] [writing-mode:vertical-rl]">{answer.word}</span>
             </button>
@@ -1017,7 +1022,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
               <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
                 <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(come / LESSONS.length) * 100}%` }} />
               </span>
-              {playOnSwitch('flex h-8 w-8 shrink-0 items-center justify-center')}
+              {playOnSwitch('flex h-8 w-8 shrink-0 items-center justify-center coarse:h-10 coarse:w-10')}
             </>
           )}
         </aside>
@@ -1042,11 +1047,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
       {dock > 0 && (
         <div className="sticky -top-3 z-10 -mx-3 -mt-3 flex shrink-0 items-center gap-2 bg-coal-950 px-3 pb-1 pt-3">
           <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
-          <span className="font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60">{t('game.guide.aria')}</span>
-          {showSteps && <span className="font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
+          <span className="min-w-0 truncate font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60 coarse:hidden">{t('game.guide.aria')}</span>
+          {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
           <span className="flex-1" />
-          {playOnSwitch('p-1')}
-          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold', { key: foldKey })} title={t('game.guide.rail.fold', { key: foldKey })} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400">
+          {playOnSwitch('p-1 coarse:p-3.5')}
+          <button type="button" onClick={() => setBoardOption('guideFolded', true)} aria-label={t('game.guide.rail.fold', { key: foldKey })} title={t('game.guide.rail.fold', { key: foldKey })} className="rounded-md border border-brass-700/50 p-1 text-brass-400/80 transition-colors hover:border-brass-400 hover:text-brass-400 coarse:p-3.5">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </div>
@@ -1060,7 +1065,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
               <p className={cn('font-serif text-[12px] leading-snug', m.kind === 'ask' ? 'text-bottle-400' : 'text-cream-100/70')}>{m.body}</p>
               {m.kind === 'answer' && i > 0 && nearFor[said[i - 1].body] && <NearList near={nearFor[said[i - 1].body]} onPick={takeUp} />}
               {m.kind === 'bot' && m.seat !== undefined && m.seat >= 0 && (
-                <button type="button" onClick={() => setGlimpse({ seat: m.seat!, at: Date.now() })} className="mt-1 inline-flex items-center gap-1 font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400">
+                <button type="button" onClick={() => setGlimpse({ seat: m.seat!, at: Date.now() })} className="mt-1 inline-flex items-center gap-1 font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400 coarse:min-h-[44px]">
                   <Eye className="h-3 w-3" /> {t('game.guide.ask.replay')}
                 </button>
               )}
@@ -1080,11 +1085,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
             </div>
             {/* the guide may be left from here too, as from any lesson */}
             <div className="relative flex items-center gap-x-3 pl-6">
-              <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+              <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
                 {t('game.guide.leave')}
               </button>
               {behind && (
-                <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
                   <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                 </button>
               )}
@@ -1100,7 +1105,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
             {stripped && (
-              <button type="button" onClick={unfold} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+              <button type="button" onClick={unfold} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             )}
@@ -1135,7 +1140,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
                         {!dock && (
-                          <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                          <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
                             <Minus className="h-3.5 w-3.5" />
                           </button>
                         )}
@@ -1147,10 +1152,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
                               {t('game.guide.advice.lede', { n: sheetAdvice.times })} <span className="font-semibold">{t(`game.debrief.motifs.${sheetAdvice.motif}`)}</span>
                             </p>
                             <div className="mt-1 flex items-center gap-2">
-                              <button type="button" onClick={() => { setReview(reread(settled, sheetAdvice.id)); setAdviceSeen(true); }} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                              <button type="button" onClick={() => { setReview(reread(settled, sheetAdvice.id)); setAdviceSeen(true); }} className="btn-strike !min-h-[24px] coarse:!min-h-[44px] !px-2.5 !py-0.5 !text-[10px]">
                                 {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${stepKey(sheetAdvice.id)}.title`, stepVars()) })}
                               </button>
-                              <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
+                              <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900 coarse:min-h-[44px] coarse:px-2">{t('game.guide.advice.later')}</button>
                             </div>
                           </div>
                         )}
@@ -1180,16 +1185,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
                   {shownIndex === 0 && !dock && <p className="mt-2 shrink-0 font-serif text-[11px] italic text-ink-900/50">{t('game.guide.foldHint')}</p>}
                   <div className="mt-2 flex shrink-0 flex-wrap items-center justify-between gap-2">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                      <button type="button" onClick={endTutorial} className="font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
                         {t('game.guide.leave')}
                       </button>
                       {behind && (
-                        <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900">
+                        <button type="button" onClick={() => setReview(behind)} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px]">
                           <ChevronLeft className="h-3 w-3" /> {t('game.guide.back')}
                         </button>
                       )}
                       {aid && myTurn && !advised && (
-                        <button type="button" onClick={ask} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-bottle-600 hover:text-ink-900">
+                        <button type="button" onClick={ask} className="inline-flex items-center gap-1 font-sans text-[10px] font-bold uppercase tracking-[0.14em] text-bottle-600 hover:text-ink-900 coarse:min-h-[44px]">
                           <Sparkles className="h-3 w-3" /> {t('game.guide.suggest.ask')}
                         </button>
                       )}
@@ -1198,12 +1203,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
                       {/* Show, while what it shows is not on show: the points'
                           ruler hidden, the lesson's halo rings this toggle */}
                       {step.show && !(step.show === 'mat' && matPlayer !== null) && !(step.show === 'vp' && vpTrack) && (
-                        <button type="button" onClick={() => show(step.show!)} data-lens={step.show === 'vp' ? 'vp' : undefined} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                        <button type="button" onClick={() => show(step.show!)} data-lens={step.show === 'vp' ? 'vp' : undefined} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
                         </button>
                       )}
                       {later && (
-                        <button type="button" onClick={() => putAside(later)} title={t('game.guide.laterHint')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                        <button type="button" onClick={() => putAside(later)} title={t('game.guide.laterHint')} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Clock className="h-3.5 w-3.5" /> {detour && dueStep ? t('game.guide.laterLesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) }) : t('game.guide.later')}
                         </button>
                       )}
@@ -1213,13 +1218,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           the loan's detour, the lesson that led there when
                           it cannot wait */}
                       {(blocked || (detour && !later) || way === 'skip') && myTurn && !already && (
-                        <button type="button" onClick={() => owed?.id && passOn(owed.id)} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                        <button type="button" onClick={() => owed?.id && passOn(owed.id)} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           {detour && dueStep ? t('game.guide.skipLesson', { lesson: t(`game.guide.steps.${stepKey(dueStep.id)}.title`, stepVars()) }) : t('game.guide.skip')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
                       {(!step.done || review !== null || already || !!spare) && (
-                        <button type="button" onClick={next} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
+                        <button type="button" onClick={next} className="btn-strike !min-h-[32px] coarse:!min-h-[44px] !px-4 !py-1 !text-[10.5px]">
                           {t('game.guide.next')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
@@ -1241,16 +1246,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     ))}
                   </ul>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <button type="button" onClick={() => setMuted({ ids: [...put, ...told.map((x) => x.id)], round })} aria-label={t('game.guide.hide')} title={t('game.guide.hide')} className="rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+                    <button type="button" onClick={() => setMuted({ ids: [...put, ...told.map((x) => x.id)], round })} aria-label={t('game.guide.hide')} title={t('game.guide.hide')} className="rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:p-3">
                       <X className="h-3.5 w-3.5" />
                     </button>
                     {aid && myTurn && !advised && (
-                      <button type="button" onClick={ask} aria-label={t('game.guide.suggest.ask')} title={t('game.guide.suggest.ask')} className="rounded-full p-0.5 text-bottle-600 hover:text-ink-900">
+                      <button type="button" onClick={ask} aria-label={t('game.guide.suggest.ask')} title={t('game.guide.suggest.ask')} className="rounded-full p-0.5 text-bottle-600 hover:text-ink-900 coarse:p-3">
                         <Sparkles className="h-3.5 w-3.5" />
                       </button>
                     )}
                     {pages > 1 && (
-                      <button type="button" onClick={() => setPage((page + 1) % pages)} className="font-mono text-[10px] text-ink-900/50 hover:text-ink-900">
+                      <button type="button" onClick={() => setPage((page + 1) % pages)} className="font-mono text-[10px] text-ink-900/50 hover:text-ink-900 coarse:min-h-[44px] coarse:px-2">
                         {page + 1}/{pages} ›
                       </button>
                     )}
@@ -1279,14 +1284,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                   </div>
                 ) : (
                   <div className="mt-1 flex items-center gap-2">
-                    <button type="button" onClick={() => setAdviceOpen(true)} className="btn-strike !min-h-[24px] !px-2.5 !py-0.5 !text-[10px]">
+                    <button type="button" onClick={() => setAdviceOpen(true)} className="btn-strike !min-h-[24px] coarse:!min-h-[44px] !px-2.5 !py-0.5 !text-[10px]">
                       {t('game.guide.advice.open', { lesson: t(`game.guide.steps.${plainKey(sheetAdvice.id)}.title`, stepVars()) })}
                     </button>
-                    <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900">{t('game.guide.advice.later')}</button>
+                    <button type="button" onClick={() => setAdviceSeen(true)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900 coarse:min-h-[44px] coarse:px-2">{t('game.guide.advice.later')}</button>
                   </div>
                 )}
               </div>
-              <button type="button" onClick={() => setAdviceSeen(true)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900">
+              <button type="button" onClick={() => setAdviceSeen(true)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1308,14 +1313,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 )}
               </div>
               {!reading && (
-                <button type="button" onClick={() => setBotHidden(bot.id)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+                <button type="button" onClick={() => setBotHidden(bot.id)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400 coarse:-m-3 coarse:p-3.5">
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
             {holding && <p className="mt-1.5 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
             {reading && (
-              <button ref={plateOk} type="button" onClick={() => readPlate(bot)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+              <button ref={plateOk} type="button" onClick={() => readPlate(bot)} className="btn-strike mt-2 !min-h-[30px] coarse:!min-h-[44px] w-full !px-3 !py-1 !text-[10px]">
                 {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -1323,7 +1328,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             {/* after the first rounds its moves may go by unheld: said here,
                 where the waiting is felt, and taken back the same way */}
             {reading && offerPlayOn && (
-              <button type="button" onClick={() => letPlay(!playOn)} title={t('game.guide.playOn.hint', { name: bot.name })} className="mt-1.5 self-center font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400">
+              <button type="button" onClick={() => letPlay(!playOn)} title={t('game.guide.playOn.hint', { name: bot.name })} className="mt-1.5 self-center font-sans text-[9.5px] font-bold uppercase tracking-[0.12em] text-brass-400/70 hover:text-brass-400 coarse:min-h-[44px]">
                 {t(playOn ? 'game.guide.playOn.hold' : 'game.guide.playOn.let', { name: bot.name })}
               </button>
             )}
@@ -1346,7 +1351,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 </div>
               </div>
             </div>
-            <button ref={newsOk} type="button" onClick={readNews} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+            <button ref={newsOk} type="button" onClick={readNews} className="btn-strike mt-2 !min-h-[30px] coarse:!min-h-[44px] w-full !px-3 !py-1 !text-[10px]">
               {t('game.guide.botOk')}
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
@@ -1391,20 +1396,20 @@ function Guide({ dock = 0 }: { dock?: number }) {
                   <p className="mt-0.5 font-serif text-[13px] text-cream-100/90">{t('game.guide.suggest.none')}</p>
                 )}
               </div>
-              <button type="button" onClick={() => setAdvice(null)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400">
+              <button type="button" onClick={() => setAdvice(null)} aria-label={t('game.guide.hide')} className="shrink-0 rounded-full p-0.5 text-cream-100/40 hover:text-brass-400 coarse:-m-3 coarse:p-3.5">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
             {/* one degree more at each click: the place, then the move set
                 up — never with the card the lesson keeps */}
             {!advised.busy && move && !advised.place && (
-              <button type="button" onClick={showPlace} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+              <button type="button" onClick={showPlace} className="btn-strike mt-2 !min-h-[30px] coarse:!min-h-[44px] w-full !px-3 !py-1 !text-[10px]">
                 {t(hasPlace(move) ? 'game.guide.suggest.where' : 'game.guide.suggest.show')}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
             )}
             {!advised.busy && advised.place && counsel?.action && (
-              <button type="button" onClick={() => prepare(counsel.action!)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+              <button type="button" onClick={() => prepare(counsel.action!)} className="btn-strike mt-2 !min-h-[30px] coarse:!min-h-[44px] w-full !px-3 !py-1 !text-[10px]">
                 {t('game.guide.suggest.prepare')}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -1428,9 +1433,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={t('game.guide.ask.placeholder')}
             aria-label={t('game.guide.ask.placeholder')}
-            className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] text-cream-100 placeholder:text-cream-100/35 focus:border-brass-400 focus:outline-none"
+            className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] coarse:min-h-[44px] text-cream-100 placeholder:text-cream-100/35 focus:border-brass-400 focus:outline-none"
           />
-          <button type="submit" disabled={!question.trim()} aria-label={t('game.guide.ask.send')} title={t('game.guide.ask.send')} className="btn-strike !min-h-[32px] shrink-0 !px-3 !py-1 !text-[10px] disabled:opacity-40">
+          <button type="submit" disabled={!question.trim()} aria-label={t('game.guide.ask.send')} title={t('game.guide.ask.send')} className="btn-strike !min-h-[32px] coarse:!min-h-[44px] shrink-0 !px-3 !py-1 !text-[10px] disabled:opacity-40 coarse:!px-4">
             <ChevronRight className="h-3.5 w-3.5" />
           </button>
         </form>
