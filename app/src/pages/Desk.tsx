@@ -181,20 +181,23 @@ function MemberHeader() {
 /* ------------------------------ Bandeau tutoriel ------------------------------ */
 
 /* the guided game: back to its table when one is left unfinished, else a
-   new one */
+   new one — and a word when the office does not deal it */
 function TutorialStrip() {
   const t = useT();
   const guided = useGuidedGame();
   return (
-    <div className="mt-6 flex flex-wrap items-center gap-4 console px-5 py-4">
-      <GraduationCap size={20} aria-hidden className="shrink-0 text-brass-300" />
-      <div className="min-w-0 flex-1">
-        <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.tutorial.title')}</p>
-        <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
+    <div className="mt-6 console px-5 py-4">
+      <div className="flex flex-wrap items-center gap-4">
+        <GraduationCap size={20} aria-hidden className="shrink-0 text-brass-300" />
+        <div className="min-w-0 flex-1">
+          <p className="font-ui text-[14px] font-semibold text-paper-100">{t('platform.desk.tutorial.title')}</p>
+          <p className="mt-0.5 font-ui text-[12.5px] text-iron-400">{t('platform.desk.tutorial.copy')}</p>
+        </div>
+        <Button variant="ghost" className="shrink-0" onClick={() => guided.open()} disabled={guided.busy} aria-busy={guided.busy}>
+          {guided.busy ? t('game.page.settingTable') : t(guided.table ? 'platform.desk.tutorial.resume' : 'platform.desk.tutorial.cta')}
+        </Button>
       </div>
-      <Button variant="ghost" className="shrink-0" onClick={() => guided.open()}>
-        {t(guided.table ? 'platform.desk.tutorial.resume' : 'platform.desk.tutorial.cta')}
-      </Button>
+      <Refusal text={guided.failed ? t('platform.desk.tutorial.failed') : null} />
     </div>
   );
 }

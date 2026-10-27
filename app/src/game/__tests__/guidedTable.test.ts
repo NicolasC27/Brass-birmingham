@@ -8,8 +8,10 @@ import type { StoredSetup } from '@/components/setup/constants';
 import type { HomeTable } from '../home';
 import { TUTORIAL_KEY, TUTORIAL_SEED, guidedResume, guidedTable, quickSetup, resumeOf, startQuickGame, startTutorial } from '../quickplay';
 
-/* the office deals the guided table its code; nothing leaves this test */
-vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()), openHomeGame: async () => ({ code: 'NEW1' }) }));
+/* the office deals the guided table its code — or keeps the line quiet,
+   when a test says so; nothing leaves this test */
+const office = vi.hoisted(() => ({ open: null as (() => Promise<{ code: string }>) | null }));
+vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()), openHomeGame: () => (office.open ? office.open() : Promise.resolve({ code: 'NEW1' })) }));
 
 /* the guided game goes with the table it was opened at, by its code — not
    with every table dealt the same seed */
@@ -17,6 +19,7 @@ vi.mock('../home', async (load) => ({ ...(await load<typeof import('../home')>()
 let store: Map<string, string>;
 beforeEach(() => {
   store = stubStorage();
+  office.open = null;
 });
 
 describe('the guided table', () => {
@@ -105,5 +108,36 @@ describe('a fresh guided game', () => {
     /* and play now dresses that table, not the guided one */
     expect(quickSetup().players.map((p) => p.name)).toEqual(['Ada', 'Watt', 'Arkwright', 'Boulton']);
     expect(quickSetup().options.eraLength).toBe('standard');
+  });
+
+  it('wipes nothing of the last one before the office has dealt it', async () => {
+    const last = letPlayOn({ ...freshProgress('OLD1'), passed: LESSON_IDS.slice(0, 12) }, true);
+    saveProgress(last);
+    store.set(TUTORIAL_KEY, 'OLD1');
+    store.set(MINI_KEY, 'coal');
+    setBoardOption('guideFolded', true);
+    let deal: (t: { code: string }) => void = () => undefined;
+    office.open = () => new Promise((ok) => (deal = ok));
+    const started = startTutorial();
+    await Promise.resolve();
+    expect(progressAt('OLD1')).toEqual(last);
+    expect(store.get(TUTORIAL_KEY)).toBe('OLD1');
+    deal({ code: 'NEW1' });
+    expect(await started).toBe('NEW1');
+    expect(progressAt('NEW1')).toEqual(freshProgress('NEW1'));
+  });
+
+  it('keeps the last one whole when the office does not answer', async () => {
+    const last = { ...freshProgress('OLD1'), passed: LESSON_IDS.slice(0, 12) };
+    saveProgress(last);
+    store.set(TUTORIAL_KEY, 'OLD1');
+    store.set(MINI_KEY, 'coal');
+    setBoardOption('guideFolded', true);
+    office.open = () => Promise.reject(new Error('offline'));
+    await expect(startTutorial()).rejects.toThrow('offline');
+    expect(progressAt('OLD1')).toEqual(last);
+    expect(store.get(TUTORIAL_KEY)).toBe('OLD1');
+    expect(store.get(MINI_KEY)).toBe('coal');
+    expect(getBoardOptions().guideFolded).toBe(true);
   });
 });

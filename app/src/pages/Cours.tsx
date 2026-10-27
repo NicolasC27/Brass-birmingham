@@ -9,7 +9,7 @@ import { useGuidedGame } from '@/hooks/use-guided-game';
 import { LESSONS, lessonsRead, lessonsToRedo } from '@/platform/cours';
 import { shortKeyOf } from '@/components/game/lessonWords';
 import { getChapters } from '@/components/rules/rulesData';
-import PageShell from '@/components/site/PageShell';
+import PageShell, { Refusal } from '@/components/site/PageShell';
 import ProgressCard from '@/components/desk/ProgressCard';
 
 /* ------------------------------------------------------------------ */
@@ -65,12 +65,12 @@ export default function Cours() {
             })}
           </ol>
           <div className="mt-5 flex flex-wrap items-center gap-4">
-            <button type="button" onClick={() => guided.open()} className="gz-ticket gz-ticket-brass">
+            <button type="button" onClick={() => guided.open()} disabled={guided.busy} aria-busy={guided.busy} className="gz-ticket gz-ticket-brass">
               <GraduationCap aria-hidden />
-              {t(table ? 'platform.cours.resume' : begun ? 'platform.cours.again' : 'platform.cours.begin')}
+              {guided.busy ? t('game.page.settingTable') : t(table ? 'platform.cours.resume' : begun ? 'platform.cours.again' : 'platform.cours.begin')}
             </button>
             {/* the table waits, and a reader some way into it may still start over */}
-            {table && begun && (
+            {table && begun && !guided.busy && (
               <button type="button" onClick={() => guided.open(true)} className="font-ui text-[10.5px] font-semibold uppercase tracking-label text-brass-500 transition-colors hover:text-paper-100">
                 {t('platform.cours.again')}
               </button>
@@ -78,6 +78,7 @@ export default function Cours() {
             <span className="data-text text-iron-400 tnums">{t('platform.cours.reached', { done: passed.length, total: LESSONS.length })}</span>
           </div>
           {table && <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.cours.waits', { name: tableTitle(table.name, lang), round: table.round })}</p>}
+          <Refusal text={guided.failed ? t('platform.cours.failed') : null} />
 
           {/* the sheet of progress keeps to the lessons' column: alone under
               the grid it was a 1176px cartouche for two lines */}

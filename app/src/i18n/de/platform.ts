@@ -492,6 +492,7 @@ const platform: typeof enPlatform = {
       copy: 'Eine erste geführte Partie: die Kanalzeit gegen eine sanfte Maschine, der Führer an Ihrer Seite für die ersten Züge.',
       cta: 'Geführte Partie starten',
       resume: 'Geführte Partie fortsetzen',
+      failed: 'Das Kontor antwortet nicht; versuchen Sie es gleich noch einmal.',
     },
     tabs: {
       tables: 'Meine Tische',
@@ -1197,6 +1198,7 @@ const platform: typeof enPlatform = {
     resume: "Lektion fortsetzen",
     again: "Noch einmal von vorn",
     waits: "Ihr Tisch „{name}“ wartet auf Sie, in Runde {round}.",
+    failed: "Das Kontor antwortet nicht: Der Tisch wurde nicht gedeckt. Ihre Lektionen bleiben abgehakt; versuchen Sie es gleich noch einmal.",
     reached: "{done}/{total} Lektionen gelesen",
     syllabus: "Das Register, Kapitel für Kapitel",
     read: "Lesen",

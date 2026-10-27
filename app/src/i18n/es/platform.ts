@@ -490,6 +490,7 @@ const platform = {
       copy: 'Una primera partida guiada: la era del canal contra una máquina suave, con el guía a su lado en sus primeros turnos.',
       cta: 'Empezar la partida guiada',
       resume: 'Retomar la partida guiada',
+      failed: 'La oficina no responde; inténtelo de nuevo en un momento.',
     },
     tabs: {
       tables: 'Mis mesas',
@@ -1195,6 +1196,7 @@ const platform = {
     resume: "Retomar la lección",
     again: "Repetir desde el principio",
     waits: "Su mesa « {name} » le espera, en la ronda {round}.",
+    failed: "La oficina no responde: la mesa no se ha preparado. Sus lecciones siguen marcadas; inténtelo de nuevo en un momento.",
     reached: "{done}/{total} lecciones leídas",
     syllabus: "El registro, capítulo a capítulo",
     read: "Leer",

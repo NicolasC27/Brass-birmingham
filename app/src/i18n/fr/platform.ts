@@ -490,6 +490,7 @@ const platform = {
       copy: 'Une première partie guidée : l’ère du canal contre une machine douce, le guide à vos côtés pour vos premiers tours.',
       cta: 'Lancer la partie guidée',
       resume: 'Reprendre la partie guidée',
+      failed: 'Le bureau ne répond pas ; réessayez dans un instant.',
     },
     tabs: {
       tables: 'Mes tables',
@@ -1195,6 +1196,7 @@ const platform = {
     resume: "Reprendre la leçon",
     again: "Reprendre depuis le début",
     waits: "Votre table « {name} » vous attend, manche {round}.",
+    failed: "Le bureau ne répond pas : la table n’a pas été dressée. Vos leçons restent cochées ; réessayez dans un instant.",
     reached: "{done}/{total} leçons lues",
     syllabus: "Le registre, chapitre par chapitre",
     read: "Lire",
