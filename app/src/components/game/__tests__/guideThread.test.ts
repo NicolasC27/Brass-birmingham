@@ -72,6 +72,22 @@ describe("the guide's thread", () => {
     expect(fileThread(b, { lesson: null, bot: null, news: [], unread: [] }).said).toHaveLength(1);
   });
 
+  it('keeps the news on show unfiled while the lane is away', () => {
+    /* the tablet turned: the lane goes and comes back with the news still
+       unread — filed once, when read, never beside its own live plate */
+    const n = [{ id: 25, text: 'a mine' }];
+    const now = (lane: boolean, read: boolean) => ({ lesson: lane ? lesson(9) : null, bot: null, news: read ? n : [], unread: read ? [] : n });
+    let th = fileThread(EMPTY_THREAD, now(true, false));
+    th = fileThread(th, now(false, false));
+    expect(th.said).toEqual([]);
+    th = fileThread(th, now(true, false));
+    expect(th.said).toEqual([]);
+    expect(th.news).toEqual(n);
+    th = fileThread(th, now(true, true));
+    expect(th.said.map((s) => s.key)).toEqual(['n25']);
+    expect(th.news).toEqual([]);
+  });
+
   it("files the machine's last move when a new one comes", () => {
     const a = fileThread(EMPTY_THREAD, { lesson: null, bot: { id: 3, head: 'w', body: 'y', seat: 1 }, news: [] });
     const b = fileThread(a, { lesson: null, bot: { id: 4, head: 'w2', body: 'y2', seat: 2 }, news: [] });

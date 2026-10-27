@@ -687,7 +687,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
 
   /* a lesson, a move of hers or an event that is no longer the live one
      is filed into the thread, worded as it was when it was read: one pure
-     step, kept only when it changed anything (see guideThread.ts) */
+     step, kept only when it changed anything (see guideThread.ts). The
+     news are passed as they stand whether the lane is there or not: the
+     floating note shows them too, and news unread while the lane was away
+     — a tablet turned — are still unread when it comes back, not gone */
   const filedNow = fileThread(thread, {
     lesson:
       game && dock && showSteps && step
@@ -702,8 +705,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
         : null,
     rest: !!dock && !showSteps,
     bot: dock && bot ? { id: bot.id, head: bot.what, body: bot.why, seat: bot.seat } : null,
-    news: dock ? happens.filter((x) => x.id <= eventsSeen) : [],
-    unread: dock ? news : [],
+    news: happens.filter((x) => x.id <= eventsSeen),
+    unread: news,
   });
   if (filedNow !== thread) setThread(filedNow);
 
