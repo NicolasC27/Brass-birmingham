@@ -476,6 +476,7 @@ function PlayerMat() {
         >
           {/* player tabs — numbered like their shortcut; the wheel cycles seats */}
           <div
+            data-mat-head
             className="flex flex-wrap items-center gap-1.5 border-b border-brass-700/40 px-3 py-2"
             onWheel={(e) => {
               const n = game.players.length;

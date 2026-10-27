@@ -109,7 +109,9 @@ function placePile(o: {
   const edge = (left: number) => {
     right = Math.max(right, vw - left + GAP);
   };
-  if (o.guide && o.guide.width > 0) edge(o.guide.left);
+  /* the guide as a lane, or its note in its place at the edge; a note
+     stepped left of an open sheet leaves the edge to the sheet */
+  if (o.guide && o.guide.width > 0 && o.guide.right > vw - 40) edge(o.guide.left);
   if (o.market) edge(o.market.left);
   /* the ledger slides in from the right: its width is read, not its
      place, which is still on its way while it arrives */

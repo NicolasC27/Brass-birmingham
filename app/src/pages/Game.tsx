@@ -769,6 +769,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
             style={{ right: analysisPane }}
             ref={ledgerSheet}
             tabIndex={-1}
+            data-ledger
             aria-label={t('game.page.ledgerDrawerAria')}
           >
             <div className="relative h-full rounded-lg border border-brass-700/60 bg-coal-900/85 shadow-e4 backdrop-blur-md [&>.plate]:h-full [&>.plate]:border-0 [&>.plate]:bg-transparent [&>.plate]:shadow-none">

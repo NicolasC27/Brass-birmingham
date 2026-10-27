@@ -405,14 +405,29 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const grip = useRef<{ id: number; sx: number; sy: number; ox: number; oy: number; at: Pos; t0: number } | null>(null);
   /* the room the note has: under whatever the top bar occupies, above the
      hand — read from the pieces as they move, not sounded once a second */
-  const [bar, map, dockBox] = useHudRects(['[data-topbar]', '[data-minimap]', '[data-dock]']);
+  const [bar, map, dockBox, rail, matHead, ledgerBox, marketBox] = useHudRects(['[data-topbar]', '[data-minimap]', '[data-dock]', '[data-player-rail]', '[data-mat-head]', '[data-ledger]', '[data-market]']);
   const band = useMemo(() => {
+    const w = window.innerWidth;
     const h = window.innerHeight;
-    const top = (bar?.bottom || 80) + 12;
+    /* the note's column down the right edge, and what stands over it: the
+       banner; on a narrow table the players' strip under it, whose tools
+       hold the ledger's button; and the head of a mat opened across it,
+       with its tabs and its close */
+    const over = (r: typeof rail) => !!r && r.right > w - laneWidth(w) - 12 && r.left < w - 12;
+    const top = Math.max(bar?.bottom || 80, over(rail) ? rail!.bottom : 0, over(matHead) ? matHead!.bottom : 0) + 12;
     /* the lane runs down to whatever the right edge already holds */
-    const feet = [map?.top, dockBox && dockBox.right > window.innerWidth - laneWidth() - 40 ? dockBox.top : undefined, h - 40].filter((x): x is number => typeof x === 'number' && x > top);
+    const feet = [map?.top, dockBox && dockBox.right > w - laneWidth(w) - 40 ? dockBox.top : undefined, h - 40].filter((x): x is number => typeof x === 'number' && x > top);
     return { top, height: Math.max(220, Math.round(Math.min(...feet) - top - 12)) };
-  }, [bar, map, dockBox]);
+  }, [bar, map, dockBox, rail, matHead]);
+  /* a sheet opened down the right edge — the ledger, the exchange's tray —
+     is read beside the floating note, not under it: the note steps left
+     of it for as long as it is open, and back after. The ledger is read by
+     its width, as it slides in from the edge */
+  const sheetAside = useMemo(() => {
+    const w = window.innerWidth;
+    const edges = [ledgerBox ? w - ledgerBox.width : null, marketBox?.left ?? null].filter((x): x is number => x !== null);
+    return edges.length ? Math.min(...edges) - 12 - (w - 12) : 0;
+  }, [ledgerBox, marketBox]);
   /* the note is kept inside the window: once as it opens, and whenever the
      window or the room around it changes — the same place when it fits */
   useEffect(() => {
@@ -693,7 +708,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const mini = miniAt === shownId;
   /* the key that folds the lane to its rail, as the reader has bound it */
   const foldKey = keyLabel(getKeybindings().guide);
-  const lean = pos;
+  /* where the note stands: where it was put, or stepped left of a sheet
+     opened at the edge — never off the window's left */
+  const lean = !dock && sheetAside < 0 ? { x: Math.max(-(window.innerWidth - laneWidth() - 20), Math.min(pos.x, sheetAside)), y: pos.y } : pos;
   /* the deed was done before its lesson came up: a page to read on from */
   const already = review === null && !detour && owed?.mode === 'already';
   const round = `${game.era}:${game.round}`;
@@ -778,7 +795,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   };
   const grab = (e: ReactPointerEvent<HTMLElement>) => {
     if (e.button !== 0) return;
-    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: pos.x, oy: pos.y, at: pos, t0: e.timeStamp };
+    grip.current = { id: e.pointerId, sx: e.clientX, sy: e.clientY, ox: lean.x, oy: lean.y, at: lean, t0: e.timeStamp };
     e.currentTarget.setPointerCapture(e.pointerId);
   };
   const drag = (e: ReactPointerEvent<HTMLElement>) => {
@@ -1096,8 +1113,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
             </div>
           </motion.aside>
         )}
+        {/* floating, the strip keeps to its own width at the right edge:
+            what lies beside it on the table stays in reach */}
         {showSteps && step && (stripped || stepBack) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={stripped ? t('game.guide.expand') : undefined} onClick={stripped ? tap : undefined} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', stripped && 'cursor-pointer')}>
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={stripped ? t('game.guide.expand') : undefined} onClick={stripped ? tap : undefined} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', stripped && 'cursor-pointer', !dock && 'self-end')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
