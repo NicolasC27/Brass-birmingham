@@ -247,7 +247,9 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
   const [candleEnd, setCandleEnd] = useState<number | null>(null);
   const onlineCandle = useGame((s) => s.candle);
   const frozen = useGame((s) => s.mood.frozen);
-  const [ledgerOpen, setLedgerOpen] = useState(false);
+  /* the ledger's drawer: in the store, so the guide can open it too */
+  const ledgerOpen = useGame((s) => s.ledgerOpen);
+  const setLedgerOpen = useGame((s) => s.setLedgerOpen);
   /* the ledger index the reader has looked up to (closing the drawer
      moves it); their own last move counts as read too */
   const [ledgerRead, setLedgerRead] = useState(0);
@@ -255,7 +257,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
     const g = useGame.getState().game;
     if (g) setLedgerRead(g.ledger.length);
     setLedgerOpen(false);
-  }, []);
+  }, [setLedgerOpen]);
   /* the ledger holds the right edge: the exchange's tray, opened after it,
      sends it away, and the other way round */
   const ledgerSheet = useLayer<HTMLElement>(ledgerOpen, closeLedger, { zone: 'right' });

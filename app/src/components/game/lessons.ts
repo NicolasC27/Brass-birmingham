@@ -22,7 +22,7 @@ import type { GameState, Verb } from '@/game/types';
 /* ------------------------------------------------------------------ */
 
 /** what a lesson may point at on the screen */
-export type Show = 'mat' | 'market' | 'vp';
+export type Show = 'mat' | 'market' | 'vp' | 'ledger';
 
 /** what a lesson reads: the table, the reader's seat, the card chosen in
  *  the hand, the seat whose mat is open, whether a tile's sheet has been
@@ -148,7 +148,9 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'coal', done: (c) => built(c, ['coal']) },
   /* read while the table waits: her turn comes once it has been read */
   { id: 'botTurn' },
-  { id: 'payday', when: (c) => c.g.round >= 2 },
+  /* its page sends the reader to the ledger: a button opens it, for a
+     tablet has no key */
+  { id: 'payday', show: 'ledger', when: (c) => c.g.round >= 2 },
   { id: 'link', done: (c) => Object.values(c.g.links).some((l) => l.owner === c.me), deferrable: true },
   /* a forge, not "a forge or a brewery": a brewery costs as much but
      burns an iron, not a coal, so the mine and the canal the two lessons

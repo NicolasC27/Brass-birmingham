@@ -363,6 +363,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const openMat = useGame((s) => s.openMat);
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
+  const ledgerOpen = useGame((s) => s.ledgerOpen);
+  const setLedgerOpen = useGame((s) => s.setLedgerOpen);
   /* what was read at this table, kept over a reload (guideRead.ts): the
      page reloaded brings back neither her plates nor the news already
      read, and keeps the thread. Read once, as the guide opens: the page
@@ -848,6 +850,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     /* the note leans out of the mat's way so both can be read at once */
     if (what === 'market') setMarketFocus(true);
     if (what === 'vp') setBoardOption('vpTrack', true);
+    if (what === 'ledger') setLedgerOpen(true);
   };
   /* the switch that lets it play on, in the lane's head and on the rail */
   const playOnSwitch = (box: string) =>
@@ -1221,7 +1224,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     <div className="ml-auto flex items-center gap-2">
                       {/* Show, while what it shows is not on show: the points'
                           ruler hidden, the lesson's halo rings this toggle */}
-                      {step.show && !(step.show === 'mat' && matPlayer !== null) && !(step.show === 'vp' && vpTrack) && (
+                      {step.show && !(step.show === 'mat' && matPlayer !== null) && !(step.show === 'vp' && vpTrack) && !(step.show === 'ledger' && ledgerOpen) && (
                         <button type="button" onClick={() => show(step.show!)} data-lens={step.show === 'vp' ? 'vp' : undefined} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
                           <Eye className="h-3.5 w-3.5" /> {t(`game.guide.show.${step.show}`)}
                         </button>
