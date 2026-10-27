@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, LogOut, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
@@ -663,8 +663,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* leaving the guide is final for this table: the table forgets it was
      the guided one. So it is asked first, from a control of its own well
      away from Back, and the keyboard lands on Stay; Escape stays too.
-     Folded to the rail, the question is dropped, not kept to spring up
-     again when the lane comes back */
+     Folded — to the rail, or the note to its strip — the question is
+     dropped, not kept to spring up again when the guide comes back */
   const [leaving, setLeaving] = useState(false);
   if (leaving && dock === GUIDE_RAIL) setLeaving(false);
   const confirming = leaving && guided;
@@ -673,6 +673,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
   useEffect(() => {
     if (confirming) stay.current?.focus();
   }, [confirming]);
+  /* floating, it is read from the column's top: a plate that grows under
+     it meanwhile stays below, not scrolled up into its place */
+  const askTop = useRef(false);
+  useLayoutEffect(() => {
+    askTop.current = confirming && !dock;
+    if (askTop.current) box.current?.scrollTo({ top: 0 });
+  }, [confirming, dock]);
   /* the lane reads like a conversation: the newest turn is the one in
      view. Whatever comes in lengthens it — a lesson filed and the next,
      her plate, the news, a Skip the table now calls for, the expert's
@@ -690,7 +697,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       frame = window.requestAnimationFrame(() => {
         frame = 0;
         const now = el.scrollHeight;
-        if (now > tall) el.scrollTop = now;
+        if (now > tall) el.scrollTop = askTop.current ? 0 : now;
         tall = now;
       });
     };
@@ -805,6 +812,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (on) setThread((prev) => noteThread(prev, t('game.guide.playOn.hint', { name: machine })));
   };
   const fold = (to: boolean) => {
+    if (to) setLeaving(false);
     setMiniAt(to ? shownId : '');
     try {
       localStorage.setItem(MINI_KEY, to ? shownId : '');
@@ -819,17 +827,23 @@ function Guide({ dock = 0 }: { dock?: number }) {
      leads its row at the left, clear of the note — nor one read back,
      nor one the reader opens again over it */
   const matAside = !dock && band.mat && review === null && step?.show !== 'mat' && !overMat;
+  /* floating, the question to leave stands over the lesson: the note
+     gives it the room, which it would otherwise squeeze its page into */
+  const asking = !dock && confirming;
   /* the lesson down to its strip: folded by the reader, under her plate
-     while it is read, or beside the mat; and on her turn stepped back to
-     a line that says so — unless asked back over her plate */
-  const stripped = mini || (reading && !unfolded) || matAside;
+     while it is read, beside the mat, or under the question to leave;
+     and on her turn stepped back to a line that says so — unless asked
+     back over her plate */
+  const stripped = mini || (reading && !unfolded) || matAside || asking;
   const stepBack = theirTurn && !unfolded;
   /* the strip opens only where opening shows something: on her turn,
      with no plate of hers to read the lesson over, it stays the line
      that says whose turn it is */
   const opens = stripped && (!stepBack || reading);
-  /* and back in full — over her plate too, which stays under it */
+  /* and back in full — over her plate too, which stays under it; the
+     lesson taken up again is the reader staying */
   const unfold = () => {
+    setLeaving(false);
     fold(false);
     if (reading && bot) setUnfoldAt(bot.id);
     if (matAside) setOverMat(true);
@@ -1191,7 +1205,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       )}
       <AnimatePresence initial={false} mode="popLayout">
         {/* floating, the question to leave stands first, over the strip */}
-        {!dock && confirming && leaveAsk}
+        {asking && leaveAsk}
         {/* nothing due now: a line that says when the guide speaks again —
             the lesson set aside next round, or the next one in its time */}
         {aside && (
