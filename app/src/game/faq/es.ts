@@ -223,7 +223,8 @@ export const ES: Tongue = {
     initiation: {
       topic: 'la partida de iniciación',
       words: ['iniciacion', 'partida iniciacion', 'partida corta', 'corta', 'solo canal', 'partida rapida', 'introductoria', 'primera partida', 'tutorial'],
-      what: 'La partida de iniciación solo juega la era del canal. Tras su recuento normal, cada jugador suma 1 punto por cada 4 £ (15 como mucho), tantos puntos como su nivel de ingresos (restados si es negativo), y puntúa por segunda vez sus losetas volteadas de nivel 2 o más. No hay cobro tras su última ronda.',
+      what: 'La partida de iniciación solo juega la era del canal: 10 rondas con 2 jugadores, 9 con 3, 8 con 4, y sin cobro tras la última. Al terminar, nada sale del tablero: cada enlace puntúa 1 por icono de enlace de los lugares que toca (2 por un mercader), cada loseta volteada, el número impreso abajo; una loseta nunca volteada no puntúa. El cierre suma luego 1 punto por cada 4 £ (15 como mucho), tantos puntos como el nivel de ingresos (restados si es negativo), y las losetas volteadas de nivel 2 o más puntúan por segunda vez.',
+      how: 'Se gana con más puntos tras el cierre. Vienen de los enlaces y las losetas volteadas, contados al final de la era del canal, de algunas bonificaciones de mercader, y luego del cierre: el dinero (1 punto por cada 4 £, 15 como mucho), el nivel de ingresos y, por segunda vez, las losetas volteadas de nivel 2 o más. En caso de empate, decide el nivel de ingresos más alto, y luego el dinero en caja.',
     },
     merchants: {
       topic: 'los mercaderes y sus bonificaciones',

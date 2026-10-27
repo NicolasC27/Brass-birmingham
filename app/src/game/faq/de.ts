@@ -222,7 +222,8 @@ export const DE: Tongue = {
     initiation: {
       topic: 'die Einführungspartie',
       words: ['einfuhrung', 'einfuhrungspartie', 'kurze partie', 'kurz', 'nur kanal', 'schnelle partie', 'anfangerpartie', 'erste partie', 'tutorial'],
-      what: 'Die Einführungspartie spielt nur die Kanalzeit. Nach ihrer normalen Wertung zählt jeder 1 Punkt pro £4 dazu (höchstens 15), Punkte in Höhe seiner Einkommensstufe (abgezogen, wenn sie negativ ist), und wertet seine umgedrehten Plättchen ab Stufe 2 ein zweites Mal. Nach ihrer letzten Runde gibt es keine Auszahlung.',
+      what: 'Die Einführungspartie spielt nur die Kanalzeit: 10 Runden zu zweit, 9 zu dritt, 8 zu viert, und nach der letzten keine Auszahlung. An ihrem Ende verlässt nichts den Plan: Jede Verbindung bringt 1 Punkt pro Verbindungssymbol an den berührten Orten (2 für einen Händler), jedes umgedrehte Plättchen seine Punkte; ein nie umgedrehtes Plättchen bringt nichts. Der Abschluss zählt dann 1 Punkt pro £4 dazu (höchstens 15), Punkte in Höhe der Einkommensstufe (abgezogen, wenn sie negativ ist), und umgedrehte Plättchen ab Stufe 2 werten ein zweites Mal.',
+      how: 'Man gewinnt mit den meisten Punkten nach dem Abschluss. Sie kommen von Verbindungen und umgedrehten Plättchen, gewertet am Ende der Kanalzeit, von einigen Händlerboni und dann vom Abschluss: dem Geld (1 Punkt pro £4, höchstens 15), der Einkommensstufe und ein zweites Mal den umgedrehten Plättchen ab Stufe 2. Bei Gleichstand entscheidet die höhere Einkommensstufe, dann das Geld in der Kasse.',
     },
     merchants: {
       topic: 'die Händler und ihre Boni',

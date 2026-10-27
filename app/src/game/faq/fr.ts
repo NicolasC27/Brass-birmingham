@@ -234,7 +234,8 @@ export const FR: Tongue = {
     initiation: {
       topic: 'la partie d’initiation',
       words: ['initiation', 'partie courte', 'courte', 'canal seulement', 'partie rapide', 'decouverte', 'short', 'premiere partie'],
-      what: 'La partie d’initiation ne joue que l’ère canal. Après son décompte normal, chacun ajoute 1 point par tranche de 4 £ (15 au plus), des points égaux à son niveau de revenu (négatif, il en retire), et marque une seconde fois ses tuiles retournées de niveau 2 et plus. Il n’y a pas de paie après sa dernière manche.',
+      what: 'La partie d’initiation ne joue que l’ère canal : 10 manches à deux joueurs, 9 à trois, 8 à quatre, et pas de paie après la dernière. À sa fin, rien ne quitte le plateau : chaque liaison marque 1 point par icône lien des lieux qu’elle touche (2 pour un marchand), chaque tuile retournée marque ses points ; une tuile jamais retournée ne marque rien. La clôture ajoute ensuite 1 point par tranche de 4 £ (15 au plus), des points égaux au niveau de revenu (négatif, il en retire), et les tuiles retournées de niveau 2 et plus marquent une seconde fois.',
+      how: 'On gagne avec le plus de points après la clôture. Ils viennent des liaisons et des tuiles retournées, comptées à la fin de l’ère canal, de quelques bonus de marchands, puis de la clôture : l’argent (1 point par tranche de 4 £, 15 au plus), le niveau de revenu, et une seconde fois les tuiles retournées de niveau 2 et plus. À égalité, le plus haut niveau de revenu départage, puis l’argent en caisse.',
     },
     merchants: {
       topic: 'les marchands et leurs bonus',

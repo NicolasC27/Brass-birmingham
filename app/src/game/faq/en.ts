@@ -222,7 +222,8 @@ export const EN: Tongue = {
     initiation: {
       topic: 'the introductory game',
       words: ['introductory', 'introductory game', 'short game', 'short', 'canal only', 'quick game', 'beginner game', 'first game', 'tutorial'],
-      what: 'The introductory game plays the Canal Era only. After its normal scoring, each player adds 1 point per £4 (15 at most), points equal to their income level (subtracted if negative), and scores their flipped tiles of level 2 and up a second time. There is no payday after its last round.',
+      what: 'The introductory game plays the Canal Era only: 10 rounds with 2 players, 9 with 3, 8 with 4, and no payday after the last. When it ends, nothing leaves the board: each link scores 1 point per link icon in the places it touches (2 for a merchant), each flipped tile scores its points; a tile never flipped scores nothing. The close then adds 1 point per £4 (15 at most), points equal to the income level (subtracted if negative), and flipped tiles of level 2 and up score a second time.',
+      how: 'You win with the most points after the close. They come from links and flipped tiles, counted at the end of the Canal Era, from a few merchant bonuses, then from the close: money (1 point per £4, 15 at most), the income level, and flipped tiles of level 2 and up a second time. On a tie, the higher income level decides, then the money in hand.',
     },
     merchants: {
       topic: 'merchants and their bonuses',

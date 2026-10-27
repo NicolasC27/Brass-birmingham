@@ -20,7 +20,7 @@
 import type { Lang } from '@/i18n';
 import { faqFor, plain, rulesMatch } from '../faq';
 import type { FaqEntry, Passage } from '../faq';
-import { FAQ_NOTION, NOTION_IDS, PULL } from './notions';
+import { FAQ_NOTION, FULL_GAME, NOTION_IDS, PULL, SHORT_TOLD } from './notions';
 import type { Asked, NotionId, Tongue } from './notions';
 import { FR } from './fr';
 import { EN } from './en';
@@ -497,8 +497,10 @@ function elsewhere(question: string, lang: Lang): Weighed | null {
 /** a question to the guide, answered from what it has written: the
  *  notion it points at, told as it was asked; a written answer when one
  *  carries more of the question; the rules codex after that; and when
- *  nothing is close, the notions it might have meant */
-export function consult(question: string, lang: Lang, passages: Passage[] = []): Consulted {
+ *  nothing is close, the notions it might have meant. At a short game's
+ *  table, the eras, their end and the scoring are told as that game
+ *  plays them: the canal era alone, and the initiation's count */
+export function consult(question: string, lang: Lang, passages: Passage[] = [], short = false): Consulted {
   const asked = askedOf(question, lang);
   const found = weigh(question, lang);
   const notions = tongueOf(lang).notions;
@@ -515,9 +517,12 @@ export function consult(question: string, lang: Lang, passages: Passage[] = []):
        the notion's own words did — by a clear margin when the notion has a
        telling of its own for the way the question was put */
     const typed = asked !== 'what' && !!notions[top.notion][asked];
-    if (top.entry && top.entryScore > top.own + (typed ? 0.6 : 0)) {
-      return { kind: 'entry', notion: top.notion, asked, answer: top.entry.answer, near: [] };
-    }
+    const entry = top.entry && top.entryScore > top.own + (typed ? 0.6 : 0) ? top.entry : null;
+    /* a short game has no rail era to reach: a written answer of the full
+       game, or a notion that tells its end, gives way to the one it plays */
+    const instead = !short ? undefined : entry ? FULL_GAME[entry.id] : SHORT_TOLD[top.notion];
+    if (instead) return { kind: 'notion', notion: instead, asked, answer: tell(instead, lang, asked), near: [] };
+    if (entry) return { kind: 'entry', notion: top.notion, asked, answer: entry.answer, near: [] };
     return { kind: 'notion', notion: top.notion, asked, answer: tell(top.notion, lang, asked), near: [] };
   }
   const passage = passages.length ? rulesMatch(mend(question, lang), passages) : null;

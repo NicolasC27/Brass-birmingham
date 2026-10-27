@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { askedOf, asksTheRules, consult, fold, mend, slips, sound, tell } from '../faq/consult';
-import { FAQ_NOTION, NOTION_IDS } from '../faq/notions';
+import { FAQ_NOTION, FULL_GAME, NOTION_IDS, SHORT_TOLD } from '../faq/notions';
 import { carries, faqBest, faqFor } from '../faq';
 import frGame from '@/i18n/fr/game';
 import enGame from '@/i18n/en/game';
@@ -558,6 +558,48 @@ describe('the case in four tongues', () => {
         for (const s of [n.what, n.how, n.cost, n.gain, n.whyNot]) if (s) expect(advice.test(s) ? `${id}: ${s}` : '').toBe('');
       }
     }
+  });
+});
+
+describe('a short game', () => {
+  it('tells its end, its eras and its scoring with the initiation', () => {
+    const asks: [Lang, string][] = [
+      ['fr', 'quand finit la partie'], ['fr', 'comment je gagne'], ['fr', 'c’est quoi la fin d’ère'], ['fr', 'est-ce que les tuiles de niveau 1 disparaissent'],
+      ['fr', 'comment marche le décompte'], ['fr', 'que se passe-t-il à la fin de l’ère'], ['en', 'when does the game end'], ['en', 'how do i win'],
+      ['en', 'what happens at the end of the era'], ['de', 'wann endet das spiel'], ['de', 'wie gewinnt man'], ['es', 'cuando termina la partida'], ['es', 'como se gana'],
+    ];
+    for (const [lang, q] of asks) {
+      const full = consult(q, lang);
+      const short = consult(q, lang, [], true);
+      expect(`${q} → ${short.notion}`).toBe(`${q} → initiation`);
+      expect(short.answer).toBe(tell('initiation', lang, short.asked));
+      /* the full game keeps the rail era's telling */
+      expect(full.notion).not.toBe('initiation');
+    }
+  });
+
+  it('gives way to the initiation where a written answer speaks of the rail era', () => {
+    /* money counts at a short game's close, not for nothing */
+    expect(consult('l’argent rapporte des points ?', 'fr').kind).toBe('entry');
+    expect(consult('l’argent rapporte des points ?', 'fr', [], true).notion).toBe('initiation');
+    /* a tie is settled the same way, but the game does not end on the rail */
+    expect(consult('égalité vainqueur', 'fr').answer).toMatch(/rail/);
+    expect(consult('égalité vainqueur', 'fr', [], true)).toMatchObject({ notion: 'ties', answer: tell('ties', 'fr') });
+    /* what holds for both lengths stays written */
+    expect(consult('combien de manches dure une ère', 'fr', [], true)).toMatchObject({ kind: 'entry', notion: 'eras' });
+  });
+
+  it('tells the initiation whole: its rounds, its count and its close', () => {
+    for (const t of [FR, EN, ES, DE]) {
+      const n = t.notions.initiation;
+      expect(n.what).toMatch(/10.*9.*8/);
+      expect(n.what).toMatch(/15/);
+      expect(n.how).toMatch(/15/);
+      for (const s of [n.what, n.how]) expect(s).not.toMatch(/rail|ferrocarril|Eisenbahn/i);
+    }
+    /* every notion told otherwise, and every written answer, is the case's own */
+    for (const id of [...Object.values(SHORT_TOLD), ...Object.values(FULL_GAME)]) expect(NOTION_IDS).toContain(id);
+    for (const id of Object.keys(FULL_GAME)) expect(FAQ_NOTION[id]).toBeDefined();
   });
 });
 

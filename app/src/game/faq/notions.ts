@@ -86,6 +86,31 @@ export const PULL: Partial<Record<NotionId, number>> = {
   rules: 0.6,
 };
 
+/** a short game plays the canal era alone and closes on the initiation's
+ *  count: what the full game's notions say of the eras, their end, the
+ *  scoring and the end of the game, it tells with the initiation */
+export const SHORT_TOLD: Partial<Record<NotionId, NotionId>> = {
+  eras: 'initiation',
+  eraEnd: 'initiation',
+  scoring: 'initiation',
+  gameEnd: 'initiation',
+};
+
+/** the written answers true of the full game alone — the sweep, the
+ *  change of era, money worth nothing at the end — and the notion a short
+ *  game tells in their place; the others hold for both lengths */
+export const FULL_GAME: Record<string, NotionId> = {
+  eraEnd: 'initiation',
+  sweepLevelOne: 'initiation',
+  eraEndOrder: 'initiation',
+  keepMoneyBetweenEras: 'initiation',
+  linksSweptAtEraEnd: 'initiation',
+  reshuffleBetweenEras: 'initiation',
+  merchantRearmEra: 'initiation',
+  scoring: 'initiation',
+  gameEndTie: 'ties',
+};
+
 /** the written answers of faq.ts, filed under the notion each belongs to */
 export const FAQ_NOTION: Record<string, NotionId> = {
   ironSells: 'ironWorks',
