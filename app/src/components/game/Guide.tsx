@@ -799,6 +799,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
      says so — unless asked back over her plate */
   const stripped = mini || (reading && !unfolded);
   const stepBack = theirTurn && !unfolded;
+  /* the strip opens only where opening shows something: on her turn,
+     with no plate of hers to read the lesson over, it stays the line
+     that says whose turn it is */
+  const opens = stripped && (!stepBack || reading);
   /* and back in full — over her plate too, which stays under it */
   const unfold = () => {
     fold(false);
@@ -1128,14 +1132,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
         {/* floating, the strip keeps to its own width at the right edge:
             what lies beside it on the table stays in reach */}
         {showSteps && step && (stripped || stepBack) && (
-          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={stripped ? t('game.guide.expand') : undefined} onClick={stripped ? tap : undefined} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', stripped && 'cursor-pointer', !dock && 'self-end')}>
+          <motion.aside key="strip" layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} aria-label={t('game.guide.aria')} title={opens ? t('game.guide.expand') : undefined} onClick={opens ? tap : undefined} className={cn('paper pointer-events-auto relative flex max-w-full items-center gap-2 px-3 py-1.5 shadow-e3', opens && 'cursor-pointer', !dock && 'self-end')}>
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
               {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
-            {stripped && (
+            {opens && (
               <button type="button" onClick={unfold} aria-label={t('game.guide.expand')} title={t('game.guide.expand')} className="relative shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
