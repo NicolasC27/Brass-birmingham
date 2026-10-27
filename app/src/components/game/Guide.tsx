@@ -613,6 +613,20 @@ function Guide({ dock = 0 }: { dock?: number }) {
     setGuideSpeaks(speaks);
     return () => setGuideSpeaks(false);
   }, [speaks, setGuideSpeaks]);
+  /* her plate, or the news, holds the machine: its Understood takes the
+     focus, so Enter or Space reads it on — when nothing else holds the
+     focus: a field typed in, a card or a control the reader is at, keep
+     it. On the reader's own turn the plate waits for nothing, and Enter
+     is left to the move being made */
+  const plateOk = useRef<HTMLButtonElement>(null);
+  const newsOk = useRef<HTMLButtonElement>(null);
+  const answerAt = hold === 'plate' && bot ? `p${bot.id}` : hold === 'news' && news.length ? `n${news[news.length - 1].id}` : '';
+  useEffect(() => {
+    if (!answerAt) return;
+    const at = document.activeElement;
+    if (at && at !== document.body && !box.current?.contains(at)) return;
+    (answerAt.startsWith('p') ? plateOk : newsOk).current?.focus({ preventScroll: true });
+  }, [answerAt]);
   /* the lane reads like a conversation: the newest turn is the one in
      view. Whatever comes in lengthens it — a lesson filed and the next,
      her plate, the news, a Skip the table now calls for, the expert's
@@ -939,6 +953,18 @@ function Guide({ dock = 0 }: { dock?: number }) {
      plainly */
   const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang())));
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
+  /* what a screen reader hears as it comes up: her move first, then the
+     news, then the lesson once it is open — said once, not the note over */
+  const spoken =
+    reading && bot ? `${t('game.guide.botWhy', { name: bot.name })}. ${bot.what}`
+    : news.length ? news[news.length - 1].text
+    : showSteps && step && !stripped && !stepBack ? `${t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}. ${t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}`
+    : '';
+  const heard = (
+    <p className="sr-only" aria-live="polite" aria-atomic="true">
+      {spoken}
+    </p>
+  );
 
   /* her move read: the plate goes, and the board shows the move itself */
   const readPlate = (b: NonNullable<typeof bot>) => {
@@ -968,6 +994,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     return (
       <>
         <LessonLens stepId={lensId} active={showSteps} />
+        {heard}
         <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
           <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold', { key: foldKey })} title={t('game.guide.rail.unfold', { key: foldKey })} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400">
             <ChevronLeft className="h-4 w-4" />
@@ -1009,6 +1036,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       style={dock ? { width: dock } : { top: band.top, width: laneWidth(), maxHeight: band.height, transform: place(lean) }}
     >
       <LessonLens stepId={lensId} active={showSteps} over={placeLit} />
+      {heard}
       {/* the lane's head stays at the top as the thread scrolls under it:
           the fold is always in reach, under a finger as under the G key */}
       {dock > 0 && (
@@ -1287,7 +1315,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             </div>
             {holding && <p className="mt-1.5 font-sans text-[10px] font-semibold uppercase tracking-[0.14em] text-brass-400/70">{t('game.guide.botHeld', { name: bot.name })}</p>}
             {reading && (
-              <button type="button" onClick={() => readPlate(bot)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+              <button ref={plateOk} type="button" onClick={() => readPlate(bot)} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
                 {t(holding ? 'game.guide.botNext' : 'game.guide.botOk', { name: bot.name })}
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -1318,7 +1346,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                 </div>
               </div>
             </div>
-            <button type="button" onClick={readNews} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
+            <button ref={newsOk} type="button" onClick={readNews} className="btn-strike mt-2 !min-h-[30px] w-full !px-3 !py-1 !text-[10px]">
               {t('game.guide.botOk')}
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
