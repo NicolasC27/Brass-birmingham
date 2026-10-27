@@ -41,6 +41,25 @@ export function useWide(): boolean {
 }
 
 /* ------------------------------------------------------------------ */
+/* A finger for a pointer (a tablet): no key to name, no hover to wait */
+/* for — the controls say what to touch.                              */
+/* ------------------------------------------------------------------ */
+
+const COARSE = '(pointer: coarse)';
+const coarse = typeof window !== 'undefined' && 'matchMedia' in window ? window.matchMedia(COARSE) : null;
+
+export function useCoarse(): boolean {
+  return useSyncExternalStore(
+    (cb) => {
+      coarse?.addEventListener('change', cb);
+      return () => coarse?.removeEventListener('change', cb);
+    },
+    () => coarse?.matches ?? false,
+    () => false,
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* A measure of the window, followed as it is resized or a tablet      */
 /* turned: the lanes that take a share of it are measured again, and   */
 /* the page renders only when the measure itself changes.              */

@@ -18,6 +18,7 @@ import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { dictOf, getLang, localeOf, useLang, useT } from '@/i18n';
 import { roman } from '@/gl/roman';
+import { useCoarse } from '@/hooks/use-narrow';
 import { cn } from '@/lib/utils';
 import { useHudRects } from './useHudRects';
 import { askThread, fileThread, noteThread } from './guideThread';
@@ -364,6 +365,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const closeMat = useGame((s) => s.closeMat);
   const setMarketFocus = useGame((s) => s.setMarketFocus);
   const ledgerOpen = useGame((s) => s.ledgerOpen);
+  /* a finger for a pointer: no key to name */
+  const finger = useCoarse();
   const setLedgerOpen = useGame((s) => s.setLedgerOpen);
   /* what was read at this table, kept over a reload (guideRead.ts): the
      page reloaded brings back neither her plates nor the news already
@@ -1326,7 +1329,17 @@ function Guide({ dock = 0 }: { dock?: number }) {
               <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                 <p className="font-sans text-[9.5px] font-bold uppercase tracking-[0.18em] text-brass-400">{t('game.guide.botWhy', { name: bot.name })}</p>
                 <p className="mt-0.5 font-mono text-[11px] text-cream-100/60">{bot.what}</p>
-                {reading && <p className="mt-0.5 font-sans text-[9.5px] uppercase tracking-[0.12em] text-brass-400/60">{t('game.guide.seeMove', { key: keyLabel(getKeybindings().lastMove), name: bot.name })}</p>}
+                {/* her move on the board: a button under a finger as under
+                    the mouse, its key named only where there are keys */}
+                {reading && (
+                  <button type="button" onClick={() => setGlimpse(glimpseNow(bot.seat))} className="mt-0.5 inline-flex items-center gap-1 self-start text-left font-sans text-[9.5px] uppercase tracking-[0.12em] text-brass-400/60 hover:text-brass-400 coarse:min-h-[44px]">
+                    <Eye className="h-3 w-3 shrink-0" />
+                    <span>
+                      {t('game.guide.seeMove', { name: bot.name })}
+                      {!finger && <kbd className="ml-1 font-mono tracking-normal text-brass-400/50">({keyLabel(getKeybindings().lastMove)})</kbd>}
+                    </span>
+                  </button>
+                )}
                 {(reading || !tutorial) && (
                   <div className={cn('mt-1', !dock && 'min-h-0 flex-1 overflow-y-auto pr-1')}>
                     <p className="font-serif text-[13px] leading-snug text-cream-100/90">{bot.why}</p>

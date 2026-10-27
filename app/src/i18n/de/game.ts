@@ -1047,7 +1047,7 @@ const game: typeof engame = {
     botNext: 'Verstanden, {name} darf weitermachen',
     botOk: 'Verstanden',
     playOn: { let: '{name} spielen lassen, ohne auf mich zu warten', hold: '{name} wieder auf mich warten lassen', hint: '{name} spielt, ohne auf dein Lesen zu warten: Die Tafeln halten die Maschine nicht mehr auf. Nur eine neue Lektion lässt sie noch warten.' },
-    seeMove: 'Taste {key} zeigt den Zug von {name} auf dem Spielplan',
+    seeMove: 'Den Zug von {name} auf dem Spielplan zeigen',
     readPlate: 'Warte auf den Zug von {bot}, lies warum, dann Verstanden.',
     turn: {
       first: 'Erste Runde der Partie: eine Aktion für jeden, in der ausgelosten Sitzreihenfolge.',

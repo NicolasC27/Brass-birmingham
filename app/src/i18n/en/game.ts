@@ -1045,7 +1045,7 @@ const game = {
     botNext: 'Understood, {name} may go on',
     botOk: 'Understood',
     playOn: { let: 'Let {name} play without waiting for me', hold: 'Make {name} wait for me again', hint: '{name} plays without waiting for your reading: the plates no longer hold the machine. Only a new lesson still makes it wait.' },
-    seeMove: 'Press {key} to look at {name}’s move on the board',
+    seeMove: 'Look at {name}’s move on the board',
     readPlate: 'Wait for {bot} to play, read why, then say Understood.',
     turn: {
       first: 'First round of the game: one action each, in the order the seats were drawn.',
