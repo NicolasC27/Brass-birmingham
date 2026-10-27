@@ -37,7 +37,7 @@ import TitleCard, { TitlePlate, TroubleCard } from '@/components/game/TitleCard'
 import { useBoardSet } from '@/components/game/titleStage';
 import { MAT_STYLES, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { analysisLane, useHudInsets } from '@/components/game/useHudInsets';
-import { isKey, onControl, typing } from '@/components/game/keybindings';
+import { isKey, keyLabel, onControl, typing, useKeybindings } from '@/components/game/keybindings';
 import { ownMatSeat } from '@/components/game/railLogic';
 import { useLayer } from '@/components/game/useLayer';
 import HandDock from '@/components/game/HandDock';
@@ -1122,6 +1122,8 @@ function TableTools({ skipAnim, onSkip, ledgerOpen, unread, onLedger }: { skipAn
   const botHold = useGame((s) => s.botHold);
   const setBotHold = useGame((s) => s.setBotHold);
   const settingsOpen = useBoardOptions().settingsOpen;
+  /* the ledger's key, as the reader has bound it */
+  const keys = useKeybindings();
   /* the skip chip is a local courtesy: online the table sets the pace */
   const botThinking = seat === null && acting === 'bot' && !ceremony;
   return (
@@ -1148,7 +1150,7 @@ function TableTools({ skipAnim, onSkip, ledgerOpen, unread, onLedger }: { skipAn
       </button>
       <FeedbackButton compact className={TOOL} />
       <TableMenu compact className={TOOL} />
-      <button type="button" data-lens="ledger" onClick={onLedger} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (L)`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
+      <button type="button" data-lens="ledger" onClick={onLedger} aria-pressed={ledgerOpen} title={`${t('game.page.ledgerChip')} (${keyLabel(keys.ledger)})`} aria-label={t('game.page.ledgerChip')} className={cn(TOOL, ledgerOpen && '!border-brass-400 !opacity-100')}>
         <ScrollText className="h-4 w-4" />
         {unread > 0 && (
           <span className="absolute -right-1.5 -top-1.5 rounded-full bg-brass-400 px-1.5 font-mono text-[9px] font-bold leading-[14px] text-coal-950" aria-label={t('game.ledger.newAria', { n: unread })}>
