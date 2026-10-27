@@ -1196,7 +1196,7 @@ const platform = {
     resume: "Resume the lesson",
     again: "Take it again from the start",
     waits: "Your table “{name}” is waiting, at round {round}.",
-    failed: "The office is not answering: the table was not set. Your lessons stay ticked; try again in a moment.",
+    failed: "The office is not answering: the table was not set. Try again in a moment.",
     reached: "{done}/{total} lessons read",
     syllabus: "The register, chapter by chapter",
     read: "Read",

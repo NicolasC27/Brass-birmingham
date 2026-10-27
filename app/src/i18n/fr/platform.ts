@@ -1196,7 +1196,7 @@ const platform = {
     resume: "Reprendre la leçon",
     again: "Reprendre depuis le début",
     waits: "Votre table « {name} » vous attend, manche {round}.",
-    failed: "Le bureau ne répond pas : la table n’a pas été dressée. Vos leçons restent cochées ; réessayez dans un instant.",
+    failed: "Le bureau ne répond pas : la table n’a pas été dressée. Réessayez dans un instant.",
     reached: "{done}/{total} leçons lues",
     syllabus: "Le registre, chapitre par chapitre",
     read: "Lire",
