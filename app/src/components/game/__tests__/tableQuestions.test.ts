@@ -98,6 +98,31 @@ const PHRASINGS: Record<Lang, [string, string[]][]> = {
   ],
 };
 
+/* the same questions put one word off the review's own: a word the case
+   does not hold is not mended into one it does — "reste" is not the
+   income's "rente", "tips" not the ties */
+const VARIANTS: Record<Lang, [string, string[]][]> = {
+  fr: [
+    ['@do', ['Que faire ?', 'Quel coup jouer ?', 'Quelle action faire ?', 'Tu as un conseil ?']],
+    ['@rounds', ['Il me reste des actions ?', 'Combien de temps il reste ?', 'Il reste combien ?', 'Il reste combien de temps ?']],
+    ['cards', ['Combien de cartes il me reste ?']],
+  ],
+  en: [
+    ['@do', ['Any tips?', 'Tips?', 'Got any tips?', 'Any hints?', 'Give me a hint', 'What should I play?', 'Any suggestions?']],
+    ['@rounds', ['How much time is left?']],
+    ['sell', ['Any tips on selling?']],
+  ],
+  de: [
+    ['@do', ['Irgendein Tipp?', 'Hast du einen Rat?', 'Welche Aktion soll ich spielen?']],
+    ['@rounds', ['Habe ich noch Aktionen?', 'Wie viele Aktionen bleiben mir?', 'Wie viele Runden sind noch übrig?']],
+  ],
+  es: [
+    ['@do', ['¿Qué hago?', '¿Qué me aconsejas?', '¿Qué me recomiendas?', '¿Alguna sugerencia?']],
+    ['@rounds', ['¿Me quedan acciones?', '¿Cuántas rondas faltan?', '¿Cuánto falta?']],
+    ['coal', ['¿Qué hago con el carbón?']],
+  ],
+};
+
 /* the review's French questions (questions.ts), typed in a hurry */
 const QUESTIONS: [string, string][] = [
   ['comment je gagne', 'initiation'],
@@ -156,6 +181,13 @@ describe('the review\'s free questions, at the guided table', () => {
   for (const lang of ['fr', 'en', 'de', 'es'] as Lang[]) {
     it(`answers every ${lang} phrasing as it was meant`, () => {
       const wrong = PHRASINGS[lang].flatMap(([want, qs]) => qs.map((q) => `${q} → ${answered(q, lang, g)}`).filter((r) => !r.endsWith(`→ ${want}`)).map((r) => `${r} (want ${want})`));
+      expect(wrong).toEqual([]);
+    });
+  }
+
+  for (const lang of ['fr', 'en', 'de', 'es'] as Lang[]) {
+    it(`answers the ${lang} questions put one word off`, () => {
+      const wrong = VARIANTS[lang].flatMap(([want, qs]) => qs.map((q) => `${q} → ${answered(q, lang, g)}`).filter((r) => !r.endsWith(`→ ${want}`)).map((r) => `${r} (want ${want})`));
       expect(wrong).toEqual([]);
     });
   }
