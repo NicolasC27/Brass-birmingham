@@ -79,6 +79,19 @@ describe('a question about the table', () => {
     expect(said({ ...full, round: 10, era: 'rail' as const })).toBe('Round 10 of 10: this is the last. The game stops at its end, and no payday follows.');
   });
 
+  it('says the points are not counted yet in the canal era', () => {
+    const g = guided();
+    const win = fr('game.guide.ask.answer.win', { mine: 0, best: 0 });
+    /* 0 to 0 all through the era is not the score: the close is to come */
+    expect(answerTo('win', g, 0, fr)).toBe(`${win} ${fr('game.guide.ask.answer.winYetShort')}`);
+    expect(answerTo('win', g, 0, fr)).toContain('clôture');
+    expect(answerTo('win', { ...g, eraLength: 'standard' as const }, 0, en)).toBe(`${en('game.guide.ask.answer.win', { mine: 0, best: 0 })} ${en('game.guide.ask.answer.winYet')}`);
+    expect(en('game.guide.ask.answer.winYet')).not.toMatch(/close|money/);
+    /* in the rail era the canal's count stands on the track */
+    const rail = { ...g, era: 'rail' as const, eraLength: 'standard' as const, players: g.players.map((x, i) => ({ ...x, vp: i === 0 ? 31 : 27 })) };
+    expect(answerTo('win', rail, 0, fr)).toBe(fr('game.guide.ask.answer.win', { mine: 31, best: 31 }));
+  });
+
   it('promises the expert\'s plate on the reader\'s turn only', () => {
     const g = guided();
     expect(g.current).toBe(0);

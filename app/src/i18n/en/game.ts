@@ -1154,6 +1154,8 @@ const game = {
         roundsEnd: 'The game stops at its end, and no payday follows.',
         roundsTurn: 'You have {actions} [actions|action|actions] left this turn.',
         win: 'Points come from flipped tiles and from the link icons of the places your links touch. You are on {mine}, the table’s best is {best}.',
+        winYet: 'Most points are not counted yet: flipped tiles and links score at the end of each era.',
+        winYetShort: 'Most points are not counted yet: flipped tiles and links score at the end of the era, then the close adds money and the income level.',
         do: 'An expert is thinking it over in your seat — the reason comes up as a card below; the place after, if you ask for it.',
         doTool: 'For advice on the move to play, ask the guide’s note on your turn: “{ask}”',
       },

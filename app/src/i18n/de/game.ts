@@ -1156,6 +1156,8 @@ const game: typeof engame = {
         roundsEnd: 'Mit ihrem Ende endet die Partie, und kein Zahltag folgt.',
         roundsTurn: 'In diesem Zug bleiben dir {actions} [actions|Aktion|Aktionen].',
         win: 'Punkte kommen von umgedrehten Plättchen und von den Verbindungssymbolen der Orte, die deine Verbindungen berühren. Du stehst bei {mine}, der Beste am Tisch bei {best}.',
+        winYet: 'Die meisten Punkte sind noch nicht gezählt: umgedrehte Plättchen und Verbindungen werten am Ende jeder Epoche.',
+        winYetShort: 'Die meisten Punkte sind noch nicht gezählt: umgedrehte Plättchen und Verbindungen werten am Ende der Epoche, dann zählt der Abschluss Geld und Einkommensstufe dazu.',
         do: 'Ein Experte überlegt an deiner Stelle — der Grund kommt gleich darunter als Tafel; der Ort danach, wenn du ihn wissen willst.',
         doTool: 'Für einen Rat zum nächsten Zug frag die Notiz des Tutorials, wenn du am Zug bist: „{ask}“',
       },

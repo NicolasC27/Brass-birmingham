@@ -1156,6 +1156,8 @@ const game: typeof engame = {
         roundsEnd: 'La partida termina con ella, y no sigue ninguna paga.',
         roundsTurn: 'Te [actions|queda|quedan] {actions} [actions|acción|acciones] en este turno.',
         win: 'Los puntos vienen de las losetas volteadas y de los iconos de enlace de los lugares que tocan tus conexiones. Vas por {mine}, el mejor de la mesa por {best}.',
+        winYet: 'La mayoría de los puntos aún no se ha contado: las losetas volteadas y las conexiones puntúan al final de cada era.',
+        winYetShort: 'La mayoría de los puntos aún no se ha contado: las losetas volteadas y las conexiones puntúan al final de la era, y luego el cierre suma el dinero y el nivel de ingresos.',
         do: 'Un experto lo está pensando en tu lugar — la razón llega en una placa justo debajo; el lugar después, si lo pides.',
         doTool: 'Para un consejo sobre la jugada, pídeselo a la nota de la guía en tu turno: «{ask}»',
       },

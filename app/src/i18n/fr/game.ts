@@ -1156,6 +1156,8 @@ const fr: typeof engame = {
         roundsEnd: 'La partie s’arrête à sa fin, et aucune paie ne suit.',
         roundsTurn: 'Il vous reste {actions} [actions|action|actions] dans ce tour.',
         win: 'Les points viennent des tuiles retournées et des icônes lien des lieux que vos liaisons touchent. Vous en êtes à {mine}, le meilleur de la table à {best}.',
+        winYet: 'Le gros des points n’est pas encore compté : tuiles retournées et liaisons marquent à la fin de chaque ère.',
+        winYetShort: 'Le gros des points n’est pas encore compté : tuiles retournées et liaisons marquent à la fin de l’ère, puis la clôture ajoute l’argent et le niveau de revenu.',
         do: 'Un expert réfléchit à votre place — sa raison arrive en plaque juste en dessous ; le lieu ensuite, si vous le demandez.',
         doTool: 'Pour un conseil sur le coup à jouer, demandez-le à la note du guide, à votre tour : « {ask} »',
       },

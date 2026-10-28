@@ -176,8 +176,14 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
       if (g.current === me) said.push(t('game.guide.ask.answer.roundsTurn', { actions: g.actionsLeft }));
       return said.join(' ');
     }
-    case 'win':
-      return t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...g.players.map((x) => x.vp)) });
+    case 'win': {
+      const said = t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...g.players.map((x) => x.vp)) });
+      /* the canal era counts little before its end — a merchant's barrel at
+         most: its tiles and links score there, and a short game's close
+         adds the purse and the income level */
+      if (g.era !== 'canal') return said;
+      return `${said} ${t(g.eraLength === 'short' ? 'game.guide.ask.answer.winYetShort' : 'game.guide.ask.answer.winYet')}`;
+    }
     case 'do':
     default:
       /* the note asks the expert on the reader's own turn only: off it, the
