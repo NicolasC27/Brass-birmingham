@@ -1,6 +1,8 @@
 import { LOAN_AMOUNT, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { ledgerText } from '@/game/ledgerText';
-import type { GameState } from '@/game/types';
+import type { GameState, LedgerEntry } from '@/game/types';
+import { getLang, localeOf } from '@/i18n';
+import type { Lang } from '@/i18n';
 import { loanWords } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
@@ -27,16 +29,26 @@ export interface BotPlate {
 
 /* ---------------------------- the machine ---------------------------- */
 
+/** the entries a machine's move writes under its own name: not a tile of
+ *  its flipping, nor what a payday took from it — its plate stays on its
+ *  move whatever followed */
+const MOVES = new Set(['build', 'network', 'develop', 'sell', 'loan', 'scout', 'pass', 'candle']);
+
 /** the last move a machine made, said as a player would reason it */
-export function botReason(g: GameState, me: number, t: T): BotPlate | null {
-  const e = [...g.ledger].reverse().find((x) => x.player !== undefined && x.player !== me && g.players[x.player]?.isBot && x.key && x.key !== 'flip');
+export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()): BotPlate | null {
+  const e = [...g.ledger].reverse().find((x) => x.player !== undefined && x.player !== me && g.players[x.player]?.isBot && !!x.key && MOVES.has(x.key));
   if (!e || e.player === undefined) return null;
   const p = g.players[e.player];
   const v = e.vars ?? {};
-  /* the entries of that same action: a development clearing two tiles
-     writes one line per tile, and is one move all the same */
+  const list = (items: string[]) => new Intl.ListFormat(localeOf(lang), { type: 'conjunction' }).format(items);
+  /* the entries of that same action: a development clearing two tiles,
+     a sale of several, write one line per tile, and are one move all the same */
   const same = g.ledger.filter((x) => x.at === e.at && x.player === e.player && x.key === e.key);
-  const what = e.key === 'develop' && same.length > 1 ? t('game.guide.developTwo', { name: p.name, list: same.map((x) => t('game.log.developed', { industry: t(`game.log.industry.${x.vars?.industry}`), level: x.vars?.level ?? '' })).join(', '), n: same.length }) : ledgerText(e, t);
+  const industryOf = (x: LedgerEntry) => t(`game.log.industry.${x.vars?.industry}`);
+  const what =
+    e.key === 'develop' && same.length > 1 ? t('game.guide.developTwo', { name: p.name, list: same.map((x) => t('game.log.developed', { industry: industryOf(x), level: x.vars?.level ?? '' })).join(', '), n: same.length })
+    : e.key === 'sell' && same.length > 1 ? t('game.guide.sellMany', { name: p.name, list: same.map((x) => t('game.log.head.sell', { industry: industryOf(x), level: x.vars?.level ?? '', merchant: x.vars?.merchant ?? '' })).join(', ') })
+    : ledgerText(e, t);
   const facts = { name: p.name, money: p.money, level: incomeLevel(p.income), industry: typeof v.industry === 'string' ? t(`game.log.industry.${v.industry}`) : '', town: v.town ?? '', merchant: v.merchant ?? '', a: v.a ?? '', b: v.b ?? '', sale: v.saleN ?? 0, gain: v.saleGain ?? 0, to: v.to ?? 0 };
   let why = '';
   switch (e.key) {
@@ -54,8 +66,16 @@ export function botReason(g: GameState, me: number, t: T): BotPlate | null {
       why = t('game.guide.bot.network', facts);
       break;
     case 'sell': {
-      const bits = [v.bonusVp ? t('game.log.bonusVp', { n: v.bonusVp }) : '', v.bonusIncome ? t('game.log.bonusIncome', { n: v.bonusIncome }) : '', v.bonusMoney ? t('game.log.bonusMoney', { n: v.bonusMoney }) : '', v.bonusDevelop ? t('game.log.bonusDevelop') : ''].filter(Boolean);
-      why = t('game.guide.bot.sell', facts) + (bits.length ? ` ${t('game.guide.bot.sellBonus', { ...facts, bits: bits.join(' · ') })}` : '');
+      /* every tile the sale flipped, and to whom: one merchant named once */
+      const merchants = [...new Set(same.map((x) => String(x.vars?.merchant ?? '')))];
+      const place = (x: LedgerEntry) => (x.region ? (TOWN_BY_ID[x.region]?.name ?? x.region) : '');
+      const tiles = same.map((x) => t(merchants.length > 1 ? 'game.guide.bot.soldTileTo' : 'game.guide.bot.soldTile', { industry: industryOf(x), town: place(x), merchant: String(x.vars?.merchant ?? '') }));
+      why = t(merchants.length > 1 ? 'game.guide.bot.sellEach' : same.length > 1 ? 'game.guide.bot.sellSome' : 'game.guide.bot.sell', { ...facts, list: list(tiles), merchant: merchants[0] });
+      const bits = same.flatMap((x) => {
+        const w = x.vars ?? {};
+        return [w.bonusVp ? t('game.log.bonusVp', { n: w.bonusVp }) : '', w.bonusIncome ? t('game.log.bonusIncome', { n: w.bonusIncome }) : '', w.bonusMoney ? t('game.log.bonusMoney', { n: w.bonusMoney }) : '', w.bonusDevelop ? t('game.log.bonusDevelop') : ''].filter(Boolean);
+      });
+      if (bits.length) why += ` ${t('game.guide.bot.sellBonus', { ...facts, bits: bits.join(' · ') })}`;
       break;
     }
     case 'loan': {
@@ -131,11 +151,15 @@ export function happenings(g: GameState, me: number, t: T): { id: number; text: 
         break;
       }
       case 'sellOff':
+        /* a rival's tile gone from the board at payday is news too: the
+           reader sees it vanish */
         if (e.player === me) out.push({ id: e.id, text: t('game.guide.happens.sellOff', vars) });
+        else if (e.player !== undefined) out.push({ id: e.id, text: t('game.guide.happens.theirsSellOff', { ...vars, name: g.players[e.player]?.name ?? '' }) });
         break;
       case 'short':
         /* only a short game counts the income level at its close */
         if (e.player === me) out.push({ id: e.id, text: t(g.eraLength === 'short' ? 'game.guide.happens.shortBooks' : 'game.guide.happens.short', vars) });
+        else if (e.player !== undefined) out.push({ id: e.id, text: t('game.guide.happens.theirsShort', { ...vars, name: g.players[e.player]?.name ?? '' }) });
         break;
       default:
         break;
