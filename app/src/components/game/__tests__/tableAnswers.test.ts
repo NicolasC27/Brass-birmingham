@@ -61,6 +61,24 @@ describe('a question about the table', () => {
     expect(answerTo('money', { ...last, eraLength: 'standard' as const }, 0, fr)).toBe(answerTo('money', g, 0, fr));
   });
 
+  it('counts the rounds left after this one, and says when the game stops', () => {
+    const g = guided();
+    const said = (x: GameState, lang = en, me = 0) => answerTo('rounds', x, me, lang);
+    /* the first round: one action, the reader's own turn */
+    expect(said(g)).toBe('Round 1 of 10: 9 more rounds after this one. You have 1 action left this turn.');
+    expect(said(g, fr)).toBe(`${fr('game.guide.ask.answer.rounds', { round: 1, total: 10, left: 9 })} ${fr('game.guide.ask.answer.roundsTurn', { actions: 1 })}`);
+    /* off the reader's turn, the actions are the machine's: not told */
+    expect(said({ ...g, current: 1 })).toBe('Round 1 of 10: 9 more rounds after this one.');
+    expect(said({ ...g, round: 9, actionsLeft: 2 })).toMatch(/^Round 9 of 10: 1 more round after this one\. You have 2 actions left/);
+    /* the short game's last round: nothing after it, and no payday */
+    expect(said({ ...g, round: 10, current: 1 })).toBe('Round 10 of 10: this is the last. The game stops at its end, and no payday follows.');
+    /* a full game's canal era leads to the rail's */
+    const full = { ...g, eraLength: 'standard' as const, current: 1 };
+    expect(said({ ...full, round: 4 })).toBe('Round 4 of 10: 6 more rounds after this one. Then comes the Rail Era, 10 rounds long as well.');
+    expect(said({ ...full, round: 10 })).toBe('Round 10 of 10: this is the last. Then comes the Rail Era, 10 rounds long as well.');
+    expect(said({ ...full, round: 10, era: 'rail' as const })).toBe('Round 10 of 10: this is the last. The game stops at its end, and no payday follows.');
+  });
+
   it('promises the expert\'s plate on the reader\'s turn only', () => {
     const g = guided();
     expect(g.current).toBe(0);

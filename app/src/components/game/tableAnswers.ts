@@ -164,8 +164,18 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
          and the level at its close, a full one counts neither */
       if (lastRound(g)) return t(g.eraLength === 'short' ? 'game.guide.ask.answer.moneyLastShort' : 'game.guide.ask.answer.moneyLast', { money: p.money, level });
       return t(level >= 0 ? 'game.guide.ask.answer.money' : 'game.guide.ask.answer.moneyOwed', { money: p.money, level, pay: Math.abs(INCOME_PAYOUT[p.income]) });
-    case 'rounds':
-      return t('game.guide.ask.answer.rounds', { left: Math.max(0, eraRounds(g.players.length) - g.round + 1), round: g.round, total: eraRounds(g.players.length), actions: g.actionsLeft });
+    case 'rounds': {
+      /* the rounds after this one; a full game's canal era has the rail's
+         to follow, the game's last round no payday; the actions left are
+         the reader's own on their turn only */
+      const total = eraRounds(g.players.length);
+      const left = Math.max(0, total - g.round);
+      const said = [t(left > 0 ? 'game.guide.ask.answer.rounds' : 'game.guide.ask.answer.roundsLast', { round: g.round, total, left })];
+      if (g.era === 'canal' && g.eraLength !== 'short') said.push(t('game.guide.ask.answer.roundsRail', { total }));
+      else if (lastRound(g)) said.push(t('game.guide.ask.answer.roundsEnd'));
+      if (g.current === me) said.push(t('game.guide.ask.answer.roundsTurn', { actions: g.actionsLeft }));
+      return said.join(' ');
+    }
     case 'win':
       return t('game.guide.ask.answer.win', { mine: p.vp, best: Math.max(...g.players.map((x) => x.vp)) });
     case 'do':
