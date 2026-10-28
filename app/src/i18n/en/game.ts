@@ -1135,7 +1135,7 @@ const game = {
         money: 'how much money,how much do i have,how much cash,how much cash do i have,my income now,my income,can i afford',
         rounds: 'how many rounds left,how long left,rounds remain,actions left,how many actions left,how many turns left,when does the game end,how much time,time left,how much time is left',
         win: 'how many points do i have,my score,who is winning,who leads,who is ahead',
-        order: 'plays before me,play before me,plays first,who starts,who goes first,turn order',
+        order: 'plays before me,play before me,plays first,who starts,who goes first,turn order,before me,does go first,goes first,goes after me,plays after me',
       },
       answer: {
         none: 'I do not know that one. Try asking about coal, beer, money, building, selling, the points, the rounds left, or what to do now.',

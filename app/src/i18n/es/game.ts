@@ -1136,8 +1136,8 @@ const game: typeof engame = {
         beer: 'donde esta la cerveza,tengo cerveza,queda cerveza,hay cerveza,donde consigo cerveza',
         money: 'cuanto dinero tengo,cuanto dinero,cuanta plata tengo,mis ingresos ahora,mis ingresos,puedo pagar',
         rounds: 'cuantas rondas quedan,cuanto queda,rondas restantes,cuantas acciones,cuantas acciones me quedan,cuantos turnos quedan,cuando termina la partida,quedan acciones,rondas faltan,cuanto falta,cuantas rondas faltan',
-        win: 'cuantos puntos tengo,mi puntuacion,quien gana,quien va ganando,quien va primero',
-        order: 'juega antes que yo,quien empieza,quien juega primero,orden de turno,orden del turno',
+        win: 'cuantos puntos tengo,mi puntuacion,quien gana,quien va ganando',
+        order: 'juega antes que yo,quien empieza,quien juega primero,orden de turno,orden del turno,antes que yo,juega despues de mi,quien va primero,por que va primero,va despues de mi',
       },
       answer: {
         none: 'Esa no la sé. Pregúntame por el carbón, la cerveza, el dinero, dónde construir, cómo vender, los puntos, las rondas que quedan, o qué jugar ahora.',

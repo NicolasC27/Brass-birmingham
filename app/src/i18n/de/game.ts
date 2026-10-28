@@ -1137,7 +1137,7 @@ const game: typeof engame = {
         money: 'wie viel geld habe ich,wie viel geld,mein einkommen jetzt,wie hoch ist mein einkommen,kann ich zahlen,kann ich bezahlen',
         rounds: 'wie viele runden bleiben,wie lange noch,verbleibende runden,wie viele runden noch,wie viele aktionen,wann endet das spiel,noch aktionen,aktionen bleiben,runden ubrig,wie viele runden noch ubrig',
         win: 'wie viele punkte habe ich,meine wertung,mein punktestand,wer gewinnt,wer fuhrt,wer liegt vorn',
-        order: 'spielt vor mir,wer fangt an,wer beginnt,wer spielt zuerst,wer ist zuerst dran',
+        order: 'spielt vor mir,wer fangt an,wer beginnt,wer spielt zuerst,wer ist zuerst dran,vor mir,spielt nach mir,zuerst dran,spielt zuerst,wer ist nach mir dran',
       },
       answer: {
         none: 'Die kenne ich nicht. Frag mich nach Kohle, Bier, Geld, wo du bauen kannst, wie man verkauft, den Punkten, den verbleibenden Runden, oder was jetzt zu spielen ist.',

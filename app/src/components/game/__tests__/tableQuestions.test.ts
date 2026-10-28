@@ -100,25 +100,30 @@ const PHRASINGS: Record<Lang, [string, string[]][]> = {
 
 /* the same questions put one word off the review's own: a word the case
    does not hold is not mended into one it does — "reste" is not the
-   income's "rente", "tips" not the ties */
+   income's "rente", "tips" not the ties — and whoever plays before the
+   reader is the turn order, not the machines' characters */
 const VARIANTS: Record<Lang, [string, string[]][]> = {
   fr: [
     ['@do', ['Que faire ?', 'Quel coup jouer ?', 'Quelle action faire ?', 'Tu as un conseil ?']],
     ['@rounds', ['Il me reste des actions ?', 'Combien de temps il reste ?', 'Il reste combien ?', 'Il reste combien de temps ?']],
+    ['@order', ['Pourquoi Wedgwood est avant moi ?', 'Pourquoi il est avant moi ?', 'Pourquoi elle joue en premier ?', 'Qui joue après moi ?']],
     ['cards', ['Combien de cartes il me reste ?']],
   ],
   en: [
     ['@do', ['Any tips?', 'Tips?', 'Got any tips?', 'Any hints?', 'Give me a hint', 'What should I play?', 'Any suggestions?']],
     ['@rounds', ['How much time is left?']],
+    ['@order', ['Why is Wedgwood before me?', 'Why does Wedgwood go first?', 'Why does she go first?', 'Who goes after me?']],
     ['sell', ['Any tips on selling?']],
   ],
   de: [
     ['@do', ['Irgendein Tipp?', 'Hast du einen Rat?', 'Welche Aktion soll ich spielen?']],
     ['@rounds', ['Habe ich noch Aktionen?', 'Wie viele Aktionen bleiben mir?', 'Wie viele Runden sind noch übrig?']],
+    ['@order', ['Warum ist Wedgwood vor mir dran?', 'Warum spielt Wedgwood zuerst?', 'Warum ist sie zuerst dran?', 'Wer spielt nach mir?', 'Wer ist nach mir dran?']],
   ],
   es: [
     ['@do', ['¿Qué hago?', '¿Qué me aconsejas?', '¿Qué me recomiendas?', '¿Alguna sugerencia?']],
     ['@rounds', ['¿Me quedan acciones?', '¿Cuántas rondas faltan?', '¿Cuánto falta?']],
+    ['@order', ['¿Por qué ella va antes que yo?', '¿Quién va primero?', '¿Por qué Wedgwood va primero?', '¿Quién juega después de mí?', '¿Quién va después de mí?']],
     ['coal', ['¿Qué hago con el carbón?']],
   ],
 };

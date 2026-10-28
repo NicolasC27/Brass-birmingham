@@ -1137,7 +1137,7 @@ const fr: typeof engame = {
         money: 'combien j ai d argent,combien d argent,combien d argent me reste,mon revenu actuel,mon revenu,je peux payer',
         rounds: 'combien de manches restent,il reste combien de manches,combien d actions,combien d actions il me reste,manches restantes,combien de tours,combien de tours restent,il reste combien de tours,quand finit la partie,quand se termine la partie,reste des actions,combien de temps,il reste combien',
         win: 'combien de points j ai,mon score,qui gagne,qui mene,qui est en tete',
-        order: 'joue avant moi,joue apres moi,joue en premier,qui commence,ordre du tour,qui joue',
+        order: 'joue avant moi,joue apres moi,joue en premier,qui commence,ordre du tour,qui joue,avant moi,apres moi,pourquoi joue en premier',
       },
       answer: {
         none: 'Celle-là, je ne la connais pas. Demandez-moi le charbon, la bière, l’argent, où construire, comment vendre, les points, les manches qui restent, ou quoi jouer maintenant.',
