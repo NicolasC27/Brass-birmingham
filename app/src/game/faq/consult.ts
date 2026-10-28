@@ -505,12 +505,13 @@ export function asksTheRules(question: string, lang: Lang, phrase: string, reach
   if (c.tongue.self.flatMap(words).some((w) => said.has(w))) return false;
   /* a phrase down to one word of the case says nothing of the seat: "le
      charbon" — unless the question asks where, "où construire"; a word
-     the case does not know is the table's alone: "un conseil". And a word
-     that asks what a thing is counts only when the table's phrase does not
-     carry it itself, as "what now" does */
+     the case does not know, or knows only as a word of asking, is the
+     table's alone: "un conseil", "tips". And a word that asks what a thing
+     is counts only when the table's phrase does not carry it itself, as
+     "what now" does */
   const lone = held.filter((w) => w.length >= 3);
   const where = c.tongue.where.some((w) => said.has(w));
-  return (lone.length < 2 && !where && lone.some((w) => c.known.has(w))) || c.tongue.define.flatMap(words).some((w) => said.has(w) && !held.includes(w));
+  return (lone.length < 2 && !where && lone.some((w) => c.known.has(w) && !c.stop.has(w))) || c.tongue.define.flatMap(words).some((w) => said.has(w) && !held.includes(w));
 }
 
 /** the closest notion of the question in any tongue but its own, for a

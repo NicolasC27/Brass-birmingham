@@ -695,6 +695,11 @@ describe('the table’s questions and the rules’ ones', () => {
   it('leaves the table a word the rules do not know', () => {
     expect(asksTheRules('un conseil ?', 'fr', 'un conseil')).toBe(false);
     expect(asksTheRules('hast du einen tipp?', 'de', 'einen tipp')).toBe(false);
+    /* nor a word it knows only as one of asking, which it leaves as typed */
+    expect(asksTheRules('tips?', 'en', 'tips')).toBe(false);
+    expect(mend('il me reste des actions', 'fr')).not.toMatch(/rente/);
+    expect(mend('any tips', 'en')).not.toMatch(/ties/);
+    expect(mend('wie viele aktionen bleiben mir', 'de')).not.toMatch(/leihen/);
     /* unless it asks what the word means */
     expect(asksTheRules('c est quoi un conseil', 'fr', 'un conseil')).toBe(true);
   });

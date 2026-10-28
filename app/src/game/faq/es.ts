@@ -21,7 +21,7 @@ export const ES: Tongue = {
     'puedo puede puedes pueden podemos poder debo debe debes deben hace hacer hago haces hecho sirve sirven servir significa significado ' +
     'exactamente favor gracias hola ahora aqui alli algo cosa cosas tengo tiene tienes tener quiero quiere querer se sabe saber ' +
     'explica explicar dime decir dice funciona funcionan funcionamiento ejemplo vez veces siempre nunca mucho poco bien mal otra otro otros ' +
-    'ademas tambien tan asi jugada jugadas pasa pasaria ocurre sucede cual cuanto cuanta cuantos cuantas qué quién'
+    'ademas tambien tan asi jugada jugadas pasa pasaria ocurre sucede cual cuanto cuanta cuantos cuantas qué quién queda faltan faltar'
   ).split(' '),
   cues: {
     whyNot: ['no puedo', 'no puede', 'no puedes', 'no me deja', 'por que no', 'porque no', 'imposible', 'prohibido', 'bloqueado', 'bloqueada', 'no funciona', 'no se puede', 'no me permite', 'rechaza', 'gris'],

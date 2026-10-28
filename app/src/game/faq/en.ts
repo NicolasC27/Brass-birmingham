@@ -20,7 +20,7 @@ export const EN: Tongue = {
     'not no yes if from as by about into than then so just there here any some all also very much many more less get got have has had am ' +
     'please thanks thank hi hello mean means meant exactly really thing things stuff okay ok well still even ever again already now ' +
     'explain tell know understand happen happens happened use used using need needs one ones way ways ' +
-    'isn doesn don won t s d m ll ve re'
+    'isn doesn don won t s d m ll ve re time tip tips hint hints'
   ).split(' '),
   cues: {
     whyNot: ['can t', 'couldn t', 'won t', 'why not', 'not allowed', 'unable', 'impossible', 'blocked', 'greyed', 'grayed', 'disabled', 'doesn t work', 'refused', 'refuses', 'forbidden', 'not let', 'isn t allowed', 'no way to'],

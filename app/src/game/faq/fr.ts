@@ -32,7 +32,8 @@ export const FR: Tongue = {
     'possible pres tres existe existent concerne concernant propos sujet regle question questions demande demander aidez ' +
     'montre montrer peut-etre facon maniere moment fois jamais toujours souvent parfois beaucoup peu mettre met mets prendre prend ' +
     'prends pris avoir eu eue quelqu quelqu un rien personne tout-a-fait voir vois voit regarde regarder utiliser utilise sert-il ' +
-    'combien-de est-ce estce qu-est-ce faudrait pouvez pouvons devez devons fallait etait sera serait seront avait aurait aura'
+    'combien-de est-ce estce qu-est-ce faudrait pouvez pouvons devez devons fallait etait sera serait seront avait aurait aura ' +
+    'reste restent rester temps'
   ).split(' '),
   cues: {
     whyNot: ['pourquoi pas', 'peux pas', 'peut pas', 'pouvez pas', 'pouvons pas', 'arrive pas', 'arrivent pas', 'fonctionne pas', 'marche pas', 'veut pas', 'impossible', 'interdit', 'interdite', 'refuse', 'refusee', 'bloque', 'bloquee', 'grise', 'grisee', 'empeche', 'droit pas', 'pas droit', 'pourquoi non', 'passe pas'],

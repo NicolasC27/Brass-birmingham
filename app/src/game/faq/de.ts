@@ -20,7 +20,7 @@ export const DE: Tongue = {
     'mit ohne fur von zu zum zur im in am an auf aus bei nach vor uber unter um nicht kein keine keinen ja nein wenn dann auch noch schon sehr mehr weniger ' +
     'alle alles man sich mir mich dir dich uns euch denn doch mal jetzt hier dort etwas gibt geben heisst bedeutet bedeutung genau eigentlich ' +
     'erklare erklaren sag sagen weiss wissen funktioniert funktionieren tun tut mache machen macht habe hast hat haben werde wird werden ' +
-    'dieser diese dieses diesen hallo gut schlecht immer nie oft viel viele wieder eben also so da nur'
+    'dieser diese dieses diesen hallo gut schlecht immer nie oft viel viele wieder eben also so da nur bleiben bleibt'
   ).split(' '),
   cues: {
     whyNot: ['kann nicht', 'kannst nicht', 'warum nicht', 'wieso nicht', 'geht nicht', 'nicht moglich', 'unmoglich', 'verboten', 'gesperrt', 'darf nicht', 'klappt nicht', 'funktioniert nicht', 'ausgegraut', 'grau', 'abgelehnt', 'nicht erlaubt'],
