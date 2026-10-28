@@ -1079,8 +1079,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
     setThread((prev) => askThread(prev, q, got.answer));
     if (got.intent === 'do' && aid && myTurn && !advised) ask();
   };
-  /* a notion taken up from the ones offered: asked by its name, answered
-     plainly */
+  /* a notion taken up from the ones offered: asked by its name, told as
+     this game plays it */
   const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang(), 'what', game.eraLength === 'short')));
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
   /* what a screen reader hears as it comes up: her move first, then the
