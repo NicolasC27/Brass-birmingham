@@ -1159,7 +1159,7 @@ const game: typeof engame = {
         roundsLast: 'Runde {round} von {total}: das ist die letzte.',
         roundsRail: 'Dann kommt die Eisenbahnzeit, ebenfalls {total} [total|Runde|Runden] lang.',
         roundsEnd: 'Mit ihrem Ende endet die Partie, und kein Zahltag folgt.',
-        roundsTurn: 'In diesem Zug bleiben dir {actions} [actions|Aktion|Aktionen].',
+        roundsTurn: 'In diesem Zug [actions|bleibt|bleiben] dir {actions} [actions|Aktion|Aktionen].',
         win: 'Punkte kommen von umgedrehten Plättchen und von den Verbindungssymbolen der Orte, die deine Verbindungen berühren. Du stehst bei {mine}, der Beste am Tisch bei {best}.',
         winYet: 'Die meisten Punkte sind noch nicht gezählt: umgedrehte Plättchen und Verbindungen werten am Ende jeder Epoche.',
         winYetShort: 'Die meisten Punkte sind noch nicht gezählt: umgedrehte Plättchen und Verbindungen werten am Ende der Epoche, dann zählt der Abschluss Geld und Einkommensstufe dazu.',

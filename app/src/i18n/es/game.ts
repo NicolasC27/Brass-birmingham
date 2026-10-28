@@ -1165,7 +1165,7 @@ const game: typeof engame = {
         winYetShort: 'La mayoría de los puntos aún no se ha contado: las losetas volteadas y las conexiones puntúan al final de la era, y luego el cierre suma el dinero y el nivel de ingresos.',
         order: 'El orden de esta ronda sigue el dinero gastado en la anterior, primero quien menos gastó: {list}.',
         orderFirst: 'En la primera ronda el orden se sortea: {list}. Después, quien menos gasta en una ronda juega primero en la siguiente.',
-        orderNext: 'En esta ronda llevas gastadas {spent} £: el orden de la siguiente se decide por eso.',
+        orderNext: 'En esta ronda llevas [spent|gastada|gastadas] {spent} £: el orden de la siguiente se decide por eso.',
         orderSeat: '{name} ({spent} £)',
         orderYou: 'tú',
         do: 'Un experto lo está pensando en tu lugar — la razón llega en una placa justo debajo; el lugar después, si lo pides.',

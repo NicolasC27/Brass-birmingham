@@ -141,6 +141,17 @@ describe('a question about the table', () => {
     expect(said({ ...full, round: 10, era: 'rail' as const })).toBe('Round 10 of 10: this is the last. The game stops at its end, and no payday follows.');
   });
 
+  it('agrees its words with a count of one', () => {
+    const g = guided();
+    const de = tIn('de');
+    const es = tIn('es');
+    expect(answerTo('rounds', g, 0, de, 'de')).toMatch(/In diesem Zug bleibt dir 1 Aktion\.$/);
+    expect(answerTo('rounds', { ...g, round: 2, actionsLeft: 2 }, 0, de, 'de')).toMatch(/In diesem Zug bleiben dir 2 Aktionen\.$/);
+    const spent = (n: number) => answerTo('order', { ...g, players: g.players.map((x, i) => ({ ...x, spent: i === 0 ? n : 0 })) }, 0, es, 'es');
+    expect(spent(1)).toContain('llevas gastada 1\u00a0£');
+    expect(spent(6)).toContain('llevas gastadas 6\u00a0£');
+  });
+
   it('says the points are not counted yet in the canal era', () => {
     const g = guided();
     const win = fr('game.guide.ask.answer.win', { mine: 0, best: 0 });
