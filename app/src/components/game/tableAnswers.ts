@@ -48,6 +48,10 @@ function tableSays<X extends { valid: boolean; reason?: string }>(reason: string
   return t('game.guide.blocked.whyAt', { town: list(towns.map(nameOf), 'conjunction'), why });
 }
 
+/** the engine's refusals and the lists of towns, in the reader's tongue */
+const sayIn = (lang: Lang): Say => (reason) => reasonText(reason, lang);
+const listIn = (lang: Lang): List => (towns, type) => new Intl.ListFormat(localeOf(lang), { type }).format(towns);
+
 /** the towns of the reader's network where the deed could be built now
  *  with a card they do not hold: there, the card alone is missing */
 function openedByACard(g: GameState, me: number, inds: string[]): string[] {
@@ -64,8 +68,8 @@ function openedByACard(g: GameState, me: number, inds: string[]): string[] {
  *  that no card will do */
 export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang = getLang()): Block | null {
   const p = g.players[me];
-  const say: Say = (reason) => reasonText(reason, lang);
-  const list: List = (towns, type) => new Intl.ListFormat(localeOf(lang), { type }).format(towns);
+  const say = sayIn(lang);
+  const list = listIn(lang);
   const vars = { money: p.money, amount: LOAN_AMOUNT, hit: LOAN_INCOME_HIT };
   /* the loan, or the payday to come back after — none follows the last round */
   const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
@@ -115,6 +119,20 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
   }
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
   return null;
+}
+
+/** why the hand builds no tile of this industry while it may build
+ *  others: the table's own refusal at the places it came nearest to, or
+ *  the towns a card it lacks would open; null when it has neither to give */
+function refusedFor(kind: string, g: GameState, me: number, t: T, lang: Lang): string | null {
+  const list = listIn(lang);
+  const targets = g.players[me].hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => x.industry === kind);
+  const no = t('game.guide.ask.answer.buildNoOf', { industry: t(`game.log.industry.${kind}`) });
+  const best = refusalOf(targets)?.reason;
+  if (best && !onTheCard(best)) return `${no} ${tableSays(best, targets, (x) => x.town, t, sayIn(lang), list)}`;
+  const opens = openedByACard(g, me, [kind]);
+  if (!opens.length) return null;
+  return `${no} ${opens.length > NAMED ? t('game.guide.blocked.cardIn') : t('game.guide.blocked.cardAt', { towns: list(opens.map(nameOf), 'disjunction') })}`;
 }
 
 /* ---------------------------- the questions -------------------------- */
@@ -171,8 +189,9 @@ export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number;
 }
 
 /** the answer, read off the table as it stands — for the tile the
- *  question names, when it names one */
-export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang(), about?: NotionId): string {
+ *  question names, when it names one; null where the table has nothing
+ *  of its own to say and the rules answer: a tile it knows no reason for */
+export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang(), about?: NotionId): string | null {
   const p = g.players[me];
   const level = incomeLevel(p.income);
   const kind = about ? INDUSTRY[about] : undefined;
@@ -194,11 +213,11 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
       const open = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => x.valid && (!kind || x.industry === kind));
       const n = new Set(open.map((x) => `${x.town}:${x.slot}`)).size;
       if (kind) {
-        const industry = t(`game.log.industry.${kind}`);
-        if (n > 0) return t('game.guide.ask.answer.buildYesOf', { n, industry });
-        /* the lesson's own reason for a mine, a forge or a works */
+        if (n > 0) return t('game.guide.ask.answer.buildYesOf', { n, industry: t(`game.log.industry.${kind}`) });
+        /* the lesson's own reason for a mine, a forge or a works — and for
+           one works while another builds, the table's refusal of that one */
         const lesson = kind === 'coal' ? 'coal' : kind === 'iron' ? 'iron' : WORKS.includes(kind) ? 'works' : null;
-        return (lesson && blockedBy(lesson, g, me, t, lang)?.text) || t('game.guide.ask.answer.buildNoOf', { industry });
+        return (lesson && blockedBy(lesson, g, me, t, lang)?.text) || refusedFor(kind, g, me, t, lang);
       }
       return n > 0 ? t('game.guide.ask.answer.buildYes', { n }) : (blockedBy('works', g, me, t, lang)?.text ?? t('game.guide.ask.answer.buildNo'));
     }
@@ -263,16 +282,18 @@ export type Asker = { g: GameState; me: number; aid?: boolean };
 export const tableSpeaks = (at: Asker | null): at is Asker => !!at && at.aid !== false && at.me >= 0 && at.g.phase === 'action';
 
 /** a question put, answered in two tries: the table as it stands, when it
- *  speaks and it is the surer match; then the guide's case — the notions
- *  of the game, the written answers, the rules codex — and, when nothing
- *  there is close, the notions it might mean (near). The case answers a
- *  short game as one, whether the table speaks or not */
+ *  speaks, it is the surer match and it has something of its own to say;
+ *  then the guide's case — the notions of the game, the written answers,
+ *  the rules codex — and, when nothing there is close, the notions it
+ *  might mean (near). The case answers a short game as one, whether the
+ *  table speaks or not */
 export function answerQuestion(q: string, at: Asker | null, t: T, lang: Lang, passages: Passage[]): { answer: string; intent: Ask | null; notion: NotionId | null; near: NearNotion[] } {
   const game = tableSpeaks(at) ? at : null;
   const table = game ? intentOf(q, t, lang) : null;
   const written = faqBest(q, faqFor(lang));
   const id = game && table && (!written || table.score >= written.score) ? table.id : null;
-  if (id && game) return { answer: answerTo(id, game.g, game.me, t, lang, table?.about), intent: id, notion: null, near: [] };
+  const said = id && game ? answerTo(id, game.g, game.me, t, lang, table?.about) : null;
+  if (said) return { answer: said, intent: id, notion: null, near: [] };
   const found = consult(q, lang, passages, at?.g.eraLength === 'short');
   return { answer: found.answer, intent: null, notion: found.notion, near: found.kind === 'near' ? found.near : [] };
 }

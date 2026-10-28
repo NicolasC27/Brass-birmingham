@@ -93,6 +93,10 @@ describe('a question about the table', () => {
     expect(answerTo('build', g, 0, fr, 'fr', 'coalMine')).toBe(fr('game.guide.ask.answer.buildYesOf', { n: slots('coal'), industry: 'mine de charbon' }));
     /* a forge on a bare board: its lesson's own reason */
     expect(answerTo('build', g, 0, fr, 'fr', 'ironWorks')).toBe(blockedBy('iron', g, 0, fr, 'fr')!.text);
+    /* one works refused while another builds: the table's refusal of that one */
+    expect(blockedBy('works', g, 0, fr, 'fr')).toBeNull();
+    expect(answerTo('build', g, 0, fr, 'fr', 'manufacturer')).toBe(`${fr('game.guide.ask.answer.buildNoOf', { industry: 'manufacture' })} ${fr('game.guide.blocked.whyAt', { town: 'Redditch et Coventry', why: reasonText('No connected coal — reach a mine or a merchant', 'fr') })}`);
+    expect(answerTo('build', g, 0, en, 'en', 'pottery')).toBe(`${en('game.guide.ask.answer.buildNoOf', { industry: 'pottery' })} ${en('game.guide.blocked.why', { why: 'Needs £19 — you hold £17' })}`);
     /* a pottery the reader has not built */
     expect(answerQuestion('Je peux vendre ma poterie ?', { g, me: 0 }, fr, 'fr', passages('fr')).answer).toBe(fr('game.guide.ask.answer.sellNoneOf', { industry: 'poterie' }));
     /* a manufactory that sells beside a pottery that cannot */
