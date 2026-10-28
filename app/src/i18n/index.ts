@@ -226,6 +226,15 @@ export function money(n: number | string, l: Lang = lang): string {
   return debt ? `−${sum}` : sum;
 }
 
+/** a merchant's bonus in the reader's words: as the ledger says it ("+2
+ *  cases de revenu", "développement gratuit"), or, `sign`, as the
+ *  medallion on the board reads ("+2 revenu", "Développer") */
+export function bonusLabel(b: { vp?: number; income?: number; money?: number; develop?: boolean }, sign = false, l: Lang = lang): string {
+  const n = b.vp ?? b.income ?? b.money ?? 0;
+  const [kind, logged] = b.vp ? ['vp', 'Vp'] : b.income ? ['income', 'Income'] : b.money ? ['money', 'Money'] : ['develop', 'Develop'];
+  return sign ? trIn(l, `board.merchant.sign.${kind}`, { n }) : trIn(l, `game.log.bonus${logged}`, { n });
+}
+
 /** translate outside React (current language, English fallback) */
 export function tr(key: string, vars?: Record<string, string | number>): string {
   const dict = dictOf(lang);

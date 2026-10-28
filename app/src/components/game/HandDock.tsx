@@ -9,7 +9,7 @@ import { beerSources, buildTargets, ironSources, saleBeerSources, sellTargets, t
 import { MERCHANT_BY_ID } from '@/game/data';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
-import { money, reasonText, tr, useT } from '@/i18n';
+import { bonusLabel, money, reasonText, tr, useT } from '@/i18n';
 import { INDUSTRY_COLOR } from './townChrome';
 import { industryFaceUrl } from '@/gl/faces';
 import Tooltip from './Tooltip';
@@ -1020,7 +1020,7 @@ function HandDock() {
                         >
                           {buyers.map((b) => (
                             <option key={b.merchant} value={b.merchant}>
-                              {MERCHANT_BY_ID[b.merchant].name} · {t('board.merchant.bonusIs', { bonus: MERCHANT_BY_ID[b.merchant].bonusLabel })}
+                              {MERCHANT_BY_ID[b.merchant].name} · {t('board.merchant.bonusIs', { bonus: bonusLabel(MERCHANT_BY_ID[b.merchant].bonus) })}
                             </option>
                           ))}
                         </select>

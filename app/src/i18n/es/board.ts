@@ -90,6 +90,8 @@ const es: typeof enboard = {
     claimed: '✓ RECLAMADO',
     title: '{name} — pide: {demands} · cerveza {beer} · bono {bonus}{claimed}',
     bonus: 'bono',
+    /** the bonus as its medallion reads: the figure big, the word small */
+    sign: { vp: '+{n} PV', income: '+{n} ingresos', money: '{n} £', develop: 'Desarrollar' },
     closedStamp: 'CERRADO',
     buys: 'Compra',
     buysNothing: 'nada (losetas en blanco)',

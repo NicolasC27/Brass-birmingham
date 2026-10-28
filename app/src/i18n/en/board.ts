@@ -88,6 +88,8 @@ const board = {
     claimed: '✓ CLAIMED',
     title: '{name} — demands {demands} · beer {beer} · bonus {bonus}{claimed}',
     bonus: 'bonus',
+    /** the bonus as its medallion reads: the figure big, the word small */
+    sign: { vp: '+{n} VP', income: '+{n} income', money: '£{n}', develop: 'Develop' },
     closedStamp: 'CLOSED',
     buys: 'Buys',
     buysNothing: 'nothing (blank tiles)',

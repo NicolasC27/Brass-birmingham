@@ -9,7 +9,7 @@ import { BoardLostPlate } from '@/components/game/TitleCard';
 import type { Era, GameState } from '@/game/types';
 import { lastActionOf, projectQueued, useGame, verbsForCard } from '@/game/store';
 import { WhyLink } from '@/components/game/RulesOverlay';
-import { money, onLangChange, reasonText, tr, useT } from '@/i18n';
+import { bonusLabel, money, onLangChange, reasonText, tr, useT } from '@/i18n';
 import { aidOn, getBoardOptions, mapUrls, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { useReducedMotion } from '@/components/game/useReducedMotion';
 import { WORLD_H, WORLD_W, farDetail, fitScale, placeAnchor, playArea, ribbonLabelScale, screenToWorld, subscribeFitReserve, worldToScreen, APRON_X, APRON_Y, BLEED_X, BLEED_Y, GLIMPSE_MS, PAINT_W } from '@/components/game/boardView';
@@ -2341,7 +2341,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
               <div>
                 {t('board.merchant.barrels', { left: merchantBeerLeft(game, hoverMerchantDef.id), total: merchantBarrelSlots(game, hoverMerchantDef.id) })}
                 {' · '}
-                {t('board.merchant.bonusIs', { bonus: hoverMerchantDef.bonusLabel })}
+                {t('board.merchant.bonusIs', { bonus: bonusLabel(hoverMerchantDef.bonus) })}
               </div>
               {aidHere && viewerIdx >= 0 && (
                 <div className={sellableHere.length ? 'text-bottle-600 brightness-150' : 'text-cream-100/55'}>

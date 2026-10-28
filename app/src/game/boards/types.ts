@@ -32,7 +32,6 @@ export interface MerchantDef {
   slots: number;
   minPlayers: number;
   bonus: { vp?: number; income?: number; money?: number; develop?: boolean };
-  bonusLabel: string;
 }
 
 export interface LinkSpec {

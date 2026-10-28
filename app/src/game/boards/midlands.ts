@@ -55,7 +55,6 @@ export const MIDLANDS: BoardDef = {
     slots: 2,
     minPlayers: 3,
     bonus: { money: 5 },
-    bonusLabel: '£5',
   },
   {
     id: 'm-nottingham',
@@ -65,7 +64,6 @@ export const MIDLANDS: BoardDef = {
     slots: 2,
     minPlayers: 4,
     bonus: { vp: 3 },
-    bonusLabel: '+3 VP',
   },
   {
     id: 'm-shrewsbury',
@@ -75,7 +73,6 @@ export const MIDLANDS: BoardDef = {
     slots: 1,
     minPlayers: 2,
     bonus: { vp: 4 },
-    bonusLabel: '+4 VP',
   },
   {
     id: 'm-oxford',
@@ -85,7 +82,6 @@ export const MIDLANDS: BoardDef = {
     slots: 2,
     minPlayers: 2,
     bonus: { income: 2 },
-    bonusLabel: '+2 income',
   },
   {
     id: 'm-gloucester',
@@ -96,7 +92,6 @@ export const MIDLANDS: BoardDef = {
     slots: 2,
     minPlayers: 2,
     bonus: { develop: true },
-    bonusLabel: 'Develop',
   },
   ],
   links: [

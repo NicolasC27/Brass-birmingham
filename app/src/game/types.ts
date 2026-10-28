@@ -60,8 +60,6 @@ export interface Merchant {
   minPlayers: number;
   /** bonus granted each time one of its beer barrels is drunk */
   bonus: { vp?: number; income?: number; money?: number; develop?: boolean };
-  /** short label for the bonus chit (board rendering) */
-  bonusLabel: string;
 }
 
 /** one of the 9 shuffled merchant tiles; `all` buys cotton, goods and pottery */

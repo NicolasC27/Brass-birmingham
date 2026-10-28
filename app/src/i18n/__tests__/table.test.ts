@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { LANGS, reasonText, setLang, tr } from '../index';
+import { LANGS, bonusLabel, reasonText, setLang, tr } from '../index';
+import { MERCHANTS } from '@/game/data';
 import type { Lang } from '../index';
 import { de } from '../de';
 import { en } from '../en';
@@ -120,6 +121,19 @@ describe('the table’s sheets', () => {
     expect(reasonText(said)).toBe(said);
     setLang('en');
     expect(tr('game.guide.happens.bonus', { merchant: 'Oxford', bits: '+2 VP' })).toContain('Oxford’s barrel');
+  });
+
+  it('say a merchant’s bonus in the reader’s tongue, on the board and in words', () => {
+    expect(bonusLabel({ income: 2 }, true, 'fr')).toBe('+2 revenu');
+    expect(bonusLabel({ income: 2 }, false, 'fr')).toBe('+2 cases de revenu');
+    expect(bonusLabel({ develop: true }, true, 'fr')).toBe('Développer');
+    expect(bonusLabel({ money: 5 }, true, 'de')).toBe('£5');
+    expect(bonusLabel({ income: 1 }, false, 'en')).toBe('+1 income space');
+    for (const lang of LANGS.filter((l) => l !== 'en')) {
+      for (const m of MERCHANTS) {
+        for (const sign of [true, false]) expect(`${lang}:${m.id} ${bonusLabel(m.bonus, sign, lang)}`).not.toMatch(/income|Develop|VP/);
+      }
+    }
   });
 
   /* every refusal the engine can give by name reaches the player in the

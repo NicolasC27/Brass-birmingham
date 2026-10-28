@@ -4,7 +4,7 @@ import { barrelKey } from '@/game/engine';
 import { townColor } from '@/game/townColors';
 import { routeFor } from '@/components/game/routePaths';
 import { merchantOpen, tileKey } from '@/game/engine';
-import { tr } from '@/i18n';
+import { bonusLabel, tr } from '@/i18n';
 import type { Era, GameState, IndustryType, LinkDef } from '@/game/types';
 import { RIBBON_FONT, RIBBON_GAP, RIBBON_H, TILE, TILE_HALF, ribbonWidth, townChrome } from '@/components/game/townChrome';
 import { FEET, SHADE } from './placeGround';
@@ -964,9 +964,11 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
     slots.eventMode = 'none';
     const medal = new Container();
     medal.eventMode = 'none';
-    /* long labels ("+2 income") engrave on two lines: the figure big, the word small */
-    const words = m.bonusLabel.split(' ');
-    const big = words.length > 1 ? words[0] : m.bonusLabel;
+    /* long labels ("+2 income") engrave on two lines: the figure big, the
+       word small — in the reader's tongue, as the medallion reads */
+    const said = bonusLabel(m.bonus, true);
+    const words = said.split(' ');
+    const big = words.length > 1 ? words[0] : said;
     const small = words.length > 1 ? words.slice(1).join(' ') : '';
     const bigFont = Math.min(medalR * 0.95, big.length <= 3 ? 17 : big.length <= 5 ? 14 : big.length <= 6 ? 11 : 9.5);
     const engrave = (text: string, size: number, y: number, serif: boolean) => {
@@ -980,6 +982,10 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       const main = new Text({ text, style: { ...style, fill: 0x2a1e0e } });
       main.anchor.set(0.5);
       main.position.set(medalX, y);
+      /* a long word ("Développer") is set narrower rather than spill off the medallion */
+      const fit = Math.min(1, (medalR * 1.8) / Math.max(1, main.width));
+      main.scale.set(fit);
+      under.scale.set(fit);
       under.eventMode = 'none';
       main.eventMode = 'none';
       medal.addChild(under, main);

@@ -52,11 +52,11 @@ export const VENETO: BoardDef = {
     { id: 'cantina-s', name: 'Cantina', x: 790, y: 700, spaces: [['brewery']], farm: true },
   ],
   merchants: [
-    { id: 'm-trento', name: 'Trente', x: 700, y: 90, slots: 2, minPlayers: 3, bonus: { money: 5 }, bonusLabel: '£5' },
-    { id: 'm-trieste', name: 'Trieste', x: 1420, y: 560, slots: 2, minPlayers: 4, bonus: { vp: 3 }, bonusLabel: '+3 PV' },
-    { id: 'm-milano', name: 'Milan', x: 250, y: 520, slots: 1, minPlayers: 2, bonus: { vp: 4 }, bonusLabel: '+4 PV' },
-    { id: 'm-bologna', name: 'Bologne', x: 830, y: 960, slots: 2, minPlayers: 2, bonus: { income: 2 }, bonusLabel: '+2 revenu' },
-    { id: 'm-ferrara', name: 'Ferrare', x: 560, y: 900, slots: 2, minPlayers: 2, bonus: { develop: true }, bonusLabel: 'Développer' },
+    { id: 'm-trento', name: 'Trente', x: 700, y: 90, slots: 2, minPlayers: 3, bonus: { money: 5 } },
+    { id: 'm-trieste', name: 'Trieste', x: 1420, y: 560, slots: 2, minPlayers: 4, bonus: { vp: 3 } },
+    { id: 'm-milano', name: 'Milan', x: 250, y: 520, slots: 1, minPlayers: 2, bonus: { vp: 4 } },
+    { id: 'm-bologna', name: 'Bologne', x: 830, y: 960, slots: 2, minPlayers: 2, bonus: { income: 2 } },
+    { id: 'm-ferrara', name: 'Ferrare', x: 560, y: 900, slots: 2, minPlayers: 2, bonus: { develop: true } },
   ],
   links: [
     /* --- both eras (30) --- */
