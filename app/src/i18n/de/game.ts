@@ -1131,7 +1131,7 @@ const game: typeof engame = {
       words: {
         do: 'was soll ich tun,was spiele ich,gib mir einen rat,was jetzt,einen tipp,welcher zug,bester zug,irgendein tipp,einen rat,welche aktion soll ich,welche aktion soll ich spielen',
         sell: 'kann ich verkaufen,was kann ich verkaufen,etwas zu verkaufen',
-        build: 'wo kann ich bauen,was kann ich bauen,kann ich etwas bauen,wo bauen,wo soll ich bauen',
+        build: 'wo kann ich bauen,was kann ich bauen,kann ich etwas bauen,wo bauen,wo soll ich bauen,kann ich bauen,wo baue ich',
         coal: 'wo ist die kohle,habe ich kohle,ist noch kohle,noch kohle,wo bekomme ich kohle',
         beer: 'wo ist das bier,habe ich bier,ist noch bier,noch bier,wo bekomme ich bier',
         money: 'wie viel geld habe ich,wie viel geld,mein einkommen jetzt,wie hoch ist mein einkommen,kann ich zahlen,kann ich bezahlen',

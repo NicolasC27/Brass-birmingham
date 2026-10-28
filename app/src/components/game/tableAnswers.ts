@@ -2,9 +2,9 @@ import { INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID
 import { buildTargets, canLoan, linkTargets, sellTargets } from '@/game/engine';
 import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
-import { asksTheRules, consult, fold, mend, named, tongueOf } from '@/game/faq/consult';
+import { askedOf, asksTheRules, consult, fold, mend, named, tongueOf } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
-import type { NotionId } from '@/game/faq/notions';
+import type { Asked, NotionId } from '@/game/faq/notions';
 import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
 import type { Card, GameState } from '@/game/types';
 import { getLang, localeOf, reasonText } from '@/i18n';
@@ -190,13 +190,16 @@ export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number;
 
 /** the answer, read off the table as it stands — for the tile the
  *  question names, when it names one; null where the table has nothing
- *  of its own to say and the rules answer: a tile it knows no reason for */
-export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang(), about?: NotionId): string | null {
+ *  of its own to say and the rules answer: how to build or sell, why a
+ *  build is refused while the hand opens places, a tile it knows no
+ *  reason for */
+export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang(), about?: NotionId, asked: Asked = 'what'): string | null {
   const p = g.players[me];
   const level = incomeLevel(p.income);
   const kind = about ? INDUSTRY[about] : undefined;
   switch (id) {
     case 'sell': {
+      if (asked === 'how') return null;
       const targets = sellTargets(g, me);
       const ok = targets.find((x) => x.valid && (!kind || x.tile.industry === kind));
       if (ok) return t('game.guide.ask.answer.sellYes', { industry: t(`game.log.industry.${ok.tile.industry}`), town: TOWN_BY_ID[ok.town]?.name ?? ok.town, merchant: MERCHANT_BY_ID[ok.merchant]?.name ?? ok.merchant });
@@ -212,6 +215,9 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
       /* the slots the hand opens, each once however many cards reach it */
       const open = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => x.valid && (!kind || x.industry === kind));
       const n = new Set(open.map((x) => `${x.town}:${x.slot}`)).size;
+      /* "why can't I build" while places are open: the rules' reasons
+         answer it, not a count */
+      if (asked === 'how' || (asked === 'whyNot' && n > 0)) return null;
       if (kind) {
         if (n > 0) return t('game.guide.ask.answer.buildYesOf', { n, industry: t(`game.log.industry.${kind}`) });
         /* the lesson's own reason for a mine, a forge or a works — and for
@@ -292,7 +298,7 @@ export function answerQuestion(q: string, at: Asker | null, t: T, lang: Lang, pa
   const table = game ? intentOf(q, t, lang) : null;
   const written = faqBest(q, faqFor(lang));
   const id = game && table && (!written || table.score >= written.score) ? table.id : null;
-  const said = id && game ? answerTo(id, game.g, game.me, t, lang, table?.about) : null;
+  const said = id && game ? answerTo(id, game.g, game.me, t, lang, table?.about, askedOf(q, lang)) : null;
   if (said) return { answer: said, intent: id, notion: null, near: [] };
   const found = consult(q, lang, passages, at?.g.eraLength === 'short');
   return { answer: found.answer, intent: null, notion: found.notion, near: found.kind === 'near' ? found.near : [] };

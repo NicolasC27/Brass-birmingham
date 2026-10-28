@@ -1131,7 +1131,7 @@ const fr: typeof engame = {
       words: {
         do: 'que faire maintenant,je fais quoi,donne moi un conseil,quoi jouer,que jouer,dois faire,un conseil,meilleur coup,aide moi,que faire,quel coup jouer,quelle action faire,quelle action jouer',
         sell: 'je peux vendre,puis je vendre,qu est ce que je peux vendre,quelque chose a vendre',
-        build: 'ou je peux construire,je peux construire quoi,je peux construire quelque chose,puis je construire,ou construire,ou batir',
+        build: 'ou je peux construire,je peux construire quoi,je peux construire quelque chose,puis je construire,ou construire,ou batir,je peux construire',
         coal: 'ou est le charbon,j ai du charbon,il reste du charbon,ou trouver du charbon',
         beer: 'ou est la biere,j ai de la biere,il reste de la biere,ou trouver de la biere',
         money: 'combien j ai d argent,combien d argent,combien d argent me reste,mon revenu actuel,mon revenu,je peux payer',

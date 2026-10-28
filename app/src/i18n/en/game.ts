@@ -1129,7 +1129,7 @@ const game = {
       words: {
         do: 'what should i do,what do i play,give me advice,what now,any advice,what is the best move,best move,help me,what should i play,any tips,tips,a tip,any hints,a hint,any suggestions',
         sell: 'can i sell,what can i sell,anything to sell',
-        build: 'where can i build,what can i build,can i build anything,where to build,where should i build',
+        build: 'where can i build,what can i build,can i build anything,where to build,where should i build,can i build',
         coal: 'where is the coal,do i have coal,any coal left,is there coal,is there coal left,coal left,where can i get coal',
         beer: 'where is the beer,do i have beer,any beer left,is there beer,is there beer left,beer left,where can i get beer',
         money: 'how much money,how much do i have,how much cash,how much cash do i have,my income now,my income,can i afford',

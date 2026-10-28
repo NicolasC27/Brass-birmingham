@@ -98,31 +98,43 @@ const PHRASINGS: Record<Lang, [string, string[]][]> = {
   ],
 };
 
-/* the same questions put one word off the review's own: a word the case
-   does not hold is not mended into one it does — "reste" is not the
-   income's "rente", "tips" not the ties — and whoever plays before the
-   reader is the turn order, not the machines' characters */
+/* the same questions put one word off the review's own. A word the case
+   does not hold is not mended into one it does: "reste" is not the
+   income's "rente", "tips" not the ties. Whoever plays before the reader
+   is the turn order, not the machines' characters. A build is asked
+   alike in the four tongues: how to, and why not while the hand opens
+   places, are the rules' questions */
 const VARIANTS: Record<Lang, [string, string[]][]> = {
   fr: [
     ['@do', ['Que faire ?', 'Quel coup jouer ?', 'Quelle action faire ?', 'Tu as un conseil ?']],
     ['@rounds', ['Il me reste des actions ?', 'Combien de temps il reste ?', 'Il reste combien ?', 'Il reste combien de temps ?']],
+    ['@build', ['Je peux construire ?', 'Je peux construire une manufacture ?', 'Où construire une poterie ?']],
+    ['build', ['Comment je peux construire ?']],
+    ['sell', ['Comment je peux vendre ?']],
     ['@order', ['Pourquoi Wedgwood est avant moi ?', 'Pourquoi il est avant moi ?', 'Pourquoi elle joue en premier ?', 'Qui joue après moi ?']],
     ['cards', ['Combien de cartes il me reste ?']],
   ],
   en: [
     ['@do', ['Any tips?', 'Tips?', 'Got any tips?', 'Any hints?', 'Give me a hint', 'What should I play?', 'Any suggestions?']],
     ['@rounds', ['How much time is left?']],
+    ['@build', ['Can I build?', 'Can I build a pottery?']],
+    ['build', ['Why can’t I build?', 'How can I build?']],
+    ['sell', ['How can I sell?']],
     ['@order', ['Why is Wedgwood before me?', 'Why does Wedgwood go first?', 'Why does she go first?', 'Who goes after me?']],
     ['sell', ['Any tips on selling?']],
   ],
   de: [
     ['@do', ['Irgendein Tipp?', 'Hast du einen Rat?', 'Welche Aktion soll ich spielen?']],
     ['@rounds', ['Habe ich noch Aktionen?', 'Wie viele Aktionen bleiben mir?', 'Wie viele Runden sind noch übrig?']],
+    ['@build', ['Kann ich bauen?', 'Kann ich eine Töpferei bauen?', 'Wo baue ich eine Töpferei?']],
+    ['build', ['Warum kann ich nicht bauen?', 'Wie kann ich bauen?']],
     ['@order', ['Warum ist Wedgwood vor mir dran?', 'Warum spielt Wedgwood zuerst?', 'Warum ist sie zuerst dran?', 'Wer spielt nach mir?', 'Wer ist nach mir dran?']],
   ],
   es: [
     ['@do', ['¿Qué hago?', '¿Qué me aconsejas?', '¿Qué me recomiendas?', '¿Alguna sugerencia?']],
     ['@rounds', ['¿Me quedan acciones?', '¿Cuántas rondas faltan?', '¿Cuánto falta?']],
+    ['@build', ['¿Puedo construir?']],
+    ['build', ['¿Por qué no puedo construir?', '¿Cómo puedo construir?']],
     ['@order', ['¿Por qué ella va antes que yo?', '¿Quién va primero?', '¿Por qué Wedgwood va primero?', '¿Quién juega después de mí?', '¿Quién va después de mí?']],
     ['coal', ['¿Qué hago con el carbón?']],
   ],

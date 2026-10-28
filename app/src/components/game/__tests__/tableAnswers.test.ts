@@ -97,6 +97,11 @@ describe('a question about the table', () => {
     expect(blockedBy('works', g, 0, fr, 'fr')).toBeNull();
     expect(answerTo('build', g, 0, fr, 'fr', 'manufacturer')).toBe(`${fr('game.guide.ask.answer.buildNoOf', { industry: 'manufacture' })} ${fr('game.guide.blocked.whyAt', { town: 'Redditch et Coventry', why: reasonText('No connected coal — reach a mine or a merchant', 'fr') })}`);
     expect(answerTo('build', g, 0, en, 'en', 'pottery')).toBe(`${en('game.guide.ask.answer.buildNoOf', { industry: 'pottery' })} ${en('game.guide.blocked.why', { why: 'Needs £19 — you hold £17' })}`);
+    /* how to build or sell, and why not while places are open: the rules' */
+    expect(answerTo('build', g, 0, en, 'en', undefined, 'how')).toBeNull();
+    expect(answerTo('sell', g, 0, en, 'en', undefined, 'how')).toBeNull();
+    expect(answerTo('build', g, 0, en, 'en', undefined, 'whyNot')).toBeNull();
+    expect(answerTo('build', g, 0, fr, 'fr', 'manufacturer', 'whyNot')).toBe(answerTo('build', g, 0, fr, 'fr', 'manufacturer'));
     /* a pottery the reader has not built */
     expect(answerQuestion('Je peux vendre ma poterie ?', { g, me: 0 }, fr, 'fr', passages('fr')).answer).toBe(fr('game.guide.ask.answer.sellNoneOf', { industry: 'poterie' }));
     /* a manufactory that sells beside a pottery that cannot */
