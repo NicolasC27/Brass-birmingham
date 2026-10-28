@@ -123,6 +123,15 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
 export const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win'] as const;
 export type Ask = (typeof ASKS)[number];
 
+/** the notions a table's answer reaches beyond its own words: the sale
+ *  answers for the works it would sell, the build for any tile — "can I
+ *  sell my pottery" is still the table's question, "what is a pottery"
+ *  the rules' */
+const REACH: Partial<Record<Ask, NotionId[]>> = {
+  sell: ['cotton', 'manufacturer', 'pottery'],
+  build: ['coalMine', 'ironWorks', 'brewery', 'cotton', 'manufacturer', 'pottery'],
+};
+
 /** the question about this table the words point at, and how long the
  *  phrase matched was — the same measure the written answers use, so the
  *  surest of the two wins rather than whichever was tried first */
@@ -138,7 +147,7 @@ export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number 
   }
   /* "c'est quoi la bière" is the rules' question, "j'ai de la bière" the
      table's: the table's phrase alone cannot tell them apart */
-  return best && !asksTheRules(q, lang, best.phrase) ? { id: best.id, score: best.score } : null;
+  return best && !asksTheRules(q, lang, best.phrase, REACH[best.id]) ? { id: best.id, score: best.score } : null;
 }
 
 /** the answer, read off the table as it stands */

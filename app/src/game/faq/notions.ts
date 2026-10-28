@@ -68,6 +68,9 @@ export interface Tongue {
   self: string[];
   /** words that ask what a thing is or is for: "quoi", "sert", "explain" */
   define: string[];
+  /** words that ask where: a question of the board as it stands, even put
+   *  in a single word of the matter ("où construire") */
+  where: string[];
 }
 
 /** a word for a generic deed pulls less than a word for a thing: "build a

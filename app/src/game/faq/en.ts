@@ -9,6 +9,7 @@ export const EN: Tongue = {
   near: 'I can’t find that question as such in the rules. Did you mean:',
   self: 'i me my myself im'.split(' '),
   define: 'what explain explains mean means meaning definition purpose work works'.split(' '),
+  where: 'where'.split(' '),
   alias: {
     u: 'you', ur: 'your', r: 'are', y: 'why', wat: 'what', wot: 'what', whats: 'what is', hw: 'how', cant: 'can t', cannot: 'can t',
     dont: 'don t', doesnt: 'doesn t', wont: 'won t', isnt: 'isn t', im: 'i am', pls: '', plz: '', thx: '', vp: 'vp', vps: 'vp', lvl: 'level', dev: 'develop',

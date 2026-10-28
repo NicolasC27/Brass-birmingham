@@ -9,6 +9,7 @@ export const ES: Tongue = {
   near: 'No encuentro esa pregunta tal cual en las reglas. ¿Querías hablar de:',
   self: 'yo me mi mis tengo puedo'.split(' '),
   define: 'es son sirve sirven explica explicame significa significado definicion funciona'.split(' '),
+  where: 'donde adonde'.split(' '),
   alias: {
     q: 'que', k: 'que', xq: 'por que', pq: 'por que', porq: 'por que', xk: 'por que', tb: 'tambien', tmb: 'tambien', d: 'de', x: 'por',
     porfa: '', pls: '', vp: 'pv', lvl: 'nivel',

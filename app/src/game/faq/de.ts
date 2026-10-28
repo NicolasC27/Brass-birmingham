@@ -9,6 +9,7 @@ export const DE: Tongue = {
   near: 'Diese Frage finde ich so nicht in den Regeln. Meintest du:',
   self: 'ich mir mich mein meine meinen meiner habe kann'.split(' '),
   define: 'was wozu erklar erklare erklaren bedeutet bedeutung woher sinn funktioniert'.split(' '),
+  where: 'wo wohin'.split(' '),
   alias: {
     wiso: 'wieso', warum: 'warum', wiviel: 'wie viel', wieviele: 'wie viele', wieviel: 'wie viel', gehts: 'geht es', kanns: 'kann es', nich: 'nicht', ned: 'nicht',
     net: 'nicht', bitte: '', danke: '', sp: 'sp', vp: 'sp', lvl: 'stufe',

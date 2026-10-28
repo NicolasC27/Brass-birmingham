@@ -149,6 +149,8 @@ interface Case {
   known: Set<string>;
   /** the words a notion is found by on their own */
   lone: Set<string>;
+  /** every word of a notion's own phrases, by notion */
+  byNotion: Map<NotionId, Set<string>>;
   /** the known words by how they sound */
   bySound: Map<string, string[]>;
   phrases: Phrase[];
@@ -195,7 +197,9 @@ function caseOf(lang: Lang): Case {
     bySound.set(k, [...(bySound.get(k) ?? []), w]);
   }
   const lone = new Set(phrases.filter((p) => !p.entry && p.toks.length === 1).map((p) => p.toks[0]));
-  const made: Case = { tongue, stop, content: [...contentSet], contentSet, known, lone, bySound, phrases, cues };
+  const byNotion = new Map<NotionId, Set<string>>();
+  for (const p of phrases) if (!p.entry) byNotion.set(p.notion, new Set([...(byNotion.get(p.notion) ?? []), ...p.toks]));
+  const made: Case = { tongue, stop, content: [...contentSet], contentSet, known, lone, byNotion, bySound, phrases, cues };
   cases.set(lang, made);
   return made;
 }
@@ -458,26 +462,34 @@ function nearTo(question: string, lang: Lang): NearNotion[] {
  *  small words on the way ("j'ai de la bière" keeps only "bière"), so they
  *  catch more than they mean. The rules take the question back when it
  *  names a notion the table's phrase does not reach ("où est le charbon"
- *  does not reach the mine in "une mine de charbon"), or when it asks what
- *  a thing is without speaking of the reader's own seat ("c'est quoi la
- *  bière", not "c'est quoi mon revenu"). */
-export function asksTheRules(question: string, lang: Lang, phrase: string): boolean {
+ *  does not reach the mine in "une mine de charbon") — unless the table's
+ *  answer reaches that notion itself (`reach`: "je peux vendre ma poterie"
+ *  is answered by the sale's) — or when it asks what a thing is without
+ *  speaking of the reader's own seat ("c'est quoi la bière", not "c'est
+ *  quoi mon revenu"). */
+export function asksTheRules(question: string, lang: Lang, phrase: string, reach: readonly NotionId[] = []): boolean {
   const c = caseOf(lang);
   const held = words(phrase);
   const cueWords = new Set(c.cues.flatMap(([, list]) => list.filter((w) => w.length === 1).flat()));
+  const reached = (w: string) => reach.some((id) => c.byNotion.get(id)?.has(w));
   const byAt = new Map<number, string[]>();
   for (const m of mendGroups(question, lang)) byAt.set(m.at, [...(byAt.get(m.at) ?? []), m.w]);
   for (const read of byAt.values()) {
     if (read.some((w) => c.stop.has(w) || cueWords.has(w) || w.length < 3)) continue;
     if (read.some((w) => held.some((k) => w === k || single(w) === single(k) || sameWord(w, k)))) continue;
+    if (read.some(reached)) continue;
     if (read.some((w) => c.contentSet.has(w))) return true;
   }
   const said = new Set(mendWords(question, lang));
   if (c.tongue.self.flatMap(words).some((w) => said.has(w))) return false;
-  /* a phrase down to one word says nothing of the seat: "le charbon"; and
-     a word that asks what a thing is counts only when the table's phrase
-     does not carry it itself, as "what now" does */
-  return held.filter((w) => w.length >= 3).length < 2 || c.tongue.define.flatMap(words).some((w) => said.has(w) && !held.includes(w));
+  /* a phrase down to one word of the case says nothing of the seat: "le
+     charbon" — unless the question asks where, "où construire"; a word
+     the case does not know is the table's alone: "un conseil". And a word
+     that asks what a thing is counts only when the table's phrase does not
+     carry it itself, as "what now" does */
+  const lone = held.filter((w) => w.length >= 3);
+  const where = c.tongue.where.some((w) => said.has(w));
+  return (lone.length < 2 && !where && lone.some((w) => c.known.has(w))) || c.tongue.define.flatMap(words).some((w) => said.has(w) && !held.includes(w));
 }
 
 /** the closest notion of the question in any tongue but its own, for a

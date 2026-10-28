@@ -11,6 +11,7 @@ export const FR: Tongue = {
   near: 'Je ne trouve pas cette question telle quelle dans les règles. Vouliez-vous parler de :',
   self: 'je j moi mon ma mes me m'.split(' '),
   define: 'quoi qu sert servent servir definition definir signifie explique expliquer expliquez vient viennent utilite role fonctionne'.split(' '),
+  where: 'ou'.split(' '),
   alias: {
     pk: 'pourquoi', pq: 'pourquoi', pkoi: 'pourquoi', pourkoi: 'pourquoi', pourqoi: 'pourquoi', purquoi: 'pourquoi',
     koi: 'quoi', kwa: 'quoi', quoa: 'quoi', cb: 'combien', cmb: 'combien', cmt: 'comment', koman: 'comment', commen: 'comment',

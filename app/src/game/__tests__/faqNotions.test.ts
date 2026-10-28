@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { askedOf, asksTheRules, consult, fold, mend, slips, sound, tell } from '../faq/consult';
 import { FAQ_NOTION, FULL_GAME, NOTION_IDS, SHORT_TOLD } from '../faq/notions';
-import { carries, faqBest, faqFor } from '../faq';
+import { faqBest, faqFor } from '../faq';
 import frGame from '@/i18n/fr/game';
 import enGame from '@/i18n/en/game';
 import esGame from '@/i18n/es/game';
@@ -11,7 +11,9 @@ import { FR } from '../faq/fr';
 import { EN } from '../faq/en';
 import { ES } from '../faq/es';
 import { DE } from '../faq/de';
+import { trIn } from '@/i18n';
 import type { Lang } from '@/i18n';
+import { intentOf } from '@/components/game/tableAnswers';
 
 /* the guide's case, asked as readers ask: plain questions, spoken ones,
    and the ones typed in a hurry. Every one must land on its notion. */
@@ -603,22 +605,14 @@ describe('a short game', () => {
   });
 });
 
-/* the guided game answers some questions from the table as it stands; the
-   same reading as Guide.tsx's intentOf, over the same phrases */
+/* the guided game answers some questions from the table as it stands:
+   the lane's and the question tool's own reading, over the same phrases */
 const TABLE_WORDS: Record<Lang, Record<string, string>> = { fr: frGame.guide.ask.words, en: enGame.guide.ask.words, es: esGame.guide.ask.words, de: deGame.guide.ask.words };
 
 function tableIntent(q: string, lang: Lang): string | null {
-  let best: { id: string; score: number; phrase: string } | null = null;
-  const readings = [q, mend(q, lang)];
-  for (const [id, list] of Object.entries(TABLE_WORDS[lang])) {
-    for (const phrase of list.split(',')) {
-      const score = Math.max(...readings.map((r) => carries(r, phrase)));
-      if (score && (!best || score > best.score)) best = { id, score, phrase };
-    }
-  }
-  if (!best || asksTheRules(q, lang, best.phrase)) return null;
+  const best = intentOf(q, (k, v) => trIn(lang, k, v), lang);
   const written = faqBest(q, faqFor(lang));
-  return !written || best.score >= written.score ? best.id : null;
+  return best && (!written || best.score >= written.score) ? best.id : null;
 }
 
 describe('the table’s questions and the rules’ ones', () => {
@@ -650,5 +644,28 @@ describe('the table’s questions and the rules’ ones', () => {
       ['de', 'was ist bier'], ['de', 'wozu dient kohle'],
     ];
     for (const [lang, q] of rules) expect(`${q} → ${tableIntent(q, lang)}`).toBe(`${q} → null`);
+  });
+
+  it('keeps the table’s question that names what its answer reaches', () => {
+    /* the sale answers for the works, the build for any tile */
+    expect(asksTheRules('je peux vendre ma poterie', 'fr', 'je peux vendre')).toBe(true);
+    expect(asksTheRules('je peux vendre ma poterie', 'fr', 'je peux vendre', ['pottery'])).toBe(false);
+    expect(asksTheRules('can i sell my pottery', 'en', 'can i sell', ['pottery'])).toBe(false);
+    /* a notion out of reach is still the rules' */
+    expect(asksTheRules('je peux vendre du charbon', 'fr', 'je peux vendre', ['pottery'])).toBe(true);
+  });
+
+  it('keeps a question put in one word of the matter when it asks where', () => {
+    expect(asksTheRules('où construire ?', 'fr', 'ou construire')).toBe(false);
+    expect(asksTheRules('wo bauen?', 'de', 'wo bauen')).toBe(false);
+    expect(asksTheRules('comment construire', 'fr', 'ou construire')).toBe(true);
+    expect(asksTheRules('le charbon', 'fr', 'j ai du charbon')).toBe(true);
+  });
+
+  it('leaves the table a word the rules do not know', () => {
+    expect(asksTheRules('un conseil ?', 'fr', 'un conseil')).toBe(false);
+    expect(asksTheRules('hast du einen tipp?', 'de', 'einen tipp')).toBe(false);
+    /* unless it asks what the word means */
+    expect(asksTheRules('c est quoi un conseil', 'fr', 'un conseil')).toBe(true);
   });
 });
