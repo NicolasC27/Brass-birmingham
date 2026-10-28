@@ -94,11 +94,19 @@ function lookup(dict: AnyDict, key: string): string | undefined {
 /** one or many: French counts 0 as one thing, the others do not */
 const isOne = (n: number, l: Lang): boolean => (l === 'fr' ? Math.abs(n) < 2 : Math.abs(n) === 1);
 
+/* French elides "de" and "que" before a word that opens on a vowel — "le
+   baril d’Oxford", "votre mine d’Uttoxeter" — and a sentence cannot know
+   what the name it is handed begins with. Not before an h, which a name
+   may sound or not */
+const ELIDED = /\b(de|De|que|Que) \{(\w+)\}/g;
+const opensOnAVowel = (v: string | number | undefined): boolean => /^[aeiouàâéèêëîïôûùüAEIOUÀÂÉÈÊËÎÏÔÛÙÜ]/.test(String(v ?? ''));
+
 function fmt(s: string, vars?: Record<string, string | number>, l: Lang = lang): string {
   if (!vars) return s;
   let out = s;
   /* [n|cube|cubes] — the word agreeing with the count named first */
   out = out.replace(/\[(\w+)\|([^|\]]*)\|([^\]]*)\]/g, (_m, k: string, one: string, many: string) => (isOne(Number(vars[k] ?? 0), l) ? one : many));
+  if (l === 'fr') out = out.replace(ELIDED, (m, w: string, k: string) => (opensOnAVowel(vars[k]) ? `${w.slice(0, -1)}’{${k}}` : m));
   for (const [k, v] of Object.entries(vars)) out = out.replaceAll(`{${k}}`, String(v));
   return out;
 }
@@ -141,7 +149,10 @@ function template(s: string): RegExp {
   let src = '';
   let from = 0;
   for (const m of s.matchAll(SLOT)) {
-    src += escape(s.slice(from, m.index));
+    const before = s.slice(from, m.index);
+    /* a "de" or a "que" the name may have elided (fmt) */
+    const elided = before.match(/\b(de|De|que|Que) $/);
+    src += elided ? `${escape(before.slice(0, -elided[0].length))}(?:${elided[0]}|${elided[1].slice(0, -1)}’)` : escape(before);
     const agree = m[0].match(/^\[\w+\|([^|\]]*)\|([^\]]*)\]$/);
     src += agree ? `(?:${escape(agree[1])}|${escape(agree[2])})` : '[\\s\\S]+?';
     from = (m.index ?? 0) + m[0].length;

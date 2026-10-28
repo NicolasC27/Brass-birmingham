@@ -107,6 +107,21 @@ describe('the table’s sheets', () => {
     expect(off).toEqual([]);
   });
 
+  it('elide a French de or que before a name that opens on a vowel', () => {
+    setLang('fr');
+    expect(tr('game.guide.happens.bonus', { merchant: 'Oxford', bits: '+2 PV' })).toContain('le baril d’Oxford');
+    expect(tr('game.guide.happens.bonus', { merchant: 'Gloucester', bits: '+2 PV' })).toContain('le baril de Gloucester');
+    expect(tr('game.guide.happens.sellOff', { industry: 'filature', town: 'Uttoxeter', value: 3 })).toContain('filature d’Uttoxeter');
+    expect(tr('game.guide.bot.build.coal', { name: 'Ada' })).toContain('cubes qu’Ada');
+    /* an h may be sounded: the name is left whole */
+    expect(tr('game.guide.bot.build.coal', { name: 'Hugo' })).toContain('cubes que Hugo');
+    /* and a sentence so said is still known for the table's own */
+    const said = tr('game.guide.happens.sellOff', { industry: 'filature', town: 'Uttoxeter', value: 3 });
+    expect(reasonText(said)).toBe(said);
+    setLang('en');
+    expect(tr('game.guide.happens.bonus', { merchant: 'Oxford', bits: '+2 VP' })).toContain('Oxford’s barrel');
+  });
+
   /* every refusal the engine can give by name reaches the player in the
      player's tongue: read straight from the rulebook's source */
   it('translate every refusal the engine can give', () => {
