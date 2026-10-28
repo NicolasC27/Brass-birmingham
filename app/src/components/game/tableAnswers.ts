@@ -138,8 +138,8 @@ const INDUSTRY: Partial<Record<NotionId, string>> = {
  *  sell my pottery" is still the table's question, and answered for the
  *  pottery; "what is a pottery" is the rules' */
 const REACH: Partial<Record<Ask, NotionId[]>> = {
-  sell: ['cotton', 'manufacturer', 'pottery'],
-  build: ['coalMine', 'ironWorks', 'brewery', 'cotton', 'manufacturer', 'pottery'],
+  sell: ['cotton', 'manufacturer', 'pottery', 'works'],
+  build: ['coalMine', 'ironWorks', 'brewery', 'cotton', 'manufacturer', 'pottery', 'works'],
   /* "why does Wedgwood play before me" names the machine it answers for */
   order: ['machines'],
 };

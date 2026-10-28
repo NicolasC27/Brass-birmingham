@@ -10,7 +10,7 @@
  *  the one written higher, so "la mine" is the mine before it is coal */
 export const NOTION_IDS = [
   /* the industries */
-  'coalMine', 'ironWorks', 'brewery', 'farmBrewery', 'cotton', 'manufacturer', 'pottery',
+  'coalMine', 'ironWorks', 'brewery', 'farmBrewery', 'cotton', 'manufacturer', 'pottery', 'works',
   /* what the industries make, and where it is bought */
   'coal', 'iron', 'beer', 'market',
   /* the actions */
@@ -77,6 +77,9 @@ export interface Tongue {
  *  mine" is about the mine, "sell a mill" is about selling */
 export const PULL: Partial<Record<NotionId, number>> = {
   build: 0.9,
+  /* the works are the three tiles that sell: a word for all of them pulls
+     less than the name of one, or than "work" asked of a thing */
+  works: 0.9,
   sell: 1.05,
   develop: 1.05,
   loan: 1.05,

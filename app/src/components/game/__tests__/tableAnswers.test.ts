@@ -84,6 +84,9 @@ describe('a question about the table', () => {
     expect(intentOf('Where should I build my iron works?', en, 'en')).toMatchObject({ id: 'build', about: 'ironWorks' });
     expect(intentOf('Je peux vendre ma poterie ?', fr, 'fr')).toMatchObject({ id: 'sell', about: 'pottery' });
     expect(intentOf('où je peux construire', fr, 'fr')?.about).toBeUndefined();
+    /* the works, all three: still the table's, answered for any of them */
+    expect(intentOf('Je peux vendre mon ouvrage ?', fr, 'fr')).toMatchObject({ id: 'sell', about: 'works' });
+    expect(answerTo('sell', g, 0, fr, 'fr', 'works')).toBe(answerTo('sell', g, 0, fr, 'fr'));
     /* the slots the hand opens, each counted once */
     const slots = (industry?: string) => new Set(g.players[0].hand.flatMap((c) => buildTargets(g, 0, c)).filter((x) => x.valid && (!industry || x.industry === industry)).map((x) => `${x.town}:${x.slot}`)).size;
     expect(answerTo('build', g, 0, fr)).toBe(fr('game.guide.ask.answer.buildYes', { n: slots() }));

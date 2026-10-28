@@ -83,6 +83,12 @@ export const DE: Tongue = {
       gain: 'Verkauft rückt eine Töpferei dein Einkommen auf den Stufen I, III und V um 5 Felder vor, auf II und IV um 1. Sie bringt 10, 1, 11, 1 oder 20 SP: Stufe V ist das schwerste Plättchen des Spiels.',
       whyNot: 'Zwei Ablehnungen kommen immer wieder. Die Töpfereien I und III tragen eine Glühbirne und lassen sich nicht entwickeln: Man muss sie bauen, um sie vom Tableau zu bekommen. Und zum Verkaufen braucht es einen verbundenen Händler, der Keramik oder „alle Waren“ kauft — zu zweit nimmt sie nur das Plättchen „alle Waren“.',
     },
+    works: {
+      topic: 'die Betriebe',
+      words: ['betrieb', 'betriebe', 'betrieben', 'gewerbe'],
+      what: 'Ein Betrieb ist ein Plättchen, das verkauft wird: Spinnerei, Manufaktur oder Töpferei. Er erzeugt nichts: Gebaut wartet er, bis die Aktion Verkaufen ihn umdreht — über Verbindungen, deine oder die anderer, mit einem Händler verbunden, der seine Waren kauft, und mit ein oder zwei Bier. Umgedreht rückt er dein Einkommen vor und wertet am Epochenende seine Punkte. Minen, Eisenhütten und Brauereien werden nicht verkauft: Sie drehen sich um, wenn man sie leert.',
+      how: 'Gebaut wird er wie jedes Plättchen: eine Karte, die ihn erlaubt, ein freier Bauplatz mit seinem Symbol, sein Preis und die Kohle oder das Eisen, die seine Stufe verlangt. Um ihn danach zu verkaufen: die Aktion Verkaufen, eine Verbindung zu einem Händler, der seine Waren kauft, und je nach Plättchen ein oder zwei Bier.',
+    },
     coal: {
       topic: 'die Kohle',
       words: ['kohle', 'kohlen', 'kohlewurfel', 'kohle wurfel', 'schwarzer wurfel', 'schwarze wurfel', 'brennstoff', 'steinkohle', 'kohle rivale', 'kohle gegner'],

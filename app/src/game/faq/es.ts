@@ -69,7 +69,7 @@ export const ES: Tongue = {
     },
     manufacturer: {
       topic: 'las manufacturas',
-      words: ['manufactura', 'manufacturas', 'fabrica', 'fabricas', 'taller', 'talleres', 'bienes manufacturados', 'mercancia', 'mercancias', 'manufacturer'],
+      words: ['manufactura', 'manufacturas', 'taller', 'talleres', 'bienes manufacturados', 'mercancia', 'mercancias', 'manufacturer'],
       what: 'La manufactura es una obra, como la hilandería: se voltea con la acción Vender, conectada a un mercader que compre bienes manufacturados (o «todos los bienes»). Es la industria de ocho niveles, con costes y ganancias muy irregulares: cada loseta se lee en tu tapete. Sus cartas son las dobles algodón/manufactura.',
       how: 'Para construirla: una carta de lugar de la ciudad, una carta doble algodón/manufactura para una ciudad de tu red, o un comodín, en un espacio con el icono de manufactura. Para voltearla: la acción Vender, un mercader conectado que compre esos bienes, y la cerveza que pida.',
       cost: 'Los ocho niveles: I, 8 £ y 1 carbón (solo canal); II, 10 £ y 1 hierro; III, 12 £ y 2 carbones; IV, 8 £ y 1 hierro; V, 16 £ y 1 carbón; VI, 20 £; VII, 16 £, 1 carbón y 1 hierro; VIII, 20 £ y 2 hierros. Todas se venden por 1 cerveza, salvo la V, que pide 2.',
@@ -83,6 +83,12 @@ export const ES: Tongue = {
       cost: 'Nivel I: 17 £ y 1 hierro. Nivel II: 0 £ y 1 carbón. Nivel III: 22 £ y 2 carbones. Nivel IV: 0 £ y 1 carbón. Nivel V: 24 £ y 2 carbones, solo en la era del ferrocarril. Los niveles I, II y IV se venden por 1 cerveza; III y V, por 2.',
       gain: 'Vendida, una alfarería avanza tus ingresos 5 casillas en los niveles I, III y V, y 1 en los niveles II y IV. Puntúa 10, 1, 11, 1 o 20 PV: la V es la loseta más pesada del juego.',
       whyNot: 'Dos negativas se repiten. Las alfarerías I y III llevan bombilla y no se desarrollan: hay que construirlas para quitarlas del tapete. Y para vender hace falta un mercader conectado que compre cerámica o «todos los bienes»; con dos jugadores, solo la loseta de «todos los bienes» la acepta.',
+    },
+    works: {
+      topic: 'las fábricas',
+      words: ['fabrica', 'fabricas'],
+      what: 'Una fábrica es una loseta que se vende: hilandería, manufactura o alfarería. No produce nada: construida, espera a que la acción Vender la voltee, conectada por enlaces —tuyos o de otros— a un mercader que compre sus bienes, bebiendo una o dos cervezas. Volteada, sube tus ingresos y puntúa al final de la era. Minas, fundiciones y cervecerías no se venden: se voltean cuando se vacían.',
+      how: 'Se construye como cualquier loseta: una carta que lo permita, un espacio libre con su icono, su precio, y el carbón o el hierro que pida su nivel. Para venderla después: la acción Vender, un enlace hasta un mercader que compre sus bienes, y una o dos cervezas según la loseta.',
     },
     coal: {
       topic: 'el carbón',

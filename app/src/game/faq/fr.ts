@@ -95,6 +95,12 @@ export const FR: Tongue = {
       gain: 'Vendue, une poterie avance votre revenu de 5 espaces aux niveaux I, III et V, d’un seul aux niveaux II et IV. Elle marque 10, 1, 11, 1 ou 20 PV : la V est la tuile la plus lourde du jeu.',
       whyNot: 'Deux refus reviennent. Les poteries I et III portent une ampoule et ne se développent pas : il faut les bâtir pour les ôter du tapis. Et pour vendre, il faut un marchand relié qui achète la céramique ou « tous biens » — à deux joueurs, seule la tuile « tous biens » en prend.',
     },
+    works: {
+      topic: 'les ouvrages',
+      words: ['ouvrage', 'ouvrages'],
+      what: 'Un ouvrage, c’est une tuile qui se vend : filature, manufacture ou poterie. Il ne produit rien : bâti, il attend que l’action Vendre le retourne, relié par des liaisons — les vôtres ou celles des autres — à un marchand qui achète ce bien, en buvant une ou deux bières. Retourné, il avance votre revenu et marque ses points en fin d’ère. Mines, forges et brasseries ne se vendent pas : elles se retournent quand on les vide.',
+      how: 'Il se bâtit comme une autre tuile : une carte qui l’autorise, un emplacement libre qui montre son icône, son prix, et le charbon ou le fer que demande son niveau. Pour le vendre ensuite : l’action Vendre, une liaison jusqu’à un marchand qui achète ce bien, et une ou deux bières selon la tuile.',
+    },
     coal: {
       topic: 'le charbon',
       words: ['charbon', 'charbons', 'cube charbon', 'cubes charbon', 'houille', 'coal', 'cube noir', 'cubes noirs', 'combustible', 'charbon adverse', 'charbon adversaire', 'charbon rival'],

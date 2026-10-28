@@ -83,6 +83,12 @@ export const EN: Tongue = {
       gain: 'Sold, a pottery moves your income 5 spaces at levels I, III and V, and 1 at levels II and IV. It scores 10, 1, 11, 1 or 20 VP: level V is the heaviest tile in the game.',
       whyNot: 'Two refusals come up. Potteries I and III carry a lightbulb and cannot be developed: they must be built to leave the mat. And to sell, you need a connected merchant who buys pottery or “all goods” — with two players, only the “all goods” tile takes it.',
     },
+    works: {
+      topic: 'the works',
+      words: ['works', 'a works', 'works tile', 'works tiles', 'goods tile', 'goods tiles'],
+      what: 'A works is a tile that sells: a cotton mill, a manufactory or a pottery. It produces nothing: once built it waits for the Sell action to flip it, connected by links — yours or anyone’s — to a merchant who buys its goods, drinking one or two beers. Flipped, it moves your income and scores its points at the era’s end. Mines, iron works and breweries are not sold: they flip when they are emptied.',
+      how: 'It is built like any tile: a card that allows it, a free space showing its icon, its price, and the coal or iron its level asks for. To sell it afterwards: the Sell action, a link to a merchant who buys its goods, and one or two beers depending on the tile.',
+    },
     coal: {
       topic: 'coal',
       words: ['coal', 'coal cube', 'coal cubes', 'black cube', 'black cubes', 'fuel', 'rival coal', 'opponent coal'],
