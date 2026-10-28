@@ -910,6 +910,12 @@ export function applyBuild(s: GameState, playerIdx: number, card: Card, target: 
   if (!target.valid) return false;
   const level = p.stacks[target.industry].shift()!;
   const lv = INDUSTRIES[target.industry][level - 1];
+  /* where the coal and the iron came from, one entry a cube — a tile's
+     owner and town, or the market — for the words the table says of the
+     move; nothing reads them to play */
+  const drawn = (plan: SupplyPlan) => plan.sources.flatMap((x) => Array<string>(x.amount).fill(x.kind === 'market' ? 'market' : `${s.tiles[tileKey(x.town!, x.slot!)]?.owner}:${x.town}`)).join(',');
+  const coalFrom = drawn(target.coalPlan);
+  const ironFrom = drawn(target.ironPlan);
   paySupply(s, p, target.coalPlan);
   paySupply(s, p, target.ironPlan);
   spend(p, lv.cost);
@@ -948,6 +954,8 @@ export function applyBuild(s: GameState, playerIdx: number, card: Card, target: 
     saleN,
     saleRes: target.industry,
     saleGain: p.money - before,
+    coalFrom,
+    ironFrom,
   });
   return true;
 }

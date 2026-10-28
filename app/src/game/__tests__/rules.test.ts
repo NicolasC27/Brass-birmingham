@@ -238,6 +238,19 @@ describe('the coal of a build', () => {
     expect(r.state!.players[other].income).toBe(income + INDUSTRIES.coal[1].incomeDelta);
   });
 
+  it('is written in the ledger, the mine or the market each cube came from', () => {
+    const { s, me, other } = table();
+    const line = (st: GameState) => st.ledger.filter((e) => e.key === 'build').at(-1)!.vars!;
+    const named = applyAction(s, me, build(['kidderminster:0'])).state!;
+    /* the owner and the town of the mine; an iron works asks no iron */
+    expect(line(named)).toMatchObject({ coalFrom: `${other}:kidderminster`, ironFrom: '' });
+    /* no mine connected, a canal to Shrewsbury: the coal is bought */
+    delete s.links['wolverhampton--coalbrookdale'];
+    delete s.links['coalbrookdale--kidderminster'];
+    s.links[LINKS.find((l) => l.a === 'coalbrookdale' && l.b === 'm-shrewsbury')!.id] = { owner: other, era: 'canal' };
+    expect(line(applyAction(s, me, build()).state!).coalFrom).toBe('market');
+  });
+
   it('is the engine\'s to choose when nothing, or no mine among the nearest, is named', () => {
     const { s, me } = table();
     const plain = applyAction(s, me, build()).state!;
