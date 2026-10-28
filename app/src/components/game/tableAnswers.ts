@@ -4,6 +4,7 @@ import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
 import { asksTheRules, consult, mend } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
+import type { NotionId } from '@/game/faq/notions';
 import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
 import type { Card, GameState } from '@/game/types';
 import { getLang, localeOf, reasonText } from '@/i18n';
@@ -175,15 +176,26 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
   }
 }
 
-/** a question put, answered in two tries: the table as it stands, when a
- *  game is on and it is the surer match; then the guide's case — the
- *  notions of the game, the written answers, the rules codex — and, when
- *  nothing there is close, the notions it might mean (near) */
-export function answerQuestion(q: string, game: { g: GameState; me: number } | null, t: T, lang: Lang, passages: Passage[]): { answer: string; intent: Ask | null; near: NearNotion[] } {
+/** who asks: the game at hand, the seat asking, and whether the
+ *  assistance lets the table speak (it does unless told otherwise) */
+export type Asker = { g: GameState; me: number; aid?: boolean };
+
+/** the table answers while moves are played, to a seat of the game, where
+ *  the assistance is on: a finished game has no next payday nor round, and
+ *  a spectator has no purse — they are answered from the rules */
+export const tableSpeaks = (at: Asker | null): at is Asker => !!at && at.aid !== false && at.me >= 0 && at.g.phase === 'action';
+
+/** a question put, answered in two tries: the table as it stands, when it
+ *  speaks and it is the surer match; then the guide's case — the notions
+ *  of the game, the written answers, the rules codex — and, when nothing
+ *  there is close, the notions it might mean (near). The case answers a
+ *  short game as one, whether the table speaks or not */
+export function answerQuestion(q: string, at: Asker | null, t: T, lang: Lang, passages: Passage[]): { answer: string; intent: Ask | null; notion: NotionId | null; near: NearNotion[] } {
+  const game = tableSpeaks(at) ? at : null;
   const table = game ? intentOf(q, t, lang) : null;
   const written = faqBest(q, faqFor(lang));
   const id = game && table && (!written || table.score >= written.score) ? table.id : null;
-  if (id && game) return { answer: answerTo(id, game.g, game.me, t, lang), intent: id, near: [] };
-  const found = consult(q, lang, passages);
-  return { answer: found.answer, intent: null, near: found.kind === 'near' ? found.near : [] };
+  if (id && game) return { answer: answerTo(id, game.g, game.me, t, lang), intent: id, notion: null, near: [] };
+  const found = consult(q, lang, passages, at?.g.eraLength === 'short');
+  return { answer: found.answer, intent: null, notion: found.notion, near: found.kind === 'near' ? found.near : [] };
 }

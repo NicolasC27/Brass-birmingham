@@ -85,6 +85,28 @@ describe('a question about the table', () => {
     /* a rules question at the table is the rules' */
     expect(answerQuestion('comment marche le fer', { g, me: 0 }, fr, 'fr', passages('fr')).intent).toBeNull();
   });
+
+  it('speaks only while moves are played, to a seat, with the assistance on', () => {
+    const g = guided();
+    const ask = (at: Parameters<typeof answerQuestion>[1]) => answerQuestion('combien j ai d argent', at, fr, 'fr', passages('fr')).intent;
+    expect(ask({ g, me: 0 })).toBe('money');
+    expect(ask({ g, me: 0, aid: true })).toBe('money');
+    /* the assistance off, a spectator, a finished game: the rules answer */
+    expect(ask({ g, me: 0, aid: false })).toBeNull();
+    expect(ask({ g, me: -1 })).toBeNull();
+    expect(ask({ g: { ...g, phase: 'game-over' }, me: 0 })).toBeNull();
+  });
+
+  it('answers a short game as one, whether the table speaks or not', () => {
+    const g = guided();
+    const end = (at: Parameters<typeof answerQuestion>[1]) => answerQuestion('comment je gagne', at, fr, 'fr', passages('fr'));
+    /* the canal era alone, and its close */
+    expect(end({ g, me: 0, aid: false })).toMatchObject({ intent: null, notion: 'initiation' });
+    expect(end({ g: { ...g, phase: 'game-over' }, me: 0 }).notion).toBe('initiation');
+    /* a full game ends on the rail; no game at all reads the rules as written */
+    expect(end({ g: { ...g, eraLength: 'standard' }, me: 0, aid: false }).notion).toBe('gameEnd');
+    expect(end(null).notion).toBe('gameEnd');
+  });
 });
 
 describe('a deed the table does not allow', () => {

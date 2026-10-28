@@ -8,7 +8,7 @@ import { useGame } from '@/game/store';
 import { dictOf, useLang, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { aidOn } from './boardOptions';
-import { answerQuestion } from './tableAnswers';
+import { answerQuestion, tableSpeaks } from './tableAnswers';
 import { useHudInsets } from './useHudInsets';
 import { leftSheetStyle, useDockReserve, useLayer } from './useLayer';
 
@@ -60,7 +60,8 @@ export default function AskGuide({ className }: { className?: string }) {
   /* the reader's seat: the one the table gave, or at home the first human
      at the table; a spectator has none, and is answered from the rules */
   const me = seat ?? Math.max(0, game?.players.findIndex((p) => !p.isBot) ?? 0);
-  const table = game && me >= 0 && game.phase === 'action' && aidOn(game.assist, online) ? { g: game, me } : null;
+  const at = game ? { g: game, me, aid: aidOn(game.assist, online) } : null;
+  const table = tableSpeaks(at);
   /* a sheet of the left edge, like the notebook: one of them at a time */
   const sheet = useLayer(open, () => setOpen(false), { zone: 'left' });
   const reserve = useDockReserve();
@@ -76,7 +77,7 @@ export default function AskGuide({ className }: { className?: string }) {
     const q = question.trim();
     if (!q) return;
     setQuestion('');
-    const got = answerQuestion(q, table, t, lang, passages);
+    const got = answerQuestion(q, at, t, lang, passages);
     /* what to play is the note's to answer, on the reader's turn: its
        plate, not this one, carries the expert's move */
     const a = got.intent === 'do' ? t('game.guide.ask.answer.doTool', { ask: t('game.guide.suggest.ask') }) : got.answer;
