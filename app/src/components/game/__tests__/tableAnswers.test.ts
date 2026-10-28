@@ -104,6 +104,22 @@ describe('a question about the table', () => {
     expect(answerTo('sell', two, 0, fr, 'fr', 'pottery')).toBe(fr('game.guide.ask.answer.sellNoOf', { industry: 'poterie' }));
   });
 
+  it('says who plays before whom, and why', () => {
+    const g = guided();
+    expect(intentOf('Pourquoi Wedgwood joue avant moi ?', fr, 'fr')?.id).toBe('order');
+    expect(intentOf('Qui commence ?', fr, 'fr')?.id).toBe('order');
+    expect(intentOf('Why does Wedgwood play before me?', en, 'en')?.id).toBe('order');
+    /* the first round's order is drawn */
+    expect(g.order).toEqual([0, 1]);
+    expect(answerTo('order', g, 0, en)).toBe('In the first round the order is drawn at random: you and Wedgwood. After that, whoever spends least in a round plays first in the next. This round you have spent £0 so far: the next round’s order is set on that.');
+    /* later, the money spent in the round before, the least first */
+    const later = { ...g, round: 4, order: [1, 0], lastSpent: [13, 4], players: g.players.map((x, i) => ({ ...x, spent: i === 0 ? 8 : 0 })) };
+    expect(answerTo('order', later, 0, en)).toBe('This round’s order follows the money spent in the last one, the least spent first: Wedgwood (£4) and you (£13). This round you have spent £8 so far: the next round’s order is set on that.');
+    expect(answerTo('order', later, 0, fr, 'fr')).toContain('Wedgwood (4\u00a0£) et vous (13\u00a0£)');
+    /* no round follows the short game's last */
+    expect(answerTo('order', { ...later, round: 10 }, 0, en)).not.toMatch(/next round/);
+  });
+
   it('counts the rounds left after this one, and says when the game stops', () => {
     const g = guided();
     const said = (x: GameState, lang = en, me = 0) => answerTo('rounds', x, me, lang);

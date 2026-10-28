@@ -120,7 +120,7 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
 /* ---------------------------- the questions -------------------------- */
 
 /** the questions about the table the guide knows, in the order they are tried */
-export const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win'] as const;
+export const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win', 'order'] as const;
 export type Ask = (typeof ASKS)[number];
 
 /** the industry of the tiles the guide's case names */
@@ -140,6 +140,8 @@ const INDUSTRY: Partial<Record<NotionId, string>> = {
 const REACH: Partial<Record<Ask, NotionId[]>> = {
   sell: ['cotton', 'manufacturer', 'pottery'],
   build: ['coalMine', 'ironWorks', 'brewery', 'cotton', 'manufacturer', 'pottery'],
+  /* "why does Wedgwood play before me" names the machine it answers for */
+  order: ['machines'],
 };
 
 /** the question about this table the words point at, how long the
@@ -228,6 +230,20 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
          adds the purse and the income level */
       if (g.era !== 'canal') return said;
       return `${said} ${t(g.eraLength === 'short' ? 'game.guide.ask.answer.winYetShort' : 'game.guide.ask.answer.winYet')}`;
+    }
+    case 'order': {
+      /* who plays when, and why: the money spent in the round before, the
+         least first — the first round's order is drawn — and what the
+         reader has spent so far, on which the next round's is set */
+      const list = new Intl.ListFormat(localeOf(lang), { type: 'conjunction' });
+      const seat = (i: number, spent?: number) => {
+        const name = i === me ? t('game.guide.ask.answer.orderYou') : g.players[i].name;
+        return spent === undefined ? name : t('game.guide.ask.answer.orderSeat', { name, spent });
+      };
+      const said = g.lastSpent
+        ? t('game.guide.ask.answer.order', { list: list.format(g.order.map((i) => seat(i, g.lastSpent?.[i]))) })
+        : t('game.guide.ask.answer.orderFirst', { list: list.format(g.order.map((i) => seat(i))) });
+      return lastRound(g) ? said : `${said} ${t('game.guide.ask.answer.orderNext', { spent: p.spent })}`;
     }
     case 'do':
     default:
