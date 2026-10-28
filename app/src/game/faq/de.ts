@@ -180,6 +180,9 @@ export const DE: Tongue = {
       what: 'Die Kanalzeit ist die erste der beiden. Es werden nur Kanäle gelegt (£3, einer pro Aktion), nur eines deiner Plättchen pro Ort, und Plättchen der Stufe 1 dürfen gebaut werden. Die allererste Runde gibt jedem nur eine Aktion. Am Ende werten Verbindungen und umgedrehte Plättchen, dann verlassen Kanäle und Plättchen der Stufe 1 den Plan.',
       cost: 'Ein Kanal kostet £3, ohne Kohle, und eine Verbindung pro Aktion — einen Doppelkanal gibt es nicht.',
       whyNot: 'In der Kanalzeit eine Verbindung pro Aktion und nur auf Strecken, die für Kanäle offen sind; reine Schienenstrecken bleiben gesperrt. Du brauchst £3 und eine freie Strecke, die dein Netz berührt.',
+      short: {
+        what: 'Die Kanalzeit ist die ganze Einführungspartie. Es werden nur Kanäle gelegt (£3, einer pro Aktion), nur eines deiner Plättchen pro Ort, und Plättchen der Stufe 1 dürfen gebaut werden. Die allererste Runde gibt jedem nur eine Aktion. Am Ende werten Verbindungen und umgedrehte Plättchen, und nichts verlässt den Plan: Der Abschluss folgt.',
+      },
     },
     rail: {
       topic: 'die Eisenbahnzeit',
@@ -187,6 +190,10 @@ export const DE: Tongue = {
       what: 'Die Eisenbahnzeit ist die zweite und letzte. Es werden Schienen gelegt: £5 und 1 Kohle pro Stück, oder zwei in derselben Aktion für £15, 2 Kohle und 1 Brauereibier. Plättchen der Stufe 1 (außer Töpferei I) werden nicht mehr gebaut, Brauereien bekommen 2 Fässer, und mehrere deiner Plättchen dürfen sich einen Ort teilen. Die Schlusswertung folgt auf ihre letzte Runde.',
       cost: 'Eine Schiene: £5 und 1 Kohle, verbunden mit der gelegten Verbindung. Zwei in derselben Aktion: £15, je 1 Kohle und 1 Bier aus einer Brauerei — nie aus dem Fass eines Händlers.',
       whyNot: 'In der Kanalzeit gibt es noch keine Schienen: Sie kommen mit der zweiten Epoche. In der Eisenbahnzeit braucht eine Schiene eine freie Strecke, die dein Netz berührt, £5 und mit der Verbindung verbundene Kohle — eine verbundene Mine oder den Markt über einen Händler.',
+      short: {
+        what: 'Die Einführungspartie kommt nicht dorthin: Sie endet mit der Kanalzeit, und es wird nie eine Schiene gelegt. In einer vollen Partie folgt die Eisenbahnzeit auf die Kanäle; dort werden Schienen gelegt, £5 und 1 Kohle pro Stück.',
+        whyNot: 'Die Einführungspartie spielt nur die Kanalzeit: Es werden nur Kanäle gelegt, nie eine Schiene.',
+      },
     },
     links: {
       topic: 'die Verbindungen',
@@ -194,6 +201,10 @@ export const DE: Tongue = {
       what: 'Eine Verbindung ist ein Kanal oder eine Schiene auf einer Strecke zwischen zwei Orten. Sie erweitert dein Netz und verbindet Orte für alle: Kohle, das Bier eines Rivalen und Verkäufe an Händler laufen über die Verbindungen jedes Spielers. Am Ende einer Epoche bringt jede 1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler, und verlässt dann den Plan.',
       gain: 'Am Ende jeder Epoche wertet eine Verbindung die Verbindungssymbole jedes Plättchens an den Orten, die sie verbindet — 0 bis 2 je Plättchen, gleich wem es gehört, umgedreht oder nicht — und 2 Punkte für ein Händlerfeld. Dann wird sie entfernt.',
       cost: 'Ein Kanal kostet £3. Eine Schiene £5 und 1 Kohle; zwei in derselben Aktion £15, 2 Kohle und 1 Brauereibier.',
+      short: {
+        what: 'Eine Verbindung ist ein Kanal auf einer Strecke zwischen zwei Orten. Sie erweitert dein Netz und verbindet Orte für alle: Kohle, das Bier eines Rivalen und Verkäufe an Händler laufen über die Verbindungen jedes Spielers. Am Ende der Epoche bringt jede 1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler, und bleibt auf dem Plan.',
+        gain: 'Am Ende der Epoche wertet eine Verbindung die Verbindungssymbole jedes Plättchens an den Orten, die sie verbindet — 0 bis 2 je Plättchen, gleich wem es gehört, umgedreht oder nicht — und 2 Punkte für ein Händlerfeld. Diese Wertung kommt nur einmal: Der Abschluss zählt Verbindungen nicht erneut.',
+      },
     },
     eras: {
       topic: 'Epochen und Runden',
@@ -240,6 +251,9 @@ export const DE: Tongue = {
       words: ['handler', 'handlerbonus', 'kaufmann', 'kaufleute', 'abnehmer', 'kaufer', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'handlerplattchen', 'bonus', 'alle waren', 'leerer handler'],
       what: 'Die Händler am Kartenrand kaufen deine Gewerbe: Jedes Händlerplättchen zeigt, was es nimmt (Baumwolle, Fertigwaren, Keramik, „alle Waren“ oder nichts, wenn es leer ist). Zum Verkaufen muss dein Plättchen mit einem von ihnen verbunden sein. Jedes nicht leere Plättchen hat ein Bierfass, und wer es beim Verkauf trinkt, bekommt den Bonus des Ortes. Ein Händlerfeld zählt zudem 2 Verbindungssymbole und öffnet den Kohlemarkt für jeden, der damit verbunden ist.',
       gain: 'Auf der Midlands-Karte: Shrewsbury gibt 4 SP, Warrington £5, Nottingham 3 SP, Gloucester eine kostenlose Entwicklung (ohne Eisen) und Oxford 2 Einkommensfelder. Der Bonus kommt mit dem bei einem Verkauf getrunkenen Fass, eines pro Händlerplättchen und Epoche; die Fässer kehren zu Beginn der Eisenbahnzeit zurück.',
+      short: {
+        gain: 'Auf der Midlands-Karte: Shrewsbury gibt 4 SP, Warrington £5, Nottingham 3 SP, Gloucester eine kostenlose Entwicklung (ohne Eisen) und Oxford 2 Einkommensfelder. Der Bonus kommt mit dem bei einem Verkauf getrunkenen Fass: ein Fass pro Händlerplättchen, für die ganze Einführungspartie.',
+      },
     },
     income: {
       topic: 'das Einkommen und seine Leiste',
@@ -392,6 +406,9 @@ export const DE: Tongue = {
       words: ['brass', 'blackrail', 'birmingham brass', 'spiel', 'ziel', 'spielziel', 'prinzip', 'spielregeln', 'spielen', 'spielt', 'lernen', 'zusammenfassung', 'grundlagen'],
       what: 'Blackrail spielt Brass: Birmingham, in zwei Epochen: erst die Kanäle, dann die Eisenbahn. Du baust Industrien — Minen, Eisenhütten, Brauereien, Spinnereien, Manufakturen, Töpfereien —, verbindest sie mit Kanälen und dann mit Schienen und verkaufst deine Gewerbe an die Händler. Punkte kommen von umgedrehten Plättchen und Verbindungen, gezählt am Ende jeder Epoche, und wer die meisten hat, gewinnt.',
       how: 'In deinem Zug zwei Aktionen (in der allerersten Runde nur eine): Bauen, Netzwerk, Entwickeln, Verkaufen, Kredit, Erkunden oder Passen. Jede kostet eine Karte: Wähle sie aus der Hand, dann die Aktion, dann das Ziel auf der Karte, und bestätige. Der Kodex (Taste ?) enthält jede Regel, und hier kannst du mich nach jeder fragen.',
+      short: {
+        what: 'Blackrail spielt Brass: Birmingham; die Einführungspartie spielt davon nur die Kanalzeit. Du baust Industrien — Minen, Eisenhütten, Brauereien, Spinnereien, Manufakturen, Töpfereien —, verbindest sie mit Kanälen und verkaufst deine Gewerbe an die Händler. Punkte kommen von umgedrehten Plättchen und Verbindungen, gezählt am Ende der Epoche, dann zählt der Abschluss Geld und Einkommensstufe dazu; wer die meisten hat, gewinnt.',
+      },
     },
     rules: {
       topic: 'der Regelkodex',

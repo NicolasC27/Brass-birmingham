@@ -50,7 +50,7 @@ export interface NotionText {
   whyNot?: string;
   /** a short game's own tellings, where the plain ones speak of the full
    *  game: money that counts at the close, points that come from it, the
-   *  rounds of the one era */
+   *  rounds of the one era, links and barrels that stay */
   short?: Partial<Record<Asked, string>>;
 }
 
@@ -107,7 +107,8 @@ export const SHORT_TOLD: Partial<Record<NotionId, NotionId>> = {
 };
 
 /** the written answers true of the full game alone — the sweep, the
- *  change of era, money worth nothing at the end — and the notion a short
+ *  change of era, money worth nothing at the end, a tile scoring again at
+ *  the rail's count, barrels set back for it — and the notion a short
  *  game tells in their place; the others hold for both lengths */
 export const FULL_GAME: Record<string, NotionId> = {
   eraEnd: 'initiation',
@@ -119,6 +120,8 @@ export const FULL_GAME: Record<string, NotionId> = {
   merchantRearmEra: 'initiation',
   scoring: 'initiation',
   gameEndTie: 'ties',
+  tileVpNumber: 'vp',
+  merchantBonus: 'merchants',
 };
 
 /** the written answers of faq.ts, filed under the notion each belongs to */

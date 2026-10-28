@@ -180,6 +180,9 @@ export const EN: Tongue = {
       what: 'The Canal Era is the first of the two. Only canals are laid (£3, one per action), only one of your tiles per place, and level 1 tiles can be built. The very first round gives each player a single action. At its end, links and flipped tiles score, then canals and level 1 tiles leave the board.',
       cost: 'A canal costs £3, no coal, and one link per action — there is no double canal.',
       whyNot: 'In the Canal Era, one link per action and only on routes open to canals; rail-only routes stay closed. You need £3 and a free route touching your network.',
+      short: {
+        what: 'The Canal Era is the whole of the introductory game. Only canals are laid (£3, one per action), only one of your tiles per place, and level 1 tiles can be built. The very first round gives each player a single action. At its end, links and flipped tiles score and nothing leaves the board: the close follows.',
+      },
     },
     rail: {
       topic: 'the Rail Era',
@@ -187,6 +190,10 @@ export const EN: Tongue = {
       what: 'The Rail Era is the second and last. Rails are laid: £5 and 1 coal each, or two in the same action for £15, 2 coal and 1 brewery beer. Level 1 tiles (except pottery I) can no longer be built, breweries receive 2 barrels, and several of your tiles may share a place. The final scoring follows its last round.',
       cost: 'One rail: £5 and 1 coal, connected to the link once laid. Two rails in the same action: £15, 1 coal each, and 1 beer drawn from a brewery — never from a merchant’s barrel.',
       whyNot: 'In the Canal Era rails do not exist yet: they arrive with the second era. In the Rail Era, a rail needs a free route touching your network, £5, and coal connected to the link laid — a connected mine, or the market through a merchant.',
+      short: {
+        what: 'The introductory game never gets there: it stops at the end of the Canal Era, and no rail is ever laid. In a full game the Rail Era follows the canals; rails are laid there, £5 and 1 coal each.',
+        whyNot: 'The introductory game plays the Canal Era only: only canals are laid, never a rail.',
+      },
     },
     links: {
       topic: 'links',
@@ -194,6 +201,10 @@ export const EN: Tongue = {
       what: 'A link is a canal or a rail laid on a route between two places. It extends your network and connects places for everyone: coal, a rival’s beer and sales to merchants run along anyone’s links. At the end of an era, each scores 1 point per link icon in the places it touches, 2 for a merchant, then leaves the board.',
       gain: 'At the end of each era, a link scores the link icons of every tile in the places it connects — 0 to 2 per tile, whoever owns it, flipped or not — and 2 points for a merchant space. Then it is removed.',
       cost: 'A canal costs £3. A rail costs £5 and 1 coal; two rails in the same action, £15, 2 coal and 1 brewery beer.',
+      short: {
+        what: 'A link is a canal laid on a route between two places. It extends your network and connects places for everyone: coal, a rival’s beer and sales to merchants run along anyone’s links. At the end of the era, each scores 1 point per link icon in the places it touches, 2 for a merchant, and stays on the board.',
+        gain: 'At the end of the era, a link scores the link icons of every tile in the places it connects — 0 to 2 per tile, whoever owns it, flipped or not — and 2 points for a merchant space. That count comes once: the close does not count links again.',
+      },
     },
     eras: {
       topic: 'eras and rounds',
@@ -240,6 +251,9 @@ export const EN: Tongue = {
       words: ['merchant', 'merchants', 'merchant bonus', 'trader', 'traders', 'buyer', 'buyers', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'merchant tile', 'merchant tiles', 'bonus', 'all goods', 'blank merchant'],
       what: 'The merchants, at the edge of the map, buy your works: each merchant tile shows what it takes (cotton, manufactured goods, pottery, “all goods”, or nothing when blank). To sell, your tile must be connected to one. Each non-blank tile has a beer barrel, and drinking it while selling gives the place’s bonus. A merchant space also counts 2 link icons, and opens the coal market to whoever is connected to it.',
       gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5, Nottingham 3 VP, Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale, one per merchant tile per era; the barrels return at the start of the Rail Era.',
+      short: {
+        gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5, Nottingham 3 VP, Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale: one barrel per merchant tile, for the whole introductory game.',
+      },
     },
     income: {
       topic: 'income and its track',
@@ -392,6 +406,9 @@ export const EN: Tongue = {
       words: ['brass', 'blackrail', 'birmingham brass', 'game', 'goal', 'aim', 'objective', 'principle', 'rules game', 'play', 'learn', 'summary', 'basics'],
       what: 'Blackrail plays Brass: Birmingham, in two eras: the canals, then the railways. You build industries — mines, iron works, breweries, cotton mills, manufactories, potteries —, connect them with canals and then rails, and sell your works to the merchants. Points come from flipped tiles and links, counted at the end of each era, and the player with the most points wins.',
       how: 'On your turn, two actions (just one in the very first round): Build, Network, Develop, Sell, Loan, Scout, or pass. Each costs a card: pick it from your hand, then the action, then the target on the map, and confirm. The codex (key ?) holds every rule, and you can ask me any of them here.',
+      short: {
+        what: 'Blackrail plays Brass: Birmingham; the introductory game plays its Canal Era only. You build industries — mines, iron works, breweries, cotton mills, manufactories, potteries —, connect them with canals, and sell your works to the merchants. Points come from flipped tiles and links, counted at the end of the era, then the close adds money and the income level; the player with the most points wins.',
+      },
     },
     rules: {
       topic: 'the rules codex',

@@ -193,6 +193,9 @@ export const FR: Tongue = {
       what: 'L’ère canal est la première des deux. On n’y pose que des canaux (3 £, un par action), une seule de vos tuiles par lieu, et les tuiles de niveau 1 s’y bâtissent. La toute première manche n’offre qu’une action à chacun. À la fin, liaisons et tuiles retournées marquent, puis canaux et tuiles de niveau 1 quittent le plateau.',
       cost: 'Un canal coûte 3 £, sans charbon, et une seule liaison par action — il n’y a pas de double canal.',
       whyNot: 'À l’ère canal, une seule liaison par action et seulement sur les routes ouvertes au canal ; les routes réservées au rail restent fermées. Il faut 3 £ et une route libre qui touche votre réseau.',
+      short: {
+        what: 'L’ère canal est toute la partie d’initiation. On n’y pose que des canaux (3 £, un par action), une seule de vos tuiles par lieu, et les tuiles de niveau 1 s’y bâtissent. La toute première manche n’offre qu’une action à chacun. À la fin, liaisons et tuiles retournées marquent, et rien ne quitte le plateau : la clôture suit.',
+      },
     },
     rail: {
       topic: 'l’ère rail',
@@ -200,6 +203,10 @@ export const FR: Tongue = {
       what: 'L’ère rail est la seconde et la dernière. On y pose des rails : 5 £ et 1 charbon chacun, ou deux dans la même action pour 15 £, 2 charbons et 1 bière de brasserie. Les tuiles de niveau 1 (sauf la poterie I) ne s’y bâtissent plus, les brasseries y reçoivent 2 barils, et plusieurs de vos tuiles peuvent partager un lieu. Le décompte final suit sa dernière manche.',
       cost: 'Un rail : 5 £ et 1 charbon, relié à la liaison une fois posée. Deux rails dans la même action : 15 £, 1 charbon pour chacun, et 1 bière tirée d’une brasserie — jamais du baril d’un marchand.',
       whyNot: 'À l’ère canal, les rails n’existent pas encore : ils arrivent avec la seconde ère. À l’ère rail, un rail demande une route libre qui touche votre réseau, 5 £, et un charbon relié à la liaison posée — mine reliée, ou marché par un marchand.',
+      short: {
+        what: 'La partie d’initiation n’y va pas : elle s’arrête à la fin de l’ère canal, et l’on n’y pose jamais de rail. Dans une partie complète, l’ère rail suit le canal ; on y pose des rails, 5 £ et 1 charbon chacun.',
+        whyNot: 'La partie d’initiation ne joue que l’ère canal : on n’y pose que des canaux, jamais de rail.',
+      },
     },
     links: {
       topic: 'les liaisons',
@@ -207,6 +214,10 @@ export const FR: Tongue = {
       what: 'Une liaison est un canal ou un rail posé sur une route entre deux lieux. Elle étend votre réseau et relie les lieux pour tout le monde : le charbon, la bière d’un rival et les ventes aux marchands passent par les liaisons de n’importe qui. En fin d’ère, chacune marque 1 point par icône lien des lieux qu’elle touche, 2 pour un marchand, puis quitte le plateau.',
       gain: 'À la fin de chaque ère, une liaison marque les icônes lien de chaque tuile posée dans les lieux qu’elle relie — de 0 à 2 par tuile, à qui qu’elle soit, retournée ou non — et 2 points pour un emplacement marchand. Puis elle est retirée.',
       cost: 'Un canal coûte 3 £. Un rail coûte 5 £ et 1 charbon ; deux rails dans la même action, 15 £, 2 charbons et 1 bière de brasserie.',
+      short: {
+        what: 'Une liaison est un canal posé sur une route entre deux lieux. Elle étend votre réseau et relie les lieux pour tout le monde : le charbon, la bière d’un rival et les ventes aux marchands passent par les liaisons de n’importe qui. À la fin de l’ère, chacune marque 1 point par icône lien des lieux qu’elle touche, 2 pour un marchand, et reste sur le plateau.',
+        gain: 'À la fin de l’ère, une liaison marque les icônes lien de chaque tuile posée dans les lieux qu’elle relie — de 0 à 2 par tuile, à qui qu’elle soit, retournée ou non — et 2 points pour un emplacement marchand. Ce compte n’a lieu qu’une fois : la clôture ne recompte pas les liaisons.',
+      },
     },
     eras: {
       topic: 'les ères et les manches',
@@ -253,6 +264,9 @@ export const FR: Tongue = {
       words: ['marchand', 'marchands', 'bonus marchand', 'negociant', 'negociants', 'comptoir', 'merchant', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'tuile marchand', 'tuiles marchands', 'bonus', 'client', 'clients', 'acheteur', 'acheteurs', 'tous biens', 'marchand vierge'],
       what: 'Les marchands, au bord de la carte, achètent vos ouvrages : chaque tuile marchande montre ce qu’elle prend (coton, manufacture, poterie, « tous biens », ou rien si elle est vierge). Pour vendre, votre tuile doit être reliée à l’un d’eux. Chaque tuile non vierge a un baril de bière, et le boire en vendant donne le bonus du lieu. Un emplacement marchand compte aussi 2 icônes lien, et ouvre le marché du charbon à qui y est relié.',
       gain: 'Sur la carte des Midlands : Shrewsbury donne 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un développement gratuit (sans fer) et Oxford 2 espaces de revenu. Le bonus vient avec le baril bu pendant une vente, un par tuile marchande et par ère ; les barils reviennent au début de l’ère rail.',
+      short: {
+        gain: 'Sur la carte des Midlands : Shrewsbury donne 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un développement gratuit (sans fer) et Oxford 2 espaces de revenu. Le bonus vient avec le baril bu pendant une vente : un baril par tuile marchande, pour toute la partie d’initiation.',
+      },
     },
     income: {
       topic: 'le revenu et sa piste',
@@ -405,6 +419,9 @@ export const FR: Tongue = {
       words: ['brass', 'blackrail', 'birmingham brass', 'jeu', 'but', 'but jeu', 'objectif', 'principe', 'regles jeu', 'jouer', 'apprendre', 'resume', 'comprendre', 'comprend', 'comprends', 'perdu', 'debuter'],
       what: 'Blackrail joue Brass: Birmingham, en deux ères : le canal, puis le rail. Vous y bâtissez des industries — mines, forges, brasseries, filatures, manufactures, poteries —, vous les reliez par des canaux puis des rails, et vous vendez vos ouvrages aux marchands. Les points viennent des tuiles retournées et des liaisons, comptés à la fin de chaque ère, et le plus riche en points l’emporte.',
       how: 'À votre tour, deux actions (une seule à la toute première manche) : Construire, Réseau, Développer, Vendre, Emprunter, Prospecter, ou passer. Chacune coûte une carte : choisissez-la dans la main, puis l’action, puis la cible sur la carte, et confirmez. Le codex (touche ?) reprend chaque règle, et vous pouvez me demander n’importe laquelle ici.',
+      short: {
+        what: 'Blackrail joue Brass: Birmingham ; la partie d’initiation n’en joue que l’ère canal. Vous y bâtissez des industries — mines, forges, brasseries, filatures, manufactures, poteries —, vous les reliez par des canaux, et vous vendez vos ouvrages aux marchands. Les points viennent des tuiles retournées et des liaisons, comptés à la fin de l’ère, puis la clôture ajoute l’argent et le niveau de revenu ; le plus riche en points l’emporte.',
+      },
     },
     rules: {
       topic: 'le codex des règles',

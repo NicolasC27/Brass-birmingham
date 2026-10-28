@@ -608,6 +608,25 @@ describe('a short game', () => {
     }
   });
 
+  it('tells the canal, its links and its merchants as the short game has them', () => {
+    const asks: [Lang, string, string][] = [
+      ['fr', 'c’est quoi l’ère canal', 'canal'], ['fr', 'c’est quoi l’ère rail', 'rail'], ['fr', 'c’est quoi une liaison', 'links'], ['fr', 'combien rapporte une liaison', 'links'],
+      ['fr', 'que donne un marchand', 'merchants'], ['fr', 'je comprends rien', 'overview'], ['en', 'what is the canal era', 'canal'], ['de', 'was ist die kanalzeit', 'canal'], ['es', 'qué es la era del canal', 'canal'],
+    ];
+    for (const [lang, q, id] of asks) {
+      const short = consult(q, lang, [], true);
+      expect(`${q} → ${short.notion}`).toBe(`${q} → ${id}`);
+      expect(short.answer).not.toBe(consult(q, lang).answer);
+    }
+    /* no second era, no sweep, no barrels set back */
+    for (const t of [FR, EN, ES, DE]) {
+      for (const s of [t.notions.canal.short!.what, t.notions.links.short!.what, t.notions.links.short!.gain!, t.notions.merchants.short!.gain!, t.notions.overview.short!.what]) expect(s).not.toMatch(/\brails?\b|ferrocarril|Eisenbahn|Schiene/i);
+    }
+    /* the written answer of a tile's second count, at the rail's, gives way to the points */
+    expect(consult('combien de PV vaut une tuile', 'fr').answer).toMatch(/ère rail/);
+    expect(consult('combien de PV vaut une tuile', 'fr', [], true)).toMatchObject({ notion: 'vp', answer: FR.notions.vp.short!.gain });
+  });
+
   it('gives way to the initiation where a written answer speaks of the rail era', () => {
     /* money counts at a short game's close, not for nothing */
     expect(consult('l’argent rapporte des points ?', 'fr').kind).toBe('entry');

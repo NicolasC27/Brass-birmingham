@@ -181,6 +181,9 @@ export const ES: Tongue = {
       what: 'La era del canal es la primera de las dos. Solo se tienden canales (3 £, uno por acción), solo una de tus losetas por lugar, y las losetas de nivel 1 se pueden construir. La primerísima ronda da una sola acción a cada jugador. Al final, enlaces y losetas volteadas puntúan, y después canales y losetas de nivel 1 salen del tablero.',
       cost: 'Un canal cuesta 3 £, sin carbón, y un enlace por acción: no existe el doble canal.',
       whyNot: 'En la era del canal, un enlace por acción y solo en rutas abiertas al canal; las rutas solo de ferrocarril siguen cerradas. Hacen falta 3 £ y una ruta libre que toque tu red.',
+      short: {
+        what: 'La era del canal es toda la partida de iniciación. Solo se tienden canales (3 £, uno por acción), solo una de tus losetas por lugar, y las losetas de nivel 1 se pueden construir. La primerísima ronda da una sola acción a cada jugador. Al final, enlaces y losetas volteadas puntúan y nada sale del tablero: sigue el cierre.',
+      },
     },
     rail: {
       topic: 'la era del ferrocarril',
@@ -188,6 +191,10 @@ export const ES: Tongue = {
       what: 'La era del ferrocarril es la segunda y última. Se tienden ferrocarriles: 5 £ y 1 carbón cada uno, o dos en la misma acción por 15 £, 2 carbones y 1 cerveza de cervecería. Las losetas de nivel 1 (salvo la alfarería I) ya no se construyen, las cervecerías reciben 2 barriles, y varias de tus losetas pueden compartir lugar. El recuento final sigue a su última ronda.',
       cost: 'Un ferrocarril: 5 £ y 1 carbón, conectado al enlace una vez colocado. Dos en la misma acción: 15 £, 1 carbón por cada uno, y 1 cerveza de una cervecería, nunca del barril de un mercader.',
       whyNot: 'En la era del canal el ferrocarril aún no existe: llega con la segunda era. En la del ferrocarril, un tramo pide una ruta libre que toque tu red, 5 £, y un carbón conectado al enlace colocado: una mina conectada, o el mercado a través de un mercader.',
+      short: {
+        what: 'La partida de iniciación no llega a ella: termina al final de la era del canal, y nunca se tiende un ferrocarril. En una partida completa, la era del ferrocarril sigue a la del canal; allí se tienden ferrocarriles, 5 £ y 1 carbón cada uno.',
+        whyNot: 'La partida de iniciación solo juega la era del canal: solo se tienden canales, nunca ferrocarriles.',
+      },
     },
     links: {
       topic: 'los enlaces',
@@ -195,6 +202,10 @@ export const ES: Tongue = {
       what: 'Un enlace es un canal o un ferrocarril colocado en una ruta entre dos lugares. Amplía tu red y conecta los lugares para todos: el carbón, la cerveza de un rival y las ventas a los mercaderes circulan por los enlaces de cualquiera. Al final de la era, cada uno puntúa 1 por icono de enlace de los lugares que toca, 2 por un mercader, y luego sale del tablero.',
       gain: 'Al final de cada era, un enlace puntúa los iconos de enlace de cada loseta de los lugares que conecta —de 0 a 2 por loseta, sea de quien sea, volteada o no— y 2 puntos por un espacio de mercader. Después se retira.',
       cost: 'Un canal cuesta 3 £. Un ferrocarril, 5 £ y 1 carbón; dos en la misma acción, 15 £, 2 carbones y 1 cerveza de cervecería.',
+      short: {
+        what: 'Un enlace es un canal colocado en una ruta entre dos lugares. Amplía tu red y conecta los lugares para todos: el carbón, la cerveza de un rival y las ventas a los mercaderes circulan por los enlaces de cualquiera. Al final de la era, cada uno puntúa 1 por icono de enlace de los lugares que toca, 2 por un mercader, y se queda en el tablero.',
+        gain: 'Al final de la era, un enlace puntúa los iconos de enlace de cada loseta de los lugares que conecta —de 0 a 2 por loseta, sea de quien sea, volteada o no— y 2 puntos por un espacio de mercader. Ese recuento llega una sola vez: el cierre no vuelve a contar los enlaces.',
+      },
     },
     eras: {
       topic: 'las eras y las rondas',
@@ -241,6 +252,9 @@ export const ES: Tongue = {
       words: ['mercader', 'mercaderes', 'comerciante', 'comerciantes', 'bonificacion mercader', 'bonificacion', 'bonus', 'comprador', 'compradores', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'loseta mercader', 'todos bienes', 'mercader blanco'],
       what: 'Los mercaderes, al borde del mapa, compran tus obras: cada loseta de mercader muestra lo que acepta (algodón, manufactura, cerámica, «todos los bienes», o nada si está en blanco). Para vender, tu loseta debe estar conectada a uno. Cada loseta no blanca tiene un barril de cerveza, y beberlo al vender da la bonificación del lugar. Un espacio de mercader cuenta además 2 iconos de enlace y abre el mercado del carbón a quien esté conectado.',
       gain: 'En el mapa de las Midlands: Shrewsbury da 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un desarrollo gratis (sin hierro) y Oxford 2 casillas de ingresos. La bonificación llega con el barril bebido en una venta, uno por loseta de mercader y por era; los barriles vuelven al empezar la era del ferrocarril.',
+      short: {
+        gain: 'En el mapa de las Midlands: Shrewsbury da 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un desarrollo gratis (sin hierro) y Oxford 2 casillas de ingresos. La bonificación llega con el barril bebido en una venta: un barril por loseta de mercader, para toda la partida de iniciación.',
+      },
     },
     income: {
       topic: 'los ingresos y su marcador',
@@ -393,6 +407,9 @@ export const ES: Tongue = {
       words: ['brass', 'blackrail', 'birmingham brass', 'juego', 'objetivo', 'meta', 'principio', 'reglas juego', 'jugar', 'juega', 'aprender', 'resumen'],
       what: 'Blackrail juega a Brass: Birmingham, en dos eras: los canales y luego el ferrocarril. Construyes industrias —minas, fundiciones, cervecerías, hilanderías, manufacturas, alfarerías—, las conectas con canales y luego con ferrocarriles, y vendes tus obras a los mercaderes. Los puntos vienen de las losetas volteadas y de los enlaces, contados al final de cada era, y gana quien más puntos tenga.',
       how: 'En tu turno, dos acciones (solo una en la primerísima ronda): Construir, Red, Desarrollar, Vender, Préstamo, Explorar, o pasar. Cada una cuesta una carta: elígela en la mano, luego la acción, luego el objetivo en el mapa, y confirma. El códice (tecla ?) reúne todas las reglas, y aquí puedes preguntarme cualquiera.',
+      short: {
+        what: 'Blackrail juega a Brass: Birmingham; la partida de iniciación solo juega su era del canal. Construyes industrias —minas, fundiciones, cervecerías, hilanderías, manufacturas, alfarerías—, las conectas con canales y vendes tus obras a los mercaderes. Los puntos vienen de las losetas volteadas y de los enlaces, contados al final de la era; luego el cierre suma el dinero y el nivel de ingresos, y gana quien más puntos tenga.',
+      },
     },
     rules: {
       topic: 'el códice de reglas',
