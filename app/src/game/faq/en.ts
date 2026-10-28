@@ -199,6 +199,9 @@ export const EN: Tongue = {
       topic: 'eras and rounds',
       words: ['era', 'eras', 'age', 'epoch', 'round', 'rounds', 'period', 'length', 'duration', 'how long', 'number rounds', 'end round'],
       what: 'A game has two eras: the Canal Era, then the Rail Era. Each lasts 8 rounds with 4 players, 9 with 3 and 10 with 2 — it ends when the draw deck and every hand are empty. Each round, everyone plays a turn of two actions (just one in the very first), then comes the new turn order and payday.',
+      short: {
+        what: 'The introductory game plays the Canal Era only: 10 rounds with 2 players, 9 with 3, 8 with 4 — it ends when the draw deck and every hand are empty. Each round, everyone plays a turn of two actions (just one in the very first), then comes the new turn order and payday — except after the last, which the close follows.',
+      },
     },
     firstRound: {
       topic: 'the first round',

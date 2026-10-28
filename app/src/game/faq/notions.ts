@@ -49,7 +49,8 @@ export interface NotionText {
   /** why the table refuses it */
   whyNot?: string;
   /** a short game's own tellings, where the plain ones speak of the full
-   *  game: money that counts at the close, points that come from it */
+   *  game: money that counts at the close, points that come from it, the
+   *  rounds of the one era */
   short?: Partial<Record<Asked, string>>;
 }
 
@@ -96,10 +97,10 @@ export const PULL: Partial<Record<NotionId, number>> = {
 };
 
 /** a short game plays the canal era alone and closes on the initiation's
- *  count: what the full game's notions say of the eras, their end, the
- *  scoring and the end of the game, it tells with the initiation */
+ *  count: what the full game's notions say of the era's end, the scoring
+ *  and the end of the game, it tells with the initiation — the rounds
+ *  themselves have a short telling of their own */
 export const SHORT_TOLD: Partial<Record<NotionId, NotionId>> = {
-  eras: 'initiation',
   eraEnd: 'initiation',
   scoring: 'initiation',
   gameEnd: 'initiation',

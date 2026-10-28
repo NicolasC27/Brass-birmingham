@@ -200,6 +200,9 @@ export const ES: Tongue = {
       topic: 'las eras y las rondas',
       words: ['era', 'eras', 'epoca', 'epocas', 'ronda', 'rondas', 'periodo', 'duracion', 'cuanto dura', 'numero rondas', 'fin ronda'],
       what: 'Una partida tiene dos eras: la del canal y luego la del ferrocarril. Cada una dura 8 rondas con 4 jugadores, 9 con 3 y 10 con 2: termina cuando el mazo y todas las manos están vacíos. En cada ronda, cada uno juega un turno de dos acciones (solo una en la primerísima), y luego llegan el nuevo orden de turno y el cobro.',
+      short: {
+        what: 'La partida de iniciación solo juega la era del canal: 10 rondas con 2 jugadores, 9 con 3, 8 con 4; termina cuando el mazo y todas las manos están vacíos. En cada ronda, cada uno juega un turno de dos acciones (solo una en la primerísima), y luego llegan el nuevo orden de turno y el cobro, salvo tras la última, a la que sigue el cierre.',
+      },
     },
     firstRound: {
       topic: 'la primera ronda',

@@ -199,6 +199,9 @@ export const DE: Tongue = {
       topic: 'Epochen und Runden',
       words: ['epoche', 'epochen', 'zeit', 'zeitalter', 'runde', 'runden', 'dauer', 'wie lange', 'anzahl runden', 'rundenende'],
       what: 'Eine Partie hat zwei Epochen: die Kanalzeit, dann die Eisenbahnzeit. Jede dauert 8 Runden zu viert, 9 zu dritt und 10 zu zweit — sie endet, wenn Nachziehstapel und alle Hände leer sind. In jeder Runde spielt jeder einen Zug mit zwei Aktionen (in der allerersten nur einer), dann kommen die neue Zugreihenfolge und die Auszahlung.',
+      short: {
+        what: 'Die Einführungspartie spielt nur die Kanalzeit: 10 Runden zu zweit, 9 zu dritt, 8 zu viert — sie endet, wenn Nachziehstapel und alle Hände leer sind. In jeder Runde spielt jeder einen Zug mit zwei Aktionen (in der allerersten nur einer), dann kommen die neue Zugreihenfolge und die Auszahlung — außer nach der letzten, auf die der Abschluss folgt.',
+      },
     },
     firstRound: {
       topic: 'die erste Runde',

@@ -577,7 +577,7 @@ describe('the works', () => {
 });
 
 describe('a short game', () => {
-  it('tells its end, its eras and its scoring with the initiation', () => {
+  it('tells its end and its scoring with the initiation', () => {
     const asks: [Lang, string][] = [
       ['fr', 'quand finit la partie'], ['fr', 'comment je gagne'], ['fr', 'c’est quoi la fin d’ère'], ['fr', 'est-ce que les tuiles de niveau 1 disparaissent'],
       ['fr', 'comment marche le décompte'], ['fr', 'que se passe-t-il à la fin de l’ère'], ['en', 'when does the game end'], ['en', 'how do i win'],
@@ -590,6 +590,21 @@ describe('a short game', () => {
       expect(short.answer).toBe(tell('initiation', lang, short.asked));
       /* the full game keeps the rail era's telling */
       expect(full.notion).not.toBe('initiation');
+    }
+  });
+
+  it('tells a round as the short game plays it', () => {
+    const tongue = { fr: FR, en: EN, es: ES, de: DE };
+    const asks: [Lang, string][] = [['fr', 'c’est quoi une manche'], ['fr', 'que se passe-t-il à la fin de la manche'], ['en', 'what is a round'], ['de', 'was ist eine runde'], ['es', 'qué es una ronda']];
+    for (const [lang, q] of asks) {
+      /* the round's two actions, the new order and the payday — none after the last */
+      expect(`${q} → ${consult(q, lang, [], true).notion}`).toBe(`${q} → eras`);
+      expect(consult(q, lang, [], true).answer).toBe(tongue[lang].notions.eras.short!.what);
+      expect(consult(q, lang).answer).toBe(tongue[lang].notions.eras.what);
+    }
+    for (const t of [FR, EN, ES, DE]) {
+      expect(t.notions.eras.short!.what).toMatch(/10.*9.*8/);
+      expect(t.notions.eras.short!.what).not.toMatch(/rail|ferrocarril|Eisenbahn/i);
     }
   });
 

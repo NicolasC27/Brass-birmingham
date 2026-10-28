@@ -212,6 +212,9 @@ export const FR: Tongue = {
       topic: 'les ères et les manches',
       words: ['ere', 'eres', 'epoque', 'epoques', 'manche', 'manches', 'round', 'rounds', 'periode', 'duree', 'longueur', 'combien manches', 'nombre manches', 'fin manche'],
       what: 'Une partie compte deux ères : l’ère canal, puis l’ère rail. Chacune dure 8 manches à 4 joueurs, 9 à 3 et 10 à 2 — elle s’achève quand la pioche et toutes les mains sont vides. À chaque manche, chacun joue son tour de deux actions (une seule à la toute première), puis vient le nouvel ordre du tour et la paie.',
+      short: {
+        what: 'La partie d’initiation ne joue que l’ère canal : 10 manches à deux joueurs, 9 à trois, 8 à quatre — elle s’achève quand la pioche et toutes les mains sont vides. À chaque manche, chacun joue son tour de deux actions (une seule à la toute première), puis vient le nouvel ordre du tour et la paie — sauf après la dernière, que suit la clôture.',
+      },
     },
     firstRound: {
       topic: 'la première manche',
