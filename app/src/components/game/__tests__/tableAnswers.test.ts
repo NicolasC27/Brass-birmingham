@@ -37,6 +37,23 @@ describe('a question about the table', () => {
     expect(intentOf('c est quoi la biere', fr, 'fr')).toBeNull();
   });
 
+  it('hears the question put in other words, in the four tongues', () => {
+    const de = tIn('de');
+    const es = tIn('es');
+    /* once read as the mines and the sale */
+    expect(intentOf('Qui mène ?', fr, 'fr')?.id).toBe('win');
+    expect(intentOf('Un conseil ?', fr, 'fr')?.id).toBe('do');
+    expect(intentOf('Combien d’actions il me reste ?', fr, 'fr')?.id).toBe('rounds');
+    expect(intentOf('How many actions left?', en, 'en')?.id).toBe('rounds');
+    expect(intentOf('¿Qué debo hacer?', es, 'es')?.id).toBe('do');
+    expect(intentOf('Hast du einen Tipp?', de, 'de')?.id).toBe('do');
+    /* a phrase that asks where wants the question to ask it */
+    expect(intentOf('Où construire ?', fr, 'fr')?.id).toBe('build');
+    expect(intentOf('Wo bauen?', de, 'de')?.id).toBe('build');
+    expect(intentOf('wie baue ich', de, 'de')).toBeNull();
+    expect(intentOf('comment construire', fr, 'fr')).toBeNull();
+  });
+
   it('is answered with the table\'s own figures', () => {
     const g = guided();
     expect(answerTo('money', g, 0, fr)).toContain(String(START_MONEY));

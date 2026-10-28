@@ -2,7 +2,7 @@ import { INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID
 import { buildTargets, canLoan, linkTargets, sellTargets } from '@/game/engine';
 import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
-import { asksTheRules, consult, mend } from '@/game/faq/consult';
+import { asksTheRules, consult, fold, mend, tongueOf } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import type { NotionId } from '@/game/faq/notions';
 import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
@@ -139,10 +139,15 @@ export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number 
   let best: { id: Ask; score: number; phrase: string } | null = null;
   /* as typed, and as mended — "jai combien dargent" is still the purse */
   const readings = [q, mend(q, lang)];
+  /* "où", "wo": too short for the measure, yet a phrase that asks where
+     wants the question to ask it too — "wie baue ich" is not "wo bauen" */
+  const where = tongueOf(lang).where;
+  const said = new Set(readings.flatMap((r) => fold(r).split(' ')));
+  const unasked = (phrase: string) => fold(phrase).split(' ').some((w) => w.length < 3 && where.includes(w) && !said.has(w));
   for (const id of ASKS) {
     for (const phrase of t(`game.guide.ask.words.${id}`).split(',')) {
       const score = Math.max(...readings.map((r) => carries(r, phrase)));
-      if (score && (!best || score > best.score)) best = { id, score, phrase };
+      if (score && !unasked(phrase) && (!best || score > best.score)) best = { id, score, phrase };
     }
   }
   /* "c'est quoi la bière" is the rules' question, "j'ai de la bière" the
