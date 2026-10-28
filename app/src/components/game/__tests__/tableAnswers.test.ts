@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { withEdition } from '@/game/actions';
 import { LINKS, START_MONEY } from '@/game/data';
-import { newGame } from '@/game/engine';
+import { buildTargets, newGame } from '@/game/engine';
 import { passagesOf } from '@/game/faq';
 import type { Card, GameState, SetupPayload } from '@/game/types';
 import { dictOf, reasonText, setLang, trIn } from '@/i18n';
@@ -76,6 +76,32 @@ describe('a question about the table', () => {
     expect(answerTo('money', rail, 0, fr)).toContain('ne compte pas');
     /* the canal's last round of a full game still ends on a payday */
     expect(answerTo('money', { ...last, eraLength: 'standard' as const }, 0, fr)).toBe(answerTo('money', g, 0, fr));
+  });
+
+  it('answers for the tile the question names', () => {
+    const g = guided();
+    expect(intentOf('Où bâtir ma forge ?', fr, 'fr')).toMatchObject({ id: 'build', about: 'ironWorks' });
+    expect(intentOf('Where should I build my iron works?', en, 'en')).toMatchObject({ id: 'build', about: 'ironWorks' });
+    expect(intentOf('Je peux vendre ma poterie ?', fr, 'fr')).toMatchObject({ id: 'sell', about: 'pottery' });
+    expect(intentOf('où je peux construire', fr, 'fr')?.about).toBeUndefined();
+    /* the slots the hand opens, each counted once */
+    const slots = (industry?: string) => new Set(g.players[0].hand.flatMap((c) => buildTargets(g, 0, c)).filter((x) => x.valid && (!industry || x.industry === industry)).map((x) => `${x.town}:${x.slot}`)).size;
+    expect(answerTo('build', g, 0, fr)).toBe(fr('game.guide.ask.answer.buildYes', { n: slots() }));
+    expect(answerTo('build', g, 0, fr, 'fr', 'coalMine')).toBe(fr('game.guide.ask.answer.buildYesOf', { n: slots('coal'), industry: 'mine de charbon' }));
+    /* a forge on a bare board: its lesson's own reason */
+    expect(answerTo('build', g, 0, fr, 'fr', 'ironWorks')).toBe(blockedBy('iron', g, 0, fr, 'fr')!.text);
+    /* a pottery the reader has not built */
+    expect(answerQuestion('Je peux vendre ma poterie ?', { g, me: 0 }, fr, 'fr', passages('fr')).answer).toBe(fr('game.guide.ask.answer.sellNoneOf', { industry: 'poterie' }));
+    /* a manufactory that sells beside a pottery that cannot */
+    const two = structuredClone(g);
+    two.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    two.tiles['stoke:0'] = { owner: 0, industry: 'pottery', level: 1, flipped: false, cubes: 0 };
+    two.merchantTiles['m-oxford'] = ['all'];
+    two.merchantBeer = { [Object.keys(g.merchantBeer).find((k) => k.startsWith('m-oxford')) ?? 'm-oxford:0']: 1 };
+    two.links[LINKS.find((l) => l.a === 'redditch' && l.b === 'm-oxford')!.id] = { owner: 1, era: 'canal' };
+    expect(answerTo('sell', two, 0, fr, 'fr')).toContain('manufacture de Redditch');
+    expect(answerTo('sell', two, 0, fr, 'fr', 'manufacturer')).toContain('manufacture de Redditch');
+    expect(answerTo('sell', two, 0, fr, 'fr', 'pottery')).toBe(fr('game.guide.ask.answer.sellNoOf', { industry: 'poterie' }));
   });
 
   it('counts the rounds left after this one, and says when the game stops', () => {

@@ -2,7 +2,7 @@ import { INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID
 import { buildTargets, canLoan, linkTargets, sellTargets } from '@/game/engine';
 import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
-import { asksTheRules, consult, fold, mend, tongueOf } from '@/game/faq/consult';
+import { asksTheRules, consult, fold, mend, named, tongueOf } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import type { NotionId } from '@/game/faq/notions';
 import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
@@ -123,19 +123,30 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
 export const ASKS = ['do', 'sell', 'build', 'coal', 'beer', 'money', 'rounds', 'win'] as const;
 export type Ask = (typeof ASKS)[number];
 
+/** the industry of the tiles the guide's case names */
+const INDUSTRY: Partial<Record<NotionId, string>> = {
+  coalMine: 'coal',
+  ironWorks: 'iron',
+  brewery: 'brewery',
+  cotton: 'cotton',
+  manufacturer: 'manufacturer',
+  pottery: 'pottery',
+};
+
 /** the notions a table's answer reaches beyond its own words: the sale
  *  answers for the works it would sell, the build for any tile — "can I
- *  sell my pottery" is still the table's question, "what is a pottery"
- *  the rules' */
+ *  sell my pottery" is still the table's question, and answered for the
+ *  pottery; "what is a pottery" is the rules' */
 const REACH: Partial<Record<Ask, NotionId[]>> = {
   sell: ['cotton', 'manufacturer', 'pottery'],
   build: ['coalMine', 'ironWorks', 'brewery', 'cotton', 'manufacturer', 'pottery'],
 };
 
-/** the question about this table the words point at, and how long the
+/** the question about this table the words point at, how long the
  *  phrase matched was — the same measure the written answers use, so the
- *  surest of the two wins rather than whichever was tried first */
-export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number } | null {
+ *  surest of the two wins rather than whichever was tried first — and the
+ *  tile it is about, when it names one its answer reaches */
+export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number; about?: NotionId } | null {
   let best: { id: Ask; score: number; phrase: string } | null = null;
   /* as typed, and as mended — "jai combien dargent" is still the purse */
   const readings = [q, mend(q, lang)];
@@ -152,21 +163,41 @@ export function intentOf(q: string, t: T, lang: Lang): { id: Ask; score: number 
   }
   /* "c'est quoi la bière" is the rules' question, "j'ai de la bière" the
      table's: the table's phrase alone cannot tell them apart */
-  return best && !asksTheRules(q, lang, best.phrase, REACH[best.id]) ? { id: best.id, score: best.score } : null;
+  if (!best || asksTheRules(q, lang, best.phrase, REACH[best.id])) return null;
+  const about = named(q, lang, REACH[best.id] ?? [])[0];
+  return about ? { id: best.id, score: best.score, about } : { id: best.id, score: best.score };
 }
 
-/** the answer, read off the table as it stands */
-export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang()): string {
+/** the answer, read off the table as it stands — for the tile the
+ *  question names, when it names one */
+export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = getLang(), about?: NotionId): string {
   const p = g.players[me];
   const level = incomeLevel(p.income);
+  const kind = about ? INDUSTRY[about] : undefined;
   switch (id) {
     case 'sell': {
-      const ok = sellTargets(g, me).find((x) => x.valid);
+      const targets = sellTargets(g, me);
+      const ok = targets.find((x) => x.valid && (!kind || x.tile.industry === kind));
       if (ok) return t('game.guide.ask.answer.sellYes', { industry: t(`game.log.industry.${ok.tile.industry}`), town: TOWN_BY_ID[ok.town]?.name ?? ok.town, merchant: MERCHANT_BY_ID[ok.merchant]?.name ?? ok.merchant });
+      if (kind) {
+        const industry = t(`game.log.industry.${kind}`);
+        /* none of that tile on the board, or it alone cannot sell */
+        if (!Object.values(g.tiles).some((x) => x.owner === me && x.industry === kind && !x.flipped)) return t('game.guide.ask.answer.sellNoneOf', { industry });
+        if (targets.some((x) => x.valid)) return t('game.guide.ask.answer.sellNoOf', { industry });
+      }
       return blockedBy('sell', g, me, t, lang)?.text ?? t('game.guide.ask.answer.sellNo');
     }
     case 'build': {
-      const n = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => x.valid).length;
+      /* the slots the hand opens, each once however many cards reach it */
+      const open = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => x.valid && (!kind || x.industry === kind));
+      const n = new Set(open.map((x) => `${x.town}:${x.slot}`)).size;
+      if (kind) {
+        const industry = t(`game.log.industry.${kind}`);
+        if (n > 0) return t('game.guide.ask.answer.buildYesOf', { n, industry });
+        /* the lesson's own reason for a mine, a forge or a works */
+        const lesson = kind === 'coal' ? 'coal' : kind === 'iron' ? 'iron' : WORKS.includes(kind) ? 'works' : null;
+        return (lesson && blockedBy(lesson, g, me, t, lang)?.text) || t('game.guide.ask.answer.buildNoOf', { industry });
+      }
       return n > 0 ? t('game.guide.ask.answer.buildYes', { n }) : (blockedBy('works', g, me, t, lang)?.text ?? t('game.guide.ask.answer.buildNo'));
     }
     case 'coal':
@@ -225,7 +256,7 @@ export function answerQuestion(q: string, at: Asker | null, t: T, lang: Lang, pa
   const table = game ? intentOf(q, t, lang) : null;
   const written = faqBest(q, faqFor(lang));
   const id = game && table && (!written || table.score >= written.score) ? table.id : null;
-  if (id && game) return { answer: answerTo(id, game.g, game.me, t, lang), intent: id, notion: null, near: [] };
+  if (id && game) return { answer: answerTo(id, game.g, game.me, t, lang, table?.about), intent: id, notion: null, near: [] };
   const found = consult(q, lang, passages, at?.g.eraLength === 'short');
   return { answer: found.answer, intent: null, notion: found.notion, near: found.kind === 'near' ? found.near : [] };
 }

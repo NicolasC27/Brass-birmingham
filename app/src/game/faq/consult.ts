@@ -149,8 +149,6 @@ interface Case {
   known: Set<string>;
   /** the words a notion is found by on their own */
   lone: Set<string>;
-  /** every word of a notion's own phrases, by notion */
-  byNotion: Map<NotionId, Set<string>>;
   /** the known words by how they sound */
   bySound: Map<string, string[]>;
   phrases: Phrase[];
@@ -197,9 +195,7 @@ function caseOf(lang: Lang): Case {
     bySound.set(k, [...(bySound.get(k) ?? []), w]);
   }
   const lone = new Set(phrases.filter((p) => !p.entry && p.toks.length === 1).map((p) => p.toks[0]));
-  const byNotion = new Map<NotionId, Set<string>>();
-  for (const p of phrases) if (!p.entry) byNotion.set(p.notion, new Set([...(byNotion.get(p.notion) ?? []), ...p.toks]));
-  const made: Case = { tongue, stop, content: [...contentSet], contentSet, known, lone, byNotion, bySound, phrases, cues };
+  const made: Case = { tongue, stop, content: [...contentSet], contentSet, known, lone, bySound, phrases, cues };
   cases.set(lang, made);
   return made;
 }
@@ -457,6 +453,26 @@ function nearTo(question: string, lang: Lang): NearNotion[] {
   return scored.map((id) => ({ id, topic: topicOf(id, lang) }));
 }
 
+/** the phrases of these notions the question carries whole — "iron
+ *  works", "forge" — as the words of the question they were read in */
+function carried(c: Case, groups: Mended[], among: readonly NotionId[]): { notion: NotionId; at: number[] }[] {
+  const out: { notion: NotionId; at: number[] }[] = [];
+  for (const p of c.phrases) {
+    if (p.entry || !among.includes(p.notion)) continue;
+    const at = p.toks.map((k) => groups.find((m) => reads(c, m.w, k))?.at ?? -1);
+    if (at.every((i) => i >= 0)) out.push({ notion: p.notion, at });
+  }
+  return out;
+}
+
+/** which of these notions the question names by a phrase of their own,
+ *  in the order it names them: "où bâtir ma forge" names the iron works */
+export function named(question: string, lang: Lang, among: readonly NotionId[]): NotionId[] {
+  const c = caseOf(lang);
+  const found = carried(c, mendGroups(question, lang).filter((m) => !c.stop.has(m.w)), among);
+  return [...new Set(found.sort((a, b) => Math.min(...a.at) - Math.min(...b.at)).map((x) => x.notion))];
+}
+
 /** Whether a question the table could answer from the position is rather
  *  a question of the rules. The table's phrases are short and lose their
  *  small words on the way ("j'ai de la bière" keeps only "bière"), so they
@@ -471,13 +487,15 @@ export function asksTheRules(question: string, lang: Lang, phrase: string, reach
   const c = caseOf(lang);
   const held = words(phrase);
   const cueWords = new Set(c.cues.flatMap(([, list]) => list.filter((w) => w.length === 1).flat()));
-  const reached = (w: string) => reach.some((id) => c.byNotion.get(id)?.has(w));
+  const groups = mendGroups(question, lang);
+  /* the words of the question read in a whole phrase of a notion reached */
+  const reached = new Set(carried(c, groups.filter((m) => !c.stop.has(m.w)), reach).flatMap((x) => x.at));
   const byAt = new Map<number, string[]>();
-  for (const m of mendGroups(question, lang)) byAt.set(m.at, [...(byAt.get(m.at) ?? []), m.w]);
-  for (const read of byAt.values()) {
+  for (const m of groups) byAt.set(m.at, [...(byAt.get(m.at) ?? []), m.w]);
+  for (const [at, read] of byAt) {
     if (read.some((w) => c.stop.has(w) || cueWords.has(w) || w.length < 3)) continue;
     if (read.some((w) => held.some((k) => w === k || single(w) === single(k) || sameWord(w, k)))) continue;
-    if (read.some(reached)) continue;
+    if (reached.has(at)) continue;
     if (read.some((w) => c.contentSet.has(w))) return true;
   }
   const said = new Set(mendWords(question, lang));
