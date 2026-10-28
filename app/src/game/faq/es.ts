@@ -86,7 +86,7 @@ export const ES: Tongue = {
     },
     works: {
       topic: 'las fábricas',
-      words: ['fabrica', 'fabricas'],
+      words: ['fabrica', 'fabricas', 'obra', 'obras'],
       what: 'Una fábrica es una loseta que se vende: hilandería, manufactura o alfarería. No produce nada: construida, espera a que la acción Vender la voltee, conectada por enlaces —tuyos o de otros— a un mercader que compre sus bienes, bebiendo una o dos cervezas. Volteada, sube tus ingresos y puntúa al final de la era. Minas, fundiciones y cervecerías no se venden: se voltean cuando se vacían.',
       how: 'Se construye como cualquier loseta: una carta que lo permita, un espacio libre con su icono, su precio, y el carbón o el hierro que pida su nivel. Para venderla después: la acción Vender, un enlace hasta un mercader que compre sus bienes, y una o dos cervezas según la loseta.',
     },

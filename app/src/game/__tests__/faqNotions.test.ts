@@ -569,7 +569,7 @@ describe('the works', () => {
     const asks: [Lang, string, NotionId][] = [
       ['fr', 'c’est quoi un ouvrage', 'works'], ['fr', 'comment construire un ouvrage', 'works'], ['fr', 'comment vendre un ouvrage', 'sell'],
       ['en', 'what is a works', 'works'], ['en', 'how does coal work', 'coal'], ['en', 'how does the market work', 'market'], ['en', 'what is an iron works', 'ironWorks'],
-      ['de', 'was ist ein betrieb', 'works'], ['es', 'qué es una fábrica', 'works'], ['es', 'qué es una manufactura', 'manufacturer'],
+      ['de', 'was ist ein betrieb', 'works'], ['es', 'qué es una fábrica', 'works'], ['es', 'qué es una obra', 'works'], ['es', 'qué es una manufactura', 'manufacturer'],
     ];
     for (const [lang, q, id] of asks) expect(`${q} → ${consult(q, lang).notion}`).toBe(`${q} → ${id}`);
     expect(consult('comment construire un ouvrage', 'fr').answer).toBe(tell('works', 'fr', 'how'));
