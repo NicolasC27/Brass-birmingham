@@ -256,6 +256,9 @@ export const ES: Tongue = {
       topic: 'el dinero',
       words: ['dinero', 'libra', 'libras', 'plata', 'pasta', 'monedas', 'moneda', 'caja', 'efectivo', 'fondos', 'dinero inicial', 'ganar dinero', 'conseguir dinero'],
       what: 'Todos empiezan con 17 £. El dinero entra con el cobro de fin de ronda, los préstamos (30 £), los cubos que tus minas y fundiciones venden al mercado y la bonificación de Warrington. Se gasta en losetas, enlaces y compras en el mercado, y lo que gastas en una ronda fija tu puesto en el orden siguiente. Pasa de una era a otra y solo desempata en último lugar.',
+      short: {
+        what: 'Todos empiezan con 17 £. El dinero entra con el cobro de fin de ronda, los préstamos (30 £), los cubos que tus minas y fundiciones venden al mercado y la bonificación de Warrington. Se gasta en losetas, enlaces y compras en el mercado, y lo que gastas en una ronda fija tu puesto en el orden siguiente. Al cierre de la partida de iniciación, cada 4 £ en caja valen 1 punto, 15 como mucho.',
+      },
     },
     turnOrder: {
       topic: 'el orden de turno',
@@ -300,6 +303,10 @@ export const ES: Tongue = {
       words: ['puntos', 'punto', 'pv', 'puntos victoria', 'punto victoria', 'puntuacion', 'marcador puntos', 'pista puntos'],
       what: 'Los puntos de victoria deciden la partida. Se ganan en el recuento de cada era: los enlaces (1 punto por icono de enlace de los lugares tocados, 2 por un mercader) y las losetas volteadas (el número impreso). Se suman las bonificaciones de Shrewsbury y Nottingham; la bancarrota resta. El marcador da la vuelta en 100.',
       gain: 'Los puntos vienen de las losetas volteadas (el número de abajo de la loseta, en cada recuento en que siga en pie), de los enlaces (los iconos de enlace de los lugares que tocan, 2 por mercader) y de las bonificaciones de Shrewsbury (4) y Nottingham (3).',
+      short: {
+        what: 'Los puntos de victoria deciden la partida. Se ganan al final de la era del canal: los enlaces (1 punto por icono de enlace de los lugares tocados, 2 por un mercader) y las losetas volteadas (el número impreso). Se suman las bonificaciones de Shrewsbury y Nottingham; la bancarrota resta. Luego el cierre de la partida de iniciación suma 1 punto por cada 4 £ (15 como mucho), el nivel de ingresos (restado si es negativo) y, por segunda vez, las losetas volteadas de nivel 2 o más.',
+        gain: 'Los puntos vienen de las losetas volteadas (el número de abajo de la loseta) y de los enlaces (los iconos de enlace de los lugares que tocan, 2 por mercader), contados al final de la era del canal, y de las bonificaciones de Shrewsbury (4) y Nottingham (3). El cierre suma luego 1 punto por cada 4 £ (15 como mucho), el nivel de ingresos y, por segunda vez, las losetas volteadas de nivel 2 o más.',
+      },
     },
     cards: {
       topic: 'las cartas',

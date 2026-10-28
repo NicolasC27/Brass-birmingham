@@ -473,6 +473,7 @@ describe('the case in four tongues', () => {
     for (const t of [EN, ES, DE]) {
       for (const id of NOTION_IDS) {
         for (const k of ['how', 'cost', 'gain', 'whyNot'] as const) expect(`${id}.${k}:${!!t.notions[id][k]}`).toBe(`${id}.${k}:${!!FR.notions[id][k]}`);
+        expect(`${id}.short:${Object.keys(t.notions[id].short ?? {}).join(',')}`).toBe(`${id}.short:${Object.keys(FR.notions[id].short ?? {}).join(',')}`);
       }
     }
   });
@@ -601,6 +602,23 @@ describe('a short game', () => {
     expect(consult('égalité vainqueur', 'fr', [], true)).toMatchObject({ notion: 'ties', answer: tell('ties', 'fr') });
     /* what holds for both lengths stays written */
     expect(consult('combien de manches dure une ère', 'fr', [], true)).toMatchObject({ kind: 'entry', notion: 'eras' });
+  });
+
+  it('tells money and points as the short game counts them', () => {
+    /* the full game: money breaks a tie at most; the short one: 4 £ a point */
+    expect(consult('à quoi sert l’argent', 'fr').answer).toMatch(/dernier recours/);
+    expect(consult('à quoi sert l’argent', 'fr', [], true).answer).toBe(FR.notions.money.short!.what);
+    expect(consult('comment gagner des points', 'fr', [], true)).toMatchObject({ notion: 'vp', answer: FR.notions.vp.short!.gain });
+    expect(consult('what are victory points', 'en', [], true).answer).toBe(EN.notions.vp.short!.what);
+    /* a telling the short game does not rewrite stays the plain one */
+    expect(tell('coalMine', 'fr', 'cost', true)).toBe(tell('coalMine', 'fr', 'cost'));
+    expect(tell('money', 'fr', 'cost', true)).toBe(FR.notions.money.short!.what);
+    /* a notion offered by name is told the short game's way too */
+    expect(tell('eraEnd', 'fr', 'what', true)).toBe(tell('initiation', 'fr'));
+    for (const t of [FR, EN, ES, DE]) {
+      expect(t.notions.money.short!.what).toMatch(/15/);
+      for (const s of [t.notions.vp.short!.what, t.notions.vp.short!.gain!]) expect(s).toMatch(/15/);
+    }
   });
 
   it('tells the initiation whole: its rounds, its count and its close', () => {

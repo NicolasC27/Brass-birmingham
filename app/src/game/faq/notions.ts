@@ -48,6 +48,9 @@ export interface NotionText {
   gain?: string;
   /** why the table refuses it */
   whyNot?: string;
+  /** a short game's own tellings, where the plain ones speak of the full
+   *  game: money that counts at the close, points that come from it */
+  short?: Partial<Record<Asked, string>>;
 }
 
 /** the cue phrases that tell how a question is put */

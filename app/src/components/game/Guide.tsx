@@ -1081,7 +1081,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   };
   /* a notion taken up from the ones offered: asked by its name, answered
      plainly */
-  const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang())));
+  const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang(), 'what', game.eraLength === 'short')));
   const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
   /* what a screen reader hears as it comes up: her move first, then the
      news, then the lesson once it is open — said once, not the note over */

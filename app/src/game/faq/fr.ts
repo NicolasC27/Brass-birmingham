@@ -267,6 +267,9 @@ export const FR: Tongue = {
       topic: 'l’argent',
       words: ['argent', 'livre', 'livres', 'caisse', 'fric', 'thune', 'monnaie', 'pieces', 'cash', 'sterling', 'fortune', 'argent depart', 'tresorerie', 'gagner argent', 'avoir argent'],
       what: 'Chacun part avec 17 £. L’argent rentre par la paie de fin de manche, par les emprunts (30 £), par les cubes que vos mines et forges vendent au marché, et par le bonus de Warrington. Il se dépense en tuiles, liaisons et achats au marché, et ce que vous dépensez dans une manche fixe votre place dans l’ordre suivant. Il passe d’une ère à l’autre et ne départage qu’en dernier recours.',
+      short: {
+        what: 'Chacun part avec 17 £. L’argent rentre par la paie de fin de manche, par les emprunts (30 £), par les cubes que vos mines et forges vendent au marché, et par le bonus de Warrington. Il se dépense en tuiles, liaisons et achats au marché, et ce que vous dépensez dans une manche fixe votre place dans l’ordre suivant. À la clôture de la partie d’initiation, chaque tranche de 4 £ en caisse vaut 1 point, 15 au plus.',
+      },
     },
     turnOrder: {
       topic: 'l’ordre du tour',
@@ -311,6 +314,10 @@ export const FR: Tongue = {
       words: ['points', 'point', 'pv', 'vp', 'points victoire', 'point victoire', 'score', 'scores', 'piste pv', 'piste points', 'victory points'],
       what: 'Les points de victoire décident de la partie. Ils se marquent au décompte de chaque ère : les liaisons (1 point par icône lien des lieux touchés, 2 pour un marchand) et les tuiles retournées (le chiffre imprimé). S’y ajoutent les bonus de Shrewsbury et de Nottingham ; une faillite, elle, en retire. La piste fait le tour à 100.',
       gain: 'Les points viennent des tuiles retournées (le chiffre en bas de la tuile, à chaque décompte où elle est là), des liaisons (les icônes lien des lieux qu’elles touchent, 2 par marchand) et des bonus de Shrewsbury (4) et de Nottingham (3).',
+      short: {
+        what: 'Les points de victoire décident de la partie. Ils se marquent à la fin de l’ère canal : les liaisons (1 point par icône lien des lieux touchés, 2 pour un marchand) et les tuiles retournées (le chiffre imprimé). S’y ajoutent les bonus de Shrewsbury et de Nottingham ; une faillite, elle, en retire. Puis la clôture de la partie d’initiation ajoute 1 point par tranche de 4 £ (15 au plus), le niveau de revenu (négatif, il en retire), et une seconde fois les tuiles retournées de niveau 2 et plus.',
+        gain: 'Les points viennent des tuiles retournées (le chiffre en bas de la tuile) et des liaisons (les icônes lien des lieux qu’elles touchent, 2 par marchand), comptées à la fin de l’ère canal, et des bonus de Shrewsbury (4) et de Nottingham (3). La clôture ajoute ensuite 1 point par tranche de 4 £ (15 au plus), le niveau de revenu, et une seconde fois les tuiles retournées de niveau 2 et plus.',
+      },
     },
     cards: {
       topic: 'les cartes',

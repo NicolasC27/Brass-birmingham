@@ -255,6 +255,9 @@ export const EN: Tongue = {
       topic: 'money',
       words: ['money', 'pound', 'pounds', 'cash', 'coins', 'coin', 'purse', 'funds', 'sterling', 'starting money', 'earn money', 'get money', 'make money'],
       what: 'Everyone starts with £17. Money comes in through the end-of-round payday, loans (£30), the cubes your mines and iron works sell to the market, and Warrington’s bonus. It is spent on tiles, links and market purchases, and what you spend in a round sets your place in the next turn order. It carries over from one era to the next and only breaks a tie as a last resort.',
+      short: {
+        what: 'Everyone starts with £17. Money comes in through the end-of-round payday, loans (£30), the cubes your mines and iron works sell to the market, and Warrington’s bonus. It is spent on tiles, links and market purchases, and what you spend in a round sets your place in the next turn order. At the close of the introductory game, every £4 in hand is worth 1 point, 15 at most.',
+      },
     },
     turnOrder: {
       topic: 'turn order',
@@ -299,6 +302,10 @@ export const EN: Tongue = {
       words: ['points', 'point', 'vp', 'victory points', 'victory point', 'score', 'scores', 'vp track', 'score track', 'points track'],
       what: 'Victory points decide the game. They are scored at each era’s end: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury and Nottingham bonuses; a shortfall takes points away. The track wraps round at 100.',
       gain: 'Points come from flipped tiles (the number at the bottom of the tile, at every scoring where it stands), from links (the link icons of the places they touch, 2 per merchant) and from the Shrewsbury (4) and Nottingham (3) bonuses.',
+      short: {
+        what: 'Victory points decide the game. They are scored at the end of the Canal Era: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury and Nottingham bonuses; a shortfall takes points away. Then the close of the introductory game adds 1 point per £4 (15 at most), the income level (subtracted if negative), and flipped tiles of level 2 and up a second time.',
+        gain: 'Points come from flipped tiles (the number at the bottom of the tile) and from links (the link icons of the places they touch, 2 per merchant), counted at the end of the Canal Era, and from the Shrewsbury (4) and Nottingham (3) bonuses. The close then adds 1 point per £4 (15 at most), the income level, and flipped tiles of level 2 and up a second time.',
+      },
     },
     cards: {
       topic: 'cards',

@@ -411,10 +411,13 @@ export interface Consulted {
   near: NearNotion[];
 }
 
-/** a notion's telling for the way it was asked, its plain one otherwise */
-export function tell(id: NotionId, lang: Lang, asked: Asked = 'what'): string {
-  const n = tongueOf(lang).notions[id];
-  return (asked !== 'what' && n[asked]) || n.what;
+/** a notion's telling for the way it was asked, its plain one otherwise;
+ *  at a short game's table, the telling of that game — the initiation for
+ *  its end, a short telling where the plain one speaks of the full game */
+export function tell(id: NotionId, lang: Lang, asked: Asked = 'what', short = false): string {
+  const n = tongueOf(lang).notions[(short && SHORT_TOLD[id]) || id];
+  const own = short ? n.short : undefined;
+  return own?.[asked] || (asked !== 'what' && n[asked]) || own?.what || n.what;
 }
 
 /** the notion's name, as offered under "did you mean" */
@@ -551,9 +554,9 @@ export function consult(question: string, lang: Lang, passages: Passage[] = [], 
     /* a short game has no rail era to reach: a written answer of the full
        game, or a notion that tells its end, gives way to the one it plays */
     const instead = !short ? undefined : entry ? FULL_GAME[entry.id] : SHORT_TOLD[top.notion];
-    if (instead) return { kind: 'notion', notion: instead, asked, answer: tell(instead, lang, asked), near: [] };
+    if (instead) return { kind: 'notion', notion: instead, asked, answer: tell(instead, lang, asked, short), near: [] };
     if (entry) return { kind: 'entry', notion: top.notion, asked, answer: entry.answer, near: [] };
-    return { kind: 'notion', notion: top.notion, asked, answer: tell(top.notion, lang, asked), near: [] };
+    return { kind: 'notion', notion: top.notion, asked, answer: tell(top.notion, lang, asked, short), near: [] };
   }
   const passage = passages.length ? rulesMatch(mend(question, lang), passages) : null;
   if (passage) return { kind: 'passage', notion: null, asked, answer: passage.title ? `${passage.title} — ${passage.body}` : passage.body, near: [] };

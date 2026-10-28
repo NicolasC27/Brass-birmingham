@@ -255,6 +255,9 @@ export const DE: Tongue = {
       topic: 'das Geld',
       words: ['geld', 'pfund', 'munzen', 'munze', 'kasse', 'bargeld', 'kapital', 'startgeld', 'geld verdienen', 'geld bekommen', 'sterling'],
       what: 'Alle beginnen mit £17. Geld kommt durch die Auszahlung am Rundenende, durch Kredite (£30), durch die Würfel, die deine Minen und Hütten an den Markt verkaufen, und durch den Bonus von Warrington. Es wird für Plättchen, Verbindungen und Marktkäufe ausgegeben, und was du in einer Runde ausgibst, bestimmt deinen Platz in der nächsten Reihenfolge. Es bleibt über die Epochen hinweg und entscheidet einen Gleichstand erst ganz zuletzt.',
+      short: {
+        what: 'Alle beginnen mit £17. Geld kommt durch die Auszahlung am Rundenende, durch Kredite (£30), durch die Würfel, die deine Minen und Hütten an den Markt verkaufen, und durch den Bonus von Warrington. Es wird für Plättchen, Verbindungen und Marktkäufe ausgegeben, und was du in einer Runde ausgibst, bestimmt deinen Platz in der nächsten Reihenfolge. Beim Abschluss der Einführungspartie ist jedes £4 in der Kasse 1 Punkt wert, höchstens 15.',
+      },
     },
     turnOrder: {
       topic: 'die Zugreihenfolge',
@@ -299,6 +302,10 @@ export const DE: Tongue = {
       words: ['punkte', 'punkt', 'siegpunkte', 'siegpunkt', 'sp', 'vp', 'punktestand', 'punkteleiste', 'siegpunktleiste'],
       what: 'Siegpunkte entscheiden die Partie. Sie werden bei jeder Epochenwertung gezählt: Verbindungen (1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler) und umgedrehte Plättchen (die aufgedruckte Zahl). Dazu kommen die Boni von Shrewsbury und Nottingham; ein Fehlbetrag zieht Punkte ab. Die Leiste läuft bei 100 wieder herum.',
       gain: 'Punkte kommen von umgedrehten Plättchen (die Zahl unten auf dem Plättchen, bei jeder Wertung, bei der es steht), von Verbindungen (die Verbindungssymbole der berührten Orte, 2 pro Händler) und von den Boni von Shrewsbury (4) und Nottingham (3).',
+      short: {
+        what: 'Siegpunkte entscheiden die Partie. Sie werden am Ende der Kanalzeit gezählt: Verbindungen (1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler) und umgedrehte Plättchen (die aufgedruckte Zahl). Dazu kommen die Boni von Shrewsbury und Nottingham; ein Fehlbetrag zieht Punkte ab. Dann zählt der Abschluss der Einführungspartie 1 Punkt pro £4 dazu (höchstens 15), die Einkommensstufe (abgezogen, wenn sie negativ ist) und ein zweites Mal die umgedrehten Plättchen ab Stufe 2.',
+        gain: 'Punkte kommen von umgedrehten Plättchen (die Zahl unten auf dem Plättchen) und von Verbindungen (die Verbindungssymbole der berührten Orte, 2 pro Händler), gezählt am Ende der Kanalzeit, und von den Boni von Shrewsbury (4) und Nottingham (3). Der Abschluss zählt dann 1 Punkt pro £4 dazu (höchstens 15), die Einkommensstufe und ein zweites Mal die umgedrehten Plättchen ab Stufe 2.',
+      },
     },
     cards: {
       topic: 'die Karten',

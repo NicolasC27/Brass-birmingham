@@ -83,8 +83,9 @@ export default function AskGuide({ className }: { className?: string }) {
     const a = got.intent === 'do' ? t('game.guide.ask.answer.doTool', { ask: t('game.guide.suggest.ask') }) : got.answer;
     setThread((prev) => [...prev.slice(-5), { q, a, near: got.near.length ? got.near : undefined }]);
   };
-  /* a notion taken up from the ones offered: asked by its name */
-  const takeUp = (n: NearNotion) => setThread((prev) => [...prev.slice(-5), { q: askedAs(n), a: tell(n.id, lang) }]);
+  /* a notion taken up from the ones offered: asked by its name, told as
+     this game plays it */
+  const takeUp = (n: NearNotion) => setThread((prev) => [...prev.slice(-5), { q: askedAs(n), a: tell(n.id, lang, 'what', game?.eraLength === 'short') }]);
   return (
     <>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-pressed={open} title={t('game.guide.ask.open')} aria-label={t('game.guide.ask.open')} className={cn(className, open && '!border-brass-400 !opacity-100')}>
