@@ -554,7 +554,7 @@ const fr: typeof engame = {
     sale: ' · au marché : {res} ×{n} pour {gain} £',
     double: ' + {a} ⇄ {b} (double : {price} £, 2 charbons, 1 bière)',
     bonusVp: '+{n} PV',
-    bonusIncome: '+{n} revenu',
+    bonusIncome: '+{n} [n|case|cases] de revenu',
     bonusMoney: '{n} £',
     bonusDevelop: 'développement gratuit',
     passCard: ' et défausse une carte',

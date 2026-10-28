@@ -552,7 +552,7 @@ const game = {
     sale: ' · {n} {res} to market for £{gain}',
     double: ' + {a} ⇄ {b} (double: £{price}, 2 coal, 1 beer)',
     bonusVp: '+{n} VP',
-    bonusIncome: '+{n} income',
+    bonusIncome: '+{n} income [n|space|spaces]',
     bonusMoney: '£{n}',
     bonusDevelop: 'free develop',
     passCard: ' and discards a card',
