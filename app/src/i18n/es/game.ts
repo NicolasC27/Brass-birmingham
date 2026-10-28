@@ -1158,7 +1158,7 @@ const game: typeof engame = {
         rounds: 'Ronda {round} de {total}: [left|queda|quedan] {left} [left|ronda|rondas] después de esta.',
         roundsLast: 'Ronda {round} de {total}: es la última.',
         roundsRail: 'Luego llega la era del ferrocarril, también de {total} [total|ronda|rondas].',
-        roundsEnd: 'La partida termina con ella, y no sigue ninguna paga.',
+        roundsEnd: 'La partida termina al final de esta ronda, sin paga.',
         roundsTurn: 'Te [actions|queda|quedan] {actions} [actions|acción|acciones] en este turno.',
         win: 'Los puntos vienen de las losetas volteadas y de los iconos de enlace de los lugares que tocan tus conexiones. Vas por {mine}, el mejor de la mesa por {best}.',
         winYet: 'La mayoría de los puntos aún no se ha contado: las losetas volteadas y las conexiones puntúan al final de cada era.',

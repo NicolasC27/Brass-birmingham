@@ -1156,7 +1156,7 @@ const game = {
         rounds: 'Round {round} of {total}: {left} more [left|round|rounds] after this one.',
         roundsLast: 'Round {round} of {total}: this is the last.',
         roundsRail: 'Then comes the Rail Era, {total} [total|round|rounds] long as well.',
-        roundsEnd: 'The game stops at its end, and no payday follows.',
+        roundsEnd: 'The game stops at the end of this round, with no payday.',
         roundsTurn: 'You have {actions} [actions|action|actions] left this turn.',
         win: 'Points come from flipped tiles and from the link icons of the places your links touch. You are on {mine}, the table’s best is {best}.',
         winYet: 'Most points are not counted yet: flipped tiles and links score at the end of each era.',

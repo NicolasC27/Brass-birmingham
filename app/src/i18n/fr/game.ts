@@ -1158,7 +1158,7 @@ const fr: typeof engame = {
         rounds: 'Manche {round} sur {total} : encore {left} [left|manche|manches] après celle-ci.',
         roundsLast: 'Manche {round} sur {total} : c’est la dernière.',
         roundsRail: 'Puis vient l’ère rail, en {total} [total|manche|manches] elle aussi.',
-        roundsEnd: 'La partie s’arrête à sa fin, et aucune paie ne suit.',
+        roundsEnd: 'La partie s’arrête à la fin de cette manche, sans paie.',
         roundsTurn: 'Il vous reste {actions} [actions|action|actions] dans ce tour.',
         win: 'Les points viennent des tuiles retournées et des icônes lien des lieux que vos liaisons touchent. Vous en êtes à {mine}, le meilleur de la table à {best}.',
         winYet: 'Le gros des points n’est pas encore compté : tuiles retournées et liaisons marquent à la fin de chaque ère.',
