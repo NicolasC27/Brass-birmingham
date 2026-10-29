@@ -65,7 +65,7 @@ describe('the line under the signature', () => {
     setLang('fr');
     expect(photoCaption(tr, { era: 'canal', round: 6, over: false, code: null, year: 2026 })).toBe('Canal, manche 6 · 2026');
     setLang('en');
-    expect(photoCaption(tr, { era: 'rail', round: 3, over: false, code: null, year: 2026 })).toBe('Rail era, round 3 · 2026');
+    expect(photoCaption(tr, { era: 'rail', round: 3, over: false, code: null, year: 2026 })).toBe('Rail Era, round 3 · 2026');
   });
 
   it('names the table first when it has a code, and says when the game is over', () => {

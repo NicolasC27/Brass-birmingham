@@ -137,14 +137,14 @@ const rules = {
       name: 'Sell',
       cost: 'Beer: as printed on the tile (1, or 2 for the great works)',
       steps: {
-        s1: 'Play any card and choose one or more of your cotton mills, manufacturers or potteries.',
+        s1: 'Play any card and choose one or more of your cotton mills, manufactories or potteries.',
         s2: 'Each must trace a connection to a merchant tile showing its goods — cotton, manufactured goods, pottery, or any goods.',
         s3: "Spend the required beer — the merchant's own barrel, your breweries, or a connected brewery — then flip each sold tile.",
       },
       edges: {
         e1: "Flipped tiles pay their income bonus immediately and score VP at era's end.",
         e2: "A merchant's appetite never runs out: its tile buys again and again. Only its bonus barrel is drunk once per era.",
-        e3: 'The beer a tile drinks is printed on it: two barrels for the level-5 manufacturer and the level-3 and level-5 potteries, in either era.',
+        e3: 'The beer a tile drinks is printed on it: two barrels for the level-5 manufactory and the level-3 and level-5 potteries, in either era.',
       },
     },
     loan: {
@@ -173,7 +173,7 @@ const rules = {
     },
   },
   industriesIntro:
-    'Six trades keep the Midlands turning. Each climbs its own column on your player board — four levels for most, five for pottery, eight for the manufacturer; you always build the lowest remaining level, and develop to reach the stronger ones. Learn to read a tile: pips mark the level, the brass chip the income gained on flipping, the cream chip the victory points.',
+    'Six trades keep the Midlands turning. Each climbs its own column on your player board — four levels for most, five for pottery, eight for the manufactory; you always build the lowest remaining level, and develop to reach the stronger ones. Learn to read a tile: pips mark the level, the brass chip the income gained on flipping, the cream chip the victory points.',
   industries: {
     tuningTag: 'Printed tiles',
     tuningNote:
@@ -211,7 +211,7 @@ const rules = {
     ironWorks: {
       name: 'Iron Works',
       blurb:
-        'Forges that stock iron bars for building and developing. Like mines, they flip when their stock is exhausted — a foundry worked cold is a foundry paid for.',
+        'Forges that stock iron bars for building and developing. Like mines, they flip when their stock is exhausted — an iron works worked cold is one paid for.',
       notes: {
         n1: 'Canal Era only. 4 iron; needs 1 coal.',
         n2: '4 iron; needs 1 coal.',
@@ -319,7 +319,7 @@ const rules = {
       'An empty market is a wall, not an inconvenience: coal that cannot be bought and cannot be reached simply cannot be had. Watch the trays the way a foreman watches the sky.',
   },
   selling: {
-    intro: 'Cotton mills, manufacturers and potteries flip only by selling to a merchant port at the map’s edge. The port must show your goods (or any goods), you must trace a connection to it, and each tile drinks the beer printed on it before it sells — one barrel for most, two for the great works.',
+    intro: 'Cotton mills, manufactories and potteries flip only by selling to a merchant port at the map’s edge. The port must show your goods (or any goods), you must trace a connection to it, and each tile drinks the beer printed on it before it sells — one barrel for most, two for the great works.',
     li1: "Beer comes first from the merchant's own barrel when you sell there — it fires the merchant's bonus — then from your breweries, then any connected brewery.",
     li2: "Flipping pays the income bonus immediately and banks the tile's VP for era scoring.",
     li3: 'Each merchant tile keeps one barrel per era; drink it and its bonus pays out, and the barrel is set again when the Rail Era opens.',
@@ -386,7 +386,7 @@ const rules = {
     },
     merchantPort: {
       term: 'Merchant port',
-      def: "A harbour tile at the map's edge showing the goods it buys; the only buyer for mills, manufacturers and potteries.",
+      def: "A harbour tile at the map's edge showing the goods it buys; the only buyer for mills, manufactories and potteries.",
     },
     demandPip: {
       term: 'Merchant goods',
