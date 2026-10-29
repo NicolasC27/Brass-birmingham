@@ -107,7 +107,8 @@ function fmt(s: string, vars?: Record<string, string | number>, l: Lang = lang):
   /* [n|cube|cubes] — the word agreeing with the count named first */
   out = out.replace(/\[(\w+)\|([^|\]]*)\|([^\]]*)\]/g, (_m, k: string, one: string, many: string) => (isOne(Number(vars[k] ?? 0), l) ? one : many));
   if (l === 'fr') out = out.replace(ELIDED, (m, w: string, k: string) => (opensOnAVowel(vars[k]) ? `${w.slice(0, -1)}’{${k}}` : m));
-  for (const [k, v] of Object.entries(vars)) out = out.replaceAll(`{${k}}`, String(v));
+  /* a figure below zero takes the minus sign, not a hyphen: "niveau −3" */
+  for (const [k, v] of Object.entries(vars)) out = out.replaceAll(`{${k}}`, typeof v === 'number' && v < 0 ? `−${-v}` : String(v));
   return out;
 }
 

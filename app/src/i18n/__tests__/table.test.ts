@@ -123,6 +123,14 @@ describe('the table’s sheets', () => {
     expect(tr('game.guide.happens.bonus', { merchant: 'Oxford', bits: '+2 VP' })).toContain('Oxford’s barrel');
   });
 
+  it('set a figure below zero with the minus sign', () => {
+    setLang('fr');
+    expect(tr('game.log.loan', { name: 'Ada', amount: 30, from: 0, to: -3 })).toContain('au niveau −3');
+    expect(tr('game.log.loan', { name: 'Ada', amount: 30, from: 0, to: -3 })).not.toContain('-3');
+    setLang('en');
+    expect(tr('game.guide.alerts.negative', { level: -2, pay: 2 })).toContain('level −2');
+  });
+
   it('say a merchant’s bonus in the reader’s tongue, on the board and in words', () => {
     expect(bonusLabel({ income: 2 }, true, 'fr')).toBe('+2 revenu');
     expect(bonusLabel({ income: 2 }, false, 'fr')).toBe('+2 cases de revenu');
