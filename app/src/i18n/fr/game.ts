@@ -1046,7 +1046,6 @@ const fr: typeof engame = {
     botOk: 'Compris',
     playOn: { let: 'Laisser {name} jouer sans m’attendre', hold: 'Faire de nouveau attendre {name}', hint: '{name} joue sans attendre votre lecture : ses plaques ne la retiennent plus. Seule une leçon nouvelle la fait encore attendre.' },
     seeMove: 'Revoir le coup de {name} sur la carte',
-    readPlate: 'Attendez le coup de {bot}, lisez pourquoi, puis « Compris ».',
     turn: {
       first: 'Première manche de la partie : une seule action chacun, dans l’ordre tiré des sièges.',
       orderBefore: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord — {name} a dépensé {spentBot} £, vous {spentMe} £, donc {name} joue avant vous. C’était la première action de {name} ce tour-ci.',
@@ -1145,7 +1144,6 @@ const fr: typeof engame = {
         order: 'joue avant moi,joue apres moi,joue en premier,qui commence,ordre du tour,qui joue,avant moi,apres moi,pourquoi joue en premier',
       },
       answer: {
-        none: 'Celle-là, je ne la connais pas. Demandez-moi le charbon, la bière, l’argent, où construire, comment vendre, les points, les manches qui restent, ou quoi jouer maintenant.',
         sellYes: 'Votre {industry} de {town} peut se vendre à {merchant}. Choisissez Vendre, la tuile, puis validez.',
         sellNo: 'Rien ne peut se vendre maintenant.',
         sellNoOf: 'Votre {industry} ne peut pas se vendre en ce moment : il lui faut une liaison jusqu’à un marchand qui achète ce bien, et de la bière.',

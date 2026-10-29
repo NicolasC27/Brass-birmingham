@@ -1046,7 +1046,6 @@ const game: typeof engame = {
     botOk: 'Entendido',
     playOn: { let: 'Dejar que {name} juegue sin esperarme', hold: 'Hacer que {name} vuelva a esperarme', hint: '{name} juega sin esperar a que leas: las placas ya no detienen a la máquina. Solo una lección nueva la hace esperar todavía.' },
     seeMove: 'Ver la jugada de {name} en el tablero',
-    readPlate: 'Espera la jugada de {bot}, lee por qué, y pulsa Entendido.',
     turn: {
       first: 'Primera ronda de la partida: una sola acción cada uno, en el orden sorteado de los asientos.',
       orderBefore: 'Ronda {round}: el orden sigue el dinero gastado en la ronda anterior, primero quien menos gastó — {name} gastó {spentBot} £, tú {spentMe} £, así que {name} juega antes que tú. Fue la primera acción de {name} en este turno.',
@@ -1145,7 +1144,6 @@ const game: typeof engame = {
         order: 'juega antes que yo,quien empieza,quien juega primero,orden de turno,orden del turno,antes que yo,juega despues de mi,quien va primero,por que va primero,va despues de mi',
       },
       answer: {
-        none: 'Esa no la sé. Pregúntame por el carbón, la cerveza, el dinero, dónde construir, cómo vender, los puntos, las rondas que quedan, o qué jugar ahora.',
         sellYes: 'Tu {industry} de {town} puede venderse a {merchant}. Elige Vender, la loseta, y confirma.',
         sellNo: 'Nada se puede vender ahora.',
         sellNoOf: 'Tu {industry} no puede venderse ahora mismo: necesita una conexión hasta un mercader que compre sus bienes, y cerveza.',

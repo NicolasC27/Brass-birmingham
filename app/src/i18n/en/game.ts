@@ -1044,7 +1044,6 @@ const game = {
     botOk: 'Understood',
     playOn: { let: 'Let {name} play without waiting for me', hold: 'Make {name} wait for me again', hint: '{name} plays without waiting for your reading: the plates no longer hold the machine. Only a new lesson still makes it wait.' },
     seeMove: 'Look at {name}’s move on the board',
-    readPlate: 'Wait for {bot} to play, read why, then say Understood.',
     turn: {
       first: 'First round of the game: one action each, in the order the seats were drawn.',
       orderBefore: 'Round {round}: the order goes by money spent last round, least first — {name} spent £{spentBot}, you spent £{spentMe}, so {name} moves before you. That was {name}’s first action of the turn.',
@@ -1143,7 +1142,6 @@ const game = {
         order: 'plays before me,play before me,plays first,who starts,who goes first,turn order,before me,does go first,goes first,goes after me,plays after me',
       },
       answer: {
-        none: 'I do not know that one. Try asking about coal, beer, money, building, selling, the points, the rounds left, or what to do now.',
         sellYes: 'Your {industry} at {town} can be sold to {merchant}. Choose Sell, then the tile, then confirm.',
         sellNo: 'Nothing can be sold right now.',
         sellNoOf: 'Your {industry} cannot be sold right now: it needs a link to a merchant who buys its goods, and beer.',

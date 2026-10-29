@@ -1046,7 +1046,6 @@ const game: typeof engame = {
     botOk: 'Verstanden',
     playOn: { let: '{name} spielen lassen, ohne auf mich zu warten', hold: '{name} wieder auf mich warten lassen', hint: '{name} spielt, ohne auf dein Lesen zu warten: Die Tafeln halten die Maschine nicht mehr auf. Nur eine neue Lektion lässt sie noch warten.' },
     seeMove: 'Den Zug von {name} auf dem Spielplan zeigen',
-    readPlate: 'Warte auf den Zug von {bot}, lies warum, dann Verstanden.',
     turn: {
       first: 'Erste Runde der Partie: eine Aktion für jeden, in der ausgelosten Sitzreihenfolge.',
       orderBefore: 'Runde {round}: Die Reihenfolge richtet sich nach dem Geld, das in der Runde davor ausgegeben wurde, der Sparsamste zuerst — {name} hat £{spentBot} ausgegeben, du £{spentMe}, also zieht {name} vor dir. Das war die erste Aktion von {name} in diesem Zug.',
@@ -1145,7 +1144,6 @@ const game: typeof engame = {
         order: 'spielt vor mir,wer fangt an,wer beginnt,wer spielt zuerst,wer ist zuerst dran,vor mir,spielt nach mir,zuerst dran,spielt zuerst,wer ist nach mir dran',
       },
       answer: {
-        none: 'Die kenne ich nicht. Frag mich nach Kohle, Bier, Geld, wo du bauen kannst, wie man verkauft, den Punkten, den verbleibenden Runden, oder was jetzt zu spielen ist.',
         sellYes: 'Deine {industry} in {town} lässt sich an {merchant} verkaufen. Wähle Verkaufen, das Plättchen, dann bestätigen.',
         sellNo: 'Jetzt lässt sich nichts verkaufen.',
         sellNoOf: 'Deine {industry} lässt sich gerade nicht verkaufen: Sie braucht eine Verbindung zu einem Händler, der ihre Waren kauft, und Bier.',
