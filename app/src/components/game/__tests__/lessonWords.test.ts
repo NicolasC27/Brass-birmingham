@@ -4,7 +4,9 @@ import type { GameAction } from '@/game/actions';
 import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
-import { LOW_PURSE, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
+import { MOTIFS } from '@/game/progress';
+import { LESSON_IDS } from '../lessons';
+import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -361,5 +363,21 @@ describe('the round the draw pile runs dry', () => {
     const { dry, last } = era(seats);
     expect(last).toBe(eraRounds(seats));
     expect(dry[0]).toBe(dryRound(seats));
+  });
+});
+
+describe('the lesson the sheet’s advice opens', () => {
+  it('teaches the move missed, never the one played in its stead', () => {
+    for (const m of MOTIFS) expect(LESSON_IDS).toContain(MOTIF_LESSON[m]);
+    /* a loan, a development, where a build was worth more: not the loan
+       nor the development, which say to take them */
+    expect(MOTIF_LESSON.loanOverBuild).toBe('works');
+    expect(MOTIF_LESSON.developOverBuild).toBe('works');
+    /* a single rail: not the opening canal, the plan that doubles them */
+    expect(MOTIF_LESSON.singleRail).toBe('plan');
+    /* a build where a link was worth more: the link to a buyer */
+    expect(MOTIF_LESSON.buildOverLink).toBe('reach');
+    const g = table('standard');
+    expect(plainKeyOf(MOTIF_LESSON.singleRail, g, 0)).toBe('plan');
   });
 });

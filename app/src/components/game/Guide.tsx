@@ -27,10 +27,9 @@ import type { Read } from './guideRead';
 import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
-import type { Motif } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
+import { MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
 import { botReason, happenings } from './machineWords';
 import { holdFor, mayPlayOn, unreadOf } from './guideHold';
@@ -408,8 +407,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const sheetAdvice = useMemo(() => {
     const back = recurring(listProgress(), 10)[0];
     if (!back) return null;
-    const LESSON: Record<Motif, string> = { singleRail: 'link', buildOverLink: 'link', linkOverBuild: 'works', loanOverBuild: 'loan', sellLate: 'sell', buildOverDevelop: 'develop', developOverBuild: 'develop', wrongTown: 'works', wrongIndustry: 'works', passed: 'tips' };
-    const id = LESSON[back.motif];
+    const id = MOTIF_LESSON[back.motif];
     return lessonOf(id) ? { motif: back.motif, times: back.times, id } : null;
   }, []);
   const news = happens.filter((x) => x.id > eventsSeen);

@@ -1,5 +1,6 @@
 import { INDUSTRIES, LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
 import { hasPresence, merchantDemand, networkTowns } from '@/game/engine';
+import type { Motif } from '@/game/progress';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
 import { lastRound } from './lessons';
 
@@ -69,6 +70,24 @@ const PLAIN: Readonly<Record<string, string>> = {
 
 /** a lesson's entry read at a plain table */
 export const plainKeyOf = (id: string, g: GameState, me: number): string => PLAIN[id] ?? stepKeyOf(id, g, me);
+
+/** the lesson the sheet's advice opens for a motif that keeps coming
+ *  back: the one that teaches the move missed, never the one played in
+ *  its stead — a loan or a development where a build was worth more
+ *  opens the works, a single rail the plan that lays them double, a build
+ *  where a link was worth more the link that reaches a buyer */
+export const MOTIF_LESSON: Readonly<Record<Motif, string>> = {
+  singleRail: 'plan',
+  buildOverLink: 'reach',
+  linkOverBuild: 'works',
+  loanOverBuild: 'works',
+  sellLate: 'sell',
+  buildOverDevelop: 'develop',
+  developOverBuild: 'works',
+  wrongTown: 'works',
+  wrongIndustry: 'works',
+  passed: 'tips',
+};
 
 const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
 /** a slot of the town that takes this industry and holds no tile yet */
