@@ -127,7 +127,7 @@ const fr: typeof enresults = {
     sourcesBonus: "{n} des barils des marchands",
     sourcesPenalty: "{n} [n|perdu|perdus] faute d’argent au jour de paie",
     idle: "Ce qui n’a jamais été retourné",
-    idleLead: "Une industrie ne rapporte qu’une fois ses cubes partis ou sa marchandise écoulée. Une tuile encore face visible à la dernière paie, c’est de l’argent dépensé pour rien.",
+    idleLead: "Une industrie ne rapporte qu’une fois ses cubes partis ou, pour un ouvrage, une fois vendu. Une tuile encore face visible à la dernière paie, c’est de l’argent dépensé pour rien.",
     idleNone: "tout a été retourné",
     idleSome: "{n} encore face visible, {vp} PV [vp|laissé|laissés] sur la table",
     swept: "et {n} [n|tuile de niveau 1 encore face visible à la fin de l’ère canal, balayée du plateau avec elle|tuiles de niveau 1 encore face visible à la fin de l’ère canal, balayées du plateau avec elle] — {vp} PV qui n’auront jamais eu leur chance",

@@ -75,7 +75,7 @@ const landing: Dict['landing'] = {
     points: [
       { h: 'Des villes réelles', p: 'Stoke, Dudley, Coventry, Birmingham : installez houillères, forges, filatures, manufactures, poteries et brasseries.' },
       { h: 'Des marchés qui bougent', p: 'Le charbon et le fer se vendent sur des marchés communs : chaque achat fait monter les prix pour vos rivaux.' },
-      { h: 'Des marchands à conquérir', p: 'Coton, marchandises et poteries partent vers Warrington, Oxford, Gloucester, Nottingham ou Shrewsbury.' },
+      { h: 'Des marchands à conquérir', p: 'Coton, manufactures et poteries partent vers Warrington, Oxford, Gloucester, Nottingham ou Shrewsbury.' },
       { h: 'Des tuiles qui se retournent', p: 'Une industrie qui a servi se retourne : elle paie un revenu et des points de victoire.' },
     ],
     stokeAlt: 'Gros plan : la poterie de Stoke-on-Trent et le marchand de Warrington',

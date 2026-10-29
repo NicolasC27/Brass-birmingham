@@ -56,7 +56,7 @@ const fr: typeof enboard = {
   },
   invalid: {
     tileCard: 'Cette tuile ne peut pas accueillir la carte sélectionnée',
-    noMerchant: 'Ces marchandises ne peuvent pas atteindre un négociant demandeur',
+    noMerchant: 'Ces ouvrages ne peuvent pas atteindre un marchand qui les achète',
     cannotBuild: 'Impossible de construire ici',
     flipsByEmptying: 'Cet établissement se retourne en se vidant, pas par une vente',
   },
@@ -98,7 +98,7 @@ const fr: typeof enboard = {
     barrels: '{left}/{total} [total|baril|barils] de bière',
     bonusIs: 'bonus {bonus}',
     youCanSell: 'Vous pourriez y vendre {n} de vos ouvrages',
-    nothingToSell: 'Aucune de vos usines ne peut s’y vendre pour l’instant',
+    nothingToSell: 'Aucun de vos ouvrages ne peut s’y vendre pour l’instant',
     noViewer: 'Marchand des Midlands',
     closed: 'Fermé à ce nombre de joueurs',
     claimedSuffix: ' (réclamé)',

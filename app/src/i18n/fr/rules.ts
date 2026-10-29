@@ -57,7 +57,7 @@ const fr: typeof enrules = {
     },
     sell: {
       title: "Vendez, empruntez, développez",
-      body: "Vendez vos marchandises à des négociants lointains pour retourner des tuiles et gagner du revenu, contractez des emprunts quand l’argent manque, et développez pour écarter les ouvrages faibles.",
+      body: "Vendez vos ouvrages à des négociants lointains pour retourner des tuiles et gagner du revenu, contractez des emprunts quand l’argent manque, et développez pour écarter les ouvrages faibles.",
     },
     supply: {
       title: "Approvisionnement et décompte",
@@ -140,13 +140,13 @@ const fr: typeof enrules = {
       cost: "Bière : comme imprimé sur la tuile (1, ou 2 pour les grands ouvrages)",
       steps: {
         s1: "Jouez une carte quelconque et choisissez une ou plusieurs de vos filatures de coton, manufactures ou poteries.",
-        s2: "Chacune doit relier une tuile marchand affichant ses biens — coton, manufacture, céramique, ou tous biens.",
+        s2: "Chacune doit relier une tuile marchand affichant ses biens — coton, manufacture, poterie, ou tous biens.",
         s3: "Dépensez la bière requise — le baril du marchand, vos brasseries ou une brasserie connectée — puis retournez chaque tuile vendue.",
       },
       edges: {
         e1: "Les tuiles retournées rapportent leur bonus de revenu immédiatement et marquent des PV à la fin de l’ère.",
         e2: "L’appétit d’un négociant ne s’épuise jamais : sa tuile achète encore et encore. Seul son baril bonus se boit une fois par ère.",
-        e3: "La bière qu’une tuile boit est imprimée dessus : deux barils pour la manufacture de niveau 5 et les céramiques de niveaux 3 et 5, quelle que soit l’ère.",
+        e3: "La bière qu’une tuile boit est imprimée dessus : deux barils pour la manufacture de niveau 5 et les poteries de niveaux 3 et 5, quelle que soit l’ère.",
       },
     },
     loan: {
@@ -175,7 +175,7 @@ const fr: typeof enrules = {
     },
   },
   industriesIntro:
-    "Six métiers font tourner les Midlands. Chacun grimpe sa propre colonne sur votre plateau joueur — quatre niveaux pour la plupart, cinq pour la céramique, huit pour la manufacture ; vous construisez toujours le niveau restant le plus bas, et développez pour atteindre les plus puissants. Apprenez à lire une tuile : les pastilles marquent le niveau, le jeton de laiton le revenu gagné au retournement, le jeton crème les points de victoire.",
+    "Six métiers font tourner les Midlands. Chacun grimpe sa propre colonne sur votre plateau joueur — quatre niveaux pour la plupart, cinq pour la poterie, huit pour la manufacture ; vous construisez toujours le niveau restant le plus bas, et développez pour atteindre les plus puissants. Apprenez à lire une tuile : les pastilles marquent le niveau, le jeton de laiton le revenu gagné au retournement, le jeton crème les points de victoire.",
   industries: {
     tuningTag: "Tuiles imprimées",
     tuningNote:
@@ -392,11 +392,11 @@ const fr: typeof enrules = {
     },
     demandPip: {
       term: "Biens du marchand",
-      def: "L’icône d’une tuile marchand — coton, manufacture, céramique, ou tous biens. Elle ne s’épuise jamais.",
+      def: "L’icône d’une tuile marchand — coton, manufacture, poterie, ou tous biens. Elle ne s’épuise jamais.",
     },
     beer: {
       term: "Bière / baril",
-      def: "Le lubrifiant du commerce, dépensé pour vendre des marchandises. Tirée des brasseries ou de la cave du négociant.",
+      def: "Le lubrifiant du commerce, dépensé pour vendre des ouvrages. Tirée des brasseries ou de la cave du négociant.",
     },
     wildCard: {
       term: "Carte joker",
@@ -457,7 +457,7 @@ const fr: typeof enrules = {
     },
     deck: {
       area: "Tuiles marchand",
-      note: "Les neuf tuiles marchand sont distribuées au hasard comme imprimées ; les deux tuiles ajoutées à 3 et 4 joueurs suivent le manifeste publié le plus courant (céramique + manufacture, puis tous biens + coton).",
+      note: "Les neuf tuiles marchand sont distribuées au hasard comme imprimées ; les deux tuiles ajoutées à 3 et 4 joueurs suivent le manifeste publié le plus courant (poterie + manufacture, puis tous biens + coton).",
     },
     bots: {
       area: "The Clockwork Club",
