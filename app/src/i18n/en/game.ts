@@ -93,8 +93,6 @@ const game = {
     yours: 'Your turn',
     plays: '{name} plays',
     thinks: '{name} is thinking…',
-    waitsRead: '{name} waits for you to read…',
-    held: '{name} waits: the machines are held',
     playsRest: 'plays',
     thinksRest: 'is thinking…',
     waitsReadRest: 'waits for you to read…',

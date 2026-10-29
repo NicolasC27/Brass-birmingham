@@ -426,15 +426,15 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const theirLast = !mine ? [...game.ledger].reverse().find((e) => e.player === me && e.verb !== 'system' && e.verb !== 'score') : undefined;
   const lastWhat = theirLast ? ledgerParts(theirLast, t).head : null;
 
-  let line: string;
+  /* another's turn is said by the strip's own sentence, below: the line
+     is the reader's */
+  let line = '';
   /* what blocks the verb, when nothing takes it: the dictionary's own
      sentence, which names the cause and the way round it — on a line of
      its own under the strip, whole, never cut after its first words */
   let blocked: string | null = null;
   let blockedWhy: string | undefined;
-  if (stage === 'theirs') {
-    line = game.phase !== 'action' ? t(game.phase === 'game-over' ? 'game.topbar.over' : 'game.topbar.between') : p.isBot ? t(guideHold ? 'game.topbar.waitsRead' : botHold ? 'game.topbar.held' : 'game.topbar.thinks', { name: p.name }) : t('game.topbar.plays', { name: p.name });
-  } else if (stage === 'ready') {
+  if (stage === 'ready') {
     line = preparing ? t('game.topbar.hint.prepared') : t('game.topbar.hint.ready');
   } else if (stage === 'target') {
     line = t(`game.topbar.hint.${verb}`);
@@ -463,7 +463,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
     }
   } else if (stage === 'verb') {
     line = t('game.topbar.hint.pickVerb', { card: card ? cardLabel(card) : '' });
-  } else {
+  } else if (stage === 'card') {
     line = preparing ? t('game.topbar.hint.preparing') : done === 1 && maxActions === 2 ? t('game.topbar.hint.second') : t('game.topbar.hint.pickCard');
   }
 
