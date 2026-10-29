@@ -152,7 +152,7 @@ const site: typeof enSite = {
   },
   tutorial: {
     title: 'Neu im Spiel?',
-    copy: 'Eine geführte erste Partie: die Kanalzeit gegen eine sanfte Maschine, der Führer für Ihre ersten Züge an Ihrer Seite, ohne Kerze.',
+    copy: 'Eine geführte erste Partie: die Kanalzeit gegen eine sanfte Maschine, der Guide für Ihre ersten Züge an Ihrer Seite, ohne Kerze.',
     cta: 'Geführte Partie starten',
   },
   friends: {
