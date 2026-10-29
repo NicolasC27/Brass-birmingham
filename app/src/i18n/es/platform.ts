@@ -487,7 +487,7 @@ const platform = {
     },
     tutorial: {
       title: '¿Nuevo en el club?',
-      copy: 'Una primera partida guiada: la era del canal contra una máquina suave, con el guía a su lado en sus primeros turnos.',
+      copy: 'Una primera partida guiada: la era del canal contra una máquina suave, con la guía a su lado en sus primeros turnos.',
       cta: 'Empezar la partida guiada',
       resume: 'Retomar la partida guiada',
       failed: 'La oficina no responde; inténtelo de nuevo en un momento.',
@@ -1243,7 +1243,7 @@ const platform = {
     eyebrow: "Llegada a la estación",
     line1: "Se apea en Birmingham, una tarde de la era del canal. El diario está fresco, la cantina abierta.",
     line2: "Aquí se levantan fraguas, se tienden raíles y se vende algodón a Gloucester — contra máquinas que nunca duermen.",
-    line3: "Tome primero el curso nocturno: una lección corta, una guía al lado. O entre, si ya conoce la casa.",
+    line3: "Tome primero el curso nocturno: una lección corta, la guía al lado. O entre, si ya conoce la casa.",
     course: "El curso nocturno",
     enter: "Entrar en la estación",
   },

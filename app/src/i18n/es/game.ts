@@ -1125,13 +1125,13 @@ const game: typeof engame = {
       theirsSellOff: 'En la paga, los ingresos de {name} no cubrían la deuda: su {industry} de {town} se ha vendido por {value} £ y sale del tablero.',
       theirsShort: 'En la paga, a {name} le [amount|faltaba|faltaban] {amount} £ y no quedaba nada que vender: {amount} [amount|punto|puntos] de victoria menos.',
     },
-    thread: { aria: 'Lo que el guía ya ha dicho' },
+    thread: { aria: 'Lo que la guía ya ha dicho' },
     ask: {
       open: 'Preguntar a la guía',
       close: 'Cerrar',
       hint: 'Una pregunta sobre las reglas: el hierro, la cerveza, las vías, la paga, el fin de era…',
       hintTable: 'Una pregunta sobre las reglas o sobre tu partida: el hierro, la cerveza, tu dinero, lo que puedes vender, las rondas que quedan…',
-      placeholder: 'Pregunta al guía…',
+      placeholder: 'Pregunta a la guía…',
       send: 'Preguntar',
       replay: 'Volver a ver',
       words: {

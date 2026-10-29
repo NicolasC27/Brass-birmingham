@@ -152,7 +152,7 @@ const site: typeof enSite = {
   },
   tutorial: {
     title: '¿Nuevo en el juego?',
-    copy: 'Una primera partida guiada: la era del canal contra una máquina suave, con el guía a su lado en sus primeros turnos, sin vela.',
+    copy: 'Una primera partida guiada: la era del canal contra una máquina suave, con la guía a su lado en sus primeros turnos, sin vela.',
     cta: 'Empezar la partida guiada',
   },
   friends: {
