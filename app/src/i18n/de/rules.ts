@@ -8,7 +8,7 @@ const de: typeof enrules = {
   },
   chapters: {
     quickstart: "Das Wesentliche",
-    eras: "Die zwei Zeitalter",
+    eras: "Die zwei Epochen",
     actions: "Die sechs Aktionen",
     industries: "Die Industrien",
     network: "Das Netzwerk",
@@ -24,7 +24,7 @@ const de: typeof enrules = {
     eyebrow: "Das Kompendium der Midlands",
     title: "Von Handel und Manufaktur",
     lede:
-      "Getreuer Bericht über die Regeln von Blackrail — Kanäle, Kohle, Eisen und die zwei großen Zeitalter der Industrie.",
+      "Getreuer Bericht über die Regeln von Blackrail — Kanäle, Kohle, Eisen und die zwei großen Epochen der Industrie.",
     wholeOfIt: "Das Ganze",
   },
   rail: {
@@ -61,7 +61,7 @@ const de: typeof enrules = {
     },
     supply: {
       title: "Versorgung und Wertung",
-      body: "Kohle und Eisen müssen dich physisch erreichen — per Kanal, per Bahn oder teuer auf dem Markt gekauft. Jedes Zeitalter endet mit einer vollständigen Wertung.",
+      body: "Kohle und Eisen müssen dich physisch erreichen — per Kanal, per Bahn oder teuer auf dem Markt gekauft. Jede Epoche endet mit einer vollständigen Wertung.",
     },
   },
   eras: {
@@ -69,7 +69,7 @@ const de: typeof enrules = {
     railAlt: "Gravierter Fries der Eisenbahnzeit",
     canalTitle: "Die Kanalzeit, 1770–1830",
     canalBody:
-      "Die Züge folgen Runde für Runde: eine Karte für jede deiner zwei Aktionen (nur eine Aktion in der ersten Runde), dann ziehst du auf eine volle Hand nach. Kanäle kosten 3 £ pro Verbindung und sind die einzigen Wege des Zeitalters. Wenn der Nachziehstapel und alle Hände aufgebraucht sind, wird das Zeitalter gewertet — umgedrehte Industrien bringen ihre SP, und jede Verbindung zählt die Verbindungssymbole der Industrieplättchen an den Orten, die sie verbindet, und zwei pro Händler.",
+      "Die Züge folgen Runde für Runde: eine Karte für jede deiner zwei Aktionen (nur eine Aktion in der ersten Runde), dann ziehst du auf eine volle Hand nach. Kanäle kosten 3 £ pro Verbindung und sind die einzigen Wege der Epoche. Wenn der Nachziehstapel und alle Hände aufgebraucht sind, wird die Epoche gewertet — umgedrehte Industrien bringen ihre SP, und jede Verbindung zählt die Verbindungssymbole der Industrieplättchen an den Orten, die sie verbindet, und zwei pro Händler.",
     railTitle: "Die Eisenbahnzeit, 1830–1870",
     railBody:
       "Ein neuer Nachziehstapel, frische Hände, und Bahnstrecken für 5 £ plus eine Kohle pro Verbindung — zwei Verbindungen lassen sich in einer Aktion für 15 £, zwei Kohle und ein Bier legen. Kein neuer Kanal darf mehr gegraben werden, und Brauereien kommen jetzt mit zwei Fässern statt einem. Wenn auch dieser Stapel aufgebraucht ist, wird der Spielplan ein zweites Mal gewertet, und das reichste Register gewinnt.",
@@ -144,8 +144,8 @@ const de: typeof enrules = {
         s3: "Gib das nötige Bier aus — das Fass des Händlers, deine Brauereien oder eine verbundene Brauerei — und drehe dann jedes verkaufte Plättchen um.",
       },
       edges: {
-        e1: "Umgedrehte Plättchen bringen ihren Einkommensbonus sofort und zählen am Ende des Zeitalters SP.",
-        e2: "Der Appetit eines Händlers ist nie gestillt: Sein Plättchen kauft wieder und wieder. Nur sein Bonusfass wird einmal pro Zeitalter getrunken.",
+        e1: "Umgedrehte Plättchen bringen ihren Einkommensbonus sofort und zählen am Ende der Epoche SP.",
+        e2: "Der Appetit eines Händlers ist nie gestillt: Sein Plättchen kauft wieder und wieder. Nur sein Bonusfass wird einmal pro Epoche getrunken.",
         e3: "Wie viel Bier ein Plättchen trinkt, steht darauf: zwei Fässer für die Manufaktur der Stufe 5 und die Töpfereien der Stufen 3 und 5, in beiden Zeitaltern.",
       },
     },
@@ -250,9 +250,9 @@ const de: typeof enrules = {
     pottery: {
       name: "Töpferei",
       blurb:
-        "Öfen mit bescheidenem Appetit und bemerkenswertem Wert. Die Töpferei punktet über ihrer Gewichtsklasse, ist im zweiten Zeitalter aber teuer zu verkaufen.",
+        "Öfen mit bescheidenem Appetit und bemerkenswertem Wert. Die Töpferei punktet über ihrer Gewichtsklasse, ist in der zweiten Epoche aber teuer zu verkaufen.",
       notes: {
-        n1: "Beide Zeitalter. Kostet 1 Eisen. Glühbirne: nicht entwickelbar.",
+        n1: "Beide Epochen. Kostet 1 Eisen. Glühbirne: nicht entwickelbar.",
         n2: "Gratis; kostet 1 Kohle. Zum Wegentwickeln.",
         n3: "Kostet 2 Kohle; verkauft sich für 2 Bier. Glühbirne: nicht entwickelbar.",
         n4: "Gratis; kostet 1 Kohle.",
@@ -278,7 +278,7 @@ const de: typeof enrules = {
     railChip: "Bahnverbindung · 5 £ + 1 Kohle · Eisenbahnzeit",
     doubleRailChip: "Doppelte Bahnstrecke · 15 £ + 2 Kohle + 1 Bier · eine Aktion",
     outro:
-      "Verbindungen werden gewertet, nicht nur genutzt: Am Ende jedes Zeitalters zählt jede Verbindung die Verbindungssymbole, die auf den Industrieplättchen der von ihr verbundenen Orte gedruckt sind — egal, wem die Plättchen gehören — und zwei pro Händler. Ein gut gelegter Kanal durch die blühende Stadt eines Rivalen ist dir so viel wert wie ihm.",
+      "Verbindungen werden gewertet, nicht nur genutzt: Am Ende jeder Epoche zählt jede Verbindung die Verbindungssymbole, die auf den Industrieplättchen der von ihr verbundenen Orte gedruckt sind — egal, wem die Plättchen gehören — und zwei pro Händler. Ein gut gelegter Kanal durch die blühende Stadt eines Rivalen ist dir so viel wert wie ihm.",
   },
   supply: {
     intro: "Das ist das Herz des Spiels, und es ist nicht abstrakt. Jeder Kohlewürfel, den ein Bau verlangt, muss physisch ankommen: aus einer verbundenen Mine — deiner oder der eines Rivalen, kostenlos für dich (sein Plättchen leert sich — ein Geschenk, das seine Industrie umdreht!) — oder auf dem Markt gekauft, was selbst eine Verbindung zu einem Händler verlangt. Ist keine Quelle erreichbar, ist der Bau unmöglich.",
@@ -323,8 +323,8 @@ const de: typeof enrules = {
   selling: {
     intro: "Baumwollspinnereien, Manufakturen und Töpfereien drehen sich nur durch Verkauf an einen Händlerhafen am Kartenrand um. Der Hafen muss deine Ware zeigen (oder beliebige Ware), du musst eine Verbindung zu ihm haben, und jedes Plättchen trinkt das darauf gedruckte Bier, bevor es sich verkauft — ein Fass für die meisten, zwei für die großen Werke.",
     li1: "Bier kommt zuerst aus dem Fass des Händlers, wenn du an ihn verkaufst — das löst seinen Bonus aus —, dann aus deinen Brauereien, dann aus jeder verbundenen Brauerei.",
-    li2: "Umdrehen zahlt den Einkommensbonus sofort aus und legt die SP des Plättchens für die Wertung des Zeitalters zurück.",
-    li3: "Jedes Händlerplättchen hält ein Fass pro Zeitalter; trink es, und sein Bonus fällt an, und das Fass wird zu Beginn der Eisenbahnzeit neu aufgestellt.",
+    li2: "Umdrehen zahlt den Einkommensbonus sofort aus und legt die SP des Plättchens für die Wertung der Epoche zurück.",
+    li3: "Jedes Händlerplättchen hält ein Fass pro Epoche; trink es, und sein Bonus fällt an, und das Fass wird zu Beginn der Eisenbahnzeit neu aufgestellt.",
     choice:
       "Die Wahl ist das Spiel im Kleinen: Einkommen füllt ab sofort die Börse jeder künftigen Runde, während die SP brav auf die Endabrechnung warten.",
     flip: {
@@ -355,16 +355,16 @@ const de: typeof enrules = {
     thWhen: "Wann",
     r1s: "Umgedrehte Industrien",
     r1c: "auf dem Plättchen gedruckte SP",
-    r1w: "Ende jedes Zeitalters",
+    r1w: "Ende jeder Epoche",
     r2s: "Verbindungen",
     r2c: "Verbindungssymbole an beiden verbundenen Orten",
-    r2w: "Ende jedes Zeitalters (Kanäle, dann Bahnstrecken)",
+    r2w: "Ende jeder Epoche (Kanäle, dann Bahnstrecken)",
     r3s: "Gleichstand",
     r3c: "höchste Einkommensstufe → meistes Geld",
     r3w: "Nur bei der Endabrechnung",
     exampleTitle: "Ein Rechenbeispiel",
     exampleBody:
-      "Zwei umgedrehte Werke (2 und 5 SP) in Städten, die deine Verbindung verbindet, plus 3 Verbindungs-SP für die Verbindung selbst: {expr} für die Wertung des Zeitalters.",
+      "Zwei umgedrehte Werke (2 und 5 SP) in Städten, die deine Verbindung verbindet, plus 3 Verbindungs-SP für die Verbindung selbst: {expr} für die Wertung der Epoche.",
     expr: "2 + 5 + 3 = 10",
   },
   scoringSketch: {
@@ -403,7 +403,7 @@ const de: typeof enrules = {
       def: "Eine Karte, die für jeden Ort oder jede Industrie steht, gewonnen durch Erkunden.",
     },
     era: {
-      term: "Zeitalter",
+      term: "Epoche",
       def: "Eine Hälfte der Partie — Kanal, dann Eisenbahn — abgeschlossen durch eine vollständige Wertung der Verbindungen und umgedrehten Plättchen.",
     },
     incomeTrack: {
@@ -445,7 +445,7 @@ const de: typeof enrules = {
   approximations: {
     supplyCore: {
       area: "Kern von Versorgung und Wertung",
-      note: "Größe der Nachziehstapel, 10/9/8 Runden pro Zeitalter, Zugreihenfolge nach ausgegebenem Geld, Einkommensleiste mit 100 Feldern, Marktpreise, Minen, die an den Markt verkaufen, Überbauen, Mehrfachverkäufe, doppelte Bahnstrecke und beide Wertungen folgen dem Regelheft.",
+      note: "Größe der Nachziehstapel, 10/9/8 Runden pro Epoche, Zugreihenfolge nach ausgegebenem Geld, Einkommensleiste mit 100 Feldern, Marktpreise, Minen, die an den Markt verkaufen, Überbauen, Mehrfachverkäufe, doppelte Bahnstrecke und beide Wertungen folgen dem Regelheft.",
     },
     industryValues: {
       area: "Automatische Entscheidungen",

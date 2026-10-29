@@ -59,9 +59,9 @@ const de: typeof enHome = {
         body: 'Jeder gekaufte Würfel verschiebt den Preis für Kohle und Eisen für den ganzen Tisch. Kauf günstig, solange die Lager voll sind.',
       },
       eras: {
-        eyebrow: 'Zwei Zeitalter der Industrie',
+        eyebrow: 'Zwei Epochen der Industrie',
         title: 'Vom Treidelpfad zum Bahnhof',
-        body: 'Zur Halbzeit weichen die Kanäle der Eisenbahn, und am Ende jedes Zeitalters werden die Vermögen gezählt.',
+        body: 'Zur Halbzeit weichen die Kanäle der Eisenbahn, und am Ende jeder Epoche werden die Vermögen gezählt.',
       },
       supply: {
         eyebrow: 'Versorgung ist Strategie',
@@ -78,7 +78,7 @@ const de: typeof enHome = {
     step: 'Schritt {n}',
     card: { title: 'Spiel eine Karte', body: 'Eine Orts- oder Industriekarte eröffnet die Aktion: Bauen, Netzwerk, Entwickeln, Verkaufen, Kredit oder Erkunden. Zwei Aktionen pro Zug.' },
     build: { title: 'Bauen und verbinden', body: 'Setzen Sie Ihre Werke in die Städte, ziehen Sie Kanäle und später Bahnstrecken dazwischen. Kohle und Eisen reisen über Ihr Netzwerk oder kosten teuer auf dem Markt.' },
-    sell: { title: 'Verkaufen und punkten', body: 'Ein verkauftes Werk wird umgedreht: Es bringt Punkte und hebt Ihr Einkommen. Zwei Zeitalter, zwei Abrechnungen, und wer die meisten Punkte hat, gewinnt.' },
+    sell: { title: 'Verkaufen und punkten', body: 'Ein verkauftes Werk wird umgedreht: Es bringt Punkte und hebt Ihr Einkommen. Zwei Epochen, zwei Abrechnungen, und wer die meisten Punkte hat, gewinnt.' },
   },
   footer: {
     tagline: 'Kanäle, Kohle und Eisen. Bauen Sie das Imperium, das die Welt gebaut hat.',
