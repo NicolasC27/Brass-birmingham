@@ -22,8 +22,10 @@ describe('a counted word', () => {
 
   it('takes the singular for one, the plural beyond', () => {
     setLang('en');
-    expect(tr('game.guide.happens.restockMine', { industry: 'forge', n: 1, gain: 4 })).toContain('1 spare cube ');
-    expect(tr('game.guide.happens.restockMine', { industry: 'forge', n: 3, gain: 9 })).toContain('3 spare cubes ');
+    expect(tr('game.guide.happens.goods.coal', { n: 1 })).toBe('1 cube');
+    expect(tr('game.guide.happens.goods.iron', { n: 3 })).toBe('3 bars');
+    /* a new mine or works sells what the market can take — none of it spare */
+    expect(tr('game.guide.happens.restockMine', { industry: 'forge', goods: tr('game.guide.happens.goods.iron', { n: 1 }), gain: 4 })).toContain('sold 1 bar to the market');
   });
 
   it('counts zero as one thing in French, as many elsewhere', () => {
@@ -82,7 +84,7 @@ describe('a counted word', () => {
       'gewertet', 'verloren', 'ausgegeben', 'möglich', 'deiner', 'deine',
       'Kohle', 'Eisen', 'Bier', 'Einkommen',
       /* der Spieler, die Spieler — the same word on either side of one */
-      'Spieler', 'Würfel', 'Plättchen',
+      'Spieler', 'Würfel', 'Plättchen', 'Barren',
     ],
   };
 

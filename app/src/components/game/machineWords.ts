@@ -218,6 +218,10 @@ export function happenings(g: GameState, me: number, t: T): { id: number; text: 
   if (at < 0) return [];
   const actor = g.ledger.find((e) => e.at === at && e.player !== undefined && e.verb !== 'system' && e.verb !== 'score')?.player;
   const out: { id: number; text: string }[] = [];
+  /* the build a flip to the market came with, and what it sold, in its
+     own goods: cubes of coal, bars of iron */
+  const builtWith = (f: LedgerEntry) => g.ledger.find((x) => x.at === f.at && x.key === 'build' && x.region === f.region && x.player === f.player);
+  const goodsOf = (b: LedgerEntry | undefined) => t(`game.guide.happens.goods.${b?.vars?.saleRes === 'iron' ? 'iron' : 'coal'}`, { n: b?.vars?.saleN ?? 0 });
   for (const e of g.ledger) {
     if ((e.at ?? -1) < at || !e.key) continue;
     const v = e.vars ?? {};
@@ -228,11 +232,17 @@ export function happenings(g: GameState, me: number, t: T): { id: number; text: 
       case 'flip':
         /* a sale of one's own is the lesson's business, not a surprise */
         if (v.why === 'merchant') break;
-        if (e.player === me) out.push({ id: e.id, text: t(`game.guide.happens.${v.why === 'barrel' ? 'barrel' : v.why === 'market' ? 'market' : 'empties'}`, vars) });
+        if (e.player === me && v.why === 'market') {
+          /* a tile of the reader's sold out to the market as it was laid:
+             the sale and the flip, told once */
+          const b = builtWith(e);
+          out.push({ id: e.id, text: t('game.guide.happens.market', { ...vars, goods: goodsOf(b), gain: b?.vars?.saleGain ?? 0 }) });
+        } else if (e.player === me) out.push({ id: e.id, text: t(`game.guide.happens.${v.why === 'barrel' ? 'barrel' : 'empties'}`, vars) });
         else if (actor === me) out.push({ id: e.id, text: t('game.guide.happens.theirs', vars) });
         break;
       case 'build':
-        if (Number(v.saleN) > 0) out.push({ id: e.id, text: t(e.player === me ? 'game.guide.happens.restockMine' : 'game.guide.happens.restock', vars) });
+        /* said with the flip, when the sale emptied it */
+        if (Number(v.saleN) > 0 && !(e.player === me && g.ledger.some((x) => x.at === e.at && x.key === 'flip' && x.region === e.region && x.vars?.why === 'market'))) out.push({ id: e.id, text: t(e.player === me ? 'game.guide.happens.restockMine' : 'game.guide.happens.restock', { ...vars, goods: goodsOf(e) }) });
         break;
       case 'sell': {
         const bits = [v.bonusVp ? t('game.log.bonusVp', { n: v.bonusVp }) : '', v.bonusIncome ? t('game.log.bonusIncome', { n: v.bonusIncome }) : '', v.bonusMoney ? t('game.log.bonusMoney', { n: v.bonusMoney }) : '', v.bonusDevelop ? t('game.log.bonusDevelop') : ''].filter(Boolean);

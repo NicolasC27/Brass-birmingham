@@ -155,6 +155,24 @@ describe('the machine’s plate', () => {
     expect(sale('own')).toContain('La bière bue venait de sa propre brasserie.');
   });
 
+  it('tells a mine of the reader’s sold out as it was laid in one piece of news', () => {
+    const mine = (room: number) => {
+      const g = table();
+      g.links[link('redditch', 'm-oxford')] = { owner: BOT, era: 'canal' };
+      g.market.coal = 14 - room;
+      g.players[ME].hand = [{ id: 'w', kind: 'wild-location' }];
+      const after = applyAction(g, ME, { kind: 'build', card: 'w', town: 'redditch', slot: 0, industry: 'coal' }).state!;
+      return happenings(after, ME, keys).map((x) => x.text);
+    };
+    /* room for both cubes: sold, emptied and flipped, said once */
+    const out = mine(5);
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatch(/^game\.guide\.happens\.market\{/);
+    expect(out[0]).toContain('"goods":"game.guide.happens.goods.coal{\\"n\\":2}"');
+    /* room for one: the sale alone */
+    expect(mine(1).map((x) => x.split('{')[0])).toEqual(['game.guide.happens.restockMine']);
+  });
+
   it('tells every tile of a sale, and the merchant once', () => {
     const g = table();
     g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
