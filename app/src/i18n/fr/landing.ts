@@ -1,7 +1,7 @@
 import type { Dict } from '../en';
 
 /* ------------------------------------------------------------------ */
-/* La une avant l'ouverture de la ligne : ce qu'on fait à une table,   */
+/* La une avant l'ouverture de la ligne : ce qu'on fait à une table,   */
 /* montré sur le plateau même, la liste d'attente deux fois, et les    */
 /* lettres que l'office lui écrit.                                     */
 /* ------------------------------------------------------------------ */
