@@ -54,7 +54,7 @@ const site: typeof enSite = {
     badLinkTitle: 'Dieser Brief ist abgelaufen',
     badLinkLede: 'Der Link ist schon benutzt oder zu alt. Fordern Sie aus Ihrem Kontor einen neuen Brief an.',
     offlineTitle: 'Das Telegrafenamt ist geschlossen',
-    offlineLede: 'Diese Version läuft allein im Browser: Kein Server führt die Konten. Starte den Tischserver und richte die App darauf aus — die README erklärt, wie.',
+    offlineLede: 'Diese Version läuft allein im Browser: Kein Server führt die Konten. Starten Sie den Tischserver und richten Sie die App darauf aus — die README erklärt, wie.',
     localCta: 'Lokal spielen',
     error: {
       'bad-name': 'Zwei bis zwanzig Buchstaben, und nichts Exotisches.',
@@ -79,7 +79,7 @@ const site: typeof enSite = {
     bannerNoEmail: 'Keine Adresse auf Ihrem Konto. Geben Sie eine an, ihr Brief folgt.',
     resend: 'Brief erneut senden',
     change: 'Andere Adresse',
-    sent: 'Der Brief ist unterwegs. Sieh im Spam-Ordner nach, falls er nicht ankommt.',
+    sent: 'Der Brief ist unterwegs. Sehen Sie im Spam-Ordner nach, falls er nicht ankommt.',
     newEmail: 'Neue Adresse',
     save: 'Brief dorthin senden',
   },
@@ -252,7 +252,7 @@ const site: typeof enSite = {
   local: {
     eyebrow: 'Das Telegrafenamt',
     title: 'In diesem Browser spielen',
-    lede: 'Kein Tischserver ist eingerichtet: Die Tische leben in diesem Browser, und ein zweiter Tab spielt den Gast. Starte den Server, um zwischen Rechnern zu spielen.',
+    lede: 'Kein Tischserver ist eingerichtet: Die Tische leben in diesem Browser, und ein zweiter Tab spielt den Gast. Starten Sie den Server, um zwischen Rechnern zu spielen.',
   },
 };
 

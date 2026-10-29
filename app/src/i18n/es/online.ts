@@ -41,8 +41,8 @@ export default {
       cta: 'Subir a bordo',
     error: { 'not-found': 'Ningún convoy lleva ese número.', full: 'Esta mesa está completa.', started: 'Esta partida ya ha empezado.', refused: 'La mesa no lo ha aceptado.', offline: 'El servidor de mesas no responde.' },
     },
-    localNote: 'Por ahora, las mesas viven en este navegador: abre una segunda pestaña para jugar como invitado.',
-    serverNote: 'Las mesas las lleva el servidor: comparte el código y juega desde donde quieras.',
+    localNote: 'Por ahora, las mesas viven en este navegador: abra una segunda pestaña para jugar como invitado.',
+    serverNote: 'Las mesas las lleva el servidor: comparta el código y juegue desde donde quiera.',
   },
   room: {
     back: 'La oficina',

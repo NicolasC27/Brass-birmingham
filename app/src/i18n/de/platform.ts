@@ -733,7 +733,7 @@ const platform: typeof enPlatform = {
     badLinkTitle: 'Dieser Brief ist abgelaufen',
     badLinkLede: 'Der Link ist verbraucht oder zu alt. Fordern Sie in Ihrem Kontor einen neuen Brief an.',
     offlineTitle: 'Die Poststelle ist geschlossen',
-    offlineLede: 'Diese Version läuft allein im Browser: Kein Server führt die Konten. Starte den Tischserver und richte die App darauf aus — das README erklärt, wie.',
+    offlineLede: 'Diese Version läuft allein im Browser: Kein Server führt die Konten. Starten Sie den Tischserver und richten Sie die App darauf aus — das README erklärt, wie.',
     localCta: 'Lokal spielen',
   },
   // --- comptoir ---

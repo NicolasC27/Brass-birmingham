@@ -90,14 +90,14 @@ const site: typeof enSite = {
     title: 'Buenos días, {name}.',
     lede: 'Sus mesas, las cartas que le esperan, y las partidas que ha jugado.',
     line: 'Línea',
-    yourMove: 'Te toca jugar',
+    yourMove: 'Le toca jugar',
     yourTables: 'Sus mesas',
     noTables: 'Ninguna mesa por ahora. Abra una, o responda a una invitación.',
     open: 'Abrir una mesa',
     openCopy: 'Es usted el anfitrión: fije las reglas de la casa, siente a jugadores mecánicos, invite a sus amigos, toque la campana.',
     openCta: 'Abrir',
     join: 'Subir a bordo con un número',
-    joinCopy: 'Cuatro letras que te da un amigo.',
+    joinCopy: 'Cuatro letras que le da un amigo.',
     joinCta: 'Subir a bordo',
     code: 'Código',
     status: {
@@ -116,7 +116,7 @@ const site: typeof enSite = {
     results: 'Los resultados',
     invitations: 'Cartas',
     noInvitations: 'Ninguna invitación pendiente.',
-    invitedBy: '{from} te invita a «{table}»',
+    invitedBy: '{from} le invita a «{table}»',
     accept: 'Tomar el asiento',
     decline: 'Rechazar',
     sent: 'Enviadas, sin respuesta',
@@ -252,7 +252,7 @@ const site: typeof enSite = {
   local: {
     eyebrow: 'La oficina del telégrafo',
     title: 'Jugar en este navegador',
-    lede: 'No hay ningún servidor de mesas configurado: las mesas viven en este navegador, y una segunda pestaña juega como invitado. Lanza el servidor para jugar entre máquinas.',
+    lede: 'No hay ningún servidor de mesas configurado: las mesas viven en este navegador, y una segunda pestaña juega como invitado. Lance el servidor para jugar entre máquinas.',
   },
 };
 
