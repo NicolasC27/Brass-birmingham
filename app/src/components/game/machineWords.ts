@@ -112,7 +112,20 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
           ? t('game.guide.turn.orderTie', { name: p.name, you, spentMe, round: e.round })
           : t(spentBot < spentMe ? 'game.guide.turn.orderBefore' : 'game.guide.turn.orderAfter', { name: p.name, you, spentBot, spentMe, round: e.round })
         : t('game.guide.turn.order', { name: p.name, round: e.round });
-  else if (g.round !== e.round || g.era !== e.era) turn = t(g.current === e.player ? 'game.guide.turn.roundOverBot' : g.current === me ? 'game.guide.turn.roundOverYou' : 'game.guide.turn.roundOver', { name: p.name, you });
+  else if (g.round !== e.round || g.era !== e.era) {
+    /* the next round's order, set on what the round just ended cost each
+       seat — and on a tie, this round's order stands (§5.11): who opens
+       the next did not then spend less than the one tied with them */
+    const opener = g.order[0];
+    const spent = g.lastSpent;
+    const tied = !!spent && g.players.some((_, i) => i !== opener && spent[i] === spent[opener]);
+    const two = g.players.length === 2;
+    const key =
+      opener === e.player ? (tied ? (two ? 'roundOverTieBot' : 'roundOver') : 'roundOverBot')
+      : opener === me ? (tied ? (two ? 'roundOverTieYou' : 'roundOver') : 'roundOverYou')
+      : 'roundOver';
+    turn = t(`game.guide.turn.${key}`, { name: p.name, you });
+  }
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
   /* fresh: the machine's move is the latest action of the log — the one being played through */
   return { id: e.id, seat: e.player, name: p.name, what, why, turn, fresh: e.at === g.actions.length - 1 };

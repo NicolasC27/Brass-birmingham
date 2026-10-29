@@ -56,6 +56,24 @@ describe('the machine’s plate', () => {
     expect(happenings(after, ME, keys).map((x) => x.text).join('\n')).toMatch(/game\.guide\.happens\.theirsSellOff/);
   });
 
+  it('says who opens the next round, and that a tie keeps this round’s order', () => {
+    /* round 1 passed, both seats at £0; round 2 to its last action */
+    const pass = (g: GameState, seat: number) => applyAction(g, seat, { kind: 'pass', card: g.players[seat].hand[0].id }).state!;
+    let g = pass(pass(table(), ME), BOT);
+    expect(g.round).toBe(2);
+    g = pass(pass(pass(g, ME), ME), BOT);
+    expect(g.current).toBe(BOT);
+    const last = (spentMe: number) => {
+      const before = structuredClone(g);
+      before.players[ME].spent = spentMe;
+      return pass(before, BOT);
+    };
+    /* the same spent: the order stands, and the reader, first this round, opens the next */
+    expect(botReason(last(0), ME, keys, 'fr')!.turn).toMatch(/^game\.guide\.turn\.roundOverTieYou/);
+    /* the reader spent more: the machine opens it, having spent least */
+    expect(botReason(last(5), ME, keys, 'fr')!.turn).toMatch(/^game\.guide\.turn\.roundOverBot/);
+  });
+
   it('tells every tile of a sale, and the merchant once', () => {
     const g = table();
     g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
