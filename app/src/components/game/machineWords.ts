@@ -1,4 +1,5 @@
-import { LOAN_AMOUNT, TOWN_BY_ID, incomeLevel } from '@/game/data';
+import { LOAN_AMOUNT, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
+import { merchantDemand, merchantOpen, reachable } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
 import type { GameState, LedgerEntry } from '@/game/types';
 import { getLang, localeOf } from '@/i18n';
@@ -29,6 +30,16 @@ export interface BotPlate {
 
 /* ---------------------------- the machine ---------------------------- */
 
+const WORKS = ['cotton', 'manufacturer', 'pottery'];
+
+/** the merchants a place reaches over the links laid — the table as it
+ *  stands, or without one link — that buy this industry */
+function buyersFrom(g: GameState, town: string, industry: string, without?: string): string[] {
+  const s = without ? { ...g, links: Object.fromEntries(Object.entries(g.links).filter(([id]) => id !== without)) } : g;
+  const near = reachable(s, town, g.era, null);
+  return MERCHANTS.filter((m) => near.has(m.id) && merchantOpen(g, m.id) && (merchantDemand(g, m.id) as string[]).includes(industry)).map((m) => m.id);
+}
+
 /** the entries a machine's move writes under its own name: not a tile of
  *  its flipping, nor what a payday took from it — its plate stays on its
  *  move whatever followed */
@@ -50,27 +61,89 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
     : e.key === 'sell' && same.length > 1 ? t('game.guide.sellMany', { name: p.name, list: same.map((x) => t('game.log.head.sell', { industry: industryOf(x), level: x.vars?.level ?? '', merchant: x.vars?.merchant ?? '' })).join(', ') })
     : ledgerText(e, t);
   const facts = { name: p.name, money: p.money, level: incomeLevel(p.income), industry: typeof v.industry === 'string' ? t(`game.log.industry.${v.industry}`) : '', town: v.town ?? '', merchant: v.merchant ?? '', a: v.a ?? '', b: v.b ?? '', sale: v.saleN ?? 0, gain: v.saleGain ?? 0, to: v.to ?? 0 };
+  /* the places a cube or a barrel was drawn from, each named once: the
+     machine's own tile, the reader's, another player's, the market, a
+     merchant's barrel */
+  const seat = e.player;
+  const fromOne = (src: string, tile: string): string => {
+    if (src === 'market') return t('game.guide.bot.from.market');
+    const [owner, town] = src.split(':');
+    const vars = { tile, town: TOWN_BY_ID[town]?.name ?? town, owner: g.players[Number(owner)]?.name ?? '' };
+    return t(Number(owner) === seat ? 'game.guide.bot.from.own' : Number(owner) === me ? 'game.guide.bot.from.yours' : 'game.guide.bot.from.theirs', vars);
+  };
+  const sourcesOf = (drawn: string, res: 'coal' | 'iron'): string[] => [...new Set(drawn.split(','))].map((x) => fromOne(x, t(`game.guide.bot.tile.${res}`)));
+  const beerOf = (sales: LedgerEntry[]): string | null => {
+    if (sales.some((x) => x.vars?.barrels === undefined)) return null;
+    const brewery = t('game.guide.bot.tile.brewery');
+    const parts: string[] = [];
+    let own = 0;
+    for (const x of sales) {
+      const w = x.vars ?? {};
+      const others = String(w.beerFrom ?? '').split(',').filter(Boolean);
+      if (Number(w.barrels) > 0) parts.push(t('game.guide.bot.from.barrel', { merchant: String(w.merchant ?? '') }));
+      parts.push(...others.map((o) => fromOne(o, brewery)));
+      own += Math.max(0, Number(w.beer ?? 0) - Number(w.barrels ?? 0) - others.length);
+    }
+    if (own > 0) parts.push(t('game.guide.bot.from.ownSome', { tile: brewery }));
+    return parts.length ? t('game.guide.bot.beerFrom', { from: list([...new Set(parts)]) }) : null;
+  };
   let why = '';
   switch (e.key) {
     case 'build': {
       const ind = String(v.industry);
       const base = ind === 'coal' ? 'coal' : ind === 'iron' ? 'iron' : ind === 'brewery' ? 'brewery' : 'works';
-      why = t(`game.guide.bot.build.${base}`, facts);
-      /* a mine sells its spare cubes only when a merchant is in reach; a
-         forge sells them wherever it stands, and restocks the market at once */
-      if (Number(v.saleN) > 0) why += ' ' + t(base === 'iron' ? 'game.guide.bot.build.soldIron' : 'game.guide.bot.build.sold', facts);
-      if (v.overName) why += ' ' + t('game.guide.bot.build.over', facts);
+      const said = [t(`game.guide.bot.build.${base}`, facts)];
+      /* the coal and the iron it drew, by where they came from (an older
+         line of the ledger did not say) */
+      for (const res of ['coal', 'iron'] as const) {
+        const drawn = String(v[`${res}From`] ?? '');
+        if (drawn) said.push(t(`game.guide.bot.${res}From`, { from: list(sourcesOf(drawn, res)) }));
+      }
+      const tile = Object.entries(g.tiles).find(([k, x]) => k.startsWith(`${e.region}:`) && x.owner === e.player && x.industry === ind && x.level === v.level)?.[1];
+      if (base === 'coal' || base === 'iron') {
+        /* a mine sells its cubes as it is laid only when a merchant is in
+           reach; an iron works sells its bars wherever it stands */
+        const soldOut = g.ledger.some((x) => x.at === e.at && x.key === 'flip' && x.region === e.region && x.vars?.why === 'market');
+        const left = tile?.cubes ?? 0;
+        if (Number(v.saleN) > 0) said.push(t(base === 'iron' ? 'game.guide.bot.build.soldIron' : 'game.guide.bot.build.sold', facts), soldOut ? t('game.guide.bot.build.soldOut') : t(base === 'iron' ? 'game.guide.bot.build.leftIron' : 'game.guide.bot.build.left', { left }));
+        else if (left > 0) said.push(t(base === 'iron' ? 'game.guide.bot.build.ironFull' : 'game.guide.bot.build.noMerchant', { ...facts, left }));
+      } else if (base === 'works' && e.region) {
+        /* a works sells only to a merchant its town reaches: said as it
+           stands, never promised */
+        const buyers = buyersFrom(g, e.region, ind).map((id) => MERCHANT_BY_ID[id].name);
+        said.push(buyers.length ? t('game.guide.bot.build.reaches', { ...facts, list: list(buyers) }) : t('game.guide.bot.build.noBuyer', facts));
+      }
+      if (v.overName) said.push(t('game.guide.bot.build.over', facts));
+      why = said.join(' ');
       break;
     }
-    case 'network':
-      why = t('game.guide.bot.network', facts);
+    case 'network': {
+      const said = [t('game.guide.bot.network', facts)];
+      /* what the link reached: a merchant at one of its ends, and a works
+         of the machine's that can now be sold through it */
+      const ends = [v.townA, v.townB].map(String);
+      const market = ends.find((x) => MERCHANT_BY_ID[x]);
+      if (market) {
+        const goods = merchantDemand(g, market);
+        said.push(goods.length ? t('game.guide.bot.linkMerchant', { merchant: MERCHANT_BY_ID[market].name, goods: list(goods.map((x) => t(`game.guide.buyers.${x}`))) }) : t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[market].name }));
+      }
+      const opened = Object.entries(g.tiles)
+        .filter(([, x]) => x.owner === e.player && !x.flipped && WORKS.includes(x.industry))
+        .map(([k, x]) => ({ town: k.split(':')[0], industry: x.industry, now: buyersFrom(g, k.split(':')[0], x.industry), before: buyersFrom(g, k.split(':')[0], x.industry, String(v.linkId)) }))
+        .find((x) => x.now.some((m) => !x.before.includes(m)));
+      if (opened) said.push(t('game.guide.bot.linkBuyer', { industry: t(`game.log.industry.${opened.industry}`), town: TOWN_BY_ID[opened.town]?.name ?? opened.town, merchant: MERCHANT_BY_ID[opened.now.find((m) => !opened.before.includes(m))!].name }));
+      why = said.join(' ');
       break;
+    }
     case 'sell': {
       /* every tile the sale flipped, and to whom: one merchant named once */
       const merchants = [...new Set(same.map((x) => String(x.vars?.merchant ?? '')))];
       const place = (x: LedgerEntry) => (x.region ? (TOWN_BY_ID[x.region]?.name ?? x.region) : '');
       const tiles = same.map((x) => t(merchants.length > 1 ? 'game.guide.bot.soldTileTo' : 'game.guide.bot.soldTile', { industry: industryOf(x), town: place(x), merchant: String(x.vars?.merchant ?? '') }));
       why = t(merchants.length > 1 ? 'game.guide.bot.sellEach' : same.length > 1 ? 'game.guide.bot.sellSome' : 'game.guide.bot.sell', { ...facts, list: list(tiles), merchant: merchants[0] });
+      /* the beer it drank, told by the sale's own lines: the merchants'
+         barrels, the breweries of others, and the rest its own */
+      why += ` ${beerOf(same) ?? t('game.guide.bot.beerAny')}`;
       const bits = same.flatMap((x) => {
         const w = x.vars ?? {};
         return [w.bonusVp ? t('game.log.bonusVp', { n: w.bonusVp }) : '', w.bonusIncome ? t('game.log.bonusIncome', { n: w.bonusIncome }) : '', w.bonusMoney ? t('game.log.bonusMoney', { n: w.bonusMoney }) : '', w.bonusDevelop ? t('game.log.bonusDevelop') : ''].filter(Boolean);

@@ -90,6 +90,71 @@ describe('the machine’s plate', () => {
     expect(cards(first)).toBe(false);
   });
 
+  it('says where the coal of its build came from, and what the new tile did', () => {
+    const g = table();
+    /* the reader's mine at Kidderminster, a canal of theirs to Coalbrookdale */
+    g.tiles['kidderminster:0'] = { owner: ME, industry: 'coal', level: 1, flipped: false, cubes: 2 };
+    g.links[link('coalbrookdale', 'kidderminster')] = { owner: ME, era: 'canal' };
+    g.players[BOT].hand = [{ id: 'w', kind: 'wild-location' }];
+    const after = botPlays(g, { kind: 'build', card: 'w', town: 'coalbrookdale', slot: 0, industry: 'iron' });
+    setLang('fr');
+    const why = botReason(after, ME, tr, 'fr')!.why;
+    expect(why).toContain('Le charbon est venu de votre mine de Kidderminster.');
+    /* an iron works sells to the iron market wherever it stands */
+    expect(why).toMatch(/au marché du fer en se posant/);
+    expect(why).toMatch(/Vide aussitôt|restent? dessus/);
+  });
+
+  it('never promises a works a buyer its links do not reach', () => {
+    const works = (buys: 'all' | 'cotton') => {
+      const g = table();
+      g.links[link('redditch', 'm-oxford')] = { owner: BOT, era: 'canal' };
+      g.merchantTiles['m-oxford'] = [buys, 'blank'];
+      g.players[BOT].hand = [{ id: 'w', kind: 'wild-location' }];
+      g.players[BOT].money = 50;
+      return botReason(botPlays(g, { kind: 'build', card: 'w', town: 'redditch', slot: 0, industry: 'manufacturer' }), ME, keys, 'fr')!.why;
+    };
+    expect(works('all')).toMatch(/game\.guide\.bot\.build\.reaches\{[^}]*"list":"Oxford"/);
+    expect(works('cotton')).toMatch(/game\.guide\.bot\.build\.noBuyer/);
+    /* the coal bought, for want of a mine joined to it */
+    expect(works('all')).toMatch(/game\.guide\.bot\.coalFrom/);
+  });
+
+  it('says what a link reached: a merchant, and a works of its it now sells', () => {
+    const g = table();
+    g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    g.merchantTiles['m-oxford'] = ['all', 'blank'];
+    g.players[BOT].hand = [{ id: 'w', kind: 'wild-location' }];
+    const after = botPlays(g, { kind: 'network', card: 'w', link: link('redditch', 'm-oxford') });
+    setLang('fr');
+    const why = botReason(after, ME, tr, 'fr')!.why;
+    expect(why).toContain('Elle atteint Oxford, qui achète le coton, les manufactures et la poterie.');
+    expect(why).toContain('Sa manufacture de Redditch peut désormais se vendre à Oxford.');
+  });
+
+  it('names the beer a sale drank: the barrel, a brewery of the reader’s, its own', () => {
+    const sale = (beer: 'barrel' | 'yours' | 'own') => {
+      const g = table();
+      g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+      g.links[link('redditch', 'm-oxford')] = { owner: BOT, era: 'canal' };
+      g.merchantTiles['m-oxford'] = ['all', 'blank'];
+      g.merchantBeer = beer === 'barrel' ? { 'm-oxford:0': 1 } : {};
+      for (const k of Object.keys(g.tiles)) if (g.tiles[k].industry === 'brewery') delete g.tiles[k];
+      /* a brewery of the reader's, joined to the sale by a canal of theirs */
+      if (beer === 'yours') {
+        g.tiles['birmingham:0'] = { owner: ME, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+        g.links[link('birmingham', 'm-oxford')] = { owner: ME, era: 'canal' };
+      }
+      if (beer === 'own') g.tiles['worcester:0'] = { owner: BOT, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+      const after = botPlays(g, { kind: 'sell', card: g.players[BOT].hand[0].id, sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] });
+      return botReason(after, ME, tr, 'fr')!.why;
+    };
+    setLang('fr');
+    expect(sale('barrel')).toContain('La bière bue venait du baril d’Oxford.');
+    expect(sale('yours')).toContain('La bière bue venait de votre brasserie de Birmingham.');
+    expect(sale('own')).toContain('La bière bue venait de sa propre brasserie.');
+  });
+
   it('tells every tile of a sale, and the merchant once', () => {
     const g = table();
     g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
