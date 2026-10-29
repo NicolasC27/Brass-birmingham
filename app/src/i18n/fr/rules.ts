@@ -316,7 +316,7 @@ const fr: typeof enrules = {
   },
   market: {
     p1:
-      "Quand l’offre vient à manquer, le marché répond — à un prix. Le charbon repose dans quatorze cases cotées de 1 £ à 7 £, le fer dans dix cases de 1 £ à 5 £ ; un plateau vide vend encore, à 8 £ et 6 £. Acheter prend le cube le moins cher et le prix monte. Rien ne regarnit les plateaux tout seul : une mine ou une forge fraîchement bâtie et connectée à un marchand vend ses cubes en trop au marché, qui se regarnit par le bout cher et le prix redescend.",
+      "Quand l’offre vient à manquer, le marché répond — à un prix. Le charbon repose dans quatorze cases cotées de 1 £ à 7 £, le fer dans dix cases de 1 £ à 5 £ ; un plateau vide vend encore, à 8 £ et 6 £. Acheter prend le cube le moins cher et le prix monte. Rien ne regarnit les plateaux tout seul : une mine fraîchement bâtie et reliée à un marchand, ou une forge fraîchement bâtie où qu’elle soit, écoule au marché les cubes qu’il peut prendre ; il se regarnit par le bout cher, et le prix redescend.",
     p2:
       "Un marché vide est un mur, pas un inconvénient : le charbon qu’on ne peut ni acheter ni atteindre est tout simplement hors de portée. Surveillez les plateaux comme un contremaître surveille le ciel.",
   },

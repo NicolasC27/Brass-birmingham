@@ -314,7 +314,7 @@ const rules = {
   },
   market: {
     p1:
-      'When supply runs short, the market answers — at a price. Coal sits in fourteen cells priced £1 to £7, iron in ten cells priced £1 to £5; an empty tray still sells, at £8 and £6. Buying takes the cheapest cube and the price climbs. Nothing refills the trays on its own: a newly built mine or works that is connected to a merchant sells its spare cubes to the market, restocking from the dear end so the price falls.',
+      'When supply runs short, the market answers — at a price. Coal sits in fourteen cells priced £1 to £7, iron in ten cells priced £1 to £5; an empty tray still sells, at £8 and £6. Buying takes the cheapest cube and the price climbs. Nothing refills the trays on its own: a newly built mine connected to a merchant, or a newly built iron works wherever it stands, sells the market as many cubes as it can take, restocking it from the dear end so the price falls.',
     p2:
       'An empty market is a wall, not an inconvenience: coal that cannot be bought and cannot be reached simply cannot be had. Watch the trays the way a foreman watches the sky.',
   },

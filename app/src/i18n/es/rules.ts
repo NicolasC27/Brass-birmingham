@@ -316,7 +316,7 @@ const es: typeof enrules = {
   },
   market: {
     p1:
-      "Cuando la oferta escasea, el mercado responde — a un precio. El carbón descansa en catorce casillas cotizadas de 1 £ a 7 £, el hierro en diez casillas de 1 £ a 5 £; un tablero vacío aún vende, a 8 £ y 6 £. Comprar toma el cubo más barato y el precio sube. Nada repone los tableros por sí solo: una mina o una fundición recién construida y conectada a un mercader vende sus cubos sobrantes al mercado, que se repone por el extremo caro y el precio vuelve a bajar.",
+      "Cuando la oferta escasea, el mercado responde — a un precio. El carbón descansa en catorce casillas cotizadas de 1 £ a 7 £, el hierro en diez casillas de 1 £ a 5 £; un tablero vacío aún vende, a 8 £ y 6 £. Comprar toma el cubo más barato y el precio sube. Nada repone los tableros por sí solo: una mina recién construida y conectada a un mercader, o una fundición recién construida esté donde esté, vende al mercado los cubos que este pueda admitir; se repone por el extremo caro y el precio vuelve a bajar.",
     p2:
       "Un mercado vacío es un muro, no un inconveniente: el carbón que no se puede comprar ni alcanzar está sencillamente fuera de tu alcance. Vigila los tableros como un capataz vigila el cielo.",
   },
