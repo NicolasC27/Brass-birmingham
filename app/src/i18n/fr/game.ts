@@ -116,6 +116,8 @@ const fr: typeof engame = {
         network: 'Jouez cette carte autrement : construisez, vendez, développez ou passez avec',
         sell: 'Rien à vendre pour l’instant : reliez un ouvrage à son acheteur ou bâtissez une brasserie',
         develop: 'Rien à développer pour l’instant : il faut un fer, et de quoi le payer au marché',
+        developMoney: 'Le fer se paie : vendez un ouvrage, empruntez, ou jouez cette carte autrement',
+        developNone: 'Plus aucune tuile de votre tapis ne se développe : jouez cette carte autrement',
       },
       coalMarket: 'Le charbon vient du marché : aucune mine n’est reliée à {town}. Une liaison vers {mine} l’aurait rendu gratuit.',
     },

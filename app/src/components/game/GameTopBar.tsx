@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { PLAYER_COLORS, TOWN_BY_ID } from '@/game/data';
 import { buildTargets, candleMinutes, developOptions, eraRounds, linkTargets, sellTargets } from '@/game/engine';
 import { ledgerParts } from '@/game/ledgerText';
+import { noneAid } from '@/game/refusals';
 import { cardLabel, confirmCost, confirmSummary, projectQueued, useGame, verbsForCard, useShownGame } from '@/game/store';
 import { WhyLink } from './RulesOverlay';
 import type { GameState, Verb } from '@/game/types';
@@ -455,7 +456,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
            under them says only why, and what would open the way */
         blocked = reasonText(why);
         blockedWhy = why;
-        if (aid) blocked += ` — ${t(`game.topbar.aid.none.${verb}`)}`;
+        if (aid) blocked += ` — ${t(`game.topbar.aid.none.${noneAid(verb, why)}`)}`;
       } else if (aid) {
         /* the beginner's aid counts the choices */
         line = `${line} · ${t('game.topbar.aid.count', { n })}`;

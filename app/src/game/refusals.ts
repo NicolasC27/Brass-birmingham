@@ -81,6 +81,17 @@ export function whyNoDevelop(options: readonly Refused[]): string {
   return refusalOf(options, DEVELOP_RANK)?.reason ?? 'Nothing worth developing (needs iron)';
 }
 
+/** the way round a refusal, as the beginner's aid says it after the
+ *  reason: its key under topbar.aid.none. A development refused for the
+ *  money has its iron, and needs the purse; one refused for the tiles —
+ *  lightbulbs alone left, or none — needs another use of the card */
+export function noneAid(verb: string, reason?: string): string {
+  if (verb !== 'develop') return verb;
+  if (reason === 'Cannot afford the iron') return 'developMoney';
+  if (reason && (/^Lightbulb/.test(reason) || reason.startsWith('Nothing worth developing'))) return 'developNone';
+  return 'develop';
+}
+
 /** why nothing sells: the beer a works joined to its buyer lacks, else no
  *  works joined to one */
 export function whyNoSale(targets: readonly SellTarget[]): string {

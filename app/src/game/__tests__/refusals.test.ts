@@ -4,7 +4,7 @@ import { LINKS } from '../data';
 import { buildTargets, developOptions, linkTargets, newGame, sellTargets } from '../engine';
 import type { BuildTarget, LinkTarget } from '../engine';
 import type { GameState, SetupPayload } from '../types';
-import { NO_FREE_LINK, refusalOf, whyNoBuild, whyNoDevelop, whyNoLink, whyNoSale } from '../refusals';
+import { NO_FREE_LINK, noneAid, refusalOf, whyNoBuild, whyNoDevelop, whyNoLink, whyNoSale } from '../refusals';
 import { dictOf, reasonText, setLang } from '@/i18n';
 import type { Lang } from '@/i18n';
 
@@ -109,5 +109,19 @@ describe('nothing to develop', () => {
     g.players[0].money = 5;
     expect(whyNoDevelop(developOptions(g, 0))).toBe('Cannot afford the iron');
     expect(whyNoDevelop([])).toBe('Nothing worth developing (needs iron)');
+  });
+});
+
+describe('the way round a refusal', () => {
+  it('follows a development refused for the money, or for the tiles, not the verb alone', () => {
+    const g = guided();
+    g.players[0].money = 0;
+    expect(noneAid('develop', whyNoDevelop(developOptions(g, 0)))).toBe('developMoney');
+    /* nothing left on the mat to take */
+    for (const k of Object.keys(g.players[0].stacks)) g.players[0].stacks[k as keyof typeof g.players[0]['stacks']] = [];
+    expect(noneAid('develop', whyNoDevelop(developOptions(g, 0)))).toBe('developNone');
+    expect(noneAid('develop', 'Lightbulb tile — cannot be developed')).toBe('developNone');
+    /* the other verbs keep their own */
+    expect(noneAid('build', 'Needs £5 — you hold £2')).toBe('build');
   });
 });
