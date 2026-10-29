@@ -460,7 +460,7 @@ const platform = {
     },
     eyebrow: "Oficina del jefe de estación",
     memberSince: 'Socio del club desde {date}',
-    season: '{season} · faltan {days} d',
+    season: '{season} · [days|falta|faltan] {days} d',
     placements: 'Colocaciones {done}/{total}',
     editProfile: 'Editar el perfil',
     progress: {
