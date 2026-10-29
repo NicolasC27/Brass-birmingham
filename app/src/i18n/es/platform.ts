@@ -487,7 +487,7 @@ const platform = {
     },
     tutorial: {
       title: '¿Nuevo en el club?',
-      copy: 'Una primera partida guiada: la era del canal contra una máquina suave, con la guía a su lado en sus primeros turnos.',
+      copy: 'Una primera partida guiada: la era del canal contra una máquina indulgente, con la guía a su lado en sus primeros turnos.',
       cta: 'Empezar la partida guiada',
       resume: 'Retomar la partida guiada',
       failed: 'La oficina no responde; inténtelo de nuevo en un momento.',
@@ -1191,7 +1191,7 @@ const platform = {
     title: "El programa",
     lede: "La partida guiada, los capítulos del registro y lo que el juez le manda releer — cosidos en un solo programa, marcado noche tras noche.",
     guided: "La lección guiada",
-    guidedCopy: "Una partida corta contra una máquina suave, con la guía al lado; cada lección leída queda marcada aquí.",
+    guidedCopy: "Una partida corta contra una máquina indulgente, con la guía al lado; cada lección leída queda marcada aquí.",
     begin: "Empezar la lección",
     resume: "Retomar la lección",
     again: "Repetir desde el principio",
