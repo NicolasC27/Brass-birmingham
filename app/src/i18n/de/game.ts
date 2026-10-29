@@ -1090,7 +1090,7 @@ const game: typeof engame = {
       lesson: 'Die Lektion verlangt ihrerseits: {lesson}.',
       why: {
         coal: 'Eine billige Mine: ihre Würfel versorgen die Bauten ringsum, und sind sie weg, dreht sie sich um für Einkommen und Punkte.',
-        iron: 'Eine Eisenhütte: ihre Barren dienen den Bauten und Entwicklungen aller, und sie dreht sich nach und nach um — bezahlt von den anderen.',
+        iron: 'Eine Eisenhütte: ihre Barren dienen den Bauten und Entwicklungen aller, und sie dreht sich um, sobald sie leer ist — bezahlt von den anderen.',
         brewery: 'Eine Brauerei: das Bier, das jeder Verkauf braucht, ohne vom Fass eines Händlers abzuhängen.',
         works: 'Ein Betrieb, der sich verkauft: einmal verkauft dreht er sich um, Einkommen jetzt und Punkte am Epochenende.',
         network: 'Eine Verbindung: sie erweitert, wo Industriekarten bauen dürfen, bringt Kohle zu den Bauten und erreicht Händler zum Verkaufen.',

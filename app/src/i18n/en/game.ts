@@ -1088,7 +1088,7 @@ const game = {
       lesson: 'The lesson, for its part, asks for: {lesson}.',
       why: {
         coal: 'A cheap mine: its cubes feed the builds around it, and once they are gone it flips for income and points.',
-        iron: 'A forge: its bars serve anyone’s builds and developments, and it flips as they go — paid by the others.',
+        iron: 'An iron works: its bars serve anyone’s builds and developments, and it flips once empty — paid for by the others.',
         brewery: 'A brewery: the beer that every sale will need, without depending on a merchant’s barrel.',
         works: 'A works that sells: once sold it flips, income now and points at the era’s end.',
         network: 'A link: it widens where industry cards may build, carries coal to the builds, and reaches merchants to sell.',

@@ -1090,7 +1090,7 @@ const fr: typeof engame = {
       lesson: 'La leçon, elle, demande : {lesson}.',
       why: {
         coal: 'Une mine bon marché : ses cubes nourrissent les constructions autour, et une fois partis elle se retourne pour du revenu et des points.',
-        iron: 'Une forge : ses barres servent aux constructions et développements de tous, et elle se retourne à mesure — payée par les autres.',
+        iron: 'Une forge : ses barres servent aux constructions et développements de tous, et elle se retourne une fois vide — payée par les autres.',
         brewery: 'Une brasserie : la bière que chaque vente demandera, sans dépendre du baril d’un marchand.',
         works: 'Un ouvrage qui se vend : une fois vendu il se retourne, revenu tout de suite et points en fin d’ère.',
         network: 'Une liaison : elle élargit là où les cartes industrie peuvent bâtir, amène le charbon aux constructions et atteint les marchands pour vendre.',

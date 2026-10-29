@@ -1090,7 +1090,7 @@ const game: typeof engame = {
       lesson: 'La lección, por su parte, pide: {lesson}.',
       why: {
         coal: 'Una mina barata: sus cubos alimentan las construcciones de alrededor, y cuando se van se voltea para ingresos y puntos.',
-        iron: 'Una fundición: sus barras sirven a las construcciones y desarrollos de todos, y se voltea a medida — pagada por los demás.',
+        iron: 'Una fundición: sus barras sirven a las construcciones y desarrollos de todos, y se voltea cuando se vacía — pagada por los demás.',
         brewery: 'Una cervecería: la cerveza que cada venta pedirá, sin depender del barril de un mercader.',
         works: 'Una fábrica que se vende: una vez vendida se voltea, ingresos ahora y puntos al final de la era.',
         network: 'Una conexión: amplía donde las cartas de industria pueden construir, lleva carbón a las construcciones y alcanza a los mercaderes para vender.',
