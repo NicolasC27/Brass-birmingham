@@ -108,6 +108,19 @@ describe('the table’s sheets', () => {
     expect(off).toEqual([]);
   });
 
+  it('quote in each tongue’s own marks', () => {
+    /* English and German quote with their own marks, Spanish with
+       guillemets set close; only French spaces them */
+    const off: string[] = [];
+    for (const lang of ['en', 'de', 'es'] as const) {
+      for (const { key, text } of strings(DICTS[lang])) {
+        if (lang !== 'es' && /[«»]/.test(text)) off.push(`${lang}:${key}`);
+        if (/«\s|\s»/.test(text)) off.push(`${lang}:${key} spaced`);
+      }
+    }
+    expect(off).toEqual([]);
+  });
+
   it('elide a French de or que before a name that opens on a vowel', () => {
     setLang('fr');
     expect(tr('game.guide.happens.bonus', { merchant: 'Oxford', bits: '+2 PV' })).toContain('le baril d’Oxford');
