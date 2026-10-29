@@ -1263,6 +1263,7 @@ const game: typeof engame = {
         left: '{left} Würfel [left|bleibt|bleiben] darauf, für die mit der Mine verbundenen Baustellen.',
         leftIron: '{left} Barren [left|bleibt|bleiben] darauf, für jede Baustelle: Eisen reist ohne Verbindung.',
         noMerchant: 'Noch führt keine Verbindung von {town} zu einem Händler: {left} Würfel [left|bleibt|bleiben] für die mit der Mine verbundenen Baustellen.',
+        coalFull: 'Der Kohlemarkt war voll: {left} Würfel [left|bleibt|bleiben] für die mit der Mine verbundenen Baustellen.',
         ironFull: 'Der Eisenmarkt war voll: {left} Barren [left|bleibt|bleiben] darauf, für jede Baustelle.',
         reaches: 'Verbindungen führen schon von {town} zu {list}, wo diese Ware gekauft wird: Mit einem Bier lässt sich das Plättchen verkaufen.',
         noBuyer: 'Noch führt keine Verbindung von {town} zu einem Händler, der diese Ware kauft: Vor dem Verkauf braucht es eine.',

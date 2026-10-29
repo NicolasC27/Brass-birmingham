@@ -32,11 +32,16 @@ export interface BotPlate {
 
 const WORKS = ['cotton', 'manufacturer', 'pottery'];
 
-/** the merchants a place reaches over the links laid — the table as it
- *  stands, or without one link — that buy this industry */
-function buyersFrom(g: GameState, town: string, industry: string, without?: string): string[] {
-  const s = without ? { ...g, links: Object.fromEntries(Object.entries(g.links).filter(([id]) => id !== without)) } : g;
-  const near = reachable(s, town, g.era, null);
+/** the places a town reaches over the links laid — the table as it
+ *  stands, or without some links */
+function reachOf(g: GameState, town: string, without: string[] = []): Set<string> {
+  const s = without.length ? { ...g, links: Object.fromEntries(Object.entries(g.links).filter(([id]) => !without.includes(id))) } : g;
+  return reachable(s, town, g.era, null);
+}
+
+/** the merchants a place reaches that buy this industry */
+function buyersFrom(g: GameState, town: string, industry: string, without: string[] = []): string[] {
+  const near = reachOf(g, town, without);
   return MERCHANTS.filter((m) => near.has(m.id) && merchantOpen(g, m.id) && (merchantDemand(g, m.id) as string[]).includes(industry)).map((m) => m.id);
 }
 
@@ -105,8 +110,13 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
            reach; an iron works sells its bars wherever it stands */
         const soldOut = g.ledger.some((x) => x.at === e.at && x.key === 'flip' && x.region === e.region && x.vars?.why === 'market');
         const left = tile?.cubes ?? 0;
+        /* nothing sold: an iron works found its market full; a mine either
+           reached no merchant as it was laid — the links laid since left
+           out — or found the coal market full */
+        const laidSince = g.ledger.filter((x) => (x.at ?? -1) > (e.at ?? -1) && x.key === 'network').flatMap((x) => [String(x.vars?.linkId ?? ''), String(x.vars?.linkId2 ?? '')]).filter(Boolean);
+        const linked = !!e.region && [...reachOf(g, e.region, laidSince)].some((x) => MERCHANT_BY_ID[x]);
         if (Number(v.saleN) > 0) said.push(t(base === 'iron' ? 'game.guide.bot.build.soldIron' : 'game.guide.bot.build.sold', facts), soldOut ? t('game.guide.bot.build.soldOut') : t(base === 'iron' ? 'game.guide.bot.build.leftIron' : 'game.guide.bot.build.left', { left }));
-        else if (left > 0) said.push(t(base === 'iron' ? 'game.guide.bot.build.ironFull' : 'game.guide.bot.build.noMerchant', { ...facts, left }));
+        else if (left > 0) said.push(t(base === 'iron' ? 'game.guide.bot.build.ironFull' : linked ? 'game.guide.bot.build.coalFull' : 'game.guide.bot.build.noMerchant', { ...facts, left }));
       } else if (base === 'works' && e.region) {
         /* a works sells only to a merchant its town reaches: said as it
            stands, never promised */
@@ -129,7 +139,7 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
       }
       const opened = Object.entries(g.tiles)
         .filter(([, x]) => x.owner === e.player && !x.flipped && WORKS.includes(x.industry))
-        .map(([k, x]) => ({ town: k.split(':')[0], industry: x.industry, now: buyersFrom(g, k.split(':')[0], x.industry), before: buyersFrom(g, k.split(':')[0], x.industry, String(v.linkId)) }))
+        .map(([k, x]) => ({ town: k.split(':')[0], industry: x.industry, now: buyersFrom(g, k.split(':')[0], x.industry), before: buyersFrom(g, k.split(':')[0], x.industry, [String(v.linkId)]) }))
         .find((x) => x.now.some((m) => !x.before.includes(m)));
       if (opened) said.push(t('game.guide.bot.linkBuyer', { industry: t(`game.log.industry.${opened.industry}`), town: TOWN_BY_ID[opened.town]?.name ?? opened.town, merchant: MERCHANT_BY_ID[opened.now.find((m) => !opened.before.includes(m))!].name }));
       why = said.join(' ');

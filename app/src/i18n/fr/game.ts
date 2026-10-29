@@ -1263,6 +1263,7 @@ const fr: typeof engame = {
         left: '{left} [left|cube reste|cubes restent] dessus, pour les chantiers reliés à la mine.',
         leftIron: '{left} [left|barre reste|barres restent] dessus, pour tous les chantiers : le fer voyage sans liaison.',
         noMerchant: 'Aucune liaison ne relie encore {town} à un marchand : ses {left} [left|cube reste|cubes restent] pour les chantiers reliés à la mine.',
+        coalFull: 'Le marché du charbon était plein : ses {left} [left|cube reste|cubes restent] pour les chantiers reliés à la mine.',
         ironFull: 'Le marché du fer était plein : ses {left} [left|barre reste|barres restent] dessus, pour tous les chantiers.',
         reaches: 'Des liaisons relient déjà {town} à {list}, où ce bien s’achète : avec une bière, la tuile peut se vendre.',
         noBuyer: 'Aucune liaison ne relie encore {town} à un marchand qui achète ce bien : il en faudra une avant de vendre.',

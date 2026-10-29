@@ -105,6 +105,29 @@ describe('the machine’s plate', () => {
     expect(why).toMatch(/Vide aussitôt|restent? dessus/);
   });
 
+  it('tells a mine that reached no merchant from one that found the coal market full', () => {
+    const mine = (linked: boolean, coal: number) => {
+      const g = table();
+      if (linked) g.links[link('redditch', 'm-oxford')] = { owner: BOT, era: 'canal' };
+      g.market.coal = coal;
+      g.players[BOT].hand = [{ id: 'w', kind: 'wild-location' }];
+      return botReason(botPlays(g, { kind: 'build', card: 'w', town: 'redditch', slot: 0, industry: 'coal' }), ME, keys, 'fr')!.why;
+    };
+    expect(mine(true, 14)).toMatch(/game\.guide\.bot\.build\.coalFull\{[^}]*"left":2/);
+    expect(mine(false, 5)).toMatch(/game\.guide\.bot\.build\.noMerchant/);
+    expect(mine(true, 5)).toMatch(/game\.guide\.bot\.build\.sold/);
+    /* a canal the reader lays to Oxford afterwards does not rewrite why
+       the mine sold nothing as it was laid */
+    const g = table();
+    g.players[BOT].hand = [{ id: 'w', kind: 'wild-location' }];
+    g.market.coal = 5;
+    const built = botPlays(g, { kind: 'build', card: 'w', town: 'redditch', slot: 0, industry: 'coal' });
+    const id = link('redditch', 'm-oxford');
+    built.links[id] = { owner: ME, era: 'canal' };
+    built.ledger.push({ id: 9999, round: built.round, era: built.era, player: ME, verb: 'network', text: '', key: 'network', vars: { linkId: id }, at: built.actions.length });
+    expect(botReason(built, ME, keys, 'fr')!.why).toMatch(/game\.guide\.bot\.build\.noMerchant/);
+  });
+
   it('never promises a works a buyer its links do not reach', () => {
     const works = (buys: 'all' | 'cotton') => {
       const g = table();
