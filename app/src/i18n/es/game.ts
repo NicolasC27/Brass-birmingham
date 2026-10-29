@@ -1173,7 +1173,7 @@ const game: typeof engame = {
         orderNext: 'En esta ronda llevas [spent|gastada|gastadas] {spent} £: el orden de la siguiente se decide por eso.',
         orderSeat: '{name} ({spent} £)',
         orderYou: 'tú',
-        do: 'Un experto lo está pensando en tu lugar — la razón llega en una placa justo debajo; el lugar después, si lo pides.',
+        do: 'Un experto lo está pensando en tu lugar — la razón llega en una placa, más abajo; el lugar después, si lo pides.',
         doTool: 'Para un consejo sobre la jugada, pídeselo a la nota de la guía en tu turno: «{ask}»',
       },
     },

@@ -1171,7 +1171,7 @@ const game = {
         orderNext: 'This round you have spent £{spent} so far: the next round’s order is set on that.',
         orderSeat: '{name} (£{spent})',
         orderYou: 'you',
-        do: 'An expert is thinking it over in your seat — the reason comes up as a card below; the place after, if you ask for it.',
+        do: 'An expert is thinking it over in your seat — the reason comes up on a plate further down; the place after, if you ask for it.',
         doTool: 'For advice on the move to play, ask the guide’s note on your turn: “{ask}”',
       },
     },

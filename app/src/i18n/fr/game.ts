@@ -1173,7 +1173,7 @@ const fr: typeof engame = {
         orderNext: 'Cette manche, vous avez dépensé {spent} £ jusqu’ici : l’ordre de la suivante se fera là-dessus.',
         orderSeat: '{name} ({spent} £)',
         orderYou: 'vous',
-        do: 'Un expert réfléchit à votre place — sa raison arrive en plaque juste en dessous ; le lieu ensuite, si vous le demandez.',
+        do: 'Un expert réfléchit à votre place — sa raison arrive en plaque, plus bas ; le lieu ensuite, si vous le demandez.',
         doTool: 'Pour un conseil sur le coup à jouer, demandez-le à la note du guide, à votre tour : « {ask} »',
       },
     },
