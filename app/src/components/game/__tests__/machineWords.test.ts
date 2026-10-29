@@ -74,6 +74,22 @@ describe('the machine’s plate', () => {
     expect(botReason(last(5), ME, keys, 'fr')!.turn).toMatch(/^game\.guide\.turn\.roundOverBot/);
   });
 
+  it('says what a turn costs in the first round of two actions, and not after', () => {
+    const pass = (g: GameState, seat: number) => applyAction(g, seat, { kind: 'pass', card: g.players[seat].hand[0].id }).state!;
+    const cards = (g: GameState) => botReason(g, ME, keys, 'fr')!.turn.includes('game.guide.turn.cards');
+    let g = pass(pass(table(), ME), BOT);
+    expect(cards(g)).toBe(false);
+    g = pass(pass(pass(g, ME), ME), BOT);
+    expect(g.round).toBe(2);
+    expect(cards(g)).toBe(true);
+    /* round 3, the order kept by the tie: the machine's first action,
+       the words not said again */
+    g = pass(pass(pass(g, BOT), ME), ME);
+    const first = pass(g, BOT);
+    expect(first.round).toBe(3);
+    expect(cards(first)).toBe(false);
+  });
+
   it('tells every tile of a sale, and the merchant once', () => {
     const g = table();
     g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };

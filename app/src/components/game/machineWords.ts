@@ -127,6 +127,9 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
     turn = t(`game.guide.turn.${key}`, { name: p.name, you });
   }
   else turn = t(g.current === me ? 'game.guide.turn.secondThenYou' : 'game.guide.turn.second', { name: p.name, you });
+  /* what a turn costs is said on the first two plates of the first round
+     with two actions, and not again */
+  if (e.era === 'canal' && e.round === 2 && g.round === 2) turn += ` ${t('game.guide.turn.cards')}`;
   /* fresh: the machine's move is the latest action of the log — the one being played through */
   return { id: e.id, seat: e.player, name: p.name, what, why, turn, fresh: e.at === g.actions.length - 1 };
 }
