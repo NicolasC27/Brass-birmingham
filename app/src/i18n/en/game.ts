@@ -1113,7 +1113,7 @@ const game = {
       empties: 'Your {industry} at {town} gave up its last cube: it flips. Your income marker advances {income} [income|space|spaces] along the track, and its points are banked for the era’s end. An emptied tile is a paid tile — no matter who took the cubes.',
       barrel: 'Your brewery at {town} poured its last barrel: it flips. The income marker advances {income} [income|space|spaces], and its points count at the era’s end.',
       market: 'Your {industry} at {town} sold its {goods} to the market as it was laid, for £{gain}: empty at once, it flips. Your income marker advances {income} [income|space|spaces], its points are banked, and the market is restocked for everyone.',
-      theirs: 'You drew on {name}’s {industry} at {town}: it emptied and flipped — it advances {name}’s income marker {income} [income|space|spaces], and leaves them its points. That is the price of free coal and iron.',
+      theirs: 'You drew on {name}’s {industry} at {town}: it emptied and flipped — {name}’s income marker advances {income} [income|space|spaces], and the points are {name}’s. That is the price of free coal and iron.',
       restock: '{name}’s new {industry} sold {goods} to the market: the price comes down for everyone. Nothing else ever restocks it.',
       restockMine: 'Your {industry} sold {goods} to the market as it was laid, for £{gain} — free money, and the market restocked for everyone.',
       bonus: 'You drank {merchant}’s barrel: its bonus is yours — {bits}. Each barrel is drunk once an era, and a merchant carries one barrel per non-blank tile — so sometimes two.',
