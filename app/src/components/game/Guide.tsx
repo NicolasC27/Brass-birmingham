@@ -13,7 +13,6 @@ import { passagesOf } from '@/game/faq';
 import { askedAs, tell } from '@/game/faq/consult';
 import type { NearNotion } from '@/game/faq/consult';
 import { cardLabel, describeAction, useGame } from '@/game/store';
-import { searchTurn } from '@/game/search';
 import type { GameAction } from '@/game/actions';
 import type { GameState } from '@/game/types';
 import { dictOf, getLang, localeOf, useLang, useT } from '@/i18n';
@@ -34,7 +33,7 @@ import { answerQuestion, blockedBy } from './tableAnswers';
 import { botReason, happenings } from './machineWords';
 import { holdFor, mayPlayOn, unreadOf } from './guideHold';
 import type { Reading } from './guideHold';
-import { hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
+import { expertMove, hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -872,9 +871,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
     window.setTimeout(() => {
       const g = useGame.getState().game;
       if (!g || g.actions.length !== here) return;
-      /* the search itself, at full strength: the machines' own entry point
-         caps a human seat under assist and blurs its reading */
-      const a = searchTurn(g, me, { budgetMs: 400, strength: 1 })?.action ?? null;
+      /* the search itself, at full strength, and never a tile begun too
+         late to flip (expertAdvice.ts) */
+      const a = expertMove(g, me);
       setAdvice({ at: here, action: a, busy: false, place: false });
       /* the table keeps it too: played, the move is the guide's word, and
          the coach — another engine — does not grade it over again */

@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, withEdition } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { buildTargets, eraRounds, newGame } from '@/game/engine';
+import { buildTargets, eraRounds, newGame, sellTargets } from '@/game/engine';
+import { LINKS } from '@/game/data';
 import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Card, GameState, SetupPayload } from '@/game/types';
-import { keepOf, keepsFor, placeLens, sameMove, spareFor, spentBy } from '../expertAdvice';
+import { deadAtClose, expertMove, keepOf, keepsFor, placeLens, sameMove, spareFor, spentBy } from '../expertAdvice';
 import { LESSON_IDS, freshProgress, lessonIndex, roundOf } from '../lessons';
 
 /* What an expert would play, set up without spending a card the guided
@@ -328,5 +329,66 @@ describe('the move the expert advised, played', () => {
     expect(sameMove(sale('m-oxford'), sale('m-oxford'))).toBe(true);
     expect(sameMove(sale('m-oxford'), sale('m-gloucester'))).toBe(false);
     expect(sameMove({ kind: 'loan', card: 'a' }, { kind: 'pass', card: 'a' })).toBe(false);
+  });
+});
+
+describe('a tile begun too late to flip', () => {
+  /** the short game's last round, the reader to play with this many
+   *  actions and cards left and a wild industry card among them; a canal
+   *  from Birmingham to Oxford, whose barrel stands, laid by the machine */
+  const late = (left: number, era: 'short' | 'standard' = 'short'): GameState => {
+    const g = table();
+    g.eraLength = era;
+    g.round = eraRounds(g.players.length);
+    g.current = 0;
+    g.actionsLeft = left;
+    g.deck = [];
+    g.players[0].money = 60;
+    g.players[0].hand = [{ id: 'wild', kind: 'wild-industry' } as Card, ...g.players[0].hand.slice(0, left - 1)];
+    g.merchantTiles = { 'm-oxford': ['all'] };
+    g.merchantBeer = { 'm-oxford:0': 1 };
+    g.links = { [LINKS.find((l) => l.a === 'birmingham' && l.b === 'm-oxford')!.id]: { owner: 1, era: 'canal' } };
+    return g;
+  };
+  const build = (g: GameState, industry: string): Extract<GameAction, { kind: 'build' }> => {
+    const x = buildTargets(g, 0, hand(g)[0]).find((t) => t.valid && t.industry === industry && t.town === 'birmingham')!;
+    return { kind: 'build', card: 'wild', town: x.town, slot: x.slot, industry: x.industry };
+  };
+
+  it('is a forge on the last action whose iron the market will not take', () => {
+    const g = late(1);
+    g.market.iron = 10;
+    expect(deadAtClose(g, 0, build(g, 'iron'))).toBe(true);
+  });
+
+  it('is not a forge that sells all its iron as it is laid', () => {
+    const g = late(1);
+    g.market.iron = 0;
+    const a = build(g, 'iron');
+    expect(played(g, a).tiles[`${a.town}:${a.slot}`].flipped).toBe(true);
+    expect(deadAtClose(g, 0, a)).toBe(false);
+  });
+
+  it('is a works on the last action, not one a second action can sell', () => {
+    expect(deadAtClose(late(1), 0, build(late(1), 'manufacturer'))).toBe(true);
+    const g = late(2);
+    const a = build(g, 'manufacturer');
+    expect(sellTargets(played(g, a), 0).some((x) => x.town === a.town && x.slot === a.slot && x.valid)).toBe(true);
+    expect(deadAtClose(g, 0, a)).toBe(false);
+  });
+
+  it('is nothing in an era another follows, nor a move that builds nothing', () => {
+    const g = late(1, 'standard');
+    g.market.iron = 10;
+    expect(deadAtClose(g, 0, build(g, 'iron'))).toBe(false);
+    expect(deadAtClose(late(1), 0, { kind: 'pass', card: 'wild' })).toBe(false);
+  });
+
+  it('is never what the expert advises', () => {
+    const g = late(1);
+    g.market.iron = 10;
+    const a = expertMove(g, 0, 60);
+    expect(a).not.toBeNull();
+    expect(deadAtClose(g, 0, a!)).toBe(false);
   });
 });

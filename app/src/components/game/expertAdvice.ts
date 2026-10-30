@@ -1,7 +1,7 @@
 import { applyAction } from '@/game/actions';
 import type { GameAction } from '@/game/actions';
-import { buildTargets, isWild, merchantOpen, reachable, tileKey } from '@/game/engine';
-import { onlyMoney, sparedFirst } from '@/game/search';
+import { buildTargets, eraRounds, isWild, merchantOpen, reachable, sellTargets, tileKey } from '@/game/engine';
+import { onlyMoney, searchTurn, sparedFirst } from '@/game/search';
 import type { Lens } from '@/game/store';
 import type { Card, GameState, IndustryType } from '@/game/types';
 import { asideNow, lastRound } from './lessons';
@@ -159,6 +159,43 @@ export function spareFor(g: GameState, me: number, a: GameAction, keeps: readonl
 function withCard(a: GameAction, from: string, to: string): GameAction {
   if (a.kind === 'scout') return { ...a, cards: a.cards.map((id) => (id === from ? to : id)) };
   return 'card' in a && a.card === from ? ({ ...a, card: to } as GameAction) : a;
+}
+
+/** the reader's actions left before the game ends, this one not
+ *  counted: the rest of the turn and two a round after it, as far as the
+ *  hand and its share of the deck still go */
+function actionsAfter(g: GameState, me: number): number {
+  const turn = g.current === me ? g.actionsLeft - 1 : 0;
+  const rounds = Math.max(0, eraRounds(g.players.length) - g.round);
+  const cards = g.players[me].hand.length - 1 + Math.floor(g.deck.length / g.players.length);
+  return Math.max(0, Math.min(turn + 2 * rounds, cards));
+}
+
+/** a tile begun too late to flip: in the era the game ends with — a
+ *  short game's canal, the rail — only a flipped tile scores, and its
+ *  price is lost otherwise. It flips as it is laid, its cubes all sold
+ *  to the market; or a works is sold, one action more (two, when no
+ *  merchant is within reach yet); or a mine, a forge or a brewery is
+ *  emptied, a cube an action at best. The engine's search values an
+ *  unflipped tile by its chances, not by the actions left: the guide
+ *  sets such a build aside itself, as its lesson on the last rounds asks */
+export function deadAtClose(g: GameState, me: number, a: GameAction): boolean {
+  if (a.kind !== 'build' || !(g.era === 'rail' || g.eraLength === 'short')) return false;
+  const after = applyAction(g, me, a).state;
+  const tile = after?.tiles[tileKey(a.town, a.slot)];
+  if (!after || !tile || tile.flipped) return false;
+  const need = WORKS.includes(tile.industry) ? (sellTargets(after, me).some((x) => x.town === a.town && x.slot === a.slot && x.valid) ? 1 : 2) : tile.cubes;
+  return need > actionsAfter(g, me);
+}
+
+/** what an expert would play in the reader's seat: the search at full
+ *  strength — not the machine's own entry point, which caps a human seat
+ *  under assist and blurs its reading — with a tile begun too late to
+ *  flip passed over for the best move after it */
+export function expertMove(g: GameState, me: number, budgetMs = 400): GameAction | null {
+  const r = searchTurn(g, me, { budgetMs, strength: 1, rank: true });
+  if (!r || !deadAtClose(g, me, r.action)) return r?.action ?? null;
+  return r.ranked?.find((x) => !deadAtClose(g, me, x.action))?.action ?? null;
 }
 
 /** the same move, whatever cards pay for it and wherever its cubes and
