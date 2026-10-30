@@ -114,7 +114,7 @@ const game = {
         network: 'Play this card another way: build, sell, develop, or pass with it',
         sell: 'Nothing to sell yet: link a works to its buyer or build a brewery',
         develop: 'Nothing to develop for now: it takes an iron, and the money for it at the market',
-        developMoney: 'The iron must be paid for: sell a works, take a loan, or play this card another way',
+        developMoney: 'The iron must be paid for: take a loan, or play this card another way',
         developNone: 'No tile left on your mat can be developed: play this card another way',
       },
       coalMarket: 'The coal comes from the market: no mine is linked to {town}. A link toward {mine} would have made it free.',
