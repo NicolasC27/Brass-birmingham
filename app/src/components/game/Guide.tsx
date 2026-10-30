@@ -258,6 +258,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
      is named at once, here and in the lesson's words */
   const keys = useKeybindings();
   const setLedgerOpen = useGame((s) => s.setLedgerOpen);
+  /* a sheet that asks for the whole table — the loan's — stands over the
+     note: the note is out of reach of the keys and the pointer meanwhile */
+  const tableAsks = useGame((s) => s.loanConfirm);
   /* what was read at this table, kept over a reload (guideRead.ts): the
      page reloaded brings back neither her plates nor the news already
      read, and keeps the thread. Read once, as the guide opens: the page
@@ -1017,7 +1020,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
       <>
         <LessonLens stepId={lensId} active={showSteps} />
         {heard}
-        <aside data-guide aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
+        <aside data-guide inert={tableAsks} aria-label={t('game.guide.rail.aria')} className="pointer-events-auto fixed inset-y-0 right-0 z-[80] flex flex-col items-center gap-3 border-l border-brass-hairline bg-coal-950/92 py-3 backdrop-blur-md" style={{ width: GUIDE_RAIL }}>
           <button type="button" onClick={() => setBoardOption('guideFolded', false)} aria-label={t('game.guide.rail.unfold', { key: foldKey })} title={t('game.guide.rail.unfold', { key: foldKey })} className="relative flex h-8 w-8 items-center justify-center rounded-md border border-brass-700/50 text-brass-400 transition-colors hover:border-brass-400 coarse:h-10 coarse:w-10">
             <ChevronLeft className="h-4 w-4" />
             {due && <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-brass-400 shadow-[0_0_0_1px_rgba(0,0,0,.6)]" />}
@@ -1051,6 +1054,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     <div
       ref={boxRef}
       data-guide
+      inert={tableAsks}
       className={cn(
         'z-[80] flex min-h-0 flex-col items-stretch gap-2 overflow-y-auto overscroll-contain',
         dock ? 'pointer-events-auto fixed inset-y-0 right-0 border-l border-brass-hairline bg-coal-950/92 px-3 py-3 backdrop-blur-md' : 'pointer-events-none fixed right-3 will-change-transform',
