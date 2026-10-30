@@ -316,9 +316,9 @@ const de: typeof enrules = {
   },
   market: {
     p1:
-      "Wenn das Angebot knapp wird, antwortet der Markt — zu einem Preis. Kohle liegt in vierzehn Feldern zu 1 £ bis 7 £, Eisen in zehn Feldern zu 1 £ bis 5 £; ein leeres Tableau verkauft noch, zu 8 £ und 6 £. Kaufen nimmt den billigsten Würfel, und der Preis steigt. Nichts füllt die Tableaus von allein: Eine frisch gebaute, mit einem Händler verbundene Mine, oder eine frisch gebaute Eisenhütte, wo immer sie steht, verkauft dem Markt so viele Würfel, wie er aufnehmen kann; er füllt sich vom teuren Ende her auf, und der Preis sinkt wieder.",
+      "Wenn das Angebot knapp wird, antwortet der Markt — zu einem Preis. Kohle liegt in vierzehn Feldern zu 1 £ bis 7 £, Eisen in zehn Feldern zu 1 £ bis 5 £; ein leerer Markt verkauft noch, zu 8 £ und 6 £. Kaufen nimmt den billigsten Würfel, und der Preis steigt. Nichts füllt die Märkte von allein: Eine frisch gebaute, mit einem Händler verbundene Mine, oder eine frisch gebaute Eisenhütte, wo immer sie steht, verkauft dem Markt so viele Würfel, wie er aufnehmen kann; er füllt sich vom teuren Ende her auf, und der Preis sinkt wieder.",
     p2:
-      "Ein leerer Markt ist eine Mauer, keine Unannehmlichkeit: Kohle, die man weder kaufen noch erreichen kann, ist schlicht außer Reichweite. Behalte die Tableaus im Auge wie ein Vorarbeiter den Himmel.",
+      "Ein leerer Markt ist eine Mauer, keine Unannehmlichkeit: Kohle, die man weder kaufen noch erreichen kann, ist schlicht außer Reichweite. Behalte die Märkte im Auge wie ein Vorarbeiter den Himmel.",
   },
   selling: {
     intro: "Baumwollspinnereien, Manufakturen und Töpfereien drehen sich nur durch Verkauf an einen Händlerhafen am Kartenrand um. Der Hafen muss deine Ware zeigen (oder beliebige Ware), du musst eine Verbindung zu ihm haben, und jedes Plättchen trinkt das darauf gedruckte Bier, bevor es sich verkauft — ein Fass für die meisten, zwei für die großen Werke.",
