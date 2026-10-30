@@ -41,7 +41,7 @@ const de: typeof enrules = {
   quick: {
     goal: {
       title: "Das Ziel",
-      body: "Sammle nach zwei großen Zeitaltern die meisten Siegpunkte. Die Punkte kommen von umgedrehten Industrien und von jeder Verbindung deines Netzwerks.",
+      body: "Sammle nach zwei großen Epochen die meisten Siegpunkte. Die Punkte kommen von umgedrehten Industrien und von jeder Verbindung deines Netzwerks.",
     },
     turn: {
       title: "Dein Zug",
@@ -73,7 +73,7 @@ const de: typeof enrules = {
     railTitle: "Die Eisenbahnzeit, 1830–1870",
     railBody:
       "Ein neuer Nachziehstapel, frische Hände, und Bahnstrecken für 5 £ plus eine Kohle pro Verbindung — zwei Verbindungen lassen sich in einer Aktion für 15 £, zwei Kohle und ein Bier legen. Kein neuer Kanal darf mehr gegraben werden, und Brauereien kommen jetzt mit zwei Fässern statt einem. Wenn auch dieser Stapel aufgebraucht ist, wird der Spielplan ein zweites Mal gewertet, und das reichste Register gewinnt.",
-    betweenTitle: "Zwischen den Zeitaltern",
+    betweenTitle: "Zwischen den Epochen",
     betweenBody:
       "Werke der Stufe 1 werden vom Spielplan gefegt, wenn das Wasser zurückweicht — plane, sie vor dem Ende der Kanalzeit umzudrehen, oder sieh zu, wie sie ungezählt verschwinden. Alle Verbindungsplättchen werden nach der Wertung ebenfalls entfernt: Die Eisenbahnzeit beginnt allein von deinen Industrien aus.",
   },
@@ -146,7 +146,7 @@ const de: typeof enrules = {
       edges: {
         e1: "Umgedrehte Plättchen bringen ihren Einkommensbonus sofort und zählen am Ende der Epoche SP.",
         e2: "Der Appetit eines Händlers ist nie gestillt: Sein Plättchen kauft wieder und wieder. Nur sein Bonusfass wird einmal pro Epoche getrunken.",
-        e3: "Wie viel Bier ein Plättchen trinkt, steht darauf: zwei Fässer für die Manufaktur der Stufe 5 und die Töpfereien der Stufen 3 und 5, in beiden Zeitaltern.",
+        e3: "Wie viel Bier ein Plättchen trinkt, steht darauf: zwei Fässer für die Manufaktur der Stufe 5 und die Töpfereien der Stufen 3 und 5, in beiden Epochen.",
       },
     },
     loan: {
