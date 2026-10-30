@@ -1518,7 +1518,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         }
         if (m.isSelling && slot) {
           const key = tileKey(slot.town.id, slot.si);
-          const t = p.sellTargetsList.find((x) => tileKey(x.town, x.slot) === key);
+          /* a tile sells to each merchant who takes its goods: the click
+             takes one who can buy it now, not merely the first listed —
+             the merchant is the reader's to change in the hand after */
+          const same = p.sellTargetsList.filter((x) => tileKey(x.town, x.slot) === key);
+          const t = same.find((x) => x.valid) ?? same[0];
           if (t?.valid) st().pickSell(t);
           else p.onInvalid(key, t?.reason ?? tr('board.invalid.noMerchant'));
           return;
