@@ -813,12 +813,28 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
         </div>
       )}
 
-      {/* at home, the office and the board fell out: play waits, frozen,
-          until the board is read back from the office's log — then a word
-          on what was read, for the reader to put away */}
-      {!tableCode && homeTrouble && !homeTrouble.mended && <HomeFrozen trouble={homeTrouble} local={titleLocal} />}
+      {/* at home, the board read back from the office's log after they fell
+          out (the veil that froze it stands beside the guide, below): a
+          word on what was read, for the reader to put away */}
       {!tableCode && homeTrouble?.mended && <HomeMended trouble={homeTrouble} />}
 
+      <Ceremony ready={boardStage === 'ready'} />
+      <GameOverModal
+        fresh={openedOver?.over === false}
+        ready={boardStage === 'ready'}
+        onRematch={() => {
+          /* the rematch is dealt for the table just played, not the salon's last one */
+          if (game && !tableCode) keepTableOf(game);
+          reset();
+        }}
+      />
+      <CoachMarks />
+      </div>
+
+      {/* the sheets that ask for the table whole stand over it and over
+          the guide beside it, not inside the table's frame: its `contain`
+          makes a layer of its own, and the guide's note, a sibling, would
+          paint over them. The loan's plate stays centred on the table */}
       {/* hot-seat pass interstitial — fully opaque: the board and every hand
           stay hidden until the next human claims the device */}
       <AnimatePresence>
@@ -827,7 +843,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[78] flex items-center justify-center bg-coal-950"
+            className="fixed inset-0 z-[84] flex items-center justify-center bg-coal-950"
             ref={passSheet}
             tabIndex={-1}
             role="dialog"
@@ -863,7 +879,6 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* loan confirm */}
       <AnimatePresence>
         {loanConfirm && (
@@ -872,6 +887,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[82] flex items-center justify-center bg-coal-950/75 p-4 backdrop-blur-sm"
+            style={{ paddingRight: dock + 16 }}
             ref={loanSheet}
             tabIndex={-1}
             role="dialog"
@@ -920,21 +936,10 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <Ceremony ready={boardStage === 'ready'} />
-      <GameOverModal
-        fresh={openedOver?.over === false}
-        ready={boardStage === 'ready'}
-        onRematch={() => {
-          /* the rematch is dealt for the table just played, not the salon's last one */
-          if (game && !tableCode) keepTableOf(game);
-          reset();
-        }}
-      />
+      {/* at home, the office and the board fell out: play waits, frozen,
+          until the board is read back from the office's log */}
+      {!tableCode && homeTrouble && !homeTrouble.mended && <HomeFrozen trouble={homeTrouble} local={titleLocal} />}
       <RulesOverlay />
-      <CoachMarks />
-      </div>
-
       {/* the guide's own lane, beside the table rather than over it */}
       {/* the review's plate: which moment of the game the board shows — the
           panel carries it at its foot when it is open */}
@@ -1048,7 +1053,7 @@ function HomeFrozen({ trouble, local }: { trouble: HomeTrouble; local: string | 
       role="alertdialog"
       aria-modal="true"
       aria-labelledby={said}
-      className="fixed inset-0 z-[79] flex items-center justify-center bg-coal-950/60 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[84] flex items-center justify-center bg-coal-950/60 p-4 backdrop-blur-[2px]"
     >
       <TitlePlate game={game} code={null} local={local} kicker={t('game.titre.troubleKicker')} tone="rust">
         <p id={said} className="font-sans text-sm leading-relaxed text-cream-100/85">
