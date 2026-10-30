@@ -196,6 +196,21 @@ describe('the machine’s plate', () => {
     expect(mine(1).map((x) => x.split('{')[0])).toEqual(['game.guide.happens.restockMine']);
   });
 
+  it('tells a rival’s brewery drained by the reader’s sale as beer, not coal and iron', () => {
+    const g = table();
+    g.tiles['redditch:0'] = { owner: ME, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    g.links[link('redditch', 'm-oxford')] = { owner: ME, era: 'canal' };
+    g.merchantTiles['m-oxford'] = ['all', 'blank'];
+    g.merchantBeer = {};
+    for (const k of Object.keys(g.tiles)) if (g.tiles[k].industry === 'brewery') delete g.tiles[k];
+    g.tiles['birmingham:0'] = { owner: BOT, industry: 'brewery', level: 1, flipped: false, cubes: 1 };
+    g.links[link('birmingham', 'm-oxford')] = { owner: BOT, era: 'canal' };
+    const after = applyAction(g, ME, { kind: 'sell', card: g.players[ME].hand[0].id, sales: [{ town: 'redditch', slot: 0, merchant: 'm-oxford' }] }).state!;
+    const out = happenings(after, ME, keys).map((x) => x.text.split('{')[0]);
+    expect(out).toContain('game.guide.happens.theirsBarrel');
+    expect(out).not.toContain('game.guide.happens.theirs');
+  });
+
   it('tells every tile of a sale, and the merchant once', () => {
     const g = table();
     g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };

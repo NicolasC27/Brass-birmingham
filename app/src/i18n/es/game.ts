@@ -1116,6 +1116,7 @@ const game: typeof engame = {
       barrel: 'Tu cervecería de {town} ha servido su último barril: se voltea. El marcador de ingresos avanza {income} [income|espacio|espacios], y sus puntos cuentan al final de la era.',
       market: 'Tu {industry} de {town} ha vendido sus {goods} al mercado al colocarse, por {gain} £: vacía al instante, se voltea. Tu marcador de ingresos avanza {income} [income|espacio|espacios], sus puntos quedan asegurados, y el mercado queda reabastecido para todos.',
       theirs: 'Has tirado de la {industry} de {name} en {town}: se ha vaciado y se voltea — el marcador de ingresos de {name} avanza {income} [income|espacio|espacios], y los puntos son para {name}. Ese es el precio del carbón y el hierro gratis.',
+      theirsBarrel: 'Has bebido el último barril de la cervecería de {name} en {town}: se voltea — el marcador de ingresos de {name} avanza {income} [income|espacio|espacios], y los puntos son para {name}. Ese es el precio de una cerveza que no es tuya.',
       restock: 'La nueva {industry} de {name} ha vendido {goods} al mercado: el precio baja para todos. Nada más lo reabastece nunca.',
       restockMine: 'Tu {industry} ha vendido {goods} al mercado al colocarse, por {gain} £ — dinero gratis, y el mercado reabastecido para todos.',
       bonus: 'Has bebido el barril de {merchant}: su bonificación es tuya — {bits}. Cada barril se bebe una vez por era, y un mercader lleva un barril por loseta no vacía — así que a veces dos.',

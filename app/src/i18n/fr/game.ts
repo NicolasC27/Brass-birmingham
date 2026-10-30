@@ -1116,6 +1116,7 @@ const fr: typeof engame = {
       barrel: 'Votre brasserie de {town} a versé son dernier baril : elle se retourne. Le marqueur de revenu avance de {income} [income|case|cases], et ses points comptent en fin d’ère.',
       market: 'Votre {industry} de {town} a écoulé ses {goods} au marché en se posant, pour {gain} £ : vide aussitôt, elle se retourne. Votre marqueur de revenu avance de {income} [income|case|cases], ses points sont acquis, et le marché est regarni pour tout le monde.',
       theirs: 'Vous avez puisé dans la {industry} de {name} à {town} : elle s’est vidée et se retourne — elle avance le marqueur de revenu de {name} de {income} [income|case|cases], et lui laisse ses points. C’est le prix du charbon et du fer gratuits.',
+      theirsBarrel: 'Vous avez bu le dernier baril de la brasserie de {name} à {town} : elle se retourne — elle avance le marqueur de revenu de {name} de {income} [income|case|cases], et lui laisse ses points. C’est le prix d’une bière qui n’est pas la vôtre.',
       restock: 'La nouvelle {industry} de {name} a écoulé {goods} au marché : le prix redescend pour tout le monde. Rien d’autre ne le regarnit jamais.',
       restockMine: 'Votre {industry} a écoulé {goods} au marché en se posant, pour {gain} £ — de l’argent gratuit, et le marché regarni pour tout le monde.',
       bonus: 'Vous avez bu le baril de {merchant} : son bonus est à vous — {bits}. Chaque baril ne se boit qu’une fois par ère, et un marchand porte un baril par tuile non vierge — donc parfois deux.',

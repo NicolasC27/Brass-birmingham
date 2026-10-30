@@ -1116,6 +1116,7 @@ const game: typeof engame = {
       barrel: 'Deine Brauerei in {town} hat ihr letztes Fass ausgeschenkt: sie dreht sich um. Der Einkommensmarker rückt {income} [income|Feld|Felder] vor, und ihre Punkte zählen am Epochenende.',
       market: 'Deine {industry} in {town} hat beim Bau ihre {goods} für £{gain} an den Markt verkauft: Sofort leer, dreht sie sich um. Dein Einkommensmarker rückt {income} [income|Feld|Felder] vor, ihre Punkte sind gesichert, und der Markt ist für alle wieder aufgefüllt.',
       theirs: 'Du hast aus der {industry} von {name} in {town} geschöpft: Sie ist leer und dreht sich um — der Einkommensmarker von {name} rückt {income} [income|Feld|Felder] vor, und die Punkte gehen an {name}. Das ist der Preis für kostenlose Kohle und kostenloses Eisen.',
+      theirsBarrel: 'Du hast das letzte Fass aus der Brauerei von {name} in {town} getrunken: Sie dreht sich um — der Einkommensmarker von {name} rückt {income} [income|Feld|Felder] vor, und die Punkte gehen an {name}. Das ist der Preis für ein Bier, das nicht deines ist.',
       restock: 'Die neue {industry} von {name} hat {goods} an den Markt verkauft: Der Preis sinkt für alle. Nichts anderes füllt ihn je wieder auf.',
       restockMine: 'Deine {industry} hat beim Bau {goods} für £{gain} an den Markt verkauft — Geld geschenkt, und der Markt für alle wieder aufgefüllt.',
       bonus: 'Du hast das Fass von {merchant} getrunken: sein Bonus gehört dir — {bits}. Jedes Fass wird einmal je Epoche getrunken, und ein Händler trägt ein Fass je nicht leerem Plättchen — also manchmal zwei.',
