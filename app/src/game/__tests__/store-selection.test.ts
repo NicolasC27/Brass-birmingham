@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { reasonText, setLang } from '@/i18n';
 import { fr } from '@/i18n/fr';
 import { applyAction } from '../actions';
+import { LINKS } from '../data';
 import { newGame } from '../engine';
 import { cardLabel, useGame } from '../store';
 import type { GameState, SetupPayload } from '../types';
@@ -68,5 +69,60 @@ describe('what the store hands the board to say', () => {
     expect(useGame.getState().dispatch(bad)).toBe(false);
     expect(useGame.getState().shake?.reason).toBe(reasonText(raw));
     expect(useGame.getState().shake?.reason).toBe(fr.game.reasons['card-not-in-hand']);
+  });
+});
+
+describe('a works two merchants could buy', () => {
+  /* a manufactory at Redditch, linked to Oxford and to Gloucester: Oxford's
+     barrel drunk, Gloucester's still there, and no brewery anywhere — only
+     Gloucester can take the sale, though Oxford is listed first */
+  const stage = () => {
+    const g = newGame(table, 7);
+    const me = g.current;
+    g.merchantTiles = { 'm-oxford': ['all'], 'm-gloucester': ['all'] };
+    g.merchantBeer = { 'm-oxford:0': 0, 'm-gloucester:0': 1 };
+    g.tiles = { 'redditch:0': { owner: me, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 } };
+    const link = (b: string) => LINKS.find((l) => l.a === 'redditch' && l.b === b)!.id;
+    g.links = { [link('m-oxford')]: { owner: me, era: 'canal' }, [link('m-gloucester')]: { owner: me, era: 'canal' } };
+    useGame.setState({ game: g, code: null, local: null, humanMarks: [], homeTrouble: null, shake: null });
+    const st = useGame.getState();
+    st.selectCard(g.players[me].hand[0].id);
+    useGame.getState().setVerb('sell');
+    return { g, me };
+  };
+
+  it('lists the merchant who cannot buy it first', () => {
+    stage();
+    const sells = useGame.getState().currentSells();
+    expect(sells.map((x) => [x.merchant, x.valid])).toEqual([['m-oxford', false], ['m-gloucester', true]]);
+  });
+
+  it('refuses the sale that cannot be made, in words, and queues nothing', () => {
+    stage();
+    const oxford = useGame.getState().currentSells().find((x) => x.merchant === 'm-oxford')!;
+    useGame.getState().pickSell(oxford);
+    expect(useGame.getState().sellPicks).toEqual([]);
+    expect(useGame.getState().shake?.key).toBe('redditch:0');
+    expect(useGame.getState().shake?.reason).toBe(oxford.reason);
+  });
+
+  it('sells to the merchant who can, and Confirm plays it', () => {
+    const { me } = stage();
+    const gloucester = useGame.getState().currentSells().find((x) => x.merchant === 'm-gloucester')!;
+    useGame.getState().pickSell(gloucester);
+    expect(useGame.getState().sellPicks.map((x) => x.merchant)).toEqual(['m-gloucester']);
+    useGame.getState().confirm();
+    const after = useGame.getState().game!;
+    expect(after.tiles['redditch:0'].flipped).toBe(true);
+    expect(after.players[me].stats.sold).toBe(1);
+    expect(after.merchantBeer['m-gloucester:0']).toBe(0);
+  });
+
+  it('lets a merchant be named only among those who can buy', () => {
+    stage();
+    const gloucester = useGame.getState().currentSells().find((x) => x.merchant === 'm-gloucester')!;
+    useGame.getState().pickSell(gloucester);
+    useGame.getState().setSellMerchant('redditch:0', 'm-oxford');
+    expect(useGame.getState().sellPicks.map((x) => x.merchant)).toEqual(['m-gloucester']);
   });
 });

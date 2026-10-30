@@ -932,6 +932,12 @@ export const useGame = create<GameStore>((set, get) => ({
       return;
     }
     const same = (x: SellTarget) => x.town === t.town && x.slot === t.slot;
+    /* a sale that cannot be made is refused as it is picked, in words:
+       queued, it would leave a Confirm that does nothing */
+    if (!t.valid && !cur.some(same)) {
+      set({ shake: { key: tileKey(t.town, t.slot), reason: t.reason ?? beerShort(t), at: Date.now() } });
+      return;
+    }
     const next = cur.some(same) ? cur.filter((x) => !same(x)) : [...cur, t];
     /* a tile joins the sale only if the beer reaches it after the ones
        already in it have drunk: the whole sale stands, or it is not begun */
