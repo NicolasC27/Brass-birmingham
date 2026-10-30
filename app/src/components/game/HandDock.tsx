@@ -535,6 +535,18 @@ function HandDock() {
   /* with moves already prepared, the hand plans on the table they leave */
   const planGame = useMemo<GameState | null>(() => (game && preparing && queued.length && planActor >= 0 ? projectQueued(game, planActor, queued) : game), [game, preparing, queued, planActor]);
   const usedByQueue = useMemo(() => new Set(queued.map((q) => ('card' in q.action ? q.action.card : undefined)).filter(Boolean)), [queued]);
+  /* a tile in the sale bound for a merchant who cannot buy it now goes to
+     one who can: the merchant's list offers only those, and would show a
+     name the sale is not bound for */
+  useEffect(() => {
+    if (!planGame || planActor < 0 || verb !== 'sell') return;
+    const all = sellTargets(planGame, planActor);
+    for (const pick of sellPicks) {
+      const key = tileKey(pick.town, pick.slot);
+      const buyers = all.filter((x) => tileKey(x.town, x.slot) === key && x.valid);
+      if (buyers.length && !buyers.some((b) => b.merchant === pick.merchant)) setSellMerchant(key, buyers[0].merchant);
+    }
+  }, [planGame, planActor, verb, sellPicks, setSellMerchant]);
   /* the aid's hammer: which cards can build now, worked out once per table
      rather than once per card on every pass of the pointer */
   const buildable = useMemo(() => {
