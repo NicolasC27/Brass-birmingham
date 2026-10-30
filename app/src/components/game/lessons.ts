@@ -67,6 +67,9 @@ export interface Lesson {
    *  whatever became of what called it. Never called, it comes in its
    *  place, the latest it may come */
   cue?: (c: LessonCtx) => boolean;
+  /** a lesson for the rounds still to come: in the last round, with none
+   *  left, it is not given */
+  ahead?: boolean;
   show?: Show;
 }
 
@@ -181,15 +184,15 @@ export const LESSONS: readonly Lesson[] = [
      lesson's to teach, not an aim for the coach to grade */
   { id: 'sell', done: worksFlipped, deferrable: true },
   { id: 'flipped', when: worksFlipped },
-  { id: 'eraEnd' },
+  { id: 'eraEnd', ahead: true },
   /* the second half: a turn's worth of actions played with no word from
      the guide — the reader's own round */
-  { id: 'onYourOwn', done: (c, s) => !!s && playedSince(c, s.at) >= 2, aim: true },
+  { id: 'onYourOwn', done: (c, s) => !!s && playedSince(c, s.at) >= 2, aim: true, ahead: true },
   /* the plan for the rounds left and the habits, once they are the rounds
      left: ahead of the aims, which a reader may leave open all game, so
      they cut in when their time comes rather than wait behind them */
-  { id: 'plan', when: halfway },
-  { id: 'tips', when: halfway },
+  { id: 'plan', when: halfway, ahead: true },
+  { id: 'tips', when: halfway, ahead: true },
   /* then aims, met in the reader's own way and set aside like any deed: a
      works within reach of its buyer, by whoever's links; a merchant's
      barrel drunk — with none left standing, one to pass */
@@ -281,13 +284,27 @@ export interface Due {
   mode: Mode;
 }
 
+/** the reader's last action of the game played: the last round's turn
+ *  gone by, or no card left to play one with. Nothing is taught after it
+ *  but the closing word — a page read then would teach a game over */
+export function through(c: LessonCtx): boolean {
+  const g = c.g;
+  if (!lastRound(g)) return false;
+  return g.phase !== 'action' || g.players[c.me].hand.length === 0 || (g.current !== c.me && g.order.indexOf(c.me) < g.turnPos);
+}
+
 /** the lesson due: the first not passed, not set aside, and not waiting
  *  on the game — a page whose time has come and will not wait before
- *  it, or one the table called for. Nothing due, the guide rests until
- *  the next one comes, the last of all on the final ledger */
+ *  it, or one the table called for. None for the rounds to come in
+ *  the last one, none at all once the reader's last action is played.
+ *  Nothing due, the guide rests until the next one comes, the last of
+ *  all on the final ledger */
 export function due(p: Progress, c: LessonCtx): Due {
   const left = (l: Lesson): boolean => !p.passed.includes(l.id) && !earned(p, l, c);
-  const open = (l: Lesson): boolean => left(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c));
+  const done = through(c);
+  /* its moment gone for good: a lesson for rounds that will not come */
+  const gone = (l: Lesson): boolean => (!!l.ahead && lastRound(c.g)) || (done && l.id !== LAST_LESSON);
+  const open = (l: Lesson): boolean => left(l) && !gone(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c));
   const urgent = LESSONS.findIndex((l) => (l.urgent || called(p, l, c)) && open(l));
   const i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
   if (i >= 0) {
@@ -296,7 +313,7 @@ export function due(p: Progress, c: LessonCtx): Due {
     return { id: l.id, index: i, mode: l.done(c, p.seen[l.id]) ? 'already' : 'do' };
   }
   const held = heldBack(p, c);
-  const next = held >= 0 ? held : LESSONS.findIndex(left);
+  const next = held >= 0 ? held : LESSONS.findIndex((l) => left(l) && !gone(l));
   if (next >= 0) return { id: LESSONS[next].id, index: next, mode: 'idle' };
   return { id: null, index: LESSONS.length, mode: 'finished' };
 }

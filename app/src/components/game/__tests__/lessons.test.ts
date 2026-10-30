@@ -540,6 +540,35 @@ describe('the last rounds', () => {
   });
 });
 
+describe('the second half, never behind a deed left open', () => {
+  it('gives nothing for the rounds to come in the last round', () => {
+    const r2 = round2();
+    const last = { ...r2, round: 10 };
+    /* the last rounds first; then, past the close and the plan, the aims */
+    expect(due(upTo('eraEnd'), ctx(last))).toMatchObject({ id: 'lastRounds', mode: 'read' });
+    expect(due(pass(upTo('eraEnd'), 'lastRounds'), ctx(last))).toMatchObject({ id: 'reach', mode: 'do' });
+    const aimsDone = ['reach', 'barrel', 'lastRounds'].reduce(pass, upTo('eraEnd'));
+    expect(due(aimsDone, ctx(last))).toMatchObject({ id: 'onward', mode: 'idle' });
+    /* a round before, they are given */
+    expect(due(aimsDone, ctx({ ...r2, round: 9 }))).toMatchObject({ id: 'eraEnd', mode: 'read' });
+  });
+
+  it('teaches nothing once the reader\'s last action is played, but the closing word', () => {
+    const r2 = round2();
+    /* the last round, the reader played first: the machine plays the game out */
+    const after = { ...r2, round: 10, order: [0, 1], turnPos: 1, current: 1 };
+    expect(due(upTo('lastRounds'), ctx(after))).toEqual({ id: 'onward', index: lessonIndex('onward'), mode: 'idle' });
+    expect(due(upTo('flipped'), ctx(after))).toMatchObject({ id: 'onward', mode: 'idle' });
+    /* the reader plays after the machine: the last rounds still come */
+    expect(due(upTo('lastRounds'), ctx({ ...r2, round: 10, order: [1, 0], turnPos: 0, current: 1 }))).toMatchObject({ id: 'lastRounds', mode: 'read' });
+    /* nor with no card left to play */
+    const spent = { ...r2, round: 10, current: 0, players: r2.players.map((x, k) => (k === 0 ? { ...x, hand: [] } : x)) };
+    expect(due(upTo('lastRounds'), ctx(spent))).toMatchObject({ id: 'onward', mode: 'idle' });
+    /* the final ledger gives the closing word */
+    expect(due(upTo('lastRounds'), ctx({ ...after, phase: 'game-over' }))).toMatchObject({ id: 'onward', mode: 'read' });
+  });
+});
+
 describe('the pages the table calls for', () => {
   /* the opening hand holds a brewery card: a brewery burns an iron, and
      with no forge on the board the market sells it */
