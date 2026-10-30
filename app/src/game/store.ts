@@ -1651,7 +1651,8 @@ export function confirmSummary(st: {
       fromTiles(t.ironPlan, 'ironFrom');
       const marketIron = t.ironPlan.sources.filter((x) => x.kind === 'market');
       if (marketIron.length) bits.push(tr('game.confirm.marketIron', { n: marketIron.length, cost: t.ironPlan.totalCost }));
-      /* a mine or works that reaches a merchant sells its spare cubes at once: say so */
+      /* a new mine joined to a merchant, or any new iron works, sells at
+         once what the market can take: say so */
       const g = useGame.getState().planGame();
       const sale = g ? marketSaleOnBuild(g, t.town, t.industry, t.level) : { sold: 0, earned: 0 };
       if (sale.sold) bits.push(tr('game.confirm.sale', { n: sale.sold, res: tr(`game.log.res.${t.industry}`), gain: sale.earned }));

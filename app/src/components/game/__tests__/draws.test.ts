@@ -52,7 +52,7 @@ describe('the waybill of a build', () => {
     const w = planDraws(s, me, picks({ verb: 'build', buildPick: ironWorks(s, me) }));
     expect(w.draws).toEqual([{ resource: 'coal', source: 'rival', n: 1, cost: 0, owner: other, town: 'wolverhampton' }]);
     expect(drawText(w.draws[0], s, tr)).toBe(`1 coal from ${s.players[other].name}'s mine at Wolverhampton`);
-    /* the works reaches a merchant: its spare iron goes to the exchange at once */
+    /* an iron works sells what the iron market can take at once, wherever it stands */
     expect(w.sale).toMatchObject({ resource: 'iron', n: 2 });
     expect(saleText(w.sale!, tr)).toBe(`sells 2 iron to the market, +£${w.sale!.gain}`);
   });

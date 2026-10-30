@@ -31,7 +31,8 @@ export interface Draw {
   merchant?: string;
 }
 
-/** a mine or works that reaches a merchant sells its spare cubes on the spot */
+/** a new mine joined to a merchant, or any new iron works, sells on the
+ *  spot what the market can take */
 export interface DrawSale {
   resource: 'coal' | 'iron';
   n: number;
