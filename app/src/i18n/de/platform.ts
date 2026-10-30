@@ -145,7 +145,7 @@ const platform: typeof enPlatform = {
   home: {
     eyebrow: "Bahnhofshalle",
     title: 'Blackrail',
-    tagline: 'Die Halle ist offen. Finde einen Tisch, wirf die Maschine an.',
+    tagline: 'Die Halle ist offen. Finden Sie einen Tisch, werfen Sie die Maschine an.',
     resumeBanner: 'Tisch „{name}“ — Sie sind am Zug',
     resumeMeta: 'Runde {round} · {opponents} Gegner',
     resumeSaveMeta: '{era}, Runde {round}',
@@ -222,7 +222,7 @@ const platform: typeof enPlatform = {
       emptyGames: 'Noch keine Partie im Register. Die erste wird am Tisch geschrieben.',
       liveTitle: 'Gerade am Tisch',
       liveSignIn: 'Tragen Sie sich ins Register ein, um die laufenden Tische zu sehen.',
-      liveEmpty: 'Der Club erwacht. Starte die erste Partie.',
+      liveEmpty: 'Der Club erwacht. Starten Sie die erste Partie.',
     },
     feed: {
       gameWon: 'Sieg an „{table}“ — {vp} SP',
@@ -365,7 +365,7 @@ const platform: typeof enPlatform = {
     code: {
       title: "Die Zugnummer",
       copy: "Die Nummer, die ein Freund Ihnen gab, bringt Sie in seinen Zug.",
-      notFound: 'Nummer nicht gefunden — frag beim Gastgeber nach.',
+      notFound: 'Nummer nicht gefunden — fragen Sie beim Gastgeber nach.',
     },
     tables: {
       friends: 'Freunde',
@@ -467,7 +467,7 @@ const platform: typeof enPlatform = {
     editProfile: 'Profil bearbeiten',
     progress: {
       title: 'Ihr Fortschritt',
-      empty: 'Analysiere eine beendete Partie (Knopf „Die Analyse“): jede Lesung fügt diesem Blatt eine Zeile hinzu.',
+      empty: 'Analysieren Sie eine beendete Partie (Knopf „Die Analyse“): jede Lesung fügt diesem Blatt eine Zeile hinzu.',
       lede: 'Der mittlere Chancenverlust je Zug, Partie für Partie. Niedriger ist besser; die goldenen Punkte sind Ihre Siege.',
       games: '{n} [n|analysierte Partie|analysierte Partien]',
       curve: 'Mittlerer Verlust je Zug, Partie für Partie',
@@ -555,12 +555,12 @@ const platform: typeof enPlatform = {
       accept: 'Annehmen',
       invite: 'Einladen',
       invited: 'Eingeladen',
-      inviteDisabled: 'Öffne ein Wartezimmer, um einzuladen',
+      inviteDisabled: 'Öffnen Sie ein Wartezimmer, um einzuladen',
       remove: 'Entfernen',
       removeTitle: '{name} entfernen?',
       removeCopy: 'Sie können später jederzeit eine neue Anfrage stellen.',
       emptyTitle: 'Noch keine Freunde.',
-      emptyCopy: 'Füge einen Spieler per Spielername hinzu; er antwortet aus seinem Kontor.',
+      emptyCopy: 'Fügen Sie einen Spieler per Spielername hinzu; er antwortet aus seinem Kontor.',
       noTable: 'Eröffnen Sie einen Tisch, um Ihre Freunde Platz nehmen zu lassen.',
       presenceOnline: 'Online',
       presenceOffline: 'Offline',

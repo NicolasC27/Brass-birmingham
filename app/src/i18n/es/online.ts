@@ -12,7 +12,7 @@ export default {
     signUp: 'Abrir una cuenta',
     password: 'Contraseña',
     passwordHint: 'Ocho caracteres como mínimo. La oficina la guarda, nadie más la ve.',
-    signedInAs: 'Eres {name}',
+    signedInAs: 'Es usted {name}',
     signOut: 'Salir',
     gate: 'Firme el registro, y las mesas se abren.',
     error: {

@@ -2,7 +2,7 @@ import ensetup from "../en/setup";
 
 const es: typeof ensetup = {
   backToTitle: "Título",
-  eyebrow: "Prepara la mesa",
+  eyebrow: "Preparar la mesa",
   title: "Nueva partida",
   seating: {
     ariaLabel: "Asientos",

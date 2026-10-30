@@ -41,7 +41,7 @@ export default {
       cta: 'Einsteigen',
     error: { 'not-found': 'Kein Zug trägt diese Nummer.', full: 'Dieser Tisch ist voll.', started: 'Diese Partie hat schon begonnen.', refused: 'Der Tisch hat abgelehnt.', offline: 'Der Tischserver antwortet nicht.' },
     },
-    localNote: 'Vorerst leben die Tische in diesem Browser: Öffne einen zweiten Tab, um den Gast zu spielen.',
+    localNote: 'Vorerst leben die Tische in diesem Browser: Öffnen Sie einen zweiten Tab, um den Gast zu spielen.',
     serverNote: 'Die Tische werden vom Server geführt: Teilen Sie den Code und spielen Sie, von wo Sie wollen.',
   },
   room: {

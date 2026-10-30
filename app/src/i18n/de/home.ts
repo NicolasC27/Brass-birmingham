@@ -56,7 +56,7 @@ const de: typeof enHome = {
       market: {
         eyebrow: 'Der lebendige Markt',
         title: 'Preise, die atmen',
-        body: 'Jeder gekaufte Würfel verschiebt den Preis für Kohle und Eisen für den ganzen Tisch. Kauf günstig, solange die Lager voll sind.',
+        body: 'Jeder gekaufte Würfel verschiebt den Preis für Kohle und Eisen für den ganzen Tisch. Kaufen Sie günstig, solange die Lager voll sind.',
       },
       eras: {
         eyebrow: 'Zwei Epochen der Industrie',

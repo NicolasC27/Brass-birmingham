@@ -56,7 +56,7 @@ const es: typeof enHome = {
       market: {
         eyebrow: 'El mercado vivo',
         title: 'Precios que respiran',
-        body: 'Cada cubo comprado desplaza el precio del carbón y del hierro para toda la mesa. Compra barato mientras las bandejas estén llenas.',
+        body: 'Cada cubo comprado desplaza el precio del carbón y del hierro para toda la mesa. Compre barato mientras las bandejas estén llenas.',
       },
       eras: {
         eyebrow: 'Dos eras de industria',
@@ -84,7 +84,7 @@ const es: typeof enHome = {
     tagline: 'Canales, carbón y hierro. Construya el imperio que construyó el mundo.',
     navAria: 'Pie de página',
     gameEyebrow: 'El juego',
-    setTable: 'Pon la mesa',
+    setTable: 'Poner la mesa',
     board: 'El tablero',
     rulesCodex: 'Códice de reglas',
     bilan: 'El Balance',
