@@ -45,6 +45,7 @@ import { coachMove, hushCoach } from './coach';
 import type { Coached } from './coach';
 import { aidOn } from '@/components/game/boardOptions';
 import { deedOf } from '@/components/game/lessons';
+import { sameMove } from '@/components/game/expertAdvice';
 import { whyNoBuild, whyNoDevelop, whyNoLink, whyNoSale } from './refusals';
 import type { JudgeId } from './analysis';
 
@@ -334,6 +335,11 @@ interface GameStore {
    *  reader's move: while it comes, and a moment once it is shown — or,
    *  let play on, does not, and the word keeps that time over her move */
   coachHold: boolean;
+  /** what the guide's expert advised for the move to come, by the action
+   *  it was asked at: played, it is not the coach's to grade — one guide
+   *  would be heard to contradict itself */
+  advised: { at: number; action: GameAction } | null;
+  setAdvised: (a: { at: number; action: GameAction } | null) => void;
   setReviewAt: (at: number | null) => void;
   /* ---- reading a game again, together: one seat shows, the others follow ---- */
   /** what a seat of this table is showing in its analysis: the move, the
@@ -692,6 +698,7 @@ export const freshGame = {
   debriefOpen: false,
   coached: null as Coached | null,
   coachHold: false,
+  advised: null as GameStore['advised'],
   serverUndo: false,
   movedTo: null as string | null,
   ceremony: null as 'canal-end' | null,
@@ -1315,7 +1322,9 @@ export const useGame = create<GameStore>((set, get) => ({
       /* at the guided table the deed a lesson asks for is the lesson's:
          the coach does not grade it, nor tell of an older move after it */
       const reader = (s: GameState) => ({ g: s, me: g.current, sel: null, mat: null });
-      if (st.tutorial && deedOf(reader(g), reader(mut))) {
+      /* nor the move the guide's expert advised here: it was the guide's word */
+      const advised = !!st.advised && st.advised.at === g.actions.length && sameMove(st.advised.action, action);
+      if (st.tutorial && (deedOf(reader(g), reader(mut)) || advised)) {
         hushCoach();
         holdForCoach(0);
       } else {
@@ -1417,6 +1426,8 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   reviewAt: null,
   setReviewAt: (at) => set({ reviewAt: at }),
+  advised: null,
+  setAdvised: (a) => set({ advised: a }),
   coached: null,
   setCoached: (c) => {
     set({ coached: c });

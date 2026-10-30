@@ -876,6 +876,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
          caps a human seat under assist and blurs its reading */
       const a = searchTurn(g, me, { budgetMs: 400, strength: 1 })?.action ?? null;
       setAdvice({ at: here, action: a, busy: false, place: false });
+      /* the table keeps it too: played, the move is the guide's word, and
+         the coach — another engine — does not grade it over again */
+      useGame.getState().setAdvised(a ? { at: here, action: a } : null);
     }, 30);
   };
   /* the second degree: where the move is played, lit on the board and

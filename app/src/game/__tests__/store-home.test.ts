@@ -229,6 +229,7 @@ describe('sitting at another table', () => {
       debriefOpen: true,
       coached: { at: 2 } as never,
       coachHold: true,
+      advised: { at: 2, action: { kind: 'loan' as const } },
       serverUndo: true,
       movedTo: 'XXXX',
       ceremony: 'canal-end' as const,

@@ -101,6 +101,31 @@ describe('the coach at the guided table', () => {
     expect(coach.asked).toBe(2);
   });
 
+  it('does not grade the move the guide\'s expert advised here', async () => {
+    const g = guided();
+    saveProgress(upTo('botTurn'));
+    const move = fallbackAction(g, g.current);
+    expect(move.kind).toBe('scout');
+    /* advised for this action, and played with other cards: the guide's word */
+    const cards = g.players[0].hand.slice(-3).map((c) => c.id);
+    useGame.setState({ game: g, tutorial: true, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null, advised: { at: g.actions.length, action: { kind: 'scout', cards } } });
+    await play(move);
+    expect(coach.asked).toBe(0);
+    expect(useGame.getState().coachHold).toBe(false);
+  });
+
+  it('grades the move advised for another action, or another move', async () => {
+    const g = guided();
+    saveProgress(upTo('botTurn'));
+    const move = fallbackAction(g, g.current);
+    useGame.setState({ game: g, tutorial: true, local: CODE, code: null, homeTrouble: null, humanMarks: [], coached: null, advised: { at: g.actions.length - 1, action: move } });
+    await play(move);
+    expect(coach.asked).toBe(1);
+    useGame.setState({ game: g, humanMarks: [], coached: null, advised: { at: g.actions.length, action: { kind: 'loan' } } });
+    await play(move);
+    expect(coach.asked).toBe(2);
+  });
+
   it('sends its word away when the machine plays', async () => {
     const g = guided();
     saveProgress(upTo('botTurn'));
