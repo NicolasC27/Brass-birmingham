@@ -211,7 +211,7 @@ const rules = {
     ironWorks: {
       name: 'Iron Works',
       blurb:
-        'Forges that stock iron bars for building and developing. Like mines, they flip when their stock is exhausted — an iron works worked cold is one paid for.',
+        'Iron works stock bars of iron for building and developing. Like mines, they flip when their stock is exhausted — an iron works worked cold is one paid for.',
       notes: {
         n1: 'Canal Era only. 4 iron; needs 1 coal.',
         n2: '4 iron; needs 1 coal.',
@@ -231,7 +231,7 @@ const rules = {
       },
     },
     manufacturer: {
-      name: 'Manufacturer',
+      name: 'Manufactory',
       blurb:
         'Workshops turning out finished goods. Cheaper than mills and steadier — the quiet backbone of many a winning ledger.',
       notes: {

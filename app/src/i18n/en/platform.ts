@@ -367,7 +367,7 @@ const platform = {
     },
     tables: {
       friends: 'Friends',
-      rail: 'Rail era',
+      rail: 'Rail Era',
       live: 'Live',
       search: 'Code, host or table name…',
       sortFilling: 'Starting soon',
@@ -1000,8 +1000,8 @@ const platform = {
       forges: "Shropshire wants iron, and the banker lends once. Two level-three iron works, and the win.",
       noBanker: "Not a shilling borrowed all game, eight links laid, and first place. The careful never win — prove otherwise.",
       burton: "Four breweries flipped, an income of twenty at the close, and the table beaten. Burton never saw so much beer.",
-      manchesterLine: "Eight rails in the rail era, three of them doubled, and first place. A network, not a collection.",
-      staffordshire: "Two potteries sold in the canal era, a level-four pottery flipped, and a hundred and forty points. Mrs Wedgwood is watching.",
+      manchesterLine: "Eight rails in the Rail Era, three of them doubled, and first place. A network, not a collection.",
+      staffordshire: "Two potteries sold in the Canal Era, a level-four pottery flipped, and a hundred and forty points. Mrs Wedgwood is watching.",
       bigCotton: "The market is volatile. Three level-three mills sold, two loans at most, and the win.",
       shortEra: "Two short eras. Ten links, thirty pounds in hand at the close, and first place. No time to hesitate.",
       boxes: "Two level-five manufactories built, three Develop actions, and the table beaten. Small boxes do not count.",
@@ -1241,7 +1241,7 @@ const platform = {
   },
   arrival: {
     eyebrow: "Arrival at the station",
-    line1: "You alight at Birmingham, one evening of the canal era. The paper is fresh, the buffet open.",
+    line1: "You alight at Birmingham, one evening of the Canal Era. The paper is fresh, the buffet open.",
     line2: "Here one raises iron works, lays rails and sells cotton to Gloucester — against machines that never sleep.",
     line3: "Take the evening course first: a short lesson, a guide beside you. Or walk in, if you already know the house.",
     course: "The evening course",
