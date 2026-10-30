@@ -88,8 +88,11 @@ describe('the lesson due', () => {
     expect(due(p, c)).toMatchObject({ id: 'coal', mode: 'do' });
     /* the mat opened before its lesson: the same */
     expect(due(upTo('mat'), ctx(g, { mat: 0 }))).toMatchObject({ id: 'mat', mode: 'already' });
-    /* a mine built before the lesson on mines, on the real table */
-    expect(due(upTo('coal'), ctx(mine(g)))).toMatchObject({ id: 'coal', mode: 'already' });
+    /* a mine built before the lesson on mines, on the real table: her
+       turn, which comes at once, is told first */
+    const built = mine(g);
+    expect(due(upTo('coal'), ctx(built))).toMatchObject({ id: 'botTurn', mode: 'read' });
+    expect(due({ ...upTo('coal'), passed: [...upTo('coal').passed, 'botTurn'] }, ctx(built))).toMatchObject({ id: 'coal', mode: 'already' });
   });
 
   it('reads a tile by opening its sheet on the mat, by hover or by tap', () => {
@@ -120,6 +123,21 @@ describe('the lesson due', () => {
     expect(due(p, ctx(g))).toMatchObject({ id: 'botTurn' });
     /* settled twice, the same progress */
     expect(settle(p, ctx(built))).toBe(p);
+  });
+
+  it('tells of her turn as it comes, whatever deed the reader played past', () => {
+    const g = guided();
+    /* the mine on show, and a canal played in its stead: her first turn */
+    const p = see(upTo('coal'), 'coal', ctx(g));
+    const canal = linkTargets(g, 0).find((x) => x.valid)!;
+    const hers = play(g, { kind: 'network', card: g.players[0].hand[0].id, link: canal.link.id });
+    expect(hers.players[hers.current].isBot).toBe(true);
+    expect(due(p, ctx(hers))).toMatchObject({ id: 'botTurn', mode: 'read' });
+    /* read, the mine is the lesson due again */
+    expect(due(pass(p, 'botTurn'), ctx(hers))).toMatchObject({ id: 'coal', mode: 'do' });
+    /* before any move, her turn is not told: the table has not turned */
+    expect(due(upTo('botTurn'), ctx(g))).toMatchObject({ id: 'botTurn', mode: 'idle' });
+    expect(due(upTo('welcome'), ctx(g))).toMatchObject({ id: 'welcome' });
   });
 
   it('sees no deed on her turn: a canal built under payday is read as done', () => {
@@ -619,7 +637,9 @@ describe('the pages the table calls for', () => {
     const built = mine(g);
     p = settle(p, ctx(built));
     expect(p.passed.at(-1)).toBe('coal');
-    expect(due(p, ctx(built))).toMatchObject({ id: 'market', mode: 'read' });
+    /* her turn told first, the page called for next */
+    expect(due(p, ctx(built))).toMatchObject({ id: 'botTurn', mode: 'read' });
+    expect(due(pass(p, 'botTurn'), ctx(built))).toMatchObject({ id: 'market', mode: 'read' });
     /* read, the lessons go on in their order, and it is not called again */
     p = pass(p, 'market');
     expect(due(p, ctx(built))).toMatchObject({ id: 'botTurn' });

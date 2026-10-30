@@ -156,8 +156,10 @@ export const LESSONS: readonly Lesson[] = [
      after round — on purpose: a mine costs little, and without one the
      lessons after it would speak of nothing */
   { id: 'coal', done: (c) => built(c, ['coal']) },
-  /* read while the table waits: her turn comes once it has been read */
-  { id: 'botTurn' },
+  /* read while the table waits: her turn comes once it has been read —
+     her first turn, whatever lesson is due then: a reader who played past
+     the mine is told before she plays, not two rounds later */
+  { id: 'botTurn', when: (c) => c.g.round >= 2 || (c.g.actions.length > 0 && !!c.g.players[c.g.current]?.isBot), urgent: true },
   /* its page sends the reader to the ledger: a button opens it, for a
      tablet has no key. What comes after it waits for it: the second round
      opens on the pay, then the canal of its first action */
