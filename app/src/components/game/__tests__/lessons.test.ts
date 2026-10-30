@@ -350,6 +350,10 @@ describe('a lesson set aside', () => {
     p = see(p, 'works', ctx(r3));
     expect(p.seen.works).toEqual({ at: r3.actions.length, round: 3 });
     expect(mayLater(p, 'works', ctx(r3))).toBe(true);
+    /* and back from a round set aside, it may be skipped too: a reader who
+       does not want it is not asked round after round */
+    expect(wayOn(p, 'works', ctx(r3))).toBe('both');
+    expect(wayOn(p, 'works', ctx({ ...r3, round: 10 }))).toBe('skip');
     /* passed, it is no longer set aside */
     expect(pass(p, 'works').later).toEqual({});
   });

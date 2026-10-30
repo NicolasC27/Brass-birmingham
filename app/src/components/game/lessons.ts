@@ -387,19 +387,24 @@ export function setAside(p: Progress, id: string, c: LessonCtx): Progress {
  *  aside, it was played past already, and one the table does not allow
  *  now (blocked) has nothing to try first: Later, which brings it back
  *  next round in its place, or Skip in the last round, with no round
- *  after it to come back in. Null while the deed is still the reader's
- *  to try */
-export function wayOn(p: Progress, id: string, c: LessonCtx, blocked = false): 'later' | 'skip' | null {
+ *  after it to come back in. Back from a round set aside, Skip stands
+ *  beside Later: a reader who does not want it is not asked every round
+ *  (both). Null while the deed is still the reader's to try */
+export function wayOn(p: Progress, id: string, c: LessonCtx, blocked = false): 'later' | 'skip' | 'both' | null {
   const l = lessonOf(id);
   const s = p.seen[id];
   if (!l?.deferrable || !l.done || l.done(c, s) || aside(p, id, c)) return null;
-  const past = blocked || p.later[id] !== undefined || (!!s && playedSince(c, s.at) > 0);
+  const back = p.later[id] !== undefined;
+  const past = blocked || back || (!!s && playedSince(c, s.at) > 0);
   if (!past) return null;
-  return lastRound(c.g) ? 'skip' : 'later';
+  return lastRound(c.g) ? 'skip' : back ? 'both' : 'later';
 }
 
 /** "Later" is offered on the deed on show (see wayOn) */
-export const mayLater = (p: Progress, id: string, c: LessonCtx, blocked = false): boolean => wayOn(p, id, c, blocked) === 'later';
+export const mayLater = (p: Progress, id: string, c: LessonCtx, blocked = false): boolean => {
+  const way = wayOn(p, id, c, blocked);
+  return way === 'later' || way === 'both';
+};
 
 /** the lesson a move did the deed of: the first whose deed did not hold
  *  before the move and holds after it. At the guided table that move is
