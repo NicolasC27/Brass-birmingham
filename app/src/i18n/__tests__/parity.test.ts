@@ -25,7 +25,7 @@ function strings(node: unknown, path: string[] = [], out = new Map<string, strin
 
 /** the {placeholders} a sentence is filled with, a count named only in
  *  its [n|one|many] agreement included */
-const holes = (text: string): string[] => [...new Set([...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]))].sort();
+const holes = (text: string): string[] => [...new Set([...text.matchAll(/\{(\w+)\}|\[(\w+)\|/g)].map((m) => m[1] ?? m[2]))].sort();
 
 describe('the four sheets', () => {
   const sheets = Object.fromEntries(LANGS.map((l) => [l, strings(DICTS[l])])) as Record<Lang, Map<string, string>>;
