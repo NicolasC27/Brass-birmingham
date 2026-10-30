@@ -921,7 +921,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
       case 'develop':
         st.selectCard(a.card);
         useGame.getState().setVerb('develop');
-        for (const ind of a.industries) useGame.getState().toggleDevelop(ind);
+        /* added, not toggled: a pair of one industry is two tiles, and the
+           second toggle would take the first back */
+        for (const ind of a.industries) useGame.getState().addDevelop(ind);
         break;
       case 'scout':
         st.selectCard(a.cards[0]);
