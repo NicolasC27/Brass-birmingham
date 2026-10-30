@@ -129,15 +129,19 @@ describe('the machine’s plate', () => {
   });
 
   it('never promises a works a buyer its links do not reach', () => {
-    const works = (buys: 'all' | 'cotton') => {
+    const works = (buys: 'all' | 'cotton', level?: number) => {
       const g = table();
       g.links[link('redditch', 'm-oxford')] = { owner: BOT, era: 'canal' };
       g.merchantTiles['m-oxford'] = [buys, 'blank'];
       g.players[BOT].hand = [{ id: 'w', kind: 'wild-location' }];
       g.players[BOT].money = 50;
+      if (level) g.players[BOT].stacks.manufacturer = [level];
       return botReason(botPlays(g, { kind: 'build', card: 'w', town: 'redditch', slot: 0, industry: 'manufacturer' }), ME, keys, 'fr')!.why;
     };
     expect(works('all')).toMatch(/game\.guide\.bot\.build\.reaches\{[^}]*"list":"Oxford"/);
+    /* the beer the tile drinks to sell: one, or two for the heaviest */
+    expect(works('all')).toMatch(/"beer":1/);
+    expect(works('all', 5)).toMatch(/"beer":2/);
     expect(works('cotton')).toMatch(/game\.guide\.bot\.build\.noBuyer/);
     /* the coal bought, for want of a mine joined to it */
     expect(works('all')).toMatch(/game\.guide\.bot\.coalFrom/);

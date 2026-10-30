@@ -1266,7 +1266,7 @@ const fr: typeof engame = {
         noMerchant: 'Aucune liaison ne relie encore {town} à un marchand : ses {left} [left|cube reste|cubes restent] pour les chantiers reliés à la mine.',
         coalFull: 'Le marché du charbon était plein : ses {left} [left|cube reste|cubes restent] pour les chantiers reliés à la mine.',
         ironFull: 'Le marché du fer était plein : ses {left} [left|barre reste|barres restent] dessus, pour tous les chantiers.',
-        reaches: 'Des liaisons relient déjà {town} à {list}, où ce bien s’achète : avec une bière, la tuile peut se vendre.',
+        reaches: 'Des liaisons relient déjà {town} à {list}, où ce bien s’achète : avec {beer} [beer|bière|bières], la tuile peut se vendre.',
         noBuyer: 'Aucune liaison ne relie encore {town} à un marchand qui achète ce bien : il en faudra une avant de vendre.',
         over: 'Elle a surconstruit un niveau inférieur : la tuile plus forte prend l’emplacement, la faible quitte le plateau.',
       },

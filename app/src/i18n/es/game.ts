@@ -1266,7 +1266,7 @@ const game: typeof engame = {
         noMerchant: 'Ninguna conexión une aún {town} con un mercader: sus {left} [left|cubo se queda|cubos se quedan] para las obras conectadas con la mina.',
         coalFull: 'El mercado del carbón estaba lleno: sus {left} [left|cubo se queda|cubos se quedan] para las obras conectadas con la mina.',
         ironFull: 'El mercado del hierro estaba lleno: sus {left} [left|barra se queda|barras se quedan] encima, para cualquier obra.',
-        reaches: 'Unas conexiones ya unen {town} con {list}, donde se compran esos bienes: con una cerveza, la loseta puede venderse.',
+        reaches: 'Unas conexiones ya unen {town} con {list}, donde se compran esos bienes: con {beer} [beer|cerveza|cervezas], la loseta puede venderse.',
         noBuyer: 'Ninguna conexión une aún {town} con un mercader que compre esos bienes: hará falta una antes de vender.',
         over: 'Ha sobreconstruido un nivel inferior: la loseta más fuerte ocupa la casilla y la débil sale del tablero.',
       },

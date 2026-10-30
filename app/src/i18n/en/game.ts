@@ -1264,7 +1264,7 @@ const game = {
         noMerchant: 'No link joins {town} to a merchant yet: its {left} [left|cube stays|cubes stay] for the sites connected to the mine.',
         coalFull: 'The coal market was full: its {left} [left|cube stays|cubes stay] for the sites connected to the mine.',
         ironFull: 'The iron market was full: its {left} [left|bar stays|bars stay] on it, for every site.',
-        reaches: 'Links already join {town} to {list}, where these goods are bought: with a beer, the tile can sell.',
+        reaches: 'Links already join {town} to {list}, where these goods are bought: with {beer} [beer|beer|beers], the tile can sell.',
         noBuyer: 'No link joins {town} to a merchant who buys these goods yet: it will take one before selling.',
         over: 'It overbuilt a lower level: the stronger tile takes the slot, and the weak one leaves the board.',
       },

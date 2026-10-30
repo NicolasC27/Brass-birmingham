@@ -1,7 +1,7 @@
-import { LOAN_AMOUNT, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
+import { INDUSTRIES, LOAN_AMOUNT, MERCHANTS, MERCHANT_BY_ID, TOWN_BY_ID, incomeLevel } from '@/game/data';
 import { merchantDemand, merchantOpen, reachable } from '@/game/engine';
 import { ledgerText } from '@/game/ledgerText';
-import type { GameState, LedgerEntry } from '@/game/types';
+import type { GameState, IndustryType, LedgerEntry } from '@/game/types';
 import { getLang, localeOf } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { loanWords } from './lessonWords';
@@ -121,7 +121,9 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
         /* a works sells only to a merchant its town reaches: said as it
            stands, never promised */
         const buyers = buyersFrom(g, e.region, ind).map((id) => MERCHANT_BY_ID[id].name);
-        said.push(buyers.length ? t('game.guide.bot.build.reaches', { ...facts, list: list(buyers) }) : t('game.guide.bot.build.noBuyer', facts));
+        /* the beer it drinks to sell: two for the heaviest tiles */
+        const beer = INDUSTRIES[ind as IndustryType]?.[Number(v.level) - 1]?.beerToSell ?? 1;
+        said.push(buyers.length ? t('game.guide.bot.build.reaches', { ...facts, list: list(buyers), beer }) : t('game.guide.bot.build.noBuyer', facts));
       }
       if (v.overName) said.push(t('game.guide.bot.build.over', facts));
       why = said.join(' ');
