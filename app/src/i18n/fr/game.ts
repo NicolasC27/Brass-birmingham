@@ -87,8 +87,6 @@ const fr: typeof engame = {
       'Canaux 3 £. Partie courte : rien n’est balayé à la fin de l’ère. Le revenu est payé à la fin de chaque manche, sauf la dernière.',
     railTip:
       'Rails 5 £ + 1 charbon (double : 15 £, 2 charbons et 1 bière). Le décompte final suit cette ère. Le revenu est payé à la fin de chaque manche, sauf la dernière.',
-    badgeCanal: 'Ère canal',
-    badgeRail: 'Ère rail',
     roundShort: 'MANCHE {round}/{total}',
     toAct: 'À {name} de jouer',
     actionOf: 'Action {n} sur {max}',

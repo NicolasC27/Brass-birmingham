@@ -87,8 +87,6 @@ const game: typeof engame = {
       'Canales 3 £. Partida corta: nada se retira del tablero al final de la era. Los ingresos se pagan al final de cada ronda, salvo la última.',
     railTip:
       'Vías 5 £ + 1 carbón (doble: 15 £, 2 carbones y 1 cerveza). La puntuación final sigue a esta era. Los ingresos se pagan al final de cada ronda, salvo la última.',
-    badgeCanal: 'Era del canal',
-    badgeRail: 'Era del ferrocarril',
     roundShort: 'RONDA {round}/{total}',
     toAct: 'Le toca a {name}',
     actionOf: 'Acción {n} de {max}',

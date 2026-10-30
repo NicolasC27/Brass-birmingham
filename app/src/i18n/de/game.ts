@@ -87,8 +87,6 @@ const game: typeof engame = {
       'Kanäle £3. Kurze Partie: Am Ende der Epoche verlässt nichts den Spielplan. Das Einkommen wird am Ende jeder Runde ausgezahlt, außer der letzten.',
     railTip:
       'Bahnstrecken £5 + 1 Kohle (doppelt: £15, 2 Kohle und 1 Bier). Die Endwertung folgt auf diese Epoche. Das Einkommen wird am Ende jeder Runde ausgezahlt, außer der letzten.',
-    badgeCanal: 'Kanalzeit',
-    badgeRail: 'Eisenbahnzeit',
     roundShort: 'RUNDE {round}/{total}',
     toAct: '{name} ist am Zug',
     actionOf: 'Aktion {n} von {max}',

@@ -85,8 +85,6 @@ const game = {
       'Canals £3. A short game: nothing is swept when the era ends. Income pays at the end of each round but the last.',
     railTip:
       'Rails £5 + 1 coal (double: £15, 2 coal and 1 beer). Final scoring follows this era. Income pays at the end of each round but the last.',
-    badgeCanal: 'Canal era',
-    badgeRail: 'Rail era',
     roundShort: 'ROUND {round}/{total}',
     toAct: '{name} to act',
     actionOf: 'Action {n} of {max}',
