@@ -540,7 +540,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
             being done, and on the reader's turn the price and the button.
             Nothing grows; the sentence gives way. */}
         <div className="flex h-9 items-stretch">
-          <Tooltip side="bottom" title={eraTitle} content={game.era === 'canal' ? t('game.topbar.canalTip') : t('game.topbar.railTip')}>
+          <Tooltip side="bottom" title={eraTitle} content={t(game.era === 'rail' ? 'game.topbar.railTip' : game.eraLength === 'short' ? 'game.topbar.canalTipShort' : 'game.topbar.canalTip')}>
             <span tabIndex={0} role="img" aria-label={eraTitle} className="flex h-full items-center border-r border-brass-700/40 px-2 outline-none focus-visible:bg-brass-400/10">
               <EraTrack era={game.era} round={game.round} total={total} />
             </span>

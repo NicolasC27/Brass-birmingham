@@ -83,8 +83,10 @@ const fr: typeof engame = {
     unlessOk: 'Poser la condition',
     canalTip:
       'Canaux 3 £. Toutes les tuiles de niveau 1 sont balayées du plateau à la fin de cette ère. Le revenu est payé à la clôture de chaque manche.',
+    canalTipShort:
+      'Canaux 3 £. Partie courte : rien n’est balayé à la fin de l’ère. Le revenu est payé à la fin de chaque manche, sauf la dernière.',
     railTip:
-      'Rails 5 £ + 1 charbon (double : 15 £ + 2 charbons). Le décompte final suit cette ère. Le revenu est payé à la clôture de chaque manche.',
+      'Rails 5 £ + 1 charbon (double : 15 £, 2 charbons et 1 bière). Le décompte final suit cette ère. Le revenu est payé à la fin de chaque manche, sauf la dernière.',
     badgeCanal: 'Ère canal',
     badgeRail: 'Ère rail',
     roundShort: 'MANCHE {round}/{total}',

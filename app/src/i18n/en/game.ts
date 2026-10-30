@@ -81,8 +81,10 @@ const game = {
     unlessOk: 'Set the condition',
     canalTip:
       'Canals £3. Every level-1 tile is swept from the board when this era ends. Income pays at each round’s close.',
+    canalTipShort:
+      'Canals £3. A short game: nothing is swept when the era ends. Income pays at the end of each round but the last.',
     railTip:
-      'Rails £5 + 1 coal (double: £15 + 2 coal). Final scoring follows this era. Income pays at each round’s close.',
+      'Rails £5 + 1 coal (double: £15, 2 coal and 1 beer). Final scoring follows this era. Income pays at the end of each round but the last.',
     badgeCanal: 'Canal era',
     badgeRail: 'Rail era',
     roundShort: 'ROUND {round}/{total}',

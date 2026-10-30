@@ -83,8 +83,10 @@ const game: typeof engame = {
     unlessOk: 'Poner la condición',
     canalTip:
       'Canales 3 £. Todas las losetas de nivel 1 se retiran del tablero al final de esta era. Los ingresos se pagan al cierre de cada ronda.',
+    canalTipShort:
+      'Canales 3 £. Partida corta: nada se retira del tablero al final de la era. Los ingresos se pagan al final de cada ronda, salvo la última.',
     railTip:
-      'Vías 5 £ + 1 carbón (doble: 15 £ + 2 carbón). La puntuación final sigue a esta era. Los ingresos se pagan al cierre de cada ronda.',
+      'Vías 5 £ + 1 carbón (doble: 15 £, 2 carbones y 1 cerveza). La puntuación final sigue a esta era. Los ingresos se pagan al final de cada ronda, salvo la última.',
     badgeCanal: 'Era del canal',
     badgeRail: 'Era del ferrocarril',
     roundShort: 'RONDA {round}/{total}',
