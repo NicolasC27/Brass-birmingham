@@ -131,17 +131,18 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
     }
     case 'network': {
       const said = [t('game.guide.bot.network', facts)];
-      /* what the link reached: a merchant at one of its ends, and a works
-         of the machine's that can now be sold through it */
-      const ends = [v.townA, v.townB].map(String);
-      const market = ends.find((x) => MERCHANT_BY_ID[x]);
-      if (market) {
+      /* what the link reached — both links of a double rail: a merchant
+         at one of their ends, and a works of the machine's that can now be
+         sold through them */
+      const ends = [v.townA, v.townB, v.townA2, v.townB2].map((x) => String(x ?? '')).filter(Boolean);
+      const laid = [v.linkId, v.linkId2].map((x) => String(x ?? '')).filter(Boolean);
+      for (const market of [...new Set(ends.filter((x) => MERCHANT_BY_ID[x]))]) {
         const goods = merchantDemand(g, market);
         said.push(goods.length ? t('game.guide.bot.linkMerchant', { merchant: MERCHANT_BY_ID[market].name, goods: list(goods.map((x) => t(`game.guide.buyers.${x}`))) }) : t('game.guide.suggest.closedMerchant', { merchant: MERCHANT_BY_ID[market].name }));
       }
       const opened = Object.entries(g.tiles)
         .filter(([, x]) => x.owner === e.player && !x.flipped && WORKS.includes(x.industry))
-        .map(([k, x]) => ({ town: k.split(':')[0], industry: x.industry, now: buyersFrom(g, k.split(':')[0], x.industry), before: buyersFrom(g, k.split(':')[0], x.industry, [String(v.linkId)]) }))
+        .map(([k, x]) => ({ town: k.split(':')[0], industry: x.industry, now: buyersFrom(g, k.split(':')[0], x.industry), before: buyersFrom(g, k.split(':')[0], x.industry, laid) }))
         .find((x) => x.now.some((m) => !x.before.includes(m)));
       if (opened) said.push(t('game.guide.bot.linkBuyer', { industry: t(`game.log.industry.${opened.industry}`), town: TOWN_BY_ID[opened.town]?.name ?? opened.town, merchant: MERCHANT_BY_ID[opened.now.find((m) => !opened.before.includes(m))!].name }));
       why = said.join(' ');

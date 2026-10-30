@@ -159,6 +159,22 @@ describe('the machine’s plate', () => {
     expect(why).toContain('Sa manufacture de Redditch peut désormais se vendre à Oxford.');
   });
 
+  it('says what a double rail reached through its second link', () => {
+    /* the rail era: Redditch to Birmingham, then Birmingham to Oxford */
+    const g = table();
+    g.era = 'rail';
+    g.tiles['redditch:0'] = { owner: BOT, industry: 'manufacturer', level: 2, flipped: false, cubes: 0 };
+    g.merchantTiles['m-oxford'] = ['all', 'blank'];
+    const first = link('birmingham', 'redditch');
+    const second = link('birmingham', 'm-oxford');
+    g.links[first] = { owner: BOT, era: 'rail' };
+    g.links[second] = { owner: BOT, era: 'rail' };
+    g.ledger.push({ id: 9999, round: g.round, era: 'rail', player: BOT, verb: 'network', text: '', key: 'network', at: 0, vars: { name: 'Wedgwood', era: 'rail', a: 'Birmingham', b: 'Redditch', a2: 'Birmingham', b2: 'Oxford', price: 15, linkId: first, townA: 'birmingham', townB: 'redditch', linkId2: second, townA2: 'birmingham', townB2: 'm-oxford' } });
+    const why = botReason(g, ME, keys, 'fr')!.why;
+    expect(why).toMatch(/game\.guide\.bot\.linkMerchant\{[^}]*"merchant":"Oxford"/);
+    expect(why).toMatch(/game\.guide\.bot\.linkBuyer\{[^}]*"town":"Redditch"/);
+  });
+
   it('names the beer a sale drank: the barrel, a brewery of the reader’s, its own', () => {
     const sale = (beer: 'barrel' | 'yours' | 'own') => {
       const g = table();
