@@ -82,7 +82,7 @@ const fr: typeof engame = {
     unlessNone: 'Sans condition',
     unlessOk: 'Poser la condition',
     canalTip:
-      'Canaux 3 £. Toutes les tuiles de niveau 1 sont balayées du plateau à la fin de cette ère. Le revenu est payé à la clôture de chaque manche.',
+      'Canaux 3 £. Toutes les tuiles de niveau 1 sont balayées du plateau à la fin de cette ère. Le revenu est payé à la fin de chaque manche.',
     canalTipShort:
       'Canaux 3 £. Partie courte : rien n’est balayé à la fin de l’ère. Le revenu est payé à la fin de chaque manche, sauf la dernière.',
     railTip:
@@ -182,7 +182,7 @@ const fr: typeof engame = {
     minimapSize: 'Mini-carte',
     size: { s: 'Petite', m: 'Moyenne', l: 'Grande' },
     beginnerAid: 'Aide au placement (débutants)',
-    beginnerAidHint: 'Carte en main : les cases injouables s’estompent et le prix détaille charbon et fer de bourse.',
+    beginnerAidHint: 'Carte en main : les cases injouables s’estompent et le prix détaille le charbon et le fer du marché.',
     traffic: 'Trafic sur les liaisons',
     trafficHint: 'Péniches et locomotives sur les canaux et rails construits, et la fumée des industries. Aucun garde la carte immobile entre deux coups.',
     trafficLevel: { none: 'Aucun', light: 'Léger', busy: 'Dense' },
@@ -441,7 +441,7 @@ const fr: typeof engame = {
     strike: 'Valider',
     total: 'Total {n} £',
     left: 'reste {n} £',
-    costTip: 'Prix de la tuile ou de la liaison, plus le charbon et le fer achetés à la bourse',
+    costTip: 'Prix de la tuile ou de la liaison, plus le charbon et le fer achetés au marché',
     cancel: 'Annuler',
     foldDock: 'Replier la main',
     openDock: 'Déplier la main',
