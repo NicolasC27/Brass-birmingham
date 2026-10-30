@@ -4,7 +4,7 @@ import type { GameAction } from '@/game/actions';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import { onlyMoney, sparedFirst } from '@/game/search';
 import type { Card, GameState, SetupPayload } from '@/game/types';
-import { keepOf, keepsFor, placeLens, spareFor, spentBy } from '../expertAdvice';
+import { keepOf, keepsFor, placeLens, sameMove, spareFor, spentBy } from '../expertAdvice';
 import { LESSON_IDS, freshProgress, lessonIndex, roundOf } from '../lessons';
 
 /* What an expert would play, set up without spending a card the guided
@@ -306,5 +306,27 @@ describe('the place of the move', () => {
     expect(placeLens({ kind: 'loan', card: 'x' })).toEqual({ hud: 'loan' });
     expect(placeLens({ kind: 'scout', cards: ['x', 'y', 'z'] })).toEqual({ hud: 'scout' });
     expect(placeLens({ kind: 'pass', card: 'x' })).toBeNull();
+  });
+});
+
+describe('the move the expert advised, played', () => {
+  const build = (card: string, extra: Partial<Extract<GameAction, { kind: 'build' }>> = {}): GameAction => ({ kind: 'build', card, town: 'dudley', slot: 0, industry: 'iron', ...extra });
+
+  it('is the same move paid with another card, or fed from another mine', () => {
+    expect(sameMove(build('a'), build('b'))).toBe(true);
+    expect(sameMove(build('a'), build('a', { coalFrom: ['walsall:0'], ironFrom: 'market' }))).toBe(true);
+    expect(sameMove({ kind: 'loan', card: 'a' }, { kind: 'loan', card: 'b' })).toBe(true);
+    expect(sameMove({ kind: 'network', card: 'a', link: 'x', second: 'y' }, { kind: 'network', card: 'b', link: 'y', second: 'x' })).toBe(true);
+    expect(sameMove({ kind: 'develop', card: 'a', industries: ['brewery', 'iron'] }, { kind: 'develop', card: 'b', industries: ['iron', 'brewery'], ironFrom: ['market', null] })).toBe(true);
+  });
+
+  it('is another move elsewhere, of another tile, or sold to another merchant', () => {
+    expect(sameMove(build('a'), build('a', { slot: 1 }))).toBe(false);
+    expect(sameMove(build('a'), build('a', { industry: 'coal' }))).toBe(false);
+    expect(sameMove({ kind: 'develop', card: 'a', industries: ['brewery', 'brewery'] }, { kind: 'develop', card: 'a', industries: ['brewery'] })).toBe(false);
+    const sale = (merchant: string): GameAction => ({ kind: 'sell', card: 'a', sales: [{ town: 'redditch', slot: 0, merchant }] });
+    expect(sameMove(sale('m-oxford'), sale('m-oxford'))).toBe(true);
+    expect(sameMove(sale('m-oxford'), sale('m-gloucester'))).toBe(false);
+    expect(sameMove({ kind: 'loan', card: 'a' }, { kind: 'pass', card: 'a' })).toBe(false);
   });
 });

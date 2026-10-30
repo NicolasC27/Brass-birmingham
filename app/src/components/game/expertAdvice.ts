@@ -161,6 +161,29 @@ function withCard(a: GameAction, from: string, to: string): GameAction {
   return 'card' in a && a.card === from ? ({ ...a, card: to } as GameAction) : a;
 }
 
+/** the same move, whatever cards pay for it and wherever its cubes and
+ *  its beer are drawn from: the tile, the links, the tiles developed, the
+ *  sales and their merchants — or a loan, a scout, a pass */
+export function sameMove(a: GameAction, b: GameAction): boolean {
+  const sorted = (xs: string[]) => [...xs].sort().join('|');
+  switch (a.kind) {
+    case 'build':
+      return b.kind === 'build' && a.town === b.town && a.slot === b.slot && a.industry === b.industry;
+    case 'network':
+      return b.kind === 'network' && sorted([a.link, ...(a.second ? [a.second] : [])]) === sorted([b.link, ...(b.second ? [b.second] : [])]);
+    case 'develop':
+      return b.kind === 'develop' && sorted(a.industries) === sorted(b.industries);
+    case 'sell':
+      return b.kind === 'sell' && sorted(a.sales.map((x) => `${tileKey(x.town, x.slot)}>${x.merchant}`)) === sorted(b.sales.map((x) => `${tileKey(x.town, x.slot)}>${x.merchant}`));
+    case 'loan':
+    case 'scout':
+    case 'pass':
+      return b.kind === a.kind;
+    default:
+      return false;
+  }
+}
+
 /** a move played on the map, whose place can be shown there */
 export const hasPlace = (a: GameAction): boolean => a.kind === 'build' || a.kind === 'network' || a.kind === 'sell';
 
