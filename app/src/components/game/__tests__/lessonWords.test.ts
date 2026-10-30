@@ -6,7 +6,7 @@ import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
 import { MOTIFS } from '@/game/progress';
 import { LESSON_IDS } from '../lessons';
-import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
+import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
 
 /* the words the lessons are said in, on the guided table itself — you
    against Wedgwood, the canal era only, the deal of seed 3 — and on the
@@ -379,5 +379,11 @@ describe('the lesson the sheet’s advice opens', () => {
     expect(MOTIF_LESSON.buildOverLink).toBe('reach');
     const g = table('standard');
     expect(plainKeyOf(MOTIF_LESSON.singleRail, g, 0)).toBe('plan');
+  });
+
+  it('opens no rail lesson at a table that lays no rail', () => {
+    expect(motifLesson('singleRail', table('standard'))).toBe('plan');
+    expect(motifLesson('singleRail', table('short'))).toBeNull();
+    expect(motifLesson('loanOverBuild', table('short'))).toBe('works');
   });
 });

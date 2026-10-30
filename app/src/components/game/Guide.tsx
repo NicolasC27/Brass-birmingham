@@ -29,7 +29,7 @@ import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
+import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
 import { botReason, happenings } from './machineWords';
 import { holdFor, mayPlayOn, unreadOf } from './guideHold';
@@ -404,12 +404,16 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const [adviceSeen, setAdviceSeen] = useState(false);
   /* outside the guided game the lesson has no page to open: it unfolds in the plate */
   const [adviceOpen, setAdviceOpen] = useState(false);
+  const short = game?.eraLength === 'short';
   const sheetAdvice = useMemo(() => {
-    const back = recurring(listProgress(), 10)[0];
-    if (!back) return null;
-    const id = MOTIF_LESSON[back.motif];
-    return lessonOf(id) ? { motif: back.motif, times: back.times, id } : null;
-  }, []);
+    /* the motif that came back most and has a page at this table: a
+       short game lays no rail to lay single */
+    for (const back of recurring(listProgress(), 10)) {
+      const id = motifLesson(back.motif, { eraLength: short ? 'short' : 'standard' });
+      if (id) return lessonOf(id) ? { motif: back.motif, times: back.times, id } : null;
+    }
+    return null;
+  }, [short]);
   const news = happens.filter((x) => x.id > eventsSeen);
 
   /* the lessons: the progress kept for this table, settled against the

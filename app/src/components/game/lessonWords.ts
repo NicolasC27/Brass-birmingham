@@ -89,6 +89,11 @@ export const MOTIF_LESSON: Readonly<Record<Motif, string>> = {
   passed: 'tips',
 };
 
+/** the lesson a motif opens at this table, if it has one: a single rail
+ *  none where the game ends before the rails are laid */
+export const motifLesson = (motif: Motif, g: Pick<GameState, 'eraLength'> | null): string | null =>
+  motif === 'singleRail' && g?.eraLength === 'short' ? null : MOTIF_LESSON[motif];
+
 const ends = (l: LinkDef): string[] => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
 /** a slot of the town that takes this industry and holds no tile yet */
 const freeSlot = (g: GameState, town: string, industry: IndustryType): boolean => !!TOWN_BY_ID[town]?.slots.some((sp, i) => sp.allows.includes(industry) && !g.tiles[`${town}:${i}`]);
