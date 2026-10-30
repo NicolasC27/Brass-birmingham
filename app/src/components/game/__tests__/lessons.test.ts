@@ -541,6 +541,26 @@ describe('the last rounds', () => {
 });
 
 describe('the second half, never behind a deed left open', () => {
+  it('cuts the close, the plan and the tips in ahead of a deed played past for a whole round', () => {
+    const r2 = round2();
+    const p = see(upTo('sell'), 'sell', ctx(r2));
+    const on = idle(idle(r2));
+    /* before the era's half, the sale is the lesson still */
+    expect(due(p, ctx({ ...on, round: 4 }))).toMatchObject({ id: 'sell', mode: 'do' });
+    expect(due(p, ctx({ ...on, round: 5 }))).toMatchObject({ id: 'eraEnd', mode: 'read' });
+    /* the reader's own round does not cut in; the plan and the tips do */
+    expect(due(pass(p, 'eraEnd'), ctx({ ...on, round: 5 }))).toMatchObject({ id: 'plan', mode: 'read' });
+    expect(due(pass(pass(p, 'eraEnd'), 'plan'), ctx({ ...on, round: 5 }))).toMatchObject({ id: 'tips', mode: 'read' });
+    expect(due(pass(pass(pass(p, 'eraEnd'), 'plan'), 'tips'), ctx({ ...on, round: 5 }))).toMatchObject({ id: 'sell', mode: 'do' });
+  });
+
+  it('keeps the deed first while it was shown this round, or played past by less than a turn', () => {
+    const r2 = round2();
+    const p = see(upTo('sell'), 'sell', ctx(r2));
+    expect(due({ ...p, seen: { sell: { at: r2.actions.length, round: 5 } } }, ctx({ ...idle(idle(r2)), round: 5 }))).toMatchObject({ id: 'sell', mode: 'do' });
+    expect(due(p, ctx({ ...idle(r2), round: 5 }))).toMatchObject({ id: 'sell', mode: 'do' });
+  });
+
   it('gives nothing for the rounds to come in the last round', () => {
     const r2 = round2();
     const last = { ...r2, round: 10 };

@@ -70,6 +70,9 @@ export interface Lesson {
   /** a lesson for the rounds still to come: in the last round, with none
    *  left, it is not given */
   ahead?: boolean;
+  /** a page that will not wait behind a deed the reader has played past
+   *  for a whole round, once this holds: it is given first */
+  cuts?: (c: LessonCtx) => boolean;
   show?: Show;
 }
 
@@ -184,15 +187,18 @@ export const LESSONS: readonly Lesson[] = [
      lesson's to teach, not an aim for the coach to grade */
   { id: 'sell', done: worksFlipped, deferrable: true },
   { id: 'flipped', when: worksFlipped },
-  { id: 'eraEnd', ahead: true },
+  /* what counts at the close, and so the plan: past the era's half it
+     will not wait behind a deed left open — a sale that will not come */
+  { id: 'eraEnd', ahead: true, cuts: halfway },
   /* the second half: a turn's worth of actions played with no word from
      the guide — the reader's own round */
   { id: 'onYourOwn', done: (c, s) => !!s && playedSince(c, s.at) >= 2, aim: true, ahead: true },
   /* the plan for the rounds left and the habits, once they are the rounds
      left: ahead of the aims, which a reader may leave open all game, so
-     they cut in when their time comes rather than wait behind them */
-  { id: 'plan', when: halfway, ahead: true },
-  { id: 'tips', when: halfway, ahead: true },
+     they cut in when their time comes rather than wait behind them — and
+     ahead of an earlier deed left open, for the same reason */
+  { id: 'plan', when: halfway, ahead: true, cuts: halfway },
+  { id: 'tips', when: halfway, ahead: true, cuts: halfway },
   /* then aims, met in the reader's own way and set aside like any deed: a
      works within reach of its buyer, by whoever's links; a merchant's
      barrel drunk — with none left standing, one to pass */
@@ -293,9 +299,17 @@ export function through(c: LessonCtx): boolean {
   return g.phase !== 'action' || g.players[c.me].hand.length === 0 || (g.current !== c.me && g.order.indexOf(c.me) < g.turnPos);
 }
 
+/** a deed played past for a whole round: shown undone in an earlier
+ *  round, and a turn's worth of actions played since */
+const stalled = (p: Progress, l: Lesson, c: LessonCtx): boolean => {
+  const s = p.seen[l.id];
+  return !!l.done && !!s && s.round < roundOf(c.g) && playedSince(c, s.at) >= 2;
+};
+
 /** the lesson due: the first not passed, not set aside, and not waiting
  *  on the game — a page whose time has come and will not wait before
- *  it, or one the table called for. None for the rounds to come in
+ *  it, or one the table called for; and a page that will not wait behind
+ *  a deed played past for a whole round. None for the rounds to come in
  *  the last one, none at all once the reader's last action is played.
  *  Nothing due, the guide rests until the next one comes, the last of
  *  all on the final ledger */
@@ -306,7 +320,11 @@ export function due(p: Progress, c: LessonCtx): Due {
   const gone = (l: Lesson): boolean => (!!l.ahead && lastRound(c.g)) || (done && l.id !== LAST_LESSON);
   const open = (l: Lesson): boolean => left(l) && !gone(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c));
   const urgent = LESSONS.findIndex((l) => (l.urgent || called(p, l, c)) && open(l));
-  const i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
+  let i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
+  if (urgent < 0 && i >= 0 && stalled(p, LESSONS[i], c)) {
+    const cut = LESSONS.findIndex((l, k) => k > i && !!l.cuts?.(c) && open(l));
+    if (cut >= 0) i = cut;
+  }
   if (i >= 0) {
     const l = LESSONS[i];
     if (!l.done) return { id: l.id, index: i, mode: 'read' };
