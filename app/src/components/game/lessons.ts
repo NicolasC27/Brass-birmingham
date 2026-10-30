@@ -73,6 +73,10 @@ export interface Lesson {
   /** a page that will not wait behind a deed the reader has played past
    *  for a whole round, once this holds: it is given first */
   cuts?: (c: LessonCtx) => boolean;
+  /** a page the lessons after it wait behind until its time comes: read
+   *  before it, they would be read out of turn — the canal taught over her
+   *  first moves, as if the reader played on while she does */
+  gate?: boolean;
   show?: Show;
 }
 
@@ -155,8 +159,9 @@ export const LESSONS: readonly Lesson[] = [
   /* read while the table waits: her turn comes once it has been read */
   { id: 'botTurn' },
   /* its page sends the reader to the ledger: a button opens it, for a
-     tablet has no key */
-  { id: 'payday', show: 'ledger', when: (c) => c.g.round >= 2 },
+     tablet has no key. What comes after it waits for it: the second round
+     opens on the pay, then the canal of its first action */
+  { id: 'payday', show: 'ledger', when: (c) => c.g.round >= 2, gate: true },
   { id: 'link', done: (c) => Object.values(c.g.links).some((l) => l.owner === c.me), deferrable: true },
   /* a forge, not "a forge or a brewery": a brewery costs as much but
      burns an iron, not a coal, so the mine and the canal the two lessons
@@ -318,11 +323,14 @@ export function due(p: Progress, c: LessonCtx): Due {
   const done = through(c);
   /* its moment gone for good: a lesson for rounds that will not come */
   const gone = (l: Lesson): boolean => (!!l.ahead && lastRound(c.g)) || (done && l.id !== LAST_LESSON);
-  const open = (l: Lesson): boolean => left(l) && !gone(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c));
-  const urgent = LESSONS.findIndex((l) => (l.urgent || called(p, l, c)) && open(l));
+  /* a page whose time has not come, which the lessons after it wait for */
+  const gate = LESSONS.findIndex((l) => !!l.gate && left(l) && !gone(l) && !!l.when && !l.when(c));
+  const open = (l: Lesson, k: number): boolean =>
+    left(l) && !gone(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c)) && (gate < 0 || k <= gate || !!l.urgent || called(p, l, c));
+  const urgent = LESSONS.findIndex((l, k) => (l.urgent || called(p, l, c)) && open(l, k));
   let i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
   if (urgent < 0 && i >= 0 && stalled(p, LESSONS[i], c)) {
-    const cut = LESSONS.findIndex((l, k) => k > i && !!l.cuts?.(c) && open(l));
+    const cut = LESSONS.findIndex((l, k) => k > i && !!l.cuts?.(c) && open(l, k));
     if (cut >= 0) i = cut;
   }
   if (i >= 0) {

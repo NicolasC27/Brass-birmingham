@@ -124,12 +124,12 @@ describe('the lesson due', () => {
 
   it('sees no deed on her turn: a canal built under payday is read as done', () => {
     const g = guided();
-    /* botTurn read: the canal is due while she plays her first turn, and
-       the guide says no more than whose turn it is */
+    /* botTurn read: while she plays her first turn, the canal waits for
+       the payday that opens the next round, and nothing is seen */
     let p = upTo('payday');
     const hers = mine(g);
     expect(hers.players[hers.current].isBot).toBe(true);
-    expect(due(p, ctx(hers))).toMatchObject({ id: 'link', mode: 'do' });
+    expect(due(p, ctx(hers))).toEqual({ id: 'payday', index: lessonIndex('payday'), mode: 'idle' });
     expect(see(p, 'link', ctx(hers))).toBe(p);
     /* round 2 opens on payday, the reader first; a canal built meanwhile */
     const r2 = theirs(hers);
@@ -147,18 +147,18 @@ describe('the lesson due', () => {
   });
 
   it('passes a deed seen while another lesson is on show', () => {
-    const g = guided();
-    /* the first payday still waits on round 2, and the loan is shown undone */
-    let p = { ...upTo('loan'), passed: upTo('loan').passed.filter((id) => id !== 'payday') };
-    expect(due(p, ctx(g))).toMatchObject({ id: 'loan', mode: 'do' });
-    p = see(p, 'loan', ctx(g));
-    /* round 2 brings payday up; a loan taken while it is read */
-    const r2 = { ...g, round: 2 };
-    expect(due(p, ctx(r2))).toMatchObject({ id: 'payday', mode: 'read' });
-    const borrowed = { ...r2, players: r2.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
+    const r2 = round2();
+    /* the loan shown undone in round 8 */
+    let p = { ...upTo('loan'), passed: upTo('loan').passed };
+    expect(due(p, ctx({ ...r2, round: 8 }))).toMatchObject({ id: 'loan', mode: 'do' });
+    p = see(p, 'loan', ctx({ ...r2, round: 8 }));
+    /* round 9 brings the last rounds up; a loan taken while they are read */
+    const r9 = { ...r2, round: 9 };
+    expect(due(p, ctx(r9))).toMatchObject({ id: 'lastRounds', mode: 'read' });
+    const borrowed = { ...r9, players: r9.players.map((x, i) => (i === 0 ? { ...x, loans: 1 } : x)) };
     p = settle(p, ctx(borrowed));
     expect(p.passed.at(-1)).toBe('loan');
-    expect(due(p, ctx(borrowed))).toMatchObject({ id: 'payday' });
+    expect(due(p, ctx(borrowed))).toMatchObject({ id: 'lastRounds' });
   });
 
   it('keeps a page waiting on the game in its place, however far the reader reads', () => {
@@ -172,10 +172,12 @@ describe('the lesson due', () => {
     expect(due(p, ctx(g))).toEqual({ id: 'flipped', index: lessonIndex('flipped'), mode: 'idle' });
     const sold = { ...g, players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
     expect(due(p, ctx(sold))).toMatchObject({ id: 'flipped', index: lessonIndex('flipped'), mode: 'read' });
-    /* payday in the first round: the canal is taught meanwhile, payday is not lost */
+    /* payday in the first round: what comes after it waits with it, and
+       the canal is not taught out of turn over her first moves */
     const q = upTo('payday');
-    expect(due(q, ctx(g))).toMatchObject({ id: 'link' });
-    expect(due(q, ctx({ ...g, round: 2 }))).toMatchObject({ id: 'payday' });
+    expect(due(q, ctx(g))).toEqual({ id: 'payday', index: lessonIndex('payday'), mode: 'idle' });
+    expect(due(q, ctx({ ...g, round: 2 }))).toMatchObject({ id: 'payday', mode: 'read' });
+    expect(due(pass(q, 'payday'), ctx({ ...g, round: 2 }))).toMatchObject({ id: 'link', mode: 'do' });
   });
 
   it('keeps the closing word for the final ledger', () => {
@@ -842,7 +844,7 @@ describe('the progress on the disk', () => {
     /* the lesson on money is the goal's now: a record of it is dropped */
     expect(p.passed).toEqual(V1.slice(0, 9).filter((id) => id !== 'money'));
     expect(p.passed).toEqual(LESSON_IDS.slice(0, 8));
-    expect(due(p, ctx(g))).toMatchObject({ id: 'link' });
+    expect(due(p, ctx(g))).toMatchObject({ id: 'payday', mode: 'idle' });
     expect(due(p, ctx({ ...g, round: 2 }))).toMatchObject({ id: 'payday' });
     saveProgress(p);
     expect(store.has('brassworks.tutorial.step')).toBe(false);
