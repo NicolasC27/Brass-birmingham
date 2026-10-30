@@ -906,8 +906,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
       case 'sell': {
         st.selectCard(a.card);
         useGame.getState().setVerb('sell');
+        /* each tile to the merchant advised — else to one who buys it
+           now: the first listed may not */
         for (const sale of a.sales) {
-          const t = useGame.getState().currentSells().find((x) => x.town === sale.town && x.slot === sale.slot);
+          const tile = useGame.getState().currentSells().filter((x) => x.town === sale.town && x.slot === sale.slot && x.valid);
+          const t = tile.find((x) => x.merchant === sale.merchant) ?? tile[0];
           if (t) useGame.getState().pickSell(t);
         }
         break;
