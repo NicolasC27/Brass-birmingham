@@ -93,7 +93,8 @@ const townList = (ids: string[], type: 'conjunction' | 'disjunction'): string =>
 /** the figures a lesson's text is written with: the table as it stands,
  *  and what it started from — a lesson read again later still says how
  *  the game began. `need` is what the next works would cost, worked out
- *  only for the lesson that speaks of it */
+ *  only for the lesson that speaks of it. The action a deed is played
+ *  with is the reader's: off their turn, the next is their turn's first */
 function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string, need: number | null = null): Record<string, string | number> {
   const p = game.players[me];
   const k = getKeybindings();
@@ -123,7 +124,7 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
      machine, at the guided table — else another player, never a blank */
   const others = game.players.filter((_, i) => i !== me);
   const rival = others.length === 1 ? others[0].name : t('game.guide.rival');
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a look at a seat's last move, from this moment */
