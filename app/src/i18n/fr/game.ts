@@ -548,6 +548,7 @@ const fr: typeof engame = {
     industry: { coal: 'mine de charbon', iron: 'forge', cotton: 'filature', manufacturer: 'manufacture', pottery: 'poterie', brewery: 'brasserie' },
     res: { coal: 'charbon', iron: 'fer' },
     era: { canal: 'un canal', rail: 'un rail' },
+    price: '{n} £',
     eraName: { canal: 'Canal', rail: 'Rail' },
     coalN: 'charbon ×{n}',
     ironN: 'fer ×{n}',

@@ -23,7 +23,8 @@ function facts(e: Entry, t: T): Record<string, string | number> {
   }
   switch (e.key) {
     case 'build': {
-      const costs = [`£${v.price}`];
+      /* the price as the tongue writes a sum: £5, 5 £ */
+      const costs = [t('game.log.price', { n: v.price ?? 0 })];
       if (v.coal) costs.push(t('game.log.coalN', { n: v.coal }));
       if (v.iron) costs.push(t('game.log.ironN', { n: v.iron }));
       v.costs = costs.join(' · ');
@@ -79,7 +80,7 @@ export function ledgerParts(e: Entry, t: T): { head: string; detail: string } {
       if (v.saleN) bits.push(t('game.log.saleShort', { n: v.saleN, res: v.saleRes ?? '', gain: v.saleGain ?? 0 }));
       return { head: t('game.log.head.build', v), detail: bits.join(' · ') };
     case 'network':
-      bits.push(`£${v.price}`);
+      bits.push(t('game.log.price', { n: v.price ?? 0 }));
       if (v.a2) bits.push(t('game.log.doubleShort', { a: v.a2, b: v.b2 ?? '' }));
       return { head: t('game.log.head.network', v), detail: bits.join(' · ') };
     case 'develop':

@@ -546,6 +546,7 @@ const game = {
     industry: { coal: 'coal mine', iron: 'iron works', cotton: 'cotton mill', manufacturer: 'manufactory', pottery: 'pottery', brewery: 'brewery' },
     res: { coal: 'coal', iron: 'iron' },
     era: { canal: 'a canal', rail: 'rail' },
+    price: '£{n}',
     eraName: { canal: 'Canal', rail: 'Rail' },
     coalN: 'coal ×{n}',
     ironN: 'iron ×{n}',
