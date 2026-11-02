@@ -665,11 +665,13 @@ function HandDock() {
             }
           }}
           className={cn(
-            'relative flex h-[32px] w-full items-center justify-center gap-3 px-4 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
+            /* the pin stands at the right edge: its room is kept, so nothing
+               of the strip runs under it */
+            'relative flex h-[32px] w-full items-center justify-center gap-3 pl-4 pr-12 font-sans text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors',
             expanded ? 'text-brass-500/70 hover:text-brass-400' : 'text-brass-400 hover:text-brass-400',
           )}
         >
-          <span className="engraved-brass font-fell normal-case tracking-[0.08em]">
+          <span className="engraved-brass whitespace-nowrap font-fell normal-case tracking-[0.08em]">
             {preparing ? t('game.hand.preparing') : isHumanTurn ? t('game.hand.cardsInHand', { count: (shown ?? p).hand.length }) : t('game.hand.atTable', { name: p.name })}
           </span>
           {/* while others play: prepare a move for my turn (two at most) */}
@@ -688,7 +690,7 @@ function HandDock() {
                   setPreparing(true);
                 }
               }}
-              className="rounded-sm border border-brass-700/60 px-2 py-[1px] font-sans text-[10px] font-bold normal-case tracking-wider text-brass-400 hover:border-brass-400"
+              className="whitespace-nowrap rounded-sm border border-brass-700/60 px-2 py-[1px] font-sans text-[10px] font-bold normal-case tracking-wider text-brass-400 hover:border-brass-400"
             >
               {t('game.hand.prepare')}
             </span>
@@ -701,8 +703,9 @@ function HandDock() {
             </span>
           )}
           {/* what the purse has spent this round, and the place it earns at
-              the next: public figures, the order the engine will deal */}
-          {shown && game.phase === 'action' && (
+              the next: public figures, the order the engine will deal — the
+              first to go where the strip is short of room */}
+          {shown && game.phase === 'action' && vw >= 1024 && (
             <span className="flex items-center gap-1 whitespace-nowrap font-sans text-[10px] font-normal normal-case tracking-normal text-cream-100/55" title={t('game.main.orderTip', { name: shown.name })}>
               <span>
                 {spentWords[0]}
@@ -748,7 +751,8 @@ function HandDock() {
                   undo();
                 }
               }}
-              className="absolute left-3 top-1/2 flex h-7 -translate-y-1/2 items-center gap-1 rounded-full border border-brass-700/50 px-2 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-500/80 transition-colors hover:border-brass-400 hover:text-brass-400"
+              /* in the strip's own row, first: set over it, it hid the count */
+              className="order-first flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-brass-700/50 px-2 font-sans text-[9px] font-bold uppercase tracking-[0.12em] text-brass-500/80 transition-colors hover:border-brass-400 hover:text-brass-400"
             >
               <Undo2 className="h-3 w-3" />
               {t('game.hand.undoShort')}
