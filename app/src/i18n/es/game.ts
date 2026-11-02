@@ -1201,6 +1201,7 @@ const game: typeof engame = {
       sell: 'Nada se puede vender ahora: hace falta una fábrica tuya conectada con un mercader que compre esos bienes, y una cerveza que beber.',
       sellWorks: 'Tu {industry} de {town} se vende a: {buyers}.',
       sellNow: 'Nada se puede vender ahora.',
+      noWorks: 'No tienes ninguna fábrica sin vender en el tablero: construye una primero, o salta esta lección.',
       loan: 'Ningún préstamo es posible: los ingresos no pueden bajar de −10.',
       why: 'La mesa responde: «{why}».',
       whyAt: 'En {town}, la mesa responde: «{why}».',

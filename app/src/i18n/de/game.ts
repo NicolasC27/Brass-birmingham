@@ -1201,6 +1201,7 @@ const game: typeof engame = {
       sell: 'Nichts lässt sich jetzt verkaufen: es braucht einen Betrieb von dir, verbunden mit einem Händler, der diese Waren kauft, und ein Bier zum Trinken.',
       sellWorks: 'Käufer deiner {industry} in {town}: {buyers}.',
       sellNow: 'Nichts lässt sich jetzt verkaufen.',
+      noWorks: 'Du hast keinen unverkauften Betrieb auf dem Spielplan: Baue zuerst einen, oder überspringe diese Lektion.',
       loan: 'Kein Kredit möglich: das Einkommen kann nicht unter −10 sinken.',
       why: 'Der Tisch antwortet: „{why}“.',
       whyAt: 'In {town} antwortet der Tisch: „{why}“.',

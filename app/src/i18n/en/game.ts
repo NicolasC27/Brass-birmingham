@@ -1199,6 +1199,7 @@ const game = {
       sell: 'Nothing can be sold right now: it takes a works of yours connected to a merchant who buys those goods, and a beer to drink.',
       sellWorks: 'Your {industry} at {town} is bought by: {buyers}.',
       sellNow: 'Nothing can be sold right now.',
+      noWorks: 'You have no unsold works on the board: build one first, or skip this lesson.',
       loan: 'No loan is possible: the income cannot sink below −10.',
       why: 'The table answers: “{why}”.',
       whyAt: 'At {town}, the table answers: “{why}”.',

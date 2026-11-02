@@ -277,6 +277,17 @@ describe('a deed the table does not allow', () => {
     expect(blockedBy('iron', g, 0, fr, 'fr')).toBeNull();
   });
 
+  it('stops the aims of the second half while no works is left to sell', () => {
+    const g = structuredClone(guided());
+    for (const id of ['reach', 'barrel']) expect(blockedBy(id, g, 0, fr)!.text).toBe(fr('game.guide.blocked.noWorks'));
+    /* a works of the reader's on the board, not sold: the aims are theirs to try */
+    g.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    for (const id of ['reach', 'barrel']) expect(blockedBy(id, g, 0, fr)).toBeNull();
+    /* sold, it is nothing to sell again */
+    g.tiles['redditch:0'].flipped = true;
+    expect(blockedBy('reach', g, 0, fr)).not.toBeNull();
+  });
+
   it('tells a works joined to its buyer that it lacks its beer, and answers so', () => {
     /* the page may be read in another tongue: the question's own is kept */
     setLang('en');

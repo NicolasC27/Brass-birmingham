@@ -118,6 +118,9 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
     return plain([t('game.guide.blocked.sell', vars), ...lines].join(' '));
   }
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
+  /* the aims of the second half are met through a works to sell: none on
+     the board, nothing to link to its buyer, no barrel to drink with it */
+  if ((id === 'reach' || id === 'barrel') && !Object.values(g.tiles).some((x) => x.owner === me && !x.flipped && WORKS.includes(x.industry))) return plain(t('game.guide.blocked.noWorks'));
   return null;
 }
 

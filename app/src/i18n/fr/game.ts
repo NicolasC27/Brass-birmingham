@@ -1201,6 +1201,7 @@ const fr: typeof engame = {
       sell: 'Rien ne peut se vendre maintenant : il faut un ouvrage à vous relié à un marchand qui achète ces biens, et une bière à boire.',
       sellWorks: 'Votre {industry} de {town} est achetée par : {buyers}.',
       sellNow: 'Rien ne peut se vendre maintenant.',
+      noWorks: 'Vous n’avez aucun ouvrage invendu sur le plateau : bâtissez-en un d’abord, ou passez cette leçon.',
       loan: 'Aucun emprunt possible : le revenu ne peut pas descendre sous −10.',
       why: 'La table répond : « {why} ».',
       whyAt: 'À {town}, la table répond : « {why} ».',
