@@ -52,6 +52,10 @@ export const EN: Tongue = {
       how: 'A card that allows it (the town’s location card, a brewery card for a town in your network, or a wild card), a free space with the brewery icon, the money and one iron — iron needs no connection. Pick the card, Build, the space, then confirm.',
       cost: 'Level I: £5 and 1 iron, Canal Era only. Level II: £7 and 1 iron. Level III: £9 and 1 iron. Level IV: £9 and 1 iron, Rail Era only. Seven breweries on your mat; each gets 1 barrel in the Canal Era and 2 in the Rail Era.',
       gain: 'Flipped, a brewery moves your income 4 spaces (level I) or 5 (levels II to IV) and scores 4, 5, 7 or 9 VP. Each carries 2 link icons, which count for the links touching its town.',
+      short: {
+        what: 'A brewery produces the beer that sales need: 1 barrel placed on it when built, whatever its level. Your own barrels can be drunk anywhere, with no link; a rival’s only if their brewery is connected. It flips when its last barrel is drunk, by you or anyone else.',
+        cost: 'Level I: £5 and 1 iron. Level II: £7 and 1 iron. Level III: £9 and 1 iron. Level IV belongs to the Rail Era, which the introductory game does not play. Each gets 1 barrel.',
+      },
     },
     farmBrewery: {
       topic: 'farm breweries',
@@ -133,6 +137,11 @@ export const EN: Tongue = {
       how: 'Pick any card, the Network action, then a route that lights up on the map, and confirm. In the Rail Era you may lay a second rail in the same action.',
       cost: 'In the Canal Era: £3 a canal, one per action. In the Rail Era: £5 and 1 coal a rail, or two rails in the same action for £15, 1 coal each and 1 beer drawn from a brewery. A rail’s coal must be connected to the link once laid.',
       whyNot: 'The route must be free and touch your network — a route holds only one link. In the Canal Era the rail-only routes are closed; in the Rail Era the canal-only Burton–Walsall route is closed too. A rail also needs coal connected to the link, the double rail a brewery beer, and you need the money.',
+      short: {
+        what: 'The Network action lays a canal on a free route touching your network. Your network is every place where you have a tile and every place your links touch; it is where your industry cards can build. A route holds only one link. While you have nothing on the board, your first one may go anywhere.',
+        cost: 'A canal costs £3, with no coal, and one per action: the introductory game lays no rail.',
+        whyNot: 'The route must be free, open to canals and touch your network — a route holds only one link, and the rail-only routes stay closed. You also need £3.',
+      },
     },
     develop: {
       topic: 'the Develop action',
@@ -181,7 +190,7 @@ export const EN: Tongue = {
       cost: 'A canal costs £3, no coal, and one link per action — there is no double canal.',
       whyNot: 'In the Canal Era, one link per action and only on routes open to canals; rail-only routes stay closed. You need £3 and a free route touching your network.',
       short: {
-        what: 'The Canal Era is the whole of the introductory game. Only canals are laid (£3, one per action), only one of your tiles per place, and level 1 tiles can be built. The very first round gives each player a single action. At its end, links and flipped tiles score and nothing leaves the board: the close follows.',
+        what: 'The Canal Era is the whole of the introductory game. Only canals are laid (£3, one per action), only one of your tiles per place, and level 1 tiles can be built. The very first round gives each player a single action. At its end, links and flipped tiles score, with no sweep of level 1 tiles: the close follows.',
       },
     },
     rail: {
@@ -202,8 +211,9 @@ export const EN: Tongue = {
       gain: 'At the end of each era, a link scores the link icons of every tile in the places it connects — 0 to 2 per tile, whoever owns it, flipped or not — and 2 points for a merchant space. Then it is removed.',
       cost: 'A canal costs £3. A rail costs £5 and 1 coal; two rails in the same action, £15, 2 coal and 1 brewery beer.',
       short: {
-        what: 'A link is a canal laid on a route between two places. It extends your network and connects places for everyone: coal, a rival’s beer and sales to merchants run along anyone’s links. At the end of the era, each scores 1 point per link icon in the places it touches, 2 for a merchant, and stays on the board.',
+        what: 'A link is a canal laid on a route between two places. It extends your network and connects places for everyone: coal, a rival’s beer and sales to merchants run along anyone’s links. At the end of the era, each scores 1 point per link icon in the places it touches, 2 for a merchant. That count comes once: the game then closes.',
         gain: 'At the end of the era, a link scores the link icons of every tile in the places it connects — 0 to 2 per tile, whoever owns it, flipped or not — and 2 points for a merchant space. That count comes once: the close does not count links again.',
+        cost: 'A canal costs £3; the introductory game lays no rail.',
       },
     },
     eras: {
@@ -243,16 +253,16 @@ export const EN: Tongue = {
     initiation: {
       topic: 'the introductory game',
       words: ['introductory', 'introductory game', 'short game', 'short', 'canal only', 'quick game', 'beginner game', 'first game', 'tutorial'],
-      what: 'The introductory game plays the Canal Era only: 10 rounds with 2 players, 9 with 3, 8 with 4, and no payday after the last. When it ends, nothing leaves the board: each link scores 1 point per link icon in the places it touches (2 for a merchant), each flipped tile scores its points; a tile never flipped scores nothing. The close then adds 1 point per £4 (15 at most), points equal to the income level (subtracted if negative), and flipped tiles of level 2 and up score a second time.',
+      what: 'The introductory game plays the Canal Era only: 10 rounds with 2 players, 9 with 3, 8 with 4, and no payday after the last. When it ends, there is no sweep: each link scores 1 point per link icon in the places it touches (2 for a merchant), each flipped tile scores its points; a tile never flipped scores nothing. The close then adds 1 point per £4 (15 at most), points equal to the income level (subtracted if negative), and flipped tiles of level 2 and up score a second time.',
       how: 'You win with the most points after the close. They come from links and flipped tiles, counted at the end of the Canal Era, from a few merchant bonuses, then from the close: money (1 point per £4, 15 at most), the income level, and flipped tiles of level 2 and up a second time. On a tie, the higher income level decides, then the money in hand.',
     },
     merchants: {
       topic: 'merchants and their bonuses',
       words: ['merchant', 'merchants', 'merchant bonus', 'trader', 'traders', 'buyer', 'buyers', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'merchant tile', 'merchant tiles', 'bonus', 'all goods', 'blank merchant'],
       what: 'The merchants, at the edge of the map, buy your works: each merchant tile shows what it takes (cotton, manufactured goods, pottery, “all goods”, or nothing when blank). To sell, your tile must be connected to one. Each non-blank tile has a beer barrel, and drinking it while selling gives the place’s bonus. A merchant space also counts 2 link icons, and opens the coal market to whoever is connected to it.',
-      gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5, Nottingham 3 VP, Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale, one per merchant tile per era; the barrels return at the start of the Rail Era.',
+      gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5 (from 3 players), Nottingham 3 VP (at 4 players), Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale, one per merchant tile per era; the barrels return at the start of the Rail Era.',
       short: {
-        gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5, Nottingham 3 VP, Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale: one barrel per merchant tile, for the whole introductory game.',
+        gain: 'On the Midlands map: Shrewsbury gives 4 VP, Warrington £5 (from 3 players), Nottingham 3 VP (at 4 players), Gloucester a free develop (no iron) and Oxford 2 income spaces. The bonus comes with the barrel drunk during a sale: one barrel per merchant tile, for the whole introductory game.',
       },
     },
     income: {
@@ -317,11 +327,11 @@ export const EN: Tongue = {
     vp: {
       topic: 'victory points',
       words: ['points', 'point', 'vp', 'victory points', 'victory point', 'score', 'scores', 'vp track', 'score track', 'points track'],
-      what: 'Victory points decide the game. They are scored at each era’s end: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury and Nottingham bonuses; a shortfall takes points away. The track wraps round at 100.',
-      gain: 'Points come from flipped tiles (the number at the bottom of the tile, at every scoring where it stands), from links (the link icons of the places they touch, 2 per merchant) and from the Shrewsbury (4) and Nottingham (3) bonuses.',
+      what: 'Victory points decide the game. They are scored at each era’s end: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury bonus and, at 4 players, Nottingham’s; a shortfall takes points away. The track wraps round at 100.',
+      gain: 'Points come from flipped tiles (the number at the bottom of the tile, at every scoring where it stands), from links (the link icons of the places they touch, 2 per merchant) and from the bonuses of Shrewsbury (4) and, at 4 players, Nottingham (3).',
       short: {
-        what: 'Victory points decide the game. They are scored at the end of the Canal Era: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury and Nottingham bonuses; a shortfall takes points away. Then the close of the introductory game adds 1 point per £4 (15 at most), the income level (subtracted if negative), and flipped tiles of level 2 and up a second time.',
-        gain: 'Points come from flipped tiles (the number at the bottom of the tile) and from links (the link icons of the places they touch, 2 per merchant), counted at the end of the Canal Era, and from the Shrewsbury (4) and Nottingham (3) bonuses. The close then adds 1 point per £4 (15 at most), the income level, and flipped tiles of level 2 and up a second time.',
+        what: 'Victory points decide the game. They are scored at the end of the Canal Era: links (1 point per link icon in the places touched, 2 for a merchant) and flipped tiles (the printed number). Add the Shrewsbury bonus and, at 4 players, Nottingham’s; a shortfall takes points away. Then the close of the introductory game adds 1 point per £4 (15 at most), the income level (subtracted if negative), and flipped tiles of level 2 and up a second time.',
+        gain: 'Points come from flipped tiles (the number at the bottom of the tile) and from links (the link icons of the places they touch, 2 per merchant), counted at the end of the Canal Era, and from the bonuses of Shrewsbury (4) and, at 4 players, Nottingham (3). The close then adds 1 point per £4 (15 at most), the income level, and flipped tiles of level 2 and up a second time.',
       },
     },
     cards: {

@@ -52,6 +52,10 @@ export const DE: Tongue = {
       how: 'Eine passende Karte (Ortskarte der Stadt, Brauereikarte für eine Stadt deines Netzes oder ein Joker), ein freies Feld mit dem Brauereisymbol, das Geld und ein Eisen — Eisen braucht keine Verbindung. Wähle die Karte, Bauen, das Feld, und bestätige.',
       cost: 'Stufe I: £5 und 1 Eisen, nur Kanalzeit. Stufe II: £7 und 1 Eisen. Stufe III: £9 und 1 Eisen. Stufe IV: £9 und 1 Eisen, nur Eisenbahnzeit. Sieben Brauereien auf deinem Tableau; jede bekommt 1 Fass in der Kanalzeit und 2 in der Eisenbahnzeit.',
       gain: 'Umgedreht rückt eine Brauerei dein Einkommen um 4 Felder (Stufe I) oder 5 (Stufen II bis IV) vor und bringt 4, 5, 7 oder 9 SP. Jede trägt 2 Verbindungssymbole, die für die Verbindungen an ihrer Stadt zählen.',
+      short: {
+        what: 'Eine Brauerei erzeugt das Bier, das Verkäufe brauchen: 1 Fass beim Bau, gleich welche Stufe. Deine eigenen Fässer werden überall getrunken, ohne Verbindung; die eines Rivalen nur, wenn seine Brauerei verbunden ist. Sie wird umgedreht, wenn ihr letztes Fass getrunken ist, von dir oder einem anderen.',
+        cost: 'Stufe I: £5 und 1 Eisen. Stufe II: £7 und 1 Eisen. Stufe III: £9 und 1 Eisen. Stufe IV gehört zur Eisenbahnzeit, die die Einführungspartie nicht spielt. Jede bekommt 1 Fass.',
+      },
     },
     farmBrewery: {
       topic: 'die Hofbrauereien',
@@ -133,6 +137,11 @@ export const DE: Tongue = {
       how: 'Wähle eine beliebige Karte, die Aktion Netzwerk, dann eine Strecke, die auf der Karte aufleuchtet, und bestätige. In der Eisenbahnzeit darfst du in derselben Aktion eine zweite Schiene legen.',
       cost: 'In der Kanalzeit: £3 pro Kanal, einer pro Aktion. In der Eisenbahnzeit: £5 und 1 Kohle pro Schiene, oder zwei in derselben Aktion für £15, je 1 Kohle und 1 Bier aus einer Brauerei. Die Kohle einer Schiene muss mit der gelegten Verbindung verbunden sein.',
       whyNot: 'Die Strecke muss frei sein und dein Netz berühren — eine Strecke trägt nur eine Verbindung. In der Kanalzeit sind die reinen Schienenstrecken gesperrt; in der Eisenbahnzeit auch die reine Kanalstrecke Burton–Walsall. Eine Schiene braucht zudem mit der Verbindung verbundene Kohle, die Doppelschiene ein Brauereibier, und das Geld muss reichen.',
+      short: {
+        what: 'Die Aktion Netzwerk legt einen Kanal auf eine freie Strecke, die dein Netz berührt. Dein Netz sind alle Orte, an denen du ein Plättchen hast, und alle, die deine Verbindungen berühren; dort dürfen deine Industriekarten bauen. Eine Strecke trägt nur eine Verbindung. Solange du nichts auf dem Plan hast, darf deine erste überallhin.',
+        cost: 'Ein Kanal kostet £3, ohne Kohle, einer pro Aktion: Die Einführungspartie legt keine Schiene.',
+        whyNot: 'Die Strecke muss frei sein, für Kanäle offen und dein Netz berühren — eine Strecke trägt nur eine Verbindung, und die reinen Schienenstrecken bleiben gesperrt. Dazu braucht es £3.',
+      },
     },
     develop: {
       topic: 'die Aktion Entwickeln',
@@ -181,7 +190,7 @@ export const DE: Tongue = {
       cost: 'Ein Kanal kostet £3, ohne Kohle, und eine Verbindung pro Aktion — einen Doppelkanal gibt es nicht.',
       whyNot: 'In der Kanalzeit eine Verbindung pro Aktion und nur auf Strecken, die für Kanäle offen sind; reine Schienenstrecken bleiben gesperrt. Du brauchst £3 und eine freie Strecke, die dein Netz berührt.',
       short: {
-        what: 'Die Kanalzeit ist die ganze Einführungspartie. Es werden nur Kanäle gelegt (£3, einer pro Aktion), nur eines deiner Plättchen pro Ort, und Plättchen der Stufe 1 dürfen gebaut werden. Die allererste Runde gibt jedem nur eine Aktion. Am Ende werten Verbindungen und umgedrehte Plättchen, und nichts verlässt den Plan: Der Abschluss folgt.',
+        what: 'Die Kanalzeit ist die ganze Einführungspartie. Es werden nur Kanäle gelegt (£3, einer pro Aktion), nur eines deiner Plättchen pro Ort, und Plättchen der Stufe 1 dürfen gebaut werden. Die allererste Runde gibt jedem nur eine Aktion. Am Ende werten Verbindungen und umgedrehte Plättchen, ohne dass Plättchen der Stufe 1 abgeräumt werden: Der Abschluss folgt.',
       },
     },
     rail: {
@@ -202,8 +211,9 @@ export const DE: Tongue = {
       gain: 'Am Ende jeder Epoche wertet eine Verbindung die Verbindungssymbole jedes Plättchens an den Orten, die sie verbindet — 0 bis 2 je Plättchen, gleich wem es gehört, umgedreht oder nicht — und 2 Punkte für ein Händlerfeld. Dann wird sie entfernt.',
       cost: 'Ein Kanal kostet £3. Eine Schiene £5 und 1 Kohle; zwei in derselben Aktion £15, 2 Kohle und 1 Brauereibier.',
       short: {
-        what: 'Eine Verbindung ist ein Kanal auf einer Strecke zwischen zwei Orten. Sie erweitert dein Netz und verbindet Orte für alle: Kohle, das Bier eines Rivalen und Verkäufe an Händler laufen über die Verbindungen jedes Spielers. Am Ende der Epoche bringt jede 1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler, und bleibt auf dem Plan.',
+        what: 'Eine Verbindung ist ein Kanal auf einer Strecke zwischen zwei Orten. Sie erweitert dein Netz und verbindet Orte für alle: Kohle, das Bier eines Rivalen und Verkäufe an Händler laufen über die Verbindungen jedes Spielers. Am Ende der Epoche bringt jede 1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler. Diese Wertung kommt nur einmal: Dann schließt die Partie.',
         gain: 'Am Ende der Epoche wertet eine Verbindung die Verbindungssymbole jedes Plättchens an den Orten, die sie verbindet — 0 bis 2 je Plättchen, gleich wem es gehört, umgedreht oder nicht — und 2 Punkte für ein Händlerfeld. Diese Wertung kommt nur einmal: Der Abschluss zählt Verbindungen nicht erneut.',
+        cost: 'Ein Kanal kostet £3; die Einführungspartie legt keine Schiene.',
       },
     },
     eras: {
@@ -243,16 +253,16 @@ export const DE: Tongue = {
     initiation: {
       topic: 'die Einführungspartie',
       words: ['einfuhrung', 'einfuhrungspartie', 'kurze partie', 'kurz', 'nur kanal', 'schnelle partie', 'anfangerpartie', 'erste partie', 'tutorial'],
-      what: 'Die Einführungspartie spielt nur die Kanalzeit: 10 Runden zu zweit, 9 zu dritt, 8 zu viert, und nach der letzten keine Auszahlung. An ihrem Ende verlässt nichts den Plan: Jede Verbindung bringt 1 Punkt pro Verbindungssymbol an den berührten Orten (2 für einen Händler), jedes umgedrehte Plättchen seine Punkte; ein nie umgedrehtes Plättchen bringt nichts. Der Abschluss zählt dann 1 Punkt pro £4 dazu (höchstens 15), Punkte in Höhe der Einkommensstufe (abgezogen, wenn sie negativ ist), und umgedrehte Plättchen ab Stufe 2 werten ein zweites Mal.',
+      what: 'Die Einführungspartie spielt nur die Kanalzeit: 10 Runden zu zweit, 9 zu dritt, 8 zu viert, und nach der letzten keine Auszahlung. An ihrem Ende wird nichts abgeräumt: Jede Verbindung bringt 1 Punkt pro Verbindungssymbol an den berührten Orten (2 für einen Händler), jedes umgedrehte Plättchen seine Punkte; ein nie umgedrehtes Plättchen bringt nichts. Der Abschluss zählt dann 1 Punkt pro £4 dazu (höchstens 15), Punkte in Höhe der Einkommensstufe (abgezogen, wenn sie negativ ist), und umgedrehte Plättchen ab Stufe 2 werten ein zweites Mal.',
       how: 'Man gewinnt mit den meisten Punkten nach dem Abschluss. Sie kommen von Verbindungen und umgedrehten Plättchen, gewertet am Ende der Kanalzeit, von einigen Händlerboni und dann vom Abschluss: dem Geld (1 Punkt pro £4, höchstens 15), der Einkommensstufe und ein zweites Mal den umgedrehten Plättchen ab Stufe 2. Bei Gleichstand entscheidet die höhere Einkommensstufe, dann das Geld in der Kasse.',
     },
     merchants: {
       topic: 'die Händler und ihre Boni',
       words: ['handler', 'handlerbonus', 'kaufmann', 'kaufleute', 'abnehmer', 'kaufer', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'handlerplattchen', 'bonus', 'alle waren', 'leerer handler'],
       what: 'Die Händler am Kartenrand kaufen deine Gewerbe: Jedes Händlerplättchen zeigt, was es nimmt (Baumwolle, Fertigwaren, Keramik, „alle Waren“ oder nichts, wenn es leer ist). Zum Verkaufen muss dein Plättchen mit einem von ihnen verbunden sein. Jedes nicht leere Plättchen hat ein Bierfass, und wer es beim Verkauf trinkt, bekommt den Bonus des Ortes. Ein Händlerfeld zählt zudem 2 Verbindungssymbole und öffnet den Kohlemarkt für jeden, der damit verbunden ist.',
-      gain: 'Auf der Midlands-Karte: Shrewsbury gibt 4 SP, Warrington £5, Nottingham 3 SP, Gloucester eine kostenlose Entwicklung (ohne Eisen) und Oxford 2 Einkommensfelder. Der Bonus kommt mit dem bei einem Verkauf getrunkenen Fass, eines pro Händlerplättchen und Epoche; die Fässer kehren zu Beginn der Eisenbahnzeit zurück.',
+      gain: 'Auf der Midlands-Karte: Shrewsbury gibt 4 SP, Warrington £5 (ab 3 Spielern), Nottingham 3 SP (zu viert), Gloucester eine kostenlose Entwicklung (ohne Eisen) und Oxford 2 Einkommensfelder. Der Bonus kommt mit dem bei einem Verkauf getrunkenen Fass, eines pro Händlerplättchen und Epoche; die Fässer kehren zu Beginn der Eisenbahnzeit zurück.',
       short: {
-        gain: 'Auf der Midlands-Karte: Shrewsbury gibt 4 SP, Warrington £5, Nottingham 3 SP, Gloucester eine kostenlose Entwicklung (ohne Eisen) und Oxford 2 Einkommensfelder. Der Bonus kommt mit dem bei einem Verkauf getrunkenen Fass: ein Fass pro Händlerplättchen, für die ganze Einführungspartie.',
+        gain: 'Auf der Midlands-Karte: Shrewsbury gibt 4 SP, Warrington £5 (ab 3 Spielern), Nottingham 3 SP (zu viert), Gloucester eine kostenlose Entwicklung (ohne Eisen) und Oxford 2 Einkommensfelder. Der Bonus kommt mit dem bei einem Verkauf getrunkenen Fass: ein Fass pro Händlerplättchen, für die ganze Einführungspartie.',
       },
     },
     income: {
@@ -317,11 +327,11 @@ export const DE: Tongue = {
     vp: {
       topic: 'die Siegpunkte',
       words: ['punkte', 'punkt', 'siegpunkte', 'siegpunkt', 'sp', 'vp', 'punktestand', 'punkteleiste', 'siegpunktleiste'],
-      what: 'Siegpunkte entscheiden die Partie. Sie werden bei jeder Epochenwertung gezählt: Verbindungen (1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler) und umgedrehte Plättchen (die aufgedruckte Zahl). Dazu kommen die Boni von Shrewsbury und Nottingham; ein Fehlbetrag zieht Punkte ab. Die Leiste läuft bei 100 wieder herum.',
-      gain: 'Punkte kommen von umgedrehten Plättchen (die Zahl unten auf dem Plättchen, bei jeder Wertung, bei der es steht), von Verbindungen (die Verbindungssymbole der berührten Orte, 2 pro Händler) und von den Boni von Shrewsbury (4) und Nottingham (3).',
+      what: 'Siegpunkte entscheiden die Partie. Sie werden bei jeder Epochenwertung gezählt: Verbindungen (1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler) und umgedrehte Plättchen (die aufgedruckte Zahl). Dazu kommen der Bonus von Shrewsbury und, zu viert, der von Nottingham; ein Fehlbetrag zieht Punkte ab. Die Leiste läuft bei 100 wieder herum.',
+      gain: 'Punkte kommen von umgedrehten Plättchen (die Zahl unten auf dem Plättchen, bei jeder Wertung, bei der es steht), von Verbindungen (die Verbindungssymbole der berührten Orte, 2 pro Händler) und von den Boni von Shrewsbury (4) und, zu viert, Nottingham (3).',
       short: {
-        what: 'Siegpunkte entscheiden die Partie. Sie werden am Ende der Kanalzeit gezählt: Verbindungen (1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler) und umgedrehte Plättchen (die aufgedruckte Zahl). Dazu kommen die Boni von Shrewsbury und Nottingham; ein Fehlbetrag zieht Punkte ab. Dann zählt der Abschluss der Einführungspartie 1 Punkt pro £4 dazu (höchstens 15), die Einkommensstufe (abgezogen, wenn sie negativ ist) und ein zweites Mal die umgedrehten Plättchen ab Stufe 2.',
-        gain: 'Punkte kommen von umgedrehten Plättchen (die Zahl unten auf dem Plättchen) und von Verbindungen (die Verbindungssymbole der berührten Orte, 2 pro Händler), gezählt am Ende der Kanalzeit, und von den Boni von Shrewsbury (4) und Nottingham (3). Der Abschluss zählt dann 1 Punkt pro £4 dazu (höchstens 15), die Einkommensstufe und ein zweites Mal die umgedrehten Plättchen ab Stufe 2.',
+        what: 'Siegpunkte entscheiden die Partie. Sie werden am Ende der Kanalzeit gezählt: Verbindungen (1 Punkt pro Verbindungssymbol an den berührten Orten, 2 für einen Händler) und umgedrehte Plättchen (die aufgedruckte Zahl). Dazu kommen der Bonus von Shrewsbury und, zu viert, der von Nottingham; ein Fehlbetrag zieht Punkte ab. Dann zählt der Abschluss der Einführungspartie 1 Punkt pro £4 dazu (höchstens 15), die Einkommensstufe (abgezogen, wenn sie negativ ist) und ein zweites Mal die umgedrehten Plättchen ab Stufe 2.',
+        gain: 'Punkte kommen von umgedrehten Plättchen (die Zahl unten auf dem Plättchen) und von Verbindungen (die Verbindungssymbole der berührten Orte, 2 pro Händler), gezählt am Ende der Kanalzeit, und von den Boni von Shrewsbury (4) und, zu viert, Nottingham (3). Der Abschluss zählt dann 1 Punkt pro £4 dazu (höchstens 15), die Einkommensstufe und ein zweites Mal die umgedrehten Plättchen ab Stufe 2.',
       },
     },
     cards: {

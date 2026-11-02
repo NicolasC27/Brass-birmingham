@@ -122,6 +122,8 @@ export const FULL_GAME: Record<string, NotionId> = {
   gameEndTie: 'ties',
   tileVpNumber: 'vp',
   merchantBonus: 'merchants',
+  /* its last word frees the routes for the rail */
+  oneLinkPerRoute: 'network',
 };
 
 /** the written answers of faq.ts, filed under the notion each belongs to */

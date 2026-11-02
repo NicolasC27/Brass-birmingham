@@ -65,6 +65,10 @@ export const FR: Tongue = {
       how: 'Une carte qui l’autorise (carte lieu de la ville, carte brasserie pour une ville de votre réseau, ou un joker), un emplacement libre à l’icône brasserie, l’argent et un fer — le fer n’a besoin d’aucune liaison. Choisissez la carte, Construire, l’emplacement, puis confirmez.',
       cost: 'Niveau I : 5 £ et 1 fer, ère canal seulement. Niveau II : 7 £ et 1 fer. Niveau III : 9 £ et 1 fer. Niveau IV : 9 £ et 1 fer, ère rail seulement. Sept brasseries sur votre tapis ; chacune reçoit 1 baril en ère canal et 2 en ère rail.',
       gain: 'Retournée, une brasserie avance votre revenu de 4 espaces (niveau I) ou de 5 (niveaux II à IV) et marque 4, 5, 7 ou 9 PV. Chacune porte 2 icônes lien, ce qui compte pour les liaisons qui touchent sa ville.',
+      short: {
+        what: 'Une brasserie produit la bière dont les ventes ont besoin : 1 baril posé à la construction, quel que soit son niveau. Vos propres barils se boivent partout, sans liaison ; ceux d’une brasserie adverse, seulement si elle est reliée. Elle se retourne quand son dernier baril est bu, par vous ou par un autre.',
+        cost: 'Niveau I : 5 £ et 1 fer. Niveau II : 7 £ et 1 fer. Niveau III : 9 £ et 1 fer. Le niveau IV est de l’ère rail, que la partie d’initiation ne joue pas. Chacune reçoit 1 baril.',
+      },
     },
     farmBrewery: {
       topic: 'les brasseries fermières',
@@ -146,6 +150,11 @@ export const FR: Tongue = {
       how: 'Choisissez une carte (n’importe laquelle), l’action Réseau, puis une route qui s’allume sur la carte, et confirmez. À l’ère rail, vous pouvez poser un second rail dans la même action.',
       cost: 'À l’ère canal : 3 £ le canal, un seul par action. À l’ère rail : 5 £ et 1 charbon le rail, ou deux rails dans la même action pour 15 £, 1 charbon chacun et 1 bière tirée d’une brasserie. Le charbon d’un rail doit être relié à la liaison une fois posée.',
       whyNot: 'La route doit être libre et toucher votre réseau — une route ne porte qu’une liaison. À l’ère canal, les routes réservées au rail sont fermées ; à l’ère rail, la route Burton–Walsall, réservée au canal, l’est aussi. Un rail demande en plus un charbon relié à la liaison, le double rail une bière de brasserie, et il faut l’argent.',
+      short: {
+        what: 'L’action Réseau pose un canal sur une route libre qui touche votre réseau. Votre réseau, ce sont les lieux où vous avez une tuile et ceux que touchent vos liaisons ; c’est là que vos cartes industrie peuvent bâtir. Une route ne porte qu’une liaison. Tant que vous n’avez rien sur le plateau, la première se pose n’importe où.',
+        cost: 'Un canal coûte 3 £, sans charbon, et un seul par action : la partie d’initiation ne pose pas de rail.',
+        whyNot: 'La route doit être libre, ouverte au canal et toucher votre réseau — une route ne porte qu’une liaison, et les routes réservées au rail restent fermées. Il faut aussi 3 £.',
+      },
     },
     develop: {
       topic: 'l’action Développer',
@@ -194,7 +203,7 @@ export const FR: Tongue = {
       cost: 'Un canal coûte 3 £, sans charbon, et une seule liaison par action — il n’y a pas de double canal.',
       whyNot: 'À l’ère canal, une seule liaison par action et seulement sur les routes ouvertes au canal ; les routes réservées au rail restent fermées. Il faut 3 £ et une route libre qui touche votre réseau.',
       short: {
-        what: 'L’ère canal est toute la partie d’initiation. On n’y pose que des canaux (3 £, un par action), une seule de vos tuiles par lieu, et les tuiles de niveau 1 s’y bâtissent. La toute première manche n’offre qu’une action à chacun. À la fin, liaisons et tuiles retournées marquent, et rien ne quitte le plateau : la clôture suit.',
+        what: 'L’ère canal est toute la partie d’initiation. On n’y pose que des canaux (3 £, un par action), une seule de vos tuiles par lieu, et les tuiles de niveau 1 s’y bâtissent. La toute première manche n’offre qu’une action à chacun. À la fin, liaisons et tuiles retournées marquent, sans balayage des tuiles de niveau 1 : la clôture suit.',
       },
     },
     rail: {
@@ -215,8 +224,9 @@ export const FR: Tongue = {
       gain: 'À la fin de chaque ère, une liaison marque les icônes lien de chaque tuile posée dans les lieux qu’elle relie — de 0 à 2 par tuile, à qui qu’elle soit, retournée ou non — et 2 points pour un emplacement marchand. Puis elle est retirée.',
       cost: 'Un canal coûte 3 £. Un rail coûte 5 £ et 1 charbon ; deux rails dans la même action, 15 £, 2 charbons et 1 bière de brasserie.',
       short: {
-        what: 'Une liaison est un canal posé sur une route entre deux lieux. Elle étend votre réseau et relie les lieux pour tout le monde : le charbon, la bière d’un rival et les ventes aux marchands passent par les liaisons de n’importe qui. À la fin de l’ère, chacune marque 1 point par icône lien des lieux qu’elle touche, 2 pour un marchand, et reste sur le plateau.',
+        what: 'Une liaison est un canal posé sur une route entre deux lieux. Elle étend votre réseau et relie les lieux pour tout le monde : le charbon, la bière d’un rival et les ventes aux marchands passent par les liaisons de n’importe qui. À la fin de l’ère, chacune marque 1 point par icône lien des lieux qu’elle touche, 2 pour un marchand. Ce compte n’a lieu qu’une fois : la partie se clôt ensuite.',
         gain: 'À la fin de l’ère, une liaison marque les icônes lien de chaque tuile posée dans les lieux qu’elle relie — de 0 à 2 par tuile, à qui qu’elle soit, retournée ou non — et 2 points pour un emplacement marchand. Ce compte n’a lieu qu’une fois : la clôture ne recompte pas les liaisons.',
+        cost: 'Un canal coûte 3 £ ; la partie d’initiation ne pose pas de rail.',
       },
     },
     eras: {
@@ -256,16 +266,16 @@ export const FR: Tongue = {
     initiation: {
       topic: 'la partie d’initiation',
       words: ['initiation', 'partie courte', 'courte', 'canal seulement', 'partie rapide', 'decouverte', 'short', 'premiere partie'],
-      what: 'La partie d’initiation ne joue que l’ère canal : 10 manches à deux joueurs, 9 à trois, 8 à quatre, et pas de paie après la dernière. À sa fin, rien ne quitte le plateau : chaque liaison marque 1 point par icône lien des lieux qu’elle touche (2 pour un marchand), chaque tuile retournée marque ses points ; une tuile jamais retournée ne marque rien. La clôture ajoute ensuite 1 point par tranche de 4 £ (15 au plus), des points égaux au niveau de revenu (négatif, il en retire), et les tuiles retournées de niveau 2 et plus marquent une seconde fois.',
+      what: 'La partie d’initiation ne joue que l’ère canal : 10 manches à deux joueurs, 9 à trois, 8 à quatre, et pas de paie après la dernière. À sa fin, pas de balayage : chaque liaison marque 1 point par icône lien des lieux qu’elle touche (2 pour un marchand), chaque tuile retournée marque ses points ; une tuile jamais retournée ne marque rien. La clôture ajoute ensuite 1 point par tranche de 4 £ (15 au plus), des points égaux au niveau de revenu (négatif, il en retire), et les tuiles retournées de niveau 2 et plus marquent une seconde fois.',
       how: 'On gagne avec le plus de points après la clôture. Ils viennent des liaisons et des tuiles retournées, comptées à la fin de l’ère canal, de quelques bonus de marchands, puis de la clôture : l’argent (1 point par tranche de 4 £, 15 au plus), le niveau de revenu, et une seconde fois les tuiles retournées de niveau 2 et plus. À égalité, le plus haut niveau de revenu départage, puis l’argent en caisse.',
     },
     merchants: {
       topic: 'les marchands et leurs bonus',
       words: ['marchand', 'marchands', 'bonus marchand', 'negociant', 'negociants', 'comptoir', 'merchant', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'tuile marchand', 'tuiles marchands', 'bonus', 'client', 'clients', 'acheteur', 'acheteurs', 'tous biens', 'marchand vierge'],
       what: 'Les marchands, au bord de la carte, achètent vos ouvrages : chaque tuile marchande montre ce qu’elle prend (coton, manufacture, poterie, « tous biens », ou rien si elle est vierge). Pour vendre, votre tuile doit être reliée à l’un d’eux. Chaque tuile non vierge a un baril de bière, et le boire en vendant donne le bonus du lieu. Un emplacement marchand compte aussi 2 icônes lien, et ouvre le marché du charbon à qui y est relié.',
-      gain: 'Sur la carte des Midlands : Shrewsbury donne 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un développement gratuit (sans fer) et Oxford 2 cases de revenu. Le bonus vient avec le baril bu pendant une vente, un par tuile marchande et par ère ; les barils reviennent au début de l’ère rail.',
+      gain: 'Sur la carte des Midlands : Shrewsbury donne 4 PV, Warrington 5 £ (dès 3 joueurs), Nottingham 3 PV (à 4 joueurs), Gloucester un développement gratuit (sans fer) et Oxford 2 cases de revenu. Le bonus vient avec le baril bu pendant une vente, un par tuile marchande et par ère ; les barils reviennent au début de l’ère rail.',
       short: {
-        gain: 'Sur la carte des Midlands : Shrewsbury donne 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un développement gratuit (sans fer) et Oxford 2 cases de revenu. Le bonus vient avec le baril bu pendant une vente : un baril par tuile marchande, pour toute la partie d’initiation.',
+        gain: 'Sur la carte des Midlands : Shrewsbury donne 4 PV, Warrington 5 £ (dès 3 joueurs), Nottingham 3 PV (à 4 joueurs), Gloucester un développement gratuit (sans fer) et Oxford 2 cases de revenu. Le bonus vient avec le baril bu pendant une vente : un baril par tuile marchande, pour toute la partie d’initiation.',
       },
     },
     income: {
@@ -330,11 +340,11 @@ export const FR: Tongue = {
     vp: {
       topic: 'les points de victoire',
       words: ['points', 'point', 'pv', 'vp', 'points victoire', 'point victoire', 'score', 'scores', 'piste pv', 'piste points', 'victory points'],
-      what: 'Les points de victoire décident de la partie. Ils se marquent au décompte de chaque ère : les liaisons (1 point par icône lien des lieux touchés, 2 pour un marchand) et les tuiles retournées (le chiffre imprimé). S’y ajoutent les bonus de Shrewsbury et de Nottingham ; une faillite, elle, en retire. La piste fait le tour à 100.',
-      gain: 'Les points viennent des tuiles retournées (le chiffre en bas de la tuile, à chaque décompte où elle est là), des liaisons (les icônes lien des lieux qu’elles touchent, 2 par marchand) et des bonus de Shrewsbury (4) et de Nottingham (3).',
+      what: 'Les points de victoire décident de la partie. Ils se marquent au décompte de chaque ère : les liaisons (1 point par icône lien des lieux touchés, 2 pour un marchand) et les tuiles retournées (le chiffre imprimé). S’y ajoutent les bonus de Shrewsbury et, à 4 joueurs, de Nottingham ; une faillite, elle, en retire. La piste fait le tour à 100.',
+      gain: 'Les points viennent des tuiles retournées (le chiffre en bas de la tuile, à chaque décompte où elle est là), des liaisons (les icônes lien des lieux qu’elles touchent, 2 par marchand) et des bonus de Shrewsbury (4) et, à 4 joueurs, de Nottingham (3).',
       short: {
-        what: 'Les points de victoire décident de la partie. Ils se marquent à la fin de l’ère canal : les liaisons (1 point par icône lien des lieux touchés, 2 pour un marchand) et les tuiles retournées (le chiffre imprimé). S’y ajoutent les bonus de Shrewsbury et de Nottingham ; une faillite, elle, en retire. Puis la clôture de la partie d’initiation ajoute 1 point par tranche de 4 £ (15 au plus), le niveau de revenu (négatif, il en retire), et une seconde fois les tuiles retournées de niveau 2 et plus.',
-        gain: 'Les points viennent des tuiles retournées (le chiffre en bas de la tuile) et des liaisons (les icônes lien des lieux qu’elles touchent, 2 par marchand), comptées à la fin de l’ère canal, et des bonus de Shrewsbury (4) et de Nottingham (3). La clôture ajoute ensuite 1 point par tranche de 4 £ (15 au plus), le niveau de revenu, et une seconde fois les tuiles retournées de niveau 2 et plus.',
+        what: 'Les points de victoire décident de la partie. Ils se marquent à la fin de l’ère canal : les liaisons (1 point par icône lien des lieux touchés, 2 pour un marchand) et les tuiles retournées (le chiffre imprimé). S’y ajoutent les bonus de Shrewsbury et, à 4 joueurs, de Nottingham ; une faillite, elle, en retire. Puis la clôture de la partie d’initiation ajoute 1 point par tranche de 4 £ (15 au plus), le niveau de revenu (négatif, il en retire), et une seconde fois les tuiles retournées de niveau 2 et plus.',
+        gain: 'Les points viennent des tuiles retournées (le chiffre en bas de la tuile) et des liaisons (les icônes lien des lieux qu’elles touchent, 2 par marchand), comptées à la fin de l’ère canal, et des bonus de Shrewsbury (4) et, à 4 joueurs, de Nottingham (3). La clôture ajoute ensuite 1 point par tranche de 4 £ (15 au plus), le niveau de revenu, et une seconde fois les tuiles retournées de niveau 2 et plus.',
       },
     },
     cards: {

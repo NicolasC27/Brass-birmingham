@@ -84,7 +84,7 @@ const game: typeof engame = {
     canalTip:
       'Kanäle £3. Jedes Plättchen der Stufe 1 verlässt am Ende dieser Epoche den Spielplan. Das Einkommen wird am Ende jeder Runde ausgezahlt.',
     canalTipShort:
-      'Kanäle £3. Kurze Partie: Am Ende der Epoche verlässt nichts den Spielplan. Das Einkommen wird am Ende jeder Runde ausgezahlt, außer der letzten.',
+      'Kanäle £3. Kurze Partie: Am Ende der Epoche wird nichts abgeräumt. Das Einkommen wird am Ende jeder Runde ausgezahlt, außer der letzten.',
     railTip:
       'Bahnstrecken £5 + 1 Kohle (doppelt: £15, 2 Kohle und 1 Bier). Die Endwertung folgt auf diese Epoche. Das Einkommen wird am Ende jeder Runde ausgezahlt, außer der letzten.',
     roundShort: 'RUNDE {round}/{total}',

@@ -53,6 +53,10 @@ export const ES: Tongue = {
       how: 'Una carta que lo permita (carta de lugar de la ciudad, carta de cervecería para una ciudad de tu red, o un comodín), un espacio libre con el icono de cervecería, el dinero y un hierro —el hierro no necesita conexión—. Elige la carta, Construir, el espacio, y confirma.',
       cost: 'Nivel I: 5 £ y 1 hierro, solo en la era del canal. Nivel II: 7 £ y 1 hierro. Nivel III: 9 £ y 1 hierro. Nivel IV: 9 £ y 1 hierro, solo en la era del ferrocarril. Siete cervecerías en tu tapete; cada una recibe 1 barril en la era del canal y 2 en la del ferrocarril.',
       gain: 'Volteada, una cervecería avanza tus ingresos 4 casillas (nivel I) o 5 (niveles II a IV) y puntúa 4, 5, 7 o 9 PV. Cada una lleva 2 iconos de enlace, que cuentan para las conexiones que tocan su ciudad.',
+      short: {
+        what: 'Una cervecería produce la cerveza que necesitan las ventas: 1 barril al construirla, sea cual sea su nivel. Tus propios barriles se beben en cualquier parte, sin conexión; los de un rival, solo si su cervecería está conectada. Se voltea cuando se bebe su último barril, lo beba quien lo beba.',
+        cost: 'Nivel I: 5 £ y 1 hierro. Nivel II: 7 £ y 1 hierro. Nivel III: 9 £ y 1 hierro. El nivel IV es de la era del ferrocarril, que la partida de iniciación no juega. Cada una recibe 1 barril.',
+      },
     },
     farmBrewery: {
       topic: 'las cervecerías de granja',
@@ -134,6 +138,11 @@ export const ES: Tongue = {
       how: 'Elige una carta (cualquiera), la acción Red y luego una ruta que se ilumine en el mapa, y confirma. En la era del ferrocarril puedes tender un segundo ferrocarril en la misma acción.',
       cost: 'En la era del canal: 3 £ el canal, uno por acción. En la del ferrocarril: 5 £ y 1 carbón cada tramo, o dos en la misma acción por 15 £, 1 carbón cada uno y 1 cerveza de una cervecería. El carbón de un ferrocarril debe estar conectado al enlace una vez colocado.',
       whyNot: 'La ruta debe estar libre y tocar tu red: una ruta solo admite un enlace. En la era del canal, las rutas solo de ferrocarril están cerradas; en la del ferrocarril, también la ruta Burton–Walsall, solo de canal. Un ferrocarril pide además un carbón conectado al enlace, el doble ferrocarril una cerveza de cervecería, y hace falta el dinero.',
+      short: {
+        what: 'La acción Red coloca un canal en una ruta libre que toque tu red. Tu red son los lugares donde tienes una loseta y los que tocan tus enlaces; ahí pueden construir tus cartas de industria. Una ruta solo admite un enlace. Mientras no tengas nada en el tablero, el primero puede ir a cualquier parte.',
+        cost: 'Un canal cuesta 3 £, sin carbón, y uno por acción: la partida de iniciación no tiende ferrocarriles.',
+        whyNot: 'La ruta debe estar libre, abierta al canal y tocar tu red: una ruta solo admite un enlace, y las rutas solo de ferrocarril siguen cerradas. Hacen falta también 3 £.',
+      },
     },
     develop: {
       topic: 'la acción Desarrollar',
@@ -182,7 +191,7 @@ export const ES: Tongue = {
       cost: 'Un canal cuesta 3 £, sin carbón, y un enlace por acción: no existe el doble canal.',
       whyNot: 'En la era del canal, un enlace por acción y solo en rutas abiertas al canal; las rutas solo de ferrocarril siguen cerradas. Hacen falta 3 £ y una ruta libre que toque tu red.',
       short: {
-        what: 'La era del canal es toda la partida de iniciación. Solo se tienden canales (3 £, uno por acción), solo una de tus losetas por lugar, y las losetas de nivel 1 se pueden construir. La primerísima ronda da una sola acción a cada jugador. Al final, enlaces y losetas volteadas puntúan y nada sale del tablero: sigue el cierre.',
+        what: 'La era del canal es toda la partida de iniciación. Solo se tienden canales (3 £, uno por acción), solo una de tus losetas por lugar, y las losetas de nivel 1 se pueden construir. La primerísima ronda da una sola acción a cada jugador. Al final, enlaces y losetas volteadas puntúan, sin barrido de las losetas de nivel 1: sigue el cierre.',
       },
     },
     rail: {
@@ -203,8 +212,9 @@ export const ES: Tongue = {
       gain: 'Al final de cada era, un enlace puntúa los iconos de enlace de cada loseta de los lugares que conecta —de 0 a 2 por loseta, sea de quien sea, volteada o no— y 2 puntos por un espacio de mercader. Después se retira.',
       cost: 'Un canal cuesta 3 £. Un ferrocarril, 5 £ y 1 carbón; dos en la misma acción, 15 £, 2 carbones y 1 cerveza de cervecería.',
       short: {
-        what: 'Un enlace es un canal colocado en una ruta entre dos lugares. Amplía tu red y conecta los lugares para todos: el carbón, la cerveza de un rival y las ventas a los mercaderes circulan por los enlaces de cualquiera. Al final de la era, cada uno puntúa 1 por icono de enlace de los lugares que toca, 2 por un mercader, y se queda en el tablero.',
+        what: 'Un enlace es un canal colocado en una ruta entre dos lugares. Amplía tu red y conecta los lugares para todos: el carbón, la cerveza de un rival y las ventas a los mercaderes circulan por los enlaces de cualquiera. Al final de la era, cada uno puntúa 1 por icono de enlace de los lugares que toca, 2 por un mercader. Ese recuento llega una sola vez: luego la partida cierra.',
         gain: 'Al final de la era, un enlace puntúa los iconos de enlace de cada loseta de los lugares que conecta —de 0 a 2 por loseta, sea de quien sea, volteada o no— y 2 puntos por un espacio de mercader. Ese recuento llega una sola vez: el cierre no vuelve a contar los enlaces.',
+        cost: 'Un canal cuesta 3 £; la partida de iniciación no tiende ferrocarriles.',
       },
     },
     eras: {
@@ -244,16 +254,16 @@ export const ES: Tongue = {
     initiation: {
       topic: 'la partida de iniciación',
       words: ['iniciacion', 'partida iniciacion', 'partida corta', 'corta', 'solo canal', 'partida rapida', 'introductoria', 'primera partida', 'tutorial'],
-      what: 'La partida de iniciación solo juega la era del canal: 10 rondas con 2 jugadores, 9 con 3, 8 con 4, y sin cobro tras la última. Al terminar, nada sale del tablero: cada enlace puntúa 1 por icono de enlace de los lugares que toca (2 por un mercader), cada loseta volteada, el número impreso abajo; una loseta nunca volteada no puntúa. El cierre suma luego 1 punto por cada 4 £ (15 como mucho), tantos puntos como el nivel de ingresos (restados si es negativo), y las losetas volteadas de nivel 2 o más puntúan por segunda vez.',
+      what: 'La partida de iniciación solo juega la era del canal: 10 rondas con 2 jugadores, 9 con 3, 8 con 4, y sin cobro tras la última. Al terminar, no hay barrido: cada enlace puntúa 1 por icono de enlace de los lugares que toca (2 por un mercader), cada loseta volteada, el número impreso abajo; una loseta nunca volteada no puntúa. El cierre suma luego 1 punto por cada 4 £ (15 como mucho), tantos puntos como el nivel de ingresos (restados si es negativo), y las losetas volteadas de nivel 2 o más puntúan por segunda vez.',
       how: 'Se gana con más puntos tras el cierre. Vienen de los enlaces y las losetas volteadas, contados al final de la era del canal, de algunas bonificaciones de mercader, y luego del cierre: el dinero (1 punto por cada 4 £, 15 como mucho), el nivel de ingresos y, por segunda vez, las losetas volteadas de nivel 2 o más. En caso de empate, decide el nivel de ingresos más alto, y luego el dinero en caja.',
     },
     merchants: {
       topic: 'los mercaderes y sus bonificaciones',
       words: ['mercader', 'mercaderes', 'comerciante', 'comerciantes', 'bonificacion mercader', 'bonificacion', 'bonus', 'comprador', 'compradores', 'shrewsbury', 'warrington', 'nottingham', 'gloucester', 'oxford', 'loseta mercader', 'todos bienes', 'mercader blanco'],
       what: 'Los mercaderes, al borde del mapa, compran tus obras: cada loseta de mercader muestra lo que acepta (algodón, manufactura, cerámica, «todos los bienes», o nada si está en blanco). Para vender, tu loseta debe estar conectada a uno. Cada loseta no blanca tiene un barril de cerveza, y beberlo al vender da la bonificación del lugar. Un espacio de mercader cuenta además 2 iconos de enlace y abre el mercado del carbón a quien esté conectado.',
-      gain: 'En el mapa de las Midlands: Shrewsbury da 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un desarrollo gratis (sin hierro) y Oxford 2 casillas de ingresos. La bonificación llega con el barril bebido en una venta, uno por loseta de mercader y por era; los barriles vuelven al empezar la era del ferrocarril.',
+      gain: 'En el mapa de las Midlands: Shrewsbury da 4 PV, Warrington 5 £ (desde 3 jugadores), Nottingham 3 PV (con 4 jugadores), Gloucester un desarrollo gratis (sin hierro) y Oxford 2 casillas de ingresos. La bonificación llega con el barril bebido en una venta, uno por loseta de mercader y por era; los barriles vuelven al empezar la era del ferrocarril.',
       short: {
-        gain: 'En el mapa de las Midlands: Shrewsbury da 4 PV, Warrington 5 £, Nottingham 3 PV, Gloucester un desarrollo gratis (sin hierro) y Oxford 2 casillas de ingresos. La bonificación llega con el barril bebido en una venta: un barril por loseta de mercader, para toda la partida de iniciación.',
+        gain: 'En el mapa de las Midlands: Shrewsbury da 4 PV, Warrington 5 £ (desde 3 jugadores), Nottingham 3 PV (con 4 jugadores), Gloucester un desarrollo gratis (sin hierro) y Oxford 2 casillas de ingresos. La bonificación llega con el barril bebido en una venta: un barril por loseta de mercader, para toda la partida de iniciación.',
       },
     },
     income: {
@@ -318,11 +328,11 @@ export const ES: Tongue = {
     vp: {
       topic: 'los puntos de victoria',
       words: ['puntos', 'punto', 'pv', 'puntos victoria', 'punto victoria', 'puntuacion', 'marcador puntos', 'pista puntos'],
-      what: 'Los puntos de victoria deciden la partida. Se ganan en el recuento de cada era: los enlaces (1 punto por icono de enlace de los lugares tocados, 2 por un mercader) y las losetas volteadas (el número impreso). Se suman las bonificaciones de Shrewsbury y Nottingham; la bancarrota resta. El marcador da la vuelta en 100.',
-      gain: 'Los puntos vienen de las losetas volteadas (el número de abajo de la loseta, en cada recuento en que siga en pie), de los enlaces (los iconos de enlace de los lugares que tocan, 2 por mercader) y de las bonificaciones de Shrewsbury (4) y Nottingham (3).',
+      what: 'Los puntos de victoria deciden la partida. Se ganan en el recuento de cada era: los enlaces (1 punto por icono de enlace de los lugares tocados, 2 por un mercader) y las losetas volteadas (el número impreso). Se suman la bonificación de Shrewsbury y, con 4 jugadores, la de Nottingham; la bancarrota resta. El marcador da la vuelta en 100.',
+      gain: 'Los puntos vienen de las losetas volteadas (el número de abajo de la loseta, en cada recuento en que siga en pie), de los enlaces (los iconos de enlace de los lugares que tocan, 2 por mercader) y de las bonificaciones de Shrewsbury (4) y, con 4 jugadores, Nottingham (3).',
       short: {
-        what: 'Los puntos de victoria deciden la partida. Se ganan al final de la era del canal: los enlaces (1 punto por icono de enlace de los lugares tocados, 2 por un mercader) y las losetas volteadas (el número impreso). Se suman las bonificaciones de Shrewsbury y Nottingham; la bancarrota resta. Luego el cierre de la partida de iniciación suma 1 punto por cada 4 £ (15 como mucho), el nivel de ingresos (restado si es negativo) y, por segunda vez, las losetas volteadas de nivel 2 o más.',
-        gain: 'Los puntos vienen de las losetas volteadas (el número de abajo de la loseta) y de los enlaces (los iconos de enlace de los lugares que tocan, 2 por mercader), contados al final de la era del canal, y de las bonificaciones de Shrewsbury (4) y Nottingham (3). El cierre suma luego 1 punto por cada 4 £ (15 como mucho), el nivel de ingresos y, por segunda vez, las losetas volteadas de nivel 2 o más.',
+        what: 'Los puntos de victoria deciden la partida. Se ganan al final de la era del canal: los enlaces (1 punto por icono de enlace de los lugares tocados, 2 por un mercader) y las losetas volteadas (el número impreso). Se suman la bonificación de Shrewsbury y, con 4 jugadores, la de Nottingham; la bancarrota resta. Luego el cierre de la partida de iniciación suma 1 punto por cada 4 £ (15 como mucho), el nivel de ingresos (restado si es negativo) y, por segunda vez, las losetas volteadas de nivel 2 o más.',
+        gain: 'Los puntos vienen de las losetas volteadas (el número de abajo de la loseta) y de los enlaces (los iconos de enlace de los lugares que tocan, 2 por mercader), contados al final de la era del canal, y de las bonificaciones de Shrewsbury (4) y, con 4 jugadores, Nottingham (3). El cierre suma luego 1 punto por cada 4 £ (15 como mucho), el nivel de ingresos y, por segunda vez, las losetas volteadas de nivel 2 o más.',
       },
     },
     cards: {
