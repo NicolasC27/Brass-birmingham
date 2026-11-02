@@ -188,6 +188,14 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
 /** the tips that speak to the move being prepared rather than to the game at
  *  large: under a lesson, the rest is what the lesson itself is for */
 const AT_HAND = new Set(['coalMarket', 'ironMarket', 'buildCost', 'network', 'sell', 'unsold', 'noLinks']);
+/** an alert or a tip whose substance a lesson's page already says: not
+ *  said again under it — the close under the last rounds, a forge's bars
+ *  sold under the forge, the beer a sale drinks under the sale */
+const SAID_IN: Record<string, readonly string[]> = { eraEnd: ['eraEnd', 'lastRounds'], eraEndMine: ['eraEnd', 'lastRounds'], ironMarket: ['iron'], sell: ['sell', 'beer'] };
+/** the alerts that would say the same thing on every page of a round —
+ *  the income below zero, the deck run out: told under the first page of
+ *  the round they come with, not under the next */
+const ONCE_A_ROUND = new Set(['negative', 'deckOut']);
 
 const TIPS: { id: string; when: (c: Ctx) => boolean; vars?: (c: Ctx) => Record<string, string | number> }[] = [
   { id: 'firstRound', when: ({ g }) => g.era === 'canal' && g.round === 1 },
@@ -441,6 +449,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const tips = useMemo(() => (ctx && aid && myTurn ? TIPS.filter((tip) => tip.when(ctx)).map((tip) => ({ id: tip.id, text: t(`game.guide.tips.${tip.id}`, tip.vars?.(ctx)) })) : []), [ctx, aid, myTurn, t]);
   const warnings = useMemo(() => (ctx && aid ? alerts(ctx, t) : []), [ctx, aid, t]);
   const bot = useMemo(() => (game && aid ? botReason(game, me, t) : null), [game, aid, me, t]);
+  /* the page each alert said once a round came under, by the round */
+  const [onceAt, setOnceAt] = useState<Record<string, string>>({});
 
   const situation = `${selectedCardId ?? ''}|${verb ?? ''}|${game?.current ?? ''}`;
   const page = paged.key === situation ? paged.page : 0;
@@ -488,6 +498,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? LAST_LESSON);
   const step = showSteps ? lessonOf(shownId)! : null;
   const shownIndex = lessonIndex(shownId);
+  /* an alert told once a round is noted under the first page it comes
+     with, as it comes */
+  const roundNow = game ? `${game.era}:${game.round}` : '';
+  const pageNow = step && review === null ? step.id : null;
+  const onceFresh = pageNow ? warnings.filter((w) => ONCE_A_ROUND.has(w.id) && !(onceAt[w.id] ?? '').startsWith(`${roundNow}|`)) : [];
+  if (onceFresh.length) setOnceAt((prev) => ({ ...prev, ...Object.fromEntries(onceFresh.map((w) => [w.id, `${roundNow}|${pageNow}`])) }));
   /* at rest, a lesson set aside says it comes back; one waiting on its time does not */
   const setAsideNow = aside && settled.later[shownId] !== undefined;
   /* a deed the reader may pass as the table stands — the loan, when the
@@ -1209,13 +1225,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
                         <Paragraphs text={t(`game.guide.steps.${stepKey(step.id)}.body`, stepVars())} />
                       {/* what the chosen card allows, what the pick costs: the
                           assistance speaks under the lesson too */}
-                      {tips.filter((x) => AT_HAND.has(x.id)).slice(0, 2).map((x) => (
+                      {tips.filter((x) => AT_HAND.has(x.id) && !SAID_IN[x.id]?.includes(step.id)).slice(0, 2).map((x) => (
                         <p key={x.id} className="mt-1.5 font-serif text-[12.5px] leading-snug text-ink-900/80">
                           {x.text}
                         </p>
                       ))}
-                      {/* the purse's alert says the loan lesson over again: not under it */}
-                      {warnings.filter((w) => (['negative', 'eraEnd', 'eraEndMine', 'deckOut'].includes(w.id) || ((w.id === 'broke' || w.id === 'brokeAgain') && !block && step.id !== 'loan'))).map((w) => (
+                      {/* the purse's alert says the loan lesson over again: not under it;
+                          nor what the page says itself, nor twice in a round */}
+                      {warnings.filter((w) => (['negative', 'eraEnd', 'eraEndMine', 'deckOut'].includes(w.id) || ((w.id === 'broke' || w.id === 'brokeAgain') && !block && step.id !== 'loan')) && !SAID_IN[w.id]?.includes(step.id) && (!ONCE_A_ROUND.has(w.id) || onceAt[w.id] === `${roundNow}|${step.id}`)).map((w) => (
                         <p key={w.id} className="mt-1.5 font-serif text-[12.5px] italic leading-snug text-ink-900/70">
                           {w.text}
                         </p>
