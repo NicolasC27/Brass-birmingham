@@ -252,7 +252,7 @@ export function happenings(g: GameState, me: number, t: T): { id: number; text: 
              the sale and the flip, told once */
           const b = builtWith(e);
           out.push({ id: e.id, text: t('game.guide.happens.market', { ...vars, goods: goodsOf(b), gain: b?.vars?.saleGain ?? 0 }) });
-        } else if (e.player === me) out.push({ id: e.id, text: t(`game.guide.happens.${v.why === 'barrel' ? 'barrel' : 'empties'}`, vars) });
+        } else if (e.player === me) out.push({ id: e.id, text: t(`game.guide.happens.${v.why === 'barrel' ? 'barrel' : 'empties'}`, { ...vars, last: t(`game.guide.happens.lastOf.${v.industry === 'iron' ? 'iron' : 'coal'}`) }) });
         /* a rival's tile the reader's move emptied: its coal or iron, or
            the last barrel of its brewery */
         else if (actor === me) out.push({ id: e.id, text: t(v.why === 'barrel' ? 'game.guide.happens.theirsBarrel' : 'game.guide.happens.theirs', vars) });

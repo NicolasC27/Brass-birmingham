@@ -1191,7 +1191,7 @@ const platform: typeof enPlatform = {
   cours: {
     eyebrow: "Abendkurs",
     title: "Das Programm",
-    lede: "Die geführte Partie, die Kapitel des Registers und was der Richter Sie nachlesen heißt — zu einem Programm zusammengenäht, Abend für Abend abgehakt.",
+    lede: 'Die geführte Partie, die Kapitel der Regeln und was der Richter Sie nachlesen heißt — zu einem Programm zusammengenäht, Abend für Abend abgehakt.',
     guided: "Die geführte Lektion",
     guidedCopy: "Eine kurze Partie gegen eine sanfte Maschine, der Guide daneben; jede gelesene Lektion bleibt hier abgehakt.",
     begin: "Lektion beginnen",
@@ -1201,7 +1201,7 @@ const platform: typeof enPlatform = {
     failed: "Das Kontor antwortet nicht: Der Tisch wurde nicht gedeckt. Versuchen Sie es gleich noch einmal.",
     reached: "{done}/{total} Lektionen gelesen",
     unseen: 'Noch offen: {list}.',
-    syllabus: "Das Register, Kapitel für Kapitel",
+    syllabus: 'Die Regeln, Kapitel für Kapitel',
     read: "Lesen",
     redo: "Lektionen zum Wiederholen",
     redoNone: "Nichts zu wiederholen — der Richter hat noch nicht genug Ihrer Partien gelesen.",

@@ -1189,7 +1189,7 @@ const platform = {
   cours: {
     eyebrow: "Curso nocturno",
     title: "El programa",
-    lede: "La partida guiada, los capítulos del registro y lo que el juez le manda releer — cosidos en un solo programa, marcado noche tras noche.",
+    lede: 'La partida guiada, los capítulos de las reglas y lo que el juez le manda releer — cosidos en un solo programa, marcado noche tras noche.',
     guided: "La lección guiada",
     guidedCopy: "Una partida corta contra una máquina indulgente, con la guía al lado; cada lección leída queda marcada aquí.",
     begin: "Empezar la lección",
@@ -1199,7 +1199,7 @@ const platform = {
     failed: "La oficina no responde: la mesa no se ha preparado. Inténtelo de nuevo en un momento.",
     reached: "{done}/{total} lecciones leídas",
     unseen: 'Quedan por ver: {list}.',
-    syllabus: "El registro, capítulo a capítulo",
+    syllabus: 'Las reglas, capítulo a capítulo',
     read: "Leer",
     redo: "Lecciones que repasar",
     redoNone: "Nada que repasar — el juez aún no ha leído bastantes partidas suyas.",

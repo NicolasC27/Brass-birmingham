@@ -487,7 +487,7 @@ const platform = {
     },
     tutorial: {
       title: 'Nouveau au club ?',
-      copy: 'Une première partie guidée : l’ère du canal contre une machine douce, le guide à vos côtés pour vos premiers tours.',
+      copy: 'Une première partie guidée : l’ère canal contre une machine douce, le guide à vos côtés pour vos premiers tours.',
       cta: 'Lancer la partie guidée',
       resume: 'Reprendre la partie guidée',
       failed: 'Le bureau ne répond pas ; réessayez dans un instant.',
@@ -1189,7 +1189,7 @@ const platform = {
   cours: {
     eyebrow: "Cours du soir",
     title: "Le programme",
-    lede: "La partie guidée, les chapitres du registre et ce que le juge vous renvoie relire — cousus en un seul programme, coché au fil des soirs.",
+    lede: 'La partie guidée, les chapitres des règles et ce que le juge vous renvoie relire — cousus en un seul programme, coché au fil des soirs.',
     guided: "La leçon guidée",
     guidedCopy: "Une partie courte contre une machine douce, le guide à côté ; chaque leçon lue reste cochée ici.",
     begin: "Commencer la leçon",
@@ -1199,7 +1199,7 @@ const platform = {
     failed: "Le bureau ne répond pas : la table n’a pas été dressée. Réessayez dans un instant.",
     reached: "{done}/{total} leçons lues",
     unseen: 'Restent à voir : {list}.',
-    syllabus: "Le registre, chapitre par chapitre",
+    syllabus: 'Les règles, chapitre par chapitre',
     read: "Lire",
     redo: "Leçons à reprendre",
     redoNone: "Rien à reprendre — le juge n’a pas encore lu assez de vos parties.",
