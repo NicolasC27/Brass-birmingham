@@ -18,6 +18,7 @@ import { useLayer } from './useLayer';
 import { useReducedMotion } from './useReducedMotion';
 import { useRivalWord } from './useRivalWord';
 import { useHudRects } from './useHudRects';
+import { useTableWidth } from './boardOptions';
 import type { HudRect } from './useHudRects';
 
 /* ------------------------------------------------------------------ */
@@ -171,7 +172,12 @@ function Notices() {
   const hush = useGame((s) => s.tutorial && s.guideSpeaks);
   const issue = useGazetteDesk((s) => s.issue);
   const insets = useHudInsets();
-  const { vw, vh } = useViewport();
+  /* the book stands in the table's own frame (its `contain` makes the
+     table the box a fixed piece is placed in), whose right edge is the
+     guide's lane when one stands beside it: the window's width would
+     count the lane twice, and push the book over the players' rail */
+  const { vh } = useViewport();
+  const vw = useTableWidth();
   const hidden = useHidden();
   const still = useReducedMotion();
   const ledgerSel = `aside[aria-label="${typeof CSS !== 'undefined' ? CSS.escape(t('game.page.ledgerDrawerAria')) : ''}"]`;
