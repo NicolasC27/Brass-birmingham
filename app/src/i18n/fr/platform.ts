@@ -1198,6 +1198,7 @@ const platform = {
     waits: "Votre table « {name} » vous attend, manche {round}.",
     failed: "Le bureau ne répond pas : la table n’a pas été dressée. Réessayez dans un instant.",
     reached: "{done}/{total} leçons lues",
+    unseen: 'Restent à voir : {list}.',
     syllabus: "Le registre, chapitre par chapitre",
     read: "Lire",
     redo: "Leçons à reprendre",

@@ -10,7 +10,7 @@ import type { GameState, PlayerState } from '@/game/types';
 import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { setBoardOption } from './boardOptions';
-import { LAST_LESSON, LESSONS, pass, progressAt, saveProgress } from './lessons';
+import { LAST_LESSON, LESSONS, closed, progressAt, saveProgress } from './lessons';
 import { PortraitMedallion } from './PlayerRail';
 import { useReducedMotion } from './useReducedMotion';
 import { useLayer } from './useLayer';
@@ -94,14 +94,15 @@ export default function GameOverModal({
   /* a game given up closes on the ledger too, with no closing word */
   const abandoned = !!game?.abandoned;
   /* the last lesson is this closing word, on the ledger of a game played
-     to its end: shown, it is passed — the lessons the game never came to
-     stay unread, and a game given up passes nothing */
+     to its end: shown, it is passed, with the pages the table never called
+     for — the lessons the reader never came to stay unread, and a game
+     given up passes nothing */
   useEffect(() => {
-    if (!shown || !guided || !local || abandoned) return;
+    if (!shown || !guided || !local || abandoned || !game) return;
     const p = progressAt(local);
-    const q = pass(p, LAST_LESSON);
+    const q = closed(p, { g: game, me: Math.max(0, seat ?? game.players.findIndex((x) => !x.isBot)), sel: null, mat: null });
     if (q !== p) saveProgress(q);
-  }, [shown, guided, local, abandoned]);
+  }, [shown, guided, local, abandoned, game, seat]);
   /* Escape lowers the plate to a strip and the finished board shows: the
      strip brings it back */
   const sheet = useLayer(shown, closeGameOver, { modal: true });

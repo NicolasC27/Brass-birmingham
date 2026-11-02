@@ -1198,6 +1198,7 @@ const platform = {
     waits: "Your table “{name}” is waiting, at round {round}.",
     failed: "The office is not answering: the table was not set. Try again in a moment.",
     reached: "{done}/{total} lessons read",
+    unseen: 'Still to see: {list}.',
     syllabus: "The register, chapter by chapter",
     read: "Read",
     redo: "Lessons to take again",

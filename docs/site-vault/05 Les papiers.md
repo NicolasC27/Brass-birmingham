@@ -9,7 +9,7 @@ Ce que l'office garde pour le compte, écrit à la fin d'une partie à la maison
 | Feuilleton | `platform/feuilleton.ts` | `feuilleton` | la dernière partie en 3 moments (`swingsFor`), la partie dans le fragment `#g=…&at=N` |
 | Lignes | `platform/lines.ts` | `lines` | villes bâties (parties locales) ; l'office ajoute ses tallies à l'affichage |
 | Défi | `game/challenge.ts` | `challenge` | tables et essais |
-| Cours | `platform/cours.ts` | `brassworks.tutorial.learnt` et `brassworks.tutorial.progress` (lecture, dans le navigateur) | leçons passées, par id, à toutes les tables guidées — une partie guidée menée au bout compte entière ; motifs du juge → chapitres |
+| Cours | `platform/cours.ts` | `brassworks.tutorial.learnt` et `brassworks.tutorial.progress` (lecture, dans le navigateur) | leçons passées, par id, à toutes les tables guidées — une partie guidée menée au bout y ajoute les pages que la table n'a jamais appelées (pas de vente, plus de baril), pas les leçons jamais vues, nommées sous le compte ; motifs du juge → chapitres |
 
 S'y ajoutent `progress` (la feuille du juge, `game/progress.ts`), `form` (la forme des machines, `game/form.ts`) et `equipped` (la tenue, `platform/wallet.ts`).
 

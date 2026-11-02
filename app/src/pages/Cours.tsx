@@ -8,6 +8,7 @@ import { tableTitle } from '@/online/tableNames';
 import { useGuidedGame } from '@/hooks/use-guided-game';
 import { LESSONS, lessonsRead, lessonsToRedo } from '@/platform/cours';
 import { shortKeyOf } from '@/components/game/lessonWords';
+import { LAST_LESSON } from '@/components/game/lessons';
 import { getChapters } from '@/components/rules/rulesData';
 import PageShell, { Refusal } from '@/components/site/PageShell';
 import ProgressCard from '@/components/desk/ProgressCard';
@@ -25,6 +26,11 @@ export default function Cours() {
   const [passed] = useState(lessonsRead);
   const [redo] = useState(lessonsToRedo);
   const begun = passed.length > 0;
+  /* a guided game played to its end with lessons it never came to: named
+     under the count, which no longer rounds them up */
+  const unseen = passed.includes(LAST_LESSON) ? LESSONS.filter((id) => !passed.includes(id)) : [];
+  /* the guided game is a short one: its lessons go by the titles it gives them */
+  const titleOf = (id: string) => t(`game.guide.steps.${shortKeyOf(id)}.title`, { bot: personaName('wedgwood') });
   /* the guided table left unfinished is taken up where it stands; with
      none — never begun, played out, the guide left there — the lessons
      start over at a new one, as they do when the reader asks */
@@ -56,10 +62,7 @@ export default function Cours() {
                   </span>
                   <span className="sr-only">{t(read ? 'platform.cours.markRead' : 'platform.cours.markUnread')}</span>
                   <span className="data-text w-6 shrink-0 text-iron-400 tnums">{String(i + 1).padStart(2, '0')}</span>
-                  {/* the guided game is a short one: its lessons go by the titles it gives them */}
-                  <span className={cn('font-fraunces text-[14px] font-medium', read ? 'text-paper-100' : 'text-paper-300')}>
-                    {t(`game.guide.steps.${shortKeyOf(id)}.title`, { bot: personaName('wedgwood') })}
-                  </span>
+                  <span className={cn('font-fraunces text-[14px] font-medium', read ? 'text-paper-100' : 'text-paper-300')}>{titleOf(id)}</span>
                 </li>
               );
             })}
@@ -77,6 +80,7 @@ export default function Cours() {
             )}
             <span className="data-text text-iron-400 tnums">{t('platform.cours.reached', { done: passed.length, total: LESSONS.length })}</span>
           </div>
+          {unseen.length > 0 && <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.cours.unseen', { list: unseen.map(titleOf).join(', ') })}</p>}
           {table && <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.cours.waits', { name: tableTitle(table.name, lang), round: table.round })}</p>}
           <Refusal text={guided.failed ? t('platform.cours.failed') : null} />
 

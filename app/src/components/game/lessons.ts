@@ -373,6 +373,17 @@ export function pass(p: Progress, id: string): Progress {
   return { ...p, passed: [...p.passed, id], later };
 }
 
+/** the closing word passed, on the final ledger of a game played to its
+ *  end — and with it the pages this table never called for: what a
+ *  flipped works is, with none of the reader's sold; the barrel, with none
+ *  left to drink; the market and the beer, never called by a move. A
+ *  lesson the reader was kept from — behind a deed left open, or given
+ *  after their last action — stays unread, for the course to say so */
+export function closed(p: Progress, c: LessonCtx): Progress {
+  const never = [...(worksFlipped(c) ? [] : ['flipped']), ...(barrelsLeft(c) ? [] : ['barrel']), ...['market', 'beer'].filter((id) => !p.seen[id])];
+  return [...never, LAST_LESSON].reduce(pass, p);
+}
+
 /** the lesson set aside until the next round; it comes back in its place
  *  as if new: shown undone, it is seen again — done meanwhile, it comes
  *  back as a page that says so, not passed unread */

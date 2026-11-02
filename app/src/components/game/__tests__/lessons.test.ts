@@ -5,7 +5,7 @@ import type { GameAction } from '@/game/actions';
 import { LINKS, TOWNS } from '@/game/data';
 import { buildTargets, canLoan, ironSources, linkTargets, newGame, sellTargets } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
-import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, deedOf, detourOf, due, forward, freshProgress, lessonIndex, letPlayOn, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
+import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, closed, deedOf, detourOf, due, forward, freshProgress, lessonIndex, letPlayOn, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
 import { stepKeyOf } from '../lessonWords';
 import type { LessonCtx, Progress } from '../lessons';
 
@@ -610,6 +610,31 @@ describe('the second half, never behind a deed left open', () => {
     expect(due(upTo('lastRounds'), ctx(spent))).toMatchObject({ id: 'onward', mode: 'idle' });
     /* the final ledger gives the closing word */
     expect(due(upTo('lastRounds'), ctx({ ...after, phase: 'game-over' }))).toMatchObject({ id: 'onward', mode: 'read' });
+  });
+});
+
+describe('the closing word', () => {
+  const over = (g: GameState): GameState => ({ ...g, phase: 'game-over' });
+
+  it('passes the pages the table never called for, and no lesson the reader never came to', () => {
+    const g = round2();
+    /* nothing sold, the barrels drunk by others, the market and the beer never called */
+    const dry = { ...over(g), merchantBeer: Object.fromEntries(Object.keys(g.merchantBeer).map((k) => [k, 0])) };
+    const p = { ...freshProgress('GWE5'), passed: LESSON_IDS.filter((id) => !['develop', 'market', 'beer', 'flipped', 'barrel', LAST_LESSON].includes(id)) };
+    const q = closed(p, ctx(dry));
+    expect(q.passed.slice(p.passed.length)).toEqual(['flipped', 'barrel', 'market', 'beer', LAST_LESSON]);
+    /* the lesson on developing, never come to, stays unread */
+    expect(q.passed).not.toContain('develop');
+  });
+
+  it('leaves unread what the table did call for', () => {
+    const g = round2();
+    const sold = { ...over(g), players: g.players.map((x, i) => (i === 0 ? { ...x, stats: { ...x.stats, sold: 1 } } : x)) };
+    const p = { ...freshProgress('GWE5'), passed: [], seen: { beer: { at: 3, round: 4 } } };
+    const q = closed(p, ctx(sold));
+    /* a sale made, barrels still standing, the beer once called */
+    expect(q.passed).toEqual(['market', LAST_LESSON]);
+    expect(closed(q, ctx(sold))).toBe(q);
   });
 });
 

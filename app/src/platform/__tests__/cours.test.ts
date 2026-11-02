@@ -24,11 +24,12 @@ describe('the lessons of the evening course', () => {
     expect(lessonsRead()).toEqual(['welcome', 'board', 'loan', 'sell']);
   });
 
-  it('count a guided game played to its end whole', () => {
-    /* no sale was made and no barrel drunk: those pages never came */
-    const passed = LESSON_IDS.filter((id) => id !== 'flipped' && id !== 'barrel');
+  it('count the lessons passed, the closing word no more than one of them', () => {
+    /* a game played to its end, two lessons never come to */
+    const passed = LESSON_IDS.filter((id) => id !== 'develop' && id !== 'loan');
     saveProgress({ ...freshProgress('GWE5'), passed });
-    expect(lessonsRead()).toEqual(LESSON_IDS);
+    expect(lessonsRead()).toEqual(passed);
+    expect(lessonsRead()).toContain(LAST_LESSON);
     /* short of the closing word, what was passed and no more */
     stubStorage();
     saveProgress({ ...freshProgress('GWE5'), passed: passed.filter((id) => id !== LAST_LESSON) });
@@ -42,8 +43,8 @@ describe('the lessons of the evening course', () => {
     expect(lessonsRead()).toEqual(['welcome', 'board', 'goal']);
     saveProgress({ ...freshProgress('QK7P'), passed: ['welcome', 'board', 'goal', 'mat'] });
     expect(lessonsRead()).toEqual(['welcome', 'board', 'goal', 'mat']);
-    /* a course once played to its end stays whole */
-    saveProgress({ ...freshProgress('QK7P'), passed: [LAST_LESSON] });
+    /* a course played to its end keeps what it read, at the next table too */
+    saveProgress({ ...freshProgress('QK7P'), passed: [...LESSON_IDS] });
     saveProgress(freshProgress('ZZ12'));
     expect(lessonsRead()).toEqual(LESSON_IDS);
   });

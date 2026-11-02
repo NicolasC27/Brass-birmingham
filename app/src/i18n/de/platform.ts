@@ -1200,6 +1200,7 @@ const platform: typeof enPlatform = {
     waits: "Ihr Tisch „{name}“ wartet auf Sie, in Runde {round}.",
     failed: "Das Kontor antwortet nicht: Der Tisch wurde nicht gedeckt. Versuchen Sie es gleich noch einmal.",
     reached: "{done}/{total} Lektionen gelesen",
+    unseen: 'Noch offen: {list}.',
     syllabus: "Das Register, Kapitel für Kapitel",
     read: "Lesen",
     redo: "Lektionen zum Wiederholen",
