@@ -95,7 +95,7 @@ const townList = (ids: string[], type: 'conjunction' | 'disjunction'): string =>
  *  the game began. `need` is what the next works would cost, worked out
  *  only for the lesson that speaks of it. The action a deed is played
  *  with is the reader's: off their turn, the next is their turn's first */
-function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string, need: number | null = null): Record<string, string | number> {
+function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<string, string | number>) => string, need: number | null = null, finger = false): Record<string, string | number> {
   const p = game.players[me];
   const k = getKeybindings();
   const first = firstPayday(game, me) ?? incomeLevel(p.income);
@@ -119,7 +119,11 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
      machine, at the guided table — else another player, never a blank */
   const others = game.players.filter((_, i) => i !== me);
   const rival = others.length === 1 ? others[0].name : t('game.guide.rival');
-  return { bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  /* a key is named where there are keys: under a finger its clause goes,
+     and the pointer's verb is the finger's */
+  const key = (clause: string, bound: string) => (finger ? '' : ` ${t(`game.guide.keys.${clause}`, { key: bound })}`);
+  const tap = t(finger ? 'game.guide.tap.touch' : 'game.guide.tap.click');
+  return { bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: key('mat', keyLabel(k.mat)), keyLedger: key('ledger', keyLabel(k.ledger)), keyMarket: key('market', keyLabel(k.market)), keyVp: key('vp', keyLabel(k.vpTrack)), keyEnter: key('enter', ''), tap, Tap: tap.charAt(0).toUpperCase() + tap.slice(1) };
 }
 
 /** a look at a seat's last move, from this moment */
@@ -644,7 +648,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
         ? {
             at: shownIndex,
             word: () => {
-              const vars = stepVarsOf(game, me, t, spare?.need);
+              const vars = stepVarsOf(game, me, t, spare?.need, finger);
               const key = stepKeyOf(step.id, game, me, !!spare);
               return { head: t(`game.guide.steps.${key}.title`, vars), body: t(`game.guide.steps.${key}.body`, vars) };
             },
@@ -1009,7 +1013,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* a notion taken up from the ones offered: asked by its name, told as
      this game plays it */
   const takeUp = (n: NearNotion) => setThread((prev) => askThread(prev, askedAs(n), tell(n.id, getLang(), 'what', game.eraLength === 'short')));
-  const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need);
+  const stepVars = (): Record<string, string | number> => stepVarsOf(game, me, t, spare?.need, finger);
   /* what a screen reader hears as it comes up: her move first, then the
      news, then the lesson once it is open — said once, not the note over */
   const spoken =

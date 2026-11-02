@@ -655,7 +655,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
                 >
                   <span className="whitespace-nowrap">
                     {t(preparing ? 'game.topbar.prepare' : 'game.topbar.confirm')}
-                    <kbd className={cn('ml-1 font-mono text-[10px] opacity-75', priced && 'max-[1279px]:hidden')}>↵</kbd>
+                    <kbd className={cn('ml-1 font-mono text-[10px] opacity-75 coarse:hidden', priced && 'max-[1279px]:hidden')}>↵</kbd>
                   </span>
                   {priced && (
                     <motion.span

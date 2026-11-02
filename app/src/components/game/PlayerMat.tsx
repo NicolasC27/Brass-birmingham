@@ -538,7 +538,7 @@ function PlayerMat() {
                   <div className="flex items-baseline gap-2">
                     <h2 className="whitespace-nowrap font-fell text-[15px] tracking-wide text-brass-400">{t('game.mat.title', { name: p.name })}</h2>
                     {matPlayer === game.current && <span className="font-sans text-[9px] font-bold uppercase tracking-widest text-brass-400">{t('game.rail.toAct')}</span>}
-                    <span className="ml-auto max-w-[55%] text-right font-sans text-[9px] uppercase leading-tight tracking-[0.14em] text-cream-100/35">{t('game.mat.keyHint', { p: keyLabel(keys.mat), t: keyLabel(keys.matStyle), w: keyLabel(keys.matWide) })}</span>
+                    <span className="ml-auto max-w-[55%] text-right font-sans text-[9px] uppercase leading-tight tracking-[0.14em] text-cream-100/35 coarse:hidden">{t('game.mat.keyHint', { p: keyLabel(keys.mat), t: keyLabel(keys.matStyle), w: keyLabel(keys.matWide) })}</span>
                   </div>
                   {/* the mat's own dress, set where it is looked at: how the
                       tiles read, whether the pile shows its count, and a way
