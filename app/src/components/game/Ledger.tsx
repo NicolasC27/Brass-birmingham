@@ -214,7 +214,8 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
     <section aria-label={t('game.ledger.aria')} className="plate relative flex h-full min-h-0 flex-1 flex-col overflow-hidden p-3">
       <div aria-hidden className="tex-coal pointer-events-none absolute inset-0 opacity-[0.06]" />
       <header className="relative mb-2">
-        <div className="flex items-center justify-between">
+        {/* the drawer's close stands over the head's right end: its room is kept */}
+        <div className="flex items-center justify-between pr-7 coarse:pr-11">
           <h2 className="font-fell text-[15px] tracking-[0.08em] text-brass-400">{t('game.ledger.heading')}</h2>
           <span className="flex items-center gap-2">
             {/* the whole game so far, action by action, on the board */}
