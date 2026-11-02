@@ -2405,7 +2405,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
                 <button
                   key={o.industry}
                   type="button"
-                  onClick={() => (o.target?.valid ? useGame.getState().pickBuild(o.target) : onInvalid(chooser.key, o.target?.reason ?? tr('board.invalid.tileCard')))}
+                  onClick={(e) => {
+                    if (!o.target?.valid) return onInvalid(chooser.key, o.target?.reason ?? tr('board.invalid.tileCard'));
+                    useGame.getState().pickBuild(o.target);
+                    /* the choice made, Enter is Confirm's again: a focused
+                       button would keep it, and only pick the same again */
+                    e.currentTarget.blur();
+                  }}
                   title={o.target?.valid ? undefined : reasonText(o.target?.reason ?? tr('board.chooser.unavailable'))}
                   aria-pressed={o.picked}
                   className={cn('flex w-[76px] flex-col items-center gap-1 rounded-md border p-1 transition-all', o.picked ? 'scale-105 border-brass-400 bg-brass-500/15 shadow-[0_0_14px_rgba(221,190,126,.45)]' : o.target?.valid ? 'border-brass-700/50 hover:border-brass-400' : 'border-brass-700/30 opacity-45 grayscale')}
