@@ -1192,7 +1192,8 @@ export const useGame = create<GameStore>((set, get) => ({
 
   cancel: () => set({ ...clearSelection, preparing: false }),
 
-  setLoanConfirm: (open) => set({ loanConfirm: open }),
+  /* the sheet closed, signed or not: the peek at a loan goes with it */
+  setLoanConfirm: (open) => set(open ? { loanConfirm: true } : { loanConfirm: false, loanPeek: false }),
   setLoanPeek: (on) => set({ loanPeek: on }),
   setRulesOpen: (open) => set({ rulesOpen: open }),
   openMat: (i) => set({ matPlayer: i }),

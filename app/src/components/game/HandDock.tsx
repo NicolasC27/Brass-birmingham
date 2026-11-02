@@ -820,7 +820,9 @@ function HandDock() {
                   onClick={() => setVerb(verb === v ? null : v)}
                   onPointerEnter={v === 'loan' && ok ? () => setLoanPeek(true) : undefined}
                   onPointerLeave={v === 'loan' ? () => setLoanPeek(false) : undefined}
-                  onFocus={v === 'loan' && ok ? () => setLoanPeek(true) : undefined}
+                  /* the peek follows the keys' focus, not the focus handed
+                     back to the button as the loan's sheet closes */
+                  onFocus={v === 'loan' && ok ? (e) => e.currentTarget.matches(':focus-visible') && setLoanPeek(true) : undefined}
                   onBlur={v === 'loan' ? () => setLoanPeek(false) : undefined}
                   className={cn(
                     /* 31px tall: four rows fill the body's 136px, and each verb
