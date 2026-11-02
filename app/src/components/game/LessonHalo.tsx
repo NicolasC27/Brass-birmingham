@@ -24,6 +24,24 @@ interface Box {
   inNote: boolean;
 }
 
+/** the element's box while it can be seen: not under an inert or hidden
+ *  part of the page, and not clipped away by what holds it — a verb of the
+ *  hand folded to its strip keeps a box of its own under the fold, and a
+ *  ring there would stand round nothing */
+function seen(el: HTMLElement): DOMRect | null {
+  if (el.closest('[inert], [aria-hidden="true"]')) return null;
+  const r = el.getBoundingClientRect();
+  if (r.width === 0 || r.height === 0) return null;
+  let [left, top, right, bottom] = [r.left, r.top, r.right, r.bottom];
+  for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+    const cs = getComputedStyle(a);
+    if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+    const b = a.getBoundingClientRect();
+    [left, top, right, bottom] = [Math.max(left, b.left), Math.max(top, b.top), Math.min(right, b.right), Math.min(bottom, b.bottom)];
+  }
+  return right - left >= r.width / 2 && bottom - top >= r.height / 2 ? r : null;
+}
+
 const same = (a: Box[], b: Box[]): boolean =>
   a.length === b.length && a.every((p, i) => p.word === b[i].word && p.inNote === b[i].inNote && Math.abs(p.x - b[i].x) < 1 && Math.abs(p.y - b[i].y) < 1 && Math.abs(p.w - b[i].w) < 1 && Math.abs(p.h - b[i].h) < 1);
 
@@ -38,8 +56,8 @@ function LessonHalo() {
       const next = words.split(' ').flatMap((word): Box[] => {
         /* a mark is a word of the element's list: a disc may stand for two parts */
         const el = document.querySelector<HTMLElement>(`[data-lens~="${word}"]`);
-        const r = el?.getBoundingClientRect();
-        if (!el || !r || r.width === 0 || r.height === 0) return [];
+        const r = el ? seen(el) : null;
+        if (!el || !r) return [];
         return [{ word, x: r.left, y: r.top, w: r.width, h: r.height, inNote: !!el.closest('[data-guide]') }];
       });
       setBoxes((prev) => (same(prev, next) ? prev : next));
