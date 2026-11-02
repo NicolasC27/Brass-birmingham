@@ -457,6 +457,7 @@ const fr: typeof engame = {
     linkBeerHint: 'Vos brasseries partout ; une brasserie adverse si la seconde liaison la relie',
     beerAuto: 'Brasserie la plus proche',
     sellTo: 'Vendre à',
+    sellDrunk: '{merchant} · baril bu',
     beerDefault: 'Automatique (baril du marchand d’abord)',
     beerMerchant: 'Baril de {name} · son bonus',
     sellBeerHint: 'Le baril du marchand donne son bonus ; une brasserie adverse doit être reliée à la tuile',

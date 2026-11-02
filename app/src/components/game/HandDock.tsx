@@ -5,7 +5,7 @@ import { INDUSTRIES, INDUSTRY_ICON, TOWN_BY_ID, incomeLevel, marketBuyPrice } fr
 import type { GameState } from '@/game/types';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
-import { beerSources, buildTargets, ironSources, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
+import { beerSources, buildTargets, ironSources, merchantBarrelsFor, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
@@ -1030,9 +1030,13 @@ function HandDock() {
                           title={t('game.hand.sellTo')}
                           className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
                         >
+                          {/* the bonus comes with the merchant's barrel beside a tile
+                              that buys these goods: drunk, none is paid */}
                           {buyers.map((b) => (
                             <option key={b.merchant} value={b.merchant}>
-                              {MERCHANT_BY_ID[b.merchant].name} · {t('board.merchant.bonusIs', { bonus: bonusLabel(MERCHANT_BY_ID[b.merchant].bonus) })}
+                              {merchantBarrelsFor(planGame, b.merchant, pick.tile.industry).length
+                                ? `${MERCHANT_BY_ID[b.merchant].name} · ${t('board.merchant.bonusIs', { bonus: bonusLabel(MERCHANT_BY_ID[b.merchant].bonus) })}`
+                                : t('game.hand.sellDrunk', { merchant: MERCHANT_BY_ID[b.merchant].name })}
                             </option>
                           ))}
                         </select>

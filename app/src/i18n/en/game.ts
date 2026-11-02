@@ -455,6 +455,7 @@ const game = {
     linkBeerHint: 'Your breweries anywhere; another’s if the second link reaches it',
     beerAuto: 'Nearest brewery',
     sellTo: 'Sell to',
+    sellDrunk: '{merchant} · barrel drunk',
     beerDefault: 'Automatic (the merchant’s barrel first)',
     beerMerchant: '{name}’s barrel · its bonus',
     sellBeerHint: 'The merchant’s barrel brings its bonus; another’s brewery must be connected to the tile',

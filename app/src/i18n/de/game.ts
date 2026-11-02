@@ -457,6 +457,7 @@ const game: typeof engame = {
     linkBeerHint: 'Deine Brauereien überall; eine fremde, wenn die zweite Verbindung sie erreicht',
     beerAuto: 'Nächste Brauerei',
     sellTo: 'Verkaufen an',
+    sellDrunk: '{merchant} · Fass getrunken',
     beerDefault: 'Automatisch (zuerst das Fass des Händlers)',
     beerMerchant: 'Fass von {name} · sein Bonus',
     sellBeerHint: 'Das Fass des Händlers bringt seinen Bonus; eine fremde Brauerei muss mit dem Plättchen verbunden sein',

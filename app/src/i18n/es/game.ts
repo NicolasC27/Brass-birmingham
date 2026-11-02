@@ -457,6 +457,7 @@ const game: typeof engame = {
     linkBeerHint: 'Tus cervecerías en cualquier sitio; una ajena si la segunda conexión la alcanza',
     beerAuto: 'Cervecería más cercana',
     sellTo: 'Vender a',
+    sellDrunk: '{merchant} · barril bebido',
     beerDefault: 'Automático (primero el barril del mercader)',
     beerMerchant: 'Barril de {name} · su bonificación',
     sellBeerHint: 'El barril del mercader da su bonificación; una cervecería ajena debe estar conectada a la loseta',
