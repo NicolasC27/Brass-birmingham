@@ -1,4 +1,4 @@
-import { INCOME_PAYOUT, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
+import { INCOME_PAYOUT, LINKS, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, linkTargets, sellTargets } from '@/game/engine';
 import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
@@ -10,6 +10,8 @@ import type { Card, GameState } from '@/game/types';
 import { getLang, localeOf, reasonText } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { lastRound } from './lessons';
+import { missingLinks } from './lensFor';
+import { barrelsSaid } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* What the table answers, read off the game as it stands: why a deed  */
@@ -38,6 +40,8 @@ export type Block = { short: string; text: string; money: boolean };
 /** the most towns a line names; past them the table speaks for the map */
 const NAMED = 3;
 const nameOf = (town: string): string => TOWN_BY_ID[town]?.name ?? town;
+/** a town or a merchant, named */
+const placeOf = (id: string): string => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
 
 /** the engine's own refusal of the places a deed came nearest to, as the
  *  table gives it — at those towns, when they are few enough to name */
@@ -115,7 +119,10 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
         .map(([id]) => MERCHANT_BY_ID[id]?.name ?? id);
       return t('game.guide.blocked.sellWorks', { industry: t(`game.log.industry.${x.industry}`), town: TOWN_BY_ID[key.split(':')[0]]?.name ?? key, buyers: buyers.join(', ') || '—' });
     });
-    return plain([t('game.guide.blocked.sell', vars), ...lines].join(' '));
+    /* and the link to lay first toward a buyer, named */
+    const links = missingLinks(g, me).map((id) => LINKS.find((l) => l.id === id)).flatMap((l) => (l ? [`${placeOf(l.a)} – ${placeOf(l.b)}`] : []));
+    const way = links.length ? [t('game.guide.blocked.sellLink', { links: list(links, 'disjunction') })] : [];
+    return plain([t('game.guide.blocked.sell', vars), ...lines, ...way].join(' '));
   }
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
   /* the aims of the second half are met through a works to sell: none on
@@ -238,7 +245,8 @@ export function answerTo(id: Ask, g: GameState, me: number, t: T, lang: Lang = g
       /* no payday follows the last round: a short game counts the purse
          and the level at its close, a full one counts neither */
       if (lastRound(g)) return t(g.eraLength === 'short' ? 'game.guide.ask.answer.moneyLastShort' : 'game.guide.ask.answer.moneyLast', { money: p.money, level });
-      return t(level >= 0 ? 'game.guide.ask.answer.money' : 'game.guide.ask.answer.moneyOwed', { money: p.money, level, pay: Math.abs(INCOME_PAYOUT[p.income]) });
+      /* and what the purse is worth at the end: "does my money count?" */
+      return `${t(level >= 0 ? 'game.guide.ask.answer.money' : 'game.guide.ask.answer.moneyOwed', { money: p.money, level, pay: Math.abs(INCOME_PAYOUT[p.income]) })} ${t(g.eraLength === 'short' ? 'game.guide.ask.answer.moneyClose' : 'game.guide.ask.answer.moneyEnd')}`;
     case 'rounds': {
       /* the rounds after this one; a full game's canal era has the rail's
          to follow, the game's last round no payday; the actions left are
@@ -304,5 +312,8 @@ export function answerQuestion(q: string, at: Asker | null, t: T, lang: Lang, pa
   const said = id && game ? answerTo(id, game.g, game.me, t, lang, table?.about, askedOf(q, lang)) : null;
   if (said) return { answer: said, intent: id, notion: null, near: [] };
   const found = consult(q, lang, passages, at?.g.eraLength === 'short');
+  /* the merchants' bonuses, asked at a table: its own merchants' alone */
+  const bonuses = at && found.kind === 'notion' && found.notion === 'merchants' && found.asked === 'gain' ? barrelsSaid(at.g, t) : '';
+  if (bonuses) return { answer: t('game.guide.ask.answer.bonuses', { list: bonuses }), intent: null, notion: found.notion, near: [] };
   return { answer: found.answer, intent: null, notion: found.notion, near: found.kind === 'near' ? found.near : [] };
 }

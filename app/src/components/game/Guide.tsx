@@ -28,7 +28,7 @@ import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
 import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
+import { barrelsSaid, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
 import { botReason, happenings } from './machineWords';
 import { holdFor, mayPlayOn, unreadOf } from './guideHold';
@@ -100,12 +100,7 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   const k = getKeybindings();
   const first = firstPayday(game, me) ?? incomeLevel(p.income);
   /* what each merchant's barrel gives at this table */
-  const barrels = barrelBonuses(game).map(({ merchant, bonus }) =>
-    bonus.vp ? t('game.guide.barrels.vp', { merchant, n: bonus.vp })
-    : bonus.income ? t('game.guide.barrels.income', { merchant, n: bonus.income })
-    : bonus.money ? t('game.guide.barrels.money', { merchant, n: bonus.money })
-    : t('game.guide.barrels.develop', { merchant }),
-  );
+  const barrels = barrelsSaid(game, t);
   /* where a first mine feeds a forge of the reader's, read off the board */
   const ways = forgeWays(game, me);
   const avoid = ways.deadEnds.length ? t('game.guide.coalAvoid', { list: townList(ways.deadEnds, 'disjunction') }) : '';
@@ -124,7 +119,7 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
      machine, at the guided table — else another player, never a blank */
   const others = game.players.filter((_, i) => i !== me);
   const rival = others.length === 1 ? others[0].name : t('game.guide.rival');
-  return { bonuses: barrels.length ? t('game.guide.barrels.line', { list: barrels.join(', ') }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
+  return { bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: keyLabel(k.mat), keyLedger: keyLabel(k.ledger), keyMarket: keyLabel(k.market), keyVp: keyLabel(k.vpTrack) };
 }
 
 /** a look at a seat's last move, from this moment */

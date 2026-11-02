@@ -153,6 +153,20 @@ export function barrelBonuses(g: GameState): { merchant: string; bonus: Merchant
   return MERCHANTS.filter((m) => (g.merchantTiles[m.id] ?? []).some((x) => x !== 'blank')).map((m) => ({ merchant: m.name, bonus: m.bonus }));
 }
 
+/** what each merchant's barrel gives at this table, said: "Shrewsbury
+ *  (4 PV), Oxford (2 cases de revenu)" — the lesson on beer and the answer
+ *  to a question on the bonuses name the table's own merchants alone */
+export function barrelsSaid(g: GameState, t: (key: string, vars?: Record<string, string | number>) => string): string {
+  return barrelBonuses(g)
+    .map(({ merchant, bonus }) =>
+      bonus.vp ? t('game.guide.barrels.vp', { merchant, n: bonus.vp })
+      : bonus.income ? t('game.guide.barrels.income', { merchant, n: bonus.income })
+      : bonus.money ? t('game.guide.barrels.money', { merchant, n: bonus.money })
+      : t('game.guide.barrels.develop', { merchant }),
+    )
+    .join(', ');
+}
+
 /** who buys what at this table, from the merchants' tiles: each merchant
  *  that buys anything, and the goods it buys — all three said as one. The
  *  lesson on works names them from the table, never from one deal; the

@@ -64,7 +64,8 @@ describe('a question about the table', () => {
 
   it('promises no payday in the last round', () => {
     const g = guided();
-    expect(answerTo('money', g, 0, fr)).toBe(fr('game.guide.ask.answer.money', { money: START_MONEY, level: 0, pay: 0 }));
+    /* and what the purse is worth at the close */
+    expect(answerTo('money', g, 0, fr)).toBe(`${fr('game.guide.ask.answer.money', { money: START_MONEY, level: 0, pay: 0 })} ${fr('game.guide.ask.answer.moneyClose')}`);
     /* the short game's last round: the purse and the level count at its close */
     const last = { ...g, round: 10 };
     expect(answerTo('money', last, 0, fr)).toBe(fr('game.guide.ask.answer.moneyLastShort', { money: START_MONEY, level: 0 }));
@@ -74,8 +75,18 @@ describe('a question about the table', () => {
     const rail = { ...last, era: 'rail' as const, eraLength: 'standard' as const };
     expect(answerTo('money', rail, 0, fr)).toBe(fr('game.guide.ask.answer.moneyLast', { money: START_MONEY, level: 0 }));
     expect(answerTo('money', rail, 0, fr)).toContain('ne compte pas');
-    /* the canal's last round of a full game still ends on a payday */
-    expect(answerTo('money', { ...last, eraLength: 'standard' as const }, 0, fr)).toBe(answerTo('money', g, 0, fr));
+    /* the canal's last round of a full game still ends on a payday, and
+       money is worth nothing at the end of the rail */
+    expect(answerTo('money', { ...last, eraLength: 'standard' as const }, 0, fr)).toBe(`${fr('game.guide.ask.answer.money', { money: START_MONEY, level: 0, pay: 0 })} ${fr('game.guide.ask.answer.moneyEnd')}`);
+  });
+
+  it('says what money is worth at the end, asked so', () => {
+    const g = guided();
+    for (const [q, lang] of [['est-ce que mon argent compte à la fin ?', 'fr'], ['does my money count at the end?', 'en'], ['zählt mein Geld am Ende?', 'de'], ['¿mi dinero cuenta al final?', 'es']] as const) {
+      const got = answerQuestion(q, { g, me: 0 }, tIn(lang), lang, passages(lang));
+      expect(got.intent).toBe('money');
+      expect(got.answer).toContain(tIn(lang)('game.guide.ask.answer.moneyClose'));
+    }
   });
 
   it('answers for the tile the question names', () => {
@@ -286,6 +297,27 @@ describe('a deed the table does not allow', () => {
     /* sold, it is nothing to sell again */
     g.tiles['redditch:0'].flipped = true;
     expect(blockedBy('reach', g, 0, fr)).not.toBeNull();
+  });
+
+  it('names the link to lay first toward the buyer of a works cut off', () => {
+    const g = structuredClone(guided());
+    g.tiles['redditch:0'] = { owner: 0, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    g.merchantTiles = { 'm-oxford': ['all'] };
+    g.merchantBeer = { 'm-oxford:0': 1 };
+    const b = blockedBy('sell', g, 0, fr, 'fr')!;
+    expect(b.text).toContain(fr('game.guide.blocked.sellLink', { links: 'Redditch – Oxford' }));
+  });
+
+  it('names the bonuses of the table\'s own merchants', () => {
+    const g = structuredClone(guided());
+    g.merchantTiles = { 'm-shrewsbury': ['cotton'], 'm-oxford': ['all', 'blank'], 'm-gloucester': ['blank', 'blank'] };
+    const got = answerQuestion('que rapportent les marchands ?', { g, me: 0 }, fr, 'fr', passages('fr'));
+    expect(got.notion).toBe('merchants');
+    expect(got.answer).toContain('Shrewsbury');
+    expect(got.answer).toContain('Oxford');
+    /* no barrel at a merchant with blank tiles alone, none at one closed */
+    expect(got.answer).not.toContain('Gloucester');
+    expect(got.answer).not.toContain('Nottingham');
   });
 
   it('tells a works joined to its buyer that it lacks its beer, and answers so', () => {
