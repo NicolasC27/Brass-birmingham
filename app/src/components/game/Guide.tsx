@@ -543,6 +543,22 @@ function Guide({ dock = 0 }: { dock?: number }) {
   useEffect(() => {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
+  /* the lesson on the hand wants the hand in view: the mat goes as it
+     comes up, however the tile before it was read — by Next, or by the
+     sheet opened, which passes it — and the sheet with it. Once as it
+     comes: the reader may open the mat again over it */
+  const dueNowId = owed?.id ?? null;
+  useEffect(() => {
+    if (tutorial && dueNowId === 'hand' && review === null && useGame.getState().matPlayer !== null) closeMat();
+  }, [tutorial, dueNowId, review, closeMat]);
+  /* the tile to read is the coal mine's: on a mat shorter than its six
+     rows, its row is brought into view */
+  const readingMat = tutorial && dueNowId === 'matRead' && matPlayer !== null;
+  useEffect(() => {
+    if (!readingMat) return;
+    const id = window.setTimeout(() => document.querySelector('[data-player-mat] [data-mat-industry="coal"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 350);
+    return () => window.clearTimeout(id);
+  }, [readingMat]);
   /* the guide has the reader's eyes — a lesson open, her plate, the
      news: at the guided table the table's notices (the paper, the call
      to play) wait until it is done. Not while it is folded to the rail
@@ -678,10 +694,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      waiting on the game is not passed by reading on — it keeps its place */
   const passOn = (id: string) => {
     if (!lctx) return;
-    const after = pass(live, id);
-    saveProgress(after);
-    /* the lesson on the hand wants the hand in view: the mat goes */
-    if (dueNow(after, lctx).id === 'hand' && matPlayer !== null) closeMat();
+    saveProgress(pass(live, id));
   };
   /* Next: read back, it walks forward through what was passed and passes
      nothing; on the live lesson it passes it. The guide ends with the game,

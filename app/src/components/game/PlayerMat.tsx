@@ -285,6 +285,7 @@ function IndustryBlock({
   const color = INDUSTRY_COLOR[ind];
   return (
     <section
+      data-mat-industry={ind}
       className={cn(
         'relative rounded-md border border-brass-700/40 bg-coal-950/60 px-2.5 py-2 transition-opacity',
         drag.dragging === ind && 'opacity-40',
