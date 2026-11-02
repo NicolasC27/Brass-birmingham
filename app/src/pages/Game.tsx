@@ -1099,13 +1099,31 @@ function CoachChip() {
   const coached = useGame((s) => s.coached);
   const setCoached = useGame((s) => s.setCoached);
   const insets = useHudInsets();
+  /* the notices' book may stand in the chip's row, where the lane narrows
+     the table: the chip steps down under it rather than lose its words */
+  const chip = useRef<HTMLDivElement>(null);
+  const [under, setUnder] = useState(0);
+  useEffect(() => {
+    if (!coached) return;
+    const look = () => {
+      const c = chip.current?.getBoundingClientRect();
+      const b = document.querySelector('[data-notice-book]')?.getBoundingClientRect();
+      const top = insets.top + 44;
+      const hit = !!c && !!b && b.width > 0 && b.left < c.right && b.right > c.left && b.top < top + c.height && b.bottom > top;
+      const next = hit ? Math.round(b!.bottom + 6 - top) : 0;
+      setUnder((prev) => (prev === next ? prev : next));
+    };
+    look();
+    const iv = window.setInterval(look, 400);
+    return () => window.clearInterval(iv);
+  }, [coached, insets.top]);
   if (!coached) return null;
   const v = coached.verdict;
   const better = v.roads[0];
   const lost = Math.round(v.loss * 100);
   const fine = v.grade === 'top' || v.grade === 'good';
   return (
-    <div className="pointer-events-auto fixed left-1/2 z-[63] flex -translate-x-1/2 items-center gap-2 rounded-md border bg-coal-950/95 px-3 py-1.5 shadow-e3" style={{ top: insets.top + 44, borderColor: fine ? 'rgba(201,164,92,.5)' : 'rgba(180,71,46,.6)' }} role="status">
+    <div ref={chip} className="pointer-events-auto fixed left-1/2 z-[63] flex -translate-x-1/2 items-center gap-2 rounded-md border bg-coal-950/95 px-3 py-1.5 shadow-e3" style={{ top: insets.top + 44 + under, borderColor: fine ? 'rgba(201,164,92,.5)' : 'rgba(180,71,46,.6)' }} role="status">
       <span className={cn('font-fell text-[10px] uppercase tracking-[0.18em]', fine ? 'text-brass-300' : v.grade === 'blunder' ? 'text-rust-400' : 'text-copper-500')}>{t(`game.debrief.quality.${v.grade}`)}</span>
       {lost > 0 && <span className="font-mono text-[11px] text-cream-100/80">−{lost} %</span>}
       {!fine && better && <span className="font-sans text-[11.5px] text-cream-100/85">{t('game.coachChip.better', { move: describeAction(better.action) })}</span>}

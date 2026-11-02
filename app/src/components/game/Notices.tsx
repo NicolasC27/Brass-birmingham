@@ -444,6 +444,7 @@ function Notices() {
                brass, the pages kept inside — a dot while some wait unread */
             <button
               type="button"
+              data-notice-book
               onClick={() => setLeafing(true)}
               aria-label={t('game.notice.book')}
               aria-expanded={false}
