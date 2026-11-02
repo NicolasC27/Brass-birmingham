@@ -513,7 +513,7 @@ function PlayerMat() {
               onClick={() => setBoardOption('matWide', !wide)}
               aria-label={wide ? t('game.mat.shrink') : t('game.mat.expand')}
               title={`${wide ? t('game.mat.shrink') : t('game.mat.expand')} (${keyLabel(keys.matWide)})`}
-              className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
+              className="ml-auto flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800 coarse:h-11 coarse:w-11"
             >
               {wide ? <Minimize2 className="h-3 w-3" /> : <Maximize2 className="h-3 w-3" />}
             </button>
@@ -521,7 +521,7 @@ function PlayerMat() {
               type="button"
               onClick={closeMat}
               aria-label={t('game.mat.close')}
-              className="flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800"
+              className="flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 hover:bg-coal-800 coarse:h-11 coarse:w-11"
             >
               <X className="h-3 w-3" />
             </button>

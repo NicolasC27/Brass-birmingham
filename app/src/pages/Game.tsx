@@ -81,7 +81,7 @@ const NO_SALES: SellTarget[] = [];
 const holdOn = () => undefined;
 
 /** the tools under the player rail: one plaque each, icon only */
-const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brass-400 opacity-90 transition-opacity hover:opacity-100';
+const TOOL = 'plaque relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-brass-400 opacity-90 transition-opacity hover:opacity-100 coarse:h-11 coarse:w-11';
 
 
 /**
@@ -749,7 +749,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
                 type="button"
                 onClick={closeMarket}
                 aria-label={t('game.page.foldMarket')}
-                className="absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 shadow-e3 hover:bg-coal-800"
+                className="absolute right-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-brass-700/70 bg-coal-900/90 text-brass-400 shadow-e3 hover:bg-coal-800 coarse:h-11 coarse:w-11"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -780,7 +780,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
                 type="button"
                 onClick={closeLedger}
                 aria-label={t('game.page.closeLedger')}
-                className="absolute right-2 top-2 z-10 rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100"
+                className="absolute right-2 top-2 z-10 rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100 coarse:p-[15px]"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

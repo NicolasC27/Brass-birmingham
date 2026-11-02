@@ -23,6 +23,7 @@ import { buildCoalCubes, linkCoalCubes } from './coalPicks';
 import type { CoalCube } from './coalPicks';
 import { CARD_H, DOCK_FIXED, DOCK_OPEN_H, FAN_PAD, FAN_SLIDE_MIN, HINTS_W, cardArt, fanMeasure, nextTurnPlace, skylineOf } from './handFan';
 import { useReducedMotion } from './useReducedMotion';
+import { useCoarse } from '@/hooks/use-narrow';
 import { roman } from '@/gl/roman';
 
 const PIN_KEY = 'brassworks.dockPinned';
@@ -461,6 +462,10 @@ function HandDock() {
   /* the room the hand has is the table's, which a guide lane may narrow —
      and widen again, folded or gone, with no resize of the window */
   const vw = useTableWidth();
+  /* under a finger the verbs stand 44 px tall, four rows of them: the
+     open dock grows to hold them */
+  const coarse = useCoarse();
+  const openH = coarse ? DOCK_OPEN_H + 52 : DOCK_OPEN_H;
   const bandRight = minimapWidth(boardOpts, vw) + 28;
   /* the dock sits in the middle of the screen when the rail and the minimap
      leave it room there; when they do not (a wide minimap), it takes the
@@ -519,7 +524,7 @@ function HandDock() {
      hand), and takes the word back when it goes */
   useLayoutEffect(() => {
     if (!visible) return;
-    setFitReserve(insets.bottom + DOCK_OPEN_H + 8);
+    setFitReserve(insets.bottom + openH + 8);
     return () => setFitReserve(FIT_PAD_BOTTOM);
   }, [visible, insets.bottom]);
   /* whose cards to show: online, always my own — dimmed while I wait my turn.
@@ -636,7 +641,7 @@ function HandDock() {
     <footer data-dock data-lens="hand" aria-label={t('game.hand.dockAria')} className="pointer-events-none fixed z-[64] flex justify-center" style={centredOnScreen ? { bottom: insets.bottom, left: 0, right: 0 } : { bottom: insets.bottom, left: insets.left, right: bandRight }}>
       <motion.div
         initial={false}
-        animate={{ height: expanded ? 180 : 32 }}
+        animate={{ height: expanded ? openH : 32 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30 }}
         /* centred on the screen, never wider than the room between the rail and the minimap */
         style={{ maxWidth: dockMax }}
@@ -795,7 +800,7 @@ function HandDock() {
         {/* expanded dock body */}
         {/* body tall enough for a full 120px card PLUS the 12px lift of a
             selected one — nothing gets cropped at the top any more */}
-        <div className="relative flex h-[148px] items-stretch gap-3 px-4 pb-3">
+        <div className="relative flex h-[148px] items-stretch gap-3 px-4 pb-3 coarse:h-[200px]">
           {/* deck plate */}
           <div className="flex w-[64px] flex-col items-center justify-center gap-1">
             <div className="relative h-[74px] w-[52px]">
@@ -831,7 +836,7 @@ function HandDock() {
                   className={cn(
                     /* 31px tall: four rows fill the body's 136px, and each verb
                        clears the target floor */
-                    'flex min-h-[31px] w-full items-center gap-1.5 rounded-sm border px-2 py-[5px] font-sans text-[10px] font-bold uppercase tracking-wider transition-colors',
+                    'flex min-h-[31px] w-full items-center gap-1.5 rounded-sm border px-2 py-[5px] font-sans text-[10px] font-bold uppercase tracking-wider transition-colors coarse:min-h-[44px]',
                     v === 'pass' && 'col-span-2 justify-center border-dashed',
                     verb === v
                       ? 'border-brass-400 bg-brass-500/20 text-brass-400 shadow-[0_0_8px_rgba(201,164,92,.3)]'
@@ -1013,7 +1018,7 @@ function HandDock() {
                 /* the strip takes the room the verbs leave and no more: at a
                    narrow table its rows wrap, the beer under the merchant,
                    rather than run past the dock's edge */
-                className="paper flex max-h-[132px] min-w-0 flex-col gap-1.5 self-center overflow-y-auto rounded-md px-3 py-2"
+                className="paper flex max-h-[132px] min-w-0 flex-col gap-1.5 self-center overflow-y-auto rounded-md px-3 py-2 coarse:max-h-[188px]"
               >
                 {(() => {
                   const all = sellTargets(planGame, actor);
@@ -1034,7 +1039,7 @@ function HandDock() {
                           onChange={(e) => setSellMerchant(key, e.target.value)}
                           aria-label={t('game.hand.sellTo')}
                           title={t('game.hand.sellTo')}
-                          className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                          className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900 coarse:h-11"
                         >
                           {/* the bonus comes with the merchant's barrel beside a tile
                               that buys these goods: drunk, none is paid */}
@@ -1053,7 +1058,7 @@ function HandDock() {
                               value={named[k] ?? ''}
                               onChange={(e) => setSellBeer(key, k, e.target.value || null)}
                               aria-label={t('game.hand.linkBeer')}
-                              className="min-w-0 max-w-[240px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                              className="min-w-0 max-w-[240px] rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900 coarse:h-11"
                             >
                               <option value="">{t('game.hand.beerDefault')}</option>
                               {sources.map((src) =>
@@ -1151,7 +1156,7 @@ function HandDock() {
                               /* the works picked: the camera glides to it */
                               if (e.target.value && e.target.value !== 'market') flyToRegion(e.target.value.split(':')[0]);
                             }}
-                            className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900"
+                            className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900 coarse:h-11"
                           >
                             <option value="">{t('game.hand.devIronAuto')}</option>
                             {sources.map((src) => (

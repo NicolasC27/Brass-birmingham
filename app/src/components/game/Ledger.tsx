@@ -252,7 +252,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
               type="button"
               onClick={() => setLedgerFilter(f.id)}
               className={cn(
-                'flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-sans text-[9px] font-semibold uppercase tracking-wider transition-colors',
+                'flex items-center gap-1 rounded-sm border px-1.5 py-0.5 font-sans text-[9px] font-semibold uppercase tracking-wider transition-colors coarse:min-h-[44px] coarse:px-2.5',
                 ledgerFilter === f.id
                   ? 'border-brass-500 bg-brass-500/15 text-brass-400'
                   : 'border-brass-700/40 text-cream-100/55 hover:text-cream-100/85',

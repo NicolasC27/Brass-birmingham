@@ -291,7 +291,7 @@ function RailChip({ p, index, active, nextRank, nowRank, compact, live, onCard, 
           e.stopPropagation();
           openMat(index);
         }}
-        className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-md border border-brass-700/50 text-brass-500/70 transition-colors hover:border-brass-400 hover:text-brass-400"
+        className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-md border border-brass-700/50 text-brass-500/70 transition-colors hover:border-brass-400 hover:text-brass-400 coarse:h-11 coarse:w-11"
       >
         <LayoutGrid className="h-3.5 w-3.5" />
       </button>
