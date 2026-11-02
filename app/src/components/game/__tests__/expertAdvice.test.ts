@@ -392,3 +392,13 @@ describe('a tile begun too late to flip', () => {
     expect(deadAtClose(g, 0, a!)).toBe(false);
   });
 });
+
+describe('the expert at the first mine', () => {
+  it('builds the mine the lesson asks for, which cannot be set aside', () => {
+    const g = table();
+    const mine = (a: GameAction) => a.kind === 'build' && a.industry === 'coal';
+    const a = expertMove(g, 0, 60, mine);
+    expect(a && mine(a)).toBe(true);
+    expect(applyAction(g, 0, a!).state).not.toBeNull();
+  });
+});

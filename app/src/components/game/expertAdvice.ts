@@ -191,11 +191,19 @@ export function deadAtClose(g: GameState, me: number, a: GameAction): boolean {
 /** what an expert would play in the reader's seat: the search at full
  *  strength — not the machine's own entry point, which caps a human seat
  *  under assist and blurs its reading — with a tile begun too late to
- *  flip passed over for the best move after it */
-export function expertMove(g: GameState, me: number, budgetMs = 400): GameAction | null {
+ *  flip passed over for the best move after it. A deed the reader may
+ *  not set aside (`deed`: the first mine) is advised first when a move
+ *  does it: advice played past it would leave the lesson with no way on */
+export function expertMove(g: GameState, me: number, budgetMs = 400, deed?: (a: GameAction) => boolean): GameAction | null {
   const r = searchTurn(g, me, { budgetMs, strength: 1, rank: true });
-  if (!r || !deadAtClose(g, me, r.action)) return r?.action ?? null;
-  return r.ranked?.find((x) => !deadAtClose(g, me, x.action))?.action ?? null;
+  if (!r) return null;
+  const fits = (a: GameAction) => !deadAtClose(g, me, a);
+  if (deed && !deed(r.action)) {
+    const does = r.ranked?.find((x) => deed(x.action) && fits(x.action))?.action;
+    if (does) return does;
+  }
+  if (fits(r.action)) return r.action;
+  return r.ranked?.find((x) => fits(x.action))?.action ?? null;
 }
 
 /** the same move, whatever cards pay for it and wherever its cubes and

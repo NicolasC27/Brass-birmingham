@@ -869,13 +869,15 @@ function Guide({ dock = 0 }: { dock?: number }) {
   }), 'conjunction');
   const ask = () => {
     setAdvice({ at: here, action: null, busy: true, place: false });
+    /* the first mine cannot be set aside: the expert builds it when he can */
+    const first = deed === 'coal' ? (a: GameAction) => asked('coal', a) : undefined;
     /* the search thinks on the thread that paints: let the note say so first */
     window.setTimeout(() => {
       const g = useGame.getState().game;
       if (!g || g.actions.length !== here) return;
       /* the search itself, at full strength, and never a tile begun too
          late to flip (expertAdvice.ts) */
-      const a = expertMove(g, me);
+      const a = expertMove(g, me, 400, first);
       setAdvice({ at: here, action: a, busy: false, place: false });
       /* the table keeps it too: played, the move is the guide's word, and
          the coach — another engine — does not grade it over again */
