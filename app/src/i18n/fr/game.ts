@@ -1052,7 +1052,7 @@ const fr: typeof engame = {
     turn: {
       first: 'Première manche de la partie : une seule action chacun, dans l’ordre tiré des sièges.',
       orderBefore: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord — {name} a dépensé {spentBot} £, vous {spentMe} £, donc {name} joue avant vous. C’était la première action de {name} ce tour-ci.',
-      orderAfter: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord — vous avez dépensé {spentMe} £, {name} {spentBot} £, donc vous avez joué en premier. C’était la première action de {name} ce tour-ci.',
+      orderAfter: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord — vous avez dépensé {spentMe} £, {name} {spentBot} £, donc vous avez joué avant {name}. C’était la première action de {name} ce tour-ci.',
       order: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord. C’était la première action de {name} ce tour-ci.',
       orderTie: 'Manche {round} : l’ordre suit l’argent dépensé la manche d’avant, le moins dépensier d’abord — {name} et vous avez dépensé {spentMe} £ chacun, donc l’ordre de la manche d’avant tient. C’était la première action de {name} ce tour-ci.',
       second: 'C’était la seconde action de {name}. Le siège suivant joue maintenant.',
@@ -1062,6 +1062,7 @@ const fr: typeof engame = {
       roundOverTieBot: 'C’était la seconde action de {name}, et la dernière de la manche : à la fin de la manche, chacun touche son revenu. {name} et vous avez dépensé autant : l’ordre de cette manche tient, et {name} ouvre la suivante.',
       roundOverTieYou: 'C’était la seconde action de {name}, et la dernière de la manche : à la fin de la manche, chacun touche son revenu. {name} et vous avez dépensé autant : l’ordre de cette manche tient, et vous ouvrez la suivante.',
       secondThenYou: 'C’était la seconde action de {name}. À vous maintenant.',
+      last: 'C’était la dernière action de {name}, et de la partie : le décompte suit.',
       cards: 'Chaque tour compte deux actions, chacune coûtant une carte.',
     },
     developTwo: '{name} développe {list} (fer ×{n})',

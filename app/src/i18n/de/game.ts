@@ -1052,7 +1052,7 @@ const game: typeof engame = {
     turn: {
       first: 'Erste Runde der Partie: eine Aktion für jeden, in der ausgelosten Sitzreihenfolge.',
       orderBefore: 'Runde {round}: Die Reihenfolge richtet sich nach dem Geld, das in der Runde davor ausgegeben wurde, der Sparsamste zuerst — {name} hat £{spentBot} ausgegeben, du £{spentMe}, also zieht {name} vor dir. Das war die erste Aktion von {name} in diesem Zug.',
-      orderAfter: 'Runde {round}: Die Reihenfolge richtet sich nach dem Geld, das in der Runde davor ausgegeben wurde, der Sparsamste zuerst — du hast £{spentMe} ausgegeben, {name} £{spentBot}, also warst du zuerst dran. Das war die erste Aktion von {name} in diesem Zug.',
+      orderAfter: 'Runde {round}: Die Reihenfolge richtet sich nach dem Geld, das in der Runde davor ausgegeben wurde, der Sparsamste zuerst — du hast £{spentMe} ausgegeben, {name} £{spentBot}, also warst du vor {name} dran. Das war die erste Aktion von {name} in diesem Zug.',
       order: 'Runde {round}: Die Reihenfolge richtet sich nach dem Geld, das in der Runde davor ausgegeben wurde, der Sparsamste zuerst. Das war die erste Aktion von {name} in diesem Zug.',
       orderTie: 'Runde {round}: Die Reihenfolge richtet sich nach dem Geld, das in der Runde davor ausgegeben wurde, der Sparsamste zuerst — {name} und du habt je £{spentMe} ausgegeben, also bleibt die Reihenfolge der Runde davor. Das war die erste Aktion von {name} in diesem Zug.',
       second: 'Das war die zweite Aktion von {name}. Jetzt spielt der nächste Platz.',
@@ -1062,6 +1062,7 @@ const game: typeof engame = {
       roundOverTieBot: 'Das war die zweite Aktion von {name} und die letzte der Runde: Am Ende der Runde erhält jeder sein Einkommen. {name} und du habt gleich viel ausgegeben, also bleibt die Reihenfolge dieser Runde, und {name} eröffnet die nächste.',
       roundOverTieYou: 'Das war die zweite Aktion von {name} und die letzte der Runde: Am Ende der Runde erhält jeder sein Einkommen. {name} und du habt gleich viel ausgegeben, also bleibt die Reihenfolge dieser Runde, und du eröffnest die nächste.',
       secondThenYou: 'Das war die zweite Aktion von {name}. Jetzt bist du dran.',
+      last: 'Das war die letzte Aktion von {name} und der Partie: die Wertung folgt.',
       cards: 'Jeder Zug hat zwei Aktionen, und jede kostet eine Karte.',
     },
     developTwo: '{name} entwickelt {list} weg (Eisen ×{n})',

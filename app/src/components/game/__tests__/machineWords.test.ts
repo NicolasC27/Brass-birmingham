@@ -74,6 +74,27 @@ describe('the machine’s plate', () => {
     expect(botReason(last(5), ME, keys, 'fr')!.turn).toMatch(/^game\.guide\.turn\.roundOverBot/);
   });
 
+  it('says no seat plays after the game\'s last action', () => {
+    const pass = (g: GameState) => applyAction(g, g.current, { kind: 'pass', card: g.players[g.current].hand[0].id }).state!;
+    /* every seat passes to the end: the order tied, the machine plays last */
+    const played = (era: 'short' | 'standard') => {
+      let g = table();
+      g.eraLength = era;
+      let last = -1;
+      while (g.phase === 'action') {
+        last = g.current;
+        g = pass(g);
+      }
+      return { g, last };
+    };
+    const short = played('short');
+    expect(short.last).toBe(BOT);
+    expect(short.g.phase).not.toBe('action');
+    expect(botReason(short.g, ME, keys, 'fr')!.turn).toMatch(/^game\.guide\.turn\.last/);
+    /* a full game's canal era ends on its count, and the rail follows */
+    expect(botReason(played('standard').g, ME, keys, 'fr')!.turn).not.toMatch(/turn\.last/);
+  });
+
   it('says what a turn costs in the first round of two actions, and not after', () => {
     const pass = (g: GameState, seat: number) => applyAction(g, seat, { kind: 'pass', card: g.players[seat].hand[0].id }).state!;
     const cards = (g: GameState) => botReason(g, ME, keys, 'fr')!.turn.includes('game.guide.turn.cards');

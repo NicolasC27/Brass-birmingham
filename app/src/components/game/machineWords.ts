@@ -190,7 +190,9 @@ export function botReason(g: GameState, me: number, t: T, lang: Lang = getLang()
   const spentBot = g.lastSpent?.[e.player];
   const spentMe = g.lastSpent?.[me];
   let turn: string;
-  if (e.round === 1 && e.era === 'canal') turn = t('game.guide.turn.first', { name: p.name });
+  /* the game's last action: no seat plays next, the count does */
+  if (g.phase !== 'action' && (g.era === 'rail' || g.eraLength === 'short') && e.at === g.actions.length - 1) turn = t('game.guide.turn.last', { name: p.name });
+  else if (e.round === 1 && e.era === 'canal') turn = t('game.guide.turn.first', { name: p.name });
   else if (played <= 1)
     turn =
       spentBot !== undefined && spentMe !== undefined

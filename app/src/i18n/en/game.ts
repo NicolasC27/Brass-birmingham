@@ -1050,7 +1050,7 @@ const game = {
     turn: {
       first: 'First round of the game: one action each, in the order the seats were drawn.',
       orderBefore: 'Round {round}: the order goes by money spent last round, least first — {name} spent £{spentBot}, you spent £{spentMe}, so {name} moves before you. That was {name}’s first action of the turn.',
-      orderAfter: 'Round {round}: the order goes by money spent last round, least first — you spent £{spentMe}, {name} £{spentBot}, so you moved first. That was {name}’s first action of the turn.',
+      orderAfter: 'Round {round}: the order goes by money spent last round, least first — you spent £{spentMe}, {name} £{spentBot}, so you moved before {name}. That was {name}’s first action of the turn.',
       order: 'Round {round}: the order goes by money spent last round, least first. That was {name}’s first action of the turn.',
       orderTie: 'Round {round}: the order goes by money spent last round, least first — {name} and you each spent £{spentMe}, so the order of the round before stands. That was {name}’s first action of the turn.',
       second: 'That was {name}’s second action. The next seat plays now.',
@@ -1060,6 +1060,7 @@ const game = {
       roundOverTieBot: 'That was {name}’s second action, and the round’s last: at the end of the round everyone draws their income. {name} and you spent the same, so this round’s order stands, and {name} opens the next.',
       roundOverTieYou: 'That was {name}’s second action, and the round’s last: at the end of the round everyone draws their income. {name} and you spent the same, so this round’s order stands, and you open the next.',
       secondThenYou: 'That was {name}’s second action. Your move now.',
+      last: 'That was {name}’s last action, and the game’s: the count follows.',
       cards: 'Every turn has two actions, each costing a card.',
     },
     developTwo: '{name} develops away {list} (iron ×{n})',

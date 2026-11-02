@@ -1052,7 +1052,7 @@ const game: typeof engame = {
     turn: {
       first: 'Primera ronda de la partida: una sola acción cada uno, en el orden sorteado de los asientos.',
       orderBefore: 'Ronda {round}: el orden sigue el dinero gastado en la ronda anterior, primero quien menos gastó — {name} gastó {spentBot} £, tú {spentMe} £, así que {name} juega antes que tú. Fue la primera acción de {name} en este turno.',
-      orderAfter: 'Ronda {round}: el orden sigue el dinero gastado en la ronda anterior, primero quien menos gastó — tú gastaste {spentMe} £, {name} {spentBot} £, así que has jugado primero. Fue la primera acción de {name} en este turno.',
+      orderAfter: 'Ronda {round}: el orden sigue el dinero gastado en la ronda anterior, primero quien menos gastó — tú gastaste {spentMe} £, {name} {spentBot} £, así que has jugado antes que {name}. Fue la primera acción de {name} en este turno.',
       order: 'Ronda {round}: el orden sigue el dinero gastado en la ronda anterior, primero quien menos gastó. Fue la primera acción de {name} en este turno.',
       orderTie: 'Ronda {round}: el orden sigue el dinero gastado en la ronda anterior, primero quien menos gastó — {name} y tú habéis gastado {spentMe} £ cada uno, así que se mantiene el orden de la ronda anterior. Fue la primera acción de {name} en este turno.',
       second: 'Fue la segunda acción de {name}. Ahora juega el siguiente asiento.',
@@ -1062,6 +1062,7 @@ const game: typeof engame = {
       roundOverTieBot: 'Fue la segunda acción de {name}, y la última de la ronda: al final de la ronda, cada uno cobra sus ingresos. {name} y tú habéis gastado lo mismo, así que se mantiene el orden de esta ronda, y {name} abre la siguiente.',
       roundOverTieYou: 'Fue la segunda acción de {name}, y la última de la ronda: al final de la ronda, cada uno cobra sus ingresos. {name} y tú habéis gastado lo mismo, así que se mantiene el orden de esta ronda, y tú abres la siguiente.',
       secondThenYou: 'Fue la segunda acción de {name}. Ahora te toca a ti.',
+      last: 'Fue la última acción de {name}, y de la partida: sigue el recuento.',
       cards: 'Cada turno tiene dos acciones, y cada una cuesta una carta.',
     },
     developTwo: '{name} desarrolla {list} (hierro ×{n})',
