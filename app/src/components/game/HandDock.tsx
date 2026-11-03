@@ -5,7 +5,8 @@ import { INDUSTRIES, INDUSTRY_ICON, TOWN_BY_ID, incomeLevel, marketBuyPrice } fr
 import type { GameState } from '@/game/types';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
-import { beerSources, buildTargets, ironSources, merchantBarrelsFor, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
+import { applySell, beerSources, buildTargets, ironSources, merchantBarrelsFor, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
+import { cloneState } from '@/game/clone';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { aidOn } from '@/components/game/boardOptions';
 import type { Card, IndustryType, Verb } from '@/game/types';
@@ -1070,12 +1071,18 @@ function HandDock() {
               >
                 {(() => {
                   const all = sellTargets(planGame, actor);
+                  /* each tile of the sale drinks what the ones before it
+                     left: a barrel the first drinks is no bonus for the next */
+                  const card = planGame.players[actor].hand.find((c) => c.id === selectedCardId);
+                  const drunk = cloneState(planGame);
                   return sellPicks.map((pick) => {
                     const key = tileKey(pick.town, pick.slot);
                     const buyers = all.filter((x) => tileKey(x.town, x.slot) === key && x.valid);
                     const need = INDUSTRIES[pick.tile.industry][pick.tile.level - 1].beerToSell;
                     const sources = saleBeerSources(planGame, actor, pick.town, pick.merchant, pick.tile.industry);
                     const named = sellBeer[key] ?? [];
+                    const bonus = new Set(buyers.filter((b) => merchantBarrelsFor(drunk, b.merchant, pick.tile.industry).length).map((b) => b.merchant));
+                    if (card) applySell(drunk, actor, card, [pick], [named]);
                     return (
                       <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[10px] text-ink-900/80">
                         <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">
@@ -1093,7 +1100,7 @@ function HandDock() {
                               that buys these goods: drunk, none is paid */}
                           {buyers.map((b) => (
                             <option key={b.merchant} value={b.merchant}>
-                              {merchantBarrelsFor(planGame, b.merchant, pick.tile.industry).length
+                              {bonus.has(b.merchant)
                                 ? `${MERCHANT_BY_ID[b.merchant].name} · ${t('board.merchant.bonusIs', { bonus: bonusLabel(MERCHANT_BY_ID[b.merchant].bonus) })}`
                                 : t('game.hand.sellDrunk', { merchant: MERCHANT_BY_ID[b.merchant].name })}
                             </option>
