@@ -377,6 +377,19 @@ describe('a tile begun too late to flip', () => {
     expect(deadAtClose(g, 0, a)).toBe(false);
   });
 
+  it('is a forge in the last two rounds that does not empty as it is laid, whatever the actions left', () => {
+    const g = late(2);
+    g.round = eraRounds(g.players.length) - 1;
+    g.market.iron = 10;
+    expect(deadAtClose(g, 0, build(g, 'iron'))).toBe(true);
+    /* earlier, actions enough to burn its bars: it may be begun */
+    const early = late(2);
+    early.round = eraRounds(early.players.length) - 3;
+    early.market.iron = 10;
+    early.players[0].hand = [...early.players[0].hand, ...table().players[0].hand];
+    expect(deadAtClose(early, 0, build(early, 'iron'))).toBe(false);
+  });
+
   it('is nothing in an era another follows, nor a move that builds nothing', () => {
     const g = late(1, 'standard');
     g.market.iron = 10;

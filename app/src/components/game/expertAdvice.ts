@@ -176,15 +176,19 @@ function actionsAfter(g: GameState, me: number): number {
  *  price is lost otherwise. It flips as it is laid, its cubes all sold
  *  to the market; or a works is sold, one action more (two, when no
  *  merchant is within reach yet); or a mine, a forge or a brewery is
- *  emptied, a cube an action at best. The engine's search values an
- *  unflipped tile by its chances, not by the actions left: the guide
- *  sets such a build aside itself, as its lesson on the last rounds asks */
+ *  emptied, a cube an action at best — and in the last two rounds, the
+ *  ones the lesson on them speaks of, not at all: what empties it is
+ *  anyone's move, not the reader's to count on. The engine's search
+ *  values an unflipped tile by its chances, not by the actions left: the
+ *  guide sets such a build aside itself, as that lesson asks */
 export function deadAtClose(g: GameState, me: number, a: GameAction): boolean {
   if (a.kind !== 'build' || !(g.era === 'rail' || g.eraLength === 'short')) return false;
   const after = applyAction(g, me, a).state;
   const tile = after?.tiles[tileKey(a.town, a.slot)];
   if (!after || !tile || tile.flipped) return false;
-  const need = WORKS.includes(tile.industry) ? (sellTargets(after, me).some((x) => x.town === a.town && x.slot === a.slot && x.valid) ? 1 : 2) : tile.cubes;
+  const works = WORKS.includes(tile.industry);
+  if (!works && g.round >= eraRounds(g.players.length) - 1) return true;
+  const need = works ? (sellTargets(after, me).some((x) => x.town === a.town && x.slot === a.slot && x.valid) ? 1 : 2) : tile.cubes;
   return need > actionsAfter(g, me);
 }
 
