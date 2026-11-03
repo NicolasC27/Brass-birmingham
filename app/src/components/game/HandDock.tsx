@@ -487,6 +487,39 @@ function HandDock() {
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
+  /* the fan's ends cut off, each shaded so the reader sees it scrolls; and
+     the fan's width changed — a tablet turned, a lane opened — it starts
+     again from its first card, or from the card chosen, never half of one */
+  const [clipped, setClipped] = useState({ left: false, right: false });
+  const hasGame = !!game;
+  const fanWidth = useRef(0);
+  useEffect(() => {
+    const el = fanRef.current;
+    if (!el) return;
+    const edges = () => {
+      const next = { left: el.scrollLeft > 2, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 2 };
+      setClipped((prev) => (prev.left === next.left && prev.right === next.right ? prev : next));
+    };
+    const resized = () => {
+      if (el.clientWidth !== fanWidth.current) {
+        fanWidth.current = el.clientWidth;
+        const chosen = useGame.getState().selectedCardId;
+        const card = chosen ? el.querySelector<HTMLElement>(`[data-card="${CSS.escape(chosen)}"]`) : null;
+        if (card) card.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        else el.scrollLeft = 0;
+      }
+      edges();
+    };
+    const watch = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resized) : null;
+    watch?.observe(el);
+    el.addEventListener('scroll', edges, { passive: true });
+    resized();
+    return () => {
+      watch?.disconnect();
+      el.removeEventListener('scroll', edges);
+    };
+    /* the fan comes and goes with the table: watched from when it stands */
+  }, [hasGame]);
 
   /* hover intent: the collapsed strip sits right above the income track, so
      a pointer merely crossing it on the way down must NOT pop the hand open.
@@ -1178,6 +1211,7 @@ function HandDock() {
 
           {/* the fan — centred while it fits, scrollable from the FIRST card
               once it overflows (a centred flex row would clip its left edge) */}
+          <div className="relative flex min-w-0 flex-1">
           <div ref={fanRef} className="relative flex min-w-0 flex-1 items-end overflow-x-auto pb-0.5" style={{ scrollSnapType: 'x proximity' }}>
             {/* the strip already names who is at the table; the fan only
                 speaks when there is nothing to show */}
@@ -1193,6 +1227,7 @@ function HandDock() {
               {shown.hand.map((card, i) => (
                 <div
                   key={card.id}
+                  data-card={card.id}
                   /* a flex box, so the card sits on the fan's floor with no
                      line's descent under it: the room goes over the cards */
                   className={cn('relative flex transition-transform duration-150 ease-out motion-reduce:transition-none', hoverCard === i && 'z-20')}
@@ -1223,6 +1258,9 @@ function HandDock() {
               ))}
               </div>
             )}
+          </div>
+          {clipped.left && <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-coal-900/95 to-transparent" />}
+          {clipped.right && <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-coal-900/95 to-transparent" />}
           </div>
 
           {/* right status / hints */}
