@@ -32,6 +32,9 @@ import { Waitlist } from './waitlist';
 import { locateFromEnv } from './geo';
 import type { Locate } from './geo';
 import { FOUNDERS, MAX_BODY, MAX_SUBJECT, audienceOf } from '@/online/waitlist';
+import { TRAIL_BATCH, eventOf, filterOf } from '@/online/guideTrail';
+import type { TrailEvent } from '@/online/guideTrail';
+import { LESSON_IDS } from '@/components/game/lessons';
 import type { Mailer } from './mail';
 import { Store } from './store';
 import type { Account } from './store';
@@ -75,6 +78,7 @@ interface Client {
   /** how much this socket may still say, and how often it has been told no */
   words: Bucket;
   claims: Bucket;
+  trail: Bucket;
   refused: number;
 }
 
@@ -101,6 +105,11 @@ const WORDS = { size: 30, perSecond: 6 };
 const CLAIMS = { size: 5, perSecond: 5 / 60 };
 const CLAIMS_PER_IP = { size: 20, perSecond: 20 / 60 };
 const isClaim = (t: ClientMessage['t']): boolean => t === 'signin' || t === 'signup' || t === 'guest' || t === 'forgot' || t === 'reset' || t === 'resend';
+/** the guided game's trail: a hundred events at once a socket, then one a
+ *  second; six hundred from one address, then one every two seconds — a
+ *  guided game says about a hundred in an hour */
+const TRAIL_WORDS = { size: 100, perSecond: 1 };
+const TRAIL_PER_IP = { size: 600, perSecond: 0.5 };
 /** after this many refusals the socket is simply closed */
 const PATIENCE = 60;
 /** ideas and bugs: five an hour an account */
@@ -295,6 +304,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const locate = options.locate ?? locateFromEnv();
   /** the claims made from each address of late */
   const claimsByIp = new Map<string, Bucket>();
+  /** and the trail's events: a bucket full again is swept */
+  const trailByIp = new Map<string, Bucket>();
   /* the counter's pages are for the developer's own machine: a house that
      forgets, or one told DEV_LETTERS=1, and only from this very machine */
   const dev = file === ':memory:' || process.env.DEV_LETTERS === '1';
@@ -600,8 +611,17 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     return drip(b, CLAIMS_PER_IP.size, CLAIMS_PER_IP.perSecond);
   };
 
+  /** the trail's bucket of an address, the ones full again swept on the way */
+  const trailOf = (ip: string): Bucket => {
+    const now = Date.now();
+    for (const [at, b] of trailByIp) if (now - b.at > (TRAIL_PER_IP.size / TRAIL_PER_IP.perSecond) * 1000) trailByIp.delete(at);
+    let b = trailByIp.get(ip);
+    if (!b) trailByIp.set(ip, (b = bucket(TRAIL_PER_IP.size)));
+    return b;
+  };
+
   wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
-    const client: Client = { socket, mark: `s-${++marks}`, ip: addressOf(req, trustProxy), local: benchReach(req), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), refused: 0 };
+    const client: Client = { socket, mark: `s-${++marks}`, ip: addressOf(req, trustProxy), local: benchReach(req), me: null, token: null, watching: new Set(), askedTables: 0, tablesQuery: undefined, latency: null, pingAt: 0, tablesAt: 0, tablesTimer: null, words: bucket(WORDS.size), claims: bucket(CLAIMS.size), trail: bucket(TRAIL_WORDS.size), refused: 0 };
     clients.add(client);
     /* one frame after another, in the order they came, even across a wait */
     let queue: Promise<void> = Promise.resolve();
@@ -779,6 +799,21 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       return;
     }
     switch (m.t) {
+      /* the guided game's trail. The session lets the frame in — a guided
+         game is always played under an account, a guest's at least — and
+         none of it is written down: the events keep their own random id */
+      case 'guide.trail': {
+        const kept: TrailEvent[] = [];
+        const from = trailOf(c.ip);
+        for (const raw of Array.isArray(m.events) ? m.events.slice(0, TRAIL_BATCH) : []) {
+          const e = eventOf(raw);
+          if (!e) continue;
+          if (!drip(c.trail, TRAIL_WORDS.size, TRAIL_WORDS.perSecond) || !drip(from, TRAIL_PER_IP.size, TRAIL_PER_IP.perSecond)) break;
+          kept.push(e);
+        }
+        if (kept.length) store.keepTrail(kept);
+        return;
+      }
       case 'resend': {
         if (m.email !== undefined) {
           const error = store.setEmail(who.id, m.email);
@@ -1243,6 +1278,9 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'admin.stop':
         waitlist.stop(String(m.id));
         book(m.rid);
+        return;
+      case 'admin.guide':
+        send(c, { t: 'admin.guide', rid: m.rid, funnel: store.guideFunnel(LESSON_IDS, filterOf(m.filter)) });
         return;
       case 'admin.circular': {
         const subject = String(m.subject ?? '').trim();

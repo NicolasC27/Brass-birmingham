@@ -8,6 +8,8 @@ import type { Held } from '@/game/analysisMerge';
 import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, HomeSave, HomeTable, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { randomId } from '@/online/table';
+import { TRAIL_CAP, TRAIL_MS, funnelOf } from '@/online/guideTrail';
+import type { GuideFunnel, TrailEvent, TrailFilter, TrailRow, View } from '@/online/guideTrail';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
 import { fresh, ratingOf, seasonAt, settle } from './rating';
@@ -444,6 +446,47 @@ create table if not exists faults (
 
 export type Fault = { accountId: string | null; message: string; stack: string; page: string; version: string; agent: string; at: number; seen: number };
 
+/* the guided game's trail: what its lessons did at one table, under a
+   random id the browser drew with the table — no account, no code, no
+   address with it — and gone after TRAIL_DAYS */
+const TRAIL = `
+create table if not exists guide_trail (
+  id       integer primary key,
+  trail    text not null,
+  kind     text not null,
+  lesson   text not null,
+  how      text,
+  vpMine   integer,
+  vpTheirs integer,
+  round    integer not null,
+  actions  integer not null,
+  secs     integer not null,
+  screen   text not null,
+  lang     text not null,
+  version  text not null,
+  seed     integer not null,
+  seen     integer not null
+);
+create index if not exists guide_trail_by on guide_trail(trail);
+create index if not exists guide_trail_seen on guide_trail(seen);`;
+
+interface TrailLine {
+  trail: string;
+  kind: TrailEvent['kind'];
+  lesson: string;
+  how: string | null;
+  vpMine: number | null;
+  vpTheirs: number | null;
+  round: number;
+  actions: number;
+  secs: number;
+  screen: View;
+  lang: string;
+  version: string;
+  seed: number;
+  seen: number;
+}
+
 export class Store {
   private db: DatabaseSync;
 
@@ -453,6 +496,7 @@ export class Store {
     this.db.exec('pragma foreign_keys = on');
     this.db.exec(SCHEMA);
     this.db.exec(FAULTS);
+    this.db.exec(TRAIL);
     this.grow();
   }
 
@@ -787,6 +831,7 @@ export class Store {
     this.db.prepare('delete from departed where closedAt < ?').run(now - DEPARTED_MS);
     this.db.prepare('delete from sessions where seenAt < ?').run(now - SESSION_MS);
     this.db.prepare('delete from letters where createdAt < ?').run(now - TOKEN_MS);
+    this.db.prepare('delete from guide_trail where seen < ?').run(now - TRAIL_MS);
   }
 
   /* -------------------------- invitations -------------------------- */
@@ -1181,6 +1226,44 @@ export class Store {
 
   faults(): (Fault & { name: string | null })[] {
     return this.db.prepare('select f.*, a.name from faults f left join accounts a on a.id = f.accountId order by f.id desc limit 300').all() as unknown as (Fault & { name: string | null })[];
+  }
+
+  /** the guided game's trail, as it comes: each table up to TRAIL_CAP
+   *  events, far more than a guided game says. The events kept */
+  keepTrail(events: readonly TrailEvent[], seen = Date.now()): number {
+    const count = this.db.prepare('select count(*) as n from guide_trail where trail = ?');
+    const add = this.db.prepare('insert into guide_trail (trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const room = new Map<string, number>();
+    let kept = 0;
+    for (const e of events) {
+      const left = room.get(e.id) ?? TRAIL_CAP - Number((count.get(e.id) as { n: number }).n);
+      if (left <= 0) continue;
+      add.run(e.id, e.kind, e.lesson, e.how ?? null, e.vp?.[0] ?? null, e.vp?.[1] ?? null, e.round, e.at, e.s, e.view, e.lang, e.version, e.seed, seen);
+      room.set(e.id, left - 1);
+      kept += 1;
+    }
+    return kept;
+  }
+
+  /** the trail summed up for the direction, the lessons in `order` */
+  guideFunnel(order: readonly string[], filter: TrailFilter = {}, now = Date.now()): GuideFunnel {
+    const lines = this.db.prepare('select trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen from guide_trail order by id').all() as unknown as TrailLine[];
+    const rows: TrailRow[] = lines.map((l) => ({
+      id: l.trail,
+      kind: l.kind,
+      lesson: l.lesson,
+      ...(l.how !== null ? { how: l.how } : {}),
+      ...(l.vpMine !== null && l.vpTheirs !== null ? { vp: [l.vpMine, l.vpTheirs] as [number, number] } : {}),
+      round: l.round,
+      at: l.actions,
+      s: l.secs,
+      view: l.screen,
+      lang: l.lang,
+      version: l.version,
+      seed: l.seed,
+      seen: l.seen,
+    }));
+    return funnelOf(rows, order, now, filter);
   }
 
   flags(): (Flag & { name: string })[] {
