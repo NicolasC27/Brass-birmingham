@@ -47,7 +47,8 @@ export const TUTORIAL_KEY = 'brassworks.tutorial.table';
  *  whichever mine they pick, and no lesson is ever missed or left with no
  *  way on. The first deal of each layout of the merchants' tiles that
  *  holds, in seed order: app/tools/guide/deals.ts plays them out and
- *  writes the list again */
+ *  writes the list again — with the machine at 200 ms a move, at node's
+ *  speed, so run it again after a change to the machines or the lessons */
 export const TUTORIAL_SEEDS: readonly number[] = [3, 395, 767, 1062, 1164, 1512, 1568, 1737, 2108, 2213, 2276, 2747];
 /** the seed of the reader's last guided deal: starting over is another game */
 export const TUTORIAL_DEALT_KEY = 'brassworks.tutorial.dealt';

@@ -20,6 +20,13 @@
 /* deal each time, and other buyers. The list is TUTORIAL_SEEDS, in   */
 /* game/quickplay.ts; guidedDeal.test.ts checks its cheap half.       */
 /*                                                                    */
+/* The machine thinks 200 ms a move, as a browser lets it at home. At */
+/* 0.5 its search stops on the clock, so the played-out half holds at */
+/* node's speed on the machine that ran it: a slower one may see the  */
+/* machine play otherwise (a run under load gave the same list). Run  */
+/* it again after a change to the machines, the deck, the shuffle or  */
+/* the lessons, and paste the list it prints.                         */
+/*                                                                    */
 /* From app/:                                                         */
 /*   ./node_modules/.bin/esbuild tools/guide/deals.ts --bundle        */
 /*     --platform=node --format=esm --alias:@=./src                   */
