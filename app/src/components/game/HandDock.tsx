@@ -743,7 +743,7 @@ function HandDock() {
           {/* what the purse has spent this round, and the place it earns at
               the next: public figures, the order the engine will deal — the
               first to go where the strip is short of room */}
-          {shown && game.phase === 'action' && vw >= 1024 && (
+          {shown && game.phase === 'action' && vw >= 820 && (
             <span className="flex items-center gap-1 whitespace-nowrap font-sans text-[10px] font-normal normal-case tracking-normal text-cream-100/55" title={t('game.main.orderTip', { name: shown.name })}>
               <span>
                 {spentWords[0]}
