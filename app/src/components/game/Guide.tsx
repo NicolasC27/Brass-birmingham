@@ -250,6 +250,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const selectedCardId = useGame((s) => s.selectedCardId);
   const verb = useGame((s) => s.verb);
   const buildPick = useGame((s) => s.buildPick);
+  const linkPick = useGame((s) => s.linkPick);
+  const sellPicks = useGame((s) => s.sellPicks);
   const tutorial = useGame((s) => s.tutorial);
   /* the guided game's table, which its progress is kept for */
   const table = useGame((s) => s.local);
@@ -754,11 +756,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
      leads its row at the left, clear of the note — nor one read back,
      nor one the reader opens again over it */
   const matAside = !dock && band.mat && review === null && step?.show !== 'mat' && !overMat;
-  /* floating, the note stands over the board's right side: while a card
-     and a verb are chosen the places to pick may lie under it — it steps
-     down to its strip, and comes back once the move is played or let go.
+  /* floating, the note stands over the board's right side: while a place
+     on the board is still to pick, it may lie under the note — which a
+     thumb does not lean aside as a mouse does. Under a finger the note
+     steps down to its strip, and comes back as soon as the place is
+     picked, for the rest of what it asks (Confirm), or the move let go.
      A deed's lesson only: a page the move calls for is read over it */
-  const pickAside = !dock && !!selectedCardId && !!verb && review === null && !overPick && owed?.mode === 'do';
+  const onBoard = verb === 'build' ? !buildPick : verb === 'network' ? !linkPick : verb === 'sell' && !sellPicks.length;
+  const pickAside = !dock && finger && !!selectedCardId && onBoard && review === null && !overPick && owed?.mode === 'do';
   /* floating, the question to leave stands over the lesson: the note
      gives it the room, which it would otherwise squeeze its page into */
   const asking = !dock && confirming;
