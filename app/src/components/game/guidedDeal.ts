@@ -1,6 +1,6 @@
 import { withEdition } from '@/game/actions';
 import { INDUSTRIES, MERCHANTS, TOWN_BY_ID } from '@/game/data';
-import { RULES_EDITION, buildTargets, merchantDemand, merchantOpen, newGame } from '@/game/engine';
+import { buildTargets, merchantDemand, merchantOpen, newGame } from '@/game/engine';
 import type { GameState, IndustryType, SetupPayload } from '@/game/types';
 import { forgesFrom } from './lessonWords';
 
@@ -22,9 +22,13 @@ export type DealMiss = 'first' | 'coalCard' | 'forgeCard' | 'coalSlot' | 'works'
 const WORKS: readonly IndustryType[] = ['cotton', 'manufacturer', 'pottery'];
 
 /** a table at home as the office deals it: under the edition of the rules
- *  the browser names, today's when it names none */
+ *  the browser names, today's when it names none — HomeRoom.deal
+ *  (server/home.ts) step for step; openHomeGame (game/home.ts) names
+ *  today's edition before it sends, as withEdition would. Should the
+ *  office deal otherwise, this follows, or the list is checked against
+ *  a deal nobody is dealt */
 export function dealtAs(setup: SetupPayload, seed: number): GameState {
-  return newGame(withEdition({ ...setup, options: { ...setup.options, rules: setup.options.rules ?? RULES_EDITION } }), seed);
+  return newGame(withEdition(setup), seed);
 }
 
 /** the works the reader's hand builds a first tile of: an industry card
