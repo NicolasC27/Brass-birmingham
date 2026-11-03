@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, LogOut, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
+import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, LogOut, MessageCircleQuestion, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
 import LessonLens from './LessonLens';
@@ -1210,6 +1210,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
                             Back: under a finger the two keep a thumb apart */}
                         {!dock && (
                           <div className="flex shrink-0 items-center gap-1.5 coarse:gap-7">
+                            {/* floating, the note has no field of its own: the
+                                question to the guide opens at the left edge */}
+                            <button type="button" onClick={() => useGame.getState().setAskOpen(true)} aria-label={t('game.guide.ask.open')} title={t('game.guide.ask.open')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
+                              <MessageCircleQuestion className="h-3.5 w-3.5" />
+                            </button>
                             {leaveButton('rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5')}
                             <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
                               <Minus className="h-3.5 w-3.5" />

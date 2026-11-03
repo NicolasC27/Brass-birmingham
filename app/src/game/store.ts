@@ -212,6 +212,10 @@ interface GameStore {
    *  button, and by the guide's lesson on payday */
   ledgerOpen: boolean;
   setLedgerOpen: (open: boolean) => void;
+  /** the question to the guide, open at the left edge: from its tool, or
+   *  from the guide's floating note, which has no field of its own */
+  askOpen: boolean;
+  setAskOpen: (open: boolean) => void;
   /** everything, one player's doings (`p<seat>`), the money or the map */
   ledgerFilter: 'all' | 'economy' | 'network' | `p${number}`;
   /** camera fly-to request (Ledger click, bot follow) — `at` dedupes repeats */
@@ -685,6 +689,7 @@ const freshTable = {
   botHold: false,
   /* and the ledger's drawer, left open at the last table, is shut */
   ledgerOpen: false,
+  askOpen: false,
 };
 
 /* what belongs to one game and goes with it: every place that sits the
@@ -1203,6 +1208,7 @@ export const useGame = create<GameStore>((set, get) => ({
   },
   setMarketFocus: (on) => set({ marketFocus: on }),
   setLedgerOpen: (open) => set((s) => (s.ledgerOpen === open ? s : { ledgerOpen: open })),
+  setAskOpen: (open) => set((s) => (s.askOpen === open ? s : { askOpen: open })),
   setLedgerFilter: (f) => set({ ledgerFilter: f }),
   flyToRegion: (key) => set({ flyTo: { key, at: Date.now() } }),
   toggleSurveyEmpire: (seat) => set((st) => ({ surveyEmpires: st.surveyEmpires.includes(seat) ? st.surveyEmpires.filter((x) => x !== seat) : [...st.surveyEmpires, seat] })),

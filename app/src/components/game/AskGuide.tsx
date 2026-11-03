@@ -48,7 +48,9 @@ export function NearList({ near, onPick }: { near: NearNotion[]; onPick: (n: Nea
 export default function AskGuide({ className }: { className?: string }) {
   const t = useT();
   const lang = useLang();
-  const [open, setOpen] = useState(false);
+  const open = useGame((s) => s.askOpen);
+  const setAsk = useGame((s) => s.setAskOpen);
+  const setOpen = (v: boolean | ((o: boolean) => boolean)) => setAsk(typeof v === 'function' ? v(open) : v);
   const [question, setQuestion] = useState('');
   const [thread, setThread] = useState<{ q: string; a: string; near?: NearNotion[] }[]>([]);
   /* the table as it stands answers too, while moves are played and where
@@ -109,7 +111,7 @@ export default function AskGuide({ className }: { className?: string }) {
           >
             <div className="mb-2 flex items-center justify-between">
               <h2 className="font-fell text-[15px] tracking-wide text-brass-400">{t('game.guide.ask.open')}</h2>
-              <button type="button" onClick={() => setOpen(false)} aria-label={t('game.guide.ask.close')} className="rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100">
+              <button type="button" onClick={() => setOpen(false)} aria-label={t('game.guide.ask.close')} className="rounded p-1 text-cream-100/50 hover:bg-coal-800 hover:text-cream-100 coarse:p-[15px]">
                 <X className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -139,9 +141,9 @@ export default function AskGuide({ className }: { className?: string }) {
                 aria-label={t('game.guide.ask.placeholder')}
                 autoFocus
                 onKeyDown={(e) => e.stopPropagation()}
-                className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] text-cream-100 placeholder:text-cream-100/55 focus:border-brass-400"
+                className="min-w-0 flex-1 rounded-md border border-brass-700/60 bg-coal-900/90 px-3 py-1.5 font-sans text-[12px] text-cream-100 placeholder:text-cream-100/55 focus:border-brass-400 coarse:h-11"
               />
-              <button type="submit" disabled={!question.trim()} aria-label={t('game.guide.ask.send')} title={t('game.guide.ask.send')} className="btn-strike !min-h-[32px] shrink-0 !px-3 !py-1 !text-[10px] disabled:opacity-40">
+              <button type="submit" disabled={!question.trim()} aria-label={t('game.guide.ask.send')} title={t('game.guide.ask.send')} className="btn-strike !min-h-[32px] shrink-0 !px-3 !py-1 !text-[10px] disabled:opacity-40 coarse:!min-h-[44px] coarse:!px-4">
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
             </form>
