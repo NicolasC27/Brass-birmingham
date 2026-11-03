@@ -918,7 +918,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
               {/* where the loan drops the income pawn (physical track read) */}
               <LoanLandingTrack income={game.players[game.current].income} color={game.players[game.current].color} />
               <div className="mt-5 flex justify-end gap-2">
-                <button type="button" onClick={() => setLoanConfirm(false)} className="btn-ledger !min-h-[36px] !px-4 !py-1.5 text-xs">
+                <button type="button" onClick={() => setLoanConfirm(false)} className="btn-ledger !min-h-[36px] !px-4 !py-1.5 text-xs coarse:!min-h-[44px]">
                   {t('game.page.cancel')}
                 </button>
                 <button
@@ -927,7 +927,7 @@ export default function Game({ demo = false }: { demo?: boolean } = {}) {
                     setLoanConfirm(false);
                     takeLoan();
                   }}
-                  className="btn-loan !min-h-[36px] !px-4 !py-1.5 text-xs"
+                  className="btn-loan !min-h-[36px] !px-4 !py-1.5 text-xs coarse:!min-h-[44px]"
                 >
                   {t('game.page.signNote')}
                 </button>
