@@ -400,6 +400,21 @@ function HandDock() {
   const selectCard = useGame((s) => s.selectCard);
   const setVerb = useGame((s) => s.setVerb);
   const setLoanPeek = useGame((s) => s.setLoanPeek);
+  const loanOpen = useGame((s) => s.loanConfirm);
+  /* the loan's sheet hands the keyboard back to its verb as it closes —
+     after Enter on its Sign, a focus still :focus-visible, and no reader's
+     asking: it brings back no peek. Marked before the sheet's own effect
+     returns the focus, forgotten once that task is over */
+  const handedBack = useRef(false);
+  useLayoutEffect(() => {
+    if (!loanOpen) return;
+    return () => {
+      handedBack.current = true;
+      window.setTimeout(() => {
+        handedBack.current = false;
+      });
+    };
+  }, [loanOpen]);
   const flyToRegion = useGame((s) => s.flyToRegion);
   const onlineCode = useGame((s) => s.code);
   const aid = !!game && aidOn(game.assist, onlineCode !== null);
@@ -864,7 +879,7 @@ function HandDock() {
                   onPointerLeave={v === 'loan' ? () => setLoanPeek(false) : undefined}
                   /* the peek follows the keys' focus, not the focus handed
                      back to the button as the loan's sheet closes */
-                  onFocus={v === 'loan' && ok ? (e) => e.currentTarget.matches(':focus-visible') && setLoanPeek(true) : undefined}
+                  onFocus={v === 'loan' && ok ? (e) => !handedBack.current && e.currentTarget.matches(':focus-visible') && setLoanPeek(true) : undefined}
                   onBlur={v === 'loan' ? () => setLoanPeek(false) : undefined}
                   className={cn(
                     /* 31px tall: four rows fill the body's 136px, and each verb
