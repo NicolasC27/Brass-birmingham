@@ -1229,11 +1229,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <div className="flex shrink-0 items-center gap-1.5 coarse:gap-7">
                             {/* floating, the note has no field of its own: the
                                 question to the guide opens at the left edge */}
-                            <button type="button" onClick={() => useGame.getState().setAskOpen(true)} aria-label={t('game.guide.ask.open')} title={t('game.guide.ask.open')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
+                            <button type="button" onClick={() => useGame.getState().setAskOpen(true)} aria-label={t('game.guide.ask.open')} title={t('game.guide.ask.open')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-[15px]">
                               <MessageCircleQuestion className="h-3.5 w-3.5" />
                             </button>
-                            {leaveButton('rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5')}
-                            <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5">
+                            {leaveButton('rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-[15px]')}
+                            <button type="button" onClick={() => fold(true)} aria-label={t('game.guide.minify')} title={t('game.guide.foldHint')} className="shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-[15px]">
                               <Minus className="h-3.5 w-3.5" />
                             </button>
                           </div>
