@@ -2,6 +2,7 @@ import { decode, encode } from './protocol';
 import type { ClientMessage, ServerMessage } from './protocol';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 import type { Audience, WaitBook } from './waitlist';
+import type { GuideFunnel, TrailEvent, TrailFilter } from './guideTrail';
 import type { GameAction } from '@/game/actions';
 import type { Rivalry } from '@/game/rivalry';
 import type { SetupPayload } from '@/game/types';
@@ -342,6 +343,19 @@ export class Wire {
   /** the circular as a proof, to the direction's own address only */
   async adminTrial(subject: string, body: string, audience: Audience): Promise<void> {
     await this.ask((rid) => ({ t: 'admin.circular', rid, subject, body, audience, trial: true }));
+  }
+
+  /** the guided game's funnel, as the office sums it up */
+  async adminGuide(filter: TrailFilter = {}): Promise<GuideFunnel> {
+    const m = await this.ask((rid) => ({ t: 'admin.guide', rid, filter }));
+    if (m.t !== 'admin.guide') throw new Error('no-funnel');
+    return m.funnel;
+  }
+
+  /** what the lessons did at the guided table, a few events at a time: no
+   *  answer awaited, and held in the outbox while the line is down */
+  trail(events: TrailEvent[]): void {
+    this.send({ t: 'guide.trail', events });
   }
 
   /** a fault of this page, for the office's log: goes even before sign-in,

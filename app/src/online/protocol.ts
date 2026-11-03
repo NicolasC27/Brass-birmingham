@@ -6,6 +6,7 @@ import type { Rivalry } from '@/game/rivalry';
 import type { GameState, SetupPayload } from '@/game/types';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 import type { Audience, WaitBook } from './waitlist';
+import type { GuideFunnel, TrailEvent, TrailFilter } from './guideTrail';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -86,6 +87,9 @@ export type ClientMessage =
   /** an idea or a bug for the house, from any page */
   /** a browser's own fault, sent unasked: no game, nothing personal */
   | { t: 'fault'; message: string; stack: string; page: string; version: string; agent: string; at: number }
+  /** what the lessons did at a guided table, a few events at a time, sent
+      unasked: under the table's own random id, never the account's */
+  | { t: 'guide.trail'; events: TrailEvent[] }
   | { t: 'feedback'; rid: number; page: string; kind: 'idea' | 'bug'; text: string }
   /** the desk: my tables, my invitations, my past games */
   | { t: 'desk'; rid?: number }
@@ -188,6 +192,8 @@ export type ClientMessage =
   | { t: 'admin.strike'; rid: number; id: string }
   | { t: 'admin.circular'; rid: number; subject: string; body: string; audience: Audience; trial?: boolean }
   | { t: 'admin.stop'; rid: number; id: string }
+  /** the guided game's trail summed up, over one kind of screen or one deal */
+  | { t: 'admin.guide'; rid: number; filter?: TrailFilter }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -251,6 +257,8 @@ export type ServerMessage =
   | { t: 'queue'; state: QueueState | null }
   /** the waiting list, as the direction reads it */
   | { t: 'admin.book'; rid: number; book: WaitBook }
+  /** the guided game's funnel, as the direction reads it */
+  | { t: 'admin.guide'; rid: number; funnel: GuideFunnel }
   | { t: 'pong' };
 
 /** a name or an address: the office does not say which was wrong */
