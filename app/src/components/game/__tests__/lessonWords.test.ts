@@ -8,9 +8,9 @@ import { MOTIFS } from '@/game/progress';
 import { LESSON_IDS } from '../lessons';
 import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
 
-/* the words the lessons are said in, on the guided table itself — you
-   against Wedgwood, the canal era only, the deal of seed 3 — and on the
-   same deal played as a full game */
+/* the words the lessons are said in, at a guided table — you against
+   Wedgwood, the canal era only, on seed 3, one of the guided game's
+   deals — and on the same deal played as a full game */
 
 function table(eraLength: 'short' | 'standard' = 'short'): GameState {
   const setup = {

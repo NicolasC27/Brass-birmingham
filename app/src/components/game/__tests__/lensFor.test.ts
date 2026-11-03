@@ -4,7 +4,7 @@ import { newGame } from '@/game/engine';
 import type { Card, GameState, SetupPayload, TileState, Verb } from '@/game/types';
 import { lensFor, linksToBuyer, missingLinks } from '../lensFor';
 
-/* The lens of each lesson, on the guided game's deal (seed 3, two seats):
+/* The lens of each lesson, on one of the guided game's deals (seed 3):
    Shrewsbury buys cotton, by Coalbrookdale; Oxford buys everything, by
    Birmingham and Redditch; Gloucester manufactured goods, by Redditch and
    Worcester. It lights the places a lesson is about, the ones its advice

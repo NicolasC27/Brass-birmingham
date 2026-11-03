@@ -7,9 +7,9 @@ import type { GameState, SetupPayload } from '@/game/types';
 import { setLang, tr } from '@/i18n';
 import { botReason, happenings } from '../machineWords';
 
-/* the machine's plate and the news, on the guided table — you against
-   Wedgwood, the canal era only, the deal of seed 3 — with the board set
-   by hand where a move needs it */
+/* the machine's plate and the news, at a guided table — you against
+   Wedgwood, the canal era only, on seed 3, one of the guided game's
+   deals — with the board set by hand where a move needs it */
 
 const ME = 0;
 const BOT = 1;

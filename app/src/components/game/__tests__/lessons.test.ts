@@ -9,8 +9,8 @@ import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, closed, deedOf, detourOf,
 import { stepKeyOf } from '../lessonWords';
 import type { LessonCtx, Progress } from '../lessons';
 
-/* the lessons of the guided game, played on the guided table itself: you
-   against Wedgwood, the canal era only, the deal of seed 3 */
+/* the lessons of the guided game, played at a guided table: you against
+   Wedgwood, the canal era only, on seed 3, one of the guided game's deals */
 
 function guided(): GameState {
   const setup = {

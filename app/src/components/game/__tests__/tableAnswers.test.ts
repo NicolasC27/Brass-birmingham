@@ -8,8 +8,9 @@ import { dictOf, reasonText, setLang, trIn } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { answerQuestion, answerTo, blockedBy, intentOf } from '../tableAnswers';
 
-/* the table's answers, on the guided table itself: you against Wedgwood,
-   the canal era only, the deal of seed 3 — asked in French and English */
+/* the table's answers, at a guided table: you against Wedgwood, the
+   canal era only, on seed 3, one of the guided game's deals — asked in
+   French and English */
 
 function guided(): GameState {
   const setup = {

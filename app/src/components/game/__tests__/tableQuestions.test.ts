@@ -7,11 +7,11 @@ import { dictOf, trIn } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { answerQuestion } from '../tableAnswers';
 
-/* The free questions of the guided game's review, put at the guided table
-   itself — you against Wedgwood, the canal era alone, the deal of seed 3 —
-   as a reader types them, in the four tongues. Each has the answer it must
-   get: '@money' is the table's own answer on the purse, a bare id is the
-   notion of the guide's case that tells it.
+/* The free questions of the guided game's review, put at a guided table
+   — you against Wedgwood, the canal era alone, on seed 3, one of its
+   deals — as a reader types them, in the four tongues. Each has the
+   answer it must get: '@money' is the table's own answer on the purse,
+   a bare id is the notion of the guide's case that tells it.
 
    When the review ran them, 63 of its 173 phrasings in four tongues fell
    through: "Qui mène ?" read as the mines, "Un conseil ?" as the sale,

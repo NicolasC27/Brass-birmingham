@@ -9,10 +9,10 @@ import { deadAtClose, expertMove, keepOf, keepsFor, placeLens, sameMove, spareFo
 import { LESSON_IDS, freshProgress, lessonIndex, roundOf } from '../lessons';
 
 /* What an expert would play, set up without spending a card the guided
-   game asks the reader to keep — on its deal (seed 3, two seats), as the
-   reviews found it: the canal to Oxford that opens the first round, and
-   the canal of the second after a mine at Dudley, both paid by the search
-   with the forge card */
+   game asks the reader to keep — on one of its deals (seed 3, two
+   seats), as the reviews found it: the canal to Oxford that opens the
+   first round, and the canal of the second after a mine at Dudley, both
+   paid by the search with the forge card */
 
 function table(): GameState {
   const setup = {

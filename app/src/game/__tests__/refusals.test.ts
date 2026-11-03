@@ -11,7 +11,8 @@ import type { Lang } from '@/i18n';
 /* the one refusal worth telling, among the reasons the engine gives for
    every place it was asked about */
 
-/** the guided table: you against Wedgwood, the canal era only, seed 3 */
+/** a guided table: you against Wedgwood, the canal era only — seed 3,
+ *  one of the guided game's deals */
 function guided(): GameState {
   const setup = { players: [{ name: 'Vous', color: 'brass', type: 'human' }, { name: 'Wedgwood', color: 'oxblood', type: 'bot', persona: 'wedgwood' }], options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core', assist: true } } as SetupPayload;
   return newGame(withEdition(setup), 3);
