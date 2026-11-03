@@ -16,6 +16,8 @@ Tests du journal : `src/platform/__tests__/` (almanach, brevets, chronique, cour
 
 Un essai complet d'une partie : bundler un script avec `esbuild --bundle --platform=node --alias:@=./src`, poser un faux `localStorage`, jouer avec `chooseBotAction`, puis appeler `noteChallenge` / `grantFromGame` / `writeLetter`. Le magasin de l'office se teste en mémoire : `new Store(':memory:')`.
 
+Les donnes de la partie guidée : `app/tools/guide/deals.ts` (la commande esbuild est en tête du fichier) donne les graines 1 à 3000 comme l'office, garde celles où les premières leçons disent vrai, les joue jusqu'au bout avec les vraies leçons et la machine à 200 ms le coup, et imprime la liste — elle doit être `quickplay.TUTORIAL_SEEDS`, il le dit. Deux minutes sur seize cœurs ; `--seed N` pour une seule. `guidedDeal.test.ts` ne vérifie que la moitié bon marché (premier siège, cartes charbon et forge, une mine à un canal d'une forge, un acheteur par industrie de la main) : relancer l'outil après un changement des machines, du paquet, du mélange ou des leçons, et coller la nouvelle liste.
+
 ## Les captures
 
 `google-chrome-stable --headless=new --remote-debugging-port=9333` puis un script CDP (patron : `capture.mjs` du scratchpad) : `Network.setUserAgentOverride` avec `acceptLanguage: 'fr-FR'` pour la langue, `Emulation.setDeviceMetricsOverride` pour la largeur, `?theme=dark&arrived=1` dans l'adresse, et de vraies secondes d'attente — `--virtual-time-budget` gèle les entrées Framer, `--lang` est ignoré. Assembler en une page HTML aux images embarquées (≈ 5 Mo à 800 px).
