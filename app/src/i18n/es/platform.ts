@@ -876,6 +876,12 @@ const platform = {
       reward: 'Al cierre, los diez primeros reciben una enseña grabada con su nombre en el mapa para la temporada siguiente.',
     },
   },
+  /* the guided game's trail, said on the evening course with the reader's way out */
+  trail: {
+    line: "Para mejorar sus lecciones, la partida guiada anota, sin nada que le nombre, dónde se detienen los jugadores.",
+    keep: "Participar",
+    more: "Qué se anota",
+  },
   legal: {
     eyebrow: "El club",
     title: "Aviso legal y privacidad",

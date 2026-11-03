@@ -878,6 +878,12 @@ const platform: typeof enPlatform = {
       reward: 'Zum Saisonende erhalten die ersten zehn ein Schild mit ihrem Namen, graviert auf der Karte der nächsten Saison.',
     },
   },
+  /* the guided game's trail, said on the evening course with the reader's way out */
+  trail: {
+    line: "Um ihre Lektionen zu verbessern, notiert die geführte Partie, ohne Sie zu nennen, wo Spieler hängen bleiben.",
+    keep: "Mitmachen",
+    more: "Was notiert wird",
+  },
   legal: {
     eyebrow: "Der Club",
     title: "Impressum und Datenschutz",

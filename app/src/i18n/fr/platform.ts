@@ -876,6 +876,12 @@ const platform = {
       reward: 'À la clôture, les dix premiers reçoivent une enseigne gravée à leur nom sur la carte pour l’exercice suivant.',
     },
   },
+  /* the guided game's trail, said on the evening course with the reader's way out */
+  trail: {
+    line: "Pour améliorer ses leçons, la partie guidée note, sans rien qui vous nomme, où les joueurs s’arrêtent.",
+    keep: "Participer",
+    more: "Ce qui est noté",
+  },
   legal: {
     eyebrow: "Le club",
     title: "Mentions légales et confidentialité",

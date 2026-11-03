@@ -876,6 +876,12 @@ const platform = {
       reward: 'At the close, the first ten get a sign engraved with their name on the map for the next season.',
     },
   },
+  /* the guided game's trail, said on the evening course with the reader's way out */
+  trail: {
+    line: "To improve its lessons, the guided game notes, with nothing that names you, where players stop.",
+    keep: "Take part",
+    more: "What is noted",
+  },
   legal: {
     eyebrow: "The club",
     title: "Legal notice and privacy",
