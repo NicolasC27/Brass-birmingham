@@ -559,7 +559,7 @@ function HandDock() {
     if (!visible) return;
     setFitReserve(insets.bottom + openH + 8);
     return () => setFitReserve(FIT_PAD_BOTTOM);
-  }, [visible, insets.bottom]);
+  }, [visible, insets.bottom, openH]);
   /* whose cards to show: online, always my own — dimmed while I wait my turn.
      Here, the player to act when human; during a bot's turn the lone human
      keeps seeing their own hand. With several humans at one screen nothing
