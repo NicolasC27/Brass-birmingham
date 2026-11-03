@@ -189,8 +189,10 @@ function alerts(c: Ctx, t: T): { id: string; text: string }[] {
 const AT_HAND = new Set(['coalMarket', 'ironMarket', 'buildCost', 'network', 'sell', 'unsold', 'noLinks']);
 /** an alert or a tip whose substance a lesson's page already says: not
  *  said again under it — the close under the last rounds, a forge's bars
- *  sold under the forge, the beer a sale drinks under the sale */
-const SAID_IN: Record<string, readonly string[]> = { eraEnd: ['eraEnd', 'lastRounds'], eraEndMine: ['eraEnd', 'lastRounds'], ironMarket: ['iron'], sell: ['sell', 'beer'] };
+ *  sold under the forge, the beer a sale drinks under the sale. The
+ *  reader's tiles still unflipped are named under every page: no page
+ *  lists them */
+const SAID_IN: Record<string, readonly string[]> = { eraEnd: ['eraEnd', 'lastRounds'], ironMarket: ['iron'], sell: ['sell', 'beer'] };
 /** the alerts that would say the same thing on every page of a round —
  *  the income below zero, the deck run out: told under the first page of
  *  the round they come with, not under the next */
