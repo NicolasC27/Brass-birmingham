@@ -1,22 +1,65 @@
 import { describe, expect, it } from 'vitest';
-import { TOWNS } from '@/game/data';
-import { tutorialSetup } from '@/game/quickplay';
-import type { GameState, SetupPayload } from '@/game/types';
-import { dealMisses, dealtAs } from '../guidedDeal';
+import { MERCHANTS, TOWNS } from '@/game/data';
+import { buildTargets } from '@/game/engine';
+import { TUTORIAL_SEEDS, tutorialSetup } from '@/game/quickplay';
+import type { Card, GameState, SetupPayload } from '@/game/types';
+import { dealMisses, dealtAs, worksInHand } from '../guidedDeal';
+import { buyersOf, forgesFrom } from '../lessonWords';
 
-/* What a deal must hold for the guided game to be dealt it, read on the
-   guided deal — seed 3, dealt as the office deals it — doctored to lack
-   one thing at a time */
+/* The guided game's deals, dealt as the office deals them: each holds what
+   the first lessons take for granted. How a game goes on each — the forge
+   fed by the reader's own mine, a first sale by round 5, no lesson missed
+   — is played out by app/tools/guide/deals.ts, too long for a test: an
+   engine that deals otherwise fails here first, and the list is drawn
+   again there */
 
 const ME = 0;
 const deal = (seed: number): GameState => dealtAs(tutorialSetup() as unknown as SetupPayload, seed);
+const industry = (g: GameState, kind: string): Card | undefined => g.players[ME].hand.find((c) => c.kind === 'industry' && c.industry === kind);
+/** who holds the merchants' tiles that buy */
+const layout = (g: GameState): string => (['cotton', 'manufacturer', 'all'] as const).map((tile) => MERCHANTS.filter((m) => (g.merchantTiles[m.id] ?? []).includes(tile)).map((m) => m.id).join('+')).join(' ');
+
+describe('the guided deals', () => {
+  it('are a dozen or so, each once, with the merchants laid out each their own way', () => {
+    expect(TUTORIAL_SEEDS.length).toBeGreaterThanOrEqual(8);
+    expect(new Set(TUTORIAL_SEEDS).size).toBe(TUTORIAL_SEEDS.length);
+    expect(new Set(TUTORIAL_SEEDS.map((s) => layout(deal(s)))).size).toBe(TUTORIAL_SEEDS.length);
+  });
+
+  describe.each(TUTORIAL_SEEDS)('seed %i', (seed) => {
+    const g = deal(seed);
+
+    it('seats the reader first: the machine plays after', () => {
+      expect(g.players[ME].isBot).toBe(false);
+      expect(g.order[0]).toBe(ME);
+      expect(g.current).toBe(ME);
+    });
+
+    it('hands a coal card and a forge card', () => {
+      expect(industry(g, 'coal')).toBeDefined();
+      expect(industry(g, 'iron')).toBeDefined();
+    });
+
+    it('leaves a mine free where the lesson on coal sends it', () => {
+      const places = buildTargets(g, ME, industry(g, 'coal')!).filter((x) => x.valid && x.industry === 'coal');
+      expect(places.some((x) => forgesFrom(g, ME, x.town).length > 0)).toBe(true);
+    });
+
+    it('names a buyer for every works the hand builds', () => {
+      const works = worksInHand(g, ME);
+      expect(works.length).toBeGreaterThan(0);
+      const buyers = buyersOf(g);
+      for (const w of works) expect(buyers.some((b) => b.goods === 'all' || b.goods.includes(w))).toBe(true);
+    });
+
+    it('lacks nothing', () => {
+      expect(dealMisses(g, ME)).toEqual([]);
+    });
+  });
+});
 
 describe('what a deal may lack', () => {
-  const doctored = (): GameState => structuredClone(deal(3));
-
-  it('nothing, on the deal the guide was written on', () => {
-    expect(dealMisses(deal(3), ME)).toEqual([]);
-  });
+  const doctored = (): GameState => structuredClone(deal(TUTORIAL_SEEDS[0]));
 
   it('the reader first to play', () => {
     const g = doctored();

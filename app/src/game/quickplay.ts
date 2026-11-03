@@ -40,6 +40,16 @@ export function quickSetup(): StoredSetup {
  *  kept by its code: the guide comes back with that table, and with no other */
 export const TUTORIAL_KEY = 'brassworks.tutorial.table';
 export const TUTORIAL_SEED = 3;
+/** the deals a guided game is dealt, each checked against the guide's words:
+ *  the reader plays first and holds a coal card and a forge card, a mine
+ *  may stand a canal away from a forge town, each works of the hand has a
+ *  buyer (guidedDeal.dealMisses) — and, played out, a reader who follows
+ *  the lessons feeds a forge from their own mine and sells by round 5,
+ *  whichever mine they pick, and no lesson is ever missed or left with no
+ *  way on. The first deal of each layout of the merchants' tiles that
+ *  holds, in seed order: app/tools/guide/deals.ts plays them out and
+ *  writes the list again */
+export const TUTORIAL_SEEDS: readonly number[] = [3, 395, 767, 1062, 1164, 1512, 1568, 1737, 2108, 2213, 2276, 2747];
 /** the deal's seed, which stood for the guided table before its code did */
 const TUTORIAL_SEED_KEY = 'brassworks.tutorial.v1';
 
