@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { getBoardOptions, setBoardOption } from '@/components/game/boardOptions';
 import { MINI_KEY } from '@/components/game/guideKeys';
@@ -6,32 +6,40 @@ import { LESSON_IDS, freshProgress, letPlayOn, progressAt, saveProgress } from '
 import { SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
 import type { HomeTable } from '../home';
-import { TUTORIAL_KEY, TUTORIAL_SEED, guidedResume, guidedTable, openGuided, quickSetup, resumeOf, startQuickGame, startTutorial } from '../quickplay';
+import { TUTORIAL_DEALT_KEY, TUTORIAL_KEY, TUTORIAL_SEEDS, drawTutorialSeed, guidedResume, guidedTable, lastTutorialSeed, openGuided, quickSetup, resumeOf, startQuickGame, startTutorial } from '../quickplay';
 
 /* the office deals the guided table its code — or keeps the line quiet,
    when a test says so — and reads out its register, which the mirror
    holds once `known`; nothing leaves this test */
 const office = vi.hoisted(() => ({
   open: null as (() => Promise<{ code: string }>) | null,
+  /** the seeds the office was asked to deal */
+  dealt: [] as (number | undefined)[],
   known: true,
   register: [] as HomeTable[],
   reread: null as (() => Promise<HomeTable[]>) | null,
 }));
 vi.mock('../home', async (load) => ({
   ...(await load<typeof import('../home')>()),
-  openHomeGame: () => (office.open ? office.open() : Promise.resolve({ code: 'NEW1' })),
+  openHomeGame: (seed?: number) => {
+    office.dealt.push(seed);
+    return office.open ? office.open() : Promise.resolve({ code: 'NEW1' });
+  },
   homeKnown: () => office.known,
   homeSnapshot: () => office.register,
   refreshHome: () => (office.reread ? office.reread() : Promise.resolve(office.register)),
 }));
 
 /* the guided game goes with the table it was opened at, by its code — not
-   with every table dealt the same seed */
+   with every table dealt the same seed. OLD_SEED is the one deal it was
+   remembered by before its code was kept */
+const OLD_SEED = 3;
 
 let store: Map<string, string>;
 beforeEach(() => {
   store = stubStorage();
   office.open = null;
+  office.dealt = [];
   office.known = true;
   office.register = [];
   office.reread = null;
@@ -42,32 +50,32 @@ const table = (code: string, over?: boolean): HomeTable => ({ code, name: 'Soho'
 describe('the guided table', () => {
   it('is the one whose code the guide was opened at', () => {
     store.set(TUTORIAL_KEY, 'GWE5');
-    expect(guidedTable('GWE5', TUTORIAL_SEED)).toBe(true);
+    expect(guidedTable('GWE5', OLD_SEED)).toBe(true);
     /* another table of the same deal is a table like any other */
-    expect(guidedTable('QK7P', TUTORIAL_SEED)).toBe(false);
+    expect(guidedTable('QK7P', OLD_SEED)).toBe(false);
   });
 
   it('is no table once the guide is left', () => {
-    expect(guidedTable('GWE5', TUTORIAL_SEED)).toBe(false);
+    expect(guidedTable('GWE5', OLD_SEED)).toBe(false);
   });
 
   it('is taken up once from the seed it was remembered by', () => {
-    store.set('brassworks.tutorial.v1', String(TUTORIAL_SEED));
+    store.set('brassworks.tutorial.v1', String(OLD_SEED));
     /* a table of another deal opened first does not take it */
     expect(guidedTable('QK7P', 81)).toBe(false);
-    expect(store.get('brassworks.tutorial.v1')).toBe(String(TUTORIAL_SEED));
-    expect(guidedTable('GWE5', TUTORIAL_SEED)).toBe(true);
+    expect(store.get('brassworks.tutorial.v1')).toBe(String(OLD_SEED));
+    expect(guidedTable('GWE5', OLD_SEED)).toBe(true);
     expect(store.get(TUTORIAL_KEY)).toBe('GWE5');
     expect(store.has('brassworks.tutorial.v1')).toBe(false);
     /* from then on, only that table */
-    expect(guidedTable('ZZ12', TUTORIAL_SEED)).toBe(false);
+    expect(guidedTable('ZZ12', OLD_SEED)).toBe(false);
   });
 
   it('stays bound through a quick game', async () => {
     store.set(TUTORIAL_KEY, 'GWE5');
     expect(await startQuickGame()).toBe('NEW1');
     expect(store.get(TUTORIAL_KEY)).toBe('GWE5');
-    expect(guidedTable('NEW1', TUTORIAL_SEED)).toBe(false);
+    expect(guidedTable('NEW1', OLD_SEED)).toBe(false);
   });
 });
 
@@ -137,6 +145,59 @@ describe('the guided table opened', () => {
     await expect(openGuided()).rejects.toThrow('offline');
     expect(store.get(TUTORIAL_KEY)).toBe('GWE5');
     expect(progressAt('GWE5')).toEqual(halfway);
+  });
+});
+
+/* each guided game is dealt one of the checked deals, and never the one
+   the reader played last: starting over is another game */
+describe('the guided deal', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('is any of the list but the last one', () => {
+    for (const last of [null, ...TUTORIAL_SEEDS]) {
+      const drawn = new Set(Array.from({ length: 100 }, (_, i) => drawTutorialSeed(last, () => i / 100)));
+      expect([...drawn].sort((a, b) => a - b)).toEqual([...TUTORIAL_SEEDS].sort((a, b) => a - b).filter((s) => s !== last));
+    }
+    /* a roll at its very top still draws one */
+    expect(TUTORIAL_SEEDS).toContain(drawTutorialSeed(null, () => 0.9999999));
+  });
+
+  it('is written down once the office has dealt it, and never dealt twice running', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const written: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      await startTutorial();
+      written.push(Number(store.get(TUTORIAL_DEALT_KEY)));
+    }
+    expect(office.dealt).toEqual(written);
+    for (const seed of written) expect(TUTORIAL_SEEDS).toContain(seed);
+    for (let i = 1; i < written.length; i++) expect(written[i]).not.toBe(written[i - 1]);
+  });
+
+  it('comes from the whole list to a newcomer', () => {
+    expect(lastTutorialSeed()).toBeNull();
+  });
+
+  it('is not the one deal of old, to a reader of the guide from then', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    store.set(TUTORIAL_KEY, 'GWE5');
+    expect(lastTutorialSeed()).toBe(OLD_SEED);
+    await startTutorial();
+    expect(office.dealt).toEqual([TUTORIAL_SEEDS.find((s) => s !== OLD_SEED)]);
+    /* nor to one who left the guide, and kept only the course's marks */
+    store.clear();
+    saveProgress({ ...freshProgress('OLD1'), passed: ['welcome'] });
+    expect(lastTutorialSeed()).toBe(OLD_SEED);
+  });
+
+  it('stays the last one while the office does not answer', async () => {
+    const last = TUTORIAL_SEEDS[2];
+    store.set(TUTORIAL_DEALT_KEY, String(last));
+    office.open = () => Promise.reject(new Error('offline'));
+    await expect(startTutorial()).rejects.toThrow('offline');
+    expect(store.get(TUTORIAL_DEALT_KEY)).toBe(String(last));
+    expect(office.dealt).toHaveLength(1);
+    expect(office.dealt[0]).not.toBe(last);
   });
 });
 

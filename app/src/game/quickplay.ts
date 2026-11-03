@@ -1,6 +1,6 @@
 import { setBoardOption } from '@/components/game/boardOptions';
 import { MINI_KEY } from '@/components/game/guideKeys';
-import { freshProgress, saveProgress } from '@/components/game/lessons';
+import { freshProgress, readLearnt, saveProgress } from '@/components/game/lessons';
 import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
 import { personaName } from '@/game/data';
@@ -35,11 +35,10 @@ export function quickSetup(): StoredSetup {
   };
 }
 
-/** the guided game: you against one gentle machine, canal era only, assistance on,
- *  and a fixed deal so the guide knows the hand. The table it is played at is
- *  kept by its code: the guide comes back with that table, and with no other */
+/** the guided game: you against one gentle machine, canal era only, assistance on.
+ *  The table it is played at is kept by its code: the guide comes back with
+ *  that table, and with no other */
 export const TUTORIAL_KEY = 'brassworks.tutorial.table';
-export const TUTORIAL_SEED = 3;
 /** the deals a guided game is dealt, each checked against the guide's words:
  *  the reader plays first and holds a coal card and a forge card, a mine
  *  may stand a canal away from a forge town, each works of the hand has a
@@ -50,6 +49,10 @@ export const TUTORIAL_SEED = 3;
  *  holds, in seed order: app/tools/guide/deals.ts plays them out and
  *  writes the list again */
 export const TUTORIAL_SEEDS: readonly number[] = [3, 395, 767, 1062, 1164, 1512, 1568, 1737, 2108, 2213, 2276, 2747];
+/** the seed of the reader's last guided deal: starting over is another game */
+export const TUTORIAL_DEALT_KEY = 'brassworks.tutorial.dealt';
+/** the deal every guided game was dealt before there was a list */
+const FIRST_SEED = 3;
 /** the deal's seed, which stood for the guided table before its code did */
 const TUTORIAL_SEED_KEY = 'brassworks.tutorial.v1';
 
@@ -102,6 +105,25 @@ export async function openGuided(again = false): Promise<string> {
   return startTutorial();
 }
 
+/** a guided deal to play: any of the list but the reader's last one */
+export function drawTutorialSeed(last: number | null, roll: () => number = Math.random): number {
+  const left = TUTORIAL_SEEDS.filter((s) => s !== last);
+  return left[Math.min(left.length - 1, Math.floor(roll() * left.length))] ?? TUTORIAL_SEEDS[0];
+}
+
+/** the seed of the reader's last guided deal — for a reader of the guide
+ *  from before the list, its one deal; none for a newcomer */
+export function lastTutorialSeed(): number | null {
+  try {
+    const dealt = localStorage.getItem(TUTORIAL_DEALT_KEY);
+    if (dealt !== null && /^\d+$/.test(dealt)) return Number(dealt);
+    const guided = localStorage.getItem(TUTORIAL_KEY) !== null || localStorage.getItem(TUTORIAL_SEED_KEY) !== null || readLearnt().length > 0;
+    return guided ? FIRST_SEED : null;
+  } catch {
+    return null;
+  }
+}
+
 export function tutorialSetup(): StoredSetup {
   return {
     players: [
@@ -117,12 +139,14 @@ export function tutorialSetup(): StoredSetup {
  *  office with the deal and nowhere else: the table form this browser keeps
  *  is the player's own, and quick play dresses its tables from it */
 export async function startTutorial(): Promise<string> {
-  const { code } = await openHomeGame(TUTORIAL_SEED, tutorialSetup() as unknown as SetupPayload);
+  const seed = drawTutorialSeed(lastTutorialSeed());
+  const { code } = await openHomeGame(seed, tutorialSetup() as unknown as SetupPayload);
   /* the guide goes with the table the office dealt, and the lessons start
      afresh there — only once it is dealt, so a table the office never
      opened takes nothing of the last one */
   try {
     localStorage.setItem(TUTORIAL_KEY, code);
+    localStorage.setItem(TUTORIAL_DEALT_KEY, String(seed));
     localStorage.removeItem(TUTORIAL_SEED_KEY);
     /* a fold left over from a past run must not re-apply to a fresh one */
     localStorage.removeItem(MINI_KEY);
