@@ -48,7 +48,7 @@ export const FR: Tongue = {
       what: 'Une mine de charbon produit des cubes de charbon : 2 à 5 selon le niveau, posés sur la tuile quand vous la construisez. Tout joueur relié à votre mine y prend son charbon gratuitement, pour bâtir ou poser un rail. La mine se retourne quand son dernier cube part — peu importe qui l’a pris — et c’est alors qu’elle fait monter votre revenu et qu’elle marquera ses points. Si elle est reliée à un emplacement marchand au moment où vous la bâtissez, ses cubes partent aussitôt au marché du charbon contre argent.',
       how: 'Il vous faut une carte qui l’autorise (la carte lieu de la ville, la carte industrie charbon pour une ville de votre réseau, ou un joker), un emplacement libre portant l’icône charbon, et l’argent — plus un fer aux niveaux III et IV. Choisissez la carte, l’action Construire, puis l’emplacement qui s’allume, et confirmez.',
       cost: 'Niveau I : 5 £, ère canal seulement, 2 cubes. Niveau II : 7 £, 3 cubes. Niveau III : 8 £ et 1 fer, 4 cubes. Niveau IV : 10 £ et 1 fer, 5 cubes. Vous en avez sept sur votre tapis (un I, deux de chaque autre niveau), et l’on bâtit toujours le plus bas niveau qui reste.',
-      gain: 'Retournée, une mine avance votre revenu de 4, 7, 6 ou 5 espaces (niveaux I à IV) et marque 1, 2, 3 ou 4 PV à chaque décompte d’ère où elle est encore là. À la construction, elle rapporte aussi le prix des cubes partis au marché, si elle est reliée à un marchand. Une mine vidée par vos rivaux vous rapporte autant qu’une mine vidée par vous.',
+      gain: 'Retournée, une mine avance votre revenu de 4, 7, 6 ou 5 cases (niveaux I à IV) et marque 1, 2, 3 ou 4 PV à chaque décompte d’ère où elle est encore là. À la construction, elle rapporte aussi le prix des cubes partis au marché, si elle est reliée à un marchand. Une mine vidée par vos rivaux vous rapporte autant qu’une mine vidée par vous.',
     },
     ironWorks: {
       topic: 'les forges',
@@ -56,7 +56,7 @@ export const FR: Tongue = {
       what: 'Une forge (usine sidérurgique) produit le fer : 4 à 6 barres posées sur la tuile à sa construction. Elle vend aussitôt au marché du fer tout ce qui y tient, reliée ou non à un marchand, et vous encaissez le prix de chaque case remplie. Le fer qui reste sert à qui en a besoin, n’importe où sur le plateau, et la forge se retourne quand sa dernière barre part.',
       how: 'Une carte qui l’autorise (la carte lieu de la ville, une carte forge pour une ville de votre réseau, ou un joker), un emplacement libre à l’icône forge, l’argent et un charbon relié au chantier. Choisissez la carte, l’action Construire, l’emplacement, puis confirmez.',
       cost: 'Niveau I : 5 £ et 1 charbon, ère canal seulement, 4 barres. Niveau II : 7 £ et 1 charbon, 4 barres. Niveau III : 9 £ et 1 charbon, 5 barres. Niveau IV : 12 £ et 1 charbon, 6 barres. Une tuile par niveau, quatre en tout sur votre tapis.',
-      gain: 'Retournée, une forge avance votre revenu de 3, 3, 2 ou 1 espace (niveaux I à IV) et marque 3, 5, 7 ou 9 PV en fin d’ère. À sa construction, elle rapporte aussi le prix des barres parties au marché du fer.',
+      gain: 'Retournée, une forge avance votre revenu de 3, 3, 2 ou 1 case (niveaux I à IV) et marque 3, 5, 7 ou 9 PV en fin d’ère. À sa construction, elle rapporte aussi le prix des barres parties au marché du fer.',
     },
     brewery: {
       topic: 'les brasseries',
@@ -64,7 +64,7 @@ export const FR: Tongue = {
       what: 'Une brasserie produit la bière dont les ventes et le double rail ont besoin : 1 baril posé à la construction en ère canal, 2 en ère rail, quel que soit son niveau. Vos propres barils se boivent partout, sans liaison ; ceux d’une brasserie adverse, seulement si elle est reliée. Elle se retourne quand son dernier baril est bu, par vous ou par un autre.',
       how: 'Une carte qui l’autorise (carte lieu de la ville, carte brasserie pour une ville de votre réseau, ou un joker), un emplacement libre à l’icône brasserie, l’argent et un fer — le fer n’a besoin d’aucune liaison. Choisissez la carte, Construire, l’emplacement, puis confirmez.',
       cost: 'Niveau I : 5 £ et 1 fer, ère canal seulement. Niveau II : 7 £ et 1 fer. Niveau III : 9 £ et 1 fer. Niveau IV : 9 £ et 1 fer, ère rail seulement. Sept brasseries sur votre tapis ; chacune reçoit 1 baril en ère canal et 2 en ère rail.',
-      gain: 'Retournée, une brasserie avance votre revenu de 4 espaces (niveau I) ou de 5 (niveaux II à IV) et marque 4, 5, 7 ou 9 PV. Chacune porte 2 icônes lien, ce qui compte pour les liaisons qui touchent sa ville.',
+      gain: 'Retournée, une brasserie avance votre revenu de 4 cases (niveau I) ou de 5 (niveaux II à IV) et marque 4, 5, 7 ou 9 PV. Chacune porte 2 icônes lien, ce qui compte pour les liaisons qui touchent sa ville.',
       short: {
         what: 'Une brasserie produit la bière dont les ventes ont besoin : 1 baril posé à la construction, quel que soit son niveau. Vos propres barils se boivent partout, sans liaison ; ceux d’une brasserie adverse, seulement si elle est reliée. Elle se retourne quand son dernier baril est bu, par vous ou par un autre.',
         cost: 'Niveau I : 5 £ et 1 fer. Niveau II : 7 £ et 1 fer. Niveau III : 9 £ et 1 fer. Le niveau IV est de l’ère rail, que la partie d’initiation ne joue pas. Chacune reçoit 1 baril.',
@@ -81,7 +81,7 @@ export const FR: Tongue = {
       what: 'La filature de coton est un ouvrage : elle ne produit rien, elle se vend. Construite, elle attend ; l’action Vendre la retourne quand elle est reliée à un marchand qui achète le coton (ou « tous biens ») et que vous buvez 1 bière. C’est seulement alors qu’elle fait monter votre revenu et qu’elle marquera ses points. Il n’existe pas de carte filature seule : ce sont les cartes doubles coton/manufacture.',
       how: 'Pour la bâtir : une carte lieu de la ville, une carte double coton/manufacture pour une ville de votre réseau, ou un joker, sur un emplacement à l’icône coton. Pour la retourner ensuite : l’action Vendre, un marchand relié qui achète le coton, et 1 bière.',
       cost: 'Niveau I : 12 £, ère canal seulement. Niveau II : 14 £ et 1 charbon. Niveau III : 16 £, 1 charbon et 1 fer. Niveau IV : 18 £, 1 charbon et 1 fer. Onze filatures sur votre tapis (3, 2, 3 et 3), et chacune se vend pour 1 bière.',
-      gain: 'Vendue, une filature avance votre revenu de 5, 4, 3 ou 2 espaces (niveaux I à IV) et marque 5, 5, 9 ou 12 PV en fin d’ère. Tant qu’elle n’est pas vendue, elle ne rapporte rien.',
+      gain: 'Vendue, une filature avance votre revenu de 5, 4, 3 ou 2 cases (niveaux I à IV) et marque 5, 5, 9 ou 12 PV en fin d’ère. Tant qu’elle n’est pas vendue, elle ne rapporte rien.',
     },
     manufacturer: {
       topic: 'les manufactures',
@@ -89,7 +89,7 @@ export const FR: Tongue = {
       what: 'La manufacture est un ouvrage, comme la filature : elle se retourne par l’action Vendre, reliée à un marchand qui achète les biens manufacturés (ou « tous biens »). C’est l’industrie aux huit niveaux, aux coûts et aux gains très irréguliers : chaque tuile se lit sur votre tapis. Ses cartes sont les cartes doubles coton/manufacture.',
       how: 'Pour la bâtir : une carte lieu de la ville, une carte double coton/manufacture pour une ville de votre réseau, ou un joker, sur un emplacement à l’icône manufacture. Pour la retourner : l’action Vendre, un marchand relié qui achète ces biens, et la bière demandée.',
       cost: 'Les huit niveaux : I, 8 £ et 1 charbon (canal seulement) ; II, 10 £ et 1 fer ; III, 12 £ et 2 charbons ; IV, 8 £ et 1 fer ; V, 16 £ et 1 charbon ; VI, 20 £ ; VII, 16 £, 1 charbon et 1 fer ; VIII, 20 £ et 2 fers. Toutes se vendent pour 1 bière, sauf la V qui en demande 2.',
-      gain: 'Vendue, une manufacture avance votre revenu de 5, 1, 4, 6, 2, 6, 4 ou 1 espace selon le niveau (I à VIII) et marque 3, 5, 4, 3, 8, 7, 9 ou 11 PV. Les niveaux III et VII n’ont aucune icône lien.',
+      gain: 'Vendue, une manufacture avance votre revenu de 5, 1, 4, 6, 2, 6, 4 ou 1 case selon le niveau (I à VIII) et marque 3, 5, 4, 3, 8, 7, 9 ou 11 PV. Les niveaux III et VII n’ont aucune icône lien.',
     },
     pottery: {
       topic: 'les poteries',
@@ -97,7 +97,7 @@ export const FR: Tongue = {
       what: 'La poterie est un ouvrage qui se vend comme la filature, à un marchand qui achète la céramique ou « tous biens ». Sur la carte des Midlands, elle n’a que quatre villes où se bâtir : Belper, Coventry, Stoke-on-Trent et Stafford. Les niveaux I et III portent une ampoule : ils ne se développent pas, il faut les construire. Et par exception, la poterie I se bâtit aussi à l’ère rail.',
       how: 'Une carte lieu d’une ville à emplacement poterie, la carte poterie pour une telle ville de votre réseau, ou un joker ; puis l’action Vendre la retourne, reliée à un marchand qui achète la céramique ou « tous biens ».',
       cost: 'Niveau I : 17 £ et 1 fer. Niveau II : 0 £ et 1 charbon. Niveau III : 22 £ et 2 charbons. Niveau IV : 0 £ et 1 charbon. Niveau V : 24 £ et 2 charbons, ère rail seulement. Les niveaux I, II et IV se vendent pour 1 bière, III et V pour 2.',
-      gain: 'Vendue, une poterie avance votre revenu de 5 espaces aux niveaux I, III et V, d’un seul aux niveaux II et IV. Elle marque 10, 1, 11, 1 ou 20 PV : la V est la tuile la plus lourde du jeu.',
+      gain: 'Vendue, une poterie avance votre revenu de 5 cases aux niveaux I, III et V, d’une seule aux niveaux II et IV. Elle marque 10, 1, 11, 1 ou 20 PV : la V est la tuile la plus lourde du jeu.',
       whyNot: 'Deux refus reviennent. Les poteries I et III portent une ampoule et ne se développent pas : il faut les bâtir pour les ôter du tapis. Et pour vendre, il faut un marchand relié qui achète la céramique ou « tous biens » — à deux joueurs, seule la tuile « tous biens » en prend.',
     },
     works: {
@@ -170,14 +170,14 @@ export const FR: Tongue = {
       words: ['vendre', 'vente', 'ventes', 'vend', 'vendu', 'vendue', 'sell', 'ecouler', 'commercer', 'negoce', 'commerce', 'livrer'],
       what: 'Vendre retourne vos ouvrages — filatures, manufactures, poteries. Défaussez n’importe quelle carte, choisissez une tuile non retournée reliée à un marchand qui achète ce bien, et buvez la bière qu’elle demande. La tuile se retourne : votre revenu monte aussitôt, ses points viendront en fin d’ère. Une même action peut vendre plusieurs tuiles, tant que la bière suit.',
       how: 'Choisissez une carte, l’action Vendre, puis la tuile à vendre : la table propose les marchands atteignables et la bière disponible. Ajoutez d’autres tuiles si vous le voulez, puis confirmez.',
-      gain: 'Chaque tuile vendue avance votre revenu du nombre d’espaces imprimé sur elle et marquera ses points à la fin de l’ère. Boire le baril du marchand ajoute son bonus. La vente elle-même ne verse pas d’argent.',
+      gain: 'Chaque tuile vendue avance votre revenu du nombre de cases imprimé sur elle et marquera ses points à la fin de l’ère. Boire le baril du marchand ajoute son bonus. La vente elle-même ne verse pas d’argent.',
       cost: 'Une carte, quelle qu’elle soit, et la bière de chaque tuile vendue : 1 baril le plus souvent, 2 pour la manufacture V et les poteries III et V. Aucun argent.',
       whyNot: 'Pour vendre, la tuile doit être un ouvrage non retourné (mines, forges et brasseries ne se vendent pas : elles se vident), relié par des liaisons à un marchand qui achète ce bien — une tuile marchande vierge n’achète rien. Il faut aussi la bière demandée : vos brasseries, une brasserie adverse reliée, ou le baril du marchand.',
     },
     loan: {
       topic: 'l’emprunt',
       words: ['emprunt', 'emprunts', 'emprunter', 'pret', 'prets', 'preter', 'credit', 'credits', 'banque', 'banquier', 'dette', 'dettes', 'loan', 'rembourser', 'remboursement', 'endetter', 'endettement'],
-      what: 'Emprunter est une action : défaussez une carte, recevez 30 £, et votre revenu recule de 3 niveaux (pas de 3 espaces), posé sur l’espace le plus haut du nouveau niveau. Un emprunt ne se rembourse jamais : son prix, c’est ce revenu perdu à chaque paie jusqu’à la fin. Impossible si le revenu devait passer sous le niveau −10.',
+      what: 'Emprunter est une action : défaussez une carte, recevez 30 £, et votre revenu recule de 3 niveaux (pas de 3 cases), posé sur la case la plus haute du nouveau niveau. Un emprunt ne se rembourse jamais : son prix, c’est ce revenu perdu à chaque paie jusqu’à la fin. Impossible si le revenu devait passer sous le niveau −10.',
       how: 'Choisissez une carte, l’action Emprunter, et confirmez : les 30 £ arrivent aussitôt, et la piste de revenu montre où tombe votre marqueur.',
       cost: 'Un emprunt rapporte 30 £ et coûte 3 niveaux de revenu, donc à chaque paie restante ce que ces trois niveaux auraient versé. Il ne se rembourse pas : on ne rend jamais les 30 £, ni en cours ni en fin de partie.',
       whyNot: 'Un emprunt fait descendre le revenu de 3 niveaux, et le revenu ne descend jamais sous −10. Si votre marqueur est déjà au niveau −8 ou plus bas, la banque refuse.',
@@ -281,10 +281,10 @@ export const FR: Tongue = {
     income: {
       topic: 'le revenu et sa piste',
       words: ['revenu', 'revenus', 'piste revenu', 'niveau revenu', 'paie', 'salaire', 'income', 'progression', 'piste progression', 'rente', 'augmenter revenu', 'espaces', 'espace'],
-      what: 'Le revenu, c’est l’argent que vous touchez à chaque fin de manche. La piste compte 100 espaces, et chaque espace montre un niveau de −10 à 30 : vous partez au niveau 0. Retourner une tuile avance votre marqueur du nombre d’espaces imprimé — les espaces se resserrent en montant — et un emprunt le fait reculer de 3 niveaux. Un revenu négatif se paie à la banque.',
+      what: 'Le revenu, c’est l’argent que vous touchez à chaque fin de manche. La piste compte 100 cases, et chaque case montre un niveau de −10 à 30 : vous partez au niveau 0. Retourner une tuile avance votre marqueur du nombre de cases imprimé — les cases se resserrent en montant — et un emprunt le fait reculer de 3 niveaux. Un revenu négatif se paie à la banque.',
       how: 'Le revenu ne monte que par les tuiles retournées — un ouvrage vendu, une mine, une forge ou une brasserie vidée — et par le bonus d’Oxford (2 cases). Il ne baisse que par l’emprunt (3 niveaux). La paie tombe à chaque fin de manche, sauf la toute dernière de la partie.',
       gain: 'À chaque fin de manche, vous touchez autant de livres que votre niveau de revenu — ou vous les payez s’il est négatif. La dernière manche de la partie n’a pas de paie.',
-      whyNot: 'Le chiffre d’une tuile retournée compte des espaces sur la piste, pas des livres : votre marqueur avance d’autant d’espaces, et la paie ne monte que lorsqu’il franchit la limite d’un niveau. Jusqu’à l’espace 10, chaque espace est un niveau ; au-delà, un niveau s’étend sur 2 espaces, puis 3 à partir de l’espace 31, puis 4 à partir du 61. Une tuile à +2 peut donc laisser la paie où elle était, si le marqueur reste dans le même niveau. Survolez la piste de revenu : chaque cran montre ses cases, et chaque pion combien il lui en manque pour le suivant.',
+      whyNot: 'Le chiffre d’une tuile retournée compte des cases sur la piste, pas des livres : votre marqueur avance d’autant de cases, et la paie ne monte que lorsqu’il franchit la limite d’un niveau. Jusqu’à la case 10, chaque case est un niveau ; au-delà, un niveau s’étend sur 2 cases, puis 3 à partir de la case 31, puis 4 à partir de la 61. Une tuile à +2 peut donc laisser la paie où elle était, si le marqueur reste dans le même niveau. Survolez la piste de revenu : chaque cran montre ses cases, et chaque pion combien il lui en manque pour le suivant.',
     },
     shortfall: {
       topic: 'la faillite',
@@ -312,9 +312,9 @@ export const FR: Tongue = {
     flip: {
       topic: 'les tuiles retournées',
       words: ['retourner', 'retourne', 'retournee', 'retournees', 'retourne tuile', 'flip', 'flipper', 'flippe', 'flippee', 'verso', 'tuile retournee', 'revers', 'tuile non retournee'],
-      what: 'Une tuile se retourne quand elle a fait son travail : une mine ou une forge quand son dernier cube part, une brasserie quand son dernier baril est bu — par n’importe qui — et un ouvrage quand vous le vendez. Retournée, elle avance aussitôt votre revenu du nombre d’espaces imprimé, et ses points compteront à chaque décompte d’ère où elle est encore là. Une tuile jamais retournée ne marque rien.',
+      what: 'Une tuile se retourne quand elle a fait son travail : une mine ou une forge quand son dernier cube part, une brasserie quand son dernier baril est bu — par n’importe qui — et un ouvrage quand vous le vendez. Retournée, elle avance aussitôt votre revenu du nombre de cases imprimé, et ses points compteront à chaque décompte d’ère où elle est encore là. Une tuile jamais retournée ne marque rien.',
       how: 'Mines, forges et brasseries se retournent quand leurs cubes ou leurs barils sont tous partis, qui que ce soit qui les ait pris. Filatures, manufactures et poteries ne se retournent que par l’action Vendre.',
-      gain: 'Retournée, une tuile avance aussitôt votre revenu du nombre d’espaces imprimé, et ses points de victoire comptent au décompte de l’ère. Non retournée, elle ne marque rien.',
+      gain: 'Retournée, une tuile avance aussitôt votre revenu du nombre de cases imprimé, et ses points de victoire comptent au décompte de l’ère. Non retournée, elle ne marque rien.',
     },
     levels: {
       topic: 'les niveaux des tuiles',
