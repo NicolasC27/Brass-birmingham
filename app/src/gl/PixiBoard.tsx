@@ -2406,11 +2406,11 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
                   key={o.industry}
                   type="button"
                   onClick={(e) => {
+                    /* the choice made or refused, Enter is Confirm's again: a
+                       focused button would keep it, and only pick again */
+                    e.currentTarget.blur();
                     if (!o.target?.valid) return onInvalid(chooser.key, o.target?.reason ?? tr('board.invalid.tileCard'));
                     useGame.getState().pickBuild(o.target);
-                    /* the choice made, Enter is Confirm's again: a focused
-                       button would keep it, and only pick the same again */
-                    e.currentTarget.blur();
                   }}
                   title={o.target?.valid ? undefined : reasonText(o.target?.reason ?? tr('board.chooser.unavailable'))}
                   aria-pressed={o.picked}
