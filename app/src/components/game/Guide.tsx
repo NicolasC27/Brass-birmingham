@@ -34,6 +34,7 @@ import { botReason, happenings } from './machineWords';
 import { holdFor, mayPlayOn, unreadOf } from './guideHold';
 import type { Reading } from './guideHold';
 import { expertMove, hasPlace, keepsFor, placeLens, spareFor } from './expertAdvice';
+import { leftGuide, useGuideTrail } from './guideTrail';
 
 /* ------------------------------------------------------------------ */
 /* The guide — a parchment note under the top bar.                     */
@@ -550,6 +551,8 @@ function Guide({ dock = 0 }: { dock?: number }) {
   useEffect(() => {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
+  /* what the lessons do at this table, noted for the direction (guideTrail.ts) */
+  useGuideTrail(table, tutorial, lctx, live, inView ? shownId : null, owed?.mode ?? null, detour ? (owed?.id ?? null) : null);
   /* the lesson on the hand wants the hand in view: the mat goes as it
      comes up, however the tile before it was read — by Next, or by the
      sheet opened, which passes it — and the sheet with it. Once as it
@@ -859,6 +862,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   );
   const leave = () => {
     setLeaving(false);
+    leftGuide(table, lctx, live, shownId);
     endTutorial();
   };
   /* leave the guide? Said to be final before it is: the lessons end at
