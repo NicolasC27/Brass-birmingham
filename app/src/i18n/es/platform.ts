@@ -913,6 +913,7 @@ const platform = {
             "Sus partidas: las jugadas, los resultados, la clasificación, los amigos y las invitaciones. Es el servicio mismo.",
                   "En su navegador: el token de sesión, el tema y el idioma, en almacenamiento local. Ninguna cookie, ningún rastreador, ninguna medición de audiencia.",
             "En la lista de espera del preestreno: la dirección de correo, el idioma de la página, el sitio del que llegó si se conoce, la fecha de inscripción y la de confirmación. La dirección IP de inscripción se guarda hasta la confirmación y luego se borra; solo se conserva el país que se deduce de ella, en nuestro propio servidor (base DB-IP). Es lo necesario para escribirle cuando abra el viaje de prueba.",
+            "Durante la partida guiada, y solo entonces: las lecciones mostradas, hechas, saltadas o dejadas para más tarde, el momento en que se deja la guía y la puntuación final de los dos jugadores, con la ronda, el tipo de pantalla (ordenador o tableta), el idioma, la versión del sitio y el reparto. Estas notas llevan un número sacado al azar para cada mesa guiada: ni su cuenta, ni su dirección IP, ni el código de la mesa se les adjuntan, y el sitio no guarda nada que permita relacionarlas con usted. Sirven para ver dónde se detienen los principiantes, para mejorar las lecciones, y se borran a los 180 días. Para que no se envíen, desmarque «Participar» en la página del Curso nocturno.",
             "No recogemos nada más. Ni nombre civil, ni dirección postal, ni medio de pago.",
           ],
         },

@@ -911,8 +911,9 @@ const platform = {
           p: [
             "Your account: the name, the e-mail address, the password (never in the clear: a scrypt hash), the opening date, the date this policy was accepted, and the IP address the account was opened from. That is what it takes to recognise you and write to you.",
             "Your games: the moves, the results, the ranking, friends and invitations. That is the service itself.",
-                  "In your browser: the session token, the theme and the language, in local storage. No cookie, no tracker, no analytics.",
+                  "In your browser: the session token, the theme and the language, in local storage. No cookie, no tracker, no audience measurement.",
             "On the preview’s waiting list: the e-mail address, the page’s language, the site you came from when it is known, the date you joined and the date you confirmed. The address you joined from (IP) is kept until you confirm, then erased; only the country read from it, on our own server (DB-IP database), is kept. This is what it takes to write to you when the trial run opens.",
+            "During the guided game, and only then: the lessons shown, done, skipped or put off until later, the moment the guide is left, and both players’ final scores, with the round, the kind of screen (computer or tablet), the language, the site’s version and the deal. These notes carry a number drawn at random for each guided table: neither your account, nor your IP address, nor the table’s code is attached to them, and the site keeps nothing that would link them to you. They show where beginners stop, so the lessons can be improved, and are erased after 180 days. To keep them from being sent, untick “Take part” on the Evening course page.",
             "We collect nothing else. No legal name, no postal address, no means of payment.",
           ],
         },
