@@ -1212,6 +1212,7 @@ const fr: typeof engame = {
       sellLink: 'La liaison à poser d’abord : {links}.',
       sellNow: 'Rien ne peut se vendre maintenant.',
       noWorks: 'Vous n’avez aucun ouvrage invendu sur le plateau : bâtissez-en un d’abord, ou passez cette leçon.',
+      noWorksLate: 'Vous n’avez aucun ouvrage invendu sur le plateau, et c’est la dernière manche : passez cette leçon.',
       loan: 'Aucun emprunt possible : le revenu ne peut pas descendre sous −10.',
       why: 'La table répond : « {why} ».',
       whyAt: 'À {town}, la table répond : « {why} ».',

@@ -1212,6 +1212,7 @@ const game: typeof engame = {
       sellLink: 'Die Verbindung, die zuerst fehlt: {links}.',
       sellNow: 'Nichts lässt sich jetzt verkaufen.',
       noWorks: 'Du hast keinen unverkauften Betrieb auf dem Spielplan: Baue zuerst einen, oder überspringe diese Lektion.',
+      noWorksLate: 'Du hast keinen unverkauften Betrieb auf dem Spielplan, und dies ist die letzte Runde: Überspringe diese Lektion.',
       loan: 'Kein Kredit möglich: das Einkommen kann nicht unter −10 sinken.',
       why: 'Der Tisch antwortet: „{why}“.',
       whyAt: 'In {town} antwortet der Tisch: „{why}“.',

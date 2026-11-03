@@ -1210,6 +1210,7 @@ const game = {
       sellLink: 'The link to lay first: {links}.',
       sellNow: 'Nothing can be sold right now.',
       noWorks: 'You have no unsold works on the board: build one first, or skip this lesson.',
+      noWorksLate: 'You have no unsold works on the board, and this is the last round: skip this lesson.',
       loan: 'No loan is possible: the income cannot sink below −10.',
       why: 'The table answers: “{why}”.',
       whyAt: 'At {town}, the table answers: “{why}”.',

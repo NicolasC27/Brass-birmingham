@@ -1212,6 +1212,7 @@ const game: typeof engame = {
       sellLink: 'La conexión que tender primero: {links}.',
       sellNow: 'Nada se puede vender ahora.',
       noWorks: 'No tienes ninguna fábrica sin vender en el tablero: construye una primero, o salta esta lección.',
+      noWorksLate: 'No tienes ninguna fábrica sin vender en el tablero, y es la última ronda: salta esta lección.',
       loan: 'Ningún préstamo es posible: los ingresos no pueden bajar de −10.',
       why: 'La mesa responde: «{why}».',
       whyAt: 'En {town}, la mesa responde: «{why}».',
