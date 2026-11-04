@@ -299,7 +299,7 @@ function Funnel() {
               <Panel title="Leçon par leçon" meta="dans l’ordre du guide">
                 <Lessons f={f} />
                 <p className="mt-4 font-ui text-[12px] leading-relaxed text-iron-400">
-                  Une leçon est vue quand elle est à l’écran, ou passée guide replié. « Perdue » : une table sans nouvelles depuis avant-hier (l’office ne garde que le jour de chaque événement), ni menée au bout ni quittée, sur la dernière leçon montrée. Les durées vont de la leçon montrée à la leçon passée, en actions jouées et en temps. Un écran ou une donne lus seuls ne se montrent qu’à partir de {TRAIL_FEW} tables.
+                  Une leçon est vue quand elle est à l’écran, ou passée guide replié. « Perdue » : une table sans nouvelles depuis avant-hier (l’office ne garde que le jour de chaque événement), ni menée au bout ni quittée, sur la dernière leçon montrée — y compris celle dont le lecteur a décoché « Participer » en route, ou qu’il a reprise depuis le début : elle se tait sans quitter le guide. Les durées vont de la leçon montrée à la leçon passée, en actions jouées et en temps. Un écran ou une donne lus seuls ne se montrent qu’à partir de {TRAIL_FEW} tables.
                 </p>
               </Panel>
             </>
