@@ -1,8 +1,8 @@
 import { INDUSTRIES, LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
-import { hasPresence, merchantDemand, networkTowns } from '@/game/engine';
+import { hasPresence, linkTargets, merchantDemand, networkTowns } from '@/game/engine';
 import type { Motif } from '@/game/progress';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
-import { lastRound } from './lessons';
+import { LINK_WORTH, lastRound, linkIcons } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* The words a lesson is said in. The guided game is a short one — the */
@@ -20,6 +20,7 @@ const SHORT: Readonly<Record<string, string>> = {
   eraEnd: 'eraEndShort',
   plan: 'planShort',
   tips: 'tipsShort',
+  linkWorth: 'linkWorthShort',
   lastRounds: 'lastRoundsShort',
 };
 
@@ -199,6 +200,25 @@ export function worksOnMat(g: GameState, me: number): MatWorks[] {
   });
   const now = tops.filter((x) => INDUSTRIES[x.industry][x.level - 1].eras.includes(g.era));
   return now.length ? now : tops;
+}
+
+/** a link the reader may lay now, and the icons at its ends */
+export interface Worthy {
+  id: string;
+  a: string;
+  b: string;
+  icons: number;
+}
+
+/** the links the reader may lay now whose ends carry the icons a link is
+ *  worth laying for, the most first, the board's order breaking a tie:
+ *  what the aim on links points at, read off the tiles as they stand */
+export function worthyLinks(g: GameState, me: number): Worthy[] {
+  return linkTargets(g, me)
+    .filter((x) => x.valid)
+    .map((x) => ({ id: x.link.id, a: x.link.a, b: x.link.b, icons: linkIcons(g, me, x.link.id) }))
+    .filter((x) => x.icons >= LINK_WORTH)
+    .sort((p, q) => q.icons - p.icons);
 }
 
 /** below this a purse builds little: a loan taken with less was for want of money */

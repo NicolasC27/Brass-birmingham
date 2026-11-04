@@ -26,9 +26,9 @@ import type { Read } from './guideRead';
 import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
-import { LAST_LESSON, LESSONS, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn } from './lessons';
+import { LAST_LESSON, LESSONS, LINKS_ASKED, LINK_WORTH, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn, worthyLaid } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
-import { barrelsSaid, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, worksOnMat } from './lessonWords';
+import { barrelsSaid, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, worksOnMat, worthyLinks } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
 import { botReason, happenings } from './machineWords';
 import { holdFor, mayPlayOn, unreadOf } from './guideHold';
@@ -90,6 +90,8 @@ const fit = (p: Pos, w = window.innerWidth, h = window.innerHeight): Pos => {
 const listed = (items: string[], type: 'conjunction' | 'disjunction'): string => new Intl.ListFormat(localeOf(getLang()), { type }).format(items);
 /** towns named so */
 const townList = (ids: string[], type: 'conjunction' | 'disjunction'): string => listed(ids.map((id) => TOWN_BY_ID[id]?.name ?? id), type);
+/** a place of the map named: a town, or a merchant */
+const placeName = (id: string): string => TOWN_BY_ID[id]?.name ?? MERCHANT_BY_ID[id]?.name ?? id;
 
 /** the figures a lesson's text is written with: the table as it stands,
  *  and what it started from — a lesson read again later still says how
@@ -116,6 +118,10 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
   const tiles = worksOnMat(game, me).map(({ industry, level, cost, coal, iron }) =>
     t('game.guide.worksTile.line', { industry: t(`game.guide.worksTile.${industry}`), level: roman(level), cost: listed([t('game.guide.worksTile.money', { n: cost }), ...(coal ? [t('game.guide.worksTile.coal', { n: coal })] : []), ...(iron ? [t('game.guide.worksTile.iron', { n: iron })] : [])], 'conjunction') }),
   );
+  /* the links worth laying for the icons at their ends, the best two named,
+     and how many of those the aim asks for are laid */
+  const worthy = worthyLinks(game, me).slice(0, 2).map((x) => t('game.guide.worthy.line', { a: placeName(x.a), b: placeName(x.b), n: x.icons }));
+  const laid = worthyLaid({ g: game, me, sel: null, mat: null });
   /* who else lays links and drinks barrels: the one rival by name — the
      machine, at the guided table — else another player, never a blank */
   const others = game.players.filter((_, i) => i !== me);
@@ -124,7 +130,7 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
      and the pointer's verb is the finger's */
   const key = (clause: string, bound: string) => (finger ? '' : ` ${t(`game.guide.keys.${clause}`, { key: bound })}`);
   const tap = t(finger ? 'game.guide.tap.touch' : 'game.guide.tap.click');
-  return { bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: key('mat', keyLabel(k.mat)), keyLedger: key('ledger', keyLabel(k.ledger)), keyMarket: key('market', keyLabel(k.market)), keyVp: key('vp', keyLabel(k.vpTrack)), keyEnter: key('enter', ''), tap, Tap: tap.charAt(0).toUpperCase() + tap.slice(1) };
+  return { bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', min: LINK_WORTH, worthy: worthy.length ? t('game.guide.worthy.some', { list: listed(worthy, 'disjunction') }) : t('game.guide.worthy.none', { min: LINK_WORTH }), sofar: laid > 0 ? t('game.guide.worthy.sofar', { n: Math.min(laid, LINKS_ASKED), of: LINKS_ASKED }) : '', forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: key('mat', keyLabel(k.mat)), keyLedger: key('ledger', keyLabel(k.ledger)), keyMarket: key('market', keyLabel(k.market)), keyVp: key('vp', keyLabel(k.vpTrack)), keyEnter: key('enter', ''), tap, Tap: tap.charAt(0).toUpperCase() + tap.slice(1) };
 }
 
 /** a look at a seat's last move, from this moment */

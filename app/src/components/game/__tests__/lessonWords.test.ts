@@ -6,7 +6,7 @@ import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
 import { MOTIFS } from '@/game/progress';
 import { LESSON_IDS } from '../lessons';
-import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat } from '../lessonWords';
+import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat, worthyLinks } from '../lessonWords';
 
 /* the words the lessons are said in, at a guided table — you against
    Wedgwood, the canal era only, on seed 3, one of the guided game's
@@ -157,6 +157,27 @@ describe('the works the mat offers next', () => {
     /* all built: nothing to quote */
     g.players[0].stacks = { ...g.players[0].stacks, cotton: [], manufacturer: [], pottery: [] };
     expect(worksOnMat(g, 0)).toEqual([]);
+  });
+});
+
+describe('the links worth laying for their icons', () => {
+  it('are those the reader may lay now whose ends carry three icons or more, the most first', () => {
+    /* the reader's mine in Redditch: two icons, and two for each merchant */
+    const g = firstRound(table());
+    expect(worthyLinks(g, 0)).toEqual([
+      { id: 'redditch--m-oxford', a: 'redditch', b: 'm-oxford', icons: 4 },
+      { id: 'redditch--m-gloucester', a: 'redditch', b: 'm-gloucester', icons: 4 },
+    ]);
+    /* the mine gone, a merchant's two alone are not enough */
+    const bare = structuredClone(g);
+    delete bare.tiles['redditch:0'];
+    expect(worthyLinks(bare, 0)).toEqual([]);
+  });
+
+  it('are said under the short game\'s own words', () => {
+    const g = table();
+    expect(stepKeyOf('linkWorth', g, 0)).toBe('linkWorthShort');
+    expect(stepKeyOf('linkWorth', table('standard'), 0)).toBe('linkWorth');
   });
 });
 

@@ -5,7 +5,7 @@ import type { GameAction } from '@/game/actions';
 import { LINKS, TOWNS } from '@/game/data';
 import { buildTargets, canLoan, ironSources, linkTargets, newGame, sellTargets } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
-import { LAST_LESSON, LESSON_IDS, back, cheapestWorks, closed, deedOf, detourOf, due, forward, freshProgress, lessonIndex, letPlayOn, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn } from '../lessons';
+import { LAST_LESSON, LESSON_IDS, LINKS_ASKED, back, cheapestWorks, closed, deedOf, detourOf, due, forward, freshProgress, lessonIndex, letPlayOn, linkIcons, mayLater, optionalNow, pass, progressAt, readProgress, reread, saveProgress, see, setAside, settle, wayOn, worthyLaid } from '../lessons';
 import { stepKeyOf } from '../lessonWords';
 import type { LessonCtx, Progress } from '../lessons';
 
@@ -847,6 +847,62 @@ describe('the aims of the second half', () => {
     expect(optionalNow('barrel', ctx(none))).toBe(true);
     expect(stepKeyOf('barrel', none, 0, true)).toBe('barrelGone');
     expect(stepKeyOf('barrel', none, 0)).toBe('barrel');
+  });
+});
+
+describe('the aim for points', () => {
+  /* the reader's mine stands in Redditch: a canal from it to Oxford or to
+     Gloucester carries its two icons and the merchant's two */
+  const OXFORD = 'redditch--m-oxford';
+  const GLOUCESTER = 'redditch--m-gloucester';
+  const canal = (g: GameState, link: string): GameState => play(g, { kind: 'network', card: g.players[0].hand[0].id, link });
+  /** the era's second half, the reader to play */
+  const half = (g: GameState = round2()): GameState => ({ ...g, round: 5 });
+
+  it('come after the link to a buyer, from the era\'s half, and never in the last round', () => {
+    expect(LESSON_IDS.slice(lessonIndex('reach'), lessonIndex('barrel') + 1)).toEqual(['reach', 'linkWorth', 'barrel']);
+    const p = upTo('linkWorth');
+    /* before the half, the barrel's aim is given meanwhile */
+    expect(due(p, ctx(round2()))).toMatchObject({ id: 'barrel', mode: 'do' });
+    expect(due(p, ctx(half()))).toMatchObject({ id: 'linkWorth', mode: 'do' });
+    expect(due(pass(p, 'linkWorth'), ctx(half()))).toMatchObject({ id: 'barrel', mode: 'do' });
+    /* the last round has its own page, and then no round for them */
+    const last = { ...round2(), round: 10 };
+    expect(due(pass(p, 'lastRounds'), ctx(last))).toMatchObject({ id: 'barrel', mode: 'do' });
+    expect(stepKeyOf('linkWorth', half(), 0)).toBe('linkWorthShort');
+    expect(stepKeyOf('linkWorth', { ...half(), eraLength: 'standard' }, 0)).toBe('linkWorth');
+  });
+
+  it('asks for two links that carry their icons, laid from the era\'s half', () => {
+    const r2 = round2();
+    expect(linkIcons(r2, 0, OXFORD)).toBe(4);
+    /* a canal laid before the half is not one of them */
+    const early = half(canal(r2, OXFORD));
+    expect(worthyLaid(ctx(early))).toBe(0);
+    let p = see(upTo('linkWorth'), 'linkWorth', ctx(early));
+    const one = canal(early, GLOUCESTER);
+    expect(worthyLaid(ctx(one))).toBe(1);
+    expect(settle(p, ctx(one))).toBe(p);
+    const g = half();
+    p = see(upTo('linkWorth'), 'linkWorth', ctx(g));
+    const two = canal(canal(g, OXFORD), GLOUCESTER);
+    expect(worthyLaid(ctx(two))).toBe(LINKS_ASKED);
+    expect(settle(p, ctx(two)).passed.at(-1)).toBe('linkWorth');
+    /* with no tile at either end but the merchant, a canal carries two icons: not enough */
+    const bare = structuredClone(two);
+    delete bare.tiles['redditch:0'];
+    expect(worthyLaid(ctx(bare))).toBe(0);
+    /* an aim: the coach grades the canal */
+    expect(deedOf(ctx(canal(g, OXFORD)), ctx(two))).toBeNull();
+  });
+
+  it('keeps the links laid when the aim is set aside', () => {
+    const g = half();
+    const p = setAside(see(upTo('linkWorth'), 'linkWorth', ctx(g)), 'linkWorth', ctx(g));
+    const two = canal(canal(g, OXFORD), GLOUCESTER);
+    /* back the next round: done meanwhile, a page that says so */
+    expect(two.round).toBe(6);
+    expect(due(p, ctx(two))).toMatchObject({ id: 'linkWorth', mode: 'already' });
   });
 });
 

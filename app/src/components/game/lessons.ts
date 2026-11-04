@@ -1,5 +1,5 @@
 import { marketBuyPrice } from '@/game/data';
-import { buildTargets, eraRounds, ironSources, sellTargets } from '@/game/engine';
+import { buildTargets, eraRounds, ironSources, projectEraScores, sellTargets } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import type { GameState, Verb } from '@/game/types';
 
@@ -117,9 +117,29 @@ const drankBarrel = (c: LessonCtx): boolean =>
 /** a barrel still standing at a merchant of this table */
 const barrelsLeft = (c: LessonCtx): boolean => Object.values(c.g.merchantBeer).some((n) => n > 0);
 
+/** the round the canal era's second half opens with */
+const halfRound = (g: GameState): number => Math.ceil(eraRounds(g.players.length) / 2);
 /** the second half of the era, or the rail's: advice for the rounds left
  *  is given when they are the rounds left */
-const halfway = (c: LessonCtx): boolean => c.g.era === 'rail' || c.g.round >= Math.ceil(eraRounds(c.g.players.length) / 2);
+const halfway = (c: LessonCtx): boolean => c.g.era === 'rail' || c.g.round >= halfRound(c.g);
+
+/** what a link counts at an era's end as the board stands: the link
+ *  icons at its ends, whoever's tiles carry them, two for a merchant —
+ *  the engine's own count */
+export const linkIcons = (g: GameState, seat: number, id: string): number => projectEraScores({ ...g, links: { [id]: { owner: seat, era: g.era } } })[seat].links;
+/** the icons a link must carry at its ends to be worth the card it costs */
+export const LINK_WORTH = 3;
+/** the links the aim on links asks for: a round's two actions (the texts
+ *  say two) */
+export const LINKS_ASKED = 2;
+/** the reader's links laid since the era's half and on the board still,
+ *  whose ends carry the icons they are worth laying for: the first canal,
+ *  laid for a forge, is not one of them */
+export const worthyLaid = (c: LessonCtx): number =>
+  c.g.ledger
+    .filter((e) => e.player === c.me && e.key === 'network' && (e.era === 'rail' || e.round >= halfRound(c.g)))
+    .flatMap((e) => [e.vars?.linkId, e.vars?.linkId2])
+    .filter((id) => typeof id === 'string' && c.g.links[id]?.owner === c.me && linkIcons(c.g, c.me, id) >= LINK_WORTH).length;
 
 /** the game's last two rounds: the rail's, or a short game's canal */
 const closing = (c: LessonCtx): boolean => (c.g.era === 'rail' || c.g.eraLength === 'short') && c.g.round >= eraRounds(c.g.players.length) - 1;
@@ -210,6 +230,12 @@ export const LESSONS: readonly Lesson[] = [
      works within reach of its buyer, by whoever's links; a merchant's
      barrel drunk — with none left standing, one to pass */
   { id: 'reach', done: linkedWorks, deferrable: true, aim: true },
+  /* and an aim for points rather than moves, from the era's half as the
+     plan that names it: links whose ends carry icons, laid from then on —
+     two, a round's worth: the reader who follows the lessons lays far fewer
+     than the machine, and loses most of the game there. None in the last
+     round: its own page says what each last action should do */
+  { id: 'linkWorth', done: (c) => worthyLaid(c) >= LINKS_ASKED, when: halfway, ahead: true, deferrable: true, aim: true },
   { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
   /* what each last action should do: it comes when they are the last,
      before an aim still open */
