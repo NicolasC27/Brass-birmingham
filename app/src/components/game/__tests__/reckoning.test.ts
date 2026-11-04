@@ -4,10 +4,11 @@ import { chooseBotMove } from '@/game/bot';
 import { BOT_SKILL, INDUSTRIES } from '@/game/data';
 import { newGame } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
+import { LANGS, trIn } from '@/i18n';
 import { CHAPTER_IDS } from '@/platform/cours';
 import { LESSON_IDS } from '../lessons';
 import { TAUGHT, reckon } from '../reckoning';
-import type { AdviceId } from '../reckoning';
+import type { AdviceId, Source } from '../reckoning';
 
 /* the reckoning of a short game played out: you against Wedgwood on seed
    3, one of the guided game's deals, both chairs played to the end by the
@@ -125,5 +126,21 @@ describe('the reckoning of a short game', () => {
     expect(reckon({ ...over, abandoned: true }, 0)).toBeNull();
     expect(reckon({ ...over, eraLength: 'standard' }, 0)).toBeNull();
     expect(reckon(over, 5)).toBeNull();
+  });
+
+  it('has its words in the four tongues', () => {
+    const sources: Source[] = ['tiles', 'links', 'barrels', 'purse', 'level', 'again', 'owed'];
+    const keys = [
+      ...(Object.keys(TAUGHT) as AdviceId[]).map((id) => `advice.${id}`),
+      ...sources.flatMap((x) => [`source.${x}`, `rows.${x}`, `tips.${x}`]),
+      ...['won', 'lost', 'lead', 'gap', 'you', 'canals', 'next', 'lesson', 'chapter', 'chapterAria', 'rows.total'],
+      ...['title', 'unflipped', 'tile', 'idle', 'passes', 'bare', 'beyond', 'none'].map((x) => `left.${x}`),
+    ];
+    for (const lang of LANGS)
+      for (const k of keys) {
+        const said = trIn(lang, `game.reckoning.${k}`, { n: 2, vp: 4, mine: 1, theirs: 3, rival: 'Wedgwood', money: '£5', cap: '£60', most: 15, list: 'x', what: 'y', source: 'z', gap: 1, title: 't', industry: 'i', level: 'II', town: 'T' });
+        expect(said, `${lang} ${k}`).not.toContain('game.reckoning');
+        expect(said, `${lang} ${k}`).not.toMatch(/\{[a-z]+\}/);
+      }
   });
 });

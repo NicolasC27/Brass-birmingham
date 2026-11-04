@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { setBoardOption } from './boardOptions';
 import { LAST_LESSON, LESSONS, closed, progressAt, saveProgress } from './lessons';
 import { PortraitMedallion } from './PlayerRail';
+import ReckoningPaper from './ReckoningPaper';
 import { useReducedMotion } from './useReducedMotion';
 import { useLayer } from './useLayer';
 
@@ -391,6 +392,15 @@ export default function GameOverModal({
           </table>
         </div>
 
+        {/* why the guided game was won or lost, from the finished game
+            alone: the points by source, what was left on the table, what
+            to do better — then the guide's last lesson */}
+        {guided && !abandoned && me >= 0 && (
+          <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="mt-5">
+            <ReckoningPaper game={game} me={me} wide />
+          </motion.div>
+        )}
+
         {/* the guided game ends here: the guide's last lesson, on its own
             paper, with the roads it names */}
         {guided && !abandoned && (
@@ -419,8 +429,8 @@ export default function GameOverModal({
           </motion.div>
         )}
 
-        {/* the ways out: a plate taller than the window scrolls under them,
-            never over them */}
+        {/* the ways out: a plate taller than the window — the guided game's,
+            with its reckoning — scrolls under them, never over them */}
         <div className="sticky -bottom-4 z-10 -mx-5 mt-2 px-5 pb-4 pt-4" style={{ background: 'linear-gradient(180deg, rgba(28,21,16,0), rgb(28,21,16) 10px)' }}>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {/* a rematch reshuffles this browser's own game: at an online

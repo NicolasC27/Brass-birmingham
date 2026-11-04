@@ -16,6 +16,8 @@ import { linkIcons } from './lessons';
  *  in the purse, fifteen at most */
 const PER_POINT = 4;
 const MOST = 15;
+/** the purse past which the close counts nothing more */
+export const PURSE_CAP = MOST * PER_POINT;
 const WORKS: readonly IndustryType[] = ['cotton', 'manufacturer', 'pottery'];
 
 /** the flipped tiles of one level, and what they scored */
@@ -196,7 +198,7 @@ export function reckon(g: GameState, me: number): Reckoning | null {
     worth: unflipped.reduce((n, x) => n + x.worth, 0),
     passes,
     bare: mine.laid.filter((l) => l.vp === 0),
-    beyond: Math.max(0, mine.books.money - MOST * PER_POINT),
+    beyond: Math.max(0, mine.books.money - PURSE_CAP),
   };
   return { me: mine, rival, won, gaps, left, advice: adviceFor(mine, rival, left) };
 }
@@ -217,7 +219,7 @@ function adviceFor(me: Sources, rival: Sources, left: Left): Advice[] {
     again: { stake: rival.books.again - me.books.again, vars: { mine: me.books.again, theirs: rival.books.again } },
     barrels: { stake: rival.barrels - me.barrels, vars: { mine: me.barrels, theirs: rival.barrels } },
     level: { stake: rival.books.level - me.books.level, vars: { mine: me.books.level, theirs: rival.books.level } },
-    hoard: { stake: Math.floor(left.beyond / PER_POINT), vars: { money: left.beyond, cap: MOST * PER_POINT, most: MOST } },
+    hoard: { stake: Math.floor(left.beyond / PER_POINT), vars: { money: left.beyond, cap: PURSE_CAP, most: MOST } },
     idle: { stake: idle * perAction, vars: { n: idle, passes: left.passes, bare: left.bare.length } },
     owed: { stake: me.owed, vars: { vp: me.owed } },
   };
