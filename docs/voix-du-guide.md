@@ -1,6 +1,6 @@
 # La voix du guide
 
-Le guide de la partie guidée compte vingt-six leçons ; la voix en dit neuf.
+Le guide de la partie guidée compte vingt-huit leçons ; la voix en dit neuf.
 Le texte écrit à l'écran garde l'explication complète ; la voix ne fait
 que le personnage : le tenancier d'une maison de jeu de Birmingham, ravi
 de voir arriver un débutant, et plus ravi encore de le voir se faire
