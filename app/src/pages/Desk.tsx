@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { BarChart3, ChevronDown, Coins, GraduationCap, History, LayoutGrid, LogOut, Mail, MailOpen, Plus, Send, UserX, Users, X } from 'lucide-react';
 import VerifyBanner from '@/components/site/VerifyBanner';
 import { Refusal, inputClass } from '@/components/site/PageShell';
+import TrailNotice from '@/components/site/TrailNotice';
 import Button from '@/components/platform/Button';
 import SeatToken from '@/components/platform/SeatToken';
 import RankBadge from '@/components/platform/RankBadge';
@@ -181,7 +182,8 @@ function MemberHeader() {
 /* ------------------------------ Bandeau tutoriel ------------------------------ */
 
 /* the guided game: back to its table when one is left unfinished, else a
-   new one — and a word when the office does not deal it */
+   new one — and a word when the office does not deal it, and one on what
+   it notes, with the reader's no */
 function TutorialStrip({ className }: { className?: string }) {
   const t = useT();
   const guided = useGuidedGame();
@@ -200,6 +202,7 @@ function TutorialStrip({ className }: { className?: string }) {
         </Button>
       </div>
       <Refusal text={guided.failed ? t('platform.desk.tutorial.failed') : null} />
+      <TrailNotice className="mt-3" />
     </div>
   );
 }

@@ -9,9 +9,9 @@ import { useGuidedGame } from '@/hooks/use-guided-game';
 import { LESSONS, lessonsRead, lessonsToRedo } from '@/platform/cours';
 import { shortKeyOf } from '@/components/game/lessonWords';
 import { LAST_LESSON } from '@/components/game/lessons';
-import { setTrailOff, useTrailOff } from '@/components/game/guideTrail';
 import { getChapters } from '@/components/rules/rulesData';
 import PageShell, { Refusal } from '@/components/site/PageShell';
+import TrailNotice from '@/components/site/TrailNotice';
 import ProgressCard from '@/components/desk/ProgressCard';
 
 /* ------------------------------------------------------------------ */
@@ -37,8 +37,6 @@ export default function Cours() {
      start over at a new one, as they do when the reader asks */
   const guided = useGuidedGame();
   const { table, unfinished } = guided;
-  /* what the guided game notes for the direction, and the reader's no */
-  const trailOff = useTrailOff();
   /* the syllabus is the register's own table of contents — all twelve
      chapters, glossary and approximations included — not a copy of ten */
   const chapters = getChapters();
@@ -86,16 +84,7 @@ export default function Cours() {
           {unseen.length > 0 && <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.cours.unseen', { list: unseen.map(titleOf).join(', ') })}</p>}
           {table && <p className="mt-2 font-serif text-[13px] italic text-paper-300">{t('platform.cours.waits', { name: tableTitle(table.name, lang), round: table.round })}</p>}
           <Refusal text={guided.failed ? t('platform.cours.failed') : null} />
-          <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 font-serif text-[13px] italic text-paper-300">
-            <span>{t('platform.trail.line')}</span>
-            <label className="inline-flex items-center gap-1.5 font-ui text-[12px] not-italic text-paper-100 coarse:min-h-[44px]">
-              <input type="checkbox" checked={!trailOff} onChange={(e) => setTrailOff(!e.target.checked)} className="h-4 w-4 accent-[rgb(var(--brass-300))]" />
-              {t('platform.trail.keep')}
-            </label>
-            <Link to="/legal#privacy" className="font-ui text-[10.5px] font-semibold uppercase not-italic tracking-label text-brass-500 transition-colors hover:text-paper-100">
-              {t('platform.trail.more')} →
-            </Link>
-          </p>
+          <TrailNotice className="mt-3" />
 
           {/* the sheet of progress keeps to the lessons' column: alone under
               the grid it was a 1176px cartouche for two lines */}
