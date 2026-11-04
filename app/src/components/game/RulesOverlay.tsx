@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, type MouseEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -78,7 +79,10 @@ function RulesOverlay() {
   /* a sheet across the whole table: it holds the keyboard while it is up */
   const sheet = useLayer(open, () => setOpen(false), { modal: true });
 
-  return (
+  /* hung on the page's body, over whatever the table has open — the
+     analysis's curve stands there too, above the table's own layers */
+  if (typeof document === 'undefined') return null;
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -128,7 +132,8 @@ function RulesOverlay() {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
