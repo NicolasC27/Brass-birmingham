@@ -353,9 +353,16 @@ export class Wire {
   }
 
   /** what the lessons did at the guided table, a few events at a time: no
-   *  answer awaited, and held in the outbox while the line is down */
-  trail(events: TrailEvent[]): void {
-    this.send({ t: 'guide.trail', events });
+   *  answer awaited, and never held in the outbox — with the line down the
+   *  page keeps them, so many at most (components/game/guideTrail.ts), and
+   *  tries again. Whether the frame went */
+  trail(events: TrailEvent[]): boolean {
+    if (!this.known || this.socket?.readyState !== WebSocket.OPEN) {
+      this.open();
+      return false;
+    }
+    this.socket.send(encode({ t: 'guide.trail', events }));
+    return true;
   }
 
   /** a fault of this page, for the office's log: goes even before sign-in,

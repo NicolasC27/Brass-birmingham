@@ -160,9 +160,11 @@ export function stepsOf(r0: TrailRecord | null, s: Sight, now: number, draw: () 
 
 /* -------------------------------- the post ------------------------------ */
 
-/** a lesson's events gathered this long before they leave */
+/** a lesson's events gathered this long before they leave — and, the
+ *  line down, tried again after as long */
 export const TRAIL_WAIT_MS = 5000;
-/** and never two frames closer than this: the office takes six a second */
+/** and never two frames closer than this but as the page goes: the
+ *  office takes six a second */
 export const TRAIL_GAP_MS = 1000;
 /** the most kept waiting while the line is down; the oldest go first */
 export const TRAIL_HELD = 200;
@@ -171,15 +173,17 @@ export interface TrailPost {
   push(e: TrailEvent): void;
   /** the next frame now rather than in a while */
   flush(): void;
-  /** everything waiting, at once: the page is going */
+  /** the page is going: a frame at once, whatever the gap — one, not a
+   *  burst the office would cut; the rest in its time if the page stays */
   drain(): void;
   drop(): void;
   readonly waiting: number;
 }
 
-/** the events on their way: gathered, then sent a frame at a time, and
- *  dropped — never sent — while `shut` holds */
-export function trailPost(send: (events: TrailEvent[]) => void, shut: () => boolean): TrailPost {
+/** the events on their way: gathered, then sent a frame at a time — kept
+ *  here while the line will not take one — and dropped, never sent, while
+ *  `shut` holds */
+export function trailPost(send: (events: TrailEvent[]) => boolean, shut: () => boolean): TrailPost {
   let queue: TrailEvent[] = [];
   let timer: ReturnType<typeof setTimeout> | null = null;
   let sentAt = -Infinity;
@@ -190,10 +194,13 @@ export function trailPost(send: (events: TrailEvent[]) => void, shut: () => bool
   const soon = (ms: number) => {
     if (timer === null) timer = setTimeout(post.flush, ms);
   };
+  /** a frame out, and the next one in its time; the line down, the frame
+   *  stays and is tried again in a while */
   const out = () => {
-    send(queue.slice(0, TRAIL_BATCH));
+    if (!send(queue.slice(0, TRAIL_BATCH))) return soon(TRAIL_WAIT_MS);
     queue = queue.slice(TRAIL_BATCH);
     sentAt = Date.now();
+    if (queue.length) soon(TRAIL_GAP_MS);
   };
   const post: TrailPost = {
     push(e) {
@@ -210,12 +217,11 @@ export function trailPost(send: (events: TrailEvent[]) => void, shut: () => bool
       const wait = sentAt + TRAIL_GAP_MS - Date.now();
       if (wait > 0) return soon(wait);
       out();
-      if (queue.length) soon(TRAIL_GAP_MS);
     },
     drain() {
       stop();
       if (shut()) queue = [];
-      while (queue.length) out();
+      if (queue.length) out();
     },
     drop() {
       stop();
@@ -242,7 +248,7 @@ export function trailOff(): boolean {
   }
 }
 
-const post = trailPost((events) => onlineWire()?.trail(events), () => !ONLINE_URL || trailOff());
+const post = trailPost((events) => onlineWire()?.trail(events) ?? false, () => !ONLINE_URL || trailOff());
 
 /** the reader says no, or yes again: no says it for what is waiting too */
 export function setTrailOff(off: boolean): void {

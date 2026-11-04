@@ -11,7 +11,7 @@ import { LESSON_IDS, freshProgress, lessonIndex } from '../lessons';
    is said twice nor under a second id */
 
 const office = vi.hoisted(() => ({ frames: [] as TrailEvent[][] }));
-vi.mock('@/online/net', () => ({ ONLINE_URL: 'ws://office', onlineWire: () => ({ trail: (events: TrailEvent[]) => void office.frames.push(events) }) }));
+vi.mock('@/online/net', () => ({ ONLINE_URL: 'ws://office', onlineWire: () => ({ trail: (events: TrailEvent[]) => office.frames.push(events) > 0 }) }));
 
 /** the module as a page loads it, with its own memory of the record —
  *  then the page's window, for the screen the events name */

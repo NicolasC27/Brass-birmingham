@@ -30,8 +30,10 @@ At a guided table the browser notes what the lessons did — a lesson
 shown, passed by its deed, by Next or by Skip, set aside, shown as
 already done, the detour to the loan, the guide left, the machine let
 play on, the game played out — and sends it over the socket as
-`guide.trail`, a few events a frame and never two frames within a
-second. Each event carries a random id drawn with the table (never the
+`guide.trail`, forty events a frame at most, and never two frames within
+a second but the one that leaves as the page goes. With the line down
+the page keeps two hundred at most and tries again; the socket's outbox
+never holds them. Each event carries a random id drawn with the table (never the
 account, never the table's code), the lesson, the round and the actions
 played, the seconds since the trail began, a coarse kind of screen, the
 language, the build and the deal (`src/online/guideTrail.ts`). The

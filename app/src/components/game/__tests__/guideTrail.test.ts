@@ -216,10 +216,16 @@ describe('what the guide says', () => {
 describe('the post', () => {
   const event = (n: number): TrailEvent => ({ id: ID, kind: 'shown', lesson: 'coal', round: 1, at: n, s: n, view: 'desktop', lang: 'fr', version: 'test', seed: 3 });
   let frames: { at: number; events: TrailEvent[] }[] = [];
-  const send = (events: TrailEvent[]) => void frames.push({ at: Date.now(), events });
+  /** the line, up or down */
+  let up = true;
+  const send = (events: TrailEvent[]) => {
+    if (up) frames.push({ at: Date.now(), events });
+    return up;
+  };
   beforeEach(() => {
     vi.useFakeTimers();
     frames = [];
+    up = true;
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -255,16 +261,40 @@ describe('the post', () => {
     expect(frames).toHaveLength(5);
   });
 
-  it('lets everything go as the page goes, and keeps only so much meanwhile', () => {
+  it('sends a frame at once as the page goes — one, not a burst', () => {
     const post = trailPost(send, () => false);
-    for (let i = 0; i < TRAIL_HELD + 100; i++) post.push(event(i));
-    /* a frame went at once; the rest waits out the gap, the newest kept */
+    for (let i = 0; i < TRAIL_BATCH + 10; i++) post.push(event(i));
     expect(frames.map((f) => f.events.length)).toEqual([TRAIL_BATCH]);
-    expect(post.waiting).toBe(TRAIL_HELD);
+    /* the page put away within the gap: the rest goes at once all the same */
     post.drain();
+    expect(frames.map((f) => f.events.length)).toEqual([TRAIL_BATCH, 10]);
+    for (let i = 0; i < 3 * TRAIL_BATCH; i++) post.push(event(i));
+    vi.advanceTimersByTime(TRAIL_GAP_MS);
+    const before = frames.length;
+    post.drain();
+    expect(frames).toHaveLength(before + 1);
+    /* and if the page comes back, the rest in its time */
+    expect(post.waiting).toBeGreaterThan(0);
+    vi.advanceTimersByTime(10 * TRAIL_GAP_MS);
+    expect(post.waiting).toBe(0);
+  });
+
+  it('keeps only so much while the line is down, and sends it once it is up', () => {
+    const post = trailPost(send, () => false);
+    up = false;
+    for (let i = 0; i < TRAIL_HELD + 100; i++) post.push(event(i));
+    vi.advanceTimersByTime(3 * TRAIL_WAIT_MS);
+    post.drain();
+    expect(frames).toEqual([]);
+    /* the newest kept */
+    expect(post.waiting).toBe(TRAIL_HELD);
+    up = true;
+    vi.advanceTimersByTime(TRAIL_WAIT_MS + 10 * TRAIL_GAP_MS);
     const all = frames.flatMap((f) => f.events);
-    expect(all).toHaveLength(TRAIL_BATCH + TRAIL_HELD);
+    expect(all).toHaveLength(TRAIL_HELD);
+    expect(all[0].at).toBe(100);
     expect(all.at(-1)!.at).toBe(TRAIL_HELD + 99);
+    for (let i = 1; i < frames.length; i++) expect(frames[i].at - frames[i - 1].at).toBeGreaterThanOrEqual(TRAIL_GAP_MS);
     expect(post.waiting).toBe(0);
   });
 
@@ -285,7 +315,7 @@ describe('the reader’s word', () => {
   it('is kept in the browser, and stops the post', () => {
     vi.useFakeTimers();
     const frames: TrailEvent[][] = [];
-    const post = trailPost((e) => void frames.push(e), trailOff);
+    const post = trailPost((e) => frames.push(e) > 0, trailOff);
     expect(trailOff()).toBe(false);
     setTrailOff(true);
     expect(localStorage.getItem(TRAIL_OFF_KEY)).toBe('1');
