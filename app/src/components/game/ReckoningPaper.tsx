@@ -140,15 +140,18 @@ export default function ReckoningPaper({ game, me, wide = false, className }: { 
                 <p className={cn(label, 'mt-2.5')}>{t('game.reckoning.next')}</p>
                 <ol className="mt-0.5 flex flex-col gap-1.5">
                   {r.advice.map((a) => {
-                    const chapter = t(`rules.chapters.${a.chapter}`);
+                    /* the chapter of the rules that teaches it, where there is one */
+                    const cite = a.chapter ? { id: a.chapter, title: t(`rules.chapters.${a.chapter}`) } : null;
                     return (
                       <li key={a.id} className="font-serif text-[12.5px] leading-snug text-ink-900/90">
                         {t(`game.reckoning.advice.${a.id}`, { ...a.vars, rival: rival.name, money: money(a.vars.money ?? 0), cap: money(a.vars.cap ?? 0) })}
                         <span className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-sans text-[10.5px] text-ink-900/60">
                           <span>{t('game.reckoning.lesson', { title: t(`game.guide.steps.${shortKeyOf(a.lesson)}.title`, { bot: rival.name }) })}</span>
-                          <button type="button" onClick={openChapter(a.chapter)} aria-label={t('game.reckoning.chapterAria', { title: chapter })} className="underline decoration-ink-900/30 underline-offset-2 hover:text-ink-900 focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink-900/60 coarse:min-h-[44px]">
-                            {t('game.reckoning.chapter', { title: chapter })}
-                          </button>
+                          {cite && (
+                            <button type="button" onClick={openChapter(cite.id)} aria-label={t('game.reckoning.chapterAria', { title: cite.title })} className="underline decoration-ink-900/30 underline-offset-2 hover:text-ink-900 focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink-900/60 coarse:min-h-[44px]">
+                              {t('game.reckoning.chapter', { title: cite.title })}
+                            </button>
+                          )}
                         </span>
                       </li>
                     );

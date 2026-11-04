@@ -152,11 +152,13 @@ describe('the reckoning of a short game', () => {
     expect(reckon(over, 1)!.advice.every((a) => a.id !== 'hoard')).toBe(true);
   });
 
-  it('sends every advice to a lesson of the guided game and a chapter of the rules', () => {
+  it('sends every advice to a lesson of the guided game, and to a chapter of the rules where one teaches it', () => {
     for (const id of Object.keys(TAUGHT) as AdviceId[]) {
       expect(LESSON_IDS).toContain(TAUGHT[id].lesson);
-      expect(CHAPTER_IDS).toContain(TAUGHT[id].chapter);
+      if (TAUGHT[id].chapter !== null) expect(CHAPTER_IDS).toContain(TAUGHT[id].chapter);
     }
+    /* no chapter tells the short game's close: the purse's cap has its lesson alone */
+    expect(TAUGHT.hoard.chapter).toBeNull();
   });
 
   it('says nothing of a game still running, given up, or a full one', () => {

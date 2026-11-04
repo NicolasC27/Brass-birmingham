@@ -90,29 +90,32 @@ export interface Left {
 export type AdviceId = 'unsold' | 'unspent' | 'links' | 'again' | 'barrels' | 'level' | 'hoard' | 'idle' | 'owed';
 
 /** where each thing to do better is taught: the lesson of the guided game
- *  that says it, and the chapter of the rules — in the order a tie
- *  between two stakes is broken */
-export const TAUGHT: Readonly<Record<AdviceId, { lesson: string; chapter: ChapterId }>> = {
+ *  that says it, and the chapter of the rules that teaches the way to it —
+ *  in the order a tie between two stakes is broken. The rules tell a full
+ *  game, and no chapter tells the short game's close: the income level is
+ *  raised as the money chapter says, a level 2 reached as the industries'
+ *  says, but a purse past its cap has its lesson alone */
+export const TAUGHT: Readonly<Record<AdviceId, { lesson: string; chapter: ChapterId | null }>> = {
   unsold: { lesson: 'reach', chapter: 'selling' },
   unspent: { lesson: 'lastRounds', chapter: 'supply' },
   links: { lesson: 'linkWorth', chapter: 'network' },
   again: { lesson: 'levelTwo', chapter: 'industries' },
   barrels: { lesson: 'barrel', chapter: 'selling' },
   level: { lesson: 'flipped', chapter: 'money' },
-  hoard: { lesson: 'eraEnd', chapter: 'money' },
+  hoard: { lesson: 'eraEnd', chapter: null },
   idle: { lesson: 'plan', chapter: 'actions' },
   owed: { lesson: 'loan', chapter: 'money' },
 };
 
 /** a thing to do better, what it cost this game (its stake, in points),
  *  the figures it is said with, and where it is taught: a lesson of the
- *  guided game and a chapter of the rules */
+ *  guided game and, where one teaches it, a chapter of the rules */
 export interface Advice {
   id: AdviceId;
   stake: number;
   vars: Record<string, number>;
   lesson: string;
-  chapter: ChapterId;
+  chapter: ChapterId | null;
 }
 
 export type Source = 'tiles' | 'links' | 'barrels' | 'purse' | 'level' | 'again' | 'owed';
