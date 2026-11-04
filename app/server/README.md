@@ -39,8 +39,10 @@ socket must be signed in — a guided game is always played under an
 account, a guest's at least — but nothing of the account is written
 down. The office checks every field, takes a hundred events at once from
 a socket and then one a second (six hundred from an address, then one
-every two seconds), keeps five hundred a table at most in `guide_trail`,
-and lets them go after 180 days with the rest of `sweepPrivacy`.
+every two seconds), keeps five hundred a table at most in `guide_trail`
+under the day each came in, not the moment — a moment, with the deal and
+the move played, would find the table among the games at home, and its
+account — and lets them go after 180 days with the rest of `sweepPrivacy`.
 
 The direction reads them summed up at `/direction/partie-guidee`
 (`admin.guide`): per lesson, per kind of screen and per deal, counts and

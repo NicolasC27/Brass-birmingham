@@ -19,6 +19,7 @@ import { Guest, post } from './guest';
 const ev = (e: Partial<TrailEvent> = {}): TrailEvent => ({ id: '0123456789abcdef', kind: 'shown', lesson: 'coal', round: 1, at: 0, s: 0, view: 'desktop', lang: 'fr', version: '1.4.0', seed: 3, ...e });
 /** a table's id, one per number */
 const idOf = (n: number) => n.toString(16).padStart(16, '0');
+const DAY = 24 * 60 * 60 * 1000;
 
 describe('the trail in the register', () => {
   it('keeps a table’s events, as many as a guided game could say', () => {
@@ -41,11 +42,23 @@ describe('the trail in the register', () => {
     const store = new Store(':memory:');
     const now = Date.now();
     store.keepTrail([ev({ id: idOf(1) })], now - TRAIL_MS - 1000);
-    store.keepTrail([ev({ id: idOf(2) })], now - TRAIL_MS + 60_000);
+    store.keepTrail([ev({ id: idOf(2) })], now - TRAIL_MS + DAY);
     store.sweepPrivacy(now);
     const f = store.guideFunnel(LESSON_IDS, {}, now);
     expect(f.tables).toBe(1);
     expect(f.lessons.find((l) => l.id === 'coal')!.shown).toBe(1);
+    store.close();
+  });
+
+  it('notes the day an event came in, not its moment', () => {
+    const store = new Store(':memory:');
+    const at = Date.UTC(2026, 10, 4, 9, 44, 17, 250);
+    store.keepTrail([ev()], at);
+    store.keepTrail([ev({ kind: 'passed', how: 'deed', at: 1, s: 30 })], at + 3 * 60 * 60 * 1000);
+    const f = store.guideFunnel(LESSON_IDS, {}, at + DAY);
+    expect([f.from, f.to]).toEqual([Date.UTC(2026, 10, 4), Date.UTC(2026, 10, 4)]);
+    /* the time on a lesson is the table's own count, not the office's */
+    expect(f.lessons.find((l) => l.id === 'coal')).toMatchObject({ seconds: 30 });
     store.close();
   });
 

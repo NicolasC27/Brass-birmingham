@@ -8,7 +8,7 @@ import type { Held } from '@/game/analysisMerge';
 import type { ChallengeBoard, ChallengeRow, Company, CompanyBoard, CompanyRow, Edition, Friend, HomeSave, HomeTable, Paper, SeasonReview, Identity, Invitation, Leaderboard, LeaderRow, Me, PastGame, Purse, Rating, Season, Stats, Table } from '@/online/table';
 import { COUNTER_BY_ID, FREE_ITEMS, GUINEAS } from '@/online/counter';
 import { randomId } from '@/online/table';
-import { TRAIL_CAP, TRAIL_MS, funnelOf } from '@/online/guideTrail';
+import { TRAIL_CAP, TRAIL_MS, dayOf, funnelOf } from '@/online/guideTrail';
 import type { GuideFunnel, TrailEvent, TrailFilter, TrailRow, View } from '@/online/guideTrail';
 import { emptyTally } from '@/game/tally';
 import type { Tally } from '@/game/tally';
@@ -1229,8 +1229,10 @@ export class Store {
   }
 
   /** the guided game's trail, as it comes: each table up to TRAIL_CAP
-   *  events, far more than a guided game says. The events kept */
-  keepTrail(events: readonly TrailEvent[], seen = Date.now()): number {
+   *  events, far more than a guided game says, under the day they came
+   *  in and not the moment. The events kept */
+  keepTrail(events: readonly TrailEvent[], at = Date.now()): number {
+    const seen = dayOf(at);
     const count = this.db.prepare('select count(*) as n from guide_trail where trail = ?');
     const add = this.db.prepare('insert into guide_trail (trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const room = new Map<string, number>();

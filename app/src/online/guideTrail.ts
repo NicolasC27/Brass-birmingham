@@ -57,11 +57,17 @@ export interface TrailEvent {
 export const TRAIL_BATCH = 40;
 /** the events one table may leave: a guided game says a hundred or so */
 export const TRAIL_CAP = 500;
+const DAY_MS = 24 * 60 * 60 * 1000;
 /** how long the office keeps them */
 export const TRAIL_DAYS = 180;
-export const TRAIL_MS = TRAIL_DAYS * 24 * 60 * 60 * 1000;
-/** a table that said nothing for a day and was not played out was let go */
-export const STALE_MS = 24 * 60 * 60 * 1000;
+export const TRAIL_MS = TRAIL_DAYS * DAY_MS;
+/** the office notes the day an event came in, not its moment: a moment,
+ *  with the deal and the move played, would find the table in the
+ *  register of games at home, and its account with it */
+export const dayOf = (t: number): number => Math.floor(t / DAY_MS) * DAY_MS;
+/** a table not played out and silent since the day before yesterday —
+ *  a whole day at least, read off the days its events came in — was let go */
+export const STALE_MS = 2 * DAY_MS;
 
 const ID = /^[0-9a-f]{16}$/;
 const LESSON = /^[A-Za-z]{0,24}$/;
@@ -99,7 +105,7 @@ export function eventOf(raw: unknown): TrailEvent | null {
 
 /* ------------------------------ summed up ----------------------------- */
 
-/** an event as the office keeps it: with the moment it came in */
+/** an event as the office keeps it: with the day it came in (dayOf) */
 export interface TrailRow extends TrailEvent {
   seen: number;
 }
@@ -133,7 +139,7 @@ export interface LessonFunnel {
   detour: number;
   /** tables whose reader left the guide on it */
   left: number;
-  /** tables let go on it: not played out, silent for a day */
+  /** tables let go on it: not played out, silent a day or more */
   stopped: number;
   /** tables whose game ended with the guide this far */
   closing: number;

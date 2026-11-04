@@ -109,7 +109,7 @@ describe('the funnel', () => {
       { kind: 'shown', lesson: 'link', s: 15 },
       { kind: 'left', lesson: 'link', s: 30 },
     ]),
-    /* gone quiet on the coal two days ago */
+    /* gone quiet on the coal days ago */
     ...table('a000000000000004', [{ kind: 'shown', lesson: 'welcome', s: 0 }, { kind: 'passed', lesson: 'welcome', how: 'next', s: 5 }, { kind: 'shown', lesson: 'coal', s: 5 }], NOW - 2 * STALE_MS),
     /* still at it, an hour ago: not let go */
     ...table('a000000000000005', [{ kind: 'shown', lesson: 'welcome', s: 0 }], NOW - 3_600_000),

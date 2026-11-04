@@ -87,7 +87,7 @@ function Lessons({ f }: { f: GuideFunnel }) {
             <th scope="col" className={head} title="Tables envoyées d’abord à l’emprunt">
               Détour
             </th>
-            <th scope="col" className={cn(head, 'text-left')} title="Guide quitté sur cette leçon, ou table restée sans nouvelles un jour sur elle">
+            <th scope="col" className={cn(head, 'text-left')} title="Guide quitté sur cette leçon, ou table restée sur elle sans nouvelles depuis avant-hier">
               Quittée · perdue
             </th>
             <th scope="col" className={head} title="La leçon la plus loin atteinte à la fin de la partie">
@@ -284,7 +284,7 @@ function Funnel() {
           <Panel title="Leçon par leçon" meta="dans l’ordre du guide">
             <Lessons f={f} />
             <p className="mt-4 font-ui text-[12px] leading-relaxed text-iron-400">
-              Une leçon est vue quand elle est à l’écran, ou passée guide replié. « Perdue » : une table restée un jour sans nouvelles, ni menée au bout ni quittée, sur la dernière leçon montrée. Les durées vont de la leçon montrée à la leçon passée, en actions jouées et en temps.
+              Une leçon est vue quand elle est à l’écran, ou passée guide replié. « Perdue » : une table sans nouvelles depuis avant-hier (l’office ne garde que le jour de chaque événement), ni menée au bout ni quittée, sur la dernière leçon montrée. Les durées vont de la leçon montrée à la leçon passée, en actions jouées et en temps.
             </p>
           </Panel>
 
