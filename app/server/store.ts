@@ -1237,12 +1237,20 @@ export class Store {
     const add = this.db.prepare('insert into guide_trail (trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const room = new Map<string, number>();
     let kept = 0;
-    for (const e of events) {
-      const left = room.get(e.id) ?? TRAIL_CAP - Number((count.get(e.id) as { n: number }).n);
-      if (left <= 0) continue;
-      add.run(e.id, e.kind, e.lesson, e.how ?? null, e.vp?.[0] ?? null, e.vp?.[1] ?? null, e.round, e.at, e.s, e.view, e.lang, e.version, e.seed, seen);
-      room.set(e.id, left - 1);
-      kept += 1;
+    /* a frame at once: one write to the file, not forty */
+    this.db.exec('begin');
+    try {
+      for (const e of events) {
+        const left = room.get(e.id) ?? TRAIL_CAP - Number((count.get(e.id) as { n: number }).n);
+        if (left <= 0) continue;
+        add.run(e.id, e.kind, e.lesson, e.how ?? null, e.vp?.[0] ?? null, e.vp?.[1] ?? null, e.round, e.at, e.s, e.view, e.lang, e.version, e.seed, seen);
+        room.set(e.id, left - 1);
+        kept += 1;
+      }
+      this.db.exec('commit');
+    } catch (e) {
+      this.db.exec('rollback');
+      throw e;
     }
     return kept;
   }
