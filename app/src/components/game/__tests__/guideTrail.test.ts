@@ -188,6 +188,24 @@ describe('what the guide says', () => {
     expect(old.record!.said).toContain('finished');
   });
 
+  it('tells a deed the last action did, on the ledger it opens', () => {
+    const g = guided();
+    const p = see(upTo('coal'), 'coal', ctx(g));
+    const r = stepsOf(null, at(ctx(g), p, null), 0, draw).record;
+    expect(r!.reached).toBe('hand');
+    /* the mine was the game's last action: the era's scoring comes next */
+    const q = pass(p, 'coal');
+    const scoring: GameState = { ...mine(g), phase: 'scoring-canal' };
+    const e = stepsOf(r, at(ctx(scoring), q, null), 0, draw);
+    expect(said(e.steps)).toEqual(['passed coal deed']);
+    expect(e.record!.reached).toBe('coal');
+    /* then the final ledger: what it passes itself goes unsaid, and the
+       game ends as far as the mine */
+    const over: GameState = { ...scoring, phase: 'game-over' };
+    const end = stepsOf(e.record, at(ctx(over), closed(q, ctx(over)), null), 0, draw);
+    expect(said(end.steps)).toEqual(['finished coal played']);
+  });
+
   it('reads its record back, and not a stranger’s', () => {
     const r: TrailRecord = { code: 'GWE5', id: ID, t0: 5, said: ['shown:welcome'], reached: 'welcome', last: 'welcome', playOn: false };
     expect(recordOf(JSON.stringify(r))).toEqual(r);

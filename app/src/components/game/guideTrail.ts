@@ -101,7 +101,8 @@ export function recordOf(raw: string | null): TrailRecord | null {
  *  the record that remembers it. A new guided table draws its id; at the
  *  guided table, the lessons passed and set aside, the machine let play
  *  on, the lesson in view; once it is played out — the guide left or not
- *  — the end. What the final ledger passes is no reader's doing, and is
+ *  — the end. A deed the last action did is told on the ledger it opens;
+ *  what the final ledger passes besides is no reader's doing, and is
  *  noted without a word */
 export function stepsOf(r0: TrailRecord | null, s: Sight, now: number, draw: () => string): { record: TrailRecord | null; steps: Step[] } {
   if (!s.table || !s.c) return { record: r0, steps: [] };
@@ -127,8 +128,11 @@ export function stepsOf(r0: TrailRecord | null, s: Sight, now: number, draw: () 
   };
   if (s.tutorial) {
     for (const id of s.p.passed) {
-      say(`passed:${id}`, () => ({ kind: 'passed', lesson: id, how: passedHow(s.p, id, c) }), playing);
-      if (playing) further(id);
+      if (said.has(`passed:${id}`)) continue;
+      const how = passedHow(s.p, id, c);
+      const aloud = playing || how === 'deed';
+      say(`passed:${id}`, () => ({ kind: 'passed', lesson: id, how }), aloud);
+      if (aloud) further(id);
     }
     for (const [id, round] of Object.entries(s.p.later)) say(`later:${id}:${round}`, () => ({ kind: 'later', lesson: id }), playing);
     if (!!s.p.playOn !== playOn) {
