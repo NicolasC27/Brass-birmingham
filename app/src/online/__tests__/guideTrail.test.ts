@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decode, encode } from '../protocol';
 import type { ClientMessage } from '../protocol';
-import { STALE_MS, TRAIL_DAYS, eventOf, filterOf, funnelOf, median } from '../guideTrail';
+import { STALE_MS, TRAIL_DAYS, TRAIL_FEW, eventOf, filterOf, funnelOf, median } from '../guideTrail';
 import type { TrailEvent, TrailRow } from '../guideTrail';
 
 /* The guided game's trail as it travels and as it is summed up: what the
@@ -148,12 +148,19 @@ describe('the funnel', () => {
       ['3', 4],
       ['395', 1],
     ]);
+    /* one table read alone: its count, and nothing of what it did */
     const tab = funnelOf(rows, ORDER, NOW, { view: 'tablet-landscape' });
-    expect(tab.tables).toBe(1);
-    expect(tab.lessons.find((l) => l.id === 'loan')!.shown).toBe(1);
-    expect(tab.lessons.find((l) => l.id === 'link')!.shown).toBe(0);
+    expect(tab).toMatchObject({ tables: 1, thin: true, events: 0, played: 0, gap: null, lessons: [], from: null });
     /* the splits stay whole under a filter */
     expect(tab.views).toEqual(f.views);
+    expect(tab.seeds).toEqual(f.seeds);
+    expect(f.thin).toBe(false);
+    /* enough tables, read in full */
+    const more = [...rows, ...table('a000000000000006', [{ kind: 'shown', lesson: 'welcome' }])];
+    const desk = funnelOf(more, ORDER, NOW, { view: 'desktop' });
+    expect(desk).toMatchObject({ tables: TRAIL_FEW, thin: false });
+    expect(desk.lessons.find((l) => l.id === 'link')!.shown).toBe(2);
+    expect(desk.lessons.find((l) => l.id === 'loan')!.shown).toBe(0);
     expect(funnelOf(rows, ORDER, NOW, { seed: 7 }).tables).toBe(0);
   });
 

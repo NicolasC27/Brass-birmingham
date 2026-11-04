@@ -6,7 +6,7 @@ import { shortKeyOf } from '@/components/game/lessonWords';
 import { personaName } from '@/game/data';
 import { trIn } from '@/i18n';
 import { onlineWire } from '@/online/net';
-import { VIEWS } from '@/online/guideTrail';
+import { TRAIL_FEW, VIEWS } from '@/online/guideTrail';
 import type { GuideFunnel, LessonFunnel, TrailFilter, TrailSplit, View } from '@/online/guideTrail';
 import { cn } from '@/lib/utils';
 import { Backstage, Figure, button } from './Direction';
@@ -274,19 +274,29 @@ function Funnel() {
         <p className="font-serif text-[14px] italic text-paper-300">…</p>
       ) : (
         <div className="grid gap-8">
-          <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4">
-            <Figure label="Tables guidées" value={n(f.tables)} note={f.playOn ? `${n(f.playOn)} ${f.playOn > 1 ? 'ont' : 'a'} laissé jouer la machine` : undefined} />
-            <Figure label="Menées au bout" value={pct(f.played, f.tables)} note={`${n(f.played)} sur ${n(f.tables)}${f.abandoned ? ` · ${n(f.abandoned)} abandonnées` : ''}`} />
-            <Figure label="Guide quitté" value={n(f.left)} note={`${n(f.stopped)} ${f.stopped > 1 ? 'tables perdues' : 'table perdue'} en route`} />
-            <Figure label="Gagnées" value={pct(f.wins, f.played)} note={f.gap === null ? 'aucune partie au bout' : `écart moyen ${signed(f.gap)} PV`} />
-          </div>
+          {f.thin ? (
+            <Panel title="Leçon par leçon" meta={`${n(f.tables)} ${f.tables > 1 ? 'tables' : 'table'} pour ce filtre`}>
+              <p className="font-serif text-[14px] italic text-paper-300">
+                Moins de {TRAIL_FEW} tables : l’office ne dit pas ce qu’elles ont fait, pour qu’aucune ne s’y lise seule. Élargissez le filtre.
+              </p>
+            </Panel>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3 min-[900px]:grid-cols-4">
+                <Figure label="Tables guidées" value={n(f.tables)} note={f.playOn ? `${n(f.playOn)} ${f.playOn > 1 ? 'ont' : 'a'} laissé jouer la machine` : undefined} />
+                <Figure label="Menées au bout" value={pct(f.played, f.tables)} note={`${n(f.played)} sur ${n(f.tables)}${f.abandoned ? ` · ${n(f.abandoned)} abandonnées` : ''}`} />
+                <Figure label="Guide quitté" value={n(f.left)} note={`${n(f.stopped)} ${f.stopped > 1 ? 'tables perdues' : 'table perdue'} en route`} />
+                <Figure label="Gagnées" value={pct(f.wins, f.played)} note={f.gap === null ? 'aucune partie au bout' : `écart moyen ${signed(f.gap)} PV`} />
+              </div>
 
-          <Panel title="Leçon par leçon" meta="dans l’ordre du guide">
-            <Lessons f={f} />
-            <p className="mt-4 font-ui text-[12px] leading-relaxed text-iron-400">
-              Une leçon est vue quand elle est à l’écran, ou passée guide replié. « Perdue » : une table sans nouvelles depuis avant-hier (l’office ne garde que le jour de chaque événement), ni menée au bout ni quittée, sur la dernière leçon montrée. Les durées vont de la leçon montrée à la leçon passée, en actions jouées et en temps.
-            </p>
-          </Panel>
+              <Panel title="Leçon par leçon" meta="dans l’ordre du guide">
+                <Lessons f={f} />
+                <p className="mt-4 font-ui text-[12px] leading-relaxed text-iron-400">
+                  Une leçon est vue quand elle est à l’écran, ou passée guide replié. « Perdue » : une table sans nouvelles depuis avant-hier (l’office ne garde que le jour de chaque événement), ni menée au bout ni quittée, sur la dernière leçon montrée. Les durées vont de la leçon montrée à la leçon passée, en actions jouées et en temps. Un écran ou une donne lus seuls ne se montrent qu’à partir de {TRAIL_FEW} tables.
+                </p>
+              </Panel>
+            </>
+          )}
 
           <div className="grid gap-8">
             <Panel title="Par écran" meta="toutes les donnes">

@@ -48,7 +48,9 @@ account — and lets them go after 180 days with the rest of `sweepPrivacy`.
 
 The direction reads them summed up at `/direction/partie-guidee`
 (`admin.guide`): per lesson, per kind of screen and per deal, counts and
-medians only. Nothing is sent by a build with no office, nor once the
+medians only; a screen or a deal read alone over fewer than five tables
+gives their count and nothing of what they did, so that the two filters
+together cannot single one out. Nothing is sent by a build with no office, nor once the
 reader has unticked « Participer » on the evening course
 (`brassworks.guide.trail.off`).
 

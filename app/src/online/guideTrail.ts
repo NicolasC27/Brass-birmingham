@@ -68,6 +68,9 @@ export const dayOf = (t: number): number => Math.floor(t / DAY_MS) * DAY_MS;
 /** a table not played out and silent since the day before yesterday —
  *  a whole day at least, read off the days its events came in — was let go */
 export const STALE_MS = 2 * DAY_MS;
+/** a screen or a deal read alone over fewer tables than this is not read:
+ *  the two together could narrow the funnel down to one table's story */
+export const TRAIL_FEW = 5;
 
 const ID = /^[0-9a-f]{16}$/;
 const LESSON = /^[A-Za-z]{0,24}$/;
@@ -183,6 +186,9 @@ export interface GuideFunnel {
   from: number | null;
   to: number | null;
   days: number;
+  /** the filter kept fewer than TRAIL_FEW tables: their count alone, with
+   *  the splits over them all, and nothing of what they did */
+  thin: boolean;
 }
 
 export function median(xs: readonly number[]): number | null {
@@ -247,10 +253,15 @@ function splitOf(key: string, tables: readonly Table[]): TrailSplit {
 /** the funnel: every lesson in the guide's order (then any the order no
  *  longer holds), over the tables the filter keeps; the splits by screen
  *  and by deal over them all. Counts and medians only — no table's own
- *  story comes out of it */
+ *  story comes out of it, nor out of a filter that keeps too few */
 export function funnelOf(rows: readonly TrailRow[], order: readonly string[], now = Date.now(), filter: TrailFilter = {}): GuideFunnel {
   const all = tablesOf(rows, now);
+  const views = VIEWS.map((v) => splitOf(v, all.filter((t) => t.view === v))).filter((s) => s.tables > 0);
+  const seeds = [...new Set(all.map((t) => t.seed))].sort((a, b) => a - b).map((seed) => splitOf(String(seed), all.filter((t) => t.seed === seed)));
+  const narrowed = filter.view !== undefined || filter.seed !== undefined;
   const tables = all.filter((t) => (filter.view === undefined || t.view === filter.view) && (filter.seed === undefined || t.seed === filter.seed));
+  if (narrowed && tables.length < TRAIL_FEW)
+    return { tables: tables.length, events: 0, played: 0, abandoned: 0, left: 0, stopped: 0, playOn: 0, wins: 0, ties: 0, gap: null, lessons: [], views, seeds, from: null, to: null, days: TRAIL_DAYS, thin: true };
   const ids = [...order];
   for (const t of tables) for (const e of t.events) if (e.lesson && !ids.includes(e.lesson)) ids.push(e.lesson);
   const rowOf = new Map<string, LessonFunnel & { spans: [number, number][] }>(
@@ -317,10 +328,11 @@ export function funnelOf(rows: readonly TrailRow[], order: readonly string[], no
     ties: sum.ties,
     gap: sum.gap,
     lessons: kept,
-    views: VIEWS.map((v) => splitOf(v, all.filter((t) => t.view === v))).filter((s) => s.tables > 0),
-    seeds: [...new Set(all.map((t) => t.seed))].sort((a, b) => a - b).map((seed) => splitOf(String(seed), all.filter((t) => t.seed === seed))),
+    views,
+    seeds,
     from,
     to,
     days: TRAIL_DAYS,
+    thin: false,
   };
 }

@@ -70,7 +70,8 @@ describe('the trail in the register', () => {
     expect(f.lessons.map((l) => l.id)).toEqual([...LESSON_IDS]);
     expect(f).toMatchObject({ tables: 2, played: 1, wins: 1, gap: 4 });
     expect(store.guideFunnel(LESSON_IDS, { view: 'tablet-portrait' }).tables).toBe(1);
-    expect(store.guideFunnel(LESSON_IDS, { seed: 3 }).played).toBe(1);
+    /* a deal read alone over one table: its count, not its game */
+    expect(store.guideFunnel(LESSON_IDS, { seed: 3 })).toMatchObject({ tables: 1, thin: true, played: 0, lessons: [] });
     store.close();
   });
 });
