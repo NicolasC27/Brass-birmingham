@@ -896,6 +896,20 @@ describe('the aims for points', () => {
     expect(deedOf(ctx(canal(g, OXFORD)), ctx(two))).toBeNull();
   });
 
+  it('counts a line canalled and then railed once, in a full game', () => {
+    const g = { ...half(), eraLength: 'standard' as const };
+    const canalled = canal(g, OXFORD);
+    expect(worthyLaid(ctx(canalled))).toBe(1);
+    /* the rail era: the canal swept, the same line laid again as a rail */
+    const railed = structuredClone(canalled);
+    railed.era = 'rail';
+    railed.round = 2;
+    railed.links = { [OXFORD]: { owner: 0, era: 'rail' } };
+    const laid = railed.ledger.find((e) => e.key === 'network' && e.player === 0)!;
+    railed.ledger.push({ ...laid, id: laid.id + 1000, era: 'rail', round: 2 });
+    expect(worthyLaid(ctx(railed))).toBe(1);
+  });
+
   it('keeps the links laid when the aim is set aside', () => {
     const g = half();
     const p = setAside(see(upTo('linkWorth'), 'linkWorth', ctx(g)), 'linkWorth', ctx(g));

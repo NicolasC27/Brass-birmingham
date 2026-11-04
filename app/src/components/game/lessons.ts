@@ -134,12 +134,17 @@ export const LINK_WORTH = 3;
 export const LINKS_ASKED = 2;
 /** the reader's links laid since the era's half and on the board still,
  *  whose ends carry the icons they are worth laying for: the first canal,
- *  laid for a forge, is not one of them */
+ *  laid for a forge, is not one of them. A line laid twice — a canal, then
+ *  the rail over it — is one link on the board, counted once */
 export const worthyLaid = (c: LessonCtx): number =>
-  c.g.ledger
-    .filter((e) => e.player === c.me && e.key === 'network' && (e.era === 'rail' || e.round >= halfRound(c.g)))
-    .flatMap((e) => [e.vars?.linkId, e.vars?.linkId2])
-    .filter((id) => typeof id === 'string' && c.g.links[id]?.owner === c.me && linkIcons(c.g, c.me, id) >= LINK_WORTH).length;
+  [
+    ...new Set(
+      c.g.ledger
+        .filter((e) => e.player === c.me && e.key === 'network' && (e.era === 'rail' || e.round >= halfRound(c.g)))
+        .flatMap((e) => [e.vars?.linkId, e.vars?.linkId2])
+        .filter((id): id is string => typeof id === 'string'),
+    ),
+  ].filter((id) => c.g.links[id]?.owner === c.me && linkIcons(c.g, c.me, id) >= LINK_WORTH).length;
 /** a tile of the reader's of level 2 or more, flipped: it outlives the
  *  canal's sweep, and a short game's close counts it again */
 const flippedTwo = (c: LessonCtx): boolean => Object.values(c.g.tiles).some((t) => t.owner === c.me && t.flipped && t.level >= 2);
