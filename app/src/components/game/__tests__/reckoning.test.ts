@@ -83,6 +83,44 @@ describe('the reckoning of a short game', () => {
     if (r.me.owed > 0) expect(r.gaps.find((x) => x.source === 'owed')?.gap).toBe(r.me.owed - r.rival.owed);
   });
 
+  it('says where the other did better too', () => {
+    const r = reckon(over, 0)!;
+    for (const x of r.leads) expect(x.gap).toBeGreaterThan(0);
+    expect(r.leads.map((x) => x.gap)).toEqual([...r.leads.map((x) => x.gap)].sort((a, b) => b - a));
+    /* no source is on both sides */
+    expect(r.leads.some((x) => r.gaps.some((y) => y.source === x.source))).toBe(false);
+    /* seen from the winner's chair, the same lists: the gaps are the winner's */
+    const w = reckon(over, 1)!;
+    expect(w.gaps).toEqual(r.gaps);
+    expect(w.leads).toEqual(r.leads);
+    expect(r.tie).toBeNull();
+  });
+
+  it('tells a game level on points by what settled it: the income level, then the money', () => {
+    /* level on points, the income level settling it for the machine */
+    const level = structuredClone(over);
+    level.players[0].vp = level.players[1].vp;
+    level.players[0].income = level.players[1].income - 3;
+    level.winner = 1;
+    const r = reckon(level, 0)!;
+    expect(r.won).toBe(false);
+    expect(r.tie).toEqual({ vp: level.players[1].vp, by: 'level', mine: r.me.books.level, theirs: r.rival.books.level });
+    expect(r.tie!.mine).toBeLessThan(r.tie!.theirs);
+    /* level on income too: the money settles it, for the reader */
+    const purse = structuredClone(level);
+    purse.players[0].income = purse.players[1].income;
+    purse.players[0].money = purse.players[1].money + 18;
+    purse.winner = 0;
+    const q = reckon(purse, 0)!;
+    expect(q.won).toBe(true);
+    expect(q.rival.seat).toBe(1);
+    expect(q.tie).toEqual({ vp: purse.players[0].vp, by: 'money', mine: purse.players[0].money, theirs: purse.players[1].money });
+    /* level on all three: the seats' order */
+    const even = structuredClone(purse);
+    even.players[0].money = even.players[1].money;
+    expect(reckon(even, 0)!.tie?.by).toBe('seat');
+  });
+
   it('counts what was left on the table: tiles never flipped, cards passed, money past the cap', () => {
     const g = structuredClone(over);
     /* a manufactory of level 2 left unsold, and a purse past what the close counts */
@@ -133,7 +171,7 @@ describe('the reckoning of a short game', () => {
     const keys = [
       ...(Object.keys(TAUGHT) as AdviceId[]).map((id) => `advice.${id}`),
       ...sources.flatMap((x) => [`source.${x}`, `rows.${x}`, `tips.${x}`]),
-      ...['won', 'lost', 'lead', 'gap', 'you', 'canals', 'next', 'lesson', 'chapter', 'chapterAria', 'rows.total'],
+      ...['won', 'lost', 'lead', 'yours', 'theirs', 'tie.level', 'tie.money', 'tie.seat', 'gap', 'you', 'canals', 'next', 'lesson', 'chapter', 'chapterAria', 'rows.total'],
       ...['title', 'unflipped', 'tile', 'idle', 'passes', 'bare', 'beyond', 'none'].map((x) => `left.${x}`),
     ];
     for (const lang of LANGS)

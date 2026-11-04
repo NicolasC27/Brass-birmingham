@@ -1385,6 +1385,13 @@ const game = {
     won: 'Why you won',
     lost: 'Why you lost',
     lead: 'The gap comes mostly from {list}.',
+    yours: 'You did better on {list}.',
+    theirs: '{rival} did better on {list}.',
+    tie: {
+      level: 'Level on {vp} VP: the income level settled it, {mine} for you to {theirs} for {rival}.',
+      money: 'Level on {vp} VP and on income: money settled it, {mine} for you to {theirs} for {rival}.',
+      seat: 'Level on {vp} VP, on income and on money: the order of the seats settled it.',
+    },
     gap: '{source} (+{gap})',
     source: { tiles: 'flipped tiles', links: 'canals', barrels: 'merchants’ barrels', purse: 'the purse', level: 'the income level', again: 'level 2 counted again', owed: 'missed paydays' },
     you: 'You',

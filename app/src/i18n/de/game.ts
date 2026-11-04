@@ -1387,6 +1387,13 @@ const game: typeof engame = {
     won: 'Warum du gewonnen hast',
     lost: 'Warum du verloren hast',
     lead: 'Der Abstand entsteht vor allem bei {list}.',
+    yours: 'Besser warst du bei {list}.',
+    theirs: '{rival} war besser bei {list}.',
+    tie: {
+      level: 'Gleichstand bei {vp} SP, entschieden über die Einkommensstufe: {mine} für dich gegen {theirs} für {rival}.',
+      money: 'Gleichstand bei {vp} SP und beim Einkommen, entschieden über das Geld: {mine} für dich gegen {theirs} für {rival}.',
+      seat: 'Gleichstand bei {vp} SP, beim Einkommen und beim Geld: entschieden hat die Sitzordnung.',
+    },
     gap: '{source} (+{gap})',
     source: { tiles: 'den umgedrehten Plättchen', links: 'den Kanälen', barrels: 'den Fässern der Händler', purse: 'der Kasse', level: 'der Einkommensstufe', again: 'der nachgezählten Stufe 2', owed: 'den verpassten Zahltagen' },
     you: 'Du',

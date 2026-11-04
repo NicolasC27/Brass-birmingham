@@ -117,6 +117,16 @@ export interface Advice {
 
 export type Source = 'tiles' | 'links' | 'barrels' | 'purse' | 'level' | 'again' | 'owed';
 
+/** a game level on points, and what settled it — the engine's own order:
+ *  the income level, then the money, else the order of the seats — with
+ *  the reader's figure and the rival's */
+export interface Tie {
+  vp: number;
+  by: 'level' | 'money' | 'seat';
+  mine: number;
+  theirs: number;
+}
+
 export interface Reckoning {
   me: Sources;
   /** the seat measured against: the winner, or the runner-up when the
@@ -126,6 +136,10 @@ export interface Reckoning {
   /** the sources the result was made on, the widest gap first: what the
    *  winner scored more than the other there */
   gaps: { source: Source; gap: number }[];
+  /** and the sources the other did better on, the widest first */
+  leads: { source: Source; gap: number }[];
+  /** a game level on points: what settled it, since no gap did */
+  tie: Tie | null;
   left: Left;
   advice: Advice[];
 }
@@ -183,7 +197,16 @@ export function reckon(g: GameState, me: number): Reckoning | null {
   const [hi, lo] = won ? [mine, rival] : [rival, mine];
   const a = bySource(hi);
   const b = bySource(lo);
-  const gaps = (Object.keys(a) as Source[]).map((source) => ({ source, gap: a[source] - b[source] })).filter((x) => x.gap > 0).sort((x, y) => y.gap - x.gap);
+  /* where one scored more than the other, the widest gap first */
+  const over = (x: Record<Source, number>, y: Record<Source, number>) => (Object.keys(x) as Source[]).map((source) => ({ source, gap: x[source] - y[source] })).filter((d) => d.gap > 0).sort((d, e) => e.gap - d.gap);
+  const gaps = over(a, b);
+  const leads = over(b, a);
+  /* level on points: settled as the engine settles it */
+  const tie: Tie | null =
+    mine.vp !== rival.vp ? null
+    : mine.books.level !== rival.books.level ? { vp: mine.vp, by: 'level', mine: mine.books.level, theirs: rival.books.level }
+    : mine.books.money !== rival.books.money ? { vp: mine.vp, by: 'money', mine: mine.books.money, theirs: rival.books.money }
+    : { vp: mine.vp, by: 'seat', mine: mine.seat, theirs: rival.seat };
 
   /* the reader's tiles never flipped: a short game leaves them all on the board */
   const unflipped: Unflipped[] = Object.entries(g.tiles)
@@ -200,7 +223,7 @@ export function reckon(g: GameState, me: number): Reckoning | null {
     bare: mine.laid.filter((l) => l.vp === 0),
     beyond: Math.max(0, mine.books.money - PURSE_CAP),
   };
-  return { me: mine, rival, won, gaps, left, advice: adviceFor(mine, rival, left) };
+  return { me: mine, rival, won, gaps, leads, tie, left, advice: adviceFor(mine, rival, left) };
 }
 
 /** what each thing to do better is said with and what it cost: its

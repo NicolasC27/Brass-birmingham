@@ -1387,6 +1387,13 @@ const fr: typeof engame = {
     won: 'Pourquoi vous avez gagné',
     lost: 'Pourquoi vous avez perdu',
     lead: 'L’écart se fait surtout sur {list}.',
+    yours: 'Vous faites mieux sur {list}.',
+    theirs: '{rival} fait mieux sur {list}.',
+    tie: {
+      level: 'Égalité à {vp} PV : le niveau de revenu a départagé, {mine} pour vous contre {theirs} pour {rival}.',
+      money: 'Égalité à {vp} PV et au niveau de revenu : l’argent a départagé, {mine} pour vous contre {theirs} pour {rival}.',
+      seat: 'Égalité à {vp} PV, au niveau de revenu et à l’argent : l’ordre des sièges a départagé.',
+    },
     gap: '{source} (+{gap})',
     source: { tiles: 'les tuiles retournées', links: 'les canaux', barrels: 'les barils des marchands', purse: 'la caisse', level: 'le niveau de revenu', again: 'les niveaux 2 recomptés', owed: 'les paies manquées' },
     you: 'Vous',

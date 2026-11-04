@@ -53,7 +53,17 @@ export default function ReckoningPaper({ game, me, wide = false, className }: { 
   };
   /* a payday missed is a row only where one was */
   const rows = ROWS.filter((row) => row !== 'owed' || mine.owed > 0 || rival.owed > 0);
-  const gaps = r.gaps.slice(0, 2).map((x) => t('game.reckoning.gap', { source: t(`game.reckoning.source.${x.source}`), gap: x.gap }));
+  /* the two widest gaps each way, named */
+  const said = (xs: typeof r.gaps): string => listed(xs.slice(0, 2).map((x) => t('game.reckoning.gap', { source: t(`game.reckoning.source.${x.source}`), gap: x.gap })));
+  const [ours, theirs] = r.won ? [r.gaps, r.leads] : [r.leads, r.gaps];
+  const betterYou = ours.length ? t('game.reckoning.yours', { list: said(ours) }) : null;
+  const betterThem = theirs.length ? t('game.reckoning.theirs', { list: said(theirs), rival: rival.name }) : null;
+  /* what the result was made on: the winner's widest gaps, then where the
+     other did better; level on points, what settled it, then each side's */
+  const lead = r.tie
+    ? [t(`game.reckoning.tie.${r.tie.by}`, { vp: r.tie.vp, rival: rival.name, ...(r.tie.by === 'money' ? { mine: money(r.tie.mine), theirs: money(r.tie.theirs) } : { mine: r.tie.mine, theirs: r.tie.theirs }) }), betterYou, betterThem]
+    : [r.gaps.length ? t('game.reckoning.lead', { list: said(r.gaps) }) : null, r.won ? betterThem : betterYou];
+  const leadLine = lead.filter((x): x is string => !!x).join(' ');
   const idle = left.passes + left.bare.length;
   const leftLines = [
     ...(left.unflipped.length
@@ -75,7 +85,7 @@ export default function ReckoningPaper({ game, me, wide = false, className }: { 
             {t(r.won ? 'game.reckoning.won' : 'game.reckoning.lost')}
           </h3>
         </div>
-        {gaps.length > 0 && <p className="mt-1 font-serif text-[13px] italic leading-snug text-ink-900/80">{t('game.reckoning.lead', { list: listed(gaps) })}</p>}
+        {leadLine && <p className="mt-1 font-serif text-[13px] italic leading-snug text-ink-900/80">{leadLine}</p>}
 
         <div className={cn('mt-2 grid gap-x-6 gap-y-3', wide && 'min-[760px]:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]')}>
           {/* the account, source by source: the reader's column, then the rival's */}

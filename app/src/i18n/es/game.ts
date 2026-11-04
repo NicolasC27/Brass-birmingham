@@ -1387,6 +1387,13 @@ const game: typeof engame = {
     won: 'Por qué has ganado',
     lost: 'Por qué has perdido',
     lead: 'La diferencia está sobre todo en {list}.',
+    yours: 'Tú lo hiciste mejor en {list}.',
+    theirs: '{rival} lo hizo mejor en {list}.',
+    tie: {
+      level: 'Empate a {vp} PV: decide el nivel de ingresos, {mine} para ti contra {theirs} para {rival}.',
+      money: 'Empate a {vp} PV y en ingresos: decide el dinero, {mine} para ti contra {theirs} para {rival}.',
+      seat: 'Empate a {vp} PV, en ingresos y en dinero: decide el orden de los asientos.',
+    },
     gap: '{source} (+{gap})',
     source: { tiles: 'las losetas volteadas', links: 'los canales', barrels: 'los barriles de los mercaderes', purse: 'la caja', level: 'el nivel de ingresos', again: 'el nivel 2 contado de nuevo', owed: 'las pagas perdidas' },
     you: 'Tú',
