@@ -4,7 +4,7 @@ import type { BuildTarget } from '@/game/engine';
 import type { HudLens, Lens } from '@/game/store';
 import type { GameState, IndustryType, LinkDef } from '@/game/types';
 import type { LessonCtx } from './lessons';
-import { forgesFrom } from './lessonWords';
+import { forgesFrom, worthyLinks } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* What each lesson of the guide lights on the table: the slots it is   */
@@ -214,6 +214,21 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     case 'reach':
       /* a works built where its buyer is linked, or the link to lay */
       return card && verb === 'build' ? works() : toBuyer();
+    case 'linkWorth': {
+      /* the links whose ends carry the icons they will count, the most first */
+      const links = worthyLinks(g, me).map((x) => x.id);
+      if (!links.length) return null;
+      if (choosing && verb !== 'network') return { hud: 'network' };
+      const hud: HudLens | undefined = !card ? 'hand' : verb === 'network' ? undefined : 'network';
+      return { links, at: links[0], ...(hud ? { hud } : {}) };
+    }
+    case 'levelTwo': {
+      /* a sale or a development may meet it as well: only a build chosen
+         lights its tiles of level 2, the others still lit */
+      if (!card || verb !== 'build') return null;
+      const all = buildTargets(g, me, card).filter((t) => t.valid);
+      return places(all, all.filter((t) => t.level >= 2), () => 1);
+    }
     case 'barrel': {
       const merchants = barrels();
       if (card && verb === 'sell') {

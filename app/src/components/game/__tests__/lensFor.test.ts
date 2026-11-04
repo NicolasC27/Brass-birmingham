@@ -249,3 +249,35 @@ describe('the halos of the lessons', () => {
     expect(lensFor('matRead', ctx(g, null, null, 1))).toEqual({ hud: 'mat-open' });
   });
 });
+
+describe('the lens of the aims for points', () => {
+  /** the reader's mine in Redditch, a canal from it to either merchant worth four icons */
+  const mined = (): GameState => {
+    const g = structuredClone(table());
+    g.tiles['redditch:0'] = tile(0, 'coal');
+    return g;
+  };
+
+  it('lights the canals whose ends carry their icons, the hand then Network rung', () => {
+    const g = mined();
+    expect(lensFor('linkWorth', ctx(g))).toEqual({ links: ['redditch--m-oxford', 'redditch--m-gloucester'], at: 'redditch--m-oxford', hud: 'hand' });
+    const card = g.players[0].hand[0].id;
+    expect(lensFor('linkWorth', ctx(g, card))).toMatchObject({ hud: 'network' });
+    expect(lensFor('linkWorth', ctx(g, card, 'network'))).toEqual({ links: ['redditch--m-oxford', 'redditch--m-gloucester'], at: 'redditch--m-oxford' });
+    /* another move being chosen: Network rung, nothing lit */
+    expect(lensFor('linkWorth', ctx(g, card, 'build'))).toEqual({ hud: 'network' });
+    /* no canal worth its icons: the lens steps aside */
+    expect(lensFor('linkWorth', ctx(table()))).toBeNull();
+  });
+
+  it('lights the tiles of level 2 a build chosen may lay, and nothing before', () => {
+    const g = mined();
+    g.players[0].stacks.coal = g.players[0].stacks.coal.filter((l) => l > 1);
+    expect(lensFor('levelTwo', ctx(g))).toBeNull();
+    const card = coalCard(g);
+    expect(lensFor('levelTwo', ctx(g, card, 'sell'))).toBeNull();
+    const lens = lensFor('levelTwo', ctx(g, card, 'build'))!;
+    expect(lens.slots!.length).toBeGreaterThan(0);
+    expect(lens.at).toBeDefined();
+  });
+});
