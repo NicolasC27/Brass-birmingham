@@ -905,7 +905,7 @@ const platform: typeof enPlatform = {
         {
           h: "Wer verantwortlich ist",
           p: [
-            "Verantwortlich für die Verarbeitung ist der oben genannte Herausgeber. Die Seite wird von einer Person betrieben, nicht von einer Firma: sie verkauft nichts von Ihnen, zeigt keine Werbung und misst keine Reichweite.",
+            "Verantwortlich für die Verarbeitung ist der oben genannte Herausgeber. Die Seite wird von einer Person betrieben, nicht von einer Firma: sie verkauft nichts von Ihnen, zeigt keine Werbung und misst keine Reichweite, außer mit der weiter unten beschriebenen anonymen Messung der geführten Partie.",
           ],
         },
         {
@@ -913,9 +913,9 @@ const platform: typeof enPlatform = {
           p: [
             "Ihr Konto: der Name, die E-Mail-Adresse, das Passwort (nie im Klartext: ein scrypt-Hash), das Eröffnungsdatum, das Datum der Annahme dieser Erklärung und die IP-Adresse, von der das Konto eröffnet wurde. Das braucht es, um Sie zu erkennen und Ihnen zu schreiben.",
             "Ihre Partien: die Züge, die Ergebnisse, die Rangliste, Freunde und Einladungen. Das ist der Dienst selbst.",
-                  "In Ihrem Browser: das Sitzungstoken, das Thema und die Sprache, im lokalen Speicher. Kein Cookie, kein Tracker, keine Reichweitenmessung.",
+                  "In Ihrem Browser: das Sitzungstoken, das Thema und die Sprache, im lokalen Speicher; für die geführte Partie die zufällig gezogene Nummer des laufenden Tisches, neben seinem Code aufbewahrt, um zu wissen, was davon schon gesendet wurde, und Ihre Entscheidung, mitzumachen oder nicht. Kein Cookie, kein Werbe-Tracker, keine andere Reichweitenmessung.",
             "Auf der Warteliste der Vorpremiere: die E-Mail-Adresse, die Sprache der Seite, die Seite, von der Sie kamen, sofern bekannt, das Datum der Eintragung und das der Bestätigung. Die IP-Adresse der Eintragung wird bis zur Bestätigung aufbewahrt und dann gelöscht; nur das daraus auf unserem eigenen Server (DB-IP-Datenbank) abgeleitete Land bleibt gespeichert. Mehr braucht es nicht, um Ihnen zu schreiben, wenn die Probefahrt beginnt.",
-            "Während der geführten Partie, und nur dann: welche Lektionen gezeigt, erledigt, übersprungen oder auf später verschoben werden, wann der Guide verlassen wird, und der Endstand beider Spieler, mit der Runde, der Art des Bildschirms (Computer oder Tablet), der Sprache, der Version der Seite und der Verteilung. Diese Notizen tragen eine Nummer, die für jeden geführten Tisch zufällig gezogen wird: weder Ihr Konto noch Ihre IP-Adresse noch der Code des Tisches werden ihnen beigefügt, und die Seite behält nichts, was sie mit Ihnen verbinden würde. Sie zeigen, wo Anfänger hängen bleiben, damit die Lektionen besser werden, und werden nach 180 Tagen gelöscht. Damit sie nicht gesendet werden, entfernen Sie das Häkchen bei „Mitmachen“ auf der Seite des Abendkurses.",
+            "Während der geführten Partie, und nur dann: jede Lektion, die gezeigt, erledigt, gelesen, übersprungen oder auf später verschoben wird, der Umweg über den Kredit, das Verlassen des Guides, die Maschine, die ohne Warten weiterspielen darf, und am Ende der Stand beider Spieler. Jede dieser Notizen trägt die Runde, die Zahl der gespielten Aktionen und die Sekunden seit Beginn des Tisches, die Art des Bildschirms (Computer, Tablet quer, Tablet hochkant oder kleiner Touchscreen), die Sprache, die Version der Seite, die Verteilung und den Tag ihres Eingangs, mehr nicht. Sie tragen eine Nummer, die für jeden geführten Tisch zufällig gezogen wird: weder Ihr Konto noch Ihre IP-Adresse noch der Code des Tisches werden ihnen beigefügt, das Register behält nichts, was sie mit Ihrem Konto verbindet, und sie werden nie mit Ihren Partien abgeglichen. Der Herausgeber liest sie nur als Summen, Lektion für Lektion. Sie zeigen, wo Anfänger hängen bleiben, damit die Lektionen besser werden, und werden nach 180 Tagen gelöscht. Damit sie nicht gesendet werden, entfernen Sie das Häkchen bei „Mitmachen“ auf der Seite des Abendkurses.",
             "Mehr sammeln wir nicht. Kein bürgerlicher Name, keine Postanschrift, kein Zahlungsmittel.",
           ],
         },
@@ -924,6 +924,7 @@ const platform: typeof enPlatform = {
           p: [
             "Konto und Partien: die Erbringung des Dienstes, den Sie verlangt haben. Die Aufbewahrung der Anmeldeadresse: die gesetzliche Pflicht der Hosts (französisches Gesetz über das Vertrauen in die digitale Wirtschaft und seine Durchführungsverordnung). Die Begrenzung der Anmeldeversuche: unser berechtigtes Interesse, die Seite und ihre Mitglieder zu schützen.",
             "Die Warteliste: Ihre Einwilligung, gegeben durch die Bestätigung der Adresse und jederzeit widerrufbar über den Link in jedem Brief.",
+            "Die Messung der geführten Partie: unser berechtigtes Interesse, die Lektionen zu verbessern. Sie können ihr jederzeit widersprechen, indem Sie das Häkchen bei „Mitmachen“ auf der Seite des Abendkurses entfernen.",
           ],
         },
         {
@@ -941,6 +942,7 @@ const platform: typeof enPlatform = {
             "Partien, solange die Seite besteht: sie sind die Geschichte des Clubs und werden von mehreren gelesen.",
             "Nach Schließung eines Kontos werden Name und E-Mail-Adresse fünf Jahre beiseitegelegt, außerhalb jeder Nutzung, weil das Gesetz es von Hosts verlangt; dann werden sie gelöscht.",
             "Eine nie bestätigte Adresse der Warteliste: sieben Tage. Eine bestätigte Adresse: bis Sie die Liste verlassen — ein Klick, in jedem Brief — oder spätestens sechs Monate nach der Eröffnung des Spiels.",
+            "Die Notizen der geführten Partie: 180 Tage.",
           ],
         },
         {

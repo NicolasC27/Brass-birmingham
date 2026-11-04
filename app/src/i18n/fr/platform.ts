@@ -903,7 +903,7 @@ const platform = {
         {
           h: "Qui est responsable",
           p: [
-            "Le responsable du traitement est l’éditeur nommé ci-dessus. Le site est tenu par une personne, pas par une société : il ne vend rien de vous, n’affiche aucune publicité et ne mesure pas votre audience.",
+            "Le responsable du traitement est l’éditeur nommé ci-dessus. Le site est tenu par une personne, pas par une société : il ne vend rien de vous, n’affiche aucune publicité et ne mesure pas votre audience, hormis la mesure anonyme de la partie guidée, décrite plus bas.",
           ],
         },
         {
@@ -911,9 +911,9 @@ const platform = {
           p: [
             "Votre compte : le pseudo, l’adresse e-mail, le mot de passe (jamais en clair : une empreinte scrypt), la date d’ouverture, la date d’acceptation de cette politique et l’adresse IP d’où le compte a été ouvert. C’est ce qu’il faut pour vous reconnaître et vous écrire.",
             "Vos parties : les coups joués, les résultats, le classement, les amis et les invitations. C’est le service lui-même.",
-                  "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local. Aucun cookie, aucun traceur, aucune mesure d’audience.",
+                  "Dans votre navigateur : le jeton de session, le thème et la langue, en stockage local ; pour la partie guidée, le numéro tiré au hasard de la table en cours, gardé à côté de son code pour savoir ce qui en a déjà été envoyé, et votre choix d’y participer ou non. Aucun cookie, aucun traceur publicitaire, aucune autre mesure d’audience.",
             "Sur la liste d’attente de l’avant-première : l’adresse e-mail, la langue de la page, le site d’où vous êtes venu s’il est connu, la date d’inscription et celle de la confirmation. L’adresse IP d’inscription est gardée jusqu’à la confirmation, puis effacée ; seul le pays qu’on en déduit, sur notre propre serveur (base DB-IP), est conservé. C’est ce qu’il faut pour vous écrire quand le voyage d’essai ouvre.",
-            "Pendant la partie guidée, et elle seule : les leçons montrées, faites, passées ou remises à plus tard, le moment où le guide est quitté et le score des deux joueurs à la fin, avec la manche, le genre d’écran (ordinateur ou tablette), la langue, la version du site et la donne. Ces notes portent un numéro tiré au hasard pour chaque table guidée : ni votre compte, ni votre adresse IP, ni le code de la table n’y sont joints, et le site ne garde rien qui permette de les relier à vous. Elles servent à voir où les débutants s’arrêtent, pour améliorer les leçons, et sont effacées au bout de 180 jours. Pour qu’elles ne partent pas, décochez « Participer » sur la page du Cours du soir.",
+            "Pendant la partie guidée, et elle seule : chaque leçon montrée, faite, lue, passée ou remise à plus tard, le détour par l’emprunt, le guide quitté, la machine laissée jouer sans attendre et, à la fin, le score des deux joueurs. Chacune de ces notes porte la manche, le nombre d’actions jouées et les secondes écoulées depuis le début de la table, le genre d’écran (ordinateur, tablette à l’horizontale, tablette à la verticale ou petit écran tactile), la langue, la version du site, la donne et le jour où elle arrive, rien de plus. Elles portent un numéro tiré au hasard pour chaque table guidée : ni votre compte, ni votre adresse IP, ni le code de la table n’y sont joints, le registre ne garde rien qui les relie à votre compte, et elles ne sont jamais rapprochées de vos parties. L’éditeur ne les lit qu’en totaux, leçon par leçon. Elles servent à voir où les débutants s’arrêtent, pour améliorer les leçons, et sont effacées au bout de 180 jours. Pour qu’elles ne partent pas, décochez « Participer » sur la page du Cours du soir.",
             "Nous ne collectons rien d’autre. Pas de nom civil, pas d’adresse postale, pas de moyen de paiement.",
           ],
         },
@@ -922,6 +922,7 @@ const platform = {
           p: [
             "Le compte et les parties : l’exécution du service que vous avez demandé. La conservation de l’adresse d’inscription : l’obligation légale faite aux hébergeurs (loi pour la confiance dans l’économie numérique et son décret d’application). La limitation des tentatives de connexion : notre intérêt légitime à protéger le site et ses membres.",
             "La liste d’attente : votre consentement, donné en confirmant l’adresse, et retiré à tout moment par le lien présent dans chaque lettre.",
+            "La mesure de la partie guidée : notre intérêt légitime à améliorer les leçons. Vous pouvez vous y opposer à tout moment en décochant « Participer » sur la page du Cours du soir.",
           ],
         },
         {
@@ -939,6 +940,7 @@ const platform = {
             "Les parties, tant que le site existe : elles sont l’histoire du club et se lisent à plusieurs.",
             "Après la fermeture d’un compte, le pseudo et l’adresse e-mail sont mis à part pendant cinq ans, hors de tout usage, parce que la loi le demande aux hébergeurs ; puis ils sont effacés.",
             "Une adresse de la liste d’attente jamais confirmée, sept jours. Une adresse confirmée, jusqu’à ce que vous quittiez la liste — un clic, dans chaque lettre — ou au plus tard six mois après l’ouverture du jeu.",
+            "Les notes de la partie guidée, 180 jours.",
           ],
         },
         {

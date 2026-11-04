@@ -903,7 +903,7 @@ const platform = {
         {
           h: "Who is responsible",
           p: [
-            "The data controller is the publisher named above. The site is run by a person, not a company: it sells nothing of you, shows no advertising and measures no audience.",
+            "The data controller is the publisher named above. The site is run by a person, not a company: it sells nothing of you, shows no advertising and measures no audience, save the anonymous measurement of the guided game described below.",
           ],
         },
         {
@@ -911,9 +911,9 @@ const platform = {
           p: [
             "Your account: the name, the e-mail address, the password (never in the clear: a scrypt hash), the opening date, the date this policy was accepted, and the IP address the account was opened from. That is what it takes to recognise you and write to you.",
             "Your games: the moves, the results, the ranking, friends and invitations. That is the service itself.",
-                  "In your browser: the session token, the theme and the language, in local storage. No cookie, no tracker, no audience measurement.",
+                  "In your browser: the session token, the theme and the language, in local storage; for the guided game, the number drawn at random for the table in progress, kept beside its code to know what has already been sent, and your choice to take part or not. No cookie, no advertising tracker, no other audience measurement.",
             "On the preview’s waiting list: the e-mail address, the page’s language, the site you came from when it is known, the date you joined and the date you confirmed. The address you joined from (IP) is kept until you confirm, then erased; only the country read from it, on our own server (DB-IP database), is kept. This is what it takes to write to you when the trial run opens.",
-            "During the guided game, and only then: the lessons shown, done, skipped or put off until later, the moment the guide is left, and both players’ final scores, with the round, the kind of screen (computer or tablet), the language, the site’s version and the deal. These notes carry a number drawn at random for each guided table: neither your account, nor your IP address, nor the table’s code is attached to them, and the site keeps nothing that would link them to you. They show where beginners stop, so the lessons can be improved, and are erased after 180 days. To keep them from being sent, untick “Take part” on the Evening course page.",
+            "During the guided game, and only then: each lesson shown, done, read, skipped or put off until later, the detour to the loan, the guide left, the machine let play on without waiting and, at the end, both players’ scores. Each of these notes carries the round, the number of actions played and the seconds since the table began, the kind of screen (computer, tablet held landscape, tablet held portrait or small touch screen), the language, the site’s version, the deal and the day it arrives, nothing more. They carry a number drawn at random for each guided table: neither your account, nor your IP address, nor the table’s code is attached to them, the register keeps nothing that links them to your account, and they are never matched against your games. The publisher reads them only as totals, lesson by lesson. They show where beginners stop, so the lessons can be improved, and are erased after 180 days. To keep them from being sent, untick “Take part” on the Evening course page.",
             "We collect nothing else. No legal name, no postal address, no means of payment.",
           ],
         },
@@ -922,6 +922,7 @@ const platform = {
           p: [
             "The account and the games: performance of the service you asked for. Keeping the sign-up address: the legal obligation on hosts (the French law on confidence in the digital economy and its implementing decree). Limiting sign-in attempts: our legitimate interest in protecting the site and its members.",
             "The waiting list: your consent, given by confirming the address, and withdrawn at any time through the link in every letter.",
+            "The guided game’s measurement: our legitimate interest in improving the lessons. You may object to it at any time by unticking “Take part” on the Evening course page.",
           ],
         },
         {
@@ -939,6 +940,7 @@ const platform = {
             "Games, as long as the site exists: they are the club’s history and are read by several.",
             "After an account is closed, the name and e-mail address are set aside for five years, out of any use, because the law asks it of hosts; then they are erased.",
             "An address on the waiting list never confirmed, seven days. A confirmed address, until you leave the list — one click, in every letter — or at the latest six months after the game opens.",
+            "The guided game’s notes, 180 days.",
           ],
         },
         {
