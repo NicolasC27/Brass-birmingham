@@ -1111,7 +1111,7 @@ const fr: typeof engame = {
     coalAvoid: 'Évitez {list} : de là, aucun canal ne mène à un emplacement de forge libre.',
     rival: 'un autre joueur',
     worksTile: { line: '{industry} {level} ({cost})', cotton: 'filature', manufacturer: 'manufacture', pottery: 'poterie', money: '{n} £', coal: '[n|un charbon|{n} charbons]', iron: '[n|un fer|{n} fers]' },
-    worthy: { line: '{a} – {b} ({n} [n|icône|icônes])', some: 'À votre portée : {list}.', none: 'Aucune liaison à votre portée n’en porte encore {min} : une tuile bâtie à l’un de ses bouts en ajoute.', sofar: ' Où vous en êtes : {n} sur {of}.' },
+    worthy: { line: '{a} – {b} ({n} [n|icône|icônes])', some: 'À votre portée : {list}.', none: 'Aucune liaison à votre portée n’en porte encore {min} : une tuile bâtie à l’un de ses bouts en ajoute.', noneShort: 'Aucun canal à votre portée n’en porte encore {min} : une tuile bâtie à l’un de ses bouts en ajoute.', sofar: ' Où vous en êtes : {n} sur {of}.' },
     twos: { some: 'Il en offre déjà : {list}.', none: 'Aucune de vos industries n’en est encore là : écartez d’abord les tuiles de niveau 1 de celle que vous visez.' },
     barrels: { line: 'À cette table, les barils des marchands rapportent : {list}.', vp: '{merchant} ({n} PV)', income: '{merchant} ({n} [n|case|cases] de revenu)', money: '{merchant} ({n} £)', develop: '{merchant} (un développement gratuit)' },
     buyers: { all: '{merchant} tout', some: '{merchant} {goods}', cotton: 'le coton', manufacturer: 'les manufactures', pottery: 'la poterie' },

@@ -1111,7 +1111,7 @@ const game: typeof engame = {
     coalAvoid: 'Evita {list}: desde allí ningún canal lleva a una casilla de fundición libre.',
     rival: 'otro jugador',
     worksTile: { line: '{industry} {level} ({cost})', cotton: 'hilandería', manufacturer: 'manufactura', pottery: 'alfarería', money: '{n} £', coal: '[n|un carbón|{n} carbones]', iron: '[n|un hierro|{n} hierros]' },
-    worthy: { line: '{a} – {b} ({n} [n|icono|iconos])', some: 'A tu alcance: {list}.', none: 'Ninguna conexión a tu alcance lleva aún {min} iconos: una loseta construida en uno de sus extremos añade alguno.', sofar: ' Por ahora: {n} de {of}.' },
+    worthy: { line: '{a} – {b} ({n} [n|icono|iconos])', some: 'A tu alcance: {list}.', none: 'Ninguna conexión a tu alcance lleva aún {min} iconos: una loseta construida en uno de sus extremos añade alguno.', noneShort: 'Ningún canal a tu alcance lleva aún {min} iconos: una loseta construida en uno de sus extremos añade alguno.', sofar: ' Por ahora: {n} de {of}.' },
     twos: { some: 'Ya ofrece: {list}.', none: 'Ninguna de tus industrias ha llegado aún: construye o desarrolla antes las losetas de nivel 1 de la que buscas.' },
     barrels: { line: 'En esta mesa, los barriles de los mercaderes dan: {list}.', vp: '{merchant} ({n} PV)', income: '{merchant} ({n} [n|casilla|casillas] de ingresos)', money: '{merchant} ({n} £)', develop: '{merchant} (un desarrollo gratis)' },
     buyers: { all: '{merchant} todo', some: '{merchant} {goods}', cotton: 'el algodón', manufacturer: 'las manufacturas', pottery: 'la cerámica' },

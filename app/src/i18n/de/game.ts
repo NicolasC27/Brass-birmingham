@@ -1111,7 +1111,7 @@ const game: typeof engame = {
     coalAvoid: 'Meide {list}: von dort führt kein Kanal zu einem freien Eisenhüttenplatz.',
     rival: 'ein anderer Spieler',
     worksTile: { line: '{industry} {level} ({cost})', cotton: 'Spinnerei', manufacturer: 'Manufaktur', pottery: 'Töpferei', money: '£{n}', coal: '[n|eine Kohle|{n} Kohle]', iron: '[n|ein Eisen|{n} Eisen]' },
-    worthy: { line: '{a} – {b} ({n} [n|Symbol|Symbole])', some: 'In deiner Reichweite: {list}.', none: 'Keine Verbindung in deiner Reichweite trägt schon {min} Symbole: ein Plättchen, an einem ihrer Enden gebaut, bringt welche dazu.', sofar: ' Bisher: {n} von {of}.' },
+    worthy: { line: '{a} – {b} ({n} [n|Symbol|Symbole])', some: 'In deiner Reichweite: {list}.', none: 'Keine Verbindung in deiner Reichweite trägt schon {min} Symbole: ein Plättchen, an einem ihrer Enden gebaut, bringt welche dazu.', noneShort: 'Kein Kanal in deiner Reichweite trägt schon {min} Symbole: ein Plättchen, an einem seiner Enden gebaut, bringt welche dazu.', sofar: ' Bisher: {n} von {of}.' },
     twos: { some: 'Es bietet schon: {list}.', none: 'Keine deiner Industrien ist schon so weit: baue zuerst die Plättchen der Stufe 1 der gewählten Industrie oder entwickle sie weg.' },
     barrels: { line: 'An diesem Tisch bringen die Händlerfässer: {list}.', vp: '{merchant} ({n} SP)', income: '{merchant} ({n} [n|Feld|Felder] Einkommen)', money: '{merchant} (£{n})', develop: '{merchant} (ein kostenloses Entwickeln)' },
     buyers: { all: '{merchant} alles', some: '{merchant} {goods}', cotton: 'Baumwolle', manufacturer: 'Manufakturwaren', pottery: 'Keramik' },

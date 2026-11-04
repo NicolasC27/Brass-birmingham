@@ -1109,7 +1109,7 @@ const game = {
     coalAvoid: 'Avoid {list}: from there no canal leads to a free iron works slot.',
     rival: 'another player',
     worksTile: { line: '{industry} {level} ({cost})', cotton: 'cotton mill', manufacturer: 'manufactory', pottery: 'pottery', money: '£{n}', coal: '[n|a coal|{n} coal]', iron: '[n|an iron|{n} iron]' },
-    worthy: { line: '{a} – {b} ({n} [n|icon|icons])', some: 'Within your reach: {list}.', none: 'No link within your reach carries {min} icons yet: a tile built at one of its ends adds some.', sofar: ' So far: {n} of {of}.' },
+    worthy: { line: '{a} – {b} ({n} [n|icon|icons])', some: 'Within your reach: {list}.', none: 'No link within your reach carries {min} icons yet: a tile built at one of its ends adds some.', noneShort: 'No canal within your reach carries {min} icons yet: a tile built at one of its ends adds some.', sofar: ' So far: {n} of {of}.' },
     twos: { some: 'It already offers: {list}.', none: 'None of your industries is there yet: first clear away the level-1 tiles of the one you aim at.' },
     barrels: { line: 'At this table the merchants’ barrels give: {list}.', vp: '{merchant} ({n} VP)', income: '{merchant} ({n} income [n|space|spaces])', money: '{merchant} (£{n})', develop: '{merchant} (a free development)' },
     buyers: { all: '{merchant} everything', some: '{merchant} {goods}', cotton: 'cotton', manufacturer: 'manufactured goods', pottery: 'pottery' },
