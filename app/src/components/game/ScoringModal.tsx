@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
 import { GraduationCap } from 'lucide-react';
@@ -108,6 +108,18 @@ export default function GameOverModal({
      strip brings it back */
   const sheet = useLayer(shown, closeGameOver, { modal: true });
 
+  /* the ways out's own height: a key that moves the focus down a plate
+     taller than the window brings it to rest above them, not under */
+  const foot = useRef<HTMLDivElement>(null);
+  const [footHeight, setFootHeight] = useState(0);
+  useEffect(() => {
+    const el = foot.current;
+    if (!shown || !el) return;
+    const ro = new ResizeObserver(() => setFootHeight(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [shown]);
+
   /* the settings or any drawer left open under the plate goes away with the game */
   useEffect(() => {
     if (shown) setBoardOption('settingsOpen', false);
@@ -202,7 +214,7 @@ export default function GameOverModal({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-[75] flex items-center justify-center overflow-y-auto p-4"
-      style={{ background: 'radial-gradient(ellipse 70% 75% at 50% 50%, rgba(16,13,11,.5), rgba(16,13,11,.84))' }}
+      style={{ background: 'radial-gradient(ellipse 70% 75% at 50% 50%, rgba(16,13,11,.5), rgba(16,13,11,.84))', scrollPaddingBottom: footHeight + 8 }}
       ref={sheet}
       tabIndex={-1}
       aria-modal="true"
@@ -431,7 +443,7 @@ export default function GameOverModal({
 
         {/* the ways out: a plate taller than the window — the guided game's,
             with its reckoning — scrolls under them, never over them */}
-        <div className="sticky -bottom-4 z-10 -mx-5 mt-2 px-5 pb-4 pt-4" style={{ background: 'linear-gradient(180deg, rgba(28,21,16,0), rgb(28,21,16) 10px)' }}>
+        <div ref={foot} className="sticky -bottom-4 z-10 -mx-5 mt-2 px-5 pb-4 pt-4" style={{ background: 'linear-gradient(180deg, rgba(28,21,16,0), rgb(28,21,16) 10px)' }}>
           <div className="flex flex-wrap items-center justify-center gap-3">
             {/* a rematch reshuffles this browser's own game: at an online
                 table it is the room's business, so the button steps aside */}
