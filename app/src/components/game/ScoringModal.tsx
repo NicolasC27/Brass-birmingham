@@ -404,19 +404,11 @@ export default function GameOverModal({
           </table>
         </div>
 
-        {/* why the guided game was won or lost, from the finished game
-            alone: the points by source, what was left on the table, what
-            to do better — then the guide's last lesson */}
-        {guided && !abandoned && me >= 0 && (
-          <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="mt-5">
-            <ReckoningPaper game={game} me={me} wide />
-          </motion.div>
-        )}
-
         {/* the guided game ends here: the guide's last lesson, on its own
-            paper, with the roads it names */}
+            paper, with the roads it names — first, in view under the
+            ledger: it is passed as the plate shows */}
         {guided && !abandoned && (
-          <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="paper relative mt-5 px-4 py-3 text-left shadow-e3">
+          <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="paper relative mt-5 px-4 py-3 text-left shadow-e3">
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div className="relative flex items-start gap-2">
               <GraduationCap aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
@@ -438,6 +430,14 @@ export default function GameOverModal({
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* then why it was won or lost, from the finished game alone: the
+            points by source, what was left on the table, what to do better */}
+        {guided && !abandoned && me >= 0 && (
+          <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.3 }} className="mt-5">
+            <ReckoningPaper game={game} me={me} wide />
           </motion.div>
         )}
 
