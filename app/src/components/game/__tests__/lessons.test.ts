@@ -919,6 +919,25 @@ describe('the aims for points', () => {
     expect(due(p, ctx(two))).toMatchObject({ id: 'linkWorth', mode: 'already' });
   });
 
+  it('may pass the tile of level 2 while none is within a build or a sale', () => {
+    /* the reader's mine laid, the coal's level 2 next on the mat, and the coal card */
+    const g = structuredClone(half());
+    g.players[0].hand = [{ id: 'c2', kind: 'industry', industry: 'coal' }];
+    g.players[0].money = 30;
+    expect(optionalNow('levelTwo', ctx(g))).toBe(false);
+    /* a brewery card, the mat's brewery still at level 1: nothing of level 2 to build */
+    const dry = structuredClone(g);
+    dry.players[0].hand = [{ id: 'b1', kind: 'industry', industry: 'brewery' }];
+    expect(optionalNow('levelTwo', ctx(dry))).toBe(true);
+    /* a manufactory of level 2 of theirs, linked to Oxford and its barrel: one to sell */
+    const works = structuredClone(dry);
+    works.tiles['redditch:1'] = { owner: 0, industry: 'manufacturer', level: 2, flipped: false, cubes: 0 };
+    works.merchantTiles['m-oxford'] = ['all'];
+    works.merchantBeer = { 'm-oxford:0': 1 };
+    works.links[OXFORD] = { owner: 1, era: 'canal' };
+    expect(optionalNow('levelTwo', ctx(works))).toBe(false);
+  });
+
   it('asks for a tile of level 2 flipped, not one of level 1', () => {
     const g = structuredClone(half());
     const p = see(upTo('levelTwo'), 'levelTwo', ctx(g));

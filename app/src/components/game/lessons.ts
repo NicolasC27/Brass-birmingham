@@ -148,6 +148,11 @@ export const worthyLaid = (c: LessonCtx): number =>
 /** a tile of the reader's of level 2 or more, flipped: it outlives the
  *  canal's sweep, and a short game's close counts it again */
 const flippedTwo = (c: LessonCtx): boolean => Object.values(c.g.tiles).some((t) => t.owner === c.me && t.flipped && t.level >= 2);
+/** a tile of level 2 or more the reader could flip from here: one the
+ *  hand builds as the table stands, or a works of theirs of that level
+ *  to sell */
+const twoInReach = (c: LessonCtx): boolean =>
+  c.g.players[c.me].hand.some((card) => buildTargets(c.g, c.me, card).some((x) => x.valid && x.level >= 2)) || sellTargets(c.g, c.me).some((x) => x.valid && x.tile.level >= 2);
 
 /** the game's last two rounds: the rail's, or a short game's canal */
 const closing = (c: LessonCtx): boolean => (c.g.era === 'rail' || c.g.eraLength === 'short') && c.g.round >= eraRounds(c.g.players.length) - 1;
@@ -245,7 +250,10 @@ export const LESSONS: readonly Lesson[] = [
      flipped, which counts once more than a level 1. None in the last
      round: its own page says what each last action should do */
   { id: 'linkWorth', done: (c) => worthyLaid(c) >= LINKS_ASKED, when: halfway, ahead: true, deferrable: true, aim: true },
-  { id: 'levelTwo', done: flippedTwo, when: halfway, ahead: true, deferrable: true, aim: true },
+  /* with no tile of level 2 within a build or a sale — the mat offers
+     none yet, or the hand builds none — it is read and may be passed: out
+     of reach, it would come back round after round */
+  { id: 'levelTwo', done: flippedTwo, when: halfway, optional: (c) => !twoInReach(c), ahead: true, deferrable: true, aim: true },
   { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
   /* what each last action should do: it comes when they are the last,
      before an aim still open */
