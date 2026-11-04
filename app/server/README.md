@@ -24,6 +24,30 @@ in, nothing else), at most five a minute per tab and per socket, each fault
 once per tab. Read them at `/faults`, from this machine or with
 `?token=` and `FEEDBACK_TOKEN`, like `/flags` and `/feedback`.
 
+## The guided game's trail
+
+At a guided table the browser notes what the lessons did — a lesson
+shown, passed by its deed, by Next or by Skip, set aside, shown as
+already done, the detour to the loan, the guide left, the machine let
+play on, the game played out — and sends it over the socket as
+`guide.trail`, a few events a frame and never two frames within a
+second. Each event carries a random id drawn with the table (never the
+account, never the table's code), the lesson, the round and the actions
+played, the seconds since the trail began, a coarse kind of screen, the
+language, the build and the deal (`src/online/guideTrail.ts`). The
+socket must be signed in — a guided game is always played under an
+account, a guest's at least — but nothing of the account is written
+down. The office checks every field, takes a hundred events at once from
+a socket and then one a second (six hundred from an address, then one
+every two seconds), keeps five hundred a table at most in `guide_trail`,
+and lets them go after 180 days with the rest of `sweepPrivacy`.
+
+The direction reads them summed up at `/direction/partie-guidee`
+(`admin.guide`): per lesson, per kind of screen and per deal, counts and
+medians only. Nothing is sent by a build with no office, nor once the
+reader has unticked « Participer » on the evening course
+(`brassworks.guide.trail.off`).
+
 ## The waiting list
 
 Before the line opens, the preview (`/avant-premiere`, or the whole site
