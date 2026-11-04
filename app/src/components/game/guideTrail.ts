@@ -280,13 +280,19 @@ if (typeof window !== 'undefined') {
 
 /* ------------------------------- the guide ------------------------------ */
 
-/** the record as this visit last wrote it, for a browser whose storage refuses it */
+/** the record as this visit last wrote it; once the storage has refused
+ *  it — full, or shut — it is the record, and what the storage still
+ *  holds from before is stale: read back, it would draw a new id or say
+ *  again what was said */
 let kept: TrailRecord | null = null;
+let refused = false;
 
 function readRecord(): TrailRecord | null {
+  if (refused) return kept;
   try {
     return recordOf(localStorage.getItem(TRAIL_KEY));
   } catch {
+    refused = true;
     return kept;
   }
 }
@@ -310,6 +316,7 @@ function note(s: Sight): void {
       localStorage.setItem(TRAIL_KEY, JSON.stringify(record));
     } catch {
       /* the record lives for this visit */
+      refused = true;
     }
   }
   if (!steps.length) return;
