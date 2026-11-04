@@ -34,6 +34,7 @@ const Tableau = lazy(() => import("@/pages/Tableau"));
 const Glossaire = lazy(() => import("@/pages/Glossaire"));
 const Services = lazy(() => import("@/pages/Services"));
 const Direction = lazy(() => import("@/pages/Direction"));
+const DirectionGuide = lazy(() => import("@/pages/DirectionGuide"));
 /* the preview and its waiting list: a sheet of its own, which never opens the socket */
 const LandingRoutes = lazy(() => import("@/landing/LandingRoutes"));
 /* the test bench, for the developer's own builds: the route does not exist
@@ -127,6 +128,7 @@ function Journal() {
         <Route path="comptoir" element={<Comptoir />} />
         <Route path="classement" element={<Classement />} />
         <Route path="direction" element={<Direction />} />
+        <Route path="direction/partie-guidee" element={<DirectionGuide />} />
         {Admin && <Route path="admin" element={<Admin />} />}
         {/* the hall's old addresses lead to the club's rooms */}
         <Route path="play" element={<Navigate to="/online" replace />} />

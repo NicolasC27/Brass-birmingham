@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { useParams } from 'react-router';
-import { Download, RefreshCw, Send, TestTube2 } from 'lucide-react';
+import { Link, useParams } from 'react-router';
+import { Download, GraduationCap, RefreshCw, Send, TestTube2 } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { onlineWire } from '@/online/net';
 import type { Me } from '@/online/table';
@@ -10,9 +10,10 @@ import { cn } from '@/lib/utils';
 
 /* ------------------------------------------------------------------ */
 /* /direction — the direction's desk: the waiting list and its         */
-/* circulars. Open to the accounts BLACKRAIL_ADMINS names, once their  */
-/* address is verified; the office checks it on every request, the     */
-/* page only spares the others a desk they could not use.              */
+/* circulars, and next door the guided game's funnel                   */
+/* (DirectionGuide.tsx). Open to the accounts BLACKRAIL_ADMINS names,  */
+/* once their address is verified; the office checks it on every       */
+/* request, the page only spares the others a desk they could not use. */
 /*                                                                     */
 /* One language, the owner's, as the test bench: nothing here is ever  */
 /* shown to a player, and keeping it out of the dictionaries keeps it   */
@@ -45,11 +46,11 @@ function download(name: string, text: string): void {
   URL.revokeObjectURL(url);
 }
 
-const button = 'inline-flex min-h-8 items-center gap-2 border border-[var(--gz-line-control)] px-3 font-ui text-[12px] uppercase tracking-[0.12em] text-paper-100 transition-colors hover:border-brass-300 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:h-3.5 [&>svg]:w-3.5';
+export const button = 'inline-flex min-h-8 items-center gap-2 border border-[var(--gz-line-control)] px-3 font-ui text-[12px] uppercase tracking-[0.12em] text-paper-100 transition-colors hover:border-brass-300 disabled:cursor-not-allowed disabled:opacity-50 [&>svg]:h-3.5 [&>svg]:w-3.5';
 
 /* ------------------------------- figures ------------------------------ */
 
-function Figure({ label, value, note }: { label: string; value: string; note?: string }) {
+export function Figure({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div className="console px-4 py-3">
       <p className="micro-label text-iron-400">{label}</p>
@@ -434,6 +435,12 @@ function Door({ me }: { me: Me | null }) {
   );
 }
 
+/** a page of the desk's, behind its door */
+export function Backstage({ children }: { children: React.ReactNode }) {
+  const session = useMe();
+  return session?.admin === true ? <>{children}</> : <Door me={session} />;
+}
+
 /** the letter's link, answered: the account's address is verified and the
  *  desk opens (before the line opens there is no account page to land on) */
 export function DirectionVerify() {
@@ -511,9 +518,14 @@ export default function Direction() {
       title="La liste d’attente"
       lede="Les adresses laissées sur l’avant-première, et les circulaires qu’on leur écrit."
       aside={
-        <button type="button" className={button} onClick={() => void read()}>
-          <RefreshCw aria-hidden /> {at ? `Lu à ${new Date(at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : 'Lire'}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/direction/partie-guidee" className={button}>
+            <GraduationCap aria-hidden /> La partie guidée
+          </Link>
+          <button type="button" className={button} onClick={() => void read()}>
+            <RefreshCw aria-hidden /> {at ? `Lu à ${new Date(at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : 'Lire'}
+          </button>
+        </div>
       }
     >
       <Refusal text={error} />
