@@ -24,6 +24,7 @@ import type { PlanId } from '@/game/plan';
 import { setBoardOption, useBoardOptions } from './boardOptions';
 import { REVIEW_CURVE_H, guideDock } from './guideKeys';
 import AnalysisCurve from './AnalysisCurve';
+import ReckoningPaper from './ReckoningPaper';
 import { RoundsGrid } from './Ledger';
 import { cn } from '@/lib/utils';
 
@@ -1065,9 +1066,11 @@ export default function Debrief({ game: live, me: opened }: { game: GameState; m
         </div>
       )}
 
-      {/* the review page: the plan the moves add up to, the guide's counted tips, the key moments */}
+      {/* the review page: why a short game was won or lost, the plan the moves add up to, the guide's counted tips, the key moments */}
       {!help && !vary && tab === 'review' && (
         <div className="min-h-0 flex-1 overflow-y-auto pr-1 [scrollbar-width:thin]">
+          {/* the reckoning the final ledger told, kept here for the reader's own seat */}
+          {me === opened && <ReckoningPaper game={game} me={me} className="mb-3" />}
           {plan.deeds.actions > 0 && (
             <section>
               <div className="flex items-center gap-2">
