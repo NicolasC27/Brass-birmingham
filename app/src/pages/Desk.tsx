@@ -202,7 +202,8 @@ function TutorialStrip({ className }: { className?: string }) {
         </Button>
       </div>
       <Refusal text={guided.failed ? t('platform.desk.tutorial.failed') : null} />
-      <TrailNotice className="mt-3" />
+      {/* under the words, not under the cap */}
+      <TrailNotice className="mt-3 pl-9" />
     </div>
   );
 }
