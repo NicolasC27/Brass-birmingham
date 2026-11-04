@@ -1,11 +1,27 @@
+import { execSync } from "child_process"
 import fs from "fs"
 import path from "path"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vitest/config"
 import { inspectAttr } from 'plugin-inspect-react-code'
 
+/* the build's name, which the faults and the guided game's trail carry:
+   VITE_VERSION when the deploy gives one, else the day and the commit it
+   is built from — a funnel read before and after a lesson changed */
+function buildName(): string {
+  if (process.env.VITE_VERSION) return process.env.VITE_VERSION
+  try {
+    return execSync("git log -1 --format=%cd.%h --date=format:%Y%m%d", { cwd: __dirname, stdio: ["ignore", "pipe", "ignore"] }).toString().trim() || "dev"
+  } catch {
+    return "dev"
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    "import.meta.env.VITE_VERSION": JSON.stringify(buildName()),
+  },
   /* relative for the desktop shell; the preview is served from a domain's
      root and opened on deep links (/avant-premiere/confirmer/…), so its
      files are addressed from the root */

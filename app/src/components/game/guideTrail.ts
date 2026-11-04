@@ -303,7 +303,8 @@ function drawId(): string {
   return [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
 }
 
-const VERSION = String(import.meta.env.VITE_VERSION ?? import.meta.env.MODE ?? 'dev');
+/** the build (vite.config's buildName), in the letters the office takes */
+const VERSION = String(import.meta.env.VITE_VERSION ?? import.meta.env.MODE ?? 'dev').replace(/[^\w.+-]/g, '-').slice(0, 40) || 'dev';
 
 function note(s: Sight): void {
   if (!s.table || !s.c) return;
