@@ -850,7 +850,7 @@ describe('the aims of the second half', () => {
   });
 });
 
-describe('the aim for points', () => {
+describe('the aims for points', () => {
   /* the reader's mine stands in Redditch: a canal from it to Oxford or to
      Gloucester carries its two icons and the merchant's two */
   const OXFORD = 'redditch--m-oxford';
@@ -860,17 +860,17 @@ describe('the aim for points', () => {
   const half = (g: GameState = round2()): GameState => ({ ...g, round: 5 });
 
   it('come after the link to a buyer, from the era\'s half, and never in the last round', () => {
-    expect(LESSON_IDS.slice(lessonIndex('reach'), lessonIndex('barrel') + 1)).toEqual(['reach', 'linkWorth', 'barrel']);
+    expect(LESSON_IDS.slice(lessonIndex('reach'), lessonIndex('barrel') + 1)).toEqual(['reach', 'linkWorth', 'levelTwo', 'barrel']);
     const p = upTo('linkWorth');
     /* before the half, the barrel's aim is given meanwhile */
     expect(due(p, ctx(round2()))).toMatchObject({ id: 'barrel', mode: 'do' });
     expect(due(p, ctx(half()))).toMatchObject({ id: 'linkWorth', mode: 'do' });
-    expect(due(pass(p, 'linkWorth'), ctx(half()))).toMatchObject({ id: 'barrel', mode: 'do' });
+    expect(due(pass(p, 'linkWorth'), ctx(half()))).toMatchObject({ id: 'levelTwo', mode: 'do' });
     /* the last round has its own page, and then no round for them */
     const last = { ...round2(), round: 10 };
     expect(due(pass(p, 'lastRounds'), ctx(last))).toMatchObject({ id: 'barrel', mode: 'do' });
     expect(stepKeyOf('linkWorth', half(), 0)).toBe('linkWorthShort');
-    expect(stepKeyOf('linkWorth', { ...half(), eraLength: 'standard' }, 0)).toBe('linkWorth');
+    expect(stepKeyOf('levelTwo', { ...half(), eraLength: 'standard' }, 0)).toBe('levelTwo');
   });
 
   it('asks for two links that carry their icons, laid from the era\'s half', () => {
@@ -903,6 +903,24 @@ describe('the aim for points', () => {
     /* back the next round: done meanwhile, a page that says so */
     expect(two.round).toBe(6);
     expect(due(p, ctx(two))).toMatchObject({ id: 'linkWorth', mode: 'already' });
+  });
+
+  it('asks for a tile of level 2 flipped, not one of level 1', () => {
+    const g = structuredClone(half());
+    const p = see(upTo('levelTwo'), 'levelTwo', ctx(g));
+    expect(due(p, ctx(g))).toMatchObject({ id: 'levelTwo', mode: 'do' });
+    const one = structuredClone(g);
+    one.tiles['redditch:0'].flipped = true;
+    expect(settle(p, ctx(one))).toBe(p);
+    const two = structuredClone(g);
+    two.tiles['stone:0'] = { owner: 0, industry: 'brewery', level: 2, flipped: true, cubes: 0 };
+    expect(settle(p, ctx(two)).passed.at(-1)).toBe('levelTwo');
+    /* already flipped when it comes up: a page that says so */
+    expect(due(upTo('levelTwo'), ctx(two))).toMatchObject({ id: 'levelTwo', mode: 'already' });
+    /* another's tile of level 2 is not the reader's */
+    const theirs = structuredClone(g);
+    theirs.tiles['stone:0'] = { owner: 1, industry: 'brewery', level: 2, flipped: true, cubes: 0 };
+    expect(settle(p, ctx(theirs))).toBe(p);
   });
 });
 

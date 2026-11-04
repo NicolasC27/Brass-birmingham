@@ -6,7 +6,7 @@ import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
 import { MOTIFS } from '@/game/progress';
 import { LESSON_IDS } from '../lessons';
-import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, worksOnMat, worthyLinks } from '../lessonWords';
+import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from '../lessonWords';
 
 /* the words the lessons are said in, at a guided table — you against
    Wedgwood, the canal era only, on seed 3, one of the guided game's
@@ -160,6 +160,18 @@ describe('the works the mat offers next', () => {
   });
 });
 
+describe('the tiles of level 2 the mat offers', () => {
+  it('are those of an industry whose level 1 is gone, priced', () => {
+    /* the first mine built: the next is a level 2 */
+    expect(twosOnMat(firstRound(table()), 0)).toEqual([{ industry: 'coal', level: 2, cost: 7, coal: 0, iron: 0 }]);
+    const g = structuredClone(firstRound(table()));
+    g.players[0].stacks.iron = g.players[0].stacks.iron.filter((l) => l > 1);
+    expect(twosOnMat(g, 0).map((x) => `${x.industry} ${x.level}`)).toEqual(['coal 2', 'iron 2']);
+    /* none before the first mine */
+    expect(twosOnMat(table(), 0)).toEqual([]);
+  });
+});
+
 describe('the links worth laying for their icons', () => {
   it('are those the reader may lay now whose ends carry three icons or more, the most first', () => {
     /* the reader's mine in Redditch: two icons, and two for each merchant */
@@ -177,6 +189,7 @@ describe('the links worth laying for their icons', () => {
   it('are said under the short game\'s own words', () => {
     const g = table();
     expect(stepKeyOf('linkWorth', g, 0)).toBe('linkWorthShort');
+    expect(stepKeyOf('levelTwo', g, 0)).toBe('levelTwoShort');
     expect(stepKeyOf('linkWorth', table('standard'), 0)).toBe('linkWorth');
   });
 });

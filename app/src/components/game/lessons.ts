@@ -140,6 +140,9 @@ export const worthyLaid = (c: LessonCtx): number =>
     .filter((e) => e.player === c.me && e.key === 'network' && (e.era === 'rail' || e.round >= halfRound(c.g)))
     .flatMap((e) => [e.vars?.linkId, e.vars?.linkId2])
     .filter((id) => typeof id === 'string' && c.g.links[id]?.owner === c.me && linkIcons(c.g, c.me, id) >= LINK_WORTH).length;
+/** a tile of the reader's of level 2 or more, flipped: it outlives the
+ *  canal's sweep, and a short game's close counts it again */
+const flippedTwo = (c: LessonCtx): boolean => Object.values(c.g.tiles).some((t) => t.owner === c.me && t.flipped && t.level >= 2);
 
 /** the game's last two rounds: the rail's, or a short game's canal */
 const closing = (c: LessonCtx): boolean => (c.g.era === 'rail' || c.g.eraLength === 'short') && c.g.round >= eraRounds(c.g.players.length) - 1;
@@ -230,12 +233,14 @@ export const LESSONS: readonly Lesson[] = [
      works within reach of its buyer, by whoever's links; a merchant's
      barrel drunk — with none left standing, one to pass */
   { id: 'reach', done: linkedWorks, deferrable: true, aim: true },
-  /* and an aim for points rather than moves, from the era's half as the
-     plan that names it: links whose ends carry icons, laid from then on —
-     two, a round's worth: the reader who follows the lessons lays far fewer
-     than the machine, and loses most of the game there. None in the last
+  /* and aims for points rather than moves, from the era's half as the plan
+     that names them: links whose ends carry icons, laid from then on — two,
+     a round's worth: the reader who follows the lessons lays far fewer than
+     the machine, and loses most of the game there — and a tile of level 2
+     flipped, which counts once more than a level 1. None in the last
      round: its own page says what each last action should do */
   { id: 'linkWorth', done: (c) => worthyLaid(c) >= LINKS_ASKED, when: halfway, ahead: true, deferrable: true, aim: true },
+  { id: 'levelTwo', done: flippedTwo, when: halfway, ahead: true, deferrable: true, aim: true },
   { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
   /* what each last action should do: it comes when they are the last,
      before an aim still open */

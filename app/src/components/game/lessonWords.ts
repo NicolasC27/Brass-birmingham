@@ -21,6 +21,7 @@ const SHORT: Readonly<Record<string, string>> = {
   plan: 'planShort',
   tips: 'tipsShort',
   linkWorth: 'linkWorthShort',
+  levelTwo: 'levelTwoShort',
   lastRounds: 'lastRoundsShort',
 };
 
@@ -200,6 +201,18 @@ export function worksOnMat(g: GameState, me: number): MatWorks[] {
   });
   const now = tops.filter((x) => INDUSTRIES[x.industry][x.level - 1].eras.includes(g.era));
   return now.length ? now : tops;
+}
+
+/** the tiles of level II or more the reader's mat offers next, one per
+ *  industry, with their price: an industry whose level I tiles are all
+ *  gone, built or developed away. A tile the era does not build is left
+ *  out */
+export function twosOnMat(g: GameState, me: number): MatWorks[] {
+  return (['coal', 'iron', 'brewery', 'cotton', 'manufacturer', 'pottery'] as const).flatMap((industry): MatWorks[] => {
+    const level = g.players[me].stacks[industry][0];
+    const tile = level === undefined ? undefined : INDUSTRIES[industry][level - 1];
+    return tile && level >= 2 && tile.eras.includes(g.era) ? [{ industry, level, cost: tile.cost, coal: tile.coal, iron: tile.iron }] : [];
+  });
 }
 
 /** a link the reader may lay now, and the icons at its ends */
