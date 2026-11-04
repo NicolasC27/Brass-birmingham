@@ -229,7 +229,7 @@ export default function GameOverModal({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: reduced ? 0.2 : 0.45, ease: [0.16, 1, 0.3, 1] }}
         data-count={phase}
-        className="plate plaque-rivets relative my-auto w-[min(840px,100%)] px-7 pb-6 pt-6"
+        className="plate plaque-rivets relative my-auto w-[min(840px,100%)] px-7 pb-2 pt-6"
         style={{ boxShadow: 'inset 0 0 0 1px rgba(201,164,92,.5), inset 0 0 0 4px rgba(12,9,7,.9), inset 0 0 0 5px rgba(201,164,92,.28), 0 18px 48px rgba(0,0,0,.6)' }}
       >
         {/* the plate's other two rivets */}
@@ -419,58 +419,62 @@ export default function GameOverModal({
           </motion.div>
         )}
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          {/* a rematch reshuffles this browser's own game: at an online
-              table it is the room's business, so the button steps aside */}
-          {online ? (
-            <button
-              type="button"
-              onClick={() => {
-                leaveOnlineTable();
-                navigate('/online');
-              }}
-              className="btn-strike"
-            >
-              {t('game.scoring.backToRoom')}
+        {/* the ways out: a plate taller than the window scrolls under them,
+            never over them */}
+        <div className="sticky -bottom-4 z-10 -mx-5 mt-2 px-5 pb-4 pt-4" style={{ background: 'linear-gradient(180deg, rgba(28,21,16,0), rgb(28,21,16) 10px)' }}>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {/* a rematch reshuffles this browser's own game: at an online
+                table it is the room's business, so the button steps aside */}
+            {online ? (
+              <button
+                type="button"
+                onClick={() => {
+                  leaveOnlineTable();
+                  navigate('/online');
+                }}
+                className="btn-strike"
+              >
+                {t('game.scoring.backToRoom')}
+              </button>
+            ) : (
+              <button type="button" onClick={onRematch} className="btn-strike">
+                {t('game.scoring.rematch')}
+              </button>
+            )}
+            {reader >= 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDebriefOpen(true);
+                  closeGameOver();
+                }}
+                className="btn-ledger"
+              >
+                {t('game.debrief.open')}
+              </button>
+            )}
+            <button type="button" onClick={closeGameOver} className="btn-ledger" aria-keyshortcuts="Escape">
+              {t('game.scoring.lookBoard')}
             </button>
-          ) : (
-            <button type="button" onClick={onRematch} className="btn-strike">
-              {t('game.scoring.rematch')}
+          </div>
+          <nav aria-label={t('game.scoring.moreAria')} className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-brass-500/50">
+            <button type="button" onClick={toBilan} className={link}>
+              {t('game.scoring.bilan')}
             </button>
-          )}
-          {reader >= 0 && (
-            <button
-              type="button"
-              onClick={() => {
-                setDebriefOpen(true);
-                closeGameOver();
-              }}
-              className="btn-ledger"
-            >
-              {t('game.debrief.open')}
+            <span aria-hidden>·</span>
+            <button type="button" onClick={share} className={link} aria-live="polite">
+              {shared ? t('game.scoring.shared') : t('game.scoring.share')}
             </button>
-          )}
-          <button type="button" onClick={closeGameOver} className="btn-ledger" aria-keyshortcuts="Escape">
-            {t('game.scoring.lookBoard')}
-          </button>
+            <span aria-hidden>·</span>
+            <button type="button" onClick={changeTable} className={link}>
+              {t('game.scoring.changeTable')}
+            </button>
+            <span aria-hidden>·</span>
+            <button type="button" onClick={() => navigate('/')} className={link}>
+              {t('game.scoring.returnTitle')}
+            </button>
+          </nav>
         </div>
-        <nav aria-label={t('game.scoring.moreAria')} className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-brass-500/50">
-          <button type="button" onClick={toBilan} className={link}>
-            {t('game.scoring.bilan')}
-          </button>
-          <span aria-hidden>·</span>
-          <button type="button" onClick={share} className={link} aria-live="polite">
-            {shared ? t('game.scoring.shared') : t('game.scoring.share')}
-          </button>
-          <span aria-hidden>·</span>
-          <button type="button" onClick={changeTable} className={link}>
-            {t('game.scoring.changeTable')}
-          </button>
-          <span aria-hidden>·</span>
-          <button type="button" onClick={() => navigate('/')} className={link}>
-            {t('game.scoring.returnTitle')}
-          </button>
-        </nav>
       </motion.div>
     </motion.div>
   );
