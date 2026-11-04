@@ -11,7 +11,7 @@ import { getLang, localeOf, reasonText } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { lastRound } from './lessons';
 import { missingLinks } from './lensFor';
-import { barrelsSaid } from './lessonWords';
+import { barrelsSaid, worthyLinks } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* What the table answers, read off the game as it stands: why a deed  */
@@ -125,6 +125,14 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
     return plain([t('game.guide.blocked.sell', vars), ...lines, ...way].join(' '));
   }
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
+  /* links worth their icons within reach, and every one of them dearer
+     than the purse: money is what the aim lacks */
+  if (id === 'linkWorth') {
+    const worthy = worthyLinks(g, me);
+    if (!worthy.length || worthy.some((x) => !x.dear)) return null;
+    const why = t(g.eraLength === 'short' ? 'game.guide.blocked.worthMoneyShort' : 'game.guide.blocked.worthMoney', { ...vars, need: Math.min(...worthy.map((x) => x.cost)) });
+    return { short: why, text: `${why} ${advice()}`, money: true };
+  }
   /* the aims of the second half are met through a works to sell: none on
      the board, nothing to link to its buyer, no barrel to drink with it —
      and in the last round, no time left to build one and sell it too */

@@ -215,21 +215,27 @@ export function twosOnMat(g: GameState, me: number): MatWorks[] {
   });
 }
 
-/** a link the reader may lay now, and the icons at its ends */
+/** a link the reader may lay now — or once the purse pays for it (dear) —
+ *  and the icons at its ends */
 export interface Worthy {
   id: string;
   a: string;
   b: string;
   icons: number;
+  /** its price, and whether the purse falls short of it */
+  cost: number;
+  dear: boolean;
 }
 
-/** the links the reader may lay now whose ends carry the icons a link is
+/** the links the reader may lay whose ends carry the icons a link is
  *  worth laying for, the most first, the board's order breaking a tie:
- *  what the aim on links points at, read off the tiles as they stand */
+ *  what the aim on links points at, read off the tiles as they stand. A
+ *  link the purse alone keeps back is one of them: it is money the reader
+ *  lacks, not a link worth laying */
 export function worthyLinks(g: GameState, me: number): Worthy[] {
   return linkTargets(g, me)
-    .filter((x) => x.valid)
-    .map((x) => ({ id: x.link.id, a: x.link.a, b: x.link.b, icons: linkIcons(g, me, x.link.id) }))
+    .filter((x) => x.valid || !!x.reason?.startsWith('Needs £'))
+    .map((x) => ({ id: x.link.id, a: x.link.a, b: x.link.b, icons: linkIcons(g, me, x.link.id), cost: x.total, dear: !x.valid }))
     .filter((x) => x.icons >= LINK_WORTH)
     .sort((p, q) => q.icons - p.icons);
 }

@@ -268,6 +268,11 @@ describe('the lens of the aims for points', () => {
     expect(lensFor('linkWorth', ctx(g, card, 'build'))).toEqual({ hud: 'network' });
     /* no canal worth its icons: the lens steps aside */
     expect(lensFor('linkWorth', ctx(table()))).toBeNull();
+    /* every one dearer than the purse: the canals lit all the same, and the loan rung */
+    const poor = structuredClone(g);
+    poor.players[0].money = 2;
+    expect(lensFor('linkWorth', ctx(poor))).toEqual({ links: ['redditch--m-oxford', 'redditch--m-gloucester'], at: 'redditch--m-oxford', hud: 'loan' });
+    expect(lensFor('linkWorth', ctx(poor, card, 'network'))).toBeNull();
   });
 
   it('lights the tiles of level 2 a build chosen may lay, and nothing before', () => {

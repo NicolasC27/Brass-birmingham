@@ -216,8 +216,11 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
       return card && verb === 'build' ? works() : toBuyer();
     case 'linkWorth': {
       /* the links whose ends carry the icons they will count, the most first */
-      const links = worthyLinks(g, me).map((x) => x.id);
+      const worthy = worthyLinks(g, me);
+      const links = worthy.map((x) => x.id);
       if (!links.length) return null;
+      /* every one dearer than the purse: the loan rung under them */
+      if (worthy.every((x) => x.dear)) return choosing ? null : { links, at: links[0], hud: 'loan' };
       if (choosing && verb !== 'network') return { hud: 'network' };
       const hud: HudLens | undefined = !card ? 'hand' : verb === 'network' ? undefined : 'network';
       return { links, at: links[0], ...(hud ? { hud } : {}) };

@@ -289,6 +289,22 @@ describe('a deed the table does not allow', () => {
     expect(blockedBy('iron', g, 0, fr, 'fr')).toBeNull();
   });
 
+  it('names the purse when it alone keeps the canals that count away', () => {
+    /* a mine of the reader's in Redditch: a canal to Oxford or Gloucester carries four icons */
+    const g = structuredClone(guided());
+    g.tiles['redditch:0'] = { owner: 0, industry: 'coal', level: 1, flipped: false, cubes: 2 };
+    expect(blockedBy('linkWorth', g, 0, fr)).toBeNull();
+    g.players[0].money = 2;
+    const b = blockedBy('linkWorth', g, 0, fr)!;
+    expect(b).toMatchObject({ money: true, short: fr('game.guide.blocked.worthMoneyShort', { need: 3, money: 2 }) });
+    expect(b.text).toContain(fr('game.guide.blocked.loanAdvice', { amount: 30, hit: 3 }));
+    /* a full game says links, as its lesson does */
+    expect(blockedBy('linkWorth', { ...g, eraLength: 'standard' }, 0, fr)!.short).toBe(fr('game.guide.blocked.worthMoney', { need: 3, money: 2 }));
+    /* no canal worth its icons at all: nothing to pay for, the lesson says what adds some */
+    delete g.tiles['redditch:0'];
+    expect(blockedBy('linkWorth', g, 0, fr)).toBeNull();
+  });
+
   it('stops the aims of the second half while no works is left to sell', () => {
     const g = structuredClone(guided());
     for (const id of ['reach', 'barrel']) expect(blockedBy(id, g, 0, fr)!.text).toBe(fr('game.guide.blocked.noWorks'));

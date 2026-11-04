@@ -1205,6 +1205,8 @@ const game: typeof engame = {
       worksCard: 'Keine Karte auf deiner Hand baut jetzt einen Betrieb: es braucht eine Ortskarte einer Stadt mit freiem Bauplatz, oder eine Industriekarte für eine Stadt deines Netzwerks. Eine Verbindung zu einer Stadt mit freiem Bauplatz, oder die Aktion Erkunden, öffnet den Weg.',
       worksNow: 'Kein Betrieb ist jetzt baubar.',
       linkMoney: 'Ein Kanal kostet £3 und du hast £{money}.',
+      worthMoney: 'Verbindungen, die zählen, sind in deiner Reichweite, aber die billigste kostet £{need} und du hast £{money}.',
+      worthMoneyShort: 'Kanäle, die zählen, sind in deiner Reichweite, aber ein Kanal kostet £{need} und du hast £{money}.',
       loanAdvice: 'Ein Kredit (eine Karte, die du nicht brauchen wirst, dann Kredit) gibt sofort £{amount}, für {hit} [hit|Einkommensstufe|Einkommensstufen] — oder komm nach dem Zahltag darauf zurück.',
       loanAdviceLast: 'Ein Kredit (eine Karte, die du nicht brauchen wirst, dann Kredit) gibt sofort £{amount}, für {hit} [hit|Einkommensstufe|Einkommensstufen].',
       link: 'Kein Kanal kann jetzt von deinem Netzwerk ausgehen.',

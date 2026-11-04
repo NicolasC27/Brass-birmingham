@@ -177,9 +177,13 @@ describe('the links worth laying for their icons', () => {
     /* the reader's mine in Redditch: two icons, and two for each merchant */
     const g = firstRound(table());
     expect(worthyLinks(g, 0)).toEqual([
-      { id: 'redditch--m-oxford', a: 'redditch', b: 'm-oxford', icons: 4 },
-      { id: 'redditch--m-gloucester', a: 'redditch', b: 'm-gloucester', icons: 4 },
+      { id: 'redditch--m-oxford', a: 'redditch', b: 'm-oxford', icons: 4, cost: 3, dear: false },
+      { id: 'redditch--m-gloucester', a: 'redditch', b: 'm-gloucester', icons: 4, cost: 3, dear: false },
     ]);
+    /* a purse short of a canal keeps them, marked dear: money is what is missing */
+    const poor = structuredClone(g);
+    poor.players[0].money = 2;
+    expect(worthyLinks(poor, 0).map((x) => `${x.id} ${x.dear}`)).toEqual(['redditch--m-oxford true', 'redditch--m-gloucester true']);
     /* the mine gone, a merchant's two alone are not enough */
     const bare = structuredClone(g);
     delete bare.tiles['redditch:0'];
