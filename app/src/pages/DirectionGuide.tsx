@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import PageShell, { Panel, Refusal, inputClass } from '@/components/site/PageShell';
@@ -206,15 +206,22 @@ function Funnel() {
   const [funnel, setFunnel] = useState<GuideFunnel | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [at, setAt] = useState(0);
+  /* the last reading asked: an answer to an older one, for another
+     filter, comes too late to be shown */
+  const asked = useRef(0);
 
   const read = useCallback(async () => {
     const w = onlineWire();
     if (!w) return;
+    const n = ++asked.current;
     try {
-      setFunnel(await w.adminGuide(filter));
+      const f = await w.adminGuide(filter);
+      if (n !== asked.current) return;
+      setFunnel(f);
       setAt(Date.now());
       setError(null);
     } catch (e) {
+      if (n !== asked.current) return;
       setError(`L’office n’a pas répondu : ${(e as Error).message}`);
     }
   }, [filter]);
