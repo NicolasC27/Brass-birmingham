@@ -49,7 +49,7 @@
 /*   node tools/guide/dist/deals.mjs --full [first seed] [last seed]  */
 /*   node tools/guide/dist/deals.mjs --full --seed 12                 */
 /* (1 to 400 by default: a full game takes a hundred machine moves,   */
-/* some ten minutes on sixteen cores).                                */
+/* a minute and a half on sixteen cores).                             */
 /* ------------------------------------------------------------------ */
 
 import './memory';
