@@ -21,7 +21,9 @@ import { useReducedMotion } from './useReducedMotion';
 /*                                                                      */
 /* At the second lesson's table the half-time asks its question: go on */
 /* with the rail era taught, or stop there — the table stays open, the  */
-/* guide goes — and play ranked, or finish the game alone.              */
+/* guide goes — and play ranked, or finish the game alone. Escape       */
+/* closes the scene and answers nothing: the guide asks it again as the */
+/* rail era opens.                                                      */
 /* ------------------------------------------------------------------ */
 
 /** Continue shows once the figures have had a moment to land */
@@ -45,18 +47,20 @@ function Ceremony({ ready = true }: { /** the table is set and in view: the cere
   const [held, setHeld] = useState(false);
   const [seen, setSeen] = useState<string | null>(null);
   const live = !!ceremony && ready;
-  /* the lesson goes on: its choice, passed — Continue, or Escape, says so */
+  /* the lesson goes on: its choice, passed — only its own button says so */
   const goOn = () => {
     if (!lesson || !table) return;
     const p = progressAt(table, 'full');
     const q = pass(p, 'railChoice');
     if (q !== p) saveProgress(q);
   };
-  /* Escape is Continue: the scene holds the table until it is answered */
+  /* Escape is Continue: the scene holds the table until it is answered.
+     At the lesson's table it answers nothing — a key pressed as a reflex,
+     perhaps before the choice was even shown, never takes the reader past
+     it: the guide's own page asks it as the rail era opens */
   const box = useLayer(
     live,
     () => {
-      goOn();
       endCeremony();
       setAsked(true);
     },
@@ -256,7 +260,7 @@ function Ceremony({ ready = true }: { /** the table is set and in view: the cere
       <div className="sticky bottom-0 mt-5 flex w-full shrink-0 flex-col items-center gap-1.5 pb-5">
         {canSkip && lesson && (
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <button ref={go} type="button" onClick={next} aria-keyshortcuts="Escape" className="btn-strike !min-h-[36px] !px-5 !py-1.5 text-xs shadow-e3">
+            <button ref={go} type="button" onClick={next} className="btn-strike !min-h-[36px] !px-5 !py-1.5 text-xs shadow-e3">
               {t('game.guide.choice.go')}
             </button>
             <button type="button" onClick={() => stop(true)} className="btn-ledger !min-h-[36px] !bg-coal-950/90 !px-5 !py-1.5 text-xs shadow-e3">
