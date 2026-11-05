@@ -1,5 +1,5 @@
-import { marketBuyPrice } from '@/game/data';
-import { buildTargets, eraRounds, ironSources, projectEraScores, sellTargets } from '@/game/engine';
+import { COSTS, LINKS, marketBuyPrice } from '@/game/data';
+import { buildTargets, doubleLinkPlan, eraRounds, ironSources, linkTargets, networkTowns, projectEraScores, sellTargets } from '@/game/engine';
 import type { BuildTarget } from '@/game/engine';
 import type { GameState, Verb } from '@/game/types';
 
@@ -19,6 +19,12 @@ import type { GameState, Verb } from '@/game/types';
 /* played at, and a lesson passed stays passed: undoing a move does not */
 /* teach it again. The functions here are pure; the guide settles the   */
 /* progress while it renders and writes it down from an effect.         */
+/*                                                                      */
+/* Two courses: the first lesson, a short game taught move by move;    */
+/* the second, a full game whose canal is played freely and whose rail  */
+/* era is taught. Each has its own lessons, whose ids never meet, its   */
+/* own table and its own record; the functions read the course off the */
+/* record they are given.                                               */
 /* ------------------------------------------------------------------ */
 
 /** what a lesson may point at on the screen */
@@ -77,6 +83,9 @@ export interface Lesson {
    *  before it, they would be read out of turn — the canal taught over her
    *  first moves, as if the reader played on while she does */
   gate?: boolean;
+  /** a page whose moment is gone for good once this holds — the canal's
+   *  last rounds, once the rail era has begun: never given after it */
+  past?: (c: LessonCtx) => boolean;
   show?: Show;
 }
 
@@ -265,12 +274,114 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'onward', when: (c) => c.g.phase === 'game-over' },
 ];
 
-export const LESSON_IDS: readonly string[] = LESSONS.map((l) => l.id);
-/** the last lesson: the closing word of the final ledger */
-export const LAST_LESSON = LESSON_IDS[LESSON_IDS.length - 1];
+/* ------------------------- the second lesson ------------------------- */
 
-export const lessonIndex = (id: string): number => LESSON_IDS.indexOf(id);
-export const lessonOf = (id: string): Lesson | undefined => LESSONS[lessonIndex(id)];
+const railEra = (c: LessonCtx): boolean => c.g.era === 'rail';
+/** the reader's move of the rail era that the log keeps under this key */
+const railed = (c: LessonCtx, key: string, also: (v: Record<string, string | number>) => boolean = () => true): boolean =>
+  c.g.ledger.some((e) => e.player === c.me && e.era === 'rail' && e.key === key && also(e.vars ?? {}));
+/** a brewery the reader built in the rail era: two barrels on it */
+const breweryRailed = (c: LessonCtx): boolean => railed(c, 'build', (v) => v.industry === 'brewery');
+/** a rail the reader laid — one alone, or two at once */
+const railLaid = (c: LessonCtx): boolean => railed(c, 'network');
+/** two rails laid in one action */
+const doubleLaid = (c: LessonCtx): boolean => railed(c, 'network', (v) => !!v.linkId2);
+/** a brewery the hand builds as the table stands: a card for it, and a
+ *  tile of the mat the rail era accepts */
+const breweryInReach = (c: LessonCtx): boolean => c.g.players[c.me].hand.some((card) => buildTargets(c.g, c.me, card).some((x) => x.valid && x.industry === 'brewery'));
+/** a double rail the table allows now: the engine's own plan, read for
+ *  every first rail the reader may lay and every second one that would
+ *  touch the network with it — once the purse and a barrel in a brewery
+ *  somewhere say it may be */
+export function doubleInReach(c: LessonCtx): boolean {
+  const { g, me } = c;
+  if (g.era !== 'rail' || g.players[me].money < COSTS.doubleRail || !g.players[me].hand.length) return false;
+  if (!Object.values(g.tiles).some((t) => t.industry === 'brewery' && !t.flipped && t.cubes > 0)) return false;
+  const net = networkTowns(g, me);
+  const ends = (l: (typeof LINKS)[number]) => [l.a, l.b, ...(l.alsoConnects ? [l.alsoConnects] : [])];
+  for (const first of linkTargets(g, me).filter((x) => x.valid)) {
+    const near = new Set([...net, ...ends(first.link)]);
+    for (const second of LINKS) if (second.rail && second.id !== first.link.id && !g.links[second.id] && ends(second).some((x) => near.has(x)) && doubleLinkPlan(g, me, first, second).valid) return true;
+  }
+  return false;
+}
+/** the rail era's second half, and its last two rounds */
+const railHalf = (c: LessonCtx): boolean => railEra(c) && c.g.round >= halfRound(c.g);
+const railClosing = (c: LessonCtx): boolean => railEra(c) && c.g.round >= eraRounds(c.g.players.length) - 1;
+
+/** the second lesson: a full game against the machine. Its canal is the
+ *  reader's to play — two pages, and no deed asked — and its rail era is
+ *  taught once the reader, at the canal's count, chooses to go on */
+export const FULL_LESSONS: readonly Lesson[] = [
+  /* what the lesson is, and that the canal is the reader's own */
+  { id: 'fullWelcome' },
+  /* the canal's last two rounds: what the sweep will take, and the first
+     turn of the rail bought by spending little. Its moment ends with the
+     canal */
+  { id: 'canalClose', when: (c) => c.g.era === 'canal' && c.g.round >= eraRounds(c.g.players.length) - 1, past: (c) => c.g.era === 'rail' || c.g.phase === 'game-over', urgent: true },
+  /* the choice at the canal's count: the ceremony asks it and passes it as
+     the reader goes on. A table that came to the rail without it asks it
+     here, first */
+  { id: 'railChoice', when: (c) => railEra(c) || c.g.phase === 'scoring-canal' },
+  /* what the sweep took and kept, then the plan for the era */
+  { id: 'sweep', when: railEra },
+  { id: 'railPlan', when: railEra },
+  /* the plan's first action: two barrels on a brewery of the rail era.
+     With none within a build — no card for one, or a brewery I still on
+     the mat — it is read and may be passed */
+  { id: 'railBrewery', when: railEra, done: breweryRailed, optional: (c) => !breweryInReach(c), deferrable: true },
+  /* a rail: £5 and a coal that reaches it — towards link icons */
+  { id: 'rails', when: railEra, done: railLaid, deferrable: true },
+  /* two at once, for a beer — out of reach, read and passed */
+  { id: 'doubleRail', when: railEra, done: doubleLaid, optional: (c) => !doubleInReach(c), deferrable: true },
+  /* the tiles the era builds, read as the reader chooses Build — else in
+     its place — and building over a tile, read as one is prepared */
+  { id: 'railTiles', when: railEra, cue: (c) => railEra(c) && c.verb === 'build' },
+  { id: 'overbuild', when: railEra, cue: (c) => railEra(c) && !!c.pick?.overbuild },
+  /* what the final count counts, from the era's half, as the plan for
+     the rounds left: it will not wait behind a deed left open */
+  { id: 'railEnd', when: railHalf, ahead: true, cuts: railHalf },
+  /* what each last action should do — the full game's words */
+  { id: 'railLast', when: railClosing, urgent: true },
+  /* the closing word, on the final ledger */
+  { id: 'fullOnward', when: (c) => c.g.phase === 'game-over' },
+];
+
+/* ------------------------------ the courses --------------------------- */
+
+/** the guided courses: the first lesson, a short game; the second, a full one */
+export type CourseId = 'short' | 'full';
+export const COURSE_IDS: readonly CourseId[] = ['short', 'full'];
+const COURSES: Readonly<Record<CourseId, readonly Lesson[]>> = { short: LESSONS, full: FULL_LESSONS };
+/** the lessons of a course, in the order the guide gives them */
+export const lessonsOf = (course: CourseId): readonly Lesson[] => COURSES[course];
+const IDS: Readonly<Record<CourseId, readonly string[]>> = { short: LESSONS.map((l) => l.id), full: FULL_LESSONS.map((l) => l.id) };
+export const courseIds = (course: CourseId): readonly string[] => IDS[course];
+/** the course a lesson belongs to: the ids of the two never meet */
+export const courseOf = (id: string): CourseId | null => COURSE_IDS.find((k) => IDS[k].includes(id)) ?? null;
+/** the course's last lesson: the closing word of its final ledger */
+export const lastOf = (course: CourseId): string => IDS[course][IDS[course].length - 1];
+/** the lessons a record is kept for */
+const listOf = (p: Pick<Progress, 'course'>): readonly Lesson[] => COURSES[p.course ?? 'short'];
+/** the lesson after which a page the move calls for may cut in: the
+ *  first lesson's hand, the second's plan for the rail — the pages before
+ *  them tell of the table, not of a move */
+const CUES_FROM: Readonly<Record<CourseId, string>> = { short: 'hand', full: 'railPlan' };
+
+export const LESSON_IDS: readonly string[] = IDS.short;
+export const FULL_LESSON_IDS: readonly string[] = IDS.full;
+/** the last lesson: the closing word of the final ledger */
+export const LAST_LESSON = lastOf('short');
+
+/** a lesson's place in its own course */
+export const lessonIndex = (id: string): number => {
+  const course = courseOf(id);
+  return course ? IDS[course].indexOf(id) : -1;
+};
+export const lessonOf = (id: string): Lesson | undefined => {
+  const course = courseOf(id);
+  return course ? COURSES[course][IDS[course].indexOf(id)] : undefined;
+};
 /** a deed the reader may pass as the table stands */
 export const optionalNow = (id: string, c: LessonCtx): boolean => !!lessonOf(id)?.optional?.(c);
 
@@ -278,6 +389,9 @@ export const optionalNow = (id: string, c: LessonCtx): boolean => !!lessonOf(id)
 
 export interface Progress {
   v: 2;
+  /** the second lesson's record — the first's says nothing, as it always
+   *  did: a record written before there were two is the first's */
+  course?: 'full';
   /** the table the guided game is played at */
   code: string | null;
   /** the lessons passed, in the order they were: the reader's history */
@@ -293,7 +407,13 @@ export interface Progress {
   playOn?: true;
 }
 
-export const freshProgress = (code: string | null): Progress => ({ v: 2, code, passed: [], later: {}, seen: {} });
+/** a course begun at a table. The second lesson's machine plays on from
+ *  the start: its reader knows the canal, and its plates go to the thread
+ *  unheld until they ask it to wait */
+export const freshProgress = (code: string | null, course: CourseId = 'short'): Progress =>
+  course === 'full' ? { v: 2, course, code, passed: [], later: {}, seen: {}, playOn: true } : { v: 2, code, passed: [], later: {}, seen: {} };
+/** the course a record is kept for */
+export const courseIn = (p: Pick<Progress, 'course'>): CourseId => p.course ?? 'short';
 
 /** the round, counted across the eras: a lesson set aside in the last
  *  round of the canal comes back in the first of the rail */
@@ -305,7 +425,7 @@ const earned = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.done && !!
 export const asideNow = (p: Progress, id: string, g: GameState): boolean => p.later[id] !== undefined && roundOf(g) <= p.later[id];
 const aside = (p: Progress, id: string, c: LessonCtx): boolean => asideNow(p, id, c.g);
 /** the first lesson set aside and not passed */
-const heldBack = (p: Progress, c: LessonCtx): number => LESSONS.findIndex((l) => !p.passed.includes(l.id) && aside(p, l.id, c));
+const heldBack = (p: Progress, c: LessonCtx): number => listOf(p).findIndex((l) => !p.passed.includes(l.id) && aside(p, l.id, c));
 /** the last round of the game: no payday follows it, and no round for a
  *  lesson set aside to come back in */
 export const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.players.length) && (g.era === 'rail' || g.eraLength === 'short');
@@ -315,7 +435,7 @@ export const lastRound = (g: GameState): boolean => g.round >= eraRounds(g.playe
  *  for would cut in ahead of them. What the reader chooses on hers,
  *  preparing a move ahead, calls for nothing yet */
 const heard = (p: Progress, l: Lesson, c: LessonCtx): boolean =>
-  !!l.cue && p.passed.includes('hand') && c.g.phase === 'action' && c.g.current === c.me && l.cue(c);
+  !!l.cue && p.passed.includes(CUES_FROM[courseIn(p)]) && c.g.phase === 'action' && c.g.current === c.me && l.cue(c);
 /** a page the table calls for now, or called for once and not read yet */
 const called = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.cue && (!!p.seen[l.id] || heard(p, l, c));
 
@@ -323,9 +443,10 @@ const called = (p: Progress, l: Lesson, c: LessonCtx): boolean => !!l.cue && (!!
  *  and every page the table calls for now, noted: it keeps its turn until
  *  read. The same progress when nothing moved */
 export function settle(p: Progress, c: LessonCtx): Progress {
-  const now = LESSONS.filter((l) => !p.passed.includes(l.id) && earned(p, l, c)).map((l) => l.id);
+  const list = listOf(p);
+  const now = list.filter((l) => !p.passed.includes(l.id) && earned(p, l, c)).map((l) => l.id);
   const q = now.reduce((q, id) => pass(q, id), p);
-  const calls = LESSONS.filter((l) => !q.passed.includes(l.id) && !q.seen[l.id] && heard(q, l, c));
+  const calls = list.filter((l) => !q.passed.includes(l.id) && !q.seen[l.id] && heard(q, l, c));
   if (!calls.length) return q;
   const at: Sight = { at: c.g.actions.length, round: roundOf(c.g) };
   return { ...q, seen: { ...q.seen, ...Object.fromEntries(calls.map((l) => [l.id, at])) } };
@@ -367,29 +488,32 @@ const stalled = (p: Progress, l: Lesson, c: LessonCtx): boolean => {
  *  Nothing due, the guide rests until the next one comes, the last of
  *  all on the final ledger */
 export function due(p: Progress, c: LessonCtx): Due {
+  const list = listOf(p);
+  const last = lastOf(courseIn(p));
   const left = (l: Lesson): boolean => !p.passed.includes(l.id) && !earned(p, l, c);
   const done = through(c);
-  /* its moment gone for good: a lesson for rounds that will not come */
-  const gone = (l: Lesson): boolean => (!!l.ahead && lastRound(c.g)) || (done && l.id !== LAST_LESSON);
+  /* its moment gone for good: a lesson for rounds that will not come, or
+     for a moment of the game gone by */
+  const gone = (l: Lesson): boolean => (!!l.ahead && lastRound(c.g)) || (done && l.id !== last) || !!l.past?.(c);
   /* a page whose time has not come, which the lessons after it wait for */
-  const gate = LESSONS.findIndex((l) => !!l.gate && left(l) && !gone(l) && !!l.when && !l.when(c));
+  const gate = list.findIndex((l) => !!l.gate && left(l) && !gone(l) && !!l.when && !l.when(c));
   const open = (l: Lesson, k: number): boolean =>
     left(l) && !gone(l) && !aside(p, l.id, c) && (!l.when || l.when(c) || called(p, l, c)) && (gate < 0 || k <= gate || !!l.urgent || called(p, l, c));
-  const urgent = LESSONS.findIndex((l, k) => (l.urgent || called(p, l, c)) && open(l, k));
-  let i = urgent >= 0 ? urgent : LESSONS.findIndex(open);
-  if (urgent < 0 && i >= 0 && stalled(p, LESSONS[i], c)) {
-    const cut = LESSONS.findIndex((l, k) => k > i && !!l.cuts?.(c) && open(l, k));
+  const urgent = list.findIndex((l, k) => (l.urgent || called(p, l, c)) && open(l, k));
+  let i = urgent >= 0 ? urgent : list.findIndex(open);
+  if (urgent < 0 && i >= 0 && stalled(p, list[i], c)) {
+    const cut = list.findIndex((l, k) => k > i && !!l.cuts?.(c) && open(l, k));
     if (cut >= 0) i = cut;
   }
   if (i >= 0) {
-    const l = LESSONS[i];
+    const l = list[i];
     if (!l.done) return { id: l.id, index: i, mode: 'read' };
     return { id: l.id, index: i, mode: l.done(c, p.seen[l.id]) ? 'already' : 'do' };
   }
   const held = heldBack(p, c);
-  const next = held >= 0 ? held : LESSONS.findIndex((l) => left(l) && !gone(l));
-  if (next >= 0) return { id: LESSONS[next].id, index: next, mode: 'idle' };
-  return { id: null, index: LESSONS.length, mode: 'finished' };
+  const next = held >= 0 ? held : list.findIndex((l) => left(l) && !gone(l));
+  if (next >= 0) return { id: list[next].id, index: next, mode: 'idle' };
+  return { id: null, index: list.length, mode: 'finished' };
 }
 
 /** a deed on show, noted while it is still undone: doing it now passes it.
@@ -397,7 +521,7 @@ export function due(p: Progress, c: LessonCtx): Due {
  *  than whose turn it is, and a deed done under the next page is read as done */
 export function see(p: Progress, id: string, c: LessonCtx): Progress {
   const l = lessonOf(id);
-  if (!l?.done || p.seen[id] || l.done(c) || aside(p, id, c)) return p;
+  if (!l?.done || courseOf(id) !== courseIn(p) || p.seen[id] || l.done(c) || aside(p, id, c)) return p;
   if (c.g.phase !== 'action' || c.g.current !== c.me) return p;
   return { ...p, seen: { ...p.seen, [id]: { at: c.g.actions.length, round: roundOf(c.g) } } };
 }
@@ -426,8 +550,11 @@ export function pass(p: Progress, id: string): Progress {
  *  lesson the reader was kept from — behind a deed left open, or given
  *  after their last action — stays unread, for the course to say so */
 export function closed(p: Progress, c: LessonCtx): Progress {
-  const never = [...(worksFlipped(c) ? [] : ['flipped']), ...(barrelsLeft(c) ? [] : ['barrel']), ...['market', 'beer'].filter((id) => !p.seen[id])];
-  return [...never, LAST_LESSON].reduce(pass, p);
+  /* the second lesson's: the pages on the rail's tiles and on building
+     over one, never called by a move */
+  const never =
+    courseIn(p) === 'full' ? ['railTiles', 'overbuild'].filter((id) => !p.seen[id]) : [...(worksFlipped(c) ? [] : ['flipped']), ...(barrelsLeft(c) ? [] : ['barrel']), ...['market', 'beer'].filter((id) => !p.seen[id])];
+  return [...never, lastOf(courseIn(p))].reduce(pass, p);
 }
 
 /** the lesson set aside until the next round; it comes back in its place
@@ -469,8 +596,8 @@ export const mayLater = (p: Progress, id: string, c: LessonCtx, blocked = false)
  *  back and done again is the lesson's still, though the lesson stays
  *  passed. The deeds are firsts, so this spares a move or two a lesson;
  *  an aim is met in the reader's own way, and graded like any move */
-export function deedOf(before: LessonCtx, after: LessonCtx): string | null {
-  return LESSONS.find((l) => l.done && !l.aim && !l.done(before) && l.done(after))?.id ?? null;
+export function deedOf(before: LessonCtx, after: LessonCtx, course: CourseId = 'short'): string | null {
+  return COURSES[course].find((l) => l.done && !l.aim && !l.done(before) && l.done(after))?.id ?? null;
 }
 
 const LOAN_AT = lessonIndex('loan');
@@ -480,7 +607,8 @@ const LOAN_AT = lessonIndex('loan');
  *  first, and the lesson due comes back after it. A loan set aside is not
  *  wanted this round: no detour leads to it */
 export function detourOf(p: Progress, d: Due, c: LessonCtx, moneyShort: boolean, loanOk: boolean): string | null {
-  if (!moneyShort || !loanOk || d.mode !== 'do' || d.id === null || d.index >= LOAN_AT) return null;
+  /* the second lesson teaches no loan: its reader has met it */
+  if (courseIn(p) !== 'short' || !moneyShort || !loanOk || d.mode !== 'do' || d.id === null || d.index >= LOAN_AT) return null;
   if (p.passed.includes('loan') || LESSONS[LOAN_AT].done!(c) || aside(p, 'loan', c)) return null;
   return 'loan';
 }
@@ -516,8 +644,12 @@ export function reread(p: Progress, id: string): Review {
 
 /* ------------------------------- the disk ---------------------------- */
 
-/** the progress, one record for the guided table */
+/** the progress, one record for the guided table — the first lesson's */
 export const PROGRESS_KEY = 'brassworks.tutorial.progress';
+/** and one for the second lesson's table, beside it: the first lesson's
+ *  record is read and written as it always was */
+export const FULL_PROGRESS_KEY = 'brassworks.tutorial.full.progress';
+const KEY_OF: Readonly<Record<CourseId, string>> = { short: PROGRESS_KEY, full: FULL_PROGRESS_KEY };
 /** before the lessons had ids: the index read past and the first lesson
  *  not passed, counted in the order of V1_ORDER */
 const STEP_KEY = 'brassworks.tutorial.step';
@@ -529,19 +661,21 @@ const V1_ORDER = ['welcome', 'board', 'goal', 'money', 'mat', 'matRead', 'hand',
  *  never have been shown. The others were read, whatever they wait on now */
 const V1_WAITED = ['payday', 'flipped'];
 
-const known = (id: unknown): id is string => typeof id === 'string' && lessonIndex(id) >= 0;
-const keep = <V>(o: unknown, ok: (v: unknown) => v is V): Record<string, V> =>
-  Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([k, v]) => known(k) && ok(v))) as Record<string, V>;
+/** a lesson of either course — of this one, when it is named */
+const known = (id: unknown, course?: CourseId): id is string => typeof id === 'string' && (course ? IDS[course].includes(id) : courseOf(id) !== null);
+const keep = <V>(o: unknown, ok: (v: unknown) => v is V, course: CourseId): Record<string, V> =>
+  Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([k, v]) => known(k, course) && ok(v))) as Record<string, V>;
 const isRound = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const isSight = (v: unknown): v is Sight => !!v && typeof v === 'object' && isRound((v as { at: unknown }).at) && isRound((v as { round: unknown }).round);
 
-/** a record read back, or null when it is not one */
-function parse(raw: string | null): Progress | null {
+/** a record of this course read back, or null when it is not one */
+function parse(raw: string | null, course: CourseId): Progress | null {
   if (!raw) return null;
   try {
     const v = JSON.parse(raw) as Partial<Progress> | null;
-    if (!v || v.v !== 2 || !Array.isArray(v.passed)) return null;
-    return { v: 2, code: typeof v.code === 'string' ? v.code : null, passed: [...new Set(v.passed.filter(known))], later: keep(v.later, isRound), seen: keep(v.seen, isSight), ...(v.playOn === true ? { playOn: true as const } : {}) };
+    if (!v || v.v !== 2 || !Array.isArray(v.passed) || (v.course ?? 'short') !== course) return null;
+    const passed = [...new Set(v.passed.filter((id) => known(id, course)))];
+    return { v: 2, ...(course === 'full' ? { course } : {}), code: typeof v.code === 'string' ? v.code : null, passed, later: keep(v.later, isRound, course), seen: keep(v.seen, isSight, course), ...(v.playOn === true ? { playOn: true as const } : {}) };
   } catch {
     return null;
   }
@@ -555,7 +689,7 @@ export function fromIndices(step: number, reached: number, code: string | null):
   const cut = (n: number) => Math.max(0, Math.min(V1_ORDER.length, Math.floor(Number.isFinite(n) ? n : 0)));
   const p = freshProgress(code);
   const r = cut(reached);
-  p.passed = V1_ORDER.slice(0, r).filter(known);
+  p.passed = V1_ORDER.slice(0, r).filter((id) => known(id, 'short'));
   for (const id of V1_ORDER.slice(r, Math.max(r, cut(step)))) {
     const l = lessonOf(id);
     if (!l || V1_WAITED.includes(id)) continue;
@@ -566,44 +700,46 @@ export function fromIndices(step: number, reached: number, code: string | null):
 }
 
 /** the progress written in this visit, for a browser whose storage refuses it */
-let kept: Progress | null = null;
+const kept: Record<CourseId, Progress | null> = { short: null, full: null };
 const listeners = new Set<() => void>();
 
-/** what this browser holds of the guided game: its record, or the old
- *  indices read into one; null when it was never begun */
-export function readProgress(): Progress | null {
+/** what this browser holds of a course: its record, or — the first
+ *  lesson's — the old indices read into one; null when it was never begun */
+export function readProgress(course: CourseId = 'short'): Progress | null {
   try {
-    const p = parse(localStorage.getItem(PROGRESS_KEY));
-    if (p) return p;
+    const p = parse(localStorage.getItem(KEY_OF[course]), course);
+    if (p || course !== 'short') return p;
     const step = localStorage.getItem(STEP_KEY);
     const reached = localStorage.getItem(REACH_KEY);
     if (step === null && reached === null) return null;
     return fromIndices(Number(step ?? 0), Number(reached ?? 0), null);
   } catch {
     /* no storage: what this visit wrote */
-    return kept;
+    return kept[course];
   }
 }
 
 /** what the disk holds for a table, as a key the last reading is kept by */
-const shelfKey = (code: string | null): string => {
+const shelfKey = (code: string | null, course: CourseId): string => {
   try {
-    return `${code}\n${[PROGRESS_KEY, STEP_KEY, REACH_KEY].map((k) => localStorage.getItem(k) ?? '').join('\n')}`;
+    const keys = course === 'short' ? [PROGRESS_KEY, STEP_KEY, REACH_KEY] : [KEY_OF[course]];
+    return `${course}\n${code}\n${keys.map((k) => localStorage.getItem(k) ?? '').join('\n')}`;
   } catch {
-    return `${code}\n`;
+    return `${course}\n${code}\n`;
   }
 };
-let memo: { key: string; p: Progress } | null = null;
+const memo: Record<CourseId, { key: string; p: Progress } | null> = { short: null, full: null };
 
 /** the progress at this table: its own record, the old indices taken up
  *  once, or a fresh start for a table that is not the one on record. The
  *  same object while nothing changes, so a render can subscribe to it */
-export function progressAt(code: string): Progress {
-  const key = shelfKey(code);
-  if (memo?.key === key) return memo.p;
-  const p = readProgress();
-  const at = !p ? freshProgress(code) : p.code === code ? p : p.code === null ? { ...p, code } : freshProgress(code);
-  memo = { key, p: at };
+export function progressAt(code: string, course: CourseId = 'short'): Progress {
+  const key = shelfKey(code, course);
+  const m = memo[course];
+  if (m?.key === key) return m.p;
+  const p = readProgress(course);
+  const at = !p ? freshProgress(code, course) : p.code === code ? p : p.code === null ? { ...p, code } : freshProgress(code, course);
+  memo[course] = { key, p: at };
   return at;
 }
 
@@ -616,37 +752,41 @@ export const LEARNT_KEY = 'brassworks.tutorial.learnt';
 function learntOnDisk(): string[] {
   try {
     const v: unknown = JSON.parse(localStorage.getItem(LEARNT_KEY) ?? '[]');
-    return Array.isArray(v) ? v.filter(known) : [];
+    return Array.isArray(v) ? v.filter((id) => known(id)) : [];
   } catch {
     return [];
   }
 }
 
-/** every lesson passed here, at the tables before and at the one on
- *  record: what the evening course marks read */
+/** every lesson passed here, at the tables before and at the ones on
+ *  record, of either course: what the evening course marks read — each
+ *  course counts its own ids */
 export function readLearnt(): string[] {
-  return [...new Set([...learntOnDisk(), ...(readProgress()?.passed ?? [])])];
+  return [...new Set([...learntOnDisk(), ...COURSE_IDS.flatMap((k) => readProgress(k)?.passed ?? [])])];
 }
 
 /** write the progress down, and say so to whoever reads it */
 export function saveProgress(p: Progress): void {
   /* what the record held, and what it now holds, go to the course's marks
      first: the record of a new table replaces the last one's */
+  const course = courseIn(p);
   const had = learntOnDisk();
   const learnt = [...new Set([...readLearnt(), ...p.passed])];
-  kept = p;
+  kept[course] = p;
   try {
     if (learnt.length > had.length) localStorage.setItem(LEARNT_KEY, JSON.stringify(learnt));
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(p));
-    /* the old indices are read once, into the record */
-    localStorage.removeItem(STEP_KEY);
-    localStorage.removeItem(REACH_KEY);
+    localStorage.setItem(KEY_OF[course], JSON.stringify(p));
+    /* the old indices are read once, into the first lesson's record */
+    if (course === 'short') {
+      localStorage.removeItem(STEP_KEY);
+      localStorage.removeItem(REACH_KEY);
+    }
   } catch {
     /* the record lives for this visit only */
   }
   /* read back as the very record written — even where the disk refused it,
      the next reading must not undo this one */
-  memo = { key: shelfKey(p.code), p };
+  memo[course] = { key: shelfKey(p.code, course), p };
   for (const f of listeners) f();
 }
 
