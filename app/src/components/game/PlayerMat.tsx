@@ -31,6 +31,8 @@ import { ShapeChip } from './TownInspector';
 
 /** fallback width of the player rail (measured live once mounted) */
 const RAIL_W = 236;
+/** how long a tile's sheet stays open before the guide counts it read */
+const SHEET_READ_MS = 1500;
 
 /** One tile of the mat, as it will sit on the board: the industry's card in
  *  the player's colour (the very texture the WebGL board paints), the level
@@ -47,8 +49,6 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
     if (!r) return;
     const up = r.bottom + 150 > window.innerHeight;
     setTip({ x: r.left + r.width / 2, y: up ? r.top - 6 : r.bottom + 6, up });
-    /* a sheet read, by hover or by tap: the guide's lesson on reading a tile */
-    useGame.getState().noteSheet();
   };
   const show = () => {
     if (timer.current !== null) window.clearTimeout(timer.current);
@@ -68,6 +68,15 @@ function LevelTile({ ind, lv, count, isNext, gone, color, tileArt }: { ind: Indu
     else place();
   };
   const open = tip !== null;
+  /* the guide's lesson on reading a tile asks for the coal mine marked
+     next: its sheet counts once it has stayed open long enough to be read,
+     not as the pointer crosses the mat on its way elsewhere */
+  const lessonTile = ind === 'coal' && isNext;
+  useEffect(() => {
+    if (!open || !lessonTile) return;
+    const id = window.setTimeout(() => useGame.getState().noteSheet(), SHEET_READ_MS);
+    return () => window.clearTimeout(id);
+  }, [open, lessonTile]);
   useEffect(() => {
     if (!open) return;
     const away = (e: PointerEvent) => {
