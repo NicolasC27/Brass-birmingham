@@ -494,10 +494,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const toRead: Reading = { plate: !!(bot && bot.fresh && botHidden !== bot.id), news: news.length > 0, page: owed?.mode ?? null, review: review !== null, coach: coachHold };
   /* at the guided table the machine's next move waits while it is read:
      the reader sets the pace — and, the first rounds played, may let it
-     play on, held by a new page alone (guideHold.ts). Beside the lane
-     only, whose thread keeps what goes by unheld: the floating note has
-     no thread, and a plate played past there would be lost unread */
-  const playOn = dock > 0 && !!settled.playOn;
+     play on, held by a new page alone (guideHold.ts). Beside the lane,
+     whose thread keeps what goes by unheld. The floating note has no
+     thread: a plate played past there is lost unread, which the first
+     lesson's reader cannot spare. The second's knows the canal: its note
+     keeps her latest move on show, the board the rest, and a whole game
+     of plates would hold the table forty times over */
+  const unheldHere = dock > 0 || course === 'full';
+  const playOn = unheldHere && !!settled.playOn;
   const machineUp = !!(tutorial && game && game.phase === 'action' && game.players[game.current]?.isBot);
   const hold = machineUp ? holdFor(toRead, playOn) : null;
   /* the lesson's own part in it, which its note says */
@@ -765,9 +769,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const machine = game.players.find((x) => x.isBot)?.name ?? '';
   /* the machine let play on, offered once the first rounds are played —
      at once in the second lesson, whose reader knows the canal — and
-     kept offered to a reader who took it, to take it back. Beside the
-     lane alone, as the choice holds there alone (see playOn) */
-  const offerPlayOn = tutorial && dock > 0 && (playOn || mayPlayOn(game) || course === 'full');
+     kept offered to a reader who took it, to take it back. Where the
+     choice holds (see playOn): beside the lane, and at the second
+     lesson's floating note, under her plate */
+  const offerPlayOn = tutorial && unheldHere && (playOn || mayPlayOn(game) || course === 'full');
   const letPlay = (on: boolean) => {
     if (!tutorial) return;
     saveProgress(letPlayOn(live, on));
