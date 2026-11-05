@@ -1,7 +1,7 @@
 import { useId, useMemo } from 'react';
 import type { MouseEvent } from 'react';
 import { Scale } from 'lucide-react';
-import { TOWN_BY_ID } from '@/game/data';
+import { COSTS, TOWN_BY_ID } from '@/game/data';
 import { useGame } from '@/game/store';
 import { useWhy } from '@/game/refusalRules';
 import type { GameState } from '@/game/types';
@@ -9,8 +9,8 @@ import { roman } from '@/gl/roman';
 import { localeOf, money, useLang, useT } from '@/i18n';
 import type { ChapterId } from '@/platform/cours';
 import { cn } from '@/lib/utils';
-import { shortKeyOf } from './lessonWords';
-import { PURSE_CAP, reckon } from './reckoning';
+import { courseKeyOf } from './lessonWords';
+import { FULL_ROWS, PURSE_CAP, SHORT_ROWS, bySource, reckon } from './reckoning';
 import type { Source, Sources } from './reckoning';
 
 /* ------------------------------------------------------------------ */
@@ -18,18 +18,19 @@ import type { Source, Sources } from './reckoning';
 /* reader's points beside the rival's, source by source; what the       */
 /* reader left on the table; and three things to do better, each sent  */
 /* to the lesson that teaches it and to the rules' chapter, opened at   */
-/* the table. A short game only — the guided game is one.               */
+/* the table. A short game's account ends on its close; a full game's   */
+/* is kept era by era, and counts no purse.                             */
 /* ------------------------------------------------------------------ */
 
+/** below a rail's price, money left at a full game's end buys nothing a line need name */
+const RAIL_PRICE = COSTS.railLink;
 /** the ledger's own figures: Spectral, lining and tabular */
 const FIG = 'font-serif tabular-nums [font-variant-numeric:lining-nums_tabular-nums]';
 /** a figure below nought with its true minus */
 const figure = (n: number): string => (n < 0 ? `−${-n}` : `${n}`);
 
-/** the rows of the account, in the order the points were made */
-const ROWS: readonly Source[] = ['tiles', 'links', 'barrels', 'purse', 'level', 'again', 'owed'];
-const pointsOf = (s: Sources, row: Source): number =>
-  row === 'tiles' ? s.tiles : row === 'links' ? s.links : row === 'barrels' ? s.barrels : row === 'purse' ? s.books.purse : row === 'level' ? s.books.level : row === 'again' ? s.books.again : -s.owed;
+/** a row of the account, in points */
+const pointsOf = (s: Sources, row: Source): number => bySource(s)[row] ?? 0;
 
 /** the chapter of the rules, opened over the table with a link to the codex */
 const openChapter = (chapter: ChapterId) => (e: MouseEvent<HTMLButtonElement>) => {
@@ -46,13 +47,15 @@ export default function ReckoningPaper({ game, me, wide = false, className }: { 
   const listed = (items: string[]) => new Intl.ListFormat(localeOf(lang), { type: 'conjunction' }).format(items);
   const { me: mine, rival, left } = r;
   const note = (s: Sources, row: Source): string | null => {
-    if (row === 'tiles') return s.flips.map((f) => `${f.count} × ${roman(f.level)}`).join(' · ') || null;
+    if (row === 'tiles' || row === 'railTiles') return s.flips.map((f) => `${f.count} × ${roman(f.level)}`).join(' · ') || null;
     if (row === 'links') return t('game.reckoning.canals', { n: s.laid.length });
+    if (row === 'canalLinks') return t('game.reckoning.canals', { n: s.eras?.canals ?? 0 });
+    if (row === 'railLinks') return t('game.reckoning.rails', { n: s.laid.length });
     if (row === 'purse') return money(s.books.money);
     return null;
   };
   /* a payday missed is a row only where one was */
-  const rows = ROWS.filter((row) => row !== 'owed' || mine.owed > 0 || rival.owed > 0);
+  const rows = (r.full ? FULL_ROWS : SHORT_ROWS).filter((row) => row !== 'owed' || mine.owed > 0 || rival.owed > 0);
   /* the two widest gaps each way, named */
   const said = (xs: typeof r.gaps): string => listed(xs.slice(0, 2).map((x) => t('game.reckoning.gap', { source: t(`game.reckoning.source.${x.source}`), gap: x.gap })));
   const [ours, theirs] = r.won ? [r.gaps, r.leads] : [r.leads, r.gaps];
@@ -65,12 +68,17 @@ export default function ReckoningPaper({ game, me, wide = false, className }: { 
     : [r.gaps.length ? t('game.reckoning.lead', { list: said(r.gaps) }) : null, r.won ? betterThem : betterYou];
   const leadLine = lead.filter((x): x is string => !!x).join(' ');
   const idle = left.passes + left.bare.length;
+  /* a full game's words where its account differs: no close, rails */
+  const full = (key: string) => (r.full ? `${key}Full` : key);
   const leftLines = [
     ...(left.unflipped.length
-      ? [t('game.reckoning.left.unflipped', { n: left.unflipped.length, vp: left.worth, list: listed(left.unflipped.map((u) => t('game.reckoning.left.tile', { industry: t(`game.log.industry.${u.industry}`), level: roman(u.level), town: TOWN_BY_ID[u.town]?.name ?? u.town }))) })]
+      ? [t(`game.reckoning.left.${full('unflipped')}`, { n: left.unflipped.length, vp: left.worth, list: listed(left.unflipped.map((u) => t('game.reckoning.left.tile', { industry: t(`game.log.industry.${u.industry}`), level: roman(u.level), town: TOWN_BY_ID[u.town]?.name ?? u.town }))) })]
       : []),
-    ...(idle ? [t('game.reckoning.left.idle', { n: idle, what: listed([...(left.passes ? [t('game.reckoning.left.passes', { n: left.passes })] : []), ...(left.bare.length ? [t('game.reckoning.left.bare', { n: left.bare.length })] : [])]) })] : []),
+    ...(left.swept ? [t('game.reckoning.left.swept', { vp: left.swept })] : []),
+    ...(idle ? [t('game.reckoning.left.idle', { n: idle, what: listed([...(left.passes ? [t('game.reckoning.left.passes', { n: left.passes })] : []), ...(left.bare.length ? [t(`game.reckoning.left.${full('bare')}`, { n: left.bare.length })] : [])]) })] : []),
     ...(left.beyond ? [t('game.reckoning.left.beyond', { money: money(left.beyond), cap: money(PURSE_CAP) })] : []),
+    /* a full game's purse counts nothing: a rail's price or more left in it is a line */
+    ...(left.purse >= RAIL_PRICE ? [t('game.reckoning.left.purse', { money: money(left.purse) })] : []),
   ];
   const th = 'pb-1 font-sans text-[9.5px] font-semibold uppercase tracking-[0.14em] text-ink-900/55';
   const label = 'font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55';
@@ -144,9 +152,9 @@ export default function ReckoningPaper({ game, me, wide = false, className }: { 
                     const cite = a.chapter ? { id: a.chapter, title: t(`rules.chapters.${a.chapter}`) } : null;
                     return (
                       <li key={a.id} className="font-serif text-[12.5px] leading-snug text-ink-900/90">
-                        {t(`game.reckoning.advice.${a.id}`, { ...a.vars, rival: rival.name, money: money(a.vars.money ?? 0), cap: money(a.vars.cap ?? 0) })}
+                        {t(`game.reckoning.advice.${a.key}`, { ...a.vars, rival: rival.name, money: money(a.vars.money ?? 0), cap: money(a.vars.cap ?? 0) })}
                         <span className="mt-0.5 flex flex-wrap items-baseline gap-x-3 gap-y-0.5 font-sans text-[10.5px] text-ink-900/60">
-                          <span>{t('game.reckoning.lesson', { title: t(`game.guide.steps.${shortKeyOf(a.lesson)}.title`, { bot: rival.name }) })}</span>
+                          <span>{t('game.reckoning.lesson', { title: t(`game.guide.steps.${courseKeyOf(a.lesson)}.title`, { bot: rival.name }) })}</span>
                           {cite && (
                             <button type="button" onClick={openChapter(cite.id)} aria-label={t('game.reckoning.chapterAria', { title: cite.title })} className="underline decoration-ink-900/30 underline-offset-2 hover:text-ink-900 focus-visible:outline focus-visible:outline-1 focus-visible:outline-ink-900/60 coarse:min-h-[44px]">
                               {t('game.reckoning.chapter', { title: cite.title })}

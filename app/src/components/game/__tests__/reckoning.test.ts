@@ -6,8 +6,8 @@ import { newGame } from '@/game/engine';
 import type { GameState, SetupPayload } from '@/game/types';
 import { LANGS, trIn } from '@/i18n';
 import { CHAPTER_IDS } from '@/platform/cours';
-import { LESSON_IDS } from '../lessons';
-import { TAUGHT, reckon } from '../reckoning';
+import { LESSON_IDS, courseOf } from '../lessons';
+import { FULL_ROWS, TAUGHT, TAUGHT_FULL, bySource, reckon } from '../reckoning';
 import type { AdviceId, Source } from '../reckoning';
 
 /* the reckoning of a short game played out: you against Wedgwood on seed
@@ -26,15 +26,19 @@ function dealt(eraLength: 'short' | 'standard' = 'short'): GameState {
   return newGame(withEdition(setup), 3);
 }
 
-function playedOut(): GameState {
-  let g = dealt();
-  for (let n = 0; g.phase === 'action' && n < 500; n++) {
+function playedOut(eraLength: 'short' | 'standard' = 'short'): GameState {
+  let g = dealt(eraLength);
+  for (let n = 0; g.phase !== 'game-over' && n < 1000; n++) {
+    /* the canal's count, then the close — or the rail era */
+    if (g.phase === 'scoring-canal') {
+      g = applyAction(g, 0, { kind: 'begin-rail' }).state!;
+      continue;
+    }
     const seat = g.current;
     const m = botAction(chooseBotMove(g, seat, BOT_SKILL.foreman));
     g = (m && applyAction(g, seat, m).state) || applyAction(g, seat, fallbackAction(g, seat)).state!;
   }
-  /* the era's count, then the close */
-  return g.phase === 'scoring-canal' ? applyAction(g, 0, { kind: 'begin-rail' }).state! : g;
+  return g;
 }
 
 const over = playedOut();
@@ -153,7 +157,7 @@ describe('the reckoning of a short game', () => {
   });
 
   it('sends every advice to a lesson of the guided game, and to a chapter of the rules where one teaches it', () => {
-    for (const id of Object.keys(TAUGHT) as AdviceId[]) {
+    for (const id of Object.keys(TAUGHT) as (keyof typeof TAUGHT)[]) {
       expect(LESSON_IDS).toContain(TAUGHT[id].lesson);
       if (TAUGHT[id].chapter !== null) expect(CHAPTER_IDS).toContain(TAUGHT[id].chapter);
     }
@@ -161,7 +165,7 @@ describe('the reckoning of a short game', () => {
     expect(TAUGHT.hoard.chapter).toBeNull();
   });
 
-  it('says nothing of a game still running, given up, or a full one', () => {
+  it('says nothing of a game still running, given up, or a full one its last count never reached', () => {
     expect(reckon(dealt(), 0)).toBeNull();
     expect(reckon({ ...over, abandoned: true }, 0)).toBeNull();
     expect(reckon({ ...over, eraLength: 'standard' }, 0)).toBeNull();
@@ -172,6 +176,9 @@ describe('the reckoning of a short game', () => {
     const sources: Source[] = ['tiles', 'links', 'barrels', 'purse', 'level', 'again', 'owed'];
     const keys = [
       ...(Object.keys(TAUGHT) as AdviceId[]).map((id) => `advice.${id}`),
+      ...['unspentFull', 'linksFull', 'idleFull', 'swept'].map((id) => `advice.${id}`),
+      ...FULL_ROWS.flatMap((x) => [`source.${x}`, `rows.${x}`, `tips.${x}`]),
+      ...['rails', 'left.unflippedFull', 'left.bareFull', 'left.purse', 'left.swept'],
       ...sources.flatMap((x) => [`source.${x}`, `rows.${x}`, `tips.${x}`]),
       ...['won', 'lost', 'lead', 'yours', 'theirs', 'tie.level', 'tie.money', 'tie.seat', 'gap', 'you', 'canals', 'next', 'lesson', 'chapter', 'chapterAria', 'rows.total'],
       ...['title', 'unflipped', 'tile', 'idle', 'passes', 'bare', 'beyond', 'none'].map((x) => `left.${x}`),
@@ -182,5 +189,66 @@ describe('the reckoning of a short game', () => {
         expect(said, `${lang} ${k}`).not.toContain('game.reckoning');
         expect(said, `${lang} ${k}`).not.toMatch(/\{[a-z]+\}/);
       }
+  });
+});
+
+/* and of a full game played out the same way: both eras, each counted
+   apart, no close */
+const full = playedOut('standard');
+
+describe('the reckoning of a full game', () => {
+  it('adds each seat\'s points up era by era, as the engine counted them', () => {
+    expect(full.phase).toBe('game-over');
+    for (const seat of [0, 1]) {
+      const r = reckon(full, seat)!;
+      expect(r.full).toBe(true);
+      for (const s of [r.me, r.rival]) {
+        const e = s.eras!;
+        expect(e.canalTiles + e.canalLinks + e.railTiles + e.railLinks + s.barrels - s.owed).toBe(s.vp);
+        expect(e.canalTiles + e.canalLinks).toBe(full.canalScores![s.seat]);
+        expect(e.railTiles + e.railLinks).toBe(full.finalScores![s.seat]);
+        /* the last count's tiles, by level; its rails, with what they counted */
+        expect(s.flips.reduce((n, f) => n + f.vp, 0)).toBe(e.railTiles);
+        expect(s.laid.reduce((n, l) => n + l.vp, 0)).toBe(e.railLinks);
+        /* no close: neither purse nor level counts */
+        expect(s.books.total).toBe(0);
+      }
+    }
+  });
+
+  it('weighs the gaps on the full game\'s rows only', () => {
+    const r = reckon(full, 0)!;
+    const rows = new Set<Source>(FULL_ROWS);
+    for (const x of [...r.gaps, ...r.leads]) expect(rows.has(x.source)).toBe(true);
+    expect(Object.keys(bySource(r.me)).sort()).toEqual([...FULL_ROWS].sort());
+  });
+
+  it('leaves money on the table as worth nothing, and the canal\'s unflipped tiles as swept', () => {
+    const g = structuredClone(full);
+    g.players[0].money = 23;
+    const r = reckon(g, 0)!;
+    expect(r.left.purse).toBe(23);
+    expect(r.left.beyond).toBe(0);
+    expect(r.left.swept).toBe(full.canalSplit![0].pending);
+    /* an unflipped tile of level 2 is worth its points once: no close counts it again */
+    g.tiles['redditch:1'] = { owner: 0, industry: 'manufacturer', level: 2, flipped: false, cubes: 0 };
+    expect(reckon(g, 0)!.left.unflipped.find((x) => x.town === 'redditch')!.worth).toBe(INDUSTRIES.manufacturer[1].vp);
+  });
+
+  it('gives the full game\'s advice, each sent to a lesson of either course', () => {
+    for (const id of Object.keys(TAUGHT_FULL) as AdviceId[]) {
+      expect(courseOf(TAUGHT_FULL[id]!.lesson), id).not.toBeNull();
+      const chapter = TAUGHT_FULL[id]!.chapter;
+      if (chapter !== null) expect(CHAPTER_IDS).toContain(chapter);
+    }
+    const r = reckon(full, 0)!;
+    expect(r.advice.length).toBeGreaterThan(0);
+    expect(r.advice.map((a) => a.stake)).toEqual([...r.advice.map((a) => a.stake)].sort((a, b) => b - a));
+    for (const a of r.advice) {
+      expect(Object.keys(TAUGHT_FULL)).toContain(a.id);
+      expect(['hoard', 'level', 'again']).not.toContain(a.id);
+      /* in a full game's words where they differ: links and actions over two eras */
+      expect(a.key).toBe(['unspent', 'links', 'idle'].includes(a.id) ? `${a.id}Full` : a.id);
+    }
   });
 });
