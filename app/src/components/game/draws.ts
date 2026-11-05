@@ -52,6 +52,7 @@ export interface DrawPicks {
   linkCoal?: (string | null)[];
   sellPicks: SellTarget[];
   sellBeer?: Record<string, (string | null)[]>;
+  sellDevelop?: Record<string, IndustryType>;
   developPick: IndustryType[];
   developIron: (string | null)[];
 }
@@ -140,7 +141,7 @@ export function planDraws(game: GameState, actor: number, picks: DrawPicks): Way
         const need = INDUSTRIES[t.tile.industry][t.tile.level - 1]?.beerToSell ?? 0;
         const beer = planSaleBeer(mut, actor, t.town, t.merchant, t.tile.industry, need, named);
         fromBeer(mut, actor, beer.sources, out);
-        if (card) applySell(mut, actor, card, [t], [named]);
+        if (card) applySell(mut, actor, card, [t], [named], [picks.sellDevelop?.[key] ?? null]);
       }
       break;
     }

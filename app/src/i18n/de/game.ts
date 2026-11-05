@@ -423,6 +423,8 @@ const game: typeof engame = {
     aboutAria: 'Über den Markt',
   },
   hand: {
+    freeDevelop: 'Entferntes Plättchen',
+    freeDevelopHint: 'Das Fass von Gloucester entfernt kostenlos ein Plättchen von Ihrem Tableau, ohne Eisen: wählen Sie, welches',
     undo: 'Deinen letzten Zug zurücknehmen — die Züge der Bots seitdem werden ebenfalls zurückgenommen',
     undoFailed: 'Dieser Zug lässt sich nicht zurücknehmen',
     undoShort: 'Zurück',

@@ -421,6 +421,8 @@ const game = {
     aboutAria: 'About the market',
   },
   hand: {
+    freeDevelop: 'Tile removed',
+    freeDevelopHint: 'Gloucester’s barrel removes a tile from your mat for free, with no iron: choose which',
     undo: 'Undo your last action — the bots’ moves since are undone too',
     undoFailed: 'This action cannot be undone',
     undoShort: 'Undo',

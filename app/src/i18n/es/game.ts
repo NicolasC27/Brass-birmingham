@@ -423,6 +423,8 @@ const game: typeof engame = {
     aboutAria: 'Acerca del mercado',
   },
   hand: {
+    freeDevelop: 'Loseta retirada',
+    freeDevelopHint: 'El barril de Gloucester retira gratis una loseta de su tablero, sin hierro: elija cuál',
     undo: 'Deshacer tu última jugada — las jugadas de los bots desde entonces también se deshacen',
     undoFailed: 'No se puede deshacer esta jugada',
     undoShort: 'Deshacer',

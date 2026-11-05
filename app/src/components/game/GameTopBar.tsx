@@ -391,6 +391,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   const linkCoal = useGame((s) => s.linkCoal);
   const linkBeer = useGame((s) => s.linkBeer);
   const sellBeer = useGame((s) => s.sellBeer);
+  const sellDevelop = useGame((s) => s.sellDevelop);
   const scoutPick = useGame((s) => s.scoutPick);
   const setVerb = useGame((s) => s.setVerb);
   const confirm = useGame((s) => s.confirm);
@@ -415,7 +416,7 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
   /* the plan the move will run: the mines, works and breweries the reader
      named, on the table the prepared moves leave */
   const gp = planGame ?? game;
-  const picks: DrawPicks = { verb, selectedCardId, buildPick, buildIron, buildCoal, linkPick, secondLinkPick, linkBeer, linkCoal, sellPicks, sellBeer, developPick, developIron };
+  const picks: DrawPicks = { verb, selectedCardId, buildPick, buildIron, buildCoal, linkPick, secondLinkPick, linkBeer, linkCoal, sellPicks, sellBeer, sellDevelop, developPick, developIron };
   const cost = summary ? confirmCost({ verb, buildPick, buildIron, buildCoal, linkPick, secondLinkPick, linkBeer, linkCoal, developPick, developIron }, gp, me) : null;
   /* what the banner asks of the reader, in one line */
   const stage = !mine ? 'theirs' : summary ? 'ready' : verb ? 'target' : card ? 'verb' : 'card';

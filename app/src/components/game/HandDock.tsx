@@ -5,7 +5,7 @@ import { INDUSTRIES, INDUSTRY_ICON, TOWN_BY_ID, incomeLevel, marketBuyPrice } fr
 import type { GameState } from '@/game/types';
 import { townColor } from '@/game/townColors';
 import { cardLabel, confirmSummary, developPlans, projectQueued, useGame, verbsForCard } from '@/game/store';
-import { applySell, beerSources, buildTargets, ironSources, merchantBarrelsFor, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
+import { applySell, beerSources, buildTargets, freeDevelopChoices, freeDevelopDefault, ironSources, merchantBarrelsFor, saleBeerSources, sellTargets, tileKey } from '@/game/engine';
 import { cloneState } from '@/game/clone';
 import { MERCHANT_BY_ID } from '@/game/data';
 import { aidOn } from '@/components/game/boardOptions';
@@ -393,6 +393,8 @@ function HandDock() {
   const setLinkBeer = useGame((s) => s.setLinkBeer);
   const sellBeer = useGame((s) => s.sellBeer);
   const setSellBeer = useGame((s) => s.setSellBeer);
+  const sellDevelop = useGame((s) => s.sellDevelop);
+  const setSellDevelop = useGame((s) => s.setSellDevelop);
   const setSellMerchant = useGame((s) => s.setSellMerchant);
   const addDevelop = useGame((s) => s.addDevelop);
   const dropDevelop = useGame((s) => s.dropDevelop);
@@ -1082,7 +1084,15 @@ function HandDock() {
                     const sources = saleBeerSources(planGame, actor, pick.town, pick.merchant, pick.tile.industry);
                     const named = sellBeer[key] ?? [];
                     const bonus = new Set(buyers.filter((b) => merchantBarrelsFor(drunk, b.merchant, pick.tile.industry).length).map((b) => b.merchant));
-                    if (card) applySell(drunk, actor, card, [pick], [named]);
+                    /* the merchant's free development: the tile it takes is the
+                       player's to name, among those this sale leaves on the mat */
+                    const mat = drunk.players[actor];
+                    const devChoices = freeDevelopChoices(mat);
+                    const devShown = sellDevelop[key] && devChoices.includes(sellDevelop[key]) ? sellDevelop[key] : freeDevelopDefault(mat);
+                    const levelOf = Object.fromEntries(devChoices.map((ind) => [ind, mat.stacks[ind][0]]));
+                    const seq = drunk.ledgerSeq;
+                    if (card) applySell(drunk, actor, card, [pick], [named], [sellDevelop[key] ?? null]);
+                    const freeDev = drunk.ledger.some((e) => e.id >= seq && e.key === 'sell' && e.vars?.bonusDevelop === 1);
                     return (
                       <div key={key} className="flex flex-wrap items-center gap-x-2 gap-y-1 font-sans text-[10px] text-ink-900/80">
                         <span className="font-fell text-[11px] uppercase tracking-wider text-ink-900/70">
@@ -1130,6 +1140,23 @@ function HandDock() {
                             </select>
                           </label>
                         ))}
+                        {freeDev && devShown && (
+                          <label className="flex items-center gap-1" title={t('game.hand.freeDevelopHint')}>
+                            <span className="font-semibold text-ink-900/75">{t('game.hand.freeDevelop')}</span>
+                            <select
+                              value={devShown}
+                              onChange={(e) => setSellDevelop(key, e.target.value as IndustryType)}
+                              aria-label={t('game.hand.freeDevelopHint')}
+                              className="rounded-sm border border-brass-700/60 bg-cream-100 px-1 py-0.5 font-sans text-[10px] text-ink-900 coarse:h-11"
+                            >
+                              {devChoices.map((ind) => (
+                                <option key={ind} value={ind}>
+                                  {tileMark(tr(`game.log.industry.${ind}`), levelOf[ind])}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        )}
                       </div>
                     );
                   });

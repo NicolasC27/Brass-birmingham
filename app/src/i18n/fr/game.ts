@@ -423,6 +423,8 @@ const fr: typeof engame = {
     aboutAria: 'À propos de la bourse',
   },
   hand: {
+    freeDevelop: 'Tuile retirée',
+    freeDevelopHint: 'Le baril de Gloucester retire gratuitement une tuile de votre tapis, sans fer : choisissez laquelle',
     undo: 'Reprendre votre dernier coup — les coups joués par les bots depuis sont repris avec lui',
     undoFailed: 'Impossible d’annuler ce coup',
     undoShort: 'Reprendre',
