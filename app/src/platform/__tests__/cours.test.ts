@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { stubStorage } from './storage';
-import { LAST_LESSON, LESSON_IDS, freshProgress, saveProgress } from '@/components/game/lessons';
-import { LESSONS, lessonsRead } from '../cours';
+import { FULL_LESSON_IDS, LAST_LESSON, LESSON_IDS, freshProgress, saveProgress } from '@/components/game/lessons';
+import { FULL_LESSONS, LESSONS, lessonsRead } from '../cours';
 
 /* the evening course reads the guide's own lessons, and marks a lesson
    read once the guide has passed it — by its id, not by how far down the
@@ -54,6 +54,24 @@ describe('the lessons of the evening course', () => {
     store.set('brassworks.tutorial.progress', JSON.stringify({ ...freshProgress('GWE5'), passed: ['welcome', 'board'] }));
     saveProgress(freshProgress('QK7P'));
     expect(lessonsRead()).toEqual(['welcome', 'board']);
+  });
+
+  it('count the second lesson apart from the first', () => {
+    expect(FULL_LESSONS).toBe(FULL_LESSON_IDS);
+    saveProgress({ ...freshProgress('GWE5'), passed: ['welcome', 'board'] });
+    saveProgress({ ...freshProgress('RAIL', 'full'), passed: ['fullWelcome', 'canalClose', 'railChoice'] });
+    expect(lessonsRead()).toEqual(['welcome', 'board']);
+    expect(lessonsRead('full')).toEqual(['fullWelcome', 'canalClose', 'railChoice']);
+    /* a new table of the second lesson keeps its marks, and the first's */
+    saveProgress(freshProgress('RAI2', 'full'));
+    expect(lessonsRead('full')).toEqual(['fullWelcome', 'canalClose', 'railChoice']);
+    expect(lessonsRead()).toEqual(['welcome', 'board']);
+  });
+
+  it('let the second lesson be taken with none of the first read', () => {
+    saveProgress({ ...freshProgress('RAIL', 'full'), passed: [...FULL_LESSON_IDS] });
+    expect(lessonsRead()).toEqual([]);
+    expect(lessonsRead('full')).toEqual(FULL_LESSON_IDS);
   });
 
   it('read the old index once, until the guided table writes its record', () => {
