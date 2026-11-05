@@ -76,7 +76,7 @@ Sources : S4, S5, S6 concordent à 100 % ; vérification visuelle sur le schéma
 | **Shrewsbury** (haut-gauche) | 1 | 2+ | **+4 PV** | Coalbrookdale |
 | **Warrington** (haut-droite) | 2 | 3+ | **+£5** | Stoke-on-Trent |
 | **Nottingham** (droite) | 2 | 4 | **+3 PV** | Derby |
-| **Gloucester** (bas-gauche) | 2 | 2+ | **Développement gratuit** (retirer 1 tuile de plus bas niveau du tapis, sans fer ; interdit pour les céramiques « ampoule ») | Worcester · Redditch |
+| **Gloucester** (bas-gauche) | 2 | 2+ | **Développement gratuit** (le joueur choisit l’industrie : il en retire la tuile de plus bas niveau, sans fer ; interdit pour les céramiques « ampoule ») | Worcester · Redditch |
 | **Oxford** (bas) | 2 | 2+ | **+2 espaces** sur la piste Progression (revenu) | Birmingham · Redditch |
 
 - Mise en place : à 2 joueurs, aucune tuile à Warrington ni Nottingham ; à 3 joueurs, aucune à Nottingham (S1). Les tuiles Marchand éligibles sont mélangées puis placées 1 par emplacement, face visible.

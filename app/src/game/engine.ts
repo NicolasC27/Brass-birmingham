@@ -811,7 +811,24 @@ interface BarrelBonus {
   barrels: number;
 }
 
-function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]): BarrelBonus {
+/** the industries a free development may take a tile from: a tile left on
+ *  the mat, the pottery's lightbulb tiles excepted */
+export function freeDevelopChoices(p: PlayerState): IndustryType[] {
+  return INDUSTRIES_IN_ORDER.filter((ind) => {
+    const lvl = p.stacks[ind][0];
+    return !!lvl && !INDUSTRIES[ind][lvl - 1].noDevelop;
+  });
+}
+
+/** the engine's pick when the player names none: the lowest tile on the
+ *  mat, the first industry in the mat's order on a tie */
+export function freeDevelopDefault(p: PlayerState): IndustryType | null {
+  let best: IndustryType | null = null;
+  for (const ind of freeDevelopChoices(p)) if (best === null || p.stacks[ind][0] < p.stacks[best][0]) best = ind;
+  return best;
+}
+
+function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[], develop: IndustryType | null = null): BarrelBonus {
   const p = s.players[playerIdx];
   const bonus: BarrelBonus = { said: '', vp: 0, money: 0, income: 0, develop: false, barrels: 0 };
   for (const b of sources) {
@@ -840,13 +857,10 @@ function drinkBeer(s: GameState, playerIdx: number, sources: BeerSource[]): Barr
       }
       if (bn.money) { p.money += bn.money; bonus.money += bn.money; bonus.said += ` · £${bn.money}`; }
       if (bn.develop) {
-        // Gloucester: remove one lowest-level tile from the mat, no iron, lightbulbs excluded
-        let bestInd: IndustryType | null = null;
-        for (const ind of INDUSTRIES_IN_ORDER) {
-          const lvl = p.stacks[ind][0];
-          if (!lvl || INDUSTRIES[ind][lvl - 1].noDevelop) continue;
-          if (bestInd === null || lvl < p.stacks[bestInd][0]) bestInd = ind;
-        }
+        /* Gloucester: the player takes one tile off the mat, from the
+           industry they name — the lowest of its column, no iron, never a
+           lightbulb tile; unnamed or not allowed, the engine's pick */
+        const bestInd = develop && freeDevelopChoices(p).includes(develop) ? develop : freeDevelopDefault(p);
         if (bestInd) {
           const lvl = p.stacks[bestInd].shift()!;
           p.stats.developed += 1;
@@ -1157,7 +1171,7 @@ export function planSaleBeer(s: GameState, playerIdx: number, town: string, merc
   return { sources: [...sources, ...rest.sources], shortage: rest.shortage };
 }
 
-function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (string | null)[] = []): boolean {
+function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (string | null)[] = [], develop: IndustryType | null = null): boolean {
   const p = s.players[playerIdx];
   const key = tileKey(target.town, target.slot);
   const tile = s.tiles[key];
@@ -1172,7 +1186,7 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (st
     .filter((b) => b.kind === 'brewery' && s.tiles[tileKey(b.town!, b.slot!)]?.owner !== playerIdx)
     .map((b) => `${s.tiles[tileKey(b.town!, b.slot!)].owner}:${b.town}`)
     .join(',');
-  const bonus = drinkBeer(s, playerIdx, beer.sources);
+  const bonus = drinkBeer(s, playerIdx, beer.sources, develop);
   flipTile(s, key, 'merchant', MERCHANT_BY_ID[target.merchant].name);
   p.stats.sold += 1;
   s.fxSeq += 1;
@@ -1195,12 +1209,12 @@ function sellOne(s: GameState, playerIdx: number, target: SellTarget, named: (st
 }
 
 /** Sell: one card, any number of tiles (each with its own beer) */
-export function applySell(s: GameState, playerIdx: number, card: Card, targets: SellTarget | SellTarget[], beerFrom: (string | null)[][] = []): boolean {
+export function applySell(s: GameState, playerIdx: number, card: Card, targets: SellTarget | SellTarget[], beerFrom: (string | null)[][] = [], develop: (IndustryType | null)[] = []): boolean {
   const list = Array.isArray(targets) ? targets : [targets];
   if (!list.length) return false;
   let sold = 0;
   list.forEach((t, i) => {
-    if (sellOne(s, playerIdx, t, beerFrom[i] ?? [])) sold += 1;
+    if (sellOne(s, playerIdx, t, beerFrom[i] ?? [], develop[i] ?? null)) sold += 1;
   });
   /* a sale is begun only if every tile of it can drink its beer (§5.5):
      each tile drinks what the ones before it left, and one of them going

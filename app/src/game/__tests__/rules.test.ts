@@ -207,6 +207,52 @@ describe('a merchant\'s bonus on a sale', () => {
   });
 });
 
+describe('the free development of Gloucester\'s barrel', () => {
+  /* a manufacturer of mine in Redditch, a canal to Gloucester, whose
+     barrel develops for free: the tile it takes is mine to name */
+  const table = (): { s: GameState; me: number } => {
+    const s = newGame(setup(4), 42);
+    const me = s.current;
+    s.tiles['redditch:0'] = { owner: me, industry: 'manufacturer', level: 1, flipped: false, cubes: 0 };
+    s.links[LINKS.find((l) => [l.a, l.b].includes('redditch') && [l.a, l.b].includes('m-gloucester'))!.id] = { owner: me, era: 'canal' };
+    s.merchantTiles['m-gloucester'] = ['all', 'all'];
+    s.merchantBeer = { 'm-gloucester:0': 1 };
+    for (const k of Object.keys(s.tiles)) if (s.tiles[k].industry === 'brewery') delete s.tiles[k];
+    s.players[me].hand = [{ id: 'any-1', kind: 'wild-location' }];
+    return { s, me };
+  };
+  const sale = (develop?: string): GameAction => ({ kind: 'sell', card: 'any-1', sales: [{ town: 'redditch', slot: 0, merchant: 'm-gloucester', ...(develop ? { develop: develop as 'iron' } : {}) }] });
+
+  it('takes the tile off the industry the player names', () => {
+    const { s, me } = table();
+    const iron = s.players[me].stacks.iron.length;
+    const coal = s.players[me].stacks.coal.length;
+    const after = applyAction(s, me, sale('iron')).state!;
+    expect(after.players[me].stacks.iron.length).toBe(iron - 1);
+    expect(after.players[me].stacks.coal.length).toBe(coal);
+  });
+
+  it('takes the engine\'s pick, the lowest tile, when none is named or the one named cannot go', () => {
+    for (const named of [undefined, 'nowhere']) {
+      const { s, me } = table();
+      const coal = s.players[me].stacks.coal.length;
+      const after = applyAction(s, me, sale(named)).state!;
+      expect(after.players[me].stacks.coal.length).toBe(coal - 1);
+    }
+  });
+
+  it('never takes a lightbulb tile', () => {
+    const { s, me } = table();
+    const bulb = INDUSTRIES.pottery.findIndex((l) => l.noDevelop) + 1;
+    s.players[me].stacks.pottery = [bulb, ...s.players[me].stacks.pottery.filter((l) => l > bulb)];
+    const pottery = s.players[me].stacks.pottery.length;
+    const coal = s.players[me].stacks.coal.length;
+    const after = applyAction(s, me, sale('pottery')).state!;
+    expect(after.players[me].stacks.pottery.length).toBe(pottery);
+    expect(after.players[me].stacks.coal.length).toBe(coal - 1);
+  });
+});
+
 describe('the coal of a build', () => {
   /* an iron works for Coalbrookdale, which burns a cube: a full mine in
      Wolverhampton and a mine on its last cube in Kidderminster, one canal

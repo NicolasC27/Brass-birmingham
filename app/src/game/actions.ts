@@ -42,7 +42,7 @@ export type GameAction =
       coalFrom?: (string | null)[];
     }
   | { kind: 'develop'; card: string; industries: IndustryType[]; /** per industry, the iron works to draw from (its key), 'market', or nothing for the engine's choice */ ironFrom?: (string | null)[] }
-  | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string; /** per beer needed, the merchant's barrel ('merchant') or a brewery (its key); nothing for the engine's choice */ beerFrom?: (string | null)[] }[] }
+  | { kind: 'sell'; card: string; sales: { town: string; slot: number; merchant: string; /** per beer needed, the merchant's barrel ('merchant') or a brewery (its key); nothing for the engine's choice */ beerFrom?: (string | null)[]; /** the industry a free development from the merchant's barrel takes a tile from; nothing for the engine's choice */ develop?: IndustryType }[] }
   | { kind: 'loan'; card?: string }
   | { kind: 'scout'; cards: string[] }
   | { kind: 'pass'; card?: string; reason?: string }
@@ -148,7 +148,7 @@ export function applyAction(s: GameState, playerIdx: number, action: GameAction)
       if (picks.some((t) => !t)) return fail('A sale is not possible');
       const sales = picks as NonNullable<(typeof picks)[number]>[];
       const beer = action.sales.map((x) => x.beerFrom ?? []);
-      ok = applySell(mut, playerIdx, card, sales, beer);
+      ok = applySell(mut, playerIdx, card, sales, beer, action.sales.map((x) => x.develop ?? null));
       /* each tile could drink alone, but not all of them together: name the
          first that goes dry, read on the table as it stood */
       if (!ok && sales.length > 1) {
