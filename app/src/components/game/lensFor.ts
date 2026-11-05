@@ -4,7 +4,7 @@ import type { BuildTarget } from '@/game/engine';
 import type { HudLens, Lens } from '@/game/store';
 import type { GameState, IndustryType, LinkDef } from '@/game/types';
 import type { LessonCtx } from './lessons';
-import { forgesFrom, worthyLinks } from './lessonWords';
+import { forgesFrom, keptTiles, worthyLinks } from './lessonWords';
 
 /* ------------------------------------------------------------------ */
 /* What each lesson of the guide lights on the table: the slots it is   */
@@ -252,7 +252,7 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     /* the second lesson: the tiles the sweep kept, a brewery's places, the mat */
     case 'sweep': {
       if (choosing) return null;
-      const keys = mine(() => true);
+      const keys = keptTiles(g, me);
       return keys.length ? { slots: keys, at: townOf(keys[0]) } : null;
     }
     case 'railBrewery':

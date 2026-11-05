@@ -252,6 +252,31 @@ export function worthyLinks(g: GameState, me: number): Worthy[] {
     .sort((p, q) => q.icons - p.icons);
 }
 
+/** the reader's tiles the sweep left standing, by their keys: once the
+ *  rail era is under way, theirs less the ones built since — the log
+ *  names a build by its town, industry and level. A tile of theirs built
+ *  over since is gone from the board either way. The sweep page, read
+ *  late or read back, names what the canal's count kept, not the era's
+ *  new tiles */
+export function keptTiles(g: GameState, me: number): string[] {
+  const mine = Object.entries(g.tiles).filter(([, x]) => x.owner === me);
+  if (g.era !== 'rail') return mine.map(([key]) => key);
+  const since = new Map<string, number>();
+  for (const e of g.ledger) {
+    if (e.player !== me || e.era !== 'rail' || e.key !== 'build' || !e.region || !e.vars) continue;
+    const id = `${e.region}|${e.vars.industry}|${e.vars.level}`;
+    since.set(id, (since.get(id) ?? 0) + 1);
+  }
+  return mine
+    .filter(([key, x]) => {
+      const id = `${key.split(':')[0]}|${x.industry}|${x.level}`;
+      const n = since.get(id) ?? 0;
+      if (n > 0) since.set(id, n - 1);
+      return n === 0;
+    })
+    .map(([key]) => key);
+}
+
 /** below this a purse builds little: a loan taken with less was for want of money */
 export const LOW_PURSE = 15;
 

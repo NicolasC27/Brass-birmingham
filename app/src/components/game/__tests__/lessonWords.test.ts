@@ -7,7 +7,7 @@ import type { GameState, SetupPayload, TileState } from '@/game/types';
 import { MOTIFS } from '@/game/progress';
 import { trIn } from '@/i18n';
 import { FULL_LESSON_IDS, LESSON_IDS, lessonOf } from '../lessons';
-import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, courseKeyOf, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from '../lessonWords';
+import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, courseKeyOf, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, keptTiles, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from '../lessonWords';
 
 /* the words the lessons are said in, at a guided table — you against
    Wedgwood, the canal era only, on seed 3, one of the guided game's
@@ -456,5 +456,46 @@ describe('the lesson the sheet’s advice opens', () => {
     expect(motifLesson('singleRail', table('standard'))).toBe('plan');
     expect(motifLesson('singleRail', table('short'))).toBeNull();
     expect(motifLesson('loanOverBuild', table('short'))).toBe('works');
+  });
+});
+
+describe('the tiles the sweep kept', () => {
+  const tile = (owner: number, industry: TileState['industry'], level: number): TileState => ({ owner, industry, level, flipped: false, cubes: 0 });
+  /** a rail era under way: two tiles of the reader's kept from the canal,
+   *  one of the machine's, and the builds of the era so far */
+  const rail = (builds: { town: string; industry: string; level: number; player?: number }[]): GameState => {
+    const g = structuredClone(table('standard'));
+    g.era = 'rail';
+    g.tiles = { 'stoke:1': tile(0, 'pottery', 2), 'birmingham:0': tile(0, 'cotton', 2), 'dudley:0': tile(1, 'coal', 2) };
+    g.ledger = builds.map((b, i) => {
+      g.tiles[i ? `${b.town}:1` : `${b.town}:2`] = tile(b.player ?? 0, b.industry as TileState['industry'], b.level);
+      return { id: 900 + i, round: 1, era: 'rail', player: b.player ?? 0, verb: 'build', text: '', region: b.town, key: 'build', vars: { industry: b.industry, level: b.level, town: b.town } };
+    });
+    return g;
+  };
+
+  it('are the reader’s tiles on the board as the rail era opens', () => {
+    expect(keptTiles(rail([]), 0)).toEqual(['stoke:1', 'birmingham:0']);
+  });
+
+  it('leave out the tiles the rail era has built since', () => {
+    const g = rail([{ town: 'coventry', industry: 'cotton', level: 3 }, { town: 'derby', industry: 'coal', level: 2, player: 1 }]);
+    expect(keptTiles(g, 0)).toEqual(['stoke:1', 'birmingham:0']);
+    /* the machine's build is its own: the reader's kept tiles stand */
+    expect(keptTiles(g, 1)).toEqual(['dudley:0']);
+  });
+
+  it('count a build of the same kind in the same town once', () => {
+    /* a second level-2 cotton in Birmingham, built in the rail era: one of
+       the two was kept, the other is new */
+    const g = rail([{ town: 'birmingham', industry: 'cotton', level: 2 }]);
+    expect(keptTiles(g, 0)).toHaveLength(2);
+    expect(keptTiles(g, 0)).toContain('stoke:1');
+  });
+
+  it('are every tile of the reader’s before the rail era', () => {
+    const g = rail([]);
+    g.era = 'canal';
+    expect(keptTiles(g, 0)).toEqual(['stoke:1', 'birmingham:0']);
   });
 });
