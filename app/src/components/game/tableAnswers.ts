@@ -1,4 +1,4 @@
-import { INCOME_PAYOUT, LINKS, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
+import { COSTS, INCOME_PAYOUT, LINKS, LOAN_AMOUNT, LOAN_INCOME_HIT, MERCHANT_BY_ID, TOWN_BY_ID, eraRounds, incomeLevel } from '@/game/data';
 import { buildTargets, canLoan, linkTargets, sellTargets } from '@/game/engine';
 import { carries, faqBest, faqFor } from '@/game/faq';
 import type { Passage } from '@/game/faq';
@@ -9,7 +9,7 @@ import { NO_FREE_LINK, onTheCard, refusalOf, whyNoLink } from '@/game/refusals';
 import type { Card, GameState } from '@/game/types';
 import { getLang, localeOf, reasonText } from '@/i18n';
 import type { Lang } from '@/i18n';
-import { lastRound } from './lessons';
+import { doubleInReach, lastRound } from './lessons';
 import { missingLinks } from './lensFor';
 import { barrelsSaid, worthyLinks } from './lessonWords';
 
@@ -78,8 +78,9 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
   /* the loan, or the payday to come back after — none follows the last round */
   const advice = () => t(lastRound(g) ? 'game.guide.blocked.loanAdviceLast' : 'game.guide.blocked.loanAdvice', vars);
   const plain = (why: string): Block => ({ short: why, text: why, money: false });
-  if (id === 'coal' || id === 'iron' || id === 'works') {
-    const inds = id === 'coal' ? ['coal'] : id === 'iron' ? ['iron'] : WORKS;
+  /* a tile the deed builds: the first lesson's, and the second's brewery of the rail */
+  if (id === 'coal' || id === 'iron' || id === 'works' || id === 'railBrewery') {
+    const inds = id === 'coal' ? ['coal'] : id === 'iron' ? ['iron'] : id === 'railBrewery' ? ['brewery'] : WORKS;
     const targets = p.hand.flatMap((c) => buildTargets(g, me, c)).filter((x) => inds.includes(x.industry));
     if (targets.some((x) => x.valid)) return null;
     const dear = targets.filter((x) => short(x.reason));
@@ -94,16 +95,18 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
     if (!best || onTheCard(best)) return plain(`${t(`game.guide.blocked.${id}Card`, vars)}${card}`);
     return plain(`${t(`game.guide.blocked.${id}Now`)} ${tableSays(best, targets, (x) => x.town, t, say, list)}${card}`);
   }
-  if (id === 'link') {
+  /* the canal of the first lesson, the rail of the second */
+  if (id === 'link' || id === 'rails') {
+    const rail = id === 'rails';
     const targets = linkTargets(g, me);
     if (targets.some((x) => x.valid)) return null;
     if (targets.some((x) => short(x.reason))) {
-      const why = t('game.guide.blocked.linkMoney', vars);
+      const why = t(rail ? 'game.guide.blocked.railMoney' : 'game.guide.blocked.linkMoney', vars);
       return { short: why, text: `${why} ${advice()}`, money: true };
     }
     /* every link that touches the network is laid; a rail may lack its coal */
     const why = whyNoLink(targets);
-    return plain(why === NO_FREE_LINK ? t('game.guide.blocked.link', vars) : `${t('game.guide.blocked.linkNow')} ${t('game.guide.blocked.why', { why: say(why) })}`);
+    return plain(why === NO_FREE_LINK ? t(rail ? 'game.guide.blocked.rail' : 'game.guide.blocked.link', vars) : `${t('game.guide.blocked.linkNow')} ${t('game.guide.blocked.why', { why: say(why) })}`);
   }
   if (id === 'sell') {
     const targets = sellTargets(g, me);
@@ -125,6 +128,13 @@ export function blockedBy(id: string, g: GameState, me: number, t: T, lang: Lang
     return plain([t('game.guide.blocked.sell', vars), ...lines, ...way].join(' '));
   }
   if (id === 'loan') return canLoan(g, me).ok ? null : plain(t('game.guide.blocked.loan', vars));
+  /* two rails at once, which the engine's own plan finds none of: the
+     purse short of it, or no barrel a brewery would give */
+  if (id === 'doubleRail') {
+    if (doubleInReach({ g, me, sel: null, mat: null })) return null;
+    const why = t('game.guide.blocked.doubleRail', { ...vars, price: COSTS.doubleRail });
+    return p.money < COSTS.doubleRail ? { short: why, text: `${why} ${advice()}`, money: true } : plain(why);
+  }
   /* links worth their icons within reach, and every one of them dearer
      than the purse: money is what the aim lacks */
   if (id === 'linkWorth') {

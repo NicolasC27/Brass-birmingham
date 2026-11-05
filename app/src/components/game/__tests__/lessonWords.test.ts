@@ -108,12 +108,11 @@ describe('the second lesson’s words', () => {
     }
   });
 
-  it('tell the rail’s last rounds in the full game’s words, and a deed out of reach in its own', () => {
+  it('tell the rail’s last rounds in the full game’s words, and the rest in their own', () => {
     const g = table('standard');
     expect(stepKeyOf('railLast', g, 0)).toBe('lastRounds');
     expect(courseKeyOf('railLast')).toBe('lastRounds');
-    expect(stepKeyOf('doubleRail', g, 0, true)).toBe('doubleRailLater');
-    expect(stepKeyOf('railBrewery', g, 0, true)).toBe('railBreweryNone');
+    expect(stepKeyOf('doubleRail', g, 0)).toBe('doubleRail');
     expect(stepKeyOf('rails', g, 0)).toBe('rails');
   });
 

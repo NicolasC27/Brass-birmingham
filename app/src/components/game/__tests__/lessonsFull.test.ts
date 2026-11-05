@@ -29,6 +29,10 @@ import {
   wayOn,
 } from '../lessons';
 import type { LessonCtx, Progress } from '../lessons';
+import { blockedBy } from '../tableAnswers';
+import { trIn } from '@/i18n';
+
+const t = (k: string, v?: Record<string, string | number>) => trIn('fr', k, v);
 
 /* the second lesson: a full game against Wedgwood, its canal played
    freely and its rail era taught once the reader chooses to go on */
@@ -132,21 +136,26 @@ describe('the choice at the canal’s count', () => {
 });
 
 describe('the rail lessons', () => {
-  it('ask for a brewery, a rail and a double rail as deeds, never a trap', () => {
+  it('ask for a brewery as a deed that waits, with the table\'s reason when none is within a build', () => {
     const g = railed();
     const p = upTo('railBrewery');
     const d = due(p, ctx(g));
-    expect(d.id).toBe('railBrewery');
-    /* a brewery the hand builds is a deed; none, a page with Next (optional) */
+    expect(d).toMatchObject({ id: 'railBrewery', mode: 'do' });
     const builds = g.players[0].hand.some((c) => buildTargets(g, 0, c).some((x) => x.valid && x.industry === 'brewery'));
-    expect(d.mode).toBe('do');
     const seen = see(p, 'railBrewery', ctx(g));
     expect(!!seen.seen.railBrewery).toBe(true);
-    /* not in reach: Next passes it; in reach: once played past, Later */
-    if (builds) {
-      const after = play(g, fallbackAction(g, 0));
-      expect(wayOn(seen, 'railBrewery', ctx(after))).toBe('later');
-    }
+    const block = blockedBy('railBrewery', g, 0, t);
+    expect(block === null).toBe(builds);
+    /* in reach: Later once played past; out of reach: Later at once, never a trap */
+    if (builds) expect(wayOn(seen, 'railBrewery', ctx(play(g, fallbackAction(g, 0))))).toBe('later');
+    else expect(wayOn(seen, 'railBrewery', ctx(g), true)).toBe('later');
+    /* a brewery I still heading the mat: the era refuses it, and says so */
+    const early = structuredClone(g);
+    early.players[0].stacks.brewery = [1, 1, 2, 2, 3, 3, 4];
+    early.players[0].money = 60;
+    const why = blockedBy('railBrewery', early, 0, t);
+    expect(why).not.toBeNull();
+    expect(why!.money).toBe(false);
   });
 
   it('pass the rail by any rail laid, and the double by two at once', () => {
@@ -180,12 +189,20 @@ describe('the rail lessons', () => {
     expect(doubleInReach(ctx(rich))).toBe(false);
   });
 
-  it('lets a double rail out of reach be read and passed', () => {
+  it('lets a double rail out of reach wait, the table saying why', () => {
     const g = railed();
-    const p = upTo('doubleRail');
-    const d = due(p, ctx(g));
-    expect(d.id).toBe('doubleRail');
-    if (!doubleInReach(ctx(g))) expect(pass(p, 'doubleRail').passed).toContain('doubleRail');
+    const p = see(upTo('doubleRail'), 'doubleRail', ctx(g));
+    expect(due(p, ctx(g))).toMatchObject({ id: 'doubleRail', mode: 'do' });
+    expect(doubleInReach(ctx(g))).toBe(false);
+    const block = blockedBy('doubleRail', g, 0, t);
+    expect(block).not.toBeNull();
+    expect(block!.text).toContain('15');
+    expect(wayOn(p, 'doubleRail', ctx(g), true)).toBe('later');
+    /* set aside, it comes back the next round in its place */
+    const q = setAside(p, 'doubleRail', ctx(g));
+    expect(due(q, ctx(g)).id).not.toBe('doubleRail');
+    const next = plainly(g, (s) => s.round > g.round && s.current === 0);
+    expect(due(q, ctx(next)).id).toBe('doubleRail');
   });
 
   it('call the page on the era’s tiles as the reader chooses Build, not before the plan', () => {

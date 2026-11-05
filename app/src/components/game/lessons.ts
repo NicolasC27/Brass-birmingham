@@ -286,9 +286,6 @@ const breweryRailed = (c: LessonCtx): boolean => railed(c, 'build', (v) => v.ind
 const railLaid = (c: LessonCtx): boolean => railed(c, 'network');
 /** two rails laid in one action */
 const doubleLaid = (c: LessonCtx): boolean => railed(c, 'network', (v) => !!v.linkId2);
-/** a brewery the hand builds as the table stands: a card for it, and a
- *  tile of the mat the rail era accepts */
-const breweryInReach = (c: LessonCtx): boolean => c.g.players[c.me].hand.some((card) => buildTargets(c.g, c.me, card).some((x) => x.valid && x.industry === 'brewery'));
 /** a double rail the table allows now: the engine's own plan, read for
  *  every first rail the reader may lay and every second one that would
  *  touch the network with it — once the purse and a barrel in a brewery
@@ -327,13 +324,15 @@ export const FULL_LESSONS: readonly Lesson[] = [
   { id: 'sweep', when: railEra },
   { id: 'railPlan', when: railEra },
   /* the plan's first action: two barrels on a brewery of the rail era.
-     With none within a build — no card for one, or a brewery I still on
-     the mat — it is read and may be passed */
-  { id: 'railBrewery', when: railEra, done: breweryRailed, optional: (c) => !breweryInReach(c), deferrable: true },
+     With none within a build — no card for one, the purse short, or a
+     brewery I still on the mat — the table says why, and it waits for a
+     round, a new card, as any deed of the first lesson does */
+  { id: 'railBrewery', when: railEra, done: breweryRailed, deferrable: true },
   /* a rail: £5 and a coal that reaches it — towards link icons */
   { id: 'rails', when: railEra, done: railLaid, deferrable: true },
-  /* two at once, for a beer — out of reach, read and passed */
-  { id: 'doubleRail', when: railEra, done: doubleLaid, optional: (c) => !doubleInReach(c), deferrable: true },
+  /* two at once, for a beer — out of reach, the table says why, and it
+     comes back once the purse or a barrel allows it */
+  { id: 'doubleRail', when: railEra, done: doubleLaid, deferrable: true },
   /* the tiles the era builds, read as the reader chooses Build — else in
      its place — and building over a tile, read as one is prepared */
   { id: 'railTiles', when: railEra, cue: (c) => railEra(c) && c.verb === 'build' },

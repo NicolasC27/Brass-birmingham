@@ -45,9 +45,6 @@ export const courseKeyOf = (id: string): string => TOLD[id] ?? (courseOf(id) ===
 const SPARE: Readonly<Record<string, string>> = {
   loan: 'loanSpare',
   barrel: 'barrelGone',
-  /* the second lesson's: no brewery, no double rail within reach yet */
-  railBrewery: 'railBreweryNone',
-  doubleRail: 'doubleRailLater',
 };
 
 /** the reader's income level at the first payday of the game, as it was
