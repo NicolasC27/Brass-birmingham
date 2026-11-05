@@ -2,7 +2,7 @@ import { INDUSTRIES, LINKS, MERCHANTS, TOWNS, TOWN_BY_ID, eraRounds, incomeLevel
 import { hasPresence, linkTargets, merchantDemand, networkTowns } from '@/game/engine';
 import type { Motif } from '@/game/progress';
 import type { GameState, IndustryType, LinkDef, Merchant } from '@/game/types';
-import { LINK_WORTH, lastRound, linkIcons } from './lessons';
+import { LINK_WORTH, courseOf, lastRound, linkIcons } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* The words a lesson is said in. The guided game is a short one — the */
@@ -28,12 +28,26 @@ const SHORT: Readonly<Record<string, string>> = {
 /** a lesson's entry in a short game — the guided game is one */
 export const shortKeyOf = (id: string): string => SHORT[id] ?? id;
 
+/** the second lesson's pages told in words the first already has, true
+ *  of a full game as they are: the last rounds of the rail */
+const TOLD: Readonly<Record<string, string>> = {
+  railLast: 'lastRounds',
+};
+
+/** a lesson's entry as its course tells it: the first lesson's in the
+ *  words of its short game, the second's in a full game's — what the
+ *  evening course and the reckoning name them by */
+export const courseKeyOf = (id: string): string => TOLD[id] ?? (courseOf(id) === 'full' ? id : shortKeyOf(id));
+
 /** the lessons told otherwise when the reader may pass them as things
  *  stand: the loan, when the purse already pays for the next works; the
  *  barrel, when none is left to drink */
 const SPARE: Readonly<Record<string, string>> = {
   loan: 'loanSpare',
   barrel: 'barrelGone',
+  /* the second lesson's: no brewery, no double rail within reach yet */
+  railBrewery: 'railBreweryNone',
+  doubleRail: 'doubleRailLater',
 };
 
 /** the reader's income level at the first payday of the game, as it was
@@ -50,6 +64,7 @@ export function firstPayday(g: GameState, me: number): number | null {
  *  the forge another way, a short game tells some lessons in its own
  *  words — and the loan, in its last round, promises no payday */
 export function stepKeyOf(id: string, g: GameState, me: number, spare = false): string {
+  if (TOLD[id]) return TOLD[id];
   if (id === 'payday') {
     const level = firstPayday(g, me) ?? incomeLevel(g.players[me].income);
     return level < 0 ? 'paydayOwed' : level === 0 ? 'paydayZero' : 'payday';

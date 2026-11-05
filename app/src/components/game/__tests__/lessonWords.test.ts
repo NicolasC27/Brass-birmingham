@@ -5,8 +5,9 @@ import { incomeLevel } from '@/game/data';
 import { buildTargets, eraRounds, newGame } from '@/game/engine';
 import type { GameState, SetupPayload, TileState } from '@/game/types';
 import { MOTIFS } from '@/game/progress';
-import { LESSON_IDS } from '../lessons';
-import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from '../lessonWords';
+import { trIn } from '@/i18n';
+import { FULL_LESSON_IDS, LESSON_IDS, lessonOf } from '../lessons';
+import { LOW_PURSE, MOTIF_LESSON, barrelBonuses, buyersOf, closingWords, courseKeyOf, dryRound, firstPayday, forgeWays, forgesFrom, forgesFromMines, loanWords, motifLesson, plainKeyOf, shortKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from '../lessonWords';
 
 /* the words the lessons are said in, at a guided table — you against
    Wedgwood, the canal era only, on seed 3, one of the guided game's
@@ -90,6 +91,39 @@ const firstRound = (g: GameState): GameState => {
   while (s.round === 1) s = play(s, fallbackAction(s, s.current));
   return s;
 };
+
+describe('the second lesson’s words', () => {
+  const LANGS = ['fr', 'en', 'de', 'es'] as const;
+  const said = (lang: (typeof LANGS)[number], key: string) => ['title', 'body'].every((part) => {
+    const path = `game.guide.steps.${key}.${part}`;
+    const x = trIn(lang, path);
+    return !!x && x !== path;
+  });
+
+  it('are the full game’s, each lesson with a page in every tongue', () => {
+    const g = table('standard');
+    for (const id of FULL_LESSON_IDS) {
+      const keys = [stepKeyOf(id, g, 0), ...(lessonOf(id)?.optional ? [stepKeyOf(id, g, 0, true)] : [])];
+      for (const lang of LANGS) for (const key of keys) expect(said(lang, key), `${lang} ${key}`).toBe(true);
+    }
+  });
+
+  it('tell the rail’s last rounds in the full game’s words, and a deed out of reach in its own', () => {
+    const g = table('standard');
+    expect(stepKeyOf('railLast', g, 0)).toBe('lastRounds');
+    expect(courseKeyOf('railLast')).toBe('lastRounds');
+    expect(stepKeyOf('doubleRail', g, 0, true)).toBe('doubleRailLater');
+    expect(stepKeyOf('railBrewery', g, 0, true)).toBe('railBreweryNone');
+    expect(stepKeyOf('rails', g, 0)).toBe('rails');
+  });
+
+  it('name each course’s lessons as its game tells them on the evening course', () => {
+    expect(courseKeyOf('goal')).toBe('goalShort');
+    expect(courseKeyOf('coal')).toBe('coal');
+    expect(courseKeyOf('sweep')).toBe('sweep');
+    for (const id of [...LESSON_IDS, ...FULL_LESSON_IDS]) expect(said('fr', courseKeyOf(id)), id).toBe(true);
+  });
+});
 
 describe('the first payday', () => {
   it('is read as it was paid, not as the purse stands', () => {
