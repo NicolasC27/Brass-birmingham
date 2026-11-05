@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { stubStorage } from '@/platform/__tests__/storage';
 import { getBoardOptions, setBoardOption } from '@/components/game/boardOptions';
 import { MINI_KEY } from '@/components/game/guideKeys';
-import { LESSON_IDS, freshProgress, letPlayOn, progressAt, saveProgress } from '@/components/game/lessons';
+import { FULL_LESSON_IDS, LESSON_IDS, freshProgress, letPlayOn, progressAt, saveProgress } from '@/components/game/lessons';
 import { SETUP_STORAGE_KEY } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
 import type { HomeTable } from '../home';
-import { TUTORIAL_DEALT_KEY, TUTORIAL_KEY, TUTORIAL_SEEDS, drawTutorialSeed, guidedResume, guidedTable, lastTutorialSeed, openGuided, quickSetup, resumeOf, startQuickGame, startTutorial } from '../quickplay';
+import { FULL_DEALT_KEY, FULL_KEY, FULL_SEEDS, TUTORIAL_DEALT_KEY, TUTORIAL_KEY, TUTORIAL_SEEDS, drawTutorialSeed, guidedCourse, guidedResume, guidedTable, lastTutorialSeed, openGuided, quickSetup, resumeOf, startFullLesson, startQuickGame, startTutorial } from '../quickplay';
 
 /* the office deals the guided table its code — or keeps the line quiet,
    when a test says so — and reads out its register, which the mirror
@@ -263,5 +263,62 @@ describe('a fresh guided game', () => {
     expect(store.get(TUTORIAL_KEY)).toBe('OLD1');
     expect(store.get(MINI_KEY)).toBe('coal');
     expect(getBoardOptions().guideFolded).toBe(true);
+  });
+});
+
+/* the second lesson: a full game at a table of its own, bound by its code
+   beside the first lesson's, dealt from its own list — and the first
+   lesson's table and record never touched by it */
+describe('the second lesson\u2019s table', () => {
+  it('is dealt from its own list, for a full game, and bound apart from the first lesson\u2019s', async () => {
+    const first = { ...freshProgress('GWE5'), passed: LESSON_IDS.slice(0, 8) };
+    saveProgress(first);
+    store.set(TUTORIAL_KEY, 'GWE5');
+    office.open = () => Promise.resolve({ code: 'RAIL' });
+    expect(await startFullLesson()).toBe('RAIL');
+    expect(FULL_SEEDS).toContain(office.dealt[0]);
+    expect(store.get(FULL_KEY)).toBe('RAIL');
+    expect(store.get(FULL_DEALT_KEY)).toBe(String(office.dealt[0]));
+    expect(progressAt('RAIL', 'full')).toEqual(freshProgress('RAIL', 'full'));
+    /* the first lesson's, as they were */
+    expect(store.get(TUTORIAL_KEY)).toBe('GWE5');
+    expect(progressAt('GWE5')).toEqual(first);
+    expect(lastTutorialSeed()).toBe(3);
+  });
+
+  it('names the course of each table, and none for another', () => {
+    store.set(TUTORIAL_KEY, 'GWE5');
+    store.set(FULL_KEY, 'RAIL');
+    expect(guidedCourse('GWE5', 3)).toBe('short');
+    expect(guidedCourse('RAIL', FULL_SEEDS[0])).toBe('full');
+    expect(guidedCourse('QK7P', 3)).toBeNull();
+  });
+
+  it('is taken up where it was left, the first lesson\u2019s table left alone', async () => {
+    store.set(TUTORIAL_KEY, 'GWE5');
+    store.set(FULL_KEY, 'RAIL');
+    const halfway = { ...freshProgress('RAIL', 'full'), passed: FULL_LESSON_IDS.slice(0, 4) };
+    saveProgress(halfway);
+    office.register = [table('GWE5'), table('RAIL')];
+    office.open = () => Promise.reject(new Error('dealt'));
+    expect(guidedResume(office.register, 'full')).toBe('RAIL');
+    expect(await openGuided(false, 'full')).toBe('RAIL');
+    expect(await openGuided()).toBe('GWE5');
+    expect(progressAt('RAIL', 'full')).toEqual(halfway);
+  });
+
+  it('never deals twice running the same deal of its list', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const written: number[] = [];
+    for (let i = 0; i < 3; i++) {
+      await startFullLesson();
+      written.push(Number(store.get(FULL_DEALT_KEY)));
+    }
+    for (const seed of written) expect(FULL_SEEDS).toContain(seed);
+    for (let i = 1; i < written.length; i++) expect(written[i]).not.toBe(written[i - 1]);
+    /* the first lesson's last deal is not the second's */
+    expect(store.has(TUTORIAL_DEALT_KEY)).toBe(false);
+    expect(drawTutorialSeed(null, () => 0, FULL_SEEDS)).toBe(FULL_SEEDS[0]);
+    vi.restoreAllMocks();
   });
 });

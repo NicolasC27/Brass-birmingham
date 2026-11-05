@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { MERCHANTS, TOWNS } from '@/game/data';
 import { buildTargets } from '@/game/engine';
-import { TUTORIAL_SEEDS, tutorialSetup } from '@/game/quickplay';
+import { FULL_SEEDS, TUTORIAL_SEEDS, fullSetup, tutorialSetup } from '@/game/quickplay';
 import type { Card, GameState, SetupPayload } from '@/game/types';
-import { dealMisses, dealtAs, worksInHand } from '../guidedDeal';
+import { dealMisses, dealtAs, fullMisses, worksInHand } from '../guidedDeal';
 import { buyersOf, forgesFrom } from '../lessonWords';
 
 /* The guided game's deals, dealt as the office deals them: each holds what
@@ -89,5 +89,37 @@ describe('what a deal may lack', () => {
     expect(dealMisses(g, ME)).toEqual(['buyers']);
     g.players[ME].hand = g.players[ME].hand.filter((c) => c.kind === 'industry' && c.industry !== 'pottery');
     expect(dealMisses(g, ME)).toEqual(['works']);
+  });
+});
+
+/* the second lesson's deals: a full game, the canal the reader's own. How
+   the rail goes on each — every lesson shown, none with no way on, the
+   careful reader opening the rail as its plan says — is played out by
+   app/tools/guide/deals.ts --full */
+describe('the second lesson\u2019s deals', () => {
+  const full = (seed: number): GameState => dealtAs(fullSetup() as unknown as SetupPayload, seed);
+
+  it('are a list of their own, none of the first lesson\u2019s, each with its layout of the merchants', () => {
+    expect(FULL_SEEDS.length).toBeGreaterThanOrEqual(6);
+    expect(new Set(FULL_SEEDS).size).toBe(FULL_SEEDS.length);
+    expect(FULL_SEEDS.filter((s) => TUTORIAL_SEEDS.includes(s))).toEqual([]);
+    expect(new Set(FULL_SEEDS.map((s) => layout(full(s)))).size).toBe(FULL_SEEDS.length);
+  });
+
+  it.each(FULL_SEEDS)('seed %i deals a full game the reader opens, with a works a merchant buys', (seed) => {
+    const g = full(seed);
+    expect(g.eraLength).toBe('standard');
+    expect(g.players.map((p) => p.isBot)).toEqual([false, true]);
+    expect(g.current).toBe(ME);
+    expect(fullMisses(g, ME)).toEqual([]);
+  });
+
+  it('asks less of a deal than the first lesson does', () => {
+    const g = structuredClone(full(FULL_SEEDS[0]));
+    g.players[ME].hand = g.players[ME].hand.filter((c) => !(c.kind === 'industry' && (c.industry === 'coal' || c.industry === 'iron')));
+    expect(fullMisses(g, ME)).toEqual(dealMisses(g, ME).filter((m) => m === 'first' || m === 'works' || m === 'buyers'));
+    expect(fullMisses(g, ME)).not.toContain('coalCard');
+    g.order = [1, 0];
+    expect(fullMisses(g, ME)).toContain('first');
   });
 });

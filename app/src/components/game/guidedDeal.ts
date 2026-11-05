@@ -13,7 +13,8 @@ import { forgesFrom } from './lessonWords';
 /* the canal is paid so as to keep the forge card, and the lesson on    */
 /* works names a buyer for every works the hand builds. The deals that  */
 /* hold them, and that a reader following the lessons plays through     */
-/* (app/tools/guide/deals.ts), are the ones quickplay deals from.       */
+/* (app/tools/guide/deals.ts), are the ones quickplay deals from. The   */
+/* second lesson asks less of its deal: its canal is the reader's.      */
 /* ------------------------------------------------------------------ */
 
 /** what a deal may lack of what the first lessons take for granted */
@@ -62,3 +63,9 @@ export function dealMisses(g: GameState, me: number): DealMiss[] {
   if (works.some((w) => !MERCHANTS.some((m) => merchantOpen(g, m.id) && merchantDemand(g, m.id).includes(w)))) misses.push('buyers');
   return misses;
 }
+
+/** what a deal lacks for the second lesson, whose canal is the reader's
+ *  own to play: no coal card, no forge card, no mine a canal from a forge
+ *  asked for — only the reader first to play, and a works in hand that a
+ *  merchant of the table buys, a sale for the canal to aim at */
+export const fullMisses = (g: GameState, me: number): DealMiss[] => dealMisses(g, me).filter((m) => m === 'first' || m === 'works' || m === 'buyers');

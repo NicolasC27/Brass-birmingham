@@ -1,6 +1,7 @@
 import { setBoardOption } from '@/components/game/boardOptions';
 import { MINI_KEY } from '@/components/game/guideKeys';
-import { freshProgress, readLearnt, saveProgress } from '@/components/game/lessons';
+import { LESSON_IDS, freshProgress, readLearnt, saveProgress } from '@/components/game/lessons';
+import type { CourseId } from '@/components/game/lessons';
 import { SETUP_STORAGE_KEY, loadStoredSetup } from '@/components/setup/constants';
 import type { StoredSetup } from '@/components/setup/constants';
 import { personaName } from '@/game/data';
@@ -57,6 +58,29 @@ const FIRST_SEED = 3;
 /** the deal's seed, which stood for the guided table before its code did */
 const TUTORIAL_SEED_KEY = 'brassworks.tutorial.v1';
 
+/** the second lesson: the full game, both eras, against the same gentle
+ *  machine, assistance on — at a table of its own, kept by its code
+ *  beside the first lesson's: either may be left unfinished while the
+ *  other is played */
+export const FULL_KEY = 'brassworks.tutorial.full.table';
+/** its deals: a list of its own, apart from the first lesson's so that it
+ *  never deals again an opening the reader played there, and checked on
+ *  what the first lesson's list never plays — the rail era. The reader
+ *  plays first and holds a works a merchant of the table buys (the canal
+ *  is theirs to play); played out by a reader who follows the lessons and
+ *  by one who follows their criteria, every lesson is shown, none is left
+ *  with no way on, and the careful reader opens the rail as its plan says
+ *  — a brewery, a rail, a double rail. The first deal of each layout of
+ *  the merchants' tiles: app/tools/guide/deals.ts --full plays them out
+ *  and writes the list, at the machine's two forms, 200 ms a move */
+export const FULL_SEEDS: readonly number[] = [1, 2, 6, 7, 11, 18, 19, 26];
+/** the seed of the reader's last deal of the second lesson */
+export const FULL_DEALT_KEY = 'brassworks.tutorial.full.dealt';
+/** where each course keeps the code of its table */
+const BOUND: Readonly<Record<CourseId, string>> = { short: TUTORIAL_KEY, full: FULL_KEY };
+/** the key a course keeps its table under — the store's leave reads it */
+export const boundKeyOf = (course: CourseId): string => BOUND[course];
+
 /** is this the guided table? The one whose code the guide was opened at —
  *  or, read once from before the code was kept, a table of the guided deal */
 export function guidedTable(code: string, seed: number): boolean {
@@ -73,6 +97,17 @@ export function guidedTable(code: string, seed: number): boolean {
   }
 }
 
+/** the course this table is the guided table of: the second lesson's, the
+ *  first's (guidedTable, which takes up the old seed once), or none */
+export function guidedCourse(code: string, seed: number): CourseId | null {
+  try {
+    if (localStorage.getItem(FULL_KEY) === code) return 'full';
+  } catch {
+    return null;
+  }
+  return guidedTable(code, seed) ? 'short' : null;
+}
+
 /** the guided table to go back to: the one the guide is bound to, while the
  *  register keeps it and it is not played out. None, and the course deals
  *  a new one */
@@ -81,35 +116,36 @@ export function resumeOf(bound: string | null, tables: readonly HomeTable[]): st
   return tables.some((t) => t.code === bound && !t.over) ? bound : null;
 }
 
-/** the code of the table the guide is bound to, if any */
-export function guidedBound(): string | null {
+/** the code of the table a course's guide is bound to, if any */
+export function guidedBound(course: CourseId = 'short'): string | null {
   try {
-    return localStorage.getItem(TUTORIAL_KEY);
+    return localStorage.getItem(BOUND[course]);
   } catch {
     return null;
   }
 }
 
-/** the guided table left unfinished, as the register now stands */
-export function guidedResume(tables: readonly HomeTable[] = listHomeGames()): string | null {
-  return resumeOf(guidedBound(), tables);
+/** a course's guided table left unfinished, as the register now stands */
+export function guidedResume(tables: readonly HomeTable[] = listHomeGames(), course: CourseId = 'short'): string | null {
+  return resumeOf(guidedBound(course), tables);
 }
 
-/** the guided table to open: the one left unfinished — the register read
- *  first when it has not been, so that a table the office still keeps is
- *  never dealt over — or, with none, or asked `again`, a new one */
-export async function openGuided(again = false): Promise<string> {
+/** a course's guided table to open: the one left unfinished — the
+ *  register read first when it has not been, so that a table the office
+ *  still keeps is never dealt over — or, with none, or asked `again`, a
+ *  new one */
+export async function openGuided(again = false, course: CourseId = 'short'): Promise<string> {
   if (!again) {
-    const left = guidedResume(homeKnown() ? homeSnapshot() : await refreshHome());
+    const left = guidedResume(homeKnown() ? homeSnapshot() : await refreshHome(), course);
     if (left) return left;
   }
-  return startTutorial();
+  return course === 'full' ? startFullLesson() : startTutorial();
 }
 
 /** a guided deal to play: any of the list but the reader's last one */
-export function drawTutorialSeed(last: number | null, roll: () => number = Math.random): number {
-  const left = TUTORIAL_SEEDS.filter((s) => s !== last);
-  return left[Math.min(left.length - 1, Math.floor(roll() * left.length))] ?? TUTORIAL_SEEDS[0];
+export function drawTutorialSeed(last: number | null, roll: () => number = Math.random, seeds: readonly number[] = TUTORIAL_SEEDS): number {
+  const left = seeds.filter((s) => s !== last);
+  return left[Math.min(left.length - 1, Math.floor(roll() * left.length))] ?? seeds[0];
 }
 
 /** the seed of the reader's last guided deal — for a reader of the guide
@@ -118,7 +154,8 @@ export function lastTutorialSeed(): number | null {
   try {
     const dealt = localStorage.getItem(TUTORIAL_DEALT_KEY);
     if (dealt !== null && /^\d+$/.test(dealt)) return Number(dealt);
-    const guided = localStorage.getItem(TUTORIAL_KEY) !== null || localStorage.getItem(TUTORIAL_SEED_KEY) !== null || readLearnt().length > 0;
+    /* the first lesson's marks: the second's say nothing of its deal */
+    const guided = localStorage.getItem(TUTORIAL_KEY) !== null || localStorage.getItem(TUTORIAL_SEED_KEY) !== null || readLearnt().some((id) => LESSON_IDS.includes(id));
     return guided ? FIRST_SEED : null;
   } catch {
     return null;
@@ -133,6 +170,40 @@ export function tutorialSetup(): StoredSetup {
     ],
     options: { eraLength: 'short', marketTemper: 'standard', timerMinutes: null, fidelity: 'core', assist: true },
   };
+}
+
+/** the second lesson's table: the first's, dressed for a full game */
+export function fullSetup(): StoredSetup {
+  const setup = tutorialSetup();
+  return { ...setup, options: { ...setup.options, eraLength: 'standard' } };
+}
+
+/** the seed of the reader's last deal of the second lesson; none before one */
+function lastFullSeed(): number | null {
+  try {
+    const dealt = localStorage.getItem(FULL_DEALT_KEY);
+    return dealt !== null && /^\d+$/.test(dealt) ? Number(dealt) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** dress the second lesson's table and open it on the register, as the
+ *  first lesson's is: nothing of it written before the office has dealt
+ *  it, and the first lesson's table and record left as they are */
+export async function startFullLesson(): Promise<string> {
+  const seed = drawTutorialSeed(lastFullSeed(), Math.random, FULL_SEEDS);
+  const { code } = await openHomeGame(seed, fullSetup() as unknown as SetupPayload);
+  try {
+    localStorage.setItem(FULL_KEY, code);
+    localStorage.setItem(FULL_DEALT_KEY, String(seed));
+    localStorage.removeItem(MINI_KEY);
+  } catch {
+    /* storage unavailable — the guide stays with this visit */
+  }
+  saveProgress(freshProgress(code, 'full'));
+  setBoardOption('guideFolded', false);
+  return code;
 }
 
 /** dress the guided table and open it on the register — the caller then opens
