@@ -1239,6 +1239,7 @@ const fr: typeof engame = {
     hide: 'Masquer',
     waitingTurn: '{name} joue — action {n} sur {max}',
     stepOf: 'Leçon {n} sur {total}',
+    stepOfFull: 'Leçon 2 · {n} sur {total}',
     yourTurn: 'À vous — la machine attend.',
     wait: 'La machine joue ; votre tour vient ensuite.',
     leave: 'Quitter le guide',

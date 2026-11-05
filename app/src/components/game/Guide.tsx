@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useNavigate } from 'react-router';
 import { Bot, Check, ChevronDown, ChevronLeft, ChevronRight, Clock, Eye, GraduationCap, Lightbulb, LogOut, MessageCircleQuestion, Minus, Newspaper, Sparkles, TimerOff, X } from 'lucide-react';
 import { aidOn, getBoardOptions, setBoardOption, useBoardOptions } from '@/components/game/boardOptions';
 import { GUIDE_RAIL, MINI_KEY, POS_KEY } from '@/components/game/guideKeys';
@@ -26,7 +27,7 @@ import type { Read } from './guideRead';
 import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
-import { LAST_LESSON, LESSONS, LINKS_ASKED, LINK_WORTH, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastRound, lessonIndex, lessonOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn, worthyLaid } from './lessons';
+import { LINKS_ASKED, LINK_WORTH, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastOf, lastRound, lessonIndex, lessonOf, lessonsOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn, worthyLaid } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelsSaid, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
@@ -67,6 +68,9 @@ interface Ctx {
 const WORKS = ['cotton', 'manufacturer', 'pottery'];
 /** the progress outside the guided game: nothing to settle, nothing to write */
 const NO_PROGRESS = freshProgress(null);
+/** each course's lessons, and its closing word */
+const COURSE_LESSONS = { short: lessonsOf('short'), full: lessonsOf('full') } as const;
+const COURSE_LAST = { short: lastOf('short'), full: lastOf('full') } as const;
 
 type Pos = { x: number; y: number };
 const readPos = (): Pos => {
@@ -135,7 +139,9 @@ function stepVarsOf(game: GameState, me: number, t: (key: string, vars?: Record<
      and the pointer's verb is the finger's */
   const key = (clause: string, bound: string) => (finger ? '' : ` ${t(`game.guide.keys.${clause}`, { key: bound })}`);
   const tap = t(finger ? 'game.guide.tap.touch' : 'game.guide.tap.click');
-  return { bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', min: LINK_WORTH, worthy: worthy.length ? t('game.guide.worthy.some', { list: listed(worthy, 'disjunction') }) : t(game.eraLength === 'short' ? 'game.guide.worthy.noneShort' : 'game.guide.worthy.none', { min: LINK_WORTH }), sofar: laid > 0 ? t('game.guide.worthy.sofar', { n: Math.min(laid, LINKS_ASKED), of: LINKS_ASKED }) : '', twos: twos.length ? t('game.guide.twos.some', { list: listed(twos, 'conjunction') }) : t('game.guide.twos.none'), forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: key('mat', keyLabel(k.mat)), keyLedger: key('ledger', keyLabel(k.ledger)), keyMarket: key('market', keyLabel(k.market)), keyVp: key('vp', keyLabel(k.vpTrack)), keyEnter: key('enter', ''), tap, Tap: tap.charAt(0).toUpperCase() + tap.slice(1) };
+  /* the reader's tiles on the board: after the canal's sweep, what it kept */
+  const kept = Object.entries(game.tiles).filter(([, x]) => x.owner === me).map(([key, x]) => t('game.guide.kept.tile', { industry: t(`game.log.industry.${x.industry}`), level: roman(x.level), town: TOWN_BY_ID[key.split(':')[0]]?.name ?? key }));
+  return { kept: kept.length ? listed(kept, 'conjunction') : t('game.guide.kept.none'), bonuses: barrels ? t('game.guide.barrels.line', { list: barrels }) : '', need: need ?? '', min: LINK_WORTH, worthy: worthy.length ? t('game.guide.worthy.some', { list: listed(worthy, 'disjunction') }) : t(game.eraLength === 'short' ? 'game.guide.worthy.noneShort' : 'game.guide.worthy.none', { min: LINK_WORTH }), sofar: laid > 0 ? t('game.guide.worthy.sofar', { n: Math.min(laid, LINKS_ASKED), of: LINKS_ASKED }) : '', twos: twos.length ? t('game.guide.twos.some', { list: listed(twos, 'conjunction') }) : t('game.guide.twos.none'), forgeTowns: townList(ways.forges, 'disjunction'), avoid, toward: toward.length ? ` (${townList(toward, 'disjunction')})` : '', buyers: buyers.join(', '), tiles: listed(tiles, 'disjunction'), name: p.name, money: p.money, level: incomeLevel(p.income), startMoney: START_MONEY, startLevel: incomeLevel(START_INCOME_SPACE), firstLevel: first, firstPay: Math.abs(first), pay: Math.abs(INCOME_PAYOUT[p.income]), rounds: eraRounds(game.players.length), dry: dryRound(game.players.length), bot: game.players.find((x) => x.isBot)?.name ?? '', rival, nth: t(game.current === me && game.actionsLeft === 1 ? 'game.guide.nth.second' : 'game.guide.nth.first'), keyMat: key('mat', keyLabel(k.mat)), keyLedger: key('ledger', keyLabel(k.ledger)), keyMarket: key('market', keyLabel(k.market)), keyVp: key('vp', keyLabel(k.vpTrack)), keyEnter: key('enter', ''), tap, Tap: tap.charAt(0).toUpperCase() + tap.slice(1) };
 }
 
 /** a look at a seat's last move, from this moment */
@@ -204,7 +210,7 @@ const AT_HAND = new Set(['coalMarket', 'ironMarket', 'buildCost', 'network', 'se
  *  sold under the forge, the beer a sale drinks under the sale. The
  *  reader's tiles still unflipped are named under every page: no page
  *  lists them */
-const SAID_IN: Record<string, readonly string[]> = { eraEnd: ['eraEnd', 'lastRounds'], ironMarket: ['iron'], sell: ['sell', 'beer'] };
+const SAID_IN: Record<string, readonly string[]> = { eraEnd: ['eraEnd', 'lastRounds', 'canalClose'], ironMarket: ['iron'], sell: ['sell', 'beer'] };
 /** the alerts that would say the same thing on every page of a round —
  *  the income below zero, the deck run out: told under the first page of
  *  the round they come with, not under the next */
@@ -265,9 +271,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const linkPick = useGame((s) => s.linkPick);
   const sellPicks = useGame((s) => s.sellPicks);
   const tutorial = useGame((s) => s.tutorial);
+  /* the course the guided table is played for: its lessons, its record */
+  const course = useGame((s) => s.course);
+  const lessons = COURSE_LESSONS[course];
+  const lastLesson = COURSE_LAST[course];
   /* the guided game's table, which its progress is kept for */
   const table = useGame((s) => s.local);
   const endTutorial = useGame((s) => s.endTutorial);
+  const navigate = useNavigate();
   const matPlayer = useGame((s) => s.matPlayer);
   const { vpTrack } = useBoardOptions();
   const sheetOpened = useGame((s) => s.sheetOpened);
@@ -450,7 +461,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      table as it stands — a deed seen undone and now done is passed, and a
      lesson once passed stays passed (closing the mat again is no reason to
      teach the mat again) */
-  const kept = useSyncExternalStore(onProgress, () => (tutorial && table ? progressAt(table) : NO_PROGRESS));
+  const kept = useSyncExternalStore(onProgress, () => (tutorial && table ? progressAt(table, course) : NO_PROGRESS));
   /* the move in the making is read too: a build that buys at the market,
      a sale chosen, call for the page that tells of it */
   const lctx = useMemo<LessonCtx | null>(() => (game ? { g: game, me, sel: selectedCardId, mat: matPlayer, sheet: sheetOpened, verb, pick: buildPick } : null), [game, me, selectedCardId, matPlayer, sheetOpened, verb, buildPick]);
@@ -514,9 +525,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const detour = !!(lctx && owed && block?.money && detourOf(settled, owed, lctx, true, canLoan(lctx.g, me).ok));
   /* what is on show: the lesson read back, the loan first, the lesson due
      — or, at rest, the one to come */
-  const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? LAST_LESSON);
+  const shownId = review ? review.id : detour ? 'loan' : (owed?.id ?? lastLesson);
   const step = showSteps ? lessonOf(shownId)! : null;
   const shownIndex = lessonIndex(shownId);
+  /* the lesson's place in its course — the second lesson's pages say so,
+     a « lesson 3 » of the second not to be read as a third lesson */
+  const stepOf = (n: number): string => t(course === 'full' ? 'game.guide.stepOfFull' : 'game.guide.stepOf', { n, total: lessons.length });
   /* an alert told once a round is noted under the first page it comes
      with, as it comes */
   const roundNow = game ? `${game.era}:${game.round}` : '';
@@ -563,7 +577,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (tutorial && live !== kept) saveProgress(live);
   }, [tutorial, live, kept]);
   /* what the lessons do at this table, noted for the direction (guideTrail.ts) */
-  useGuideTrail(table, tutorial, lctx, live, inView ? shownId : null, owed?.mode ?? null, detour ? (owed?.id ?? null) : null);
+  useGuideTrail(table, tutorial, lctx, live, inView ? shownId : null, owed?.mode ?? null, detour ? (owed?.id ?? null) : null, course);
   /* the lesson on the hand wants the hand in view: the mat goes as it
      comes up, however the tile before it was read — by Next, or by the
      sheet opened, which passes it — and the sheet with it. Once as it
@@ -744,9 +758,10 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the machine's name at the table, for the note's word that it waits */
   const machine = game.players.find((x) => x.isBot)?.name ?? '';
   /* the machine let play on, offered once the first rounds are played —
-     and kept offered to a reader who took it, to take it back. Beside
-     the lane alone, as the choice holds there alone (see playOn) */
-  const offerPlayOn = tutorial && dock > 0 && (playOn || mayPlayOn(game));
+     at once in the second lesson, whose reader knows the canal — and
+     kept offered to a reader who took it, to take it back. Beside the
+     lane alone, as the choice holds there alone (see playOn) */
+  const offerPlayOn = tutorial && dock > 0 && (playOn || mayPlayOn(game) || course === 'full');
   const letPlay = (on: boolean) => {
     if (!tutorial) return;
     saveProgress(letPlayOn(live, on));
@@ -875,6 +890,14 @@ function Guide({ dock = 0 }: { dock?: number }) {
     setLeaving(false);
     leftGuide(table, lctx, live, shownId);
     endTutorial();
+  };
+  /* the second lesson's choice, asked here when the table came to the rail
+     without the ceremony's: go on (Next), or stop — the table stays, the
+     guide goes — and play ranked, or finish the game alone */
+  const choosing = step?.id === 'railChoice' && review === null;
+  const stopHere = (ranked: boolean) => {
+    leave();
+    if (ranked) navigate('/online');
   };
   /* leave the guide? Said to be final before it is: the lessons end at
      this table for good, the assistance stays. In the lane it hangs under
@@ -1016,6 +1039,9 @@ function Guide({ dock = 0 }: { dock?: number }) {
     : id === 'link' ? a.kind === 'network'
     : id === 'sell' ? a.kind === 'sell'
     : id === 'loan' ? a.kind === 'loan'
+    : id === 'railBrewery' ? a.kind === 'build' && a.industry === 'brewery'
+    : id === 'rails' ? a.kind === 'network'
+    : id === 'doubleRail' ? a.kind === 'network' && !!a.second
     : true;
   const whyKey = (a: GameAction): string => {
     if (a.kind === 'build') return a.industry === 'coal' || a.industry === 'iron' || a.industry === 'brewery' ? a.industry : 'works';
@@ -1051,7 +1077,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const spoken =
     reading && bot ? `${t('game.guide.botWhy', { name: bot.name })}. ${bot.what}`
     : news.length ? news[news.length - 1].text
-    : showSteps && step && !stripped && !stepBack ? `${t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}. ${t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}`
+    : showSteps && step && !stripped && !stepBack ? `${stepOf(Math.min(shownIndex + 1, lessons.length))}. ${t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}`
     : '';
   const heard = (
     <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -1071,7 +1097,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
      something waits to be read (her fresh move, the news, a page); the
      lesson's lens still lights the board */
   if (dock === GUIDE_RAIL) {
-    const n = Math.min(shownIndex + 1, LESSONS.length);
+    const n = Math.min(shownIndex + 1, lessons.length);
     const come = settled.passed.length;
     const due = unreadOf(toRead);
     /* the lesson's number while one is on show or set aside; at rest, the bar alone */
@@ -1103,12 +1129,12 @@ function Guide({ dock = 0 }: { dock?: number }) {
           {guided && (
             <>
               {numbered && (
-                <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={t('game.guide.stepOf', { n, total: LESSONS.length })}>
-                  {n}/{LESSONS.length}
+                <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={stepOf(n)}>
+                  {n}/{lessons.length}
                 </span>
               )}
               <span className="relative w-1 flex-1 overflow-hidden rounded-full bg-coal-800" aria-hidden>
-                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(come / LESSONS.length) * 100}%` }} />
+                <span className="absolute inset-x-0 top-0 rounded-full bg-brass-400/80" style={{ height: `${(come / lessons.length) * 100}%` }} />
               </span>
               {playOnSwitch('flex h-8 w-8 shrink-0 items-center justify-center coarse:h-10 coarse:w-10')}
             </>
@@ -1138,7 +1164,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           <div className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
             <span className="min-w-0 truncate font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60 coarse:hidden">{t('game.guide.aria')}</span>
-            {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
+            {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{stepOf(Math.min(shownIndex + 1, lessons.length))}</span>}
             <span className="flex-1" />
             {guided && leaveButton('rounded-md p-1 text-cream-100/45 transition-colors hover:text-cream-100 coarse:p-3.5')}
             {playOnSwitch('p-1 coarse:p-3.5')}
@@ -1180,7 +1206,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             <div className="relative flex items-start gap-2">
               <div {...grabProps} className={cn(grabClass, 'flex min-w-0 flex-1 items-center gap-2')}>
                 {setAsideNow ? <Clock className="h-4 w-4 shrink-0 text-ink-900/70" /> : <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />}
-                <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{setAsideNow ? t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) }) : t('game.guide.rest')}</span>
+                <span className="min-w-0 font-serif text-[12.5px] leading-snug text-ink-900/85">{setAsideNow ? t('game.guide.aside', { lesson: t(`game.guide.steps.${stepKey(shownId)}.title`, stepVars()) }) : t(course === 'full' && game.era === 'canal' ? 'game.guide.restCanal' : 'game.guide.rest')}</span>
               </div>
               {!dock && leaveButton('shrink-0 rounded-full p-0.5 text-ink-900/40 hover:text-ink-900 coarse:-m-3 coarse:p-3.5')}
             </div>
@@ -1200,7 +1226,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
-              {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</span>}
+              {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{stepOf(Math.min(shownIndex + 1, lessons.length))}</span>}
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
             {opens && (
@@ -1235,7 +1261,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
-                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: Math.min(shownIndex + 1, LESSONS.length), total: LESSONS.length })}</p>
+                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{stepOf(Math.min(shownIndex + 1, lessons.length))}</p>
                           <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
                         {/* floating, the way out stands by the fold, far from
@@ -1331,9 +1357,19 @@ function Guide({ dock = 0 }: { dock?: number }) {
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      {choosing && (
+                        <>
+                          <button type="button" onClick={() => stopHere(false)} className="font-sans text-[10.5px] text-ink-900/55 hover:text-ink-900 coarse:min-h-[44px] coarse:px-2">
+                            {t('game.guide.choice.alone')}
+                          </button>
+                          <button type="button" onClick={() => stopHere(true)} className="btn-ledger !min-h-[32px] coarse:!min-h-[44px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                            {t('game.guide.choice.stop')}
+                          </button>
+                        </>
+                      )}
                       {(!step.done || review !== null || already || !!spare) && (
                         <button type="button" onClick={next} className="btn-strike !min-h-[32px] coarse:!min-h-[44px] !px-4 !py-1 !text-[10.5px]">
-                          {t('game.guide.next')}
+                          {t(choosing ? 'game.guide.choice.go' : 'game.guide.next')}
                           <ChevronRight className="h-3.5 w-3.5" />
                         </button>
                       )}

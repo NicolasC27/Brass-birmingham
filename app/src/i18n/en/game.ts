@@ -1237,6 +1237,7 @@ const game = {
     hide: 'Hide',
     waitingTurn: '{name} plays — action {n} of {max}',
     stepOf: 'Lesson {n} of {total}',
+    stepOfFull: 'Lesson 2 · {n} of {total}',
     yourTurn: 'Your move — the machine waits.',
     wait: 'The machine is playing; your move comes next.',
     leave: 'Leave the guide',

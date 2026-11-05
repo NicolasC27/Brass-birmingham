@@ -1239,6 +1239,7 @@ const game: typeof engame = {
     hide: 'Ausblenden',
     waitingTurn: '{name} ist am Zug — Aktion {n} von {max}',
     stepOf: 'Lektion {n} von {total}',
+    stepOfFull: 'Lektion 2 · {n} von {total}',
     yourTurn: 'Du bist dran — die Maschine wartet.',
     wait: 'Die Maschine spielt; danach bist du dran.',
     leave: 'Den Guide verlassen',

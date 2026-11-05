@@ -1239,6 +1239,7 @@ const game: typeof engame = {
     hide: 'Ocultar',
     waitingTurn: '{name} juega — acción {n} de {max}',
     stepOf: 'Lección {n} de {total}',
+    stepOfFull: 'Lección 2 · {n} de {total}',
     yourTurn: 'Te toca — la máquina espera.',
     wait: 'La máquina juega; tu turno viene después.',
     leave: 'Salir de la guía',

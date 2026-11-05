@@ -4,7 +4,7 @@ import { buildTargets, eraRounds, isWild, merchantOpen, reachable, sellTargets, 
 import { onlyMoney, searchTurn, sparedFirst } from '@/game/search';
 import type { Lens } from '@/game/store';
 import type { Card, GameState, IndustryType } from '@/game/types';
-import { asideNow, lastRound } from './lessons';
+import { asideNow, courseIn, lastRound } from './lessons';
 import type { Progress } from './lessons';
 
 /* ------------------------------------------------------------------ */
@@ -65,6 +65,9 @@ export function keepOf(id: string, g: GameState, me: number): Keep | null {
       return keep('iron', deedCards(g, me, 'iron'), false, builds(['iron']));
     case 'works':
       return keep('works', hand.filter((c) => buildsNow(g, me, c, WORKS)).map((c) => c.id), false, builds(WORKS));
+    /* the second lesson's brewery of the rail era */
+    case 'railBrewery':
+      return keep('railBrewery', deedCards(g, me, 'brewery'), false, builds(['brewery']));
     case 'loan':
       if (lastRound(g)) return null;
       return keep('works', hand.filter((c) => c.kind === 'location' && !!c.town && nearBuyer(g, c.town)).map((c) => c.id), true, builds(WORKS));
@@ -86,7 +89,8 @@ const OPENING: readonly (readonly [lesson: string, keep: string, industry: Indus
  *  until the forge, each until its lesson is passed or set aside */
 export function keepsFor(p: Progress, g: GameState, me: number, deed: string | null, detour: boolean): Keep[] {
   const built = (industry: IndustryType): boolean => Object.values(g.tiles).some((t) => t.owner === me && t.industry === industry);
-  const opening = OPENING.filter(([lesson, , industry]) => !p.passed.includes(lesson) && !asideNow(p, lesson, g) && !built(industry)).map(([, id]) => id);
+  /* the first lesson's opening only: the second's canal is the reader's */
+  const opening = courseIn(p) === 'short' ? OPENING.filter(([lesson, , industry]) => !p.passed.includes(lesson) && !asideNow(p, lesson, g) && !built(industry)).map(([, id]) => id) : [];
   const ids = [...new Set([...(detour ? ['loan'] : []), ...(deed ? [deed] : []), ...opening])];
   return ids.map((id) => keepOf(id, g, me)).filter((k): k is Keep => !!k);
 }
