@@ -204,7 +204,7 @@ interface GameStore {
   rulesOpen: boolean;
   /** player whose mat (remaining tiles) is open, null = closed */
   matPlayer: number | null;
-  /** the next coal mine's sheet has been held open on a mat at this
+  /** the next coal mine's sheet has been opened and closed on a mat at this
    *  table: the guide's lesson on reading a tile asks for that gesture */
   sheetOpened: boolean;
   noteSheet: () => void;

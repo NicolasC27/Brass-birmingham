@@ -187,7 +187,7 @@ export const LESSONS: readonly Lesson[] = [
   /* the points, and the purse and the income that buy them: one lesson */
   { id: 'goal', show: 'vp' },
   { id: 'mat', show: 'mat', done: (c) => c.mat !== null },
-  /* read by doing: the next coal mine's sheet held open on the mat, by hover or by tap */
+  /* read by doing: the next coal mine's sheet opened then closed on the mat, by hover or by tap */
   { id: 'matRead', show: 'mat', done: (c) => !!c.sheet },
   { id: 'hand', done: (c) => c.sel !== null },
   /* not to be set aside: in the first round the mine is the reader's one
