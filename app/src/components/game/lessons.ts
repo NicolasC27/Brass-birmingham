@@ -240,21 +240,23 @@ export const LESSONS: readonly Lesson[] = [
   { id: 'plan', when: halfway, ahead: true, cuts: halfway },
   { id: 'tips', when: halfway, ahead: true, cuts: halfway },
   /* then aims, met in the reader's own way and set aside like any deed: a
-     works within reach of its buyer, by whoever's links; a merchant's
-     barrel drunk — with none left standing, one to pass */
+     works within reach of its buyer, by whoever's links */
   { id: 'reach', done: linkedWorks, deferrable: true, aim: true },
   /* and aims for points rather than moves, from the era's half as the plan
      that names them: links whose ends carry icons, laid from then on — two,
      a round's worth: the reader who follows the lessons lays far fewer than
-     the machine, and loses most of the game there — and a tile of level 2
-     flipped, which counts once more than a level 1. None in the last
+     the machine, and loses most of the game there. None in the last
      round: its own page says what each last action should do */
   { id: 'linkWorth', done: (c) => worthyLaid(c) >= LINKS_ASKED, when: halfway, ahead: true, deferrable: true, aim: true },
-  /* with no tile of level 2 within a build or a sale — the mat offers
-     none yet, or the hand builds none — it is read and may be passed: out
-     of reach, it would come back round after round */
+  /* a merchant's barrel drunk — with none left standing, one to pass. Its
+     page says to sell early: never first given in the last round, so it
+     comes before the level 2, which may wait for its tile a round or two */
+  { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), ahead: true, deferrable: true, aim: true },
+  /* a tile of level 2 flipped, which counts once more than a level 1. With
+     none within a build or a sale — the mat offers none yet, or the hand
+     builds none — it is read and may be passed: out of reach, it would
+     come back round after round */
   { id: 'levelTwo', done: flippedTwo, when: halfway, optional: (c) => !twoInReach(c), ahead: true, deferrable: true, aim: true },
-  { id: 'barrel', done: drankBarrel, optional: (c) => !barrelsLeft(c), deferrable: true, aim: true },
   /* what each last action should do: it comes when they are the last,
      before an aim still open */
   { id: 'lastRounds', when: closing, urgent: true },

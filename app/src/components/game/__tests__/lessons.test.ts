@@ -860,15 +860,17 @@ describe('the aims for points', () => {
   const half = (g: GameState = round2()): GameState => ({ ...g, round: 5 });
 
   it('come after the link to a buyer, from the era\'s half, and never in the last round', () => {
-    expect(LESSON_IDS.slice(lessonIndex('reach'), lessonIndex('barrel') + 1)).toEqual(['reach', 'linkWorth', 'levelTwo', 'barrel']);
+    expect(LESSON_IDS.slice(lessonIndex('reach'), lessonIndex('levelTwo') + 1)).toEqual(['reach', 'linkWorth', 'barrel', 'levelTwo']);
     const p = upTo('linkWorth');
     /* before the half, the barrel's aim is given meanwhile */
     expect(due(p, ctx(round2()))).toMatchObject({ id: 'barrel', mode: 'do' });
     expect(due(p, ctx(half()))).toMatchObject({ id: 'linkWorth', mode: 'do' });
-    expect(due(pass(p, 'linkWorth'), ctx(half()))).toMatchObject({ id: 'levelTwo', mode: 'do' });
-    /* the last round has its own page, and then no round for them */
+    expect(due(pass(p, 'linkWorth'), ctx(half()))).toMatchObject({ id: 'barrel', mode: 'do' });
+    expect(due(['linkWorth', 'barrel'].reduce(pass, p), ctx(half()))).toMatchObject({ id: 'levelTwo', mode: 'do' });
+    /* the last round has its own page, and then no round for them — nor
+       for the barrel, whose page says to sell early */
     const last = { ...round2(), round: 10 };
-    expect(due(pass(p, 'lastRounds'), ctx(last))).toMatchObject({ id: 'barrel', mode: 'do' });
+    expect(due(pass(p, 'lastRounds'), ctx(last))).toMatchObject({ id: 'onward', mode: 'idle' });
     expect(stepKeyOf('linkWorth', half(), 0)).toBe('linkWorthShort');
     expect(stepKeyOf('levelTwo', { ...half(), eraLength: 'standard' }, 0)).toBe('levelTwo');
   });
