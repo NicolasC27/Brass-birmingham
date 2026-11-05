@@ -3,6 +3,7 @@ import type { GameAction } from '../actions';
 import { newGame, serialize } from '../engine';
 import type { HomeSave } from '@/online/table';
 import type { GameState, SetupPayload } from '../types';
+import { stubStorage } from '@/platform/__tests__/storage';
 
 /* ------------------------------------------------------------------ */
 /* A game at home and the office that keeps its log. The office here   */
@@ -235,6 +236,7 @@ describe('sitting at another table', () => {
       ceremony: 'canal-end' as const,
       gameOverOpen: true,
       tutorial: true,
+      course: 'full' as const,
       guideLane: true,
       sheetOpened: true,
       coachStep: 3,
@@ -272,6 +274,21 @@ describe('sitting at another table', () => {
     expect(useGame.getState()).toMatchObject({ tutorial: false, guideLane: true });
     useGame.getState().init(undefined, undefined);
     expect(useGame.getState().guideLane).toBe(false);
+  });
+
+  it('sits a guided table with the course it is bound to, and leaves that course\'s binding alone when the guide is left', async () => {
+    const store = stubStorage();
+    store.set('brassworks.tutorial.table', 'GWE5');
+    store.set('brassworks.tutorial.full.table', 'HOME');
+    office.current.deal('HOME', setup, 5);
+    useGame.getState().init(undefined, 'HOME');
+    await settle();
+    expect(useGame.getState()).toMatchObject({ tutorial: true, course: 'full' });
+    useGame.getState().endTutorial();
+    expect(store.has('brassworks.tutorial.full.table')).toBe(false);
+    expect(store.get('brassworks.tutorial.table')).toBe('GWE5');
+    useGame.getState().init(undefined, undefined);
+    expect(useGame.getState()).toMatchObject({ tutorial: false, course: 'short' });
   });
 
   it('lifts the reader\'s pause of the machines at the next table', () => {

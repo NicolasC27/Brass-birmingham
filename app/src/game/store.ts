@@ -29,7 +29,7 @@ import type {
 } from './types';
 
 import { ledgerText } from './ledgerText';
-import { TUTORIAL_KEY, guidedTable } from './quickplay';
+import { boundKeyOf, guidedCourse } from './quickplay';
 import { cloneState } from './clone';
 import { forkHomeGame, openHomeGame, readHomeSave, recordMove, recordUndo } from './home';
 import type { HomeMiss, Recorded } from './home';
@@ -45,6 +45,7 @@ import { coachMove, hushCoach } from './coach';
 import type { Coached } from './coach';
 import { aidOn } from '@/components/game/boardOptions';
 import { deedOf } from '@/components/game/lessons';
+import type { CourseId } from '@/components/game/lessons';
 import { sameMove } from '@/components/game/expertAdvice';
 import { whyNoBuild, whyNoDevelop, whyNoLink, whyNoSale } from './refusals';
 import type { JudgeId } from './analysis';
@@ -238,6 +239,9 @@ interface GameStore {
   coachStep: number; // -1 hidden
   /** this game is the guided one: the guide's steps show */
   tutorial: boolean;
+  /** and the course it is the table of: the first lesson's short game, or
+   *  the second's full one */
+  course: CourseId;
   /** the guided game's lessons are left, and its lane stays for the rest of
    *  the game: the thread, the machine's reasons and the questions */
   guideLane: boolean;
@@ -452,8 +456,10 @@ async function fetchHome(code: string): Promise<void> {
      before anything is drawn on it */
   setBoard(game.board);
   /* the guided game: the table it was opened at, remembered by its code so
-     a reload keeps the guide — and never a table opened from the week's notice */
-  const tutorial = challengeSeedFor(at) === null && guidedTable(at, game.seed);
+     a reload keeps the guide — and never a table opened from the week's
+     notice — with the course it is the table of */
+  const course = challengeSeedFor(at) === null ? guidedCourse(at, game.seed) : null;
+  const tutorial = course !== null;
   const coached = (() => {
     try {
       return localStorage.getItem('brassworks.coached.v1') === '1';
@@ -476,6 +482,7 @@ async function fetchHome(code: string): Promise<void> {
     candle: null,
     mood: NO_MOOD,
     tutorial,
+    course: course ?? 'short',
     humanMarks,
     pins: {},
     notebook: '',
@@ -709,6 +716,7 @@ export const freshGame = {
   ceremony: null as 'canal-end' | null,
   gameOverOpen: false,
   tutorial: false,
+  course: 'short' as CourseId,
   guideLane: false,
   sheetOpened: false,
   coachStep: -1,
@@ -746,6 +754,7 @@ export const useGame = create<GameStore>((set, get) => ({
   flyTo: null,
   followBots: true,
   tutorial: false,
+  course: 'short',
   guideLane: false,
   sheetOpened: false,
   botHold: false,
@@ -1331,7 +1340,7 @@ export const useGame = create<GameStore>((set, get) => ({
       const reader = (s: GameState) => ({ g: s, me: g.current, sel: null, mat: null });
       /* nor the move the guide's expert advised here: it was the guide's word */
       const advised = !!st.advised && st.advised.at === g.actions.length && sameMove(st.advised.action, action);
-      if (st.tutorial && (deedOf(reader(g), reader(mut)) || advised)) {
+      if (st.tutorial && (deedOf(reader(g), reader(mut), st.course) || advised)) {
         hushCoach();
         holdForCoach(0);
       } else {
@@ -1484,7 +1493,7 @@ export const useGame = create<GameStore>((set, get) => ({
 
   endTutorial: () => {
     try {
-      localStorage.removeItem(TUTORIAL_KEY);
+      localStorage.removeItem(boundKeyOf(get().course));
     } catch {
       /* non-fatal */
     }
