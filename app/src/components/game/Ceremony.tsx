@@ -1,9 +1,13 @@
 import { memo, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { motion } from 'framer-motion';
+import { GraduationCap } from 'lucide-react';
 import { PLAYER_COLORS } from '@/game/data';
 import { useGame } from '@/game/store';
 import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { leftGuide } from './guideTrail';
+import { pass, progressAt, saveProgress } from './lessons';
 import { useLayer } from './useLayer';
 import { useReducedMotion } from './useReducedMotion';
 
@@ -14,6 +18,10 @@ import { useReducedMotion } from './useReducedMotion';
 /* game waits for the reader: nothing closes it but Continue (or        */
 /* Escape). Reduced motion keeps the same wait, without the slides.     */
 /* A game reopened on this moment waits for the title card to lift.     */
+/*                                                                      */
+/* At the second lesson's table the half-time asks its question: go on */
+/* with the rail era taught, or stop there — the table stays open, the  */
+/* guide goes — and play ranked, or finish the game alone.              */
 /* ------------------------------------------------------------------ */
 
 /** Continue shows once the figures have had a moment to land */
@@ -25,6 +33,11 @@ function Ceremony({ ready = true }: { /** the table is set and in view: the cere
   const game = useGame((s) => s.game);
   const endCeremony = useGame((s) => s.endCeremony);
   const home = useGame((s) => !s.code && !!s.local);
+  /* the second lesson's table, asked whether its lesson goes on */
+  const table = useGame((s) => s.local);
+  const lesson = useGame((s) => s.tutorial && s.course === 'full');
+  const endTutorial = useGame((s) => s.endTutorial);
+  const navigate = useNavigate();
   const reduced = useReducedMotion();
   const [stage, setStage] = useState(0);
   const [canSkip, setCanSkip] = useState(false);
@@ -32,10 +45,18 @@ function Ceremony({ ready = true }: { /** the table is set and in view: the cere
   const [held, setHeld] = useState(false);
   const [seen, setSeen] = useState<string | null>(null);
   const live = !!ceremony && ready;
+  /* the lesson goes on: its choice, passed — Continue, or Escape, says so */
+  const goOn = () => {
+    if (!lesson || !table) return;
+    const p = progressAt(table, 'full');
+    const q = pass(p, 'railChoice');
+    if (q !== p) saveProgress(q);
+  };
   /* Escape is Continue: the scene holds the table until it is answered */
   const box = useLayer(
     live,
     () => {
+      goOn();
       endCeremony();
       setAsked(true);
     },
@@ -93,6 +114,21 @@ function Ceremony({ ready = true }: { /** the table is set and in view: the cere
   const seatsInOrder = game.players.map((p, i) => ({ p, i }));
   const order = stage >= 2 ? [...seatsInOrder].sort((a, b) => b.p.vp - a.p.vp || a.i - b.i) : seatsInOrder;
   const next = () => {
+    goOn();
+    endCeremony();
+    setAsked(true);
+  };
+  /* the lesson left here, its choice noted for the direction: the ranked
+     tables at once, the game waiting at its count — or the game played
+     on alone */
+  const stop = (ranked: boolean) => {
+    const me = Math.max(0, game.players.findIndex((p) => !p.isBot));
+    if (table) leftGuide(table, { g: game, me, sel: null, mat: null }, progressAt(table, 'full'), 'railChoice');
+    endTutorial();
+    if (ranked) {
+      navigate('/online');
+      return;
+    }
     endCeremony();
     setAsked(true);
   };
@@ -198,9 +234,40 @@ function Ceremony({ ready = true }: { /** the table is set and in view: the cere
         <p className="mt-2 text-center font-display text-2xl font-black uppercase tracking-wide text-copper-500 brightness-125">{t('game.ceremony.railEra')}</p>
       </motion.div>
 
+      {/* the second lesson asks whether it goes on, once the figures are in */}
+      {lesson && canSkip && (
+        <div className="paper relative mt-5 w-[min(560px,90vw)] shrink-0 px-4 py-3 text-left shadow-e3">
+          <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
+          <div className="relative flex items-start gap-2">
+            <GraduationCap aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
+            <div className="min-w-0 flex-1">
+              <h3 className="font-display text-[16px] font-bold leading-tight text-ink-900">{t('game.guide.steps.railChoice.title')}</h3>
+              {t('game.guide.steps.railChoice.body').split('\n').map((line, i) => (
+                <p key={i} className={cn('font-serif text-[13.5px] leading-snug text-ink-900/85', i > 0 ? 'mt-1.5' : 'mt-1')}>
+                  {line}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Continue stays in view at the foot of the scene, whatever its height */}
       <div className="sticky bottom-0 mt-5 flex w-full shrink-0 flex-col items-center gap-1.5 pb-5">
-        {canSkip && (
+        {canSkip && lesson && (
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button ref={go} type="button" onClick={next} aria-keyshortcuts="Escape" className="btn-strike !min-h-[36px] !px-5 !py-1.5 text-xs shadow-e3">
+              {t('game.guide.choice.go')}
+            </button>
+            <button type="button" onClick={() => stop(true)} className="btn-ledger !min-h-[36px] !bg-coal-950/90 !px-5 !py-1.5 text-xs shadow-e3">
+              {t('game.guide.choice.stop')}
+            </button>
+            <button type="button" onClick={() => stop(false)} className="font-sans text-[11px] font-semibold uppercase tracking-[0.14em] text-brass-300/80 transition-colors hover:text-cream-100">
+              {t('game.guide.choice.alone')}
+            </button>
+          </div>
+        )}
+        {canSkip && !lesson && (
           <button ref={go} type="button" onClick={next} aria-keyshortcuts="Escape" className="btn-ledger !min-h-[36px] !bg-coal-950/90 !px-5 !py-1.5 text-xs shadow-e3">
             {t('game.ceremony.continue')}
           </button>
