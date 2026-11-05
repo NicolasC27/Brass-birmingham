@@ -335,7 +335,7 @@ export const FULL_LESSONS: readonly Lesson[] = [
   { id: 'doubleRail', when: railEra, done: doubleLaid, deferrable: true },
   /* the tiles the era builds, read as the reader chooses Build — else in
      its place — and building over a tile, read as one is prepared */
-  { id: 'railTiles', when: railEra, cue: (c) => railEra(c) && c.verb === 'build' },
+  { id: 'railTiles', when: railEra, cue: (c) => railEra(c) && c.verb === 'build', show: 'mat' },
   { id: 'overbuild', when: railEra, cue: (c) => railEra(c) && !!c.pick?.overbuild },
   /* what the final count counts, from the era's half, as the plan for
      the rounds left: it will not wait behind a deed left open */

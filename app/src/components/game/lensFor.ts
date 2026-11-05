@@ -214,6 +214,10 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     case 'reach':
       /* a works built where its buyer is linked, or the link to lay */
       return card && verb === 'build' ? works() : toBuyer();
+    /* the second lesson's rails, one or two: the same links, whose ends
+       carry the icons the era's end will count */
+    case 'rails':
+    case 'doubleRail':
     case 'linkWorth': {
       /* the links whose ends carry the icons they will count, the most first */
       const worthy = worthyLinks(g, me);
@@ -245,6 +249,16 @@ export function lensFor(stepId: string | null | undefined, c: LessonCtx): Lens |
     }
     case 'loan':
       return { hud: 'loan' };
+    /* the second lesson: the tiles the sweep kept, a brewery's places, the mat */
+    case 'sweep': {
+      if (choosing) return null;
+      const keys = mine(() => true);
+      return keys.length ? { slots: keys, at: townOf(keys[0]) } : null;
+    }
+    case 'railBrewery':
+      return sites(['brewery'], () => 1);
+    case 'railTiles':
+      return { hud: c.mat !== null ? 'mat-open' : 'mat' };
     case 'develop':
       return { hud: 'develop' };
     default:
