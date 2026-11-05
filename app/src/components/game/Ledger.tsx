@@ -6,7 +6,7 @@ import { PLAYER_COLORS } from '@/game/data';
 import { useGame, useShownGame } from '@/game/store';
 import type { LedgerEntry } from '@/game/types';
 import { useT } from '@/i18n';
-import { ledgerParts } from '@/game/ledgerText';
+import { ledgerParts, pursesOf } from '@/game/ledgerText';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router';
 import { keyLabel, useKeybindings } from './keybindings';
@@ -63,7 +63,7 @@ const VERB_HEX: Record<LedgerEntry['verb'], string> = {
 /** Every player's every round at a glance, the way a contributions graph
  *  reads: one cell per player and round, split by the round's actions and
  *  coloured by what each was. Hover says the moves; a click opens the round. */
-export function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
+export function RoundsGrid({ rounds, players, purses, picked, onPick, t }: { purses?: Map<string, number[]>; rounds: { key: string; era: LedgerEntry['era']; round: number; items: LedgerEntry[] }[]; players: { name: string; color: string }[]; picked: { key: string; player: number } | null; onPick: (key: string, player: number) => void; t: (k: string, v?: Record<string, string | number>) => string }) {
   if (rounds.length < 1) return null;
   /* what a player's round cost the purse, from the entries' own figures */
   const spentIn = (r: (typeof rounds)[number], pi: number) => r.items.filter((e) => e.player === pi).reduce((a, e) => a + Number(e.vars?.spent ?? 0), 0);
@@ -82,7 +82,7 @@ export function RoundsGrid({ rounds, players, picked, onPick, t }: { rounds: { k
               {rounds.map((r, ri) => {
                 const moves = r.items.filter((e) => e.player === pi && e.verb !== 'system' && e.verb !== 'score');
                 const spent = spentIn(r, pi);
-                const title = `${t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })} — ${p.name}: ${moves.length ? moves.map((e) => ledgerParts(e, t).head).join(' · ') : '—'} · ${t('game.ledger.spentTip', { n: spent })}`;
+                const title = `${t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })} — ${p.name}: ${moves.length ? moves.map((e) => ledgerParts(e, t).head).join(' · ') : '—'} · ${t('game.ledger.spentTip', { n: spent })}${purses?.get(r.key) ? ` · ${t('game.ledger.purseLine', { m: t('game.ledger.money', { n: purses.get(r.key)![pi] }) })}` : ''}`;
                 return (
                   <td key={r.key} className={cn('p-0', ri === railStart && ri > 0 && 'border-l-2 border-copper-500/70 pl-[3px]')}>
                     <button
@@ -208,6 +208,9 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
     if (last && last.key === key) last.items.push(e);
     else allRounds.push({ key, era: e.era, round: e.round, items: [e] });
   }
+  const purses = pursesOf(game.history ?? [], { era: game.era, round: game.round }, game.players.length);
+  const money = (n: number) => t('game.ledger.money', { n });
+  const signed = (n: number) => (n < 0 ? `−${money(-n)}` : `+${money(n)}`);
   const isOpen = (r: (typeof rounds)[number], i: number) => folded[r.key] === undefined ? i === rounds.length - 1 || r.items.some((e) => e.id >= newFrom) : !folded[r.key];
 
   return (
@@ -268,6 +271,7 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
       {ledgerFilter === 'all' && (
         <RoundsGrid
           rounds={allRounds}
+          purses={purses.start}
           players={game.players.map((p) => ({ name: p.name, color: p.color }))}
           picked={picked}
           t={t}
@@ -303,11 +307,19 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                 className={cn('flex w-full items-center gap-2 rounded-sm px-1 py-1 text-left transition-colors hover:bg-brass-500/10', open ? 'mt-1' : 'mt-0.5')}
               >
                 {open ? <ChevronDown className="h-3 w-3 shrink-0 text-brass-500" /> : <ChevronRight className="h-3 w-3 shrink-0 text-brass-500" />}
-                <span className="font-fell text-[10.5px] tracking-[0.2em] text-brass-500/90">
+                <span className="whitespace-nowrap font-fell text-[10.5px] tracking-[0.2em] text-brass-500/90">
                   {t('game.ledger.roundSep', { era: r.era === 'canal' ? t('game.ledger.eraCanal') : t('game.ledger.eraRail'), round: r.round })}
                 </span>
-                <span className="h-px flex-1 bg-brass-700/50" />
-                <span className="font-mono text-[9px] text-cream-100/40">{t('game.ledger.roundCount', { n: acted.length })}</span>
+                {/* each player's cash as the round opened, in their colour, where the rule was */}
+                {!purses.start.get(r.key) && <span className="h-px flex-1 bg-brass-700/50" />}
+                {purses.start.get(r.key) && (
+                  <span className="flex flex-1 shrink-0 justify-end gap-1 font-mono text-[9px]" title={`${t('game.ledger.purseTip')} — ${game.players.map((p, pi) => `${p.name} ${money(purses.start.get(r.key)![pi])}`).join(' · ')}`}>
+                    {purses.start.get(r.key)!.map((n, pi) => (
+                      <span key={pi} style={{ color: PLAYER_COLORS[game.players[pi].color]?.hex ?? '#C9A45C' }}>{money(n)}</span>
+                    ))}
+                  </span>
+                )}
+                <span className="whitespace-nowrap font-mono text-[9px] text-cream-100/40">{t('game.ledger.roundCount', { n: acted.length })}</span>
               </button>
               {!open && acted.length > 0 && (
                 <div className="plaque pointer-events-none absolute left-4 right-0 top-full z-20 hidden rounded-md p-2 group-hover:block">
@@ -379,6 +391,16 @@ export default function Ledger({ seen = 0 }: { seen?: number }) {
                                   <span className={cn('font-sans leading-snug text-cream-100/90', (e.verb === 'system' || e.verb === 'score') && e.player === undefined && 'italic text-cream-100/65')}>{head}</span>
                                 </span>
                                 {detail && <span className="mt-0.5 block font-sans text-[10.5px] leading-snug text-cream-100/55">{detail}</span>}
+                                {/* what the payday paid each player, or took from them */}
+                                {e.key === 'payday' && purses.paid.get(r.key) && (
+                                  <span className="mt-0.5 flex flex-wrap gap-x-2 font-sans text-[10.5px] not-italic leading-snug" title={t('game.ledger.paidTip')}>
+                                    {purses.paid.get(r.key)!.map((n, pi) => (
+                                      <span key={pi} style={{ color: PLAYER_COLORS[game.players[pi].color]?.hex ?? '#C9A45C' }}>
+                                        {game.players[pi].name.replace(/^(mrs|mr|miss|ms|dr)\.?\s+/i, '')} {signed(n)}
+                                      </span>
+                                    ))}
+                                  </span>
+                                )}
                               </span>
                             </button>
                             {/* online, the host may propose to return the table to before this action */}

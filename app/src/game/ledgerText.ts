@@ -1,4 +1,5 @@
-import type { LedgerEntry } from './types';
+import { START_MONEY } from './data';
+import type { LedgerEntry, RoundSnapshot } from './types';
 
 /* ------------------------------------------------------------------ */
 /* The ledger in the reader's language. The engine writes English and  */
@@ -104,4 +105,21 @@ export function ledgerParts(e: Entry, t: T): { head: string; detail: string } {
     default:
       return { head: ledgerText(e, t), detail: '' };
   }
+}
+
+/** every player's cash as each round opened, and what each payday paid,
+ *  read off the game's account book: a round opens on the cash the round
+ *  before closed with, after its payday; the first on the starting purse */
+export function pursesOf(history: RoundSnapshot[], now: { era: LedgerEntry['era']; round: number }, seats: number): { start: Map<string, number[]>; paid: Map<string, number[]> } {
+  const start = new Map<string, number[]>();
+  const paid = new Map<string, number[]>();
+  const keys = history.map((h) => `${h.era}:${h.round}`);
+  const current = `${now.era}:${now.round}`;
+  if (!keys.includes(current)) keys.push(current);
+  if (keys.length) start.set(keys[0], Array.from({ length: seats }, () => START_MONEY));
+  history.forEach((h, i) => {
+    if (keys[i + 1]) start.set(keys[i + 1], h.money);
+    paid.set(keys[i], h.income);
+  });
+  return { start, paid };
 }
