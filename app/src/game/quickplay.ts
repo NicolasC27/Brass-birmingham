@@ -73,7 +73,7 @@ export const FULL_KEY = 'brassworks.tutorial.full.table';
  *  — a brewery, a rail, a double rail. The first deal of each layout of
  *  the merchants' tiles: app/tools/guide/deals.ts --full plays them out
  *  and writes the list, at the machine's two forms, 200 ms a move */
-export const FULL_SEEDS: readonly number[] = [1, 2, 6, 7, 11, 18, 19, 26];
+export const FULL_SEEDS: readonly number[] = [2, 6, 7, 11, 18, 19, 26, 27];
 /** the seed of the reader's last deal of the second lesson */
 export const FULL_DEALT_KEY = 'brassworks.tutorial.full.dealt';
 /** where each course keeps the code of its table */
