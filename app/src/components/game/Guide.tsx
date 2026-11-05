@@ -27,7 +27,7 @@ import type { Read } from './guideRead';
 import { NearList } from './AskGuide';
 import type { Thread } from './guideThread';
 import { listProgress, recurring } from '@/game/progress';
-import { LINKS_ASKED, LINK_WORTH, back as readBack, cheapestWorks, detourOf, due as dueNow, forward as readForward, freshProgress, lastOf, lastRound, lessonIndex, lessonOf, lessonsOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn, worthyLaid } from './lessons';
+import { LINKS_ASKED, LINK_WORTH, back as readBack, cheapestWorks, courseOf, detourOf, due as dueNow, forward as readForward, freshProgress, lastOf, lastRound, lessonIndex, lessonOf, lessonsOf, letPlayOn, onProgress, optionalNow, pass, progressAt, reread, saveProgress, see, setAside, settle, wayOn, worthyLaid } from './lessons';
 import type { LessonCtx, Review, Show } from './lessons';
 import { barrelsSaid, buyersOf, closingWords, dryRound, firstPayday, forgeWays, forgesFromMines, motifLesson, plainKeyOf, stepKeyOf, twosOnMat, worksOnMat, worthyLinks } from './lessonWords';
 import { answerQuestion, blockedBy } from './tableAnswers';
@@ -531,6 +531,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
   /* the lesson's place in its course — the second lesson's pages say so,
      a « lesson 3 » of the second not to be read as a third lesson */
   const stepOf = (n: number): string => t(course === 'full' ? 'game.guide.stepOfFull' : 'game.guide.stepOf', { n, total: lessons.length });
+  /* a page of the other course, opened from the sheet's advice, has no
+     place in this one: it goes without a number, and is told for its
+     rule, as at a plain table — not for the first lesson's moment */
+  const ownPage = courseOf(shownId) === course;
+  const placed = ownPage ? stepOf(Math.min(shownIndex + 1, lessons.length)) : null;
   /* an alert told once a round is noted under the first page it comes
      with, as it comes */
   const roundNow = game ? `${game.era}:${game.round}` : '';
@@ -682,10 +687,11 @@ function Guide({ dock = 0 }: { dock?: number }) {
     lesson:
       game && dock && showSteps && step
         ? {
-            at: shownIndex,
+            /* a page of the other course is filed apart from this one's */
+            at: ownPage ? shownIndex : -1 - shownIndex,
             word: () => {
               const vars = stepVarsOf(game, me, t, spare?.need, finger);
-              const key = stepKeyOf(step.id, game, me, !!spare);
+              const key = ownPage ? stepKeyOf(step.id, game, me, !!spare) : plainKeyOf(step.id, game, me);
               return { head: t(`game.guide.steps.${key}.title`, vars), body: t(`game.guide.steps.${key}.body`, vars) };
             },
           }
@@ -1049,12 +1055,13 @@ function Guide({ dock = 0 }: { dock?: number }) {
     if (a.kind === 'loan' && game.eraLength === 'short') return 'loanShort';
     return a.kind;
   };
-  /* the lesson's words, when the table asks for another telling of it:
-     a payday owed rather than paid, a short game that ends here, a loan
-     on show that can wait */
-  const stepKey = (id: string): string => stepKeyOf(id, game, me, id === shownId && !!spare);
   /* the sheet's advice at a plain table: the lesson read for its rule, not its moment */
   const plainKey = (id: string): string => plainKeyOf(id, game, me);
+  /* the lesson's words, when the table asks for another telling of it:
+     a payday owed rather than paid, a short game that ends here, a loan
+     on show that can wait — and a page of the other course, opened from
+     the sheet's advice, told as at a plain table */
+  const stepKey = (id: string): string => (courseOf(id) === course ? stepKeyOf(id, game, me, id === shownId && !!spare) : plainKey(id));
   /* a question is answered from the table as it stands when that is the
      surer match, else from the guide's case — and, when nothing there is
      close, with the notions it might mean */
@@ -1077,7 +1084,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
   const spoken =
     reading && bot ? `${t('game.guide.botWhy', { name: bot.name })}. ${bot.what}`
     : news.length ? news[news.length - 1].text
-    : showSteps && step && !stripped && !stepBack ? `${stepOf(Math.min(shownIndex + 1, lessons.length))}. ${t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}`
+    : showSteps && step && !stripped && !stepBack ? `${placed ? `${placed}. ` : ''}${t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}`
     : '';
   const heard = (
     <p className="sr-only" aria-live="polite" aria-atomic="true">
@@ -1101,7 +1108,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
     const come = settled.passed.length;
     const due = unreadOf(toRead);
     /* the lesson's number while one is on show or set aside; at rest, the bar alone */
-    const numbered = showSteps || setAsideNow;
+    const numbered = (showSteps || setAsideNow) && ownPage;
     /* what is unread has its answer on the rail, as in the note: Understood
        for her move or the news, Next for a page — the machine need not
        wait on a note folded out of sight */
@@ -1129,7 +1136,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           {guided && (
             <>
               {numbered && (
-                <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={stepOf(n)}>
+                <span className="font-mono text-[10px] text-cream-100/80 [writing-mode:vertical-rl]" title={placed ?? undefined}>
                   {n}/{lessons.length}
                 </span>
               )}
@@ -1164,7 +1171,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
           <div className="flex items-center gap-2">
             <GraduationCap className="h-4 w-4 text-brass-400" aria-hidden />
             <span className="min-w-0 truncate font-fell text-[11px] uppercase tracking-[0.2em] text-cream-100/60 coarse:hidden">{t('game.guide.aria')}</span>
-            {showSteps && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{stepOf(Math.min(shownIndex + 1, lessons.length))}</span>}
+            {showSteps && placed && <span className="shrink-0 whitespace-nowrap font-mono text-[10.5px] text-cream-100/45">{placed}</span>}
             <span className="flex-1" />
             {guided && leaveButton('rounded-md p-1 text-cream-100/45 transition-colors hover:text-cream-100 coarse:p-3.5')}
             {playOnSwitch('p-1 coarse:p-3.5')}
@@ -1226,7 +1233,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div {...grabProps} className={cn(grabClass, 'relative flex min-w-0 items-center gap-2')}>
               <GraduationCap className="h-4 w-4 shrink-0 text-ink-900/70" />
-              {!waiting && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{stepOf(Math.min(shownIndex + 1, lessons.length))}</span>}
+              {!waiting && placed && <span className="shrink-0 font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{placed}</span>}
               <span className="truncate font-display text-[13px] font-bold text-ink-900">{waiting ?? t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</span>
             </div>
             {opens && (
@@ -1261,7 +1268,7 @@ function Guide({ dock = 0 }: { dock?: number }) {
                     <div className={cn('flex min-w-0 flex-1 flex-col', !dock && 'min-h-0')}>
                       <div className="flex items-start justify-between gap-2">
                         <div {...grabProps} className={cn(grabClass, 'min-w-0 flex-1')}>
-                          <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{stepOf(Math.min(shownIndex + 1, lessons.length))}</p>
+                          {placed && <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{placed}</p>}
                           <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${stepKey(step.id)}.title`, stepVars())}</h3>
                         </div>
                         {/* floating, the way out stands by the fold, far from
