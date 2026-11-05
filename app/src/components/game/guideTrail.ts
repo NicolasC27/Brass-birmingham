@@ -3,8 +3,8 @@ import { getLang } from '@/i18n';
 import { ONLINE_URL, onlineWire } from '@/online/net';
 import { TRAIL_BATCH } from '@/online/guideTrail';
 import type { Passed, TrailEvent, View } from '@/online/guideTrail';
-import { lessonIndex, lessonOf, optionalNow, roundOf } from './lessons';
-import type { LessonCtx, Mode, Progress } from './lessons';
+import { courseIn, lessonIndex, lessonOf, optionalNow, roundOf } from './lessons';
+import type { CourseId, LessonCtx, Mode, Progress } from './lessons';
 
 /* ------------------------------------------------------------------ */
 /* The guided game's trail, written as it is played: the lessons shown, */
@@ -17,11 +17,16 @@ import type { LessonCtx, Mode, Progress } from './lessons';
 /* under a random id drawn with the guided table — never the account,   */
 /* never the table's code — and nothing leaves at all with no office    */
 /* configured, or once the reader has said no on the evening course.   */
+/* Each course keeps its own record, under its own id: the second      */
+/* lesson's events say which course they are of.                       */
 /* ------------------------------------------------------------------ */
 
 /** the guided table's trail: its random id, kept with the table as the
- *  progress is — one table at a time */
+ *  progress is — one table at a time, the first lesson's; the second's
+ *  beside it */
 export const TRAIL_KEY = 'brassworks.guide.trail';
+export const FULL_TRAIL_KEY = 'brassworks.guide.trail.full';
+const TRAIL_KEYS: Readonly<Record<CourseId, string>> = { short: TRAIL_KEY, full: FULL_TRAIL_KEY };
 /** the reader said no: nothing is noted, nothing leaves */
 export const TRAIL_OFF_KEY = 'brassworks.guide.trail.off';
 
@@ -56,6 +61,9 @@ export interface Sight {
   from: string | null;
   /** the guide left, on this lesson */
   left?: string;
+  /** the course the table is played for — its record's, when not said:
+   *  the guide left, the table's course still names its trail */
+  course?: CourseId;
 }
 
 /** the screen, coarsely: a mouse is a desk; a finger, a tablet held one
@@ -113,8 +121,11 @@ export function stepsOf(r0: TrailRecord | null, s: Sight, now: number, draw: () 
   /* a guided table first seen played out — from before the trail — ended
      with nothing noted: its end is not news */
   if (r !== r0 && g.phase === 'game-over') r.said.push('finished');
-  const playing = g.phase === 'action';
-  const base = { id: r.id, round: roundOf(g), at: g.actions.length, s: Math.max(0, Math.round((now - r.t0) / 1000)), seed: g.seed };
+  /* the reader at the table: playing, or at the canal's count, where the
+     second lesson asks whether it goes on */
+  const playing = g.phase === 'action' || g.phase === 'scoring-canal';
+  const full = (s.course ?? courseIn(s.p)) === 'full';
+  const base = { id: r.id, round: roundOf(g), at: g.actions.length, s: Math.max(0, Math.round((now - r.t0) / 1000)), seed: g.seed, ...(full ? { course: 'full' as const } : {}) };
   const steps: Step[] = [];
   const said = new Set(r.said);
   let { reached, last, playOn } = r;
@@ -290,16 +301,16 @@ if (typeof window !== 'undefined') {
  *  it — full, or shut — it is the record, and what the storage still
  *  holds from before is stale: read back, it would draw a new id or say
  *  again what was said */
-let kept: TrailRecord | null = null;
+const kept: Record<CourseId, TrailRecord | null> = { short: null, full: null };
 let refused = false;
 
-function readRecord(): TrailRecord | null {
-  if (refused) return kept;
+function readRecord(course: CourseId): TrailRecord | null {
+  if (refused) return kept[course];
   try {
-    return recordOf(localStorage.getItem(TRAIL_KEY));
+    return recordOf(localStorage.getItem(TRAIL_KEYS[course]));
   } catch {
     refused = true;
-    return kept;
+    return kept[course];
   }
 }
 
@@ -314,13 +325,14 @@ const VERSION = String(import.meta.env.VITE_VERSION ?? import.meta.env.MODE ?? '
 
 function note(s: Sight): void {
   if (!s.table || !s.c) return;
-  const r = readRecord();
+  const course = s.course ?? courseIn(s.p);
+  const r = readRecord(course);
   if (!s.tutorial && r?.code !== s.table) return;
   const { record, steps } = stepsOf(r, s, Date.now(), drawId);
   if (record && record !== r) {
-    kept = record;
+    kept[course] = record;
     try {
-      localStorage.setItem(TRAIL_KEY, JSON.stringify(record));
+      localStorage.setItem(TRAIL_KEYS[course], JSON.stringify(record));
     } catch {
       /* the record lives for this visit */
       refused = true;
@@ -334,12 +346,13 @@ function note(s: Sight): void {
 }
 
 /** the guide's trail, noted as it renders: the lesson in view (with how
- *  it is given, and the lesson that led to the loan), and the progress */
-export function useGuideTrail(table: string | null, tutorial: boolean, c: LessonCtx | null, p: Progress, shown: string | null, mode: Mode | null, from: string | null): void {
-  useEffect(() => note({ table, tutorial, c, p, shown, mode, from }), [table, tutorial, c, p, shown, mode, from]);
+ *  it is given, and the lesson that led to the loan), and the progress —
+ *  of the table's course */
+export function useGuideTrail(table: string | null, tutorial: boolean, c: LessonCtx | null, p: Progress, shown: string | null, mode: Mode | null, from: string | null, course: CourseId = 'short'): void {
+  useEffect(() => note({ table, tutorial, c, p, shown, mode, from, course }), [table, tutorial, c, p, shown, mode, from, course]);
 }
 
 /** the guide left, on the lesson on show */
 export function leftGuide(table: string | null, c: LessonCtx | null, p: Progress, lesson: string): void {
-  note({ table, tutorial: true, c, p, shown: null, mode: null, from: null, left: lesson });
+  note({ table, tutorial: true, c, p, shown: null, mode: null, from: null, left: lesson, course: courseIn(p) });
 }

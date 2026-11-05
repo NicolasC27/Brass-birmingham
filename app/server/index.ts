@@ -34,7 +34,7 @@ import type { Locate } from './geo';
 import { FOUNDERS, MAX_BODY, MAX_SUBJECT, audienceOf } from '@/online/waitlist';
 import { TRAIL_BATCH, eventOf, filterOf } from '@/online/guideTrail';
 import type { TrailEvent } from '@/online/guideTrail';
-import { LESSON_IDS } from '@/components/game/lessons';
+import { FULL_LESSON_IDS, LESSON_IDS } from '@/components/game/lessons';
 import type { Mailer } from './mail';
 import { Store } from './store';
 import type { Account } from './store';
@@ -1279,9 +1279,12 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         waitlist.stop(String(m.id));
         book(m.rid);
         return;
-      case 'admin.guide':
-        send(c, { t: 'admin.guide', rid: m.rid, funnel: store.guideFunnel(LESSON_IDS, filterOf(m.filter)) });
+      case 'admin.guide': {
+        /* each course's funnel in its own lessons' order */
+        const filter = filterOf(m.filter);
+        send(c, { t: 'admin.guide', rid: m.rid, funnel: store.guideFunnel(filter.course === 'full' ? FULL_LESSON_IDS : LESSON_IDS, filter) });
         return;
+      }
       case 'admin.circular': {
         const subject = String(m.subject ?? '').trim();
         const body = String(m.body ?? '').trim();

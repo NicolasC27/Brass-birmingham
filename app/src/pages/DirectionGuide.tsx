@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import PageShell, { Panel, Refusal, inputClass } from '@/components/site/PageShell';
-import { shortKeyOf } from '@/components/game/lessonWords';
+import { courseKeyOf } from '@/components/game/lessonWords';
 import { personaName } from '@/game/data';
 import { trIn } from '@/i18n';
 import { onlineWire } from '@/online/net';
@@ -19,6 +19,8 @@ import { Backstage, Figure, button } from './Direction';
 /* Summed up by the office from the trail the guided tables leave       */
 /* (online/guideTrail.ts), which names no one: counts and medians, no   */
 /* table's own story. The owner's language, as the rest of the desk.    */
+/* Each course is read apart: the first lesson's short game, or the     */
+/* second's full one.                                                   */
 /* ------------------------------------------------------------------ */
 
 /** the funnel is read again this often while the page is open */
@@ -39,7 +41,7 @@ function span(s: number | null): string {
 }
 /** a lesson's title as the guided game gives it — its id alone for one no longer in the guide */
 function titleOf(id: string): string {
-  const key = `game.guide.steps.${shortKeyOf(id)}.title`;
+  const key = `game.guide.steps.${courseKeyOf(id)}.title`;
   const title = trIn('fr', key, { bot: personaName('wedgwood') });
   return title === key ? id : title;
 }
@@ -255,6 +257,11 @@ function Funnel() {
     >
       <Refusal text={error} />
       <div className="mb-6 flex flex-wrap items-center gap-3">
+        {/* a course, then the deals of that course: another course deals from another list */}
+        <select className={cn(inputClass, 'w-auto')} value={filter.course ?? ''} onChange={(e) => setFilter((x) => ({ ...(e.target.value === 'full' ? { course: 'full' as const } : {}), ...(x.view ? { view: x.view } : {}) }))} aria-label="Leçon">
+          <option value="">Leçon 1 : la partie courte</option>
+          <option value="full">Leçon 2 : la partie complète</option>
+        </select>
         <select className={cn(inputClass, 'w-auto')} value={filter.view ?? ''} onChange={(e) => setFilter((x) => ({ ...x, view: (e.target.value || undefined) as View | undefined }))} aria-label="Écran">
           <option value="">Tous les écrans</option>
           {VIEWS.map((v) => (

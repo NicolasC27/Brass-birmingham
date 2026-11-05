@@ -7,8 +7,9 @@
 /* the game played out. Each event carries a random id drawn with the  */
 /* table — never the account, never the table's code — and no more     */
 /* than the lesson, where the game stood, the kind of screen, the      */
-/* language, the build and the deal: enough to see where beginners     */
-/* stop, nothing to find one of them by. Shared by the browser that    */
+/* language, the build, the deal and the course — the second lesson's  */
+/* tables say they are: enough to see where beginners stop, nothing to */
+/* find one of them by. Shared by the browser that                     */
 /* writes it (components/game/guideTrail.ts), the office that keeps it */
 /* (server/store.ts) and the direction's page, which reads it summed   */
 /* up and never one table at a time.                                   */
@@ -51,6 +52,9 @@ export interface TrailEvent {
   version: string;
   /** the guided deal */
   seed: number;
+  /** the second lesson's table, the full game: the first's says nothing,
+   *  as every event did before there were two */
+  course?: 'full';
 }
 
 /** the events of one frame, at most */
@@ -90,6 +94,7 @@ export function eventOf(raw: unknown): TrailEvent | null {
   if (e.kind === 'finished' ? !(Array.isArray(vp) && vp.length === 2 && vp.every((v) => whole(v, 999))) : vp !== undefined) return null;
   if (!whole(e.round, 300) || !whole(e.at, 5000) || !whole(e.s, TRAIL_DAYS * 24 * 60 * 60) || !whole(e.seed, 2 ** 32 - 1)) return null;
   if (!one(VIEWS, e.view) || !one(TRAIL_LANGS, e.lang) || typeof e.version !== 'string' || !VERSION.test(e.version)) return null;
+  if (e.course !== undefined && e.course !== 'full') return null;
   return {
     id: e.id,
     kind: e.kind,
@@ -103,6 +108,7 @@ export function eventOf(raw: unknown): TrailEvent | null {
     lang: e.lang,
     version: e.version,
     seed: e.seed,
+    ...(e.course === 'full' ? { course: 'full' as const } : {}),
   };
 }
 
@@ -113,8 +119,10 @@ export interface TrailRow extends TrailEvent {
   seen: number;
 }
 
-/** the tables the funnel is read over: one kind of screen, one deal */
+/** the tables the funnel is read over: one course — the first lesson's
+ *  unless the second is asked for — one kind of screen, one deal */
 export interface TrailFilter {
+  course?: 'full';
   view?: View;
   seed?: number;
 }
@@ -122,7 +130,7 @@ export interface TrailFilter {
 /** a filter as sent over the wire, checked: what is not one is dropped */
 export function filterOf(raw: unknown): TrailFilter {
   const f = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
-  return { ...(one(VIEWS, f.view) ? { view: f.view } : {}), ...(whole(f.seed, 2 ** 32 - 1) ? { seed: f.seed } : {}) };
+  return { ...(f.course === 'full' ? { course: 'full' as const } : {}), ...(one(VIEWS, f.view) ? { view: f.view } : {}), ...(whole(f.seed, 2 ** 32 - 1) ? { seed: f.seed } : {}) };
 }
 
 /** one lesson, over every table that came to it */
@@ -200,6 +208,8 @@ export function median(xs: readonly number[]): number | null {
 
 /** one table's events read together */
 interface Table {
+  /** the second lesson's table */
+  full: boolean;
   view: View;
   seed: number;
   events: TrailRow[];
@@ -229,7 +239,7 @@ function tablesOf(rows: readonly TrailRow[], now: number): Table[] {
     const last = events.reduce((m, e) => Math.max(m, e.seen), 0);
     const lastShown = [...events].reverse().find((e) => e.kind === 'shown' || e.kind === 'already');
     const stopped = !end && !left && now - last > STALE_MS ? (lastShown?.lesson ?? '') : null;
-    return { view, seed: events[0].seed, events, last, end, left, stopped, passed: new Set(events.filter((e) => e.kind === 'passed').map((e) => e.lesson)).size };
+    return { full: events.some((e) => e.course === 'full'), view, seed: events[0].seed, events, last, end, left, stopped, passed: new Set(events.filter((e) => e.kind === 'passed').map((e) => e.lesson)).size };
   });
 }
 
@@ -250,12 +260,14 @@ function splitOf(key: string, tables: readonly Table[]): TrailSplit {
   };
 }
 
-/** the funnel: every lesson in the guide's order (then any the order no
- *  longer holds), over the tables the filter keeps; the splits by screen
- *  and by deal over them all. Counts and medians only — no table's own
- *  story comes out of it, nor out of a filter that keeps too few */
+/** the funnel: every lesson of the course in the guide's order (then any
+ *  the order no longer holds), over the tables the filter keeps; the
+ *  splits by screen and by deal over all the course's tables. Counts and
+ *  medians only — no table's own story comes out of it, nor out of a
+ *  filter that keeps too few. The course narrows nothing: each is read
+ *  whole */
 export function funnelOf(rows: readonly TrailRow[], order: readonly string[], now = Date.now(), filter: TrailFilter = {}): GuideFunnel {
-  const all = tablesOf(rows, now);
+  const all = tablesOf(rows, now).filter((t) => t.full === (filter.course === 'full'));
   const views = VIEWS.map((v) => splitOf(v, all.filter((t) => t.view === v))).filter((s) => s.tables > 0);
   const seeds = [...new Set(all.map((t) => t.seed))].sort((a, b) => a - b).map((seed) => splitOf(String(seed), all.filter((t) => t.seed === seed)));
   const narrowed = filter.view !== undefined || filter.seed !== undefined;

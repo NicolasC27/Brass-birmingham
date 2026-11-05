@@ -206,6 +206,21 @@ describe('what the guide says', () => {
     expect(said(end.steps)).toEqual(['finished coal played']);
   });
 
+  it('marks the second lesson’s events with its course, and tells its choice at the canal’s count', () => {
+    const g = { ...guided(), eraLength: 'standard' as const };
+    const p = freshProgress('RAIL', 'full');
+    const first = stepsOf(null, { ...at(ctx(g), p, 'fullWelcome'), table: 'RAIL' }, 0, draw);
+    expect(said(first.steps)).toEqual(['shown fullWelcome']);
+    expect(first.steps.every((e) => e.course === 'full')).toBe(true);
+    /* the first lesson's say nothing of a course */
+    expect(stepsOf(null, at(ctx(guided()), upTo('coal'), 'coal'), 0, draw).steps.every((e) => !('course' in e))).toBe(true);
+    /* at the count, the lesson left there: said, with its course */
+    const count: GameState = { ...g, phase: 'scoring-canal' };
+    const left = stepsOf(first.record, { ...at(ctx(count), pass(p, 'fullWelcome'), null, { left: 'railChoice' }), table: 'RAIL' }, 0, draw);
+    expect(said(left.steps)).toEqual(['passed fullWelcome next', 'left railChoice']);
+    expect(left.steps.every((e) => e.course === 'full')).toBe(true);
+  });
+
   it('reads its record back, and not a stranger’s', () => {
     const r: TrailRecord = { code: 'GWE5', id: ID, t0: 5, said: ['shown:welcome'], reached: 'welcome', last: 'welcome', playOn: false };
     expect(recordOf(JSON.stringify(r))).toEqual(r);

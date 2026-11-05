@@ -51,16 +51,22 @@ describe('an event of the trail', () => {
       { ...ev(), lang: 'it' },
       { ...ev(), version: '' },
       { ...ev(), version: 'a b' },
+      /* the second lesson's mark, and no other */
+      { ...ev(), course: 'short' },
+      { ...ev(), course: 'rail' },
     ];
     for (const b of bad) expect(eventOf(b), JSON.stringify(b)).toBeNull();
     expect(eventOf(ev({ kind: 'left', lesson: '' }))).not.toBeNull();
     expect(eventOf(ev({ kind: 'playOn', how: 'off' }))).not.toBeNull();
     expect(eventOf(ev({ kind: 'finished', how: 'abandoned', vp: [0, 12] }))).not.toBeNull();
+    expect(eventOf(ev({ lesson: 'sweep', course: 'full' }))).toEqual(ev({ lesson: 'sweep', course: 'full' }));
   });
 
   it('reads a filter, and drops what is not one', () => {
     expect(filterOf({ view: 'tablet-portrait', seed: 395 })).toEqual({ view: 'tablet-portrait', seed: 395 });
     expect(filterOf({ view: 'phone', seed: -3 })).toEqual({});
+    expect(filterOf({ course: 'full', seed: 12 })).toEqual({ course: 'full', seed: 12 });
+    expect(filterOf({ course: 'short' })).toEqual({});
     expect(filterOf(null)).toEqual({});
   });
 });
@@ -114,6 +120,21 @@ describe('the funnel', () => {
     /* still at it, an hour ago: not let go */
     ...table('a000000000000005', [{ kind: 'shown', lesson: 'welcome', s: 0 }], NOW - 3_600_000),
   ];
+
+  it('reads each course apart: the first lesson’s tables unless the second’s are asked for', () => {
+    const second = table('b000000000000001', [
+      { kind: 'shown', lesson: 'fullWelcome', s: 0 },
+      { kind: 'passed', lesson: 'fullWelcome', how: 'next', s: 30 },
+      { kind: 'left', lesson: 'railChoice', s: 1800 },
+    ], NOW - 60_000, { course: 'full' });
+    const both = [...rows, ...second];
+    /* the first lesson's funnel is what it was */
+    expect(funnelOf(both, ORDER, NOW)).toEqual(funnelOf(rows, ORDER, NOW));
+    const f = funnelOf(both, ['fullWelcome', 'railChoice', 'sweep'], NOW, { course: 'full' });
+    expect(f).toMatchObject({ tables: 1, left: 1, thin: false });
+    expect(f.lessons.map((l) => l.id)).toEqual(['fullWelcome', 'railChoice', 'sweep']);
+    expect(f.lessons.find((l) => l.id === 'railChoice')!.left).toBe(1);
+  });
 
   it('counts every lesson in the guide’s order, how it was passed and where readers left', () => {
     const f = funnelOf(rows, ORDER, NOW);

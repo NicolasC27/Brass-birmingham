@@ -282,6 +282,8 @@ const GROWTH: [table: string, column: string, ddl: string][] = [
   ['games', 'brief', 'text'],
   ['games', 'updatedAt', 'integer'],
   ['tables', 'ranked', 'integer not null default 0'],
+  /* the guided game's second lesson: its trail says so */
+  ['guide_trail', 'course', 'text'],
 ];
 
 /** a name is one name whatever the case or the stray spaces around it */
@@ -472,6 +474,7 @@ create index if not exists guide_trail_seen on guide_trail(seen);`;
 
 interface TrailLine {
   trail: string;
+  course: string | null;
   kind: TrailEvent['kind'];
   lesson: string;
   how: string | null;
@@ -1234,7 +1237,7 @@ export class Store {
   keepTrail(events: readonly TrailEvent[], at = Date.now()): number {
     const seen = dayOf(at);
     const count = this.db.prepare('select count(*) as n from guide_trail where trail = ?');
-    const add = this.db.prepare('insert into guide_trail (trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const add = this.db.prepare('insert into guide_trail (trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen, course) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
     const room = new Map<string, number>();
     let kept = 0;
     /* a frame at once: one write to the file, not forty */
@@ -1243,7 +1246,7 @@ export class Store {
       for (const e of events) {
         const left = room.get(e.id) ?? TRAIL_CAP - Number((count.get(e.id) as { n: number }).n);
         if (left <= 0) continue;
-        add.run(e.id, e.kind, e.lesson, e.how ?? null, e.vp?.[0] ?? null, e.vp?.[1] ?? null, e.round, e.at, e.s, e.view, e.lang, e.version, e.seed, seen);
+        add.run(e.id, e.kind, e.lesson, e.how ?? null, e.vp?.[0] ?? null, e.vp?.[1] ?? null, e.round, e.at, e.s, e.view, e.lang, e.version, e.seed, seen, e.course ?? null);
         room.set(e.id, left - 1);
         kept += 1;
       }
@@ -1255,9 +1258,10 @@ export class Store {
     return kept;
   }
 
-  /** the trail summed up for the direction, the lessons in `order` */
+  /** the trail summed up for the direction, the lessons in `order` — the
+   *  course's the filter asks for */
   guideFunnel(order: readonly string[], filter: TrailFilter = {}, now = Date.now()): GuideFunnel {
-    const lines = this.db.prepare('select trail, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen from guide_trail order by id').all() as unknown as TrailLine[];
+    const lines = this.db.prepare('select trail, course, kind, lesson, how, vpMine, vpTheirs, round, actions, secs, screen, lang, version, seed, seen from guide_trail order by id').all() as unknown as TrailLine[];
     const rows: TrailRow[] = lines.map((l) => ({
       id: l.trail,
       kind: l.kind,
@@ -1272,6 +1276,7 @@ export class Store {
       version: l.version,
       seed: l.seed,
       seen: l.seen,
+      ...(l.course === 'full' ? { course: 'full' as const } : {}),
     }));
     return funnelOf(rows, order, now, filter);
   }

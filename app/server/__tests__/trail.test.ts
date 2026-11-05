@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
-import { LESSON_IDS } from '@/components/game/lessons';
+import { FULL_LESSON_IDS, LESSON_IDS } from '@/components/game/lessons';
 import { TRAIL_CAP, TRAIL_MS } from '@/online/guideTrail';
 import type { GuideFunnel, TrailEvent } from '@/online/guideTrail';
 import { Store } from '../store';
@@ -62,6 +62,17 @@ describe('the trail in the register', () => {
     store.close();
   });
 
+  it('keeps the second lesson’s mark, and sums each course apart', () => {
+    const store = new Store(':memory:');
+    store.keepTrail([ev({ id: idOf(1), lesson: 'welcome' })]);
+    store.keepTrail([ev({ id: idOf(2), lesson: 'fullWelcome', course: 'full' }), ev({ id: idOf(2), kind: 'left', lesson: 'railChoice', course: 'full' })]);
+    expect(store.guideFunnel(LESSON_IDS).tables).toBe(1);
+    const f = store.guideFunnel(FULL_LESSON_IDS, { course: 'full' });
+    expect(f).toMatchObject({ tables: 1, left: 1 });
+    expect(f.lessons.find((l) => l.id === 'railChoice')!.left).toBe(1);
+    store.close();
+  });
+
   it('reads the funnel back in the guide’s order, filtered by screen or deal', () => {
     const store = new Store(':memory:');
     store.keepTrail([ev({ id: idOf(1), lesson: 'welcome' }), ev({ id: idOf(1), kind: 'finished', lesson: 'coal', how: 'played', vp: [44, 40], at: 38, s: 1800, round: 10 })]);
@@ -101,7 +112,7 @@ describe('the trail over the wire', () => {
     g.send({ t: 'ping' });
     await g.until('the pong', () => g.trace.filter((t) => t === 'pong').length > n);
   };
-  const funnelOf = async (g: Guest, rid: number, filter?: { view?: 'desktop'; seed?: number }): Promise<GuideFunnel> => {
+  const funnelOf = async (g: Guest, rid: number, filter?: { view?: 'desktop'; seed?: number; course?: 'full' }): Promise<GuideFunnel> => {
     g.send({ t: 'admin.guide', rid, filter });
     await g.until(`rid ${rid}`, () => g.frames.some((f) => f.t === 'admin.guide' && f.rid === rid));
     const f = g.frames.find((x) => x.t === 'admin.guide' && x.rid === rid);
@@ -121,7 +132,7 @@ describe('the trail over the wire', () => {
     /* the register holds the events and nothing that names the reader */
     const db = new DatabaseSync(file);
     const cols = (db.prepare('pragma table_info(guide_trail)').all() as { name: string }[]).map((c) => c.name);
-    expect(cols).toEqual(['id', 'trail', 'kind', 'lesson', 'how', 'vpMine', 'vpTheirs', 'round', 'actions', 'secs', 'screen', 'lang', 'version', 'seed', 'seen']);
+    expect(cols).toEqual(['id', 'trail', 'kind', 'lesson', 'how', 'vpMine', 'vpTheirs', 'round', 'actions', 'secs', 'screen', 'lang', 'version', 'seed', 'seen', 'course']);
     const dump = JSON.stringify(db.prepare('select * from guide_trail').all());
     expect(dump).not.toContain(reader.id);
     expect(dump).not.toContain('QUJA');
@@ -161,5 +172,12 @@ describe('the trail over the wire', () => {
     /* no table's own story comes back: counts only */
     expect(JSON.stringify(f)).not.toContain('0123456789abcdef');
     expect((await funnelOf(ada, 72, { seed: 395 })).tables).toBe(0);
+    /* the second lesson's funnel, in its own lessons' order */
+    reader.send({ t: 'guide.trail', events: [ev({ id: idOf(5), lesson: 'fullWelcome', course: 'full' })] });
+    await settled(reader);
+    const full = await funnelOf(ada, 73, { course: 'full' });
+    expect(full.tables).toBe(1);
+    expect(full.lessons.map((l) => l.id)).toEqual([...FULL_LESSON_IDS]);
+    expect((await funnelOf(ada, 74)).tables).toBe(1);
   });
 });
