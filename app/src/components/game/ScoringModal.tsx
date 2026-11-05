@@ -10,7 +10,8 @@ import type { GameState, PlayerState } from '@/game/types';
 import { money, useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { setBoardOption } from './boardOptions';
-import { LAST_LESSON, LESSONS, closed, progressAt, saveProgress } from './lessons';
+import { useGuidedGame } from '@/hooks/use-guided-game';
+import { closed, lastOf, lessonsOf, progressAt, saveProgress } from './lessons';
 import { PortraitMedallion } from './PlayerRail';
 import ReckoningPaper from './ReckoningPaper';
 import { useReducedMotion } from './useReducedMotion';
@@ -88,8 +89,13 @@ export default function GameOverModal({
   const online = useGame((s) => s.code !== null);
   const local = useGame((s) => s.local);
   const code = useGame((s) => s.code);
-  /* the guided table: the guide's closing word is told here */
+  /* the guided table: the guide's closing word is told here, the course's own */
   const guided = useGame((s) => s.tutorial);
+  const course = useGame((s) => s.course);
+  const lastLesson = lastOf(course);
+  /* the second lesson, offered at the end of the first: its table left
+     unfinished is taken up, else a new one is dealt */
+  const full = useGuidedGame('full');
   const navigate = useNavigate();
   const shown = open && !!game && game.phase === 'game-over';
   /* a game given up closes on the ledger too, with no closing word */
@@ -100,10 +106,10 @@ export default function GameOverModal({
      given up passes nothing */
   useEffect(() => {
     if (!shown || !guided || !local || abandoned || !game) return;
-    const p = progressAt(local);
+    const p = progressAt(local, course);
     const q = closed(p, { g: game, me: Math.max(0, seat ?? game.players.findIndex((x) => !x.isBot)), sel: null, mat: null });
     if (q !== p) saveProgress(q);
-  }, [shown, guided, local, abandoned, game, seat]);
+  }, [shown, guided, local, abandoned, game, seat, course]);
   /* Escape lowers the plate to a strip and the finished board shows: the
      strip brings it back */
   const sheet = useLayer(shown, closeGameOver, { modal: true });
@@ -405,28 +411,44 @@ export default function GameOverModal({
         </div>
 
         {/* the guided game ends here: the guide's last lesson, on its own
-            paper, with the roads it names — first, in view under the
-            ledger: it is passed as the plate shows */}
+            paper, with the two ways on it names — ranked play first, then
+            the second lesson, or the course when the second is the one
+            played; first, in view under the ledger: it is passed as the
+            plate shows */}
         {guided && !abandoned && (
           <motion.div initial={false} animate={{ opacity: phase >= 2 ? 1 : 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="paper relative mt-5 px-4 py-3 text-left shadow-e3">
             <div aria-hidden className="tex-paper pointer-events-none absolute inset-0 rounded-[6px] opacity-[0.3]" />
             <div className="relative flex items-start gap-2">
               <GraduationCap aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-ink-900/70" />
               <div className="min-w-0 flex-1">
-                <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t('game.guide.stepOf', { n: LESSONS.length, total: LESSONS.length })}</p>
-                <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${LAST_LESSON}.title`)}</h3>
-                {t(`game.guide.steps.${LAST_LESSON}.body`).split('\n').map((line, i) => (
+                <p className="font-fell text-[10px] uppercase tracking-[0.2em] text-ink-900/55">{t(course === 'full' ? 'game.guide.stepOfFull' : 'game.guide.stepOf', { n: lessonsOf(course).length, total: lessonsOf(course).length })}</p>
+                <h3 className="mt-0.5 font-display text-[16px] font-bold leading-tight text-ink-900">{t(`game.guide.steps.${lastLesson}.title`)}</h3>
+                {t(`game.guide.steps.${lastLesson}.body`).split('\n').map((line, i) => (
                   <p key={i} className={cn('font-serif text-[13.5px] leading-snug text-ink-900/85', i > 0 ? 'mt-1.5' : 'mt-1')}>
                     {line}
                   </p>
                 ))}
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => navigate('/cours')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
-                    {t('platform.home.shortcuts.guided')}
-                  </button>
-                  <button type="button" onClick={() => navigate('/desk')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
-                    {t('platform.home.shortcuts.desk')}
-                  </button>
+                <div className="mt-2.5 grid gap-x-4 gap-y-2.5 min-[640px]:grid-cols-2">
+                  <div>
+                    <button type="button" onClick={() => navigate('/online')} className="btn-strike !min-h-[32px] !px-4 !py-1 !text-[10.5px]">
+                      {t('game.guide.ways.ranked')}
+                    </button>
+                    <p className="mt-1 font-serif text-[12.5px] leading-snug text-ink-900/75">{t('game.guide.ways.rankedLine')}</p>
+                  </div>
+                  {course === 'full' ? (
+                    <div>
+                      <button type="button" onClick={() => navigate('/cours')} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                        {t('game.guide.ways.cours')}
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <button type="button" onClick={() => full.open()} disabled={full.busy} aria-busy={full.busy} className="btn-ledger !min-h-[32px] !border-ink-900/50 !px-3 !py-1 !text-[10px] !text-ink-900 hover:!bg-ink-900/10">
+                        {full.busy ? t('game.page.settingTable') : t('game.guide.ways.full')}
+                      </button>
+                      <p className="mt-1 font-serif text-[12.5px] leading-snug text-ink-900/75">{full.failed ? t('platform.cours.failed') : t('game.guide.ways.fullLine')}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
