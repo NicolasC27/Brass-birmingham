@@ -384,6 +384,9 @@ interface March {
   selling?: boolean;
 }
 
+/** how far the arrow of a works' sale to the exchange runs off the works, in world units */
+const SALE_REACH = TILE_R + 70;
+
 /** an arrowhead at (gx,gy) pointing away from (sx,sy), stopping `back` short */
 function arrowHead(sx: number, sy: number, gx: number, gy: number, back: number): number[] {
   const dx = gx - sx;
@@ -1094,9 +1097,13 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
             const sx = r && r.width > 0 ? (r.left - 6 - host.left - scene.world.position.x) / scene.world.scale.x : WORLD_W - 52;
             const sy = r && r.width > 0 ? (r.top + r.height / 2 - host.top - scene.world.position.y) / scene.world.scale.y : (m.tray === 'coal' ? WORLD_H * 0.29 : WORLD_H * 0.71);
             /* selling: the works is the source and the exchange the target,
-               so the dashes march the other way and the head sits on the tray */
+               so the dashes march the other way. The line is only begun: a
+               short arrow off the works, pointing at the tray, rather than a
+               thread across the whole map to the edge of the page */
             const [ax, ay] = m.selling ? m.to : [sx, sy];
-            const [bx, by] = m.selling ? [sx, sy] : m.to;
+            const toward = Math.hypot(sx - ax, sy - ay) || 1;
+            const reach = Math.min(toward, SALE_REACH);
+            const [bx, by] = m.selling ? [ax + ((sx - ax) / toward) * reach, ay + ((sy - ay) / toward) * reach] : m.to;
             const { end, head } = m.selling ? { end: [bx, by] as [number, number], head: arrowHead(ax, ay, bx, by, 14) } : supplyLine(ax, ay, bx, by, m.stop);
             m.g.clear();
             m.g.moveTo(ax, ay).lineTo(end[0], end[1]).stroke({ width: 7, color: CASING, alpha: 0.85, cap: 'round' });
@@ -1872,7 +1879,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       tag.addChild(new Graphics().roundRect(-w / 2, -11, w, 22, 4).fill({ color: 0x0f1a12, alpha: 0.94 }).stroke({ width: 1.4, color: 0x5fa37a }), label);
       tag.eventMode = 'none';
       overlay.addChild(tag);
-      marchRef.current.push({ g, tray: sale.resource === 'coal' ? 'coal' : 'iron', to: saleAt, color: 0x5fa37a, selling: true, tag, along: 78 + supply.market.length * 30 });
+      marchRef.current.push({ g, tray: sale.resource === 'coal' ? 'coal' : 'iron', to: saleAt, color: 0x5fa37a, selling: true, tag, along: SALE_REACH + 34 });
     }
 
     /* the reader's pinned towns: a brass pin at the cluster's top-right corner */
