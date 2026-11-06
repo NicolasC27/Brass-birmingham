@@ -201,6 +201,8 @@ const WHARVES = [0, 1, 2, 3, 4];
 let placeTex: Texture[] = [];
 /* and one works to a trade: a town that has built shows what it built */
 let worksTex: Partial<Record<IndustryType, Texture>> = {};
+/* the same works under snow, for a frozen ground (the ?ground=city trial) */
+let worksFrostTex: Partial<Record<IndustryType, Texture>> = {};
 /* and a wharf under every merchant's sign, so the edge of the map is a
    place of business rather than a picture hung in the air */
 let wharfTex: (Texture | null)[] = [];
@@ -568,8 +570,10 @@ export async function loadBoardAssets(): Promise<void> {
   hamletTex = [loaded['/town-hamlet-0.webp'], loaded['/town-hamlet-1.webp'], loaded['/town-hamlet-2.webp']];
   placeTex = [loaded['/town-place-0.webp'], loaded['/town-place-1.webp'], loaded['/town-place-2.webp'], loaded['/town-place-3.webp']];
   worksTex = Object.fromEntries(works.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
+  const frost = await Promise.all(WORKS.map(async (i) => [i, await tolerant(`/town-works-${i}-frost.webp`)] as const));
+  worksFrostTex = Object.fromEntries(frost.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
   wharfTex = wharves;
-  const drawn = [0, 1, 2, 3].map((i) => `town-place-${i}`).concat(WORKS.map((i) => `town-works-${i}`), WHARVES.map((n) => `merchant-wharf-${n}`));
+  const drawn = [0, 1, 2, 3].map((i) => `town-place-${i}`).concat(WORKS.map((i) => `town-works-${i}`), WORKS.map((i) => `town-works-${i}-frost`), WHARVES.map((n) => `merchant-wharf-${n}`));
   shadowTex = Object.fromEntries(await Promise.all(drawn.map(async (n) => [n, await tolerant(`/${n}-shadow.webp`)] as const)));
   tableUrls = kept;
 }
@@ -1384,28 +1388,32 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
        hamlet of the four: the same picture under twenty-two towns read as
        wallpaper, and at the painting's old size it read as nothing at all */
     const placed = !engraved && placeTex.length === 4;
-    /* a ground that paints its own places stands bare under the cards */
+    /* a ground that paints its own places stands bare under the cards —
+       bare but for the works a town builds, under snow on a frozen one */
+    const frost = villageStyle === 'frost';
     const none = villageStyle === 'none';
     for (const v of villages) {
-      v.box.visible = !none;
-      if (none) continue;
-      const trades = game && placed && !v.farm ? tradesOf(game, v.town) : [];
-      const built = game && placed && !v.farm ? builtIn(game, v.town) : 0;
+      const trades = game && (placed || frost) && !v.farm ? tradesOf(game, v.town) : [];
+      const built = game && (placed || frost) && !v.farm ? builtIn(game, v.town) : 0;
       const first = trades[0];
-      const name = first ? `town-works-${first}` : `town-place-${v.farm ? 3 : v.place}`;
-      const tex = engraved ? hamletTex[v.hamlet] : placed ? (first && worksTex[first]) || placeTex[v.farm ? 3 : v.place] : villageTex;
+      const shown = !none && (!frost || !!(first && worksFrostTex[first]));
+      v.box.visible = shown;
+      if (!shown) continue;
+      const suffix = frost ? '-frost' : '';
+      const name = first ? `town-works-${first}${suffix}` : `town-place-${v.farm ? 3 : v.place}`;
+      const tex = engraved ? hamletTex[v.hamlet] : frost ? worksFrostTex[first!]! : placed ? (first && worksTex[first]) || placeTex[v.farm ? 3 : v.place] : villageTex;
       if (v.sprite.texture !== tex) v.sprite.texture = tex;
       /* the painting fits the card block; the hamlet is drawn wider, its
          church above the cards and its wharf below the ribbon, so the
          town shows around them. Farms have no hamlet. */
       const grow = 1 + 0.1 * Math.min(3, Math.max(0, built - 1));
-      const size = (engraved ? v.h * 2.2 : placed ? v.h * 1.15 : v.h) * grow;
-      const lift = engraved ? v.h * 0.4 : placed ? v.h * 0.22 : 0;
+      const size = (engraved ? v.h * 2.2 : placed || frost ? v.h * 1.15 : v.h) * grow;
+      const lift = engraved ? v.h * 0.4 : placed || frost ? v.h * 0.22 : 0;
       v.sprite.width = size;
       v.sprite.height = size;
       v.sprite.position.set(-size / 2, -size + lift);
-      v.box.alpha = engraved ? (v.farm ? 0 : 0.85) : placed ? (v.farm ? 0.72 : 0.84) : v.farm ? 0.55 : 0.62;
-      const second = trades[1] ? worksTex[trades[1]] : undefined;
+      v.box.alpha = engraved ? (v.farm ? 0 : 0.85) : placed || frost ? (v.farm ? 0.72 : 0.84) : v.farm ? 0.55 : 0.62;
+      const second = trades[1] ? (frost ? worksFrostTex : worksTex)[trades[1]] : undefined;
       v.annex.visible = !!second;
       const shade = groundShade[v.town.id] ?? 0;
       if (second) {
@@ -1416,9 +1424,9 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
         v.annex.width = a;
         v.annex.height = a;
         v.annex.position.set(ax, ay);
-        castShadow(v.annexShadow, `town-works-${trades[1]}`, ax, ay, a, shade, v.mirror);
+        castShadow(v.annexShadow, `town-works-${trades[1]}${suffix}`, ax, ay, a, shade, v.mirror);
       } else v.annexShadow.visible = false;
-      if (placed) castShadow(v.shadow, name, -size / 2, -size + lift, size, shade, v.mirror);
+      if (placed || frost) castShadow(v.shadow, name, -size / 2, -size + lift, size, shade, v.mirror);
       else v.shadow.visible = false;
     }
   };

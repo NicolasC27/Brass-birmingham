@@ -404,3 +404,18 @@ trial in `boardOptions.ts`, read by the board through `groundWeather()`):
   and under their names; a third of the sheet by day, all of it by night,
   and now and then a gust that drives the streaks. Under reduced motion a
   few flakes stand still.
+
+### The works under snow
+
+A town on the frozen ground wears no painted village, but the works it
+builds still stand behind its cards: the six drawings
+(`town-works-*.webp`) handed back to `fal-ai/nano-banana/edit` one by one
+— "the same buildings in the dead of a Frostpunk winter, the magenta
+untouched" — snow on every roof, icicles, the windows lit, steam off the
+chimney. The ironworks came back once with a dark vignette painted over
+the magenta and was asked again with the background spelled out. Keyed
+off the magenta at a 24 % fuzz, trimmed, and set on trodden snow rather
+than bare earth (`GROUND='rgba(150,162,184,0.42)'` to `anchor-place.py`),
+served as `town-works-*-frost.webp` with their shadows, their feet added
+to `placeGround.ts`. `villages: 'frost'` on the trial; `setVillages('frost')`
+shows them and nothing else. Sources in `villages/works-*-frost-{fal,cut}.png`.

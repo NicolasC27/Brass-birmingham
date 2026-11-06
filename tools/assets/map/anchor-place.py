@@ -4,7 +4,8 @@
     tools/assets/map/anchor-place.py <cut.png> <app/public/name.webp> [feet.json]
 
 The cut is the drawing alone, the magenta keyed off and the canvas trimmed
-(see tools/map/README.md, "Anchoring a place"). It is centred on a square
+(see tools/map/README.md, "Anchoring a place"). GROUND names the colour of
+the cleared ground (bare earth by default; trodden snow for a frozen place). It is centred on a square
 with room under it, a soft disc of bare earth laid at its feet, and served
 at 768×768, with its soft silhouette beside it (<name>-shadow.webp) for
 the board to lay down as its shadow. No shadow is baked in: the board casts one at play time, shaped
@@ -23,7 +24,7 @@ bx, by = ox + w // 2, oy + int(h * 0.86)
 rx, ry = int(w * 0.50), int(h * 0.13)
 subprocess.run(['magick', '-size', f'{side}x{side}', 'xc:none',
     # the cleared ground the place stands on
-    '-fill', 'rgba(204,186,148,0.50)', '-stroke', 'none', '-draw', f'ellipse {bx},{by} {int(rx*1.24)},{int(ry*1.5)} 0,360',
+    '-fill', os.environ.get('GROUND', 'rgba(204,186,148,0.50)'), '-stroke', 'none', '-draw', f'ellipse {bx},{by} {int(rx*1.24)},{int(ry*1.5)} 0,360',
     '-blur', f'0x{max(8, ry//2)}',
     '(', cut, ')', '-geometry', f'+{ox}+{oy}', '-compose', 'over', '-composite',
     '-resize', '768x768!', '-quality', '88', out], check=True)

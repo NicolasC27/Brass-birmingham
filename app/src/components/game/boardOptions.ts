@@ -35,8 +35,9 @@ export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail
  *  blowing snow and the breath of its settlements */
 export type Weather = 'frost';
 /** what stands under a town's cards: the painted village, the ink hamlet
- *  of an engraved sheet, or nothing — a ground that paints its own places */
-export type VillageStyle = 'painted' | 'engraved' | 'none';
+ *  of an engraved sheet, nothing — a ground that paints its own places —
+ *  or, on the frozen ground, nothing but the works a town builds, under snow */
+export type VillageStyle = 'painted' | 'engraved' | 'none' | 'frost';
 /* the country as a made thing: a painted plaster model of low English
    swells under a raking light, a shelf cut in it for every town, the rail
    era the same model gone grey with a century of smoke settled on it. The
@@ -58,7 +59,7 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
    furnaces lit by the rail era. */
 const TRIAL_GROUNDS: Record<string, MapSet> = {
   frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
-  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'none', weather: 'frost' },
+  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'frost', weather: 'frost' },
 };
 const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
 
