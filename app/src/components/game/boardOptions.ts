@@ -47,9 +47,12 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
    the address (?ground=frost), over whatever board is on the table. The
    frozen country is the English model under snow — the same swells in a
    polar twilight, the canals gone to ice, the rail era's snow greyed with
-   soot. */
+   soot. The frozen city (?ground=city) is the wasteland alone with a ring
+   settlement under every town and a depot under every merchant, their
+   furnaces lit by the rail era. */
 const TRIAL_GROUNDS: Record<string, MapSet> = {
   frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
+  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' } },
 };
 const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
 

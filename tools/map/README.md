@@ -309,3 +309,38 @@ eras stand on the same land:
       tools/assets/map/compose-canal.sh tools/assets/map/map-frost-canal-fal.jpg geo.json map-frost-canal
     ETCH=1 INK=ice TONE=114,90 DIM=70 FADE=60 MIST='rgb(30,38,54)' \
       tools/assets/map/compose-rail.sh rail-world.png geo.json map-frost-rail
+
+## The frozen city, on trial
+
+The frozen country read as countryside; Frostpunk is a city. `?ground=city`
+is the second trial: a wasteland of wind-packed snow with a ring settlement
+under every town and a depot under every merchant.
+
+A model asked for a city paints one where it likes. Given the board as a
+plan — a disc for every town — `fal-ai/nano-banana/edit` kept the style of
+its reference and the layout of its own, twenty-seven rings where the
+board has twenty-two places. So the city is assembled by hand, from two
+paintings of the same model: the rings (`map-frostcity-rings-fal.jpg`, a
+plan of the play area handed over with the frozen country as the palette)
+and the wasteland (`map-frostcity-waste-fal.jpg`, the same painting with
+"remove every ring settlement" — the sheds, tanks and coal heaps stayed).
+`tools/map/frost-city.py` cuts eight rings and two depots that stand clear
+of their neighbours, each through a soft disc, and lays them where the
+board shows its towns and merchants (`tools/map/places.ts`: the towns
+nudged clear of one another, the southern merchants lifted — not the
+authentic anchors of `geo.ts`). A farm gets a ring at three fifths.
+
+The rail era is the same sheet a generation on, made by the same script
+and no model: asked to age it, the model kept every ring in place but
+laid great white plumes over the snow, and the board breathes its own.
+The snow is greyed, soot drifts down and right of every place, and the
+furnaces are lit inside the rings — a warm glow the tiles then stand in.
+
+    node places.mjs places.json
+    tools/map/frost-city.py tools/assets/map/map-frostcity-rings-fal.jpg \
+      tools/assets/map/map-frostcity-waste-fal.jpg places.json canal.png rail.png
+    magick rail.png -resize '3200x1800^' -gravity center -extent 3200x1800 rail-world.png
+    ETCH=1 RELIEF=0 INK=ice DIM=70 FADE=60 MIST='rgb(24,30,44)' \
+      tools/assets/map/compose-canal.sh canal.png geo.json map-frostcity-canal
+    ETCH=1 INK=ice TONE=116,92 DIM=70 FADE=60 MIST='rgb(24,30,44)' \
+      tools/assets/map/compose-rail.sh rail-world.png geo.json map-frostcity-rail
