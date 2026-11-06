@@ -968,3 +968,13 @@ The judge's environment, once (CPU-only torch first, to keep it small):
     tools/assets/sfx/.venv/bin/python tools/assets/sfx/judge_sfx.py --synth /tmp/synth   # every short sound (judge/sfx.json)
 
 **Kept after all:** music-canal-ii stays in the canal playlist as a fourth piece. Its loopiness (31.0) is among the lowest of all tunes, and a fourth piece spreads the rotation further, so the ear meets each air less often. It is out of `RETIRED` in `process.py`.
+
+## The frozen city's wind (2026-11-06)
+
+Two takes of `amb-frost` for the `?ground=city` trial, 660 credits (the
+counter from 61 123 to 61 783). Take 1, the open plain with the ice far
+off: -36 LUFS integrated, a real wind with its gusts. Take 2, the wind
+heard from inside a shelter: -60 LUFS, nothing in it. Take 1 is served,
+levelled at -24 LUFS, between the two eras' beds since it stands in for
+either; only the floor under 30 Hz cut. The board makes its own wind
+when the file cannot be had (`windBed` in sfx.ts).

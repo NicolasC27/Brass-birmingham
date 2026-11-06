@@ -222,3 +222,5 @@
 {"note": "seventh round, the short sounds: the counter settled", "take": "era-end-3 + life-whistle-3 (\"toot... tooooot\")", "seconds": 8.0, "before": 60779, "after": 60867, "spent": 88}
 {"note": "seventh round, the short sounds: the counter settled", "take": "era-end-4 + life-whistle-4 (a mellow note)", "seconds": 8.0, "before": 60867, "after": 60955, "spent": 88}
 {"note": "seventh round, the short sounds: the counter settled", "take": "loan-2 + link-canal-2 + life-passing-2 + house-shrewsbury-3", "seconds": 15.2, "before": 60955, "after": 61123, "spent": 168}
+{"take": "amb-frost-1", "seconds": 30.0, "before": 61123, "after": 61123, "spent": 0}
+{"take": "amb-frost-2", "seconds": 30.0, "before": 61123, "after": 61783, "spent": 660}

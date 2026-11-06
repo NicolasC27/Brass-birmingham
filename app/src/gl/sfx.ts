@@ -706,7 +706,10 @@ const AMB_FADE = 3;
  *  peaks would not allow more): brought up a little. The rail's is a low
  *  murmur of the town far off with a few birds, levelled at -26 LUFS so
  *  that it tires no one; its trains come now and then over it */
-const AMB_TRIM: Record<Bed, number> = { canal: 1.4, rail: 1.2, frost: 0.5 };
+const AMB_TRIM: Record<Bed, number> = { canal: 1.4, rail: 1.2, frost: 1.2 };
+/** the wind made on the spot, when its recording could not be had:
+ *  levelled by ear against the canal's bed */
+const WIND_TRIM = 0.5;
 /** the loop's own length: the file was folded onto itself at this length,
  *  an MP3's padding past it is left out of the loop */
 const AMB_LOOP_S = 27;
@@ -730,9 +733,10 @@ function fadeOut(t: { src: AudioBufferSourceNode; gain: GainNode; stop?: () => v
   if (t.stop) setTimeout(t.stop, (seconds + 0.1) * 1000);
 }
 
-/** the wind over a frozen plain, made rather than recorded: a breath of
- *  noise kept low, its pitch and its strength swaying slowly and out of
- *  step, so it gusts and never repeats. Nothing is fetched for it */
+/** the wind over a frozen plain, made rather than recorded, for when the
+ *  recording (amb-frost) cannot be had: a breath of noise kept low, its
+ *  pitch and its strength swaying slowly and out of step, so it gusts and
+ *  never repeats */
 function windBed(ac: AudioContext): { src: AudioBufferSourceNode; gain: GainNode; stop: () => void } {
   const seconds = 4;
   const buf = ac.createBuffer(2, ac.sampleRate * seconds, ac.sampleRate);
@@ -787,12 +791,13 @@ function applyAmbience(): void {
   if (!bed || table) return;
   void context().then(async (ac) => {
     if (!ac) return;
-    const buf = bed === 'frost' ? null : await sample(`amb-${bed}`);
+    const buf = await sample(`amb-${bed}`);
     /* the table may have moved on while the file came */
     const now = mix.on && mix.ambience ? wantBed : null;
     if ((bed !== 'frost' && !buf) || now !== bed || table) return;
     const t0 = ac.currentTime;
-    const voice = bed === 'frost' ? windBed(ac) : null;
+    /* the wind is made on the spot when its recording is not there */
+    const voice = bed === 'frost' && !buf ? windBed(ac) : null;
     const src = voice ? voice.src : ac.createBufferSource();
     if (buf && !voice) {
       src.buffer = buf;
@@ -802,7 +807,7 @@ function applyAmbience(): void {
     }
     const gain = voice ? voice.gain : ac.createGain();
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.linearRampToValueAtTime(AMB_TRIM[bed], t0 + AMB_FADE);
+    gain.gain.linearRampToValueAtTime(voice ? WIND_TRIM : AMB_TRIM[bed], t0 + AMB_FADE);
     if (!voice) src.connect(gain);
     gain.connect(busOf(ac, 'ambience'));
     src.start(t0);

@@ -196,6 +196,11 @@ LOOPS = {
     # a few of the canal's birds far over it, 12 dB under the canal's.
     # Take 4 (a quiet valley) came back empty, -67 LUFS. The railway itself
     # is heard in the life events (life-*), now and then
+    # the frozen city's wind (the ?ground=city trial): take 1, the open
+    # plain with the ice far off; only the model's floor under 30 Hz is cut,
+    # the wind itself living low. Levelled at -24 LUFS, between the two
+    # eras' beds, since it stands in for either
+    'amb-frost': ('amb-frost-1', 'highpass=f=30,highpass=f=30', -24.0, True),
     'amb-rail': ('amb-rail-1', 'highpass=f=45,highpass=f=45,lowpass=f=300,lowpass=f=300', -26.0, False,
                  {'breathe': 3.0, 'under': ('amb-canal-3', 'highpass=f=1500,highpass=f=1500', -32.0)}),
 }
