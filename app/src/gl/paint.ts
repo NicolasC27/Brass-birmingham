@@ -2,6 +2,7 @@ import { Assets, Container, FillGradient, Graphics, Rectangle, Sprite, Text, Tex
 import { INDUSTRIES, LINKS, MERCHANTS, PLAYER_COLORS, TOWNS } from '@/game/data';
 import { barrelKey } from '@/game/engine';
 import { townColor } from '@/game/townColors';
+import type { VillageStyle } from '@/components/game/boardOptions';
 import { routeFor } from '@/components/game/routePaths';
 import { merchantOpen, tileKey } from '@/game/engine';
 import { bonusLabel, tr } from '@/i18n';
@@ -127,7 +128,7 @@ export interface BoardScene {
   /** the village under each town: the painting, or the ink hamlet of the
    *  engraved map; `ground` names the board whose relief shapes the shadows
    *  (placeGround.ts), or nothing on a level ground */
-  setVillages: (style: 'painted' | 'engraved', ground?: string | null) => void;
+  setVillages: (style: VillageStyle, ground?: string | null) => void;
 }
 
 /** one print run: the engraved face, its halves, the dual-slot scenes */
@@ -1042,7 +1043,7 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
   type Village = { box: Container; sprite: Sprite; annex: Sprite; shadow: Sprite; annexShadow: Sprite; mirror: boolean; town: (typeof TOWNS)[number]; farm: boolean; hamlet: number; place: number; h: number };
   const villages: Village[] = [];
   /* which family of places is in play, so a redraw knows whether to dress */
-  let villageStyle: 'painted' | 'engraved' = 'painted';
+  let villageStyle: VillageStyle = 'painted';
   for (const town of TOWNS) {
     const c = townChrome(town);
     const mirror = (town.x * 7 + town.y * 13) % 2 === 0;
@@ -1383,7 +1384,11 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
        hamlet of the four: the same picture under twenty-two towns read as
        wallpaper, and at the painting's old size it read as nothing at all */
     const placed = !engraved && placeTex.length === 4;
+    /* a ground that paints its own places stands bare under the cards */
+    const none = villageStyle === 'none';
     for (const v of villages) {
+      v.box.visible = !none;
+      if (none) continue;
       const trades = game && placed && !v.farm ? tradesOf(game, v.town) : [];
       const built = game && placed && !v.farm ? builtIn(game, v.town) : 0;
       const first = trades[0];
@@ -1790,11 +1795,12 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       villageStyle = style;
       groundShade = (ground && SHADE[ground]) || {};
       layVillages(lastGame);
-      /* an ink map keeps its own hand: no painted wharf on it */
+      /* an ink map keeps its own hand, and a ground with its own places
+         its own depots: no painted wharf on either */
       for (const w of wharves) {
         castShadow(w.g, w.name, w.ox, w.oy, w.size, groundShade[w.id] ?? 0);
-        w.q.visible = style !== 'engraved';
-        if (style === 'engraved') w.g.visible = false;
+        w.q.visible = style === 'painted';
+        if (style !== 'painted') w.g.visible = false;
       }
     },
   };

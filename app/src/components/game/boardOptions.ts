@@ -30,7 +30,10 @@ export type IncomeSide = 'bottom' | 'left';
  *  relief model the survey — cart roads, towpaths, the rail era's railways —
  *  served as a layer of its own so hiding the traces (key C) hides it too;
  *  the water stays in the land */
-export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail: string } };
+export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail: string }; villages?: VillageStyle };
+/** what stands under a town's cards: the painted village, the ink hamlet
+ *  of an engraved sheet, or nothing — a ground that paints its own places */
+export type VillageStyle = 'painted' | 'engraved' | 'none';
 /* the country as a made thing: a painted plaster model of low English
    swells under a raking light, a shelf cut in it for every town, the rail
    era the same model gone grey with a century of smoke settled on it. The
@@ -52,7 +55,7 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
    furnaces lit by the rail era. */
 const TRIAL_GROUNDS: Record<string, MapSet> = {
   frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
-  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' } },
+  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'none' },
 };
 const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
 

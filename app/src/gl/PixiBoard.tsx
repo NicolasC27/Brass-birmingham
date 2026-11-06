@@ -888,7 +888,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
       scene.setBigChips(bootOpts.bigChips);
       scene.setGreyFreeMerchants(bootOpts.greyFreeMerchants);
       scene.setStockStyle(bootOpts.stockStyle);
-      scene.setVillages('painted', activeBoard().id);
+      scene.setVillages(bgUrls.villages ?? 'painted', activeBoard().id);
       if (Object.keys(bootOpts.tileArt).length) void scene.setTileArt(bootOpts.tileArt);
       scene.setTileLook({ slotArt: bootOpts.slotArt, colorBlind: bootOpts.colorBlind, sealTiles: bootOpts.sealTiles, sealLinks: bootOpts.sealLinks, cardGrain: bootOpts.cardGrain, chipStyle: bootOpts.chipStyle });
       a.stage.addChild(scene.world);
