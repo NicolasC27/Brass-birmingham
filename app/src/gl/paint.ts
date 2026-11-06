@@ -206,6 +206,8 @@ let worksFrostTex: Partial<Record<IndustryType, Texture>> = {};
 /* and a wharf under every merchant's sign, so the edge of the map is a
    place of business rather than a picture hung in the air */
 let wharfTex: (Texture | null)[] = [];
+/* the same wharves under snow, for a frozen ground */
+let wharfFrostTex: (Texture | null)[] = [];
 /** each drawing's soft silhouette, by served name: laid down as its shadow */
 let shadowTex: Record<string, Texture | null> = {};
 /* the engraved map lays an ink hamlet under each town instead (three, in turn) */
@@ -573,7 +575,8 @@ export async function loadBoardAssets(): Promise<void> {
   const frost = await Promise.all(WORKS.map(async (i) => [i, await tolerant(`/town-works-${i}-frost.webp`)] as const));
   worksFrostTex = Object.fromEntries(frost.filter(([, t]) => !!t)) as Partial<Record<IndustryType, Texture>>;
   wharfTex = wharves;
-  const drawn = [0, 1, 2, 3].map((i) => `town-place-${i}`).concat(WORKS.map((i) => `town-works-${i}`), WORKS.map((i) => `town-works-${i}-frost`), WHARVES.map((n) => `merchant-wharf-${n}`));
+  wharfFrostTex = await Promise.all(WHARVES.map((n) => tolerant(`/merchant-wharf-${n}-frost.webp`)));
+  const drawn = [0, 1, 2, 3].map((i) => `town-place-${i}`).concat(WORKS.map((i) => `town-works-${i}`), WORKS.map((i) => `town-works-${i}-frost`), WHARVES.map((n) => `merchant-wharf-${n}`), WHARVES.map((n) => `merchant-wharf-${n}-frost`));
   shadowTex = Object.fromEntries(await Promise.all(drawn.map(async (n) => [n, await tolerant(`/${n}-shadow.webp`)] as const)));
   tableUrls = kept;
 }
@@ -879,7 +882,9 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
     sp.alpha = 0.5 - down * 0.1 + up * 0.18;
   };
   /* the wharves' shadows, recast when the ground changes */
-  const wharves: { g: Sprite; q: Sprite; name: string; ox: number; oy: number; size: number; id: string }[] = [];
+  const wharves: { g: Sprite; q: Sprite; name: string; ox: number; oy: number; size: number; id: string; qi: number; ribbonCy: number }[] = [];
+  /** each merchant's shelves under its tiles: parchment, or slate on a frozen ground */
+  const shelves: { parchment: Graphics; slate: Graphics }[] = [];
   /* how the land lies under each place on the ground in play; empty on a level one */
   let groundShade: Record<string, number> = {};
 
@@ -929,7 +934,7 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       const qShadow = new Sprite();
       qShadow.eventMode = 'none';
       plate.addChild(qShadow, q);
-      wharves.push({ g: qShadow, q, name: `merchant-wharf-${qi}`, ox: -qw / 2, oy: q.y - qw / 2, size: qw, id: m.id });
+      wharves.push({ g: qShadow, q, name: `merchant-wharf-${qi}`, ox: -qw / 2, oy: q.y - qw / 2, size: qw, id: m.id, qi, ribbonCy });
     }
 
     /* the row's own shadow on the ground, then the shelves — a parchment
@@ -943,6 +948,15 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
     for (const x of slotX) {
       shelf.roundRect(x - MT / 2 - 2, tileTop - 2, MT + 4, MT + 4, 6).fill({ color: 0xe9dfc6, alpha: 0.5 }).stroke({ width: 0.9, color: 0x6b5232, alpha: 0.45 });
     }
+    /* on a frozen ground the parchment would be the brightest thing on
+       the table: a slate shelf stands in for it there (setVillages) */
+    const slate = new Graphics();
+    slate.eventMode = 'none';
+    slate.visible = false;
+    for (const x of slotX) {
+      slate.roundRect(x - MT / 2 - 2, tileTop - 2, MT + 4, MT + 4, 6).fill({ color: 0x2a3340, alpha: 0.72 }).stroke({ width: 0.9, color: 0x9fb2c8, alpha: 0.5 });
+    }
+    shelves.push({ parchment: shelf, slate });
     const brass = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 1, y: 1 }, textureSpace: 'local' });
     brass.addColorStop(0, '#F0D48E').addColorStop(0.45, '#C9A45C').addColorStop(1, '#7E5F28');
     shelf.circle(medalX + 2, medalY + 3, medalR + 2).fill({ color: 0x1e160e, alpha: 0.4 });
@@ -953,7 +967,7 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       shelf.circle(medalX + Math.cos(a) * (medalR - 2.2), medalY + Math.sin(a) * (medalR - 2.2), 0.9).fill({ color: 0xfff3c8, alpha: 0.8 });
     }
     shelf.circle(medalX, medalY, medalR - 4.5).stroke({ width: 0.8, color: 0x5a4520, alpha: 0.6 });
-    plate.addChild(under, shelf);
+    plate.addChild(under, shelf, slate);
 
     /* the word over the medallion, small caps in brass */
     const cap = new Text({
@@ -1803,12 +1817,25 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
       villageStyle = style;
       groundShade = (ground && SHADE[ground]) || {};
       layVillages(lastGame);
-      /* an ink map keeps its own hand, and a ground with its own places
-         its own depots: no painted wharf on either */
+      /* an ink map keeps its own hand: no painted wharf on it. The frozen
+         ground has the same wharves under snow, set on their own feet */
       for (const w of wharves) {
+        const frost = style === 'frost' && !!wharfFrostTex[w.qi];
+        const tex = frost ? wharfFrostTex[w.qi]! : wharfTex[w.qi]!;
+        if (w.q.texture !== tex) w.q.texture = tex;
+        w.name = `merchant-wharf-${w.qi}${frost ? '-frost' : ''}`;
+        const foot = FEET[w.name]?.[1] ?? 0.7;
+        w.q.width = w.size;
+        w.q.height = w.size;
+        w.q.position.set(0, w.ribbonCy + 16 - (foot - 0.5) * w.size);
+        w.oy = w.q.y - w.size / 2;
         castShadow(w.g, w.name, w.ox, w.oy, w.size, groundShade[w.id] ?? 0);
-        w.q.visible = style === 'painted';
-        if (style !== 'painted') w.g.visible = false;
+        w.q.visible = style === 'painted' || frost;
+        if (!w.q.visible) w.g.visible = false;
+      }
+      for (const sh of shelves) {
+        sh.parchment.visible = style !== 'frost';
+        sh.slate.visible = style === 'frost';
       }
     },
   };

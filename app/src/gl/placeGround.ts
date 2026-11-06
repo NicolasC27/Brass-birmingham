@@ -25,6 +25,11 @@ export const FEET: Record<string, [number, number, number, number]> = {
   'town-works-iron-frost': [0.5, 0.612, 0.391, 0.06],
   'town-works-manufacturer-frost': [0.5, 0.645, 0.39, 0.07],
   'town-works-pottery-frost': [0.5, 0.684, 0.391, 0.08],
+  'merchant-wharf-0-frost': [0.499, 0.702, 0.39, 0.085],
+  'merchant-wharf-1-frost': [0.5, 0.697, 0.39, 0.084],
+  'merchant-wharf-2-frost': [0.499, 0.756, 0.39, 0.1],
+  'merchant-wharf-3-frost': [0.5, 0.711, 0.391, 0.088],
+  'merchant-wharf-4-frost': [0.5, 0.648, 0.391, 0.07],
 };
 
 /** how the land lies where each place's shadow falls, per board:

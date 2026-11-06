@@ -419,6 +419,10 @@ than bare earth (`GROUND='rgba(150,162,184,0.42)'` to `anchor-place.py`),
 served as `town-works-*-frost.webp` with their shadows, their feet added
 to `placeGround.ts`. `villages: 'frost'` on the trial; `setVillages('frost')`
 shows them and nothing else. Sources in `villages/works-*-frost-{fal,cut}.png`.
+The five merchants' wharves went the same way ("on a plus de bâtiment pour
+les marchands ?"): `merchant-wharf-*-frost.webp`, the quay's water frozen
+to grey ice, set on their own feet in `placeGround.ts` and swapped in by
+`setVillages('frost')`.
 
 ### At the counter
 
