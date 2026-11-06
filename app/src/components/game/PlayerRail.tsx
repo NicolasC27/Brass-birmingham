@@ -313,7 +313,7 @@ const LANE = 16;
 const RING = 50;
 const R = 22.5;
 const SLOT_W = LANE + RING + 2;
-const SLOT_H = 70;
+const SLOT_H = 76;
 const GAP = 8;
 const PITCH = SLOT_H + GAP;
 const LANTERN_H = 24;
@@ -461,10 +461,13 @@ function Medal({ p, index, active, nextRank, nowRank, open, onToggle, onClose, o
           the next round's order is read from, public at the table */}
       <span
         aria-hidden
-        className={cn('pointer-events-none absolute flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap font-mono text-[9px] leading-none tabular-nums', p.spent > 0 ? 'text-cream-100/70' : 'text-cream-100/35')}
+        className={cn(
+          'pointer-events-none absolute flex -translate-x-1/2 items-center gap-0.5 whitespace-nowrap rounded-sm bg-coal-950/80 px-1 font-mono text-[11px] font-semibold leading-[14px] tabular-nums',
+          p.spent > 0 ? 'text-brass-300' : 'text-cream-100/50',
+        )}
         style={{ left: LANE + RING / 2, top: RING + 10 }}
       >
-        <ArrowDownRight className="h-2 w-2 shrink-0 opacity-80" />
+        <ArrowDownRight className="h-2.5 w-2.5 shrink-0" />
         {sum(p.spent)}
       </span>
 
