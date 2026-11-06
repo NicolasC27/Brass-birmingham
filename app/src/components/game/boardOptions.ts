@@ -43,7 +43,17 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
   veneto: { canal: '/map-veneto-canal.webp', rail: '/map-veneto-rail.webp' },
 };
 
-export const mapUrls = (board?: string): MapSet => (board && OTHER_BOARDS[board]) || MAP_URL;
+/* a ground being tried is not offered in the settings: it is asked for in
+   the address (?ground=frost), over whatever board is on the table. The
+   frozen country is the English model under snow — the same swells in a
+   polar twilight, the canals gone to ice, the rail era's snow greyed with
+   soot. */
+const TRIAL_GROUNDS: Record<string, MapSet> = {
+  frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
+};
+const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
+
+export const mapUrls = (board?: string): MapSet => trialGround() ?? ((board && OTHER_BOARDS[board]) || MAP_URL);
 
 /* the minimap's plate: the small preset stands level with the open hand
    dock (180px tall); a width dragged by hand overrides the preset */

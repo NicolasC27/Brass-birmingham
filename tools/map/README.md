@@ -276,3 +276,36 @@ engraved map one of three ink hamlets drawn by Midjourney in the same hand
 (`town-hamlet-0..2.webp`, square, bottom-aligned; sources
 `tools/assets/map/vignette-*-midjourney.jpg`), the church and the roofs
 showing between the cards.
+
+## A frozen country, on trial
+
+A ground in the spirit of Frostpunk, not offered in the settings: it is
+asked for in the address, `?ground=frost`, over whatever board is on the
+table (`TRIAL_GROUNDS` in `boardOptions.ts`). It is the English model under
+snow — `fal-ai/nano-banana/edit` with `map-relief-canal-fal.jpg` as the
+reference, so the swells, the streams and the woods stand where they
+stood: deep wind-packed snow in a polar twilight, slate in the shadows, a
+few outcrops of dark rock, two frozen ponds, the woods gone to frosted
+pines. The rail era is the same painting handed back to the same model to
+be aged — the snow greyed with soot, slag heaps, thaw on the ponds. Both
+upscaled three times by `fal-ai/clarity-upscaler` (creativity 0.2,
+resemblance 1). Sources in `tools/assets/map/map-frost-{canal,rail}-fal.jpg`.
+
+Three takes were asked for. The first came back all cliffs and strata,
+too busy under the tiles; the second was the English model whitewashed,
+calm but not cold. The third named how many of each thing it wanted —
+"five or six outcrops", "three or four ponds" — and asked for a dark
+image, never white: it sits at 26 in lightness, under the tiles.
+
+Both composers gained two knobs for it, neither changing what they did
+before: `INK=ice` (the waters as ice, lanes of trodden snow, a town's worn
+ground a dark slush, grey ballast and cold rails) and `MIST` (the colour
+of the distance past the play area — a dark ground wants it darker, not
+paler). The rail painting is brought to the world's size first, so both
+eras stand on the same land:
+
+    magick map-frost-rail-fal.jpg -resize '3200x1800^' -gravity center -extent 3200x1800 rail-world.png
+    ETCH=1 RELIEF=0 PADS=1 INK=ice DIM=70 FADE=60 MIST='rgb(30,38,54)' \
+      tools/assets/map/compose-canal.sh tools/assets/map/map-frost-canal-fal.jpg geo.json map-frost-canal
+    ETCH=1 INK=ice TONE=114,90 DIM=70 FADE=60 MIST='rgb(30,38,54)' \
+      tools/assets/map/compose-rail.sh rail-world.png geo.json map-frost-rail
