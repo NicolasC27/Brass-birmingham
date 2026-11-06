@@ -463,6 +463,8 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
     quay: number;
     reverse: boolean;
     boat: boolean;
+    /** a sledge on the ice of a frozen ground, where a barge would be */
+    sledge: boolean;
     puffs: Puff[];
     lastPuff: number;
     len: number;
@@ -537,6 +539,48 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
     lamp.position.set(L / 2 - 2, 0);
     lamp.tint = 0xffb347;
     lamp.alpha = 0.55;
+    lamp.blendMode = 'screen';
+    lamp.eventMode = 'none';
+    c.addChild(lamp);
+    c.eventMode = 'none';
+    return c;
+  };
+
+  /* a horse-drawn sledge on the ice, pointing +x, where the frozen ground
+     has no water for a barge: a heavy horse in harness, the traces, a low
+     sledge on two iron runners under a canvas in the owner's colour, the
+     driver muffled at the back, a lantern at the front */
+  const makeSledge = (col: number): Container => {
+    const c = new Container();
+    const g = new Graphics();
+    const L = 46;
+    const W = 10;
+    // runners
+    for (const side of [-1, 1]) g.roundRect(-L / 2, (side * W) / 2 - 1, 26, 1.6, 0.8).fill(0x2a2d36).stroke({ width: 0.5, color: 0x0a0a0d });
+    // the sledge's box, the canvas over it, the ropes across
+    g.roundRect(-L / 2 + 1, -W / 2 + 1, 23, W - 2, 1.5).fill(0x3a2a1c).stroke({ width: 0.8, color: 0x0a0705 });
+    const canvas = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
+    canvas.addColorStop(0, shadeHex(col, 0.8)).addColorStop(0.5, shadeHex(col, 0.55)).addColorStop(1, shadeHex(col, 0.35));
+    g.roundRect(-L / 2 + 5, -W / 2 + 2, 17, W - 4, 1.5).fill(canvas);
+    for (let k = 0; k < 3; k++) g.rect(-L / 2 + 8 + k * 5, -W / 2 + 2, 0.8, W - 4).fill({ color: 0x0a0705, alpha: 0.35 });
+    // snow on the canvas's windward edge
+    g.rect(-L / 2 + 5, -W / 2 + 2, 17, 1.2).fill({ color: 0xf4f6fa, alpha: 0.7 });
+    // the driver, muffled, at the back
+    g.circle(-L / 2 + 3, 0, 1.8).fill(0x1c1410).stroke({ width: 0.5, color: 0x0a0705 });
+    // the traces, then the horse: body, mane, head
+    g.moveTo(-L / 2 + 24, -2.5).lineTo(-L / 2 + 31, -1.5).moveTo(-L / 2 + 24, 2.5).lineTo(-L / 2 + 31, 1.5).stroke({ width: 0.8, color: 0x5a4632 });
+    g.ellipse(-L / 2 + 36, 0, 6, 3).fill(0x4a3222).stroke({ width: 0.7, color: 0x1a110a });
+    g.rect(-L / 2 + 32, -0.8, 6, 1.6).fill({ color: 0x2a1a10, alpha: 0.8 });
+    g.ellipse(-L / 2 + 43.5, 0, 2.6, 1.7).fill(0x3e2a1c).stroke({ width: 0.6, color: 0x1a110a });
+    g.eventMode = 'none';
+    c.addChild(g);
+    // the lantern at the front of the sledge
+    const lamp = new Sprite(glow);
+    lamp.anchor.set(0.5);
+    lamp.width = lamp.height = 22;
+    lamp.position.set(-L / 2 + 23, 0);
+    lamp.tint = 0xffb347;
+    lamp.alpha = 0.5;
     lamp.blendMode = 'screen';
     lamp.eventMode = 'none';
     c.addChild(lamp);
@@ -627,6 +671,8 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
           const pts = routeFor(def, game.era).pts;
           const sam = makeSampler(pts);
           const boat = l.era !== 'rail';
+          /* on the frozen ground the canal's barge is a sledge on the ice */
+          const sledge = boat && weather === 'frost';
           const col = hex(PLAYER_COLORS[game.players[l.owner].color]?.hex ?? '#C9A45C');
           const h = hashId(id);
           /* keep to the open water between the quays: the vehicle never
@@ -639,7 +685,7 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
           const cycle = pass.dur + rest;
           if (traffic === 'none' && maiden !== undefined && t >= maiden + pass.dur) continue;
           const spawn = (reverse: boolean, ph: number, from: number, second: boolean) => {
-            const c = boat ? makeBoat(col) : makeTrain(col);
+            const c = sledge ? makeSledge(col) : boat ? makeBoat(col) : makeTrain(col);
             c.scale.set(boat ? 1.3 : 1.25);
             c.visible = false;
             const wake = new Graphics();
@@ -650,7 +696,7 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
             for (let k = 0; k < (boat ? 2 : 5); k++) {
               const s = new Sprite(glow);
               s.anchor.set(0.5);
-              s.tint = boat ? 0xd6cebc : 0xe8e2d6;
+              s.tint = sledge ? 0xf2f6fb : boat ? 0xd6cebc : 0xe8e2d6;
               s.blendMode = 'screen';
               s.alpha = 0;
               s.eventMode = 'none';
@@ -660,7 +706,7 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
             const until = traffic === 'none' && maiden !== undefined ? maiden + pass.dur : Infinity;
             const gate = `${id}:${l.era}:${second ? 1 : 0}`;
             const ruled = gates.get(gate);
-            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until, gate, gateK: ruled?.k ?? NaN, gateOpen: ruled?.open ?? false, gateMaiden: ruled?.maiden ?? false, maiden: second ? undefined : maiden });
+            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, sledge, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until, gate, gateK: ruled?.k ?? NaN, gateOpen: ruled?.open ?? false, gateMaiden: ruled?.maiden ?? false, maiden: second ? undefined : maiden });
           };
           const first = h % 2 === 0;
           /* a maiden voyage starts its cycle right now; an older link keeps
@@ -815,12 +861,14 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
         v.sam.at(d, P);
         const heading = v.reverse ? P[2] + Math.PI : P[2];
         /* a barge sways a touch on the water; a locomotive rattles faster and less */
-        const sway = v.boat ? Math.sin(t * 1.6 + v.ph) * 0.03 : Math.sin(t * 9 + v.ph) * 0.006;
+        const sway = v.sledge ? Math.sin(t * 2.4 + v.ph) * 0.012 : v.boat ? Math.sin(t * 1.6 + v.ph) * 0.03 : Math.sin(t * 9 + v.ph) * 0.006;
         v.c.position.set(P[0], P[1]);
         v.c.rotation = heading + sway;
         /* wake: two ripples peeling off the stern, following the curve behind */
         v.wake.clear();
         if (v.boat) {
+          /* a sledge leaves the two tracks of its runners in the snow,
+             straight behind it; a barge two ripples peeling off the stern */
           const dirSign = v.reverse ? 1 : -1;
           for (let side = -1; side <= 1; side += 2) {
             let first = true;
@@ -830,7 +878,7 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
               v.sam.at(dd, Q);
               const nx = -Math.sin(Q[2]);
               const ny = Math.cos(Q[2]);
-              const off = side * (3.5 + k * 3);
+              const off = side * (v.sledge ? 4.2 : 3.5 + k * 3);
               const x = Q[0] + nx * off;
               const y = Q[1] + ny * off;
               if (first) {
@@ -838,7 +886,8 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
                 first = false;
               } else v.wake.lineTo(x, y);
             }
-            v.wake.stroke({ width: 1.8, color: 0xffffff, alpha: 0.5, cap: 'round' });
+            if (v.sledge) v.wake.stroke({ width: 1.4, color: 0x5c6c84, alpha: 0.45, cap: 'round' });
+            else v.wake.stroke({ width: 1.8, color: 0xffffff, alpha: 0.5, cap: 'round' });
           }
         }
         /* smoke: the chimney breathes a puff every so often; puffs drift up and fade */
@@ -846,7 +895,8 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
         if (t - v.lastPuff > every) {
           v.lastPuff = t;
           const puff = v.puffs.reduce((a, b) => (a.born < b.born ? a : b));
-          const chimney = v.boat ? -v.len / 2 + 5 : 15;
+          /* the horse's breath at the front of a sledge, the chimney elsewhere */
+          const chimney = v.sledge ? v.len / 2 + 2 : v.boat ? -v.len / 2 + 5 : 15;
           const cx = P[0] + Math.cos(heading) * chimney;
           const cy = P[1] + Math.sin(heading) * chimney;
           puff.born = t;
@@ -855,16 +905,16 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
         }
         for (const puff of v.puffs) {
           const age = t - puff.born;
-          const life = v.boat ? 3.2 : 2.2;
+          const life = v.sledge ? 1.6 : v.boat ? 3.2 : 2.2;
           if (age < 0 || age > life) {
             puff.s.alpha = 0;
             continue;
           }
           const q = age / life;
-          const size = (v.boat ? 8 : 10) + q * (v.boat ? 22 : 34);
+          const size = v.sledge ? 5 + q * 10 : (v.boat ? 8 : 10) + q * (v.boat ? 22 : 34);
           puff.s.width = puff.s.height = size;
           puff.s.position.set(puff.x + Math.sin(puff.born * 3 + q * 4) * 6 * q, puff.y - q * (v.boat ? 26 : 40));
-          puff.s.alpha = (q < 0.15 ? q / 0.15 : 1 - (q - 0.15) / 0.85) * (v.boat ? 0.22 : 0.4);
+          puff.s.alpha = (q < 0.15 ? q / 0.15 : 1 - (q - 0.15) / 0.85) * (v.sledge ? 0.3 : v.boat ? 0.22 : 0.4);
         }
       }
     },
