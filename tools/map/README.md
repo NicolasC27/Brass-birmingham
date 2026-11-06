@@ -333,12 +333,25 @@ authentic anchors of `geo.ts`). A farm gets a ring at three fifths.
 The rail era is the same sheet a generation on, made by the same script
 and no model: asked to age it, the model kept every ring in place but
 laid great white plumes over the snow, and the board breathes its own.
-The snow is greyed, soot drifts down and right of every place, and the
-furnaces are lit inside the rings — a warm glow the tiles then stand in.
+Soot settles on the walls and drifts down and right of every place, and
+the lamps come on in every ring — a furnace door and a few windows at
+the inner edge of the houses, never under the cards.
+
+A design review of the first assembly asked for five things, all done:
+the autumn villages and the wharves off this ground (`villages: 'none'`
+on the trial, `setVillages('none')` in `paint.ts`: a ground that paints
+its own places stands bare under the cards); the walls held under the
+cards' own light (the ring sprites' highlights pressed down, the discs
+cut tighter); the snowfield emptied of the sheds, tanks and pipes the
+wasteland kept, which read as things to play (`map-frostcity-snow-fal.jpg`,
+the same painting asked to remove every man-made thing); a ring sized to
+its town's cards, from three quarters for one card to a little over one
+for a block of four; and no two neighbouring towns wearing the same ring.
+The rail era's brown wash went for the lamps above.
 
     node places.mjs places.json
     tools/map/frost-city.py tools/assets/map/map-frostcity-rings-fal.jpg \
-      tools/assets/map/map-frostcity-waste-fal.jpg places.json canal.png rail.png
+      tools/assets/map/map-frostcity-snow-fal.jpg places.json canal.png rail.png
     magick rail.png -resize '3200x1800^' -gravity center -extent 3200x1800 rail-world.png
     ETCH=1 RELIEF=0 INK=ice DIM=70 FADE=60 MIST='rgb(24,30,44)' \
       tools/assets/map/compose-canal.sh canal.png geo.json map-frostcity-canal
