@@ -17,7 +17,7 @@ export interface ShopItem {
   rarity: Rarity;
 }
 
-export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'portrait', 'tiles'];
+export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'portrait', 'tiles', 'ground'];
 
 /* ------------------------------------------------------------------ */
 /* Le comptoir est en veille : rien ne se vend encore. Les deux        */
@@ -29,7 +29,7 @@ export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'port
 export const COUNTER_OPEN: boolean = false;
 
 /** les rayons montrés tant que le comptoir est en veille */
-export const PREVIEW_CATEGORIES: Category[] = ['portrait', 'tiles'];
+export const PREVIEW_CATEGORIES: Category[] = ['portrait', 'tiles', 'ground'];
 
 /** les rayons visibles, boutique ouverte ou non */
 export const SHOWN_CATEGORIES: Category[] = COUNTER_OPEN ? CATEGORIES : PREVIEW_CATEGORIES;
@@ -62,6 +62,7 @@ export const DEFAULT_EQUIPPED: Record<Category, string> = {
   sign: 'sign-shrewsbury',
   portrait: 'portrait-1',
   tiles: 'tiles-engraved',
+  ground: 'ground-midlands',
 };
 
 /** L'objet existe, et appartient bien à la catégorie annoncée. */

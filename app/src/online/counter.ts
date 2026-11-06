@@ -7,7 +7,7 @@
 /* purse or outfit; both sides pass over it when they read.            */
 /* ------------------------------------------------------------------ */
 
-export type CounterKind = 'sign' | 'portrait' | 'tiles' | 'avatar' | 'frame' | 'title';
+export type CounterKind = 'sign' | 'portrait' | 'tiles' | 'ground' | 'avatar' | 'frame' | 'title';
 
 export interface CounterItem {
   id: string;
@@ -28,6 +28,10 @@ export const COUNTER: CounterItem[] = [
   { id: 'portrait-4', kind: 'portrait', price: 80 },
   { id: 'tiles-engraved', kind: 'tiles', price: 0 },
   { id: 'tiles-mono', kind: 'tiles', price: 60 },
+  /* the ground under the board: the English model for everyone, and the
+     frozen city — the Midlands under the ice, with its own weather */
+  { id: 'ground-midlands', kind: 'ground', price: 0 },
+  { id: 'ground-frost', kind: 'ground', price: 200 },
   /* the member's card: an engraved avatar, a frame around it, a title under the name */
   { id: 'avatar-iron', kind: 'avatar', price: 0 },
   { id: 'avatar-brass', kind: 'avatar', price: 40 },

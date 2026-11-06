@@ -419,3 +419,14 @@ than bare earth (`GROUND='rgba(150,162,184,0.42)'` to `anchor-place.py`),
 served as `town-works-*-frost.webp` with their shadows, their feet added
 to `placeGround.ts`. `villages: 'frost'` on the trial; `setVillages('frost')`
 shows them and nothing else. Sources in `villages/works-*-frost-{fal,cut}.png`.
+
+### At the counter
+
+The frozen city is not a setting: it is bought at the counter
+(`ground-frost`, 200 guineas, `online/counter.ts`) and worn through the
+`ground` board option, as the tile sets are (`boardWear` in
+`Comptoir.tsx`); `mapUrls` serves it on the English board alone, a second
+country being its own. The English model stays everyone's
+(`ground-midlands`, free). The counter being in standby, the ground
+stands in its window with the portraits and the tiles. The trials
+(`?ground=frost`, `?ground=city`) remain for looking.

@@ -8,7 +8,7 @@ import Modal from '@/components/platform/Modal';
 import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import PageShell from '@/components/site/PageShell';
 import Toast, { type ToastData } from '@/components/platform/Toast';
-import { setBoardOption, useBoardOptions, type BoardOptions } from '@/components/game/boardOptions';
+import { setBoardOption, useBoardOptions, type BoardOptions, type Ground } from '@/components/game/boardOptions';
 import type { SlotArt } from '@/gl/faces';
 import { CATALOG, COUNTER_OPEN, SHOWN_CATEGORIES, type Category, type Rarity, type ShopItem } from '@/platform/catalog';
 import { equip, useWallet, type Wallet } from '@/platform/wallet';
@@ -54,19 +54,23 @@ const PIC: Record<string, string> = {
   'portrait-4': '/portrait-4.webp',
   'tiles-engraved': '/tile-coal-cut.png',
   'tiles-mono': '/tile-coal-cut.png',
+  'ground-midlands': '/comptoir-ground-midlands.webp',
+  'ground-frost': '/comptoir-ground-frost.webp',
 };
 
 /** les catégories dont le choix équipé est une préférence locale (carte de membre) */
 const LOCAL_WEAR: ReadonlySet<Category> = new Set<Category>(['avatar', 'frame', 'title']);
 /** celles qui s'affichent avec une description sous le nom */
-const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'portrait', 'tiles']);
+const WITH_BLURB: ReadonlySet<Category> = new Set<Category>(['sign', 'portrait', 'tiles', 'ground']);
 
-type BoardWear = { key: 'slotArt'; value: SlotArt };
+type BoardWear = { key: 'slotArt'; value: SlotArt } | { key: 'ground'; value: Ground };
 
 /** ce que porter un objet change sur le plateau, quand ça change quelque chose */
 function boardWear(item: ShopItem): BoardWear | null {
   if (item.id === 'tiles-mono') return { key: 'slotArt', value: 'mono' };
   if (item.id === 'tiles-engraved') return { key: 'slotArt', value: 'engraved' };
+  if (item.id === 'ground-frost') return { key: 'ground', value: 'frost' };
+  if (item.id === 'ground-midlands') return { key: 'ground', value: 'midlands' };
   return null;
 }
 

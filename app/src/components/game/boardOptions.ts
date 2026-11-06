@@ -50,20 +50,26 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
   veneto: { canal: '/map-veneto-canal.webp', rail: '/map-veneto-rail.webp' },
 };
 
-/* a ground being tried is not offered in the settings: it is asked for in
-   the address (?ground=frost), over whatever board is on the table. The
-   frozen country is the English model under snow — the same swells in a
-   polar twilight, the canals gone to ice, the rail era's snow greyed with
-   soot. The frozen city (?ground=city) is the wasteland alone with a ring
-   settlement under every town and a depot under every merchant, their
-   furnaces lit by the rail era. */
+/* the frozen city: the Midlands under the ice — a wasteland with a
+   settlement of its trade under every town and a depot under every
+   merchant, the furnaces lit by the rail era, and its own weather. Bought
+   at the counter (ground-frost) and worn through the `ground` option; it
+   dresses the English board alone, a second country being its own */
+export const FROST_URL: MapSet = { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'frost', weather: 'frost' };
+/** the ground worn: the English model, or the frozen city from the counter */
+export type Ground = 'midlands' | 'frost';
+export const sanitizeGround = (g: unknown): Ground => (g === 'frost' ? 'frost' : 'midlands');
+/* a ground being tried is asked for in the address (?ground=frost), over
+   whatever board is on the table: the frozen country, the English model
+   under snow — the same swells in a polar twilight, the canals gone to
+   ice — kept as the first trial; and the frozen city itself (?ground=city) */
 const TRIAL_GROUNDS: Record<string, MapSet> = {
   frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
-  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'frost', weather: 'frost' },
+  city: FROST_URL,
 };
 const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
 
-export const mapUrls = (board?: string): MapSet => trialGround() ?? ((board && OTHER_BOARDS[board]) || MAP_URL);
+export const mapUrls = (board?: string): MapSet => trialGround() ?? ((board && OTHER_BOARDS[board]) || (getBoardOptions().ground === 'frost' ? FROST_URL : MAP_URL));
 /** the weather of the ground on the table, if it has any */
 export const groundWeather = (board?: string): Weather | null => mapUrls(board).weather ?? null;
 
@@ -129,6 +135,8 @@ export interface BoardOptions {
   matOrder: IndustryType[];
   /** empty-slot face: engraved print or colour painting */
   slotArt: SlotArt;
+  /** the ground under the board, from the counter */
+  ground: Ground;
   /** colour-blind mode: owner shape medallions on built cards and/or links */
   colorBlind: boolean;
   sealTiles: boolean;
@@ -190,6 +198,7 @@ const KEYS: Record<Exclude<keyof BoardOptions, 'settingsOpen'>, string> = {
   tileArt: 'brassworks.tileArt',
   matOrder: 'brassworks.matOrder',
   slotArt: 'brassworks.slotArt',
+  ground: 'brassworks.ground',
   colorBlind: 'brassworks.colorBlind',
   sealTiles: 'brassworks.colorBlind.tiles',
   sealLinks: 'brassworks.colorBlind.links',
@@ -257,6 +266,7 @@ let state: BoardOptions = {
   matOrder: read('matOrder', [...MAT_ORDER_DEFAULT]),
   /* the empty slots print in black ink by default: the sepia plate stays a choice */
   slotArt: read('slotArt', 'mono'),
+  ground: sanitizeGround(read('ground', 'midlands')),
   /* on by default: oxblood and verdigris sit too close under deuteranopia
      and protanopia for colour alone to tell the owners apart */
   /* colour-blind seals are asked for, not imposed */
