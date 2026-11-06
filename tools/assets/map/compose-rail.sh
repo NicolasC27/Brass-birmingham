@@ -21,7 +21,10 @@ DIM=${DIM:-72} FADE=${FADE:-30}
 # the painting's own tone, as brightness,saturation, and the ink that suits it:
 # LIT=1 lightens ballast and rails for a ground graded down under painted tiles
 TONE=${TONE:-100,100}
-if [[ ${LIT:-0} == 1 ]]; then
+# INK=ice is the set for a frozen ground: grey ballast, rails cold as the snow
+if [[ ${INK:-} == ice ]]; then
+  BALLAST='rgba(96,96,102,0.60)' SLEEPER='rgba(14,14,18,0.65)' RAIL_WIDE='rgba(206,214,222,0.55)' RAIL_FINE='rgba(230,236,242,0.75)'
+elif [[ ${LIT:-0} == 1 ]]; then
   BALLAST='rgba(150,138,110,0.55)' SLEEPER='rgba(20,16,10,0.60)' RAIL_WIDE='rgba(224,220,202,0.55)' RAIL_FINE='rgba(236,232,214,0.75)'
 else
   BALLAST='rgba(72,66,52,0.45)' SLEEPER='rgba(24,20,14,0.55)' RAIL_WIDE='rgba(176,170,150,0.42)' RAIL_FINE='rgba(72,66,52,0.8)'
@@ -99,9 +102,10 @@ elif [[ "${ETCH:-0}" == 1 ]]; then
   cp "$T/full.png" "$T/rails.png"
   magick "$T/bank.png" "$T/track.png" -compose over -composite -modulate 84,112 -modulate ${TONE} -quality 85 "app/public/$STEM-etch.webp"
 else magick "$T/full.png" "$T/bank.png" -compose over -composite "$T/track.png" -compose over -composite "$T/rails.png"; fi
-# 3. mist past the play area only, so the far edges read as distance
+# 3. mist past the play area only, so the far edges read as distance (MIST
+#    is its colour, as in compose-canal.sh)
 magick -size $((WW + 80))x$((WH + 80)) xc:black -gravity center -background white -extent ${FW}x${FH} -blur 0x110 -evaluate multiply 0.45 "$T/mask.png"
-magick -size ${FW}x${FH} xc:'rgb(150,170,160)' "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"
+magick -size ${FW}x${FH} xc:"${MIST:-rgb(150,170,160)}" "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"
 magick "$T/rails.png" "$T/mist.png" -compose over -composite -modulate 84,112 -modulate ${TONE} "$T/out.png"
 magick "$T/out.png" -quality 82 "app/public/$STEM.webp"
 echo "$STEM.webp: $(du -h "app/public/$STEM.webp" | cut -f1) from ${SW}x${SH}"

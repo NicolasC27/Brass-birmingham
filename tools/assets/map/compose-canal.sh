@@ -28,7 +28,13 @@ TONE=${TONE:-100,92}
 # Ink made for a pale sheet drowns on a dark ground. LIT=1 swaps in a lighter
 # set — waters, lanes, village grounds, basin rims — so the geometry still
 # reads when the painting has been graded down for painted tiles.
-if [[ ${LIT:-0} == 1 ]]; then
+# INK=ice is the set for a frozen ground: the waters are ice, the lanes
+# trodden snow, the ground a town has worn a dark slush rather than dust.
+if [[ ${INK:-} == ice ]]; then
+  W_DEEP='rgba(126,168,186,0.80)' W_SHEEN='rgba(176,210,222,0.55)' W_THREAD='rgba(240,250,255,0.55)'
+  TOWPATH='rgba(200,206,212,0.50)' LANE_UNDER='rgba(10,12,18,0.36)' LANE_OVER='rgba(190,198,208,0.50)'
+  PATCH='rgba(52,48,46,0.50)' RIM='rgba(196,214,224,0.70)' BASIN='rgba(70,104,122,0.80)'
+elif [[ ${LIT:-0} == 1 ]]; then
   W_DEEP='rgba(96,150,146,0.85)' W_SHEEN='rgba(150,200,196,0.55)' W_THREAD='rgba(238,248,242,0.55)'
   TOWPATH='rgba(226,208,162,0.55)' LANE_UNDER='rgba(18,14,10,0.34)' LANE_OVER='rgba(222,206,166,0.52)'
   PATCH='rgba(166,146,112,0.45)' RIM='rgba(228,216,182,0.70)' BASIN='rgba(62,104,100,0.80)'
@@ -215,9 +221,10 @@ if [[ ${RELIEF:-1} == 1 ]]; then
   mv "$T/relief.png" "$T/land.png"
 fi
 
-# 7. mist past the play area only, so the far edges read as distance
+# 7. mist past the play area only, so the far edges read as distance; MIST
+#    is its colour — a dark ground wants the distance darker, not paler
 magick -size $((WW + 80))x$((WH + 80)) xc:black -gravity center -background white -extent ${FW}x${FH} -blur 0x110 -evaluate multiply 0.45 "$T/mask.png"
-magick -size ${FW}x${FH} xc:'rgb(150,170,160)' "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"
+magick -size ${FW}x${FH} xc:"${MIST:-rgb(150,170,160)}" "$T/mask.png" -alpha off -compose CopyOpacity -composite "$T/mist.png"
 magick "$T/land.png" "$T/mist.png" -compose over -composite "$T/out.png"
 magick "$T/out.png" -quality 82 "app/public/$STEM.webp"
 echo "$STEM.webp: $(du -h "app/public/$STEM.webp" | cut -f1) from ${SW}x${SH}"
