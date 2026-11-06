@@ -709,6 +709,14 @@ const game: typeof engame = {
     mute: 'Stummschalten',
     unmute: 'Wieder hören',
   },
+  /* the table's wire: free lines between the seats, online */
+  wire: {
+    title: 'Der Draht des Tisches',
+    open: 'Der Draht des Tisches',
+    placeholder: 'Eine Zeile für den Tisch…',
+    empty: 'An diesem Tisch steht noch nichts geschrieben.',
+    unreadAria: '{n} ungelesene [n|Zeile|Zeilen]',
+  },
   telegram: {
     title: 'Telegramm',
     send: 'Telegramm senden',

@@ -23,6 +23,7 @@ import { guideDock, GUIDE_RAIL } from '@/components/game/guideKeys';
 import { useWide, useWindowMeasure } from '@/hooks/use-narrow';
 import Notices from '@/components/game/Notices';
 import { MarkWarning, TelegramButton } from '@/components/game/Telegrams';
+import { TableWireButton } from '@/components/game/TableWire';
 import Gazette from '@/components/game/Gazette';
 import PreparedPanel from '@/components/game/PreparedPanel';
 import SpectatorStrip from '@/components/game/SpectatorStrip';
@@ -1153,6 +1154,7 @@ function TableTools({ skipAnim, onSkip, ledgerOpen, unread, onLedger }: { skipAn
         </button>
       )}
       <TelegramButton className={TOOL} />
+      <TableWireButton className={TOOL} />
       <NotebookButton className={TOOL} />
       <AskGuide className={TOOL} />
       <PhotoButton className={TOOL} />

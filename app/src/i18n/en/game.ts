@@ -707,6 +707,14 @@ const game = {
     mute: 'Stop hearing',
     unmute: 'Hear again',
   },
+  /* the table's wire: free lines between the seats, online */
+  wire: {
+    title: 'The table’s wire',
+    open: 'The table’s wire',
+    placeholder: 'A line for the table…',
+    empty: 'Nothing written at this table yet.',
+    unreadAria: '{n} unread [n|line|lines]',
+  },
   telegram: {
     title: 'Telegram',
     send: 'Wire a telegram',
