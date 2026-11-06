@@ -319,16 +319,23 @@ under every town and a depot under every merchant.
 A model asked for a city paints one where it likes. Given the board as a
 plan — a disc for every town — `fal-ai/nano-banana/edit` kept the style of
 its reference and the layout of its own, twenty-seven rings where the
-board has twenty-two places. So the city is assembled by hand, from two
-paintings of the same model: the rings (`map-frostcity-rings-fal.jpg`, a
-plan of the play area handed over with the frozen country as the palette)
-and the wasteland (`map-frostcity-waste-fal.jpg`, the same painting with
-"remove every ring settlement" — the sheds, tanks and coal heaps stayed).
-`tools/map/frost-city.py` cuts eight rings and two depots that stand clear
-of their neighbours, each through a soft disc, and lays them where the
-board shows its towns and merchants (`tools/map/places.ts`: the towns
-nudged clear of one another, the southern merchants lifted — not the
-authentic anchors of `geo.ts`). A farm gets a ring at three fifths.
+board has twenty-two places; and eight of those rings cycled over the
+towns read as the same stamp twenty-two times. So the model is asked for
+settlements by the sheet instead, nine to a sheet, each named by its
+trade and no two alike in footprint — round, oval, a crescent, a walled
+square, a scattered hamlet, a row along one street
+(`map-frostcity-sheet-{a,b,c}-fal.jpg`: cotton mills and collieries;
+manufactories, ironworks and farmsteads; breweries, the potteries and
+five depots) — and the city is assembled by hand on an empty snowfield
+(`map-frostcity-snow-fal.jpg`, the first wasteland asked to remove every
+man-made thing). `tools/map/frost-city.py` cuts every settlement from its
+sheet through a soft ellipse, read off the sheets by eye, and lays it
+under the town that trades as it does — Burton its brewhouse tower,
+Stoke its bottle kilns, Cannock its pit and spoil heap, Birmingham the
+great ring — sized to the town's cards, a depot of its own under every
+merchant, at the places the board shows them (`tools/map/places.ts`: the
+towns nudged clear of one another, the southern merchants lifted — not
+the authentic anchors of `geo.ts`).
 
 The rail era is the same sheet a generation on, made by the same script
 and no model: asked to age it, the model kept every ring in place but
@@ -337,20 +344,16 @@ Soot settles on the walls and drifts down and right of every place, and
 the lamps come on in every ring — a furnace door and a few windows at
 the inner edge of the houses, never under the cards.
 
-A design review of the first assembly asked for five things, all done:
-the autumn villages and the wharves off this ground (`villages: 'none'`
-on the trial, `setVillages('none')` in `paint.ts`: a ground that paints
-its own places stands bare under the cards); the walls held under the
-cards' own light (the ring sprites' highlights pressed down, the discs
-cut tighter); the snowfield emptied of the sheds, tanks and pipes the
-wasteland kept, which read as things to play (`map-frostcity-snow-fal.jpg`,
-the same painting asked to remove every man-made thing); a ring sized to
-its town's cards, from three quarters for one card to a little over one
-for a block of four; and no two neighbouring towns wearing the same ring.
-The rail era's brown wash went for the lamps above.
+A design review of the first assembly asked for the autumn villages and
+the wharves off this ground (`villages: 'none'` on the trial,
+`setVillages('none')` in `paint.ts`: a ground that paints its own places
+stands bare under the cards), the walls held under the cards' own light
+(the sprites' highlights pressed down), and the snowfield emptied of
+anything that read as a thing to play — all done. The rail era's brown
+wash went for the lamps above.
 
     node places.mjs places.json
-    tools/map/frost-city.py tools/assets/map/map-frostcity-rings-fal.jpg \
+    tools/map/frost-city.py tools/assets/map/map-frostcity-sheet-{a,b,c}-fal.jpg \
       tools/assets/map/map-frostcity-snow-fal.jpg places.json canal.png rail.png
     magick rail.png -resize '3200x1800^' -gravity center -extent 3200x1800 rail-world.png
     ETCH=1 RELIEF=0 INK=ice DIM=70 FADE=60 MIST='rgb(24,30,44)' \
