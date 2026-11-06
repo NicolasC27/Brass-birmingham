@@ -588,8 +588,9 @@ function GameTopBar({ candle, marketOpen }: { candle: CandleProp; marketOpen: bo
               /* the move, whole: the works and the place, the tile's price
                  when the line has room, then its tokens — no ellipsis; the
                  words give way only on a line too narrow for anything */
-              <span ref={statusRef} role="status" className="flex min-w-0 flex-1 items-center gap-1.5" title={head.full ?? summaryFull ?? undefined}>
-                <span className="min-w-0 truncate whitespace-nowrap font-fell text-[12.5px] leading-none text-cream-100/90 min-[1280px]:text-[13px]">
+              <span ref={statusRef} role="status" className="flex min-w-0 flex-1 items-center gap-1.5">
+                {/* the whole line on the words alone: over the tokens, their own plaque speaks */}
+                <span className="min-w-0 truncate whitespace-nowrap font-fell text-[12.5px] leading-none text-cream-100/90 min-[1280px]:text-[13px]" title={head.full ?? summaryFull ?? undefined}>
                   <span ref={whatRef}>{head.what}</span>
                   {head.price !== null && (
                     <span ref={priceRef} aria-hidden={room.price ? undefined : true} className={cn('whitespace-pre text-cream-100/60', room.price ? 'inline' : OUT_OF_FLOW)}>
