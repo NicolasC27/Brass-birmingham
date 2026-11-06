@@ -56,7 +56,7 @@ export class PaceWatch {
 export interface Flag {
   id: string;
   accountId: string;
-  kind: 'pace' | 'meetings' | 'household';
+  kind: 'pace' | 'meetings' | 'household' | 'line';
   detail: string;
   code: string | null;
   at: number;

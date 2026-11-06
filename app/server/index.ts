@@ -18,6 +18,8 @@ import type { ClientMessage, ServerMessage } from '@/online/protocol';
 import type { JudgeId } from '@/game/analysis';
 import type { Me, TableQuery } from '@/online/table';
 import { normalizeCode } from '@/online/table';
+import { SAY_SHOWER, SAY_WINDOW_MS, cleanLine, friendRoom, roomOf, tableRoom } from '@/online/parlour';
+import type { Room } from '@/online/parlour';
 import { CAPS } from '@/game/analysisMerge';
 import type { Facts } from '@/game/analysisMerge';
 import { Readings, isJudge, isVersion } from './analysis';
@@ -202,6 +204,8 @@ interface Office {
   lastTelegram: number;
   marks: number[];
   strikes: number;
+  /** when the last lines were said in the parlour, within the window */
+  lines: number[];
   seenAt: number;
 }
 const offices = new Map<string, Office>();
@@ -210,7 +214,7 @@ function officeOf(accountId: string): Office {
   const now = Date.now();
   for (const [id, o] of offices) if (now - o.seenAt > OFFICE_IDLE_MS) offices.delete(id);
   let o = offices.get(accountId);
-  if (!o) offices.set(accountId, (o = { lastTelegram: 0, marks: [], strikes: 0, seenAt: now }));
+  if (!o) offices.set(accountId, (o = { lastTelegram: 0, marks: [], strikes: 0, lines: [], seenAt: now }));
   o.seenAt = now;
   return o;
 }
@@ -532,6 +536,43 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
   const tellFriends = (accountId: string) => {
     for (const id of hall.friendsToTell(accountId)) for (const c of socketsOf(id)) pushDesk(c);
   };
+
+  /* ------------------------------ the parlour ------------------------------ */
+
+  /** the rooms this account has a seat in, besides the hall: its friends'
+   *  rooms and the rooms of the tables it sits at */
+  const roomsOf = (accountId: string): Room[] => [
+    ...store
+      .friendsOf(accountId)
+      .filter((f) => f.status === 'friends')
+      .map((f) => friendRoom(f.id)),
+    ...hall.tablesFor(accountId).map((x) => tableRoom(x.code)),
+  ];
+  /** what this account has not read, to every socket of its */
+  const pushUnread = (accountId: string) => {
+    const rooms = store.unreadOf(accountId, roomsOf(accountId));
+    for (const c of socketsOf(accountId)) send(c, { t: 'unread', rooms });
+  };
+  /** a room as this account may use it: who hears what is said there, and
+   *  whether this account may say anything — or null when the room is not
+   *  this account's to read */
+  const roomFor = (who: Me, room: Room): { hears: Client[]; may: boolean } | null => {
+    const r = roomOf(room);
+    if (!r) return null;
+    if (r.kind === 'hall') return { hears: [...clients].filter((c) => c.me?.verified), may: true };
+    if (r.kind === 'friend') {
+      const f = store.friendsOf(who.id).find((x) => x.id === r.id);
+      if (!f || f.status !== 'friends') return null;
+      return { hears: [...socketsOf(who.id), ...socketsOf(f.account.id)], may: true };
+    }
+    const code = normalizeCode(r.code);
+    const table = hall.table(code);
+    if (!table) return null;
+    const seated = table.seats.some((x) => x.id === who.id);
+    /* a watcher reads the table's room; a seat speaks in it */
+    if (!seated && !socketsOf(who.id).some((c) => c.watching.has(code))) return null;
+    return { hears: watchers(code), may: seated };
+  };
   /** the register of tables, to a socket that asked for it of late — at
    *  most once a second, the changes in between folded into one push */
   const pushTables = (c: Client) => {
@@ -730,6 +771,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         c.token = m.token;
         send(c, { t: 'welcome', rid: m.rid, me: c.me });
         tellFriends(account.id);
+        if (c.me.verified) pushUnread(account.id);
         return;
       }
       case 'signout': {
@@ -1120,6 +1162,64 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       return;
     }
     switch (m.t) {
+      /* the parlour: a line said, a page read, a room read up to here, a
+         line reported. Each room says who hears it (roomFor) */
+      case 'say': {
+        const text = cleanLine(m.text);
+        const place = roomFor(who, m.room);
+        if (!place || !place.may) {
+          send(c, { t: 'refused', rid: m.rid, error: place ? 'refused' : 'not-found' });
+          return;
+        }
+        if (!text) {
+          send(c, { t: 'refused', rid: m.rid, error: 'too-long' });
+          return;
+        }
+        const now = Date.now();
+        if (store.silencedUntil(who.id, now)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'silenced' });
+          return;
+        }
+        /* so many lines within the window, whatever the room */
+        const office = officeOf(who.id);
+        office.lines = office.lines.filter((at) => now - at < SAY_WINDOW_MS);
+        if (office.lines.length >= SAY_SHOWER) {
+          send(c, { t: 'refused', rid: m.rid, error: 'refused' });
+          return;
+        }
+        office.lines.push(now);
+        const line = store.sayLine(m.room, { id: who.id, name: who.name }, text, now);
+        send(c, { t: 'done', rid: m.rid });
+        for (const w of place.hears) send(w, { t: 'said', line });
+        return;
+      }
+      case 'lines': {
+        if (!roomFor(who, m.room)) {
+          send(c, { t: 'refused', rid: m.rid, error: 'not-found' });
+          return;
+        }
+        const before = typeof m.before === 'number' && Number.isFinite(m.before) ? Math.floor(m.before) : undefined;
+        const { lines, more } = store.linesOf(m.room, before);
+        send(c, { t: 'lines', rid: m.rid, room: m.room, lines, more });
+        return;
+      }
+      case 'seen': {
+        if (!roomFor(who, m.room) || typeof m.at !== 'number' || !Number.isFinite(m.at)) return;
+        store.seeRoom(who.id, m.room, Math.min(Math.floor(m.at), Date.now()));
+        /* every tab of mine clears the count together */
+        pushUnread(who.id);
+        return;
+      }
+      case 'report': {
+        const line = typeof m.id === 'number' ? store.line(Math.floor(m.id)) : null;
+        if (!line || !roomFor(who, line.room) || line.from.id === who.id) {
+          send(c, { t: 'refused', rid: m.rid, error: 'not-found' });
+          return;
+        }
+        store.flag(line.from.id, 'line', `reported by ${who.name} (${who.id}) — line ${line.id} in ${line.room}: ${line.text}`);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
       case 'create': {
         const table = hall.create(who, m.options, m.color);
         c.watching.add(table.code);
@@ -1279,6 +1379,17 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
         waitlist.stop(String(m.id));
         book(m.rid);
         return;
+      case 'admin.silence': {
+        const hours = Number(m.hours);
+        const target = store.account(String(m.id));
+        if (!target || !Number.isFinite(hours) || hours < 0 || hours > 24 * 30) {
+          send(c, { t: 'refused', rid: m.rid, error: 'not-found' });
+          return;
+        }
+        store.silence(target.id, Date.now() + hours * 60 * 60 * 1000, account.id);
+        send(c, { t: 'done', rid: m.rid });
+        return;
+      }
       case 'admin.guide': {
         /* each course's funnel in its own lessons' order */
         const filter = filterOf(m.filter);
@@ -1353,6 +1464,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     c.token = store.openSession(account.id);
     send(c, { t: 'session', rid, token: c.token, me: c.me });
     tellFriends(account.id);
+    if (c.me.verified) pushUnread(account.id);
   }
 
   const every = options.sweepEvery ?? 15 * 60 * 1000;

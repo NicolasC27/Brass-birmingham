@@ -16,6 +16,8 @@ import { fresh, ratingOf, seasonAt, settle } from './rating';
 import type { Standing } from './rating';
 import { MEETINGS_CAP } from './watch';
 import type { Flag } from './watch';
+import type { Line, Room, Unread } from '@/online/parlour';
+import { LINES_PAGE } from '@/online/parlour';
 import type { Finished } from './rivals';
 
 /** the first moment of a season id such as 2026-Q3 */
@@ -90,6 +92,10 @@ export const MAX_PORTRAIT = 64_000;
 const PORTRAIT_DATA = /^data:image\/(webp|jpeg|png);base64,[A-Za-z0-9+/]+=*$/;
 /** a page of notes beside one game, and no more */
 export const MAX_NOTES = 32_000;
+/** a line in the parlour is kept so long, then let go */
+export const LINES_MS = 90 * 24 * 60 * 60 * 1000;
+/** a room keeps so many lines at most, the oldest let go first */
+export const LINES_CAP = 500;
 /** a session lasts a month of silence */
 export const SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 /** a letter is good for an hour */
@@ -258,6 +264,28 @@ create table if not exists challenges (
   met       text not null,
   at        integer not null,
   primary key (accountId, week)
+);
+/* the parlour: every line said in a room, who has read how far, and who
+   the direction has silenced */
+create table if not exists lines (
+  id     integer primary key autoincrement,
+  room   text not null,
+  fromId text not null,
+  text   text not null,
+  at     integer not null
+);
+create index if not exists lines_room on lines(room, id);
+create table if not exists room_seen (
+  accountId text not null,
+  room      text not null,
+  at        integer not null,
+  primary key (accountId, room)
+);
+create table if not exists silences (
+  accountId text primary key,
+  until     integer not null,
+  byId      text not null,
+  at        integer not null
 );
 `;
 
@@ -782,6 +810,7 @@ export class Store {
       papers: rows('select kind, body, updatedAt from papers where accountId = ?'),
       notes: rows('select code, body, updatedAt from notes where accountId = ?'),
       flags: rows('select kind, detail, code, at from flags where accountId = ?'),
+      lines: rows('select room, text, at from lines where fromId = ?'),
     };
   }
 
@@ -820,6 +849,10 @@ export class Store {
       }
       this.db.prepare('delete from friends where aId = ? or bId = ?').run(accountId, accountId);
       this.db.prepare('delete from invitations where fromId = ? or toId = ?').run(accountId, accountId);
+      /* what was said goes with the one who said it */
+      this.db.prepare('delete from lines where fromId = ?').run(accountId);
+      this.db.prepare('delete from room_seen where accountId = ?').run(accountId);
+      this.db.prepare('delete from silences where accountId = ?').run(accountId);
       this.db.exec('commit');
     } catch (e) {
       this.db.exec('rollback');
@@ -835,6 +868,8 @@ export class Store {
     this.db.prepare('delete from sessions where seenAt < ?').run(now - SESSION_MS);
     this.db.prepare('delete from letters where createdAt < ?').run(now - TOKEN_MS);
     this.db.prepare('delete from guide_trail where seen < ?').run(now - TRAIL_MS);
+    this.db.prepare('delete from lines where at < ?').run(now - LINES_MS);
+    this.db.prepare('delete from silences where until < ?').run(now);
   }
 
   /* -------------------------- invitations -------------------------- */
@@ -929,6 +964,66 @@ export class Store {
   /* ---------------------------- feedback --------------------------- */
 
   /** an idea or a bug, as a player wrote it */
+  /* ----------------------------- the parlour ----------------------------- */
+
+  /** a line said in a room, written down and handed back with its number */
+  sayLine(room: Room, from: Identity, text: string, at = Date.now()): Line {
+    const r = this.db.prepare('insert into lines (room, fromId, text, at) values (?, ?, ?, ?)').run(room, from.id, text, at);
+    const id = Number(r.lastInsertRowid);
+    /* a room keeps so many lines: the oldest go as the new ones come */
+    this.db.prepare('delete from lines where room = ? and id <= (select id from lines where room = ? order by id desc limit 1 offset ?)').run(room, room, LINES_CAP);
+    /* what I said, I have read */
+    this.seeRoom(from.id, room, at);
+    return { id, room, from, text, at };
+  }
+
+  /** a page of a room, oldest first — the lines before `before` when given */
+  linesOf(room: Room, before?: number, limit = LINES_PAGE): { lines: Line[]; more: boolean } {
+    const rows = (
+      before === undefined
+        ? this.db.prepare('select l.id, l.room, l.fromId, a.name, l.text, l.at from lines l join accounts a on a.id = l.fromId where l.room = ? order by l.id desc limit ?').all(room, limit + 1)
+        : this.db.prepare('select l.id, l.room, l.fromId, a.name, l.text, l.at from lines l join accounts a on a.id = l.fromId where l.room = ? and l.id < ? order by l.id desc limit ?').all(room, before, limit + 1)
+    ) as { id: number; room: string; fromId: string; name: string; text: string; at: number }[];
+    const more = rows.length > limit;
+    const page = rows.slice(0, limit).reverse();
+    return { lines: page.map((r) => ({ id: r.id, room: r.room, from: { id: r.fromId, name: r.name }, text: r.text, at: r.at })), more };
+  }
+
+  /** one line, for the direction to read what was reported */
+  line(id: number): Line | null {
+    const r = this.db.prepare('select l.id, l.room, l.fromId, a.name, l.text, l.at from lines l join accounts a on a.id = l.fromId where l.id = ?').get(id) as { id: number; room: string; fromId: string; name: string; text: string; at: number } | undefined;
+    return r ? { id: r.id, room: r.room, from: { id: r.fromId, name: r.name }, text: r.text, at: r.at } : null;
+  }
+
+  /** this member has read the room up to `at` — never backwards */
+  seeRoom(accountId: string, room: Room, at: number): void {
+    this.db.prepare('insert into room_seen (accountId, room, at) values (?, ?, ?) on conflict (accountId, room) do update set at = max(at, excluded.at)').run(accountId, room, at);
+  }
+
+  /** what this member has not read in each of these rooms: lines said by
+   *  others since the member last read there (every line, in a room never opened) */
+  unreadOf(accountId: string, rooms: Room[]): Unread[] {
+    const q = this.db.prepare('select count(*) as n, max(l.at) as at from lines l where l.room = ? and l.fromId != ? and l.at > coalesce((select at from room_seen where accountId = ? and room = ?), 0)');
+    const out: Unread[] = [];
+    for (const room of rooms) {
+      const r = q.get(room, accountId, accountId, room) as { n: number; at: number | null };
+      if (r.n > 0) out.push({ room, count: r.n, at: r.at ?? 0 });
+    }
+    return out;
+  }
+
+  /** the direction's silence on a member, until when (0 lifts it) */
+  silence(accountId: string, until: number, byId: string, at = Date.now()): void {
+    if (until <= at) this.db.prepare('delete from silences where accountId = ?').run(accountId);
+    else this.db.prepare('insert into silences (accountId, until, byId, at) values (?, ?, ?, ?) on conflict (accountId) do update set until = excluded.until, byId = excluded.byId, at = excluded.at').run(accountId, until, byId, at);
+  }
+
+  /** until when this member is silenced, or 0 */
+  silencedUntil(accountId: string, now = Date.now()): number {
+    const r = this.db.prepare('select until from silences where accountId = ?').get(accountId) as { until: number } | undefined;
+    return r && r.until > now ? r.until : 0;
+  }
+
   feedback(accountId: string, page: string, kind: string, text: string): Note {
     const note: Note = { id: 'f-' + randomBytes(6).toString('hex'), accountId, page: page.slice(0, 120), kind: kind === 'bug' ? 'bug' : 'idea', text: text.trim().slice(0, 4000), createdAt: Date.now() };
     this.db.prepare('insert into feedback (id, accountId, page, kind, text, createdAt) values (?, ?, ?, ?, ?, ?)').run(note.id, note.accountId, note.page, note.kind, note.text, note.createdAt);

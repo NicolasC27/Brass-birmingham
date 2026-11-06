@@ -7,6 +7,7 @@ import type { GameState, SetupPayload } from '@/game/types';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, AuthError, Desk, Identity, Leaderboard, LobbyError, Me, QueueState, Table, TableQuery, TablesPage } from './table';
 import type { Audience, WaitBook } from './waitlist';
 import type { GuideFunnel, TrailEvent, TrailFilter } from './guideTrail';
+import type { Line, Room, Unread } from './parlour';
 
 /* ------------------------------------------------------------------ */
 /* The wire — what a table and its players say to each other.          */
@@ -97,6 +98,15 @@ export type ClientMessage =
   | { t: 'friend'; rid: number; name: string }
   /** end a friendship, or decline one on its way */
   | { t: 'unfriend'; rid: number; id: string }
+  /* the parlour: the hall, a friends' room, a table's room (online/parlour.ts) */
+  /** a line said in a room */
+  | { t: 'say'; rid: number; room: Room; text: string }
+  /** a page of a room's lines, the ones before `before` (the latest when unset) */
+  | { t: 'lines'; rid: number; room: Room; before?: number }
+  /** I have read the room up to this line: nothing before it is unread */
+  | { t: 'seen'; room: Room; at: number }
+  /** a line the direction should look at */
+  | { t: 'report'; rid: number; id: number }
   /** ask a player by name to a table I sit at */
   | { t: 'invite'; rid: number; code: string; name: string }
   /** answer an invitation — accepting takes the chair */
@@ -194,6 +204,8 @@ export type ClientMessage =
   | { t: 'admin.stop'; rid: number; id: string }
   /** the guided game's trail summed up, over one kind of screen or one deal */
   | { t: 'admin.guide'; rid: number; filter?: TrailFilter }
+  /** a member silenced in the parlour for so many hours (0 lifts it) */
+  | { t: 'admin.silence'; rid: number; id: string; hours: number }
   | { t: 'ping' };
 
 export type ServerMessage =
@@ -209,6 +221,12 @@ export type ServerMessage =
   | { t: 'export'; rid: number; data: Record<string, unknown> }
   /** the desk, whenever it changes */
   | { t: 'desk'; rid?: number; desk: Desk }
+  /** a line said in a room I am in */
+  | { t: 'said'; line: Line }
+  /** a page of a room, oldest first; `more` when older lines remain */
+  | { t: 'lines'; rid: number; room: Room; lines: Line[]; more: boolean }
+  /** what I have not read, room by room — on signing in, and whenever a tab of mine reads */
+  | { t: 'unread'; rooms: Unread[] }
   /** the table changed (null = it is gone) */
   | { t: 'table'; code: string; table: Table | null }
   /** the answer to a create or a join */
