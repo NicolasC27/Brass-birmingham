@@ -2,6 +2,7 @@ import { Container, Particle, ParticleContainer, Rectangle, Texture } from 'pixi
 import { TOWNS } from '@/game/data';
 import type { GameState, IndustryType } from '@/game/types';
 import { TILE_HALF, displayPosFor, townChrome } from '@/components/game/townChrome';
+import type { Weather } from '@/components/game/boardOptions';
 import { duskLevel, duskTint, plumeFor } from './living';
 import type { Plume } from './living';
 
@@ -154,7 +155,7 @@ function slotAt(key: string): [number, number] | null {
 
 /** `ground` is the table's painted ground: the dusk tints it, and nothing
  *  else, at no cost to the frame (no sheet is laid over it) */
-export function buildPlumes(reduced: boolean, ground: Container): Plumes {
+export function buildPlumes(reduced: boolean, ground: Container, weather: Weather | null = null): Plumes {
   const { puffs, glow } = atlas();
   const low = new Container();
   const high = new Container();
@@ -238,6 +239,20 @@ export function buildPlumes(reduced: boolean, ground: Container): Plumes {
       tw.ys += at[1];
       tw.n += 1;
       perTown.set(town, tw);
+    }
+    /* on a frozen ground every settlement breathes, works or none: a
+       thread of steam off the houses at the top of the block, a farm's
+       thinner, so the city reads as lived in against the cold */
+    if (weather === 'frost') {
+      const breath = plumeFor('brewery', false);
+      for (const def of TOWNS) {
+        const c = townChrome(def);
+        const seed = hash(`${def.id}:breath`);
+        let top = Infinity;
+        for (const sl of c.slots) top = Math.min(top, sl.y);
+        const farm = !!def.farm;
+        list.push({ x: c.ax + (unit(seed, 0) - 0.5) * c.blockW * 0.7, y: top - TILE_HALF - 4, plume: { ...breath, count: farm ? 3 : 5, alpha: 0.6, life: 5.5, rise: 70, size0: 9, size1: 38 }, seed });
+      }
     }
     /* the columns share the sheet: a busy table breathes a little more,
        a crowded one gives each works fewer puffs rather than more sprites */

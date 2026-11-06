@@ -897,7 +897,7 @@ export default function PixiBoard({ game, targets, linkTargetsList, sellTargetsL
         onLangChange(() => scene.redraw(gameRef.current)),
       );
 
-      const ambiance = buildAmbiance(reduced, scene.ground);
+      const ambiance = buildAmbiance(reduced, scene.ground, bgUrls.weather ?? null);
       ambiance.setTraffic(bootOpts.traffic);
       ambianceRef.current = ambiance;
       /* mist, halos and traffic under the towns: right over the links,

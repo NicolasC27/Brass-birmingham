@@ -6,6 +6,9 @@ import type { GameState, IndustryType } from '@/game/types';
 import { admitCrossing, trafficCap, trafficLinks } from './living';
 import type { TrafficLevel } from './living';
 import { buildPlumes } from './plumes';
+import { buildSnow } from './snow';
+import { duskLevel } from './living';
+import type { Weather } from '@/components/game/boardOptions';
 
 export type { TrafficLevel } from './living';
 
@@ -315,7 +318,7 @@ export interface Ambiance {
 }
 
 /** `ground` is the table's painted ground, which the dusk tints */
-export function buildAmbiance(reduced: boolean, ground: Container): Ambiance {
+export function buildAmbiance(reduced: boolean, ground: Container, weather: Weather | null = null): Ambiance {
   const layer = new Container();
   const glow = glowTexture();
   const animated: Animated[] = [];
@@ -349,16 +352,19 @@ export function buildAmbiance(reduced: boolean, ground: Container): Ambiance {
   }
 
   /* ----------------------- town lamplight halos ---------------------- */
-  for (const node of [...TOWNS.map((t) => ({ id: t.id, x: t.x, y: t.y, r: 90 })), ...MERCHANTS.map((m) => ({ id: m.id, x: m.x, y: m.y, r: 70 }))]) {
+  /* on the frozen ground Birmingham is the hearth of the country, as the
+     generator is of Frostpunk's city: its halo wide and warm */
+  const hearth = (id: string): boolean => weather === 'frost' && id === 'birmingham';
+  for (const node of [...TOWNS.map((t) => ({ id: t.id, x: t.x, y: t.y, r: hearth(t.id) ? 260 : 90 })), ...MERCHANTS.map((m) => ({ id: m.id, x: m.x, y: m.y, r: 70 }))]) {
     const h = hashId(node.id);
     const s = new Sprite(glow);
     s.anchor.set(0.5);
     s.position.set(node.x, node.y);
     s.width = s.height = node.r * 2;
-    s.tint = 0xe8a33d;
+    s.tint = hearth(node.id) ? 0xff9a3c : 0xe8a33d;
     s.blendMode = 'screen';
-    const lo = 0.28;
-    const hi = 0.4;
+    const lo = hearth(node.id) ? 0.36 : 0.28;
+    const hi = hearth(node.id) ? 0.52 : 0.4;
     const dur = 4 + (h % 300) / 100;
     const ph = (h % 700) / 100;
     layer.addChild(s);
@@ -432,7 +438,13 @@ export function buildAmbiance(reduced: boolean, ground: Container): Ambiance {
   };
 
   /* ----------------- the works' plumes + traffic (dynamic) ----------- */
-  const plumes = buildPlumes(reduced, ground);
+  const plumes = buildPlumes(reduced, ground, weather);
+  /* the snow over a frozen ground, over the towns and under their names */
+  const snow = weather === 'frost' ? buildSnow(reduced) : null;
+  const high = new Container();
+  high.eventMode = 'none';
+  high.addChild(plumes.high);
+  if (snow) high.addChild(snow.layer);
   const wakeLayer = new Container(); // ripples + smoke puffs, under the hulls
   const trafficLayer = new Container();
   layer.addChild(plumes.low, wakeLayer, trafficLayer);
@@ -737,7 +749,7 @@ export function buildAmbiance(reduced: boolean, ground: Container): Ambiance {
   let lastT = 0;
   return {
     layer,
-    high: plumes.high,
+    high,
     setTraffic(level: TrafficLevel) {
       traffic = level; // the next tick rebuilds the vehicles (tKey changes)
     },
@@ -760,6 +772,7 @@ export function buildAmbiance(reduced: boolean, ground: Container): Ambiance {
       updateEtch(t, game);
       /* the columns stand still with the traffic off: the glows stay lit */
       plumes.tick(t, dt, k, traffic !== 'none');
+      snow?.tick(t, dt, k, game ? duskLevel(game) : 0);
       /* the vehicles under way on the lines, for the gate below */
       let sailing = 0;
       for (const v of vehicles) if (v.gateOpen && !v.gateMaiden && underWay(v, t) !== null && v.gateK === Math.floor((t + v.ph) / (v.pass.dur + v.rest))) sailing++;
