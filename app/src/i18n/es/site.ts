@@ -147,6 +147,8 @@ const site: typeof enSite = {
       'already-invited': 'Ya le va una carta de camino.',
       'not-yours': 'Solo un jugador de la mesa puede invitar.',
       'already-friends': 'Ya sois amigos.',
+      'silenced': 'La dirección le ha silenciado por un tiempo.',
+      'too-long': 'Una línea vacía, o demasiado larga: 280 caracteres como máximo.',
       yourself: 'Es usted.',
     },
   },

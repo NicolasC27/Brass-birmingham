@@ -145,6 +145,8 @@ const site = {
       'already-invited': 'A letter to them is already on its way.',
       'not-yours': 'Only a player at the table may invite.',
       'already-friends': 'You are friends already.',
+      'silenced': 'The direction has silenced you for a while.',
+      'too-long': 'An empty line, or one too long: 280 characters at most.',
       yourself: 'That is you.',
     },
   },

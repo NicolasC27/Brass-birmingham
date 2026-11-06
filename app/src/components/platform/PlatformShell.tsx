@@ -11,6 +11,7 @@ import RankBadge from './RankBadge';
 import { usePresence } from './presence';
 import { ephemerisOf } from '@/platform/almanac';
 import Arrival from './Arrival';
+import Telegraph from './Telegraph';
 import { useEffect } from 'react';
 import { clearPapers, hydratePapers } from '@/platform/papers';
 
@@ -415,6 +416,7 @@ export default function PlatformShell() {
       </main>
       <Colophon />
       <BottomTabBar />
+      <Telegraph />
       <Arrival />
     </div>
   );

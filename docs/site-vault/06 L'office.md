@@ -37,6 +37,18 @@ Une partie à la maison entre dans `historyFor` (l'onglet Historique) mais sort 
 
 `server/edition.ts` écrit l'édition en français à partir du dictionnaire `fr`. Toutes les 10 min (`editionEvery`), `index.ts` regarde si la semaine passée a été envoyée (`claimMailing('edition:<semaine>')`) ; sinon : Discord (`server/discord.ts`, `DISCORD_WEBHOOK_URL`, paquets de 8 lignes/minute) et courriel aux abonnés vérifiés (`store.subscribers()`, via le courrier existant : Resend ou console).
 
+## Le parloir
+
+`src/online/parlour.ts` (types et règles partagés), `server/store.ts` (tables `lines`, `room_seen`, `silences`), `src/online/talk.ts` (l'état côté navigateur). Trois sortes de salles : `hall` (tout membre vérifié), `friend:<id d'amitié>` (les deux amis, tant que l'amitié dure), `table:<code>` (les sièges parlent, qui regarde la table lit). Une ligne fait 280 caractères au plus, cinq lignes par dix secondes et par compte, 500 lignes gardées par salle, 90 jours au plus ; ce qu'un membre a dit part avec son compte.
+
+| Client → office | Réponse | Rôle |
+|---|---|---|
+| `say {room, text}` | `done` ou `refused` (`not-found`, `too-long`, `silenced`, `refused`) | une ligne dite ; chaque socket de la salle reçoit `said {line}` |
+| `lines {room, before?}` | `lines {room, lines, more}` | une page de cinquante lignes, les plus anciennes d'abord |
+| `seen {room, at}` | `unread {rooms}` à chaque socket du compte | lu jusque-là ; `unread` est aussi envoyé à l'ouverture de session (salles d'amis et de tables, jamais le hall) |
+| `report {id}` | `done` | une ligne signalée : une marque `line` dans `flags`, lisible sur `/flags` |
+| `admin.silence {id, hours}` | `done` | la direction fait taire un compte (0 lève le silence) |
+
 ## La liste d'attente
 
 `server/waitlist.ts`, sa propre connexion au même fichier : tables `waitlist` (l'adresse, la langue, la provenance, le jeton de confirmation scellé, le jeton de sortie en clair), `circulars` et `circular_post` (une lettre par adresse, `sentAt`, trois essais au plus). HTTP sans socket : `POST /waitlist` (champ piège `website`, cinq par adresse IP puis une toutes les deux minutes), `/waitlist/confirm`, `/waitlist/leave` (aussi le clic unique RFC 8058). Messages de la direction, refusés à qui n'est pas dans `BLACKRAIL_ADMINS` : `admin.book`, `admin.strike`, `admin.circular` (`trial` : un essai à sa propre adresse), `admin.stop` — chacun répond `admin.book`. Les types partagés et `reach()` (qui compte le public d'une circulaire des deux côtés) sont dans `src/online/waitlist.ts`.

@@ -32,7 +32,8 @@ export function Toast({ toast, onDismiss }: { toast: ToastData | null; onDismiss
   }, [toast, onDismiss]);
 
   return createPortal(
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[90] flex flex-col items-end gap-2" aria-live="polite">
+    /* above the telegraph's plate at the foot of the page */
+    <div className="pointer-events-none fixed bottom-14 right-4 z-[90] flex flex-col items-end gap-2" aria-live="polite">
       <AnimatePresence>
         {toast && (
           <motion.div

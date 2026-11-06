@@ -147,6 +147,8 @@ const site: typeof enSite = {
       'already-invited': 'Ein Brief an sie ist schon unterwegs.',
       'not-yours': 'Nur ein Spieler am Tisch kann einladen.',
       'already-friends': 'Ihr seid schon Freunde.',
+      'silenced': 'Die Direktion hat Sie für eine Weile stummgeschaltet.',
+      'too-long': 'Eine leere oder zu lange Zeile: höchstens 280 Zeichen.',
       yourself: 'Das sind Sie.',
     },
   },
