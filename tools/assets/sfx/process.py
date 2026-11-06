@@ -180,6 +180,10 @@ for n in ('bark-ezra-frozen', 'bark-ezra-snow', 'bark-ezra-alive', 'bark-ezra-no
           'bark-tom-warmest', 'bark-tom-ice', 'bark-tom-snow', 'bark-tom-rails'):
     BARKS[n] = f'{n}-1'
 BARKS['bark-barnaby-rope'] = 'bark-barnaby-rope-2'
+# the eighth round, heard back by the speech-to-text model (check_lines.py):
+# take 1 of each said 'Lil's' for 'Mill's', and a 'Look' the bubble does not show
+BARKS['bark-nellie-warmest'] = 'bark-nellie-warmest-2'
+BARKS['bark-hepzibah-warm'] = 'bark-hepzibah-warm-2'
 BARKS['bark-hepzibah-finest'] = 'bark-hepzibah-finest-3'
 # a line is heard in a town on the board, not in the ear: nothing under
 # 110 Hz (the chest of a close microphone), nothing over 7 kHz (the lips),

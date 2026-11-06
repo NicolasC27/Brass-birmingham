@@ -992,3 +992,10 @@ one take each, none asked again. Levelled at -22 LUFS like the others;
 Ezra's "alive" (-26.0) and "nose" (-24.3) sit under it, their peaks
 allowing no more. Said on the frozen ground only (`weather: 'frost'` in
 voices.ts); the lock and the towpath are not heard there.
+
+Heard back by the speech-to-text model (`check_lines.py`, every take held
+to its line): 22 of 28 word for word, four off by spelling alone
+(cole/coal, mustache, 12, trains), and two wrong — Nellie's "Lil's the
+warmest spot" for "Mill's", and Mrs Blewitt adding a "Look" the bubble
+does not show. Both asked twice more; takes 2 and 3 came back word for
+word each time, the second kept.

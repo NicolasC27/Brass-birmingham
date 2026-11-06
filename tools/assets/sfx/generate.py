@@ -559,10 +559,12 @@ VOICES = {
     'bark-nellie-mittens': ('nellie', 1, '[giggles] Knitted mittens for Sunday!'),
     'bark-nellie-moustache': ('nellie', 1, "[gasps] The overseer's moustache froze right off!"),
     'bark-nellie-blue': ('nellie', 1, '[shivering] Twelve hours, and me fingers blue.'),
-    'bark-nellie-warmest': ('nellie', 1, "[excited] Mill's the warmest spot in town! Taking on hands!"),
+    # take 1 said 'Lil's the warmest spot': asked twice more
+    'bark-nellie-warmest': ('nellie', 3, "[excited] Mill's the warmest spot in town! Taking on hands!"),
     'bark-hepzibah-hot': ('hepzibah', 1, "[laughing] Hot ale all round, my loves! Doctor's orders!"),
     'bark-hepzibah-froze': ('hepzibah', 1, '[outraged] Me barrels have froze! Who let the fire out?'),
-    'bark-hepzibah-warm': ('hepzibah', 1, "[hiccups] I'm only... keeping warm."),
+    # take 1 added a 'Look' the bubble does not show: asked twice more
+    'bark-hepzibah-warm': ('hepzibah', 3, "[hiccups] I'm only... keeping warm."),
     'bark-hepzibah-icicles': ('hepzibah', 1, '[indignant] Icicles on me washing now! I ask you!'),
     'bark-pomfrey-cold': ('pomfrey', 1, '[clears throat] Cold is no excuse, gentlemen.'),
     'bark-pomfrey-furs': ('pomfrey', 1, '[pompously] An order for furs. From London. Naturally.'),
