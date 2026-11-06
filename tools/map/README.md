@@ -380,3 +380,27 @@ composers:
       app/public/map-frostcity-canal.webp app/public/map-frostcity-canal.webp
     tools/map/crater-rim.py tools/assets/map/map-frostcity-rim-fal.jpg places.json \
       app/public/map-frostcity-rail.webp app/public/map-frostcity-rail.webp 88,90
+
+### The cold itself
+
+The frozen city's ground carries its weather (`weather: 'frost'` on the
+trial in `boardOptions.ts`, read by the board through `groundWeather()`):
+
+- **the wind** under the table instead of the era's recording (`windBed`
+  in `sfx.ts`): a breath of noise kept low, its pitch and its strength
+  swaying slowly and out of step, so it gusts and never repeats. Made
+  rather than recorded, levelled by ear against the canal's bed (an RMS of
+  0.04 either way); `amb-frost` stays in `generate.py`'s plan for the day
+  the sound model is asked for it — its key was refused on 2026-11-06;
+- **the breath of every settlement** (`plumes.ts`): a thread of steam off
+  the houses at the top of each town's block, works or none, a farm's
+  thinner, so the city reads as lived in against the cold;
+- **the hearth**: Birmingham is to this country what the generator is to
+  Frostpunk's city — a warmth painted on the snow round it in either era
+  (`frost-city.py`) and a wide, warm halo the board lays over it
+  (`ambiance.ts`);
+- **the snow** (`snow.ts`): flakes and streaks of blown snow crossing the
+  table from the upper left, as the wind would carry them, over the towns
+  and under their names; a third of the sheet by day, all of it by night,
+  and now and then a gust that drives the streaks. Under reduced motion a
+  few flakes stand still.

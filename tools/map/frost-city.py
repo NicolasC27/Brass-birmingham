@@ -131,7 +131,14 @@ for t in sorted(towns, key=lambda t: (not t['farm'], t['y'])):
 for m in p['merchants']:
     n = MERCHANT[m['id']]
     lay(cmd, n, fit(n, DEPOT_ACROSS), m['x'], m['y'])
-run(*cmd, CANAL)
+run(*cmd, f'{T}/laid.png')
+# the hearth: Birmingham is to this country what the generator is to
+# Frostpunk's city — a warmth on the snow round it in either era, and the
+# board lays a wide halo over it besides (ambiance.ts)
+HEARTH = 'birmingham'
+hx, hy = next((PX(t['x']), PY(t['y'])) for t in towns if t['id'] == HEARTH)
+run('-size', f'{W}x{H}', 'xc:black', '-fill', 'rgb(255,120,40)', '-stroke', 'none', '-draw', f'circle {hx:.0f},{hy:.0f} {hx + 330:.0f},{hy:.0f}', '-blur', '0x120', '-evaluate', 'multiply', 0.34, f'{T}/hearth.png')
+run(f'{T}/laid.png', f'{T}/hearth.png', '-compose', 'screen', '-composite', CANAL)
 
 
 def h(s):
