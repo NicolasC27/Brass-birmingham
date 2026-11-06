@@ -978,3 +978,17 @@ heard from inside a shelter: -60 LUFS, nothing in it. Take 1 is served,
 levelled at -24 LUFS, between the two eras' beds since it stands in for
 either; only the floor under 30 Hz cut. The board makes its own wind
 when the file cannot be had (`windBed` in sfx.ts).
+
+## The eighth round: the frozen city's lines, said by v4 (2026-11-06)
+
+Twenty-eight lines for the frozen city (`ground-frost`): the same seven,
+four each, in the cold — the pit froze solid, Bess pulling a sledge, the
+mill the warmest spot in town, hot ale by doctor's orders, an order for
+furs from London, the kiln the only warm thing in Burslem, ice on the
+hammers. Said by `eleven_v4` (the owner's text-to-speech allowance being
+its own, 240 000 credits: the counter did not move, 61 783 before and
+after), at the same loose setting as v3, the audio tags played as before;
+one take each, none asked again. Levelled at -22 LUFS like the others;
+Ezra's "alive" (-26.0) and "nose" (-24.3) sit under it, their peaks
+allowing no more. Said on the frozen ground only (`weather: 'frost'` in
+voices.ts); the lock and the towpath are not heard there.

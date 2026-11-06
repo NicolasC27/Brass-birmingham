@@ -170,6 +170,15 @@ BARKS = {n: f'{n}-1' for n in (
     'bark-kezia-kiln', 'bark-kezia-bread', 'bark-kezia-price', 'bark-kezia-coal', 'bark-kezia-kettle',
     'bark-tom-furnace', 'bark-tom-what', 'bark-tom-dear', 'bark-tom-sweet', 'bark-tom-late',
 )}
+# the eighth round: the frozen city's lines, said by v4, one take each
+for n in ('bark-ezra-frozen', 'bark-ezra-snow', 'bark-ezra-alive', 'bark-ezra-nose',
+          'bark-barnaby-sledge', 'bark-barnaby-ice', 'bark-barnaby-whiskers', 'bark-barnaby-runners',
+          'bark-nellie-mittens', 'bark-nellie-moustache', 'bark-nellie-blue', 'bark-nellie-warmest',
+          'bark-hepzibah-hot', 'bark-hepzibah-froze', 'bark-hepzibah-warm', 'bark-hepzibah-icicles',
+          'bark-pomfrey-cold', 'bark-pomfrey-furs', 'bark-pomfrey-ink', 'bark-pomfrey-winter',
+          'bark-kezia-warm', 'bark-kezia-snow', 'bark-kezia-froze', 'bark-kezia-soup',
+          'bark-tom-warmest', 'bark-tom-ice', 'bark-tom-snow', 'bark-tom-rails'):
+    BARKS[n] = f'{n}-1'
 BARKS['bark-barnaby-rope'] = 'bark-barnaby-rope-2'
 BARKS['bark-hepzibah-finest'] = 'bark-hepzibah-finest-3'
 # a line is heard in a town on the board, not in the ear: nothing under

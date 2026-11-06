@@ -158,7 +158,7 @@ export function useTableSounds(): void {
       pick: (chance, last) => {
         const now = Date.now();
         stirs.current = freshStirs(stirs.current, now);
-        const spoken = pickVoice(useGame.getState().game, stirs.current, last, chance);
+        const spoken = pickVoice(useGame.getState().game, stirs.current, last, chance, groundWeather());
         /* a stir answered is spent */
         if (spoken?.stir) stirs.current = stirs.current.filter((s) => s !== spoken.stir);
         return spoken;

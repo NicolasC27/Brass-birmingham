@@ -491,7 +491,9 @@ CAST = {
 }
 # the expressive model, played loose ('Creative', the least stable of its
 # three settings): the barks are meant to be overdone
-SPEECH_MODEL = 'eleven_v3'
+# the eighth round (the frozen city's lines) is said by v4, the owner's
+# text-to-speech allowance being its own (240 000 credits, 2026-10-01)
+SPEECH_MODEL = 'eleven_v4'
 SPEECH = {'stability': 0.0}
 
 # name: (character, takes, line with its audio tags) — the same lines,
@@ -544,6 +546,36 @@ VOICES = {
     'bark-tom-dear': ('tom', 1, "[shouting] Iron's dear as silver now!"),
     'bark-tom-sweet': ('tom', 1, '[shouting happily] She runs sweet, this engine!'),
     'bark-tom-late': ('tom', 1, "[shouting] Train's late again! What?"),
+    # the eighth round: the same seven, on the frozen ground (the counter's
+    # frozen city) — the cold, the snow, the sledges, the one warm place
+    'bark-ezra-frozen': ('ezra', 1, "[shivering] Pit's froze solid. Me beard's froze solid. Everything's froze."),
+    'bark-ezra-snow': ('ezra', 1, '[grumbling] Snow? In MY day, snow knew its place.'),
+    'bark-ezra-alive': ('ezra', 1, "[grudgingly] Coal's keeping us alive. Don't you forget it."),
+    'bark-ezra-nose': ('ezra', 1, "[groaning] Can't feel me nose. Had it this morning."),
+    'bark-barnaby-sledge': ('barnaby', 1, '[cheerfully] Bess pulls a sledge like she were born to it! [laughs]'),
+    'bark-barnaby-ice': ('barnaby', 1, "[bellowing] Mind the ice there! She's thin by the bank!"),
+    'bark-barnaby-whiskers': ('barnaby', 1, '[laughing] Frost on me whiskers and wages on Friday!'),
+    'bark-barnaby-runners': ('barnaby', 1, '[exasperated] Runners stuck fast! Blast this cold!'),
+    'bark-nellie-mittens': ('nellie', 1, '[giggles] Knitted mittens for Sunday!'),
+    'bark-nellie-moustache': ('nellie', 1, "[gasps] The overseer's moustache froze right off!"),
+    'bark-nellie-blue': ('nellie', 1, '[shivering] Twelve hours, and me fingers blue.'),
+    'bark-nellie-warmest': ('nellie', 1, "[excited] Mill's the warmest spot in town! Taking on hands!"),
+    'bark-hepzibah-hot': ('hepzibah', 1, "[laughing] Hot ale all round, my loves! Doctor's orders!"),
+    'bark-hepzibah-froze': ('hepzibah', 1, '[outraged] Me barrels have froze! Who let the fire out?'),
+    'bark-hepzibah-warm': ('hepzibah', 1, "[hiccups] I'm only... keeping warm."),
+    'bark-hepzibah-icicles': ('hepzibah', 1, '[indignant] Icicles on me washing now! I ask you!'),
+    'bark-pomfrey-cold': ('pomfrey', 1, '[clears throat] Cold is no excuse, gentlemen.'),
+    'bark-pomfrey-furs': ('pomfrey', 1, '[pompously] An order for furs. From London. Naturally.'),
+    'bark-pomfrey-ink': ('pomfrey', 1, '[spluttering] The ink has frozen? Preposterous!'),
+    'bark-pomfrey-winter': ('pomfrey', 1, '[smugly] British industry fears no winter.'),
+    'bark-kezia-warm': ('kezia', 1, "[warmly] Kiln's the only warm thing in Burslem, duck."),
+    'bark-kezia-snow': ('kezia', 1, '[sighs] Not a lump of coal, and snow to the windows!'),
+    'bark-kezia-froze': ('kezia', 1, "[laughs] Kettle's froze. Put it on anyway, duck."),
+    'bark-kezia-soup': ('kezia', 1, '[delighted] Hot soup on the table tonight!'),
+    'bark-tom-warmest': ('tom', 1, '[shouting] Furnace is the warmest job in England! What?'),
+    'bark-tom-ice': ('tom', 1, '[shouting] Ice on the hammers! What? ICE!'),
+    'bark-tom-snow': ('tom', 1, "[shouting happily] Snow! It's snowing! What?"),
+    'bark-tom-rails': ('tom', 1, "[shouting] Train's froze to the rails! What?"),
 }
 # the fifth round's second thought: the owner wanted the townsfolk played,
 # not read — barks, as in a city builder: short, broad, funny. Seven

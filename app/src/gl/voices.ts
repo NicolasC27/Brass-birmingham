@@ -10,6 +10,7 @@
 
 import { TOWN_BY_ID, activeBoard, marketBuyPrice } from '@/game/data';
 import type { Era, GameState, IndustryType } from '@/game/types';
+import type { Weather } from '@/components/game/boardOptions';
 import { nextOf } from './playlist';
 import type { Chance } from './playlist';
 
@@ -55,9 +56,13 @@ export interface Line {
   about?: IndustryType;
   /** said in this era only */
   era?: Era;
+  /** said on a ground of this weather only (the frozen city's lines) */
+  weather?: Weather;
+  /** not said on a frozen ground: a lock, a towpath — things the ice took */
+  thaw?: true;
 }
 
-const line = (id: string, who: Who, mood: Mood, text: string, more: { about?: IndustryType; era?: Era } = {}): Line => ({ id: `bark-${who}-${id}`, who, text, mood, ...more });
+const line = (id: string, who: Who, mood: Mood, text: string, more: { about?: IndustryType; era?: Era; weather?: Weather; thaw?: true } = {}): Line => ({ id: `bark-${who}-${id}`, who, text, mood, ...more });
 
 /** every line, as recorded (tools/assets/sfx/generate.py, VOICES) */
 export const LINES: readonly Line[] = [
@@ -69,10 +74,10 @@ export const LINES: readonly Line[] = [
   line('almost', 'ezra', 'glad', 'Good coal, that. Almost.', { about: 'coal' }),
   line('wages', 'barnaby', 'glad', 'Wages on Friday, lads!'),
   line('bess', 'barnaby', 'plain', 'Walk on, Bess, my beauty. Walk on.', { era: 'canal' }),
-  line('lock', 'barnaby', 'grumble', 'Lock’s jammed again! Blast it!', { era: 'canal' }),
+  line('lock', 'barnaby', 'grumble', 'Lock’s jammed again! Blast it!', { era: 'canal', thaw: true }),
   line('load', 'barnaby', 'glad', 'Full load, and early too!', { era: 'canal' }),
   line('engines', 'barnaby', 'grumble', 'Them engines? Bess could beat ’em!', { era: 'rail' }),
-  line('rope', 'barnaby', 'plain', 'Mind the rope there!', { era: 'canal' }),
+  line('rope', 'barnaby', 'plain', 'Mind the rope there!', { era: 'canal', thaw: true }),
   line('overseer', 'nellie', 'plain', 'Ooh, did you hear about the overseer?'),
   line('vicar', 'nellie', 'plain', 'Never! With the vicar’s wife?'),
   line('hands', 'nellie', 'glad', 'Mill’s taking on hands again!', { about: 'cotton' }),
@@ -99,7 +104,41 @@ export const LINES: readonly Line[] = [
   line('dear', 'tom', 'grumble', 'Iron’s dear as silver now!', { about: 'iron' }),
   line('sweet', 'tom', 'glad', 'She runs sweet, this engine!', { era: 'rail' }),
   line('late', 'tom', 'grumble', 'Train’s late again! What?', { era: 'rail' }),
+  /* the frozen city: the same seven in the cold, the snow, the sledges */
+  line('frozen', 'ezra', 'plain', 'Pit’s froze solid. Me beard’s froze solid. Everything’s froze.', { weather: 'frost' }),
+  line('snow', 'ezra', 'grumble', 'Snow? In MY day, snow knew its place.', { weather: 'frost' }),
+  line('alive', 'ezra', 'glad', 'Coal’s keeping us alive. Don’t you forget it.', { weather: 'frost', about: 'coal' }),
+  line('nose', 'ezra', 'grumble', 'Can’t feel me nose. Had it this morning.', { weather: 'frost' }),
+  line('sledge', 'barnaby', 'glad', 'Bess pulls a sledge like she were born to it!', { weather: 'frost', era: 'canal' }),
+  line('ice', 'barnaby', 'plain', 'Mind the ice there! She’s thin by the bank!', { weather: 'frost', era: 'canal' }),
+  line('whiskers', 'barnaby', 'glad', 'Frost on me whiskers and wages on Friday!', { weather: 'frost' }),
+  line('runners', 'barnaby', 'grumble', 'Runners stuck fast! Blast this cold!', { weather: 'frost', era: 'canal' }),
+  line('mittens', 'nellie', 'glad', 'Knitted mittens for Sunday!', { weather: 'frost' }),
+  line('moustache', 'nellie', 'plain', 'The overseer’s moustache froze right off!', { weather: 'frost' }),
+  line('blue', 'nellie', 'grumble', 'Twelve hours, and me fingers blue.', { weather: 'frost', about: 'cotton' }),
+  line('warmest', 'nellie', 'glad', 'Mill’s the warmest spot in town! Taking on hands!', { weather: 'frost', about: 'cotton' }),
+  line('hot', 'hepzibah', 'glad', 'Hot ale all round, my loves! Doctor’s orders!', { weather: 'frost', about: 'brewery' }),
+  line('froze', 'hepzibah', 'grumble', 'Me barrels have froze! Who let the fire out?', { weather: 'frost', about: 'brewery' }),
+  line('warm', 'hepzibah', 'plain', 'I’m only… keeping warm.', { weather: 'frost' }),
+  line('icicles', 'hepzibah', 'grumble', 'Icicles on me washing now! I ask you!', { weather: 'frost' }),
+  line('cold', 'pomfrey', 'plain', 'Cold is no excuse, gentlemen.', { weather: 'frost' }),
+  line('furs', 'pomfrey', 'glad', 'An order for furs. From London. Naturally.', { weather: 'frost', about: 'manufacturer' }),
+  line('ink', 'pomfrey', 'grumble', 'The ink has frozen? Preposterous!', { weather: 'frost' }),
+  line('winter', 'pomfrey', 'glad', 'British industry fears no winter.', { weather: 'frost' }),
+  line('warm', 'kezia', 'glad', 'Kiln’s the only warm thing in Burslem, duck.', { weather: 'frost', about: 'pottery' }),
+  line('snow', 'kezia', 'grumble', 'Not a lump of coal, and snow to the windows!', { weather: 'frost', about: 'coal' }),
+  line('froze', 'kezia', 'plain', 'Kettle’s froze. Put it on anyway, duck.', { weather: 'frost' }),
+  line('soup', 'kezia', 'glad', 'Hot soup on the table tonight!', { weather: 'frost' }),
+  line('warmest', 'tom', 'glad', 'Furnace is the warmest job in England! What?', { weather: 'frost', about: 'iron' }),
+  line('ice', 'tom', 'grumble', 'Ice on the hammers! What? ICE!', { weather: 'frost' }),
+  line('snow', 'tom', 'plain', 'Snow! It’s snowing! What?', { weather: 'frost' }),
+  line('rails', 'tom', 'grumble', 'Train’s froze to the rails! What?', { weather: 'frost', era: 'rail' }),
 ];
+
+/** the lines that may be said on a ground of this weather, in this era:
+ *  the frozen city hears its own and keeps the rest, less what the ice
+ *  took; elsewhere its lines are never heard */
+export const linesFor = (era: Era, weather: Weather | null): Line[] => LINES.filter((l) => (!l.era || l.era === era) && (weather ? (!l.weather || l.weather === weather) && !l.thaw : !l.weather));
 
 /* ---------------- what stirred a town ---------------- */
 
@@ -195,9 +234,9 @@ const dearNow = (g: GameState, res: 'coal' | 'iron'): boolean => marketBuyPrice(
  *  grumble about coal or iron only when it is dear; half the time in the
  *  speaker's own town. Never the line just heard. Null when no one speaks:
  *  another board, no era being played. */
-export function pickVoice(g: GameState | null, stirs: readonly Stir[], last: string | null, chance: Chance): Spoken | null {
+export function pickVoice(g: GameState | null, stirs: readonly Stir[], last: string | null, chance: Chance, weather: Weather | null = null): Spoken | null {
   if (!g || !voicesHere(g)) return null;
-  const said = LINES.filter((l) => !l.era || l.era === g.era);
+  const said = linesFor(g.era, weather);
   const stir = stirs[0] ?? null;
   if (stir) {
     /* its own line, unless that was the last one heard: then any of its mood */

@@ -178,6 +178,30 @@ describe('who says what, where', () => {
     expect([...eras]).toEqual(['rail']);
   });
 
+  it('the frozen ground hears its own lines and keeps the rest, less what the ice took', () => {
+    const chance = seeded(5);
+    const heard = new Set<string>();
+    for (let i = 0; i < 1500; i++) {
+      const spoken = pickVoice(built, [], null, chance, 'frost');
+      if (spoken) heard.add(spoken.line.id);
+    }
+    /* its own lines, in every mood, from everyone */
+    const frost = LINES.filter((l) => l.weather === 'frost' && !l.era);
+    expect(frost.filter((l) => heard.has(l.id)).length).toBeGreaterThan(frost.length / 2);
+    expect(new Set(LINES.filter((l) => heard.has(l.id) && l.weather).map((l) => l.who)).size).toBe(Object.keys(CAST).length);
+    /* the old lines still, but no lock and no towpath on the ice */
+    expect([...heard].some((id) => !LINES.find((l) => l.id === id)?.weather)).toBe(true);
+    expect(heard.has('bark-barnaby-lock')).toBe(false);
+    expect(heard.has('bark-barnaby-rope')).toBe(false);
+    /* and none of the cold's lines elsewhere */
+    const elsewhere = new Set<string>();
+    for (let i = 0; i < 1500; i++) {
+      const spoken = pickVoice(built, [], null, chance);
+      if (spoken) elsewhere.add(spoken.line.id);
+    }
+    expect([...elsewhere].some((id) => LINES.find((l) => l.id === id)?.weather)).toBe(false);
+  });
+
   it('no one speaks while an era is scored, once the game is over, or with no game', () => {
     expect(pickVoice(after(built, (h) => (h.phase = 'scoring-canal')), [], null, always(0.5))).toBeNull();
     expect(pickVoice(after(built, (h) => (h.phase = 'game-over')), [], null, always(0.5))).toBeNull();
