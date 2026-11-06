@@ -8,6 +8,7 @@ import { townChrome } from '@/components/game/townChrome';
 import { routeFor } from '@/components/game/routePaths';
 import type { Camera } from './camera';
 import type { BoardScene } from './paint';
+import { MAX_LIGHTS, litBoxes } from './photoLights';
 import { printSize } from './photoPrint';
 import type { PhotoLook } from './photoPrint';
 import { getPhoto, subscribePhoto } from './photoState';
@@ -23,7 +24,9 @@ import type { PhotoState } from './photoState';
 /* shader laid over the whole world, the same at the table and on the   */
 /* print: its grain, its hatching and its margins are measured in      */
 /* pixels of the frame, so a print pulled at twice the size carries    */
-/* them at twice the size.                                              */
+/* them at twice the size. A look never takes the table's reading      */
+/* away: the places that are read (photoLights.ts) are handed to the   */
+/* shader, which lights them by night and draws them fine in a wash.   */
 /* ------------------------------------------------------------------ */
 
 /** how close the photographer may come: well past the table's own limit */
@@ -87,6 +90,36 @@ float plate(vec2 uv, float bite) {
 }
 `;
 
+/* the places that are read, in pixels of the frame: a centre and its half
+   sizes each. How far a point stands from the nearest of them, measured
+   in the ellipse drawn round the place: under 1 on it, corners and all */
+const PLACES = /* glsl */ `
+uniform vec4 uLamps[${MAX_LIGHTS}];
+uniform float uLampCount;
+
+float away(vec2 p) {
+  float d = 1.0e6;
+  for (int i = 0; i < ${MAX_LIGHTS}; i++) {
+    if (float(i) >= uLampCount) break;
+    vec4 b = uLamps[i];
+    d = min(d, length((p - b.xy) / (b.zw * 1.42)));
+  }
+  return d;
+}
+
+/* how fine the drawing is at a point: the shade against its neighbours,
+   near and a little further — high on a card or a name, low on the land */
+float fineness(vec2 pos, float l0, float near, float far) {
+  float f = 0.0;
+  for (int i = 0; i < 4; i++) {
+    float a = float(i) * 1.5708 + 0.4;
+    vec2 d = vec2(cos(a), sin(a)) * uUnit;
+    f += abs(luma(tex(pos + d * near)) - l0) + abs(luma(tex(pos + d * far)) - l0);
+  }
+  return f / 8.0;
+}
+`;
+
 /* an engraving pulled in sepia ink on laid paper, faintly hand-tinted like
    the county maps of the 1830s: the shade cut in two systems of lines,
    the second only where the shade deepens */
@@ -140,13 +173,23 @@ void main() {
 /* a watercolour on cold-pressed paper, line and wash: the washes
    softened and let run a little, the pigment pooled at their edges and
    settled in the paper's tooth, all of it lighter; over them the pen's
-   line, drawn from the board's own edges, so a name still reads; and the
-   colour stopping short of the sheet */
-const AQUARELLE = /* glsl */ `${PRELUDE}
+   line, drawn from the board's own edges; and the colour stopping short
+   of the sheet. Where the table is read — a town, a merchant, anything
+   drawn fine — the brush gives way to the pen: the colour stays on its
+   line and keeps its edge, so a name and a card still read */
+const AQUARELLE = /* glsl */ `${PRELUDE}${PLACES}
 void main() {
   vec2 pos = vTextureCoord * uInputSize.xy;
   vec2 p = pos / uUnit;
   vec2 uv = p / uFrame;
+  vec3 c = tex(pos);
+  float l0 = luma(c);
+  /* a place that is read keeps its line, and what is drawn on it its
+     depth; the bare ground under it is washed as lightly as the rest */
+  float place = 1.0 - smoothstep(1.0, 1.25, away(p));
+  float drawn = smoothstep(0.035, 0.13, fineness(pos, l0, 1.5, 3.5));
+  float keep = max(drawn, place);
+  float deep = max(drawn, place * smoothstep(0.012, 0.05, fineness(pos, l0, 2.5, 6.0)));
   /* the water carries the pigment off its line, a few pixels either way */
   vec2 run = vec2(fbm(p * 0.02 + uSeed), fbm(p * 0.02 + uSeed + 17.3)) - 0.5;
   vec2 q = pos + run * 5.0 * uUnit;
@@ -156,7 +199,7 @@ void main() {
     float rr = sqrt(float(i) / 13.0) * 2.4 * uUnit;
     acc += tex(q + vec2(cos(a), sin(a)) * rr);
   }
-  vec3 soft = acc / 14.0;
+  vec3 soft = mix(acc / 14.0, c, keep);
   float lc = luma(soft);
   /* where one wash meets another the pigment gathers */
   float e = 0.0;
@@ -168,19 +211,20 @@ void main() {
   /* clear, brighter washes */
   vec3 col = mix(vec3(lc), soft, 1.45);
   col = floor(col * 8.0 + 0.5) / 8.0 * 0.2 + col * 0.8;
-  col = 1.0 - (1.0 - clamp(col, 0.0, 1.0)) * 0.76;
-  col *= 1.0 - smoothstep(0.02, 0.16, e) * 0.24;
+  col = 1.0 - (1.0 - clamp(col, 0.0, 1.0)) * mix(0.76, 0.96, deep);
+  col *= 1.0 - smoothstep(0.02, 0.16, e) * 0.24 * (1.0 - keep);
   /* blooms where the paper stayed wet longer, and the tooth the pigment settles in */
   float bloom = fbm(p * 0.005 + uSeed * 2.0);
-  col = 1.0 - (1.0 - col) * (0.82 + bloom * 0.36);
+  col = 1.0 - (1.0 - col) * mix(0.82 + bloom * 0.36, 1.0, deep);
   float tooth = vnoise(p * 0.5) * 0.55 + vnoise(p * 1.3) * 0.45;
   col *= 1.0 - (tooth - 0.5) * 0.12 * (1.0 - luma(col) * 0.5);
-  /* the pen: the board's own edges, in a sepia ink, a little broken */
+  /* the pen: the board's own edges, in a sepia ink, a little broken — held
+     off what is already drawn fine, which it would only blot */
   float d = 1.0 * uUnit;
   float gx = luma(tex(pos + vec2(d, 0.0))) - luma(tex(pos - vec2(d, 0.0)));
   float gy = luma(tex(pos + vec2(0.0, d))) - luma(tex(pos - vec2(0.0, d)));
   float pen = smoothstep(0.07, 0.3, length(vec2(gx, gy))) * (0.7 + 0.3 * vnoise(p * 0.3));
-  col = mix(col, col * vec3(0.3, 0.26, 0.24), pen * 0.62);
+  col = mix(col, col * vec3(0.3, 0.26, 0.24), pen * 0.62 * (1.0 - keep * 0.85));
   vec3 paper = vec3(0.985, 0.972, 0.94) * (0.975 + 0.035 * tooth);
   col *= vec3(0.99, 0.985, 0.965);
   /* the washes stop short of the sheet's edge, raggedly, with a darker lip */
@@ -195,28 +239,38 @@ void main() {
 `;
 
 /* the same country by moonlight: a deep blue night, the colours sunk but
-   not lost, the fires already on the map left warm (the lamps of the
-   towns are laid over it, unfiltered: nightLamps) */
-const NUIT = /* glsl */ `${PRELUDE}
+   not lost; every town and every merchant under its lamps, where the
+   cards and the names read in their own colours, warmed; and the fires
+   already on the map left burning (the glow of the lamps is laid over
+   it all, unfiltered: layLamps) */
+const NUIT = /* glsl */ `${PRELUDE}${PLACES}
 void main() {
   vec2 pos = vTextureCoord * uInputSize.xy;
   vec2 p = pos / uUnit;
   vec2 uv = p / uFrame;
   vec3 c = tex(pos);
   float l = luma(c);
-  vec3 moon = vec3(0.035, 0.055, 0.11) + vec3(0.30, 0.40, 0.62) * pow(l, 1.35);
-  vec3 kept = c * vec3(0.26, 0.32, 0.5);
+  vec3 moon = vec3(0.045, 0.07, 0.135) + vec3(0.34, 0.45, 0.68) * pow(l, 1.25);
+  vec3 kept = c * vec3(0.3, 0.37, 0.56);
   vec3 col = mix(moon, kept + moon * 0.55, 0.38);
   /* a pale sheen where the painting is brightest, as moonlight on water */
   col += vec3(0.10, 0.13, 0.19) * smoothstep(0.72, 0.95, l);
-  /* what already burns on the map keeps its fire */
-  float warm = smoothstep(0.5, 0.8, l) * smoothstep(0.12, 0.35, c.r - c.b);
-  col = mix(col, c * vec3(1.0, 0.78, 0.5), warm * 0.85);
-  /* the moon stands high on the left; the dark closes in from the edges,
-     with a fine grain, as a night plate */
+  /* the moon stands high on the left; the dark closes in from the edges */
   col *= mix(0.86, 1.12, smoothstep(1.3, 0.0, length((uv - vec2(0.18, 0.08)) * vec2(1.0, 0.7))));
   float v = plate(uv, 0.32);
-  col *= mix(0.32, 1.0, v);
+  col *= mix(0.5, 1.0, v);
+  /* the lamps: what stands under them is seen as by day, in their warmth
+     — the cards and the names in full, the ground they stand on only
+     touched by it, in a pool that dies away */
+  float pool = 1.0 - smoothstep(1.0, 1.75, away(p));
+  float drawn = smoothstep(0.02, 0.09, fineness(pos, l, 2.0, 5.0));
+  vec3 lamp = mix(vec3(l), c, 0.85) * vec3(1.0, 0.88, 0.72) * mix(0.84, 1.0, v);
+  col = mix(col, lamp, pool * pool * mix(0.4, 0.94, drawn));
+  /* what already burns on the map keeps its fire: a furnace's mouth, a
+     kiln's crown — an orange, not the yellow of a field in the sun */
+  float warm = smoothstep(0.5, 0.8, l) * smoothstep(0.3, 0.55, c.r - c.b) * smoothstep(0.08, 0.22, c.r - c.g);
+  col = mix(col, c * vec3(1.0, 0.78, 0.5), warm * 0.85);
+  /* a fine grain, as a night plate */
   col += (hash(floor(p) + uSeed) - 0.5) * 0.022;
   finalColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
@@ -228,6 +282,8 @@ interface LookUniforms {
   uFrame: Float32Array;
   uUnit: number;
   uSeed: number;
+  uLamps: Float32Array;
+  uLampCount: number;
 }
 
 function lookFilter(look: Exclude<PhotoLook, 'none'>): Filter {
@@ -240,6 +296,8 @@ function lookFilter(look: Exclude<PhotoLook, 'none'>): Filter {
         uFrame: { value: new Float32Array([1, 1]), type: 'vec2<f32>' },
         uUnit: { value: 1, type: 'f32' },
         uSeed: { value: 0.37, type: 'f32' },
+        uLamps: { value: new Float32Array(4 * MAX_LIGHTS), type: 'vec4<f32>', size: MAX_LIGHTS },
+        uLampCount: { value: 0, type: 'f32' },
       },
     },
   });
@@ -326,6 +384,22 @@ interface Rigged extends PhotoRig {
 
 let rig: Rigged | null = null;
 
+/** the places that are read, handed to the look where the world now
+ *  stands: in pixels of the frame, as the shader measures everything */
+function light(me: Rigged, f: Filter): void {
+  const u = uniformsOf(f);
+  const { world, ribbons } = me.scene;
+  const s = world.scale.x;
+  const boxes = litBoxes(ribbons[0]?.scale.x ?? 1);
+  boxes.forEach((b, i) => {
+    u.uLamps[4 * i] = b.x * s + world.position.x;
+    u.uLamps[4 * i + 1] = b.y * s + world.position.y;
+    u.uLamps[4 * i + 2] = b.hw * s;
+    u.uLamps[4 * i + 3] = b.hh * s;
+  });
+  u.uLampCount = boxes.length;
+}
+
 /** the board lends itself to the photo mode; returns the way to take it back */
 export function attachPhoto(r: PhotoRig): () => void {
   const lamps = new Container();
@@ -353,6 +427,7 @@ export function attachPhoto(r: PhotoRig): () => void {
       const u = uniformsOf(f);
       u.uFrame[0] = me.app.screen.width;
       u.uFrame[1] = me.app.screen.height;
+      light(me, f);
     }
   };
   r.app.ticker.add(follow, undefined, UPDATE_PRIORITY.LOW);
@@ -427,6 +502,7 @@ function dress(me: Rigged): void {
     u.uFrame[0] = me.app.screen.width;
     u.uFrame[1] = me.app.screen.height;
     u.uUnit = 1;
+    light(me, f);
     scene.world.filters = [f];
     scene.world.filterArea = TABLE_AREA;
   }

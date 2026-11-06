@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { MAX_K, PAINT_H, PAINT_W, clampKFor, clampPan, fitScale, getFitReserve, holdFitReserve, setFitReserve, setZoomCeiling, zoomCeiling, FIT_PAD_BOTTOM } from '@/components/game/boardView';
 import { DEFAULT_KEYS, RESERVED_KEYS, isKey, reconcileKeys, resetKeybindings } from '@/components/game/keybindings';
+import { MERCHANTS, TOWNS } from '@/game/data';
+import { townChrome } from '@/components/game/townChrome';
 import { setLang, tr } from '@/i18n';
+import { MAX_LIGHTS, litBoxes } from '../photoLights';
 import { PHOTO_LOOKS, PNG_MAX_PIXELS, PRINT_MAX_W, isPhotoLook, photoCaption, photoFileName, printFormat, printSize } from '../photoPrint';
 
 /* ------------------------------------------------------------------ */
@@ -152,5 +155,33 @@ describe('the camera let off its leash', () => {
     expect(getFitReserve()).toBe(0);
     holdFitReserve(null);
     expect(getFitReserve()).toBe(200);
+  });
+});
+
+describe('the places a look leaves legible', () => {
+  it('counts every town and every merchant, within what the shader holds', () => {
+    expect(litBoxes()).toHaveLength(TOWNS.length + MERCHANTS.length);
+    expect(TOWNS.length + MERCHANTS.length).toBeLessThanOrEqual(MAX_LIGHTS);
+  });
+
+  it('holds a town’s cards and its name', () => {
+    const boxes = litBoxes();
+    TOWNS.forEach((town, i) => {
+      const c = townChrome(town);
+      const b = boxes[i];
+      for (const s of c.slots) {
+        expect(Math.abs(s.x - b.x)).toBeLessThanOrEqual(b.hw);
+        expect(Math.abs(s.y - b.y)).toBeLessThanOrEqual(b.hh);
+      }
+      expect(b.hw).toBeGreaterThanOrEqual(c.ribbonW / 2);
+      expect(c.ribbonCy).toBeLessThan(b.y + b.hh);
+    });
+  });
+
+  it('widens with the names as they are counter-scaled', () => {
+    const near = litBoxes(1);
+    const far = litBoxes(1.5);
+    far.forEach((b, i) => expect(b.hw).toBeGreaterThanOrEqual(near[i].hw));
+    expect(far.some((b, i) => b.hw > near[i].hw)).toBe(true);
   });
 });
