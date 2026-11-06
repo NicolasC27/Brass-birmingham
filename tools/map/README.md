@@ -360,3 +360,23 @@ wash went for the lamps above.
       tools/assets/map/compose-canal.sh canal.png geo.json map-frostcity-canal
     ETCH=1 INK=ice TONE=116,92 DIM=70 FADE=60 MIST='rgb(24,30,44)' \
       tools/assets/map/compose-rail.sh rail-world.png geo.json map-frostcity-rail
+
+### The crater's rim
+
+Frostpunk's city sits at the bottom of a crater. The served frozen-city
+ground, handed to `fal-ai/nano-banana/edit` with "keep the middle exactly
+as it is, only the outer margin changes", came back with walls of cracked
+ice and dark rock all round — and the middle repainted, the walls climbing
+a long way into the play area. `tools/map/crater-rim.py` keeps only what
+is wanted of it: the rim is laid over the served ground through a mask
+that is the crater's floor — the world less 150 px at the sides, its
+corners rounded, so the walls come in where the board is empty — and a
+clear disc round every town and merchant, so nothing a player reads
+changes. Both eras wear the same rim, the rail's a little darker
+(`88,90`). Source in `map-frostcity-rim-fal.jpg`; run it last, after the
+composers:
+
+    tools/map/crater-rim.py tools/assets/map/map-frostcity-rim-fal.jpg places.json \
+      app/public/map-frostcity-canal.webp app/public/map-frostcity-canal.webp
+    tools/map/crater-rim.py tools/assets/map/map-frostcity-rim-fal.jpg places.json \
+      app/public/map-frostcity-rail.webp app/public/map-frostcity-rail.webp 88,90
