@@ -5,7 +5,7 @@ import { cue, noteStrike, setMix, tableAmbience, tableMusic, tableVoices, voiceS
 import type { Cue, VoiceSource } from '@/gl/sfx';
 import { freshStirs, pickVoice, stirsOf, voicesHere } from '@/gl/voices';
 import type { Stir } from '@/gl/voices';
-import { useBoardOptions } from './boardOptions';
+import { groundWeather, useBoardOptions } from './boardOptions';
 
 /* ------------------------------------------------------------------ */
 /* The table's sounds, cued from the game as it changes. The hook only */
@@ -138,7 +138,7 @@ export function useTableSounds(): void {
   /* the era's ambience; gone at the end of the game and when the table is left */
   const era = useGame((s) => (s.game && s.game.phase !== 'game-over' ? s.game.era : null));
   useEffect(() => {
-    tableAmbience(era);
+    tableAmbience(era, groundWeather());
   }, [era]);
   useEffect(() => () => tableAmbience(null), []);
 

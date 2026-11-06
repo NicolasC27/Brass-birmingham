@@ -696,59 +696,117 @@ export function noteStrike(kind: 'tile' | 'link', era: 'canal' | 'rail', mine: b
 
 /** the era the table stands in (null: no table, the ambience goes) */
 let wantEra: 'canal' | 'rail' | null = null;
-let table: { era: 'canal' | 'rail'; src: AudioBufferSourceNode; gain: GainNode } | null = null;
+/** what is heard under the table: the era's own recording, or the wind of
+ *  a frozen ground (the ?ground=city trial), the same in either era */
+export type Bed = 'canal' | 'rail' | 'frost';
+let wantBed: Bed | null = null;
+let table: { bed: Bed; src: AudioBufferSourceNode; gain: GainNode; stop?: () => void } | null = null;
 const AMB_FADE = 3;
 /** the canal's loop is birds over a quiet bed, levelled at -20 LUFS (its
  *  peaks would not allow more): brought up a little. The rail's is a low
  *  murmur of the town far off with a few birds, levelled at -26 LUFS so
  *  that it tires no one; its trains come now and then over it */
-const AMB_TRIM: Record<'canal' | 'rail', number> = { canal: 1.4, rail: 1.2 };
+const AMB_TRIM: Record<Bed, number> = { canal: 1.4, rail: 1.2, frost: 0.5 };
 /** the loop's own length: the file was folded onto itself at this length,
  *  an MP3's padding past it is left out of the loop */
 const AMB_LOOP_S = 27;
 
 /** the ambience of this era, looped under the table; another era's fades
- *  across into it */
-export function tableAmbience(era: 'canal' | 'rail' | null): void {
+ *  across into it. On a frozen ground (`weather`) the wind is heard
+ *  instead, whatever the era */
+export function tableAmbience(era: 'canal' | 'rail' | null, weather: 'frost' | null = null): void {
   wantEra = era;
+  wantBed = era ? (weather ?? era) : null;
   applyAmbience();
 }
 
-function fadeOut(t: { src: AudioBufferSourceNode; gain: GainNode }, seconds: number): void {
+function fadeOut(t: { src: AudioBufferSourceNode; gain: GainNode; stop?: () => void }, seconds: number): void {
   const ac = t.src.context;
   const now = ac.currentTime;
   t.gain.gain.cancelScheduledValues(now);
   t.gain.gain.setValueAtTime(t.gain.gain.value, now);
   t.gain.gain.linearRampToValueAtTime(0.0001, now + seconds);
   t.src.stop(now + seconds + 0.05);
+  if (t.stop) setTimeout(t.stop, (seconds + 0.1) * 1000);
+}
+
+/** the wind over a frozen plain, made rather than recorded: a breath of
+ *  noise kept low, its pitch and its strength swaying slowly and out of
+ *  step, so it gusts and never repeats. Nothing is fetched for it */
+function windBed(ac: AudioContext): { src: AudioBufferSourceNode; gain: GainNode; stop: () => void } {
+  const seconds = 4;
+  const buf = ac.createBuffer(2, ac.sampleRate * seconds, ac.sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const d = buf.getChannelData(c);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  const src = ac.createBufferSource();
+  src.buffer = buf;
+  src.loop = true;
+  const low = ac.createBiquadFilter();
+  low.type = 'lowpass';
+  low.frequency.value = 460;
+  low.Q.value = 0.6;
+  const band = ac.createBiquadFilter();
+  band.type = 'bandpass';
+  band.frequency.value = 190;
+  band.Q.value = 1.1;
+  const gain = ac.createGain();
+  /* the gusts: the pitch swings over a quarter of a minute, the strength
+     over a sixth, and a faster shiver rides on both */
+  const sway = (hz: number, depth: number, target: AudioParam) => {
+    const o = ac.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = hz;
+    const g = ac.createGain();
+    g.gain.value = depth;
+    o.connect(g).connect(target);
+    o.start();
+    return o;
+  };
+  const swell = ac.createGain();
+  swell.gain.value = 1;
+  const lfos = [sway(0.041, 140, band.frequency), sway(0.013, 60, low.frequency), sway(0.061, 0.3, swell.gain), sway(0.23, 0.08, swell.gain)];
+  src.connect(low).connect(band).connect(swell).connect(gain);
+  return {
+    src,
+    gain,
+    stop: () => {
+      for (const o of lfos) o.stop();
+    },
+  };
 }
 
 function applyAmbience(): void {
   applyLife();
-  const era = mix.on && mix.ambience ? wantEra : null;
-  if (table && table.era !== era) {
-    fadeOut(table, era ? AMB_FADE : 1);
+  const bed = mix.on && mix.ambience ? wantBed : null;
+  if (table && table.bed !== bed) {
+    fadeOut(table, bed ? AMB_FADE : 1);
     table = null;
   }
-  if (!era || table) return;
+  if (!bed || table) return;
   void context().then(async (ac) => {
     if (!ac) return;
-    const buf = await sample(`amb-${era}`);
+    const buf = bed === 'frost' ? null : await sample(`amb-${bed}`);
     /* the table may have moved on while the file came */
-    const now = mix.on && mix.ambience ? wantEra : null;
-    if (!buf || now !== era || table) return;
-    const src = ac.createBufferSource();
-    src.buffer = buf;
-    src.loop = true;
-    src.loopStart = 0;
-    src.loopEnd = Math.min(buf.duration, AMB_LOOP_S);
-    const gain = ac.createGain();
+    const now = mix.on && mix.ambience ? wantBed : null;
+    if ((bed !== 'frost' && !buf) || now !== bed || table) return;
     const t0 = ac.currentTime;
+    const voice = bed === 'frost' ? windBed(ac) : null;
+    const src = voice ? voice.src : ac.createBufferSource();
+    if (buf && !voice) {
+      src.buffer = buf;
+      src.loop = true;
+      src.loopStart = 0;
+      src.loopEnd = Math.min(buf.duration, AMB_LOOP_S);
+    }
+    const gain = voice ? voice.gain : ac.createGain();
     gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.linearRampToValueAtTime(AMB_TRIM[era], t0 + AMB_FADE);
-    src.connect(gain).connect(busOf(ac, 'ambience'));
+    gain.gain.linearRampToValueAtTime(AMB_TRIM[bed], t0 + AMB_FADE);
+    if (!voice) src.connect(gain);
+    gain.connect(busOf(ac, 'ambience'));
     src.start(t0);
-    table = { era, src, gain };
+    table = { bed, src, gain, stop: voice?.stop };
   });
 }
 
@@ -1252,7 +1310,7 @@ let tuneDue: number | null = null;
 if (import.meta.env.DEV && typeof window !== 'undefined')
   (window as unknown as { __sfx?: Record<string, () => unknown> }).__sfx = {
     playing: () => playing?.id ?? null,
-    ambience: () => table?.era ?? null,
+    ambience: () => table?.bed ?? null,
     life: () => life?.name ?? null,
     music: () => tune?.name ?? null,
     voice: () => voice?.id ?? null,

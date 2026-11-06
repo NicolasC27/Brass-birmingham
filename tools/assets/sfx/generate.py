@@ -100,6 +100,10 @@ PLAN = {
     # then a faint faraway hammer on an anvil, a soft breeze, a few birds, ...':
     # both came back as the same steady rumble. Take 4 names no town and no
     # engine at all: the railway is heard in the life events below instead
+    # the frozen city's bed (the ?ground=city trial): the wind alone, the
+    # ice far off, a breath of steam; one loop for both eras
+    'amb-frost': (30.0, 2, 0.5, True, ['a frozen wasteland at polar twilight: a steady cold wind blowing over open snow, gusting a little now and then with a soft hiss of blown ice crystals, far away the deep slow creak and boom of thick ice shifting, once a faint distant hiss of steam, no music, no voices, no hum, no rumble, clean quiet recording with a low noise floor, continuous, ' + ERA,
+                                        'a low steady winter wind over a wide frozen plain heard from inside a wooden shelter, muffled and even, a soft whistle at a gap in the boards now and then, a faint far-off groan of ice, very calm and sparse, no music, no voices, no hum, clean quiet recording with a very low noise floor, continuous, ' + ERA]),
     'amb-rail': (30.0, 4, 0.5, True, 'a quiet green valley on a still grey afternoon, a light breeze in long grass, a few rooks calling far away, now and then a faint far-off clink of iron, long quiet gaps between sounds, sparse and calm, clean quiet recording with a very low noise floor, no hum, no drone, no rumble, no engine, no traffic, no voices, continuous, ' + ERA),
     # the rail's life: now and then, over its ambience, a train somewhere off
     # take 1 gave one blast where two were asked (seventh round: asked again)

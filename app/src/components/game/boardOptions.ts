@@ -30,7 +30,10 @@ export type IncomeSide = 'bottom' | 'left';
  *  relief model the survey — cart roads, towpaths, the rail era's railways —
  *  served as a layer of its own so hiding the traces (key C) hides it too;
  *  the water stays in the land */
-export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail: string }; villages?: VillageStyle };
+export type MapSet = { canal: string; rail: string; etch?: { canal: string; rail: string }; villages?: VillageStyle; weather?: Weather };
+/** the weather a ground brings with it: a frozen one has its wind, its
+ *  blowing snow and the breath of its settlements */
+export type Weather = 'frost';
 /** what stands under a town's cards: the painted village, the ink hamlet
  *  of an engraved sheet, or nothing — a ground that paints its own places */
 export type VillageStyle = 'painted' | 'engraved' | 'none';
@@ -55,11 +58,13 @@ const OTHER_BOARDS: Record<string, { canal: string; rail: string }> = {
    furnaces lit by the rail era. */
 const TRIAL_GROUNDS: Record<string, MapSet> = {
   frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
-  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'none' },
+  city: { canal: '/map-frostcity-canal.webp', rail: '/map-frostcity-rail.webp', etch: { canal: '/map-frostcity-canal-etch.webp', rail: '/map-frostcity-rail-etch.webp' }, villages: 'none', weather: 'frost' },
 };
 const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
 
 export const mapUrls = (board?: string): MapSet => trialGround() ?? ((board && OTHER_BOARDS[board]) || MAP_URL);
+/** the weather of the ground on the table, if it has any */
+export const groundWeather = (board?: string): Weather | null => mapUrls(board).weather ?? null;
 
 /* the minimap's plate: the small preset stands level with the open hand
    dock (180px tall); a width dragged by hand overrides the preset */
