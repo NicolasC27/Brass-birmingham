@@ -51,28 +51,35 @@ const subject = (front: FrontRecipe): TileVariant => ({ id: 'v3', dir: '/tiles-v
  *  the hand of the engraved map, black ink on a cream label; an owner's
  *  card carries the same drawing on the colour. Its dual slots are printed
  *  as one label, the two drawings side by side (tools/assets/tiles-woodcut). */
+/** The same subjects with a light touch of winter — a dusting of snow
+ *  on the roofs, the light a shade colder, a warm window — for the frozen
+ *  city, bought at the counter (tiles-frost; tools/tiles/subjects-frost). */
+const frost = (front: FrontRecipe): TileVariant => ({ id: 'frost', dir: '/tiles-frost', front, ext: 'webp', pair: (a, b) => `/tile-combo-${pairKey(a, b)}.webp` });
 const woodcut = (): TileVariant => ({ id: 'woodcut', dir: '/tiles-woodcut', front: { scale: 64 }, ext: 'webp', label: true, pair: (a, b) => `/tile-combo-${pairFile(a, b)}.webp` });
 
 export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
   coal: [
     subject({ scale: 64 }),
+    frost({ scale: 64 }),
     woodcut(),
     { id: 'wagon', dir: '', front: { scale: 64 } },
     { id: 'cart', dir: '/tiles-classic', front: { scale: 64 } },
     { id: 'colliery', dir: '/tiles-works', front: { crop: [22, 280], scale: 88, partnerX: { cotton: 154 } } },
   ],
-  iron: [subject({ scale: 70 }), woodcut(), { id: 'foundry', dir: '', front: { scale: 70 } }],
-  cotton: [subject({ scale: 70 }), woodcut(), { id: 'mill', dir: '', front: { scale: 70 } }],
+  iron: [subject({ scale: 70 }), frost({ scale: 70 }), woodcut(), { id: 'foundry', dir: '', front: { scale: 70 } }],
+  cotton: [subject({ scale: 70 }), frost({ scale: 70 }), woodcut(), { id: 'mill', dir: '', front: { scale: 70 } }],
   manufacturer: [
     subject({ scale: 62 }),
+    frost({ scale: 62 }),
     woodcut(),
     { id: 'crate', dir: '', front: { scale: 62 } },
     { id: 'parcels', dir: '/tiles-classic', front: { scale: 62 } },
     { id: 'manufactory', dir: '/tiles-works', front: { crop: [10, 300], scale: 84, partnerX: { cotton: 160, iron: 160, pottery: 160 } } },
   ],
-  pottery: [subject({ scale: 70 }), woodcut(), { id: 'kiln', dir: '', front: { scale: 70 } }],
+  pottery: [subject({ scale: 70 }), frost({ scale: 70 }), woodcut(), { id: 'kiln', dir: '', front: { scale: 70 } }],
   brewery: [
     subject({ scale: 60 }),
+    frost({ scale: 60 }),
     woodcut(),
     { id: 'barrel', dir: '', front: { scale: 60 } },
     { id: 'mug', dir: '/tiles-classic', front: { scale: 60 } },
