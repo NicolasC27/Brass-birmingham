@@ -805,6 +805,9 @@ const platform = {
     soon: 'Próximamente',
     standbyBadge: 'Mostrador en espera',
     standbyNote: 'La tienda aún no abre. Los retratos y las baldosas siguen en el escaparate: se miran, no se venden. Las guineas, en cambio, siguen acumulándose.',
+    openNote: 'El mostrador está abierto: las guineas ganadas en las mesas se gastan aquí. Cada objeto se ve en la mesa antes de comprarlo.',
+    try: 'Verlo en la mesa',
+    tryNote: 'Abre una mesa de prueba que lleva el objeto diez minutos, sin comprarlo.',
     tabs: {
       avatar: 'Avatares',
       frame: 'Marcos',

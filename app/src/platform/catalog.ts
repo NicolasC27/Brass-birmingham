@@ -26,7 +26,7 @@ export const CATEGORIES: Category[] = ['avatar', 'frame', 'title', 'sign', 'port
 /* COUNTER_OPEN à true.                                                */
 /* ------------------------------------------------------------------ */
 
-export const COUNTER_OPEN: boolean = false;
+export const COUNTER_OPEN: boolean = true;
 
 /** les rayons montrés tant que le comptoir est en veille */
 export const PREVIEW_CATEGORIES: Category[] = ['portrait', 'tiles', 'cards', 'ground'];

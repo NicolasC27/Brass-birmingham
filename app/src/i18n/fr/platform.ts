@@ -805,6 +805,9 @@ const platform = {
     soon: 'Bientôt',
     standbyBadge: 'Comptoir en veille',
     standbyNote: 'La boutique n’ouvre pas encore. Les portraits et les tuiles restent en vitrine : on les regarde, rien ne se vend. Les guinées, elles, continuent de s’accumuler.',
+    openNote: 'Le comptoir est ouvert : les guinées gagnées aux tables s’y dépensent. Chaque objet se voit sur la table avant d’être acheté.',
+    try: 'Voir sur la table',
+    tryNote: 'Ouvre une table d’essai qui porte l’objet dix minutes, sans l’acheter.',
     tabs: {
       avatar: 'Avatars',
       frame: 'Cadres',

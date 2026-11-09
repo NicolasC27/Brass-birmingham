@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { useNavigate, Link } from 'react-router';
 import { motion, useReducedMotion } from 'framer-motion';
 import { BadgeCheck, Check, Clock, Coins } from 'lucide-react';
 import Button from '@/components/platform/Button';
@@ -8,7 +8,7 @@ import Modal from '@/components/platform/Modal';
 import Tabs, { TabPanel } from '@/components/platform/Tabs';
 import PageShell from '@/components/site/PageShell';
 import Toast, { type ToastData } from '@/components/platform/Toast';
-import { setBoardOption, useBoardOptions, type BoardOptions, type CardSet, type Ground } from '@/components/game/boardOptions';
+import { setBoardOption, tryOn, useBoardOptions, type BoardOptions, type CardSet, type Ground, type TryOn } from '@/components/game/boardOptions';
 import type { IndustryType } from '@/game/types';
 import type { TileArt } from '@/gl/faces';
 import type { SlotArt } from '@/gl/faces';
@@ -83,6 +83,14 @@ function boardWear(item: ShopItem): BoardWear | null {
   if (item.id === 'cards-plain') return { key: 'cardSet', value: 'plain' };
   if (item.id === 'ground-frost') return { key: 'ground', value: 'frost' };
   if (item.id === 'ground-midlands') return { key: 'ground', value: 'midlands' };
+  return null;
+}
+
+/** what trying an item on puts on the table, when it can be tried */
+function tryOf(item: ShopItem): Omit<TryOn, 'until'> | null {
+  if (item.id === 'ground-frost') return { ground: 'city' };
+  if (item.id === 'tiles-frost') return { tiles: 'frost' };
+  if (item.id === 'cards-frost') return { cards: 'frost' };
   return null;
 }
 
@@ -171,6 +179,7 @@ function ShopItemCard({
   opts,
   canBuy,
   onBuy,
+  onTry,
   onEquip,
 }: {
   item: ShopItem;
@@ -179,6 +188,7 @@ function ShopItemCard({
   opts: BoardOptions;
   canBuy: boolean;
   onBuy: (item: ShopItem) => void;
+  onTry: (item: ShopItem) => void;
   onEquip: (item: ShopItem) => void;
 }) {
   const t = useT();
@@ -229,15 +239,22 @@ function ShopItemCard({
             </span>
           )
         ) : COUNTER_OPEN ? (
-          <Button
-            variant="ticket-brass"
-            className="gz-ticket-sm"
-            disabled={!canBuy || !affordable}
-            title={!canBuy ? t('platform.comptoir.signedOutNote') : !affordable ? t('platform.comptoir.insufficient') : undefined}
-            onClick={() => onBuy(item)}
-          >
-            {t('platform.comptoir.buy')}
-          </Button>
+          <span className="flex flex-wrap items-center justify-center gap-2">
+            {tryOf(item) && (
+              <Button variant="ticket" className="gz-ticket-sm" onClick={() => onTry(item)} title={t('platform.comptoir.tryNote')}>
+                {t('platform.comptoir.try')}
+              </Button>
+            )}
+            <Button
+              variant="ticket-brass"
+              className="gz-ticket-sm"
+              disabled={!canBuy || !affordable}
+              title={!canBuy ? t('platform.comptoir.signedOutNote') : !affordable ? t('platform.comptoir.insufficient') : undefined}
+              onClick={() => onBuy(item)}
+            >
+              {t('platform.comptoir.buy')}
+            </Button>
+          </span>
         ) : (
           <span className={cn(CARTOUCHE, 'text-iron-400')}>
             <Clock size={13} aria-hidden className="text-brass-300" />
@@ -338,6 +355,7 @@ export default function Comptoir() {
   const [buying, setBuying] = useState<ShopItem | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastData | null>(null);
+  const navigate = useNavigate();
 
   const showToast = (message: string, kind: ToastData['kind'] = 'success') => setToast({ id: Date.now(), message, kind });
 
@@ -361,6 +379,14 @@ export default function Comptoir() {
       setBusy(false);
       setBuying(null);
     }
+  };
+
+  /* a thing tried on: the tab wears it for a while, and a table is opened */
+  const doTry = (item: ShopItem) => {
+    const what = tryOf(item);
+    if (!what) return;
+    tryOn(what);
+    navigate('/game');
   };
 
   const doEquip = (item: ShopItem) => {
@@ -396,7 +422,9 @@ export default function Comptoir() {
       </motion.div>
 
       {/* the one fact that stops a purchase: the page's one full frame */}
-      {!COUNTER_OPEN && (
+      {COUNTER_OPEN ? (
+        <p role="status" className="console console-ruled mt-6 px-5 py-3 font-ui text-[13px] leading-relaxed text-paper-300">{t('platform.comptoir.openNote')}</p>
+      ) : (
         <div role="status" className="console console-ruled mt-6 flex flex-wrap items-center gap-3 px-5 py-4">
           <Clock size={16} aria-hidden className="shrink-0 text-brass-300" />
           <span className="micro-label text-paper-100">{t('platform.comptoir.standbyBadge')}</span>
@@ -409,7 +437,7 @@ export default function Comptoir() {
           <Tabs groupId="comptoir" ariaLabel={t('platform.comptoir.title')} active={tab} onChange={(id) => setTab(id as Category)} tabs={SHOWN_CATEGORIES.map((c) => ({ id: c, label: t(`platform.comptoir.tabs.${c}`) }))} />
           <TabPanel groupId="comptoir" id={tab} key={tab} className="mt-6 grid gap-4 min-[640px]:grid-cols-2 min-[900px]:grid-cols-3">
             {items.map((item, i) => (
-              <ShopItemCard key={item.id} item={item} index={i} wallet={wallet} opts={opts} canBuy={session !== null} onBuy={setBuying} onEquip={doEquip} />
+              <ShopItemCard key={item.id} item={item} index={i} wallet={wallet} opts={opts} canBuy={session !== null} onBuy={setBuying} onEquip={doEquip} onTry={doTry} />
             ))}
           </TabPanel>
         </div>

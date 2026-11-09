@@ -805,6 +805,9 @@ const platform = {
     soon: 'Coming soon',
     standbyBadge: 'Counter on standby',
     standbyNote: 'The shop is not open yet. Portraits and tiles stay in the window — look all you like, nothing is for sale. The guineas keep adding up all the same.',
+    openNote: 'The counter is open: the guineas earned at the tables are spent here. Every item can be seen on the table before it is bought.',
+    try: 'See it on the table',
+    tryNote: 'Opens a trial table wearing the item for ten minutes, nothing bought.',
     tabs: {
       avatar: 'Avatars',
       frame: 'Frames',

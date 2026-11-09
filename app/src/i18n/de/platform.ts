@@ -807,6 +807,9 @@ const platform: typeof enPlatform = {
     soon: 'Demnächst',
     standbyBadge: 'Kontor ruht',
     standbyNote: 'Der Laden hat noch nicht geöffnet. Porträts und Plättchen bleiben im Schaufenster: ansehen ja, verkauft wird nichts. Die Guineen sammeln sich unterdessen weiter.',
+    openNote: 'Der Schalter ist offen: die an den Tischen verdienten Guineen werden hier ausgegeben. Jeder Gegenstand lässt sich vor dem Kauf auf dem Tisch sehen.',
+    try: 'Auf dem Tisch sehen',
+    tryNote: 'Öffnet einen Probetisch, der den Gegenstand zehn Minuten trägt, ohne Kauf.',
     tabs: {
       avatar: 'Avatare',
       frame: 'Rahmen',
