@@ -357,6 +357,8 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
   /* on the frozen ground Birmingham is the hearth of the country, as the
      generator is of Frostpunk's city: its halo wide and warm */
   const hearth = (id: string): boolean => weather === 'frost' && id === 'birmingham';
+  /** the hearth's halo, widened with every works the city builds (tick) */
+  let hearthHalo: Sprite | null = null;
   for (const node of [...TOWNS.map((t) => ({ id: t.id, x: t.x, y: t.y, r: hearth(t.id) ? 260 : 90 })), ...MERCHANTS.map((m) => ({ id: m.id, x: m.x, y: m.y, r: 70 }))]) {
     const h = hashId(node.id);
     const s = new Sprite(glow);
@@ -370,6 +372,7 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
     const dur = 4 + (h % 300) / 100;
     const ph = (h % 700) / 100;
     layer.addChild(s);
+    if (hearth(node.id)) hearthHalo = s;
     if (reduced) {
       s.alpha = (lo + hi) / 2;
     } else {
@@ -857,6 +860,14 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
         }
       }
       rebuildDynamic(t, game, iconCanal, iconRail);
+      /* the hearth burns wider for every works the city builds: four
+         works and it is half as wide again */
+      if (hearthHalo && game) {
+        let works = 0;
+        for (const key in game.tiles) if (key.startsWith('birmingham:')) works++;
+        const r = 260 + 32 * Math.min(4, works);
+        if (hearthHalo.width !== r * 2) hearthHalo.width = hearthHalo.height = r * 2;
+      }
       updateEtch(t, game);
       /* the columns stand still with the traffic off: the glows stay lit */
       plumes.tick(t, dt, k, traffic !== 'none');

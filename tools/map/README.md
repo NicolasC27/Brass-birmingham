@@ -452,3 +452,18 @@ location cards are engraved again under snow
 frozen ground by `cardArt`). The first ask for the cards, "in the dead of
 a hard winter", came back as the same plates with hardly a flake: the
 snow has to be asked for plainly, as most of the picture.
+
+### The cold, a third round
+
+Told "fais tout" once more: the frozen city's own music, one piece an
+era (`TUNES_FROST` in playlist.ts, the plans in generate.py, the choice
+in CHOIX.md); the challenge of the winter (`winter` in challenge.ts: the
+frozen city lent to everyone for the week, two collieries sold, six
+links on the ice, one loan at most, and first place — the tab wears the
+ground as a trial when the notice is opened); a fourth look for the
+photo mode, the blizzard (`BLIZZARD` in photo.ts: steel and ice, blown
+snow streaking the frame, a veil thick at the edges and lifted off the
+places that are read); the townsfolk's bubbles iced and rimmed in blue
+(`VoiceBubble.tsx`); a sledge's bells for a link laid on the ice
+(`link-sledge`); and Birmingham's hearth burning wider for every works
+the city builds (`hearthHalo` in ambiance.ts).
