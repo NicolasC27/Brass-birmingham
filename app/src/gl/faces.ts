@@ -1,4 +1,5 @@
 import type { IndustryType } from '@/game/types';
+import { groundWeather } from '@/components/game/boardOptions';
 
 /* ------------------------------------------------------------------ */
 /* The faces of the tiles: which painting set each industry wears and  */
@@ -89,7 +90,15 @@ export const TILE_VARIANTS: Partial<Record<IndustryType, TileVariant[]>> = {
 /** chosen variant id per industry (missing = the first of the list, the
  *  painted subjects of /tiles-v3) */
 export type TileArt = Partial<Record<IndustryType, string>>;
-export const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefined => TILE_VARIANTS[i]?.find((v) => v.id === art[i]) ?? TILE_VARIANTS[i]?.[0];
+/** the variant an industry wears: the reader's choice, else on a frozen
+ *  ground the winter set, else the first of the list */
+export const variantOf = (i: IndustryType, art: TileArt): TileVariant | undefined => {
+  const list = TILE_VARIANTS[i];
+  const chosen = list?.find((v) => v.id === art[i]);
+  if (chosen) return chosen;
+  if (groundWeather() === 'frost') return list?.find((v) => v.id === 'frost') ?? list?.[0];
+  return list?.[0];
+};
 /** the face an industry wears under the current art choice: the finished
  *  painting, or the owner's colour card of a drawn set (the HUD paints the
  *  very same image the board does) */
