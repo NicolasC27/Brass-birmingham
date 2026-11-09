@@ -430,6 +430,10 @@ function Notices() {
 
   const hasPages = notes.length > 0;
   const folded = !leafing && (open.length === 0 || hush);
+  /* the market open takes the right edge: the pile steps left of it so a
+     notice stays readable, but a folded book stepping left of the sheet
+     read as a stray button in the middle of the table — it waits */
+  const bookAway = folded && !!market;
   const list = leafing ? open : shown;
 
   return (
@@ -445,7 +449,7 @@ function Notices() {
           transition={still ? { duration: 0 } : { duration: 0.24, ease: EASE }}
           style={{ width: place.width }}
         >
-          {folded ? (
+          {bookAway ? null : folded ? (
             /* nothing open, or the guide speaking: the book is a stud of
                brass, the pages kept inside — a dot while some wait unread */
             <button
