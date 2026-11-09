@@ -66,10 +66,11 @@ SHORT = {
     'stamp': ('stamp-1', None, '', PEAK),
     'link-canal': ('link-canal-1', None, '', PEAK),
     'link-rail': ('link-rail-1', None, '', PEAK, {'dehum': True}),
-    'link-sledge': ('link-sledge-1', None, '', PEAK, {'dehum': True}),
+    'link-sledge': ('link-sledge-1', None, '', PEAK, {'dehum': True, 'lufs': -24}),
     # levelled at its peak, the coins came to -18.7 LUFS, 8 LU over the
     # other moves of the hand: brought to the stamp's loudness less 3 LU
-    'sell': ('sell-1', None, '', PEAK, {'lufs': -23}),
+    # the coins came through loud over the table (Nicolas, 2026-10-02): 4 dB down
+    'sell': ('sell-1', None, '', PEAK, {'lufs': -27}),
     # the whistle is heard across the fields: its top dulled a little. Take
     # 4 (the seventh round, CHOIX.md): an early engine's whistle, one warm
     # note at 580 Hz blown once for 0.8 s and its echo (no take of the four
