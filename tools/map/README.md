@@ -508,3 +508,13 @@ a quay of dressed stone; both read as severe and were put back (the
 coloured ribbons, the row's soft shadow). The empty slots are engraved in a cold steel
 ink on the frozen ground (`toneTable('cold')`); the apron's far haze
 leans toward the table's felt; and key N takes the names off the table.
+
+### The frozen ground's own links
+
+Asked for routes that keep to the theme and belong to it alone: on the
+frozen ground (`frost` in `drawLinks`) a route not yet made is a trail
+staked out over the ice — a thin pale line and the stakes along it; a
+canal link is an ice road, pale ice between dark banks, the owner's
+colour as the lanterns posted along it rather than as the water; a rail
+link is iron on the snow, the owner's sleepers under twin rails of
+frosted steel. Every other ground keeps the slim ribbons.

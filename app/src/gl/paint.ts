@@ -1281,6 +1281,9 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
     into.addChild(g);
   };
   const drawLinks = (game: GameState) => {
+    /* the frozen ground draws its links its own way: trails staked over
+       the ice, ice roads lit by the owner's lanterns, iron on the snow */
+    const frost = groundWeather() === 'frost';
     for (const def of LINKS) {
       const g = linkGfx.get(def.id)!;
       g.clear();
@@ -1305,7 +1308,16 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
            valleys carved into the model, the ice channels — so the trace
            over it is a hairline: a thin dark bed and one fine line, water
            or steel, enough to say where a link may go and no more */
-        if (railStyle) {
+        if (frost) {
+          /* on the frozen ground a route not yet made is a trail staked
+             out over the ice: a thin pale line and the stakes along it */
+          tracePath(g, pts);
+          g.stroke({ width: 3, color: 0x0a1420, alpha: furrow * 0.45, cap: 'round', join: 'round' });
+          tracePath(g, pts);
+          g.stroke({ width: 1, color: 0xcfe4f4, alpha: Math.min(0.75, furrow + 0.15), cap: 'round', join: 'round' });
+          traceDashes(g, pts, 2, 26);
+          g.stroke({ width: 2.4, color: 0xe8f2fb, alpha: Math.min(0.9, furrow + 0.3), cap: 'round' });
+        } else if (railStyle) {
           tracePath(g, pts);
           g.stroke({ width: 3.6, color: 0x0c0e0e, alpha: furrow * 0.4, cap: 'round', join: 'round' });
           if (game.era !== 'rail') {
@@ -1330,7 +1342,34 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
         /* owner glow, narrow: the line is read by its colour, not its width */
         tracePath(g, pts);
         g.stroke({ width: 13, color: col, alpha: 0.22, cap: 'round', join: 'round' });
-        if (built.era === 'rail') {
+        if (frost && built.era !== 'rail') {
+          /* an ice road on the frozen ground: a channel of pale ice between
+             dark banks, the owner's colour as the lanterns posted along it
+             and a thin line of it down one edge, not as the water */
+          tracePath(g, pts);
+          g.stroke({ width: 11, color: 0x0b1522, alpha: 0.85, cap: 'round', join: 'round' });
+          tracePath(g, pts);
+          g.stroke({ width: 7.5, color: 0xb8d2e6, cap: 'round', join: 'round' });
+          tracePath(g, pts);
+          g.stroke({ width: 2.6, color: 0x7ea2bf, alpha: 0.7, join: 'round' });
+          traceDashes(g, pts, 3.2, 20);
+          g.stroke({ width: 4, color: col, alpha: 0.95, cap: 'round' });
+          traceDashes(g, pts, 3.2, 20);
+          g.stroke({ width: 1.4, color: tint(col, 0.7), alpha: 0.9, cap: 'round' });
+        } else if (frost) {
+          /* iron on the snow: a dark bed, the owner's sleepers, twin rails
+             of pale frosted steel */
+          tracePath(g, pts);
+          g.stroke({ width: 10, color: 0x06090e, cap: 'round', join: 'round' });
+          tracePath(g, pts);
+          g.stroke({ width: 7.5, color: shade(col, 0.5), join: 'round' });
+          traceDashes(g, pts, 1.8, 7);
+          g.stroke({ width: 6, color: col, alpha: 0.9 });
+          tracePath(g, pts);
+          g.stroke({ width: 2.8, color: 0xdbe8f4, alpha: 0.95, join: 'round' });
+          tracePath(g, pts);
+          g.stroke({ width: 0.8, color: 0x2a3644, join: 'round' });
+        } else if (built.era === 'rail') {
           /* steam-era track, slim: a dark bed, the owner's ballast, fine
              sleepers, twin pale rails on it */
           tracePath(g, pts);
