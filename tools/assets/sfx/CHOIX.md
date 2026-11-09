@@ -1048,3 +1048,15 @@ verdict on the four takes is in `judge/frost-*.json`.
 `link-sledge` (one take, 1.5 s, the harness bells of a sledge setting
 off, the runners creaking free) is the canal era's link on the ice, in
 place of the water at the lock wall (`linkCue` in sfx.ts).
+
+## The tenth round: the townsfolk said again by v4 (2026-11-09)
+
+Nicolas asked for the lines of the fifth round, said by v3, to be said
+again by v4 like the frozen city's. One take more of each of the 38
+(`VOICES` in generate.py, the counts raised by one), on the
+text-to-speech allowance; the counter did not move. Heard back by
+`check_lines.py`: 36 word for word, two off by a spelling alone — "12
+hours" for "twelve", and an extra groan before "me knees" — kept
+anyway. Every line now serves its v4 take (`FIRST_ROUND` in process.py:
+take 2 of each, Barnaby's rope its third, Mrs Blewitt's "finest" its
+fourth); the v3 takes stay in raw/.

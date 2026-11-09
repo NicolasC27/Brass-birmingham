@@ -177,6 +177,7 @@ BARKS = {n: f'{n}-1' for n in (
     'bark-kezia-kiln', 'bark-kezia-bread', 'bark-kezia-price', 'bark-kezia-coal', 'bark-kezia-kettle',
     'bark-tom-furnace', 'bark-tom-what', 'bark-tom-dear', 'bark-tom-sweet', 'bark-tom-late',
 )}
+FIRST_ROUND = tuple(BARKS)
 # the eighth round: the frozen city's lines, said by v4, one take each
 for n in ('bark-ezra-frozen', 'bark-ezra-snow', 'bark-ezra-alive', 'bark-ezra-nose',
           'bark-barnaby-sledge', 'bark-barnaby-ice', 'bark-barnaby-whiskers', 'bark-barnaby-runners',
@@ -192,6 +193,14 @@ BARKS['bark-barnaby-rope'] = 'bark-barnaby-rope-2'
 BARKS['bark-nellie-warmest'] = 'bark-nellie-warmest-2'
 BARKS['bark-hepzibah-warm'] = 'bark-hepzibah-warm-2'
 BARKS['bark-hepzibah-finest'] = 'bark-hepzibah-finest-3'
+# the tenth round: every line of the fifth said again with v4, the new
+# take of each heard back by the speech-to-text model (check_lines.py):
+# 36 of 38 word for word, two off by a spelling ('12 hours', an extra
+# groan on 'me knees'); every one kept over its v3 take
+for n in FIRST_ROUND:
+    BARKS[n] = f'{n}-2'
+BARKS['bark-barnaby-rope'] = 'bark-barnaby-rope-3'
+BARKS['bark-hepzibah-finest'] = 'bark-hepzibah-finest-4'
 # a line is heard in a town on the board, not in the ear: nothing under
 # 110 Hz (the chest of a close microphone), nothing over 7 kHz (the lips),
 # and one early reflection, a wall across the street. Levelled at -22 LUFS
