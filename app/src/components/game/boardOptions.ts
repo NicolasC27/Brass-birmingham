@@ -67,7 +67,19 @@ const TRIAL_GROUNDS: Record<string, MapSet> = {
   frost: { canal: '/map-frost-canal.webp', rail: '/map-frost-rail.webp', etch: { canal: '/map-frost-canal-etch.webp', rail: '/map-frost-rail-etch.webp' } },
   city: FROST_URL,
 };
-const trialGround = (): MapSet | undefined => (typeof location === 'undefined' ? undefined : TRIAL_GROUNDS[new URLSearchParams(location.search).get('ground') ?? '']);
+/* the trial asked for is kept for the tab: a game opened at /game is sent
+   on to its own address, and the query would be lost on the way */
+const TRIAL_KEY = 'brassworks.ground.trial';
+const trialGround = (): MapSet | undefined => {
+  if (typeof location === 'undefined') return undefined;
+  const asked = new URLSearchParams(location.search).get('ground');
+  try {
+    if (asked !== null) sessionStorage.setItem(TRIAL_KEY, asked);
+    return TRIAL_GROUNDS[asked ?? sessionStorage.getItem(TRIAL_KEY) ?? ''];
+  } catch {
+    return TRIAL_GROUNDS[asked ?? ''];
+  }
+};
 
 export const mapUrls = (board?: string): MapSet => trialGround() ?? ((board && OTHER_BOARDS[board]) || (getBoardOptions().ground === 'frost' ? FROST_URL : MAP_URL));
 /** the weather of the ground on the table, if it has any */
