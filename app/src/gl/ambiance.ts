@@ -6,7 +6,9 @@ import type { GameState, IndustryType } from '@/game/types';
 import { admitCrossing, trafficCap, trafficLinks } from './living';
 import type { TrafficLevel } from './living';
 import { buildPlumes } from './plumes';
-import { buildSnow } from './snow';
+import { buildSnow, storm } from './snow';
+import { BLEED_X, BLEED_Y, WORLD_H, WORLD_W } from '@/components/game/boardView';
+import { windStorm } from './sfx';
 import { duskLevel } from './living';
 import type { Weather } from '@/components/game/boardOptions';
 
@@ -444,7 +446,20 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
   const high = new Container();
   high.eventMode = 'none';
   high.addChild(plumes.high);
-  if (snow) high.addChild(snow.layer);
+  /* the storm's veil: blown snow thickening over the whole table, never
+     past a third, so the cards and the names still read through it */
+  let veil: Sprite | null = null;
+  if (snow) {
+    high.addChild(snow.layer);
+    veil = new Sprite(Texture.WHITE);
+    veil.position.set(-BLEED_X, -BLEED_Y);
+    veil.width = WORLD_W + 2 * BLEED_X;
+    veil.height = WORLD_H + 2 * BLEED_Y;
+    veil.tint = 0xdde8f4;
+    veil.alpha = 0;
+    veil.eventMode = 'none';
+    high.addChild(veil);
+  }
   const wakeLayer = new Container(); // ripples + smoke puffs, under the hulls
   const trafficLayer = new Container();
   layer.addChild(plumes.low, wakeLayer, trafficLayer);
@@ -465,6 +480,10 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
     boat: boolean;
     /** a sledge on the ice of a frozen ground, where a barge would be */
     sledge: boolean;
+    /** the two ruts its runners wear into the snow along the line, deeper
+     *  with every crossing (null for anything but a sledge) */
+    ruts: Graphics | null;
+    crossings: number;
     puffs: Puff[];
     lastPuff: number;
     len: number;
@@ -691,6 +710,29 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
             const wake = new Graphics();
             wake.eventMode = 'none';
             wakeLayer.addChild(wake);
+            /* a sledge's ruts, drawn once along the whole crossing and
+               deepened as it goes back and forth */
+            let ruts: Graphics | null = null;
+            if (sledge) {
+              ruts = new Graphics();
+              ruts.eventMode = 'none';
+              ruts.alpha = 0;
+              for (const side of [-1, 1]) {
+                let firstPt = true;
+                for (let i = 0; i <= 40; i++) {
+                  const dd = 0.1 * sam.total + (0.8 * sam.total * i) / 40;
+                  sam.at(dd, Q);
+                  const x = Q[0] - Math.sin(Q[2]) * side * 4.2;
+                  const y = Q[1] + Math.cos(Q[2]) * side * 4.2;
+                  if (firstPt) {
+                    ruts.moveTo(x, y);
+                    firstPt = false;
+                  } else ruts.lineTo(x, y);
+                }
+                ruts.stroke({ width: 1.3, color: 0x4a5870, alpha: 0.7, cap: 'round' });
+              }
+              wakeLayer.addChildAt(ruts, 0);
+            }
             trafficLayer.addChild(c);
             const puffs: Puff[] = [];
             for (let k = 0; k < (boat ? 2 : 5); k++) {
@@ -706,7 +748,7 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
             const until = traffic === 'none' && maiden !== undefined ? maiden + pass.dur : Infinity;
             const gate = `${id}:${l.era}:${second ? 1 : 0}`;
             const ruled = gates.get(gate);
-            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, sledge, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until, gate, gateK: ruled?.k ?? NaN, gateOpen: ruled?.open ?? false, gateMaiden: ruled?.maiden ?? false, maiden: second ? undefined : maiden });
+            vehicles.push({ c, wake, sam, pass, quay: 0.1 * sam.total, ph, reverse, boat, sledge, ruts, crossings: 0, puffs, lastPuff: -99, len: boat ? 44 : 48, rest, from, until, gate, gateK: ruled?.k ?? NaN, gateOpen: ruled?.open ?? false, gateMaiden: ruled?.maiden ?? false, maiden: second ? undefined : maiden });
           };
           const first = h % 2 === 0;
           /* a maiden voyage starts its cycle right now; an older link keeps
@@ -818,7 +860,12 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
       updateEtch(t, game);
       /* the columns stand still with the traffic off: the glows stay lit */
       plumes.tick(t, dt, k, traffic !== 'none');
-      snow?.tick(t, dt, k, game ? duskLevel(game) : 0);
+      if (snow) {
+        snow.tick(t, dt, k, game ? duskLevel(game) : 0);
+        const blow = reduced ? 0 : storm(t);
+        if (veil) veil.alpha = 0.32 * blow;
+        windStorm(blow);
+      }
       /* the vehicles under way on the lines, for the gate below */
       let sailing = 0;
       for (const v of vehicles) if (v.gateOpen && !v.gateMaiden && underWay(v, t) !== null && v.gateK === Math.floor((t + v.ph) / (v.pass.dur + v.rest))) sailing++;
@@ -836,6 +883,11 @@ export function buildAmbiance(reduced: boolean, ground: Container, weather: Weat
             v.gateOpen = admitCrossing(sailing, cap, maiden);
             v.gateMaiden = maiden;
             if (v.gateOpen && !maiden) sailing++;
+            /* another crossing on the snow: the ruts a little deeper */
+            if (v.gateOpen && v.ruts) {
+              v.crossings++;
+              v.ruts.alpha = Math.min(0.55, 0.1 * v.crossings);
+            }
             gates.set(v.gate, { k, open: v.gateOpen, maiden });
           }
           if (!v.gateOpen) inCycle = null;

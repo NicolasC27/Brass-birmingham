@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FLAKES, gust, snowDensity } from '../snow';
+import { FLAKES, STORM_BLOW, STORM_EVERY, STORM_RISE, gust, snowDensity, storm } from '../snow';
 
 /* ------------------------------------------------------------------ */
 /* the snow's pure parts: how hard the wind blows, and how much of the  */
@@ -29,5 +29,23 @@ describe('the snow seen', () => {
     expect(snowDensity(0.5)).toBeGreaterThan(snowDensity(0));
     expect(snowDensity(2)).toBe(1);
     expect(snowDensity(-1)).toBe(snowDensity(0));
+  });
+});
+
+describe('the storm', () => {
+  it('comes once a cycle, rises, blows a minute and drops, and is nothing the rest of the time', () => {
+    const start = STORM_EVERY - 2 * STORM_RISE - STORM_BLOW;
+    expect(storm(0)).toBe(0);
+    expect(storm(start - 1)).toBe(0);
+    expect(storm(start + STORM_RISE / 2)).toBeGreaterThan(0.3);
+    expect(storm(start + STORM_RISE / 2)).toBeLessThan(0.7);
+    expect(storm(start + STORM_RISE + 1)).toBe(1);
+    expect(storm(start + STORM_RISE + STORM_BLOW - 1)).toBe(1);
+    expect(storm(STORM_EVERY - 1)).toBeLessThan(0.1);
+    expect(storm(STORM_EVERY + 5)).toBe(0);
+    /* most of the cycle is calm */
+    let calm = 0;
+    for (let t = 0; t < STORM_EVERY; t++) if (storm(t) === 0) calm++;
+    expect(calm / STORM_EVERY).toBeGreaterThan(0.65);
   });
 });

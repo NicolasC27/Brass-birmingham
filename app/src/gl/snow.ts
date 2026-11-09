@@ -54,6 +54,20 @@ export function gust(t: number): number {
  *  all of it by night */
 export const snowDensity = (dusk: number): number => 0.34 + 0.66 * Math.min(1, Math.max(0, dusk));
 
+/** a storm every so often: nothing for most of the cycle, then the wind
+ *  rises over twenty seconds, blows a minute, and drops again. 0 to 1 */
+export const STORM_EVERY = 330;
+export const STORM_RISE = 20;
+export const STORM_BLOW = 60;
+export function storm(t: number): number {
+  const p = ((t % STORM_EVERY) + STORM_EVERY) % STORM_EVERY;
+  const start = STORM_EVERY - STORM_RISE * 2 - STORM_BLOW;
+  if (p < start) return 0;
+  const q = p - start;
+  const s = q < STORM_RISE ? q / STORM_RISE : q < STORM_RISE + STORM_BLOW ? 1 : Math.max(0, 1 - (q - STORM_RISE - STORM_BLOW) / STORM_RISE);
+  return s * s * (3 - 2 * s);
+}
+
 export function buildSnow(reduced: boolean): Snow {
   const tex = flakeTexture();
   const layer = new ParticleContainer({ dynamicProperties: { position: true, vertex: true, rotation: false, color: true, uvs: false } });
@@ -104,8 +118,10 @@ export function buildSnow(reduced: boolean): Snow {
         });
         return;
       }
-      const g = gust(t);
-      const shown = Math.floor(FLAKES * density);
+      /* the storm drives the wind up and fills the sheet */
+      const blow = storm(t);
+      const g = gust(t) * (1 + 0.9 * blow);
+      const shown = Math.floor(FLAKES * Math.min(1, density + blow));
       /* the camera close: the flakes read at their own size, not blown up
          with the table */
       const closeness = Math.min(1, 1 / Math.max(1, k * 0.6));
@@ -120,7 +136,7 @@ export function buildSnow(reduced: boolean): Snow {
           continue;
         }
         const drive = g * f.pace;
-        f.x += (WIND_X * drive + Math.sin(t * 1.3 + f.ph) * 12) * dt;
+        f.x += (WIND_X * drive * (1 + 0.6 * blow) + Math.sin(t * 1.3 + f.ph) * 12) * dt;
         f.y += (WIND_Y * drive + FALL * f.pace + Math.cos(t * 0.9 + f.ph) * 8) * dt;
         if (f.x > X0 + SW) f.x -= SW;
         if (f.y > Y0 + SH) f.y -= SH;
