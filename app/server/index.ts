@@ -523,7 +523,7 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
     if (!c.me) return;
     const desk = hall.desk(c.me.id);
     /* a friend is online when a socket of theirs is open */
-    desk.friends = desk.friends.map((f) => ({ ...f, online: socketsOf(f.account.id).length > 0, playing: hall.playingOf(f.account.id) }));
+    desk.friends = desk.friends.map((f) => ({ ...f, online: socketsOf(f.account.id).length > 0, playing: hall.playingOf(f.account.id), open: hall.openTableOf(f.account.id) }));
     send(c, { t: 'desk', rid, desk });
   };
   /** the register of games at home moved: every browser of this account

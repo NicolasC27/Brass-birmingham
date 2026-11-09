@@ -215,6 +215,14 @@ export class Hall {
     return undefined;
   }
 
+  /** the table this account sits at that still waits for players, with a chair free */
+  openTableOf(accountId: string): { code: string; name: string } | undefined {
+    for (const room of this.rooms.values()) {
+      if (!room.game && room.table.status === 'open' && room.table.seats.length < MAX_SEATS && room.table.seats.some((s) => s.id === accountId)) return { code: room.table.code, name: room.table.name };
+    }
+    return undefined;
+  }
+
   desk(accountId: string): Desk {
     const { received, sent } = this.store.invitationsFor(accountId);
     const season = seasonAt();

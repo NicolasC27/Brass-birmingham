@@ -62,7 +62,6 @@ const platform = {
     playNow: "Próxima salida",
     createTable: "Fletar un convoy",
     joinWithCode: "Mi número de convoy",
-    join: 'Unirse',
     watch: 'Mirar',
     full: 'Completa',
     resume: 'Reanudar',
@@ -237,6 +236,7 @@ const platform = {
       profile: 'Mi perfil',
       profileCopy: 'Rango, cotización e historial público.',
     },
+    join: 'Unirse a su mesa',
   },
   // --- rules ---
   rules: {
@@ -482,6 +482,12 @@ const platform = {
     placeholderTo: 'Una línea para {name}…',
     send: 'Enviar',
     back: 'Volver a la lista',
+    join: 'Unirse',
+    joinAria: 'Unirse a la mesa de {name}',
+    hosting: 'Abre la mesa «{table}»',
+    cameOnline: '{name} está en línea.',
+    wentOffline: '{name} se ha ido.',
+    openNotice: 'Abrir',
   },
   desk: {
     lines: {

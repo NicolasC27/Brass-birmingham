@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Link, useLocation } from 'react-router';
-import { ArrowLeft, Check, ChevronDown, ChevronUp, Eye, EyeOff, Flag, MessageSquare, Radio, Send, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Check, ChevronDown, ChevronUp, Eye, EyeOff, Flag, LogIn, MessageSquare, Radio, Send, UserPlus, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { localeOf, useLang, useT } from '@/i18n';
 import { befriend, invite, portraitUrl, useDesk, useLine, useSession } from '@/online/session';
@@ -9,9 +9,35 @@ import { deskErrorKey } from '@/online/errors';
 import type { Friend, TableSummary } from '@/online/table';
 import { HALL, MAX_LINE, friendRoom, roomOf } from '@/online/parlour';
 import type { Line, Room } from '@/online/parlour';
-import { hideMember, loadMore, markRead, reportLine, say, setDocked, showRoom, useParlour, useRoom, useUnreadTotal } from '@/online/talk';
+import { clearLatest, hideMember, loadMore, markRead, reportLine, say, setDocked, showRoom, useParlour, useRoom, useUnreadTotal } from '@/online/talk';
+import { counterBell } from '@/gl/sfx';
+import { getBoardOptions } from '@/components/game/boardOptions';
+import Toast from './Toast';
+import type { ToastData } from './Toast';
+import { CODE_ALPHABET } from '@/online/table';
 import { tableTitle } from '@/online/tableNames';
 import Button from './Button';
+
+/** a table's code in a line — four glyphs of the code alphabet, standing alone — becomes the way to its room */
+const CODE_IN_TEXT = new RegExp(`(^|[^${CODE_ALPHABET}])([${CODE_ALPHABET}]{4})(?![${CODE_ALPHABET}])`, 'g');
+
+/** the text of a line, its table codes made into links */
+function withCodes(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  let last = 0;
+  for (const m of text.matchAll(CODE_IN_TEXT)) {
+    const at = m.index + m[1].length;
+    if (at > last) parts.push(text.slice(last, at));
+    parts.push(
+      <Link key={at} to={`/online/${m[2]}`} className="font-mono tracking-[0.12em] text-brass-300 underline decoration-brass-300/50 underline-offset-2 hover:decoration-brass-300">
+        {m[2]}
+      </Link>,
+    );
+    last = at + 4;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return parts.length ? parts : text;
+}
 
 /* ------------------------------------------------------------------ */
 /* The telegraph — the dock at the foot of every page but the table.   */
@@ -60,10 +86,11 @@ function FriendLine({ friend, hosting, invited, onWrite, onInvite, onAccept }: {
           <Badge n={unread} />
         </span>
         <span className="data-text block truncate text-iron-400">
-          {friend.status === 'asks' ? t('platform.desk.friends.asks') : friend.status === 'asked' ? t('platform.desk.friends.asked') : friend.playing ? t('platform.telegraph.atTable', { table: tableTitle(friend.playing.name, lang) }) : t(friend.online ? 'platform.desk.friends.presenceOnline' : 'platform.desk.friends.presenceOffline')}
+          {friend.status === 'asks' ? t('platform.desk.friends.asks') : friend.status === 'asked' ? t('platform.desk.friends.asked') : friend.playing ? t('platform.telegraph.atTable', { table: tableTitle(friend.playing.name, lang) }) : friend.open ? t('platform.telegraph.hosting', { table: tableTitle(friend.open.name, lang) }) : t(friend.online ? 'platform.desk.friends.presenceOnline' : 'platform.desk.friends.presenceOffline')}
         </span>
       </button>
-      <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+      {/* the actions show under the pointer, and always under a finger, where there is no pointer to show them */}
+      <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 coarse:opacity-100">
         {friend.status === 'asks' && (
           <button type="button" onClick={onAccept} title={t('platform.desk.friends.accept')} aria-label={t('platform.desk.friends.accept')} className={cn(act, 'text-bottle-400')}>
             <Check size={15} aria-hidden />
@@ -77,6 +104,10 @@ function FriendLine({ friend, hosting, invited, onWrite, onInvite, onAccept }: {
             {friend.playing ? (
               <Link to={`/game/${friend.playing.code}`} title={t('platform.telegraph.watch')} aria-label={t('platform.telegraph.watchAria', { name: friend.account.name })} className={act}>
                 <Eye size={15} aria-hidden />
+              </Link>
+            ) : friend.open ? (
+              <Link to={`/online/${friend.open.code}`} title={t('platform.telegraph.join')} aria-label={t('platform.telegraph.joinAria', { name: friend.account.name })} className={act}>
+                <LogIn size={15} aria-hidden />
               </Link>
             ) : (
               <button type="button" onClick={onInvite} disabled={!canInvite || invited} title={invited ? t('platform.desk.friends.invited') : canInvite ? t('platform.desk.friends.invite') : t('platform.desk.friends.inviteDisabled')} aria-label={t('platform.desk.friends.invite')} className={act}>
@@ -212,7 +243,13 @@ const field = 'h-8 min-w-0 flex-1 rounded-md border border-brass-hairline-strong
 /** lines in a row from one member within a few minutes read as one breath */
 const TOGETHER_MS = 3 * 60 * 1000;
 
-export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSaid }: { room: Room; lines: Line[]; more: boolean; readOnly?: boolean; placeholder: string; emptyText: string; onSaid?: () => void }) {
+/** a word of the house in the tape — a friend come or gone — never written down */
+interface Note {
+  at: number;
+  text: string;
+}
+
+export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSaid, notes = [] }: { room: Room; lines: Line[]; more: boolean; readOnly?: boolean; placeholder: string; emptyText: string; onSaid?: () => void; notes?: Note[] }) {
   const t = useT();
   const lang = useLang();
   const session = useSession();
@@ -225,6 +262,11 @@ export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSa
   const input = useRef<HTMLInputElement>(null);
   const hidden = useMemo(() => new Set(p.hidden), [p.hidden]);
   const shown = useMemo(() => lines.filter((l) => !hidden.has(l.from.id)), [lines, hidden]);
+  /* the lines and the house's notes, in one order of time */
+  const items = useMemo(() => {
+    const all: ({ kind: 'line'; at: number; line: Line } | { kind: 'note'; at: number; note: Note })[] = [...shown.map((line) => ({ kind: 'line' as const, at: line.at, line })), ...notes.map((note) => ({ kind: 'note' as const, at: note.at, note }))];
+    return all.sort((a, b) => a.at - b.at);
+  }, [shown, notes]);
 
   /* the tape is read from its end: a new line keeps it there unless the
      reader has scrolled up to read the old ones */
@@ -232,7 +274,7 @@ export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSa
   useEffect(() => {
     const el = box.current;
     if (el && stuck.current) el.scrollTop = el.scrollHeight;
-  }, [shown.length, room]);
+  }, [items.length, room]);
   useEffect(() => {
     stuck.current = true;
     const el = box.current;
@@ -263,6 +305,8 @@ export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSa
       .catch(() => undefined);
   };
   const time = (at: number) => new Date(at).toLocaleTimeString(localeOf(lang), { hour: '2-digit', minute: '2-digit' });
+  const dayOf = (at: number) => new Date(at).toDateString();
+  const day = (at: number) => new Date(at).toLocaleDateString(localeOf(lang), { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -281,19 +325,40 @@ export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSa
         )}
         {shown.length === 0 && <p className="py-6 text-center font-serif text-[13px] italic text-iron-400">{emptyText}</p>}
         <ol className="grid gap-0.5">
-          {shown.map((l, i) => {
-            const prev = shown[i - 1];
+          {items.map((it, i) => {
+            const prev = items[i - 1];
+            /* a new day is said once, above its first line */
+            const newDay = !prev || dayOf(prev.at) !== dayOf(it.at);
+            const rule = newDay && (
+              <li key={`day-${it.at}`} className="my-2 flex items-center gap-2" aria-hidden>
+                <span className="h-px flex-1 bg-[var(--gz-ink-faint)]" />
+                <span className="micro-label text-iron-400">{day(it.at)}</span>
+                <span className="h-px flex-1 bg-[var(--gz-ink-faint)]" />
+              </li>
+            );
+            if (it.kind === 'note') {
+              return (
+                <Fragment key={`note-${it.at}`}>
+                  {rule}
+                  <li className="px-2 py-0.5 font-serif text-[12.5px] italic text-iron-400">{it.note.text}</li>
+                </Fragment>
+              );
+            }
+            const l = it.line;
+            const before = prev?.kind === 'line' ? prev.line : null;
             const mine = l.from.id === session?.id;
-            const together = !!prev && prev.from.id === l.from.id && l.at - prev.at < TOGETHER_MS;
+            const together = !newDay && !!before && before.from.id === l.from.id && l.at - before.at < TOGETHER_MS;
             return (
-              <li key={l.id} className={cn('group relative rounded-md px-2 py-0.5 transition-colors hover:bg-enamel-800', !together && i > 0 && 'mt-2')}>
+              <Fragment key={l.id}>
+              {rule}
+              <li className={cn('group relative rounded-md px-2 py-0.5 transition-colors hover:bg-enamel-800', !together && i > 0 && !newDay && 'mt-2')}>
                 {!together && (
                   <p className="flex items-baseline gap-2">
                     <span className={cn('font-ui text-[12.5px] font-semibold', mine ? 'text-paper-300' : 'text-brass-300')}>{mine ? t('platform.telegraph.you') : l.from.name}</span>
                     <span className="data-text text-iron-400">{time(l.at)}</span>
                   </p>
                 )}
-                <p className="break-words font-ui text-[13px] leading-snug text-paper-100">{l.text}</p>
+                <p className="break-words font-ui text-[13px] leading-snug text-paper-100">{withCodes(l.text)}</p>
                 {!mine && (
                   <span className="absolute -top-2 right-1 hidden items-center gap-0.5 rounded-md border border-brass-hairline bg-enamel-850 p-0.5 group-hover:flex">
                     <button type="button" onClick={() => report(l.id)} disabled={reported.has(l.id)} title={reported.has(l.id) ? t('platform.telegraph.reported') : t('platform.telegraph.report')} aria-label={t('platform.telegraph.report')} className="flex h-6 w-6 items-center justify-center rounded text-iron-400 hover:text-rust-400 disabled:opacity-50">
@@ -305,6 +370,7 @@ export function Tape({ room, lines, more, readOnly, placeholder, emptyText, onSa
                   </span>
                 )}
               </li>
+              </Fragment>
             );
           })}
         </ol>
@@ -353,6 +419,9 @@ function RoomPane({ room, onBack }: { room: Room; onBack: () => void }) {
   useEffect(() => {
     if (r?.kind === 'friend' && desk && !friend) onBack();
   }, [r?.kind, desk, friend, onBack]);
+  /* the friend coming or going is said in the tape, in grey (online/talk.ts keeps the notes) */
+  const p = useParlour();
+  const notes = useMemo<Note[]>(() => (p.notes[room] ?? []).map((n) => ({ at: n.at, text: t(n.kind === 'came' ? 'platform.telegraph.cameOnline' : 'platform.telegraph.wentOffline', { name: n.name }) })), [p.notes, room, t]);
   const title = r?.kind === 'hall' ? t('platform.telegraph.hall') : r?.kind === 'table' ? r.code : (friend?.account.name ?? '');
   return (
     <>
@@ -364,7 +433,7 @@ function RoomPane({ room, onBack }: { room: Room; onBack: () => void }) {
         <span className="min-w-0 flex-1 truncate font-ui text-[13px] font-semibold text-paper-100">{title}</span>
         {r?.kind === 'hall' && <span className="data-text text-iron-400">{t('platform.telegraph.hallCount', { count: desk?.hall.online ?? 0 })}</span>}
       </div>
-      <Tape room={room} lines={view.lines} more={view.more} placeholder={friend ? t('platform.telegraph.placeholderTo', { name: friend.account.name }) : t('platform.telegraph.placeholder')} emptyText={r?.kind === 'hall' ? t('platform.telegraph.hallEmpty') : t('platform.telegraph.roomEmpty', { name: friend?.account.name ?? '' })} />
+      <Tape room={room} lines={view.lines} more={view.more} notes={notes} placeholder={friend ? t('platform.telegraph.placeholderTo', { name: friend.account.name }) : t('platform.telegraph.placeholder')} emptyText={r?.kind === 'hall' ? t('platform.telegraph.hallEmpty') : t('platform.telegraph.roomEmpty', { name: friend?.account.name ?? '' })} />
     </>
   );
 }
@@ -381,6 +450,19 @@ export default function Telegraph() {
   const { pathname } = useLocation();
   const panel = useRef<HTMLDivElement>(null);
   const onlineCount = desk?.friends.filter((f) => f.status === 'friends' && f.online).length ?? 0;
+  /* a line said to me while nobody was looking: a word at the foot of the
+     page, the counter's bell when the reader keeps the sound, and the way to
+     the room on the word itself */
+  const latest = p.latest;
+  const toast = useMemo<ToastData | null>(() => {
+    if (!latest) return null;
+    const r = roomOf(latest.room);
+    const who = r?.kind === 'table' ? `${latest.from.name} · ${r.code}` : latest.from.name;
+    return { id: latest.id, kind: 'info', message: `${who} : ${latest.text.length > 80 ? latest.text.slice(0, 79) + '…' : latest.text}`, action: { label: t('platform.telegraph.openNotice'), onClick: () => { setDocked(true); showRoom(latest.room); } } };
+  }, [latest, t]);
+  useEffect(() => {
+    if (latest && getBoardOptions().sound) counterBell();
+  }, [latest?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   /* a room still on show in a tab that was folded is read when it opens */
   useEffect(() => {
     if (p.docked && p.open) showRoom(p.open);
@@ -408,6 +490,8 @@ export default function Telegraph() {
   const label = p.docked ? t('platform.telegraph.fold') : t('platform.telegraph.unfold');
 
   return (
+    <>
+    <Toast toast={toast} onDismiss={clearLatest} />
     <div className="fixed bottom-[68px] right-3 z-[70] flex flex-col items-end min-[900px]:bottom-0 min-[900px]:right-6" data-print="hide">
       <AnimatePresence initial={false}>
         {p.docked && (
@@ -446,5 +530,6 @@ export default function Telegraph() {
         <span className={cn('text-iron-400', unread > 0 && !p.docked ? 'ml-1' : 'ml-auto')}>{p.docked ? <ChevronDown size={14} aria-hidden /> : <ChevronUp size={14} aria-hidden />}</span>
       </button>
     </div>
+    </>
   );
 }

@@ -218,6 +218,23 @@ describe('the parlour', () => {
     expect(server!.store.reports()).toEqual([]);
   });
 
+  it("shows a friend the table one is opening, until it fills or starts", async () => {
+    await open();
+    const ada = await arrive('Ada');
+    const bob = await arrive('Bob');
+    await befriend(ada, bob);
+    ada.send({ t: 'create', rid: 1, options: OPTIONS });
+    await ada.until('the table', () => !!ada.table);
+    const code = ada.table!.code;
+    await bob.until('the open table on the desk', () => bob.desk?.friends.some((f) => f.account.id === ada.id && f.open?.code === code) === true);
+    expect(bob.desk!.friends.find((f) => f.account.id === ada.id)!.open).toEqual({ code, name: ada.table!.name });
+    /* seated beside, the table is no longer one to join from the list */
+    bob.send({ t: 'join', rid: 2, code });
+    await bob.until('the seat', () => !!bob.table);
+    bob.send({ t: 'desk', rid: 3 });
+    await bob.until('the desk again', () => bob.frames.some((f) => f.t === 'desk' && f.rid === 3));
+    expect(bob.desk!.friends.find((f) => f.account.id === ada.id)!.open).toEqual({ code, name: ada.table!.name });
+  });
 
   it('lets what was said go with the member who closes their account', async () => {
     await open();

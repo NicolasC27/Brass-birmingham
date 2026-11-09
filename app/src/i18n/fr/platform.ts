@@ -62,7 +62,6 @@ const platform = {
     playNow: "Prochain départ",
     createTable: "Affréter un convoi",
     joinWithCode: "Mon numéro de convoi",
-    join: 'Monter à bord',
     watch: 'Regarder',
     full: 'Complet',
     resume: 'Reprendre',
@@ -237,6 +236,7 @@ const platform = {
       profile: 'Mon profil',
       profileCopy: 'Rang, cote et historique public.',
     },
+    join: 'Rejoindre sa table',
   },
   // --- rules ---
   rules: {
@@ -482,6 +482,12 @@ const platform = {
     placeholderTo: 'Une ligne pour {name}…',
     send: 'Envoyer',
     back: 'Retour à la liste',
+    join: 'Monter à bord',
+    joinAria: 'Rejoindre la table de {name}',
+    hosting: 'Ouvre la table « {table} »',
+    cameOnline: '{name} est en ligne.',
+    wentOffline: '{name} est parti.',
+    openNotice: 'Ouvrir',
   },
   desk: {
     lines: {

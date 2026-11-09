@@ -389,6 +389,8 @@ export interface Friend {
   online: boolean;
   /** the table they sit at that is in play: one may go and watch it */
   playing?: { code: string; name: string };
+  /** the table they sit at that waits for players, with a chair free: one may go and sit */
+  open?: { code: string; name: string };
 }
 
 /** everything the desk shows: my tables, my letters, my friends, my past games */

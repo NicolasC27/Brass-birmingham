@@ -3,7 +3,7 @@ import { onlineWire } from './net';
 import type { Wire } from './wire';
 import type { ServerMessage } from './protocol';
 import type { Line, Room } from './parlour';
-import { HALL } from './parlour';
+import { HALL, friendRoom } from './parlour';
 
 /* ------------------------------------------------------------------ */
 /* The parlour, as this browser keeps it.                              */
@@ -41,11 +41,23 @@ export interface Parlour {
   focus: Room | null;
   /** members this reader has chosen not to read */
   hidden: string[];
+  /** the last line said to this reader while nobody was looking (never the hall's), for a word on the page */
+  latest: Line | null;
+  /** a friend come or gone, by their room: said in the tape, never written down */
+  notes: Record<Room, Note[]>;
+}
+
+export interface Note {
+  at: number;
+  kind: 'came' | 'went';
+  name: string;
 }
 
 const EMPTY: RoomView = { lines: [], more: false, asked: false };
 
-let state: Parlour = { rooms: {}, unread: {}, open: null, docked: false, focus: null, hidden: [] };
+let state: Parlour = { rooms: {}, unread: {}, open: null, docked: false, focus: null, hidden: [], latest: null, notes: {} };
+/** the friends' lamps as the desk last showed them, by account id */
+let lamps: Map<string, boolean> | null = null;
 const listeners = new Set<() => void>();
 let attached: Wire | null = null;
 
@@ -96,7 +108,26 @@ function attach(): Wire | null {
   w.on(receive);
   w.onSession(() => {
     /* nobody signed in: nothing of the parlour is this browser's */
-    if (!w.session) set({ rooms: {}, unread: {}, open: null, focus: null });
+    if (!w.session) {
+      lamps = null;
+      set({ rooms: {}, unread: {}, open: null, focus: null, latest: null, notes: {} });
+    }
+  });
+  /* a friend's lamp turning on or off is a note in their room */
+  w.onDesk(() => {
+    const friends = w.desk?.friends.filter((f) => f.status === 'friends') ?? [];
+    const now = new Map(friends.map((f) => [f.account.id, f.online]));
+    if (lamps) {
+      let notes = state.notes;
+      for (const f of friends) {
+        const was = lamps.get(f.account.id);
+        if (was === undefined || was === f.online) continue;
+        const room = friendRoom(f.id);
+        notes = { ...notes, [room]: [...(notes[room] ?? []), { at: Date.now(), kind: f.online ? ('came' as const) : ('went' as const), name: f.account.name }].slice(-20) };
+      }
+      if (notes !== state.notes) set({ notes });
+    }
+    lamps = now;
   });
   return w;
 }
@@ -113,7 +144,10 @@ function receive(m: ServerMessage): void {
     const lines = [...room.lines, line].slice(-KEEP);
     const rooms = { ...state.rooms, [line.room]: { ...room, lines } };
     const mine = line.from.id === attached?.session?.id;
-    if (!mine && !reading(line.room)) set({ rooms, unread: { ...state.unread, [line.room]: (state.unread[line.room] ?? 0) + 1 } });
+    if (!mine && !reading(line.room)) {
+      const hidden = state.hidden.includes(line.from.id);
+      set({ rooms, unread: hidden ? state.unread : { ...state.unread, [line.room]: (state.unread[line.room] ?? 0) + 1 }, latest: hidden || line.room === HALL ? state.latest : line });
+    }
     else {
       set({ rooms });
       if (!mine) attached?.send({ t: 'seen', room: line.room, at: line.at });
@@ -225,6 +259,11 @@ export async function reportLine(id: number): Promise<void> {
   const w = attach();
   if (!w) throw new Error('offline');
   await w.ask((rid) => ({ t: 'report', rid, id }));
+}
+
+/** the word on the page has been read, or waved away */
+export function clearLatest(): void {
+  if (state.latest) set({ latest: null });
 }
 
 /** a member this reader would rather not read, or read again */

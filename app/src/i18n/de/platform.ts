@@ -64,7 +64,6 @@ const platform: typeof enPlatform = {
     playNow: "Nächste Abfahrt",
     createTable: "Einen Zug chartern",
     joinWithCode: "Meine Zugnummer",
-    join: 'Beitreten',
     watch: 'Zuschauen',
     full: 'Voll',
     resume: 'Fortsetzen',
@@ -239,6 +238,7 @@ const platform: typeof enPlatform = {
       profile: 'Mein Profil',
       profileCopy: 'Rang, Wertung und öffentliche Historie.',
     },
+    join: 'An seinen Tisch setzen',
   },
   // --- rules ---
   rules: {
@@ -484,6 +484,12 @@ const platform: typeof enPlatform = {
     placeholderTo: 'Eine Zeile für {name}…',
     send: 'Senden',
     back: 'Zurück zur Liste',
+    join: 'Beitreten',
+    joinAria: 'An den Tisch von {name} setzen',
+    hosting: 'Eröffnet den Tisch „{table}“',
+    cameOnline: '{name} ist online.',
+    wentOffline: '{name} ist gegangen.',
+    openNotice: 'Öffnen',
   },
   desk: {
     lines: {

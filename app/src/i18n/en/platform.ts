@@ -62,7 +62,6 @@ const platform = {
     playNow: "Next departure",
     createTable: "Charter a train",
     joinWithCode: "My train number",
-    join: 'Join',
     watch: 'Watch',
     full: 'Full',
     resume: 'Resume',
@@ -237,6 +236,7 @@ const platform = {
       profile: 'My profile',
       profileCopy: 'Rank, rating and public history.',
     },
+    join: 'Join their table',
   },
   // --- rules ---
   rules: {
@@ -482,6 +482,12 @@ const platform = {
     placeholderTo: 'A line for {name}…',
     send: 'Send',
     back: 'Back to the list',
+    join: 'Join',
+    joinAria: 'Join {name}’s table',
+    hosting: 'Opening the table “{table}”',
+    cameOnline: '{name} is on line.',
+    wentOffline: '{name} has left.',
+    openNotice: 'Open',
   },
   desk: {
     lines: {
