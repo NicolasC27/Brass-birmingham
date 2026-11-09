@@ -949,14 +949,9 @@ export function buildBoardScene(bgCanal: Container, bgRail: Container, etchCanal
     /* the row's own shadow on the ground, then the shelves — a parchment
        recess for each tile, like a town's empty card — and the medallion:
        a brass disc with a beaded rim, seated on the ground */
-    /* the row stands on a quay of dressed stone: a dark slab with a
-       lighter coping along its top and its shadow on the land, so the
-       tiles and the medallion read as set on the place, not on the HUD */
     const under = new Graphics();
     under.eventMode = 'none';
-    under.roundRect(-rowW / 2 + 1, -MT / 2 + 4, rowW + 8, MT + 8, 7).fill({ color: 0x0e0b09, alpha: 0.4 });
-    under.roundRect(-rowW / 2 - 2, -MT / 2 - 1, rowW + 10, MT + 9, 7).fill({ color: 0x4a4440, alpha: 0.78 }).stroke({ width: 0.9, color: 0x1a1613, alpha: 0.8 });
-    under.rect(-rowW / 2 - 1, -MT / 2, rowW + 8, 1.6).fill({ color: 0x8a847c, alpha: 0.55 });
+    under.roundRect(-rowW / 2 - 1, -MT / 2 + 1, rowW + 8, MT + 8, 8).fill({ color: 0x1e160e, alpha: 0.26 });
     const shelf = new Graphics();
     shelf.eventMode = 'none';
     for (const x of slotX) {

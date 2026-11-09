@@ -503,9 +503,8 @@ the towns were needed at all: the ground already carries every route
 so the trace Pixi lays over it is now a hairline — a thin dark bed and
 one fine line of water or steel — and a built link a slim ribbon in its
 owner's colour (half its old width), read by its colour rather than its
-bulk. The towns' ribbons became ink plates: cream small capitals on a
-dark lacquered bar, the town's colour kept as a fillet along the top and
-in the swallowtails; the merchants' rows stand on a quay of dressed
-stone rather than a shadow; the empty slots are engraved in a cold steel
+bulk. The towns' ribbons were tried as ink plates and the merchants' rows on
+a quay of dressed stone; both read as severe and were put back (the
+coloured ribbons, the row's soft shadow). The empty slots are engraved in a cold steel
 ink on the frozen ground (`toneTable('cold')`); the apron's far haze
 leans toward the table's felt; and key N takes the names off the table.
