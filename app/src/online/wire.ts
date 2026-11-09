@@ -3,6 +3,7 @@ import type { ClientMessage, ServerMessage } from './protocol';
 import type { CompanyBoard, HomeSave, HomeTable, Paper, Season, SeasonReview, Edition, ChallengeBoard, Desk, Me, Leaderboard, TableQuery, TablesPage } from './table';
 import type { Audience, WaitBook } from './waitlist';
 import type { GuideFunnel, TrailEvent, TrailFilter } from './guideTrail';
+import type { Report } from './parlour';
 import type { GameAction } from '@/game/actions';
 import type { Rivalry } from '@/game/rivalry';
 import type { SetupPayload } from '@/game/types';
@@ -343,6 +344,21 @@ export class Wire {
   /** the circular as a proof, to the direction's own address only */
   async adminTrial(subject: string, body: string, audience: Audience): Promise<void> {
     await this.ask((rid) => ({ t: 'admin.circular', rid, subject, body, audience, trial: true }));
+  }
+
+  /** the lines reported to the direction */
+  async adminReports(): Promise<Report[]> {
+    const m = await this.ask((rid) => ({ t: 'admin.reports', rid }));
+    if (m.t !== 'admin.reports') throw new Error('no-reports');
+    return m.reports;
+  }
+
+  async adminSilence(id: string, hours: number): Promise<void> {
+    await this.ask((rid) => ({ t: 'admin.silence', rid, id, hours }));
+  }
+
+  async adminDismiss(id: string): Promise<void> {
+    await this.ask((rid) => ({ t: 'admin.dismiss', rid, id }));
   }
 
   /** the guided game's funnel, as the office sums it up */

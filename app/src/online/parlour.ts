@@ -63,3 +63,15 @@ export function cleanLine(raw: unknown): string | null {
 
 /** why a line was not carried */
 export type SayError = 'refused' | 'not-found' | 'silenced' | 'too-long' | 'verify-first';
+
+/** a line reported to the direction, as its desk reads it */
+export interface Report {
+  /** the mark's id */
+  id: string;
+  at: number;
+  reporter: Identity;
+  author: Identity;
+  line: { id: number; room: Room; text: string; at: number };
+  /** until when the author is silenced, or 0 */
+  silencedUntil: number;
+}

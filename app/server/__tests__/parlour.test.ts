@@ -192,6 +192,12 @@ describe('the parlour', () => {
     expect(flags).toHaveLength(1);
     expect(flags[0]).toMatchObject({ accountId: bob.id, kind: 'line' });
     expect(flags[0].detail).toContain('Something unkind.');
+    /* the direction reads the report whole */
+    ada.send({ t: 'admin.reports', rid: 30 });
+    await ada.until('the reports', () => ada.frames.some((f) => f.t === 'admin.reports'));
+    const reports = ada.frames.find((f): f is Extract<ServerMessage, { t: 'admin.reports' }> => f.t === 'admin.reports')!.reports;
+    expect(reports).toHaveLength(1);
+    expect(reports[0]).toMatchObject({ id: flags[0].id, reporter: { id: ada.id, name: 'Ada' }, author: { id: bob.id, name: 'Bob' }, line: { id: line.id, room: HALL, text: 'Something unkind.' }, silencedUntil: 0 });
     /* Ada is of the direction: Bob is silenced for an hour, then let speak again */
     ada.send({ t: 'admin.silence', rid: 4, id: bob.id, hours: 1 });
     await ada.until('the silence', () => ada.done.includes(4));
@@ -206,7 +212,12 @@ describe('the parlour', () => {
     bob.send({ t: 'admin.silence', rid: 8, id: ada.id, hours: 1 });
     await bob.until('the refusal', () => refusals(bob, 8).length === 1);
     expect(refusals(bob, 8)).toEqual(['not-allowed']);
+    /* the report put away */
+    ada.send({ t: 'admin.dismiss', rid: 9, id: flags[0].id });
+    await ada.until('the mark gone', () => ada.done.includes(9));
+    expect(server!.store.reports()).toEqual([]);
   });
+
 
   it('lets what was said go with the member who closes their account', async () => {
     await open();

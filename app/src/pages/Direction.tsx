@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, useParams } from 'react-router';
-import { Download, GraduationCap, RefreshCw, Send, TestTube2 } from 'lucide-react';
+import { Download, GraduationCap, RefreshCw, Send, TestTube2, VolumeX, Volume2, Archive } from 'lucide-react';
 import PageShell, { Field, Panel, Refusal, inputClass } from '@/components/site/PageShell';
 import { onlineWire } from '@/online/net';
 import type { Me } from '@/online/table';
+import type { Report } from '@/online/parlour';
+import { roomOf } from '@/online/parlour';
 import { FOUNDERS, MAX_BODY, MAX_SUBJECT, WAIT_LANGS, founders, reach } from '@/online/waitlist';
 import type { Audience, Circular, Entrant, WaitBook, WaitLang } from '@/online/waitlist';
 import { cn } from '@/lib/utils';
@@ -359,6 +361,53 @@ function Book({ entrants, onStrike }: { entrants: Entrant[]; onStrike: (e: Entra
   );
 }
 
+/* ------------------------------ the parlour ------------------------------ */
+
+/** where a line was said, in the direction's words */
+const roomText = (room: string): string => {
+  const r = roomOf(room);
+  return !r ? room : r.kind === 'hall' ? 'le hall' : r.kind === 'table' ? `la table ${r.code}` : 'une salle d’amis';
+};
+
+/** the lines reported by the members: the author silenced for a day, let
+ *  speak again, or the report put away */
+function Parlour({ reports, onAct }: { reports: Report[]; onAct: (act: () => Promise<void>) => void }) {
+  const w = onlineWire();
+  if (!reports.length) return <p className="font-serif text-[14px] italic text-paper-300">Rien de signalé.</p>;
+  return (
+    <ol className="grid gap-3">
+      {reports.map((r) => (
+        <li key={r.id} className="grid gap-2 border-t border-[var(--gz-ink-faint)] pt-3 first:border-t-0 first:pt-0">
+          <p className="font-ui text-[12px] text-iron-400">
+            {stamp(r.at)} — <span className="text-paper-100">{r.reporter.name}</span> signale <span className="text-paper-100">{r.author.name}</span>, dans {roomText(r.line.room)}
+            {r.silencedUntil > 0 && <span className="ml-2 rounded bg-rust-600/15 px-1.5 py-0.5 text-rust-400">au silence jusqu’à {stamp(r.silencedUntil)}</span>}
+          </p>
+          <p className="break-words border-l-2 border-brass-300/50 pl-3 font-serif text-[14px] leading-relaxed text-paper-100">« {r.line.text} »</p>
+          <div className="flex flex-wrap gap-2">
+            {r.silencedUntil > 0 ? (
+              <button type="button" className={button} onClick={() => onAct(() => w!.adminSilence(r.author.id, 0))}>
+                <Volume2 aria-hidden /> Lever le silence
+              </button>
+            ) : (
+              <>
+                <button type="button" className={button} onClick={() => onAct(() => w!.adminSilence(r.author.id, 24))}>
+                  <VolumeX aria-hidden /> Faire taire 24 h
+                </button>
+                <button type="button" className={button} onClick={() => onAct(() => w!.adminSilence(r.author.id, 24 * 7))}>
+                  <VolumeX aria-hidden /> Une semaine
+                </button>
+              </>
+            )}
+            <button type="button" className={button} onClick={() => onAct(() => w!.adminDismiss(r.id))}>
+              <Archive aria-hidden /> Classer
+            </button>
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /* ------------------------------ the door ------------------------------ */
 
 /* the desk signs in on its own, straight on the wire: the account page and
@@ -470,6 +519,7 @@ export function DirectionVerify() {
 export default function Direction() {
   const session = useMe();
   const [book, setBook] = useState<WaitBook | null>(null);
+  const [reports, setReports] = useState<Report[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [at, setAt] = useState(0);
   const admin = session?.admin === true;
@@ -479,6 +529,7 @@ export default function Direction() {
     if (!w) return;
     try {
       setBook(await (ask ?? (() => w.adminBook()))());
+      setReports(await w.adminReports());
       setAt(Date.now());
       setError(null);
     } catch (e) {
@@ -585,6 +636,10 @@ export default function Direction() {
               <Circulars circulars={book.circulars} onStop={(id) => void read(() => onlineWire()!.adminStop(id))} />
             </Panel>
           </div>
+
+          <Panel title="Le parloir" meta={reports.length ? plural(reports.length, 'ligne signalée', 'lignes signalées') : undefined}>
+            <Parlour reports={reports} onAct={(act) => void act().then(() => read(), (e: unknown) => setError(`L’office n’a pas répondu : ${(e as Error).message}`))} />
+          </Panel>
 
           <Book entrants={book.entrants} onStrike={(e) => void read(() => onlineWire()!.adminStrike(e.id))} />
         </div>

@@ -1216,7 +1216,8 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
           send(c, { t: 'refused', rid: m.rid, error: 'not-found' });
           return;
         }
-        store.flag(line.from.id, 'line', `reported by ${who.name} (${who.id}) — line ${line.id} in ${line.room}: ${line.text}`);
+        /* the mark carries the line and who reported it, for the direction's desk */
+        store.flag(line.from.id, 'line', JSON.stringify({ reporter: { id: who.id, name: who.name }, line: { id: line.id, room: line.room, text: line.text, at: line.at } }));
         send(c, { t: 'done', rid: m.rid });
         return;
       }
@@ -1378,6 +1379,13 @@ export function serve(options: ServeOptions = {}): Promise<Serving> {
       case 'admin.stop':
         waitlist.stop(String(m.id));
         book(m.rid);
+        return;
+      case 'admin.reports':
+        send(c, { t: 'admin.reports', rid: m.rid, reports: store.reports() });
+        return;
+      case 'admin.dismiss':
+        store.dropFlag(String(m.id));
+        send(c, { t: 'done', rid: m.rid });
         return;
       case 'admin.silence': {
         const hours = Number(m.hours);

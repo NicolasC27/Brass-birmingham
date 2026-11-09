@@ -16,7 +16,7 @@ import { fresh, ratingOf, seasonAt, settle } from './rating';
 import type { Standing } from './rating';
 import { MEETINGS_CAP } from './watch';
 import type { Flag } from './watch';
-import type { Line, Room, Unread } from '@/online/parlour';
+import type { Line, Report, Room, Unread } from '@/online/parlour';
 import { LINES_PAGE } from '@/online/parlour';
 import type { Finished } from './rivals';
 
@@ -1313,6 +1313,27 @@ export class Store {
     const f: Flag = { id: 'f-' + randomBytes(6).toString('hex'), accountId, kind, detail, code, at: Date.now() };
     this.db.prepare('insert into flags (id, accountId, kind, detail, code, at) values (?, ?, ?, ?, ?, ?)').run(f.id, f.accountId, f.kind, f.detail, f.code, f.at);
     return f;
+  }
+
+  /** the lines reported to the direction, newest first: the marks of kind
+   *  'line', their detail read back, with the author's silence if any */
+  reports(now = Date.now()): Report[] {
+    const rows = this.db.prepare("select f.id, f.accountId, f.detail, f.at, a.name from flags f left join accounts a on a.id = f.accountId where f.kind = 'line' order by f.at desc").all() as { id: string; accountId: string; detail: string; at: number; name: string | null }[];
+    const out: Report[] = [];
+    for (const r of rows) {
+      try {
+        const d = JSON.parse(r.detail) as { reporter: Identity; line: Report['line'] };
+        out.push({ id: r.id, at: r.at, reporter: d.reporter, author: { id: r.accountId, name: r.name ?? '' }, line: d.line, silencedUntil: this.silencedUntil(r.accountId, now) });
+      } catch {
+        /* a mark written another way: not a report */
+      }
+    }
+    return out;
+  }
+
+  /** a mark put away */
+  dropFlag(id: string): void {
+    this.db.prepare('delete from flags where id = ?').run(id);
   }
 
   /** every mark, newest first, with the account's name */
